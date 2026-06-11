@@ -10,12 +10,19 @@ import { homedir } from "os"
 // Dynamic import — web-tree-sitter is the only WASM dependency
 let wtsModule: any = null
 
-async function getWts(): Promise<any> {
+async function getWts(): Promise<{ Parser: any; Language: any }> {
   if (!wtsModule) {
     wtsModule = await import("web-tree-sitter")
+    // web-tree-sitter 0.24.x: init() registers Language on the module
+    // The module itself is the Parser constructor
     await wtsModule.default.init()
   }
-  return wtsModule
+  // After init, wts.Language is available; wts itself is Parser
+  const mod: any = wtsModule
+  return {
+    Parser: mod.Parser ?? mod.default ?? mod,
+    Language: mod.Language ?? mod.default?.Language,
+  }
 }
 
 // ============================================================================
@@ -166,9 +173,7 @@ export async function getParser(language: string): Promise<any> {
 
   // Load WASM
   const wasmBytes = await loadWasmBytes(language)
-  const wts = await getWts()
-  const Language = wts.Language
-  const Parser = wts.Parser || wts.default || wts
+  const { Parser, Language } = await getWts()
 
   // Load grammar (3 second timeout)
   const grammar = await Promise.race([
