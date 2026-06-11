@@ -1,0 +1,185 @@
+// @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
+import type { Node } from "web-tree-sitter"
+import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "../types.js"
+
+/**
+ * 4 LAWS COMPLIANT REAL HCL / TERRAFORM ANALYZER
+ * 1. Flawless Database Extraction (UniversalSymbol, UniversalRelationship)
+ * 2. Absolute Zero WASM-Bridge Arrays (O(D) Space using namedChild)
+ * 3. Big-O Time Complexity Ceiling (O(N) Iterative DFS)
+ * 4. 100% Stateless Thread Safety (No class-level mutable properties)
+ */
+export class RealHclAnalyzer implements LanguageAnalyzer {
+  public analyze(rootNode: Node, content: string, filePath: string): ParseResult {
+    const symbols: UniversalSymbol[] = []
+    const relationships: UniversalRelationship[] = []
+    const imports: ImportInfo[] = []
+    const exports: ExportInfo[] = []
+    const errors: ParseError[] = []
+
+    // O(N) Iterative DFS Stack
+    const walkStack: { node: Node; scopePath: string[] }[] = [{ node: rootNode, scopePath: [] }]
+
+    while (walkStack.length > 0) {
+      const { node, scopePath } = walkStack.pop()!
+      const type = node.type
+
+      let currentScope = [...scopePath]
+
+      // Terraform Blocks (e.g. resource, data, module, variable, output, provider)
+      if (type === "block") {
+        let blockType = ""
+        const labels: string[] = []
+
+        // HCL blocks have identifiers (block type) and strings or identifiers (labels)
+        for (let i = 0; i < node.namedChildCount; i++) {
+          const child = node.namedChild(i)
+          if (!child) continue
+          if (child.type === "identifier" && !blockType) {
+            blockType = child.text
+          } else if (child.type === "string_lit" || child.type === "identifier") {
+            // Usually the string_lit contains the label inside quotes, strip them if it's a string_lit
+            let labelText = child.text
+            if (child.type === "string_lit") {
+              labelText = labelText.replace(/^"|"$/g, "")
+            }
+            if (labelText) labels.push(labelText)
+          }
+        }
+
+        if (blockType) {
+          const blockName = `${blockType}${labels.length > 0 ? "_" + labels.join("_") : ""}`
+
+          let kind = SymbolKind.Class
+          if (blockType === "module" || blockType === "provider" || blockType === "terraform")
+            kind = SymbolKind.Module
+          else if (blockType === "variable" || blockType === "output" || blockType === "locals")
+            kind = SymbolKind.Variable
+          else if (blockType === "data") kind = SymbolKind.Interface
+
+          const blockSymbol: UniversalSymbol = {
+            name: blockName,
+            kind: kind,
+            range: {
+              startLine: node.startPosition.row + 1,
+              endLine: node.endPosition.row + 1,
+              startColumn: node.startPosition.column,
+              endColumn: node.endPosition.column,
+              startIndex: node.startIndex,
+              endIndex: node.endIndex,
+            },
+            scope: currentScope.join("."),
+            metadata: {
+              hclBlockType: blockType,
+              hclLabels: labels,
+            },
+          }
+          symbols.push(blockSymbol)
+          currentScope.push(blockName)
+
+          // Modules are essentially import statements
+          if (blockType === "module") {
+            imports.push({
+              module: labels[0] || "unknown",
+              range: blockSymbol.range,
+            })
+          }
+        }
+      }
+
+      // Terraform Attributes
+      if (type === "template_expr" || type === "template_interpolation" || type === "string_lit") {
+        const val = node.text;
+        const refs = val.match(/\$\{([^}]+)\}/g);
+        if (refs && currentScope.length > 0) {
+          for (var _ri = 0; _ri < refs.length; _ri++) {
+            var refName = refs[_ri].replace(/\$\{|\}/g, "").split(".")[0];
+            if (refName) {
+              relationships.push({ type: RelationshipType.Uses, sourceId: currentScope[currentScope.length - 1], targetId: refName, metadata: { isVariableRef: true } });
+            }
+          }
+        }
+      } else if (type === "attribute") {
+        const keyNode = this.findChild(node, (n) => n.type === "identifier")
+        if (keyNode) {
+          const attrSymbol: UniversalSymbol = {
+            name: keyNode.text,
+            kind: SymbolKind.Property,
+            range: {
+              startLine: node.startPosition.row + 1,
+              endLine: node.endPosition.row + 1,
+              startColumn: node.startPosition.column,
+              endColumn: node.endPosition.column,
+              startIndex: node.startIndex,
+              endIndex: node.endIndex,
+            },
+            scope: currentScope.join("."),
+            metadata: {},
+          }
+          symbols.push(attrSymbol)
+
+          if (currentScope.length > 0) {
+            relationships.push({
+              type: RelationshipType.Contains,
+              sourceId: currentScope[currentScope.length - 1],
+              targetId: keyNode.text,
+              metadata: {},
+            })
+          }
+        }
+      }
+
+      // Catch parsing errors
+      const isErr = node.hasError
+      if (type === "ERROR" || isErr) {
+        errors.push({
+          message: `HCL/Terraform Syntax Error at ${node.startPosition.row + 1}:${node.startPosition.column}`,
+          range: {
+            startLine: node.startPosition.row + 1,
+            endLine: node.endPosition.row + 1,
+            startColumn: node.startPosition.column,
+            endColumn: node.endPosition.column,
+          },
+          severity: "error",
+        })
+      }
+
+      // O(D) arrays. Absolute zero WASM arrays (.children). Pushing in reverse for normal DFS.
+      for (let i = node.namedChildCount - 1; i >= 0; i--) {
+        const child = node.namedChild(i)
+        if (child) {
+          walkStack.push({ node: child, scopePath: currentScope })
+        }
+      }
+    }
+
+    for (var _hi = 0; _hi < symbols.length; _hi++) { var hs = symbols[_hi]; exports.push({ name: hs.name, kind: hs.kind, range: hs.range, visibility: "public" }); }
+    return {
+      language: "hcl",
+      symbols,
+      relationships,
+      imports,
+      exports,
+      errors,
+      metadata: {
+        complexity: symbols.length,
+        linesOfCode: content.split("\n").length,
+        patterns: [],
+        framework: "HCL/Terraform",
+        hasFrameworkIntelligence: true,
+        hasTypeInference: false,
+      },
+    }
+  }
+
+  // Pure function cursor helper
+  private findChild(node: Node, predicate: (n: Node) => boolean): Node | null {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const child = node.namedChild(i)
+      if (child && predicate(child)) {
+        return child
+      }
+    }
+    return null
+  }
+}
