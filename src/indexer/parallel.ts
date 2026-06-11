@@ -1,2 +1,435 @@
-// Placeholder
-export {}
+// Parallel Indexer — Master orchestrator for project indexing
+// Ported from backbencher's parallel-indexer.ts indexProjectParallel()
+// Ties together: file discovery → worker pool → batch storage → post-processing
+
+import { cpus } from "os"
+import { fork, type ChildProcess } from "child_process"
+import { basename, join, dirname } from "path"
+import { fileURLToPath } from "url"
+import type Database from "better-sqlite3"
+import { createLogger, setVerbose } from "../util/log.js"
+import { discoverFiles } from "./discover.js"
+import { storeResults, type FileResult, type StoreStats } from "./store.js"
+
+const log = createLogger("indexer")
+
+// ============================================================================
+// CONFIGURATION
+// ============================================================================
+
+const CONCURRENCY = Math.max(2, Math.min(cpus().length - 1, 12))
+const FILE_TIMEOUT_MS = 45000 // 45s per file
+const WORKER_BATCH_SIZE = 10
+const DB_BATCH_SIZE = 100
+const PROGRESS_MS = 100
+
+// ============================================================================
+// TYPES
+// ============================================================================
+
+export interface IndexingStats {
+  totalFiles: number
+  processedFiles: number
+  successFiles: number
+  timeoutFiles: number
+  errorFiles: number
+  skippedFiles: number
+  symbolsExtracted: number
+  relationshipsFound: number
+  importsFound: number
+  startTime: number
+  endTime?: number
+  filesPerSecond?: number
+  errors: Array<{ file: string; error: string }>
+}
+
+export interface IndexingOptions {
+  onProgress?: (stats: IndexingStats) => void
+  files?: string[]
+  excludePatterns?: string[]
+  isIncremental?: boolean
+  verbose?: boolean
+}
+
+// ============================================================================
+// POST-PROCESSING
+// ============================================================================
+
+function resolveRelationships(db: Database.Database, projectHash: string): void {
+  log.debug("resolving cross-file relationships")
+
+  // Strategy 1: Full symbol ID match
+  db.prepare(`
+    UPDATE relationships SET target_symbol_id = (SELECT id FROM symbols WHERE symbols.id = relationships.target_external AND symbols.project_hash = relationships.project_hash LIMIT 1)
+    WHERE project_hash = ? AND target_symbol_id IS NULL AND target_external IS NOT NULL
+  `).run(projectHash)
+
+  // Strategy 2: Qualified name match
+  db.prepare(`
+    UPDATE relationships SET target_symbol_id = (SELECT id FROM symbols WHERE qualified_name = relationships.target_external AND project_hash = relationships.project_hash LIMIT 1)
+    WHERE project_hash = ? AND target_symbol_id IS NULL AND target_external IS NOT NULL
+  `).run(projectHash)
+
+  // Strategy 3: Name-only match (if unique)
+  db.prepare(`
+    UPDATE relationships SET target_symbol_id = (SELECT id FROM symbols WHERE name = relationships.target_external AND project_hash = relationships.project_hash LIMIT 1)
+    WHERE project_hash = ? AND target_symbol_id IS NULL AND target_external IS NOT NULL
+      AND (SELECT COUNT(*) FROM symbols WHERE name = relationships.target_external AND project_hash = relationships.project_hash) = 1
+  `).run(projectHash)
+
+  // Mark cross-file relationships
+  db.prepare(`
+    UPDATE relationships SET is_cross_file = 1
+    WHERE project_hash = ? AND target_symbol_id IS NOT NULL
+      AND source_symbol_id IN (SELECT id FROM symbols WHERE file_id != (SELECT file_id FROM symbols WHERE symbols.id = relationships.target_symbol_id))
+  `).run(projectHash)
+}
+
+function calculateGravityScores(db: Database.Database, projectHash: string): void {
+  // Base: complexity × visibility
+  db.prepare(`
+    UPDATE symbols SET gravity_score = (complexity * (CASE WHEN visibility = 'public' THEN 1.5 ELSE 1.0 END))
+    WHERE project_hash = ?
+  `).run(projectHash)
+
+  // PageRank: in-degree boost
+  db.prepare(`
+    UPDATE symbols SET gravity_score = gravity_score + (
+      SELECT COUNT(*) * 5.0 FROM relationships r WHERE r.target_symbol_id = symbols.id
+    )
+    WHERE project_hash = ? AND EXISTS (SELECT 1 FROM relationships r WHERE r.target_symbol_id = symbols.id)
+  `).run(projectHash)
+
+  // Layer weighting
+  db.prepare(`UPDATE symbols SET gravity_score = gravity_score * 2.0 WHERE project_hash = ? AND layer = 'core'`).run(projectHash)
+  db.prepare(`UPDATE symbols SET gravity_score = gravity_score * 1.5 WHERE project_hash = ? AND (layer = 'service' OR layer = 'db')`).run(projectHash)
+  db.prepare(`UPDATE symbols SET gravity_score = gravity_score * 0.5 WHERE project_hash = ? AND layer = 'test'`).run(projectHash)
+}
+
+function resolveCrossSymbolTaints(db: Database.Database, projectHash: string): void {
+  db.prepare(`
+    UPDATE taint_flows SET sink_symbol_id = (
+      SELECT r.target_symbol_id FROM relationships r
+      WHERE r.source_symbol_id = taint_flows.source_symbol_id AND r.project_hash = taint_flows.project_hash
+      LIMIT 1
+    )
+    WHERE project_hash = ? AND sink_symbol_id IS NULL AND source_symbol_id IS NOT NULL
+  `).run(projectHash)
+}
+
+// ============================================================================
+// WORKER POOL
+// ============================================================================
+
+function processWithWorkers(
+  projectHash: string,
+  projectPath: string,
+  files: string[],
+  onProgress: (processed: number, total: number, currentFile: string) => void,
+): Promise<FileResult[]> {
+  const numWorkers = Math.min(CONCURRENCY, Math.ceil(files.length / WORKER_BATCH_SIZE) || 1)
+
+  log.debug("starting worker pool", { numWorkers, files: files.length })
+
+  return new Promise((resolve) => {
+    const results: FileResult[] = []
+    let processed = 0
+    const fileQueue = [...files]
+    const pendingBatches = new Map<number, { files: string[]; worker: ChildProcess; timeout: NodeJS.Timeout; currentFile?: string }>()
+    let batchCounter = 0
+
+    const workers = new Set<ChildProcess>()
+    const idleWorkers: ChildProcess[] = []
+
+    function handleWorkerTimeout(worker: ChildProcess, batchId: number) {
+      const batch = pendingBatches.get(batchId)
+      if (!batch) return
+
+      clearTimeout(batch.timeout)
+      pendingBatches.delete(batchId)
+
+      try { worker.kill("SIGKILL") } catch {}
+
+      // Mark remaining files in batch as timed out
+      const idx = batch.files.indexOf(batch.currentFile || batch.files[0]!)
+      const remaining = batch.files.slice(idx >= 0 ? idx : 0)
+      for (const f of remaining) {
+        results.push({ filePath: f, success: false, timeout: true, error: "Worker timeout" })
+        processed++
+        onProgress(processed, files.length, f)
+      }
+    }
+
+    function createWorker(workerId: number) {
+      const workerPath = join(dirname(fileURLToPath(import.meta.url)), "worker.js")
+      const worker = fork(workerPath, [], {
+        env: { ...process.env, BB_SUBPROCESS: "1" },
+        stdio: ["ignore", "ignore", "ignore", "ipc"],
+      })
+
+      workers.add(worker)
+
+      worker.on("message", (msg: any) => {
+        if (msg.type === "ready") {
+          idleWorkers.push(worker)
+          scheduleNext()
+        } else if (msg.type === "file_start") {
+          const batch = pendingBatches.get(msg.batchId)
+          if (batch) {
+            batch.currentFile = msg.filePath
+            clearTimeout(batch.timeout)
+            batch.timeout = setTimeout(() => handleWorkerTimeout(worker, msg.batchId), FILE_TIMEOUT_MS)
+          }
+        } else if (msg.type === "file_done") {
+          results.push({ filePath: msg.filePath, ...msg.result, success: true })
+          processed++
+          onProgress(processed, files.length, msg.filePath)
+        } else if (msg.type === "file_error") {
+          results.push({ filePath: msg.filePath, success: false, error: msg.error })
+          processed++
+          onProgress(processed, files.length, msg.filePath)
+        } else if (msg.type === "batch_done") {
+          const batch = pendingBatches.get(msg.batchId)
+          if (batch) {
+            clearTimeout(batch.timeout)
+            pendingBatches.delete(msg.batchId)
+          }
+          idleWorkers.push(worker)
+          scheduleNext()
+        }
+      })
+
+      worker.on("exit", (code) => {
+        workers.delete(worker)
+        const idx = idleWorkers.indexOf(worker)
+        if (idx !== -1) idleWorkers.splice(idx, 1)
+
+        // Handle batches assigned to dead worker
+        for (const [batchId, batch] of pendingBatches) {
+          if (batch.worker === worker) {
+            handleWorkerTimeout(worker, batchId)
+          }
+        }
+
+        // Respawn if needed
+        if (workers.size < numWorkers && (fileQueue.length > 0 || pendingBatches.size > 0)) {
+          setTimeout(() => {
+            if (workers.size < numWorkers) {
+              createWorker(Date.now())
+              scheduleNext()
+            }
+          }, 500)
+        }
+      })
+
+      // Send warmup
+      worker.send({ type: "warmup", workerId })
+    }
+
+    function scheduleNext() {
+      if (fileQueue.length === 0 && pendingBatches.size === 0) {
+        // All done — kill remaining workers
+        for (const w of workers) w.kill()
+        resolve(results)
+        return
+      }
+
+      while (idleWorkers.length > 0 && fileQueue.length > 0) {
+        const worker = idleWorkers.shift()!
+        const batchFiles = fileQueue.splice(0, WORKER_BATCH_SIZE)
+        const batchId = ++batchCounter
+
+        pendingBatches.set(batchId, {
+          files: batchFiles,
+          worker,
+          timeout: setTimeout(() => handleWorkerTimeout(worker, batchId), FILE_TIMEOUT_MS),
+        })
+
+        worker.send({ type: "parse_batch", batchId, files: batchFiles, projectPath })
+      }
+    }
+
+    // Spawn initial workers
+    for (let i = 0; i < numWorkers; i++) {
+      createWorker(i)
+    }
+  })
+}
+
+// ============================================================================
+// MAIN ENTRY POINT
+// ============================================================================
+
+export async function indexProject(
+  projectPath: string,
+  db: Database.Database,
+  options: IndexingOptions = {},
+): Promise<IndexingStats> {
+  if (options.verbose) setVerbose(true)
+
+  let projectHash = (db.prepare("SELECT project_hash FROM files LIMIT 1").get() as any)?.project_hash ||
+    (db.prepare("SELECT project_hash FROM index_status LIMIT 1").get() as any)?.project_hash
+
+  if (!projectHash) {
+    const { createHash } = await import("crypto")
+    projectHash = createHash("sha256").update(projectPath).digest("hex").slice(0, 16)
+    db.prepare("INSERT OR REPLACE INTO index_status (project_hash, status) VALUES (?, 'indexing')").run(projectHash)
+  }
+
+  const stats: IndexingStats = {
+    totalFiles: 0,
+    processedFiles: 0,
+    successFiles: 0,
+    timeoutFiles: 0,
+    errorFiles: 0,
+    skippedFiles: 0,
+    symbolsExtracted: 0,
+    relationshipsFound: 0,
+    importsFound: 0,
+    startTime: Date.now(),
+    errors: [],
+  }
+
+  log.info("starting indexing", { projectPath, concurrency: CONCURRENCY })
+
+  try {
+    // Phase 1: Discover files
+    const files = options.files && options.files.length > 0
+      ? options.files
+      : await discoverFiles(projectPath, db, { excludePatterns: options.excludePatterns })
+
+    stats.totalFiles = files.length
+    log.info("files discovered", { count: files.length })
+
+    if (files.length === 0) {
+      stats.endTime = Date.now()
+      db.prepare("UPDATE index_status SET status = 'complete', files_indexed = 0, last_indexed_at = ? WHERE project_hash = ?")
+        .run(Date.now(), projectHash)
+      return stats
+    }
+
+    // Phase 2: Process files with worker pool
+    let lastProgress = 0
+    const results = await processWithWorkers(projectHash, projectPath, files, (processed, total, file) => {
+      stats.processedFiles = processed
+      const now = Date.now()
+      if (now - lastProgress > PROGRESS_MS || processed === total) {
+        lastProgress = now
+        const elapsed = (now - stats.startTime) / 1000
+        const fps = elapsed > 0 ? processed / elapsed : 0
+        log.info(`indexing: ${processed}/${total} (${fps.toFixed(0)} files/s) — ${basename(file)}`)
+
+        if (options.onProgress) {
+          options.onProgress({ ...stats, filesPerSecond: fps })
+        }
+      }
+    })
+
+    // Phase 3: Store results in batches
+    log.info("storing results", { fileCount: results.length })
+    let storedStats: StoreStats = { symbols: 0, relationships: 0, imports: 0 }
+
+    for (let i = 0; i < results.length; i += DB_BATCH_SIZE) {
+      const batch = results.slice(i, i + DB_BATCH_SIZE)
+      const s = storeResults(db, projectHash, projectPath, batch)
+      storedStats.symbols += s.symbols
+      storedStats.relationships += s.relationships
+      storedStats.imports += s.imports
+    }
+
+    // Count results
+    for (const r of results) {
+      if (r.success) stats.successFiles++
+      else if (r.timeout) { stats.timeoutFiles++; stats.errors.push({ file: r.filePath, error: "Timeout" }) }
+      else { stats.errorFiles++; stats.errors.push({ file: r.filePath, error: r.error || "Unknown" }) }
+    }
+
+    stats.symbolsExtracted = (db.prepare("SELECT count(*) as c FROM symbols WHERE project_hash = ?").get(projectHash) as any)?.c || 0
+    stats.relationshipsFound = (db.prepare("SELECT count(*) as c FROM relationships WHERE project_hash = ?").get(projectHash) as any)?.c || 0
+    stats.importsFound = storedStats.imports
+
+    // Phase 4: Post-processing (full index only)
+    if (!options.isIncremental) {
+      log.info("post-processing: resolving relationships")
+      resolveRelationships(db, projectHash)
+
+      log.info("post-processing: calculating gravity scores")
+      calculateGravityScores(db, projectHash)
+
+      log.info("post-processing: resolving taint flows")
+      resolveCrossSymbolTaints(db, projectHash)
+    }
+
+    stats.endTime = Date.now()
+    const duration = (stats.endTime - stats.startTime) / 1000
+    stats.filesPerSecond = duration > 0 ? stats.processedFiles / duration : 0
+
+    // Update index status
+    db.prepare("UPDATE index_status SET status = ?, files_indexed = ?, symbols_indexed = ?, last_indexed_at = ? WHERE project_hash = ?")
+      .run(stats.errorFiles > 0 ? "partial" : "complete", stats.successFiles, stats.symbolsExtracted, Date.now(), projectHash)
+
+    log.info("indexing complete", {
+      files: stats.successFiles,
+      symbols: stats.symbolsExtracted,
+      relationships: stats.relationshipsFound,
+      duration: `${duration.toFixed(1)}s`,
+      fps: stats.filesPerSecond?.toFixed(1),
+    })
+  } catch (err: any) {
+    log.error("indexing failed", { error: err?.message })
+    stats.endTime = Date.now()
+    db.prepare("UPDATE index_status SET status = 'error', error_message = ?, last_indexed_at = ? WHERE project_hash = ?")
+      .run(err?.message || "Unknown error", Date.now(), projectHash)
+    throw err
+  }
+
+  return stats
+}
+
+// ============================================================================
+// INCREMENTAL REINDEX
+// ============================================================================
+
+export interface FileChange {
+  path: string
+  type: "added" | "modified" | "deleted"
+}
+
+export async function reindexFiles(
+  projectPath: string,
+  db: Database.Database,
+  changes: FileChange[],
+): Promise<{ indexed: number; deleted: number; errors: number }> {
+  const result = { indexed: 0, deleted: 0, errors: 0 }
+  const projectHash = (db.prepare("SELECT project_hash FROM index_status LIMIT 1").get() as any)?.project_hash
+  if (!projectHash) return result
+
+  // Handle deletions
+  const deleted = changes.filter((c) => c.type === "deleted")
+  if (deleted.length > 0) {
+    const tx = db.transaction(() => {
+      for (const change of deleted) {
+        const fileId = `${projectHash}:${change.path}`
+        db.prepare("DELETE FROM relationships WHERE source_symbol_id IN (SELECT id FROM symbols WHERE file_id = ?)").run(fileId)
+        db.prepare("DELETE FROM taint_flows WHERE source_symbol_id IN (SELECT id FROM symbols WHERE file_id = ?)").run(fileId)
+        db.prepare("DELETE FROM symbols WHERE file_id = ?").run(fileId)
+        db.prepare("DELETE FROM imports WHERE file_id = ?").run(fileId)
+        db.prepare("DELETE FROM files WHERE id = ?").run(fileId)
+        result.deleted++
+      }
+    })
+    try { tx() } catch (err: any) { result.errors++ }
+  }
+
+  // Handle adds/modifies
+  const toIndex = changes.filter((c) => c.type !== "deleted").map((c) => c.path)
+  if (toIndex.length > 0) {
+    try {
+      const stats = await indexProject(projectPath, db, { files: toIndex, isIncremental: true })
+      result.indexed = stats.successFiles
+      result.errors += stats.errorFiles
+    } catch { result.errors++ }
+  }
+
+  return result
+}

@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS symbols (
   project_hash TEXT NOT NULL,
   file_id TEXT NOT NULL REFERENCES files(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
+  qualified_name TEXT,
   kind TEXT NOT NULL,
   line_start INTEGER,
   line_end INTEGER,
