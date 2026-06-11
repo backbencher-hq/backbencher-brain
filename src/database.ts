@@ -143,6 +143,33 @@ export function closeDatabase(instance: DatabaseInstance): void {
 }
 
 /**
+ * Run database health checks.
+ */
+export function checkDatabaseHealth(db: Database.Database): { ok: boolean; issues: string[] } {
+  const issues: string[] = []
+
+  try {
+    const integrity = db.pragma("integrity_check") as any[]
+    if (integrity.length > 0 && integrity[0] && integrity[0].integrity_check !== "ok") {
+      issues.push(`Integrity check: ${JSON.stringify(integrity)}`)
+    }
+  } catch (e: any) {
+    issues.push(`Integrity check failed: ${e.message}`)
+  }
+
+  try {
+    // Check WAL size
+    const walInfo = db.pragma("wal_checkpoint(PASSIVE)") as any[]
+    if (walInfo.length > 0) {
+      const blocked = walInfo[0]?.busy || 0
+      if (blocked > 0) issues.push(`WAL has ${blocked} blocked pages`)
+    }
+  } catch {}
+
+  return { ok: issues.length === 0, issues }
+}
+
+/**
  * Remove a project's database entirely.
  */
 export function cleanDatabase(projectPath: string): boolean {

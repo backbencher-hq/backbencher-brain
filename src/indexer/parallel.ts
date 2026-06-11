@@ -18,10 +18,12 @@ const log = createLogger("indexer")
 // ============================================================================
 
 const CONCURRENCY = Math.max(2, Math.min(cpus().length - 1, 12))
-const FILE_TIMEOUT_MS = 45000 // 45s per file
+const FILE_TIMEOUT_MS = 45000
 const WORKER_BATCH_SIZE = 10
 const DB_BATCH_SIZE = 100
 const PROGRESS_MS = 100
+const MAX_HEAP_MB = 4096 // 4GB warning threshold
+const MEMORY_CHECK_INTERVAL = 50 // Check memory every N files
 
 // ============================================================================
 // TYPES
@@ -40,7 +42,57 @@ export interface IndexingStats {
   startTime: number
   endTime?: number
   filesPerSecond?: number
-  errors: Array<{ file: string; error: string }>
+  errors: Array<{ file: string; error: string; retryable?: boolean }>
+}
+
+export interface IndexingOptions {
+  onProgress?: (stats: IndexingStats) => void
+  files?: string[]
+  excludePatterns?: string[]
+  isIncremental?: boolean
+  verbose?: boolean
+}
+
+// ============================================================================
+// PROGRESS REPORTER
+// ============================================================================
+
+class ProgressReporter {
+  private lastEmit = 0
+  private symbolCount = 0
+  private relCount = 0
+  private langStats = new Map<string, number>()
+
+  constructor(private onProgress?: (stats: IndexingStats) => void) {}
+
+  emit(stats: IndexingStats, currentFile: string, force = false) {
+    const now = Date.now()
+    if (!force && now - this.lastEmit < PROGRESS_MS) return
+    this.lastEmit = now
+
+    const elapsed = (now - stats.startTime) / 1000
+    const fps = elapsed > 0 ? stats.processedFiles / elapsed : 0
+    const eta = fps > 0 ? Math.round((stats.totalFiles - stats.processedFiles) / fps) : 0
+
+    stats.filesPerSecond = fps
+
+    if (this.onProgress) {
+      this.onProgress(stats)
+    }
+
+    log.info(`indexing: ${stats.processedFiles}/${stats.totalFiles} (${fps.toFixed(0)}/s, ETA ${eta}s) — ${basename(currentFile)}`)
+  }
+
+  checkMemory(processed: number) {
+    if (processed % MEMORY_CHECK_INTERVAL !== 0) return
+    const usage = process.memoryUsage()
+    const heapMB = Math.round(usage.heapUsed / 1024 / 1024)
+
+    if (heapMB > MAX_HEAP_MB) {
+      log.warn("high memory usage", { heapMB, limitMB: MAX_HEAP_MB })
+      if (global.gc) { global.gc(); log.debug("forced GC") }
+    }
+  }
 }
 
 export interface IndexingOptions {
@@ -277,23 +329,17 @@ export async function indexProject(
   }
 
   const stats: IndexingStats = {
-    totalFiles: 0,
-    processedFiles: 0,
-    successFiles: 0,
-    timeoutFiles: 0,
-    errorFiles: 0,
-    skippedFiles: 0,
-    symbolsExtracted: 0,
-    relationshipsFound: 0,
-    importsFound: 0,
-    startTime: Date.now(),
-    errors: [],
+    totalFiles: 0, processedFiles: 0, successFiles: 0,
+    timeoutFiles: 0, errorFiles: 0, skippedFiles: 0,
+    symbolsExtracted: 0, relationshipsFound: 0, importsFound: 0,
+    startTime: Date.now(), errors: [],
   }
+
+  const reporter = new ProgressReporter(options.onProgress)
 
   log.info("starting indexing", { projectPath, concurrency: CONCURRENCY })
 
   try {
-    // Phase 1: Discover files
     const files = options.files && options.files.length > 0
       ? options.files
       : await discoverFiles(projectPath, db, { excludePatterns: options.excludePatterns })
@@ -308,24 +354,13 @@ export async function indexProject(
       return stats
     }
 
-    // Phase 2: Process files with worker pool
-    let lastProgress = 0
     const results = await processWithWorkers(projectHash, projectPath, files, (processed, total, file) => {
       stats.processedFiles = processed
-      const now = Date.now()
-      if (now - lastProgress > PROGRESS_MS || processed === total) {
-        lastProgress = now
-        const elapsed = (now - stats.startTime) / 1000
-        const fps = elapsed > 0 ? processed / elapsed : 0
-        log.info(`indexing: ${processed}/${total} (${fps.toFixed(0)} files/s) — ${basename(file)}`)
-
-        if (options.onProgress) {
-          options.onProgress({ ...stats, filesPerSecond: fps })
-        }
-      }
+      reporter.checkMemory(processed)
+      reporter.emit(stats, file)
     })
 
-    // Phase 3: Store results in batches
+    // Store with retry for transient errors
     log.info("storing results", { fileCount: results.length })
     let storedStats: StoreStats = { symbols: 0, relationships: 0, imports: 0 }
 
@@ -337,11 +372,18 @@ export async function indexProject(
       storedStats.imports += s.imports
     }
 
-    // Count results
+    // Count results with error classification
     for (const r of results) {
       if (r.success) stats.successFiles++
-      else if (r.timeout) { stats.timeoutFiles++; stats.errors.push({ file: r.filePath, error: "Timeout" }) }
-      else { stats.errorFiles++; stats.errors.push({ file: r.filePath, error: r.error || "Unknown" }) }
+      else if (r.timeout) {
+        stats.timeoutFiles++
+        stats.errors.push({ file: r.filePath, error: "Timeout", retryable: true })
+      }
+      else {
+        stats.errorFiles++
+        const retryable = r.error?.includes("timeout") || r.error?.includes("busy") || r.error?.includes("ETIMEDOUT")
+        stats.errors.push({ file: r.filePath, error: r.error || "Unknown", retryable })
+      }
     }
 
     stats.symbolsExtracted = (db.prepare("SELECT count(*) as c FROM symbols WHERE project_hash = ?").get(projectHash) as any)?.c || 0

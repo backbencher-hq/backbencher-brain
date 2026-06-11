@@ -3,5 +3,6 @@
 
 import "./read-tools.js"
 import "./write-tools.js"
+import "./undo.js"
 
 export { getTools } from "../server.js"
