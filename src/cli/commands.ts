@@ -51,9 +51,10 @@ export async function run(argv: string[]) {
   program
     .command("start [path]")
     .description("Start MCP server (auto-indexes project)")
+    .option("-p, --project <path>", "Project directory (alternative to positional)")
     .option("--no-index", "Skip auto-indexing")
     .action(async (path, options) => {
-      const projectPath = path || process.cwd()
+      const projectPath = path || options.project || process.cwd()
       if (options.verbose) setVerbose(true)
       header()
 
@@ -77,8 +78,9 @@ export async function run(argv: string[]) {
   program
     .command("index [path]")
     .description("Index project without starting MCP server")
-    .action(async (path) => {
-      const projectPath = path || process.cwd()
+    .option("-p, --project <path>", "Project directory (alternative to positional)")
+    .action(async (path, options) => {
+      const projectPath = path || options.project || process.cwd()
       header()
       const db = openDatabase(projectPath)
 
@@ -100,8 +102,9 @@ export async function run(argv: string[]) {
   program
     .command("status [path]")
     .description("Show project index health")
-    .action(async (path) => {
-      const projectPath = path || process.cwd()
+    .option("-p, --project <path>", "Project directory (alternative to positional)")
+    .action(async (path, options) => {
+      const projectPath = path || options.project || process.cwd()
       header()
       const db = openDatabase(projectPath)
       const stats = getStats(db.db, db.projectHash)
@@ -169,8 +172,9 @@ export async function run(argv: string[]) {
   program
     .command("clean [path]")
     .description("Remove project index")
-    .action((path) => {
-      const projectPath = path || process.cwd()
+    .option("-p, --project <path>", "Project directory (alternative to positional)")
+    .action((path, options) => {
+      const projectPath = path || options.project || process.cwd()
       header()
       const removed = cleanDatabase(projectPath)
       if (removed) {

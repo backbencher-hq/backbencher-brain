@@ -114,7 +114,10 @@ export function storeResults(
     "SELECT id FROM symbols WHERE project_hash = ? AND name = ? LIMIT 1"
   )
 
-  // Process each file result — Phase 1: Symbols + Imports
+  // Two-phase insert: disable FK during batch for performance/correctness
+  // (relationships may reference symbols being inserted in the same batch)
+  db.pragma("foreign_keys = OFF")
+
   const tx = db.transaction(() => {
     for (const result of results) {
       if (!result.success) continue
@@ -338,7 +341,9 @@ export function storeResults(
 
   try {
     tx()
+    db.pragma("foreign_keys = ON")
   } catch (err: any) {
+    db.pragma("foreign_keys = ON")
     log.error("batch insert failed", { error: err?.message, batchSize: results.length })
   }
 
