@@ -70,8 +70,8 @@ export async function run(argv: string[]) {
       process.stderr.write(`  Project: ${projectPath}\n`)
       process.stderr.write(`  Tools: 14 registered\n\n`)
 
+      // MCP server runs until process killed. DB cleanup happens on exit.
       await startServer({ projectPath, projectHash: db.projectHash, db: db.db })
-      closeDatabase(db)
     })
 
   // === INDEX ===
