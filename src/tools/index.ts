@@ -1,11 +1,9 @@
-// Tool registry — all 15 MCP brain tools
-// Will be populated in M6
+// Tool registry — imports all tool modules to register them
+// Each tool module calls registerTool() on import
 
-import type { MCPToolDefinition } from "../ast/types.js"
+import "./read-tools.js"
 
-// Placeholder — actual tools added in M6.2
-export const TOOLS: MCPToolDefinition[] = []
+// Write tools will be imported in M7:
+// import "./write-tools.js"
 
-export function getTool(name: string): MCPToolDefinition | undefined {
-  return TOOLS.find((t) => t.name === name)
-}
+export { getTools } from "../server.js"
