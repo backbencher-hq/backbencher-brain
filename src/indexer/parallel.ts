@@ -340,36 +340,55 @@ export async function indexProject(
   log.info("starting indexing", { projectPath, concurrency: CONCURRENCY })
 
   try {
-    const brain_file = options.brain_file && options.brain_file.length > 0
-      ? options.brain_file
+    const files = options.files && options.files.length > 0
+      ? options.files
       : await discoverFiles(projectPath, db, { excludePatterns: options.excludePatterns })
 
-    stats.totalFiles = brain_file.length
-    log.info("brain_file discovered", { count: brain_file.length })
+    stats.totalFiles = files.length
+    log.info("files discovered", { count: files.length })
 
-    if (brain_file.length === 0) {
+    if (files.length === 0) {
       stats.endTime = Date.now()
       db.prepare("UPDATE index_status SET status = 'complete', files_indexed = 0, last_indexed_at = ? WHERE project_hash = ?")
         .run(Date.now(), projectHash)
       return stats
     }
 
-    const results = await processWithWorkers(projectHash, projectPath, brain_file, (processed, total, file) => {
-      stats.processedFiles = processed
-      reporter.checkMemory(processed)
-      reporter.emit(stats, file)
-    })
+    // Try worker pool with fork test, fall back to in-process
+    let results: FileResult[]
+    try {
+      results = await processWithWorkers(projectHash, projectPath, files, (processed, total, file) => {
+        stats.processedFiles = processed
+        reporter.checkMemory(processed)
+        reporter.emit(stats, file)
+      })
+    } catch (e: any) {
+      log.warn("worker pool failed, falling back to in-process", { error: e?.message })
+      // In-process fallback: parse files directly
+      results = []
+      for (const file of files) {
+        try {
+          const { parseFile: workerParse } = await import("../ast/pool-worker.js")
+          const r = await workerParse(file, projectPath)
+          results.push({ filePath: file, ...r, success: r.success !== false })
+        } catch (err: any) {
+          results.push({ filePath: file, success: false, error: err?.message || String(err) })
+        }
+        stats.processedFiles++
+        reporter.emit(stats, file)
+      }
+    }
 
     // Store with retry for transient errors
     log.info("storing results", { fileCount: results.length })
-    let storedStats: StoreStats = { brain_symbol: 0, brain_relationship: 0, brain_import: 0 }
+    let storedStats: StoreStats = { symbols: 0, relationships: 0, imports: 0 }
 
     for (let i = 0; i < results.length; i += DB_BATCH_SIZE) {
       const batch = results.slice(i, i + DB_BATCH_SIZE)
       const s = storeResults(db, projectHash, projectPath, batch)
-      storedStats.brain_symbol += s.brain_symbol
-      storedStats.brain_relationship += s.brain_relationship
-      storedStats.brain_import += s.brain_import
+      storedStats.symbols += s.symbols
+      storedStats.relationships += s.relationships
+      storedStats.imports += s.imports
     }
 
     // Count results with error classification
@@ -388,7 +407,7 @@ export async function indexProject(
 
     stats.symbolsExtracted = (db.prepare("SELECT count(*) as c FROM brain_symbol WHERE project_hash = ?").get(projectHash) as any)?.c || 0
     stats.relationshipsFound = (db.prepare("SELECT count(*) as c FROM brain_relationship WHERE project_hash = ?").get(projectHash) as any)?.c || 0
-    stats.importsFound = storedStats.brain_import
+    stats.importsFound = storedStats.imports
 
     // Phase 4: Post-processing (full index only)
     if (!options.isIncremental) {

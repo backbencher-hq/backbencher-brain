@@ -30,9 +30,9 @@ export interface FileResult {
 }
 
 export interface StoreStats {
-  brain_symbol: number
-  brain_relationship: number
-  brain_import: number
+  symbols: number
+  relationships: number
+  imports: number
 }
 
 // ============================================================================
@@ -347,5 +347,5 @@ export function storeResults(
     log.error("batch insert failed", { error: err?.message, batchSize: results.length })
   }
 
-  return { brain_symbol: totalSymbols, brain_relationship: totalRelationships, brain_import: totalImports }
+  return { symbols: totalSymbols, relationships: totalRelationships, imports: totalImports }
 }
