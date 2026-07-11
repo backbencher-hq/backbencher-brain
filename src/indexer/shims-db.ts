@@ -1,7 +1,62 @@
-import { openDatabase } from "../database.js"
-import { loadProjectIndex } from "../database.js"
+import { openDatabase, loadProjectIndex } from "../database.js"
+import type Database from "better-sqlite3"
 
 const instances = new Map<string, any>()
+
+// Drizzle-compatible query builder mock
+function createDbWrapper(rawDb: Database.Database) {
+  // Chainable query builder that mimics Drizzle ORM
+  const chain = (obj: any = {}) => new Proxy(obj, {
+    get(target, prop) {
+      if (prop === 'all') return () => {
+        if (target._exec) return target._exec()
+        return []
+      }
+      if (prop === 'get') return () => null
+      if (prop === 'run') return (...args: any[]) => {
+        if (target._sql) rawDb.prepare(target._sql).run(...args)
+      }
+      // Return a new chain for any property
+      return chain({ ...target, _lastCall: prop })
+    }
+  })
+  
+  return chain({ db: rawDb })
+}
+
+function createDrizzleDb(rawDb: Database.Database) {
+  return {
+    select: (..._cols: any[]) => ({
+      from: (_table: any) => ({
+        innerJoin: (_other: any, _on: any) => ({
+          where: (_where: any) => ({
+            orderBy: (..._order: any[]) => ({
+              limit: (n: number) => ({
+                offset: (o: number) => ({ all: () => [] }),
+                all: () => [],
+              }),
+              all: () => [],
+            }),
+            all: () => [],
+          }),
+          all: () => [],
+        }),
+        where: (_where: any) => ({
+          orderBy: (..._order: any[]) => ({
+            limit: (n: number) => ({ all: () => [] }),
+            all: () => [],
+          }),
+          all: () => [],
+        }),
+        all: () => [],
+      }),
+    }),
+    run: (sql: string, ...params: any[]) => rawDb.prepare(sql).run(...params),
+    all: (sql: string, ...params: any[]) => rawDb.prepare(sql).all(...params),
+    get: (sql: string, ...params: any[]) => rawDb.prepare(sql).get(...params),
+    db: rawDb,
+  }
+}
 
 export const BrainDatabase = {
   async getInstance(projectId: string): Promise<any> {
@@ -10,21 +65,8 @@ export const BrainDatabase = {
       const entry = index[projectId]
       if (!entry) throw new Error(`Project not found: ${projectId}`)
       const db = openDatabase(entry.path)
-
-      const mockDb = {
-        select() { return this },
-        from() { return this },
-        innerJoin() { return this },
-        where() { return this },
-        orderBy() { return this },
-        limit() { return this },
-        offset() { return this },
-        all() { return [] },
-        get() { return null },
-        run() {},
-        db: db.db,
-      }
-      instances.set(projectId, mockDb)
+      const wrapper = createDrizzleDb(db.db)
+      instances.set(projectId, wrapper)
     }
     return instances.get(projectId)
   },

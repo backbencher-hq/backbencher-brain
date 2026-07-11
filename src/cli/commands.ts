@@ -64,7 +64,7 @@ export async function run(argv: string[]) {
       if (!options.noIndex && stats.files === 0) {
         process.stderr.write(`${c.yellow}  First run — indexing project...${c.reset}\n\n`)
         const result = await indexWithProgress(projectPath, db.db)
-        stats.files = result?.successFiles || result?.filesProcessed || 0
+        stats.files = result?.totalFiles || result?.filesProcessed || 0
       }
 
       process.stderr.write(`${c.green}  ✓ MCP server ready on stdio${c.reset}\n`)
@@ -87,7 +87,7 @@ export async function run(argv: string[]) {
 
       const result = await indexWithProgress(projectPath, db.db)
 
-      const successFiles = result?.successFiles || result?.filesProcessed || 0
+      const successFiles = result?.totalFiles || result?.filesProcessed || 0
       const symbols = result?.symbolsExtracted || 0
       const relations = result?.relationshipsFound || 0
       const duration = result?.endTime ? `${((result.endTime - result.startTime)/1000).toFixed(1)}s` : 'unknown'
@@ -195,6 +195,7 @@ export async function run(argv: string[]) {
 // ============================================================================
 
 async function indexWithProgress(projectPath: string, db: any): Promise<any> {
+  // Using our working parallel.ts indexer
   let lastUpdate = 0
   return indexProject(projectPath, db, {
     onProgress: (stats: any) => {

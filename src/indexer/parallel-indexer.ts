@@ -656,7 +656,7 @@ async function processInProcess(
   }
 
   // Load pool-worker's parse function
-  const poolWorker = await import("./pool-worker.js")
+  const poolWorker = await import("../ast/pool-worker.js")
   const parseFile = (poolWorker as any).parseFile
 
   for (const file of effectiveFiles) {
@@ -732,7 +732,7 @@ async function processInProcess(
 }
 
 async function extractFallbackResult(filePath: string, projectPath: string): Promise<any> {
-  const { extractFallback } = await import("./pool-worker.js")
+  const { extractFallback } = await import("../ast/pool-worker.js")
   const { readFile } = await import("fs/promises")
   const path = await import("path")
   const content = await readFile(filePath, "utf-8")
@@ -2234,7 +2234,7 @@ export async function indexProjectParallel(
       const missed = files.filter(f => !stored.has(f) && !shouldSkipCli(f))
       if (missed.length > 0) {
         process.stderr.write(`[brain] ⚠ ${missed.length} files missed, re-processing...\n`)
-        const { parseFile } = await import("./pool-worker.js")
+        const { parseFile } = await import("../ast/pool-worker.js")
         for (const file of missed) {
           try {
             const result = await parseFile(file as any, projectPath) as any
@@ -2479,31 +2479,12 @@ export async function reindexFilesParallel(
 // STATISTICS
 // ============================================================================
 
-export async function getIndexingStats(projectId: ProjectID) {
-  // Drizzle removed using raw SQL
-const sql = (strings: TemplateStringsArray, ...values: any[]) => strings.join('?'); const eq = () => '1=1'
-  const { BrainFileTable, BrainSymbolTable, BrainRelationshipTable } = await import("../brain/brain.sql.js")
-
-  const db = await BrainDatabase.getInstance(projectId)
-
-  const [fileCount] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(BrainFileTable)
-    .where(eq(BrainFileTable.project_hash, projectId))
-
-  const [symbolCount] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(BrainSymbolTable)
-    .where(eq(BrainSymbolTable.project_hash, projectId))
-
-  const [relationshipCount] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(BrainRelationshipTable)
-    .where(eq(BrainRelationshipTable.project_hash, projectId))
-
-  return {
-    files: Number(fileCount?.count || 0),
-    symbols: Number(symbolCount?.count || 0),
-    relationships: Number(relationshipCount?.count || 0),
-  }
+async function getIndexingStatsDrizzle(projectId: string) { return { files: 0, symbols: 0, relationships: 0 } }
+export async function getIndexingStats(projectId: string) {
+  const rawDb = await BrainDatabase.getRawInstance(projectId)
+  const files = (rawDb.prepare("SELECT count(*) as c FROM brain_file WHERE project_hash = ?").get(projectId) as any)?.c || 0
+  const symbols = (rawDb.prepare("SELECT count(*) as c FROM brain_symbol WHERE project_hash = ?").get(projectId) as any)?.c || 0
+  const relationships = (rawDb.prepare("SELECT count(*) as c FROM brain_relationship WHERE project_hash = ?").get(projectId) as any)?.c || 0
+  return { files, symbols, relationships }
 }
+
