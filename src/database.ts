@@ -60,8 +60,8 @@ export interface ProjectIndexEntry {
   name: string
   path: string
   lastIndexed: string | null
-  brain_file: number
-  brain_symbol: number
+  files: number
+  symbols: number
 }
 
 export function loadProjectIndex(): Record<string, ProjectIndexEntry> {
@@ -123,8 +123,8 @@ export function openDatabase(projectPath: string): DatabaseInstance {
     name,
     path: projectPath,
     lastIndexed: null,
-    brain_file: 0,
-    brain_symbol: 0,
+    files: 0,
+    symbols: 0,
   })
 
   return { db, projectPath, projectHash: hash }

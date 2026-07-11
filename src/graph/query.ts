@@ -54,10 +54,10 @@ export interface FileResult {
 }
 
 export interface StatsResult {
-  brain_file: number
-  brain_symbol: number
-  brain_relationship: number
-  brain_import: number
+  files: number
+  symbols: number
+  relationships: number
+  imports: number
   languages: string[]
   avgComplexity: number
 }
@@ -350,8 +350,8 @@ export function getFile(
 // ============================================================================
 
 /**
- * Get brain_import for a file.
- * Used by: brain_relationships (brain_import mode)
+ * Get imports for a file.
+ * Used by: brain_relationships (imports mode)
  */
 export function getFileImports(
   db: Database.Database,
@@ -456,10 +456,10 @@ export function getStats(db: Database.Database, projectHash: string): StatsResul
   ).all(projectHash) as Array<{ language: string }>
 
   return {
-    brain_file: fileCount,
-    brain_symbol: symbolCount,
-    brain_relationship: relCount,
-    brain_import: importCount,
+    files: fileCount,
+    symbols: symbolCount,
+    relationships: relCount,
+    imports: importCount,
     languages: languages.map((l) => l.language),
     avgComplexity: Math.round(avgComplexity * 100) / 100,
   }
