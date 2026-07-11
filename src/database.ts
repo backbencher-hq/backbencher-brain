@@ -60,8 +60,8 @@ export interface ProjectIndexEntry {
   name: string
   path: string
   lastIndexed: string | null
-  files: number
-  symbols: number
+  brain_file: number
+  brain_symbol: number
 }
 
 export function loadProjectIndex(): Record<string, ProjectIndexEntry> {
@@ -123,8 +123,8 @@ export function openDatabase(projectPath: string): DatabaseInstance {
     name,
     path: projectPath,
     lastIndexed: null,
-    files: 0,
-    symbols: 0,
+    brain_file: 0,
+    brain_symbol: 0,
   })
 
   return { db, projectPath, projectHash: hash }
@@ -180,7 +180,7 @@ export function cleanDatabase(projectPath: string): boolean {
     if (existsSync(dbPath)) {
       const { unlinkSync } = require("fs")
       unlinkSync(dbPath)
-      // Remove WAL and SHM files if they exist
+      // Remove WAL and SHM brain_file if they exist
       try { unlinkSync(dbPath + "-wal") } catch {}
       try { unlinkSync(dbPath + "-shm") } catch {}
     }

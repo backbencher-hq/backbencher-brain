@@ -23,7 +23,7 @@ const WORKER_BATCH_SIZE = 10
 const DB_BATCH_SIZE = 100
 const PROGRESS_MS = 100
 const MAX_HEAP_MB = 4096 // 4GB warning threshold
-const MEMORY_CHECK_INTERVAL = 50 // Check memory every N files
+const MEMORY_CHECK_INTERVAL = 50 // Check memory every N brain_file
 
 // ============================================================================
 // TYPES
@@ -47,7 +47,7 @@ export interface IndexingStats {
 
 export interface IndexingOptions {
   onProgress?: (stats: IndexingStats) => void
-  files?: string[]
+  brain_file?: string[]
   excludePatterns?: string[]
   isIncremental?: boolean
   verbose?: boolean
@@ -97,7 +97,7 @@ class ProgressReporter {
 
 export interface IndexingOptions {
   onProgress?: (stats: IndexingStats) => void
-  files?: string[]
+  brain_file?: string[]
   excludePatterns?: string[]
   isIncremental?: boolean
   verbose?: boolean
@@ -108,61 +108,61 @@ export interface IndexingOptions {
 // ============================================================================
 
 function resolveRelationships(db: Database.Database, projectHash: string): void {
-  log.debug("resolving cross-file relationships")
+  log.debug("resolving cross-file brain_relationship")
 
   // Strategy 1: Full symbol ID match
   db.prepare(`
-    UPDATE relationships SET target_symbol_id = (SELECT id FROM symbols WHERE symbols.id = relationships.target_external AND symbols.project_hash = relationships.project_hash LIMIT 1)
+    UPDATE brain_relationship SET target_symbol_id = (SELECT id FROM brain_symbol WHERE brain_symbol.id = brain_relationship.target_external AND brain_symbol.project_hash = brain_relationship.project_hash LIMIT 1)
     WHERE project_hash = ? AND target_symbol_id IS NULL AND target_external IS NOT NULL
   `).run(projectHash)
 
   // Strategy 2: Qualified name match
   db.prepare(`
-    UPDATE relationships SET target_symbol_id = (SELECT id FROM symbols WHERE qualified_name = relationships.target_external AND project_hash = relationships.project_hash LIMIT 1)
+    UPDATE brain_relationship SET target_symbol_id = (SELECT id FROM brain_symbol WHERE qualified_name = brain_relationship.target_external AND project_hash = brain_relationship.project_hash LIMIT 1)
     WHERE project_hash = ? AND target_symbol_id IS NULL AND target_external IS NOT NULL
   `).run(projectHash)
 
   // Strategy 3: Name-only match (if unique)
   db.prepare(`
-    UPDATE relationships SET target_symbol_id = (SELECT id FROM symbols WHERE name = relationships.target_external AND project_hash = relationships.project_hash LIMIT 1)
+    UPDATE brain_relationship SET target_symbol_id = (SELECT id FROM brain_symbol WHERE name = brain_relationship.target_external AND project_hash = brain_relationship.project_hash LIMIT 1)
     WHERE project_hash = ? AND target_symbol_id IS NULL AND target_external IS NOT NULL
-      AND (SELECT COUNT(*) FROM symbols WHERE name = relationships.target_external AND project_hash = relationships.project_hash) = 1
+      AND (SELECT COUNT(*) FROM brain_symbol WHERE name = brain_relationship.target_external AND project_hash = brain_relationship.project_hash) = 1
   `).run(projectHash)
 
-  // Mark cross-file relationships
+  // Mark cross-file brain_relationship
   db.prepare(`
-    UPDATE relationships SET is_cross_file = 1
+    UPDATE brain_relationship SET is_cross_file = 1
     WHERE project_hash = ? AND target_symbol_id IS NOT NULL
-      AND source_symbol_id IN (SELECT id FROM symbols WHERE file_id != (SELECT file_id FROM symbols WHERE symbols.id = relationships.target_symbol_id))
+      AND source_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id != (SELECT file_id FROM brain_symbol WHERE brain_symbol.id = brain_relationship.target_symbol_id))
   `).run(projectHash)
 }
 
 function calculateGravityScores(db: Database.Database, projectHash: string): void {
   // Base: complexity × visibility
   db.prepare(`
-    UPDATE symbols SET gravity_score = (complexity * (CASE WHEN visibility = 'public' THEN 1.5 ELSE 1.0 END))
+    UPDATE brain_symbol SET gravity_score = (complexity * (CASE WHEN visibility = 'public' THEN 1.5 ELSE 1.0 END))
     WHERE project_hash = ?
   `).run(projectHash)
 
   // PageRank: in-degree boost
   db.prepare(`
-    UPDATE symbols SET gravity_score = gravity_score + (
-      SELECT COUNT(*) * 5.0 FROM relationships r WHERE r.target_symbol_id = symbols.id
+    UPDATE brain_symbol SET gravity_score = gravity_score + (
+      SELECT COUNT(*) * 5.0 FROM brain_relationship r WHERE r.target_symbol_id = brain_symbol.id
     )
-    WHERE project_hash = ? AND EXISTS (SELECT 1 FROM relationships r WHERE r.target_symbol_id = symbols.id)
+    WHERE project_hash = ? AND EXISTS (SELECT 1 FROM brain_relationship r WHERE r.target_symbol_id = brain_symbol.id)
   `).run(projectHash)
 
   // Layer weighting
-  db.prepare(`UPDATE symbols SET gravity_score = gravity_score * 2.0 WHERE project_hash = ? AND layer = 'core'`).run(projectHash)
-  db.prepare(`UPDATE symbols SET gravity_score = gravity_score * 1.5 WHERE project_hash = ? AND (layer = 'service' OR layer = 'db')`).run(projectHash)
-  db.prepare(`UPDATE symbols SET gravity_score = gravity_score * 0.5 WHERE project_hash = ? AND layer = 'test'`).run(projectHash)
+  db.prepare(`UPDATE brain_symbol SET gravity_score = gravity_score * 2.0 WHERE project_hash = ? AND layer = 'core'`).run(projectHash)
+  db.prepare(`UPDATE brain_symbol SET gravity_score = gravity_score * 1.5 WHERE project_hash = ? AND (layer = 'service' OR layer = 'db')`).run(projectHash)
+  db.prepare(`UPDATE brain_symbol SET gravity_score = gravity_score * 0.5 WHERE project_hash = ? AND layer = 'test'`).run(projectHash)
 }
 
 function resolveCrossSymbolTaints(db: Database.Database, projectHash: string): void {
   db.prepare(`
-    UPDATE taint_flows SET sink_symbol_id = (
-      SELECT r.target_symbol_id FROM relationships r
-      WHERE r.source_symbol_id = taint_flows.source_symbol_id AND r.project_hash = taint_flows.project_hash
+    UPDATE brain_taint_flow SET sink_symbol_id = (
+      SELECT r.target_symbol_id FROM brain_relationship r
+      WHERE r.source_symbol_id = brain_taint_flow.source_symbol_id AND r.project_hash = brain_taint_flow.project_hash
       LIMIT 1
     )
     WHERE project_hash = ? AND sink_symbol_id IS NULL AND source_symbol_id IS NOT NULL
@@ -176,18 +176,18 @@ function resolveCrossSymbolTaints(db: Database.Database, projectHash: string): v
 function processWithWorkers(
   projectHash: string,
   projectPath: string,
-  files: string[],
+  brain_file: string[],
   onProgress: (processed: number, total: number, currentFile: string) => void,
 ): Promise<FileResult[]> {
-  const numWorkers = Math.min(CONCURRENCY, Math.ceil(files.length / WORKER_BATCH_SIZE) || 1)
+  const numWorkers = Math.min(CONCURRENCY, Math.ceil(brain_file.length / WORKER_BATCH_SIZE) || 1)
 
-  log.debug("starting worker pool", { numWorkers, files: files.length })
+  log.debug("starting worker pool", { numWorkers, brain_file: brain_file.length })
 
   return new Promise((resolve) => {
     const results: FileResult[] = []
     let processed = 0
-    const fileQueue = [...files]
-    const pendingBatches = new Map<number, { files: string[]; worker: ChildProcess; timeout: NodeJS.Timeout; currentFile?: string }>()
+    const fileQueue = [...brain_file]
+    const pendingBatches = new Map<number, { brain_file: string[]; worker: ChildProcess; timeout: NodeJS.Timeout; currentFile?: string }>()
     let batchCounter = 0
 
     const workers = new Set<ChildProcess>()
@@ -202,13 +202,13 @@ function processWithWorkers(
 
       try { worker.kill("SIGKILL") } catch {}
 
-      // Mark remaining files in batch as timed out
-      const idx = batch.files.indexOf(batch.currentFile || batch.files[0]!)
-      const remaining = batch.files.slice(idx >= 0 ? idx : 0)
+      // Mark remaining brain_file in batch as timed out
+      const idx = batch.brain_file.indexOf(batch.currentFile || batch.brain_file[0]!)
+      const remaining = batch.brain_file.slice(idx >= 0 ? idx : 0)
       for (const f of remaining) {
         results.push({ filePath: f, success: false, timeout: true, error: "Worker timeout" })
         processed++
-        onProgress(processed, files.length, f)
+        onProgress(processed, brain_file.length, f)
       }
     }
 
@@ -235,11 +235,11 @@ function processWithWorkers(
         } else if (msg.type === "file_done") {
           results.push({ filePath: msg.filePath, ...msg.result, success: true })
           processed++
-          onProgress(processed, files.length, msg.filePath)
+          onProgress(processed, brain_file.length, msg.filePath)
         } else if (msg.type === "file_error") {
           results.push({ filePath: msg.filePath, success: false, error: msg.error })
           processed++
-          onProgress(processed, files.length, msg.filePath)
+          onProgress(processed, brain_file.length, msg.filePath)
         } else if (msg.type === "batch_done") {
           const batch = pendingBatches.get(msg.batchId)
           if (batch) {
@@ -292,12 +292,12 @@ function processWithWorkers(
         const batchId = ++batchCounter
 
         pendingBatches.set(batchId, {
-          files: batchFiles,
+          brain_file: batchFiles,
           worker,
           timeout: setTimeout(() => handleWorkerTimeout(worker, batchId), FILE_TIMEOUT_MS),
         })
 
-        worker.send({ type: "parse_batch", batchId, files: batchFiles, projectPath })
+        worker.send({ type: "parse_batch", batchId, brain_file: batchFiles, projectPath })
       }
     }
 
@@ -319,7 +319,7 @@ export async function indexProject(
 ): Promise<IndexingStats> {
   if (options.verbose) setVerbose(true)
 
-  let projectHash = (db.prepare("SELECT project_hash FROM files LIMIT 1").get() as any)?.project_hash ||
+  let projectHash = (db.prepare("SELECT project_hash FROM brain_file LIMIT 1").get() as any)?.project_hash ||
     (db.prepare("SELECT project_hash FROM index_status LIMIT 1").get() as any)?.project_hash
 
   if (!projectHash) {
@@ -340,21 +340,21 @@ export async function indexProject(
   log.info("starting indexing", { projectPath, concurrency: CONCURRENCY })
 
   try {
-    const files = options.files && options.files.length > 0
-      ? options.files
+    const brain_file = options.brain_file && options.brain_file.length > 0
+      ? options.brain_file
       : await discoverFiles(projectPath, db, { excludePatterns: options.excludePatterns })
 
-    stats.totalFiles = files.length
-    log.info("files discovered", { count: files.length })
+    stats.totalFiles = brain_file.length
+    log.info("brain_file discovered", { count: brain_file.length })
 
-    if (files.length === 0) {
+    if (brain_file.length === 0) {
       stats.endTime = Date.now()
       db.prepare("UPDATE index_status SET status = 'complete', files_indexed = 0, last_indexed_at = ? WHERE project_hash = ?")
         .run(Date.now(), projectHash)
       return stats
     }
 
-    const results = await processWithWorkers(projectHash, projectPath, files, (processed, total, file) => {
+    const results = await processWithWorkers(projectHash, projectPath, brain_file, (processed, total, file) => {
       stats.processedFiles = processed
       reporter.checkMemory(processed)
       reporter.emit(stats, file)
@@ -362,14 +362,14 @@ export async function indexProject(
 
     // Store with retry for transient errors
     log.info("storing results", { fileCount: results.length })
-    let storedStats: StoreStats = { symbols: 0, relationships: 0, imports: 0 }
+    let storedStats: StoreStats = { brain_symbol: 0, brain_relationship: 0, brain_import: 0 }
 
     for (let i = 0; i < results.length; i += DB_BATCH_SIZE) {
       const batch = results.slice(i, i + DB_BATCH_SIZE)
       const s = storeResults(db, projectHash, projectPath, batch)
-      storedStats.symbols += s.symbols
-      storedStats.relationships += s.relationships
-      storedStats.imports += s.imports
+      storedStats.brain_symbol += s.brain_symbol
+      storedStats.brain_relationship += s.brain_relationship
+      storedStats.brain_import += s.brain_import
     }
 
     // Count results with error classification
@@ -386,13 +386,13 @@ export async function indexProject(
       }
     }
 
-    stats.symbolsExtracted = (db.prepare("SELECT count(*) as c FROM symbols WHERE project_hash = ?").get(projectHash) as any)?.c || 0
-    stats.relationshipsFound = (db.prepare("SELECT count(*) as c FROM relationships WHERE project_hash = ?").get(projectHash) as any)?.c || 0
-    stats.importsFound = storedStats.imports
+    stats.symbolsExtracted = (db.prepare("SELECT count(*) as c FROM brain_symbol WHERE project_hash = ?").get(projectHash) as any)?.c || 0
+    stats.relationshipsFound = (db.prepare("SELECT count(*) as c FROM brain_relationship WHERE project_hash = ?").get(projectHash) as any)?.c || 0
+    stats.importsFound = storedStats.brain_import
 
     // Phase 4: Post-processing (full index only)
     if (!options.isIncremental) {
-      log.info("post-processing: resolving relationships")
+      log.info("post-processing: resolving brain_relationship")
       resolveRelationships(db, projectHash)
 
       log.info("post-processing: calculating gravity scores")
@@ -411,9 +411,9 @@ export async function indexProject(
       .run(stats.errorFiles > 0 ? "partial" : "complete", stats.successFiles, stats.symbolsExtracted, Date.now(), projectHash)
 
     log.info("indexing complete", {
-      files: stats.successFiles,
-      symbols: stats.symbolsExtracted,
-      relationships: stats.relationshipsFound,
+      brain_file: stats.successFiles,
+      brain_symbol: stats.symbolsExtracted,
+      brain_relationship: stats.relationshipsFound,
       duration: `${duration.toFixed(1)}s`,
       fps: stats.filesPerSecond?.toFixed(1),
     })
@@ -452,11 +452,11 @@ export async function reindexFiles(
     const tx = db.transaction(() => {
       for (const change of deleted) {
         const fileId = `${projectHash}:${change.path}`
-        db.prepare("DELETE FROM relationships WHERE source_symbol_id IN (SELECT id FROM symbols WHERE file_id = ?)").run(fileId)
-        db.prepare("DELETE FROM taint_flows WHERE source_symbol_id IN (SELECT id FROM symbols WHERE file_id = ?)").run(fileId)
-        db.prepare("DELETE FROM symbols WHERE file_id = ?").run(fileId)
-        db.prepare("DELETE FROM imports WHERE file_id = ?").run(fileId)
-        db.prepare("DELETE FROM files WHERE id = ?").run(fileId)
+        db.prepare("DELETE FROM brain_relationship WHERE source_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id = ?)").run(fileId)
+        db.prepare("DELETE FROM brain_taint_flow WHERE source_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id = ?)").run(fileId)
+        db.prepare("DELETE FROM brain_symbol WHERE file_id = ?").run(fileId)
+        db.prepare("DELETE FROM brain_import WHERE file_id = ?").run(fileId)
+        db.prepare("DELETE FROM brain_file WHERE id = ?").run(fileId)
         result.deleted++
       }
     })
@@ -467,7 +467,7 @@ export async function reindexFiles(
   const toIndex = changes.filter((c) => c.type !== "deleted").map((c) => c.path)
   if (toIndex.length > 0) {
     try {
-      const stats = await indexProject(projectPath, db, { files: toIndex, isIncremental: true })
+      const stats = await indexProject(projectPath, db, { brain_file: toIndex, isIncremental: true })
       result.indexed = stats.successFiles
       result.errors += stats.errorFiles
     } catch { result.errors++ }

@@ -404,7 +404,7 @@ registerTool({
     }
 
     if (args.analysisType === "violations") {
-      const largeFiles = ctx.db.prepare("SELECT relative_path, line_count FROM files WHERE project_hash = ? AND line_count > 500 ORDER BY line_count DESC LIMIT 10").all(ctx.projectHash) as any[]
+      const largeFiles = ctx.db.prepare("SELECT relative_path, line_count FROM brain_file WHERE project_hash = ? AND line_count > 500 ORDER BY line_count DESC LIMIT 10").all(ctx.projectHash) as any[]
       const highComplexity = getMostComplex(ctx.db, ctx.projectHash, 10)
       const orphaned = findOrphaned(ctx.db, ctx.projectHash, 10)
 
@@ -444,8 +444,8 @@ registerTool({
     // Get symbols and relationships
     const symbols = ctx.db.prepare(`
       SELECT s.id, s.name, s.kind, f.relative_path as file, f.language
-      FROM symbols s
-      JOIN files f ON f.id = s.file_id
+      FROM brain_symbol s
+      JOIN brain_file f ON f.id = s.file_id
       WHERE s.project_hash = ?
       ORDER BY s.gravity_score DESC
       LIMIT ?

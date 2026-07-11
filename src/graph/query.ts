@@ -54,10 +54,10 @@ export interface FileResult {
 }
 
 export interface StatsResult {
-  files: number
-  symbols: number
-  relationships: number
-  imports: number
+  brain_file: number
+  brain_symbol: number
+  brain_relationship: number
+  brain_import: number
   languages: string[]
   avgComplexity: number
 }
@@ -67,7 +67,7 @@ export interface StatsResult {
 // ============================================================================
 
 /**
- * Search symbols by name with optional filters.
+ * Search brain_symbol by name with optional filters.
  * Used by: brain_search
  */
 export function searchSymbols(
@@ -164,7 +164,7 @@ export function findSymbol(
 }
 
 /**
- * Get all symbols in a file (for file outline).
+ * Get all brain_symbol in a file (for file outline).
  * Used by: brain_select (outline mode)
  */
 export function getFileSymbols(
@@ -185,7 +185,7 @@ export function getFileSymbols(
 }
 
 /**
- * Get symbols of specific kinds (functions, classes, etc.)
+ * Get brain_symbol of specific kinds (functions, classes, etc.)
  * Used by: brain_search (scope filter)
  */
 export function getSymbolsByKind(
@@ -310,8 +310,8 @@ export function getRecursiveCallers(
 // ============================================================================
 
 /**
- * Find files by path pattern.
- * Used by: brain_search (files scope)
+ * Find brain_file by path pattern.
+ * Used by: brain_search (brain_file scope)
  */
 export function findFiles(
   db: Database.Database,
@@ -322,7 +322,7 @@ export function findFiles(
   return db.prepare(`
     SELECT id, path, relative_path, language, framework, layer,
            line_count, size_bytes, last_modified, is_test
-    FROM files
+    FROM brain_file
     WHERE project_hash = ? AND relative_path LIKE ?
     ORDER BY line_count DESC
     LIMIT ?
@@ -340,7 +340,7 @@ export function getFile(
   return (db.prepare(`
     SELECT id, path, relative_path, language, framework, layer,
            line_count, size_bytes, last_modified, is_test
-    FROM files
+    FROM brain_file
     WHERE project_hash = ? AND relative_path = ?
   `).get(projectHash, relativePath) as FileResult) || null
 }
@@ -350,8 +350,8 @@ export function getFile(
 // ============================================================================
 
 /**
- * Get imports for a file.
- * Used by: brain_relationships (imports mode)
+ * Get brain_import for a file.
+ * Used by: brain_relationships (brain_import mode)
  */
 export function getFileImports(
   db: Database.Database,
@@ -370,7 +370,7 @@ export function getFileImports(
 }
 
 /**
- * Get files that import a given file (dependents).
+ * Get brain_file that import a given file (dependents).
  */
 export function getFileDependents(
   db: Database.Database,
@@ -456,10 +456,10 @@ export function getStats(db: Database.Database, projectHash: string): StatsResul
   ).all(projectHash) as Array<{ language: string }>
 
   return {
-    files: fileCount,
-    symbols: symbolCount,
-    relationships: relCount,
-    imports: importCount,
+    brain_file: fileCount,
+    brain_symbol: symbolCount,
+    brain_relationship: relCount,
+    brain_import: importCount,
     languages: languages.map((l) => l.language),
     avgComplexity: Math.round(avgComplexity * 100) / 100,
   }
@@ -492,7 +492,7 @@ export function getMostComplex(
 }
 
 /**
- * Find orphaned symbols (no incoming relationships).
+ * Find orphaned brain_symbol (no incoming brain_relationship).
  * Used by: brain_patterns (orphaned mode)
  */
 export function findOrphaned(

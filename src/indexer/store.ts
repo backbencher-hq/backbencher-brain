@@ -1,7 +1,7 @@
 // Batch Storage — Write file parse results to SQLite in batches
 // Ported from backbencher's parallel-indexer.ts storeResults()
-// Handles: file records, symbols, relationships (5-strategy resolution),
-// imports, taint flows, semantic embeddings
+// Handles: file records, brain_symbol, brain_relationship (5-strategy resolution),
+// brain_import, taint flows, semantic embeddings
 
 import { relative } from "path"
 import type Database from "better-sqlite3"
@@ -18,9 +18,9 @@ export interface FileResult {
   success: boolean
   timeout?: boolean
   error?: string
-  symbols?: any[]
-  relationships?: any[]
-  imports?: any[]
+  brain_symbol?: any[]
+  brain_relationship?: any[]
+  brain_import?: any[]
   language?: string
   framework?: string
   fileHash?: string
@@ -30,9 +30,9 @@ export interface FileResult {
 }
 
 export interface StoreStats {
-  symbols: number
-  relationships: number
-  imports: number
+  brain_symbol: number
+  brain_relationship: number
+  brain_import: number
 }
 
 // ============================================================================
@@ -70,31 +70,31 @@ export function storeResults(
 
   // Prepare statements
   const insertFile = db.prepare(`
-    INSERT OR REPLACE INTO files
+    INSERT OR REPLACE INTO brain_file
     (id, project_hash, path, relative_path, file_hash, size_bytes, last_modified, language, framework, layer, is_test, indexed_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `)
 
   const insertSymbol = db.prepare(`
-    INSERT OR REPLACE INTO symbols
+    INSERT OR REPLACE INTO brain_symbol
     (id, project_hash, file_id, name, qualified_name, kind, line_start, line_end, byte_start, byte_end, visibility, parameters, return_type, qualified_calls, complexity, gravity_score, layer, owner_symbol_id, annotations, is_async, is_static, is_abstract, generic_parameters)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `)
 
   const insertImport = db.prepare(`
-    INSERT OR REPLACE INTO imports
+    INSERT OR REPLACE INTO brain_import
     (id, project_hash, file_id, imported_name, import_path, import_type, is_external, line_number)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `)
 
   const insertRelationship = db.prepare(`
-    INSERT OR REPLACE INTO relationships
+    INSERT OR REPLACE INTO brain_relationship
     (id, project_hash, source_symbol_id, target_symbol_id, target_external, relationship_type, confidence, line_number, is_cross_file, is_cross_language, bridge_mechanism)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `)
 
   const insertTaint = db.prepare(`
-    INSERT OR REPLACE INTO taint_flows
+    INSERT OR REPLACE INTO brain_taint_flow
     (id, project_hash, source_symbol_id, sink_symbol_id, source_type, sink_type, vulnerability_type, severity, is_mitigated, flow_path)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `)
@@ -115,7 +115,7 @@ export function storeResults(
   )
 
   // Two-phase insert: disable FK during batch for performance/correctness
-  // (relationships may reference symbols being inserted in the same batch)
+  // (brain_relationship may reference brain_symbol being inserted in the same batch)
   db.pragma("foreign_keys = OFF")
 
   const tx = db.transaction(() => {
@@ -145,8 +145,8 @@ export function storeResults(
       }
 
       // Override layer if framework is detected
-      if (result.imports) {
-        const hasFramework = result.imports.some(
+      if (result.brain_import) {
+        const hasFramework = result.brain_import.some(
           (i: any) =>
             typeof i.module === "string" &&
             (i.module.includes("react") || i.module.includes("vue") || i.module.includes("svelte")),
@@ -166,9 +166,9 @@ export function storeResults(
         result.framework || null, fileLayer, isTestFile, now,
       )
 
-      // Insert symbols
-      if (result.symbols) {
-        for (const symbol of result.symbols) {
+      // Insert brain_symbol
+      if (result.brain_symbol) {
+        for (const symbol of result.brain_symbol) {
           const symbolKind = symbol.type || symbol.kind || "unknown"
           if (symbolKind === "unknown" && ANALYZER_GENERIC_NAMES.has(symbol.name)) continue
 
@@ -186,7 +186,7 @@ export function storeResults(
           } else if (symbol.qualifiedName && symbol.qualifiedName.includes(".")) {
             const qnParts = symbol.qualifiedName.split(".")
             if (qnParts.length >= 2) {
-              const ownerFromQn = result.symbols?.find((s: any) => s.name === qnParts[qnParts.length - 2])
+              const ownerFromQn = result.brain_symbol?.find((s: any) => s.name === qnParts[qnParts.length - 2])
               if (ownerFromQn) {
                 const parentStartLine = ownerFromQn.startLine ?? ownerFromQn.range?.startLine ?? 0
                 ownerSymbolId = `${fileId}:${ownerFromQn.name}:${parentStartLine}`
@@ -258,9 +258,9 @@ export function storeResults(
         }
       }
 
-      // Insert imports
-      if (result.imports) {
-        for (const imp of result.imports) {
+      // Insert brain_import
+      if (result.brain_import) {
+        for (const imp of result.brain_import) {
           if (!imp.name) continue
           const importId = `${fileId}:import:${imp.name}:${imp.line || 0}`
           insertImport.run(importId, projectHash, fileId, imp.name || "unknown", imp.path || "", imp.type || "named", imp.isExternal ? 1 : 0, imp.line || 0)
@@ -268,9 +268,9 @@ export function storeResults(
         }
       }
 
-      // Insert relationships with 5-strategy source resolution
-      if (result.relationships) {
-        for (const rel of result.relationships) {
+      // Insert brain_relationship with 5-strategy source resolution
+      if (result.brain_relationship) {
+        for (const rel of result.brain_relationship) {
           const sourceName = rel.source || rel.sourceId || rel.fromSymbol || rel.from || "unknown"
           const targetName = rel.targetExternal || rel.targetId || rel.target || rel.toSymbol || rel.to || "unknown"
           const relType = rel.type || rel.relationshipType || "references"
@@ -288,7 +288,7 @@ export function storeResults(
           const targetLeaf = extractLeaf(targetName)
 
           // 5-strategy source symbol lookup
-          const sourceSymbol = result.symbols?.find((s: any) => {
+          const sourceSymbol = result.brain_symbol?.find((s: any) => {
             if (!sourceName || sourceName === "unknown") return false
             if (s.name === sourceName) return true
             if (s.name === sourceLeaf) return true
@@ -304,13 +304,13 @@ export function storeResults(
           } else {
             // Handle intra-class receivers
             if (INTRA_CLASS_RECEIVERS.has(sourceLeaf)) {
-              const enclosingSymbol = result.symbols?.find((s: any) => {
+              const enclosingSymbol = result.brain_symbol?.find((s: any) => {
                 const kind = s.type || s.kind || "unknown"
                 return ["class", "interface", "struct", "trait", "enum", "object", "actor", "impl"].includes(kind)
               })
               if (enclosingSymbol) {
                 sourceId = `${fileId}:${enclosingSymbol.name}:${enclosingSymbol.startLine || 0}`
-                if (!result.symbols?.some((s: any) => s.name === enclosingSymbol.name)) {
+                if (!result.brain_symbol?.some((s: any) => s.name === enclosingSymbol.name)) {
                   // Insert a dummy source
                   insertSymbol.run(sourceId, projectHash, fileId, enclosingSymbol.name, enclosingSymbol.name, "class", 0, 0, null, null, "public", null, null, null, 1, 1.0, "core", null, null, 0, 0, 0, null)
                   totalSymbols++
@@ -347,5 +347,5 @@ export function storeResults(
     log.error("batch insert failed", { error: err?.message, batchSize: results.length })
   }
 
-  return { symbols: totalSymbols, relationships: totalRelationships, imports: totalImports }
+  return { brain_symbol: totalSymbols, brain_relationship: totalRelationships, brain_import: totalImports }
 }

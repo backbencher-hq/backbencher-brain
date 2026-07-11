@@ -1,4 +1,4 @@
-// File Discovery — Walk project directory, filter files, respect .gitignore/.bbignore
+// File Discovery — Walk project directory, filter brain_file, respect .gitignore/.bbignore
 // Ported from backbencher's parallel-indexer.ts discoverAndFilterFiles()
 
 import { readdir, stat } from "fs/promises"
@@ -104,7 +104,7 @@ export async function discoverFiles(
     existingRecords.map((f) => [f.path, { mtime: f.last_modified, size: f.size_bytes }])
   )
 
-  const files: string[] = []
+  const brain_file: string[] = []
   const foundPaths = new Set<string>()
   let skipped = 0
 
@@ -136,7 +136,7 @@ export async function discoverFiles(
         return
       }
 
-      files.push(fullPath)
+      brain_file.push(fullPath)
     } catch {
       // Skip on stat error
     }
@@ -171,7 +171,7 @@ export async function discoverFiles(
         return
       }
 
-      // Parse local ignore files
+      // Parse local ignore brain_file
       let localIg = ig
       const localGitignore = entries.find((e) => e.isFile() && e.name === ".gitignore")
       const localBbignore = entries.find((e) => e.isFile() && e.name === ".bbignore")
@@ -229,7 +229,7 @@ export async function discoverFiles(
     }
   }
 
-  // If files override is provided, only process those
+  // If brain_file override is provided, only process those
   if (options.filesOverride && options.filesOverride.length > 0) {
     for (const f of options.filesOverride) {
       await processFile(f)
@@ -238,20 +238,20 @@ export async function discoverFiles(
     await walk(projectPath, rootIg, 0)
   }
 
-  // Cleanup stale files (in DB but not on disk)
+  // Cleanup stale brain_file (in DB but not on disk)
   if (!options.filesOverride || options.filesOverride.length === 0) {
     const staleFiles = existingRecords.filter((record) => !foundPaths.has(record.path))
     if (staleFiles.length > 0) {
-      log.debug("cleaning up stale files", { count: staleFiles.length })
+      log.debug("cleaning up stale brain_file", { count: staleFiles.length })
       // Cascade delete will be handled by the storage module
     }
   }
 
   log.info("file discovery complete", {
-    found: files.length,
+    found: brain_file.length,
     skipped,
-    total: files.length + skipped,
+    total: brain_file.length + skipped,
   })
 
-  return files
+  return brain_file
 }
