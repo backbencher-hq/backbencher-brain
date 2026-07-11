@@ -1,6 +1,6 @@
 {
   "name": "backbencher-brain",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Universal MCP code intelligence server \u2014 index any project with 40+ language analyzers",
   "type": "module",
   "main": "dist/index.js",

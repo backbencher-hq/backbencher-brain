@@ -1339,84 +1339,84 @@ export namespace ASTEngine {
     switch (language) {
       case "typescript":
       case "tsx":
-        return new (await import("./real-typescript-analyzer")).RealTypeScriptAnalyzer()
+        return new (await import("./real-typescript-analyzer.js")).RealTypeScriptAnalyzer()
       case "javascript":
-        return new (await import("./real-javascript-analyzer")).RealJavaScriptAnalyzer()
+        return new (await import("./real-javascript-analyzer.js")).RealJavaScriptAnalyzer()
       case "html":
-        return new (await import("./real-html-analyzer")).RealHtmlAnalyzer()
+        return new (await import("./real-html-analyzer.js")).RealHtmlAnalyzer()
       case "css":
       case "scss":
       case "sass":
-        return new (await import("./real-css-analyzer")).RealCssAnalyzer()
+        return new (await import("./real-css-analyzer.js")).RealCssAnalyzer()
       case "json":
-        return new (await import("./real-json-analyzer")).RealJsonAnalyzer()
+        return new (await import("./real-json-analyzer.js")).RealJsonAnalyzer()
       case "yaml":
-        return new (await import("./real-yaml-analyzer")).RealYamlAnalyzer()
+        return new (await import("./real-yaml-analyzer.js")).RealYamlAnalyzer()
       case "perl":
-        return new (await import("./real-perl-analyzer")).RealPerlAnalyzer()
+        return new (await import("./real-perl-analyzer.js")).RealPerlAnalyzer()
       case "c":
-        return new (await import("./real-c-analyzer")).RealCAnalyzer()
+        return new (await import("./real-c-analyzer.js")).RealCAnalyzer()
       case "cpp":
-        return new (await import("./real-cpp-analyzer")).RealCppAnalyzer()
+        return new (await import("./real-cpp-analyzer.js")).RealCppAnalyzer()
       case "rust":
-        return new (await import("./real-rust-analyzer")).RealRustAnalyzer()
+        return new (await import("./real-rust-analyzer.js")).RealRustAnalyzer()
       case "go":
-        return new (await import("./real-go-analyzer")).RealGoAnalyzer()
+        return new (await import("./real-go-analyzer.js")).RealGoAnalyzer()
       case "java":
-        return new (await import("./real-java-analyzer")).RealJavaAnalyzer()
+        return new (await import("./real-java-analyzer.js")).RealJavaAnalyzer()
       case "kotlin":
-        return new (await import("./real-kotlin-analyzer")).RealKotlinAnalyzer()
+        return new (await import("./real-kotlin-analyzer.js")).RealKotlinAnalyzer()
       case "scala":
-        return new (await import("./real-scala-analyzer")).RealScalaAnalyzer()
+        return new (await import("./real-scala-analyzer.js")).RealScalaAnalyzer()
       case "python":
-        return new (await import("./real-python-analyzer")).RealPythonAnalyzer()
+        return new (await import("./real-python-analyzer.js")).RealPythonAnalyzer()
       case "ruby":
-        return new (await import("./real-ruby-analyzer")).RealRubyAnalyzer()
+        return new (await import("./real-ruby-analyzer.js")).RealRubyAnalyzer()
       case "php":
-        return new (await import("./real-php-analyzer")).RealPhpAnalyzer()
+        return new (await import("./real-php-analyzer.js")).RealPhpAnalyzer()
       case "lua":
-        return new (await import("./real-lua-analyzer")).RealLuaAnalyzer()
+        return new (await import("./real-lua-analyzer.js")).RealLuaAnalyzer()
       case "elixir":
-        return new (await import("./real-elixir-analyzer")).RealElixirAnalyzer()
+        return new (await import("./real-elixir-analyzer.js")).RealElixirAnalyzer()
       case "erlang":
-        return new (await import("./real-erlang-analyzer")).RealErlangAnalyzer()
+        return new (await import("./real-erlang-analyzer.js")).RealErlangAnalyzer()
       case "haskell":
-        return new (await import("./real-haskell-analyzer")).RealHaskellAnalyzer()
+        return new (await import("./real-haskell-analyzer.js")).RealHaskellAnalyzer()
       case "clean":
-        return new (await import("./real-clean-analyzer")).RealCleanAnalyzer()
+        return new (await import("./real-clean-analyzer.js")).RealCleanAnalyzer()
       case "clojure":
-        return new (await import("./real-clojure-analyzer")).RealClojureAnalyzer()
+        return new (await import("./real-clojure-analyzer.js")).RealClojureAnalyzer()
       case "swift":
-        return new (await import("./real-swift-analyzer")).RealSwiftAnalyzer()
+        return new (await import("./real-swift-analyzer.js")).RealSwiftAnalyzer()
       case "dart":
-        return new (await import("./real-dart-analyzer")).RealDartAnalyzer()
+        return new (await import("./real-dart-analyzer.js")).RealDartAnalyzer()
       case "csharp":
-        return new (await import("./real-csharp-analyzer")).RealCSharpAnalyzer()
+        return new (await import("./real-csharp-analyzer.js")).RealCSharpAnalyzer()
       case "r":
-        return new (await import("./real-r-analyzer")).RealRAnalyzer()
+        return new (await import("./real-r-analyzer.js")).RealRAnalyzer()
       case "sql":
-        return new (await import("./real-sql-analyzer")).RealSqlAnalyzer()
+        return new (await import("./real-sql-analyzer.js")).RealSqlAnalyzer()
       case "bash":
-        return new (await import("./real-bash-analyzer")).RealBashAnalyzer()
+        return new (await import("./real-bash-analyzer.js")).RealBashAnalyzer()
       case "objective-c":
-        return new (await import("./real-objective-c-analyzer")).RealObjectiveCAnalyzer()
+        return new (await import("./real-objective-c-analyzer.js")).RealObjectiveCAnalyzer()
       case "groovy":
-        return new (await import("./real-groovy-analyzer")).RealGroovyAnalyzer()
+        return new (await import("./real-groovy-analyzer.js")).RealGroovyAnalyzer()
       case "vue":
-        return new (await import("./real-vue-analyzer")).RealVueAnalyzer()
+        return new (await import("./real-vue-analyzer.js")).RealVueAnalyzer()
       case "svelte":
-        return new (await import("./real-svelte-analyzer")).RealSvelteAnalyzer()
+        return new (await import("./real-svelte-analyzer.js")).RealSvelteAnalyzer()
       case "hcl":
       case "terraform":
-        return new (await import("./real-hcl-analyzer")).RealHclAnalyzer()
+        return new (await import("./real-hcl-analyzer.js")).RealHclAnalyzer()
       case "graphql":
-        return new (await import("./real-graphql-analyzer")).RealGraphqlAnalyzer()
+        return new (await import("./real-graphql-analyzer.js")).RealGraphqlAnalyzer()
       case "zig":
-        return new (await import("./real-zig-analyzer")).RealZigAnalyzer()
+        return new (await import("./real-zig-analyzer.js")).RealZigAnalyzer()
       case "fsharp":
-        return new (await import("./real-fsharp-analyzer")).RealFsharpAnalyzer()
+        return new (await import("./real-fsharp-analyzer.js")).RealFsharpAnalyzer()
       case "powershell":
-        return new (await import("./real-powershell-analyzer")).RealPowershellAnalyzer()
+        return new (await import("./real-powershell-analyzer.js")).RealPowershellAnalyzer()
       default:
         return new GenericAnalyzer()
     }
