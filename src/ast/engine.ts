@@ -1165,12 +1165,12 @@ export namespace ASTEngine {
       let analysisResult
 
       // STEP 2: 🧠 ENHANCE WITH ADVANCED TYPE INFERENCE
-      const TypeInference = (await import("./type-inference")).TypeInference
+      const TypeInference = (await import("./type-inference.js")).TypeInference
       const enhancedAnalyzer = TypeInference.enhanceAnalyzerWithTypeInference(analyzer, language)
       analysisResult = enhancedAnalyzer.analyze(tree.rootNode, content, filePath)
 
       // STEP 3: 🚀 ENHANCE WITH FRAMEWORK-SPECIFIC INTELLIGENCE
-      const FrameworkIntelligence = (await import("./framework-intelligence")).FrameworkIntelligence
+      const FrameworkIntelligence = (await import("./framework-intelligence.js")).FrameworkIntelligence
       analysisResult = FrameworkIntelligence.enhanceWithFrameworkIntelligence(analysisResult, content, language)
 
       return analysisResult

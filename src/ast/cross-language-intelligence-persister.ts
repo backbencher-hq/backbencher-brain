@@ -4,7 +4,7 @@ import * as Log from "../tool/brain-log.js"
 // Persists ALL cross-language intelligence to the brain database
 // INTEGRATION: Seamlessly connects cross-language analysis with brain storage
 
-import { CrossLanguageIntelligence } from "./cross-language-intelligence"
+import { CrossLanguageIntelligence } from "./cross-language-intelligence.js"
 import { eq, and } from "drizzle-orm"
 import { randomUUID } from "crypto"
 import type { SQLiteBunDatabase } from "drizzle-orm/bun-sqlite"

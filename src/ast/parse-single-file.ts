@@ -248,7 +248,7 @@ async function parseFile(filePath: string, projectPath: string) {
 
     try {
       // Import and use the AST engine
-      const { ASTEngine } = await import("./engine")
+      const { ASTEngine } = await import("./engine.js")
       const parsed = await ASTEngine.parseFile(filePath, content)
 
       result = {

@@ -3,8 +3,8 @@
 // Advanced runtime behavior analysis and cross-file relationship resolution
 
 import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
-import { TypeInference } from "./type-inference"
-import { FrameworkIntelligence } from "./framework-intelligence"
+import { TypeInference } from "./type-inference.js"
+import { FrameworkIntelligence } from "./framework-intelligence.js"
 import type { Node } from "web-tree-sitter"
 
 export namespace DynamicRelationships {

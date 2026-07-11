@@ -3,7 +3,7 @@ import * as Log from "../tool/brain-log.js"
 import path from "path"
 import fs from "fs/promises"
 import { createHash } from "crypto"
-import { extractFallback } from "./pool-worker"
+import { extractFallback } from "./pool-worker.js"
 
 const log = Log.create({ service: "dependency-skimmer" })
 

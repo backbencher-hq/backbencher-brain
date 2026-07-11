@@ -6,7 +6,7 @@ import * as Log from "../tool/brain-log.js"
 
 import type { Node } from "web-tree-sitter"
 import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
-import { CrossLanguageIntelligence } from "./cross-language-intelligence"
+import { CrossLanguageIntelligence } from "./cross-language-intelligence.js"
 
 const log = Log.create({ service: "relationship-mapper" })
 

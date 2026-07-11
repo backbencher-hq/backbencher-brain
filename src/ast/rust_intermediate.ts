@@ -3,7 +3,7 @@
 // AST analysis for Rust language
 
 import type { Node } from "web-tree-sitter"
-import { ASTEngine } from "./engine"
+import { ASTEngine } from "./engine.js"
 
 export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
   private currentFile: string = ""

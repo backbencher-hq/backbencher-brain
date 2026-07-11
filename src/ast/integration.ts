@@ -1,6 +1,6 @@
 // @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
 import * as Log from "../tool/brain-log.js"
-import { CrossFileQualifier } from "./qualifier"
+import { CrossFileQualifier } from "./qualifier.js"
 import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
 
 type UniversalSymbol = UniversalSymbol

@@ -1,5 +1,5 @@
 // @ts-nocheck — Full indexer port from backbencher.
-import { ASTEngine } from "./engine"
+import { ASTEngine } from "./engine.js"
 import { BrainDatabase } from "../brain/database.js";
 import * as Log from "../tool/brain-log.js";
 // Filesystem

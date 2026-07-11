@@ -1,5 +1,5 @@
 // @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
-import type { ASTEngine } from "./engine"
+import type { ASTEngine } from "./engine.js"
 
 export class TaintAnalyzer {
   static enrichSymbols(symbols: UniversalSymbol[], content: string, language: string) {

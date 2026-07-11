@@ -64,7 +64,7 @@ export async function initializeParser(language: string): Promise<any> {
   let langModule = languageModules.get(language)
   if (!langModule) {
     try {
-      const { ASTEngine } = await import("./engine")
+      const { ASTEngine } = await import("./engine.js")
       langModule = await (ASTEngine as any).loadLanguage(language)
       if (langModule) {
         languageModules.set(language, langModule)

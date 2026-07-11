@@ -504,7 +504,7 @@ export async function parseFile(filePath: string, projectPath: string) {
 
     // Stage 5: Universal Multi-Language Taint Data-Flow Extraction
     try {
-      const { TaintAnalyzer } = await import("./taint-analyzer")
+      const { TaintAnalyzer } = await import("./taint-analyzer.js")
       TaintAnalyzer.enrichSymbols(parsed.symbols, content, language)
     } catch (e) {
       log("Taint extraction failed:", e)

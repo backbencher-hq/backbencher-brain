@@ -4,7 +4,7 @@
 // The most powerful TypeScript analyzer ever built
 
 import type { Node } from "web-tree-sitter"
-import { detectFrameworks, type FrameworkInfo } from "./framework-detectors"
+import { detectFrameworks, type FrameworkInfo } from "./framework-detectors.js"
 import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
 import * as path from "path"
 import * as fs from "fs"

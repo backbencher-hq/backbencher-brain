@@ -1,8 +1,8 @@
 // @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
 import * as Log from "../tool/brain-log.js"
 import { eq, and, like, sql, desc, inArray, or, ne } from "drizzle-orm"
-import { GraphIntelligence } from "./graph"
-import { PatternRecognition } from "./patterns"
+import { GraphIntelligence } from "./graph.js"
+import { PatternRecognition } from "./patterns.js"
 // 🔥 Import cross-language security analysis
 
 const log = Log.create({ service: "brain-tools" })

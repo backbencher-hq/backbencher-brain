@@ -6,13 +6,13 @@ import * as Log from "../tool/brain-log.js"
 
 import type { Node } from "web-tree-sitter"
 import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
-import { CrossLanguageSymbolDiscovery } from "./cross-language-symbol-discovery"
-import { CrossLanguageRelationshipMapper } from "./cross-language-relationship-mapper"
-import { ServiceTopologyBuilder } from "./service-topology-builder"
-import { DataFlowAnalyzer } from "./data-flow-analyzer"
-import { APICoverageAnalyzer } from "./api-coverage-analyzer"
-import { CrossLanguageIntelligencePersister } from "./cross-language-intelligence-persister"
-import { ArchitecturalHealthMonitor } from "./architectural-health"
+import { CrossLanguageSymbolDiscovery } from "./cross-language-symbol-discovery.js"
+import { CrossLanguageRelationshipMapper } from "./cross-language-relationship-mapper.js"
+import { ServiceTopologyBuilder } from "./service-topology-builder.js"
+import { DataFlowAnalyzer } from "./data-flow-analyzer.js"
+import { APICoverageAnalyzer } from "./api-coverage-analyzer.js"
+import { CrossLanguageIntelligencePersister } from "./cross-language-intelligence-persister.js"
+import { ArchitecturalHealthMonitor } from "./architectural-health.js"
 
 const log = Log.create({ service: "cross-language-intelligence" })
 
@@ -138,7 +138,7 @@ export namespace CrossLanguageIntelligence {
     architecturalInsights: ArchitecturalInsight[]
     complianceReport: ComplianceReport
     projectMetrics: ProjectMetrics
-    apiContractValidation?: import("./api-contract-validator").APIContractValidator.ValidationReport
+    apiContractValidation?: import("./api-contract-validator.js").APIContractValidator.ValidationReport
   }
 
   export interface CrossLanguageRelationship {
@@ -376,7 +376,7 @@ export namespace CrossLanguageIntelligence {
     log.info("🚀 Reconstructing Polyglot Intelligence from Brain Database", { projectId })
 
     // Dynamic import to avoid circular dependencies
-    const { BrainDatabase } = await import("../brain/database")
+    const { BrainDatabase } = await import("../brain/database.js")
     const { BrainSymbolTable, BrainRelationshipTable, BrainFileTable, BrainTaintFlowTable } = await import(
       "../brain/brain.sql"
     )
@@ -564,7 +564,7 @@ export namespace CrossLanguageIntelligence {
     log.info("📊 API coverage analyzed", { coverage: apiCoverage.coverage.overall })
 
     // PHASE 5.5: 🤝 API CONTRACT VALIDATION - Cross-language God-Mode Check
-    const { APIContractValidator } = await import("./api-contract-validator")
+    const { APIContractValidator } = await import("./api-contract-validator.js")
     const { endpoints, callers } = APIContractValidator.extractContracts(
       serviceTopology,
       crossLanguageRelationships,
@@ -725,7 +725,7 @@ export namespace CrossLanguageIntelligence {
   async function findOrCreateFileId(db: any, projectId: ProjectID, filePath: string): Promise<string> {
     const { randomUUID } = await import("crypto")
     const { eq, and } = await import("drizzle-orm")
-    const { BrainFileTable } = await import("../brain/brain.sql")
+    const { BrainFileTable } = await import("../brain/brain.sql.js")
 
     // Try to find existing file
     const results = await db

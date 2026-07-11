@@ -5,7 +5,7 @@ import * as Log from "../tool/brain-log.js"
 // COVERAGE: Documentation, testing, security, monitoring - EVERYTHING tracked!
 
 import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
-import { CrossLanguageIntelligence } from "./cross-language-intelligence"
+import { CrossLanguageIntelligence } from "./cross-language-intelligence.js"
 
 const log = Log.create({ service: "api-coverage-analyzer" })
 

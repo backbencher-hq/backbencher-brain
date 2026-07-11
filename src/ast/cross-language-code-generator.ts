@@ -1,6 +1,6 @@
 // @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
 import * as Log from "../tool/brain-log.js"
-import { APIContractValidator } from "./api-contract-validator"
+import { APIContractValidator } from "./api-contract-validator.js"
 
 const log = Log.create({ service: "cross-language-code-generator" })
 

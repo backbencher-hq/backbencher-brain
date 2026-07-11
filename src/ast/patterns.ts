@@ -8,7 +8,7 @@ import {
   BrainImportTable,
   BrainPatternTable,
 } from "../brain/brain.sql"
-import { GraphIntelligence } from "./graph"
+import { GraphIntelligence } from "./graph.js"
 
 const log = Log.create({ service: "pattern-recognition" })
 
@@ -1293,7 +1293,7 @@ export namespace PatternRecognition {
     // We look for pairs of symbols that mutually depend on each other
     let rawDb
     try {
-      const { BrainDatabase } = await import("../brain/database")
+      const { BrainDatabase } = await import("../brain/database.js")
       rawDb = await BrainDatabase.getRawInstance(projectId)
     } catch {}
 
