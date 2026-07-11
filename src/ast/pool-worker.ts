@@ -481,7 +481,7 @@ export async function parseFile(filePath: string, projectPath: string) {
 
   try {
     if (!engineModule) {
-      engineModule = await import("./engine")
+      engineModule = await import("./engine.js")
     }
     const parsed = await engineModule.ASTEngine.parseFile(filePath, content)
 
@@ -612,7 +612,7 @@ process.on("message", async (msg: any) => {
     // Registry loads core grammars only with 10s timeout per import.
     // WASM registry initialized by engine on first parse
     try {
-      engineModule = await import("./engine")
+      engineModule = await import("./engine.js")
     } catch {}
     process.send?.({ type: "ready", workerId: msg.workerId })
   } else if (msg.type === "parse_batch") {
