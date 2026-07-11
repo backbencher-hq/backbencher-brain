@@ -1,4 +1,6 @@
 // @ts-nocheck — Full engine port from backbencher. Structurally identical.
+import { createRequire } from "node:module"
+const require = createRequire(import.meta.url)
 import type { Language, Parser, Node } from "web-tree-sitter"
 import * as Log from "../tool/brain-log.js"
 function lazy<T>(fn: () => Promise<T>) { let val: T; return () => { if (!val) val = fn() as any; return val } }

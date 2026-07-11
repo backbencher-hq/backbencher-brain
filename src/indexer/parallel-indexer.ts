@@ -1197,7 +1197,8 @@ export async function storeResults(
         // Count lines — use max symbol endLine as estimate, fallback to 0
         let lineCount = 0
         if (result.symbols && result.symbols.length > 0) {
-          for (const s of result.symbols) {
+          if (!result.symbols || !Array.isArray(result.symbols)) return { symbolCount: 0, relationshipCount: 0, relationshipInsertFailures: 0 };
+              for (const s of result.symbols) {
             const end = s.endLine ?? s.range?.endLine ?? 0
             if (end > lineCount) lineCount = end
           }
@@ -1253,6 +1254,7 @@ export async function storeResults(
             const pb = CONTAINER_PRIORITY[b.type || b.kind] ?? 3
             return pa - pb
           })
+          if (!result.symbols || !Array.isArray(result.symbols)) continue;
           for (const symbol of result.symbols) {
             // Skip symbols that would cause SQL insert failures
             const symbolKind = symbol.type || symbol.kind || "unknown"
@@ -1570,6 +1572,7 @@ export async function storeResults(
 
         if (result.relationships) {
           let fileRelCount = 0
+          if (!result.relationships || !Array.isArray(result.relationships)) continue;
           for (const rel of result.relationships) {
             const sourceName = rel.source || rel.sourceId || rel.fromSymbol || rel.from || "unknown"
             const targetName = rel.targetExternal || rel.targetId || rel.target || rel.toSymbol || rel.to || "unknown"
