@@ -1,0 +1,1 @@
+declare const BB_POOL_WORKER_PATH: string | undefined
