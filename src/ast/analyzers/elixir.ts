@@ -92,6 +92,19 @@ export class RealElixirAnalyzer implements LanguageAnalyzer {
               } else { this.recordCall(t, ctx, currentScope) }
             }
          }
+      } else if (node.type === "identifier" && currentScope?.name) {
+        // Variable/function reference in function bodies
+        const parent = node.parent
+        if (parent?.type !== "call" && parent?.type !== "binary_operator" && parent?.type !== "stab_clause" &&
+            !["defmodule","def","defp","defmacro","defprotocol","defimpl","defstruct"].includes(node.text)) {
+          ctx.relationships.push({
+            source: currentScope.name,
+            target: node.text,
+            type: RelationshipType.References,
+            confidence: 0.6,
+            metadata: { elixirSpecific: true, isVariableRef: true }
+          })
+        }
       } else if (node.type === "unary_operator" && node.child(0)?.text === "@") {
         const attrName = node.child(1)?.text
         const attrValue = node.parent?.namedChildren?.find((n: any) => n !== node)?.text || ""
@@ -166,6 +179,21 @@ export class RealElixirAnalyzer implements LanguageAnalyzer {
       const isExp = [SymbolKind.Module, SymbolKind.Function, SymbolKind.Interface, SymbolKind.Struct].includes(s.kind)
       if (isModLevel && isPub && isExp) { ctx.exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility }) }
     }
+
+    // Post-loop: add contains for owned symbols
+    for (const s of ctx.symbols) {
+      const _owner = s.ownerName || s.scope
+      if (_owner) {
+        ctx.relationships.push({
+          source: _owner,
+          target: s.name,
+          type: RelationshipType.Contains,
+          confidence: 1.0,
+          metadata: {},
+        })
+      }
+    }
+
     return {
       language: "elixir", symbols: ctx.symbols, relationships: ctx.relationships, imports: ctx.imports, exports: ctx.exports, errors: ctx.errors,
       metadata: {
@@ -416,6 +444,7 @@ export class RealElixirAnalyzer implements LanguageAnalyzer {
      if (target === "import" || target === "alias" || target === "require") {
          ctx.imports.push({ module: moduleName, source: moduleName, imported: ["*"], isTypeOnly: false, range: this.nodeToRange(node) })
           ctx.relationships.push({ source: currentScope?.name || "Global", target: (argsNode.text || "").replace(/".*"/, "").trim() || node.text, type: RelationshipType.Uses, confidence: 0.8, metadata: { elixirSpecific: true, directiveType: target } })
+          ctx.relationships.push({ source: currentScope?.name || "Global", target: moduleName, type: RelationshipType.References, confidence: 0.9, metadata: { elixirSpecific: true, isModuleDep: true } })
      }
   }
 

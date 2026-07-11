@@ -131,6 +131,20 @@ export class RealRubyAnalyzer implements LanguageAnalyzer {
 
     this.detectFrameworks(imports, symbols, frameworksObj, patternsObj)
 
+    // Add Contains: parent class/module → owned methods
+    for (const s of symbols) {
+      const _owner = s.ownerName || s.scope
+      if (_owner) {
+        relationships.push({
+          source: _owner,
+          target: s.name,
+          type: RelationshipType.Contains,
+          confidence: 1.0,
+          metadata: { rubySpecific: true },
+        })
+      }
+    }
+
     for (const fw in frameworksObj) {
       metadata.detectedFrameworks!.push(fw)
     }
@@ -166,7 +180,7 @@ export class RealRubyAnalyzer implements LanguageAnalyzer {
     let isRailsController = false
 
     if (superclassNode) {
-      superClass = superclassNode.text
+      superClass = superclassNode.text.replace(/^<\s*/, "")
 
       if (superclassNode.type === "scope_resolution") {
         const scope = superclassNode.childForFieldName("scope")?.text || this.getFirstNamedChildText(superclassNode)
@@ -406,6 +420,14 @@ export class RealRubyAnalyzer implements LanguageAnalyzer {
               range: this.getRange(node),
               isWildcard: true,
               metadata: { requireMethod: methodName },
+            })
+            // DependsOn for require/require_relative
+            relationships.push({
+              source: "root",
+              target: cleanText,
+              type: RelationshipType.References,
+              confidence: 0.9,
+              metadata: { rubySpecific: true },
             })
           }
         }

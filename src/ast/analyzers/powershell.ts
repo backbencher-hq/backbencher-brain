@@ -47,6 +47,7 @@ export class RealPowershellAnalyzer implements LanguageAnalyzer {
         kind,
         range: this.nodeToRange(range),
         scope: currentFunction || "global",
+        ownerName: (meta.ownerClass as string) || undefined,
         visibility: "public",
         metadata: { powershellSpecific: true, ...meta },
       }
@@ -167,12 +168,13 @@ export class RealPowershellAnalyzer implements LanguageAnalyzer {
               metadata: { powershellSpecific: true },
             })
           }
+          // Powershell: second+ types after : are interfaces (all share same parent list)
           for (const iface of interfaces) {
             relationships.push({
               source: className,
               target: iface,
               type: RelationshipType.Implements,
-              confidence: 0.9,
+              confidence: 0.85,
               metadata: { powershellSpecific: true },
             })
           }
@@ -478,7 +480,7 @@ export class RealPowershellAnalyzer implements LanguageAnalyzer {
 
     traverse(rootNode)
 
-    const allSymbols = symbols.filter((s, i, arr) => arr.findIndex((x) => x.name === s.name && x.kind === s.kind) === i)
+    const allSymbols = symbols.filter((s, i, arr) => arr.findIndex((x) => x.name === s.name && x.kind === s.kind && x.ownerName === s.ownerName) === i)
     const uniqueRels = relationships.filter(
       (r, i, arr) => arr.findIndex((x) => x.source === r.source && x.target === r.target && x.type === r.type) === i,
     )
@@ -487,6 +489,17 @@ export class RealPowershellAnalyzer implements LanguageAnalyzer {
     const detectedFrameworks = Object.keys(frameworks).filter((k) =>
       Object.prototype.hasOwnProperty.call(frameworks, k),
     )
+
+    // Add Contains for owned symbols + References for imports
+    for (const s of allSymbols) {
+      const _owner = s.ownerName || s.scope
+      if (_owner) {
+        uniqueRels.push({ source: _owner, target: s.name, type: RelationshipType.Contains, confidence: 1.0, metadata: {} })
+      }
+    }
+    for (const imp of imports) {
+      uniqueRels.push({ source: "global", target: imp.module || "", type: RelationshipType.References, confidence: 0.9, metadata: {} })
+    }
 
     return {
       language: "powershell",

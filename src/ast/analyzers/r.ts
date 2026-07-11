@@ -110,6 +110,20 @@ export class RealRAnalyzer implements LanguageAnalyzer {
 
     this.detectFrameworksFromImports(imports, metadata)
 
+    // Post-loop: add contains for owned symbols (R is top-level, default owner is 'global')
+    for (const s of symbols) {
+      const _owner = s.ownerName || s.scope || 'global'
+      if (_owner) {
+        relationships.push({
+          source: _owner,
+          target: s.name,
+          type: RelationshipType.Contains,
+          confidence: 1.0,
+          metadata: {},
+        })
+      }
+    }
+
     return {
       symbols,
       imports,
@@ -216,9 +230,9 @@ export class RealRAnalyzer implements LanguageAnalyzer {
             toName += name[i]
           }
           relationships.push({
-            type: RelationshipType.Implementation,
-            from: name,
-            to: toName,
+            source: name,
+            target: toName,
+            type: RelationshipType.Implements,
             metadata: { relationshipSubType: "s3_method" },
           })
         }
@@ -243,9 +257,9 @@ export class RealRAnalyzer implements LanguageAnalyzer {
           })
           for (const bc of baseClasses) {
             relationships.push({
-              type: RelationshipType.Inheritance,
               source: name,
               target: bc,
+              type: RelationshipType.Extends,
               metadata: { relationshipSubType: "r6_inherits" },
             })
           }
@@ -265,9 +279,9 @@ export class RealRAnalyzer implements LanguageAnalyzer {
           })
           for (const bc of baseClasses) {
             relationships.push({
-              type: RelationshipType.Inheritance,
               source: name,
               target: bc,
+              type: RelationshipType.Extends,
               metadata: { relationshipSubType: "r5_inherits" },
             })
           }
@@ -374,9 +388,9 @@ export class RealRAnalyzer implements LanguageAnalyzer {
                       metadata: { rSpecific: true, isR6Method: true, r6Visibility: argName, ownerClass: className },
                     })
                     relationships.push({
-                      type: RelationshipType.Implementation,
-                      from: methodName,
-                      to: className,
+                      source: className,
+                      target: methodName,
+                      type: RelationshipType.Contains,
                       metadata: { relationshipSubType: "r6_method", visibility: argName },
                     })
                   }
@@ -432,9 +446,9 @@ export class RealRAnalyzer implements LanguageAnalyzer {
                       metadata: { rSpecific: true, isR5Method: true, ownerClass: className },
                     })
                     relationships.push({
-                      type: RelationshipType.Implementation,
-                      from: methodName,
-                      to: className,
+                      source: className,
+                      target: methodName,
+                      type: RelationshipType.Contains,
                       metadata: { relationshipSubType: "r5_method" },
                     })
                   }
@@ -593,6 +607,14 @@ export class RealRAnalyzer implements LanguageAnalyzer {
                 range: this.getRange(node),
                 isWildcard: true,
               })
+              // DependsOn for library/require imports
+              relationships.push({
+                source: "global",
+                target: moduleName,
+                type: RelationshipType.References,
+                confidence: 0.9,
+                metadata: { rSpecific: true },
+              })
             }
           }
         }
@@ -674,9 +696,9 @@ export class RealRAnalyzer implements LanguageAnalyzer {
           })
           for (const bc of baseClasses) {
             relationships.push({
-              type: RelationshipType.Inheritance,
               source: className,
               target: bc,
+              type: RelationshipType.Extends,
               metadata: { relationshipSubType: "s4_inherits" },
             })
           }

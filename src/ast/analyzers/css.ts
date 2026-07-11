@@ -87,7 +87,7 @@ export class RealCssAnalyzer implements LanguageAnalyzer {
         }
         case "declaration": {
           // CSS custom property: --name: value
-          const propNode = node.childForFieldName("property") || this.v2FindChild(node, "property_name")
+          const propNode = node.childForFieldName("property") || this.findChild(node, (c: Node) => c.type === "property_name")
           if (propNode && propNode.text.startsWith("--")) {
             ctx.symbols.push({
               name: propNode.text,
@@ -144,42 +144,56 @@ export class RealCssAnalyzer implements LanguageAnalyzer {
         return "SCSS_FILE_SCOPE"
       }
 
-      const mixinRegex = /@mixin\s+([\w-]+)/g
-      let match
-      while ((match = mixinRegex.exec(content)) !== null) {
-        const name = match[1]
-        if (!ctx.symbols.some((s) => s.name === `@mixin ${name}`)) {
-          const lines = content.slice(0, match.index).split("\n")
-          const startLine = lines.length
-          ctx.symbols.push({
-            name: `@mixin ${name}`,
-            kind: SymbolKind.Function,
-            range: {
-              startLine,
-              startColumn: 1,
-              endLine: startLine,
-              endColumn: match[0].length,
-              startIndex: match.index,
-              endIndex: match.index + match[0].length,
-            },
-            scope: "",
-            visibility: "public",
-            metadata: { isAtRule: true, atKeyword: "@mixin", fromRegexFallback: true },
-          })
+      // SCSS mixin detection — AST-based walk (zero regex)
+      const findMixins = (n: Node) => {
+        if (n.type === "mixin_statement" || n.type === "mixin_declaration") {
+          for (let i = 0; i < n.childCount; i++) {
+            const c = n.child(i)
+            if (c && (c.type === "mixin_name" || c.type === "identifier" || c.type === "tag_name")) {
+              const name = c.text
+              if (!ctx.symbols.some((s: any) => s.name === `@mixin ${name}`)) {
+                ctx.symbols.push({
+                  name: `@mixin ${name}`,
+                  kind: SymbolKind.Function,
+                  range: {
+                    startLine: n.startPosition.row + 1,
+                    startColumn: n.startPosition.column + 1,
+                    endLine: n.endPosition.row + 1,
+                    endColumn: n.endPosition.column + 1,
+                  },
+                  scope: "",
+                  visibility: "public",
+                  metadata: { isAtRule: true, atKeyword: "@mixin" },
+                })
+              }
+            }
+          }
         }
+        for (let i = 0; i < n.childCount; i++) { const c = n.child(i); if (c) findMixins(c) }
       }
+      findMixins((ctx as any).tree?.rootNode || rootNode)
 
-      const includeRegex = /@include\s+([\w-]+)/g
-      while ((match = includeRegex.exec(content)) !== null) {
-        const name = match[1]
-        const scope = getScope(content, match.index)
-        ctx.relationships.push({
-          source: scope,
-          target: `@mixin ${name}`,
-          type: RelationshipType.Uses,
-          metadata: { cssSpecific: true, isMixinRef: true, fromRegexFallback: true },
-        })
+      // SCSS mixin usage — AST-based detection
+      // Tree-sitter-css: include_statement nodes for @include mixin-name
+      const findIncludes = (n: Node) => {
+        if (n.type === "include_statement" || n.type === "call_expression") {
+          for (let i = 0; i < n.childCount; i++) {
+            const c = n.child(i)
+            if (c && (c.type === "identifier" || c.type === "tag_name" || c.type === "mixin_name")) {
+              const name = c.text
+              const scope = "SCSS_FILE_SCOPE"
+              ctx.relationships.push({
+                source: scope,
+                target: `@mixin ${name}`,
+                type: RelationshipType.Uses,
+                metadata: { cssSpecific: true, isMixinRef: true },
+              })
+            }
+          }
+        }
+        for (let i = 0; i < n.childCount; i++) { const c = n.child(i); if (c) findIncludes(c) }
       }
+      findIncludes((ctx as any).tree?.rootNode || rootNode)
     }
 
     for (const s of ctx.symbols) { if (!s.scope || s.scope === "") { ctx.exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility || "public" }) } }
@@ -202,6 +216,20 @@ export class RealCssAnalyzer implements LanguageAnalyzer {
         framework: frameworks[i],
         patterns: [{ type: "usage", detected: true, description: `${frameworks[i]} usage detected` }],
       })
+    }
+
+    // Post-loop: add contains for owned symbols
+    for (const s of ctx.symbols) {
+      const _owner = s.ownerName || s.scope
+      if (_owner) {
+        ctx.relationships.push({
+          source: _owner,
+          target: s.name,
+          type: RelationshipType.Contains,
+          confidence: 1.0,
+          metadata: {},
+        })
+      }
     }
 
     return {
@@ -510,6 +538,14 @@ export class RealCssAnalyzer implements LanguageAnalyzer {
         isTypeOnly: false,
         range: this.nodeToRange(node),
       })
+      // depends: @import = compile-time dependency
+      ctx.relationships.push({
+        source: "global",
+        target: moduleName,
+        type: RelationshipType.References,
+        confidence: 0.9,
+        metadata: { isCssImport: true }
+      })
       if (moduleName.indexOf("tailwind") !== -1) ctx.frameworks["Tailwind CSS"] = true
       if (moduleName.indexOf("bootstrap") !== -1) ctx.frameworks["Bootstrap"] = true
       if (moduleName.indexOf("bulma") !== -1) ctx.frameworks["Bulma"] = true
@@ -675,7 +711,7 @@ export class RealCssAnalyzer implements LanguageAnalyzer {
   private processDeclaration(node: Node, currentSelector: string, ctx: CssContext) {
     // Create Uses relationship between selector and property
     if (currentSelector) {
-      const propNode = node.childForFieldName("property") || this.v2FindChild(node, "property_name")
+      const propNode = node.childForFieldName("property") || this.findChild(node, (c: Node) => c.type === "property_name")
       if (propNode) {
         ctx.relationships.push({
           source: currentSelector,
@@ -767,7 +803,7 @@ export class RealCssAnalyzer implements LanguageAnalyzer {
             ctx.relationships.push({
               source: currentSelector,
               target: n.text.trim(),
-              type: RelationshipType.Uses,
+              type: RelationshipType.References,
               metadata: { cssSpecific: true, isVariableRef: true },
             })
             ctx.patterns["CSS Custom Properties"] = true

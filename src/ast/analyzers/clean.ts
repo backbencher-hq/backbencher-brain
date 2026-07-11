@@ -149,7 +149,7 @@ export class RealCleanAnalyzer implements LanguageAnalyzer {
           relationships.push({
             source: activeFunction || "global",
             target: moduleName,
-            type: RelationshipType.DependsOn,
+            type: RelationshipType.References,
             confidence: 1.0,
             metadata: { cleanSpecific: true, isImportDependency: true },
           })
@@ -236,6 +236,7 @@ export class RealCleanAnalyzer implements LanguageAnalyzer {
           let paramCount = 0
           for (let j = lambdaIdx + 1; j < siblings.length; j++) {
             const sib = siblings[j]
+            if (!sib) continue
             if (sib.type === "operator" && (sib.text === "->" || sib.text === "=")) {
               bodyExpr = siblings[j + 1] || null
               break
@@ -364,6 +365,21 @@ export class RealCleanAnalyzer implements LanguageAnalyzer {
         exports.push({ name: sym.name, kind: sym.kind, range: sym.range, visibility: "public" })
       }
     }
+
+    // Post-loop: add contains for owned symbols
+    for (const s of symbols) {
+      const _owner = s.ownerName || s.scope
+      if (_owner) {
+        relationships.push({
+          source: _owner,
+          target: s.name,
+          type: RelationshipType.Contains,
+          confidence: 1.0,
+          metadata: {},
+        })
+      }
+    }
+
     return {
       language: "clean",
       symbols,

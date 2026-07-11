@@ -63,6 +63,14 @@ export class RealGroovyAnalyzer implements LanguageAnalyzer {
              range: this.getRange(node),
              metadata: { groovySpecific: true, isStatic },
           })
+          // DependsOn for imports
+          relationships.push({
+            source: currentPackage || filePath,
+            target: nameNode.text,
+            type: RelationshipType.References,
+            confidence: 0.9,
+            metadata: { isImportDep: true },
+          })
         }
       }
       // 3. Classes, Traits, Interfaces, Enums
@@ -84,25 +92,29 @@ export class RealGroovyAnalyzer implements LanguageAnalyzer {
           })
 
           // Extract Implements / Extends relationships (Traits / Superclasses)
-          const extendsClause = this.findChild(node, (n) => n.type === "super_interfaces" || n.type === "interfaces");
-          const superClass = this.findChild(node, (n) => n.type === "superclass");
+          const extendsClause = this.findChild(node, (n) => n.type === "super_interfaces" || n.type === "interfaces")
+          const superClass = this.findChild(node, (n) => n.type === "superclass")
           if (superClass) {
-            const scName = this.findChild(superClass, (n) => n.type === "type_identifier");
+            const scName = this.findChild(superClass, (n) => n.type === "type_identifier")
             if (scName) {
-              relationships.push({ source: className, target: scName.text, type: RelationshipType.Extends, metadata: {} });
+              relationships.push({ source: className, target: scName.text, type: RelationshipType.Extends, metadata: {} })
             }
           }
-          const extendsClause2 = this.findChild(node, (n) => n.type === "super_interfaces" || n.type === "interfaces")
           if (extendsClause) {
-             const typeIds = this.filterChildren(extendsClause, (n) => n.type === "type_identifier")
-             for (let i = 0; i < typeIds.length; i++) {
-                 relationships.push({
-                     source: className,
-                     target: typeIds[i].text,
-                     type: RelationshipType.Implements,
-                     metadata: {}
-                 })
-             }
+            // type_identifier may be nested under type_list
+            let typeIds = this.filterChildren(extendsClause, (n) => n.type === "type_identifier")
+            if (typeIds.length === 0) {
+              const typeList = this.findChild(extendsClause, (n) => n.type === "type_list")
+              if (typeList) typeIds = this.filterChildren(typeList, (n) => n.type === "type_identifier")
+            }
+            for (const tid of typeIds) {
+              relationships.push({
+                source: className,
+                target: tid.text,
+                type: RelationshipType.Implements,
+                metadata: {},
+              })
+            }
           }
 
           // FIX 5: Synthesize compile-time AST Annotations (@Slf4j, @Log, etc.)
@@ -144,14 +156,31 @@ export class RealGroovyAnalyzer implements LanguageAnalyzer {
             metadata: { groovySpecific: true, isSpockTest: nameNode.type === "string_literal" },
           })
           
-          // Map method to parent class
-          if (activeScope && activeScope !== "global") {
+          // Map method to parent class (skip constructors with same name as class)
+          if (activeScope && activeScope !== "global" && methodName !== activeScope) {
             relationships.push({
-               source: methodName,
-               target: activeScope,
-               type: RelationshipType.Uses, // belongs to
+               source: activeScope,
+               target: methodName,
+               type: RelationshipType.Contains,
                metadata: { belongsToClass: true }
             })
+          }
+          // Check for @Override annotation → Overrides relationship
+          const modifiers = this.findChild(node, (n) => n.type === "modifiers")
+          if (modifiers) {
+            const annotations = this.filterChildren(modifiers, (n) => n.type === "annotation" || n.type === "marker_annotation")
+            for (const ann of annotations) {
+              const annName = this.findChild(ann, (n) => n.type === "identifier")?.text
+              if (annName === "Override") {
+                relationships.push({
+                  source: activeScope,
+                  target: methodName,
+                  type: RelationshipType.Overrides,
+                  confidence: 0.9,
+                  metadata: { isOverride: true },
+                })
+              }
+            }
           }
         }
       }
@@ -261,7 +290,7 @@ export class RealGroovyAnalyzer implements LanguageAnalyzer {
         }
       }
       // 8. Constructor calls: new ClassName() → Instantiates
-      else if (node.type === "constructor_declaration") {
+      else if (node.type === "constructor_declaration" || node.type === "object_creation_expression") {
         const typeNode = this.findChild(node, (n) => n.type === "type_identifier" || n.type === "identifier")
         if (typeNode) {
           relationships.push({
@@ -269,7 +298,7 @@ export class RealGroovyAnalyzer implements LanguageAnalyzer {
             target: typeNode.text,
             type: RelationshipType.Instantiates,
             confidence: 0.95,
-            metadata: { isConstructor: true },
+            metadata: { isConstructor: node.type === "constructor_declaration", isObjectCreation: node.type === "object_creation_expression" },
           })
         }
       }
@@ -294,7 +323,7 @@ export class RealGroovyAnalyzer implements LanguageAnalyzer {
          }
       }
       // 8. Annotations (`@CompileStatic`, `@SpringBootApplication`, etc)
-      else if (node.type === "annotation") {
+      else if (node.type === "annotation" || node.type === "marker_annotation") {
          const nameNode = this.findChild(node, (n) => n.type === "identifier" || n.type === "scoped_identifier")
          if (nameNode) {
              symbols.push({
@@ -329,7 +358,12 @@ export class RealGroovyAnalyzer implements LanguageAnalyzer {
     }
     const uniqueRelationships = Array.from(uniqueRelMap.values())
 
-    for (var _gi = 0; _gi < uniqueSymbols.length; _gi++) { var gs = uniqueSymbols[_gi]; if (!gs.metadata?.synthetic && gs.visibility !== "private") { exports.push({ name: gs.name, kind: gs.kind, range: gs.range, visibility: "public" }); } }
+    for (let i = 0; i < uniqueSymbols.length; i++) {
+      const s = uniqueSymbols[i]
+      if (!s.metadata?.synthetic && s.visibility !== "private") {
+        exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: "public" })
+      }
+    }
     return {
       language: "groovy",
       symbols: uniqueSymbols,

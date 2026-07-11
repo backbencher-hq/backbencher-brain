@@ -174,7 +174,22 @@ export class RealJsonAnalyzer implements LanguageAnalyzer {
     };
     this.addSymbol(ctx, rootSymbol);
 
-    for (var _ji = 0; _ji < ctx.symbols.length; _ji++) { var js = ctx.symbols[_ji]; if (js.kind !== SymbolKind.Constant || js.name.startsWith("$")) { ctx.exports.push({ name: js.name, kind: js.kind, range: js.range, visibility: "public" }); } }
+    for (let i = 0; i < ctx.symbols.length; i++) { const s = ctx.symbols[i]; if (s.kind !== SymbolKind.Constant || s.name.startsWith("$")) { ctx.exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: "public" }); } }
+
+    // Post-loop: add contains for owned symbols
+    for (const s of ctx.symbols) {
+      const _owner = s.ownerName || s.scope
+      if (_owner) {
+        ctx.relationships.push({
+          source: _owner,
+          target: s.name,
+          type: RelationshipType.Contains,
+          confidence: 1.0,
+          metadata: {},
+        })
+      }
+    }
+
     return {
       symbols: ctx.symbols,
       relationships: ctx.relationships,

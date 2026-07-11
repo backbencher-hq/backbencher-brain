@@ -211,7 +211,13 @@ export class RealScalaAnalyzer implements LanguageAnalyzer {
     for (const fw in frameworksObj) metadata.detectedFrameworks!.push(fw)
     for (const pat in patternsObj) metadata.patterns!.push(pat)
 
-    
+    // Add Contains + DependsOn
+    for (const s of symbols) {
+      const _owner = s.ownerName || s.scope; if (_owner) relationships.push({ source: _owner, target: s.name, type: RelationshipType.Contains, confidence: 1.0, metadata: {} })
+    }
+    for (const imp of imports) {
+      relationships.push({ source: "root", target: imp.module || "", type: RelationshipType.References, confidence: 0.9, metadata: {} })
+    }
     
     return {
       symbols,

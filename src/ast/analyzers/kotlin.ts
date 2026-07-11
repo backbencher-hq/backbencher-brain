@@ -189,7 +189,40 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
     }
     // --- END KOTLIN CALL GRAPH EXTRACTION ---
 
-    for (var _ki = 0; _ki < symbols.length; _ki++) { var ks = symbols[_ki]; if (!ks.metadata?.isPhantom && ks.visibility !== "private" && (!ks.ownerName || ks.ownerKind === SymbolKind.Class)) { exports.push({ name: ks.name, kind: ks.kind, range: ks.range, visibility: ks.visibility || "public" }); } }
+    // Add Contains + Overrides + DependsOn
+    for (const s of symbols) {
+      const _owner = s.ownerName || s.scope
+      if (_owner) {
+        relationships.push({
+          source: _owner,
+          target: s.name,
+          type: RelationshipType.Contains,
+          confidence: 1.0,
+          metadata: { isContained: true },
+        })
+      }
+      // Overrides: methods with 'override' modifier
+      if (s.kind === SymbolKind.Method && s.metadata?.modifiers?.includes?.("override")) {
+        relationships.push({
+          source: s.ownerName || "root",
+          target: s.name,
+          type: RelationshipType.Overrides,
+          confidence: 0.9,
+          metadata: { isOverride: true },
+        })
+      }
+    }
+    for (const imp of imports) {
+      relationships.push({
+        source: "root",
+        target: imp.module || "",
+        type: RelationshipType.References,
+        confidence: 0.9,
+        metadata: { isImportDep: true },
+      })
+    }
+
+    for (let i = 0; i < symbols.length; i++) { const s = symbols[i]; if (!s.metadata?.isPhantom && s.visibility !== "private" && (!s.ownerName || s.ownerKind === SymbolKind.Class)) { exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility || "public" }); } }
     return {
       symbols,
       relationships,

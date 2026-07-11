@@ -157,24 +157,24 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
       if (node.type === "variable_assignment") {
         this.extractVariable(node, symbols, currentScope())
       } else if (node.type === "variable_expansion" || node.type === "simple_expansion") {
-        // references: $VAR, ${VAR}, $1, $@, $? — track variable usage
+        // uses: $VAR, ${VAR} — track variable usage
         const varName = node.text.replace(/^[\$]/, "").replace(/[{}]/g, "")
         if (varName && varName.trim() !== "" && !/^\d+$/.test(varName) && varName !== "@" && varName !== "*" && varName !== "?") {
           relationships.push({
-            source: currentScope() || "global",
+            source: currentScope() || "script",
             target: varName,
-            type: RelationshipType.References,
+            type: RelationshipType.Uses,
             confidence: 0.7,
             metadata: { isVariableReference: true, bashSpecific: true },
           })
         }
       } else if (node.type === "special_variable_name" && /^[0-9]+$|^[@*?#]$/.test(node.text.replace(/^\$/, ""))) {
-        // references: $1, $2, $@, $*, $? — positional/special params
+        // uses: $1, $2, $@, $*, $? — positional/special params
         const refName = node.text.replace(/^\$/, "")
         relationships.push({
-          source: currentScope() || "global",
+          source: currentScope() || "script",
           target: refName,
-          type: RelationshipType.References,
+          type: RelationshipType.Uses,
           confidence: 0.6,
           metadata: { isPositionalParam: true, bashSpecific: true },
         })
@@ -465,6 +465,20 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
       symbols.push(phantomSymbols[i])
     }
 
+    // Post-loop: add contains for owned symbols
+    for (const s of symbols) {
+      const _owner = s.ownerName || s.scope
+      if (_owner) {
+        relationships.push({
+          source: _owner,
+          target: s.name,
+          type: RelationshipType.Contains,
+          confidence: 1.0,
+          metadata: {},
+        })
+      }
+    }
+
     return {
       language: "bash",
       symbols,
@@ -507,7 +521,8 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
           range: this.nodeToRange(node),
           scope: scope,
           visibility: "public",
-          parameters: [], // Filled during post-processing
+          ownerName: "script",
+          parameters: [],
           metadata: { bashSpecific: true },
         })
         return // Break and exit so we only add it once
@@ -531,6 +546,7 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
         range: this.nodeToRange(node),
         scope: scope,
         visibility: "public",
+        ownerName: "script",
         parameters: [], // Filled during post-processing
         metadata: { bashSpecific: true },
       })
@@ -552,6 +568,7 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
               range: this.nodeToRange(child),
               scope: scope,
               visibility: "private",
+              ownerName: scope || "script",
               metadata: { bashSpecific: true, isLocal: true },
             })
             break
@@ -569,6 +586,7 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
           range: this.nodeToRange(child),
           scope: scope,
           visibility: "private",
+          ownerName: scope || "script",
           metadata: { bashSpecific: true, isLocal: true },
         })
       }
@@ -588,6 +606,7 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
           range: this.nodeToRange(node),
           scope: scope,
           visibility: isImplicitGlobal ? "public" : "private",
+          ownerName: scope || "script",
           metadata: { bashSpecific: true, isImplicitGlobal, inSubshell: scope.startsWith("subshell_") },
         })
         break
@@ -616,6 +635,7 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
               range: this.nodeToRange(child),
               scope: scope,
               visibility: "public",
+              ownerName: scope || "script",
               metadata: { isExported: true, bashSpecific: true },
             })
             break
@@ -634,6 +654,7 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
           range: this.nodeToRange(child),
           scope: scope,
           visibility: "public",
+          ownerName: scope || "script",
           metadata: { isExported: true, bashSpecific: true },
         })
       }
@@ -684,7 +705,7 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
         relationships.push({
           source: scope || "global",
           target: sourcePath,
-          type: RelationshipType.DependsOn,
+          type: RelationshipType.References,
           confidence: 1.0,
           metadata: { isSourceDependency: true, bashSpecific: true },
         })

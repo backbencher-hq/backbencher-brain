@@ -72,7 +72,7 @@ export class RealFsharpAnalyzer implements LanguageAnalyzer {
                 (n) => n.type === "identifier" && n.text === "interface",
               )
               const hasConcreteMembers = this.findDescendants(anonNode, (n) => n.type === "member_defn").length > 0
-              if (hasMemberSig && !hasInherits && !hasInterfaceImpl) {
+              if (hasMemberSig && !hasInherits && !hasInterfaceImpl && !hasConcreteMembers) {
                 kind = SymbolKind.Interface
                 isInterface = true
               } else if (hasInterfaceKeyword && !hasInherits && !hasConcreteMembers) {
@@ -184,6 +184,18 @@ export class RealFsharpAnalyzer implements LanguageAnalyzer {
           if (leftNode)
             nameNode = this.findChild(leftNode, (n) => n.type === "identifier" || n.type === "identifier_pattern")
         }
+        // Fallback for member_defn: method_or_prop_defn → property_or_ident → identifiers
+        if (!nameNode) {
+          const mopNode = this.findChild(node, (n) => n.type === "method_or_prop_defn")
+          if (mopNode) {
+            const propNode = this.findChild(mopNode, (n) => n.type === "property_or_ident")
+            if (propNode) {
+              // Get the method/property name (second identifier, e.g. "this.Speak" → "Speak")
+              const idents = this.filterChildren(propNode, (n) => n.type === "identifier")
+              nameNode = idents.length >= 2 ? idents[1] : idents[0]
+            }
+          }
+        }
         if (nameNode && nameNode.text) {
           const name = nameNode.text
           const isFunc = !!this.findChild(
@@ -196,6 +208,8 @@ export class RealFsharpAnalyzer implements LanguageAnalyzer {
           )
           const isMember = type === "member_defn"
           const hasMethodOrProp = !!this.findChild(node, (n) => n.type === "method_or_prop_defn")
+          // Check for override modifier (non-named keyword token in member_defn text)
+          const hasOverride = type === "member_defn" && !!(node.text && /^override\b/.test(node.text))
           let kind: SymbolKind
           if (isMember && hasMethodOrProp) {
             const propNameNode = this.findDescendant(node, (n) => n.type === "property_or_ident")
@@ -237,6 +251,19 @@ export class RealFsharpAnalyzer implements LanguageAnalyzer {
             isAsync,
             metadata: { nodeType: type },
           })
+          // Overrides relationship
+          if (hasOverride) {
+            const owner = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined
+            if (owner) {
+              relationships.push({
+                source: owner,
+                target: name,
+                type: RelationshipType.Overrides,
+                confidence: 0.9,
+                metadata: { nodeType: type, isOverride: true },
+              })
+            }
+          }
         }
       } else if (type === "additional_constr_defn") {
         const nameNode = this.findDescendant(node, (n) => n.type === "identifier" || n.type === "long_identifier")
@@ -350,6 +377,8 @@ export class RealFsharpAnalyzer implements LanguageAnalyzer {
         var openTarget = this.findDescendant(node, function(n) { return n.type === "long_identifier" || n.type === "identifier"; });
         if (openTarget && openTarget.text) {
           imports.push({ module: openTarget.text, items: ["*"], isDefault: false, range: this.nodeToRange(node) });
+          const owner = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined;
+          relationships.push({ source: owner || openTarget.text, target: openTarget.text, type: RelationshipType.References, confidence: 0.9, metadata: { nodeType: type, isOpen: true } });
         }
       } else if (type === "import_decl") {
         const targetNode = this.findChild(node, (n) => n.type === "long_identifier" || n.type === "identifier")
@@ -360,6 +389,8 @@ export class RealFsharpAnalyzer implements LanguageAnalyzer {
             isDefault: true,
             range: this.nodeToRange(node),
           })
+          const owner = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined;
+          relationships.push({ source: owner || targetNode.text, target: targetNode.text, type: RelationshipType.References, confidence: 0.9, metadata: { nodeType: type, isImport: true } });
         }
       } else if (type === "module_abbrev") {
         const children = this.filterChildren(node, (n) => n.type === "identifier" || n.type === "long_identifier")
@@ -378,10 +409,52 @@ export class RealFsharpAnalyzer implements LanguageAnalyzer {
             metadata: { nodeType: "module_abbrev" },
           })
         }
+      } else if (type === "brace_expression") {
+        // Record creation: { Name = value; Age = value }
+        const ownerName = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined
+        if (ownerName) {
+          const fieldInits = this.findDescendants(node, (n) => n.type === "field_initializer", 4)
+          if (fieldInits.length > 0) {
+            relationships.push({
+              source: ownerName,
+              target: "record_expression",
+              type: RelationshipType.Instantiates,
+              confidence: 0.7,
+              metadata: { nodeType: "brace_expression", isRecord: true, fieldCount: fieldInits.length },
+            })
+            for (const fi of fieldInits) {
+              const fieldId = this.findChild(fi, (n) => n.type === "long_identifier" || n.type === "identifier")
+              if (fieldId?.text) {
+                relationships.push({
+                  source: ownerName,
+                  target: fieldId.text,
+                  type: RelationshipType.Uses,
+                  confidence: 0.7,
+                  metadata: { nodeType: "field_initializer", isFieldAccess: true },
+                })
+              }
+            }
+          }
+        }
+      } else if (type === "dot_expression" || type === "property_or_ident") {
+        // this.Name, obj.Method — field/property access
+        const identifiers = this.filterChildren(node, (n) => n.type === "identifier")
+        if (identifiers.length >= 2) {
+          const ownerName = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined
+          if (ownerName) {
+            relationships.push({
+              source: ownerName,
+              target: node.text,
+              type: RelationshipType.Uses,
+              confidence: 0.6,
+              metadata: { nodeType: type, isFieldAccess: true },
+            })
+          }
+        }
       } else if (type === "app_expression" || type === "application_expression") {
         var fnNode = node.namedChild(0);
         if (fnNode) {
-          var fnName = fnNode.type === "long_identifier" || fnNode.type === "identifier" ? fnNode.text : fnNode.type === "dot_expression" ? fnNode.text : "";
+          var fnName = (fnNode.type === "long_identifier" || fnNode.type === "identifier" || fnNode.type === "long_identifier_or_op") ? fnNode.text : fnNode.type === "dot_expression" ? fnNode.text : "";
           if (fnName && fnName.length > 1) {
             var ownerName = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined;
             if (ownerName) {
@@ -410,7 +483,27 @@ export class RealFsharpAnalyzer implements LanguageAnalyzer {
       }
     }
 
-    for (var _ei = 0; _ei < symbols.length; _ei++) { var s = symbols[_ei]; if (!s.ownerName && s.kind !== SymbolKind.Variable) { exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: "public" }); } }
+    // Add Contains relationships: scope owner → owned symbols
+    for (const s of symbols) {
+      const _owner = s.ownerName || s.scope
+      if (_owner) {
+        relationships.push({
+          source: _owner,
+          target: s.name,
+          type: RelationshipType.Contains,
+          confidence: 1.0,
+          metadata: { nodeType: s.metadata?.nodeType || "symbol", isContained: true },
+        })
+      }
+    }
+
+    // Exports: all public non-variable symbols
+    for (const s of symbols) {
+      const isVariable = s.kind === SymbolKind.Variable
+      if (!isVariable) {
+        exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: "public" })
+      }
+    }
     return {
       language: "fsharp",
       symbols,

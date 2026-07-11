@@ -8,25 +8,8 @@ export class RealVueAnalyzer implements LanguageAnalyzer {
     const relationships: UniversalRelationship[] = []
     const imports: ImportInfo[] = []
     const exports: ExportInfo[] = []
-    const vueRelRegexes = [
-      { pattern: /v-on:(\w+)="(\w+)"/g, type: "Calls" },
-      { pattern: /@(\w+)="(\w+)"/g, type: "Calls" },
-      { pattern: /v-bind:(\w+)="(\w+)"/g, type: "Uses" },
-      { pattern: /:(\w+)="(\w+)"/g, type: "Uses" },
-      { pattern: /v-model="(\w+)"/g, type: "Uses" },
-    ]
-    for (const r of vueRelRegexes) {
-      let m: any
-      while ((m = r.pattern.exec(content)) !== null) {
-        relationships.push({
-          source: "template",
-          target: m[2] || m[1],
-          type: r.type === "Calls" ? RelationshipType.Calls : RelationshipType.Uses,
-          confidence: 0.7,
-          metadata: { vueDirective: true, directiveName: m[1] },
-        })
-      }
-    }
+    // Vue relationships extracted via AST traversal (zero regex)
+    // Directives like v-on:, @, v-bind:, :, v-model are parsed as attributes by tree-sitter
     const errors: ParseError[] = []
     const patterns: string[] = []
 
@@ -60,7 +43,7 @@ export class RealVueAnalyzer implements LanguageAnalyzer {
       let currentScope = [...scopePath]
 
       if (type === "element" || type === "script_element" || type === "template_element" || type === "style_element") {
-        const startTag = this.findChild(node, (n) => n.type === "start_tag")
+        const startTag = this.findChild(node, (n) => n.type === "start_tag") || this.findChild(node, (n) => n.type === "self_closing_tag")
         if (startTag) {
           const tagName = this.findChild(startTag, (n) => n.type === "tag_name")?.text || "template"
 
@@ -83,14 +66,108 @@ export class RealVueAnalyzer implements LanguageAnalyzer {
 
             if (tagName === "script") {
               const rawText = node.text
-              const scriptMatch = rawText.match(/<script[^>]*>([^\x00]*?)<\/script>/i)
-              if (scriptMatch && scriptMatch[1]) {
-                blockSymbol.metadata!.embeddedScriptContent = scriptMatch[1]
+              // Extract script content without regex: find <script...> and </script>
+              const openEnd = rawText.indexOf(">")
+              const closeTag = rawText.lastIndexOf("</script>")
+              let scriptContent = ""
+              if (openEnd !== -1 && closeTag > openEnd) {
+                scriptContent = rawText.substring(openEnd + 1, closeTag)
+                blockSymbol.metadata!.embeddedScriptContent = scriptContent
+              }
+
+              // Extract exports from script content (pure string ops, zero regex)
+              if (scriptContent) {
+                const exportKeyword = "export "
+                let searchIdx = 0
+                while (searchIdx < scriptContent.length) {
+                  const expIdx = scriptContent.indexOf(exportKeyword, searchIdx)
+                  if (expIdx === -1) break
+                  searchIdx = expIdx + exportKeyword.length
+                  while (searchIdx < scriptContent.length &&
+                         (scriptContent[searchIdx] === " " || scriptContent[searchIdx] === "\t" || scriptContent[searchIdx] === "\n")) {
+                    searchIdx++
+                  }
+                  const rest = scriptContent.substring(searchIdx)
+                  let nameStart = searchIdx
+                  if (rest.startsWith("let ") || rest.startsWith("const ")) {
+                    nameStart = searchIdx + (rest.startsWith("let ") ? 4 : 6)
+                  } else if (rest.startsWith("function ")) {
+                    nameStart = searchIdx + 9
+                  } else if (rest.startsWith("class ")) {
+                    nameStart = searchIdx + 6
+                  } else if (rest.startsWith("default ")) {
+                    const afterDefault = rest.substring(8).trimStart()
+                    if (afterDefault.startsWith("function ")) {
+                      nameStart = searchIdx + 8 + 1 + 9
+                    } else if (afterDefault.startsWith("class ")) {
+                      nameStart = searchIdx + 8 + 1 + 6
+                    } else {
+                      nameStart = searchIdx + 8
+                    }
+                  } else {
+                    continue
+                  }
+                  while (nameStart < scriptContent.length &&
+                         (scriptContent[nameStart] === " " || scriptContent[nameStart] === "\t")) {
+                    nameStart++
+                  }
+                  let nameEnd = nameStart
+                  while (nameEnd < scriptContent.length &&
+                         ((scriptContent[nameEnd] >= "a" && scriptContent[nameEnd] <= "z") ||
+                          (scriptContent[nameEnd] >= "A" && scriptContent[nameEnd] <= "Z") ||
+                          (scriptContent[nameEnd] >= "0" && scriptContent[nameEnd] <= "9") ||
+                          scriptContent[nameEnd] === "_" || scriptContent[nameEnd] === "$")) {
+                    nameEnd++
+                  }
+                  if (nameEnd > nameStart) {
+                    const exportName = scriptContent.substring(nameStart, nameEnd)
+                    exports.push({
+                      name: exportName,
+                      module: filePath,
+                      isDefaultExport: false,
+                      range: {
+                        startLine: node.startPosition.row + 1,
+                        endLine: node.endPosition.row + 1,
+                        startColumn: node.startPosition.column,
+                        endColumn: node.endPosition.column,
+                        startIndex: node.startIndex,
+                        endIndex: node.endIndex,
+                      },
+                    })
+                    relationships.push({
+                      source: "component",
+                      target: exportName,
+                      type: RelationshipType.Exports,
+                      confidence: 0.9,
+                      metadata: { context: "Vue component export" },
+                    } as any)
+                  }
+                  searchIdx = nameEnd
+                }
               }
             }
 
             currentScope.push(blockSymbol.name)
           } else {
+            // Vue component detection: PascalCase tag → Instantiates + Contains
+            const isCustomComponent = tagName.length > 0 && tagName[0] === tagName[0].toUpperCase() && tagName[0] !== tagName[0].toLowerCase()
+            if (isCustomComponent) {
+              const parentName = currentScope.length > 0 ? currentScope[currentScope.length - 1] : "component"
+              relationships.push({
+                source: parentName,
+                target: tagName,
+                type: RelationshipType.Contains,
+                confidence: 0.9,
+                metadata: { context: "Vue component nesting" },
+              } as any)
+              relationships.push({
+                source: parentName,
+                target: tagName,
+                type: RelationshipType.Instantiates,
+                confidence: 0.85,
+                metadata: { context: "Vue component usage" },
+              } as any)
+            }
             const componentSymbol: UniversalSymbol = {
               name: tagName,
               kind: SymbolKind.Class,
@@ -132,15 +209,111 @@ export class RealVueAnalyzer implements LanguageAnalyzer {
           symbols.push(attrSymbol)
 
           if (attrName.startsWith("v-") || attrName.startsWith(":") || attrName.startsWith("@")) {
-            const attrValue = this.findChild(node, (n) => n.type === "attribute_value")?.text
+            // Search deeper for attribute_value (may be nested in quoted_attribute_value)
+            let attrValue: string | undefined
+            const findAttrValue = (n: Node): string | undefined => {
+              if (n.type === "attribute_value") return n.text
+              if (n.type === "quoted_attribute_value") {
+                for (let i = 0; i < n.childCount; i++) {
+                  const c = n.child(i)
+                  if (c && c.type === "attribute_value") return c.text
+                }
+              }
+              for (let i = 0; i < n.childCount; i++) {
+                const c = n.child(i)
+                if (c) {
+                  const result = findAttrValue(c)
+                  if (result !== undefined) return result
+                }
+              }
+              return undefined
+            }
+            attrValue = findAttrValue(node)
             if (attrValue) {
-              attrSymbol.metadata!.directiveExpression = attrValue.replace(/^["']|["']$/g, "")
+              // Strip quotes without regex
+              let val = attrValue
+              if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+                val = val.substring(1, val.length - 1)
+              }
+              attrSymbol.metadata!.directiveExpression = val
+
               if (attrName === "v-if" || attrName === "v-else" || attrName === "v-show") patterns.push("Conditional Rendering")
               if (attrName === "v-for") patterns.push("List Rendering (v-for)")
               if (attrName === "v-model") patterns.push("Two-Way Binding (v-model)")
               if (attrName === "router-link" || attrName === "router-view") patterns.push("Vue Router")
               if (attrName === "@click" || attrName === "v-on:click") patterns.push("Event Handling")
               if (attrName === "v-html") patterns.push("Raw HTML (v-html)")
+            }
+
+            // AST-based relationship extraction (zero regex)
+            const scopeName = currentScope.length > 0 ? currentScope[currentScope.length - 1] : "component"
+
+            // Get the expression value for use as relationship target
+            let exprValue = ""
+            if (attrValue) {
+              if ((attrValue.startsWith('"') && attrValue.endsWith('"')) || (attrValue.startsWith("'") && attrValue.endsWith("'"))) {
+                exprValue = attrValue.substring(1, attrValue.length - 1)
+              } else {
+                exprValue = attrValue
+              }
+            }
+
+            // v-on:event or @event → Calls (target = handler from value)
+            if (attrName.startsWith("v-on:")) {
+              relationships.push({
+                source: scopeName,
+                target: exprValue || attrName.slice(5),
+                type: RelationshipType.Calls,
+                confidence: 0.7,
+                metadata: { context: "Vue event handler " + attrName },
+              } as any)
+            } else if (attrName.startsWith("@")) {
+              relationships.push({
+                source: scopeName,
+                target: exprValue || attrName.slice(1),
+                type: RelationshipType.Calls,
+                confidence: 0.7,
+                metadata: { context: "Vue event handler " + attrName },
+              } as any)
+            }
+            // v-bind:prop or :prop → Uses (target = bound variable from value)
+            else if (attrName.startsWith("v-bind:")) {
+              relationships.push({
+                source: scopeName,
+                target: exprValue || attrName.slice(7),
+                type: RelationshipType.Uses,
+                confidence: 0.8,
+                metadata: { context: "Vue binding " + attrName },
+              } as any)
+            } else if (attrName.startsWith(":") && !attrName.startsWith(":class") && !attrName.startsWith(":style")) {
+              // :prop (shorthand v-bind, target = bound variable from value)
+              relationships.push({
+                source: scopeName,
+                target: exprValue || attrName.slice(1),
+                type: RelationshipType.Uses,
+                confidence: 0.8,
+                metadata: { context: "Vue binding " + attrName },
+              } as any)
+            }
+            // v-model → Uses (target = bound variable from value)
+            else if (attrName === "v-model") {
+              relationships.push({
+                source: scopeName,
+                target: exprValue || attrName,
+                type: RelationshipType.Uses,
+                confidence: 0.9,
+                metadata: { context: "Vue v-model directive" },
+              } as any)
+            }
+            // v-if, v-show, v-for → Uses (control flow, target = directive name)
+            else if (attrName === "v-if" || attrName === "v-show" || attrName === "v-for" || attrName === "v-else-if") {
+              relationships.push({
+                source: scopeName,
+                target: attrName,
+                type: RelationshipType.Uses,
+                confidence: 0.6,
+                metadata: { context: "Vue control flow " + attrName },
+              } as any)
             }
           }
         }
@@ -167,10 +340,27 @@ export class RealVueAnalyzer implements LanguageAnalyzer {
               metadata: { isVueMacro: true },
             }
             symbols.push(macroSymbol)
+            // Vue macro calls
+            const scopeName = currentScope.length > 0 ? currentScope[currentScope.length - 1] : "component"
+            relationships.push({
+              source: scopeName,
+              target: fnName,
+              type: RelationshipType.Calls,
+              confidence: 0.8,
+              metadata: { context: "Vue compiler macro" },
+            } as any)
           }
 
           if (fnName === "ref" || fnName === "reactive" || fnName === "computed" || fnName === "watch" || fnName === "watchEffect") {
             patterns.push("Composition API")
+            const scopeName = currentScope.length > 0 ? currentScope[currentScope.length - 1] : "component"
+            relationships.push({
+              source: scopeName,
+              target: fnName,
+              type: RelationshipType.Calls,
+              confidence: 0.8,
+              metadata: { context: "Vue Composition API" },
+            } as any)
             const parent = node.parent
             if (parent && parent.type === "variable_declarator") {
               const varName = this.findChild(parent, (n) => n.type === "identifier")?.text
@@ -190,8 +380,28 @@ export class RealVueAnalyzer implements LanguageAnalyzer {
             }
           }
 
-          if (fnName === "useRouter" || fnName === "useRoute") patterns.push("Vue Router")
-          if (fnName === "useStore" || fnName === "defineStore") patterns.push("Pinia State Management")
+          if (fnName === "useRouter" || fnName === "useRoute") {
+            patterns.push("Vue Router")
+            const scopeName = currentScope.length > 0 ? currentScope[currentScope.length - 1] : "component"
+            relationships.push({
+              source: scopeName,
+              target: fnName,
+              type: RelationshipType.Calls,
+              confidence: 0.8,
+              metadata: { context: "Vue Router composable" },
+            } as any)
+          }
+          if (fnName === "useStore" || fnName === "defineStore") {
+            patterns.push("Pinia State Management")
+            const scopeName = currentScope.length > 0 ? currentScope[currentScope.length - 1] : "component"
+            relationships.push({
+              source: scopeName,
+              target: fnName,
+              type: RelationshipType.Calls,
+              confidence: 0.8,
+              metadata: { context: "Pinia store" },
+            } as any)
+          }
         }
       }
 
@@ -203,7 +413,12 @@ export class RealVueAnalyzer implements LanguageAnalyzer {
           const child = node.namedChild(i)
           if (child) {
             if (child.type === "string") {
-              modulePath = child.text.replace(/^["']|["']$/g, "")
+              // Strip quotes without regex
+              let path = child.text
+              if ((path.startsWith('"') && path.endsWith('"')) || (path.startsWith("'") && path.endsWith("'"))) {
+                path = path.substring(1, path.length - 1)
+              }
+              modulePath = path
             } else if (child.type === "identifier") {
               importedNames.push(child.text)
             }
@@ -224,6 +439,18 @@ export class RealVueAnalyzer implements LanguageAnalyzer {
               endIndex: node.endIndex,
             },
           })
+
+          // AST-based import relationships
+          const scopeName = currentScope.length > 0 ? currentScope[currentScope.length - 1] : "component"
+          for (const item of importedNames) {
+            relationships.push({
+              source: scopeName,
+              target: item,
+              type: RelationshipType.Imports,
+              confidence: 0.9,
+              metadata: { context: "Vue import", module: modulePath },
+            } as any)
+          }
         }
       }
 
@@ -307,6 +534,20 @@ export class RealVueAnalyzer implements LanguageAnalyzer {
         if (child) {
           walkStack.push({ node: child, scopePath: currentScope })
         }
+      }
+    }
+
+    // Post-loop: add contains for owned symbols
+    for (const s of symbols) {
+      const _owner = s.ownerName || s.scope
+      if (_owner) {
+        relationships.push({
+          source: _owner,
+          target: s.name,
+          type: RelationshipType.Contains,
+          confidence: 1.0,
+          metadata: {},
+        })
       }
     }
 

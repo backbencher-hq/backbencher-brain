@@ -262,7 +262,7 @@ export class RealCAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: scopeManager.getScopeName(),
               target: includePath,
-              type: RelationshipType.DependsOn,
+              type: RelationshipType.References,
               confidence: 1.0,
               metadata: { relationshipType: "include_dependency", isSystem: includePath.startsWith("<") },
             })
@@ -546,6 +546,20 @@ export class RealCAnalyzer implements LanguageAnalyzer {
     })(patterns)
 
     const insights: any[] = []
+
+    // Post-loop: add contains for owned symbols (struct→field, union→field, enum→constant)
+    for (const s of symbols) {
+      const _owner = s.ownerName || s.scope
+      if (_owner) {
+        relationships.push({
+          source: _owner,
+          target: s.name,
+          type: RelationshipType.Contains,
+          confidence: 1.0,
+          metadata: {},
+        })
+      }
+    }
 
     return {
       language: "c",

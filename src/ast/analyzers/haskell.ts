@@ -259,7 +259,21 @@ export class RealHaskellAnalyzer implements LanguageAnalyzer {
       })
     }
 
-    if (ctx.exports.length === 0) { for (var _hi = 0; _hi < ctx.symbols.length; _hi++) { var hs = ctx.symbols[_hi]; if (!hs.ownerName || hs.ownerKind === SymbolKind.Module) { ctx.exports.push({ name: hs.name, kind: hs.kind, range: hs.range, visibility: "public" }); } } }
+    // Post-loop: add contains for owned symbols
+    for (const s of ctx.symbols) {
+      const _owner = s.ownerName || s.scope
+      if (_owner) {
+        ctx.relationships.push({
+          source: _owner,
+          target: s.name,
+          type: RelationshipType.Contains,
+          confidence: 1.0,
+          metadata: {},
+        })
+      }
+    }
+
+    if (ctx.exports.length === 0) { for (let i = 0; i < ctx.symbols.length; i++) { const s = ctx.symbols[i]; if (!s.ownerName || s.ownerKind === SymbolKind.Module) { ctx.exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: "public" }); } } }
     return {
       language: "haskell",
       symbols: ctx.symbols,
@@ -388,6 +402,14 @@ export class RealHaskellAnalyzer implements LanguageAnalyzer {
         isTypeOnly: false,
         range: this.nodeToRange(node),
         metadata: { isQualified, alias: mod.alias, isHiding: mod.isHiding },
+      })
+      // DependsOn for imports
+      ctx.relationships.push({
+        source: mod.name,
+        target: mod.name,
+        type: RelationshipType.References,
+        confidence: 0.9,
+        metadata: { isHaskellImport: true },
       })
 
       if (mod.name.indexOf("Scotty") !== -1) ctx.frameworks["Scotty"] = true
@@ -552,7 +574,7 @@ export class RealHaskellAnalyzer implements LanguageAnalyzer {
 
     const currentScope = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1] : undefined
     const superClasses = this.collectNamedChildrenByType(node, ["type", "type_constructor", "tycon"]);
-    for (var _si = 1; _si < superClasses.length; _si++) { if (superClasses[_si]) { ctx.relationships.push({ source: name, target: superClasses[_si].text, type: RelationshipType.Extends, metadata: { isSuperclass: true } }); } }
+    for (let i = 1; i < superClasses.length; i++) { if (superClasses[i]) { ctx.relationships.push({ source: name, target: superClasses[i].text, type: RelationshipType.Extends, metadata: { isSuperclass: true } }); } }
     ctx.symbols.push({
       name,
       kind: SymbolKind.Interface,

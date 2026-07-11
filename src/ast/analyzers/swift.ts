@@ -193,6 +193,33 @@ export class RealSwiftAnalyzer implements LanguageAnalyzer {
       metadata.detectedFrameworks!.push(f)
     }
 
+    // Post-loop: add contains (parent→child) and references (import deps)
+    for (const s of symbols) {
+      const _owner = s.ownerName || s.scope
+      if (_owner) {
+        relationships.push({
+          type: RelationshipType.Contains,
+          source: _owner,
+          target: s.name,
+          isExternal: false,
+          weight: 1,
+          metadata: {},
+        })
+      }
+    }
+    for (const imp of imports) {
+      if (imp.module) {
+        relationships.push({
+          type: RelationshipType.References,
+          source: "root",
+          target: imp.module,
+          isExternal: true,
+          weight: 0.9,
+          metadata: { importModule: imp.module },
+        })
+      }
+    }
+
     return {
       symbols,
       relationships,
@@ -366,6 +393,7 @@ export class RealSwiftAnalyzer implements LanguageAnalyzer {
 
     const meta: Record<string, any> = { hasGenerics }
     if (isValueType) meta.isValueType = true
+    if (kind === SymbolKind.Interface) meta.isProtocol = true
 
     let rawType = ""
     for (let i = 0; i < node.childCount; i++) {
@@ -393,7 +421,7 @@ export class RealSwiftAnalyzer implements LanguageAnalyzer {
     for (let i = 0; i < node.childCount; i++) {
       const c = node.child(i)
       if (c && (c.type === "type_inheritance_clause" || c.type === "inheritance_specifier" || c.type === "protocol_inheritance_clause")) {
-        this.extractInheritance(c, relationships, symbol)
+        this.extractInheritance(c, relationships, symbol, symbols)
       }
     }
 
@@ -404,9 +432,18 @@ export class RealSwiftAnalyzer implements LanguageAnalyzer {
     inheritanceClause: Node,
     relationships: UniversalRelationship[],
     symbol: UniversalSymbol,
+    symbols: UniversalSymbol[],
   ) {
     symbol.metadata = symbol.metadata || {}
     symbol.metadata.inheritance = symbol.metadata.inheritance || []
+
+    // Build a set of known protocol names for accurate extends vs implements
+    const protocolNames = new Set<string>()
+    for (const s of symbols) {
+      if (s.kind === SymbolKind.Interface || s.metadata?.isProtocol) {
+        protocolNames.add(s.name)
+      }
+    }
 
     for (let i = 0; i < inheritanceClause.childCount; i++) {
       const child = inheritanceClause.child(i)
@@ -433,9 +470,13 @@ export class RealSwiftAnalyzer implements LanguageAnalyzer {
         }
 
         symbol.metadata.inheritance.push(name)
-        const relType = (symbol.kind === SymbolKind.Class || symbol.kind === SymbolKind.Actor) && i === 0
-          ? RelationshipType.Extends
-          : RelationshipType.Implements
+        // Determine extends vs implements by checking if target is a known protocol
+        const isProtocol = protocolNames.has(name)
+        const relType = isProtocol
+          ? RelationshipType.Implements
+          : (symbol.kind === SymbolKind.Class || symbol.kind === SymbolKind.Actor) && i === 0
+            ? RelationshipType.Extends
+            : RelationshipType.Implements
         relationships.push({
           type: relType,
           source: symbol.name,
@@ -520,6 +561,32 @@ export class RealSwiftAnalyzer implements LanguageAnalyzer {
     if (throws) meta.throws = true
 
     const symbol = this.createSymbol(nameNode.text, kind, nameNode, parent, symbols, meta, vis)
+
+    // Check for override keyword → Overrides relationship
+    let isOverride = false
+    for (let i = 0; i < node.childCount; i++) {
+      const c = node.child(i)
+      if (c && c.type === "modifiers") {
+        for (let j = 0; j < c.childCount; j++) {
+          const mod = c.child(j)
+          if (mod && (mod.text === "override" || mod.type === "override_keyword")) {
+            isOverride = true
+            break
+          }
+        }
+      }
+      if (isOverride) break
+    }
+    if (isOverride && parent) {
+      relationships.push({
+        type: RelationshipType.Overrides,
+        source: symbol.name,
+        target: symbol.name, // The overridden method has the same name
+        isExternal: true,
+        weight: 0.8,
+        metadata: { overriddenIn: parent.name },
+      })
+    }
 
     let foundArrow = false
     for (let i = 0; i < node.childCount; i++) {

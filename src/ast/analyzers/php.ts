@@ -370,8 +370,19 @@ export class RealPhpAnalyzer implements LanguageAnalyzer {
       )
     }
 
-    
-    
+    // Add Contains relationships for owned symbols
+    for (const s of ctx.symbols) {
+      if (s.ownerName) {
+        ctx.relationships.push({
+          source: s.ownerName,
+          target: s.name,
+          type: RelationshipType.Contains,
+          confidence: 1.0,
+          metadata: { isContained: true },
+        })
+      }
+    }
+
     return {
       language: "php",
       symbols: ctx.symbols,

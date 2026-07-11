@@ -85,7 +85,9 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
             },
           })
           currentScope.push(fnName)
-          if (isExported_) exports.push({ name: fnName, kind: SymbolKind.Function })
+          if (isExported_) {
+            exports.push({ name: fnName, kind: SymbolKind.Function })
+          }
         }
       }
 
@@ -169,8 +171,8 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
           })
           if (currentScope.length > 0) {
             relationships.push({
-              fromSymbol: currentScope[currentScope.length - 1],
-              toSymbol: varName,
+              source: currentScope[currentScope.length - 1],
+              target: varName,
               type: RelationshipType.Contains,
               metadata: {},
             })
@@ -455,12 +457,25 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
           if (argsNode) {
             const strNode = this.anyChild(argsNode, (n) => n.type === "string" || n.type === "string_content")
             if (strNode) {
-              const importTarget = strNode.text.replace(/^["']|["']$/g, "")
+              // Strip quotes without regex
+              let importTarget = strNode.text
+              if ((importTarget.startsWith('"') && importTarget.endsWith('"')) || (importTarget.startsWith("'") && importTarget.endsWith("'"))) {
+                importTarget = importTarget.substring(1, importTarget.length - 1)
+              }
               imports.push({
                 module: importTarget,
                 isDefaultImport: false,
                 range: this.nodeRange(node),
               })
+              // Import relationship
+              const scopeName = currentScope.length > 0 ? currentScope[currentScope.length - 1] : "global"
+              relationships.push({
+                source: scopeName,
+                target: importTarget,
+                type: RelationshipType.Imports,
+                confidence: 0.9,
+                metadata: { zigImport: true },
+              } as any)
               if (fnName === "@cImport") {
                 symbols.push({
                   name: importTarget,
@@ -547,8 +562,8 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
           })
           if (currentScope.length > 0) {
             relationships.push({
-              fromSymbol: currentScope[currentScope.length - 1],
-              toSymbol: fieldName,
+              source: currentScope[currentScope.length - 1],
+              target: fieldName,
               type: RelationshipType.Contains,
               metadata: {},
             })
@@ -634,7 +649,7 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
       // ─── IDENTIFIER (type reference, PascalCase) ───
       if (type === "identifier") {
         const identText = node.text
-        if (identText && identText.length > 0 && identText.length < 80 && !identText.match(/^\d/)) {
+        if (identText && identText.length > 0 && identText.length < 80 && !(identText[0] >= "0" && identText[0] <= "9")) {
           if (identText[0] === identText[0].toUpperCase() && identText[0] !== identText[0].toLowerCase()) {
             symbols.push({
               name: identText,
@@ -683,6 +698,42 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
           walkStack.push({ node: child, scopePath: currentScope })
         }
       }
+    }
+
+    // Post-loop: add contains for owned symbols and references for imports
+    for (const s of symbols) {
+      const _owner = s.ownerName || s.scope
+      if (_owner) {
+        relationships.push({
+          source: _owner,
+          target: s.name,
+          type: RelationshipType.Contains,
+          confidence: 1.0,
+          metadata: {},
+        })
+      }
+    }
+    for (const imp of imports) {
+      if (imp.module) {
+        relationships.push({
+          source: "root",
+          target: imp.module,
+          type: RelationshipType.References,
+          isExternal: true,
+          weight: 0.9,
+          metadata: { importModule: imp.module },
+        })
+      }
+    }
+    // Add export relationships from the exports array
+    for (const exp of exports) {
+      relationships.push({
+        source: "module",
+        target: exp.name,
+        type: RelationshipType.Exports,
+        confidence: 0.9,
+        metadata: { zigExport: true },
+      } as any)
     }
 
     return {

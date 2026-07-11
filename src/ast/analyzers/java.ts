@@ -121,6 +121,14 @@ export class RealJavaAnalyzer implements LanguageAnalyzer {
             metadata: { isWildcard: isAsterisk, isStatic }
           })
           this.detectFrameworksFromImport(moduleName, frameworks)
+          // DependsOn for imports
+          relationships.push({
+            source: currentPackage || "root",
+            target: moduleName,
+            type: RelationshipType.References,
+            confidence: 0.9,
+            metadata: { isJavaImport: true, isWildcard: isAsterisk },
+          })
         }
       }
 
@@ -593,7 +601,29 @@ export class RealJavaAnalyzer implements LanguageAnalyzer {
       if (hasSpringCore) finalFrameworks.push("spring_core")
     }
 
-    for (var _ji = 0; _ji < symbols.length; _ji++) { var js = symbols[_ji]; if (!js.metadata?.isPhantom && js.visibility === "public" && (!js.ownerName || js.ownerKind === SymbolKind.Class)) { exports.push({ name: js.name, kind: js.kind, range: js.range, visibility: js.visibility }); } }
+    // Add Contains relationships: owner → owned symbols
+    for (const s of symbols) {
+      const _owner = s.ownerName || s.scope
+      if (_owner) {
+        relationships.push({
+          source: _owner,
+          target: s.name,
+          type: RelationshipType.Contains,
+          confidence: 1.0,
+          metadata: { isContained: true },
+        })
+      }
+    }
+
+    // Add Uses relationships for field accesses (this.name, obj.method)
+    this.collectFieldAccessUses(rootNode, relationships, symbols)
+
+    for (let i = 0; i < symbols.length; i++) {
+      const s = symbols[i]
+      if (!s.metadata?.isPhantom && s.visibility === "public" && (!s.ownerName || s.ownerKind === SymbolKind.Class)) {
+        exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility })
+      }
+    }
     return {
       symbols,
       relationships,
@@ -859,6 +889,41 @@ export class RealJavaAnalyzer implements LanguageAnalyzer {
     return results
   }
 
+  /**
+   * Collect Uses relationships from field_access expressions (this.name, obj.method)
+   */
+  private collectFieldAccessUses(
+    rootNode: Node,
+    relationships: UniversalRelationship[],
+    symbols: UniversalSymbol[],
+  ) {
+    const stack = [rootNode]
+    const seen = new Set<string>()
+    while (stack.length > 0) {
+      const node = stack.pop()!
+      if (node.type === "field_access") {
+        const parts = node.text.split(".")
+        if (parts.length >= 2) {
+          const key = node.text
+          if (!seen.has(key)) {
+            seen.add(key)
+            relationships.push({
+              source: parts[0],
+              target: parts[parts.length - 1],
+              type: RelationshipType.Uses,
+              confidence: 0.6,
+              metadata: { isFieldAccess: true },
+            })
+          }
+        }
+      }
+      for (let i = node.namedChildCount - 1; i >= 0; i--) {
+        const child = node.namedChild(i)
+        if (child) stack.push(child)
+      }
+    }
+  }
+
   private childText(node: Node, type: string): string | null {
     const child = this.findChildByType(node, type)
     return child ? child.text : null
@@ -1019,10 +1084,76 @@ export class RealJavaAnalyzer implements LanguageAnalyzer {
   }
 
   private isJavaBuiltin(call: string): boolean {
-    const builtins = ["System.out.println", "System.out.print", "System.err.println", "toString", "hashCode", "equals", "getClass", "notify", "notifyAll", "wait"]
+    // Exact builtin patterns (common JDK calls with known full paths)
+    const builtins = [
+      "System.out.println", "System.out.print", "System.out.printf",
+      "System.err.println", "System.err.print",
+      "System.exit", "System.gc", "System.currentTimeMillis",
+      "System.nanoTime", "System.getProperty", "System.getenv",
+      "System.identityHashCode", "System.arraycopy",
+      "toString", "hashCode", "equals", "getClass", "notify", "notifyAll", "wait",
+      "clone", "finalize",
+    ]
     for (let i = 0; i < builtins.length; i++) {
-       if (builtins[i] === call) return true
+      if (builtins[i] === call) return true
     }
+    // Prefix-based stdlib filtering: first segment identifies the class/package.
+    // These are unambiguous — java.*, javax.*, kotlin.*, and common JDK classes.
+    const firstDot = call.indexOf(".")
+    const root = firstDot > 0 ? call.slice(0, firstDot) : call
+    const STDLIB_ROOTS = new Set([
+      // java.lang
+      "System", "String", "Integer", "Long", "Double", "Float", "Boolean",
+      "Byte", "Short", "Character", "Math", "StrictMath", "Object", "Class",
+      "Thread", "Runnable", "Runtime", "Process", "ProcessBuilder",
+      "Throwable", "Error", "Exception", "StackTraceElement",
+      "Enum", "Void", "Compiler", "Package",
+      // java.util
+      "ArrayList", "LinkedList", "HashMap", "HashSet", "TreeMap", "TreeSet",
+      "LinkedHashMap", "LinkedHashSet", "WeakHashMap", "IdentityHashMap",
+      "Collections", "Arrays", "Objects", "Optional", "OptionalInt",
+      "OptionalLong", "OptionalDouble", "Stream", "Collectors", "Comparator",
+      "Iterator", "ListIterator", "Spliterator", "Random", "UUID",
+      "Date", "Calendar", "TimeZone", "Locale", "Currency",
+      "Base64", "Scanner", "Formatter", "StringJoiner",
+      "AbstractList", "AbstractMap", "AbstractSet", "AbstractCollection",
+      "EnumMap", "EnumSet", "Queue", "Deque", "Stack", "Vector",
+      "Hashtable", "Properties", "BitSet", "Dictionary",
+      "List", "Map", "Set", "Collection", "Iterable",
+      // java.io / java.nio
+      "File", "Files", "Path", "Paths", "InputStream", "OutputStream",
+      "Reader", "Writer", "BufferedReader", "BufferedWriter",
+      "FileInputStream", "FileOutputStream", "FileReader", "FileWriter",
+      "ByteArrayInputStream", "ByteArrayOutputStream",
+      "StringReader", "StringWriter", "PrintWriter", "PrintStream",
+      "IOException", "FileNotFoundException", "EOFException",
+      // java.net / java.sql / javax
+      "URL", "URI", "HttpURLConnection", "URLEncoder", "URLDecoder",
+      "Connection", "DriverManager", "ResultSet", "Statement",
+      "PreparedStatement", "SQLException", "DataSource",
+      "javax", "jakarta", "org", "com",
+      // kotlin stdlib
+      "kotlin", "Unit", "Nothing", "Any", "Int", "String",
+      // Common JDK prefixes
+      "java", "jdk", "sun",
+      // Logger frameworks (always stdlib when called by these names)
+      "Logger", "LoggerFactory", "LogManager", "Level", "LogRecord",
+      "Marker", "MDC", "NDC",
+      // Common annotations (never architectural)
+      "Override", "Deprecated", "SuppressWarnings", "SafeVarargs",
+      "FunctionalInterface", "Nullable", "NotNull", "NonNls",
+      "Test", "Before", "After", "BeforeClass", "AfterClass", "Ignore",
+      "RunWith", "Suite", "Parameterized",
+      // org.slf4j / logging
+      "slf4j", "log4j", "logback",
+    ])
+    // Split dotted call and check every segment prefix
+    const segments = call.split(".")
+    for (const seg of segments) {
+      if (STDLIB_ROOTS.has(seg)) return true
+    }
+    // If the entire call itself (no dots) matches a stdlib root
+    if (STDLIB_ROOTS.has(call)) return true
     return false
   }
 

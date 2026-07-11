@@ -138,6 +138,20 @@ export class RealLuaAnalyzer implements LanguageAnalyzer {
 
     
     
+    // Post-loop: add contains for owned symbols
+    for (const s of ctx.symbols) {
+      const _owner = s.ownerName || s.scope || "global"
+      if (_owner) {
+        ctx.relationships.push({
+          source: _owner,
+          target: s.name,
+          type: RelationshipType.Contains,
+          confidence: 1.0,
+          metadata: {},
+        })
+      }
+    }
+
     return {
       language: "lua",
       symbols: ctx.symbols,
@@ -176,16 +190,19 @@ export class RealLuaAnalyzer implements LanguageAnalyzer {
 
     switch (node.type) {
       case "function_definition":
-      case "function_declaration": // Tree-sitter variations
+      case "function_declaration":
+      case "function_definition_statement":
         this.extractFunction(node, currentScopeStr, ctx)
         break
 
       case "local_function_declaration":
+      case "local_function_definition_statement":
         this.extractLocalFunction(node, currentScopeStr, ctx)
         break
 
       case "assignment_statement":
       case "variable_declaration":
+      case "variable_assignment":
         this.extractAssignment(node, currentScopeStr, ctx)
         break
 
@@ -200,6 +217,7 @@ export class RealLuaAnalyzer implements LanguageAnalyzer {
 
       case "function_call":
       case "call_expression":
+      case "call":
         this.processFunctionCall(node, currentScopeStr, ctx)
         break
 
@@ -280,14 +298,13 @@ export class RealLuaAnalyzer implements LanguageAnalyzer {
   }
 
   private extractAssignment(node: Node, scope: string, ctx: LuaContext) {
-    const varList = node.childForFieldName("name_list") || this.findChildByType(node, "variable_list")
+    const varList = node.childForFieldName("name_list") || this.findChildByType(node, "variable_list") || this.findChildByType(node, "name_list")
     if (!varList) return
 
-    // Shallow check just for the declared targets
     for (let i = 0; i < varList.namedChildCount; i++) {
       const vNode = varList.namedChild(i)
-      if (vNode && (vNode.type === "identifier" || vNode.type === "dot_index_expression")) {
-        const name = vNode.text
+      if (vNode && (vNode.type === "identifier" || vNode.type === "dot_index_expression" || vNode.type === "variable")) {
+        const name = vNode.type === "variable" ? (this.findChildByType(vNode, "identifier")?.text || vNode.text) : vNode.text
         ctx.symbols.push({
           name,
           kind: SymbolKind.Variable,
@@ -307,8 +324,8 @@ export class RealLuaAnalyzer implements LanguageAnalyzer {
 
     for (let i = 0; i < varList.namedChildCount; i++) {
       const vNode = varList.namedChild(i)
-      if (vNode && vNode.type === "identifier") {
-        const name = vNode.text
+      if (vNode && (vNode.type === "identifier" || vNode.type === "variable")) {
+        const name = vNode.type === "variable" ? (this.findChildByType(vNode, "identifier")?.text || vNode.text) : vNode.text
         ctx.symbols.push({
           name,
           kind: SymbolKind.Variable,
@@ -371,6 +388,7 @@ export class RealLuaAnalyzer implements LanguageAnalyzer {
   private processFunctionCall(node: Node, scope: string, ctx: LuaContext) {
     const target =
       node.childForFieldName("function") ||
+      this.findChildByType(node, "variable") ||
       this.findChildByType(node, "identifier") ||
       this.findChildByType(node, "dot_index_expression")
     if (!target) return

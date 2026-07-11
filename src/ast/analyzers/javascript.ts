@@ -84,23 +84,30 @@ export class RealJavaScriptAnalyzer implements LanguageAnalyzer {
 
             const heritageNode = this.findChildByType(node, "class_heritage")
             if (heritageNode) {
-              let firstExtends = true
+              const isExtends = heritageNode.text.includes("extends")
               for (let i = 0; i < heritageNode.namedChildCount; i++) {
                 const hChild = heritageNode.namedChild(i)
                 if (!hChild) continue
-                if (hChild.type === "extends_clause" || hChild.type === "implements_clause") {
+                // Direct identifier (newer grammar) or extends_clause/implements_clause (older)
+                if (hChild.type === "identifier" || hChild.type === "type_identifier") {
+                  relationships.push({
+                    source: name,
+                    target: hChild.text,
+                    type: isExtends ? RelationshipType.Extends : RelationshipType.Implements,
+                    confidence: 1.0,
+                    metadata: { javascriptSpecific: true },
+                  })
+                } else if (hChild.type === "extends_clause" || hChild.type === "implements_clause") {
                   for (let j = 0; j < hChild.namedChildCount; j++) {
                     const typeNode = hChild.namedChild(j)
                     if (typeNode && (typeNode.type === "identifier" || typeNode.type === "type_identifier")) {
-                      const isExtends = hChild.type === "extends_clause" && firstExtends
                       relationships.push({
                         source: name,
                         target: typeNode.text,
-                        type: isExtends ? RelationshipType.Extends : RelationshipType.Implements,
+                        type: hChild.type === "extends_clause" ? RelationshipType.Extends : RelationshipType.Implements,
                         confidence: 1.0,
-                        metadata: { javascriptSpecific: true, type: hChild.type },
+                        metadata: { javascriptSpecific: true },
                       })
-                      if (isExtends) firstExtends = false
                     }
                   }
                 }
@@ -123,12 +130,22 @@ export class RealJavaScriptAnalyzer implements LanguageAnalyzer {
               range: this.nodeToRange(node),
               scope: scope.join("."),
               visibility: "public",
-              metadata: { javascriptSpecific: true, isGenerator: node.type === "generator_function_declaration", isAsync, isAsync: false },
+              metadata: { javascriptSpecific: true, isGenerator: node.type === "generator_function_declaration", isAsync },
             }
             symbols.push(sym)
             symbolMap.set(fqn, sym)
             nextScope.push(name)
             nextIsClassScope = false
+            // Contains + potential Overrides: if this function is inside a class
+            if (isClassScope && scope.length > 0) {
+              relationships.push({
+                source: scope[scope.length - 1],
+                target: name,
+                type: RelationshipType.Contains,
+                confidence: 1.0,
+                metadata: { javascriptSpecific: true, isMember: true },
+              })
+            }
           }
           break
         }
@@ -173,6 +190,16 @@ export class RealJavaScriptAnalyzer implements LanguageAnalyzer {
             symbolMap.set(fqn, sym)
             nextScope.push(name)
             nextIsClassScope = false
+            // Contains for class methods
+            if (isClassScope && scope.length > 0) {
+              relationships.push({
+                source: scope[scope.length - 1],
+                target: name,
+                type: RelationshipType.Contains,
+                confidence: 1.0,
+                metadata: { javascriptSpecific: true, isMember: true },
+              })
+            }
           }
           break
         }
@@ -492,11 +519,11 @@ export class RealJavaScriptAnalyzer implements LanguageAnalyzer {
               range: this.nodeToRange(node),
               metadata: { javascriptSpecific: true, type: "import" }
             })
-            // Create a relationship for ES6 imports too
+            // Create a relationship for ES6 imports
             relationships.push({
                source: scope.join(".") || "global",
                target: srcPath,
-               type: RelationshipType.Uses,
+               type: RelationshipType.References,
                confidence: 1.0,
                metadata: { javascriptSpecific: true, isImport: true }
             })

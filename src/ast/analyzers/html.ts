@@ -201,8 +201,8 @@ export class RealHtmlAnalyzer implements LanguageAnalyzer {
             if (attributes["alt"]) imgWithAltCount++
             if (attributes["srcset"]) {
               const candidates = attributes["srcset"].split(",");
-              for (var _ci = 0; _ci < candidates.length; _ci++) {
-                var srcUrl = candidates[_ci].trim().split(/\s+/)[0];
+              for (let i = 0; i < candidates.length; i++) {
+                const srcUrl = candidates[i].trim().split(/\s+/)[0];
                 if (srcUrl) { imports.push({ module: srcUrl, items: ["*"], isDefaultImport: true, isNamespaceImport: false, range, metadata: { isResponsiveImage: true } }); }
               }
             }
@@ -366,7 +366,22 @@ export class RealHtmlAnalyzer implements LanguageAnalyzer {
     const architecturalInsights: string[] = []
     for (const insight in insights) architecturalInsights.push(insight)
 
-    for (var _hi = 0; _hi < symbols.length; _hi++) { var hs = symbols[_hi]; if (!hs.metadata?.isClass) { exports.push({ name: hs.name, kind: hs.kind, range: hs.range, visibility: "public" }); } }
+    for (let i = 0; i < symbols.length; i++) { const s = symbols[i]; if (!s.metadata?.isClass) { exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: "public" }); } }
+
+    // Post-loop: add contains for owned symbols
+    for (const s of symbols) {
+      const _owner = s.ownerName || s.scope
+      if (_owner) {
+        relationships.push({
+          source: _owner,
+          target: s.name,
+          type: RelationshipType.Contains,
+          confidence: 1.0,
+          metadata: {},
+        })
+      }
+    }
+
     return {
       language: "html",
       symbols,

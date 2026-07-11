@@ -98,6 +98,14 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
             range: this.nodeToRange(node),
             isTypeOnly: false,
           })
+          // depends: using directive = compile-time dependency
+          relationships.push({
+            source: "global",
+            target: text,
+            type: RelationshipType.References,
+            confidence: 0.9,
+            metadata: { isUsingDirective: true }
+          })
 
           const lowerText = text.toLowerCase()
           if (lowerText.startsWith("system.linq")) patterns["LINQ"] = true
@@ -169,7 +177,7 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source,
               target: "Service",
-              type: RelationshipType.DependsOn,
+              type: RelationshipType.References,
               metadata: { isDependencyInjection: true, lifetime },
             })
           }
@@ -286,10 +294,11 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
             const baseType = baseList.namedChild(i)
             if (baseType) {
               baseClasses.push(baseType.text)
+              const isInterfaceBase = baseType.text.startsWith("I") && baseType.text.length > 1 && baseType.text[1] === baseType.text[1].toUpperCase()
               relationships.push({
                 source: fullName,
                 target: baseType.text,
-                type: stringIncludes(type, "interface")
+                type: isInterfaceBase
                   ? RelationshipType.Implements
                   : RelationshipType.Extends,
                 metadata: {},
@@ -335,8 +344,19 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
         const tableAttr = findTableAttr(attributes)
         if (tableAttr) {
             frameworks["Entity Framework"] = true
-            const tableNameMatch = tableAttr.match(/Table\(\s*"([^"]+)"\s*\)/)
-            const tableName = tableNameMatch ? tableNameMatch[1] : rawName
+            // Extract table name from [Table("name")] — pure string ops
+            let tableName = rawName
+            const tableIdx = tableAttr.indexOf("Table(")
+            if (tableIdx !== -1) {
+              const afterTable = tableAttr.substring(tableIdx + 6)
+              const quoteIdx = afterTable.indexOf('"')
+              if (quoteIdx !== -1) {
+                const endQuoteIdx = afterTable.indexOf('"', quoteIdx + 1)
+                if (endQuoteIdx !== -1) {
+                  tableName = afterTable.substring(quoteIdx + 1, endQuoteIdx)
+                }
+              }
+            }
             relationships.push({
                 source: fullName,
                 target: tableName,
@@ -533,9 +553,43 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
             genericTypes: genericTypes.length > 0 ? genericTypes : undefined
           },
         })
+        // Push override relationship
+        if (isOverride && parentContext?.name) {
+          relationships.push({
+            source: `${parentContext.name}.${name}`,
+            target: name,
+            type: RelationshipType.Overrides,
+            confidence: 0.9,
+            metadata: { isOverride: true }
+          })
+        }
         newContext = { node, name, rawName: name, kind: SymbolKind.Method, visibility, isStatic }
         scopeStack.push(newContext)
         pushedScope = true
+      } else if (type === "member_access_expression" && !parentContext?.node?.type?.includes("invocation")) {
+        // Field/member access outside invocation: obj.Field or obj.Property
+        const exprNode = node.childForFieldName("expression")
+        const nameNode = node.childForFieldName("name")
+        if (exprNode && nameNode && parentContext?.name) {
+          relationships.push({
+            source: parentContext.name,
+            target: `${exprNode.text}.${nameNode.text}`,
+            type: RelationshipType.Uses,
+            confidence: 0.7,
+            metadata: { isFieldAccess: true, field: nameNode.text, object: exprNode.text }
+          })
+        }
+      } else if (type === "identifier" && parentContext?.name && !node.text.startsWith("_")) {
+        // Simple variable reference (not field access, not invocation function position)
+        if (node.parent?.type !== "invocation_expression" && node.parent?.type !== "member_access_expression" && node.parent?.type !== "variable_declarator") {
+          relationships.push({
+            source: parentContext.name,
+            target: node.text,
+            type: RelationshipType.References,
+            confidence: 0.6,
+            metadata: { isVariableRef: true }
+          })
+        }
       } else if (type === "accessor_declaration") {
         const name = node.childForFieldName("name")?.text || this.childText(node, "identifier") || node.text.split(" ")[0] || "accessor"
         newContext = {
@@ -664,6 +718,21 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
     }
 
     for (const s of namespaceScoped) { if (s.visibility !== "private") exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility || "public" }) }
+
+    // Post-loop: add contains for owned symbols
+    for (const s of symbols) {
+      const _owner = s.ownerName || s.scope
+      if (_owner) {
+        relationships.push({
+          source: _owner,
+          target: s.name,
+          type: RelationshipType.Contains,
+          confidence: 1.0,
+          metadata: {},
+        })
+      }
+    }
+
     return {
       symbols,
       relationships,
@@ -692,6 +761,7 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
     const typeNodes = [
       "predefined_type",
       "type_identifier",
+      "identifier",
       "generic_name",
       "array_type",
       "nullable_type",

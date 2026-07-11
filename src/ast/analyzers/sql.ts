@@ -11,14 +11,32 @@ export class RealSqlAnalyzer implements LanguageAnalyzer {
     const symbols: UniversalSymbol[] = []
     const imports: ImportInfo[] = []
 
-    const sql1Matches = content.matchAll(/#import\s+["\x27]?([^"\x27\n]+)["\x27]?/g)
-    for (const m of sql1Matches) {
-      imports.push({ module: m[1].replace(/["<>]/g, ""), items: [], importType: "sql_import", lineNumber: 0, isExternal: m[0].includes("<") || !m[1].startsWith(".") })
+    // SQL imports — non-standard #import/@import directives
+    // Extracted via AST comment nodes, pure string ops (zero regex)
+    const walkForImports = (node: Node) => {
+      if (node.type === "comment" || node.type === "marginalia") {
+        const txt = node.text.trim()
+        if (txt.startsWith("#import ") || txt.startsWith("@import ")) {
+          const spaceIdx = txt.indexOf(" ")
+          if (spaceIdx !== -1) {
+            let path = txt.substring(spaceIdx + 1).trim()
+            // Strip quotes and angle brackets (pure string ops)
+            let cleaned = ""
+            for (let i = 0; i < path.length; i++) {
+              const ch = path[i]
+              if (ch !== '"' && ch !== "'" && ch !== "<" && ch !== ">") cleaned += ch
+            }
+            const isExternal = txt.startsWith("@") || cleaned.includes("/")
+            imports.push({ module: cleaned, items: [], importType: "sql_import", lineNumber: 0, isExternal })
+          }
+        }
+      }
+      for (let i = 0; i < node.childCount; i++) {
+        const child = node.child(i)
+        if (child) walkForImports(child)
+      }
     }
-    const sql2Matches = content.matchAll(/@import\s+["\x27]?([^"\x27\n]+)["\x27]?/g)
-    for (const m of sql2Matches) {
-      imports.push({ module: m[1].replace(/["<>]/g, ""), items: [], importType: "sql_import", lineNumber: 0, isExternal: m[0].includes("<") || !m[1].startsWith(".") })
-    }
+    walkForImports(rootNode)
 
     const relationships: UniversalRelationship[] = []
     const exports: ExportInfo[] = []
@@ -85,7 +103,7 @@ export class RealSqlAnalyzer implements LanguageAnalyzer {
       } else if (curr.type === "create_view_statement" || curr.type === "create_view") {
         newParentSymbol = this.handleView(curr, symbols, relationships, metadata)
       } else if (curr.type === "create_index_statement" || curr.type === "create_index") {
-        this.handleIndex(curr, symbols, metadata, patternsObj)
+        this.handleIndex(curr, symbols, relationships, metadata, patternsObj)
       } else if (curr.type === "select_statement" || curr.type === "select") {
         this.handleSelect(curr, symbols, relationships, metadata, patternsObj, parentSymbol)
       } else if (curr.type === "create_function_statement" || curr.type === "create_function") {
@@ -181,7 +199,7 @@ export class RealSqlAnalyzer implements LanguageAnalyzer {
           } else if (stmtChild.type === "create_view") {
             newParentSymbol = this.handleView(stmtChild, symbols, relationships, metadata)
           } else if (stmtChild.type === "create_index") {
-            this.handleIndex(stmtChild, symbols, metadata, patternsObj)
+            this.handleIndex(stmtChild, symbols, relationships, metadata, patternsObj)
           } else if (stmtChild.type === "select") {
             this.handleSelect(stmtChild, symbols, relationships, metadata, patternsObj, parentSymbol)
           } else if (stmtChild.type === "create_function") {
@@ -212,6 +230,14 @@ export class RealSqlAnalyzer implements LanguageAnalyzer {
 
     for (const p in patternsObj) {
       metadata.patterns!.push(p)
+    }
+
+    // Add Contains for table→column relationships
+    for (const s of symbols) {
+      const _owner = s.ownerName || s.scope
+      if (_owner) {
+        relationships.push({ source: _owner, target: s.name, type: RelationshipType.Contains, confidence: 1.0, metadata: {} })
+      }
     }
 
     return {
@@ -339,9 +365,20 @@ export class RealSqlAnalyzer implements LanguageAnalyzer {
               }
             }
             if (!references) {
-              // Try to extract from text like "REFERENCES users(id)"
-              const match = curr.text.match(/REFERENCES\s+([a-zA-Z0-9_]+)/i)
-              if (match) references = match[1]
+              // Fallback: extract REFERENCES target via pure string ops (no regex)
+              const refIdx = curr.text.toUpperCase().indexOf("REFERENCES")
+              if (refIdx !== -1) {
+                const afterRef = curr.text.substring(refIdx + 10).trim()
+                let wordEnd = 0
+                while (wordEnd < afterRef.length && 
+                       ((afterRef[wordEnd] >= "a" && afterRef[wordEnd] <= "z") ||
+                        (afterRef[wordEnd] >= "A" && afterRef[wordEnd] <= "Z") ||
+                        (afterRef[wordEnd] >= "0" && afterRef[wordEnd] <= "9") ||
+                        afterRef[wordEnd] === "_")) {
+                  wordEnd++
+                }
+                if (wordEnd > 0) references = afterRef.substring(0, wordEnd)
+              }
             }
           }
 
@@ -367,6 +404,14 @@ export class RealSqlAnalyzer implements LanguageAnalyzer {
           hasForeignKey = true
           relationships.push({
             type: RelationshipType.Uses,
+            source: tableSymbol.name,
+            target: tableRefNode.text,
+            isExternal: true,
+            weight: 1,
+            metadata: { constraint: "foreign_key", isForeignKey: true },
+          })
+          relationships.push({
+            type: RelationshipType.References,
             source: tableSymbol.name,
             target: tableRefNode.text,
             isExternal: true,
@@ -495,16 +540,44 @@ export class RealSqlAnalyzer implements LanguageAnalyzer {
   private handleIndex(
     node: Node,
     symbols: UniversalSymbol[],
+    relationships: UniversalRelationship[],
     metadata: Partial<FileMetadata>,
     patternsObj: Record<string, boolean>,
   ) {
     const nameNode = this.getIdentifier(node)
     if (nameNode) {
-      this.createSymbol(nameNode.text, SymbolKind.Constant, nameNode, null, symbols, {
+      const indexSymbol = this.createSymbol(nameNode.text, SymbolKind.Constant, nameNode, null, symbols, {
         type: "index",
         indexName: nameNode.text,
       })
       patternsObj["Custom Indexes"] = true
+
+      // Extract table name the index is on: CREATE INDEX idx ON table_name (...)
+      // Tree-sitter-sql: create_index_statement → [identifier idx, identifier table, parameters (...)]
+      // The second identifier (after the index name) is the table name
+      let tableName = ""
+      let foundFirstName = false
+      for (let i = 0; i < node.childCount; i++) {
+        const c = node.child(i)
+        if (c && (c.type === "identifier" || c.type === "word")) {
+          if (!foundFirstName) {
+            foundFirstName = true
+          } else {
+            tableName = c.text
+            break
+          }
+        }
+      }
+      if (tableName) {
+        relationships.push({
+          type: RelationshipType.References,
+          source: indexSymbol.name,
+          target: tableName,
+          isExternal: false,
+          weight: 1,
+          metadata: { dependency: true, indexOn: tableName },
+        })
+      }
 
       if (metadata.performanceScore !== undefined) {
         metadata.performanceScore += 10
@@ -680,6 +753,17 @@ export class RealSqlAnalyzer implements LanguageAnalyzer {
               weight: 1,
               metadata: { tableReference: true },
             })
+            // View/Function depends on the tables it queries
+            if (parentSymbol.metadata?.type === "view" || parentSymbol.metadata?.functionName) {
+              relationships.push({
+                type: RelationshipType.References,
+                source: parentSymbol.name,
+                target: curr.text,
+                isExternal: true,
+                weight: 1,
+                metadata: { dependency: true, tableReference: true },
+              })
+            }
           }
           for (let i = curr.childCount - 1; i >= 0; i--) {
             const child = curr.child(i)

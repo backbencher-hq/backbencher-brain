@@ -122,7 +122,7 @@ export class RealCppAnalyzer implements LanguageAnalyzer {
           relationships.push({
             source: "global",
             target: includePath,
-            type: RelationshipType.DependsOn,
+            type: RelationshipType.References,
             confidence: 1.0,
             metadata: { isIncludeDependency: true },
           })
@@ -571,6 +571,20 @@ export class RealCppAnalyzer implements LanguageAnalyzer {
       }
     }
 
+    // Post-loop: add contains for owned symbols (class→method, class→field, namespace→class)
+    for (const s of symbols) {
+      const _owner = s.ownerName || s.scope
+      if (_owner) {
+        relationships.push({
+          source: _owner,
+          target: s.name,
+          type: RelationshipType.Contains,
+          confidence: 1.0,
+          metadata: {},
+        })
+      }
+    }
+
     return {
       symbols,
       relationships,
@@ -633,6 +647,14 @@ export class RealCppAnalyzer implements LanguageAnalyzer {
         child.text === modifier
       ) {
         return true
+      }
+    }
+    // Also check inside function_declarator for virtual_specifier (override keyword)
+    const funcDecl = this.findChild(node, "function_declarator")
+    if (funcDecl) {
+      for (let i = 0; i < funcDecl.childCount; i++) {
+        const child = funcDecl.child(i)
+        if (child?.type === "virtual_specifier" && child.text === modifier) return true
       }
     }
     return false

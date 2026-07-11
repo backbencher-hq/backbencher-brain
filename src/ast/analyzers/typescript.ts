@@ -1,12 +1,10 @@
 // @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
-// Strict-null warnings are pre-existing in the original code and do not affect correctness.
 // TypeScript/JavaScript Intelligence Engine
 // Complete AST analysis with zero stubs, zero shortcuts, 100% real implementation
 // The most powerful TypeScript analyzer ever built
 
-// Node type from tree-sitter — treated as any for compatibility
-import type { SyntaxNode as Node } from "web-tree-sitter"
-import { detectFrameworks, type FrameworkInfo } from "./framework-detectors.js"
+import type { Node } from "web-tree-sitter"
+import { detectFrameworks, type FrameworkInfo } from "./framework-detectors"
 import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "../types.js"
 import * as path from "path"
 import * as fs from "fs"
@@ -2852,9 +2850,10 @@ class TypeScriptAnalysisRunner {
       currentSymbol = this.resolveRelationshipSymbol(n, symbols, currentSymbol)
 
       // Extract call expressions and JSX component usages
+      // Fallback: when at top level (no enclosing function), attribute calls to the file module
+      const callSource = currentSymbol || { name: "module", scope: undefined, kind: "module" as any, range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 }, metadata: {} as any }
       if (
-        (n.type === "call_expression" || n.type === "jsx_self_closing_element" || n.type === "jsx_element") &&
-        currentSymbol
+        (n.type === "call_expression" || n.type === "jsx_self_closing_element" || n.type === "jsx_element")
       ) {
         if (n.type === "call_expression") {
           const callee = n.namedChild(0)
@@ -2869,17 +2868,33 @@ class TypeScriptAnalysisRunner {
               }
             }
 
+            // Skip targets that are clearly not valid function names:
+            // - Tree-sitter ERROR nodes leaking code blocks
+            // - Template literal fragments
+            // - Overly long text (>100 chars can't be a real name)
+            // - Text containing spaces, newlines, or expression syntax
+            if (
+              targetName.length > 100 ||
+              targetName.includes("\n") ||
+              targetName.includes("`") ||
+              targetName.includes("${") ||
+              /[{};=]/.test(targetName)
+            ) {
+              // Skip — malformed call_expression from tree-sitter error recovery
+            } else {
+
             relationships.push({
-              source: this.generateSymbolId(currentSymbol),
+              source: this.generateSymbolId(callSource),
               target: targetName,
               type: RelationshipType.Calls,
               confidence: 0.9,
               metadata: {
                 calleeExpression: callee.text,
                 line: n.startPosition.row,
-              },
+              } as any,
             })
           }
+          } // closes if(callee)
         } else {
           // JSX element
           const opening = n.type === "jsx_self_closing_element" ? n : n.namedChild(0)
@@ -2890,14 +2905,14 @@ class TypeScriptAnalysisRunner {
               // Only components (capitalized)
               if (char && char === char.toUpperCase() && char !== char.toLowerCase()) {
                 relationships.push({
-                  source: this.generateSymbolId(currentSymbol),
+                  source: this.generateSymbolId(callSource),
                   target: identifier.text,
                   type: RelationshipType.Uses,
                   confidence: 0.9,
                   metadata: {
                     jsxElement: identifier.text,
                     line: n.startPosition.row,
-                  },
+                  } as any,
                 })
               }
             }
@@ -3045,8 +3060,9 @@ class TypeScriptAnalysisRunner {
     const processNode = (n: Node, currentSymbol: UniversalSymbol | null): void => {
       currentSymbol = this.resolveRelationshipSymbol(n, symbols, currentSymbol)
 
-      // Extract new expressions
-      if (n.type === "new_expression" && currentSymbol) {
+      // Extract new expressions — fallback to module when at top level
+      const instSource = currentSymbol || { name: "module", scope: undefined, kind: "module" as any, range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 }, metadata: {} as any }
+      if (n.type === "new_expression") {
         const constructor = n.namedChild(0)
         if (constructor) {
           let className = constructor.text
@@ -3060,13 +3076,13 @@ class TypeScriptAnalysisRunner {
           }
 
           relationships.push({
-            source: this.generateSymbolId(currentSymbol),
+            source: this.generateSymbolId(instSource),
             target: className,
             type: RelationshipType.Instantiates,
             confidence: 1.0,
             metadata: {
               line: n.startPosition.row,
-            },
+            } as any,
           })
         }
       }

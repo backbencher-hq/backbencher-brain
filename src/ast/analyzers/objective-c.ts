@@ -8,13 +8,29 @@ export class RealObjectiveCAnalyzer implements LanguageAnalyzer {
     const relationships: UniversalRelationship[] = []
     const imports: ImportInfo[] = []
 
+    const exports: ExportInfo[] = []; const frameworks = new Set<string>()
+    const errors: ParseError[] = []
+
+    // Extract imports — use AST-based approach where possible, regex for #import pragmas
     const objcMatches = content.matchAll(/#(?:import|include)\s+[<"]([^>"]+)[>"]/g)
     for (const m of objcMatches) {
-      var modName = m[1].replace(/["<>]/g, ""); frameworks.add(modName.indexOf("UIKit") !== -1 ? "UIKit" : modName.indexOf("Foundation") !== -1 ? "Foundation" : modName.indexOf("AppKit") !== -1 ? "AppKit" : modName.indexOf("Cocoa") !== -1 ? "Cocoa" : ""); imports.push({ module: modName, items: [], importType: "include", lineNumber: 0, isExternal: m[0].includes("<") || !m[1].startsWith(".") })
+      const modName = m[1].replace(/["<>]/g, "")
+      if (modName.includes("UIKit")) frameworks.add("UIKit")
+      if (modName.includes("Foundation")) frameworks.add("Foundation")
+      if (modName.includes("AppKit")) frameworks.add("AppKit")
+      if (modName.includes("Cocoa")) frameworks.add("Cocoa")
+      imports.push({
+        module: modName, items: [], importType: "include",
+        lineNumber: 0, isExternal: m[0].includes("<") || !modName.startsWith(".")
+      })
+      relationships.push({
+        source: "root",
+        target: modName,
+        type: RelationshipType.References,
+        confidence: 0.9,
+        metadata: { isObjCImport: true },
+      })
     }
-
-    const exports: ExportInfo[] = []; const frameworks: string[] = []
-    const errors: ParseError[] = []
 
     // Law 3 & 4: Explicit Iterative Stack (O(N) single-pass) and ZERO mutable class props
     const walkStack: Array<{ node: Node; isExit: boolean; activeScope: string }> = [
@@ -37,7 +53,7 @@ export class RealObjectiveCAnalyzer implements LanguageAnalyzer {
         const nameNode = this.findChild(node, (n) => n.type === "identifier" || n.type === "type_identifier")
         if (nameNode) {
           nextActiveScope = nameNode.text
-          // Extract superclass (after nameNode, look for type_identifier)
+          // Extract superclass (after nameNode, look for identifier/type_identifier)
           let foundName = false
           let superName: string | null = null
           let protocols: string[] = []
@@ -45,11 +61,11 @@ export class RealObjectiveCAnalyzer implements LanguageAnalyzer {
             const cn = node.namedChild(ci)
             if (!cn) continue
             if (cn.type === "identifier" && !foundName) { foundName = true; continue }
-            if ((cn.type === "type_identifier" || cn.type === "superclass_reference") && !superName) { superName = cn.text }
-            if (cn.type === "protocol_qualifiers" || cn.type === "protocol_list") {
+            if ((cn.type === "type_identifier" || cn.type === "superclass_reference" || cn.type === "identifier") && !superName) { superName = cn.text }
+            if (cn.type === "protocol_qualifiers" || cn.type === "protocol_list" || cn.type === "parameterized_arguments") {
               for (let pj = 0; pj < cn.namedChildCount; pj++) {
                 const pn = cn.namedChild(pj)
-                if (pn && (pn.type === "type_identifier" || pn.type === "identifier")) protocols.push(pn.text)
+                if (pn && (pn.type === "type_identifier" || pn.type === "identifier" || pn.type === "type_name")) protocols.push(pn.text)
               }
             }
           }
@@ -59,6 +75,7 @@ export class RealObjectiveCAnalyzer implements LanguageAnalyzer {
             name: nameNode.text,
             kind: SymbolKind.Class,
             range: this.getRange(node),
+            ownerName: activeScope !== "global" ? activeScope : undefined,
             metadata: { objcSpecific: true, type: node.type, superClass: superName, protocols },
           })
         }
@@ -99,6 +116,7 @@ export class RealObjectiveCAnalyzer implements LanguageAnalyzer {
             name: nameNode.text,
             kind: SymbolKind.Method,
             range: this.getRange(node),
+            ownerName: activeScope !== "global" ? activeScope : undefined,
             metadata: { objcSpecific: true, isClassMethod: node.text.startsWith("+"), isInstanceMethod: node.text.startsWith("-") },
           })
         }
@@ -126,6 +144,7 @@ export class RealObjectiveCAnalyzer implements LanguageAnalyzer {
              name: nameNode.text,
              kind: SymbolKind.Property,
              range: this.getRange(node),
+             ownerName: activeScope !== "global" ? activeScope : undefined,
              metadata: { objcSpecific: true },
            })
          }
@@ -162,7 +181,7 @@ export class RealObjectiveCAnalyzer implements LanguageAnalyzer {
             })
             // Detect [[Foo alloc] init] as Instantiates
             if (selectorNode.text === "alloc" || selectorNode.text === "new") { 
-              var receiverNode = this.findChild(node, (n) => n.type === "identifier" || n.type === "type_identifier");
+              const receiverNode = this.findChild(node, (n) => n.type === "identifier" || n.type === "type_identifier");
               if (receiverNode) {
                 relationships.push({ source: activeScope, target: receiverNode.text, type: RelationshipType.Instantiates, confidence: 0.9, metadata: { isObjCAlloc: true } });
               }
@@ -191,11 +210,10 @@ export class RealObjectiveCAnalyzer implements LanguageAnalyzer {
       }
     }
 
-    // Law 3: O(1) MAP deduplications
+    // Law 3: O(1) MAP deduplications — include ownerName for methods to avoid collision
     const uniqueSymbolsMap = new Map<string, UniversalSymbol>()
     for (let i = 0; i < symbols.length; i++) {
-        // Allow overloading map to include kind
-        uniqueSymbolsMap.set(`${symbols[i].kind}:${symbols[i].name}`, symbols[i])
+        uniqueSymbolsMap.set(`${symbols[i].kind}:${symbols[i].ownerName || ''}:${symbols[i].name}`, symbols[i])
     }
     const uniqueSymbols = Array.from(uniqueSymbolsMap.values())
 
@@ -205,7 +223,20 @@ export class RealObjectiveCAnalyzer implements LanguageAnalyzer {
     }
     const uniqueRelationships = Array.from(uniqueRelMap.values())
 
-    for (var _oi = 0; _oi < uniqueSymbols.length; _oi++) { var os = uniqueSymbols[_oi]; exports.push({ name: os.name, kind: os.kind, range: os.range, visibility: "public" }); }
+    // Add Contains relationships for owned symbols
+    for (const s of uniqueSymbols) {
+      const _owner = s.ownerName || s.scope
+      if (_owner) {
+        uniqueRelationships.push({
+          source: _owner,
+          target: s.name,
+          type: RelationshipType.Contains,
+          confidence: 1.0,
+          metadata: { isContained: true },
+        })
+      }
+    }
+    for (let i = 0; i < uniqueSymbols.length; i++) { const s = uniqueSymbols[i]; exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: "public" }); }
     return {
       language: "objective-c",
       symbols: uniqueSymbols,
@@ -213,7 +244,7 @@ export class RealObjectiveCAnalyzer implements LanguageAnalyzer {
       imports,
       exports,
       errors,
-      metadata: { complexity: uniqueSymbols.length, linesOfCode: content.split("\n").length, detectedFrameworks: frameworks.filter(Boolean), framework: frameworks.filter(Boolean)[0] },
+      metadata: { complexity: uniqueSymbols.length, linesOfCode: content.split("\n").length, detectedFrameworks: [...frameworks], framework: [...frameworks][0] },
     }
   }
 

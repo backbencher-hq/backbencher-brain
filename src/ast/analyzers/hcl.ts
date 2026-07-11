@@ -77,11 +77,28 @@ export class RealHclAnalyzer implements LanguageAnalyzer {
           symbols.push(blockSymbol)
           currentScope.push(blockName)
 
-          // Modules are essentially import statements
+          // Modules are essentially import statements — add DependsOn
           if (blockType === "module") {
             imports.push({
               module: labels[0] || "unknown",
               range: blockSymbol.range,
+            })
+            relationships.push({
+              source: "terraform",
+              target: labels[0] || "unknown",
+              type: RelationshipType.References,
+              confidence: 0.9,
+              metadata: { isModuleDep: true },
+            })
+          }
+          // Providers are also dependencies
+          if (blockType === "provider") {
+            relationships.push({
+              source: "terraform",
+              target: labels[0] || "unknown",
+              type: RelationshipType.References,
+              confidence: 0.9,
+              metadata: { isProviderDep: true },
             })
           }
         }
@@ -92,10 +109,15 @@ export class RealHclAnalyzer implements LanguageAnalyzer {
         const val = node.text;
         const refs = val.match(/\$\{([^}]+)\}/g);
         if (refs && currentScope.length > 0) {
-          for (var _ri = 0; _ri < refs.length; _ri++) {
-            var refName = refs[_ri].replace(/\$\{|\}/g, "").split(".")[0];
+          for (let i = 0; i < refs.length; i++) {
+            const refName = refs[i].replace(/\$\{|\}/g, "").split(".")[0]
             if (refName) {
-              relationships.push({ type: RelationshipType.Uses, sourceId: currentScope[currentScope.length - 1], targetId: refName, metadata: { isVariableRef: true } });
+              relationships.push({
+                source: currentScope[currentScope.length - 1],
+                target: refName,
+                type: RelationshipType.Uses,
+                metadata: { isVariableRef: true },
+              })
             }
           }
         }
@@ -120,9 +142,9 @@ export class RealHclAnalyzer implements LanguageAnalyzer {
 
           if (currentScope.length > 0) {
             relationships.push({
+              source: currentScope[currentScope.length - 1],
+              target: keyNode.text,
               type: RelationshipType.Contains,
-              sourceId: currentScope[currentScope.length - 1],
-              targetId: keyNode.text,
               metadata: {},
             })
           }
@@ -153,7 +175,9 @@ export class RealHclAnalyzer implements LanguageAnalyzer {
       }
     }
 
-    for (var _hi = 0; _hi < symbols.length; _hi++) { var hs = symbols[_hi]; exports.push({ name: hs.name, kind: hs.kind, range: hs.range, visibility: "public" }); }
+    for (let i = 0; i < symbols.length; i++) {
+      exports.push({ name: symbols[i].name, kind: symbols[i].kind, range: symbols[i].range, visibility: "public" })
+    }
     return {
       language: "hcl",
       symbols,

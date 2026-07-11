@@ -42,11 +42,17 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
       if (!fnNode) return params
       
       const vecNodes: Node[] = []
-      for (let i = 1; i < fnNode.namedChildCount; i++) {
+      for (let i = 0; i < fnNode.namedChildCount; i++) {
          const c = fnNode.namedChild(i);
          if (!c) continue;
          if (c.type === "vec_lit" || c.type === "vector") {
             vecNodes.push(c);
+         } else if (c.type === "params") {
+            // Named params node wraps a vector
+            for (let j = 0; j < c.namedChildCount; j++) {
+              const inner = c.namedChild(j)
+              if (inner?.type === "vec_lit" || inner?.type === "vector") vecNodes.push(inner)
+            }
          } else if (c.type === "list_lit" || c.type === "list") {
              const firstC = c.namedChild(0);
              if (firstC && (firstC.type === "vec_lit" || firstC.type === "vector")) {
@@ -87,10 +93,30 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
     if (content.includes("comment") || content.includes("#_")) patterns["REPL-driven Development"] = true
     if (content.includes("defmacro")) patterns["Metaprogramming"] = true
     if (content.includes("defprotocol")) patterns["Protocol-based Polymorphism"] = true
-    if (content.includes("java.") || content.includes("import ") || content.match(/[A-Z][a-zA-Z0-9_]*\//)) patterns["Java Interoperability"] = true
+    if (content.includes("java.") || content.includes("import ")) patterns["Java Interoperability"] = true
+    // AST-based Java interop detection: symbol nodes with / separator (e.g., SomeClass/method)
+    const checkJavaInterop = (n: Node): boolean => {
+      if ((n.type === "sym" || n.type === "symbol" || n.type === "sym_lit") && n.text.includes("/")) {
+        const beforeSlash = n.text.split("/")[0]
+        if (beforeSlash && beforeSlash[0] === beforeSlash[0]?.toUpperCase() && beforeSlash[0] !== beforeSlash[0]?.toLowerCase()) return true
+      }
+      for (let i = 0; i < n.childCount; i++) { const c = n.child(i); if (c && checkJavaInterop(c)) return true }
+      return false
+    }
+    if (checkJavaInterop(rootNode)) patterns["Java Interoperability"] = true
     if (content.includes("swap!") || content.includes("reset!") || content.includes("dosync")) patterns["Software Transactional Memory"] = true
 
     const walkStack: Array<{ node: Node; isExit: boolean; previousActiveFunction: any }> = [{ node: rootNode, isExit: false, previousActiveFunction: activeFunction }];
+    
+    // Dedup set for relationships: type|source|target
+    const relKeySet = new Set<string>()
+    const pushRel = (rel: UniversalRelationship) => {
+      const key = rel.type + "|" + rel.source + "|" + rel.target
+      if (relKeySet.has(key)) return
+      relKeySet.add(key)
+      relationships.push(rel)
+    }
+    
     while (walkStack.length > 0) {
       const { node, isExit, previousActiveFunction: savedActiveFunction } = walkStack.pop()!;
       if (!node) continue;
@@ -102,6 +128,101 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
 
       const previousActiveFunction = activeFunction;
       walkStack.push({ node, isExit: true, previousActiveFunction });
+
+      // ── Named form nodes (grammar produces wrappers for special forms) ──
+      if (node.type === "defn" || node.type === "defn-") {
+        const nameNode = node.namedChild(0)
+        const name = nameNode?.text || "unknown"
+        const paramsNode = this.findChild(node, (n: Node) => n.type === "params")
+        const params = extractParams(paramsNode || node)
+        const funcSymbol: UniversalSymbol = {
+          name, kind: SymbolKind.Function,
+          range: this.nodeToRange(node), scope: currentNamespace, ownerName: currentNamespace,
+          visibility: "public", parameters: params,
+          metadata: { clojureSpecific: true, isPure: true, complexity: 1 }
+        }
+        symbols.push(funcSymbol)
+        activeFunction = funcSymbol
+        // exports
+        exports.push({ name, kind: SymbolKind.Function, range: this.nodeToRange(node), visibility: "public" })
+      } else if (node.type === "fn" || node.type === "anonymous_function") {
+        const lambdaSymbol: UniversalSymbol = {
+          name: `lambda_${node.startPosition.row}_${node.startPosition.column}`,
+          kind: SymbolKind.Function,
+          range: this.nodeToRange(node), scope: currentNamespace,
+          visibility: "local",
+          metadata: { isAnonymous: true, isPure: true, complexity: 1, clojureSpecific: true }
+        }
+        symbols.push(lambdaSymbol)
+        activeFunction = lambdaSymbol
+      } else if (node.type === "defrecord" || node.type === "deftype") {
+        const nameNode = node.namedChild(1)
+        const name = nameNode?.text || "unknown"
+        symbols.push({ name, kind: SymbolKind.Class, range: this.nodeToRange(node), scope: currentNamespace, visibility: "public", metadata: { clojureSpecific: true } })
+        // implements: look for protocol names after the fields vector
+        for (let pi = 3; pi < node.namedChildCount; pi++) {
+          const protoNode = node.namedChild(pi)
+          if (protoNode?.type === "symbol") {
+            const protoName = protoNode.text
+            if (!protoName.startsWith(":") && protoName.length > 1) {
+              pushRel({ source: name, target: protoName, type: RelationshipType.Implements, confidence: 0.85, metadata: { clojureSpecific: true } })
+              break
+            }
+          }
+        }
+        exports.push({ name, kind: SymbolKind.Class, range: this.nodeToRange(node), visibility: "public" })
+      } else if (node.type === "defprotocol") {
+        const nameNode = node.namedChild(1)
+        const name = nameNode?.text || "unknown"
+        symbols.push({ name, kind: SymbolKind.Interface, range: this.nodeToRange(node), scope: currentNamespace, visibility: "public", metadata: { clojureSpecific: true } })
+        exports.push({ name, kind: SymbolKind.Interface, range: this.nodeToRange(node), visibility: "public" })
+      } else if (node.type === "defmulti") {
+        const nameNode = node.namedChild(1)
+        const name = nameNode?.text || "unknown"
+        symbols.push({ name, kind: SymbolKind.Function, range: this.nodeToRange(node), scope: currentNamespace, visibility: "public", metadata: { clojureSpecific: true, isMultimethod: true } })
+        exports.push({ name, kind: SymbolKind.Function, range: this.nodeToRange(node), visibility: "public" })
+      } else if (node.type === "defmethod") {
+        const nameNode = node.namedChild(1)
+        const name = nameNode?.text || "unknown"
+        symbols.push({ name, kind: SymbolKind.Function, range: this.nodeToRange(node), scope: currentNamespace, visibility: "public", metadata: { clojureSpecific: true, isMethodImpl: true } })
+        // overrides: defmethod overrides a defmulti
+        pushRel({ source: name, target: name.split("/")[0] || name, type: RelationshipType.Overrides, confidence: 0.7, metadata: { clojureSpecific: true, isDefmethod: true } })
+      } else if (node.type === "defmacro") {
+        const nameNode = node.namedChild(1)
+        const name = nameNode?.text || "unknown"
+        symbols.push({ name, kind: SymbolKind.Function, range: this.nodeToRange(node), scope: currentNamespace, visibility: "public", metadata: { clojureSpecific: true, isMacro: true } })
+        exports.push({ name, kind: SymbolKind.Function, range: this.nodeToRange(node), visibility: "public" })
+      } else if (node.type === "threading_macro") {
+        // -> or ->> threading macros — track Uses relationships
+        if (activeFunction) {
+          let prev = ""
+          for (let ti = 1; ti < node.namedChildCount; ti++) {
+            const tChild = node.namedChild(ti)
+            if (!tChild) continue
+            let tName = tChild.type === "symbol" ? tChild.text : tChild.type === "list" ? tChild.namedChild(0)?.text || "" : ""
+            if (tName && !CLOJURE_CORE_BUILTINS[tName]) {
+              if (prev) pushRel({ source: prev, target: tName, type: RelationshipType.Uses, confidence: 0.85, metadata: { clojureSpecific: true, isThreadingMacro: true } })
+              prev = tName
+            }
+          }
+        }
+      } else if (node.type === "new_class" || (node.type === "interop" && node.text?.endsWith("."))) {
+        // Java interop constructor call: (ClassName.) → instantiates
+        if (activeFunction) {
+          const className = node.text?.replace(/\.$/, "") || "unknown"
+          pushRel({ source: activeFunction.name, target: className, type: RelationshipType.Instantiates, confidence: 0.8, metadata: { clojureSpecific: true, isJavaInterop: true } })
+        }
+      } else if (node.type === "field_access" || node.type === "member_access") {
+        // (.field obj) or (..obj field) → field_access
+        if (activeFunction) {
+          for (let i = 0; i < node.namedChildCount; i++) {
+            const child = node.namedChild(i)
+            if (child?.type === "symbol" && child.text) {
+              pushRel({ source: activeFunction.name, target: child.text, type: RelationshipType.Uses, confidence: 0.7, metadata: { clojureSpecific: true, isFieldAccess: true } })
+            }
+          }
+        }
+      }
 
       if (node.type === "list_lit" || node.type === "list") {
         const firstSym = node.namedChild(0)
@@ -210,13 +331,14 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
 
           } else if (formName === "defrecord" || formName === "deftype") {
             const nameNode = node.namedChild(1)
+            const name = nameNode ? nameNode.text : "unknown"
             const fieldsNode = node.namedChild(2)
             for (let pi = 3; pi < node.namedChildCount; pi++) {
               const protoNode = node.namedChild(pi)
               if (protoNode && (protoNode.type === "sym_lit" || protoNode.type === "symbol")) {
                 const protoName = protoNode.text
                 if (!protoName.startsWith(":") && protoName.length > 1) {
-                  relationships.push({
+                  pushRel({
                     source: name, target: protoName,
                     type: RelationshipType.Implements,
                     confidence: 0.85,
@@ -226,7 +348,6 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
                 }
               }
             }
-            let name = nameNode ? nameNode.text : "unknown"
 
             const classSymbol: UniversalSymbol = {
               name,
@@ -278,16 +399,17 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
           } else if (formName === "defmethod" || formName.endsWith("/defmethod")) {
             const nameNode = node.namedChild(1)
             if (nameNode) {
-              relationships.push({
+              pushRel({
                 source: `${currentNamespace}.${nameNode.text}_impl_${node.startPosition.row}`,
                 target: nameNode.text,
-                type: RelationshipType.Extends,
+                type: RelationshipType.Overrides,
                 metadata: { clojureSpecific: true, isMultimethodImpl: true }
               })
             }
           } else if ((formName === "s/def" || formName === "s/fdef" || formName === "clojure.spec.alpha/def" || formName === "clojure.spec.alpha/fdef") && node.namedChild(1)) {
+            const child = node.namedChild(1)!
             symbols.push({
-              name: node.namedChild(1).text,
+              name: child.text,
               kind: SymbolKind.Interface,
               range: this.nodeToRange(node),
               scope: currentNamespace,
@@ -325,7 +447,7 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
                 activeFunction.metadata.isPure = false
               }
               if (formName === "recur") {
-                relationships.push({ source: activeFunction.name, target: activeFunction.name, type: RelationshipType.Calls, confidence: 1.0, metadata: { clojureSpecific: true, isRecursion: true } })
+                pushRel({ source: activeFunction.name, target: activeFunction.name, type: RelationshipType.Calls, confidence: 1.0, metadata: { clojureSpecific: true, isRecursion: true } })
                 activeFunction.metadata.isRecursive = true
               } else if (formName === activeFunction.name) {
                 activeFunction.metadata.isRecursive = true
@@ -346,7 +468,7 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
                 }
                 if (tName && !CLOJURE_CORE_BUILTINS[tName]) {
                   if (prev) {
-                    relationships.push({ source: prev, target: tName, type: RelationshipType.Uses, confidence: 0.85, metadata: { clojureSpecific: true, isThreadingMacro: true } })
+                    pushRel({ source: prev, target: tName, type: RelationshipType.Uses, confidence: 0.85, metadata: { clojureSpecific: true, isThreadingMacro: true } })
                   }
                   prev = tName
                 }
@@ -356,21 +478,44 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
                 // FLAW 2 FIXED: Resolve alias to true namespace
                 const [alias, func] = formName.split("/")
                 const resolvedNs = namespaceAliases[alias] || alias
-                relationships.push({
+                pushRel({
                   source: activeFunction.name,
                   target: `${resolvedNs}/${func}`,
                   type: RelationshipType.Calls,
                   metadata: { clojureSpecific: true }
                 })
+                // depends: library dependency (always push for qualified calls)
+                pushRel({
+                  source: currentNamespace, target: resolvedNs,
+                  type: RelationshipType.References,
+                  confidence: 0.8, metadata: { clojureSpecific: true, isLibraryDep: true }
+                })
                 // Clojure constructor: (ClassName.) or (->ClassName ...)
                 if (func.endsWith(".") || resolvedNs[0] === resolvedNs[0].toUpperCase()) {
-                  relationships.push({
+                  pushRel({
                     source: activeFunction.name,
                     target: `${resolvedNs}/${func.replace(/\.$/, "")}`,
                     type: RelationshipType.Instantiates,
                     confidence: 0.75,
                     metadata: { clojureSpecific: true, isConstructor: true },
                   })
+                }
+              } else if (activeFunction && !CLOJURE_CORE_BUILTINS[formName] && !formName.startsWith(".") && !formName.startsWith(":")) {
+                // General function call: any non-builtin, non-special form
+                pushRel({
+                  source: activeFunction.name,
+                  target: formName,
+                  type: RelationshipType.Calls,
+                  confidence: 0.9,
+                  metadata: { clojureSpecific: true, isGeneralCall: true }
+                })
+              }
+              // references: track all non-form-position symbols as variable references
+              if (activeFunction) {
+                for (let ai = 1; ai < node.namedChildCount; ai++) {
+                  const argNode = node.namedChild(ai)
+                  if (!argNode) continue
+                  this.collectSymbolRefs(argNode, activeFunction.name, relationships)
                 }
               }
             }
@@ -430,6 +575,20 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
 
     if (symbols.length > 0 && totalCyclomaticComplexity === 0) totalCyclomaticComplexity = symbols.length
 
+    // Post-loop: add contains for owned symbols
+    for (const s of symbols) {
+      const _owner = s.ownerName || s.scope
+      if (_owner) {
+        relationships.push({
+          source: _owner,
+          target: s.name,
+          type: RelationshipType.Contains,
+          confidence: 1.0,
+          metadata: {},
+        })
+      }
+    }
+
     return {
       language: "clojure",
       symbols,
@@ -468,6 +627,35 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
       endColumn: node.endPosition.column + 1,
       startIndex: node.startIndex,
       endIndex: node.endIndex,
+    }
+  }
+
+  private findChild(node: Node, predicate: (n: Node) => boolean): Node | null {
+    const count = node.namedChildCount
+    for (let i = 0; i < count; i++) {
+      const child = node.namedChild(i)
+      if (child && predicate(child)) return child
+    }
+    return null
+  }
+
+  private collectSymbolRefs(node: Node, source: string, relationships: UniversalRelationship[]): void {
+    if (!node || !source) return
+    if (node.type === "symbol" || node.type === "sym_lit") {
+      if (node.text && node.text !== source && !node.text.startsWith(":") && !node.text.startsWith(".")) {
+        relationships.push({
+          source, target: node.text,
+          type: RelationshipType.References,
+          confidence: 0.7,
+          metadata: { clojureSpecific: true, isSymbolRef: true }
+        })
+      }
+      return
+    }
+    // Recurse into children
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const child = node.namedChild(i)
+      if (child) this.collectSymbolRefs(child, source, relationships)
     }
   }
 }

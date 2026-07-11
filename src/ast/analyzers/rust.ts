@@ -185,6 +185,14 @@ export class RealRustAnalyzer implements LanguageAnalyzer {
       }
     }
 
+    // Add Contains + References
+    for (const s of ctx.symbols) {
+      const _owner = s.ownerName || s.scope; if (_owner) ctx.relationships.push({ source: _owner, target: s.name, type: RelationshipType.Contains, confidence: 1.0, metadata: {} })
+    }
+    for (const imp of ctx.imports) {
+      ctx.relationships.push({ source: "root", target: imp.module || "", type: RelationshipType.References, confidence: 0.9, metadata: {} })
+    }
+
     return {
       symbols: ctx.symbols,
       relationships: ctx.relationships,
@@ -387,7 +395,7 @@ export class RealRustAnalyzer implements LanguageAnalyzer {
     ctx.symbols.push(symbol)
 
     // Extract trait bounds → Extends relationships (trait Foo: Bar + Baz)
-    const boundsNode = node.childForFieldName("bounds") || this.findChildByType(node, "trait_bounds")
+    const boundsNode = node.childForFieldName("bounds")
     if (boundsNode) {
       for (let i = 0; i < boundsNode.namedChildCount; i++) {
         const bound = boundsNode.namedChild(i)

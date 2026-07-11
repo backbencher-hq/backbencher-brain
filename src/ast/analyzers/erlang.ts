@@ -17,6 +17,7 @@ export class RealErlangAnalyzer implements LanguageAnalyzer {
 
     const stack: Node[] = [rootNode]
     const seenFuncalls = new Set<string>()
+    const registeredFunctions = new Set<string>() // Dedup across fun_decl clauses
     const patterns: Record<string, boolean> = {}
 
     while (stack.length > 0) {
@@ -24,10 +25,26 @@ export class RealErlangAnalyzer implements LanguageAnalyzer {
       const type = node.type
       currentLine = node.startPosition.row + 1
 
-      if (type === "include_attribute" || type === "include_lib_attribute") {
-        var fNode = this.getChildByType(node, "string") || this.getChildByType(node, "string_literal");
-        if (fNode) { imports.push({ module: fNode.text.replace(/['"]/g, ""), file: fNode.text, line: currentLine, isNif: false }); }
-      } else if (type === "module_attribute") {
+      // ---- -include / -include_lib (pp_include / pp_include_lib) ----
+      if (type === "include_attribute" || type === "include_lib_attribute" || type === "pp_include" || type === "pp_include_lib") {
+        const fNode = this.getChildByType(node, "string") || this.getChildByType(node, "string_literal")
+        if (fNode) {
+          const includePath = fNode.text.replace(/['"]/g, "")
+          imports.push({ module: includePath, file: includePath, line: currentLine, isNif: false })
+          if (currentModule || filePath) {
+            relationships.push({
+              source: currentModule || filePath,
+              target: includePath,
+              type: RelationshipType.References,
+              confidence: 0.9,
+              metadata: { erlangSpecific: true, isInclude: type === "include_attribute" || type === "pp_include", isLibInclude: type === "include_lib_attribute" || type === "pp_include_lib" },
+            })
+          }
+        }
+      }
+
+      // ---- -module(...) ----
+      else if (type === "module_attribute") {
         const nameNode = this.getChildByType(node, "atom")
         if (nameNode?.text) {
           currentModule = nameNode.text
@@ -38,7 +55,10 @@ export class RealErlangAnalyzer implements LanguageAnalyzer {
             metadata: { nodeType: "module_attribute" },
           })
         }
-      } else if (type === "behaviour_attribute") {
+      }
+
+      // ---- -behaviour(gen_server). ----
+      else if (type === "behaviour_attribute") {
         const beNode = this.getChildByType(node, "atom")
         if (beNode?.text && OTP_BEHAVIOURS.has(beNode.text)) {
           symbols.push({
@@ -59,69 +79,140 @@ export class RealErlangAnalyzer implements LanguageAnalyzer {
             },
           })
         }
-      } else if (type === "wild_attribute") {
+      }
+
+      // ---- -export([greet/1, add/2]). ----
+      else if (type === "export_attribute") {
+        for (let i = 0; i < node.namedChildCount; i++) {
+          const child = node.namedChild(i)
+          if (child?.type === "fa") {
+            const nameNode = this.getChildByType(child, "atom")
+            const arityNode = this.getChildByType(child, "integer") || this.getChildByType(child, "arity")
+            if (nameNode?.text) {
+              const arity = arityNode ? parseInt(arityNode.text.replace(/\D/g, "")) || 0 : 0
+              exports.push({
+                name: nameNode.text,
+                arity,
+                file: filePath,
+                line: currentLine,
+              })
+            }
+          }
+        }
+      }
+
+      // ---- -import(lists, [map/2]). ----
+      else if (type === "import_attribute") {
+        const modNode = this.getChildByType(node, "atom")
+        const funcs: string[] = []
+        for (let i = 0; i < node.namedChildCount; i++) {
+          const child = node.namedChild(i)
+          if (child?.type === "fa") {
+            const faName = this.getChildByType(child, "atom")
+            if (faName?.text) funcs.push(faName.text)
+          }
+        }
+        if (modNode?.text) {
+          imports.push({
+            module: modNode.text,
+            functions: funcs,
+            file: "",
+            line: currentLine,
+            isNif: false,
+          })
+          relationships.push({
+            source: currentModule || filePath,
+            target: modNode.text,
+            type: RelationshipType.References,
+            confidence: 1.0,
+            metadata: { erlangSpecific: true, isModuleImport: true, importedFunctions: funcs },
+          })
+        }
+      }
+
+      // ---- -nifs([...]) / -on_load(...) ----
+      else if (type === "wild_attribute") {
         const attrNameNode = this.getChildByType(node, "attr_name")
         if (attrNameNode?.text === "nifs" || attrNameNode?.text === "on_load") {
-          const listNode = this.getChildByType(node, "list")
-          if (listNode) {
-            this.processList(listNode, (item) => {
-              const funcNode = this.getChildByType(item, "binary_op_expr") || this.getChildByType(item, "atom")
-              const funcName = funcNode?.text?.split("/")[0]
-              if (funcName && funcName !== "nifs") {
+          for (let i = 0; i < node.namedChildCount; i++) {
+            const child = node.namedChild(i)
+            if (child?.type === "fa") {
+              const nifName = this.getChildByType(child, "atom")
+              if (nifName?.text) {
                 symbols.push({
-                  name: funcName,
+                  name: nifName.text,
                   kind: SymbolKind.Function,
                   range: this.nodeToRange(node),
                   ownerName: currentModule,
                   metadata: { nodeType: attrNameNode.text, isNif: true },
                 })
               }
-            })
+            }
           }
         }
-      } else if (type === "export_attribute") {
-        const listNode = this.getChildByType(node, "list")
-        if (listNode) {
-          this.processList(listNode, (fa) => {
-            if (fa?.type === "fa") {
-              const nameNode = this.getChildByType(fa, "atom")
-              const arityNode = this.getChildByType(fa, "integer")
-              if (nameNode?.text) {
-                exports.push({
-                  name: nameNode.text,
-                  arity: arityNode ? parseInt(arityNode.text) : 0,
-                  file: filePath,
-                  line: currentLine,
-                })
-              }
-            }
-          })
-        }
-      } else if (type === "record_decl") {
+      }
+
+      // ---- -record(person, {name, age}). ----
+      else if (type === "record_decl") {
         const nameNode = this.getChildByType(node, "atom")
         if (nameNode?.text) {
+          const recordName = nameNode.text
           const fields: string[] = []
-          const fieldsContainer = this.getChildByType(node, "list") || this.getChildByType(node, "{")
-          if (fieldsContainer) {
-            this.processList(fieldsContainer, (field) => {
-              const fieldNameNode = this.getChildByType(field, "atom")
-              if (fieldNameNode?.text) fields.push(fieldNameNode.text)
-            })
+          for (let i = 0; i < node.namedChildCount; i++) {
+            const child = node.namedChild(i)
+            if (child?.type === "record_field") {
+              const fieldNameNode = this.getChildByType(child, "atom")
+              if (fieldNameNode?.text) {
+                fields.push(fieldNameNode.text)
+              }
+            }
           }
           symbols.push({
-            name: nameNode.text,
+            name: recordName,
             kind: SymbolKind.Struct,
             range: this.nodeToRange(node),
             ownerName: currentModule,
             metadata: { nodeType: "record_decl", fields },
           })
+          // Contains: record → each field
+          for (const field of fields) {
+            relationships.push({
+              source: `${currentModule ? currentModule + ":" : ""}${recordName}`,
+              target: field,
+              type: RelationshipType.Contains,
+              confidence: 1.0,
+              metadata: { erlangSpecific: true, recordField: true },
+            })
+          }
         }
-      } else if (type === "define") {
-        var macroNode = this.getChildByType(node, "macro_name") || this.getChildByType(node, "atom");
-        if (macroNode && macroNode.text && macroNode.text !== "define") {
-          symbols.push({ name: macroNode.text, kind: SymbolKind.Struct, range: this.nodeToRange(node), ownerName: currentModule, metadata: { nodeType: "macro_definition", isMacro: true } });
+      }
+
+      // ---- -define(MACRO, value). (pp_define) ----
+      else if (type === "define" || type === "pp_define") {
+        // Grammar: pp_define → macro_lhs → var(MAX_AGE)
+        let macroName = ""
+        const macroLhs = this.getChildByType(node, "macro_lhs")
+        if (macroLhs) {
+          const varNode = this.getChildByType(macroLhs, "var") || this.getChildByType(macroLhs, "atom")
+          macroName = varNode?.text || ""
         }
-      } else if (type === "type_alias") {
+        if (!macroName) {
+          const atomNode = this.getChildByType(node, "macro_name") || this.getChildByType(node, "atom")
+          if (atomNode && atomNode.text !== "define") macroName = atomNode.text
+        }
+        if (macroName) {
+          symbols.push({
+            name: macroName,
+            kind: SymbolKind.Constant,
+            range: this.nodeToRange(node),
+            ownerName: currentModule,
+            metadata: { nodeType: "macro_definition", isMacro: true },
+          })
+        }
+      }
+
+      // ---- -type name() :: ... ----
+      else if (type === "type_alias") {
         const typeNameNode = this.getChildByType(node, "type_name")
         const typeName = typeNameNode?.text?.replace(/\(\)$/, "") || this.getChildByType(node, "atom")?.text
         if (typeName) {
@@ -133,7 +224,10 @@ export class RealErlangAnalyzer implements LanguageAnalyzer {
             metadata: { nodeType: "type_alias" },
           })
         }
-      } else if (type === "spec") {
+      }
+
+      // ---- -spec name(...) :: ... ----
+      else if (type === "spec") {
         const nameNode = this.getChildByType(node, "function_name") || this.getChildByType(node, "atom")
         if (nameNode?.text) {
           symbols.push({
@@ -144,12 +238,59 @@ export class RealErlangAnalyzer implements LanguageAnalyzer {
             metadata: { nodeType: "spec", isSpec: true },
           })
         }
-      } else if (type === "send_expression") {
-        var destNode = this.getChildByType(node, "atom") || node.namedChild(0);
+      }
+
+      // ---- ! (send_expression) ----
+      else if (type === "send_expression") {
+        const destNode = this.getChildByType(node, "atom") || node.namedChild(0)
         if (destNode && currentModule) {
-          relationships.push({ source: currentModule, target: destNode.text, type: RelationshipType.Calls, confidence: 0.8, metadata: { erlangSpecific: true, isMessagePass: true } });
+          relationships.push({
+            source: currentModule,
+            target: destNode.text,
+            type: RelationshipType.Calls,
+            confidence: 0.8,
+            metadata: { erlangSpecific: true, isMessagePass: true },
+          })
         }
-      } else if (type === "fun_decl") {
+      }
+
+      // ---- #person{name = Name, age = Age} (record_expr) ----
+      else if (type === "record_expr") {
+        const nameNode = this.getChildByType(node, "record_name") || this.getChildByType(node, "atom")
+        const recordName = nameNode?.text?.replace(/^#/, "") || ""
+        if (recordName && currentModule) {
+          relationships.push({
+            source: currentModule,
+            target: recordName,
+            type: RelationshipType.Instantiates,
+            confidence: 1.0,
+            metadata: { erlangSpecific: true, isRecordExpr: true },
+          })
+        }
+        // Track variable uses in record fields
+        for (let i = 0; i < node.namedChildCount; i++) {
+          const child = node.namedChild(i)
+          if (child?.type === "record_field") {
+            const fieldName = this.getChildByType(child, "atom")
+            const fieldExpr = this.getChildByType(child, "field_expr")
+            if (fieldExpr) {
+              const varNode = this.getChildByType(fieldExpr, "var")
+              if (varNode?.text && currentModule) {
+                relationships.push({
+                  source: currentModule,
+                  target: varNode.text,
+                  type: RelationshipType.Uses,
+                  confidence: 0.8,
+                  metadata: { erlangSpecific: true, isFieldBinding: true, recordField: fieldName?.text },
+                })
+              }
+            }
+          }
+        }
+      }
+
+      // ---- fun_decl (function definition) ----
+      else if (type === "fun_decl") {
         const funcClauses = this.collectChildrenByType(node, "function_clause")
         let funcName = ""
         let symbolRegistered = false
@@ -160,19 +301,31 @@ export class RealErlangAnalyzer implements LanguageAnalyzer {
             funcName = nameNode.text
             const funcLine = funcClause.startPosition.row + 1
 
-            // Register the function symbol once (all clauses share the same name)
-            if (!symbolRegistered) {
-              symbols.push({
-                name: funcName,
-                kind: SymbolKind.Function,
-                range: this.nodeToRange(node),
-                ownerName: currentModule,
-                metadata: { nodeType: "function_clause", clauseCount: funcClauses.length },
-              })
+            // Dedup across multiple fun_decl nodes (semicolon-separated clauses)
+            if (!symbolRegistered && currentModule) {
+              const fullKey = `${currentModule}:${funcName}`
+              if (!registeredFunctions.has(fullKey)) {
+                registeredFunctions.add(fullKey)
+                symbols.push({
+                  name: funcName,
+                  kind: SymbolKind.Function,
+                  range: this.nodeToRange(node),
+                  ownerName: currentModule,
+                  metadata: { nodeType: "function_clause", clauseCount: funcClauses.length },
+                })
+                // Contains: module contains this function
+                relationships.push({
+                  source: currentModule,
+                  target: funcName,
+                  type: RelationshipType.Contains,
+                  confidence: 1.0,
+                  metadata: { erlangSpecific: true, isModuleMember: true },
+                })
+              }
               symbolRegistered = true
             }
 
-            // Extract calls from EVERY clause (not just the first)
+            // Extract calls from EVERY clause
             this.extractCallsFromFunction(
               funcClause,
               currentModule,
@@ -181,14 +334,18 @@ export class RealErlangAnalyzer implements LanguageAnalyzer {
               relationships,
               imports,
               seenFuncalls,
+              registeredFunctions,
             )
           }
         }
-      } else if (type === "receive_expression") {
+      }
+
+      // ---- receive ... end ----
+      else if (type === "receive_expression") {
         patterns["Message Reception (receive)"] = true
         for (let i = 0; i < node.namedChildCount; i++) {
           const child = node.namedChild(i)
-          if (child && child.type === "after_clause") {
+          if (child?.type === "after_clause") {
             const timeoutNode = this.getChildByType(child, "integer")
             if (timeoutNode) {
               relationships.push({
@@ -203,6 +360,10 @@ export class RealErlangAnalyzer implements LanguageAnalyzer {
           }
         }
       }
+
+      // ---- var references (Uses) ----
+      // Variable usage is tracked contextually through record_expr field bindings
+      // and function call extraction. Individual var node tracking is too noisy.
 
       for (let i = node.childCount - 1; i >= 0; i--) {
         const child = node.child(i)
@@ -240,6 +401,7 @@ export class RealErlangAnalyzer implements LanguageAnalyzer {
     relationships: UniversalRelationship[],
     imports: ImportInfo[],
     seenCalls: Set<string>,
+    registeredFunctions: Set<string>,
   ) {
     const stack: Node[] = [funcNode]
 
@@ -247,10 +409,23 @@ export class RealErlangAnalyzer implements LanguageAnalyzer {
       const node = stack.pop()!
 
       if (node.type === "call") {
-        const cnNode = node.namedChild(0); const cn = cnNode ? cnNode.text : "";
-        if (cn === "spawn" || cn === "spawn_link" || cn === "spawn_monitor") {
-          if (currentModule) { relationships.push({ source: currentModule + ":" + funcName, target: cn, type: RelationshipType.Calls, confidence: 0.9, metadata: { erlangSpecific: true, isProcessSpawn: true } }); }
+        const callee = node.namedChild(0)
+        const calleeText = callee?.text || ""
+
+        // Process spawn: spawn(fun() -> ... end) / spawn(Module, Function, Args)
+        if (calleeText === "spawn" || calleeText === "spawn_link" || calleeText === "spawn_monitor") {
+          if (currentModule) {
+            relationships.push({
+              source: `${currentModule}:${funcName}`,
+              target: calleeText,
+              type: RelationshipType.Calls,
+              confidence: 0.9,
+              metadata: { erlangSpecific: true, isProcessSpawn: true },
+            })
+          }
         }
+
+        // Remote call: io:format(...)
         const remoteNode = this.getChildByType(node, "remote")
         if (remoteNode) {
           const atoms: string[] = []
@@ -276,12 +451,35 @@ export class RealErlangAnalyzer implements LanguageAnalyzer {
                   line: lineNumber,
                   isNif: false,
                 })
+                relationships.push({
+                  source: currentModule || "global",
+                  target: targetModule,
+                  type: RelationshipType.References,
+                  confidence: 0.9,
+                  metadata: { erlangSpecific: true, isModuleDep: true },
+                })
               }
             }
           }
         }
+
+        // Local call: factorial(N - 1) — callee is an atom matching a known function
+        if (callee?.type === "atom" && calleeText && !remoteNode && currentModule) {
+          const localKey = `${currentModule}:${calleeText}`
+          if (registeredFunctions.has(localKey) && !seenCalls.has(localKey)) {
+            seenCalls.add(localKey)
+            relationships.push({
+              source: `${currentModule}:${funcName}`,
+              target: calleeText,
+              type: RelationshipType.Calls,
+              confidence: 0.9,
+              metadata: { erlangSpecific: true, context: "local function call" },
+            })
+          }
+        }
       }
 
+      // Track remote module references (even outside call context)
       if (node.type === "remote") {
         const atoms: string[] = []
         this.collectAtoms(node, atoms)
@@ -309,15 +507,6 @@ export class RealErlangAnalyzer implements LanguageAnalyzer {
     }
     for (let i = 0; i < node.childCount; i++) {
       this.collectAtoms(node.child(i)!, atoms)
-    }
-  }
-
-  private processList(listNode: Node, callback: (item: Node) => void) {
-    for (let i = 0; i < listNode.childCount; i++) {
-      const child = listNode.child(i)
-      if (child?.isNamed) {
-        callback(child)
-      }
     }
   }
 

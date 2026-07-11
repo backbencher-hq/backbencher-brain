@@ -114,7 +114,7 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
           break
         case "import_specification":
         case "library_export":
-          this.processImportExport(node, imports, exports, frameworks)
+          this.processImportExport(node, imports, exports, frameworks, relationships)
           break
         case "import_or_export":
         case "library_import":
@@ -129,6 +129,20 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
         case "identifier":
         case "simple_identifier":
           this.processMethodChannelIdentifier(node, relationships, currentScope)
+          // General variable reference tracking
+          if (currentScope && node.text && !node.text.startsWith("_") &&
+              node.parent?.type !== "function_signature" && node.parent?.type !== "method_signature" &&
+              node.parent?.type !== "class_definition" && node.parent?.type !== "superclass" &&
+              node.parent?.type !== "interfaces" && node.parent?.type !== "mixins" &&
+              node.parent?.type !== "variable_declaration" && node.parent?.type !== "initialized_variable_declaration") {
+            relationships.push({
+              source: currentScope.name,
+              target: node.text,
+              type: RelationshipType.References,
+              confidence: 0.6,
+              metadata: { isVariableRef: true, dartSpecific: true }
+            })
+          }
           break
         case "creation_expression":
         case "invocation_expression":
@@ -341,6 +355,21 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
     }
 
     for (const s of symbols) { const tl = !s.ownerName && !s.ownerKind; const pub = s.visibility !== "private" && !s.name.startsWith("_"); const exp = [SymbolKind.Class, SymbolKind.Enum, SymbolKind.Function, SymbolKind.Method, SymbolKind.Variable, SymbolKind.Constructor].includes(s.kind); if (tl && pub && exp) { exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility || "public" }) } }
+
+    // Post-loop: add contains for owned symbols
+    for (const s of symbols) {
+      const _owner = s.ownerName || s.scope
+      if (_owner) {
+        relationships.push({
+          source: _owner,
+          target: s.name,
+          type: RelationshipType.Contains,
+          confidence: 1.0,
+          metadata: {},
+        })
+      }
+    }
+
     return {
       language: "dart",
       symbols,
@@ -751,7 +780,18 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
       }
     }
 
+    const relationships: any[] = []
     symbols.push(symbol)
+    // Push overrides relationship
+    if (isOverride && currentScope?.name) {
+      relationships.push({
+        source: `${currentScope.name}.${functionName}`,
+        target: functionName,
+        type: RelationshipType.Overrides,
+        confidence: 0.9,
+        metadata: { isOverride: true, dartSpecific: true }
+      })
+    }
     return isDecl
   }
 
@@ -939,6 +979,7 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
     imports: ImportInfo[],
     exports: ExportInfo[],
     frameworks: Record<string, boolean>,
+    relationships: UniversalRelationship[],
   ) {
     const isExport = node.text.startsWith("export")
     const uriNode = this.findDescendant(node, (c) => c?.type === "string_literal")
@@ -956,6 +997,14 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
           isTypeOnly: false,
           range: this.nodeToRange(node),
         })
+      // depends: import = compile-time dependency
+      relationships.push({
+        source: "global",
+        target: moduleUri,
+        type: RelationshipType.References,
+        confidence: 0.9,
+        metadata: { isDartImport: true }
+      })
     }
   }
 

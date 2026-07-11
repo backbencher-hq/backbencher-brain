@@ -320,6 +320,14 @@ export class RealPythonAnalyzer implements LanguageAnalyzer {
       }
     }
 
+    // Add Contains + DependsOn
+    for (const s of ctx.symbols) {
+      if (s.ownerName) ctx.relationships.push({ source: s.ownerName, target: s.name, type: RelationshipType.Contains, confidence: 1.0, metadata: {} })
+    }
+    for (const imp of ctx.imports) {
+      ctx.relationships.push({ source: "root", target: imp.module || "", type: RelationshipType.DependsOn, confidence: 0.9, metadata: {} })
+    }
+
     return {
       language: "python",
       symbols: ctx.symbols,
@@ -379,8 +387,8 @@ export class RealPythonAnalyzer implements LanguageAnalyzer {
             target: arg.text,
             fromSymbol: scope ? `${scope}.${className}` : className,
             toSymbol: arg.text,
-            type: RelationshipType.Inheritance,
-            relationshipType: RelationshipType.Inheritance,
+            type: RelationshipType.Extends,
+            relationshipType: RelationshipType.Extends,
             confidence: 1.0,
             metadata: { relationshipType: "python_inherits" },
           })
@@ -721,7 +729,7 @@ export class RealPythonAnalyzer implements LanguageAnalyzer {
   private processCall(node: Node, ctx: PythonContext, pClass?: string, pFunc?: string) {
     const caller = pFunc || pClass || "global"
 
-    let targetName = ""
+    let targetName: string | null = ""
     let targetQualified = ""
 
     const funcChild = (node as any).childForFieldName?.("function")
@@ -732,7 +740,7 @@ export class RealPythonAnalyzer implements LanguageAnalyzer {
 
     if (!targetName) {
       targetName = this.getCallName(node)
-      targetQualified = targetName
+      targetQualified = targetName || ""
     }
 
     if (!targetName) return

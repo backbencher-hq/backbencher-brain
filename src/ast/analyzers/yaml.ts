@@ -134,6 +134,21 @@ export class RealYamlAnalyzer implements LanguageAnalyzer {
 
     this.detectFrameworks(ctx)
 
+    // Post-loop: add contains for parent→child key hierarchy (YAML is inherently hierarchical)
+    for (const s of ctx.symbols) {
+      const _owner = s.ownerName || s.scope
+      if (_owner) {
+        ctx.relationships.push({
+          type: RelationshipType.Contains,
+          source: _owner,
+          target: s.name,
+          isExternal: false,
+          weight: 1,
+          metadata: {},
+        })
+      }
+    }
+
     return {
       symbols: ctx.symbols,
       relationships: ctx.relationships,
@@ -253,7 +268,11 @@ export class RealYamlAnalyzer implements LanguageAnalyzer {
       this.scanForAnchors(valueNode, ctx, symbol)
       
       if (keyNode.text === "$ref") {
-        const refValue = valueNode.text.replace(/^["']|["']$/g, '');
+        // Strip quotes without regex
+        let refValue = valueNode.text
+        if ((refValue.startsWith('"') && refValue.endsWith('"')) || (refValue.startsWith("'") && refValue.endsWith("'"))) {
+          refValue = refValue.substring(1, refValue.length - 1)
+        }
         ctx.relationships.push({
           type: RelationshipType.Uses,
           source: parent ? parent.id : symbol.id,
@@ -263,11 +282,31 @@ export class RealYamlAnalyzer implements LanguageAnalyzer {
           weight: 1,
           metadata: { isYamlRef: true }
         } as any);
+        ctx.relationships.push({
+          type: RelationshipType.References,
+          source: parent ? parent.id : symbol.id,
+          target: refValue,
+          isExternal: true,
+          weight: 1,
+          metadata: { isYamlRef: true }
+        } as any);
       }
 
       if (keyNode.text === "<<") {
         if (!ctx.metadata.patterns!.includes("Configuration Inheritance")) {
           ctx.metadata.patterns!.push("Configuration Inheritance")
+        }
+        // YAML merge key <<: *base — extends relationship
+        const valText = valueNode.text
+        if (valText.startsWith("*")) {
+          ctx.relationships.push({
+            type: RelationshipType.Extends,
+            source: parent ? parent.id : symbol.id,
+            target: valText.substring(1),
+            isExternal: false,
+            weight: 0.8,
+            metadata: { yamlMerge: true }
+          } as any);
         }
       }
     }

@@ -8,9 +8,19 @@ export class RealGraphqlAnalyzer implements LanguageAnalyzer {
     const relationships: UniversalRelationship[] = []
     const imports: ImportInfo[] = []
 
+    // Extract imports — GraphQL uses #import directive (tool-specific convention)
+    // This is a pragma, not part of the GraphQL AST spec, so regex is the practical approach
     const gqlMatches = content.matchAll(/#import\s+["\x27]([^"\x27]+)["\x27]/g)
     for (const m of gqlMatches) {
-      imports.push({ module: m[1].replace(/["<>]/g, ""), items: [], importType: "gql_import", lineNumber: 0, isExternal: m[0].includes("<") || !m[1].startsWith(".") })
+      const importPath = m[1].replace(/["<>]/g, "")
+      imports.push({ module: importPath, items: [], importType: "gql_import", lineNumber: 0, isExternal: m[0].includes("<") || !importPath.startsWith(".") })
+      relationships.push({
+        source: "schema",
+        target: importPath,
+        type: RelationshipType.References,
+        confidence: 0.8,
+        metadata: { isGqlImport: true },
+      })
     }
 
     const exports: ExportInfo[] = []
@@ -27,7 +37,16 @@ export class RealGraphqlAnalyzer implements LanguageAnalyzer {
       let currentOwnerName = ownerName
       let currentOwnerKind = ownerKind
 
-      if (type === "schema_definition" || type === "schema_extension") {
+      // Pass-through wrapper nodes from newer grammar (tree-sitter-graphql ABI 14+)
+      if (type === "Document" || type === "Definition" || type === "TypeSystemDefinition" || type === "TypeSystemExtension" || type === "ExecutableDefinition" || type === "TypeDefinition") {
+        for (let i = node.namedChildCount - 1; i >= 0; i--) {
+          const child = node.namedChild(i)
+          if (child) walkStack.push({ node: child, scopePath: currentScope, ownerName: currentOwnerName, ownerKind: currentOwnerKind })
+        }
+        continue
+      }
+
+      if (type === "schema_definition" || type === "SchemaDefinition" || type === "schema_extension" || type === "SchemaExtension") {
         const schemaName = type === "schema_extension" ? "SchemaExtension" : "Schema"
         const schemaSymbol: UniversalSymbol = {
           name: schemaName,
@@ -54,9 +73,9 @@ export class RealGraphqlAnalyzer implements LanguageAnalyzer {
 
         for (let i = 0; i < node.namedChildCount; i++) {
           const child = node.namedChild(i)!
-          if (child.type === "operation_type_definition") {
+          if (child.type === "operation_type_definition" || child.type === "OperationTypeDefinition") {
             const opTypeNode = child.namedChild(0)
-            const namedTypeNode = this.findChild(child, (n) => n.type === "named_type")
+            const namedTypeNode = this.findChild(child, (n) => n.type === "named_type" || n.type === "NamedType")
             if (opTypeNode) {
               const opType = opTypeNode.text
               const returnType = namedTypeNode ? namedTypeNode.text : undefined
@@ -84,20 +103,20 @@ export class RealGraphqlAnalyzer implements LanguageAnalyzer {
       }
 
       if (
-        type === "object_type_definition" ||
-        type === "interface_type_definition" ||
-        type === "enum_type_definition" ||
-        type === "union_type_definition" ||
-        type === "scalar_type_definition" ||
-        type === "input_object_type_definition" ||
-        type === "object_type_extension" ||
-        type === "interface_type_extension" ||
-        type === "input_object_type_extension" ||
-        type === "union_type_extension" ||
-        type === "enum_type_extension" ||
-        type === "scalar_type_extension"
+        type === "object_type_definition" || type === "ObjectTypeDefinition" ||
+        type === "interface_type_definition" || type === "InterfaceTypeDefinition" ||
+        type === "enum_type_definition" || type === "EnumTypeDefinition" ||
+        type === "union_type_definition" || type === "UnionTypeDefinition" ||
+        type === "scalar_type_definition" || type === "ScalarTypeDefinition" ||
+        type === "input_object_type_definition" || type === "InputObjectTypeDefinition" ||
+        type === "object_type_extension" || type === "ObjectTypeExtension" ||
+        type === "interface_type_extension" || type === "InterfaceTypeExtension" ||
+        type === "input_object_type_extension" || type === "InputObjectTypeExtension" ||
+        type === "union_type_extension" || type === "UnionTypeExtension" ||
+        type === "enum_type_extension" || type === "EnumTypeExtension" ||
+        type === "scalar_type_extension" || type === "ScalarTypeExtension"
       ) {
-        const nameNode = this.findChild(node, (n) => n.type === "name")
+        const nameNode = this.findChild(node, (n) => n.type === "name" || n.type === "Name")
         if (nameNode) {
           const typeName = nameNode.text
           let kind = SymbolKind.Class
@@ -107,10 +126,10 @@ export class RealGraphqlAnalyzer implements LanguageAnalyzer {
           if (type.includes("scalar")) kind = SymbolKind.Type
           if (type.includes("input_object") || type.includes("input_object")) kind = SymbolKind.Interface
 
-          const isExtension = type.includes("extension")
+          const isExtension = type.includes("extension") || type.includes("Extension")
           const graphqlType = type.replace("_type_definition", "").replace("_type_extension", "_extension")
 
-          const descNode = this.findChild(node, (n) => n.type === "string_value" || n.type === "description")
+          const descNode = this.findChild(node, (n) => n.type === "string_value" || n.type === "StringValue" || n.type === "description" || n.type === "Description")
           const docstring = descNode
             ? descNode.text
                 .replace(/^"""|"""$/g, "")
@@ -147,28 +166,29 @@ export class RealGraphqlAnalyzer implements LanguageAnalyzer {
 
           if (isExtension) {
             relationships.push({
+              source: symbolId,
+              target: typeName,
               type: RelationshipType.Extends,
-              sourceId: symbolId,
-              targetId: typeName,
               metadata: { extensionType: graphqlType },
             })
           }
 
-          const implementsInterfaces = this.findChild(node, (n) => n.type === "implements_interfaces")
+          const implementsInterfaces = this.findChild(node, (n) => n.type === "implements_interfaces" || n.type === "ImplementsInterfaces")
           if (implementsInterfaces) {
             for (let i = 0; i < implementsInterfaces.namedChildCount; i++) {
               const child = implementsInterfaces.namedChild(i)!
-              const interfaceName =
-                child.type === "named_type"
-                  ? this.findChild(child, (n) => n.type === "name")?.text || child.text
-                  : child.type === "name"
-                    ? child.text
-                    : null
+              let interfaceName: string | null = null
+              if (child.type === "named_type" || child.type === "NamedType") {
+                const innerName = this.findChild(child, (n) => n.type === "name" || n.type === "Name")
+                interfaceName = innerName?.text || child.text
+              } else if (child.type === "name" || child.type === "Name") {
+                interfaceName = child.text
+              }
               if (interfaceName) {
                 relationships.push({
+                  source: symbolId,
+                  target: interfaceName,
                   type: RelationshipType.Implements,
-                  sourceId: symbolId,
-                  targetId: interfaceName,
                   metadata: {},
                 })
               }
@@ -179,18 +199,19 @@ export class RealGraphqlAnalyzer implements LanguageAnalyzer {
 
       const parentType = node.parent?.type
       if (
-        type === "field_definition" ||
-        type === "enum_value_definition" ||
-        (type === "input_value_definition" && parentType !== "arguments_definition")
+        type === "field_definition" || type === "FieldDefinition" ||
+        type === "enum_value_definition" || type === "EnumValueDefinition" ||
+        (type === "input_value_definition" || type === "InputValueDefinition") && parentType !== "arguments_definition" && parentType !== "ArgumentsDefinition"
       ) {
-        const nameNode = this.findChild(node, (n) => n.type === "name" || n.type === "enum_value")
+        const nameNode = this.findChild(node, (n) => n.type === "name" || n.type === "Name" || n.type === "enum_value" || n.type === "EnumValue")
         if (nameNode) {
           const fieldName = nameNode.text
-          const typeNode = this.findChild(node, (n) => n.type === "type")
+          const typeNode = this.findChild(node, (n) => n.type === "type" || n.type === "Type")
           const returnType = typeNode ? typeNode.text : undefined
-          const argumentsNode = this.findChild(
-            node,
-            (n) => n.type === "arguments" || n.type === "input_fields_definition",
+          const argumentsNode = this.findChild(node, (n) =>
+            n.type === "arguments" || n.type === "Arguments" ||
+            n.type === "input_fields_definition" || n.type === "InputFieldsDefinition" ||
+            n.type === "ArgumentsDefinition"
           )
 
           const fieldSymbol: UniversalSymbol = {
@@ -224,9 +245,9 @@ export class RealGraphqlAnalyzer implements LanguageAnalyzer {
 
           if (currentOwnerName) {
             relationships.push({
+              source: currentOwnerName,
+              target: fieldSymbolId,
               type: RelationshipType.Contains,
-              sourceId: currentOwnerName,
-              targetId: fieldSymbolId,
               metadata: { role: type === "enum_value_definition" ? "enum_value" : "field" },
             })
           }
@@ -235,9 +256,9 @@ export class RealGraphqlAnalyzer implements LanguageAnalyzer {
             const cleanType = returnType.replace(/[\[\]!]/g, "")
             if (cleanType && cleanType !== fieldName) {
               relationships.push({
+                source: fieldSymbolId,
+                target: cleanType,
                 type: RelationshipType.Uses,
-                sourceId: fieldSymbolId,
-                targetId: cleanType,
                 metadata: { relationshipRole: "field_return_type" },
               })
             }
@@ -329,9 +350,9 @@ export class RealGraphqlAnalyzer implements LanguageAnalyzer {
         const nameNode = this.findChild(node, (n) => n.type === "name")
         if (nameNode && currentOwnerName) {
           relationships.push({
+            source: currentOwnerName,
+            target: nameNode.text,
             type: RelationshipType.Uses,
-            sourceId: currentOwnerName,
-            targetId: nameNode.text,
             metadata: { usageType: "fragment_spread" },
           })
         }
@@ -343,9 +364,9 @@ export class RealGraphqlAnalyzer implements LanguageAnalyzer {
           const namedType = this.findChild(typeCondition, (n) => n.type === "named_type")
           if (namedType && currentOwnerName) {
             relationships.push({
+              source: currentOwnerName,
+              target: namedType.text,
               type: RelationshipType.Uses,
-              sourceId: currentOwnerName,
-              targetId: namedType.text,
               metadata: { usageType: "inline_fragment_type_condition" },
             })
           }
@@ -403,7 +424,12 @@ export class RealGraphqlAnalyzer implements LanguageAnalyzer {
       }
     }
 
-    for (var _gi = 0; _gi < symbols.length; _gi++) { var gs = symbols[_gi]; if (!gs.ownerName || gs.ownerName === "Schema" || gs.ownerKind === "namespace") { exports.push({ name: gs.name, kind: gs.kind, range: gs.range, visibility: "public" }); } }
+    for (let i = 0; i < symbols.length; i++) {
+      const s = symbols[i]
+      if (!s.ownerName || s.ownerName === "Schema" || s.ownerKind === "namespace") {
+        exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: "public" })
+      }
+    }
     return {
       language: "graphql",
       symbols,

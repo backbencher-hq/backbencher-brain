@@ -238,14 +238,25 @@ export class RealPerlAnalyzer implements LanguageAnalyzer {
               metadata: { perlSpecific: true, type: "use" },
             })
             patterns["Module Includes"] = true
+            // DependsOn for use imports
+            relationships.push({
+              source: currentPackage || "global",
+              target: name,
+              type: RelationshipType.References,
+              confidence: 0.9,
+              metadata: { perlSpecific: true, isUseImport: true },
+            })
 
             if (name === "parent" || name === "base") {
+              const capturedPackage = currentPackage // Capture value, not reference
               deferredInheritance.push(() => {
                 const args = this.getUseStatementArguments(node)
                 for (const arg of args) {
+                  const cleanArg = arg.replace(/-norequire\s*/g, "").trim()
+                  if (!cleanArg) continue
                   relationships.push({
-                    source: currentPackage || "global",
-                    target: arg.replace(/-norequire\s*/g, "").trim(),
+                    source: capturedPackage || "global",
+                    target: cleanArg,
                     type: RelationshipType.Extends,
                     confidence: 0.9,
                     metadata: { perlSpecific: true, via: `use ${name}` },
@@ -274,13 +285,14 @@ export class RealPerlAnalyzer implements LanguageAnalyzer {
           if (left) {
             const leftText = left.text
             if (leftText.includes("ISA")) {
+              const capturedPackage = currentPackage // Capture value
               deferredInheritance.push(() => {
                 const right = this.findNodeByFieldName(node, "right")
                 if (right) {
                   const parentNames = this.extractNamesFromQwOrList(right)
                   for (const pn of parentNames) {
                     relationships.push({
-                      source: currentPackage || "global",
+                      source: capturedPackage || "global",
                       target: pn,
                       type: RelationshipType.Extends,
                       confidence: 0.85,
@@ -297,7 +309,7 @@ export class RealPerlAnalyzer implements LanguageAnalyzer {
                 for (const en of exportNames) {
                   exports.push({
                     name: en,
-                    kind: "function",
+                    kind: SymbolKind.Function,
                     range: this.nodeToRange(node),
                     metadata: { perlSpecific: true, exportArray: leftText },
                   })
@@ -321,6 +333,20 @@ export class RealPerlAnalyzer implements LanguageAnalyzer {
 
     const architecturalScore = Math.min(100, Math.max(0, 100 - errors.length * 5))
     const detectedPatterns = Object.keys(patterns).filter(k => Object.prototype.hasOwnProperty.call(patterns, k))
+    // Post-loop: add contains for owned symbols
+    for (const s of symbols) {
+      const _owner = s.ownerName || s.scope
+      if (_owner) {
+        relationships.push({
+          source: _owner,
+          target: s.name,
+          type: RelationshipType.Contains,
+          confidence: 1.0,
+          metadata: {},
+        })
+      }
+    }
+
     const detectedFrameworks = Object.keys(frameworks).filter(k => Object.prototype.hasOwnProperty.call(frameworks, k))
 
     return {

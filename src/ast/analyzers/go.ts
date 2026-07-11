@@ -153,14 +153,30 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
     // PHASE 3: Process Go imports (with proper module path handling)
     this.processGoImports(rootNode, imports)
 
+    // PHASE 3b: Add DependsOn relationships for imports
+    for (const imp of imports) {
+      relationships.push({
+        source: packageName || filePath,
+        target: imp.module || "",
+        type: RelationshipType.References,
+        confidence: 0.9,
+        metadata: { isGoImportDep: true, packageName: imp.metadata?.packageName },
+      })
+    }
+
     // PHASE 4: Detect Go frameworks and patterns
     const frameworks = this.detectGoFrameworks(rootNode, imports)
     const patterns = this.detectGoPatterns(rootNode, symbols)
 
-    // PHASE 5: Phantom Symbols (Go Interface implementations or implicit receivers)
-    // Implicit interface implementations are handled during relationship analysis.
-
-    for (var _gi = 0; _gi < symbols.length; _gi++) { var gs = symbols[_gi]; if (!gs.ownerName && gs.kind !== SymbolKind.Variable && gs.visibility !== "private") { exports.push({ name: gs.name, kind: gs.kind, range: gs.range, visibility: gs.visibility || "public" }); } }
+    // PHASE 5: Exports — all public (exported) non-variable symbols
+    for (let i = 0; i < symbols.length; i++) {
+      const s = symbols[i]
+      const isPrivate = s.visibility === "private"
+      const isVar = s.kind === SymbolKind.Variable
+      if (!isPrivate && !isVar) {
+        exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility || "public" })
+      }
+    }
     return {
       language: "go",
       symbols,
@@ -853,6 +869,9 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
 
     // 6. Analyze Go-specific patterns (channels, goroutines, defer)
     this.analyzeGoSpecificPatterns(rootNode, relationships, symbols)
+
+    // 7. Analyze selector expression Uses (field access, method calls on values)
+    this.analyzeGoSelectorUses(rootNode, relationships, symbols)
   }
 
   /**
@@ -868,42 +887,57 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
     while (stack.length > 0) {
       const node = stack.pop()!
       if (node.type === "type_declaration") {
-        const structSpec = this.findChildByType(node, "struct_type")
-        if (structSpec) {
-          const structName = this.getGoTypeName(node)
-          if (structName) {
-            const embeddedTypes = this.extractGoEmbeddedTypes(structSpec)
-            forEachSymbol(embeddedTypes, (embeddedType) => {
-              relationships.push({
-                source: structName,
-                target: embeddedType,
-                type: RelationshipType.Contains,
-                confidence: 1.0,
-                metadata: {
-                  relationshipType: "go_struct_embedding",
-                  isEmbedding: true,
-                  isAnonymous: true,
-                  embedType: "struct_composition",
-                },
-              })
-            })
-
-            const fieldTypes = this.extractGoStructFieldTypes(structSpec)
-            forEachSymbol(fieldTypes, ({ fieldName, fieldType }) => {
-              if (this.isCustomGoType(fieldType)) {
+        const typeSpecs = this.findChildrenByType(node, "type_spec")
+        for (const typeSpec of typeSpecs) {
+          const structSpec = this.findChildByType(typeSpec, "struct_type")
+          if (structSpec) {
+            const nameNode = typeSpec.childForFieldName("name")
+            const structName = nameNode?.text
+            if (structName) {
+              const embeddedTypes = this.extractGoEmbeddedTypes(structSpec)
+              forEachSymbol(embeddedTypes, (embeddedType) => {
                 relationships.push({
                   source: structName,
-                  target: fieldType,
-                  type: RelationshipType.Uses,
-                  confidence: 0.9,
+                  target: embeddedType,
+                  type: RelationshipType.Contains,
+                  confidence: 1.0,
                   metadata: {
-                    relationshipType: "go_struct_field",
-                    fieldName,
-                    fieldType,
+                    relationshipType: "go_struct_embedding",
+                    isEmbedding: true,
+                    isAnonymous: true,
+                    embedType: "struct_composition",
                   },
                 })
-              }
-            })
+                relationships.push({
+                  source: structName,
+                  target: embeddedType,
+                  type: RelationshipType.Extends,
+                  confidence: 0.8,
+                  metadata: {
+                    relationshipType: "go_struct_embedding",
+                    isEmbedding: true,
+                    embedType: "struct_composition_extends",
+                  },
+                })
+              })
+
+              const fieldTypes = this.extractGoStructFieldTypes(structSpec)
+              forEachSymbol(fieldTypes, ({ fieldName, fieldType }) => {
+                if (this.isCustomGoType(fieldType)) {
+                  relationships.push({
+                    source: structName,
+                    target: fieldType,
+                    type: RelationshipType.Uses,
+                    confidence: 0.9,
+                    metadata: {
+                      relationshipType: "go_struct_field",
+                      fieldName,
+                      fieldType,
+                    },
+                  })
+                }
+              })
+            }
           }
         }
       }
@@ -1179,6 +1213,45 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
         }
       }
 
+      for (let i = node.namedChildCount - 1; i >= 0; i--) {
+        const child = node.namedChild(i)
+        if (child) stack.push(child)
+      }
+    }
+  }
+
+  /**
+   * Go Selector Expression Uses Analysis
+   * Tracks field access and method calls on structs (e.g., p.Name, p.Greet())
+   */
+  private analyzeGoSelectorUses(
+    rootNode: Node,
+    relationships: UniversalRelationship[],
+    symbols: UniversalSymbol[],
+  ) {
+    const stack = [rootNode]
+    const seen = new Set<string>()
+    while (stack.length > 0) {
+      const node = stack.pop()!
+      if (node.type === "selector_expression") {
+        const operand = node.childForFieldName("operand")
+        const field = node.childForFieldName("field")
+        if (operand && field) {
+          const src = operand.text
+          const tgt = field.text
+          const key = `${src}.${tgt}`
+          if (!seen.has(key)) {
+            seen.add(key)
+            relationships.push({
+              source: src,
+              target: tgt,
+              type: RelationshipType.Uses,
+              confidence: 0.7,
+              metadata: { relationshipType: "go_selector_use", selectorExpression: key },
+            })
+          }
+        }
+      }
       for (let i = node.namedChildCount - 1; i >= 0; i--) {
         const child = node.namedChild(i)
         if (child) stack.push(child)
@@ -1808,6 +1881,15 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
     return null
   }
 
+  private findChildrenByType(node: Node, type: string): Node[] {
+    const results: Node[] = []
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const child = node.namedChild(i)
+      if (child?.type === type) results.push(child)
+    }
+    return results
+  }
+
   /**
    * Get Go type name from type declaration
    */
@@ -1839,7 +1921,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
           }
           if (fieldNames.length === 0) {
             // This is an embedded field
-            const typeNode = field.childForFieldName("type")
+            const typeNode = field.childForFieldName("type") || this.findChildByType(field, "type_identifier")
             if (typeNode) {
               embeddedTypes.push(typeNode.text)
             }
