@@ -1,5 +1,5 @@
-// @ts-nocheck — Ported from backbencher.
-// (was bun shebang)
+// @ts-nocheck — Pool worker port from backbencher.
+#!/usr/bin/env bun
 import { createHash } from "node:crypto"
 import path from "node:path"
 import fs from "node:fs"
@@ -612,7 +612,7 @@ process.on("message", async (msg: any) => {
     // Registry loads core grammars only with 10s timeout per import.
     try {
       const { ensureWasmRegistry } = await import("../util/wasm")
-      await ensureWasmRegistry()
+      // ensureWasmRegistry handled by wasm.ts
     } catch {}
     try {
       engineModule = await import("./engine")

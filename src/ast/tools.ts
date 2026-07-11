@@ -1,4 +1,5 @@
 // @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
+import * as Log from "../tool/brain-log.js"
 import { eq, and, like, sql, desc, inArray, or, ne } from "drizzle-orm"
 import { GraphIntelligence } from "./graph"
 import { PatternRecognition } from "./patterns"
@@ -3197,7 +3198,7 @@ export namespace SystemReportBrainTools {
     projectId: ProjectID,
     options: {
       system?: string
-      section?: "all" | "summary" | "architecture" | "health" | "dependencies" | "files" | "metrics"
+      section?: "all" | "summary" | "architecture" | "health" | "dependencies" | "brain_file" | "metrics"
       regenerate?: boolean
     } = {},
   ): Promise<{
@@ -5630,7 +5631,7 @@ export namespace AdvancedBrainTools {
     projectId: ProjectID,
     query: string,
     options: {
-      searchScope?: ("functions" | "classes" | "files" | "comments")[]
+      searchScope?: ("functions" | "classes" | "brain_file" | "comments")[]
       similarityThreshold?: number
       maxResults?: number
       includeContext?: boolean
@@ -5665,7 +5666,7 @@ export namespace AdvancedBrainTools {
     }>
   }> {
     const opts = {
-      searchScope: ["functions", "classes", "files", "comments"] as const,
+      searchScope: ["functions", "classes", "brain_file", "comments"] as const,
       similarityThreshold: 0.3,
       maxResults: 50,
       includeContext: true,

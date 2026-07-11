@@ -97,7 +97,7 @@ export async function discoverFiles(
 
   // Get existing file records for incremental check
   const existingRecords = db.prepare(
-    "SELECT path, last_modified, size_bytes FROM files WHERE project_hash = (SELECT project_hash FROM index_status LIMIT 1)"
+    "SELECT path, last_modified, size_bytes FROM brain_file WHERE project_hash = (SELECT project_hash FROM index_status LIMIT 1)"
   ).all() as { path: string; last_modified: number; size_bytes: number }[]
 
   const existingStats = new Map(

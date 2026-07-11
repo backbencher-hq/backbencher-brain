@@ -1,4 +1,5 @@
 // @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
+import * as Log from "../tool/brain-log.js"
 import { eq, and, like, count } from "drizzle-orm"
 
 const log = Log.create({ service: "layer-classifier" })

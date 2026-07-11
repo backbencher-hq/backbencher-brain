@@ -1,4 +1,5 @@
 // @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
+import * as Log from "../tool/brain-log.js"
 import path from "path"
 import fs from "fs/promises"
 import { createHash } from "crypto"

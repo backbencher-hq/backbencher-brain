@@ -1,4 +1,5 @@
 // @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
+import * as Log from "../tool/brain-log.js"
 import { eq, and, or, sql, inArray, like } from "drizzle-orm"
 
 const log = Log.create({ service: "graph-intelligence" })
@@ -30,7 +31,7 @@ export namespace GraphIntelligence {
   export enum RelationshipType {
     // Direct code relationships
     Calls = "calls",
-    Imports = "imports",
+    Imports = "brain_import",
     Extends = "extends",
     Implements = "implements",
     Uses = "uses",

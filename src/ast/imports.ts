@@ -6,7 +6,7 @@ import { readFileSync, writeFileSync } from "fs"
 import { parseFile } from "../ast/engine.js"
 import { createLogger } from "../util/log.js"
 
-const log = createLogger("imports")
+const log = createLogger("brain_import")
 
 // ============================================================================
 // IMPORT INJECTOR

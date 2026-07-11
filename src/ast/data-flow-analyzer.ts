@@ -1,4 +1,5 @@
 // @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
+import * as Log from "../tool/brain-log.js"
 // Data Flow Analyzer
 // Traces ALL data movements across polyglot systems
 // INTELLIGENCE: Every data transformation, persistence, and security boundary mapped!

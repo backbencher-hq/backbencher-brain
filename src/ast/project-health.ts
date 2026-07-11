@@ -1,4 +1,5 @@
 // @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
+import * as Log from "../tool/brain-log.js"
 // Project Health Calculator
 // Computes and stores health metrics directly from indexed symbols
 

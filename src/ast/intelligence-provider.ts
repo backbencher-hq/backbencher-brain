@@ -1,4 +1,5 @@
 // @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
+import * as Log from "../tool/brain-log.js"
 import { eq, and, like, sql, desc } from "drizzle-orm"
 import { BrainTools } from "./tools"
 import { TestIntelligence } from "./test_intelligence"

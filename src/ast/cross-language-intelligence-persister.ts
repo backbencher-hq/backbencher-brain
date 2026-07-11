@@ -1,4 +1,5 @@
 // @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
+import * as Log from "../tool/brain-log.js"
 // Cross-Language Intelligence Persister
 // Persists ALL cross-language intelligence to the brain database
 // INTEGRATION: Seamlessly connects cross-language analysis with brain storage

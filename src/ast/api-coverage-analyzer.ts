@@ -1,4 +1,5 @@
 // @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
+import * as Log from "../tool/brain-log.js"
 // API Coverage Analyzer
 // Analyzes ALL API endpoints across polyglot systems
 // COVERAGE: Documentation, testing, security, monitoring - EVERYTHING tracked!

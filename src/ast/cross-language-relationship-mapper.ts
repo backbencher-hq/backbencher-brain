@@ -1,4 +1,5 @@
 // @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
+import * as Log from "../tool/brain-log.js"
 // Cross-Language Relationship Mapper
 // Maps EVERY relationship between symbols across ALL 26 languages
 // TRACING: API calls, data flows, service dependencies, FFI bindings - EVERYTHING!

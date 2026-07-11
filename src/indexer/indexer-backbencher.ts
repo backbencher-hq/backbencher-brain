@@ -1,25 +1,25 @@
-// @ts-nocheck — Full indexer port from backbencher. Kept structurally identical.
+// @ts-nocheck — Full indexer port from backbencher.
 import { ASTEngine } from "./engine"
-import { BrainDatabase } from "../brain/database"
-import type { ProjectID } from "../project/schema"
-import { Filesystem } from "../util/filesystem"
+import { BrainDatabase } from "../brain/database.js";
+import * as Log from "../tool/brain-log.js";
+// Filesystem
 import path from "node:path"
 import { readdir, stat } from "node:fs/promises"
-import { Bus } from "../bus"
-import { BrainService } from "../brain/service"
-import { eq, and, sql, inArray } from "drizzle-orm"
+import { Bus } from "../bus.js";
+import { BrainService } from "../brain/service.js";
+// Drizzle
 import {
   BrainFileTable,
   BrainSymbolTable,
   BrainRelationshipTable,
   BrainImportTable,
   BrainTaintFlowTable,
-} from "../brain/brain.sql"
+} from "../brain/brain.sql.js"
 import { BrainSemanticEmbeddingTable } from "../brain/revolutionary.sql"
 import { qualifyProjectCalls } from "../brain/qualifier"
 import { resolveProjectHeritage } from "../brain/qualifier/heritage-resolver"
 
-const log = { debug: (...a:any[])=>{}, info: (...a:any[])=>{}, warn: (...a:any[])=>{}, error: (...a:any[])=>{} }
+const log = Log.create({ service: "brain-indexer" })
 
 // Universal Brain Indexer - Connects AST Engine to Brain Database
 // This is the intelligence pipeline that transforms code into brain knowledge
@@ -382,7 +382,7 @@ export namespace BrainIndexer {
     try {
       await db.run(sql`
         INSERT OR REPLACE INTO indexing_checkpoints
-        (project_id, checkpoint_data, created_at)
+        (project_hash, checkpoint_data, created_at)
         VALUES (${checkpoint.projectId}, ${JSON.stringify(checkpoint)}, ${new Date().toISOString()})
       `)
       log.debug("checkpoint saved", {
@@ -399,7 +399,7 @@ export namespace BrainIndexer {
     try {
       const rows = (await db.all(sql`
         SELECT checkpoint_data FROM indexing_checkpoints
-        WHERE project_id = ${projectId}
+        WHERE project_hash = ${projectId}
         ORDER BY created_at DESC
         LIMIT 1
       `)) as any[]
@@ -422,7 +422,7 @@ export namespace BrainIndexer {
 
   async function clearCheckpoint(projectId: ProjectID, db: any): Promise<void> {
     try {
-      await db.run(sql`DELETE FROM indexing_checkpoints WHERE project_id = ${projectId}`)
+      await db.run(sql`DELETE FROM indexing_checkpoints WHERE project_hash = ${projectId}`)
       log.debug("checkpoint cleared", { projectId })
     } catch (error) {
       log.warn("failed to clear checkpoint", { error: error instanceof Error ? error.message : String(error) })
@@ -433,7 +433,7 @@ export namespace BrainIndexer {
     try {
       await db.run(sql`
         CREATE TABLE IF NOT EXISTS indexing_checkpoints (
-          project_id TEXT PRIMARY KEY,
+          project_hash TEXT PRIMARY KEY,
           checkpoint_data TEXT NOT NULL,
           created_at TEXT NOT NULL
         )
@@ -1089,7 +1089,7 @@ export namespace BrainIndexer {
       const fileSymbols = await tx
         .select({ id: BrainSymbolTable.id })
         .from(BrainSymbolTable)
-        .where(and(eq(BrainSymbolTable.project_id, projectId), eq(BrainSymbolTable.file_id, fileId)))
+        .where(and(eq(BrainSymbolTable.project_hash, projectId), eq(BrainSymbolTable.file_id, fileId)))
 
       const symbolIds = fileSymbols.map((s: any) => s.id)
 
@@ -1098,7 +1098,7 @@ export namespace BrainIndexer {
           .delete(BrainRelationshipTable)
           .where(
             and(
-              eq(BrainRelationshipTable.project_id, projectId),
+              eq(BrainRelationshipTable.project_hash, projectId),
               inArray(BrainRelationshipTable.source_symbol_id, symbolIds),
             ),
           )
@@ -1109,7 +1109,7 @@ export namespace BrainIndexer {
           .delete(BrainRelationshipTable)
           .where(
             and(
-              eq(BrainRelationshipTable.project_id, projectId),
+              eq(BrainRelationshipTable.project_hash, projectId),
               inArray(BrainRelationshipTable.target_symbol_id, symbolIds),
             ),
           )
@@ -1118,12 +1118,12 @@ export namespace BrainIndexer {
       // 2. Delete symbols for this file
       await tx
         .delete(BrainSymbolTable)
-        .where(and(eq(BrainSymbolTable.project_id, projectId), eq(BrainSymbolTable.file_id, fileId)))
+        .where(and(eq(BrainSymbolTable.project_hash, projectId), eq(BrainSymbolTable.file_id, fileId)))
 
       // 3. Delete imports for this file
       await tx
         .delete(BrainImportTable)
-        .where(and(eq(BrainImportTable.project_id, projectId), eq(BrainImportTable.file_id, fileId)))
+        .where(and(eq(BrainImportTable.project_hash, projectId), eq(BrainImportTable.file_id, fileId)))
 
       // 3.5 Delete taint flows involving this file
       if (symbolIds.length > 0) {
@@ -1131,14 +1131,14 @@ export namespace BrainIndexer {
           .delete(BrainTaintFlowTable)
           .where(
             and(
-              eq(BrainTaintFlowTable.project_id, projectId),
+              eq(BrainTaintFlowTable.project_hash, projectId),
               inArray(BrainTaintFlowTable.source_symbol_id, symbolIds),
             ),
           )
         await tx
           .delete(BrainTaintFlowTable)
           .where(
-            and(eq(BrainTaintFlowTable.project_id, projectId), inArray(BrainTaintFlowTable.sink_symbol_id, symbolIds)),
+            and(eq(BrainTaintFlowTable.project_hash, projectId), inArray(BrainTaintFlowTable.sink_symbol_id, symbolIds)),
           )
       }
 
@@ -1151,7 +1151,7 @@ export namespace BrainIndexer {
       // 4. Delete the file record itself
       await tx
         .delete(BrainFileTable)
-        .where(and(eq(BrainFileTable.project_id, projectId), eq(BrainFileTable.id, fileId)))
+        .where(and(eq(BrainFileTable.project_hash, projectId), eq(BrainFileTable.id, fileId)))
     })
 
     log.debug("deleted file from index", { projectId, filePath: relativePath })
@@ -1222,7 +1222,7 @@ export namespace BrainIndexer {
     const existingFile = await db
       .select()
       .from(BrainFileTable)
-      .where(and(eq(BrainFileTable.project_id, projectId), eq(BrainFileTable.path, filePath)))
+      .where(and(eq(BrainFileTable.project_hash, projectId), eq(BrainFileTable.path, filePath)))
       .limit(1)
 
     const needsReindex = !existingFile[0] || existingFile[0].file_hash !== fileHash
@@ -1236,7 +1236,7 @@ export namespace BrainIndexer {
         .from(BrainSymbolTable)
         .where(
           and(
-            eq(BrainSymbolTable.project_id, projectId),
+            eq(BrainSymbolTable.project_hash, projectId),
             eq(BrainSymbolTable.file_id, generateFileId(projectId, relativePath)),
           ),
         )
@@ -1247,7 +1247,7 @@ export namespace BrainIndexer {
         .from(BrainSymbolTable)
         .where(
           and(
-            eq(BrainSymbolTable.project_id, projectId),
+            eq(BrainSymbolTable.project_hash, projectId),
             eq(BrainSymbolTable.file_id, generateFileId(projectId, relativePath)),
           ),
         )
@@ -1261,7 +1261,7 @@ export namespace BrainIndexer {
           .from(BrainRelationshipTable)
           .where(
             and(
-              eq(BrainRelationshipTable.project_id, projectId),
+              eq(BrainRelationshipTable.project_hash, projectId),
               inArray(BrainRelationshipTable.source_symbol_id, symbolIds),
             ),
           )
@@ -1285,7 +1285,7 @@ export namespace BrainIndexer {
         .insert(BrainFileTable)
         .values({
           id: fileId,
-          project_id: projectId,
+          project_hash: projectId,
           path: filePath,
           relative_path: relativePath,
           file_hash: fileHash,
@@ -1328,7 +1328,7 @@ export namespace BrainIndexer {
       const existingFileSymbols = await tx
         .select({ id: BrainSymbolTable.id })
         .from(BrainSymbolTable)
-        .where(and(eq(BrainSymbolTable.project_id, projectId), eq(BrainSymbolTable.file_id, fileId)))
+        .where(and(eq(BrainSymbolTable.project_hash, projectId), eq(BrainSymbolTable.file_id, fileId)))
 
       const existingSymbolIds = existingFileSymbols.map((s: { id: string }) => s.id)
 
@@ -1337,7 +1337,7 @@ export namespace BrainIndexer {
           .delete(BrainTaintFlowTable)
           .where(
             and(
-              eq(BrainTaintFlowTable.project_id, projectId),
+              eq(BrainTaintFlowTable.project_hash, projectId),
               inArray(BrainTaintFlowTable.source_symbol_id, existingSymbolIds),
             ),
           )
@@ -1345,7 +1345,7 @@ export namespace BrainIndexer {
           .delete(BrainTaintFlowTable)
           .where(
             and(
-              eq(BrainTaintFlowTable.project_id, projectId),
+              eq(BrainTaintFlowTable.project_hash, projectId),
               inArray(BrainTaintFlowTable.sink_symbol_id, existingSymbolIds),
             ),
           )
@@ -1354,7 +1354,7 @@ export namespace BrainIndexer {
       // Delete existing symbols for this file (for clean re-indexing)
       await tx
         .delete(BrainSymbolTable)
-        .where(and(eq(BrainSymbolTable.project_id, projectId), eq(BrainSymbolTable.file_id, fileId)))
+        .where(and(eq(BrainSymbolTable.project_hash, projectId), eq(BrainSymbolTable.file_id, fileId)))
 
       // Insert symbols in batches
       let symbolCount = 0
@@ -1375,7 +1375,7 @@ export namespace BrainIndexer {
             symbol.kind,
             symbol.kind === "variable" ? symbol.range.startIndex : undefined,
           ),
-          project_id: projectId,
+          project_hash: projectId,
           file_id: fileId,
           name: symbol.name,
           symbol_type: symbol.kind,
@@ -1440,7 +1440,7 @@ export namespace BrainIndexer {
                 .insert(BrainSemanticEmbeddingTable)
                 .values({
                   id: `${symbolId}_semantic`,
-                  project_id: projectId,
+                  project_hash: projectId,
                   entity_id: symbolId,
                   entity_type: "symbol",
                   embedding_model: embeddingModel,
@@ -1472,7 +1472,7 @@ export namespace BrainIndexer {
       const fileSymbols = await tx
         .select({ id: BrainSymbolTable.id })
         .from(BrainSymbolTable)
-        .where(and(eq(BrainSymbolTable.project_id, projectId), eq(BrainSymbolTable.file_id, fileId)))
+        .where(and(eq(BrainSymbolTable.project_hash, projectId), eq(BrainSymbolTable.file_id, fileId)))
 
       const symbolIds = fileSymbols.map((s: any) => s.id)
 
@@ -1481,7 +1481,7 @@ export namespace BrainIndexer {
           .delete(BrainRelationshipTable)
           .where(
             and(
-              eq(BrainRelationshipTable.project_id, projectId),
+              eq(BrainRelationshipTable.project_hash, projectId),
               inArray(BrainRelationshipTable.source_symbol_id, symbolIds),
             ),
           )
@@ -1519,7 +1519,7 @@ export namespace BrainIndexer {
               .insert(BrainSymbolTable)
               .values({
                 id: sourceId,
-                project_id: projectId,
+                project_hash: projectId,
                 file_id: fileId,
                 name: fakeName,
                 symbol_type: "unknown",
@@ -1552,7 +1552,7 @@ export namespace BrainIndexer {
             targetId || `external:${relationship.target}`,
             relationship.type || relationship.relationshipType || ASTEngine.RelationshipType.References,
           ),
-          project_id: projectId,
+          project_hash: projectId,
           source_symbol_id: sourceId,
           target_symbol_id: targetId,
           target_external: targetSymbol
@@ -1592,7 +1592,7 @@ export namespace BrainIndexer {
       // Delete existing imports for this file
       await tx
         .delete(BrainImportTable)
-        .where(and(eq(BrainImportTable.project_id, projectId), eq(BrainImportTable.file_id, fileId)))
+        .where(and(eq(BrainImportTable.project_hash, projectId), eq(BrainImportTable.file_id, fileId)))
 
       // Insert imports in batches
       const importBatches = []
@@ -1605,7 +1605,7 @@ export namespace BrainIndexer {
         if (items.length === 0) {
           currentImportBatch.push({
             id: generateImportId(projectId, relativePath, mod, mod),
-            project_id: projectId,
+            project_hash: projectId,
             file_id: fileId,
             imported_name: mod,
             imported_as: importInfo.alias,
@@ -1618,7 +1618,7 @@ export namespace BrainIndexer {
           for (const item of items) {
             currentImportBatch.push({
               id: generateImportId(projectId, relativePath, mod, item),
-              project_id: projectId,
+              project_hash: projectId,
               file_id: fileId,
               imported_name: item,
               imported_as: importInfo.alias,
@@ -1819,17 +1819,17 @@ export namespace BrainIndexer {
     const [fileCount] = await db
       .select({ count: sql`count(*)` })
       .from(BrainFileTable)
-      .where(eq(BrainFileTable.project_id, projectId))
+      .where(eq(BrainFileTable.project_hash, projectId))
 
     const [symbolCount] = await db
       .select({ count: sql`count(*)` })
       .from(BrainSymbolTable)
-      .where(eq(BrainSymbolTable.project_id, projectId))
+      .where(eq(BrainSymbolTable.project_hash, projectId))
 
     const [relationshipCount] = await db
       .select({ count: sql`count(*)` })
       .from(BrainRelationshipTable)
-      .where(eq(BrainRelationshipTable.project_id, projectId))
+      .where(eq(BrainRelationshipTable.project_hash, projectId))
 
     return {
       files: fileCount?.count || 0,

@@ -1,4 +1,5 @@
 // @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
+import * as Log from "../tool/brain-log.js"
 import { CrossLanguageIntelligence } from "./cross-language-intelligence"
 
 const log = Log.create({ service: "cross-language-security" })

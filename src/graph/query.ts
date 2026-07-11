@@ -91,8 +91,8 @@ export function searchSymbols(
            f.language, s.line_start, s.line_end, s.byte_start, s.byte_end,
            s.visibility, s.is_static, s.is_async, s.complexity,
            s.gravity_score, s.layer, s.parameters, s.return_type, s.docstring
-    FROM symbols s
-    JOIN files f ON f.id = s.file_id AND f.project_hash = s.project_hash
+    FROM brain_symbol s
+    JOIN brain_file f ON f.id = s.file_id AND f.project_hash = s.project_hash
     WHERE s.project_hash = ?
   `
   const params: any[] = [projectHash]
@@ -142,8 +142,8 @@ export function findSymbol(
            f.language, s.line_start, s.line_end, s.byte_start, s.byte_end,
            s.visibility, s.is_static, s.is_async, s.complexity,
            s.gravity_score, s.layer, s.parameters, s.return_type, s.docstring
-    FROM symbols s
-    JOIN files f ON f.id = s.file_id AND f.project_hash = s.project_hash
+    FROM brain_symbol s
+    JOIN brain_file f ON f.id = s.file_id AND f.project_hash = s.project_hash
     WHERE s.project_hash = ? AND s.name = ?
   `
   const params: any[] = [projectHash, name]
@@ -177,8 +177,8 @@ export function getFileSymbols(
            f.language, s.line_start, s.line_end, s.byte_start, s.byte_end,
            s.visibility, s.is_static, s.is_async, s.complexity,
            s.gravity_score, s.layer, s.parameters, s.return_type, s.docstring
-    FROM symbols s
-    JOIN files f ON f.id = s.file_id AND f.project_hash = s.project_hash
+    FROM brain_symbol s
+    JOIN brain_file f ON f.id = s.file_id AND f.project_hash = s.project_hash
     WHERE s.project_hash = ? AND f.relative_path = ?
     ORDER BY s.line_start
   `).all(projectHash, relativePath) as SymbolResult[]
@@ -201,8 +201,8 @@ export function getSymbolsByKind(
            f.language, s.line_start, s.line_end, s.byte_start, s.byte_end,
            s.visibility, s.is_static, s.is_async, s.complexity,
            s.gravity_score, s.layer, s.parameters, s.return_type, s.docstring
-    FROM symbols s
-    JOIN files f ON f.id = s.file_id AND f.project_hash = s.project_hash
+    FROM brain_symbol s
+    JOIN brain_file f ON f.id = s.file_id AND f.project_hash = s.project_hash
     WHERE s.project_hash = ? AND s.kind IN (${placeholders})
     ORDER BY s.gravity_score DESC LIMIT ? OFFSET ?
   `).all(projectHash, ...kinds, limit, offset) as SymbolResult[]
@@ -226,11 +226,11 @@ export function getCallers(
     SELECT src.name as source_name, sf.relative_path as source_file,
            tgt.name as target_name, tf.relative_path as target_file,
            r.relationship_type, r.line_number, r.is_cross_file
-    FROM relationships r
-    JOIN symbols src ON src.id = r.source_symbol_id AND src.project_hash = r.project_hash
-    JOIN files sf ON sf.id = src.file_id
-    LEFT JOIN symbols tgt ON tgt.id = r.target_symbol_id AND tgt.project_hash = r.project_hash
-    LEFT JOIN files tf ON tf.id = tgt.file_id
+    FROM brain_relationship r
+    JOIN brain_symbol src ON src.id = r.source_symbol_id AND src.project_hash = r.project_hash
+    JOIN brain_file sf ON sf.id = src.file_id
+    LEFT JOIN brain_symbol tgt ON tgt.id = r.target_symbol_id AND tgt.project_hash = r.project_hash
+    LEFT JOIN brain_file tf ON tf.id = tgt.file_id
     WHERE r.project_hash = ? AND r.target_symbol_id = ?
     ORDER BY src.gravity_score DESC
     LIMIT ?
@@ -251,11 +251,11 @@ export function getCallees(
     SELECT src.name as source_name, sf.relative_path as source_file,
            tgt.name as target_name, tf.relative_path as target_file,
            r.relationship_type, r.line_number, r.is_cross_file
-    FROM relationships r
-    JOIN symbols src ON src.id = r.source_symbol_id AND src.project_hash = r.project_hash
-    JOIN files sf ON sf.id = src.file_id
-    LEFT JOIN symbols tgt ON tgt.id = r.target_symbol_id AND tgt.project_hash = r.project_hash
-    LEFT JOIN files tf ON tf.id = tgt.file_id
+    FROM brain_relationship r
+    JOIN brain_symbol src ON src.id = r.source_symbol_id AND src.project_hash = r.project_hash
+    JOIN brain_file sf ON sf.id = src.file_id
+    LEFT JOIN brain_symbol tgt ON tgt.id = r.target_symbol_id AND tgt.project_hash = r.project_hash
+    LEFT JOIN brain_file tf ON tf.id = tgt.file_id
     WHERE r.project_hash = ? AND r.source_symbol_id = ?
     ORDER BY tgt.gravity_score DESC
     LIMIT ?
@@ -285,10 +285,10 @@ export function getRecursiveCallers(
 
       const callers = db.prepare(`
         SELECT DISTINCT src.name as caller, sf.relative_path as file
-        FROM relationships r
-        JOIN symbols src ON src.id = r.source_symbol_id AND src.project_hash = r.project_hash
-        JOIN files sf ON sf.id = src.file_id
-        JOIN symbols tgt ON tgt.id = r.target_symbol_id AND tgt.project_hash = r.project_hash
+        FROM brain_relationship r
+        JOIN brain_symbol src ON src.id = r.source_symbol_id AND src.project_hash = r.project_hash
+        JOIN brain_file sf ON sf.id = src.file_id
+        JOIN brain_symbol tgt ON tgt.id = r.target_symbol_id AND tgt.project_hash = r.project_hash
         WHERE r.project_hash = ? AND tgt.name = ? AND r.relationship_type = 'calls'
         LIMIT 50
       `).all(projectHash, name) as Array<{ caller: string; file: string }>
@@ -362,8 +362,8 @@ export function getFileImports(
   return db.prepare(`
     SELECT i.imported_name, i.import_path, i.import_type, i.is_external, i.line_number,
            f.relative_path as file
-    FROM imports i
-    JOIN files f ON f.id = i.file_id
+    FROM brain_import i
+    JOIN brain_file f ON f.id = i.file_id
     WHERE i.project_hash = ? AND f.relative_path LIKE ?
     LIMIT ?
   `).all(projectHash, `%${relativePath}%`, limit)
@@ -380,8 +380,8 @@ export function getFileDependents(
 ) {
   return db.prepare(`
     SELECT i.imported_name, i.import_path, f.relative_path as dependent_file
-    FROM imports i
-    JOIN files f ON f.id = i.file_id
+    FROM brain_import i
+    JOIN brain_file f ON f.id = i.file_id
     WHERE i.project_hash = ? AND i.import_path LIKE ?
     LIMIT ?
   `).all(projectHash, `%${relativePath}%`, limit)
@@ -408,7 +408,7 @@ export function searchContent(
     const matches = db.prepare(`
       SELECT f.relative_path as file_path, f.content as file_content
       FROM content_fts ft
-      JOIN files f ON f.id = ft.file_id
+      JOIN brain_file f ON f.id = ft.file_id
       WHERE content_fts MATCH ? AND f.project_hash = ?
       LIMIT ?
     `).all(`"${safeQuery}"`, projectHash, limit) as Array<{ file_path: string; file_content: string | null }>
@@ -445,14 +445,14 @@ export function searchContent(
  * Used by: brain_health
  */
 export function getStats(db: Database.Database, projectHash: string): StatsResult {
-  const fileCount = (db.prepare("SELECT count(*) as c FROM files WHERE project_hash = ?").get(projectHash) as any)?.c || 0
-  const symbolCount = (db.prepare("SELECT count(*) as c FROM symbols WHERE project_hash = ?").get(projectHash) as any)?.c || 0
-  const relCount = (db.prepare("SELECT count(*) as c FROM relationships WHERE project_hash = ?").get(projectHash) as any)?.c || 0
-  const importCount = (db.prepare("SELECT count(*) as c FROM imports WHERE project_hash = ?").get(projectHash) as any)?.c || 0
-  const avgComplexity = (db.prepare("SELECT avg(complexity) as c FROM symbols WHERE project_hash = ?").get(projectHash) as any)?.c || 0
+  const fileCount = (db.prepare("SELECT count(*) as c FROM brain_file WHERE project_hash = ?").get(projectHash) as any)?.c || 0
+  const symbolCount = (db.prepare("SELECT count(*) as c FROM brain_symbol WHERE project_hash = ?").get(projectHash) as any)?.c || 0
+  const relCount = (db.prepare("SELECT count(*) as c FROM brain_relationship WHERE project_hash = ?").get(projectHash) as any)?.c || 0
+  const importCount = (db.prepare("SELECT count(*) as c FROM brain_import WHERE project_hash = ?").get(projectHash) as any)?.c || 0
+  const avgComplexity = (db.prepare("SELECT avg(complexity) as c FROM brain_symbol WHERE project_hash = ?").get(projectHash) as any)?.c || 0
 
   const languages = db.prepare(
-    "SELECT DISTINCT language FROM files WHERE project_hash = ? AND language IS NOT NULL"
+    "SELECT DISTINCT language FROM brain_file WHERE project_hash = ? AND language IS NOT NULL"
   ).all(projectHash) as Array<{ language: string }>
 
   return {
@@ -483,8 +483,8 @@ export function getMostComplex(
            f.language, s.line_start, s.line_end, s.byte_start, s.byte_end,
            s.visibility, s.is_static, s.is_async, s.complexity,
            s.gravity_score, s.layer, s.parameters, s.return_type, s.docstring
-    FROM symbols s
-    JOIN files f ON f.id = s.file_id AND f.project_hash = s.project_hash
+    FROM brain_symbol s
+    JOIN brain_file f ON f.id = s.file_id AND f.project_hash = s.project_hash
     WHERE s.project_hash = ? AND s.kind IN ('function', 'method')
     ORDER BY s.complexity DESC
     LIMIT ?
@@ -505,12 +505,12 @@ export function findOrphaned(
            f.language, s.line_start, s.line_end, s.byte_start, s.byte_end,
            s.visibility, s.is_static, s.is_async, s.complexity,
            s.gravity_score, s.layer, s.parameters, s.return_type, s.docstring
-    FROM symbols s
-    JOIN files f ON f.id = s.file_id AND f.project_hash = s.project_hash
+    FROM brain_symbol s
+    JOIN brain_file f ON f.id = s.file_id AND f.project_hash = s.project_hash
     WHERE s.project_hash = ?
       AND s.kind IN ('function', 'method', 'class')
-      AND s.id NOT IN (SELECT DISTINCT target_symbol_id FROM relationships WHERE project_hash = ? AND target_symbol_id IS NOT NULL)
-      AND s.id NOT IN (SELECT DISTINCT source_symbol_id FROM relationships WHERE project_hash = ?)
+      AND s.id NOT IN (SELECT DISTINCT target_symbol_id FROM brain_relationship WHERE project_hash = ? AND target_symbol_id IS NOT NULL)
+      AND s.id NOT IN (SELECT DISTINCT source_symbol_id FROM brain_relationship WHERE project_hash = ?)
     ORDER BY s.complexity DESC
     LIMIT ?
   `).all(projectHash, projectHash, projectHash, limit) as SymbolResult[]
@@ -527,11 +527,11 @@ export function getCouplingHeatmap(
 ): Array<{ name: string; file: string; incoming: number; outgoing: number; score: number }> {
   return db.prepare(`
     SELECT s.name, f.relative_path as file,
-           (SELECT count(*) FROM relationships r WHERE r.target_symbol_id = s.id AND r.project_hash = ?) as incoming,
-           (SELECT count(*) FROM relationships r WHERE r.source_symbol_id = s.id AND r.project_hash = ?) as outgoing,
-           (SELECT count(*) FROM relationships r WHERE (r.source_symbol_id = s.id OR r.target_symbol_id = s.id) AND r.project_hash = ?) as score
-    FROM symbols s
-    JOIN files f ON f.id = s.file_id AND f.project_hash = s.project_hash
+           (SELECT count(*) FROM brain_relationship r WHERE r.target_symbol_id = s.id AND r.project_hash = ?) as incoming,
+           (SELECT count(*) FROM brain_relationship r WHERE r.source_symbol_id = s.id AND r.project_hash = ?) as outgoing,
+           (SELECT count(*) FROM brain_relationship r WHERE (r.source_symbol_id = s.id OR r.target_symbol_id = s.id) AND r.project_hash = ?) as score
+    FROM brain_symbol s
+    JOIN brain_file f ON f.id = s.file_id AND f.project_hash = s.project_hash
     WHERE s.project_hash = ? AND s.kind = 'class'
     ORDER BY score DESC
     LIMIT ?
@@ -556,11 +556,11 @@ export function getTaintFlows(
            t.vulnerability_type, t.severity, t.is_mitigated, t.flow_path,
            src.name as source_name, sf.relative_path as source_file,
            snk.name as sink_name, tnf.relative_path as sink_file
-    FROM taint_flows t
-    LEFT JOIN symbols src ON src.id = t.source_symbol_id
-    LEFT JOIN files sf ON sf.id = src.file_id
-    LEFT JOIN symbols snk ON snk.id = t.sink_symbol_id
-    LEFT JOIN files tnf ON tnf.id = snk.file_id
+    FROM brain_taint_flow t
+    LEFT JOIN brain_symbol src ON src.id = t.source_symbol_id
+    LEFT JOIN brain_file sf ON sf.id = src.file_id
+    LEFT JOIN brain_symbol snk ON snk.id = t.sink_symbol_id
+    LEFT JOIN brain_file tnf ON tnf.id = snk.file_id
     WHERE t.project_hash = ?
     ORDER BY CASE t.severity WHEN 'critical' THEN 0 WHEN 'high' THEN 1 ELSE 2 END
     LIMIT ?

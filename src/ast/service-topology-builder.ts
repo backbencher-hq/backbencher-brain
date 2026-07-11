@@ -1,4 +1,5 @@
 // @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
+import * as Log from "../tool/brain-log.js"
 // Service Topology Builder
 // Builds complete service architecture map across ALL languages
 // TRACING: Every microservice, API, database, message queue, cache - EVERYTHING!

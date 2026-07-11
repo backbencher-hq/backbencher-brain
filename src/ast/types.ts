@@ -51,7 +51,7 @@ export enum RelationshipType {
   Implementation = "implements",
   Uses = "uses",
   Dependency = "uses",
-  Imports = "imports",
+  Imports = "brain_import",
   Exports = "exports",
   Contains = "contains",
   DependsOn = "references",

@@ -1,6 +1,6 @@
 // @ts-nocheck — Full engine port from backbencher. Structurally identical.
 import type { Language, Parser, Node } from "web-tree-sitter"
-// Log replaced with local logger
+import * as Log from "../tool/brain-log.js"
 function lazy<T>(fn: () => Promise<T>) { let val: T; return () => { if (!val) val = fn() as any; return val } }
 import { fileURLToPath } from "node:url"
 // WASM utilities — handled by our wasm.ts
@@ -304,7 +304,7 @@ export namespace ASTEngine {
     Implementation = "implements", // Legacy alias
     Uses = "uses",
     Dependency = "uses", // Legacy alias
-    Imports = "imports",
+    Imports = "brain_import",
     Exports = "exports",
     Contains = "contains",
     DependsOn = "references", // Legacy alias

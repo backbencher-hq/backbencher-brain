@@ -1,4 +1,5 @@
 // @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
+import * as Log from "../tool/brain-log.js"
 import { eq, and, or, sql, inArray, like, desc, count } from "drizzle-orm"
 import {
   BrainSymbolTable,

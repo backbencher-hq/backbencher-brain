@@ -1,4 +1,5 @@
 // @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
+import * as Log from "../tool/brain-log.js"
 import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "../types.js"
 import path from "path"
 import { readdir, stat } from "fs/promises"
@@ -9,7 +10,7 @@ import {
   BrainRelationshipTable,
   BrainImportTable,
   BrainTaintFlowTable,
-} from "../brain/brain.sql"
+} from "../brain/brain.sql.js"
 
 const log = Log.create({ service: "brain-indexer" })
 

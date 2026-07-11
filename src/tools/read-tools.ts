@@ -23,7 +23,7 @@ registerTool({
     type: "object",
     properties: {
       query: { type: "string", description: "The symbol name or concept to search for" },
-      scope: { type: "string", enum: ["project", "functions", "classes", "files"], description: "Search scope" },
+      scope: { type: "string", enum: ["project", "functions", "classes", "brain_file"], description: "Search scope" },
       exact: { type: "boolean", description: "Exact name match only" },
       language: { type: "string", description: "Filter by language (typescript, python, etc.)" },
       includeContent: { type: "boolean", description: "Include code snippets in results" },
@@ -50,7 +50,7 @@ registerTool({
       return { data: results, count: results.length }
     }
 
-    if (args.scope === "files") {
+    if (args.scope === "brain_file") {
       const results = findFiles(ctx.db, ctx.projectHash, args.query, limit)
       return { data: results, count: results.length }
     }
@@ -170,7 +170,7 @@ registerTool({
       target: { type: "string", description: "Symbol or file name to analyze" },
       analysisType: {
         type: "string",
-        enum: ["callers", "callees", "impact", "imports", "exports", "coupling", "orphaned"],
+        enum: ["callers", "callees", "impact", "brain_import", "exports", "coupling", "orphaned"],
         description: "Type of relationship analysis",
       },
       traceToRoot: { type: "boolean", description: "Recursively trace call graph to root (max depth 10)" },
@@ -203,7 +203,7 @@ registerTool({
       return { data: { symbol: args.target, callees, count: callees.length } }
     }
 
-    if (args.analysisType === "imports") {
+    if (args.analysisType === "brain_import") {
       const imports = getFileImports(ctx.db, ctx.projectHash, args.target, limit)
       return { data: { file: args.target, imports, count: imports.length } }
     }

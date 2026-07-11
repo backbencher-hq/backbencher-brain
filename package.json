@@ -1,11 +1,11 @@
 {
   "name": "backbencher-brain",
   "version": "0.1.0",
-  "description": "Universal MCP code intelligence server — index any project with 40+ language analyzers",
+  "description": "Universal MCP code intelligence server \u2014 index any project with 40+ language analyzers",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "bb": "./bin/bb"
+    "bb-mcp": "./bin/bb"
   },
   "files": [
     "dist/",

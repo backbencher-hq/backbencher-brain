@@ -99,19 +99,19 @@ export function storeResults(
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `)
 
-  const deleteFileSymbols = db.prepare("DELETE FROM symbols WHERE file_id = ?")
-  const deleteFileImports = db.prepare("DELETE FROM imports WHERE file_id = ?")
+  const deleteFileSymbols = db.prepare("DELETE FROM brain_symbol WHERE file_id = ?")
+  const deleteFileImports = db.prepare("DELETE FROM brain_import WHERE file_id = ?")
   const deleteFileRelationships = db.prepare(`
-    DELETE FROM relationships WHERE source_symbol_id IN (SELECT id FROM symbols WHERE file_id = ?)
+    DELETE FROM brain_relationship WHERE source_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id = ?)
   `)
   const deleteFileTaints = db.prepare(`
-    DELETE FROM taint_flows WHERE source_symbol_id IN (SELECT id FROM symbols WHERE file_id = ?)
-       OR sink_symbol_id IN (SELECT id FROM symbols WHERE file_id = ?)
+    DELETE FROM brain_taint_flow WHERE source_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id = ?)
+       OR sink_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id = ?)
   `)
 
   // Pre-resolve targets across the entire DB
   const resolveTargetStmt = db.prepare(
-    "SELECT id FROM symbols WHERE project_hash = ? AND name = ? LIMIT 1"
+    "SELECT id FROM brain_symbol WHERE project_hash = ? AND name = ? LIMIT 1"
   )
 
   // Two-phase insert: disable FK during batch for performance/correctness

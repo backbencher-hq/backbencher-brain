@@ -1,4 +1,5 @@
 // @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
+import * as Log from "../tool/brain-log.js"
 // Cross-Language Symbol Discovery Engine
 // Discovers and correlates symbols across ALL 26 languages
 // NO STONE LEFT UNTURNED - Every API, service, model, config is traced!

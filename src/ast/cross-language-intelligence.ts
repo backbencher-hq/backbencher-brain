@@ -1,4 +1,5 @@
 // @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
+import * as Log from "../tool/brain-log.js"
 // Cross-Language Intelligence Engine
 // polyglot analysis system that traces relationships across ALL 26 languages
 // The most advanced cross-language intelligence ever built - NO STONE LEFT UNTURNED

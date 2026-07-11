@@ -1,20 +1,17 @@
-// @ts-nocheck — Full parallel-indexer port from backbencher. Kept structurally identical.
-// SemanticEngine removed
+// @ts-nocheck — Full parallel-indexer port from backbencher.
 // Parallel Indexer v4 - Batch Processing to Avoid Event Loop Blocking
 // Scales gracefully and avoids 500ms setup overhead per file
 
 import { cpus } from "node:os"
 import * as path from "node:path"
 import { fork, type ChildProcess } from "node:child_process"
-import type { ProjectID } from "../project/schema"
-import { BrainDatabase } from "../brain/database"
-import { Bus } from "../bus"
-import { BrainService } from "../brain/service"
+import * as Log from "../tool/brain-log.js"
+import { BrainDatabase } from "../brain/database.js";
+import { Bus } from "../bus.js";
+import { BrainService } from "../brain/service.js";
 import { readdir, stat } from "node:fs/promises"
-// computeAndStoreProjectHealth removed
-// CrossLanguageIntelligencePersister removed
 
-const log = { debug: (...a:any[])=>{}, info: (...a:any[])=>{}, warn: (...a:any[])=>{}, error: (...a:any[])=>{} }
+const log = Log.create({ service: "parallel-indexer" })
 
 // ============================================================================
 // PILLAR 3: LAYER-AWARE PAGERANK
@@ -415,13 +412,13 @@ async function discoverAndFilterFiles(
     const placeholders = filesOverride.map(() => "?").join(",")
     existingRecords = rawDb
       .prepare(
-        `SELECT path, last_modified, size_bytes FROM brain_file WHERE project_id = ? AND path IN (${placeholders})`,
+        `SELECT path, last_modified, size_bytes FROM brain_file WHERE project_hash = ? AND path IN (${placeholders})`,
       )
       .all(projectId, ...filesOverride) as { path: string; last_modified: number; size_bytes: number }[]
   } else {
     // Fetch all for full project index
     existingRecords = rawDb
-      .prepare(`SELECT path, last_modified, size_bytes FROM brain_file WHERE project_id = ?`)
+      .prepare(`SELECT path, last_modified, size_bytes FROM brain_file WHERE project_hash = ?`)
       .all(projectId) as { path: string; last_modified: number; size_bytes: number }[]
   }
 
@@ -659,7 +656,7 @@ async function processInProcess(
   }
 
   // Load pool-worker's parse function
-  const poolWorker = await import("./pool-worker")
+  const poolWorker = await import("./pool-worker.js")
   const parseFile = (poolWorker as any).parseFile
 
   for (const file of effectiveFiles) {
@@ -735,7 +732,7 @@ async function processInProcess(
 }
 
 async function extractFallbackResult(filePath: string, projectPath: string): Promise<any> {
-  const { extractFallback } = await import("./pool-worker")
+  const { extractFallback } = await import("./pool-worker.js")
   const { readFile } = await import("fs/promises")
   const path = await import("path")
   const content = await readFile(filePath, "utf-8")
@@ -1062,25 +1059,25 @@ export async function storeResults(
 
   const insertFile = rawDb.prepare(`
     INSERT OR REPLACE INTO brain_file 
-    (id, project_id, path, relative_path, file_hash, size_bytes, line_count, last_modified, language, framework_type, has_syntax_errors, error_report, is_test_file, layer, time_created, time_updated)
+    (id, project_hash, path, relative_path, file_hash, size_bytes, line_count, last_modified, language, framework_type, has_syntax_errors, error_report, is_test_file, layer, time_created, time_updated)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `)
 
   const insertSymbol = rawDb.prepare(`
     INSERT OR REPLACE INTO brain_symbol
-    (id, project_id, file_id, name, qualified_name, symbol_type, line_start, line_end, byte_start, byte_end, visibility, parameters, return_type, qualified_calls, complexity, api_contract_path, gravity_score, layer, owner_symbol_id, annotations, is_async, is_static, is_abstract, generic_parameters, time_created, time_updated)
+    (id, project_hash, file_id, name, qualified_name, symbol_type, line_start, line_end, byte_start, byte_end, visibility, parameters, return_type, qualified_calls, complexity, api_contract_path, gravity_score, layer, owner_symbol_id, annotations, is_async, is_static, is_abstract, generic_parameters, time_created, time_updated)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `)
 
   const insertImport = rawDb.prepare(`
     INSERT OR REPLACE INTO brain_import
-    (id, project_id, file_id, imported_name, import_path, import_type, is_external, line_number, time_created, time_updated)
+    (id, project_hash, file_id, imported_name, import_path, import_type, is_external, line_number, time_created, time_updated)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `)
 
   const insertRelationship = rawDb.prepare(`
     INSERT OR IGNORE INTO brain_relationship
-    (id, project_id, source_symbol_id, target_symbol_id, source_external, target_external, relationship_type, confidence, context, line_number, is_cross_file, is_cross_language, bridge_mechanism, metadata, time_created, time_updated)
+    (id, project_hash, source_symbol_id, target_symbol_id, source_external, target_external, relationship_type, confidence, context, line_number, is_cross_file, is_cross_language, bridge_mechanism, metadata, time_created, time_updated)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `)
 
@@ -1088,7 +1085,7 @@ export async function storeResults(
   // Actually, we can store partial taints right now, where the sink is known and the source is known inside the symbol.
   const insertTaintSource = rawDb.prepare(`
     INSERT OR REPLACE INTO brain_taint_flow
-    (id, project_id, source_symbol_id, sink_symbol_id, source_type, sink_type, vulnerability_type, severity, is_mitigated, flow_path, cross_language_boundaries, time_created, time_updated)
+    (id, project_hash, source_symbol_id, sink_symbol_id, source_type, sink_type, vulnerability_type, severity, is_mitigated, flow_path, cross_language_boundaries, time_created, time_updated)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `)
 
@@ -1115,7 +1112,7 @@ export async function storeResults(
 
   // Pre-prepare target resolution statement — reused for every relationship
   const resolveTargetStmt = rawDb.prepare(
-    `SELECT id FROM brain_symbol WHERE project_id = ? AND name = ? LIMIT 1`
+    `SELECT id FROM brain_symbol WHERE project_hash = ? AND name = ? LIMIT 1`
   )
 
 
@@ -1732,7 +1729,7 @@ export async function storeResults(
 
         const insertEmbed = rawDb.prepare(`
           INSERT OR REPLACE INTO brain_semantic_embedding
-          (id, project_id, entity_id, entity_type, embedding_model, embedding_vector, vector_dimension, content_hash, semantic_context, similarity_threshold, last_updated, time_created, time_updated)
+          (id, project_hash, entity_id, entity_type, embedding_model, embedding_vector, vector_dimension, content_hash, semantic_context, similarity_threshold, last_updated, time_created, time_updated)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `)
 
@@ -1779,7 +1776,7 @@ export async function storeResults(
         // Works for any project size, no external ML dependency
         const tfidfInsert = rawDb.prepare(`
           INSERT OR REPLACE INTO brain_semantic_embedding
-          (id, project_id, entity_id, entity_type, embedding_model, embedding_vector, vector_dimension, content_hash, semantic_context, similarity_threshold, last_updated, time_created, time_updated)
+          (id, project_hash, entity_id, entity_type, embedding_model, embedding_vector, vector_dimension, content_hash, semantic_context, similarity_threshold, last_updated, time_created, time_updated)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `)
         const { createHash } = await import("crypto")
@@ -1813,7 +1810,7 @@ export async function storeResults(
   // ========================================================================
   if (!options.skipResolution) {
     const symbolCount = rawDb
-      .prepare(`SELECT count(*) as c FROM brain_symbol WHERE project_id = ?`)
+      .prepare(`SELECT count(*) as c FROM brain_symbol WHERE project_hash = ?`)
       .get(projectId) as any
     if (symbolCount && symbolCount.c > 0) { // Always run — now fast since most relationships resolved at insert time
       log.info("resolving external symbol references", { symbolCount: symbolCount.c })
@@ -1823,8 +1820,8 @@ export async function storeResults(
         rawDb.run(`CREATE TEMP TABLE IF NOT EXISTS _res_name_unique (name TEXT PRIMARY KEY, symbol_id TEXT NOT NULL, file_id TEXT)`)
         rawDb.run(`DELETE FROM _res_qname`)
         rawDb.run(`DELETE FROM _res_name_unique`)
-        rawDb.run(`INSERT INTO _res_qname (qualified_name, symbol_id, file_id) SELECT qualified_name, id, file_id FROM brain_symbol WHERE project_id = '${projectId}' AND qualified_name IS NOT NULL`)
-        rawDb.run(`INSERT INTO _res_name_unique (name, symbol_id, file_id) SELECT name, MIN(id), MIN(file_id) FROM brain_symbol WHERE project_id = '${projectId}' GROUP BY name HAVING COUNT(*) = 1`)
+        rawDb.run(`INSERT INTO _res_qname (qualified_name, symbol_id, file_id) SELECT qualified_name, id, file_id FROM brain_symbol WHERE project_hash = '${projectId}' AND qualified_name IS NOT NULL`)
+        rawDb.run(`INSERT INTO _res_name_unique (name, symbol_id, file_id) SELECT name, MIN(id), MIN(file_id) FROM brain_symbol WHERE project_hash = '${projectId}' GROUP BY name HAVING COUNT(*) = 1`)
 
         // Strategy 1: Qualified name exact match
         rawDb.run(`
@@ -1837,7 +1834,7 @@ export async function storeResults(
           WHERE brain_relationship.target_external = _res_qname.qualified_name
             AND brain_relationship.target_symbol_id IS NULL
             AND brain_relationship.target_external IS NOT NULL
-            AND brain_relationship.project_id = '${projectId}'
+            AND brain_relationship.project_hash = '${projectId}'
         `)
 
         // Strategy 2: Name-only match with uniqueness
@@ -1851,7 +1848,7 @@ export async function storeResults(
           WHERE brain_relationship.target_external = _res_name_unique.name
             AND brain_relationship.target_symbol_id IS NULL
             AND brain_relationship.target_external IS NOT NULL
-            AND brain_relationship.project_id = '${projectId}'
+            AND brain_relationship.project_hash = '${projectId}'
         `)
 
         // Strategy 3: Qualified name partial match for dotted names
@@ -1860,12 +1857,12 @@ export async function storeResults(
           SET target_symbol_id = (
               SELECT sym.id FROM brain_symbol sym
               WHERE sym.name = SUBSTR(brain_relationship.target_external, INSTR(brain_relationship.target_external, '.') + 1)
-                AND sym.project_id = '${projectId}'
+                AND sym.project_hash = '${projectId}'
               LIMIT 1
           )
           WHERE brain_relationship.target_symbol_id IS NULL
             AND brain_relationship.target_external IS NOT NULL
-            AND brain_relationship.project_id = '${projectId}'
+            AND brain_relationship.project_hash = '${projectId}'
             AND INSTR(brain_relationship.target_external, '.') > 0
         `)
 
@@ -1883,7 +1880,7 @@ export async function storeResults(
     const maxRetries = 5
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        rawDb.prepare(`DELETE FROM brain_query_cache WHERE project_id = ?`).run(projectId)
+        rawDb.prepare(`DELETE FROM brain_query_cache WHERE project_hash = ?`).run(projectId)
         break
       } catch (err: any) {
         if (attempt === maxRetries) {
@@ -1911,7 +1908,7 @@ async function resolveRelationships(projectId: ProjectID): Promise<void> {
   log.debug("starting final relationship resolution")
 
   const unresolved = (rawDb.prepare(
-    `SELECT count(*) as c FROM brain_relationship WHERE target_symbol_id IS NULL AND target_external IS NOT NULL AND project_id = ?`
+    `SELECT count(*) as c FROM brain_relationship WHERE target_symbol_id IS NULL AND target_external IS NOT NULL AND project_hash = ?`
   ).get(projectId) as any)?.c || 0
 
   if (unresolved === 0) {
@@ -1930,14 +1927,14 @@ async function resolveRelationships(projectId: ProjectID): Promise<void> {
     rawDb.prepare(
       `INSERT INTO _res_qname (qualified_name, symbol_id, file_id)
        SELECT qualified_name, id, file_id FROM brain_symbol
-       WHERE project_id = ? AND qualified_name IS NOT NULL`
+       WHERE project_hash = ? AND qualified_name IS NOT NULL`
     ).run(projectId)
 
     // Populate names with uniqueness count
     rawDb.prepare(
       `INSERT INTO _res_name (name, symbol_id, file_id, cnt)
        SELECT name, id, file_id, COUNT(*) OVER (PARTITION BY name)
-       FROM brain_symbol WHERE project_id = ?`
+       FROM brain_symbol WHERE project_hash = ?`
     ).run(projectId)
 
     // Create indexes on temp tables
@@ -1955,7 +1952,7 @@ async function resolveRelationships(projectId: ProjectID): Promise<void> {
       WHERE brain_relationship.target_external = _res_qname.qualified_name
         AND brain_relationship.target_symbol_id IS NULL
         AND brain_relationship.target_external IS NOT NULL
-        AND brain_relationship.project_id = '${projectId}'
+        AND brain_relationship.project_hash = '${projectId}'
     `)
 
     // Strategy 2: Unambiguous name match (only if unique)
@@ -1970,7 +1967,7 @@ async function resolveRelationships(projectId: ProjectID): Promise<void> {
         AND _res_name.cnt = 1
         AND brain_relationship.target_symbol_id IS NULL
         AND brain_relationship.target_external IS NOT NULL
-        AND brain_relationship.project_id = '${projectId}'
+        AND brain_relationship.project_hash = '${projectId}'
     `)
 
     const resolved = (r1?.changes || 0) + (r2?.changes || 0)
@@ -1998,12 +1995,12 @@ export async function resolveCrossSymbolTaints(projectId: ProjectID): Promise<nu
     WITH Sources AS (
       SELECT id, source_symbol_id
       FROM brain_taint_flow
-      WHERE project_id = ? AND sink_symbol_id IS NULL AND source_type != 'unresolved'
+      WHERE project_hash = ? AND sink_symbol_id IS NULL AND source_type != 'unresolved'
     ),
     Sinks AS (
       SELECT id, sink_symbol_id
       FROM brain_taint_flow
-      WHERE project_id = ? AND source_symbol_id IS NULL AND sink_type != 'unresolved'
+      WHERE project_hash = ? AND source_symbol_id IS NULL AND sink_type != 'unresolved'
     ),
     ResolvedFlows AS (
       SELECT 
@@ -2228,13 +2225,13 @@ export async function indexProjectParallel(
     try {
       const rawDb = await BrainDatabase.getRawInstance(projectId)
       const stored = new Set(
-        (rawDb.prepare(`SELECT path FROM brain_file WHERE project_id = ?`).all(projectId) as any[])
+        (rawDb.prepare(`SELECT path FROM brain_file WHERE project_hash = ?`).all(projectId) as any[])
           .map((r: any) => r.path)
       )
       const missed = files.filter(f => !stored.has(f) && !shouldSkipCli(f))
       if (missed.length > 0) {
         process.stderr.write(`[brain] ⚠ ${missed.length} files missed, re-processing...\n`)
-        const { parseFile } = await import("./pool-worker")
+        const { parseFile } = await import("./pool-worker.js")
         for (const file of missed) {
           try {
             const result = await parseFile(file as any, projectPath) as any
@@ -2336,7 +2333,7 @@ export async function indexProjectParallel(
         try {
           const taints = await resolveCrossSymbolTaints(projectId)
           const _t2 = Date.now()
-          await (await import("./project-health")).computeAndStoreProjectHealth(projectId)
+          await (await import("./project-health.js")).computeAndStoreProjectHealth(projectId)
           console.log(`  ✓ taint(${Date.now()-_t2}ms) + health(${_t2-_t}ms) in ${Date.now()-_t}ms`)
         } catch (postErr: any) {
           log.warn("post-indexing taint/health failed", { error: postErr?.message })
@@ -2417,7 +2414,7 @@ export async function reindexFilesParallel(
   if (deleted.length > 0) {
     try {
       const rawDb = await BrainDatabase.getRawInstance(projectId)
-      rawDb.prepare(`DELETE FROM brain_query_cache WHERE project_id = ?`).run(projectId)
+      rawDb.prepare(`DELETE FROM brain_query_cache WHERE project_hash = ?`).run(projectId)
       const deleteSymbols = rawDb.prepare(`DELETE FROM brain_symbol WHERE file_id = ?`)
       const deleteImports = rawDb.prepare(`DELETE FROM brain_import WHERE file_id = ?`)
       const deleteFile = rawDb.prepare(`DELETE FROM brain_file WHERE id = ?`)
@@ -2459,7 +2456,7 @@ export async function reindexFilesParallel(
   if (toIndex.length > 0) {
     try {
       const rawDb = await BrainDatabase.getRawInstance(projectId)
-      rawDb.prepare(`DELETE FROM brain_query_cache WHERE project_id = ?`).run(projectId)
+      rawDb.prepare(`DELETE FROM brain_query_cache WHERE project_hash = ?`).run(projectId)
       const indexResult = await indexProjectParallel(projectId, projectPath, {
         files: toIndex,
         isIncremental: true,
@@ -2480,25 +2477,26 @@ export async function reindexFilesParallel(
 // ============================================================================
 
 export async function getIndexingStats(projectId: ProjectID) {
-  const { eq, sql } = await import("drizzle-orm")
-  const { BrainFileTable, BrainSymbolTable, BrainRelationshipTable } = await import("../brain/brain.sql")
+  // Drizzle removed using raw SQL
+const sql = (strings: TemplateStringsArray, ...values: any[]) => strings.join('?'); const eq = () => '1=1'
+  const { BrainFileTable, BrainSymbolTable, BrainRelationshipTable } = await import("../brain/brain.sql.js")
 
   const db = await BrainDatabase.getInstance(projectId)
 
   const [fileCount] = await db
     .select({ count: sql<number>`count(*)` })
     .from(BrainFileTable)
-    .where(eq(BrainFileTable.project_id, projectId))
+    .where(eq(BrainFileTable.project_hash, projectId))
 
   const [symbolCount] = await db
     .select({ count: sql<number>`count(*)` })
     .from(BrainSymbolTable)
-    .where(eq(BrainSymbolTable.project_id, projectId))
+    .where(eq(BrainSymbolTable.project_hash, projectId))
 
   const [relationshipCount] = await db
     .select({ count: sql<number>`count(*)` })
     .from(BrainRelationshipTable)
-    .where(eq(BrainRelationshipTable.project_id, projectId))
+    .where(eq(BrainRelationshipTable.project_hash, projectId))
 
   return {
     files: Number(fileCount?.count || 0),
