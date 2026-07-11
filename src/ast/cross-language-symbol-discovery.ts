@@ -5,7 +5,7 @@ import * as Log from "../tool/brain-log.js"
 // NO STONE LEFT UNTURNED - Every API, service, model, config is traced!
 
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "../types.js"
+import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
 import { CrossLanguageIntelligence } from "./cross-language-intelligence"
 
 const log = Log.create({ service: "symbol-discovery" })

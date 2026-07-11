@@ -1,6 +1,6 @@
 // @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
 import * as Log from "../tool/brain-log.js"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "../types.js"
+import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
 import path from "path"
 import { readdir, stat } from "fs/promises"
 import { eq, and, sql, inArray } from "drizzle-orm"

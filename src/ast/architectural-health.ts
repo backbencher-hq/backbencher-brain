@@ -1,7 +1,7 @@
 // @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
 import { APIContractValidator } from "./api-contract-validator"
 import { CrossLanguageIntelligence } from "./cross-language-intelligence"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "../types.js"
+import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
 
 export class ArchitecturalHealthMonitor {
   /**

@@ -5,7 +5,7 @@ import * as Log from "../tool/brain-log.js"
 // The most advanced cross-language intelligence ever built - NO STONE LEFT UNTURNED
 
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "../types.js"
+import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
 import { CrossLanguageSymbolDiscovery } from "./cross-language-symbol-discovery"
 import { CrossLanguageRelationshipMapper } from "./cross-language-relationship-mapper"
 import { ServiceTopologyBuilder } from "./service-topology-builder"

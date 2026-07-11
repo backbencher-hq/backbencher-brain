@@ -2,7 +2,7 @@
 // Advanced Type Inference and Flow Analysis Engine
 // Sophisticated type tracking across assignments, method calls, generics, and control flow
 
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, Parameter, FileMetadata, LanguageAnalyzer } from "../types.js"
+import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, Parameter, FileMetadata, LanguageAnalyzer } from "./types.js"
 import type { Node } from "web-tree-sitter"
 
 export namespace TypeInference {

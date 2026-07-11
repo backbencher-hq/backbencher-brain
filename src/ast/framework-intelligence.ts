@@ -2,7 +2,7 @@
 // Framework-Specific Intelligence Engine
 // Deep pattern recognition for popular frameworks across all languages
 
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, Parameter, FileMetadata, LanguageAnalyzer } from "../types.js"
+import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, Parameter, FileMetadata, LanguageAnalyzer } from "./types.js"
 import type { Node } from "web-tree-sitter"
 
 export namespace FrameworkIntelligence {

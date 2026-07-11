@@ -4,7 +4,7 @@ import * as Log from "../tool/brain-log.js"
 // Analyzes ALL API endpoints across polyglot systems
 // COVERAGE: Documentation, testing, security, monitoring - EVERYTHING tracked!
 
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "../types.js"
+import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
 import { CrossLanguageIntelligence } from "./cross-language-intelligence"
 
 const log = Log.create({ service: "api-coverage-analyzer" })

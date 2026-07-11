@@ -4,7 +4,7 @@ import * as Log from "../tool/brain-log.js"
 // Traces ALL data movements across polyglot systems
 // INTELLIGENCE: Every data transformation, persistence, and security boundary mapped!
 
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "../types.js"
+import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
 import { CrossLanguageIntelligence } from "./cross-language-intelligence"
 
 const log = Log.create({ service: "data-flow-analyzer" })

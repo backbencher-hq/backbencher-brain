@@ -1,5 +1,5 @@
 // @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "../types.js"
+import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
 import * as fs from "fs"
 import { getExecDir } from "../util/exec-dir"
 import * as path from "path"

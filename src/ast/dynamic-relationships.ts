@@ -2,7 +2,7 @@
 // Dynamic Relationship Detection Engine
 // Advanced runtime behavior analysis and cross-file relationship resolution
 
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "../types.js"
+import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
 import { TypeInference } from "./type-inference"
 import { FrameworkIntelligence } from "./framework-intelligence"
 import type { Node } from "web-tree-sitter"

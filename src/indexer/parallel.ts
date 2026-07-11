@@ -361,7 +361,7 @@ export async function indexProject(
     for (const file of files) {
       try {
         const r = await workerParse(file, projectPath)
-        results.push({ filePath: file, success: r.success !== false, symbols: r.symbols, relationships: r.relationships, imports: r.imports, language: r.language, framework: r.framework, fileHash: r.fileHash, sizeBytes: r.sizeBytes, lastModified: r.lastModified })
+        results.push({ filePath: file, success: r.success !== false, symbols: r.symbols, relationships: r.relationships, imports: r.imports, language: r.language, fileHash: r.fileHash, sizeBytes: r.sizeBytes, lastModified: r.lastModified })
       } catch (err: any) {
         results.push({ filePath: file, success: false, error: err?.message || String(err) })
       }
@@ -476,7 +476,7 @@ export async function reindexFiles(
   const toIndex = changes.filter((c) => c.type !== "deleted").map((c) => c.path)
   if (toIndex.length > 0) {
     try {
-      const stats = await indexProject(projectPath, db, { brain_file: toIndex, isIncremental: true })
+      const stats = await indexProject(projectPath, db, { files: toIndex, isIncremental: true })
       result.indexed = stats.successFiles
       result.errors += stats.errorFiles
     } catch { result.errors++ }
