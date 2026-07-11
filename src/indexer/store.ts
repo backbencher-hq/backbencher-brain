@@ -18,9 +18,9 @@ export interface FileResult {
   success: boolean
   timeout?: boolean
   error?: string
-  brain_symbol?: any[]
-  brain_relationship?: any[]
-  brain_import?: any[]
+  symbols?: any[]
+  relationships?: any[]
+  imports?: any[]
   language?: string
   framework?: string
   fileHash?: string
@@ -145,8 +145,8 @@ export function storeResults(
       }
 
       // Override layer if framework is detected
-      if (result.brain_import) {
-        const hasFramework = result.brain_import.some(
+      if (result.imports) {
+        const hasFramework = result.imports.some(
           (i: any) =>
             typeof i.module === "string" &&
             (i.module.includes("react") || i.module.includes("vue") || i.module.includes("svelte")),
@@ -167,8 +167,8 @@ export function storeResults(
       )
 
       // Insert brain_symbol
-      if (result.brain_symbol) {
-        for (const symbol of result.brain_symbol) {
+      if (result.symbols) {
+        for (const symbol of result.symbols) {
           const symbolKind = symbol.type || symbol.kind || "unknown"
           if (symbolKind === "unknown" && ANALYZER_GENERIC_NAMES.has(symbol.name)) continue
 
@@ -186,7 +186,7 @@ export function storeResults(
           } else if (symbol.qualifiedName && symbol.qualifiedName.includes(".")) {
             const qnParts = symbol.qualifiedName.split(".")
             if (qnParts.length >= 2) {
-              const ownerFromQn = result.brain_symbol?.find((s: any) => s.name === qnParts[qnParts.length - 2])
+              const ownerFromQn = result.symbols?.find((s: any) => s.name === qnParts[qnParts.length - 2])
               if (ownerFromQn) {
                 const parentStartLine = ownerFromQn.startLine ?? ownerFromQn.range?.startLine ?? 0
                 ownerSymbolId = `${fileId}:${ownerFromQn.name}:${parentStartLine}`
@@ -259,8 +259,8 @@ export function storeResults(
       }
 
       // Insert brain_import
-      if (result.brain_import) {
-        for (const imp of result.brain_import) {
+      if (result.imports) {
+        for (const imp of result.imports) {
           if (!imp.name) continue
           const importId = `${fileId}:import:${imp.name}:${imp.line || 0}`
           insertImport.run(importId, projectHash, fileId, imp.name || "unknown", imp.path || "", imp.type || "named", imp.isExternal ? 1 : 0, imp.line || 0)
@@ -269,8 +269,8 @@ export function storeResults(
       }
 
       // Insert brain_relationship with 5-strategy source resolution
-      if (result.brain_relationship) {
-        for (const rel of result.brain_relationship) {
+      if (result.relationships) {
+        for (const rel of result.relationships) {
           const sourceName = rel.source || rel.sourceId || rel.fromSymbol || rel.from || "unknown"
           const targetName = rel.targetExternal || rel.targetId || rel.target || rel.toSymbol || rel.to || "unknown"
           const relType = rel.type || rel.relationshipType || "references"
@@ -288,7 +288,7 @@ export function storeResults(
           const targetLeaf = extractLeaf(targetName)
 
           // 5-strategy source symbol lookup
-          const sourceSymbol = result.brain_symbol?.find((s: any) => {
+          const sourceSymbol = result.symbols?.find((s: any) => {
             if (!sourceName || sourceName === "unknown") return false
             if (s.name === sourceName) return true
             if (s.name === sourceLeaf) return true
@@ -304,13 +304,13 @@ export function storeResults(
           } else {
             // Handle intra-class receivers
             if (INTRA_CLASS_RECEIVERS.has(sourceLeaf)) {
-              const enclosingSymbol = result.brain_symbol?.find((s: any) => {
+              const enclosingSymbol = result.symbols?.find((s: any) => {
                 const kind = s.type || s.kind || "unknown"
                 return ["class", "interface", "struct", "trait", "enum", "object", "actor", "impl"].includes(kind)
               })
               if (enclosingSymbol) {
                 sourceId = `${fileId}:${enclosingSymbol.name}:${enclosingSymbol.startLine || 0}`
-                if (!result.brain_symbol?.some((s: any) => s.name === enclosingSymbol.name)) {
+                if (!result.symbols?.some((s: any) => s.name === enclosingSymbol.name)) {
                   // Insert a dummy source
                   insertSymbol.run(sourceId, projectHash, fileId, enclosingSymbol.name, enclosingSymbol.name, "class", 0, 0, null, null, "public", null, null, null, 1, 1.0, "core", null, null, 0, 0, 0, null)
                   totalSymbols++

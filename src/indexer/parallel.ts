@@ -47,7 +47,7 @@ export interface IndexingStats {
 
 export interface IndexingOptions {
   onProgress?: (stats: IndexingStats) => void
-  brain_file?: string[]
+  files?: string[]
   excludePatterns?: string[]
   isIncremental?: boolean
   verbose?: boolean
@@ -97,7 +97,7 @@ class ProgressReporter {
 
 export interface IndexingOptions {
   onProgress?: (stats: IndexingStats) => void
-  brain_file?: string[]
+  files?: string[]
   excludePatterns?: string[]
   isIncremental?: boolean
   verbose?: boolean
@@ -354,29 +354,19 @@ export async function indexProject(
       return stats
     }
 
-    // Try worker pool with fork test, fall back to in-process
-    let results: FileResult[]
-    try {
-      results = await processWithWorkers(projectHash, projectPath, files, (processed, total, file) => {
-        stats.processedFiles = processed
-        reporter.checkMemory(processed)
-        reporter.emit(stats, file)
-      })
-    } catch (e: any) {
-      log.warn("worker pool failed, falling back to in-process", { error: e?.message })
-      // In-process fallback: parse files directly
-      results = []
-      for (const file of files) {
-        try {
-          const { parseFile: workerParse } = await import("../ast/pool-worker.js")
-          const r = await workerParse(file, projectPath)
-          results.push({ filePath: file, ...r, success: r.success !== false })
-        } catch (err: any) {
-          results.push({ filePath: file, success: false, error: err?.message || String(err) })
-        }
-        stats.processedFiles++
-        reporter.emit(stats, file)
+    // Skip worker pool — always use in-process parsing (worker pool needs IPC fixes)
+    const results: FileResult[] = []
+    const { parseFile: workerParse } = await import("../ast/pool-worker.js")
+    
+    for (const file of files) {
+      try {
+        const r = await workerParse(file, projectPath)
+        results.push({ filePath: file, success: r.success !== false, symbols: r.symbols, relationships: r.relationships, imports: r.imports, language: r.language, framework: r.framework, fileHash: r.fileHash, sizeBytes: r.sizeBytes, lastModified: r.lastModified })
+      } catch (err: any) {
+        results.push({ filePath: file, success: false, error: err?.message || String(err) })
       }
+      stats.processedFiles++
+      reporter.emit(stats, file)
     }
 
     // Store with retry for transient errors
