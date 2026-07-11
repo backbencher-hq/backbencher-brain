@@ -3,7 +3,7 @@ import type { Language, Parser, Node } from "web-tree-sitter"
 import * as Log from "../tool/brain-log.js"
 function lazy<T>(fn: () => Promise<T>) { let val: T; return () => { if (!val) val = fn() as any; return val } }
 import { fileURLToPath } from "node:url"
-// WASM utilities — handled by our wasm.ts
+import { resolveWasmAsset, loadWebTreeSitter, hasWasmInRegistry, isWasmRegistryLoaded } from "../util/wasm.js"; // WASM utils
 
 
 // Import all comprehensive language analyzers (temporarily disabled for integration)
@@ -538,7 +538,7 @@ export namespace ASTEngine {
 
   // Get parser for a specific language
   export async function getParser(language: SupportedLanguage): Promise<Parser> {
-    await ensureWasmRegistry()
+    // ensureWasmRegistry handled by wasm.ts
     // FIX: Track parsed files for memory monitoring
     totalFilesParsed++
     const MEMORY_REPORT_INTERVAL = 100

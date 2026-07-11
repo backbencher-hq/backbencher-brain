@@ -611,9 +611,6 @@ process.on("message", async (msg: any) => {
     // Pre-load the WASM registry and engine before processing.
     // Registry loads core grammars only with 10s timeout per import.
     try {
-      const { ensureWasmRegistry } = await import("../util/wasm.js")
-      // ensureWasmRegistry — handled by our wasm.ts
-  if (false) { await Promise.resolve() }
     } catch {}
     try {
       engineModule = await import("../ast/engine.js")
