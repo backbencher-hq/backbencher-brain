@@ -3,7 +3,6 @@
 
 import { Command } from "commander"
 import { openDatabase, closeDatabase, cleanDatabase, listProjects } from "../database.js"
-import { indexProject, type IndexingStats } from "../indexer/parallel.js"
 import { getStats, getMostComplex } from "../graph/query.js"
 import { startServer } from "../server.js"
 import { setVerbose } from "../util/log.js"
@@ -63,7 +62,8 @@ export async function run(argv: string[]) {
 
       if (!options.noIndex && stats.files === 0) {
         process.stderr.write(`${c.yellow}  First run — indexing project...${c.reset}\n\n`)
-        await indexWithProgress(projectPath, db.db)
+        const result = await indexWithProgress(projectPath, db.projectHash)
+        stats.files = result?.totalFiles || result?.filesProcessed || 0
       }
 
       process.stderr.write(`${c.green}  ✓ MCP server ready on stdio${c.reset}\n`)
@@ -84,16 +84,18 @@ export async function run(argv: string[]) {
       header()
       const db = openDatabase(projectPath)
 
-      const result = await indexWithProgress(projectPath, db.db)
+      const result = await indexWithProgress(projectPath, db.projectHash)
+
+      const successFiles = result?.totalFiles || result?.filesProcessed || 0
+      const symbols = result?.symbolsExtracted || 0
+      const relations = result?.relationshipsFound || 0
+      const duration = result?.duration ? `${(result.duration/1000).toFixed(1)}s` : "unknown"
 
       console.log(`\n${c.green}  ✓ Indexing complete${c.reset}`)
-      console.log(`  Files:     ${result.successFiles.toLocaleString()}`)
-      console.log(`  Symbols:   ${result.symbolsExtracted.toLocaleString()}`)
-      console.log(`  Relations: ${result.relationshipsFound.toLocaleString()}`)
-      console.log(`  Duration:  ${result.endTime ? ((result.endTime - result.startTime) / 1000).toFixed(1) + "s" : "unknown"}`)
-      if (result.errors.length > 0) {
-        console.log(`  ${c.yellow}  Errors:    ${result.errors.length}${c.reset}`)
-      }
+      console.log(`  Files:     ${(successFiles as number).toLocaleString()}`)
+      console.log(`  Symbols:   ${(symbols as number).toLocaleString()}`)
+      console.log(`  Relations: ${(relations as number).toLocaleString()}`)
+      console.log(`  Duration:  ${duration}`)
 
       closeDatabase(db)
     })
@@ -188,26 +190,28 @@ export async function run(argv: string[]) {
 }
 
 // ============================================================================
-// PROGRESS DISPLAY DURING INDEXING
+// PROGRESS DISPLAY DURING INDEXING (uses real backbencher indexer)
 // ============================================================================
 
-async function indexWithProgress(projectPath: string, db: any): Promise<IndexingStats> {
+async function indexWithProgress(projectPath: string, dbHash: string): Promise<any> {
+  // Import the real backbencher indexer with shims
+  const { indexProjectParallel } = await import("../indexer/parallel-indexer.js")
   let lastUpdate = 0
 
-  return indexProject(projectPath, db, {
-    onProgress: (stats) => {
+  return indexProjectParallel(dbHash as any, projectPath, {
+    onProgress: (stats: any) => {
       const now = Date.now()
       if (now - lastUpdate < 500 && stats.processedFiles < stats.totalFiles) return
       lastUpdate = now
 
-      const bar = progressBar(stats.processedFiles, stats.totalFiles)
-      const fps = stats.filesPerSecond?.toFixed(0) || "0"
-      const eta = stats.filesPerSecond && stats.filesPerSecond > 0
-        ? `${Math.round((stats.totalFiles - stats.processedFiles) / stats.filesPerSecond)}s`
-        : "..."
+      const pct = Math.min(stats.processedFiles / stats.totalFiles, 1)
+      const filled = Math.round(pct * 30)
+      const bar = "\x1b[36m█\x1b[0m".repeat(filled) + "\x1b[2m░\x1b[0m".repeat(30 - filled)
+      const fps = stats.filesPerSecond?.toFixed(0) || "?"
+      const eta = stats.filesPerSecond > 0 ? `${Math.round((stats.totalFiles - stats.processedFiles) / stats.filesPerSecond)}s` : "..."
 
       process.stderr.write(
-        `\r  Indexing  ${bar}  ${stats.processedFiles}/${stats.totalFiles} files  ${fps}/s  ETA: ${eta}    `
+        `\r  Indexing  ${bar}  ${Math.round(pct * 100)}%  ${stats.processedFiles}/${stats.totalFiles} files  ${fps}/s  ETA: ${eta}    `
       )
     },
   })

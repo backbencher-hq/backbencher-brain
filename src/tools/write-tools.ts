@@ -6,7 +6,7 @@ import { registerTool, type ServerContext } from "../server.js"
 import { patch, createBackup, restoreBackup, preflightCheck } from "../ast/patcher.js"
 import { injectImports, pruneImports } from "../ast/imports.js"
 import { findSymbol, searchSymbols, findFiles, getCallers, getFileSymbols } from "../graph/query.js"
-import { reindexFiles } from "../indexer/parallel.js"
+import { reindexFilesParallel } from "../indexer/parallel-indexer.js"
 import { readFileSync, writeFileSync, mkdirSync } from "fs"
 import { resolve, relative, basename, extname, dirname } from "path"
 import { existsSync } from "fs"
@@ -93,7 +93,7 @@ registerTool({
       await patch(filepath, startIdx, endIdx, args.newContent)
 
       // Reindex in background
-      reindexFiles(ctx.projectPath, ctx.db, [{ path: filepath, type: "modified" }]).catch(() => {})
+      reindexFilesParallel(ctx.projectHash, ctx.projectPath, [{ path: filepath, type: "modified" }]).catch(() => {})
 
       return { data: { success: true, file: relative(ctx.projectPath, filepath), symbol: args.symbolName } }
     }
@@ -109,7 +109,7 @@ registerTool({
 
       createBackup(filepath, ctx.projectPath)
       await patch(filepath, idx, idx + args.oldContent.length, args.newContent)
-      reindexFiles(ctx.projectPath, ctx.db, [{ path: filepath, type: "modified" }]).catch(() => {})
+      reindexFilesParallel(ctx.projectHash, ctx.projectPath, [{ path: filepath, type: "modified" }]).catch(() => {})
 
       return { data: { success: true, file: relative(ctx.projectPath, filepath) } }
     }
@@ -184,7 +184,7 @@ registerTool({
       await injectImports(filepath, args.requiredImports)
     }
 
-    reindexFiles(ctx.projectPath, ctx.db, [{ path: filepath, type: "modified" }]).catch(() => {})
+    reindexFilesParallel(ctx.projectHash, ctx.projectPath, [{ path: filepath, type: "modified" }]).catch(() => {})
 
     return { data: { success: true, file: relative(ctx.projectPath, filepath), target: args.targetSymbolName } }
   },
@@ -215,7 +215,7 @@ registerTool({
       createBackup(filepath, ctx.projectPath)
       const { unlinkSync } = await import("fs")
       unlinkSync(filepath)
-      reindexFiles(ctx.projectPath, ctx.db, [{ path: filepath, type: "deleted" }]).catch(() => {})
+      reindexFilesParallel(ctx.projectHash, ctx.projectPath, [{ path: filepath, type: "deleted" }]).catch(() => {})
 
       return { data: { success: true, file: args.filePath, deleted: "file" } }
     }
@@ -251,7 +251,7 @@ registerTool({
     // Prune orphaned imports
     await pruneImports(filepath)
 
-    reindexFiles(ctx.projectPath, ctx.db, [{ path: filepath, type: "modified" }]).catch(() => {})
+    reindexFilesParallel(ctx.projectHash, ctx.projectPath, [{ path: filepath, type: "modified" }]).catch(() => {})
 
     return { data: { success: true, file: relative(ctx.projectPath, filepath), symbol: args.symbolName } }
   },
@@ -331,7 +331,7 @@ registerTool({
 
     // Reindex all affected files
     const changes = Array.from(affectedFiles).map(f => ({ path: f, type: "modified" as const }))
-    reindexFiles(ctx.projectPath, ctx.db, changes).catch(() => {})
+    reindexFilesParallel(ctx.projectHash, ctx.projectPath, changes).catch(() => {})
 
     return {
       data: {
@@ -432,7 +432,7 @@ registerTool({
 
     // JIT index
     try {
-      await reindexFiles(ctx.projectPath, ctx.db, [{ path: filepath, type: "added" }])
+      await reindexFilesParallel(ctx.projectHash, ctx.projectPath, [{ path: filepath, type: "added" }])
     } catch {}
 
     return {

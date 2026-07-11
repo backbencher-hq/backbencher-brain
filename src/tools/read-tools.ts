@@ -10,7 +10,7 @@ import {
   searchContent, getStats, getMostComplex, findOrphaned,
   getCouplingHeatmap, getTaintFlows, getSymbolsByKind,
 } from "../graph/query.js"
-import { indexProject } from "../indexer/parallel.js"
+import { indexProjectParallel } from "../indexer/parallel-indexer.js"
 
 // ============================================================================
 // TOOL: brain_search
@@ -502,7 +502,7 @@ registerTool({
   },
   handler: async (args: any, ctx: any) => {
     // Start indexing in background
-    const promise = indexProject(ctx.projectPath, ctx.db, {
+    const promise = indexProjectParallel(ctx.projectHash, ctx.projectPath, {
       files: args.path ? [args.path] : undefined,
     })
 
