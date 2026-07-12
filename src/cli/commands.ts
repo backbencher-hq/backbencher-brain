@@ -3,7 +3,7 @@
 
 import { Command } from "commander"
 import { openDatabase, closeDatabase, cleanDatabase, listProjects } from "../database.js"
-// Using backbencher indexer via shims (loaded in indexWithProgress)
+import { indexProject } from "../indexer/parallel.js"
 import { getStats, getMostComplex } from "../graph/query.js"
 import { startServer } from "../server.js"
 import { setVerbose } from "../util/log.js"
@@ -63,7 +63,7 @@ export async function run(argv: string[]) {
 
       if (!options.noIndex && stats.files === 0) {
         process.stderr.write(`${c.yellow}  First run — indexing project...${c.reset}\n\n`)
-        const result = await indexWithProgress(projectPath, db.projectHash)
+        const result = await indexWithProgress(projectPath, db.db)
         stats.files = result?.totalFiles || result?.filesProcessed || 0
       }
 
@@ -85,7 +85,7 @@ export async function run(argv: string[]) {
       header()
       const db = openDatabase(projectPath)
 
-      const result = await indexWithProgress(projectPath, db.projectHash)
+      const result = await indexWithProgress(projectPath, db.db)
 
       const successFiles = result?.totalFiles || result?.filesProcessed || 0
       const symbols = result?.symbolsExtracted || 0
