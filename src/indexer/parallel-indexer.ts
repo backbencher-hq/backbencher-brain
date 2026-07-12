@@ -2467,7 +2467,7 @@ export async function reindexFilesParallel(
 // STATISTICS
 // ============================================================================
 
-async function getIndexingStatsDrizzle(projectId: string) { return { files: 0, symbols: 0, relationships: 0 } }
+
 export async function getIndexingStats(projectId: string) {
   const rawDb = await BrainDatabase.getRawInstance(projectId)
   const files = (rawDb.prepare("SELECT count(*) as c FROM brain_file WHERE project_hash = ?").get(projectId) as any)?.c || 0
