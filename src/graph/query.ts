@@ -105,7 +105,7 @@ export function searchSymbols(
     params.push(`%${query}%`)
   }
 
-  if (options.symbol_type) {
+  if (options.kind) {
     sql += ` AND s.symbol_type = ?`
     params.push(options.symbol_type)
   }
