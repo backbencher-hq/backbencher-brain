@@ -112,28 +112,28 @@ function resolveRelationships(db: Database.Database, projectHash: string): void 
 
   // Strategy 1: Full symbol ID match
   db.prepare(`
-    UPDATE relationships SET target_symbol_id = (SELECT id FROM symbols WHERE symbols.id = relationships.target_external AND symbols.project_hash = relationships.project_hash LIMIT 1)
+    UPDATE relationships SET target_symbol_id = (SELECT id FROM brain_symbol WHERE symbols.id = relationships.target_external AND symbols.project_hash = relationships.project_hash LIMIT 1)
     WHERE project_hash = ? AND target_symbol_id IS NULL AND target_external IS NOT NULL
   `).run(projectHash)
 
   // Strategy 2: Qualified name match
   db.prepare(`
-    UPDATE relationships SET target_symbol_id = (SELECT id FROM symbols WHERE qualified_name = relationships.target_external AND project_hash = relationships.project_hash LIMIT 1)
+    UPDATE relationships SET target_symbol_id = (SELECT id FROM brain_symbol WHERE qualified_name = relationships.target_external AND project_hash = relationships.project_hash LIMIT 1)
     WHERE project_hash = ? AND target_symbol_id IS NULL AND target_external IS NOT NULL
   `).run(projectHash)
 
   // Strategy 3: Name-only match (if unique)
   db.prepare(`
-    UPDATE relationships SET target_symbol_id = (SELECT id FROM symbols WHERE name = relationships.target_external AND project_hash = relationships.project_hash LIMIT 1)
+    UPDATE relationships SET target_symbol_id = (SELECT id FROM brain_symbol WHERE name = relationships.target_external AND project_hash = relationships.project_hash LIMIT 1)
     WHERE project_hash = ? AND target_symbol_id IS NULL AND target_external IS NOT NULL
-      AND (SELECT COUNT(*) FROM symbols WHERE name = relationships.target_external AND project_hash = relationships.project_hash) = 1
+      AND (SELECT COUNT(*) FROM brain_symbol WHERE name = relationships.target_external AND project_hash = relationships.project_hash) = 1
   `).run(projectHash)
 
   // Mark cross-file relationships
   db.prepare(`
     UPDATE relationships SET is_cross_file = 1
     WHERE project_hash = ? AND target_symbol_id IS NOT NULL
-      AND source_symbol_id IN (SELECT id FROM symbols WHERE file_id != (SELECT file_id FROM symbols WHERE symbols.id = relationships.target_symbol_id))
+      AND source_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id != (SELECT file_id FROM brain_symbol WHERE symbols.id = relationships.target_symbol_id))
   `).run(projectHash)
 }
 
@@ -147,9 +147,9 @@ function calculateGravityScores(db: Database.Database, projectHash: string): voi
   // PageRank: in-degree boost
   db.prepare(`
     UPDATE symbols SET gravity_score = gravity_score + (
-      SELECT COUNT(*) * 5.0 FROM relationships r WHERE r.target_symbol_id = symbols.id
+      SELECT COUNT(*) * 5.0 FROM brain_relationship r WHERE r.target_symbol_id = symbols.id
     )
-    WHERE project_hash = ? AND EXISTS (SELECT 1 FROM relationships r WHERE r.target_symbol_id = symbols.id)
+    WHERE project_hash = ? AND EXISTS (SELECT 1 FROM brain_relationship r WHERE r.target_symbol_id = symbols.id)
   `).run(projectHash)
 
   // Layer weighting
@@ -161,7 +161,7 @@ function calculateGravityScores(db: Database.Database, projectHash: string): voi
 function resolveCrossSymbolTaints(db: Database.Database, projectHash: string): void {
   db.prepare(`
     UPDATE brain_taint_flow SET sink_symbol_id = (
-      SELECT r.target_symbol_id FROM relationships r
+      SELECT r.target_symbol_id FROM brain_relationship r
       WHERE r.source_symbol_id = brain_taint_flow.source_symbol_id AND r.project_hash = brain_taint_flow.project_hash
       LIMIT 1
     )
@@ -319,7 +319,7 @@ export async function indexProject(
 ): Promise<IndexingStats> {
   if (options.verbose) setVerbose(true)
 
-  let projectHash = (db.prepare("SELECT project_hash FROM files LIMIT 1").get() as any)?.project_hash ||
+  let projectHash = (db.prepare("SELECT project_hash FROM brain_file LIMIT 1").get() as any)?.project_hash ||
     (db.prepare("SELECT project_hash FROM index_status LIMIT 1").get() as any)?.project_hash
 
   if (!projectHash) {
@@ -395,8 +395,8 @@ export async function indexProject(
       }
     }
 
-    stats.symbolsExtracted = (db.prepare("SELECT count(*) as c FROM symbols WHERE project_hash = ?").get(projectHash) as any)?.c || 0
-    stats.relationshipsFound = (db.prepare("SELECT count(*) as c FROM relationships WHERE project_hash = ?").get(projectHash) as any)?.c || 0
+    stats.symbolsExtracted = (db.prepare("SELECT count(*) as c FROM brain_symbol WHERE project_hash = ?").get(projectHash) as any)?.c || 0
+    stats.relationshipsFound = (db.prepare("SELECT count(*) as c FROM brain_relationship WHERE project_hash = ?").get(projectHash) as any)?.c || 0
     stats.importsFound = storedStats.imports
 
     // Phase 4: Post-processing (full index only)
@@ -461,11 +461,11 @@ export async function reindexFiles(
     const tx = db.transaction(() => {
       for (const change of deleted) {
         const fileId = `${projectHash}:${change.path}`
-        db.prepare("DELETE FROM relationships WHERE source_symbol_id IN (SELECT id FROM symbols WHERE file_id = ?)").run(fileId)
-        db.prepare("DELETE FROM brain_taint_flow WHERE source_symbol_id IN (SELECT id FROM symbols WHERE file_id = ?)").run(fileId)
-        db.prepare("DELETE FROM symbols WHERE file_id = ?").run(fileId)
-        db.prepare("DELETE FROM imports WHERE file_id = ?").run(fileId)
-        db.prepare("DELETE FROM files WHERE id = ?").run(fileId)
+        db.prepare("DELETE FROM brain_relationship WHERE source_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id = ?)").run(fileId)
+        db.prepare("DELETE FROM brain_taint_flow WHERE source_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id = ?)").run(fileId)
+        db.prepare("DELETE FROM brain_symbol WHERE file_id = ?").run(fileId)
+        db.prepare("DELETE FROM brain_import WHERE file_id = ?").run(fileId)
+        db.prepare("DELETE FROM brain_file WHERE id = ?").run(fileId)
         result.deleted++
       }
     })
