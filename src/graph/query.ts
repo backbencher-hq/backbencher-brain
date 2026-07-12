@@ -107,7 +107,7 @@ export function searchSymbols(
 
   if (options.kind) {
     sql += ` AND s.symbol_type = ?`
-    params.push(options.symbol_type)
+    params.push(options.kind)
   }
 
   if (options.language) {

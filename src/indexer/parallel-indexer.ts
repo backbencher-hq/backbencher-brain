@@ -2140,7 +2140,7 @@ export async function indexProjectParallel(
 
     // Try worker pool first (real process isolation with fork + 45s timeouts)
     // Falls back to in-process only if fork() is unavailable
-    let processFn = processWithWorkerPool
+    let processFn = processInProcess // Skip worker pool - use in-process directly
     // Test if fork works by spawning the binary with BB_POOL_WORKER=1
     try {
       const { fork } = await import("child_process")

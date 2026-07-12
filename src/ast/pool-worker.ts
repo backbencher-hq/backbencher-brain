@@ -608,13 +608,9 @@ export async function parseFile(filePath: string, projectPath: string) {
 // IPC message handler
 process.on("message", async (msg: any) => {
   if (msg.type === "warmup") {
-    // Pre-load the WASM registry and engine before processing.
-    // Registry loads core grammars only with 10s timeout per import.
-    // WASM registry initialized by engine on first parse
-    try {
-      engineModule = await import("./engine.js")
-    } catch {}
-    process.send?.({ type: "ready", workerId: msg.workerId })
+    // Send ready immediately - engine loads on first parse
+    try { engineModule = await import("./engine.js") } catch {}
+    if (process.send) { process.send({ type: "ready", workerId: msg.workerId }) }
   } else if (msg.type === "parse_batch") {
     const { batchId, files, projectPath } = msg
     const FILE_TIMEOUT_MS = 45000 // 45s per-file self-timeout
