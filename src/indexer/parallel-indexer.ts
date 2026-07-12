@@ -1,4 +1,4 @@
-// @ts-nocheck — Full parallel-indexer port from backbencher.
+import { SemanticEngine } from "../brain/semantic/engine.js"
 // Parallel Indexer v4 - Batch Processing to Avoid Event Loop Blocking
 // Scales gracefully and avoids 500ms setup overhead per file
 
@@ -6,10 +6,13 @@ import { cpus } from "node:os"
 import * as path from "node:path"
 import { fork, type ChildProcess } from "node:child_process"
 import * as Log from "../tool/brain-log.js"
-import { BrainDatabase } from "../brain/database.js";
-import { Bus } from "../bus.js";
-import { BrainService } from "../brain/service.js";
+import type { ProjectID } from "../project/schema.js"
+import { BrainDatabase } from "../brain/database.js"
+import { Bus } from "../bus.js"
+import { BrainService } from "../brain/service.js"
 import { readdir, stat } from "node:fs/promises"
+import { computeAndStoreProjectHealth } from "./project-health.js"
+import { CrossLanguageIntelligencePersister } from "./cross-language-intelligence-persister.js"
 
 const log = Log.create({ service: "parallel-indexer" })
 
@@ -18,7 +21,7 @@ const log = Log.create({ service: "parallel-indexer" })
 // ============================================================================
 
 export async function calculateGravityScores(projectId: ProjectID) {
-  const { BrainDatabase } = await import("../brain/database.js")
+  const { BrainDatabase } = await import("../brain/database")
   const rawDb = await BrainDatabase.getRawInstance(projectId)
 
   // 1. Reset gravity scores to base complexity + visibility (fallback if needed)
@@ -686,8 +689,10 @@ async function processInProcess(
       }
 
       consecutiveTimeouts = 0 // Reset on success
+      if (result) {
         results.push({ filePath: file, ...result, success: true })
       }
+    } catch (e: any) {
       const isTimeout = e?.message === "FILE_TIMEOUT"
       if (isTimeout) {
         consecutiveTimeouts++
@@ -708,6 +713,7 @@ async function processInProcess(
       try {
         await storeResults(projectId as any, projectPath, batch, { skipResolution: true })
         log.info(`stored ${batch.length} file results in DB`)
+      } catch (e: any) {
         log.error(`storeResults failed: ${e?.message || String(e)}`)
       }
       // Re-add for return value
@@ -720,6 +726,7 @@ async function processInProcess(
     try {
       await storeResults(projectId as any, projectPath, results, { skipResolution: true })
       log.info(`stored final ${results.length} file results in DB`)
+    } catch (e: any) {
       log.error(`final storeResults failed: ${e?.message || String(e)}`)
     }
   }
@@ -763,7 +770,7 @@ export async function processWithWorkerPool(
   log.debug("starting worker pool", { numWorkers, files: files.length, batchSize })
 
   // Streaming DB batch
-  const { BrainWorkerClient } = await import("../brain/worker/client.js")
+  const { BrainWorkerClient } = await import("../brain/worker/client")
   let pendingDbBatch: FileResult[] = []
   const dbPromises: Array<Promise<{ symbols: number; relationships: number; imports: number; failed?: boolean }>> = []
 
@@ -774,6 +781,7 @@ export async function processWithWorkerPool(
     try {
       const stats = await storeResults(projectId, projectPath, batchToStore, { skipResolution: true })
       return stats
+    } catch (e: any) {
       log.error("storeResults failed", { error: e?.message, batchSize: batchToStore.length })
       return { symbols: -1, relationships: -1, imports: -1, failed: true }
     }
@@ -814,6 +822,7 @@ export async function processWithWorkerPool(
 
         try {
           worker.kill("SIGKILL")
+        } catch (e: any) {}
 
         const currentFile = batch.currentFile
 
@@ -823,6 +832,7 @@ export async function processWithWorkerPool(
           processed++
           try {
             onProgress(processed, files.length, currentFile)
+          } catch (e: any) {}
 
           const idx = batch.files.indexOf(currentFile)
           if (idx !== -1 && idx < batch.files.length - 1) {
@@ -849,6 +859,7 @@ export async function processWithWorkerPool(
           processed++
           try {
             onProgress(processed, files.length, batch.files[0])
+          } catch (e: any) {}
 
           if (batch.files.length > 1) {
             const remaining = batch.files.slice(1)
@@ -1047,7 +1058,7 @@ export async function storeResults(
 
   const semanticBatch: any[] = []
   // @backbencher: embedding_model from SemanticEngine directly (Config.get() is Effect-only)
-  const { SemanticEngine } = await import("../brain/semantic/engine.js"); let embeddingModel = await SemanticEngine.getEmbeddingModel()
+  let embeddingModel = await SemanticEngine.getEmbeddingModel()
 
   const insertFile = rawDb.prepare(`
     INSERT OR REPLACE INTO brain_file 
@@ -1189,8 +1200,7 @@ export async function storeResults(
         // Count lines — use max symbol endLine as estimate, fallback to 0
         let lineCount = 0
         if (result.symbols && result.symbols.length > 0) {
-          if (!result.symbols || !Array.isArray(result.symbols)) return { symbolCount: 0, relationshipCount: 0, relationshipInsertFailures: 0 };
-              for (const s of result.symbols) {
+          for (const s of result.symbols) {
             const end = s.endLine ?? s.range?.endLine ?? 0
             if (end > lineCount) lineCount = end
           }
@@ -1246,7 +1256,6 @@ export async function storeResults(
             const pb = CONTAINER_PRIORITY[b.type || b.kind] ?? 3
             return pa - pb
           })
-          if (!result.symbols || !Array.isArray(result.symbols)) continue;
           for (const symbol of result.symbols) {
             // Skip symbols that would cause SQL insert failures
             const symbolKind = symbol.type || symbol.kind || "unknown"
@@ -1564,7 +1573,6 @@ export async function storeResults(
 
         if (result.relationships) {
           let fileRelCount = 0
-          if (!result.relationships || !Array.isArray(result.relationships)) continue;
           for (const rel of result.relationships) {
             const sourceName = rel.source || rel.sourceId || rel.fromSymbol || rel.from || "unknown"
             const targetName = rel.targetExternal || rel.targetId || rel.target || rel.toSymbol || rel.to || "unknown"
@@ -1719,7 +1727,7 @@ export async function storeResults(
     let useMLModel = !options.skipResolution && semanticBatch.length < 5000
     try {
       if (useMLModel) {
-        const { SemanticEngine } = await import("../brain/semantic/engine.js")
+        const { SemanticEngine } = await import("../brain/semantic/engine")
         const maxBatch = 100
 
         const insertEmbed = rawDb.prepare(`
@@ -1728,7 +1736,7 @@ export async function storeResults(
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `)
 
-        const { Instance } = await import("../project/instance.js")
+        const { Instance } = await import("../project/instance")
         const { createHash } = await import("crypto")
         for (let j = 0; j < semanticBatch.length; j += maxBatch) {
           const chunk = semanticBatch.slice(j, j + maxBatch)
@@ -1793,6 +1801,7 @@ export async function storeResults(
           )
         }
       }
+    } catch (e: any) {
       log.warn("semantic embedding generation failed", { error: e?.message })
     }
   }
@@ -1896,7 +1905,7 @@ export async function storeResults(
 // ============================================================================
 
 async function resolveRelationships(projectId: ProjectID): Promise<void> {
-  const { BrainDatabase } = await import("../brain/database.js")
+  const { BrainDatabase } = await import("../brain/database")
   const rawDb = await BrainDatabase.getRawInstance(projectId)
 
   log.debug("starting final relationship resolution")
@@ -1981,7 +1990,7 @@ async function resolveRelationships(projectId: ProjectID): Promise<void> {
 
 export async function resolveCrossSymbolTaints(projectId: ProjectID): Promise<number> {
   log.debug("starting cross-symbol taint resolution", { projectId })
-  const { BrainDatabase } = await import("../brain/database.js")
+  const { BrainDatabase } = await import("../brain/database")
   const rawDb = await BrainDatabase.getRawInstance(projectId)
   const now = Date.now()
 
@@ -2131,7 +2140,7 @@ export async function indexProjectParallel(
 
     // Try worker pool first (real process isolation with fork + 45s timeouts)
     // Falls back to in-process only if fork() is unavailable
-    let processFn = processInProcess // Skip worker pool - use in-process directly
+    let processFn = processInProcess
     // Test if fork works by spawning the binary with BB_POOL_WORKER=1
     try {
       const { fork } = await import("child_process")
@@ -2166,6 +2175,7 @@ export async function indexProjectParallel(
       })
       console.log("[brain] ✓ worker pool available — using parallel indexing with 45s timeouts")
       log.info("worker pool fork test passed — using parallel workers")
+    } catch (e: any) {
       console.log(`[brain] ⚠ worker pool unavailable (${e?.message}), falling back to in-process indexing`)
       log.warn("worker pool fork unavailable, falling back to in-process", { error: e?.message })
       processFn = processInProcess
@@ -2232,8 +2242,10 @@ export async function indexProjectParallel(
               await storeResults(projectId, projectPath, [{ filePath: file, success: true, ...result }], { skipResolution: true })
               process.stderr.write(`  ✓ ${file.split('/').pop()}\n`)
             }
+          } catch (e: any) { process.stderr.write(`  ✗ ${file.split('/').pop()}\n`) }
         }
       }
+    } catch (e: any) {
       process.stderr.write(`[brain] fallback error: ${e?.message}\n`)
     }
 
@@ -2303,7 +2315,7 @@ export async function indexProjectParallel(
 
         // Enrich relationships with architectural reasoning (Phase 1+2)
         try {
-          const { enrichRelationships } = await import("../brain/brain-relationship-enrichment.js")
+          const { enrichRelationships } = await import("../brain/brain-relationship-enrichment")
           console.log("  Enriching relationships with architectural context...")
           _t = Date.now()
           const enrichResult = await enrichRelationships(projectId, (step: string, pct: number) => {
@@ -2324,7 +2336,7 @@ export async function indexProjectParallel(
         try {
           const taints = await resolveCrossSymbolTaints(projectId)
           const _t2 = Date.now()
-          await (await import("./project-health.js")).computeAndStoreProjectHealth(projectId)
+          await (await import("./project-health")).computeAndStoreProjectHealth(projectId)
           console.log(`  ✓ taint(${Date.now()-_t2}ms) + health(${_t2-_t}ms) in ${Date.now()-_t}ms`)
         } catch (postErr: any) {
           log.warn("post-indexing taint/health failed", { error: postErr?.message })
@@ -2334,7 +2346,7 @@ export async function indexProjectParallel(
         // Lightweight post-index integrity validation (4 fast checks)
         try {
           _t = Date.now()
-          const { runIndexHealthCheck } = await import("../brain/brain-index-health.js")
+          const { runIndexHealthCheck } = await import("../brain/brain-index-health")
           const health = await runIndexHealthCheck(projectId)
           console.log(`  ✓ health check in ${Date.now()-_t}ms`)
           const warnCount = health.checks.filter((c) => c.status !== "ok").length
@@ -2467,12 +2479,30 @@ export async function reindexFilesParallel(
 // STATISTICS
 // ============================================================================
 
+export async function getIndexingStats(projectId: ProjectID) {
+  const sql = (strings: TemplateStringsArray, ...values: any[]) => strings.join("?"); const eq = (a: any, b: any) => ({})
+  const { BrainFileTable, BrainSymbolTable, BrainRelationshipTable } = await import("../brain/brain.sql.js")
 
-export async function getIndexingStats(projectId: string) {
-  const rawDb = await BrainDatabase.getRawInstance(projectId)
-  const files = (rawDb.prepare("SELECT count(*) as c FROM brain_file WHERE project_hash = ?").get(projectId) as any)?.c || 0
-  const symbols = (rawDb.prepare("SELECT count(*) as c FROM brain_symbol WHERE project_hash = ?").get(projectId) as any)?.c || 0
-  const relationships = (rawDb.prepare("SELECT count(*) as c FROM brain_relationship WHERE project_hash = ?").get(projectId) as any)?.c || 0
-  return { files, symbols, relationships }
+  const db = await BrainDatabase.getInstance(projectId)
+
+  const [fileCount] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(BrainFileTable)
+    .where(eq(BrainFileTable.project_hash, projectId))
+
+  const [symbolCount] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(BrainSymbolTable)
+    .where(eq(BrainSymbolTable.project_hash, projectId))
+
+  const [relationshipCount] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(BrainRelationshipTable)
+    .where(eq(BrainRelationshipTable.project_hash, projectId))
+
+  return {
+    files: Number(fileCount?.count || 0),
+    symbols: Number(symbolCount?.count || 0),
+    relationships: Number(relationshipCount?.count || 0),
+  }
 }
-
