@@ -18,7 +18,7 @@ const log = Log.create({ service: "parallel-indexer" })
 // ============================================================================
 
 export async function calculateGravityScores(projectId: ProjectID) {
-  const { BrainDatabase } = await import("../brain/database.js")
+  const { BrainDatabase } = await import("../brain/database.js.js")
   const rawDb = await BrainDatabase.getRawInstance(projectId)
 
   // 1. Reset gravity scores to base complexity + visibility (fallback if needed)
@@ -656,7 +656,7 @@ async function processInProcess(
   }
 
   // Load pool-worker's parse function
-  const poolWorker = await import("../ast/pool-worker.js")
+  const poolWorker = await import("../ast/pool-worker.js.js")
   const parseFile = (poolWorker as any).parseFile
 
   for (const file of effectiveFiles) {
@@ -732,7 +732,7 @@ async function processInProcess(
 }
 
 async function extractFallbackResult(filePath: string, projectPath: string): Promise<any> {
-  const { extractFallback } = await import("../ast/pool-worker.js")
+  const { extractFallback } = await import("../ast/pool-worker.js.js")
   const { readFile } = await import("fs/promises")
   const path = await import("path")
   const content = await readFile(filePath, "utf-8")
@@ -767,7 +767,7 @@ export async function processWithWorkerPool(
   log.debug("starting worker pool", { numWorkers, files: files.length, batchSize })
 
   // Streaming DB batch
-  const { BrainWorkerClient } = await import("../brain/worker/client.js")
+  const { BrainWorkerClient } = await import("../brain/worker/client.js.js")
   let pendingDbBatch: FileResult[] = []
   const dbPromises: Array<Promise<{ symbols: number; relationships: number; imports: number; failed?: boolean }>> = []
 
@@ -1055,7 +1055,7 @@ export async function storeResults(
 
   const semanticBatch: any[] = []
   // @backbencher: embedding_model from SemanticEngine directly (Config.get() is Effect-only)
-  const { SemanticEngine } = await import("../brain/semantic/engine.js"); let embeddingModel = await SemanticEngine.getEmbeddingModel()
+  const { SemanticEngine } = await import("../brain/semantic/engine.js.js"); let embeddingModel = await SemanticEngine.getEmbeddingModel()
 
   const insertFile = rawDb.prepare(`
     INSERT OR REPLACE INTO brain_file 
@@ -1727,7 +1727,7 @@ export async function storeResults(
     let useMLModel = !options.skipResolution && semanticBatch.length < 5000
     try {
       if (useMLModel) {
-        const { SemanticEngine } = await import("../brain/semantic/engine.js")
+        const { SemanticEngine } = await import("../brain/semantic/engine.js.js")
         const maxBatch = 100
 
         const insertEmbed = rawDb.prepare(`
@@ -1736,7 +1736,7 @@ export async function storeResults(
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `)
 
-        const { Instance } = await import("../project/instance")
+        const { Instance } = await import("../project/instance.js")
         const { createHash } = await import("crypto")
         for (let j = 0; j < semanticBatch.length; j += maxBatch) {
           const chunk = semanticBatch.slice(j, j + maxBatch)
@@ -1905,7 +1905,7 @@ export async function storeResults(
 // ============================================================================
 
 async function resolveRelationships(projectId: ProjectID): Promise<void> {
-  const { BrainDatabase } = await import("../brain/database.js")
+  const { BrainDatabase } = await import("../brain/database.js.js")
   const rawDb = await BrainDatabase.getRawInstance(projectId)
 
   log.debug("starting final relationship resolution")
@@ -1990,7 +1990,7 @@ async function resolveRelationships(projectId: ProjectID): Promise<void> {
 
 export async function resolveCrossSymbolTaints(projectId: ProjectID): Promise<number> {
   log.debug("starting cross-symbol taint resolution", { projectId })
-  const { BrainDatabase } = await import("../brain/database.js")
+  const { BrainDatabase } = await import("../brain/database.js.js")
   const rawDb = await BrainDatabase.getRawInstance(projectId)
   const now = Date.now()
 
@@ -2234,7 +2234,7 @@ export async function indexProjectParallel(
       const missed = files.filter(f => !stored.has(f) && !shouldSkipCli(f))
       if (missed.length > 0) {
         process.stderr.write(`[brain] ⚠ ${missed.length} files missed, re-processing...\n`)
-        const { parseFile } = await import("../ast/pool-worker.js")
+        const { parseFile } = await import("../ast/pool-worker.js.js")
         for (const file of missed) {
           try {
             const result = await parseFile(file as any, projectPath) as any
@@ -2315,7 +2315,7 @@ export async function indexProjectParallel(
 
         // Enrich relationships with architectural reasoning (Phase 1+2)
         try {
-          const { enrichRelationships } = await import("../brain/brain-relationship-enrichment")
+          const { enrichRelationships } = await import("../brain/brain-relationship-enrichment.js")
           console.log("  Enriching relationships with architectural context...")
           _t = Date.now()
           const enrichResult = await enrichRelationships(projectId, (step: string, pct: number) => {
@@ -2346,7 +2346,7 @@ export async function indexProjectParallel(
         // Lightweight post-index integrity validation (4 fast checks)
         try {
           _t = Date.now()
-          const { runIndexHealthCheck } = await import("../brain/brain-index-health")
+          const { runIndexHealthCheck } = await import("../brain/brain-index-health.js")
           const health = await runIndexHealthCheck(projectId)
           console.log(`  ✓ health check in ${Date.now()-_t}ms`)
           const warnCount = health.checks.filter((c) => c.status !== "ok").length

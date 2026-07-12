@@ -1293,7 +1293,7 @@ export namespace PatternRecognition {
     // We look for pairs of symbols that mutually depend on each other
     let rawDb
     try {
-      const { BrainDatabase } = await import("../brain/database.js")
+      const { BrainDatabase } = await import("../brain/database.js.js")
       rawDb = await BrainDatabase.getRawInstance(projectId)
     } catch {}
 

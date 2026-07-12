@@ -283,14 +283,14 @@ registerTool({
       return {
         data: {
           answer: `Found ${results.length} symbols matching "${args.query}"`,
-          symbols: results.slice(0, 5).map((s) => ({ name: s.name, kind: s.kind, file: s.relative_path })),
+          symbols: results.slice(0, 5).map((s) => ({ name: s.name, kind: s.symbol_type, file: s.relative_path })),
         },
       }
     }
 
     // semantic_search mode
     const results = searchSymbols(ctx.db, ctx.projectHash, args.query, { limit: maxResults })
-    return { data: { results: results.map((s) => ({ name: s.name, kind: s.kind, file: s.relative_path, line: s.line_start })), count: results.length } }
+    return { data: { results: results.map((s) => ({ name: s.name, kind: s.symbol_type, file: s.relative_path, line: s.line_start })), count: results.length } }
   },
 })
 
@@ -412,7 +412,7 @@ registerTool({
         data: {
           largeFiles: largeFiles.map((f: any) => ({ file: f.relative_path, lines: f.line_count })),
           highComplexity: highComplexity.map((s) => ({ name: s.name, complexity: s.complexity, file: s.relative_path })),
-          orphaned: orphaned.map((s) => ({ name: s.name, kind: s.kind, file: s.relative_path })),
+          orphaned: orphaned.map((s) => ({ name: s.name, kind: s.symbol_type, file: s.relative_path })),
         },
       }
     }
@@ -443,7 +443,7 @@ registerTool({
 
     // Get symbols and relationships
     const symbols = ctx.db.prepare(`
-      SELECT s.id, s.name, s.kind, f.relative_path as file, f.language
+      SELECT s.id, s.name, s.symbol_type, f.relative_path as file, f.language
       FROM brain_symbol s
       JOIN brain_file f ON f.id = s.file_id
       WHERE s.project_hash = ?
