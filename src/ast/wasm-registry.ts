@@ -74,14 +74,14 @@ export async function ensureRegistry(): Promise<void> {
       // === Built-from-source WASM (no pre-built .wasm in npm package) ===
       // Built with tree-sitter-cli 0.26.9 — compatible with web-tree-sitter 0.25.10 for these grammars.
       // yaml, vue, graphql, zig, xml, markdown excluded — external scanner ABI issues.
-      import("../../wasm-built/tree-sitter-SQL.wasm.js.js").then((m) => read(m, "tree-sitter-sql/tree-sitter-sql.wasm")),
-      import("../../wasm-built/tree-sitter-perl.wasm.js.js").then((m) => read(m, "tree-sitter-perl/tree-sitter-perl.wasm")),
-      import("../../wasm-built/tree-sitter-kotlin.wasm.js.js").then((m) => read(m, "tree-sitter-kotlin/tree-sitter-kotlin.wasm")),
-      import("../../wasm-built/tree-sitter-swift.wasm.js.js").then((m) => read(m, "tree-sitter-swift/tree-sitter-swift.wasm")),
-      import("../../wasm-built/tree-sitter-lua.wasm.js.js").then((m) => read(m, "tree-sitter-lua/tree-sitter-lua.wasm")),
-      import("../../wasm-built/tree-sitter-toml.wasm.js.js").then((m) => read(m, "tree-sitter-toml/tree-sitter-toml.wasm")),
+      import("../../wasm-built/tree-sitter-SQL.wasm.js").then((m) => read(m, "tree-sitter-sql/tree-sitter-sql.wasm")),
+      import("../../wasm-built/tree-sitter-perl.wasm.js").then((m) => read(m, "tree-sitter-perl/tree-sitter-perl.wasm")),
+      import("../../wasm-built/tree-sitter-kotlin.wasm.js").then((m) => read(m, "tree-sitter-kotlin/tree-sitter-kotlin.wasm")),
+      import("../../wasm-built/tree-sitter-swift.wasm.js").then((m) => read(m, "tree-sitter-swift/tree-sitter-swift.wasm")),
+      import("../../wasm-built/tree-sitter-lua.wasm.js").then((m) => read(m, "tree-sitter-lua/tree-sitter-lua.wasm")),
+      import("../../wasm-built/tree-sitter-toml.wasm.js").then((m) => read(m, "tree-sitter-toml/tree-sitter-toml.wasm")),
       // tree-sitter-clean — on npm (v1.0.0) but ships no .wasm; built from grammar source
-      import("../../wasm-built/tree-sitter-clean.wasm.js.js").then((m) => read(m, "tree-sitter-clean/tree-sitter-clean.wasm")),
+      import("../../wasm-built/tree-sitter-clean.wasm.js").then((m) => read(m, "tree-sitter-clean/tree-sitter-clean.wasm")),
       // tree-sitter-clojure — built from grammar.js (no npm package)
       import("tree-sitter-clojure/tree-sitter-clojure.wasm").then((m) => read(m, "tree-sitter-clojure/tree-sitter-clojure.wasm")),
       // erlang — WASM from @lumis-sh/wasm-erlang; registered under both keys

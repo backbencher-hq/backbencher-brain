@@ -58,10 +58,10 @@ CREATE TABLE IF NOT EXISTS brain_taint_flow (
 CREATE VIRTUAL TABLE IF NOT EXISTS brain_content_fts USING fts5(file_id, content, tokenize='porter');
 
 CREATE TABLE IF NOT EXISTS brain_semantic_embedding (
-  symbol_id TEXT PRIMARY KEY,
-  project_hash TEXT NOT NULL,
-  tokens TEXT,
-  embedding_model TEXT
+  id TEXT, project_hash TEXT NOT NULL, entity_id TEXT, entity_type TEXT,
+  embedding_model TEXT, embedding_vector TEXT, vector_dimension INTEGER,
+  content_hash TEXT, semantic_context TEXT, similarity_threshold REAL,
+  last_updated INTEGER, time_created INTEGER, time_updated INTEGER
 );
 
 CREATE INDEX IF NOT EXISTS idx_symbols_project ON brain_symbol(project_hash);

@@ -356,7 +356,7 @@ export async function indexProject(
 
     // Skip worker pool — always use in-process parsing (worker pool needs IPC fixes)
     const results: FileResult[] = []
-    const { parseFile: workerParse } = await import("../ast/pool-worker.js.js")
+    const { parseFile: workerParse } = await import("../ast/pool-worker.js")
     
     for (const file of files) {
       try {

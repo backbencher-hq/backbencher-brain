@@ -195,7 +195,7 @@ export async function run(argv: string[]) {
 // ============================================================================
 
 async function indexWithProgress(projectPath: string, dbHash: string): Promise<any> {
-  const { indexProjectParallel } = await import("../indexer/parallel-indexer.js.js")
+  const { indexProjectParallel } = await import("../indexer/parallel-indexer.js")
   let lastUpdate = 0
   return indexProjectParallel(dbHash, projectPath, {
     onProgress: (stats: any) => {

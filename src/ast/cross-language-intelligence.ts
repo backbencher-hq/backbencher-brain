@@ -376,7 +376,7 @@ export namespace CrossLanguageIntelligence {
     log.info("🚀 Reconstructing Polyglot Intelligence from Brain Database", { projectId })
 
     // Dynamic import to avoid circular dependencies
-    const { BrainDatabase } = await import("../brain/database.js.js")
+    const { BrainDatabase } = await import("../brain/database.js")
     const { BrainSymbolTable, BrainRelationshipTable, BrainFileTable, BrainTaintFlowTable } = await import(
       "../brain/brain.sql"
     )
@@ -725,7 +725,7 @@ export namespace CrossLanguageIntelligence {
   async function findOrCreateFileId(db: any, projectId: ProjectID, filePath: string): Promise<string> {
     const { randomUUID } = await import("crypto")
     const { eq, and } = await import("drizzle-orm")
-    const { BrainFileTable } = await import("../brain/brain.sql.js.js")
+    const { BrainFileTable } = await import("../brain/brain.sql.js")
 
     // Try to find existing file
     const results = await db

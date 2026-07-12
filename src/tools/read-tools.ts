@@ -147,7 +147,7 @@ registerTool({
 
     return {
       data: {
-        symbol: { name: symbol.name, kind: symbol.kind, file: symbol.relative_path, language: symbol.language },
+        symbol: { name: symbol.name, kind: symbol.symbol_type, file: symbol.relative_path, language: symbol.language },
         range: { startLine: symbol.line_start, endLine: symbol.line_end },
         snippet,
         callers: callers.map((c) => ({ name: c.source_name, file: c.source_file })),
@@ -216,7 +216,7 @@ registerTool({
         const symbols = getFileSymbols(ctx.db, ctx.projectHash, file[0]!.relative_path)
         return { data: { file: args.target, symbols, count: symbols.length } }
       }
-      return { data: { symbol: symbol.name, file: symbol.relative_path, kind: symbol.kind } }
+      return { data: { symbol: symbol.name, file: symbol.relative_path, kind: symbol.symbol_type } }
     }
 
     if (args.analysisType === "coupling") {
@@ -481,7 +481,7 @@ function generateGraphHtml(nodes: any[], links: any[]): string {
 const sim=d3.forceSimulation(data.nodes).force("link",d3.forceLink(data.links).id(d=>d.id).distance(50)).force("charge",d3.forceManyBody().strength(-200)).force("center",d3.forceCenter(W/2,H/2));
 const link=svg.append("g").selectAll("line").data(data.links).join("line");
 const node=svg.append("g").selectAll("g").data(data.nodes).join("g").call(d3.drag().on("start",(e,d)=>{if(!e.active)sim.alphaTarget(0.3).restart();d.fx=d.x;d.fy=d.y}).on("drag",(e,d)=>{d.fx=e.x;d.fy=e.y}).on("end",(e,d)=>{if(!e.active)sim.alphaTarget(0);d.fx=null;d.fy=null}));
-node.append("circle").attr("r",4).attr("fill",d=>d.kind==="class"?"steelblue":"orange");
+node.append("circle").attr("r",4).attr("fill",d=>d.symbol_type==="class"?"steelblue":"orange");
 node.append("text").text(d=>d.name).attr("dx",6).attr("dy",3);
 sim.on("tick",()=>{link.attr("x1",d=>d.source.x).attr("y1",d=>d.source.y).attr("x2",d=>d.target.x).attr("y2",d=>d.target.y);node.attr("transform",d=>"translate("+d.x+","+d.y+")")})</script></body></html>`
 }

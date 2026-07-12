@@ -398,7 +398,7 @@ registerTool({
     // Syntax validation
     let syntaxStatus = "not checked"
     try {
-      const { parseFile } = await import("../ast/engine.js.js")
+      const { parseFile } = await import("../ast/engine.js")
       await parseFile(filepath, args.content)
       syntaxStatus = "ok"
     } catch {

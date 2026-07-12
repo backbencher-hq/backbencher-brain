@@ -11,7 +11,7 @@ import type Database from "better-sqlite3"
 export interface SymbolResult {
   id: string
   name: string
-  kind: string
+  symbol_type: string
   file_path: string
   relative_path: string
   language: string

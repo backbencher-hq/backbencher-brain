@@ -172,7 +172,7 @@ export async function parseFile(
 
     // Try AST parsing first, fall back to regex
     try {
-      const { parseFile: astParse } = await import("../ast/engine.js.js")
+      const { parseFile: astParse } = await import("../ast/engine.js")
       const result = await astParse(filePath, content)
       return {
         filePath,
@@ -222,7 +222,7 @@ if (process.send) {
       // Initialize parser (preload WASM)
       try {
         // Warm up by loading the most common parser
-        const { getParser } = await import("../ast/wasm.js.js")
+        const { getParser } = await import("../ast/wasm.js")
         // Don't actually load — just verify the module works
       } catch {}
       process.send!({ type: "ready", workerId: msg.workerId })

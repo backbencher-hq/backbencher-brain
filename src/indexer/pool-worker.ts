@@ -481,7 +481,7 @@ export async function parseFile(filePath: string, projectPath: string) {
 
   try {
     if (!engineModule) {
-      engineModule = await import("../ast/engine.js.js")
+      engineModule = await import("../ast/engine.js")
     }
     const parsed = await engineModule.parseFile(filePath, content)
 
@@ -613,7 +613,7 @@ process.on("message", async (msg: any) => {
     try {
     } catch {}
     try {
-      engineModule = await import("../ast/engine.js.js")
+      engineModule = await import("../ast/engine.js")
     } catch {}
     process.send?.({ type: "ready", workerId: msg.workerId })
   } else if (msg.type === "parse_batch") {
