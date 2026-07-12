@@ -2479,30 +2479,14 @@ export async function reindexFilesParallel(
 // STATISTICS
 // ============================================================================
 
-export async function getIndexingStats(projectId: ProjectID) {
-  const sql = (strings: TemplateStringsArray, ...values: any[]) => strings.join("?"); const eq = (a: any, b: any) => ({})
-  const { BrainFileTable, BrainSymbolTable, BrainRelationshipTable } = await import("../brain/brain.sql.js")
-
-  const db = await BrainDatabase.getInstance(projectId)
-
-  const [fileCount] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(BrainFileTable)
-    .where(eq(BrainFileTable.project_hash, projectId))
-
-  const [symbolCount] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(BrainSymbolTable)
-    .where(eq(BrainSymbolTable.project_hash, projectId))
-
-  const [relationshipCount] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(BrainRelationshipTable)
-    .where(eq(BrainRelationshipTable.project_hash, projectId))
-
-  return {
-    files: Number(fileCount?.count || 0),
-    symbols: Number(symbolCount?.count || 0),
-    relationships: Number(relationshipCount?.count || 0),
+export async function getIndexingStats(projectId: string) {
+  try {
+    const rawDb = await BrainDatabase.getRawInstance(projectId)
+    const files = (rawDb.prepare("SELECT count(*) as c FROM brain_file WHERE project_hash = ?").get(projectId) as any)?.c || 0
+    const symbols = (rawDb.prepare("SELECT count(*) as c FROM brain_symbol WHERE project_hash = ?").get(projectId) as any)?.c || 0
+    const relationships = (rawDb.prepare("SELECT count(*) as c FROM brain_relationship WHERE project_hash = ?").get(projectId) as any)?.c || 0
+    return { files, symbols, relationships }
+  } catch {
+    return { files: 0, symbols: 0, relationships: 0 }
   }
 }
