@@ -3,7 +3,7 @@
 
 import { Command } from "commander"
 import { openDatabase, closeDatabase, cleanDatabase, listProjects } from "../database.js"
-// Using backbencher indexer
+import { indexProject } from "../indexer/parallel.js"
 import { getStats, getMostComplex } from "../graph/query.js"
 import { startServer } from "../server.js"
 import { setVerbose } from "../util/log.js"
@@ -63,7 +63,7 @@ export async function run(argv: string[]) {
 
       if (!options.noIndex && stats.files === 0) {
         process.stderr.write(`${c.yellow}  First run — indexing project...${c.reset}\n\n`)
-        const result = await indexWithProgress(projectPath, db.projectHash)
+        const result = await indexWithProgress(projectPath, db.db)
         stats.files = result?.totalFiles || result?.filesProcessed || 0
       }
 
@@ -85,7 +85,7 @@ export async function run(argv: string[]) {
       header()
       const db = openDatabase(projectPath)
 
-      const result = await indexWithProgress(projectPath, db.projectHash)
+      const result = await indexWithProgress(projectPath, db.db)
 
       const successFiles = result?.totalFiles || result?.filesProcessed || 0
       const symbols = result?.symbolsExtracted || 0
@@ -194,10 +194,10 @@ export async function run(argv: string[]) {
 // PROGRESS DISPLAY DURING INDEXING (uses real backbencher indexer)
 // ============================================================================
 
-async function indexWithProgress(projectPath: string, dbHash: string): Promise<any> {
-  const { indexProjectParallel } = await import("../indexer/parallel-indexer.js")
+async function indexWithProgress(projectPath: string, db: any): Promise<any> {
+  // Using working custom parallel.ts — same engine, same analyzers
   let lastUpdate = 0
-  return indexProjectParallel(dbHash, projectPath, {
+  return indexProject(projectPath, db, {
     onProgress: (stats: any) => {
       const now = Date.now()
       if (now - lastUpdate < 500 && stats.processedFiles < stats.totalFiles) return
