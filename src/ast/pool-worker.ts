@@ -606,6 +606,7 @@ export async function parseFile(filePath: string, projectPath: string) {
 }
 
 // IPC message handler
+process.stderr.write("[PW-START] Pool worker started\n");
 process.on("message", async (msg: any) => {
   if (msg.type === "warmup") {
     // Send ready immediately - engine loads on first parse
@@ -618,7 +619,7 @@ process.on("message", async (msg: any) => {
     for (const filePath of files) {
       try {
         // Yield to event loop to ensure file_start is sent BEFORE sync tree-sitter block
-        process.send?.({ type: "file_start", batchId, filePath })
+        process.stderr.write("[PW-FILE-START] " + filePath + "\n"); process.send?.({ type: "file_start", batchId, filePath })
         await new Promise((r) => setTimeout(r, 0))
 
         // Self-timeout: kill worker if file processing hangs (doesn't rely on parent process)
@@ -630,7 +631,7 @@ process.on("message", async (msg: any) => {
         const result = await parseFile(filePath, projectPath)
         clearTimeout(fileTimer)
 
-        process.send?.({ type: "file_done", batchId, filePath, result })
+        process.stderr.write("[PW-FILE-DONE] " + filePath + " syms:" + (result?.symbols?.length || 0) + "\n"); process.send?.({ type: "file_done", batchId, filePath, result })
       } catch (err) {
         process.send?.({
           type: "file_error",
