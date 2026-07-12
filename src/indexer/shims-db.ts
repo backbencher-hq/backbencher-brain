@@ -76,7 +76,7 @@ export const BrainDatabase = {
     const entry = index[projectId]
     if (!entry) throw new Error(`Project not found: ${projectId}`)
     const db = openDatabase(entry.path)
-    return db.db
+    const raw = db.db as any; if (!raw.run) raw.run = (sql: string) => raw.exec(sql); return raw
   },
 
   async getStats(projectId: string) {

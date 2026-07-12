@@ -18,7 +18,7 @@ const log = Log.create({ service: "parallel-indexer" })
 // ============================================================================
 
 export async function calculateGravityScores(projectId: ProjectID) {
-  const { BrainDatabase } = await import("../brain/database")
+  const { BrainDatabase } = await import("../brain/database.js")
   const rawDb = await BrainDatabase.getRawInstance(projectId)
 
   // 1. Reset gravity scores to base complexity + visibility (fallback if needed)
@@ -686,10 +686,10 @@ async function processInProcess(
       }
 
       consecutiveTimeouts = 0 // Reset on success
-      if (result) {
+      process.stderr.write("[BB-TRACE] Result is " + !!result + " symbols:" + (result?.symbols?.length) + "\n"); if (result) {
         results.push({ filePath: file, ...result, success: true })
       }
-    } catch (e: any) {
+    } catch (e: any) { process.stderr.write("[BB-TRACE] Caught: " + (e?.message || String(e)) + "\n");
       const isTimeout = e?.message === "FILE_TIMEOUT"
       if (isTimeout) {
         consecutiveTimeouts++
@@ -710,7 +710,7 @@ async function processInProcess(
       try {
         await storeResults(projectId as any, projectPath, batch, { skipResolution: true })
         log.info(`stored ${batch.length} file results in DB`)
-      } catch (e: any) {
+      } catch (e: any) { process.stderr.write("[BB-TRACE] Caught: " + (e?.message || String(e)) + "\n");
         log.error(`storeResults failed: ${e?.message || String(e)}`)
       }
       // Re-add for return value
@@ -723,7 +723,7 @@ async function processInProcess(
     try {
       await storeResults(projectId as any, projectPath, results, { skipResolution: true })
       log.info(`stored final ${results.length} file results in DB`)
-    } catch (e: any) {
+    } catch (e: any) { process.stderr.write("[BB-TRACE] Caught: " + (e?.message || String(e)) + "\n");
       log.error(`final storeResults failed: ${e?.message || String(e)}`)
     }
   }
@@ -767,7 +767,7 @@ export async function processWithWorkerPool(
   log.debug("starting worker pool", { numWorkers, files: files.length, batchSize })
 
   // Streaming DB batch
-  const { BrainWorkerClient } = await import("../brain/worker/client")
+  const { BrainWorkerClient } = await import("../brain/worker/client.js")
   let pendingDbBatch: FileResult[] = []
   const dbPromises: Array<Promise<{ symbols: number; relationships: number; imports: number; failed?: boolean }>> = []
 
@@ -778,7 +778,7 @@ export async function processWithWorkerPool(
     try {
       const stats = await storeResults(projectId, projectPath, batchToStore, { skipResolution: true })
       return stats
-    } catch (e: any) {
+    } catch (e: any) { process.stderr.write("[BB-TRACE] Caught: " + (e?.message || String(e)) + "\n");
       log.error("storeResults failed", { error: e?.message, batchSize: batchToStore.length })
       return { symbols: -1, relationships: -1, imports: -1, failed: true }
     }
@@ -819,7 +819,7 @@ export async function processWithWorkerPool(
 
         try {
           worker.kill("SIGKILL")
-        } catch (e: any) {}
+        } catch (e: any) { process.stderr.write("[BB-TRACE] Caught: " + (e?.message || String(e)) + "\n");}
 
         const currentFile = batch.currentFile
 
@@ -829,7 +829,7 @@ export async function processWithWorkerPool(
           processed++
           try {
             onProgress(processed, files.length, currentFile)
-          } catch (e: any) {}
+          } catch (e: any) { process.stderr.write("[BB-TRACE] Caught: " + (e?.message || String(e)) + "\n");}
 
           const idx = batch.files.indexOf(currentFile)
           if (idx !== -1 && idx < batch.files.length - 1) {
@@ -856,7 +856,7 @@ export async function processWithWorkerPool(
           processed++
           try {
             onProgress(processed, files.length, batch.files[0])
-          } catch (e: any) {}
+          } catch (e: any) { process.stderr.write("[BB-TRACE] Caught: " + (e?.message || String(e)) + "\n");}
 
           if (batch.files.length > 1) {
             const remaining = batch.files.slice(1)
@@ -1055,7 +1055,7 @@ export async function storeResults(
 
   const semanticBatch: any[] = []
   // @backbencher: embedding_model from SemanticEngine directly (Config.get() is Effect-only)
-  let embeddingModel = await SemanticEngine.getEmbeddingModel()
+  const { SemanticEngine } = await import("../brain/semantic/engine.js"); let embeddingModel = await SemanticEngine.getEmbeddingModel()
 
   const insertFile = rawDb.prepare(`
     INSERT OR REPLACE INTO brain_file 
@@ -1727,7 +1727,7 @@ export async function storeResults(
     let useMLModel = !options.skipResolution && semanticBatch.length < 5000
     try {
       if (useMLModel) {
-        const { SemanticEngine } = await import("../brain/semantic/engine")
+        const { SemanticEngine } = await import("../brain/semantic/engine.js")
         const maxBatch = 100
 
         const insertEmbed = rawDb.prepare(`
@@ -1801,7 +1801,7 @@ export async function storeResults(
           )
         }
       }
-    } catch (e: any) {
+    } catch (e: any) { process.stderr.write("[BB-TRACE] Caught: " + (e?.message || String(e)) + "\n");
       log.warn("semantic embedding generation failed", { error: e?.message })
     }
   }
@@ -1905,7 +1905,7 @@ export async function storeResults(
 // ============================================================================
 
 async function resolveRelationships(projectId: ProjectID): Promise<void> {
-  const { BrainDatabase } = await import("../brain/database")
+  const { BrainDatabase } = await import("../brain/database.js")
   const rawDb = await BrainDatabase.getRawInstance(projectId)
 
   log.debug("starting final relationship resolution")
@@ -1990,7 +1990,7 @@ async function resolveRelationships(projectId: ProjectID): Promise<void> {
 
 export async function resolveCrossSymbolTaints(projectId: ProjectID): Promise<number> {
   log.debug("starting cross-symbol taint resolution", { projectId })
-  const { BrainDatabase } = await import("../brain/database")
+  const { BrainDatabase } = await import("../brain/database.js")
   const rawDb = await BrainDatabase.getRawInstance(projectId)
   const now = Date.now()
 
@@ -2175,7 +2175,7 @@ export async function indexProjectParallel(
       })
       console.log("[brain] ✓ worker pool available — using parallel indexing with 45s timeouts")
       log.info("worker pool fork test passed — using parallel workers")
-    } catch (e: any) {
+    } catch (e: any) { process.stderr.write("[BB-TRACE] Caught: " + (e?.message || String(e)) + "\n");
       console.log(`[brain] ⚠ worker pool unavailable (${e?.message}), falling back to in-process indexing`)
       log.warn("worker pool fork unavailable, falling back to in-process", { error: e?.message })
       processFn = processInProcess
@@ -2242,10 +2242,10 @@ export async function indexProjectParallel(
               await storeResults(projectId, projectPath, [{ filePath: file, success: true, ...result }], { skipResolution: true })
               process.stderr.write(`  ✓ ${file.split('/').pop()}\n`)
             }
-          } catch (e: any) { process.stderr.write(`  ✗ ${file.split('/').pop()}\n`) }
+          } catch (e: any) { process.stderr.write("[BB-TRACE] Caught: " + (e?.message || String(e)) + "\n"); process.stderr.write(`  ✗ ${file.split('/').pop()}\n`) }
         }
       }
-    } catch (e: any) {
+    } catch (e: any) { process.stderr.write("[BB-TRACE] Caught: " + (e?.message || String(e)) + "\n");
       process.stderr.write(`[brain] fallback error: ${e?.message}\n`)
     }
 
