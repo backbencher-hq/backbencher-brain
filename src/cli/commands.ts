@@ -195,7 +195,7 @@ export async function run(argv: string[]) {
 // ============================================================================
 
 async function indexWithProgress(projectPath: string, db: any): Promise<any> {
-  // Using working custom parallel.ts — same engine, same analyzers
+  // Using our working parallel.ts indexer
   let lastUpdate = 0
   return indexProject(projectPath, db, {
     onProgress: (stats: any) => {

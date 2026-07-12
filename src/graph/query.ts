@@ -11,7 +11,7 @@ import type Database from "better-sqlite3"
 export interface SymbolResult {
   id: string
   name: string
-  symbol_type: string
+  kind: string
   file_path: string
   relative_path: string
   language: string
@@ -87,7 +87,7 @@ export function searchSymbols(
   const offset = options.offset || 0
 
   let sql = `
-    SELECT s.id, s.name, s.symbol_type, f.path as file_path, f.relative_path,
+    SELECT s.id, s.name, s.kind, f.path as file_path, f.relative_path,
            f.language, s.line_start, s.line_end, s.byte_start, s.byte_end,
            s.visibility, s.is_static, s.is_async, s.complexity,
            s.gravity_score, s.layer, s.parameters, s.return_type, s.docstring
@@ -106,7 +106,7 @@ export function searchSymbols(
   }
 
   if (options.kind) {
-    sql += ` AND s.symbol_type = ?`
+    sql += ` AND s.kind = ?`
     params.push(options.kind)
   }
 
@@ -138,7 +138,7 @@ export function findSymbol(
   lineStart?: number,
 ): SymbolResult | null {
   let sql = `
-    SELECT s.id, s.name, s.symbol_type, f.path as file_path, f.relative_path,
+    SELECT s.id, s.name, s.kind, f.path as file_path, f.relative_path,
            f.language, s.line_start, s.line_end, s.byte_start, s.byte_end,
            s.visibility, s.is_static, s.is_async, s.complexity,
            s.gravity_score, s.layer, s.parameters, s.return_type, s.docstring
@@ -173,7 +173,7 @@ export function getFileSymbols(
   relativePath: string,
 ): SymbolResult[] {
   return db.prepare(`
-    SELECT s.id, s.name, s.symbol_type, f.path as file_path, f.relative_path,
+    SELECT s.id, s.name, s.kind, f.path as file_path, f.relative_path,
            f.language, s.line_start, s.line_end, s.byte_start, s.byte_end,
            s.visibility, s.is_static, s.is_async, s.complexity,
            s.gravity_score, s.layer, s.parameters, s.return_type, s.docstring
@@ -197,13 +197,13 @@ export function getSymbolsByKind(
 ): SymbolResult[] {
   const placeholders = kinds.map(() => "?").join(",")
   return db.prepare(`
-    SELECT s.id, s.name, s.symbol_type, f.path as file_path, f.relative_path,
+    SELECT s.id, s.name, s.kind, f.path as file_path, f.relative_path,
            f.language, s.line_start, s.line_end, s.byte_start, s.byte_end,
            s.visibility, s.is_static, s.is_async, s.complexity,
            s.gravity_score, s.layer, s.parameters, s.return_type, s.docstring
     FROM brain_symbol s
     JOIN brain_file f ON f.id = s.file_id AND f.project_hash = s.project_hash
-    WHERE s.project_hash = ? AND s.symbol_type IN (${placeholders})
+    WHERE s.project_hash = ? AND s.kind IN (${placeholders})
     ORDER BY s.gravity_score DESC LIMIT ? OFFSET ?
   `).all(projectHash, ...kinds, limit, offset) as SymbolResult[]
 }
@@ -479,13 +479,13 @@ export function getMostComplex(
   limit = 10,
 ): SymbolResult[] {
   return db.prepare(`
-    SELECT s.id, s.name, s.symbol_type, f.path as file_path, f.relative_path,
+    SELECT s.id, s.name, s.kind, f.path as file_path, f.relative_path,
            f.language, s.line_start, s.line_end, s.byte_start, s.byte_end,
            s.visibility, s.is_static, s.is_async, s.complexity,
            s.gravity_score, s.layer, s.parameters, s.return_type, s.docstring
     FROM brain_symbol s
     JOIN brain_file f ON f.id = s.file_id AND f.project_hash = s.project_hash
-    WHERE s.project_hash = ? AND s.symbol_type IN ('function', 'method')
+    WHERE s.project_hash = ? AND s.kind IN ('function', 'method')
     ORDER BY s.complexity DESC
     LIMIT ?
   `).all(projectHash, limit) as SymbolResult[]
@@ -501,14 +501,14 @@ export function findOrphaned(
   limit = 20,
 ): SymbolResult[] {
   return db.prepare(`
-    SELECT s.id, s.name, s.symbol_type, f.path as file_path, f.relative_path,
+    SELECT s.id, s.name, s.kind, f.path as file_path, f.relative_path,
            f.language, s.line_start, s.line_end, s.byte_start, s.byte_end,
            s.visibility, s.is_static, s.is_async, s.complexity,
            s.gravity_score, s.layer, s.parameters, s.return_type, s.docstring
     FROM brain_symbol s
     JOIN brain_file f ON f.id = s.file_id AND f.project_hash = s.project_hash
     WHERE s.project_hash = ?
-      AND s.symbol_type IN ('function', 'method', 'class')
+      AND s.kind IN ('function', 'method', 'class')
       AND s.id NOT IN (SELECT DISTINCT target_symbol_id FROM brain_relationship WHERE project_hash = ? AND target_symbol_id IS NOT NULL)
       AND s.id NOT IN (SELECT DISTINCT source_symbol_id FROM brain_relationship WHERE project_hash = ?)
     ORDER BY s.complexity DESC
@@ -532,7 +532,7 @@ export function getCouplingHeatmap(
            (SELECT count(*) FROM brain_relationship r WHERE (r.source_symbol_id = s.id OR r.target_symbol_id = s.id) AND r.project_hash = ?) as score
     FROM brain_symbol s
     JOIN brain_file f ON f.id = s.file_id AND f.project_hash = s.project_hash
-    WHERE s.project_hash = ? AND s.symbol_type = 'class'
+    WHERE s.project_hash = ? AND s.kind = 'class'
     ORDER BY score DESC
     LIMIT ?
   `).all(projectHash, projectHash, projectHash, projectHash, limit) as any[]
