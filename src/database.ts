@@ -44,8 +44,8 @@ function getDbDir(): string {
   return dir
 }
 
-function getDbPath(projectHash: string): string {
-  return join(getDbDir(), `${projectHash}.db`)
+function getDbPath(projectId: string): string {
+  return join(getDbDir(), `${projectId}.db`)
 }
 
 function getIndexPath(): string {
@@ -91,7 +91,7 @@ export function updateProjectIndex(hash: string, entry: Partial<ProjectIndexEntr
 export interface DatabaseInstance {
   db: Database.Database
   projectPath: string
-  projectHash: string
+  projectId: string
 }
 
 /**
@@ -127,7 +127,7 @@ export function openDatabase(projectPath: string): DatabaseInstance {
     symbols: 0,
   })
 
-  return { db, projectPath, projectHash: hash }
+  return { db, projectPath, projectId: hash }
 }
 
 /**

@@ -14,7 +14,7 @@ const MIGRATION_V1 = `
 -- ================================================================
 CREATE TABLE IF NOT EXISTS brain_file (
   id TEXT PRIMARY KEY,
-  project_hash TEXT NOT NULL,
+  project_id TEXT NOT NULL,
   path TEXT NOT NULL,
   relative_path TEXT NOT NULL,
   file_hash TEXT NOT NULL,
@@ -34,11 +34,11 @@ CREATE TABLE IF NOT EXISTS brain_file (
 -- ================================================================
 CREATE TABLE IF NOT EXISTS brain_symbol (
   id TEXT PRIMARY KEY,
-  project_hash TEXT NOT NULL,
+  project_id TEXT NOT NULL,
   file_id TEXT NOT NULL REFERENCES brain_file(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   qualified_name TEXT,
-  kind TEXT NOT NULL,
+  symbol_type TEXT NOT NULL,
   line_start INTEGER,
   line_end INTEGER,
   byte_start INTEGER,
@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS brain_symbol (
 -- ================================================================
 CREATE TABLE IF NOT EXISTS brain_relationship (
   id TEXT PRIMARY KEY,
-  project_hash TEXT NOT NULL,
+  project_id TEXT NOT NULL,
   source_symbol_id TEXT NOT NULL REFERENCES brain_symbol(id) ON DELETE CASCADE,
   target_symbol_id TEXT,
   target_external TEXT,
@@ -81,7 +81,7 @@ CREATE TABLE IF NOT EXISTS brain_relationship (
 -- ================================================================
 CREATE TABLE IF NOT EXISTS brain_import (
   id TEXT PRIMARY KEY,
-  project_hash TEXT NOT NULL,
+  project_id TEXT NOT NULL,
   file_id TEXT NOT NULL REFERENCES brain_file(id) ON DELETE CASCADE,
   imported_name TEXT NOT NULL,
   import_path TEXT NOT NULL,
@@ -95,7 +95,7 @@ CREATE TABLE IF NOT EXISTS brain_import (
 -- ================================================================
 CREATE TABLE IF NOT EXISTS brain_taint_flow (
   id TEXT PRIMARY KEY,
-  project_hash TEXT NOT NULL,
+  project_id TEXT NOT NULL,
   source_symbol_id TEXT,
   sink_symbol_id TEXT,
   source_type TEXT,
@@ -120,31 +120,31 @@ CREATE VIRTUAL TABLE IF NOT EXISTS brain_content_fts USING fts5(
 -- ================================================================
 
 -- Symbol indexes
-CREATE INDEX IF NOT EXISTS idx_symbols_project ON brain_symbol(project_hash);
+CREATE INDEX IF NOT EXISTS idx_symbols_project ON brain_symbol(project_id);
 CREATE INDEX IF NOT EXISTS idx_symbols_file ON brain_symbol(file_id);
 CREATE INDEX IF NOT EXISTS idx_symbols_name ON brain_symbol(name);
-CREATE INDEX IF NOT EXISTS idx_symbols_kind ON brain_symbol(kind);
+CREATE INDEX IF NOT EXISTS idx_symbols_type ON brain_symbol(symbol_type);
 
 -- Relationship indexes
 CREATE INDEX IF NOT EXISTS idx_relationships_source ON brain_relationship(source_symbol_id);
 CREATE INDEX IF NOT EXISTS idx_relationships_target ON brain_relationship(target_symbol_id);
 CREATE INDEX IF NOT EXISTS idx_relationships_type ON brain_relationship(relationship_type);
-CREATE INDEX IF NOT EXISTS idx_relationships_project ON brain_relationship(project_hash);
+CREATE INDEX IF NOT EXISTS idx_relationships_project ON brain_relationship(project_id);
 
 -- Compound indexes for common JOIN patterns
-CREATE INDEX IF NOT EXISTS idx_sym_proj_name ON brain_symbol(project_hash, name);
-CREATE INDEX IF NOT EXISTS idx_sym_proj_file ON brain_symbol(project_hash, file_id);
+CREATE INDEX IF NOT EXISTS idx_sym_proj_name ON brain_symbol(project_id, name);
+CREATE INDEX IF NOT EXISTS idx_sym_proj_file ON brain_symbol(project_id, file_id);
 
 -- Import indexes
 CREATE INDEX IF NOT EXISTS idx_imports_file ON brain_import(file_id);
-CREATE INDEX IF NOT EXISTS idx_imports_project ON brain_import(project_hash);
+CREATE INDEX IF NOT EXISTS idx_imports_project ON brain_import(project_id);
 
 -- File indexes
-CREATE INDEX IF NOT EXISTS idx_files_project ON brain_file(project_hash);
+CREATE INDEX IF NOT EXISTS idx_files_project ON brain_file(project_id);
 CREATE INDEX IF NOT EXISTS idx_files_language ON brain_file(language);
 
 -- Taint flow index
-CREATE INDEX IF NOT EXISTS idx_taint_project ON brain_taint_flow(project_hash);
+CREATE INDEX IF NOT EXISTS idx_taint_project ON brain_taint_flow(project_id);
 
 -- ================================================================
 -- MANAGEMENT TABLES
@@ -152,7 +152,7 @@ CREATE INDEX IF NOT EXISTS idx_taint_project ON brain_taint_flow(project_hash);
 
 -- Checkpoints for crash recovery during indexing
 CREATE TABLE IF NOT EXISTS checkpoints (
-  project_hash TEXT PRIMARY KEY,
+  project_id TEXT PRIMARY KEY,
   total_files INTEGER,
   processed_files INTEGER,
   completed_files TEXT,
@@ -162,7 +162,7 @@ CREATE TABLE IF NOT EXISTS checkpoints (
 
 -- Index status tracking
 CREATE TABLE IF NOT EXISTS index_status (
-  project_hash TEXT PRIMARY KEY,
+  project_id TEXT PRIMARY KEY,
   status TEXT DEFAULT 'idle',
   files_indexed INTEGER DEFAULT 0,
   symbols_indexed INTEGER DEFAULT 0,

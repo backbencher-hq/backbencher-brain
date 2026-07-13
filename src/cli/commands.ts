@@ -59,7 +59,7 @@ export async function run(argv: string[]) {
       header()
 
       const db = openDatabase(projectPath)
-      const stats = getStats(db.db, db.projectHash)
+      const stats = getStats(db.db, db.projectId)
 
       if (!options.noIndex && stats.files === 0) {
         process.stderr.write(`${c.yellow}  First run — indexing project...${c.reset}\n\n`)
@@ -72,7 +72,7 @@ export async function run(argv: string[]) {
       process.stderr.write(`  Tools: 14 registered\n\n`)
 
       // MCP server runs until process killed. DB cleanup happens on exit.
-      await startServer({ projectPath, projectHash: db.projectHash, db: db.db })
+      await startServer({ projectPath, projectId: db.projectId, db: db.db })
     })
 
   // === INDEX ===
@@ -110,8 +110,8 @@ export async function run(argv: string[]) {
       const projectPath = path || options.project || process.cwd()
       header()
       const db = openDatabase(projectPath)
-      const stats = getStats(db.db, db.projectHash)
-      const status = db.db.prepare("SELECT status, last_indexed_at FROM index_status WHERE project_hash = ?").get(db.projectHash) as any
+      const stats = getStats(db.db, db.projectId)
+      const status = db.db.prepare("SELECT status, last_indexed_at FROM index_status WHERE project_id = ?").get(db.projectId) as any
 
       const health = stats.files > 0 ? `${c.green}● OK${c.reset}` : `${c.yellow}○ Not indexed${c.reset}`
       const lastIdx = status?.last_indexed_at
@@ -137,7 +137,7 @@ export async function run(argv: string[]) {
 `)
 
       if (stats.symbols > 0) {
-        const top = getMostComplex(db.db, db.projectHash, 5)
+        const top = getMostComplex(db.db, db.projectId, 5)
         console.log(`  ${c.bold}Top 5 most complex:${c.reset}`)
         for (const s of top) {
           console.log(`    ${s.name.padEnd(25)} complexity=${s.complexity}  ${s.relative_path}`)

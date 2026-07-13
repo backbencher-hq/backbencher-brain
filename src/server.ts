@@ -35,7 +35,7 @@ export function getTools(): MCPToolDefinition[] {
 
 export interface ServerContext {
   projectPath: string
-  projectHash: string
+  projectId: string
   db: Database.Database
 }
 
@@ -138,6 +138,6 @@ export async function startServer(ctx: ServerContext): Promise<void> {
   log.info("MCP server started", {
     project: ctx.projectPath,
     tools: tools.length,
-    hash: ctx.projectHash,
+    hash: ctx.projectId,
   })
 }

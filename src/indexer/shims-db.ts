@@ -31,9 +31,9 @@ export const BrainDatabase = {
     try {
       const db = await this.getRawInstance(projectId)
       return {
-        files: (db.prepare("SELECT count(*) as c FROM brain_file WHERE project_hash = ?").get(projectId) as any)?.c || 0,
-        symbols: (db.prepare("SELECT count(*) as c FROM brain_symbol WHERE project_hash = ?").get(projectId) as any)?.c || 0,
-        relationships: (db.prepare("SELECT count(*) as c FROM brain_relationship WHERE project_hash = ?").get(projectId) as any)?.c || 0,
+        files: (db.prepare("SELECT count(*) as c FROM brain_file WHERE project_id = ?").get(projectId) as any)?.c || 0,
+        symbols: (db.prepare("SELECT count(*) as c FROM brain_symbol WHERE project_id = ?").get(projectId) as any)?.c || 0,
+        relationships: (db.prepare("SELECT count(*) as c FROM brain_relationship WHERE project_id = ?").get(projectId) as any)?.c || 0,
         imports: 0,
       }
     } catch { return { files: 0, symbols: 0, relationships: 0, imports: 0 } }
@@ -42,7 +42,7 @@ export const BrainDatabase = {
   async updateIndexStatus(projectId: string, data: any) {
     try {
       const db = await this.getRawInstance(projectId)
-      db.prepare("UPDATE index_status SET status = ?, files_indexed = ?, symbols_indexed = ?, last_indexed_at = ? WHERE project_hash = ?")
+      db.prepare("UPDATE index_status SET status = ?, files_indexed = ?, symbols_indexed = ?, last_indexed_at = ? WHERE project_id = ?")
         .run(data.status || "complete", data.filesIndexed || 0, data.symbolsIndexed || 0, Date.now(), projectId)
     } catch {}
   },

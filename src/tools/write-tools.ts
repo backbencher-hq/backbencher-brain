@@ -16,7 +16,7 @@ import { existsSync } from "fs"
 // ============================================================================
 
 async function resolveSymbol(ctx: ServerContext, name: string, filePath?: string, lineStart?: number) {
-  const symbol = findSymbol(ctx.db, ctx.projectHash, name, filePath, lineStart)
+  const symbol = findSymbol(ctx.db, ctx.projectId, name, filePath, lineStart)
   if (!symbol) return null
 
   const filepath = resolve(ctx.projectPath, symbol.relative_path)
@@ -58,7 +58,7 @@ registerTool({
 
       // Cascade check
       if (!args.force) {
-        const callers = getCallers(ctx.db, ctx.projectHash, symbol.id, 5)
+        const callers = getCallers(ctx.db, ctx.projectId, symbol.id, 5)
         if (callers.length > 5) {
           return {
             error: {
@@ -93,7 +93,7 @@ registerTool({
       await patch(filepath, startIdx, endIdx, args.newContent)
 
       // Reindex in background
-      reindexFilesParallel(ctx.projectHash, ctx.projectPath, [{ path: filepath, type: "modified" }]).catch(() => {})
+      reindexFilesParallel(ctx.projectId, ctx.projectPath, [{ path: filepath, type: "modified" }]).catch(() => {})
 
       return { data: { success: true, file: relative(ctx.projectPath, filepath), symbol: args.symbolName } }
     }
@@ -109,7 +109,7 @@ registerTool({
 
       createBackup(filepath, ctx.projectPath)
       await patch(filepath, idx, idx + args.oldContent.length, args.newContent)
-      reindexFilesParallel(ctx.projectHash, ctx.projectPath, [{ path: filepath, type: "modified" }]).catch(() => {})
+      reindexFilesParallel(ctx.projectId, ctx.projectPath, [{ path: filepath, type: "modified" }]).catch(() => {})
 
       return { data: { success: true, file: relative(ctx.projectPath, filepath) } }
     }
@@ -184,7 +184,7 @@ registerTool({
       await injectImports(filepath, args.requiredImports)
     }
 
-    reindexFilesParallel(ctx.projectHash, ctx.projectPath, [{ path: filepath, type: "modified" }]).catch(() => {})
+    reindexFilesParallel(ctx.projectId, ctx.projectPath, [{ path: filepath, type: "modified" }]).catch(() => {})
 
     return { data: { success: true, file: relative(ctx.projectPath, filepath), target: args.targetSymbolName } }
   },
@@ -215,7 +215,7 @@ registerTool({
       createBackup(filepath, ctx.projectPath)
       const { unlinkSync } = await import("fs")
       unlinkSync(filepath)
-      reindexFilesParallel(ctx.projectHash, ctx.projectPath, [{ path: filepath, type: "deleted" }]).catch(() => {})
+      reindexFilesParallel(ctx.projectId, ctx.projectPath, [{ path: filepath, type: "deleted" }]).catch(() => {})
 
       return { data: { success: true, file: args.filePath, deleted: "file" } }
     }
@@ -233,7 +233,7 @@ registerTool({
 
     // Cascade protection
     if (!args.force) {
-      const callers = getCallers(ctx.db, ctx.projectHash, symbol.id, 100)
+      const callers = getCallers(ctx.db, ctx.projectId, symbol.id, 100)
       if (callers.length > 0) {
         return {
           error: {
@@ -251,7 +251,7 @@ registerTool({
     // Prune orphaned imports
     await pruneImports(filepath)
 
-    reindexFilesParallel(ctx.projectHash, ctx.projectPath, [{ path: filepath, type: "modified" }]).catch(() => {})
+    reindexFilesParallel(ctx.projectId, ctx.projectPath, [{ path: filepath, type: "modified" }]).catch(() => {})
 
     return { data: { success: true, file: relative(ctx.projectPath, filepath), symbol: args.symbolName } }
   },
@@ -282,7 +282,7 @@ registerTool({
     const { symbol, filepath: defFile } = resolved
 
     // Find all call sites
-    const callers = getCallers(ctx.db, ctx.projectHash, symbol.id, 500)
+    const callers = getCallers(ctx.db, ctx.projectId, symbol.id, 500)
     const affectedFiles = new Set<string>()
     affectedFiles.add(defFile)
 
@@ -331,7 +331,7 @@ registerTool({
 
     // Reindex all affected files
     const changes = Array.from(affectedFiles).map(f => ({ path: f, type: "modified" as const }))
-    reindexFilesParallel(ctx.projectHash, ctx.projectPath, changes).catch(() => {})
+    reindexFilesParallel(ctx.projectId, ctx.projectPath, changes).catch(() => {})
 
     return {
       data: {
@@ -432,7 +432,7 @@ registerTool({
 
     // JIT index
     try {
-      await reindexFilesParallel(ctx.projectHash, ctx.projectPath, [{ path: filepath, type: "added" }])
+      await reindexFilesParallel(ctx.projectId, ctx.projectPath, [{ path: filepath, type: "added" }])
     } catch {}
 
     return {

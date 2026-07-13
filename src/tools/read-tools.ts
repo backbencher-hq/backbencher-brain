@@ -37,32 +37,32 @@ registerTool({
     const offset = args.offset || 0
 
     if (args.scope === "functions") {
-      const results = searchSymbols(ctx.db, ctx.projectHash, args.query, {
+      const results = searchSymbols(ctx.db, ctx.projectId, args.query, {
         kind: "function", language: args.language, exact: args.exact, limit, offset,
       })
       return { data: results, count: results.length }
     }
 
     if (args.scope === "classes") {
-      const results = searchSymbols(ctx.db, ctx.projectHash, args.query, {
+      const results = searchSymbols(ctx.db, ctx.projectId, args.query, {
         kind: "class", language: args.language, exact: args.exact, limit, offset,
       })
       return { data: results, count: results.length }
     }
 
     if (args.scope === "brain_file") {
-      const results = findFiles(ctx.db, ctx.projectHash, args.query, limit)
+      const results = findFiles(ctx.db, ctx.projectId, args.query, limit)
       return { data: results, count: results.length }
     }
 
     // scope === "project" (default)
-    const symbolResults = searchSymbols(ctx.db, ctx.projectHash, args.query, {
+    const symbolResults = searchSymbols(ctx.db, ctx.projectId, args.query, {
       language: args.language, exact: args.exact, limit, offset,
     })
 
     // FTS5 content fallback
     if (args.includeContent || symbolResults.length < limit) {
-      const contentResults = searchContent(ctx.db, ctx.projectHash, args.query, limit - symbolResults.length)
+      const contentResults = searchContent(ctx.db, ctx.projectId, args.query, limit - symbolResults.length)
       return {
         data: { symbols: symbolResults, content: contentResults },
         count: symbolResults.length + contentResults.length,
@@ -117,7 +117,7 @@ registerTool({
       return { error: { code: "INVALID_PARAMS", message: "Provide symbolName or filePath" } }
     }
 
-    const symbol = findSymbol(ctx.db, ctx.projectHash, args.symbolName, args.filePath, args.lineStart)
+    const symbol = findSymbol(ctx.db, ctx.projectId, args.symbolName, args.filePath, args.lineStart)
     if (!symbol) {
       return { error: { code: "NOT_FOUND", message: `Symbol not found: ${args.symbolName}` } }
     }
@@ -141,8 +141,8 @@ registerTool({
     let callers: any[] = []
     let callees: any[] = []
     if (args.includeDependencies !== false) {
-      callers = getCallers(ctx.db, ctx.projectHash, symbol.id, 10)
-      callees = getCallees(ctx.db, ctx.projectHash, symbol.id, 10)
+      callers = getCallers(ctx.db, ctx.projectId, symbol.id, 10)
+      callees = getCallees(ctx.db, ctx.projectId, symbol.id, 10)
     }
 
     return {
@@ -183,49 +183,49 @@ registerTool({
     const limit = args.limit || 20
 
     if (args.analysisType === "callers") {
-      const symbol = findSymbol(ctx.db, ctx.projectHash, args.target)
+      const symbol = findSymbol(ctx.db, ctx.projectId, args.target)
       if (!symbol) return { error: { code: "NOT_FOUND", message: `Symbol not found: ${args.target}` } }
 
       if (args.traceToRoot) {
-        const callers = getRecursiveCallers(ctx.db, ctx.projectHash, args.target, 10, 100)
+        const callers = getRecursiveCallers(ctx.db, ctx.projectId, args.target, 10, 100)
         return { data: { symbol: args.target, recursiveCallers: callers, totalCallers: callers.length } }
       }
 
-      const callers = getCallers(ctx.db, ctx.projectHash, symbol.id, limit)
+      const callers = getCallers(ctx.db, ctx.projectId, symbol.id, limit)
       return { data: { symbol: args.target, callers, count: callers.length } }
     }
 
     if (args.analysisType === "callees") {
-      const symbol = findSymbol(ctx.db, ctx.projectHash, args.target)
+      const symbol = findSymbol(ctx.db, ctx.projectId, args.target)
       if (!symbol) return { error: { code: "NOT_FOUND", message: `Symbol not found: ${args.target}` } }
 
-      const callees = getCallees(ctx.db, ctx.projectHash, symbol.id, limit)
+      const callees = getCallees(ctx.db, ctx.projectId, symbol.id, limit)
       return { data: { symbol: args.target, callees, count: callees.length } }
     }
 
     if (args.analysisType === "brain_import") {
-      const imports = getFileImports(ctx.db, ctx.projectHash, args.target, limit)
+      const imports = getFileImports(ctx.db, ctx.projectId, args.target, limit)
       return { data: { file: args.target, imports, count: imports.length } }
     }
 
     if (args.analysisType === "exports") {
-      const symbol = findSymbol(ctx.db, ctx.projectHash, args.target)
+      const symbol = findSymbol(ctx.db, ctx.projectId, args.target)
       if (!symbol) {
-        const file = findFiles(ctx.db, ctx.projectHash, args.target, 1)
+        const file = findFiles(ctx.db, ctx.projectId, args.target, 1)
         if (file.length === 0) return { error: { code: "NOT_FOUND", message: "Not found" } }
-        const symbols = getFileSymbols(ctx.db, ctx.projectHash, file[0]!.relative_path)
+        const symbols = getFileSymbols(ctx.db, ctx.projectId, file[0]!.relative_path)
         return { data: { file: args.target, symbols, count: symbols.length } }
       }
       return { data: { symbol: symbol.name, file: symbol.relative_path, kind: symbol.symbol_type } }
     }
 
     if (args.analysisType === "coupling") {
-      const heatmap = getCouplingHeatmap(ctx.db, ctx.projectHash, limit)
+      const heatmap = getCouplingHeatmap(ctx.db, ctx.projectId, limit)
       return { data: { classes: heatmap, count: heatmap.length } }
     }
 
     if (args.analysisType === "orphaned") {
-      const orphaned = findOrphaned(ctx.db, ctx.projectHash, limit)
+      const orphaned = findOrphaned(ctx.db, ctx.projectId, limit)
       return { data: { orphanedSymbols: orphaned, count: orphaned.length } }
     }
 
@@ -256,17 +256,17 @@ registerTool({
     if (args.mode === "quick_answer") {
       // Pattern-matched quick answers
       if (lower.includes("how many") && lower.includes("function")) {
-        const stats = getStats(ctx.db, ctx.projectHash)
+        const stats = getStats(ctx.db, ctx.projectId)
         return { data: { answer: `There are ${stats.symbols.toLocaleString()} symbols in this project`, stats } }
       }
 
       if (lower.includes("how many") && lower.includes("file")) {
-        const stats = getStats(ctx.db, ctx.projectHash)
+        const stats = getStats(ctx.db, ctx.projectId)
         return { data: { answer: `There are ${stats.files.toLocaleString()} files in this project`, stats } }
       }
 
       if (lower.includes("most complex")) {
-        const complex = getMostComplex(ctx.db, ctx.projectHash, 1)
+        const complex = getMostComplex(ctx.db, ctx.projectId, 1)
         if (complex.length > 0) {
           return { data: { answer: `Most complex: ${complex[0]!.name} (complexity ${complex[0]!.complexity})`, top: complex } }
         }
@@ -274,12 +274,12 @@ registerTool({
       }
 
       if (lower.includes("language")) {
-        const stats = getStats(ctx.db, ctx.projectHash)
+        const stats = getStats(ctx.db, ctx.projectId)
         return { data: { answer: `Languages: ${stats.languages.join(", ")}`, stats } }
       }
 
       // Fallback: symbol search
-      const results = searchSymbols(ctx.db, ctx.projectHash, args.query, { limit: maxResults })
+      const results = searchSymbols(ctx.db, ctx.projectId, args.query, { limit: maxResults })
       return {
         data: {
           answer: `Found ${results.length} symbols matching "${args.query}"`,
@@ -289,7 +289,7 @@ registerTool({
     }
 
     // semantic_search mode
-    const results = searchSymbols(ctx.db, ctx.projectHash, args.query, { limit: maxResults })
+    const results = searchSymbols(ctx.db, ctx.projectId, args.query, { limit: maxResults })
     return { data: { results: results.map((s) => ({ name: s.name, kind: s.symbol_type, file: s.relative_path, line: s.line_start })), count: results.length } }
   },
 })
@@ -308,8 +308,8 @@ registerTool({
     },
   },
   handler: async (_args: any, ctx: any) => {
-    const stats = getStats(ctx.db, ctx.projectHash)
-    const status = (ctx.db.prepare("SELECT status, last_indexed_at, error_message FROM index_status WHERE project_hash = ?").get(ctx.projectHash) as any) || {}
+    const stats = getStats(ctx.db, ctx.projectId)
+    const status = (ctx.db.prepare("SELECT status, last_indexed_at, error_message FROM index_status WHERE project_id = ?").get(ctx.projectId) as any) || {}
     return {
       data: {
         healthy: stats.files > 0,
@@ -341,7 +341,7 @@ registerTool({
     properties: {},
   },
   handler: async (_args: any, ctx: any) => {
-    const flows = getTaintFlows(ctx.db, ctx.projectHash, 50)
+    const flows = getTaintFlows(ctx.db, ctx.projectId, 50)
 
     // Group by severity
     const critical = flows.filter((f: any) => f.severity === "critical")
@@ -390,23 +390,23 @@ registerTool({
   },
   handler: async (args: any, ctx: any) => {
     if (args.analysisType === "orphaned") {
-      const orphaned = findOrphaned(ctx.db, ctx.projectHash, 20)
+      const orphaned = findOrphaned(ctx.db, ctx.projectId, 20)
       return { data: { orphanedSymbols: orphaned, count: orphaned.length } }
     }
 
     if (args.analysisType === "complexity") {
       if (args.target) {
-        const results = searchSymbols(ctx.db, ctx.projectHash, args.target, { limit: 10 })
+        const results = searchSymbols(ctx.db, ctx.projectId, args.target, { limit: 10 })
         return { data: { symbols: results.map((s) => ({ name: s.name, complexity: s.complexity, file: s.relative_path })) } }
       }
-      const complex = getMostComplex(ctx.db, ctx.projectHash, 20)
+      const complex = getMostComplex(ctx.db, ctx.projectId, 20)
       return { data: { topComplexFunctions: complex.map((s) => ({ name: s.name, complexity: s.complexity, file: s.relative_path })) } }
     }
 
     if (args.analysisType === "violations") {
-      const largeFiles = ctx.db.prepare("SELECT relative_path, line_count FROM brain_file WHERE project_hash = ? AND line_count > 500 ORDER BY line_count DESC LIMIT 10").all(ctx.projectHash) as any[]
-      const highComplexity = getMostComplex(ctx.db, ctx.projectHash, 10)
-      const orphaned = findOrphaned(ctx.db, ctx.projectHash, 10)
+      const largeFiles = ctx.db.prepare("SELECT relative_path, line_count FROM brain_file WHERE project_id = ? AND line_count > 500 ORDER BY line_count DESC LIMIT 10").all(ctx.projectId) as any[]
+      const highComplexity = getMostComplex(ctx.db, ctx.projectId, 10)
+      const orphaned = findOrphaned(ctx.db, ctx.projectId, 10)
 
       return {
         data: {
@@ -446,18 +446,18 @@ registerTool({
       SELECT s.id, s.name, s.symbol_type, f.relative_path as file, f.language
       FROM brain_symbol s
       JOIN brain_file f ON f.id = s.file_id
-      WHERE s.project_hash = ?
+      WHERE s.project_id = ?
       ORDER BY s.gravity_score DESC
       LIMIT ?
-    `).all(ctx.projectHash, maxNodes) as any[]
+    `).all(ctx.projectId, maxNodes) as any[]
 
     const symbolIds = new Set(symbols.map((s: any) => s.id))
     const relationships = ctx.db.prepare(`
       SELECT source_symbol_id, target_symbol_id, target_external, relationship_type
       FROM relationships
-      WHERE project_hash = ?
+      WHERE project_id = ?
       LIMIT 5000
-    `).all(ctx.projectHash) as any[]
+    `).all(ctx.projectId) as any[]
 
     const filteredRels = relationships.filter(
       (r: any) => symbolIds.has(r.source_symbol_id) && (symbolIds.has(r.target_symbol_id) || r.target_external),
@@ -502,7 +502,7 @@ registerTool({
   },
   handler: async (args: any, ctx: any) => {
     // Start indexing in background
-    const promise = indexProjectParallel(ctx.projectHash, ctx.projectPath, {
+    const promise = indexProjectParallel(ctx.projectId, ctx.projectPath, {
       files: args.path ? [args.path] : undefined,
     })
 

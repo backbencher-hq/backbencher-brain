@@ -14,7 +14,7 @@ function col(tableName: string, colName: string) {
 function table(name: string): any {
   const cols: Record<string, any> = {}
   const known = [
-    "id", "project_id", "project_hash", "path", "relative_path", "file_hash",
+    "id", "project_id", "path", "relative_path", "file_hash",
     "size_bytes", "line_count", "language", "framework", "framework_type",
     "layer", "system", "content", "is_test", "is_test_file", "is_config",
     "is_documentation", "has_syntax_errors", "error_report", "last_modified",

@@ -38,11 +38,16 @@ export async function loadWebTreeSitter() {
 }
 
 export function resolveWasmAsset(name: string): string {
-  // Return path to WASM file
   const wasmName = name.split("/").pop() || name
-  tryLoadWasm(wasmName)
-  const devPath = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "wasm", wasmName)
-  if (existsSync(devPath)) return devPath
+  
+  const paths = [
+    join(dirname(fileURLToPath(import.meta.url)), "..", "..", "wasm", wasmName),
+    join(homedir(), ".bb", "wasm", wasmName),
+    join("$HOME/mcp/backbencher-brain/wasm", wasmName),
+  ]
+  for (const p of paths) {
+    if (existsSync(p)) return p
+  }
   return name
 }
 
@@ -53,8 +58,6 @@ export function hasWasmInRegistry(name: string): Uint8Array | undefined {
   // Also try the full name as key
   if (_wasmRegistry[name]) return _wasmRegistry[name]
   // Direct file read as fallback
-  const { existsSync, readFileSync } = require("node:fs")
-  const { join } = require("node:path")
   const wasmDir = join(require("node:os").homedir(), ".bb", "wasm")
   const localDir = join(__dirname, "..", "..", "wasm")
   for (const dir of [wasmDir, localDir]) {

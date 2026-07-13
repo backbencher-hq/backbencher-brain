@@ -41,7 +41,7 @@ export interface StoreStats {
 
 export function storeResults(
   db: Database.Database,
-  projectHash: string,
+  projectId: string,
   projectPath: string,
   results: FileResult[],
 ): StoreStats {
@@ -71,31 +71,31 @@ export function storeResults(
   // Prepare statements
   const insertFile = db.prepare(`
     INSERT OR REPLACE INTO brain_file
-    (id, project_hash, path, relative_path, file_hash, size_bytes, last_modified, language, framework, layer, is_test, indexed_at)
+    (id, project_id, path, relative_path, file_hash, size_bytes, last_modified, language, framework, layer, is_test, indexed_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `)
 
   const insertSymbol = db.prepare(`
     INSERT OR REPLACE INTO brain_symbol
-    (id, project_hash, file_id, name, qualified_name, kind, line_start, line_end, byte_start, byte_end, visibility, parameters, return_type, qualified_calls, complexity, gravity_score, layer, owner_symbol_id, annotations, is_async, is_static, is_abstract, generic_parameters)
+    (id, project_id, file_id, name, qualified_name, symbol_type, line_start, line_end, byte_start, byte_end, visibility, parameters, return_type, qualified_calls, complexity, gravity_score, layer, owner_symbol_id, annotations, is_async, is_static, is_abstract, generic_parameters)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `)
 
   const insertImport = db.prepare(`
     INSERT OR REPLACE INTO brain_import
-    (id, project_hash, file_id, imported_name, import_path, import_type, is_external, line_number)
+    (id, project_id, file_id, imported_name, import_path, import_type, is_external, line_number)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `)
 
   const insertRelationship = db.prepare(`
     INSERT OR REPLACE INTO brain_relationship
-    (id, project_hash, source_symbol_id, target_symbol_id, target_external, relationship_type, confidence, line_number, is_cross_file, is_cross_language, bridge_mechanism)
+    (id, project_id, source_symbol_id, target_symbol_id, target_external, relationship_type, confidence, line_number, is_cross_file, is_cross_language, bridge_mechanism)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `)
 
   const insertTaint = db.prepare(`
     INSERT OR REPLACE INTO brain_taint_flow
-    (id, project_hash, source_symbol_id, sink_symbol_id, source_type, sink_type, vulnerability_type, severity, is_mitigated, flow_path)
+    (id, project_id, source_symbol_id, sink_symbol_id, source_type, sink_type, vulnerability_type, severity, is_mitigated, flow_path)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `)
 
@@ -111,7 +111,7 @@ export function storeResults(
 
   // Pre-resolve targets across the entire DB
   const resolveTargetStmt = db.prepare(
-    "SELECT id FROM brain_symbol WHERE project_hash = ? AND name = ? LIMIT 1"
+    "SELECT id FROM brain_symbol WHERE project_id = ? AND name = ? LIMIT 1"
   )
 
   // Two-phase insert: disable FK during batch for performance/correctness
@@ -123,7 +123,7 @@ export function storeResults(
       if (!result.success) continue
 
       const relativePath = relative(projectPath, result.filePath)
-      const fileId = `${projectHash}:${relativePath}`
+      const fileId = `${projectId}:${relativePath}`
       const pathLower = relativePath.toLowerCase()
 
       // Clean existing data for this file
@@ -160,7 +160,7 @@ export function storeResults(
 
       // Insert file record
       insertFile.run(
-        fileId, projectHash, result.filePath, relativePath,
+        fileId, projectId, result.filePath, relativePath,
         result.fileHash || "", result.sizeBytes || 0,
         result.lastModified || now, result.language || "unknown",
         result.framework || null, fileLayer, isTestFile, now,
@@ -169,7 +169,7 @@ export function storeResults(
       // Insert brain_symbol
       if (result.symbols) {
         for (const symbol of result.symbols) {
-          const symbolKind = symbol.type || symbol.kind || "unknown"
+          const symbolKind = symbol.type || symbol.symbol_type || "unknown"
           if (symbolKind === "unknown" && ANALYZER_GENERIC_NAMES.has(symbol.name)) continue
 
           const startLine = symbol.startLine ?? symbol.range?.startLine ?? 0
@@ -195,7 +195,7 @@ export function storeResults(
           }
 
           insertSymbol.run(
-            symbolId, projectHash, fileId, symbol.name,
+            symbolId, projectId, fileId, symbol.name,
             symbol.qualifiedName || symbol.name, symbolKind,
             startLine, endLine, startIndex, endIndex,
             symbol.visibility || "public",
@@ -222,23 +222,23 @@ export function storeResults(
             if (sources.length > 0 && sinks.length > 0) {
               for (const source of sources) {
                 for (const sink of sinks) {
-                  const taintId = `taint:${projectHash}:${symbolId}:${source.type}:${sink.type}`
+                  const taintId = `taint:${projectId}:${symbolId}:${source.type}:${sink.type}`
                   const severity =
                     sink.vulnerability_type === "sql_injection" || sink.vulnerability_type === "command_injection"
                       ? "critical" : "high"
-                  insertTaint.run(taintId, projectHash, symbolId, symbolId, source.type, sink.type, sink.vulnerability_type, severity, 0, JSON.stringify([symbolId]))
+                  insertTaint.run(taintId, projectId, symbolId, symbolId, source.type, sink.type, sink.vulnerability_type, severity, 0, JSON.stringify([symbolId]))
                 }
               }
             } else if (sources.length > 0) {
               for (let i = 0; i < sources.length; i++) {
                 const source = sources[i]
-                insertTaint.run(`taint_src:${projectHash}:${symbolId}:${source.type}:${i}`, projectHash, symbolId, null, source.type, "unresolved", "unresolved", "unknown", 0, JSON.stringify([symbolId]))
+                insertTaint.run(`taint_src:${projectId}:${symbolId}:${source.type}:${i}`, projectId, symbolId, null, source.type, "unresolved", "unresolved", "unknown", 0, JSON.stringify([symbolId]))
               }
             } else if (sinks.length > 0) {
               for (let i = 0; i < sinks.length; i++) {
                 const sink = sinks[i]
                 const severity = sink.vulnerability_type === "sql_injection" ? "critical" : "high"
-                insertTaint.run(`taint_snk:${projectHash}:${symbolId}:${sink.type}:${i}`, projectHash, null, symbolId, "unresolved", sink.type, sink.vulnerability_type, severity, 0, JSON.stringify([symbolId]))
+                insertTaint.run(`taint_snk:${projectId}:${symbolId}:${sink.type}:${i}`, projectId, null, symbolId, "unresolved", sink.type, sink.vulnerability_type, severity, 0, JSON.stringify([symbolId]))
               }
             }
           }
@@ -252,7 +252,7 @@ export function storeResults(
 
             if (hasStringConcat && /execute|query|find|insert|update|delete.*where|cursor/i.test(callsPattern)) {
               // Potential SQL injection — store as isolated sink
-              insertTaint.run(`taint_h:${projectHash}:${symbolId}:sql_injection:0`, projectHash, null, symbolId, "unresolved", "sql_query", "sql_injection", "high", 0, JSON.stringify([symbolId]))
+              insertTaint.run(`taint_h:${projectId}:${symbolId}:sql_injection:0`, projectId, null, symbolId, "unresolved", "sql_query", "sql_injection", "high", 0, JSON.stringify([symbolId]))
             }
           }
         }
@@ -263,7 +263,7 @@ export function storeResults(
         for (const imp of result.imports) {
           if (!imp.name) continue
           const importId = `${fileId}:import:${imp.name}:${imp.line || 0}`
-          insertImport.run(importId, projectHash, fileId, imp.name || "unknown", imp.path || "", imp.type || "named", imp.isExternal ? 1 : 0, imp.line || 0)
+          insertImport.run(importId, projectId, fileId, imp.name || "unknown", imp.path || "", imp.type || "named", imp.isExternal ? 1 : 0, imp.line || 0)
           totalImports++
         }
       }
@@ -305,20 +305,20 @@ export function storeResults(
             // Handle intra-class receivers
             if (INTRA_CLASS_RECEIVERS.has(sourceLeaf)) {
               const enclosingSymbol = result.symbols?.find((s: any) => {
-                const kind = s.type || s.kind || "unknown"
+                const kind = s.type || s.symbol_type || "unknown"
                 return ["class", "interface", "struct", "trait", "enum", "object", "actor", "impl"].includes(kind)
               })
               if (enclosingSymbol) {
                 sourceId = `${fileId}:${enclosingSymbol.name}:${enclosingSymbol.startLine || 0}`
                 if (!result.symbols?.some((s: any) => s.name === enclosingSymbol.name)) {
                   // Insert a dummy source
-                  insertSymbol.run(sourceId, projectHash, fileId, enclosingSymbol.name, enclosingSymbol.name, "class", 0, 0, null, null, "public", null, null, null, 1, 1.0, "core", null, null, 0, 0, 0, null)
+                  insertSymbol.run(sourceId, projectId, fileId, enclosingSymbol.name, enclosingSymbol.name, "class", 0, 0, null, null, "public", null, null, null, 1, 1.0, "core", null, null, 0, 0, 0, null)
                   totalSymbols++
                 }
                 // Skip the rest
-                const targetId = resolveTargetStmt.get(projectHash, targetLeaf) as any
-                const relId = `${projectHash}:rel:${sourceId}:${targetName}:${relType}`
-                insertRelationship.run(relId, projectHash, sourceId, targetId?.id || null, targetName, relType, rel.confidence || 1.0, 0, 1, 0, null)
+                const targetId = resolveTargetStmt.get(projectId, targetLeaf) as any
+                const relId = `${projectId}:rel:${sourceId}:${targetName}:${relType}`
+                insertRelationship.run(relId, projectId, sourceId, targetId?.id || null, targetName, relType, rel.confidence || 1.0, 0, 1, 0, null)
                 totalRelationships++
                 continue
               }
@@ -328,11 +328,11 @@ export function storeResults(
           }
 
           // Resolve target
-          const targetRow = resolveTargetStmt.get(projectHash, targetLeaf) as any
+          const targetRow = resolveTargetStmt.get(projectId, targetLeaf) as any
           const targetId = targetRow?.id || null
 
-          const relId = `${projectHash}:rel:${sourceId}:${targetName}:${relType}`
-          insertRelationship.run(relId, projectHash, sourceId, targetId, targetName, relType, rel.confidence || 1.0, 0, 1, 0, null)
+          const relId = `${projectId}:rel:${sourceId}:${targetName}:${relType}`
+          insertRelationship.run(relId, projectId, sourceId, targetId, targetName, relType, rel.confidence || 1.0, 0, 1, 0, null)
           totalRelationships++
         }
       }

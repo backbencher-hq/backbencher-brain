@@ -229,6 +229,6 @@ export interface MCPToolDefinition {
 
 export interface ToolContext {
   projectPath: string
-  projectHash: string
+  projectId: string
   db: any // Database instance — typed in database.ts
 }

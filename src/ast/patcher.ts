@@ -175,7 +175,7 @@ export interface PreflightResult {
   errors: string[]
 }
 
-export function preflightCheck(filePath: string, projectHash: string): PreflightResult {
+export function preflightCheck(filePath: string, projectId: string): PreflightResult {
   const errors: string[] = []
 
   if (!existsSync(filePath)) {
