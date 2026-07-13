@@ -49,7 +49,21 @@ export function resolveWasmAsset(name: string): string {
 export function hasWasmInRegistry(name: string): Uint8Array | undefined {
   const wasmName = name.split("/").pop() || name
   tryLoadWasm(wasmName)
-  return _wasmRegistry[wasmName]
+  if (_wasmRegistry[wasmName]) return _wasmRegistry[wasmName]
+  // Also try the full name as key
+  if (_wasmRegistry[name]) return _wasmRegistry[name]
+  // Direct file read as fallback
+  const { existsSync, readFileSync } = require("node:fs")
+  const { join } = require("node:path")
+  const wasmDir = join(require("node:os").homedir(), ".bb", "wasm")
+  const localDir = join(__dirname, "..", "..", "wasm")
+  for (const dir of [wasmDir, localDir]) {
+    const path = join(dir, wasmName)
+    if (existsSync(path)) {
+      try { const data = new Uint8Array(readFileSync(path)); _wasmRegistry[wasmName] = data; return data } catch {}
+    }
+  }
+  return undefined
 }
 
 export function isWasmRegistryLoaded(): boolean {
