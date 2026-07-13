@@ -27,10 +27,10 @@ class QueryChain {
   select(cols: any) {
     if (cols && typeof cols === "object") {
       const keys = Object.keys(cols)
-      // Check if any column uses sql template
       this._columns = keys.map(k => {
         const v = cols[k]
         if (v && v._sql) return v._sql
+        if (v && v._colName) return v._colName
         if (typeof v === "function") return v() || k
         return k
       }).join(", ")
