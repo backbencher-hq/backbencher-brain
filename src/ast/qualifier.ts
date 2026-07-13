@@ -1,4 +1,8 @@
 // @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
+import { fileURLToPath } from "node:url"
+import { dirname } from "node:path"
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 import * as Log from "../tool/brain-log.js"
 import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
 

@@ -1,4 +1,6 @@
 // @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
+import { createRequire } from "node:module"
+const require = createRequire(import.meta.url)
 import * as Log from "../tool/brain-log.js"
 import { eq, and, like, sql, desc, inArray, or, ne } from "drizzle-orm"
 import { GraphIntelligence } from "./graph.js"

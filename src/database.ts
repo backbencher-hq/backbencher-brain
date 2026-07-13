@@ -2,6 +2,8 @@
 // Uses better-sqlite3 for synchronous, fast SQLite access
 // One database per project at ~/.bb/db/<sha256(projectPath)>.db
 
+import { createRequire } from "node:module"
+const require = createRequire(import.meta.url)
 import Database from "better-sqlite3"
 import { createHash } from "crypto"
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs"

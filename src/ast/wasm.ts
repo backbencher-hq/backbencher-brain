@@ -1,3 +1,6 @@
+import { createRequire } from "node:module"
+const require = createRequire(import.meta.url)
+
 // WASM Loading Infrastructure — Tree-sitter parser management
 // Three-tier loading: bundled wasm/ → node_modules → download (future)
 // LRU cache with memory-conscious eviction
@@ -6,6 +9,10 @@ import { existsSync, readFileSync, mkdirSync } from "fs"
 import { join, dirname } from "path"
 import { fileURLToPath } from "url"
 import { homedir } from "os"
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+
 
 // Dynamic import — web-tree-sitter is the only WASM dependency
 let wtsModule: any = null

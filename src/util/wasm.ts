@@ -1,7 +1,13 @@
-import { existsSync, readFileSync } from "node:fs"
+import { createRequire } from "node:module"
+const require = createRequire(import.meta.url)
+import { existsSync, readFileSync, readdirSync } from "node:fs"
 import { join, dirname } from "node:path"
 import { fileURLToPath } from "node:url"
 import { homedir } from "node:os"
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+
 
 let _wtsModule: any = null
 let _wasmRegistry: Record<string, Uint8Array> = {}
@@ -27,7 +33,31 @@ function tryLoadWasm(name: string): void {
   }
 }
 
-export async function ensureWasmRegistry() {}
+export async function ensureWasmRegistry() {
+  const wasmDir = join(__dirname, "..", "..", "wasm")
+  if (existsSync(wasmDir)) {
+    const files = (await import("node:fs")).readdirSync(wasmDir)
+    for (const f of files) {
+      if (f.endsWith(".wasm")) {
+        try {
+          _wasmRegistry[f] = new Uint8Array(readFileSync(join(wasmDir, f)))
+        } catch {}
+      }
+    }
+  }
+  // Also check ~/.bb/wasm
+  const homeWasm = join(homedir(), ".bb", "wasm")
+  if (existsSync(homeWasm)) {
+    const files = (await import("node:fs")).readdirSync(homeWasm)
+    for (const f of files) {
+      if (f.endsWith(".wasm") && !_wasmRegistry[f]) {
+        try {
+          _wasmRegistry[f] = new Uint8Array(readFileSync(join(homeWasm, f)))
+        } catch {}
+      }
+    }
+  }
+}
 
 export async function loadWebTreeSitter() {
   if (!_wtsModule) {
@@ -70,5 +100,32 @@ export function hasWasmInRegistry(name: string): Uint8Array | undefined {
 }
 
 export function isWasmRegistryLoaded(): boolean {
-  return true
+  return false
 }
+
+
+// Auto-load WASM on module init
+(function _autoLoadWasm() {
+  const wasmDir = join(__dirname, "..", "..", "wasm")
+  if (existsSync(wasmDir)) {
+    try {
+      const files = readdirSync(wasmDir)
+      for (const f of files) {
+        if (f.endsWith(".wasm") && !_wasmRegistry[f]) {
+          try { _wasmRegistry[f] = new Uint8Array(readFileSync(join(wasmDir, f))) } catch {}
+        }
+      }
+    } catch {}
+  }
+  const homeWasm = join(homedir(), ".bb", "wasm")
+  if (existsSync(homeWasm)) {
+    try {
+      const files = readdirSync(homeWasm)
+      for (const f of files) {
+        if (f.endsWith(".wasm") && !_wasmRegistry[f]) {
+          try { _wasmRegistry[f] = new Uint8Array(readFileSync(join(homeWasm, f))) } catch {}
+        }
+      }
+    } catch {}
+  }
+})()

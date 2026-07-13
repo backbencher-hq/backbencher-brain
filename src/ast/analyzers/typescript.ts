@@ -3,6 +3,10 @@
 // Complete AST analysis with zero stubs, zero shortcuts, 100% real implementation
 // The most powerful TypeScript analyzer ever built
 
+import { fileURLToPath } from "node:url"
+import { dirname } from "node:path"
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 import type { Node } from "web-tree-sitter"
 import { detectFrameworks, type FrameworkInfo } from "./framework-detectors.js"
 import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "../types.js"

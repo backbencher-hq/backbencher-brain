@@ -1,10 +1,17 @@
 // @ts-nocheck — Pool worker port from backbencher.
 // was bun shebang
+import { fileURLToPath } from "node:url"
+import { dirname } from "node:path"
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 import { createHash } from "node:crypto"
 import path from "node:path"
 import fs from "node:fs"
 
 process.env.BB_LOG_LEVEL = "error"
+
+import { createRequire } from "node:module"
+const _req = createRequire(import.meta.url)
 const debug = false
 
 function log(..._args: unknown[]) {}
@@ -488,7 +495,7 @@ export async function parseFile(filePath: string, projectPath: string) {
     // Log when engine returns 0 symbols (silent failure — no exception thrown)
     if ((parsed?.symbols?.length || 0) === 0 && (parsed?.errors?.length || 0) > 0) {
       try {
-        const fs = require("fs")
+        const fs = _req("fs")
         const errSample = parsed.errors.slice(0, 3).map((e: any) => e.message).join(" | ")
         fs.appendFileSync("/tmp/bb-parse-errors.log",
           `${new Date().toISOString()} | ${language} | ${sizeBytes}B | ${filePath} | ENGINE_EMPTY: ${errSample.substring(0, 200)}\n`)

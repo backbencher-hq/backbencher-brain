@@ -1,4 +1,6 @@
 // @ts-nocheck — Full indexer port from backbencher.
+import { createRequire } from "node:module"
+const require = createRequire(import.meta.url)
 import { ASTEngine } from "./engine.js"
 import { BrainDatabase } from "../brain/database.js";
 import * as Log from "../tool/brain-log.js";

@@ -17,6 +17,12 @@ import { resolveWasmAsset, loadWebTreeSitter, hasWasmInRegistry, isWasmRegistryL
 // This prevents a deadlock cycle: engine → 38 analyzers → engine (each analyzer imports ASTEngine)
 // TypeInference and FrameworkIntelligence are lazily loaded at the call site
 
+
+import * as _fs from "node:fs"
+import * as _path from "node:path"  
+import * as _os from "node:os"
+import { fileURLToPath as _fileURLToPath } from "node:url"
+
 const log = Log.create({ service: "ast-engine" })
 
 // Universal AST Engine - Core intelligence for ANY programming language
@@ -60,9 +66,9 @@ export namespace ASTEngine {
     // Write registry WASM to temp file if available (compiled binary)
     let wasmFile = treePath
     if (coreWasm) {
-      const os = require("os")
-      const p = require("path")
-      const fsModule = require("fs")
+      const os = _os
+      const p = _path
+      const fsModule = _fs
       for (const tmpDir of [os.tmpdir(), "/tmp", process.cwd()]) {
         try {
           const tmp = p.join(tmpDir, "bb-ts-core.wasm")
@@ -395,8 +401,8 @@ export namespace ASTEngine {
 
   // Resolve WASM file paths (enhanced version)
   function resolveWasm(relativePath: string): string {
-    const fs = require("fs")
-    const path = require("path")
+    const fs = _fs
+    const path = _path
 
     // Return the original registry key — the loading code at call site looks up
     // hasWasmInRegistry() with the returned path, so it must match registry keys.
@@ -421,7 +427,7 @@ export namespace ASTEngine {
 
     // Also check import.meta.dir for ES module contexts
     try {
-      const metaDir = path.dirname(require("url").fileURLToPath(import.meta.url))
+      const metaDir = path.dirname(fileURLToPath(import.meta.url))
       const metaCheck = path.join(metaDir, "tree-sitter.wasm")
       if (fs.existsSync(metaCheck)) {
         execDir = metaDir
@@ -529,7 +535,7 @@ export namespace ASTEngine {
       const data = hasWasmInRegistry(relativePath)
       if (data) {
         try {
-          const os = require("os")
+          const os = _os
           const tmp = path.join(os.tmpdir(), "bb-wasm_" + relativePath.replace(/\//g, "_").replace(/\\/g, "_"))
           fs.writeFileSync(tmp, data)
           return tmp
@@ -816,7 +822,7 @@ export namespace ASTEngine {
       // Compiled binary: registry loaded but WASM entry not found — fatal
       throw new Error(`WASM not found in registry for ${language} (${languageWasmPath})`)
     } else {
-      const fs = require("fs")
+      const fs = _fs
       wasmBuffer = new Uint8Array(fs.readFileSync(languageWasmPath))
     }
     let languageGrammar: any
@@ -1259,7 +1265,7 @@ export namespace ASTEngine {
 
               try {
                 if (filePath.includes("UltimateSvelteTest.svelte")) {
-                  require("fs").writeFileSync("/tmp/svelte_inner_" + langName + ".txt", innerCode)
+                  _fs.writeFileSync("/tmp/svelte_inner_" + langName + ".txt", innerCode)
                 }
                 const subParse = await ASTEngine.parseFile(filePath + "." + langName, innerCode)
 
@@ -1682,7 +1688,7 @@ export namespace ASTEngine {
     for (const r of results) {
       if ((r.byteStart == null || r.byteEnd == null || r.byteEnd <= r.byteStart) && r.fileId && r.lineStart != null) {
         try {
-          const fs = require("fs")
+          const fs = _fs
           const content = fs.readFileSync(r.fileId, "utf8")
           const lines = content.split("\n")
           let offset = 0

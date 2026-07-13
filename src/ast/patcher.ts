@@ -1,4 +1,6 @@
 // Surgical Patcher — Byte-precise file editing
+import { createRequire } from "node:module"
+const require = createRequire(import.meta.url)
 // Ported from backbencher's brain-surgical-patcher.ts
 // Handles: smart delete (whitespace cleanup), auto-indent, format, undo backup
 

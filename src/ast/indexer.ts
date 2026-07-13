@@ -1,4 +1,6 @@
 // @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
+import { createRequire } from "node:module"
+const require = createRequire(import.meta.url)
 import * as Log from "../tool/brain-log.js"
 import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
 import path from "path"

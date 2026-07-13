@@ -1,5 +1,11 @@
 // @ts-nocheck — Ported from backbencher.
 // (was bun shebang)
+import { fileURLToPath } from "node:url"
+import { dirname } from "node:path"
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+import { createRequire } from "node:module"
+const require = createRequire(import.meta.url)
 import { createHash } from "node:crypto"
 import path from "node:path"
 import fs from "node:fs"
