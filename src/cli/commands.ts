@@ -197,7 +197,7 @@ export async function run(argv: string[]) {
 async function indexWithProgress(projectPath: string, db: any): Promise<any> {
   // Using our working parallel.ts indexer
   let lastUpdate = 0
-  return indexProjectParallel(dbHash, projectPath, {
+  return indexProject(projectPath, db, {
     onProgress: (stats: any) => {
       const now = Date.now()
       if (now - lastUpdate < 500 && stats.processedFiles < stats.totalFiles) return

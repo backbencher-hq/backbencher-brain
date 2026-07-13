@@ -606,7 +606,7 @@ export async function parseFile(filePath: string, projectPath: string) {
 }
 
 // IPC message handler
-process.stderr.write("[PW-START] Pool worker started\n");
+process.stderr.write("[PW-START] Pool worker pid=" + process.pid + " send=" + !!process.send + "\n");
 process.on("message", async (msg: any) => {
   if (msg.type === "warmup") {
     // Send ready immediately - engine loads on first parse

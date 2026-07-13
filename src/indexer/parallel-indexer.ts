@@ -891,7 +891,7 @@ export async function processWithWorkerPool(
       // enters the pool-worker IPC loop instead of the normal CLI flow.
       // This works in both compiled and dev mode — in compiled mode the
       // binary is the single executable; in dev mode Bun runs index.ts.
-      const workerPath: string = process.execPath
+      const workerPath: string = new URL("../ast/pool-worker.js", import.meta.url).pathname
       const worker = fork(workerPath, [], {
         env: { ...process.env, BB_POOL_WORKER: "1" },
         stdio: ["ignore", "ignore", "ignore", "ipc"],
