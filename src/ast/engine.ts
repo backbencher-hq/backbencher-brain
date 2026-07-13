@@ -1,5 +1,9 @@
 // @ts-nocheck — Full engine port from backbencher. Structurally identical.
 import { createRequire } from "node:module"
+import { fileURLToPath } from "node:url"
+import { dirname } from "node:path"
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 const require = createRequire(import.meta.url)
 import type { Language, Parser, Node } from "web-tree-sitter"
 import * as Log from "../tool/brain-log.js"

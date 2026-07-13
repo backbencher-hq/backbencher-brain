@@ -1,7 +1,7 @@
 {
   "name": "backbencher-brain",
   "version": "0.1.1",
-  "description": "Universal MCP code intelligence server \u2014 index any project with 40+ language analyzers",
+  "description": "Universal MCP code intelligence server — index any project with 40+ language analyzers",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
@@ -47,6 +47,7 @@
     "better-sqlite3": "^11.0.0",
     "commander": "^12.0.0",
     "ignore": "^5.3.0",
+    "tree-sitter-dart": "^1.0.0",
     "tree-sitter-typescript": "^0.23.2",
     "web-tree-sitter": "^0.24.0"
   },
