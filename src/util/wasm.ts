@@ -62,7 +62,9 @@ export async function ensureWasmRegistry() {
 export async function loadWebTreeSitter() {
   if (!_wtsModule) {
     _wtsModule = await import("web-tree-sitter")
-    await _wtsModule.default.init()
+    // 0.24.7: default.init() with no args loads core WASM from same directory
+    const initFn = _wtsModule.default?.init || _wtsModule.init
+    if (initFn) await initFn()
   }
   return _wtsModule
 }
