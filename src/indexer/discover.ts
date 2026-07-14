@@ -38,6 +38,8 @@ export const EXTENSIONS = new Set([
   ".r", ".sql",
   // Shell
   ".sh", ".bash", ".zsh", ".ps1", ".psm1", ".psd1",
+  // Docs
+  ".md", ".markdown",
   // Infra
   ".tf", ".tfvars", ".tofu", ".hcl",
   // Apple
@@ -66,7 +68,7 @@ export const SKIP_PATTERNS = [
   /package-lock\.json$/, /yarn\.lock$/, /pnpm-lock\.yaml$/, /bun\.lockb$/,
   /openapi\.json$/, /swagger\.json$/, /schema\.json$/,
   /\/perf\//, /\/Microbenchmarks\//, /\/wwwroot\//,
-  /\/testassets\//, /\/benchmarkapps\//, /\/test\//,
+  /\/testassets\//, /\/benchmarkapps\//,
   /.*\.(generated|Generated|gen|Gen)\./i,
   /.*\.g\.(cs|ts|js|fs)$/i,
 ]
@@ -209,8 +211,7 @@ export async function discoverFiles(
           relativePath.includes("/coverage/") ||
           relativePath.includes("/obj/") ||
           relativePath.includes("/bin/") ||
-          relativePath.includes("/perf/") ||
-          relativePath.includes("/testData/")
+          relativePath.includes("/perf/")
         ) continue
 
         if (shouldSkip(fullPath)) continue
