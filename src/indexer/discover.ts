@@ -62,14 +62,12 @@ export const SKIP_PATTERNS = [
   /\/tree-sitter-clean\//, /\/\.bb_backups\//,
   /\/android\/build\//, /\/ios\/build\//,
   /\/\.expo\//, /\/platforms\//,
-  /\/__generated__\//i, /\/generated\//i, /\/gen\//,
   /.*\.min\./, /.*-min\./, /.*\.bundle\./, /.*\.chunk\./,
   /.*\.map$/, /.*\.d\.ts$/,
   /package-lock\.json$/, /yarn\.lock$/, /pnpm-lock\.yaml$/, /bun\.lockb$/,
   /openapi\.json$/, /swagger\.json$/, /schema\.json$/,
   /\/perf\//, /\/Microbenchmarks\//, /\/wwwroot\//,
   /\/testassets\//, /\/benchmarkapps\//,
-  /.*\.(generated|Generated|gen|Gen)\./i,
   /.*\.g\.(cs|ts|js|fs)$/i,
 ]
 
