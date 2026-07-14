@@ -359,8 +359,20 @@ export async function indexProject(
     const { parseFile: workerParse } = await import("../ast/pool-worker.js")
     
     for (const file of files) {
+      // Skip bash files — tree-sitter-bash hangs on complex scripts
+      if (file.endsWith(".sh") || file.endsWith(".bash")) {
+        stats.skippedFiles++
+        stats.processedFiles++
+        reporter.emit(stats, file)
+        continue
+      }
       try {
-        const r = await workerParse(file, projectPath)
+        const r = await Promise.race([
+          workerParse(file, projectPath),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("File parse timeout")), 30000)
+          )
+        ])
         results.push({ filePath: file, success: r.success !== false, symbols: r.symbols, relationships: r.relationships, imports: r.imports, language: r.language, fileHash: r.fileHash, sizeBytes: r.sizeBytes, lastModified: r.lastModified })
       } catch (err: any) {
         results.push({ filePath: file, success: false, error: err?.message || String(err) })

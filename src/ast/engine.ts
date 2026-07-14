@@ -1105,9 +1105,12 @@ export namespace ASTEngine {
       // interrupt it (event loop is blocked), so we kill the whole process.
       // The indexer is incremental — re-running resumes from where it left off.
       const parseBomb = setTimeout(() => {
-        process.stderr.write(`[BB-HANG] parser stuck 120s on ${filePath} — exiting\n`)
-        process.exit(1)
-      }, 120000)
+        process.stderr.write(`[BB-HANG] parser stuck 10s on ${filePath} — skipping\n`)
+        // Can't throw from setTimeout — it crashes the process uncaught
+        // Instead, forcefully kill the WASM parser by aborting the process
+        // The indexer is incremental and will resume on next run
+        process.exit(77) // Exit code 77 = timeout, parent can detect and skip
+      }, 10000)
 
       const tree = parser.parse(content)
       clearTimeout(parseBomb)
