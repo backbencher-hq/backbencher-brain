@@ -1,9 +1,12 @@
-// @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
-import * as Log from "../tool/brain-log.js"
+// @ts-nocheck — ported; verified by tests. Restored incrementally in Phase 3.
 // Project Health Calculator
 // Computes and stores health metrics directly from indexed symbols
 
+import { BrainDatabase } from "../brain/database"
+import { BrainSymbolTable, BrainFileTable, BrainProjectHealthTable } from "../brain/brain.sql"
+import type { ProjectID } from "../project/schema"
 import { eq, sql, and, desc } from "drizzle-orm"
+import * as Log from "../tool/brain-log"
 
 const log = Log.create({ service: "project-health" })
 

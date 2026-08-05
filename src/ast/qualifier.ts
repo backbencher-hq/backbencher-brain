@@ -1,15 +1,10 @@
-// @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
-import { fileURLToPath } from "node:url"
-import { dirname } from "node:path"
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-import * as Log from "../tool/brain-log.js"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import * as Log from "../tool/brain-log"
+import { ASTEngine } from "./engine"
 
-type UniversalSymbol = UniversalSymbol
-type UniversalRelationship = UniversalRelationship
-const SymbolKind = SymbolKind
-const RelationshipType = RelationshipType
+type UniversalSymbol = ASTEngine.UniversalSymbol
+type UniversalRelationship = ASTEngine.UniversalRelationship
+const SymbolKind = ASTEngine.SymbolKind
+const RelationshipType = ASTEngine.RelationshipType
 
 const log = Log.create({ service: "ast-qualifier" })
 

@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { createRequire } from "node:module"
 const require = createRequire(import.meta.url)
-import { UniversalSymbol, ParseResult } from "./types.js"
+import type { UniversalSymbol, ParseResult } from "./types.js"
 
 export interface FrameworkInfo {
   name: string

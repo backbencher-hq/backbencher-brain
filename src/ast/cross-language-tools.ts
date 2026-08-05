@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { BrainDatabase } from "../brain/database"
 import type { ProjectID } from "../project/schema"
 import { eq, and, sql, or } from "drizzle-orm"

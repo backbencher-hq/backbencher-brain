@@ -1,15 +1,10 @@
-// @ts-nocheck — Ported from backbencher.
 // TypeScript/JavaScript Intelligence Engine
 // Complete AST analysis with zero stubs, zero shortcuts, 100% real implementation
 // The most powerful TypeScript analyzer ever built
 
-import { fileURLToPath } from "node:url"
-import { dirname } from "node:path"
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
 import type { Node } from "web-tree-sitter"
-import { detectFrameworks, type FrameworkInfo } from "./framework-detectors.js"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import { detectFrameworks, type FrameworkInfo } from "./framework-detectors"
+import { ASTEngine } from "./engine"
 import * as path from "path"
 import * as fs from "fs"
 
@@ -35,7 +30,7 @@ interface ScopeEntry {
   kind: ScopeKind
   name: string
   node: Node
-  symbols: Map<string, UniversalSymbol>
+  symbols: Map<string, ASTEngine.UniversalSymbol>
 }
 
 interface StackEntry {
@@ -83,29 +78,29 @@ class ScopeManager {
     return parts.join(".")
   }
 
-  getOwnerInfo(): { ownerName?: string; ownerKind?: SymbolKind } | undefined {
+  getOwnerInfo(): { ownerName?: string; ownerKind?: ASTEngine.SymbolKind } | undefined {
     // Find the nearest class/namespace/interface owner
     for (let i = this.stack.length - 1; i >= 0; i--) {
       const scope = this.stack[i]
       switch (scope.kind) {
         case ScopeKind.Class:
-          return { ownerName: scope.name, ownerKind: SymbolKind.Class }
+          return { ownerName: scope.name, ownerKind: ASTEngine.SymbolKind.Class }
         case ScopeKind.Namespace:
-          return { ownerName: scope.name, ownerKind: SymbolKind.Namespace }
+          return { ownerName: scope.name, ownerKind: ASTEngine.SymbolKind.Namespace }
         case ScopeKind.Interface:
-          return { ownerName: scope.name, ownerKind: SymbolKind.Interface }
+          return { ownerName: scope.name, ownerKind: ASTEngine.SymbolKind.Interface }
         case ScopeKind.Enum:
-          return { ownerName: scope.name, ownerKind: SymbolKind.Enum }
+          return { ownerName: scope.name, ownerKind: ASTEngine.SymbolKind.Enum }
       }
     }
     return undefined
   }
 
-  registerSymbol(symbol: UniversalSymbol): void {
+  registerSymbol(symbol: ASTEngine.UniversalSymbol): void {
     this.currentScope().symbols.set(symbol.name, symbol)
   }
 
-  findSymbolInScope(name: string): UniversalSymbol | undefined {
+  findSymbolInScope(name: string): ASTEngine.UniversalSymbol | undefined {
     // Search from innermost to outermost scope
     for (let i = this.stack.length - 1; i >= 0; i--) {
       const found = this.stack[i].symbols.get(name)
@@ -1154,12 +1149,12 @@ interface FrameworkPattern {
   metadata?: Record<string, any>
 }
 
-function extractFrameworkPatterns(symbols: UniversalSymbol[], content: string): FrameworkPattern[] {
+function extractFrameworkPatterns(symbols: ASTEngine.UniversalSymbol[], content: string): FrameworkPattern[] {
   const patterns: FrameworkPattern[] = []
 
   for (const symbol of symbols) {
     // React Hooks
-    if (symbol.name.startsWith("use") && symbol.kind === SymbolKind.Function) {
+    if (symbol.name.startsWith("use") && symbol.kind === ASTEngine.SymbolKind.Function) {
       const isReactHook = symbol.name.length > 3 && symbol.name[3] === symbol.name[3].toUpperCase()
       if (isReactHook) {
         patterns.push({
@@ -1185,7 +1180,7 @@ function extractFrameworkPatterns(symbols: UniversalSymbol[], content: string): 
     // React Components - More conservative detection
     // Note: This is heuristic-based and may have false positives
     // Ideal solution would analyze return types for JSX
-    if (symbol.kind === SymbolKind.Function || symbol.kind === SymbolKind.Variable) {
+    if (symbol.kind === ASTEngine.SymbolKind.Function || symbol.kind === ASTEngine.SymbolKind.Variable) {
       if (
         symbol.name.length > 0 &&
         symbol.name[0] >= "A" &&
@@ -1207,7 +1202,7 @@ function extractFrameworkPatterns(symbols: UniversalSymbol[], content: string): 
     }
 
     // Vue Composition API / Setup
-    if (symbol.name === "setup" && symbol.kind === SymbolKind.Function) {
+    if (symbol.name === "setup" && symbol.kind === ASTEngine.SymbolKind.Function) {
       patterns.push({
         name: symbol.name,
         type: "vue-setup",
@@ -1241,7 +1236,7 @@ function extractFrameworkPatterns(symbols: UniversalSymbol[], content: string): 
     }
 
     // Drizzle Schemas (variables ending with 'Table')
-    if (symbol.kind === SymbolKind.Variable && symbol.name.endsWith("Table")) {
+    if (symbol.kind === ASTEngine.SymbolKind.Variable && symbol.name.endsWith("Table")) {
       patterns.push({
         name: symbol.name,
         type: "drizzle-table",
@@ -1295,7 +1290,7 @@ function extractFrameworkPatterns(symbols: UniversalSymbol[], content: string): 
     // Qwik Components and Hooks
     if (
       symbol.name.endsWith("$") &&
-      (symbol.kind === SymbolKind.Function || symbol.kind === SymbolKind.Variable)
+      (symbol.kind === ASTEngine.SymbolKind.Function || symbol.kind === ASTEngine.SymbolKind.Variable)
     ) {
       patterns.push({
         name: symbol.name,
@@ -1306,7 +1301,7 @@ function extractFrameworkPatterns(symbols: UniversalSymbol[], content: string): 
     }
 
     // Astro Components (special .astro files, but can have TS/JS logic)
-    if (symbol.name === "Astro" && symbol.kind === SymbolKind.Variable) {
+    if (symbol.name === "Astro" && symbol.kind === ASTEngine.SymbolKind.Variable) {
       patterns.push({
         name: symbol.name,
         type: "astro-global",
@@ -1317,7 +1312,7 @@ function extractFrameworkPatterns(symbols: UniversalSymbol[], content: string): 
     // Remix Route Exports
     if (
       ["loader", "action", "meta", "links", "headers", "ErrorBoundary"].includes(symbol.name) &&
-      (symbol.kind === SymbolKind.Function || symbol.kind === SymbolKind.Variable)
+      (symbol.kind === ASTEngine.SymbolKind.Function || symbol.kind === ASTEngine.SymbolKind.Variable)
     ) {
       patterns.push({
         name: symbol.name,
@@ -1328,7 +1323,7 @@ function extractFrameworkPatterns(symbols: UniversalSymbol[], content: string): 
     }
 
     // SvelteKit Route Functions
-    if (["load", "actions"].includes(symbol.name) && symbol.kind === SymbolKind.Function) {
+    if (["load", "actions"].includes(symbol.name) && symbol.kind === ASTEngine.SymbolKind.Function) {
       patterns.push({
         name: symbol.name,
         type: "sveltekit-route",
@@ -1403,7 +1398,7 @@ function extractFrameworkPatterns(symbols: UniversalSymbol[], content: string): 
         symbol.name === "PUT" ||
         symbol.name === "DELETE" ||
         symbol.name === "PATCH") &&
-      symbol.kind === SymbolKind.Function
+      symbol.kind === ASTEngine.SymbolKind.Function
     ) {
       patterns.push({
         name: symbol.name,
@@ -1427,7 +1422,7 @@ class TypeScriptAnalysisRunner {
   private scopeManager: ScopeManager
   private moduleResolver: TypeScriptModuleResolver | null = null
   private typeInference: TypeInferenceEngine
-  private symbolsById = new Map<string, UniversalSymbol>()
+  private symbolsById = new Map<string, ASTEngine.UniversalSymbol>()
 
   constructor() {
     this.scopeManager = new ScopeManager()
@@ -1466,7 +1461,7 @@ class TypeScriptAnalysisRunner {
     rootNode: Node,
     content: string,
     filePath: string,
-  ): ParseResult & { metadata: Partial<FileMetadata> } {
+  ): ASTEngine.ParseResult & { metadata: Partial<ASTEngine.FileMetadata> } {
     // Reset state for new analysis
     this.currentFile = filePath
     this.content = content
@@ -1477,11 +1472,11 @@ class TypeScriptAnalysisRunner {
     const projectRoot = this.findProjectRoot(filePath)
     this.moduleResolver = new TypeScriptModuleResolver(projectRoot)
 
-    const symbols: UniversalSymbol[] = []
-    const relationships: UniversalRelationship[] = []
-    const imports: ImportInfo[] = []
-    const exports: ExportInfo[] = []
-    const errors: ParseError[] = []
+    const symbols: ASTEngine.UniversalSymbol[] = []
+    const relationships: ASTEngine.UniversalRelationship[] = []
+    const imports: ASTEngine.ImportInfo[] = []
+    const exports: ASTEngine.ExportInfo[] = []
+    const errors: ASTEngine.ParseError[] = []
 
     // ========================================================================
     // STAGE 3: RESILIENT PARSING & ERROR NODE BYPASS
@@ -1518,8 +1513,11 @@ class TypeScriptAnalysisRunner {
     const mod = path.basename(filePath, path.extname(filePath))
     this.scopeManager.pushScope(ScopeKind.Module, mod, rootNode)
 
-    // PHASE 1: Inject phantom symbols for better resolution
-    this.injectPhantomSymbols(rootNode, symbols)
+    // PHASE 1: (removed) phantom symbol injection — injected fake `this`,
+    // line-0 `constructor`, and unconditional window/document/console/process/
+    // global/__dirname/__filename symbols for every file, polluting indexes
+    // with rows that have no real location. The analyzer extracts real
+    // declarations only.
 
     // PHASE 2: Extract all symbols with proper scoping
     this.extractSymbols(rootNode, symbols)
@@ -1586,7 +1584,7 @@ class TypeScriptAnalysisRunner {
   // PHANTOM SYMBOL INJECTION - Smart symbol pre-processing
   // ========================================================================
 
-  private injectPhantomSymbols(rootNode: Node, symbols: UniversalSymbol[]): void {
+  private injectPhantomSymbols(rootNode: Node, symbols: ASTEngine.UniversalSymbol[]): void {
     // Pre-inject commonly referenced but not explicitly declared symbols
     // This helps with better cross-reference resolution in large codebases
 
@@ -1600,7 +1598,7 @@ class TypeScriptAnalysisRunner {
     this.injectGlobalEnvironmentSymbols(symbols)
   }
 
-  private injectImplicitThisSymbols(node: Node, symbols: UniversalSymbol[]): void {
+  private injectImplicitThisSymbols(node: Node, symbols: ASTEngine.UniversalSymbol[]): void {
     const traverse = (n: Node) => {
       if (n.type === "class_declaration") {
         const nameNode = n.childForFieldName("name")
@@ -1609,13 +1607,13 @@ class TypeScriptAnalysisRunner {
           // Add implicit 'this' reference for this class
           symbols.push({
             name: "this",
-            kind: SymbolKind.Variable,
+            kind: ASTEngine.SymbolKind.Variable,
             range: this.nodeRange(n),
             scope: className,
             visibility: "private",
             returnType: className,
             ownerName: className,
-            ownerKind: SymbolKind.Class,
+            ownerKind: ASTEngine.SymbolKind.Class,
             metadata: {
               isImplicit: true,
               isThisReference: true,
@@ -1633,7 +1631,7 @@ class TypeScriptAnalysisRunner {
     traverse(node)
   }
 
-  private injectImplicitConstructors(node: Node, symbols: UniversalSymbol[]): void {
+  private injectImplicitConstructors(node: Node, symbols: ASTEngine.UniversalSymbol[]): void {
     const classesWithConstructors: Record<string, boolean> = {}
     const allClasses: Record<string, boolean> = {}
 
@@ -1667,13 +1665,13 @@ class TypeScriptAnalysisRunner {
       if (!!!classesWithConstructors[className]) {
         symbols.push({
           name: "constructor",
-          kind: SymbolKind.Constructor,
+          kind: ASTEngine.SymbolKind.Constructor,
           range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0, startIndex: 0, endIndex: 0 },
           scope: className,
           visibility: "public",
           parameters: [],
           ownerName: className,
-          ownerKind: SymbolKind.Class,
+          ownerKind: ASTEngine.SymbolKind.Class,
           metadata: {
             isImplicit: true,
             isDefaultConstructor: true,
@@ -1683,7 +1681,7 @@ class TypeScriptAnalysisRunner {
     }
   }
 
-  private injectGlobalEnvironmentSymbols(symbols: UniversalSymbol[]): void {
+  private injectGlobalEnvironmentSymbols(symbols: ASTEngine.UniversalSymbol[]): void {
     // Common global symbols that are often referenced but not explicitly imported
     const globalSymbols = [
       { name: "window", type: "Window" },
@@ -1698,7 +1696,7 @@ class TypeScriptAnalysisRunner {
     for (const global of globalSymbols) {
       symbols.push({
         name: global.name,
-        kind: SymbolKind.Variable,
+        kind: ASTEngine.SymbolKind.Variable,
         range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0, startIndex: 0, endIndex: 0 },
         scope: "__global__",
         visibility: "public",
@@ -1715,7 +1713,7 @@ class TypeScriptAnalysisRunner {
   // SYMBOL EXTRACTION - Complete TypeScript construct handling
   // ========================================================================
 
-  private extractSymbols(rootNode: Node, symbols: UniversalSymbol[]): void {
+  private extractSymbols(rootNode: Node, symbols: ASTEngine.UniversalSymbol[]): void {
     const stack: StackEntry[] = [{ node: rootNode }]
 
     while (stack.length > 0) {
@@ -1805,7 +1803,7 @@ class TypeScriptAnalysisRunner {
     }
   }
 
-  private extractFunction(node: Node, symbols: UniversalSymbol[], stack: StackEntry[]): boolean {
+  private extractFunction(node: Node, symbols: ASTEngine.UniversalSymbol[], stack: StackEntry[]): boolean {
     const nameNode = node.childForFieldName("name")
     if (!nameNode) return false
     const name = nameNode.text
@@ -1815,9 +1813,9 @@ class TypeScriptAnalysisRunner {
     const returnType = this.extractReturnType(node)
     const typeParams = this.extractTypeParameters(node)
 
-    const symbol: UniversalSymbol = {
+    const symbol: ASTEngine.UniversalSymbol = {
       name,
-      kind: SymbolKind.Function,
+      kind: ASTEngine.SymbolKind.Function,
       range: this.nodeRange(node),
       scope: this.scopeManager.buildQualifiedName("").replace(/\.$/, "") || undefined,
       visibility: exportStatus.isExported ? "public" : "private",
@@ -1853,7 +1851,7 @@ class TypeScriptAnalysisRunner {
     return true
   }
 
-  private extractClass(node: Node, symbols: UniversalSymbol[], stack: StackEntry[]): boolean {
+  private extractClass(node: Node, symbols: ASTEngine.UniversalSymbol[], stack: StackEntry[]): boolean {
     const nameNode = node.childForFieldName("name")
     if (!nameNode) return false
     const name = nameNode.text
@@ -1864,9 +1862,9 @@ class TypeScriptAnalysisRunner {
     const heritage = this.extractClassHeritage(node)
     const typeParams = this.extractTypeParameters(node)
 
-    const symbol: UniversalSymbol = {
+    const symbol: ASTEngine.UniversalSymbol = {
       name,
-      kind: SymbolKind.Class,
+      kind: ASTEngine.SymbolKind.Class,
       range: this.nodeRange(node),
       scope: this.scopeManager.buildQualifiedName("").replace(/\.$/, "") || undefined,
       visibility: exportStatus.isExported ? "public" : "private",
@@ -1938,7 +1936,7 @@ class TypeScriptAnalysisRunner {
     return false
   }
 
-  private extractInterface(node: Node, symbols: UniversalSymbol[], stack: StackEntry[]): boolean {
+  private extractInterface(node: Node, symbols: ASTEngine.UniversalSymbol[], stack: StackEntry[]): boolean {
     const nameNode = node.childForFieldName("name")
     if (!nameNode) return false
     const name = nameNode.text
@@ -1948,9 +1946,9 @@ class TypeScriptAnalysisRunner {
     const extendsClause = this.extractInterfaceExtends(node)
     const typeParams = this.extractTypeParameters(node)
 
-    const symbol: UniversalSymbol = {
+    const symbol: ASTEngine.UniversalSymbol = {
       name,
-      kind: SymbolKind.Interface,
+      kind: ASTEngine.SymbolKind.Interface,
       range: this.nodeRange(node),
       scope: this.scopeManager.buildQualifiedName("").replace(/\.$/, "") || undefined,
       visibility: exportStatus.isExported ? "public" : "private",
@@ -1979,7 +1977,7 @@ class TypeScriptAnalysisRunner {
     return false
   }
 
-  private extractInterfaceMembers(body: Node, symbols: UniversalSymbol[], interfaceName: string): void {
+  private extractInterfaceMembers(body: Node, symbols: ASTEngine.UniversalSymbol[], interfaceName: string): void {
     for (let i = 0; i < body.namedChildCount; i++) {
       const member = body.namedChild(i)
       if (!member) continue
@@ -1994,13 +1992,13 @@ class TypeScriptAnalysisRunner {
 
             symbols.push({
               name: propName.text,
-              kind: SymbolKind.Property,
+              kind: ASTEngine.SymbolKind.Property,
               range: this.nodeRange(member),
               scope: interfaceName,
               isStatic: false,
               returnType: typeAnnotation?.text.replace(/^:\s*/, ""),
               ownerName: interfaceName,
-              ownerKind: SymbolKind.Interface,
+              ownerKind: ASTEngine.SymbolKind.Interface,
               metadata: {
                 isOptional,
                 isInterfaceMember: true,
@@ -2018,13 +2016,13 @@ class TypeScriptAnalysisRunner {
 
             symbols.push({
               name: methodName.text,
-              kind: SymbolKind.Method,
+              kind: ASTEngine.SymbolKind.Method,
               range: this.nodeRange(member),
               scope: interfaceName,
               parameters: params,
               returnType,
               ownerName: interfaceName,
-              ownerKind: SymbolKind.Interface,
+              ownerKind: ASTEngine.SymbolKind.Interface,
               metadata: {
                 isInterfaceMember: true,
               },
@@ -2044,13 +2042,13 @@ class TypeScriptAnalysisRunner {
 
           symbols.push({
             name: "(call)",
-            kind: SymbolKind.Method,
+            kind: ASTEngine.SymbolKind.Method,
             range: this.nodeRange(member),
             scope: interfaceName,
             parameters: params,
             returnType,
             ownerName: interfaceName,
-            ownerKind: SymbolKind.Interface,
+            ownerKind: ASTEngine.SymbolKind.Interface,
             metadata: {
               isCallSignature: true,
             },
@@ -2064,13 +2062,13 @@ class TypeScriptAnalysisRunner {
 
           symbols.push({
             name: "(new)",
-            kind: SymbolKind.Constructor,
+            kind: ASTEngine.SymbolKind.Constructor,
             range: this.nodeRange(member),
             scope: interfaceName,
             parameters: params,
             returnType,
             ownerName: interfaceName,
-            ownerKind: SymbolKind.Interface,
+            ownerKind: ASTEngine.SymbolKind.Interface,
             metadata: {
               isConstructSignature: true,
             },
@@ -2081,7 +2079,7 @@ class TypeScriptAnalysisRunner {
     }
   }
 
-  private extractTypeAlias(node: Node, symbols: UniversalSymbol[]): boolean {
+  private extractTypeAlias(node: Node, symbols: ASTEngine.UniversalSymbol[]): boolean {
     const nameNode = node.childForFieldName("name")
     if (!nameNode) return false
     const name = nameNode.text
@@ -2089,9 +2087,9 @@ class TypeScriptAnalysisRunner {
     const typeValue = node.childForFieldName("value")
     const typeParams = this.extractTypeParameters(node)
 
-    const symbol: UniversalSymbol = {
+    const symbol: ASTEngine.UniversalSymbol = {
       name,
-      kind: SymbolKind.Type,
+      kind: ASTEngine.SymbolKind.Type,
       range: this.nodeRange(node),
       scope: this.scopeManager.buildQualifiedName("").replace(/\.$/, "") || undefined,
       visibility: exportStatus.isExported ? "public" : "private",
@@ -2114,16 +2112,16 @@ class TypeScriptAnalysisRunner {
     return true
   }
 
-  private extractEnum(node: Node, symbols: UniversalSymbol[], stack: StackEntry[]): boolean {
+  private extractEnum(node: Node, symbols: ASTEngine.UniversalSymbol[], stack: StackEntry[]): boolean {
     const nameNode = node.childForFieldName("name")
     if (!nameNode) return false
     const name = nameNode.text
     const modifiers = extractModifiersFromNode(node)
     const exportStatus = isNodeExported(node)
 
-    const symbol: UniversalSymbol = {
+    const symbol: ASTEngine.UniversalSymbol = {
       name,
-      kind: SymbolKind.Enum,
+      kind: ASTEngine.SymbolKind.Enum,
       range: this.nodeRange(node),
       scope: this.scopeManager.buildQualifiedName("").replace(/\.$/, "") || undefined,
       visibility: exportStatus.isExported ? "public" : "private",
@@ -2159,11 +2157,11 @@ class TypeScriptAnalysisRunner {
 
             symbols.push({
               name: memberName,
-              kind: SymbolKind.EnumMember,
+              kind: ASTEngine.SymbolKind.EnumMember,
               range: this.nodeRange(member),
               scope: name,
               ownerName: name,
-              ownerKind: SymbolKind.Enum,
+              ownerKind: ASTEngine.SymbolKind.Enum,
               metadata: {
                 value: valueNode?.text,
                 isEnumMember: true,
@@ -2178,7 +2176,7 @@ class TypeScriptAnalysisRunner {
     return false
   }
 
-  private extractVariables(node: Node, symbols: UniversalSymbol[], stack: StackEntry[]): boolean {
+  private extractVariables(node: Node, symbols: ASTEngine.UniversalSymbol[], stack: StackEntry[]): boolean {
     const isConst = node.text.startsWith("const")
 
     for (let i = 0; i < node.namedChildCount; i++) {
@@ -2199,13 +2197,13 @@ class TypeScriptAnalysisRunner {
       const exportStatus = isNodeExported(node)
 
       // Check if this is an arrow function assignment
-      let kind: SymbolKind = isConst ? SymbolKind.Constant : SymbolKind.Variable
-      let params: Parameter[] | undefined
+      let kind: ASTEngine.SymbolKind = isConst ? ASTEngine.SymbolKind.Constant : ASTEngine.SymbolKind.Variable
+      let params: ASTEngine.Parameter[] | undefined
       let returnType: string | undefined
       let isAsync = false
 
       if (valueNode?.type === "arrow_function" || valueNode?.type === "function") {
-        kind = SymbolKind.Function
+        kind = ASTEngine.SymbolKind.Function
         params = this.extractParameters(valueNode)
         returnType = this.extractReturnType(valueNode)
 
@@ -2225,7 +2223,7 @@ class TypeScriptAnalysisRunner {
 
       const modifiers = extractModifiersFromNode(node)
 
-      const symbol: UniversalSymbol = {
+      const symbol: ASTEngine.UniversalSymbol = {
         name,
         kind,
         range: this.nodeRange(declarator),
@@ -2238,7 +2236,7 @@ class TypeScriptAnalysisRunner {
         decorators: modifiers.decorators.length > 0 ? modifiers.decorators : undefined,
         comments: this.extractComments(node),
         qualified_calls:
-          kind === SymbolKind.Function && valueNode ? this.extractQualifiedCalls(valueNode) : undefined,
+          kind === ASTEngine.SymbolKind.Function && valueNode ? this.extractQualifiedCalls(valueNode) : undefined,
         taintSources: valueNode ? this.extractTaintSources(valueNode) : undefined,
         taintSinks: valueNode ? this.extractTaintSinks(valueNode) : undefined,
         ...this.scopeManager.getOwnerInfo(),
@@ -2248,7 +2246,7 @@ class TypeScriptAnalysisRunner {
           isConst,
           isDeclare: modifiers.isDeclare,
           complexity:
-            kind === SymbolKind.Function && valueNode ? this.calculateComplexity(valueNode) : undefined,
+            kind === ASTEngine.SymbolKind.Function && valueNode ? this.calculateComplexity(valueNode) : undefined,
         },
       }
 
@@ -2269,7 +2267,7 @@ class TypeScriptAnalysisRunner {
   private extractDestructuringPattern(
     pattern: Node,
     declarator: Node,
-    symbols: UniversalSymbol[],
+    symbols: ASTEngine.UniversalSymbol[],
     isConst: boolean,
   ): void {
     const extractNames = (node: Node): string[] => {
@@ -2309,7 +2307,7 @@ class TypeScriptAnalysisRunner {
     for (const name of names) {
       symbols.push({
         name,
-        kind: isConst ? SymbolKind.Constant : SymbolKind.Variable,
+        kind: isConst ? ASTEngine.SymbolKind.Constant : ASTEngine.SymbolKind.Variable,
         range: this.nodeRange(declarator),
         scope: this.scopeManager.buildQualifiedName("").replace(/\.$/, "") || undefined,
         visibility: exportStatus.isExported ? "public" : "private",
@@ -2322,7 +2320,7 @@ class TypeScriptAnalysisRunner {
     }
   }
 
-  private extractMethod(node: Node, symbols: UniversalSymbol[], stack: StackEntry[]): boolean {
+  private extractMethod(node: Node, symbols: ASTEngine.UniversalSymbol[], stack: StackEntry[]): boolean {
     const nameNode = node.childForFieldName("name")
     if (!nameNode) return false
     const name = nameNode.text
@@ -2341,9 +2339,9 @@ class TypeScriptAnalysisRunner {
 
     const ownerInfo = this.scopeManager.getOwnerInfo()
 
-    const symbol: UniversalSymbol = {
+    const symbol: ASTEngine.UniversalSymbol = {
       name: name.replace(/^#/, ""), // Normalize private field name
-      kind: SymbolKind.Method,
+      kind: ASTEngine.SymbolKind.Method,
       range: this.nodeRange(node),
       scope: ownerInfo?.ownerName,
       visibility,
@@ -2378,14 +2376,14 @@ class TypeScriptAnalysisRunner {
     return true
   }
 
-  private extractConstructor(node: Node, symbols: UniversalSymbol[], stack: StackEntry[]): boolean {
+  private extractConstructor(node: Node, symbols: ASTEngine.UniversalSymbol[], stack: StackEntry[]): boolean {
     const params = this.extractParameters(node)
     const ownerInfo = this.scopeManager.getOwnerInfo()
     const modifiers = extractModifiersFromNode(node)
 
-    const symbol: UniversalSymbol = {
+    const symbol: ASTEngine.UniversalSymbol = {
       name: "constructor",
-      kind: SymbolKind.Constructor,
+      kind: ASTEngine.SymbolKind.Constructor,
       range: this.nodeRange(node),
       scope: ownerInfo?.ownerName,
       visibility: "public",
@@ -2415,7 +2413,7 @@ class TypeScriptAnalysisRunner {
       const name = param.name.startsWith("...") ? param.name.slice(3) : param.name
       symbols.push({
         name,
-        kind: SymbolKind.Property,
+        kind: ASTEngine.SymbolKind.Property,
         range: this.nodeRange(node),
         scope: ownerInfo?.ownerName,
         visibility: vis,
@@ -2436,7 +2434,7 @@ class TypeScriptAnalysisRunner {
     return true
   }
 
-  private extractProperty(node: Node, symbols: UniversalSymbol[]): void {
+  private extractProperty(node: Node, symbols: ASTEngine.UniversalSymbol[]): void {
     const nameNode = node.childForFieldName("name")
     if (!nameNode) return
 
@@ -2461,9 +2459,9 @@ class TypeScriptAnalysisRunner {
 
     const ownerInfo = this.scopeManager.getOwnerInfo()
 
-    const symbol: UniversalSymbol = {
+    const symbol: ASTEngine.UniversalSymbol = {
       name: name.replace(/^#/, ""),
-      kind: SymbolKind.Property,
+      kind: ASTEngine.SymbolKind.Property,
       range: this.nodeRange(node),
       scope: ownerInfo?.ownerName,
       visibility,
@@ -2483,7 +2481,7 @@ class TypeScriptAnalysisRunner {
     symbols.push(symbol)
   }
 
-  private extractIndexSignature(node: Node, symbols: UniversalSymbol[]): void {
+  private extractIndexSignature(node: Node, symbols: ASTEngine.UniversalSymbol[]): void {
     // [key: string]: T
     const ownerInfo = this.scopeManager.getOwnerInfo()
 
@@ -2502,9 +2500,9 @@ class TypeScriptAnalysisRunner {
       }
     }
 
-    const symbol: UniversalSymbol = {
+    const symbol: ASTEngine.UniversalSymbol = {
       name: `[${indexParam}]`,
-      kind: SymbolKind.Property,
+      kind: ASTEngine.SymbolKind.Property,
       range: this.nodeRange(node),
       scope: ownerInfo?.ownerName,
       returnType: valueType || "unknown",
@@ -2518,12 +2516,12 @@ class TypeScriptAnalysisRunner {
     symbols.push(symbol)
   }
 
-  private extractStaticBlock(node: Node, symbols: UniversalSymbol[], stack: StackEntry[]): boolean {
+  private extractStaticBlock(node: Node, symbols: ASTEngine.UniversalSymbol[], stack: StackEntry[]): boolean {
     const ownerInfo = this.scopeManager.getOwnerInfo()
 
-    const symbol: UniversalSymbol = {
+    const symbol: ASTEngine.UniversalSymbol = {
       name: "static {}",
-      kind: SymbolKind.Method,
+      kind: ASTEngine.SymbolKind.Method,
       range: this.nodeRange(node),
       scope: ownerInfo?.ownerName,
       isStatic: true,
@@ -2545,7 +2543,7 @@ class TypeScriptAnalysisRunner {
     return true
   }
 
-  private extractAccessor(node: Node, symbols: UniversalSymbol[]): void {
+  private extractAccessor(node: Node, symbols: ASTEngine.UniversalSymbol[]): void {
     const nameNode = node.childForFieldName("name")
     if (!nameNode) return
 
@@ -2557,9 +2555,9 @@ class TypeScriptAnalysisRunner {
     const returnType = isGetter ? this.extractReturnType(node) : undefined
     const params = !isGetter ? this.extractParameters(node) : []
 
-    const symbol: UniversalSymbol = {
+    const symbol: ASTEngine.UniversalSymbol = {
       name,
-      kind: SymbolKind.Method,
+      kind: ASTEngine.SymbolKind.Method,
       range: this.nodeRange(node),
       scope: ownerInfo?.ownerName,
       visibility: modifiers.isPrivate ? "private" : modifiers.isProtected ? "protected" : "public",
@@ -2576,16 +2574,16 @@ class TypeScriptAnalysisRunner {
     symbols.push(symbol)
   }
 
-  private extractNamespace(node: Node, symbols: UniversalSymbol[], stack: StackEntry[]): boolean {
+  private extractNamespace(node: Node, symbols: ASTEngine.UniversalSymbol[], stack: StackEntry[]): boolean {
     const nameNode = node.childForFieldName("name")
     if (!nameNode) return false
     const name = nameNode.text
     const exportStatus = isNodeExported(node)
     const modifiers = extractModifiersFromNode(node)
 
-    const symbol: UniversalSymbol = {
+    const symbol: ASTEngine.UniversalSymbol = {
       name,
-      kind: SymbolKind.Namespace,
+      kind: ASTEngine.SymbolKind.Namespace,
       range: this.nodeRange(node),
       scope: this.scopeManager.buildQualifiedName("").replace(/\.$/, "") || undefined,
       visibility: exportStatus.isExported ? "public" : "private",
@@ -2612,7 +2610,7 @@ class TypeScriptAnalysisRunner {
   // IMPORT/EXPORT EXTRACTION
   // ========================================================================
 
-  private extractImports(node: Node, imports: ImportInfo[]): void {
+  private extractImports(node: Node, imports: ASTEngine.ImportInfo[]): void {
     if (node.type === "import_statement") {
       const sourceNode = node.childForFieldName("source")
       if (!sourceNode) return
@@ -2665,7 +2663,7 @@ class TypeScriptAnalysisRunner {
     }
   }
 
-  private extractExports(node: Node, exports: ExportInfo[], symbols: UniversalSymbol[]): void {
+  private extractExports(node: Node, exports: ASTEngine.ExportInfo[], symbols: ASTEngine.UniversalSymbol[]): void {
     if (node.type === "export_statement") {
       // Check for default export
       const isDefault = this.hasToken(node, "default")
@@ -2767,9 +2765,9 @@ class TypeScriptAnalysisRunner {
 
   private extractRelationships(
     node: Node,
-    relationships: UniversalRelationship[],
-    symbols: UniversalSymbol[],
-    exports: ExportInfo[],
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+    exports: ASTEngine.ExportInfo[],
   ): void {
     // 1. Extract inheritance (extends) relationships from classes
     this.extractInheritanceRelationships(symbols, relationships)
@@ -2800,18 +2798,18 @@ class TypeScriptAnalysisRunner {
   }
 
   private extractInheritanceRelationships(
-    symbols: UniversalSymbol[],
-    relationships: UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
   ): void {
     for (const symbol of symbols) {
-      if (symbol.kind === SymbolKind.Class || symbol.kind === SymbolKind.Interface) {
+      if (symbol.kind === ASTEngine.SymbolKind.Class || symbol.kind === ASTEngine.SymbolKind.Interface) {
         const extendsTypes = symbol.metadata?.extends as string[] | undefined
         if (extendsTypes) {
           for (const baseType of extendsTypes) {
             relationships.push({
               source: this.generateSymbolId(symbol),
               target: baseType,
-              type: RelationshipType.Extends,
+              type: ASTEngine.RelationshipType.Extends,
               confidence: 1.0,
               metadata: {
                 sourceKind: symbol.kind,
@@ -2824,18 +2822,18 @@ class TypeScriptAnalysisRunner {
   }
 
   private extractImplementsRelationships(
-    symbols: UniversalSymbol[],
-    relationships: UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
   ): void {
     for (const symbol of symbols) {
-      if (symbol.kind === SymbolKind.Class) {
+      if (symbol.kind === ASTEngine.SymbolKind.Class) {
         const implementsTypes = symbol.metadata?.implements as string[] | undefined
         if (implementsTypes) {
           for (const iface of implementsTypes) {
             relationships.push({
               source: this.generateSymbolId(symbol),
               target: iface,
-              type: RelationshipType.Implements,
+              type: ASTEngine.RelationshipType.Implements,
               confidence: 1.0,
               metadata: {},
             })
@@ -2847,10 +2845,10 @@ class TypeScriptAnalysisRunner {
 
   private extractCallRelationships(
     node: Node,
-    relationships: UniversalRelationship[],
-    symbols: UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
   ): void {
-    const processNode = (n: Node, currentSymbol: UniversalSymbol | null): void => {
+    const processNode = (n: Node, currentSymbol: ASTEngine.UniversalSymbol | null): void => {
       currentSymbol = this.resolveRelationshipSymbol(n, symbols, currentSymbol)
 
       // Extract call expressions and JSX component usages
@@ -2890,7 +2888,7 @@ class TypeScriptAnalysisRunner {
             relationships.push({
               source: this.generateSymbolId(callSource),
               target: targetName,
-              type: RelationshipType.Calls,
+              type: ASTEngine.RelationshipType.Calls,
               confidence: 0.9,
               metadata: {
                 calleeExpression: callee.text,
@@ -2911,7 +2909,7 @@ class TypeScriptAnalysisRunner {
                 relationships.push({
                   source: this.generateSymbolId(callSource),
                   target: identifier.text,
-                  type: RelationshipType.Uses,
+                  type: ASTEngine.RelationshipType.Uses,
                   confidence: 0.9,
                   metadata: {
                     jsxElement: identifier.text,
@@ -2938,13 +2936,13 @@ class TypeScriptAnalysisRunner {
 
   private extractUsageRelationships(
     node: Node,
-    relationships: UniversalRelationship[],
-    symbols: UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
   ): void {
     const symbolNames: Record<string, boolean> = {}
     const processed: Record<string, boolean> = {}
 
-    const processNode = (n: Node, currentSymbol: UniversalSymbol | null): void => {
+    const processNode = (n: Node, currentSymbol: ASTEngine.UniversalSymbol | null): void => {
       currentSymbol = this.resolveRelationshipSymbol(n, symbols, currentSymbol)
 
       // JSX component usage detection
@@ -2964,7 +2962,7 @@ class TypeScriptAnalysisRunner {
                 relationships.push({
                   source: this.generateSymbolId(currentSymbol),
                   target: name,
-                  type: RelationshipType.Instantiates,
+                  type: ASTEngine.RelationshipType.Instantiates,
                   confidence: 0.95,
                   metadata: {
                     isJsxComponent: true,
@@ -3011,7 +3009,7 @@ class TypeScriptAnalysisRunner {
             relationships.push({
               source: this.generateSymbolId(currentSymbol),
               target: name,
-              type: RelationshipType.References,
+              type: ASTEngine.RelationshipType.References,
               confidence: 0.8,
               metadata: {
                 line: n.startPosition.row,
@@ -3033,7 +3031,7 @@ class TypeScriptAnalysisRunner {
             relationships.push({
               source: this.generateSymbolId(currentSymbol),
               target: typeName,
-              type: RelationshipType.Uses,
+              type: ASTEngine.RelationshipType.Uses,
               confidence: 0.9,
               metadata: {
                 isTypeReference: true,
@@ -3058,10 +3056,10 @@ class TypeScriptAnalysisRunner {
 
   private extractInstantiationRelationships(
     node: Node,
-    relationships: UniversalRelationship[],
-    symbols: UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
   ): void {
-    const processNode = (n: Node, currentSymbol: UniversalSymbol | null): void => {
+    const processNode = (n: Node, currentSymbol: ASTEngine.UniversalSymbol | null): void => {
       currentSymbol = this.resolveRelationshipSymbol(n, symbols, currentSymbol)
 
       // Extract new expressions — fallback to module when at top level
@@ -3082,7 +3080,7 @@ class TypeScriptAnalysisRunner {
           relationships.push({
             source: this.generateSymbolId(instSource),
             target: className,
-            type: RelationshipType.Instantiates,
+            type: ASTEngine.RelationshipType.Instantiates,
             confidence: 1.0,
             metadata: {
               line: n.startPosition.row,
@@ -3104,8 +3102,8 @@ class TypeScriptAnalysisRunner {
   }
 
   private extractDecoratorRelationships(
-    symbols: UniversalSymbol[],
-    relationships: UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
   ): void {
     for (const symbol of symbols) {
       if (symbol.decorators && symbol.decorators.length > 0) {
@@ -3113,7 +3111,7 @@ class TypeScriptAnalysisRunner {
           relationships.push({
             source: decorator,
             target: this.generateSymbolId(symbol),
-            type: RelationshipType.References,
+            type: ASTEngine.RelationshipType.References,
             confidence: 1.0,
             metadata: {
               isDecorator: true,
@@ -3125,15 +3123,15 @@ class TypeScriptAnalysisRunner {
   }
 
   private extractOverrideRelationships(
-    symbols: UniversalSymbol[],
-    relationships: UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
   ): void {
     for (const symbol of symbols) {
       if (symbol.metadata?.isOverride && symbol.ownerName) {
         // Find the parent class
         const parentClass = findItem(
           symbols,
-          (s) => s.name === symbol.ownerName && s.kind === SymbolKind.Class,
+          (s) => s.name === symbol.ownerName && s.kind === ASTEngine.SymbolKind.Class,
         )
         if (parentClass && parentClass.metadata?.extends) {
           const baseClasses = parentClass.metadata.extends as string[]
@@ -3141,7 +3139,7 @@ class TypeScriptAnalysisRunner {
             relationships.push({
               source: this.generateSymbolId(symbol),
               target: `${baseClass}.${symbol.name}`,
-              type: RelationshipType.Overrides,
+              type: ASTEngine.RelationshipType.Overrides,
               confidence: 0.95,
               metadata: {
                 baseClass,
@@ -3155,8 +3153,8 @@ class TypeScriptAnalysisRunner {
 
   private extractImportRelationships(
     node: Node,
-    relationships: UniversalRelationship[],
-    symbols: UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
   ): void {
     if (node.type === "import_statement") {
       const sourceNode = node.childForFieldName("source")
@@ -3172,7 +3170,7 @@ class TypeScriptAnalysisRunner {
         relationships.push({
           source: this.currentFile,
           target: `${modulePath}:${itemName}`,
-          type: RelationshipType.Imports,
+          type: ASTEngine.RelationshipType.Imports,
           confidence: 1.0,
           metadata: {
             module: modulePath,
@@ -3192,9 +3190,9 @@ class TypeScriptAnalysisRunner {
   }
 
   private extractExportRelationships(
-    exports: ExportInfo[],
-    relationships: UniversalRelationship[],
-    symbols: UniversalSymbol[],
+    exports: ASTEngine.ExportInfo[],
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
   ): void {
     for (const item of exports) {
       const target = findItem(symbols, (s) => s.name === item.name)
@@ -3202,7 +3200,7 @@ class TypeScriptAnalysisRunner {
       relationships.push({
         source: this.currentFile,
         target: target ? this.generateSymbolId(target) : `${this.currentFile}:${item.name}`,
-        type: RelationshipType.Exports,
+        type: ASTEngine.RelationshipType.Exports,
         confidence: 1.0,
         metadata: {
           isDefault: item.isDefault,
@@ -3213,8 +3211,8 @@ class TypeScriptAnalysisRunner {
   }
 
   private addContainmentRelationships(
-    symbols: UniversalSymbol[],
-    relationships: UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
   ): void {
     for (const symbol of symbols) {
       if (symbol.ownerName) {
@@ -3223,7 +3221,7 @@ class TypeScriptAnalysisRunner {
           relationships.push({
             source: this.generateSymbolId(owner),
             target: this.generateSymbolId(symbol),
-            type: RelationshipType.Contains,
+            type: ASTEngine.RelationshipType.Contains,
             confidence: 1.0,
             metadata: {},
           })
@@ -3234,10 +3232,10 @@ class TypeScriptAnalysisRunner {
 
   private resolveRelationshipSymbol(
     node: Node,
-    symbols: UniversalSymbol[],
-    current: UniversalSymbol | null,
-  ): UniversalSymbol | null {
-    const byPos = (name: string, kind: SymbolKind, line: number, col: number, owner?: string) =>
+    symbols: ASTEngine.UniversalSymbol[],
+    current: ASTEngine.UniversalSymbol | null,
+  ): ASTEngine.UniversalSymbol | null {
+    const byPos = (name: string, kind: ASTEngine.SymbolKind, line: number, col: number, owner?: string) =>
       findItem(
         symbols,
         (s) =>
@@ -3252,8 +3250,8 @@ class TypeScriptAnalysisRunner {
       const name = node.childForFieldName("name")?.text
       if (!name) return current
       return (
-        byPos(name, SymbolKind.Function, node.startPosition.row, node.startPosition.column) ||
-        findItem(symbols, (s) => s.name === name && s.kind === SymbolKind.Function) ||
+        byPos(name, ASTEngine.SymbolKind.Function, node.startPosition.row, node.startPosition.column) ||
+        findItem(symbols, (s) => s.name === name && s.kind === ASTEngine.SymbolKind.Function) ||
         current
       )
     }
@@ -3264,10 +3262,10 @@ class TypeScriptAnalysisRunner {
       const name = raw.replace(/^#/, "")
       const owner = this.findEnclosingClassName(node)
       return (
-        byPos(name, SymbolKind.Method, node.startPosition.row, node.startPosition.column, owner) ||
+        byPos(name, ASTEngine.SymbolKind.Method, node.startPosition.row, node.startPosition.column, owner) ||
         findItem(
           symbols,
-          (s) => s.name === name && s.kind === SymbolKind.Method && (!owner || s.ownerName === owner),
+          (s) => s.name === name && s.kind === ASTEngine.SymbolKind.Method && (!owner || s.ownerName === owner),
         ) ||
         current
       )
@@ -3279,8 +3277,8 @@ class TypeScriptAnalysisRunner {
         const name = parent.childForFieldName("name")?.text
         if (!name) return current
         return (
-          byPos(name, SymbolKind.Function, parent.startPosition.row, parent.startPosition.column) ||
-          findItem(symbols, (s) => s.name === name && s.kind === SymbolKind.Function) ||
+          byPos(name, ASTEngine.SymbolKind.Function, parent.startPosition.row, parent.startPosition.column) ||
+          findItem(symbols, (s) => s.name === name && s.kind === ASTEngine.SymbolKind.Function) ||
           current
         )
       }
@@ -3304,8 +3302,8 @@ class TypeScriptAnalysisRunner {
   // HELPER METHODS
   // ========================================================================
 
-  private extractParameters(node: Node): Parameter[] {
-    const params: Parameter[] = []
+  private extractParameters(node: Node): ASTEngine.Parameter[] {
+    const params: ASTEngine.Parameter[] = []
 
     const paramsNode = node.childForFieldName("parameters") || node.childForFieldName("formal_parameters")
     if (!paramsNode) return params
@@ -3713,7 +3711,7 @@ class TypeScriptAnalysisRunner {
     return uniqueSinks.length > 0 ? uniqueSinks : undefined
   }
 
-  private nodeRange(node: Node, preferParentStatement: boolean = true): UniversalSymbol["range"] {
+  private nodeRange(node: Node, preferParentStatement: boolean = true): ASTEngine.UniversalSymbol["range"] {
     let targetNode = node
 
     if (preferParentStatement) {
@@ -3741,16 +3739,18 @@ class TypeScriptAnalysisRunner {
     }
 
     return {
-      startLine: targetNode.startPosition.row,
-      startColumn: targetNode.startPosition.column,
-      endLine: targetNode.endPosition.row,
-      endColumn: targetNode.endPosition.column,
+      // tree-sitter rows are 0-indexed; the index convention is 1-based
+      // (readSymbolSnippet and line_start consumers slice at line-1).
+      startLine: targetNode.startPosition.row + 1,
+      startColumn: targetNode.startPosition.column + 1,
+      endLine: targetNode.endPosition.row + 1,
+      endColumn: targetNode.endPosition.column + 1,
       startIndex: targetNode.startIndex,
       endIndex: targetNode.endIndex,
     }
   }
 
-  private generateSymbolId(symbol: UniversalSymbol): string {
+  private generateSymbolId(symbol: ASTEngine.UniversalSymbol): string {
     const parts = [this.currentFile]
     if (symbol.scope) parts.push(symbol.scope)
     parts.push(symbol.name)
@@ -3861,8 +3861,8 @@ class TypeScriptAnalysisRunner {
   }
 
   private calculateArchitecturalScore(
-    symbols: UniversalSymbol[],
-    relationships: UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
   ): number {
     let score = 100
 
@@ -3880,13 +3880,13 @@ class TypeScriptAnalysisRunner {
     // Deduct for too many large classes
     const largeClasses = filterItems(
       symbols,
-      (s) => s.kind === SymbolKind.Class && filterItems(symbols, (m) => m.ownerName === s.name).length > 20,
+      (s) => s.kind === ASTEngine.SymbolKind.Class && filterItems(symbols, (m) => m.ownerName === s.name).length > 20,
     ).length
     score -= largeClasses * 5
 
     // Deduct for deep inheritance
     const hasDeepInheritance =
-      filterItems(relationships, (r) => r.type === RelationshipType.Extends).length > 5
+      filterItems(relationships, (r) => r.type === ASTEngine.RelationshipType.Extends).length > 5
     if (hasDeepInheritance) score -= 10
 
     // Bonus for good patterns
@@ -3903,8 +3903,8 @@ class TypeScriptAnalysisRunner {
   }
 
   private assessCodeQuality(
-    symbols: UniversalSymbol[],
-    relationships: UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
     complexity: number,
     cyclomaticComplexity: number,
   ): string {
@@ -3936,8 +3936,8 @@ class TypeScriptAnalysisRunner {
     return "critical"
   }
 
-  private detectReactHookAntiPatterns(rootNode: Node): ParseError[] {
-    const errors: ParseError[] = []
+  private detectReactHookAntiPatterns(rootNode: Node): ASTEngine.ParseError[] {
+    const errors: ASTEngine.ParseError[] = []
     const seen: Record<string, boolean> = {}
 
     const warn = (node: Node, callee: string, message: string) => {
@@ -4075,7 +4075,7 @@ function getObjectKeys(obj: any): string[] {
   return keys
 }
 
-export class RealTypeScriptAnalyzer implements LanguageAnalyzer {
+export class RealTypeScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
   private extractTypeParameters(node: Node): string[] {
     const typeParams: string[] = []
     const typeArgs = node.childForFieldName("type_parameters") || node.childForFieldName("type_arguments")
@@ -4108,7 +4108,7 @@ export class RealTypeScriptAnalyzer implements LanguageAnalyzer {
     rootNode: Node,
     content: string,
     filePath: string,
-  ): ParseResult & { metadata: Partial<FileMetadata> } {
+  ): ASTEngine.ParseResult & { metadata: Partial<ASTEngine.FileMetadata> } {
     return new TypeScriptAnalysisRunner().analyze(rootNode, content, filePath)
   }
 }

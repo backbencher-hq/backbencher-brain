@@ -1,15 +1,14 @@
-// @ts-nocheck — Ported from backbencher.
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import { ASTEngine } from "./engine"
 
-export class RealCleanAnalyzer implements LanguageAnalyzer {
-  analyze(rootNode: Node, fileContent: string, filePath: string): ParseResult {
+export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
+  analyze(rootNode: Node, fileContent: string, filePath: string): ASTEngine.ParseResult {
     // 100% STATELESS THREAD SAFETY: All state instantiated inside analyze()
-    const symbols: UniversalSymbol[] = []
-    const relationships: UniversalRelationship[] = []
-    const imports: ImportInfo[] = []
-    const exports: ExportInfo[] = []
-    const errors: ParseError[] = []
+    const symbols: ASTEngine.UniversalSymbol[] = []
+    const relationships: ASTEngine.UniversalRelationship[] = []
+    const imports: ASTEngine.ImportInfo[] = []
+    const exports: ASTEngine.ExportInfo[] = []
+    const errors: ASTEngine.ParseError[] = []
 
     // O(1) Lookups for state
     const commentRanges: { start: number; end: number }[] = []
@@ -30,7 +29,7 @@ export class RealCleanAnalyzer implements LanguageAnalyzer {
         const cName = this.findChild(node, (n) => n.type === "identifier")
         if (cName) {
           symbols.push({
-            name: cName.text, kind: SymbolKind.Constructor,
+            name: cName.text, kind: ASTEngine.SymbolKind.Constructor,
             range: { startLine: node.startPosition.row + 1, startColumn: node.startPosition.column, endLine: node.endPosition.row + 1, endColumn: node.endPosition.column, startIndex: node.startIndex, endIndex: node.endIndex },
             metadata: { cleanSpecific: true, isADTConstructor: true },
           })
@@ -38,7 +37,7 @@ export class RealCleanAnalyzer implements LanguageAnalyzer {
           relationships.push({
             source: activeFunction || "global",
             target: cName.text,
-            type: RelationshipType.Instantiates,
+            type: ASTEngine.RelationshipType.Instantiates,
             confidence: 0.8,
             metadata: { cleanSpecific: true, isADTConstructor: true },
           })
@@ -59,7 +58,7 @@ export class RealCleanAnalyzer implements LanguageAnalyzer {
 
           symbols.push({
             name,
-            kind: SymbolKind.Function,
+            kind: ASTEngine.SymbolKind.Function,
             range: {
               startLine: node.startPosition.row + 1,
               startColumn: node.startPosition.column,
@@ -78,9 +77,9 @@ export class RealCleanAnalyzer implements LanguageAnalyzer {
       ) {
         const nameNode = node.childForFieldName("name") || this.findChild(node, (n) => n.type === "identifier")
         if (nameNode) {
-          let kind = SymbolKind.Type
-          if (node.type === "class_declaration") kind = SymbolKind.Interface
-          else if (node.type === "instance_declaration") kind = SymbolKind.Class
+          let kind = ASTEngine.SymbolKind.Type
+          if (node.type === "class_declaration") kind = ASTEngine.SymbolKind.Interface
+          else if (node.type === "instance_declaration") kind = ASTEngine.SymbolKind.Class
 
           // Track Implements: instance ClassName Type where ...
           if (node.type === "instance_declaration") {
@@ -89,7 +88,7 @@ export class RealCleanAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: identifiers[1].text,
                 target: identifiers[0].text,
-                type: RelationshipType.Implements,
+                type: ASTEngine.RelationshipType.Implements,
                 confidence: 0.9,
                 metadata: { cleanSpecific: true },
               })
@@ -115,7 +114,7 @@ export class RealCleanAnalyzer implements LanguageAnalyzer {
         if (nameNode) {
           symbols.push({
             name: nameNode.text,
-            kind: SymbolKind.Module,
+            kind: ASTEngine.SymbolKind.Module,
             range: {
               startLine: node.startPosition.row + 1,
               startColumn: node.startPosition.column,
@@ -149,7 +148,7 @@ export class RealCleanAnalyzer implements LanguageAnalyzer {
           relationships.push({
             source: activeFunction || "global",
             target: moduleName,
-            type: RelationshipType.References,
+            type: ASTEngine.RelationshipType.References,
             confidence: 1.0,
             metadata: { cleanSpecific: true, isImportDependency: true },
           })
@@ -162,10 +161,10 @@ export class RealCleanAnalyzer implements LanguageAnalyzer {
             // Clean convention: uppercase = constructor, lowercase = variable binding
             const isConstructor = child.text[0] === child.text[0].toUpperCase() && child.text[0] !== child.text[0].toLowerCase()
             if (isConstructor) {
-              relationships.push({ source: activeFunction, target: child.text, type: RelationshipType.Calls, confidence: 0.85, metadata: { cleanSpecific: true, fromPatternMatch: true, isConstructorCall: true } })
+              relationships.push({ source: activeFunction, target: child.text, type: ASTEngine.RelationshipType.Calls, confidence: 0.85, metadata: { cleanSpecific: true, fromPatternMatch: true, isConstructorCall: true } })
             } else {
               // Lowercase pattern variable — track as Uses (variable binding from pattern)
-              relationships.push({ source: activeFunction, target: child.text, type: RelationshipType.Uses, confidence: 0.5, metadata: { cleanSpecific: true, fromPatternBinding: true } })
+              relationships.push({ source: activeFunction, target: child.text, type: ASTEngine.RelationshipType.Uses, confidence: 0.5, metadata: { cleanSpecific: true, fromPatternBinding: true } })
             }
           }
         }
@@ -181,7 +180,7 @@ export class RealCleanAnalyzer implements LanguageAnalyzer {
           relationships.push({
             source: activeFunction,
             target: funcNode.text,
-            type: isConstructor ? RelationshipType.Instantiates : RelationshipType.Calls,
+            type: isConstructor ? ASTEngine.RelationshipType.Instantiates : ASTEngine.RelationshipType.Calls,
             confidence: isConstructor ? 0.8 : 0.95,
             metadata: { cleanSpecific: true, fromApplication: true, isConstructorCall: isConstructor },
           })
@@ -205,7 +204,7 @@ export class RealCleanAnalyzer implements LanguageAnalyzer {
           const lambdaName = `lambda_${activeFunction}_${node.startPosition.row}`
           symbols.push({
             name: lambdaName,
-            kind: SymbolKind.Function,
+            kind: ASTEngine.SymbolKind.Function,
             range: {
               startLine: node.startPosition.row + 1,
               startColumn: node.startPosition.column,
@@ -247,7 +246,7 @@ export class RealCleanAnalyzer implements LanguageAnalyzer {
             const lambdaName = `lambda_${activeFunction}_${node.startPosition.row}`
             symbols.push({
               name: lambdaName,
-              kind: SymbolKind.Function,
+              kind: ASTEngine.SymbolKind.Function,
               range: {
                 startLine: node.startPosition.row + 1,
                 startColumn: node.startPosition.column,
@@ -317,7 +316,7 @@ export class RealCleanAnalyzer implements LanguageAnalyzer {
           relationships.push({
             source: activeFunction,
             target: node.text,
-            type: RelationshipType.Uses,
+            type: ASTEngine.RelationshipType.Uses,
             confidence: 0.5,
             metadata: { cleanSpecific: true, fromIdentifierFallback: true },
           })
@@ -353,12 +352,12 @@ export class RealCleanAnalyzer implements LanguageAnalyzer {
     // Export only module-scope symbols (functions, types, classes, interfaces, modules, constructors)
     // Exclude lambdas and internal variables
     const EXPORTABLE_KINDS = new Set([
-      SymbolKind.Function,
-      SymbolKind.Type,
-      SymbolKind.Interface,
-      SymbolKind.Class,
-      SymbolKind.Module,
-      SymbolKind.Constructor,
+      ASTEngine.SymbolKind.Function,
+      ASTEngine.SymbolKind.Type,
+      ASTEngine.SymbolKind.Interface,
+      ASTEngine.SymbolKind.Class,
+      ASTEngine.SymbolKind.Module,
+      ASTEngine.SymbolKind.Constructor,
     ])
     for (const sym of symbols) {
       if (!sym.name.startsWith("_") && EXPORTABLE_KINDS.has(sym.kind) && !sym.ownerName) {
@@ -373,7 +372,7 @@ export class RealCleanAnalyzer implements LanguageAnalyzer {
         relationships.push({
           source: _owner,
           target: s.name,
-          type: RelationshipType.Contains,
+          type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
           metadata: {},
         })
@@ -420,7 +419,7 @@ export class RealCleanAnalyzer implements LanguageAnalyzer {
   }
 
   // Recursively collect all identifiers from an expression subtree for relationship tracking
-  private collectIdentifiers(node: Node, activeFunction: string, relationships: UniversalRelationship[]): void {
+  private collectIdentifiers(node: Node, activeFunction: string, relationships: ASTEngine.UniversalRelationship[]): void {
     if (!node || !activeFunction) return
 
     // Handle application nodes INSIDE the subtree (nested calls in infix expressions, etc.)
@@ -432,7 +431,7 @@ export class RealCleanAnalyzer implements LanguageAnalyzer {
         relationships.push({
           source: activeFunction,
           target: funcNode.text,
-          type: isConstructor ? RelationshipType.Instantiates : RelationshipType.Calls,
+          type: isConstructor ? ASTEngine.RelationshipType.Instantiates : ASTEngine.RelationshipType.Calls,
           confidence: isConstructor ? 0.8 : 0.95,
           metadata: { cleanSpecific: true, fromApplication: true, isConstructorCall: isConstructor },
         })
@@ -451,7 +450,7 @@ export class RealCleanAnalyzer implements LanguageAnalyzer {
       relationships.push({
         source: activeFunction,
         target: node.text,
-        type: isConstructor ? RelationshipType.Instantiates : RelationshipType.References,
+        type: isConstructor ? ASTEngine.RelationshipType.Instantiates : ASTEngine.RelationshipType.References,
         confidence: isConstructor ? 0.8 : 0.7,
         metadata: { cleanSpecific: true, isApplicationArgument: true, isConstructorInstantiation: isConstructor },
       })

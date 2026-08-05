@@ -1,15 +1,14 @@
-// @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
 // Dynamic Relationship Detection Engine
 // Advanced runtime behavior analysis and cross-file relationship resolution
 
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
-import { TypeInference } from "./type-inference.js"
-import { FrameworkIntelligence } from "./framework-intelligence.js"
+import { ASTEngine } from "./engine"
+import { TypeInference } from "./type-inference"
+import { FrameworkIntelligence } from "./framework-intelligence"
 import type { Node } from "web-tree-sitter"
 
 export namespace DynamicRelationships {
 
-  export interface DynamicRelationship extends UniversalRelationship {
+  export interface DynamicRelationship extends ASTEngine.UniversalRelationship {
     isRuntimeDetermined: boolean
     conditionalExecution?: boolean
     callFrequency?: "low" | "medium" | "high" | "critical"
@@ -28,7 +27,7 @@ export namespace DynamicRelationships {
   export interface CallGraphNode {
     id: string
     name: string
-    kind: SymbolKind
+    kind: ASTEngine.SymbolKind
     filePath: string
     complexity: number
     isPublic: boolean
@@ -73,7 +72,7 @@ export namespace DynamicRelationships {
     }
 
     public analyzeProject(
-      fileResults: Map<string, ParseResult>
+      fileResults: Map<string, ASTEngine.ParseResult>
     ): {
       callGraph: CallGraph
       dynamicRelationships: DynamicRelationship[]
@@ -105,7 +104,7 @@ export namespace DynamicRelationships {
       }
     }
 
-    private buildCallGraph(fileResults: Map<string, ParseResult>) {
+    private buildCallGraph(fileResults: Map<string, ASTEngine.ParseResult>) {
       // Step 1: Create nodes for all symbols
       for (const [filePath, result] of fileResults) {
         for (const symbol of result.symbols) {
@@ -150,7 +149,7 @@ export namespace DynamicRelationships {
       this.findCriticalPaths()
     }
 
-    private resolveTargetSymbol(target: string, fileResults: Map<string, ParseResult>): string {
+    private resolveTargetSymbol(target: string, fileResults: Map<string, ASTEngine.ParseResult>): string {
       // Try to resolve target symbol across files
       for (const [filePath, result] of fileResults) {
         // Direct match
@@ -203,7 +202,7 @@ export namespace DynamicRelationships {
       return resolved.join("/")
     }
 
-    private addCallGraphEdge(fromId: string, toId: string, relationship: UniversalRelationship) {
+    private addCallGraphEdge(fromId: string, toId: string, relationship: ASTEngine.UniversalRelationship) {
       if (!this.callGraph.edges.has(fromId)) {
         this.callGraph.edges.set(fromId, [])
       }
@@ -222,25 +221,25 @@ export namespace DynamicRelationships {
       })
     }
 
-    private determineEdgeType(relationship: UniversalRelationship): "direct" | "indirect" | "conditional" | "async" {
+    private determineEdgeType(relationship: ASTEngine.UniversalRelationship): "direct" | "indirect" | "conditional" | "async" {
       if (relationship.metadata?.isAsync) return "async"
       if (relationship.metadata?.conditional) return "conditional"
-      if (relationship.type === RelationshipType.Calls) return "direct"
+      if (relationship.type === ASTEngine.RelationshipType.Calls) return "direct"
       return "indirect"
     }
 
-    private calculateEdgeWeight(relationship: UniversalRelationship, edgeType: string): number {
+    private calculateEdgeWeight(relationship: ASTEngine.UniversalRelationship, edgeType: string): number {
       let weight = relationship.confidence || 0.5
 
       // Adjust weight based on relationship type
       switch (relationship.type) {
-        case RelationshipType.Calls:
+        case ASTEngine.RelationshipType.Calls:
           weight *= 1.0
           break
-        case RelationshipType.Uses:
+        case ASTEngine.RelationshipType.Uses:
           weight *= 0.8
           break
-        case RelationshipType.References:
+        case ASTEngine.RelationshipType.References:
           weight *= 0.6
           break
         default:
@@ -266,7 +265,7 @@ export namespace DynamicRelationships {
       return weight
     }
 
-    private detectEntryPoints(fileResults: Map<string, ParseResult>) {
+    private detectEntryPoints(fileResults: Map<string, ASTEngine.ParseResult>) {
       for (const [filePath, result] of fileResults) {
         for (const symbol of result.symbols) {
           const nodeId = `${filePath}::${symbol.name}`
@@ -289,7 +288,7 @@ export namespace DynamicRelationships {
       }
     }
 
-    private isFrameworkEntryPoint(symbol: UniversalSymbol, frameworks: string[]): boolean {
+    private isFrameworkEntryPoint(symbol: ASTEngine.UniversalSymbol, frameworks: string[]): boolean {
       // React components
       if (frameworks.includes("react") &&
           (symbol.name.endsWith("Component") || /^[A-Z]/.test(symbol.name))) {
@@ -397,7 +396,7 @@ export namespace DynamicRelationships {
       return paths
     }
 
-    private resolveCrossFileRelationships(fileResults: Map<string, ParseResult>): DynamicRelationship[] {
+    private resolveCrossFileRelationships(fileResults: Map<string, ASTEngine.ParseResult>): DynamicRelationship[] {
       const dynamicRelationships: DynamicRelationship[] = []
 
       // Strategy 1: Import/Export Resolution
@@ -418,7 +417,7 @@ export namespace DynamicRelationships {
       return dynamicRelationships
     }
 
-    private resolveImportExportRelationships(fileResults: Map<string, ParseResult>): DynamicRelationship[] {
+    private resolveImportExportRelationships(fileResults: Map<string, ASTEngine.ParseResult>): DynamicRelationship[] {
       const relationships: DynamicRelationship[] = []
 
       for (const [filePath, result] of fileResults) {
@@ -433,7 +432,7 @@ export namespace DynamicRelationships {
                 relationships.push({
                   source: `${filePath}::import`,
                   target: `${targetFilePath}::${importedItem}`,
-                  type: RelationshipType.Imports,
+                  type: ASTEngine.RelationshipType.Imports,
                   confidence: 0.95,
                   isRuntimeDetermined: false,
                   metadata: {
@@ -451,7 +450,7 @@ export namespace DynamicRelationships {
       return relationships
     }
 
-    private resolveTypeBasedRelationships(fileResults: Map<string, ParseResult>): DynamicRelationship[] {
+    private resolveTypeBasedRelationships(fileResults: Map<string, ASTEngine.ParseResult>): DynamicRelationship[] {
       const relationships: DynamicRelationship[] = []
 
       // Use type inference engine to resolve type-based relationships
@@ -468,7 +467,7 @@ export namespace DynamicRelationships {
                 relationships.push({
                   source: `${filePath}::${symbol.name}`,
                   target: targetSymbol,
-                  type: RelationshipType.Extends,
+                  type: ASTEngine.RelationshipType.Extends,
                   confidence: typeInfo.confidence,
                   isRuntimeDetermined: false,
                   metadata: {
@@ -485,7 +484,7 @@ export namespace DynamicRelationships {
       return relationships
     }
 
-    private resolveFrameworkConventions(fileResults: Map<string, ParseResult>): DynamicRelationship[] {
+    private resolveFrameworkConventions(fileResults: Map<string, ASTEngine.ParseResult>): DynamicRelationship[] {
       const relationships: DynamicRelationship[] = []
 
       for (const [filePath, result] of fileResults) {
@@ -514,21 +513,21 @@ export namespace DynamicRelationships {
 
     private resolveReactConventions(
       filePath: string,
-      result: ParseResult,
-      fileResults: Map<string, ParseResult>
+      result: ASTEngine.ParseResult,
+      fileResults: Map<string, ASTEngine.ParseResult>
     ): DynamicRelationship[] {
       const relationships: DynamicRelationship[] = []
 
       // React component imports (JSX usage)
       for (const symbol of result.symbols) {
-        if (symbol.kind === SymbolKind.Function && /^[A-Z]/.test(symbol.name)) {
+        if (symbol.kind === ASTEngine.SymbolKind.Function && /^[A-Z]/.test(symbol.name)) {
           // This might be a React component used in JSX
           const usages = this.findJSXUsages(symbol.name, fileResults)
           for (const usage of usages) {
             relationships.push({
               source: usage,
               target: `${filePath}::${symbol.name}`,
-              type: RelationshipType.Uses,
+              type: ASTEngine.RelationshipType.Uses,
               confidence: 0.8,
               isRuntimeDetermined: true,
               conditionalExecution: true,
@@ -546,8 +545,8 @@ export namespace DynamicRelationships {
 
     private resolveDjangoConventions(
       filePath: string,
-      result: ParseResult,
-      fileResults: Map<string, ParseResult>
+      result: ASTEngine.ParseResult,
+      fileResults: Map<string, ASTEngine.ParseResult>
     ): DynamicRelationship[] {
       // Django model relationships, URL patterns, etc.
       return []
@@ -555,8 +554,8 @@ export namespace DynamicRelationships {
 
     private resolveRailsConventions(
       filePath: string,
-      result: ParseResult,
-      fileResults: Map<string, ParseResult>
+      result: ASTEngine.ParseResult,
+      fileResults: Map<string, ASTEngine.ParseResult>
     ): DynamicRelationship[] {
       // Rails conventions: controller actions, model associations, etc.
       return []
@@ -564,14 +563,14 @@ export namespace DynamicRelationships {
 
     private resolveSpringConventions(
       filePath: string,
-      result: ParseResult,
-      fileResults: Map<string, ParseResult>
+      result: ASTEngine.ParseResult,
+      fileResults: Map<string, ASTEngine.ParseResult>
     ): DynamicRelationship[] {
       // Spring dependency injection, component scanning, etc.
       return []
     }
 
-    private resolvePatternBasedRelationships(fileResults: Map<string, ParseResult>): DynamicRelationship[] {
+    private resolvePatternBasedRelationships(fileResults: Map<string, ASTEngine.ParseResult>): DynamicRelationship[] {
       const relationships: DynamicRelationship[] = []
 
       // Observer pattern detection
@@ -586,7 +585,7 @@ export namespace DynamicRelationships {
       return relationships
     }
 
-    private simulateRuntimeRelationships(fileResults: Map<string, ParseResult>): DynamicRelationship[] {
+    private simulateRuntimeRelationships(fileResults: Map<string, ASTEngine.ParseResult>): DynamicRelationship[] {
       const relationships: DynamicRelationship[] = []
 
       // Simulate dynamic method calls, reflection, etc.
@@ -599,7 +598,7 @@ export namespace DynamicRelationships {
                 relationships.push({
                   source: `${filePath}::${symbol.name}`,
                   target: targetSymbol,
-                  type: RelationshipType.Calls,
+                  type: ASTEngine.RelationshipType.Calls,
                   confidence: 0.7,
                   isRuntimeDetermined: true,
                   callFrequency: this.estimateCallFrequency(call, symbol),
@@ -618,7 +617,7 @@ export namespace DynamicRelationships {
     }
 
     // Helper methods
-    private findSymbolByType(typeName: string, fileResults: Map<string, ParseResult>): string | null {
+    private findSymbolByType(typeName: string, fileResults: Map<string, ASTEngine.ParseResult>): string | null {
       for (const [filePath, result] of fileResults) {
         const symbol = result.symbols.find(s => s.name === typeName)
         if (symbol) {
@@ -628,7 +627,7 @@ export namespace DynamicRelationships {
       return null
     }
 
-    private findSymbolByName(symbolName: string, fileResults: Map<string, ParseResult>): string | null {
+    private findSymbolByName(symbolName: string, fileResults: Map<string, ASTEngine.ParseResult>): string | null {
       // Split qualified name (e.g., "service.createUser" -> "service", "createUser")
       const parts = symbolName.split(".")
       const methodName = parts.pop()!
@@ -656,28 +655,28 @@ export namespace DynamicRelationships {
       return null
     }
 
-    private findJSXUsages(componentName: string, fileResults: Map<string, ParseResult>): string[] {
+    private findJSXUsages(componentName: string, fileResults: Map<string, ASTEngine.ParseResult>): string[] {
       const usages: string[] = []
       // In a real implementation, would parse JSX and find component usages
       return usages
     }
 
-    private detectObserverPattern(fileResults: Map<string, ParseResult>): DynamicRelationship[] {
+    private detectObserverPattern(fileResults: Map<string, ASTEngine.ParseResult>): DynamicRelationship[] {
       // Pattern detection logic for observer pattern
       return []
     }
 
-    private detectFactoryPattern(fileResults: Map<string, ParseResult>): DynamicRelationship[] {
+    private detectFactoryPattern(fileResults: Map<string, ASTEngine.ParseResult>): DynamicRelationship[] {
       // Pattern detection logic for factory pattern
       return []
     }
 
-    private detectStrategyPattern(fileResults: Map<string, ParseResult>): DynamicRelationship[] {
+    private detectStrategyPattern(fileResults: Map<string, ASTEngine.ParseResult>): DynamicRelationship[] {
       // Pattern detection logic for strategy pattern
       return []
     }
 
-    private estimateCallFrequency(call: string, symbol: UniversalSymbol): "low" | "medium" | "high" | "critical" {
+    private estimateCallFrequency(call: string, symbol: ASTEngine.UniversalSymbol): "low" | "medium" | "high" | "critical" {
       // Heuristic-based call frequency estimation
       if (symbol.name === "main" || symbol.name.includes("init")) return "critical"
       if (call.includes("log") || call.includes("debug")) return "high"
@@ -793,9 +792,9 @@ export namespace DynamicRelationships {
 
   // Integration function to enhance project analysis
   export function enhanceWithDynamicAnalysis(
-    fileResults: Map<string, ParseResult>
+    fileResults: Map<string, ASTEngine.ParseResult>
   ): {
-    enhancedResults: Map<string, ParseResult>
+    enhancedResults: Map<string, ASTEngine.ParseResult>
     projectAnalysis: {
       callGraph: CallGraph
       dynamicRelationships: DynamicRelationship[]
@@ -808,7 +807,7 @@ export namespace DynamicRelationships {
     const projectAnalysis = analyzer.analyzeProject(fileResults)
 
     // Enhance each file result with cross-file relationships
-    const enhancedResults = new Map<string, ParseResult>()
+    const enhancedResults = new Map<string, ASTEngine.ParseResult>()
 
     for (const [filePath, result] of fileResults) {
       const fileRelationships = projectAnalysis.dynamicRelationships.filter(rel =>

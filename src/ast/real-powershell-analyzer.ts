@@ -1,19 +1,18 @@
-// @ts-nocheck — Ported from backbencher.
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import { ASTEngine } from "./engine"
 
-export class RealPowershellAnalyzer implements LanguageAnalyzer {
+export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(
     rootNode: Node,
     content: string,
     filePath: string,
-  ): ParseResult & { metadata: Partial<FileMetadata> } {
-    const symbols: UniversalSymbol[] = []
-    const relationships: UniversalRelationship[] = []
-    const imports: ImportInfo[] = []
-    const exports: ExportInfo[] = []
-    const errors: ParseError[] = []
-    const symbolMap = new Map<string, UniversalSymbol>()
+  ): ASTEngine.ParseResult & { metadata: Partial<ASTEngine.FileMetadata> } {
+    const symbols: ASTEngine.UniversalSymbol[] = []
+    const relationships: ASTEngine.UniversalRelationship[] = []
+    const imports: ASTEngine.ImportInfo[] = []
+    const exports: ASTEngine.ExportInfo[] = []
+    const errors: ASTEngine.ParseError[] = []
+    const symbolMap = new Map<string, ASTEngine.UniversalSymbol>()
 
     const frameworks: Record<string, boolean> = { PowerShell: true }
     const patterns: Record<string, boolean> = {}
@@ -39,10 +38,10 @@ export class RealPowershellAnalyzer implements LanguageAnalyzer {
     let cyclomaticComplexity = 1
     let currentFunction = ""
 
-    const pushSymbol = (name: string, kind: SymbolKind, range: Node, meta: Record<string, unknown> = {}) => {
+    const pushSymbol = (name: string, kind: ASTEngine.SymbolKind, range: Node, meta: Record<string, unknown> = {}) => {
       const key = `${currentFunction}:${name}`
       if (symbolMap.has(key) || name.startsWith("$global:") || name.startsWith("$script:")) return null
-      const sym: UniversalSymbol = {
+      const sym: ASTEngine.UniversalSymbol = {
         name: name.replace(/^\$/, ""),
         kind,
         range: this.nodeToRange(range),
@@ -83,7 +82,7 @@ export class RealPowershellAnalyzer implements LanguageAnalyzer {
           if (nameNode) {
             currentFunction = nameNode.text
 
-            const params: Parameter[] = []
+            const params: ASTEngine.Parameter[] = []
             const paramDecl = this.findChildByType(node, "function_parameter_declaration")
             const paramList = paramDecl
               ? this.findChildByType(paramDecl, "parameter_list")
@@ -122,7 +121,7 @@ export class RealPowershellAnalyzer implements LanguageAnalyzer {
                 patterns["Input Validation"] = true
             }
 
-            pushSymbol(nameNode.text, SymbolKind.Function, node, {
+            pushSymbol(nameNode.text, ASTEngine.SymbolKind.Function, node, {
               parameters: params.length > 0 ? params : undefined,
               annotations: annotations.length > 0 ? annotations : undefined,
             })
@@ -163,7 +162,7 @@ export class RealPowershellAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: className,
               target: baseClass,
-              type: RelationshipType.Extends,
+              type: ASTEngine.RelationshipType.Extends,
               confidence: 1.0,
               metadata: { powershellSpecific: true },
             })
@@ -173,13 +172,13 @@ export class RealPowershellAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: className,
               target: iface,
-              type: RelationshipType.Implements,
+              type: ASTEngine.RelationshipType.Implements,
               confidence: 0.85,
               metadata: { powershellSpecific: true },
             })
           }
 
-          pushSymbol(className, SymbolKind.Class, node)
+          pushSymbol(className, ASTEngine.SymbolKind.Class, node)
 
           for (let i = 0; i < node.namedChildCount; i++) {
             const child = node.namedChild(i)
@@ -206,7 +205,7 @@ export class RealPowershellAnalyzer implements LanguageAnalyzer {
           }
           if (!enumName) break
           currentFunction = enumName
-          pushSymbol(enumName, SymbolKind.Enum, node)
+          pushSymbol(enumName, ASTEngine.SymbolKind.Enum, node)
 
           for (let i = 0; i < node.namedChildCount; i++) {
             const child = node.namedChild(i)
@@ -219,7 +218,7 @@ export class RealPowershellAnalyzer implements LanguageAnalyzer {
         case "enum_member": {
           const nameNode = this.findChildByType(node, "simple_name") || this.findChildByType(node, "identifier")
           if (nameNode && currentFunction) {
-            pushSymbol(nameNode.text, SymbolKind.EnumMember, node)
+            pushSymbol(nameNode.text, ASTEngine.SymbolKind.EnumMember, node)
           }
           break
         }
@@ -227,7 +226,7 @@ export class RealPowershellAnalyzer implements LanguageAnalyzer {
         case "class_method_definition": {
           const nameNode = this.findChildByType(node, "simple_name") || this.findChildByType(node, "identifier")
           if (nameNode) {
-            const params: Parameter[] = []
+            const params: ASTEngine.Parameter[] = []
             const paramDecl = this.findChildByType(node, "class_method_parameter_list")
             if (paramDecl) {
               const paramList = this.findChildByType(paramDecl, "parameter_list")
@@ -249,7 +248,7 @@ export class RealPowershellAnalyzer implements LanguageAnalyzer {
                 }
               }
             }
-            pushSymbol(nameNode.text, SymbolKind.Method, node, {
+            pushSymbol(nameNode.text, ASTEngine.SymbolKind.Method, node, {
               ownerClass: currentFunction,
               parameters: params.length > 0 ? params : undefined,
             })
@@ -262,7 +261,7 @@ export class RealPowershellAnalyzer implements LanguageAnalyzer {
             this.findChildByType(node, "variable_expression") || this.findChildByType(node, "simple_name")
           if (nameNode) {
             const modifiers = this.extractPsModifiers(node)
-            pushSymbol(nameNode.text, SymbolKind.Property, node, {
+            pushSymbol(nameNode.text, ASTEngine.SymbolKind.Property, node, {
               ownerClass: currentFunction,
               isStatic: modifiers.includes("static"),
             })
@@ -279,7 +278,7 @@ export class RealPowershellAnalyzer implements LanguageAnalyzer {
         case "script_block":
         case "script_block_expression": {
           const name = `scriptblock_${node.startPosition.row + 1}_${node.startPosition.column + 1}`
-          pushSymbol(name, SymbolKind.Function, node, { isScriptBlock: true })
+          pushSymbol(name, ASTEngine.SymbolKind.Function, node, { isScriptBlock: true })
           break
         }
 
@@ -290,7 +289,7 @@ export class RealPowershellAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: currentFunction || "global",
               target: memberName.text,
-              type: RelationshipType.Calls,
+              type: ASTEngine.RelationshipType.Calls,
               confidence: 0.5,
               metadata: { powershellSpecific: true, memberAccess: true, on: object.text },
             })
@@ -305,7 +304,7 @@ export class RealPowershellAnalyzer implements LanguageAnalyzer {
             if (!child) continue
             if (child.type === "variable_expression") {
               varName = child.text
-              pushSymbol(varName, SymbolKind.Variable, child, { isVariable: true })
+              pushSymbol(varName, ASTEngine.SymbolKind.Variable, child, { isVariable: true })
             }
             if (child.type === "command_invocation" || child.type === "command") {
               const cmdName = this.getCommandName(child)
@@ -313,7 +312,7 @@ export class RealPowershellAnalyzer implements LanguageAnalyzer {
                 relationships.push({
                   source: varName || currentFunction || "global",
                   target: cmdName,
-                  type: RelationshipType.Calls,
+                  type: ASTEngine.RelationshipType.Calls,
                   confidence: 0.7,
                   metadata: { powershellSpecific: true, assignedFrom: !!varName },
                 })
@@ -337,7 +336,7 @@ export class RealPowershellAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: currentFunction || "global",
                 target: firstArg,
-                type: RelationshipType.Calls,
+                type: ASTEngine.RelationshipType.Calls,
                 confidence: 0.9,
                 metadata: { powershellSpecific: true, dotSource: true },
               })
@@ -379,7 +378,7 @@ export class RealPowershellAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: currentFunction || "global",
               target: cleanType,
-              type: RelationshipType.Instantiates,
+              type: ASTEngine.RelationshipType.Instantiates,
               confidence: 0.9,
               metadata: { powershellSpecific: true, dotNetNew: true },
             })
@@ -403,7 +402,7 @@ export class RealPowershellAnalyzer implements LanguageAnalyzer {
           relationships.push({
             source: currentFunction || "global",
             target: cmdName,
-            type: RelationshipType.Calls,
+            type: ASTEngine.RelationshipType.Calls,
             confidence: cmdName.includes("-") ? 0.9 : 0.6,
             metadata: { powershellSpecific: true },
           })
@@ -428,7 +427,7 @@ export class RealPowershellAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: commands[i],
               target: commands[i + 1],
-              type: RelationshipType.Calls,
+              type: ASTEngine.RelationshipType.Calls,
               confidence: 0.5,
               metadata: { powershellSpecific: true, pipelineStage: i + 1 },
             })
@@ -445,7 +444,7 @@ export class RealPowershellAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: currentFunction || "global",
                 target: cmdName,
-                type: RelationshipType.References,
+                type: ASTEngine.RelationshipType.References,
                 confidence: 0.8,
                 metadata: { powershellSpecific: true, isThrow: true },
               })
@@ -462,7 +461,7 @@ export class RealPowershellAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: currentFunction || "global",
                 target: cmdName,
-                type: RelationshipType.Calls,
+                type: ASTEngine.RelationshipType.Calls,
                 confidence: 0.6,
                 metadata: { powershellSpecific: true, returned: true },
               })
@@ -494,11 +493,11 @@ export class RealPowershellAnalyzer implements LanguageAnalyzer {
     for (const s of allSymbols) {
       const _owner = s.ownerName || s.scope
       if (_owner) {
-        uniqueRels.push({ source: _owner, target: s.name, type: RelationshipType.Contains, confidence: 1.0, metadata: {} })
+        uniqueRels.push({ source: _owner, target: s.name, type: ASTEngine.RelationshipType.Contains, confidence: 1.0, metadata: {} })
       }
     }
     for (const imp of imports) {
-      uniqueRels.push({ source: "global", target: imp.module || "", type: RelationshipType.References, confidence: 0.9, metadata: {} })
+      uniqueRels.push({ source: "global", target: imp.module || "", type: ASTEngine.RelationshipType.References, confidence: 0.9, metadata: {} })
     }
 
     return {
@@ -671,7 +670,7 @@ export class RealPowershellAnalyzer implements LanguageAnalyzer {
     return results
   }
 
-  private nodeToRange(node: Node): UniversalSymbol["range"] {
+  private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {
     return {
       startLine: node.startPosition.row + 1,
       startColumn: node.startPosition.column + 1,

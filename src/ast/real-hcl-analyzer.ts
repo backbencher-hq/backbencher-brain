@@ -1,6 +1,5 @@
-// @ts-nocheck — Ported from backbencher.
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import { ASTEngine } from "./engine"
 
 /**
  * 4 LAWS COMPLIANT REAL HCL / TERRAFORM ANALYZER
@@ -9,13 +8,13 @@ import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo,
  * 3. Big-O Time Complexity Ceiling (O(N) Iterative DFS)
  * 4. 100% Stateless Thread Safety (No class-level mutable properties)
  */
-export class RealHclAnalyzer implements LanguageAnalyzer {
-  public analyze(rootNode: Node, content: string, filePath: string): ParseResult {
-    const symbols: UniversalSymbol[] = []
-    const relationships: UniversalRelationship[] = []
-    const imports: ImportInfo[] = []
-    const exports: ExportInfo[] = []
-    const errors: ParseError[] = []
+export class RealHclAnalyzer implements ASTEngine.LanguageAnalyzer {
+  public analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
+    const symbols: ASTEngine.UniversalSymbol[] = []
+    const relationships: ASTEngine.UniversalRelationship[] = []
+    const imports: ASTEngine.ImportInfo[] = []
+    const exports: ASTEngine.ExportInfo[] = []
+    const errors: ASTEngine.ParseError[] = []
 
     // O(N) Iterative DFS Stack
     const walkStack: { node: Node; scopePath: string[] }[] = [{ node: rootNode, scopePath: [] }]
@@ -50,14 +49,14 @@ export class RealHclAnalyzer implements LanguageAnalyzer {
         if (blockType) {
           const blockName = `${blockType}${labels.length > 0 ? "_" + labels.join("_") : ""}`
 
-          let kind = SymbolKind.Class
+          let kind = ASTEngine.SymbolKind.Class
           if (blockType === "module" || blockType === "provider" || blockType === "terraform")
-            kind = SymbolKind.Module
+            kind = ASTEngine.SymbolKind.Module
           else if (blockType === "variable" || blockType === "output" || blockType === "locals")
-            kind = SymbolKind.Variable
-          else if (blockType === "data") kind = SymbolKind.Interface
+            kind = ASTEngine.SymbolKind.Variable
+          else if (blockType === "data") kind = ASTEngine.SymbolKind.Interface
 
-          const blockSymbol: UniversalSymbol = {
+          const blockSymbol: ASTEngine.UniversalSymbol = {
             name: blockName,
             kind: kind,
             range: {
@@ -86,7 +85,7 @@ export class RealHclAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: "terraform",
               target: labels[0] || "unknown",
-              type: RelationshipType.References,
+              type: ASTEngine.RelationshipType.References,
               confidence: 0.9,
               metadata: { isModuleDep: true },
             })
@@ -96,7 +95,7 @@ export class RealHclAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: "terraform",
               target: labels[0] || "unknown",
-              type: RelationshipType.References,
+              type: ASTEngine.RelationshipType.References,
               confidence: 0.9,
               metadata: { isProviderDep: true },
             })
@@ -115,7 +114,7 @@ export class RealHclAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: currentScope[currentScope.length - 1],
                 target: refName,
-                type: RelationshipType.Uses,
+                type: ASTEngine.RelationshipType.Uses,
                 metadata: { isVariableRef: true },
               })
             }
@@ -124,9 +123,9 @@ export class RealHclAnalyzer implements LanguageAnalyzer {
       } else if (type === "attribute") {
         const keyNode = this.findChild(node, (n) => n.type === "identifier")
         if (keyNode) {
-          const attrSymbol: UniversalSymbol = {
+          const attrSymbol: ASTEngine.UniversalSymbol = {
             name: keyNode.text,
-            kind: SymbolKind.Property,
+            kind: ASTEngine.SymbolKind.Property,
             range: {
               startLine: node.startPosition.row + 1,
               endLine: node.endPosition.row + 1,
@@ -144,7 +143,7 @@ export class RealHclAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: currentScope[currentScope.length - 1],
               target: keyNode.text,
-              type: RelationshipType.Contains,
+              type: ASTEngine.RelationshipType.Contains,
               metadata: {},
             })
           }

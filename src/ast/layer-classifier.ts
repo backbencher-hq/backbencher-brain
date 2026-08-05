@@ -1,5 +1,7 @@
-// @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
-import * as Log from "../tool/brain-log.js"
+import { BrainDatabase } from "../brain/database"
+import type { ProjectID } from "../project/schema"
+import * as Log from "../tool/brain-log"
+import { BrainSymbolTable, BrainFileTable, BrainRelationshipTable } from "../brain/brain.sql"
 import { eq, and, like, count } from "drizzle-orm"
 
 const log = Log.create({ service: "layer-classifier" })

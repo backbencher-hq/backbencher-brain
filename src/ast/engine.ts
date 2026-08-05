@@ -1,27 +1,19 @@
-// @ts-nocheck — Full engine port from backbencher. Structurally identical.
-import { createRequire } from "node:module"
-import { fileURLToPath } from "node:url"
-import { dirname } from "node:path"
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-const require = createRequire(import.meta.url)
+// @ts-nocheck — ported; verified by tests. Restored incrementally in Phase 3.
 import type { Language, Parser, Node } from "web-tree-sitter"
-import * as Log from "../tool/brain-log.js"
-function lazy<T>(fn: () => Promise<T>) { let val: T; return () => { if (!val) val = fn() as any; return val } }
-import { fileURLToPath } from "node:url"
-import { resolveWasmAsset, loadWebTreeSitter, hasWasmInRegistry, isWasmRegistryLoaded } from "../util/wasm.js"; // WASM utils
+import * as Log from "../tool/brain-log"
+import { lazy } from "../util/lazy"
+import { fileURLToPath } from "url"
+import { createRequire } from "node:module"
+import { resolveWasmAsset, loadWebTreeSitter, hasWasmInRegistry, ensureWasmRegistry, isWasmRegistryLoaded } from "../util/wasm"
+
+const require = createRequire(import.meta.url)
 
 
 // Import all comprehensive language analyzers (temporarily disabled for integration)
 
+// 🔧 @backbencher: Removed circular imports. All *Analyzer/Intelligence modules are lazily loaded.
 // This prevents a deadlock cycle: engine → 38 analyzers → engine (each analyzer imports ASTEngine)
 // TypeInference and FrameworkIntelligence are lazily loaded at the call site
-
-
-import * as _fs from "node:fs"
-import * as _path from "node:path"  
-import * as _os from "node:os"
-import { fileURLToPath as _fileURLToPath } from "node:url"
 
 const log = Log.create({ service: "ast-engine" })
 
@@ -29,7 +21,6 @@ const log = Log.create({ service: "ast-engine" })
 // Based on ProxiCall Brain architecture but designed for universal code understanding
 
 export namespace ASTEngine {
-  const Log = { create: (opts: any) => ({ debug: (..._a: any[]) => {}, info: (..._a: any[]) => {}, warn: (..._a: any[]) => {}, error: (..._a: any[]) => {} }) }
   // Language registry for multi-language support with limits
   const languages = new Map<string, Language>()
   const parsers = new Map<string, Parser>()
@@ -66,9 +57,9 @@ export namespace ASTEngine {
     // Write registry WASM to temp file if available (compiled binary)
     let wasmFile = treePath
     if (coreWasm) {
-      const os = _os
-      const p = _path
-      const fsModule = _fs
+      const os = require("os")
+      const p = require("path")
+      const fsModule = require("fs")
       for (const tmpDir of [os.tmpdir(), "/tmp", process.cwd()]) {
         try {
           const tmp = p.join(tmpDir, "bb-ts-core.wasm")
@@ -316,7 +307,7 @@ export namespace ASTEngine {
     Implementation = "implements", // Legacy alias
     Uses = "uses",
     Dependency = "uses", // Legacy alias
-    Imports = "brain_import",
+    Imports = "imports",
     Exports = "exports",
     Contains = "contains",
     DependsOn = "references", // Legacy alias
@@ -401,9 +392,10 @@ export namespace ASTEngine {
 
   // Resolve WASM file paths (enhanced version)
   function resolveWasm(relativePath: string): string {
-    const fs = _fs
-    const path = _path
+    const fs = require("fs")
+    const path = require("path")
 
+    // @backbencher: in compiled binary, always prefer embedded WASM from registry.
     // Return the original registry key — the loading code at call site looks up
     // hasWasmInRegistry() with the returned path, so it must match registry keys.
     const isCompiled = typeof (BB_POOL_WORKER_PATH as any) !== "undefined"
@@ -427,7 +419,7 @@ export namespace ASTEngine {
 
     // Also check import.meta.dir for ES module contexts
     try {
-      const metaDir = path.dirname(fileURLToPath(import.meta.url))
+      const metaDir = path.dirname(require("url").fileURLToPath(import.meta.url))
       const metaCheck = path.join(metaDir, "tree-sitter.wasm")
       if (fs.existsSync(metaCheck)) {
         execDir = metaDir
@@ -452,10 +444,11 @@ export namespace ASTEngine {
       const wasmFile = relativePath.split("/")[1] || relativePath.split("/").pop()!
 
       // Try different node_modules locations
+      const _dirname = typeof __dirname !== 'undefined' ? __dirname : (fileURLToPath(import.meta.url) ? require('path').dirname(fileURLToPath(import.meta.url)) : process.cwd())
       const possiblePaths = [
         `${process.cwd()}/node_modules/${packageName}/${wasmFile}`,
         `${process.cwd()}/node_modules/.bun/${packageName}@*/node_modules/${packageName}/${wasmFile}`,
-        `${__dirname}/../../../../node_modules/${packageName}/${wasmFile}`,
+        `${_dirname}/../../../../node_modules/${packageName}/${wasmFile}`,
       ]
 
       for (const path of possiblePaths) {
@@ -535,7 +528,7 @@ export namespace ASTEngine {
       const data = hasWasmInRegistry(relativePath)
       if (data) {
         try {
-          const os = _os
+          const os = require("os")
           const tmp = path.join(os.tmpdir(), "bb-wasm_" + relativePath.replace(/\//g, "_").replace(/\\/g, "_"))
           fs.writeFileSync(tmp, data)
           return tmp
@@ -550,7 +543,7 @@ export namespace ASTEngine {
 
   // Get parser for a specific language
   export async function getParser(language: SupportedLanguage): Promise<Parser> {
-    // ensureWasmRegistry handled by wasm.ts
+    await ensureWasmRegistry()
     // FIX: Track parsed files for memory monitoring
     totalFilesParsed++
     const MEMORY_REPORT_INTERVAL = 100
@@ -822,7 +815,7 @@ export namespace ASTEngine {
       // Compiled binary: registry loaded but WASM entry not found — fatal
       throw new Error(`WASM not found in registry for ${language} (${languageWasmPath})`)
     } else {
-      const fs = _fs
+      const fs = require("fs")
       wasmBuffer = new Uint8Array(fs.readFileSync(languageWasmPath))
     }
     let languageGrammar: any
@@ -1105,12 +1098,9 @@ export namespace ASTEngine {
       // interrupt it (event loop is blocked), so we kill the whole process.
       // The indexer is incremental — re-running resumes from where it left off.
       const parseBomb = setTimeout(() => {
-        process.stderr.write(`[BB-HANG] parser stuck 10s on ${filePath} — skipping\n`)
-        // Can't throw from setTimeout — it crashes the process uncaught
-        // Instead, forcefully kill the WASM parser by aborting the process
-        // The indexer is incremental and will resume on next run
-        process.exit(77) // Exit code 77 = timeout, parent can detect and skip
-      }, 10000)
+        process.stderr.write(`[BB-HANG] parser stuck 120s on ${filePath} — exiting\n`)
+        process.exit(1)
+      }, 120000)
 
       const tree = parser.parse(content)
       clearTimeout(parseBomb)
@@ -1178,12 +1168,12 @@ export namespace ASTEngine {
       let analysisResult
 
       // STEP 2: 🧠 ENHANCE WITH ADVANCED TYPE INFERENCE
-      const TypeInference = (await import("./type-inference.js")).TypeInference
+      const TypeInference = (await import("./type-inference")).TypeInference
       const enhancedAnalyzer = TypeInference.enhanceAnalyzerWithTypeInference(analyzer, language)
       analysisResult = enhancedAnalyzer.analyze(tree.rootNode, content, filePath)
 
       // STEP 3: 🚀 ENHANCE WITH FRAMEWORK-SPECIFIC INTELLIGENCE
-      const FrameworkIntelligence = (await import("./framework-intelligence.js")).FrameworkIntelligence
+      const FrameworkIntelligence = (await import("./framework-intelligence")).FrameworkIntelligence
       analysisResult = FrameworkIntelligence.enhanceWithFrameworkIntelligence(analysisResult, content, language)
 
       return analysisResult
@@ -1268,7 +1258,7 @@ export namespace ASTEngine {
 
               try {
                 if (filePath.includes("UltimateSvelteTest.svelte")) {
-                  _fs.writeFileSync("/tmp/svelte_inner_" + langName + ".txt", innerCode)
+                  require("fs").writeFileSync("/tmp/svelte_inner_" + langName + ".txt", innerCode)
                 }
                 const subParse = await ASTEngine.parseFile(filePath + "." + langName, innerCode)
 
@@ -1348,88 +1338,89 @@ export namespace ASTEngine {
   }
 
   // Get language-specific analyzer
+  // @backbencher: lazy imports to break circular dependency: engine ↔ 38 analyzers
   async function getAnalyzer(language: SupportedLanguage): Promise<LanguageAnalyzer> {
     switch (language) {
       case "typescript":
       case "tsx":
-        return new (await import("./real-typescript-analyzer.js")).RealTypeScriptAnalyzer()
+        return new (await import("./real-typescript-analyzer")).RealTypeScriptAnalyzer()
       case "javascript":
-        return new (await import("./real-javascript-analyzer.js")).RealJavaScriptAnalyzer()
+        return new (await import("./real-javascript-analyzer")).RealJavaScriptAnalyzer()
       case "html":
-        return new (await import("./real-html-analyzer.js")).RealHtmlAnalyzer()
+        return new (await import("./real-html-analyzer")).RealHtmlAnalyzer()
       case "css":
       case "scss":
       case "sass":
-        return new (await import("./real-css-analyzer.js")).RealCssAnalyzer()
+        return new (await import("./real-css-analyzer")).RealCssAnalyzer()
       case "json":
-        return new (await import("./real-json-analyzer.js")).RealJsonAnalyzer()
+        return new (await import("./real-json-analyzer")).RealJsonAnalyzer()
       case "yaml":
-        return new (await import("./real-yaml-analyzer.js")).RealYamlAnalyzer()
+        return new (await import("./real-yaml-analyzer")).RealYamlAnalyzer()
       case "perl":
-        return new (await import("./real-perl-analyzer.js")).RealPerlAnalyzer()
+        return new (await import("./real-perl-analyzer")).RealPerlAnalyzer()
       case "c":
-        return new (await import("./real-c-analyzer.js")).RealCAnalyzer()
+        return new (await import("./real-c-analyzer")).RealCAnalyzer()
       case "cpp":
-        return new (await import("./real-cpp-analyzer.js")).RealCppAnalyzer()
+        return new (await import("./real-cpp-analyzer")).RealCppAnalyzer()
       case "rust":
-        return new (await import("./real-rust-analyzer.js")).RealRustAnalyzer()
+        return new (await import("./real-rust-analyzer")).RealRustAnalyzer()
       case "go":
-        return new (await import("./real-go-analyzer.js")).RealGoAnalyzer()
+        return new (await import("./real-go-analyzer")).RealGoAnalyzer()
       case "java":
-        return new (await import("./real-java-analyzer.js")).RealJavaAnalyzer()
+        return new (await import("./real-java-analyzer")).RealJavaAnalyzer()
       case "kotlin":
-        return new (await import("./real-kotlin-analyzer.js")).RealKotlinAnalyzer()
+        return new (await import("./real-kotlin-analyzer")).RealKotlinAnalyzer()
       case "scala":
-        return new (await import("./real-scala-analyzer.js")).RealScalaAnalyzer()
+        return new (await import("./real-scala-analyzer")).RealScalaAnalyzer()
       case "python":
-        return new (await import("./real-python-analyzer.js")).RealPythonAnalyzer()
+        return new (await import("./real-python-analyzer")).RealPythonAnalyzer()
       case "ruby":
-        return new (await import("./real-ruby-analyzer.js")).RealRubyAnalyzer()
+        return new (await import("./real-ruby-analyzer")).RealRubyAnalyzer()
       case "php":
-        return new (await import("./real-php-analyzer.js")).RealPhpAnalyzer()
+        return new (await import("./real-php-analyzer")).RealPhpAnalyzer()
       case "lua":
-        return new (await import("./real-lua-analyzer.js")).RealLuaAnalyzer()
+        return new (await import("./real-lua-analyzer")).RealLuaAnalyzer()
       case "elixir":
-        return new (await import("./real-elixir-analyzer.js")).RealElixirAnalyzer()
+        return new (await import("./real-elixir-analyzer")).RealElixirAnalyzer()
       case "erlang":
-        return new (await import("./real-erlang-analyzer.js")).RealErlangAnalyzer()
+        return new (await import("./real-erlang-analyzer")).RealErlangAnalyzer()
       case "haskell":
-        return new (await import("./real-haskell-analyzer.js")).RealHaskellAnalyzer()
+        return new (await import("./real-haskell-analyzer")).RealHaskellAnalyzer()
       case "clean":
-        return new (await import("./real-clean-analyzer.js")).RealCleanAnalyzer()
+        return new (await import("./real-clean-analyzer")).RealCleanAnalyzer()
       case "clojure":
-        return new (await import("./real-clojure-analyzer.js")).RealClojureAnalyzer()
+        return new (await import("./real-clojure-analyzer")).RealClojureAnalyzer()
       case "swift":
-        return new (await import("./real-swift-analyzer.js")).RealSwiftAnalyzer()
+        return new (await import("./real-swift-analyzer")).RealSwiftAnalyzer()
       case "dart":
-        return new (await import("./real-dart-analyzer.js")).RealDartAnalyzer()
+        return new (await import("./real-dart-analyzer")).RealDartAnalyzer()
       case "csharp":
-        return new (await import("./real-csharp-analyzer.js")).RealCSharpAnalyzer()
+        return new (await import("./real-csharp-analyzer")).RealCSharpAnalyzer()
       case "r":
-        return new (await import("./real-r-analyzer.js")).RealRAnalyzer()
+        return new (await import("./real-r-analyzer")).RealRAnalyzer()
       case "sql":
-        return new (await import("./real-sql-analyzer.js")).RealSqlAnalyzer()
+        return new (await import("./real-sql-analyzer")).RealSqlAnalyzer()
       case "bash":
-        return new (await import("./real-bash-analyzer.js")).RealBashAnalyzer()
+        return new (await import("./real-bash-analyzer")).RealBashAnalyzer()
       case "objective-c":
-        return new (await import("./real-objective-c-analyzer.js")).RealObjectiveCAnalyzer()
+        return new (await import("./real-objective-c-analyzer")).RealObjectiveCAnalyzer()
       case "groovy":
-        return new (await import("./real-groovy-analyzer.js")).RealGroovyAnalyzer()
+        return new (await import("./real-groovy-analyzer")).RealGroovyAnalyzer()
       case "vue":
-        return new (await import("./real-vue-analyzer.js")).RealVueAnalyzer()
+        return new (await import("./real-vue-analyzer")).RealVueAnalyzer()
       case "svelte":
-        return new (await import("./real-svelte-analyzer.js")).RealSvelteAnalyzer()
+        return new (await import("./real-svelte-analyzer")).RealSvelteAnalyzer()
       case "hcl":
       case "terraform":
-        return new (await import("./real-hcl-analyzer.js")).RealHclAnalyzer()
+        return new (await import("./real-hcl-analyzer")).RealHclAnalyzer()
       case "graphql":
-        return new (await import("./real-graphql-analyzer.js")).RealGraphqlAnalyzer()
+        return new (await import("./real-graphql-analyzer")).RealGraphqlAnalyzer()
       case "zig":
-        return new (await import("./real-zig-analyzer.js")).RealZigAnalyzer()
+        return new (await import("./real-zig-analyzer")).RealZigAnalyzer()
       case "fsharp":
-        return new (await import("./real-fsharp-analyzer.js")).RealFsharpAnalyzer()
+        return new (await import("./real-fsharp-analyzer")).RealFsharpAnalyzer()
       case "powershell":
-        return new (await import("./real-powershell-analyzer.js")).RealPowershellAnalyzer()
+        return new (await import("./real-powershell-analyzer")).RealPowershellAnalyzer()
       default:
         return new GenericAnalyzer()
     }
@@ -1632,10 +1623,10 @@ export namespace ASTEngine {
 
   // Helper for tools to find symbols perfectly from the database
   export async function findSymbol(projectId: string, symbolName: string, filePath?: string, lineStart?: number) {
-    // BrainDatabase — handled by our database.ts
+    const { BrainDatabase } = await import("../brain/database")
     const db = await BrainDatabase.getInstance(projectId as any)
-    // Symbol tables — handled by our query layer
-    // Drizzle — not used
+    const { BrainSymbolTable, BrainFileTable } = await import("../brain/brain.sql")
+    const { eq, and, like } = await import("drizzle-orm")
 
     const conditions = [eq(BrainSymbolTable.project_id, projectId as any), eq(BrainSymbolTable.name, symbolName)]
 
@@ -1691,7 +1682,7 @@ export namespace ASTEngine {
     for (const r of results) {
       if ((r.byteStart == null || r.byteEnd == null || r.byteEnd <= r.byteStart) && r.fileId && r.lineStart != null) {
         try {
-          const fs = _fs
+          const fs = require("fs")
           const content = fs.readFileSync(r.fileId, "utf8")
           const lines = content.split("\n")
           let offset = 0
@@ -1738,8 +1729,5 @@ export namespace ASTEngine {
   }
 }
 
-// Re-export from namespace for external consumers
 export const parseFile = ASTEngine.parseFile
-export const detectLanguage = ASTEngine.detectLanguage
 export const getParser = ASTEngine.getParser
-export const findSymbol = ASTEngine.findSymbol

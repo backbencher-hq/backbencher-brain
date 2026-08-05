@@ -1,22 +1,21 @@
-// @ts-nocheck — Ported from backbencher.
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import { ASTEngine } from "./engine"
 import type { Node } from "web-tree-sitter"
 
-export class RealPerlAnalyzer implements LanguageAnalyzer {
+export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(
     rootNode: Node,
     content: string,
     filePath: string
-  ): ParseResult & { metadata: Partial<FileMetadata> } {
-    const symbols: UniversalSymbol[] = []
-    const relationships: UniversalRelationship[] = []
-    const imports: ImportInfo[] = []
-    const exports: ExportInfo[] = []
-    const errors: ParseError[] = []
+  ): ASTEngine.ParseResult & { metadata: Partial<ASTEngine.FileMetadata> } {
+    const symbols: ASTEngine.UniversalSymbol[] = []
+    const relationships: ASTEngine.UniversalRelationship[] = []
+    const imports: ASTEngine.ImportInfo[] = []
+    const exports: ASTEngine.ExportInfo[] = []
+    const errors: ASTEngine.ParseError[] = []
 
     const frameworks: Record<string, boolean> = { Perl: true }
     const patterns: Record<string, boolean> = {}
-    const symbolMap = new Map<string, UniversalSymbol>()
+    const symbolMap = new Map<string, ASTEngine.UniversalSymbol>()
     const deferredInheritance: (() => void)[] = []
 
     if (rootNode.hasError) {
@@ -50,9 +49,9 @@ export class RealPerlAnalyzer implements LanguageAnalyzer {
       currentPackage = packageStack.pop() || ""
     }
 
-    const pushSymbol = (name: string, kind: SymbolKind, range: Node, meta: Record<string, unknown> = {}) => {
+    const pushSymbol = (name: string, kind: ASTEngine.SymbolKind, range: Node, meta: Record<string, unknown> = {}) => {
       const fqn = currentPackage ? `${currentPackage}::${name}` : name
-      const sym: UniversalSymbol = {
+      const sym: ASTEngine.UniversalSymbol = {
         name,
         kind,
         range: this.nodeToRange(range),
@@ -71,7 +70,7 @@ export class RealPerlAnalyzer implements LanguageAnalyzer {
       relationships.push({
         source,
         target,
-        type: RelationshipType.Calls,
+        type: ASTEngine.RelationshipType.Calls,
         confidence: 0.7,
         metadata: { perlSpecific: true },
       })
@@ -91,9 +90,9 @@ export class RealPerlAnalyzer implements LanguageAnalyzer {
         case "package_statement":
         case "class_statement":
         case "role_statement": {
-          const kind = node.type === "package_statement" ? SymbolKind.Class
-            : node.type === "role_statement" ? SymbolKind.Interface
-            : SymbolKind.Class
+          const kind = node.type === "package_statement" ? ASTEngine.SymbolKind.Class
+            : node.type === "role_statement" ? ASTEngine.SymbolKind.Interface
+            : ASTEngine.SymbolKind.Class
           const nameNode = this.findChildByType(node, "package")
           if (nameNode) {
             const name = nameNode.text
@@ -129,8 +128,8 @@ export class RealPerlAnalyzer implements LanguageAnalyzer {
             const name = nameNode.text
             const fqn = currentPackage ? `${currentPackage}::${name}` : name
             if (symbolMap.has(fqn)) break
-            const kind = node.type === "method_declaration_statement" ? SymbolKind.Method
-              : currentPackage ? SymbolKind.Method : SymbolKind.Function
+            const kind = node.type === "method_declaration_statement" ? ASTEngine.SymbolKind.Method
+              : currentPackage ? ASTEngine.SymbolKind.Method : ASTEngine.SymbolKind.Function
             pushSymbol(name, kind, node, { isMethod: node.type === "method_declaration_statement" })
           }
           break
@@ -139,7 +138,7 @@ export class RealPerlAnalyzer implements LanguageAnalyzer {
         case "anonymous_subroutine_expression":
         case "anonymous_method_expression": {
           const name = `anon_${node.type === "anonymous_method_expression" ? "method" : "sub"}_${node.startPosition.row + 1}_${node.startPosition.column + 1}`
-          pushSymbol(name, SymbolKind.Function, node, { isAnonymous: true })
+          pushSymbol(name, ASTEngine.SymbolKind.Function, node, { isAnonymous: true })
           break
         }
 
@@ -151,7 +150,7 @@ export class RealPerlAnalyzer implements LanguageAnalyzer {
           for (const v of allDeclVars) {
             const varnameNode = this.findChildByType(v, "varname")
             if (varnameNode) {
-              pushSymbol(varnameNode.text.replace(/^[\$@%#]/, ""), SymbolKind.Variable, v, { perlDeclType: declType, sigil: v.type })
+              pushSymbol(varnameNode.text.replace(/^[\$@%#]/, ""), ASTEngine.SymbolKind.Variable, v, { perlDeclType: declType, sigil: v.type })
             }
           }
           break
@@ -166,7 +165,7 @@ export class RealPerlAnalyzer implements LanguageAnalyzer {
           if (callName === "has") {
             const firstArg = this.getFirstArgument(node)
             if (firstArg) {
-              pushSymbol(firstArg, SymbolKind.Property, node, { isMooseProperty: true })
+              pushSymbol(firstArg, ASTEngine.SymbolKind.Property, node, { isMooseProperty: true })
               frameworks["Moose/Moo OOP"] = true
             }
             break
@@ -174,7 +173,7 @@ export class RealPerlAnalyzer implements LanguageAnalyzer {
 
           if (callName === "extends" || callName === "with") {
             frameworks["Moose/Moo OOP"] = true
-            const relType = callName === "extends" ? RelationshipType.Extends : RelationshipType.Implements
+            const relType = callName === "extends" ? ASTEngine.RelationshipType.Extends : ASTEngine.RelationshipType.Implements
             const args = this.getArgumentStrings(node)
             for (const arg of args) {
               relationships.push({
@@ -192,7 +191,7 @@ export class RealPerlAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: currentPackage || "global",
               target: "new",
-              type: RelationshipType.Instantiates,
+              type: ASTEngine.RelationshipType.Instantiates,
               confidence: 0.7,
               metadata: { perlSpecific: true, isConstructor: true },
             })
@@ -214,7 +213,7 @@ export class RealPerlAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: currentPackage || "global",
                 target: invocantName,
-                type: RelationshipType.Instantiates,
+                type: ASTEngine.RelationshipType.Instantiates,
                 confidence: 0.9,
                 metadata: { perlSpecific: true, isConstructor: true, methodCallNew: true },
               })
@@ -242,7 +241,7 @@ export class RealPerlAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: currentPackage || "global",
               target: name,
-              type: RelationshipType.References,
+              type: ASTEngine.RelationshipType.References,
               confidence: 0.9,
               metadata: { perlSpecific: true, isUseImport: true },
             })
@@ -257,7 +256,7 @@ export class RealPerlAnalyzer implements LanguageAnalyzer {
                   relationships.push({
                     source: capturedPackage || "global",
                     target: cleanArg,
-                    type: RelationshipType.Extends,
+                    type: ASTEngine.RelationshipType.Extends,
                     confidence: 0.9,
                     metadata: { perlSpecific: true, via: `use ${name}` },
                   })
@@ -270,7 +269,7 @@ export class RealPerlAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: currentPackage || "unknown",
                 target: name,
-                type: RelationshipType.Imports,
+                type: ASTEngine.RelationshipType.Imports,
                 confidence: 1.0,
                 targetExternal: false,
                 metadata: { perlSpecific: true, modulePath: name.replace(/::/g, "/") + ".pm" },
@@ -294,7 +293,7 @@ export class RealPerlAnalyzer implements LanguageAnalyzer {
                     relationships.push({
                       source: capturedPackage || "global",
                       target: pn,
-                      type: RelationshipType.Extends,
+                      type: ASTEngine.RelationshipType.Extends,
                       confidence: 0.85,
                       metadata: { perlSpecific: true, via: "@ISA" },
                     })
@@ -309,7 +308,7 @@ export class RealPerlAnalyzer implements LanguageAnalyzer {
                 for (const en of exportNames) {
                   exports.push({
                     name: en,
-                    kind: SymbolKind.Function,
+                    kind: ASTEngine.SymbolKind.Function,
                     range: this.nodeToRange(node),
                     metadata: { perlSpecific: true, exportArray: leftText },
                   })
@@ -340,7 +339,7 @@ export class RealPerlAnalyzer implements LanguageAnalyzer {
         relationships.push({
           source: _owner,
           target: s.name,
-          type: RelationshipType.Contains,
+          type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
           metadata: {},
         })
@@ -502,7 +501,7 @@ export class RealPerlAnalyzer implements LanguageAnalyzer {
     return null
   }
 
-  private nodeToRange(node: Node): UniversalSymbol["range"] {
+  private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {
     return {
       startLine: node.startPosition.row + 1,
       startColumn: node.startPosition.column + 1,

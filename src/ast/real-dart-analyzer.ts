@@ -1,6 +1,5 @@
-// @ts-nocheck — Ported from backbencher.
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import { ASTEngine } from "./engine"
 interface DartContext {
   currentFile: string
   content: string
@@ -9,18 +8,18 @@ interface DartContext {
 interface Scope {
   node: Node
   name: string
-  kind: SymbolKind
+  kind: ASTEngine.SymbolKind
   isStatic: boolean
 }
 
-export class RealDartAnalyzer implements LanguageAnalyzer {
-  analyze(rootNode: Node, content: string, filePath: string): ParseResult {
+export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
+  analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
     const ctx: DartContext = { currentFile: filePath, content, libraryName: "" }
-    const symbols: UniversalSymbol[] = []
-    const relationships: UniversalRelationship[] = []
-    const imports: ImportInfo[] = []
-    const exports: ExportInfo[] = []
-    const errors: ParseError[] = []
+    const symbols: ASTEngine.UniversalSymbol[] = []
+    const relationships: ASTEngine.UniversalRelationship[] = []
+    const imports: ASTEngine.ImportInfo[] = []
+    const exports: ASTEngine.ExportInfo[] = []
+    const errors: ASTEngine.ParseError[] = []
     const patterns: Record<string, boolean> = {}
     const frameworks: Record<string, boolean> = {}
     let cyclomaticComplexity = 1
@@ -138,7 +137,7 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: currentScope.name,
               target: node.text,
-              type: RelationshipType.References,
+              type: ASTEngine.RelationshipType.References,
               confidence: 0.6,
               metadata: { isVariableRef: true, dartSpecific: true }
             })
@@ -236,13 +235,13 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
             if (callee && callee !== "print" && callee !== "super" && callee !== "this" &&
                 callee !== "true" && callee !== "false" && callee !== "null" && callee.length > 0) {
               const alreadyAdded = relationships.some(
-                (r) => r.source === currentFunction && r.target === callee && r.type === RelationshipType.Calls
+                (r) => r.source === currentFunction && r.target === callee && r.type === ASTEngine.RelationshipType.Calls
               )
               if (!alreadyAdded) {
                 relationships.push({
                   source: currentFunction,
                   target: callee,
-                  type: RelationshipType.Calls,
+                  type: ASTEngine.RelationshipType.Calls,
                   confidence: 0.9,
                   metadata: { line: n.startPosition.row },
                 })
@@ -262,7 +261,7 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: currentFunction,
                 target: callee,
-                type: RelationshipType.Calls,
+                type: ASTEngine.RelationshipType.Calls,
                 confidence: 0.9,
                 metadata: { line: n.startPosition.row },
               })
@@ -278,7 +277,7 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: currentFunction,
               target: typeNode.text,
-              type: RelationshipType.Instantiates,
+              type: ASTEngine.RelationshipType.Instantiates,
               confidence: 0.9,
               metadata: { line: n.startPosition.row },
             })
@@ -310,13 +309,13 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
           if (currentFunction) {
             // Skip if already added by invocation_expression handling above
             const alreadyAdded = relationships.some(
-              (r) => r.source === currentFunction && r.target === callee && r.type === RelationshipType.Calls
+              (r) => r.source === currentFunction && r.target === callee && r.type === ASTEngine.RelationshipType.Calls
             )
             if (!alreadyAdded) {
               relationships.push({
                 source: currentFunction,
                 target: callee,
-                type: RelationshipType.Calls,
+                type: ASTEngine.RelationshipType.Calls,
                 confidence: 0.9,
                 metadata: { line: n.startPosition.row },
               })
@@ -354,7 +353,7 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
       })
     }
 
-    for (const s of symbols) { const tl = !s.ownerName && !s.ownerKind; const pub = s.visibility !== "private" && !s.name.startsWith("_"); const exp = [SymbolKind.Class, SymbolKind.Enum, SymbolKind.Function, SymbolKind.Method, SymbolKind.Variable, SymbolKind.Constructor].includes(s.kind); if (tl && pub && exp) { exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility || "public" }) } }
+    for (const s of symbols) { const tl = !s.ownerName && !s.ownerKind; const pub = s.visibility !== "private" && !s.name.startsWith("_"); const exp = [ASTEngine.SymbolKind.Class, ASTEngine.SymbolKind.Enum, ASTEngine.SymbolKind.Function, ASTEngine.SymbolKind.Method, ASTEngine.SymbolKind.Variable, ASTEngine.SymbolKind.Constructor].includes(s.kind); if (tl && pub && exp) { exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility || "public" }) } }
 
     // Post-loop: add contains for owned symbols
     for (const s of symbols) {
@@ -363,7 +362,7 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
         relationships.push({
           source: _owner,
           target: s.name,
-          type: RelationshipType.Contains,
+          type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
           metadata: {},
         })
@@ -424,8 +423,8 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
 
   private processClass(
     node: Node,
-    symbols: UniversalSymbol[],
-    relationships: UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
     currentScope: Scope | undefined,
     patterns: Record<string, boolean>,
     frameworks: Record<string, boolean>,
@@ -446,7 +445,7 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
         relationships.push({
           source: className,
           target: superclassText,
-          type: RelationshipType.Extends,
+          type: ASTEngine.RelationshipType.Extends,
           metadata: {},
         })
         if (superclassText.indexOf("Widget") !== -1) isWidget = true
@@ -465,7 +464,7 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
           relationships.push({
             source: className,
             target: child?.text,
-            type: RelationshipType.Implements,
+            type: ASTEngine.RelationshipType.Implements,
             metadata: {},
           })
       }
@@ -482,7 +481,7 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
           relationships.push({
             source: className,
             target: child?.text,
-            type: RelationshipType.Uses,
+            type: ASTEngine.RelationshipType.Uses,
             metadata: { isMixin: true },
           })
       }
@@ -521,7 +520,7 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
     }
     symbols.push({
       name: className,
-      kind: SymbolKind.Class,
+      kind: ASTEngine.SymbolKind.Class,
       range: this.nodeToRange(node),
       scope: currentScope?.name || "",
       visibility: className.startsWith("_") ? "private" : "public",
@@ -548,7 +547,7 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
 
   private processMixin(
     node: Node,
-    symbols: UniversalSymbol[],
+    symbols: ASTEngine.UniversalSymbol[],
     currentScope: Scope | undefined,
     patterns: Record<string, boolean>,
   ): boolean {
@@ -557,7 +556,7 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
     patterns["Mixins"] = true
     symbols.push({
       name: nameNode?.text,
-      kind: SymbolKind.Class,
+      kind: ASTEngine.SymbolKind.Class,
       range: this.nodeToRange(node),
       scope: currentScope?.name || "",
       visibility: nameNode?.text.startsWith("_") ? "private" : "public",
@@ -568,7 +567,7 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
 
   private processExtension(
     node: Node,
-    symbols: UniversalSymbol[],
+    symbols: ASTEngine.UniversalSymbol[],
     currentScope: Scope | undefined,
     patterns: Record<string, boolean>,
   ): boolean {
@@ -599,7 +598,7 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
     patterns["Extensions"] = true
     symbols.push({
       name: nameNode?.text,
-      kind: SymbolKind.Class,
+      kind: ASTEngine.SymbolKind.Class,
       range: this.nodeToRange(node),
       scope: currentScope?.name || "",
       visibility: nameNode?.text.startsWith("_") ? "private" : "public",
@@ -610,7 +609,7 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
 
   private processMethodChannelIdentifier(
     node: Node,
-    relationships: UniversalRelationship[],
+    relationships: ASTEngine.UniversalRelationship[],
     currentScope: Scope | undefined,
   ) {
     if (node.text === "MethodChannel" || node.text === "EventChannel" || node.text === "BasicMessageChannel") {
@@ -634,7 +633,7 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: currentScope?.name || "Global",
               target: channelName,
-              type: RelationshipType.Uses,
+              type: ASTEngine.RelationshipType.Uses,
               metadata: { isCrossLanguage: true, bridgeMechanism: node.text },
             })
           }
@@ -643,7 +642,7 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
     }
   }
 
-  private processEnum(node: Node, symbols: UniversalSymbol[], currentScope: Scope | undefined): boolean {
+  private processEnum(node: Node, symbols: ASTEngine.UniversalSymbol[], currentScope: Scope | undefined): boolean {
     const nameNode = node.childForFieldName("name") || this.findChild(node, (c) => c?.type === "identifier")
     if (!nameNode) return false
     let isEnhancedEnum = false
@@ -656,7 +655,7 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
     }
     symbols.push({
       name: nameNode?.text,
-      kind: SymbolKind.Enum,
+      kind: ASTEngine.SymbolKind.Enum,
       range: this.nodeToRange(node),
       scope: currentScope?.name || "",
       visibility: nameNode?.text.startsWith("_") ? "private" : "public",
@@ -667,7 +666,7 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
 
   private processFunctionOrMethod(
     node: Node,
-    symbols: UniversalSymbol[],
+    symbols: ASTEngine.UniversalSymbol[],
     currentScope: Scope | undefined,
     patterns: Record<string, boolean>,
   ): boolean {
@@ -742,14 +741,14 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
       if (annotations[i] === "@override") isOverride = true
     }
 
-    const symbol: UniversalSymbol = {
+    const symbol: ASTEngine.UniversalSymbol = {
       name: functionName,
       kind:
         isGetter || isSetter
-          ? SymbolKind.Property
+          ? ASTEngine.SymbolKind.Property
           : currentScope
-            ? SymbolKind.Method
-            : SymbolKind.Function,
+            ? ASTEngine.SymbolKind.Method
+            : ASTEngine.SymbolKind.Function,
       range: this.nodeToRange(node),
       scope: currentScope?.name || "",
       visibility: functionName.startsWith("_") ? "private" : "public",
@@ -787,7 +786,7 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
       relationships.push({
         source: `${currentScope.name}.${functionName}`,
         target: functionName,
-        type: RelationshipType.Overrides,
+        type: ASTEngine.RelationshipType.Overrides,
         confidence: 0.9,
         metadata: { isOverride: true, dartSpecific: true }
       })
@@ -797,8 +796,8 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
 
   private processConstructor(
     node: Node,
-    symbols: UniversalSymbol[],
-    relationships: UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
     currentScope: Scope | undefined,
     patterns: Record<string, boolean>,
   ): boolean {
@@ -824,9 +823,9 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
 
     const parameters = this.extractDartParameters(sigNode)
     if (isNamed) {
-      let classSymbol: UniversalSymbol | undefined
+      let classSymbol: ASTEngine.UniversalSymbol | undefined
       for (let i = 0; i < symbols.length; i++) {
-        if (symbols[i].name === currentScope.name && symbols[i].kind === SymbolKind.Class) {
+        if (symbols[i].name === currentScope.name && symbols[i].kind === ASTEngine.SymbolKind.Class) {
           classSymbol = symbols[i]
           break
         }
@@ -842,14 +841,14 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
 
     symbols.push({
       name,
-      kind: SymbolKind.Constructor,
+      kind: ASTEngine.SymbolKind.Constructor,
       range: this.nodeToRange(node),
       scope: currentScope.name,
       visibility: name.startsWith("_") ? "private" : "public",
       parameters,
       decorators: annotations,
       ownerName: currentScope.name,
-      ownerKind: SymbolKind.Class,
+      ownerKind: ASTEngine.SymbolKind.Class,
       metadata: { isFactory, isConst, isNamed, dartSpecific: true },
     })
 
@@ -887,7 +886,7 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
         relationships.push({
           source: currentScope.name,
           target: targetName,
-          type: RelationshipType.Instantiates,
+          type: ASTEngine.RelationshipType.Instantiates,
           metadata: { isFactoryRedirection: true },
         })
     }
@@ -896,7 +895,7 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
 
   private processFieldOrVariable(
     node: Node,
-    symbols: UniversalSymbol[],
+    symbols: ASTEngine.UniversalSymbol[],
     currentScope: Scope | undefined,
     patterns: Record<string, boolean>,
   ) {
@@ -944,9 +943,9 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
           symbols.push({
             name: nameNode?.text,
             kind:
-              currentScope && currentScope.kind === SymbolKind.Class
-                ? SymbolKind.Property
-                : SymbolKind.Variable,
+              currentScope && currentScope.kind === ASTEngine.SymbolKind.Class
+                ? ASTEngine.SymbolKind.Property
+                : ASTEngine.SymbolKind.Variable,
             range: this.nodeToRange(node),
             scope: currentScope?.name || "",
             visibility: nameNode.text.startsWith("_") ? "private" : "public",
@@ -959,9 +958,9 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
         symbols.push({
           name: child?.text,
           kind:
-            currentScope && currentScope.kind === SymbolKind.Class
-              ? SymbolKind.Property
-              : SymbolKind.Variable,
+            currentScope && currentScope.kind === ASTEngine.SymbolKind.Class
+              ? ASTEngine.SymbolKind.Property
+              : ASTEngine.SymbolKind.Variable,
           range: this.nodeToRange(node),
           scope: currentScope?.name || "",
           visibility: child?.text.startsWith("_") ? "private" : "public",
@@ -976,10 +975,10 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
 
   private processImportExport(
     node: Node,
-    imports: ImportInfo[],
-    exports: ExportInfo[],
+    imports: ASTEngine.ImportInfo[],
+    exports: ASTEngine.ExportInfo[],
     frameworks: Record<string, boolean>,
-    relationships: UniversalRelationship[],
+    relationships: ASTEngine.UniversalRelationship[],
   ) {
     const isExport = node.text.startsWith("export")
     const uriNode = this.findDescendant(node, (c) => c?.type === "string_literal")
@@ -1001,14 +1000,14 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
       relationships.push({
         source: "global",
         target: moduleUri,
-        type: RelationshipType.References,
+        type: ASTEngine.RelationshipType.References,
         confidence: 0.9,
         metadata: { isDartImport: true }
       })
     }
   }
 
-  private processPart(node: Node, imports: ImportInfo[], patterns: Record<string, boolean>) {
+  private processPart(node: Node, imports: ASTEngine.ImportInfo[], patterns: Record<string, boolean>) {
     let uriNode = this.findDescendant(node, (c) => c?.type === "string_literal")
     if (uriNode) {
       imports.push({
@@ -1023,7 +1022,7 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
 
   private processSelector(
     node: Node,
-    relationships: UniversalRelationship[],
+    relationships: ASTEngine.UniversalRelationship[],
     currentScope: Scope | undefined,
     patterns: Record<string, boolean>,
   ) {
@@ -1035,7 +1034,7 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
         relationships.push({
           source: currentScope.name,
           target: child.text,
-          type: RelationshipType.Instantiates,
+          type: ASTEngine.RelationshipType.Instantiates,
           metadata: { isWidgetTree: true },
         })
       }
@@ -1044,7 +1043,7 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
 
   private processInvocation(
     node: Node,
-    relationships: UniversalRelationship[],
+    relationships: ASTEngine.UniversalRelationship[],
     currentScope: Scope | undefined,
     patterns: Record<string, boolean>,
   ) {
@@ -1098,7 +1097,7 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
       relationships.push({
         source: sourceName,
         target: targetName,
-        type: isWidgetTree ? RelationshipType.Instantiates : RelationshipType.Calls,
+        type: isWidgetTree ? ASTEngine.RelationshipType.Instantiates : ASTEngine.RelationshipType.Calls,
         metadata: isWidgetTree ? { isWidgetTree: true } : {},
       })
     }
@@ -1106,7 +1105,7 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
 
   private processCascade(
     node: Node,
-    relationships: UniversalRelationship[],
+    relationships: ASTEngine.UniversalRelationship[],
     currentScope: Scope | undefined,
     patterns: Record<string, boolean>,
   ) {
@@ -1144,7 +1143,7 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: currentScope?.name || "Global",
               target: `${receiverName}.${methodName}`,
-              type: RelationshipType.Calls,
+              type: ASTEngine.RelationshipType.Calls,
               metadata: { cascade: true },
             })
         }
@@ -1152,8 +1151,8 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
     }
   }
 
-  private extractDartParameters(node: Node): Parameter[] {
-    const parameters: Parameter[] = []
+  private extractDartParameters(node: Node): ASTEngine.Parameter[] {
+    const parameters: ASTEngine.Parameter[] = []
     const paramsNode =
       node.childForFieldName("parameters") || this.findChild(node, (c) => c?.type === "formal_parameter_list")
     if (!paramsNode) return parameters
@@ -1229,7 +1228,7 @@ export class RealDartAnalyzer implements LanguageAnalyzer {
     return false
   }
 
-  private nodeToRange(node: Node): UniversalSymbol["range"] {
+  private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {
     return {
       startLine: node.startPosition.row + 1,
       startColumn: node.startPosition.column + 1,

@@ -1,5 +1,4 @@
-// @ts-nocheck
-import { UniversalSymbol, ParseResult } from "./types.js"
+import { ASTEngine } from "./engine"
 
 export class ImportPruner {
   /**
@@ -7,12 +6,12 @@ export class ImportPruner {
    * Used by bb_delete to perform Garbage Collection on dependencies.
    */
   static async prune(fileContent: string, filePath: string): Promise<string> {
-    const lang = (await import("./engine.js")).detectLanguage(filePath)
+    const lang = ASTEngine.detectLanguage(filePath)
     if (!lang) return fileContent
 
     try {
       if (["typescript", "javascript", "tsx", "jsx"].includes(lang)) {
-        const { tree: ast } = await (await import("./engine.js")).parseFile(filePath, fileContent)
+        const { tree: ast } = await ASTEngine.parseFile(filePath, fileContent)
         return this.pruneTypeScriptImports(fileContent, ast)
       }
       return this.pruneImportsStructural(fileContent, lang)

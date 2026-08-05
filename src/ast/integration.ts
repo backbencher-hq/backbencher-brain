@@ -1,10 +1,9 @@
-// @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
-import * as Log from "../tool/brain-log.js"
-import { CrossFileQualifier } from "./qualifier.js"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import { CrossFileQualifier } from "./qualifier"
+import { ASTEngine } from "./engine"
+import * as Log from "../tool/brain-log"
 
-type UniversalSymbol = UniversalSymbol
-type UniversalRelationship = UniversalRelationship
+type UniversalSymbol = ASTEngine.UniversalSymbol
+type UniversalRelationship = ASTEngine.UniversalRelationship
 
 const log = Log.create({ service: "ast-integration" })
 

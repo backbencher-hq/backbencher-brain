@@ -1,12 +1,11 @@
-// @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
-import * as Log from "../tool/brain-log.js"
 // Service Topology Builder
 // Builds complete service architecture map across ALL languages
 // TRACING: Every microservice, API, database, message queue, cache - EVERYTHING!
 
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
-import { CrossLanguageIntelligence } from "./cross-language-intelligence.js"
+import { ASTEngine } from "./engine"
+import { CrossLanguageIntelligence } from "./cross-language-intelligence"
+import * as Log from "../tool/brain-log"
 
 const log = Log.create({ service: "service-topology" })
 
@@ -17,7 +16,7 @@ export namespace ServiceTopologyBuilder {
    * Builds complete architecture map with precision
    */
   export async function buildServiceTopology(
-    fileResults: Map<string, ParseResult>,
+    fileResults: Map<string, ASTEngine.ParseResult>,
     symbols: CrossLanguageIntelligence.CrossLanguageSymbol[],
     relationships: CrossLanguageIntelligence.CrossLanguageRelationship[]
   ): Promise<CrossLanguageIntelligence.ServiceTopology> {
@@ -75,7 +74,7 @@ export namespace ServiceTopologyBuilder {
      * Discovers ALL services across ALL languages and frameworks
      */
     async discoverServices(
-      fileResults: Map<string, ParseResult>,
+      fileResults: Map<string, ASTEngine.ParseResult>,
       symbols: CrossLanguageIntelligence.CrossLanguageSymbol[]
     ): Promise<CrossLanguageIntelligence.ServiceNode[]> {
 
@@ -218,7 +217,7 @@ export namespace ServiceTopologyBuilder {
      * Discovers ALL deployment units (Docker, Kubernetes, etc.)
      */
     async discoverDeploymentUnits(
-      fileResults: Map<string, ParseResult>,
+      fileResults: Map<string, ASTEngine.ParseResult>,
       services: CrossLanguageIntelligence.ServiceNode[]
     ): Promise<CrossLanguageIntelligence.DeploymentUnit[]> {
 
@@ -240,7 +239,7 @@ export namespace ServiceTopologyBuilder {
 
     private determinePrimaryLanguage(
       languages: string[],
-      serviceFiles: Array<{ filePath: string; language: string; result: ParseResult }>
+      serviceFiles: Array<{ filePath: string; language: string; result: ASTEngine.ParseResult }>
     ): string {
       // Count lines of code per language
       const languageLines = new Map<string, number>()
@@ -266,7 +265,7 @@ export namespace ServiceTopologyBuilder {
 
     private extractServiceEndpoints(
       symbols: CrossLanguageIntelligence.CrossLanguageSymbol[],
-      serviceFiles: Array<{ filePath: string; language: string; result: ParseResult }>
+      serviceFiles: Array<{ filePath: string; language: string; result: ASTEngine.ParseResult }>
     ): CrossLanguageIntelligence.ServiceEndpoint[] {
 
       const endpoints: CrossLanguageIntelligence.ServiceEndpoint[] = []
@@ -298,7 +297,7 @@ export namespace ServiceTopologyBuilder {
     }
 
     private async analyzeServiceMetadata(
-      serviceFiles: Array<{ filePath: string; language: string; result: ParseResult }>,
+      serviceFiles: Array<{ filePath: string; language: string; result: ASTEngine.ParseResult }>,
       framework: string
     ): Promise<CrossLanguageIntelligence.ServiceMetadata> {
 
@@ -354,10 +353,10 @@ export namespace ServiceTopologyBuilder {
   class ServiceDetector {
 
     async groupFilesByService(
-      fileResults: Map<string, ParseResult>
-    ): Promise<Map<string, Array<{ filePath: string; language: string; result: ParseResult }>>> {
+      fileResults: Map<string, ASTEngine.ParseResult>
+    ): Promise<Map<string, Array<{ filePath: string; language: string; result: ASTEngine.ParseResult }>>> {
 
-      const serviceGroups = new Map<string, Array<{ filePath: string; language: string; result: ParseResult }>>()
+      const serviceGroups = new Map<string, Array<{ filePath: string; language: string; result: ASTEngine.ParseResult }>>()
 
       for (const [filePath, result] of fileResults) {
         const serviceName = this.detectServiceName(filePath, result)
@@ -376,7 +375,7 @@ export namespace ServiceTopologyBuilder {
       return serviceGroups
     }
 
-    private detectServiceName(filePath: string, result: ParseResult): string {
+    private detectServiceName(filePath: string, result: ASTEngine.ParseResult): string {
       // Detect service name from file path and content
 
       // Check for microservice patterns in path
@@ -401,7 +400,7 @@ export namespace ServiceTopologyBuilder {
     }
 
     async detectServiceType(
-      serviceFiles: Array<{ filePath: string; language: string; result: ParseResult }>,
+      serviceFiles: Array<{ filePath: string; language: string; result: ASTEngine.ParseResult }>,
       symbols: CrossLanguageIntelligence.CrossLanguageSymbol[]
     ): Promise<CrossLanguageIntelligence.ServiceNode["type"]> {
 
@@ -448,7 +447,7 @@ export namespace ServiceTopologyBuilder {
     }
 
     async detectFramework(
-      serviceFiles: Array<{ filePath: string; language: string; result: ParseResult }>,
+      serviceFiles: Array<{ filePath: string; language: string; result: ASTEngine.ParseResult }>,
       primaryLanguage: string
     ): Promise<string> {
 
@@ -715,7 +714,7 @@ export namespace ServiceTopologyBuilder {
 
     private extractEndpoint(reference: CrossLanguageIntelligence.SymbolReference): string | undefined {
       // Try to extract endpoint information from the reference
-      if (reference.context.accessPattern === "call" && reference.symbolKind === SymbolKind.Function) {
+      if (reference.context.accessPattern === "call" && reference.symbolKind === ASTEngine.SymbolKind.Function) {
         return `${reference.filePath}:${reference.range.startLine}`
       }
       return undefined
@@ -785,7 +784,7 @@ export namespace ServiceTopologyBuilder {
   class DeploymentUnitDetector {
     async detectDeploymentUnit(
       filePath: string,
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       services: CrossLanguageIntelligence.ServiceNode[]
     ): Promise<CrossLanguageIntelligence.DeploymentUnit | null> {
 
@@ -834,7 +833,7 @@ export namespace ServiceTopologyBuilder {
       )
     }
 
-    private detectEnvironment(result: ParseResult): string {
+    private detectEnvironment(result: ASTEngine.ParseResult): string {
       // Look for environment indicators in the deployment configuration
       const content = result.rawContent?.toLowerCase() || ""
 
@@ -846,7 +845,7 @@ export namespace ServiceTopologyBuilder {
       return 'unknown'
     }
 
-    private analyzeResources(result: ParseResult): DeploymentResources {
+    private analyzeResources(result: ASTEngine.ParseResult): DeploymentResources {
       // Parse resource specifications from deployment files
       return {
         cpu: "medium",
@@ -856,12 +855,12 @@ export namespace ServiceTopologyBuilder {
       }
     }
 
-    private analyzeDependencies(result: ParseResult): string[] {
+    private analyzeDependencies(result: ASTEngine.ParseResult): string[] {
       // Extract dependencies from deployment configuration
       return []
     }
 
-    private analyzeScaling(result: ParseResult, deploymentType: string): DeploymentScaling {
+    private analyzeScaling(result: ASTEngine.ParseResult, deploymentType: string): DeploymentScaling {
       return {
         horizontal: deploymentType === 'kubernetes' || deploymentType === 'docker-compose',
         vertical: true,

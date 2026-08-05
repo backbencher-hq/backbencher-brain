@@ -1,6 +1,5 @@
-// @ts-nocheck — Ported from backbencher.
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import { ASTEngine } from "./engine"
 
 /**
  * REAL ZIG ANALYZER v5.0 - Grounded in real tree-sitter-zig 0.2.0 AST
@@ -15,13 +14,13 @@ import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo,
  * 3. O(N) iterative DFS (single while loop, push children in reverse)
  * 4. 100% stateless (pure helper functions only)
  */
-export class RealZigAnalyzer implements LanguageAnalyzer {
-  public analyze(rootNode: Node, content: string, filePath: string): ParseResult {
-    const symbols: UniversalSymbol[] = []
-    const relationships: UniversalRelationship[] = []
-    const imports: ImportInfo[] = []
-    const exports: ExportInfo[] = []
-    const errors: ParseError[] = []
+export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
+  public analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
+    const symbols: ASTEngine.UniversalSymbol[] = []
+    const relationships: ASTEngine.UniversalRelationship[] = []
+    const imports: ASTEngine.ImportInfo[] = []
+    const exports: ASTEngine.ExportInfo[] = []
+    const errors: ASTEngine.ParseError[] = []
 
     const walkStack: { node: Node; scopePath: string[] }[] = [{ node: rootNode, scopePath: [] }]
 
@@ -42,7 +41,7 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
         if (identNode) fnName = identNode.text
 
         if (fnName && fnName.length < 100) {
-          const params: Parameter[] = []
+          const params: ASTEngine.Parameter[] = []
           const paramsNode = this.anyChild(node, (n) => n.type === "parameters")
           if (paramsNode) {
             for (let i = 0; i < paramsNode.namedChildCount; i++) {
@@ -72,7 +71,7 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
 
           symbols.push({
             name: fnName,
-            kind: SymbolKind.Function,
+            kind: ASTEngine.SymbolKind.Function,
             visibility: isExported_ ? "public" : "private",
             range: this.nodeRange(node),
             scope: currentScope.join("."),
@@ -86,7 +85,7 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
           })
           currentScope.push(fnName)
           if (isExported_) {
-            exports.push({ name: fnName, kind: SymbolKind.Function })
+            exports.push({ name: fnName, kind: ASTEngine.SymbolKind.Function })
           }
         }
       }
@@ -120,50 +119,50 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
         if (rhsType === "enum_declaration" || rhsText.includes("enum{")) {
           symbols.push({
             name: varName,
-            kind: SymbolKind.Enum,
+            kind: ASTEngine.SymbolKind.Enum,
             visibility: isExported ? "public" : "private",
             range: this.nodeRange(node),
             scope: currentScope.join("."),
             metadata: { zigDeclaration: "enum", zigEnum: true },
           })
-          if (isExported) exports.push({ name: varName, kind: SymbolKind.Enum })
+          if (isExported) exports.push({ name: varName, kind: ASTEngine.SymbolKind.Enum })
           currentScope.push(varName)
         } else if (rhsType === "error_set_declaration" || rhsText.startsWith("error{")) {
           symbols.push({
             name: varName,
-            kind: SymbolKind.Enum,
+            kind: ASTEngine.SymbolKind.Enum,
             visibility: isExported ? "public" : "private",
             range: this.nodeRange(node),
             scope: currentScope.join("."),
             metadata: { zigDeclaration: "error_set", zigErrorSet: true },
           })
-          if (isExported) exports.push({ name: varName, kind: SymbolKind.Enum })
+          if (isExported) exports.push({ name: varName, kind: ASTEngine.SymbolKind.Enum })
           currentScope.push(varName)
         } else if (rhsType === "struct_declaration" || rhsText.includes("struct{") || rhsText.startsWith("struct{")) {
           symbols.push({
             name: varName,
-            kind: SymbolKind.Class,
+            kind: ASTEngine.SymbolKind.Class,
             visibility: isExported ? "public" : "private",
             range: this.nodeRange(node),
             scope: currentScope.join("."),
             metadata: { zigDeclaration: "struct", zigStruct: true },
           })
-          if (isExported) exports.push({ name: varName, kind: SymbolKind.Class })
+          if (isExported) exports.push({ name: varName, kind: ASTEngine.SymbolKind.Class })
           currentScope.push(varName)
         } else if (varName[0] === varName[0].toUpperCase() && varName[0] !== varName[0].toLowerCase()) {
           symbols.push({
             name: varName,
-            kind: SymbolKind.Type,
+            kind: ASTEngine.SymbolKind.Type,
             visibility: isExported ? "public" : "private",
             range: this.nodeRange(node),
             scope: currentScope.join("."),
             metadata: { zigDeclaration: "type_alias" },
           })
-          if (isExported) exports.push({ name: varName, kind: SymbolKind.Type })
+          if (isExported) exports.push({ name: varName, kind: ASTEngine.SymbolKind.Type })
         } else {
           symbols.push({
             name: varName,
-            kind: SymbolKind.Constant,
+            kind: ASTEngine.SymbolKind.Constant,
             visibility: isExported ? "public" : "private",
             range: this.nodeRange(node),
             scope: currentScope.join("."),
@@ -173,11 +172,11 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: currentScope[currentScope.length - 1],
               target: varName,
-              type: RelationshipType.Contains,
+              type: ASTEngine.RelationshipType.Contains,
               metadata: {},
             })
           }
-          if (isExported) exports.push({ name: varName, kind: SymbolKind.Constant })
+          if (isExported) exports.push({ name: varName, kind: ASTEngine.SymbolKind.Constant })
         }
       }
 
@@ -186,7 +185,7 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
         const isInline = nodeText.includes("inline ")
         symbols.push({
           name: isInline ? "inline for" : "for",
-          kind: SymbolKind.Function,
+          kind: ASTEngine.SymbolKind.Function,
           visibility: "private",
           range: this.nodeRange(node),
           scope: currentScope.join("."),
@@ -205,7 +204,7 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
         const isInline = nodeText.includes("inline ")
         symbols.push({
           name: isInline ? "inline while" : "while",
-          kind: SymbolKind.Function,
+          kind: ASTEngine.SymbolKind.Function,
           visibility: "private",
           range: this.nodeRange(node),
           scope: currentScope.join("."),
@@ -235,7 +234,7 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
           if (isFor) {
             symbols.push({
               name: isInline ? "inline for" : "for",
-              kind: SymbolKind.Function,
+              kind: ASTEngine.SymbolKind.Function,
               visibility: "private",
               range: this.nodeRange(node),
               scope: currentScope.join("."),
@@ -251,7 +250,7 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
           } else if (isWhile) {
             symbols.push({
               name: isInline ? "inline while" : "while",
-              kind: SymbolKind.Function,
+              kind: ASTEngine.SymbolKind.Function,
               visibility: "private",
               range: this.nodeRange(node),
               scope: currentScope.join("."),
@@ -272,7 +271,7 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
       if (type === "comptime_declaration") {
         symbols.push({
           name: "comptime",
-          kind: SymbolKind.Function,
+          kind: ASTEngine.SymbolKind.Function,
           visibility: "private",
           range: this.nodeRange(node),
           scope: currentScope.join("."),
@@ -289,7 +288,7 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
       if (type === "comptime_expression") {
         symbols.push({
           name: "comptime",
-          kind: SymbolKind.Function,
+          kind: ASTEngine.SymbolKind.Function,
           visibility: "private",
           range: this.nodeRange(node),
           scope: currentScope.join("."),
@@ -308,7 +307,7 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
         if (nodeText.includes("comptime")) {
           symbols.push({
             name: "comptime",
-            kind: SymbolKind.Function,
+            kind: ASTEngine.SymbolKind.Function,
             visibility: "private",
             range: this.nodeRange(node),
             scope: currentScope.join("."),
@@ -327,7 +326,7 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
       if (type === "error_set_declaration") {
         symbols.push({
           name: "error_set",
-          kind: SymbolKind.Enum,
+          kind: ASTEngine.SymbolKind.Enum,
           visibility: "private",
           range: this.nodeRange(node),
           scope: currentScope.join("."),
@@ -339,7 +338,7 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
       if (type === "error_type" || type === "error_union_type") {
         symbols.push({
           name: "error",
-          kind: SymbolKind.Type,
+          kind: ASTEngine.SymbolKind.Type,
           visibility: "private",
           range: this.nodeRange(node),
           scope: currentScope.join("."),
@@ -351,7 +350,7 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
       if (type === "enum_declaration") {
         symbols.push({
           name: "enum",
-          kind: SymbolKind.Enum,
+          kind: ASTEngine.SymbolKind.Enum,
           visibility: "private",
           range: this.nodeRange(node),
           scope: currentScope.join("."),
@@ -363,7 +362,7 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
       if (type === "struct_declaration") {
         symbols.push({
           name: "struct",
-          kind: SymbolKind.Class,
+          kind: ASTEngine.SymbolKind.Class,
           visibility: "private",
           range: this.nodeRange(node),
           scope: currentScope.join("."),
@@ -375,7 +374,7 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
       if (type === "switch_expression") {
         symbols.push({
           name: "switch",
-          kind: SymbolKind.Function,
+          kind: ASTEngine.SymbolKind.Function,
           visibility: "private",
           range: this.nodeRange(node),
           scope: currentScope.join("."),
@@ -391,7 +390,7 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
       if (type === "switch_case") {
         symbols.push({
           name: "switch_case",
-          kind: SymbolKind.Method,
+          kind: ASTEngine.SymbolKind.Method,
           visibility: "private",
           range: this.nodeRange(node),
           scope: currentScope.join("."),
@@ -403,7 +402,7 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
       if (type === "try_expression") {
         symbols.push({
           name: "try",
-          kind: SymbolKind.Function,
+          kind: ASTEngine.SymbolKind.Function,
           visibility: "private",
           range: this.nodeRange(node),
           scope: currentScope.join("."),
@@ -415,7 +414,7 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
       if (type === "return_expression") {
         symbols.push({
           name: "return",
-          kind: SymbolKind.Function,
+          kind: ASTEngine.SymbolKind.Function,
           visibility: "private",
           range: this.nodeRange(node),
           scope: currentScope.join("."),
@@ -427,7 +426,7 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
       if (type === "break_expression") {
         symbols.push({
           name: "break",
-          kind: SymbolKind.Function,
+          kind: ASTEngine.SymbolKind.Function,
           visibility: "private",
           range: this.nodeRange(node),
           scope: currentScope.join("."),
@@ -439,7 +438,7 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
       if (type === "continue_expression") {
         symbols.push({
           name: "continue",
-          kind: SymbolKind.Function,
+          kind: ASTEngine.SymbolKind.Function,
           visibility: "private",
           range: this.nodeRange(node),
           scope: currentScope.join("."),
@@ -472,14 +471,14 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: scopeName,
                 target: importTarget,
-                type: RelationshipType.Imports,
+                type: ASTEngine.RelationshipType.Imports,
                 confidence: 0.9,
                 metadata: { zigImport: true },
               } as any)
               if (fnName === "@cImport") {
                 symbols.push({
                   name: importTarget,
-                  kind: SymbolKind.Namespace,
+                  kind: ASTEngine.SymbolKind.Namespace,
                   visibility: "private",
                   range: this.nodeRange(node),
                   scope: currentScope.join("."),
@@ -491,7 +490,7 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
         } else if (fnName.startsWith("@")) {
           symbols.push({
             name: fnName,
-            kind: SymbolKind.Function,
+            kind: ASTEngine.SymbolKind.Function,
             visibility: "private",
             range: this.nodeRange(node),
             scope: currentScope.join("."),
@@ -508,7 +507,7 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
           if (fnText && fnText.length < 60 && !fnText.startsWith("@")) {
             symbols.push({
               name: fnText,
-              kind: SymbolKind.Function,
+              kind: ASTEngine.SymbolKind.Function,
               visibility: "private",
               range: this.nodeRange(node),
               scope: currentScope.join("."),
@@ -518,7 +517,7 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: currentScope.join(".") || "global",
               target: fnText,
-              type: RelationshipType.Calls,
+              type: ASTEngine.RelationshipType.Calls,
               confidence: 0.8,
               metadata: { zigSpecific: true },
             })
@@ -527,7 +526,7 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: currentScope.join(".") || "global",
                 target: fnText.replace(".init", ""),
-                type: RelationshipType.Instantiates,
+                type: ASTEngine.RelationshipType.Instantiates,
                 confidence: 0.75,
                 metadata: { zigSpecific: true, isConstructor: true },
               })
@@ -553,7 +552,7 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
           )
           symbols.push({
             name: fieldName,
-            kind: SymbolKind.Property,
+            kind: ASTEngine.SymbolKind.Property,
             visibility: "public",
             range: this.nodeRange(node),
             scope: currentScope.join("."),
@@ -564,7 +563,7 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: currentScope[currentScope.length - 1],
               target: fieldName,
-              type: RelationshipType.Contains,
+              type: ASTEngine.RelationshipType.Contains,
               metadata: {},
             })
           }
@@ -576,7 +575,7 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
         if (nodeText.length < 300 && node.startPosition.row < 100) {
           symbols.push({
             name: "block",
-            kind: SymbolKind.Function,
+            kind: ASTEngine.SymbolKind.Function,
             visibility: "private",
             range: this.nodeRange(node),
             scope: currentScope.join("."),
@@ -594,7 +593,7 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
           if (fieldName && fieldName.length < 50) {
             symbols.push({
               name: fieldName,
-              kind: SymbolKind.Property,
+              kind: ASTEngine.SymbolKind.Property,
               visibility: "private",
               range: this.nodeRange(node),
               scope: currentScope.join("."),
@@ -609,7 +608,7 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
         if (nodeText && nodeText.length < 30) {
           symbols.push({
             name: nodeText,
-            kind: SymbolKind.Type,
+            kind: ASTEngine.SymbolKind.Type,
             visibility: "private",
             range: this.nodeRange(node),
             scope: currentScope.join("."),
@@ -623,7 +622,7 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
         if (nodeText.length < 50) {
           symbols.push({
             name: nodeText,
-            kind: SymbolKind.Type,
+            kind: ASTEngine.SymbolKind.Type,
             visibility: "private",
             range: this.nodeRange(node),
             scope: currentScope.join("."),
@@ -637,7 +636,7 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
         if (nodeText.length < 50) {
           symbols.push({
             name: nodeText,
-            kind: SymbolKind.Type,
+            kind: ASTEngine.SymbolKind.Type,
             visibility: "private",
             range: this.nodeRange(node),
             scope: currentScope.join("."),
@@ -653,7 +652,7 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
           if (identText[0] === identText[0].toUpperCase() && identText[0] !== identText[0].toLowerCase()) {
             symbols.push({
               name: identText,
-              kind: SymbolKind.Type,
+              kind: ASTEngine.SymbolKind.Type,
               visibility: "private",
               range: this.nodeRange(node),
               scope: currentScope.join("."),
@@ -667,7 +666,7 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
       if (type === "if_statement" || type === "if_expression") {
         symbols.push({
           name: "if",
-          kind: SymbolKind.Function,
+          kind: ASTEngine.SymbolKind.Function,
           visibility: "private",
           range: this.nodeRange(node),
           scope: currentScope.join("."),
@@ -707,7 +706,7 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
         relationships.push({
           source: _owner,
           target: s.name,
-          type: RelationshipType.Contains,
+          type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
           metadata: {},
         })
@@ -718,7 +717,7 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
         relationships.push({
           source: "root",
           target: imp.module,
-          type: RelationshipType.References,
+          type: ASTEngine.RelationshipType.References,
           isExternal: true,
           weight: 0.9,
           metadata: { importModule: imp.module },
@@ -730,7 +729,7 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
       relationships.push({
         source: "module",
         target: exp.name,
-        type: RelationshipType.Exports,
+        type: ASTEngine.RelationshipType.Exports,
         confidence: 0.9,
         metadata: { zigExport: true },
       } as any)
@@ -756,7 +755,7 @@ export class RealZigAnalyzer implements LanguageAnalyzer {
 
   // ─── PURE HELPER FUNCTIONS ───
 
-  private nodeRange(node: Node): UniversalSymbol["range"] {
+  private nodeRange(node: Node): ASTEngine.UniversalSymbol["range"] {
     return {
       startLine: node.startPosition.row + 1,
       startColumn: node.startPosition.column,

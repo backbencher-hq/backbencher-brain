@@ -37,7 +37,7 @@ export function setQuiet(quiet: boolean): void {
   globalLevel = quiet ? LogLevel.WARN : LogLevel.INFO
 }
 
-interface Logger {
+export interface Logger {
   trace: (msg: string, context?: Record<string, any>) => void
   debug: (msg: string, context?: Record<string, any>) => void
   info: (msg: string, context?: Record<string, any>) => void

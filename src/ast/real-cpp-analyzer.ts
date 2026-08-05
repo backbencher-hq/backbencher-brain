@@ -1,22 +1,21 @@
-// @ts-nocheck — Ported from backbencher.
 function stringIncludes(str: string, val: string): boolean {
   return str.indexOf(val) !== -1
 }
 
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import { ASTEngine } from "./engine"
 
-export class RealCppAnalyzer implements LanguageAnalyzer {
+export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(
     rootNode: Node,
     content: string,
     filePath: string,
-  ): Omit<ParseResult, "language" | "metadata"> & { metadata: Partial<FileMetadata> } {
-    const symbols: UniversalSymbol[] = []
-    const relationships: UniversalRelationship[] = []
-    const imports: ImportInfo[] = []
-    const exports: ExportInfo[] = []
-    const errors: ParseError[] = []
+  ): Omit<ASTEngine.ParseResult, "language" | "metadata"> & { metadata: Partial<ASTEngine.FileMetadata> } {
+    const symbols: ASTEngine.UniversalSymbol[] = []
+    const relationships: ASTEngine.UniversalRelationship[] = []
+    const imports: ASTEngine.ImportInfo[] = []
+    const exports: ASTEngine.ExportInfo[] = []
+    const errors: ASTEngine.ParseError[] = []
 
     const patterns: Record<string, boolean> = {}
     const frameworks: Record<string, boolean> = {}
@@ -25,11 +24,11 @@ export class RealCppAnalyzer implements LanguageAnalyzer {
     interface Scope {
       node: Node
       name: string
-      kind: SymbolKind
+      kind: ASTEngine.SymbolKind
       visibility: "public" | "private" | "protected"
       isTemplate: boolean
       isAbstract: boolean
-      symbolRef?: UniversalSymbol
+      symbolRef?: ASTEngine.UniversalSymbol
       friends?: string[]
     }
 
@@ -100,7 +99,7 @@ export class RealCppAnalyzer implements LanguageAnalyzer {
         if (typeId) {
           symbols.push({
             name: typeId.text,
-            kind: SymbolKind.Type,
+            kind: ASTEngine.SymbolKind.Type,
             range: this.nodeToRange(node),
             visibility: parentContext?.visibility || "public",
             ownerName: parentContext?.name,
@@ -122,7 +121,7 @@ export class RealCppAnalyzer implements LanguageAnalyzer {
           relationships.push({
             source: "global",
             target: includePath,
-            type: RelationshipType.References,
+            type: ASTEngine.RelationshipType.References,
             confidence: 1.0,
             metadata: { isIncludeDependency: true },
           })
@@ -164,7 +163,7 @@ export class RealCppAnalyzer implements LanguageAnalyzer {
         const name = this.childText(node, "namespace_identifier") || "anonymous"
         symbols.push({
           name,
-          kind: SymbolKind.Namespace,
+          kind: ASTEngine.SymbolKind.Namespace,
           range: this.nodeToRange(node),
           visibility: "public",
           metadata: { isCppNamespace: true, fullName: this.buildFullName(scopeStack, name) },
@@ -172,7 +171,7 @@ export class RealCppAnalyzer implements LanguageAnalyzer {
         newContext = {
           node,
           name,
-          kind: SymbolKind.Namespace,
+          kind: ASTEngine.SymbolKind.Namespace,
           visibility: "public",
           isTemplate: false,
           isAbstract: false,
@@ -182,7 +181,7 @@ export class RealCppAnalyzer implements LanguageAnalyzer {
         pushedScope = true
       } else if (type === "class_specifier" || type === "struct_specifier" || type === "union_specifier") {
         const name = this.childText(node, "type_identifier") || "anonymous"
-        const kind = SymbolKind.Class
+        const kind = ASTEngine.SymbolKind.Class
         const defaultVis = type === "class_specifier" ? "private" : "public"
 
         const isTemplate = node.parent?.type === "template_declaration"
@@ -215,7 +214,7 @@ export class RealCppAnalyzer implements LanguageAnalyzer {
                 relationships.push({
                   source: name,
                   target: text,
-                  type: RelationshipType.Extends,
+                  type: ASTEngine.RelationshipType.Extends,
                   metadata: { nodeType: typeNode.type },
                 })
               }
@@ -232,9 +231,9 @@ export class RealCppAnalyzer implements LanguageAnalyzer {
           }
         }
 
-        const sym: UniversalSymbol = {
+        const sym: ASTEngine.UniversalSymbol = {
           name,
-          kind: SymbolKind.Class,
+          kind: ASTEngine.SymbolKind.Class,
           range: this.nodeToRange(node),
           visibility: parentContext?.visibility || "public",
           ownerName: parentContext?.name,
@@ -260,7 +259,7 @@ export class RealCppAnalyzer implements LanguageAnalyzer {
 
         symbols.push({
           name,
-          kind: SymbolKind.Enum,
+          kind: ASTEngine.SymbolKind.Enum,
           range: this.nodeToRange(node),
           visibility: parentContext?.visibility || "public",
           ownerName: parentContext?.name,
@@ -270,7 +269,7 @@ export class RealCppAnalyzer implements LanguageAnalyzer {
         newContext = {
           node,
           name,
-          kind: SymbolKind.Enum,
+          kind: ASTEngine.SymbolKind.Enum,
           visibility: "public",
           isTemplate: false,
           isAbstract: false,
@@ -291,9 +290,9 @@ export class RealCppAnalyzer implements LanguageAnalyzer {
 
           // 3. Out-of-Line Method Orphan Fix: Use explicit scope if defined (e.g. MyClass::myMethod)
           const actualOwnerName = explicitScope || parentContext?.name
-          const actualOwnerKind = explicitScope ? SymbolKind.Class : parentContext?.kind
+          const actualOwnerKind = explicitScope ? ASTEngine.SymbolKind.Class : parentContext?.kind
 
-          const isConstructor = actualOwnerName === funcName && actualOwnerKind === SymbolKind.Class
+          const isConstructor = actualOwnerName === funcName && actualOwnerKind === ASTEngine.SymbolKind.Class
 
           // 2. Pure Virtual Hallucination Fix: Only check direct immediate children for '0' in a field declaration
           let isPureVirtual = false
@@ -313,12 +312,12 @@ export class RealCppAnalyzer implements LanguageAnalyzer {
 
           const isTemplate = node.parent?.type === "template_declaration"
           const kind = isConstructor
-              ? SymbolKind.Constructor
-              : actualOwnerKind === SymbolKind.Class
-                ? SymbolKind.Method
-                : SymbolKind.Function
+              ? ASTEngine.SymbolKind.Constructor
+              : actualOwnerKind === ASTEngine.SymbolKind.Class
+                ? ASTEngine.SymbolKind.Method
+                : ASTEngine.SymbolKind.Function
 
-          const sym: UniversalSymbol = {
+          const sym: ASTEngine.UniversalSymbol = {
             name: funcName,
             kind: kind,
             range: this.nodeToRange(node),
@@ -340,7 +339,7 @@ export class RealCppAnalyzer implements LanguageAnalyzer {
             },
           }
           // Detect Implements: virtual method override in derived class
-          if ((isVirtual || isPureVirtual) && parentContext?.kind === SymbolKind.Class && !isConstructor) {
+          if ((isVirtual || isPureVirtual) && parentContext?.kind === ASTEngine.SymbolKind.Class && !isConstructor) {
             // This is a virtual method in a class. Track it for future overrides.
             const bv = (this as any)._baseVirtuals
             if (bv) {
@@ -349,7 +348,7 @@ export class RealCppAnalyzer implements LanguageAnalyzer {
               bv.set(parentContext.name, classVirtuals)
             }
           }
-          if (isVirtual && parentContext?.kind === SymbolKind.Class && actualOwnerKind === SymbolKind.Class && isConstructor === false) {
+          if (isVirtual && parentContext?.kind === ASTEngine.SymbolKind.Class && actualOwnerKind === ASTEngine.SymbolKind.Class && isConstructor === false) {
             // Check if this overrides a base class virtual method
             const bv = (this as any)._baseVirtuals
             if (bv && parentContext.symbolRef) {
@@ -360,7 +359,7 @@ export class RealCppAnalyzer implements LanguageAnalyzer {
                   relationships.push({
                     source: `${parentContext.name}.${funcName}`,
                     target: `${baseClass}.${funcName}`,
-                    type: RelationshipType.Implements,
+                    type: ASTEngine.RelationshipType.Implements,
                     confidence: 0.9,
                     metadata: { isOverride: true, isVirtual: true },
                   })
@@ -368,7 +367,7 @@ export class RealCppAnalyzer implements LanguageAnalyzer {
                   relationships.push({
                     source: `${parentContext.name}.${funcName}`,
                     target: `${baseClass}.${funcName}`,
-                    type: RelationshipType.Overrides,
+                    type: ASTEngine.RelationshipType.Overrides,
                     confidence: 0.95,
                     metadata: { isVirtualOverride: true },
                   })
@@ -414,10 +413,10 @@ export class RealCppAnalyzer implements LanguageAnalyzer {
               symbols.push({
                 name,
                 kind: isConstexpr
-                  ? SymbolKind.Constant
-                  : parentContext?.kind === SymbolKind.Class
-                    ? SymbolKind.Property
-                    : SymbolKind.Variable,
+                  ? ASTEngine.SymbolKind.Constant
+                  : parentContext?.kind === ASTEngine.SymbolKind.Class
+                    ? ASTEngine.SymbolKind.Property
+                    : ASTEngine.SymbolKind.Variable,
                 range: this.nodeToRange(d),
                 visibility: parentContext?.visibility || "public",
                 isStatic,
@@ -437,7 +436,7 @@ export class RealCppAnalyzer implements LanguageAnalyzer {
         if (name) {
           symbols.push({
             name,
-            kind: SymbolKind.EnumMember,
+            kind: ASTEngine.SymbolKind.EnumMember,
             range: this.nodeToRange(node),
             visibility: "public",
             ownerName: parentContext?.name,
@@ -461,7 +460,7 @@ export class RealCppAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source,
               target: field.text,
-              type: RelationshipType.Uses,
+              type: ASTEngine.RelationshipType.Uses,
               confidence: 0.9,
               metadata: { relationshipType: "field_access", accessedFrom: obj?.text },
             })
@@ -469,7 +468,7 @@ export class RealCppAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source,
               target: field.text,
-              type: RelationshipType.References,
+              type: ASTEngine.RelationshipType.References,
               confidence: 0.85,
               metadata: { relationshipType: "field_access", accessedFrom: obj?.text },
             })
@@ -509,7 +508,7 @@ export class RealCppAnalyzer implements LanguageAnalyzer {
               target: targetName,
               fromSymbol: source,
               toSymbol: qualifiedName,
-              type: RelationshipType.Calls,
+              type: ASTEngine.RelationshipType.Calls,
               metadata: { line: node.startPosition.row, qualified: qualifiedName },
             })
           }
@@ -529,7 +528,7 @@ export class RealCppAnalyzer implements LanguageAnalyzer {
             target: typeName,
             fromSymbol: source,
             toSymbol: typeNode.text,
-            type: RelationshipType.Instantiates,
+            type: ASTEngine.RelationshipType.Instantiates,
             metadata: { line: node.startPosition.row, isNew: true },
           })
         }
@@ -578,7 +577,7 @@ export class RealCppAnalyzer implements LanguageAnalyzer {
         relationships.push({
           source: _owner,
           target: s.name,
-          type: RelationshipType.Contains,
+          type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
           metadata: {},
         })
@@ -707,7 +706,7 @@ export class RealCppAnalyzer implements LanguageAnalyzer {
   private buildFullName(scopeStack: any[], name: string): string {
     const parts: string[] = []
     for (let i = 0; i < scopeStack.length; i++) {
-      if (scopeStack[i].kind === SymbolKind.Namespace) {
+      if (scopeStack[i].kind === ASTEngine.SymbolKind.Namespace) {
         parts.push(scopeStack[i].name)
       }
     }

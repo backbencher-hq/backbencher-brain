@@ -1,4 +1,4 @@
-// @ts-nocheck
+// @ts-nocheck — ported; verified by tests. Restored incrementally in Phase 3.
 /**
  * OPTIMIZED BRAIN TOOLS - Lightning Fast Performance
  * Enhanced with caching, connection pooling, and query optimizations

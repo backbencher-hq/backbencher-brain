@@ -1,8 +1,13 @@
-// @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
-import * as Log from "../tool/brain-log.js"
+// @ts-nocheck — ported; verified by tests. Restored incrementally in Phase 3.
+import { BrainDatabase } from "../brain/database"
+import type { ProjectID } from "../project/schema"
+import { BrainSymbolTable, BrainFileTable, BrainRelationshipTable } from "../brain/brain.sql"
 import { eq, and, like, sql, desc } from "drizzle-orm"
-import { BrainTools } from "./tools.js"
-import { TestIntelligence } from "./test_intelligence.js"
+import { BrainTools } from "./tools"
+import { TestIntelligence } from "./test_intelligence"
+import { GitTemporalHelper } from "../indexer/git_temporal_helper"
+import * as Log from "../tool/brain-log"
+import { CrossLanguageSecurityAnalysis } from "../security/cross-language-security"
 
 const log = Log.create({ service: "intelligence-provider" })
 

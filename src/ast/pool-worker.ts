@@ -1,17 +1,12 @@
-// @ts-nocheck — Pool worker port from backbencher.
-// was bun shebang
-import { fileURLToPath } from "node:url"
-import { dirname } from "node:path"
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-import { createHash } from "node:crypto"
-import path from "node:path"
-import fs from "node:fs"
+#!/usr/bin/env bun
+import { createHash } from "crypto"
+import { createRequire } from "node:module"
+import path from "path"
+import fs from "fs"
+
+const require = createRequire(import.meta.url)
 
 process.env.BB_LOG_LEVEL = "error"
-
-import { createRequire } from "node:module"
-const _req = createRequire(import.meta.url)
 const debug = false
 
 function log(..._args: unknown[]) {}
@@ -488,14 +483,14 @@ export async function parseFile(filePath: string, projectPath: string) {
 
   try {
     if (!engineModule) {
-      engineModule = await import("./engine.js")
+      engineModule = await import("./engine")
     }
     const parsed = await engineModule.ASTEngine.parseFile(filePath, content)
 
     // Log when engine returns 0 symbols (silent failure — no exception thrown)
     if ((parsed?.symbols?.length || 0) === 0 && (parsed?.errors?.length || 0) > 0) {
       try {
-        const fs = _req("fs")
+        const fs = require("fs")
         const errSample = parsed.errors.slice(0, 3).map((e: any) => e.message).join(" | ")
         fs.appendFileSync("/tmp/bb-parse-errors.log",
           `${new Date().toISOString()} | ${language} | ${sizeBytes}B | ${filePath} | ENGINE_EMPTY: ${errSample.substring(0, 200)}\n`)
@@ -511,7 +506,7 @@ export async function parseFile(filePath: string, projectPath: string) {
 
     // Stage 5: Universal Multi-Language Taint Data-Flow Extraction
     try {
-      const { TaintAnalyzer } = await import("./taint-analyzer.js")
+      const { TaintAnalyzer } = await import("./taint-analyzer")
       TaintAnalyzer.enrichSymbols(parsed.symbols, content, language)
     } catch (e) {
       log("Taint extraction failed:", e)
@@ -613,12 +608,18 @@ export async function parseFile(filePath: string, projectPath: string) {
 }
 
 // IPC message handler
-process.stderr.write("[PW-START] Pool worker pid=" + process.pid + " send=" + !!process.send + "\n");
 process.on("message", async (msg: any) => {
   if (msg.type === "warmup") {
-    // Send ready immediately - engine loads on first parse
-    try { engineModule = await import("./engine.js") } catch {}
-    if (process.send) { process.send({ type: "ready", workerId: msg.workerId }) }
+    // Pre-load the WASM registry and engine before processing.
+    // Registry loads core grammars only with 10s timeout per import.
+    try {
+      const { ensureWasmRegistry } = await import("../util/wasm")
+      await ensureWasmRegistry()
+    } catch {}
+    try {
+      engineModule = await import("./engine")
+    } catch {}
+    process.send?.({ type: "ready", workerId: msg.workerId })
   } else if (msg.type === "parse_batch") {
     const { batchId, files, projectPath } = msg
     const FILE_TIMEOUT_MS = 45000 // 45s per-file self-timeout
@@ -626,7 +627,7 @@ process.on("message", async (msg: any) => {
     for (const filePath of files) {
       try {
         // Yield to event loop to ensure file_start is sent BEFORE sync tree-sitter block
-        process.stderr.write("[PW-FILE-START] " + filePath + "\n"); process.send?.({ type: "file_start", batchId, filePath })
+        process.send?.({ type: "file_start", batchId, filePath })
         await new Promise((r) => setTimeout(r, 0))
 
         // Self-timeout: kill worker if file processing hangs (doesn't rely on parent process)
@@ -638,7 +639,7 @@ process.on("message", async (msg: any) => {
         const result = await parseFile(filePath, projectPath)
         clearTimeout(fileTimer)
 
-        process.stderr.write("[PW-FILE-DONE] " + filePath + " syms:" + (result?.symbols?.length || 0) + "\n"); process.send?.({ type: "file_done", batchId, filePath, result })
+        process.send?.({ type: "file_done", batchId, filePath, result })
       } catch (err) {
         process.send?.({
           type: "file_error",

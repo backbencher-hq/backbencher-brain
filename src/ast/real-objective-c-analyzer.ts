@@ -1,15 +1,14 @@
-// @ts-nocheck — Ported from backbencher.
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import { ASTEngine } from "./engine"
 
-export class RealObjectiveCAnalyzer implements LanguageAnalyzer {
-  analyze(rootNode: Node, content: string, filePath: string): ParseResult {
-    const symbols: UniversalSymbol[] = []
-    const relationships: UniversalRelationship[] = []
-    const imports: ImportInfo[] = []
+export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
+  analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
+    const symbols: ASTEngine.UniversalSymbol[] = []
+    const relationships: ASTEngine.UniversalRelationship[] = []
+    const imports: ASTEngine.ImportInfo[] = []
 
-    const exports: ExportInfo[] = []; const frameworks = new Set<string>()
-    const errors: ParseError[] = []
+    const exports: ASTEngine.ExportInfo[] = []; const frameworks = new Set<string>()
+    const errors: ASTEngine.ParseError[] = []
 
     // Extract imports — use AST-based approach where possible, regex for #import pragmas
     const objcMatches = content.matchAll(/#(?:import|include)\s+[<"]([^>"]+)[>"]/g)
@@ -26,7 +25,7 @@ export class RealObjectiveCAnalyzer implements LanguageAnalyzer {
       relationships.push({
         source: "root",
         target: modName,
-        type: RelationshipType.References,
+        type: ASTEngine.RelationshipType.References,
         confidence: 0.9,
         metadata: { isObjCImport: true },
       })
@@ -69,11 +68,11 @@ export class RealObjectiveCAnalyzer implements LanguageAnalyzer {
               }
             }
           }
-          if (superName) { relationships.push({ source: nameNode.text, target: superName, type: RelationshipType.Extends, metadata: { objcSpecific: true } }) }
-          for (let pk = 0; pk < protocols.length; pk++) { relationships.push({ source: nameNode.text, target: protocols[pk], type: RelationshipType.Implements, metadata: { objcSpecific: true, isProtocol: true } }) }
+          if (superName) { relationships.push({ source: nameNode.text, target: superName, type: ASTEngine.RelationshipType.Extends, metadata: { objcSpecific: true } }) }
+          for (let pk = 0; pk < protocols.length; pk++) { relationships.push({ source: nameNode.text, target: protocols[pk], type: ASTEngine.RelationshipType.Implements, metadata: { objcSpecific: true, isProtocol: true } }) }
           symbols.push({
             name: nameNode.text,
-            kind: SymbolKind.Class,
+            kind: ASTEngine.SymbolKind.Class,
             range: this.getRange(node),
             ownerName: activeScope !== "global" ? activeScope : undefined,
             metadata: { objcSpecific: true, type: node.type, superClass: superName, protocols },
@@ -87,7 +86,7 @@ export class RealObjectiveCAnalyzer implements LanguageAnalyzer {
           nextActiveScope = nameNode.text
           symbols.push({
             name: nameNode.text,
-            kind: SymbolKind.Namespace, // Representing category extension
+            kind: ASTEngine.SymbolKind.Namespace, // Representing category extension
             range: this.getRange(node),
             metadata: { objcSpecific: true, isCategory: true },
           })
@@ -100,7 +99,7 @@ export class RealObjectiveCAnalyzer implements LanguageAnalyzer {
           nextActiveScope = nameNode.text
           symbols.push({
             name: nameNode.text,
-            kind: SymbolKind.Interface,
+            kind: ASTEngine.SymbolKind.Interface,
             range: this.getRange(node),
             metadata: { objcSpecific: true, isProtocol: true },
           })
@@ -114,7 +113,7 @@ export class RealObjectiveCAnalyzer implements LanguageAnalyzer {
           nextActiveScope = nameNode.text
           symbols.push({
             name: nameNode.text,
-            kind: SymbolKind.Method,
+            kind: ASTEngine.SymbolKind.Method,
             range: this.getRange(node),
             ownerName: activeScope !== "global" ? activeScope : undefined,
             metadata: { objcSpecific: true, isClassMethod: node.text.startsWith("+"), isInstanceMethod: node.text.startsWith("-") },
@@ -130,7 +129,7 @@ export class RealObjectiveCAnalyzer implements LanguageAnalyzer {
           nextActiveScope = nameNode.text
           symbols.push({
             name: nameNode.text,
-            kind: SymbolKind.Function,
+            kind: ASTEngine.SymbolKind.Function,
             range: this.getRange(node),
             metadata: { objcSpecific: true },
           })
@@ -142,7 +141,7 @@ export class RealObjectiveCAnalyzer implements LanguageAnalyzer {
          if (nameNode) {
            symbols.push({
              name: nameNode.text,
-             kind: SymbolKind.Property,
+             kind: ASTEngine.SymbolKind.Property,
              range: this.getRange(node),
              ownerName: activeScope !== "global" ? activeScope : undefined,
              metadata: { objcSpecific: true },
@@ -153,7 +152,7 @@ export class RealObjectiveCAnalyzer implements LanguageAnalyzer {
       else if (node.type === "block_literal" || node.type === "block_expression") {
          symbols.push({
            name: "block_" + node.startPosition.row + "_" + node.startPosition.column,
-           kind: SymbolKind.Function,
+           kind: ASTEngine.SymbolKind.Function,
            range: this.getRange(node),
            metadata: { objcSpecific: true, isBlock: true },
          })
@@ -163,7 +162,7 @@ export class RealObjectiveCAnalyzer implements LanguageAnalyzer {
          if (nameNode) {
            symbols.push({
              name: nameNode.text,
-             kind: SymbolKind.Variable,
+             kind: ASTEngine.SymbolKind.Variable,
              range: this.getRange(node),
              metadata: { objcSpecific: true },
            })
@@ -176,14 +175,14 @@ export class RealObjectiveCAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: activeScope,
               target: selectorNode.text,
-              type: RelationshipType.Calls,
+              type: ASTEngine.RelationshipType.Calls,
               metadata: { isMessageExpression: true }
             })
             // Detect [[Foo alloc] init] as Instantiates
             if (selectorNode.text === "alloc" || selectorNode.text === "new") { 
               const receiverNode = this.findChild(node, (n) => n.type === "identifier" || n.type === "type_identifier");
               if (receiverNode) {
-                relationships.push({ source: activeScope, target: receiverNode.text, type: RelationshipType.Instantiates, confidence: 0.9, metadata: { isObjCAlloc: true } });
+                relationships.push({ source: activeScope, target: receiverNode.text, type: ASTEngine.RelationshipType.Instantiates, confidence: 0.9, metadata: { isObjCAlloc: true } });
               }
             }
          }
@@ -194,7 +193,7 @@ export class RealObjectiveCAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: activeScope,
               target: funcNode.text,
-              type: RelationshipType.Calls,
+              type: ASTEngine.RelationshipType.Calls,
               metadata: { isCFunctionCall: true }
             })
         }
@@ -211,13 +210,13 @@ export class RealObjectiveCAnalyzer implements LanguageAnalyzer {
     }
 
     // Law 3: O(1) MAP deduplications — include ownerName for methods to avoid collision
-    const uniqueSymbolsMap = new Map<string, UniversalSymbol>()
+    const uniqueSymbolsMap = new Map<string, ASTEngine.UniversalSymbol>()
     for (let i = 0; i < symbols.length; i++) {
         uniqueSymbolsMap.set(`${symbols[i].kind}:${symbols[i].ownerName || ''}:${symbols[i].name}`, symbols[i])
     }
     const uniqueSymbols = Array.from(uniqueSymbolsMap.values())
 
-    const uniqueRelMap = new Map<string, UniversalRelationship>()
+    const uniqueRelMap = new Map<string, ASTEngine.UniversalRelationship>()
     for (let i = 0; i < relationships.length; i++) {
         uniqueRelMap.set(`${relationships[i].source}->${relationships[i].target}`, relationships[i])
     }
@@ -230,7 +229,7 @@ export class RealObjectiveCAnalyzer implements LanguageAnalyzer {
         uniqueRelationships.push({
           source: _owner,
           target: s.name,
-          type: RelationshipType.Contains,
+          type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
           metadata: { isContained: true },
         })

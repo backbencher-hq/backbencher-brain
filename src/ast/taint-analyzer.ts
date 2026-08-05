@@ -1,8 +1,7 @@
-// @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
-import type { ASTEngine } from "./engine.js"
+import type { ASTEngine } from "./engine"
 
 export class TaintAnalyzer {
-  static enrichSymbols(symbols: UniversalSymbol[], content: string, language: string) {
+  static enrichSymbols(symbols: ASTEngine.UniversalSymbol[], content: string, language: string) {
     for (const symbol of symbols) {
       if (symbol.range.startIndex !== undefined && symbol.range.endIndex !== undefined) {
         const snippet = content.slice(symbol.range.startIndex, symbol.range.endIndex)

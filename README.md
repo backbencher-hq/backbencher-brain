@@ -1,163 +1,84 @@
-# Backbencher Brain — Universal MCP Code Intelligence Server
+# backbencher-brain-core — universal code intelligence
 
-**Index any project. Query with AI. 40 languages. 14 tools. One command.**
+Standalone, runtime-agnostic (Bun **and** Node) code intelligence core:
+index any project with 40+ Tree-sitter language analyzers, then query it
+from a CLI, an MCP server, or a library.
 
-[![npm version](https://img.shields.io/badge/npm-v0.1.0-blue)](https://npmjs.com/package/backbencher-brain)
-[![Node](https://img.shields.io/badge/node-%3E%3D18-green)](https://nodejs.org)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-
----
-
-## What is this?
-
-Backbencher Brain is a standalone MCP (Model Context Protocol) server that indexes your project's source code using Tree-sitter AST parsers and exposes **14 code intelligence tools** to any AI assistant.
-
-**It gives LLMs surgical vision into your codebase.**
-
-Instead of the AI reading entire files to find one function, the brain returns exact byte-precise code with call graphs, security vulnerabilities, and cross-language relationships.
-
-## Quick Start
+## Quick start
 
 ```bash
-npm install -g backbencher-brain
+# index a project (Bun)
+bun run bin/bb index ~/my-project
 
-cd your-project
-bb start
+# or with Node
+npx tsx bin/bb index ~/my-project
+
+# search the index
+bun run bin/bb search "calculateTotal" --dir ~/my-project
+bun run bin/bb health ~/my-project
 ```
 
-That's it. The brain indexes your project and starts an MCP server over stdio.
+## CLI commands
 
-## Connect to Your AI Tool
+| Command | Purpose |
+|---|---|
+| `bb index <dir>` | Build the AST index (parallel, all languages) |
+| `bb index <dir> --force` | Wipe and rebuild |
+| `bb search <query> [--dir] [--limit N] [--language LANG]` | Symbol search with freshness flags |
+| `bb health [dir]` | Index stats + file freshness sample |
+| `bb mcp [--dir DIR]` | Start the MCP server over stdio |
 
-Add to your MCP host config:
+Indexes live at `~/.bb/projects/<sha1-of-dir>/brain.db` — no opencode, no
+global config required.
 
-### Claude Desktop (`claude_desktop_config.json`)
+## MCP server (Claude Code, Cursor, VS Code, opencode, …)
+
+```bash
+# run once per project; then point any MCP host at it
+bun run bin/bb mcp --dir ~/my-project
+```
+
+Claude Desktop (`claude_desktop_config.json`):
+
 ```json
 {
   "mcpServers": {
-    "brain": {
-      "command": "bb",
-      "args": ["start"]
+    "bb-brain": {
+      "command": "bun",
+      "args": ["run", "bin/bb", "mcp", "--dir", "/abs/path/to/project"]
     }
   }
 }
 ```
 
-### OpenCode (`opencode.json`)
-```json
-{
-  "mcpServers": {
-    "brain": {
-      "command": "npx",
-      "args": ["backbencher-brain", "start"]
-    }
-  }
-}
-```
+Exposed tools (read-only for now — MCP has no permission system):
 
-### Cursor (`.cursor/mcp.json`)
-```json
-{
-  "mcpServers": {
-    "brain": {
-      "command": "bb",
-      "args": ["start", "${workspaceFolder}"]
-    }
-  }
-}
-```
+- `bb_search` — AST symbol search; results carry a `[STALE]` flag when the
+  file changed since indexing
+- `bb_health` — index counts + freshness sample
 
-## CLI Commands
+## Semantic embeddings
 
-| Command | Description |
-|---|---|
-| `bb start [path]` | Start MCP server (auto-indexes) |
-| `bb index [path]` | Index project only |
-| `bb status [path]` | Show index health dashboard |
-| `bb list` | List all indexed projects |
-| `bb clean [path]` | Remove project index |
+See [EMBEDDINGS.md](./EMBEDDINGS.md) — 3 env vars turn on real embeddings
+(Google / NVIDIA NIM / OpenAI / self-hosted), with offline word-vector
+fallback when unconfigured.
 
-## 14 MCP Tools
+## Verification
 
-### Read Tools
-| Tool | Description |
-|---|---|
-| `brain_search` | Search symbols by name with FTS5 content fallback |
-| `brain_select` | Byte-precise symbol/file reading with callers/callees |
-| `brain_relationships` | Callers, callees, recursive trace, imports, exports, coupling |
-| `brain_ask` | Quick answers about codebase statistics and concepts |
-| `brain_health` | File/symbol/relationship counts, language breakdown |
-| `brain_security` | Cross-language vulnerability scanning (SQLi, XSS, RCE) |
-| `brain_patterns` | Orphaned code, complexity analysis, violations |
-| `brain_visualize` | Interactive D3.js dependency graphs (HTML/JSON) |
-| `brain_refresh` | Trigger project reindexing |
-
-### Write Tools
-| Tool | Description |
-|---|---|
-| `brain_update` | Byte-precise code replacement with cascade protection |
-| `brain_insert` | Insert code with auto-import injection |
-| `brain_delete` | Delete symbols with cascade check + import pruning |
-| `brain_refactor` | Rename symbols across all call sites |
-| `brain_write` | Create files with auto-wiring + syntax validation |
-
-## Supported Languages (40)
-
-TypeScript, JavaScript, Python, Java, Go, Rust, C, C++, C#, F#, Ruby, PHP, Swift, Kotlin, Scala, Dart, Lua, Perl, Elixir, Erlang, Haskell, Clojure, R, SQL, Bash, PowerShell, Groovy, Zig, Objective-C, GraphQL, HTML, CSS, JSON, YAML, Vue, Svelte, HCL, Clean
-
-## Architecture
-
-```
-┌──────────────┐    stdio JSON-RPC    ┌──────────────┐
-│  AI Assistant │ ◄──────────────────► │  bb MCP      │
-│  (Claude etc) │                      │  Server      │
-└──────────────┘                      └──────┬───────┘
-                                             │
-                                    ┌────────▼───────┐
-                                    │  Query Layer   │
-                                    │  15 SQL fns    │
-                                    └────────┬───────┘
-                                             │
-                              ┌──────────────▼──────────────┐
-                              │  SQLite DB                  │
-                              │  files · symbols · rels     │
-                              │  imports · taints · FTS5   │
-                              └─────────────────────────────┘
-                                             ▲
-                              ┌──────────────┴──────────────┐
-                              │  Parallel Indexer           │
-                              │  40 analyzers · worker pool │
-                              └─────────────────────────────┘
-```
-
-## How It Works
-
-1. **Index** — Walks project directory, respects `.gitignore`/`.bbignore`, parses every source file with Tree-sitter WASM parsers, extracts symbols/relationships/imports/taints, stores in SQLite
-2. **Serve** — Starts MCP server over stdin/stdout. AI tools call `brain_search`, `brain_select`, etc.
-3. **Edit** — Write tools use byte-precise surgical patching to modify code safely with undo backups
-
-## Development
+Every suite runs under Bun and Node:
 
 ```bash
-git clone https://github.com/backbencher-hq/backbencher-brain
-cd backbencher-brain
-npm install
-npm run dev          # Run in development mode
-npm run build        # Compile TypeScript
-npm run typecheck    # Strict type checking
-npm test             # Run tests
+bun run script/verify-core.ts && npx tsx script/verify-core.ts   # DB layer
+bun run script/verify-engine.ts && npx tsx script/verify-engine.ts # parser
+bun run script/verify-index.ts && npx tsx script/verify-index.ts   # indexer
+bun run script/verify-embed.ts && npx tsx script/verify-embed.ts   # embeddings
+bun run script/verify-freshness.ts && npx tsx script/verify-freshness.ts # reads
+bun run script/verify-mcp.ts && npx tsx script/verify-mcp.ts       # MCP server
 ```
 
-### Syncing Analyzers from Upstream
+## Roadmap
 
-When analyzers are updated in the main backbencher repo:
-
-```bash
-./scripts/sync-analyzers.sh /path/to/backbencher
-```
-
-This copies all `real-*-analyzer.ts` files, replaces imports, and preserves structural identity.
-
-## License
-
-MIT
+- `bb update` / `bb delete` (mutation tools — opt-in under MCP)
+- `bb select` (byte-precise symbol extraction)
+- publish as npm package (compiled dist for plain Node)
+- opencode adapter: the 12 opencode tools become thin wrappers over this core

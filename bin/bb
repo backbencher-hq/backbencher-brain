@@ -1,39 +1,4 @@
 #!/usr/bin/env node
-// Backbencher Brain — Universal MCP Code Intelligence Server
-// Entry point: detects command, routes to appropriate handler
-//
-// In development: runs TypeScript directly via tsx
-// In production: runs compiled JS from dist/
-
-import { fileURLToPath } from "url"
-import { dirname, resolve } from "path"
-import { existsSync } from "fs"
-import { spawnSync } from "child_process"
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-const projectRoot = resolve(__dirname, "..")
-
-async function main() {
-  const args = process.argv.slice(2)
-  const distEntry = resolve(projectRoot, "dist", "cli", "commands.js")
-
-  if (existsSync(distEntry)) {
-    // Production mode — use compiled JS
-    const { run } = await import(distEntry)
-    await run(args)
-  } else {
-    // Development mode — use tsx to run TypeScript directly
-    const tsxEntry = resolve(projectRoot, "src", "index.ts")
-    const result = spawnSync("npx", ["tsx", tsxEntry, ...args], {
-      stdio: "inherit",
-      cwd: projectRoot,
-    })
-    process.exit(result.status ?? 1)
-  }
-}
-
-main().catch((err) => {
-  console.error("Fatal error:", err instanceof Error ? err.message : String(err))
-  process.exit(1)
-})
+// Global `bb` binary — runs the compiled CLI (plain Node, no tsx needed).
+import { runCli } from "../dist/cli/index.js"
+await runCli(process.argv.slice(2))

@@ -1,6 +1,5 @@
-// @ts-nocheck — Ported from backbencher.
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import { ASTEngine } from "./engine"
 
 const CLOJURE_CORE_BUILTINS = (function(){ const r: Record<string, boolean> = {}; const arr = [
   "if", "let", "def", "defn", "defn-", "fn", "loop", "recur", "quote", "var", "do", "try", "catch", "finally", "throw", "monitor-enter", "monitor-exit", "new", ".", "set!", "+", "-", "*", "/", "=", "not=", "<", "<=", ">", ">=", "and", "or", "not", "println", "print", "str", "concat", "map", "reduce", "filter", "remove", "into", "assoc", "dissoc", "get", "update", "merge", "keys", "vals", "first", "rest", "next", "last", "cons", "conj", "apply", "comp", "partial", "inc", "dec", "zero?", "empty?", "nil?", "when", "when-not", "when-let", "if-let", "if-not", "cond", "case", "for", "doseq", "dotimes", "->", "->>", "as->", "cond->", "cond->>", "some->", "some->>", "swap!", "reset!", "deref", "alter", "commute", "dosync", "ref", "atom", "agent", "send", "send-off", "future", "promise", "deliver", "defrecord", "defprotocol", "defmulti", "defmethod", "ns", "require", "import", "use", "refer", "comment", "deftest", "is", "testing"
@@ -11,20 +10,20 @@ const STM_BUILTINS = (function(){ const r: Record<string, boolean> = {}; const a
 const COMPLEXITY_BUILTINS = (function(){ const r: Record<string, boolean> = {}; const arr = ["if", "cond", "when", "case", "for", "loop", "when-let", "if-let"]; for(let i=0;i<arr.length;i++) r[arr[i]] = true; return r; })();
 const IMPURE_BUILTINS = (function(){ const r: Record<string, boolean> = {}; const arr = ["println", "print", "def", "alter-var-root", "with-redefs", "set!", "swap!", "reset!", "alter"]; for(let i=0;i<arr.length;i++) r[arr[i]] = true; return r; })();
 
-export class RealClojureAnalyzer implements LanguageAnalyzer {
-  analyze(rootNode: Node, content: string, filePath: string): ParseResult {
-    const symbols: UniversalSymbol[] = []
-    const relationships: UniversalRelationship[] = []
-    const imports: ImportInfo[] = []
-    const exports: ExportInfo[] = []
-    const errors: ParseError[] = []
+export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
+  analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
+    const symbols: ASTEngine.UniversalSymbol[] = []
+    const relationships: ASTEngine.UniversalRelationship[] = []
+    const imports: ASTEngine.ImportInfo[] = []
+    const exports: ASTEngine.ExportInfo[] = []
+    const errors: ASTEngine.ParseError[] = []
 
     const frameworks: Record<string, boolean> = {}
     const patterns: Record<string, boolean> = {}
 
     let currentNamespace = "user"
     let namespaceAliases: Record<string, string> = {}
-    let activeFunction: UniversalSymbol | null = null
+    let activeFunction: ASTEngine.UniversalSymbol | null = null
 
     let totalCyclomaticComplexity = 0
 
@@ -37,8 +36,8 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
     }
 
     // FLAW 1 & 3 FIXED: Extract ALL vectors for multi-arity, capture map_lit/vec_lit for destructuring
-    const extractParams = (fnNode: Node | null): Parameter[] => {
-      const params: Parameter[] = []
+    const extractParams = (fnNode: Node | null): ASTEngine.Parameter[] => {
+      const params: ASTEngine.Parameter[] = []
       if (!fnNode) return params
       
       const vecNodes: Node[] = []
@@ -110,7 +109,7 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
     
     // Dedup set for relationships: type|source|target
     const relKeySet = new Set<string>()
-    const pushRel = (rel: UniversalRelationship) => {
+    const pushRel = (rel: ASTEngine.UniversalRelationship) => {
       const key = rel.type + "|" + rel.source + "|" + rel.target
       if (relKeySet.has(key)) return
       relKeySet.add(key)
@@ -135,8 +134,8 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
         const name = nameNode?.text || "unknown"
         const paramsNode = this.findChild(node, (n: Node) => n.type === "params")
         const params = extractParams(paramsNode || node)
-        const funcSymbol: UniversalSymbol = {
-          name, kind: SymbolKind.Function,
+        const funcSymbol: ASTEngine.UniversalSymbol = {
+          name, kind: ASTEngine.SymbolKind.Function,
           range: this.nodeToRange(node), scope: currentNamespace, ownerName: currentNamespace,
           visibility: "public", parameters: params,
           metadata: { clojureSpecific: true, isPure: true, complexity: 1 }
@@ -144,11 +143,11 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
         symbols.push(funcSymbol)
         activeFunction = funcSymbol
         // exports
-        exports.push({ name, kind: SymbolKind.Function, range: this.nodeToRange(node), visibility: "public" })
+        exports.push({ name, kind: ASTEngine.SymbolKind.Function, range: this.nodeToRange(node), visibility: "public" })
       } else if (node.type === "fn" || node.type === "anonymous_function") {
-        const lambdaSymbol: UniversalSymbol = {
+        const lambdaSymbol: ASTEngine.UniversalSymbol = {
           name: `lambda_${node.startPosition.row}_${node.startPosition.column}`,
-          kind: SymbolKind.Function,
+          kind: ASTEngine.SymbolKind.Function,
           range: this.nodeToRange(node), scope: currentNamespace,
           visibility: "local",
           metadata: { isAnonymous: true, isPure: true, complexity: 1, clojureSpecific: true }
@@ -158,40 +157,40 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
       } else if (node.type === "defrecord" || node.type === "deftype") {
         const nameNode = node.namedChild(1)
         const name = nameNode?.text || "unknown"
-        symbols.push({ name, kind: SymbolKind.Class, range: this.nodeToRange(node), scope: currentNamespace, visibility: "public", metadata: { clojureSpecific: true } })
+        symbols.push({ name, kind: ASTEngine.SymbolKind.Class, range: this.nodeToRange(node), scope: currentNamespace, visibility: "public", metadata: { clojureSpecific: true } })
         // implements: look for protocol names after the fields vector
         for (let pi = 3; pi < node.namedChildCount; pi++) {
           const protoNode = node.namedChild(pi)
           if (protoNode?.type === "symbol") {
             const protoName = protoNode.text
             if (!protoName.startsWith(":") && protoName.length > 1) {
-              pushRel({ source: name, target: protoName, type: RelationshipType.Implements, confidence: 0.85, metadata: { clojureSpecific: true } })
+              pushRel({ source: name, target: protoName, type: ASTEngine.RelationshipType.Implements, confidence: 0.85, metadata: { clojureSpecific: true } })
               break
             }
           }
         }
-        exports.push({ name, kind: SymbolKind.Class, range: this.nodeToRange(node), visibility: "public" })
+        exports.push({ name, kind: ASTEngine.SymbolKind.Class, range: this.nodeToRange(node), visibility: "public" })
       } else if (node.type === "defprotocol") {
         const nameNode = node.namedChild(1)
         const name = nameNode?.text || "unknown"
-        symbols.push({ name, kind: SymbolKind.Interface, range: this.nodeToRange(node), scope: currentNamespace, visibility: "public", metadata: { clojureSpecific: true } })
-        exports.push({ name, kind: SymbolKind.Interface, range: this.nodeToRange(node), visibility: "public" })
+        symbols.push({ name, kind: ASTEngine.SymbolKind.Interface, range: this.nodeToRange(node), scope: currentNamespace, visibility: "public", metadata: { clojureSpecific: true } })
+        exports.push({ name, kind: ASTEngine.SymbolKind.Interface, range: this.nodeToRange(node), visibility: "public" })
       } else if (node.type === "defmulti") {
         const nameNode = node.namedChild(1)
         const name = nameNode?.text || "unknown"
-        symbols.push({ name, kind: SymbolKind.Function, range: this.nodeToRange(node), scope: currentNamespace, visibility: "public", metadata: { clojureSpecific: true, isMultimethod: true } })
-        exports.push({ name, kind: SymbolKind.Function, range: this.nodeToRange(node), visibility: "public" })
+        symbols.push({ name, kind: ASTEngine.SymbolKind.Function, range: this.nodeToRange(node), scope: currentNamespace, visibility: "public", metadata: { clojureSpecific: true, isMultimethod: true } })
+        exports.push({ name, kind: ASTEngine.SymbolKind.Function, range: this.nodeToRange(node), visibility: "public" })
       } else if (node.type === "defmethod") {
         const nameNode = node.namedChild(1)
         const name = nameNode?.text || "unknown"
-        symbols.push({ name, kind: SymbolKind.Function, range: this.nodeToRange(node), scope: currentNamespace, visibility: "public", metadata: { clojureSpecific: true, isMethodImpl: true } })
+        symbols.push({ name, kind: ASTEngine.SymbolKind.Function, range: this.nodeToRange(node), scope: currentNamespace, visibility: "public", metadata: { clojureSpecific: true, isMethodImpl: true } })
         // overrides: defmethod overrides a defmulti
-        pushRel({ source: name, target: name.split("/")[0] || name, type: RelationshipType.Overrides, confidence: 0.7, metadata: { clojureSpecific: true, isDefmethod: true } })
+        pushRel({ source: name, target: name.split("/")[0] || name, type: ASTEngine.RelationshipType.Overrides, confidence: 0.7, metadata: { clojureSpecific: true, isDefmethod: true } })
       } else if (node.type === "defmacro") {
         const nameNode = node.namedChild(1)
         const name = nameNode?.text || "unknown"
-        symbols.push({ name, kind: SymbolKind.Function, range: this.nodeToRange(node), scope: currentNamespace, visibility: "public", metadata: { clojureSpecific: true, isMacro: true } })
-        exports.push({ name, kind: SymbolKind.Function, range: this.nodeToRange(node), visibility: "public" })
+        symbols.push({ name, kind: ASTEngine.SymbolKind.Function, range: this.nodeToRange(node), scope: currentNamespace, visibility: "public", metadata: { clojureSpecific: true, isMacro: true } })
+        exports.push({ name, kind: ASTEngine.SymbolKind.Function, range: this.nodeToRange(node), visibility: "public" })
       } else if (node.type === "threading_macro") {
         // -> or ->> threading macros — track Uses relationships
         if (activeFunction) {
@@ -201,7 +200,7 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
             if (!tChild) continue
             let tName = tChild.type === "symbol" ? tChild.text : tChild.type === "list" ? tChild.namedChild(0)?.text || "" : ""
             if (tName && !CLOJURE_CORE_BUILTINS[tName]) {
-              if (prev) pushRel({ source: prev, target: tName, type: RelationshipType.Uses, confidence: 0.85, metadata: { clojureSpecific: true, isThreadingMacro: true } })
+              if (prev) pushRel({ source: prev, target: tName, type: ASTEngine.RelationshipType.Uses, confidence: 0.85, metadata: { clojureSpecific: true, isThreadingMacro: true } })
               prev = tName
             }
           }
@@ -210,7 +209,7 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
         // Java interop constructor call: (ClassName.) → instantiates
         if (activeFunction) {
           const className = node.text?.replace(/\.$/, "") || "unknown"
-          pushRel({ source: activeFunction.name, target: className, type: RelationshipType.Instantiates, confidence: 0.8, metadata: { clojureSpecific: true, isJavaInterop: true } })
+          pushRel({ source: activeFunction.name, target: className, type: ASTEngine.RelationshipType.Instantiates, confidence: 0.8, metadata: { clojureSpecific: true, isJavaInterop: true } })
         }
       } else if (node.type === "field_access" || node.type === "member_access") {
         // (.field obj) or (..obj field) → field_access
@@ -218,7 +217,7 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
           for (let i = 0; i < node.namedChildCount; i++) {
             const child = node.namedChild(i)
             if (child?.type === "symbol" && child.text) {
-              pushRel({ source: activeFunction.name, target: child.text, type: RelationshipType.Uses, confidence: 0.7, metadata: { clojureSpecific: true, isFieldAccess: true } })
+              pushRel({ source: activeFunction.name, target: child.text, type: ASTEngine.RelationshipType.Uses, confidence: 0.7, metadata: { clojureSpecific: true, isFieldAccess: true } })
             }
           }
         }
@@ -236,7 +235,7 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
               currentNamespace = nameNode.text
               symbols.push({
                 name: currentNamespace,
-                kind: SymbolKind.Module,
+                kind: ASTEngine.SymbolKind.Module,
                 range: this.nodeToRange(node),
                 scope: "",
                 visibility: "public",
@@ -296,9 +295,9 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
               }
             }
 
-            const funcSymbol: UniversalSymbol = {
+            const funcSymbol: ASTEngine.UniversalSymbol = {
               name,
-              kind: SymbolKind.Function,
+              kind: ASTEngine.SymbolKind.Function,
               range: this.nodeToRange(node),
               scope: currentNamespace,
               visibility: formName === "defn-" ? "private" : "public",
@@ -317,9 +316,9 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
           } else if (formName === "fn") {
             // FLAW 5 FIXED: Shield outer function from inner lambda complexity/mutations
             let name = `lambda_${node.startPosition.row}_${node.startPosition.column}`;
-            const lambdaSymbol: UniversalSymbol = {
+            const lambdaSymbol: ASTEngine.UniversalSymbol = {
               name,
-              kind: SymbolKind.Function,
+              kind: ASTEngine.SymbolKind.Function,
               range: this.nodeToRange(node),
               scope: currentNamespace,
               visibility: "local",
@@ -340,7 +339,7 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
                 if (!protoName.startsWith(":") && protoName.length > 1) {
                   pushRel({
                     source: name, target: protoName,
-                    type: RelationshipType.Implements,
+                    type: ASTEngine.RelationshipType.Implements,
                     confidence: 0.85,
                     metadata: { clojureSpecific: true, isRecord: formName === "defrecord" },
                   })
@@ -349,9 +348,9 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
               }
             }
 
-            const classSymbol: UniversalSymbol = {
+            const classSymbol: ASTEngine.UniversalSymbol = {
               name,
-              kind: SymbolKind.Class,
+              kind: ASTEngine.SymbolKind.Class,
               range: this.nodeToRange(node),
               scope: currentNamespace,
               visibility: "public",
@@ -365,7 +364,7 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
                 if (field && (field.type === "sym_lit" || field.type === "symbol")) {
                   symbols.push({
                     name: field.text,
-                    kind: SymbolKind.Property,
+                    kind: ASTEngine.SymbolKind.Property,
                     range: this.nodeToRange(field),
                     scope: `${currentNamespace}.${name}`,
                     visibility: "public",
@@ -379,7 +378,7 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
             let name = nameNode ? nameNode.text : "unknown"
             symbols.push({
               name,
-              kind: SymbolKind.Interface,
+              kind: ASTEngine.SymbolKind.Interface,
               range: this.nodeToRange(node),
               scope: currentNamespace,
               visibility: "public",
@@ -390,7 +389,7 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
             let name = nameNode ? nameNode.text : "unknown"
             symbols.push({
               name,
-              kind: SymbolKind.Function,
+              kind: ASTEngine.SymbolKind.Function,
               range: this.nodeToRange(node),
               scope: currentNamespace,
               visibility: "public",
@@ -402,7 +401,7 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
               pushRel({
                 source: `${currentNamespace}.${nameNode.text}_impl_${node.startPosition.row}`,
                 target: nameNode.text,
-                type: RelationshipType.Overrides,
+                type: ASTEngine.RelationshipType.Overrides,
                 metadata: { clojureSpecific: true, isMultimethodImpl: true }
               })
             }
@@ -410,7 +409,7 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
             const child = node.namedChild(1)!
             symbols.push({
               name: child.text,
-              kind: SymbolKind.Interface,
+              kind: ASTEngine.SymbolKind.Interface,
               range: this.nodeToRange(node),
               scope: currentNamespace,
               visibility: "public",
@@ -421,7 +420,7 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
             if (nameNode) {
               symbols.push({
                 name: nameNode.text,
-                kind: SymbolKind.Variable,
+                kind: ASTEngine.SymbolKind.Variable,
                 range: this.nodeToRange(node),
                 scope: currentNamespace,
                 visibility: "public",
@@ -447,7 +446,7 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
                 activeFunction.metadata.isPure = false
               }
               if (formName === "recur") {
-                pushRel({ source: activeFunction.name, target: activeFunction.name, type: RelationshipType.Calls, confidence: 1.0, metadata: { clojureSpecific: true, isRecursion: true } })
+                pushRel({ source: activeFunction.name, target: activeFunction.name, type: ASTEngine.RelationshipType.Calls, confidence: 1.0, metadata: { clojureSpecific: true, isRecursion: true } })
                 activeFunction.metadata.isRecursive = true
               } else if (formName === activeFunction.name) {
                 activeFunction.metadata.isRecursive = true
@@ -468,7 +467,7 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
                 }
                 if (tName && !CLOJURE_CORE_BUILTINS[tName]) {
                   if (prev) {
-                    pushRel({ source: prev, target: tName, type: RelationshipType.Uses, confidence: 0.85, metadata: { clojureSpecific: true, isThreadingMacro: true } })
+                    pushRel({ source: prev, target: tName, type: ASTEngine.RelationshipType.Uses, confidence: 0.85, metadata: { clojureSpecific: true, isThreadingMacro: true } })
                   }
                   prev = tName
                 }
@@ -481,13 +480,13 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
                 pushRel({
                   source: activeFunction.name,
                   target: `${resolvedNs}/${func}`,
-                  type: RelationshipType.Calls,
+                  type: ASTEngine.RelationshipType.Calls,
                   metadata: { clojureSpecific: true }
                 })
                 // depends: library dependency (always push for qualified calls)
                 pushRel({
                   source: currentNamespace, target: resolvedNs,
-                  type: RelationshipType.References,
+                  type: ASTEngine.RelationshipType.References,
                   confidence: 0.8, metadata: { clojureSpecific: true, isLibraryDep: true }
                 })
                 // Clojure constructor: (ClassName.) or (->ClassName ...)
@@ -495,7 +494,7 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
                   pushRel({
                     source: activeFunction.name,
                     target: `${resolvedNs}/${func.replace(/\.$/, "")}`,
-                    type: RelationshipType.Instantiates,
+                    type: ASTEngine.RelationshipType.Instantiates,
                     confidence: 0.75,
                     metadata: { clojureSpecific: true, isConstructor: true },
                   })
@@ -505,7 +504,7 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
                 pushRel({
                   source: activeFunction.name,
                   target: formName,
-                  type: RelationshipType.Calls,
+                  type: ASTEngine.RelationshipType.Calls,
                   confidence: 0.9,
                   metadata: { clojureSpecific: true, isGeneralCall: true }
                 })
@@ -523,9 +522,9 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
         }
       } else if (node.type === "anon_fn_lit" || node.type === "anon_fn") {
          let name = `lambda_${node.startPosition.row}_${node.startPosition.column}`;
-         const lambdaSymbol: UniversalSymbol = {
+         const lambdaSymbol: ASTEngine.UniversalSymbol = {
             name,
-            kind: SymbolKind.Function,
+            kind: ASTEngine.SymbolKind.Function,
             range: this.nodeToRange(node),
             scope: currentNamespace,
             visibility: "local",
@@ -545,7 +544,7 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
     for (const s of symbols) {
       const isNSLevel = !s.scope || s.scope === "user" || s.scope === currentNamespace || s.scope.indexOf(".") === -1
       const isPublic = s.visibility === "public"
-      const isExportable = [SymbolKind.Function, SymbolKind.Variable, SymbolKind.Class, SymbolKind.Interface, SymbolKind.Module].includes(s.kind)
+      const isExportable = [ASTEngine.SymbolKind.Function, ASTEngine.SymbolKind.Variable, ASTEngine.SymbolKind.Class, ASTEngine.SymbolKind.Interface, ASTEngine.SymbolKind.Module].includes(s.kind)
       if (isNSLevel && isPublic && isExportable) {
         exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility })
       }
@@ -555,7 +554,7 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
     let funcCount = 0
     for (let _i = 0; _i < symbols.length; _i++) {
       const s = symbols[_i];
-      if (s.kind === SymbolKind.Function && !s.metadata?.isMultimethod) {
+      if (s.kind === ASTEngine.SymbolKind.Function && !s.metadata?.isMultimethod) {
          funcCount++
          if (s.metadata?.isPure) pureCount++
       }
@@ -582,7 +581,7 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
         relationships.push({
           source: _owner,
           target: s.name,
-          type: RelationshipType.Contains,
+          type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
           metadata: {},
         })
@@ -619,7 +618,7 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
 
 
 
-  private nodeToRange(node: Node): UniversalSymbol["range"] {
+  private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {
     return {
       startLine: node.startPosition.row + 1,
       startColumn: node.startPosition.column + 1,
@@ -639,13 +638,13 @@ export class RealClojureAnalyzer implements LanguageAnalyzer {
     return null
   }
 
-  private collectSymbolRefs(node: Node, source: string, relationships: UniversalRelationship[]): void {
+  private collectSymbolRefs(node: Node, source: string, relationships: ASTEngine.UniversalRelationship[]): void {
     if (!node || !source) return
     if (node.type === "symbol" || node.type === "sym_lit") {
       if (node.text && node.text !== source && !node.text.startsWith(":") && !node.text.startsWith(".")) {
         relationships.push({
           source, target: node.text,
-          type: RelationshipType.References,
+          type: ASTEngine.RelationshipType.References,
           confidence: 0.7,
           metadata: { clojureSpecific: true, isSymbolRef: true }
         })

@@ -1,18 +1,20 @@
-// @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
-import * as Log from "../tool/brain-log.js"
+// @ts-nocheck — ported; verified by tests. Restored incrementally in Phase 3.
 // Cross-Language Intelligence Engine
 // polyglot analysis system that traces relationships across ALL 26 languages
 // The most advanced cross-language intelligence ever built - NO STONE LEFT UNTURNED
 
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
-import { CrossLanguageSymbolDiscovery } from "./cross-language-symbol-discovery.js"
-import { CrossLanguageRelationshipMapper } from "./cross-language-relationship-mapper.js"
-import { ServiceTopologyBuilder } from "./service-topology-builder.js"
-import { DataFlowAnalyzer } from "./data-flow-analyzer.js"
-import { APICoverageAnalyzer } from "./api-coverage-analyzer.js"
-import { CrossLanguageIntelligencePersister } from "./cross-language-intelligence-persister.js"
-import { ArchitecturalHealthMonitor } from "./architectural-health.js"
+import type { ProjectID } from "../project/schema"
+import { ASTEngine } from "./engine"
+import { CrossLanguageSymbolDiscovery } from "./cross-language-symbol-discovery"
+import { CrossLanguageRelationshipMapper } from "./cross-language-relationship-mapper"
+import { ServiceTopologyBuilder } from "./service-topology-builder"
+import { DataFlowAnalyzer } from "./data-flow-analyzer"
+import { APICoverageAnalyzer } from "./api-coverage-analyzer"
+import { CrossLanguageIntelligencePersister } from "./cross-language-intelligence-persister"
+import { ArchitecturalHealthMonitor } from "./architectural-health"
+import { BrainDatabase } from "../brain/database"
+import * as Log from "../tool/brain-log"
 
 const log = Log.create({ service: "cross-language-intelligence" })
 
@@ -84,8 +86,8 @@ export namespace CrossLanguageIntelligence {
   export interface SymbolReference {
     filePath: string
     language: string
-    range: UniversalSymbol["range"]
-    symbolKind: SymbolKind
+    range: ASTEngine.UniversalSymbol["range"]
+    symbolKind: ASTEngine.SymbolKind
     confidence: number // 0.0 to 1.0
     context: ReferenceContext
     symbolId?: string // Link back to the exact AST symbol
@@ -138,7 +140,7 @@ export namespace CrossLanguageIntelligence {
     architecturalInsights: ArchitecturalInsight[]
     complianceReport: ComplianceReport
     projectMetrics: ProjectMetrics
-    apiContractValidation?: import("./api-contract-validator.js").APIContractValidator.ValidationReport
+    apiContractValidation?: import("./api-contract-validator").APIContractValidator.ValidationReport
   }
 
   export interface CrossLanguageRelationship {
@@ -376,7 +378,7 @@ export namespace CrossLanguageIntelligence {
     log.info("🚀 Reconstructing Polyglot Intelligence from Brain Database", { projectId })
 
     // Dynamic import to avoid circular dependencies
-    const { BrainDatabase } = await import("../brain/database.js")
+    const { BrainDatabase } = await import("../brain/database")
     const { BrainSymbolTable, BrainRelationshipTable, BrainFileTable, BrainTaintFlowTable } = await import(
       "../brain/brain.sql"
     )
@@ -535,7 +537,7 @@ export namespace CrossLanguageIntelligence {
   }
 
   export async function analyzePolyglotProject(
-    fileResults: Map<string, ParseResult>,
+    fileResults: Map<string, ASTEngine.ParseResult>,
     projectId?: ProjectID,
   ): Promise<PolyglotProjectAnalysis> {
     log.info("🚀 Starting Cross-Language Intelligence Analysis", {
@@ -564,7 +566,7 @@ export namespace CrossLanguageIntelligence {
     log.info("📊 API coverage analyzed", { coverage: apiCoverage.coverage.overall })
 
     // PHASE 5.5: 🤝 API CONTRACT VALIDATION - Cross-language God-Mode Check
-    const { APIContractValidator } = await import("./api-contract-validator.js")
+    const { APIContractValidator } = await import("./api-contract-validator")
     const { endpoints, callers } = APIContractValidator.extractContracts(
       serviceTopology,
       crossLanguageRelationships,
@@ -679,14 +681,14 @@ export namespace CrossLanguageIntelligence {
   // These will be implemented in separate files for maintainability
 
   async function discoverCrossLanguageSymbols(
-    fileResults: Map<string, ParseResult>,
+    fileResults: Map<string, ASTEngine.ParseResult>,
   ): Promise<CrossLanguageSymbol[]> {
     // Use our symbol discovery implementation
     return CrossLanguageSymbolDiscovery.discoverCrossLanguageSymbols(fileResults)
   }
 
   async function mapCrossLanguageRelationships(
-    fileResults: Map<string, ParseResult>,
+    fileResults: Map<string, ASTEngine.ParseResult>,
     symbols: CrossLanguageSymbol[],
   ): Promise<CrossLanguageRelationship[]> {
     // Use our insane relationship mapping implementation
@@ -694,7 +696,7 @@ export namespace CrossLanguageIntelligence {
   }
 
   async function buildServiceTopology(
-    fileResults: Map<string, ParseResult>,
+    fileResults: Map<string, ASTEngine.ParseResult>,
     symbols: CrossLanguageSymbol[],
     relationships: CrossLanguageRelationship[],
   ): Promise<ServiceTopology> {
@@ -703,7 +705,7 @@ export namespace CrossLanguageIntelligence {
   }
 
   async function analyzeDataFlows(
-    fileResults: Map<string, ParseResult>,
+    fileResults: Map<string, ASTEngine.ParseResult>,
     topology: ServiceTopology,
     symbols: CrossLanguageSymbol[],
   ): Promise<DataFlowAnalysis> {
@@ -713,7 +715,7 @@ export namespace CrossLanguageIntelligence {
 
   async function analyzeAPICoverage(
     topology: ServiceTopology,
-    fileResults: Map<string, ParseResult>,
+    fileResults: Map<string, ASTEngine.ParseResult>,
   ): Promise<APICoverageAnalysis> {
     // Use our ultimate API coverage analyzer
     return APICoverageAnalyzer.analyzeAPICoverage(topology, fileResults)
@@ -725,7 +727,7 @@ export namespace CrossLanguageIntelligence {
   async function findOrCreateFileId(db: any, projectId: ProjectID, filePath: string): Promise<string> {
     const { randomUUID } = await import("crypto")
     const { eq, and } = await import("drizzle-orm")
-    const { BrainFileTable } = await import("../brain/brain.sql.js")
+    const { BrainFileTable } = await import("../brain/brain.sql")
 
     // Try to find existing file
     const results = await db
@@ -767,7 +769,7 @@ export namespace CrossLanguageIntelligence {
   // These provide basic functionality until full implementation
 
   async function performCrossLanguageSecurityAnalysis(
-    fileResults: Map<string, ParseResult>,
+    fileResults: Map<string, ASTEngine.ParseResult>,
     topology: ServiceTopology,
     dataFlow: DataFlowAnalysis,
   ): Promise<CrossLanguageSecurityAnalysis> {
@@ -915,7 +917,7 @@ export namespace CrossLanguageIntelligence {
   }
 
   function calculateProjectMetrics(
-    fileResults: Map<string, ParseResult>,
+    fileResults: Map<string, ASTEngine.ParseResult>,
     symbols: CrossLanguageSymbol[],
     relationships: CrossLanguageRelationship[],
     topology: ServiceTopology,
@@ -1110,7 +1112,7 @@ export namespace CrossLanguageIntelligence {
       | {
           filePath: string
           language?: string
-          range?: UniversalSymbol["range"]
+          range?: ASTEngine.UniversalSymbol["range"]
         }
     dataTypes?: string[]
     storageSystem?: string

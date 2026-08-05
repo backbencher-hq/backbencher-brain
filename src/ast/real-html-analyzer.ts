@@ -1,6 +1,5 @@
-// @ts-nocheck — Ported from backbencher.
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import { ASTEngine } from "./engine"
 
 const SEMANTIC_ELEMENTS: Record<string, boolean> = {
   "header": true,
@@ -57,13 +56,13 @@ const FORM_ELEMENTS: Record<string, boolean> = {
   "progress": true
 }
 
-export class RealHtmlAnalyzer implements LanguageAnalyzer {
-  analyze(rootNode: Node, content: string, filePath: string): ParseResult {
-    const symbols: UniversalSymbol[] = []
-    const relationships: UniversalRelationship[] = []
-    const imports: ImportInfo[] = []
-    const exports: ExportInfo[] = []
-    const errors: ParseError[] = []
+export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
+  analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
+    const symbols: ASTEngine.UniversalSymbol[] = []
+    const relationships: ASTEngine.UniversalRelationship[] = []
+    const imports: ASTEngine.ImportInfo[] = []
+    const exports: ASTEngine.ExportInfo[] = []
+    const errors: ASTEngine.ParseError[] = []
 
     // Metrics & Architectural Insights State
     let semanticCount = 0
@@ -80,7 +79,7 @@ export class RealHtmlAnalyzer implements LanguageAnalyzer {
 
     // $O(1)$ Hash Maps for late binding
     const idMap: Record<string, string> = {} // id -> mapped Node ID
-    const deferredLinks: { source: string; targetId: string; type: RelationshipType; metadata: any }[] = []
+    const deferredLinks: { source: string; targetId: string; type: ASTEngine.RelationshipType; metadata: any }[] = []
 
     // Single-pass DFS stack
     const stack: { node: Node; parentId?: string; parentTagName?: string }[] = [{ node: rootNode }]
@@ -140,14 +139,14 @@ export class RealHtmlAnalyzer implements LanguageAnalyzer {
           }
 
           // 1. Symbol Registration (All elements extracted)
-          const symbol: UniversalSymbol = {
+          const symbol: ASTEngine.UniversalSymbol = {
             name: currentId,
-            kind: SymbolKind.Class,
+            kind: ASTEngine.SymbolKind.Class,
             range,
             scope: "",
             visibility: "public",
             ownerName: parentId,
-            ownerKind: parentId ? SymbolKind.Class : undefined,
+            ownerKind: parentId ? ASTEngine.SymbolKind.Class : undefined,
             metadata: {
               tagName: currentTagName,
               attributes,
@@ -173,7 +172,7 @@ export class RealHtmlAnalyzer implements LanguageAnalyzer {
               const cn = classNames[i]
               symbols.push({
                 name: cn,
-                kind: SymbolKind.Variable,
+                kind: ASTEngine.SymbolKind.Variable,
                 range,
                 scope: "",
                 visibility: "public",
@@ -188,7 +187,7 @@ export class RealHtmlAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: parentId,
               target: currentId,
-              type: RelationshipType.Contains,
+              type: ASTEngine.RelationshipType.Contains,
               metadata: { htmlSpecific: true, isDOMHierarchy: true },
             })
           }
@@ -222,7 +221,7 @@ export class RealHtmlAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: executionSource,
                 target: attributes["src"],
-                type: RelationshipType.Uses,
+                type: ASTEngine.RelationshipType.Uses,
                 metadata: { htmlSpecific: true, resourceType: "script" },
               })
             } else {
@@ -245,7 +244,7 @@ export class RealHtmlAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: executionSource,
               target: attributes["href"],
-              type: RelationshipType.Uses,
+              type: ASTEngine.RelationshipType.Uses,
               metadata: { htmlSpecific: true, resourceType: isStylesheet ? "stylesheet" : "link" },
             })
           } else if (currentTagName === "form" && attributes["action"]) {
@@ -260,39 +259,39 @@ export class RealHtmlAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: executionSource,
               target: attributes["action"],
-              type: RelationshipType.Calls,
+              type: ASTEngine.RelationshipType.Calls,
               metadata: { htmlSpecific: true, isFormAction: true },
             })
           } else if (currentTagName === "label" && attributes["for"]) {
             deferredLinks.push({
               source: executionSource,
               targetId: attributes["for"],
-              type: RelationshipType.Uses,
+              type: ASTEngine.RelationshipType.Uses,
               metadata: { htmlSpecific: true, isLabelAssociation: true },
             })
           } else if (currentTagName === "audio" || currentTagName === "video") {
             if (attributes["src"]) {
               imports.push({ module: attributes["src"], items: ["*"], isDefaultImport: true, isNamespaceImport: false, range, metadata: { isMedia: true } })
-              relationships.push({ source: executionSource, target: attributes["src"], type: RelationshipType.Uses, metadata: { htmlSpecific: true, resourceType: currentTagName } })
+              relationships.push({ source: executionSource, target: attributes["src"], type: ASTEngine.RelationshipType.Uses, metadata: { htmlSpecific: true, resourceType: currentTagName } })
             }
           } else if (currentTagName === "source" && attributes["src"]) {
             if (parentTagName === "picture" || parentTagName === "audio" || parentTagName === "video") {
               imports.push({ module: attributes["src"], items: ["*"], isDefaultImport: true, isNamespaceImport: false, range, metadata: { isMediaSource: true } })
-              relationships.push({ source: executionSource, target: attributes["src"], type: RelationshipType.Uses, metadata: { htmlSpecific: true, resourceType: parentTagName, mediaQuery: attributes["media"] } })
+              relationships.push({ source: executionSource, target: attributes["src"], type: ASTEngine.RelationshipType.Uses, metadata: { htmlSpecific: true, resourceType: parentTagName, mediaQuery: attributes["media"] } })
             }
           } else if (currentTagName === "a" && attributes["href"]) {
             if (attributes["href"].startsWith("#") && attributes["href"].length > 1) {
               deferredLinks.push({
                 source: executionSource,
                 targetId: attributes["href"].substring(1),
-                type: RelationshipType.Uses,
+                type: ASTEngine.RelationshipType.Uses,
                 metadata: { htmlSpecific: true, isInternalAnchor: true },
               })
             } else if (!attributes["href"].startsWith("#") && !attributes["href"].startsWith("javascript:")) {
               relationships.push({
                 source: executionSource,
                 target: attributes["href"],
-                type: RelationshipType.Uses,
+                type: ASTEngine.RelationshipType.Uses,
                 metadata: { htmlSpecific: true, isNavigation: true },
               })
             }
@@ -375,7 +374,7 @@ export class RealHtmlAnalyzer implements LanguageAnalyzer {
         relationships.push({
           source: _owner,
           target: s.name,
-          type: RelationshipType.Contains,
+          type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
           metadata: {},
         })
@@ -462,7 +461,7 @@ export class RealHtmlAnalyzer implements LanguageAnalyzer {
     return !!FORM_ELEMENTS[tagName]
   }
 
-  private nodeToRange(node: Node): UniversalSymbol["range"] {
+  private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {
     return {
       startLine: node.startPosition.row + 1,
       startColumn: node.startPosition.column + 1,

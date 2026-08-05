@@ -1,4 +1,3 @@
-// @ts-nocheck — Ported from backbencher.
 // Utility functions to avoid array methods
 function stringIncludes(str: string, val: string): boolean {
   if (!str) return false
@@ -82,22 +81,22 @@ function getUniqueStrings(arr: string[]): string[] {
 // AST analysis for Go language
 
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import { ASTEngine } from "./engine"
 
 export interface GoContext {
   content: string
   filePath: string
 }
 
-export class RealGoAnalyzer implements LanguageAnalyzer {
-  analyze(rootNode: Node, content: string, filePath: string): ParseResult {
+export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
+  analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
     const ctx: GoContext = { filePath, content }
 
-    const symbols: UniversalSymbol[] = []
-    const relationships: UniversalRelationship[] = []
-    const imports: ImportInfo[] = []
-    const exports: ExportInfo[] = []
-    const errors: ParseError[] = []
+    const symbols: ASTEngine.UniversalSymbol[] = []
+    const relationships: ASTEngine.UniversalRelationship[] = []
+    const imports: ASTEngine.ImportInfo[] = []
+    const exports: ASTEngine.ExportInfo[] = []
+    const errors: ASTEngine.ParseError[] = []
 
     if (rootNode.hasError) {
       const stack = [rootNode]
@@ -127,7 +126,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
     if (packageName) {
       symbols.push({
         name: packageName,
-        kind: SymbolKind.Module,
+        kind: ASTEngine.SymbolKind.Module,
         range: {
           startLine: 1,
           startColumn: 1,
@@ -158,7 +157,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
       relationships.push({
         source: packageName || filePath,
         target: imp.module || "",
-        type: RelationshipType.References,
+        type: ASTEngine.RelationshipType.References,
         confidence: 0.9,
         metadata: { isGoImportDep: true, packageName: imp.metadata?.packageName },
       })
@@ -172,7 +171,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
     for (let i = 0; i < symbols.length; i++) {
       const s = symbols[i]
       const isPrivate = s.visibility === "private"
-      const isVar = s.kind === SymbolKind.Variable
+      const isVar = s.kind === ASTEngine.SymbolKind.Variable
       if (!isPrivate && !isVar) {
         exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility || "public" })
       }
@@ -210,7 +209,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
   /**
    * PHASE 1: Extract Go symbols with proper Go semantics understanding
    */
-  private extractGoSymbols(node: Node, symbols: UniversalSymbol[], ctx: GoContext, parentStruct?: string) {
+  private extractGoSymbols(node: Node, symbols: ASTEngine.UniversalSymbol[], ctx: GoContext, parentStruct?: string) {
     const stack: { node: Node; parent?: string }[] = [{ node, parent: parentStruct }]
 
     while (stack.length > 0) {
@@ -245,7 +244,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
   /**
    * Extract Go function declarations
    */
-  private extractGoFunction(node: Node, symbols: UniversalSymbol[], parentStruct?: string) {
+  private extractGoFunction(node: Node, symbols: ASTEngine.UniversalSymbol[], parentStruct?: string) {
     const nameNode = node.childForFieldName("name")
     if (!nameNode) return
 
@@ -265,7 +264,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
 
     symbols.push({
       name: functionName,
-      kind: SymbolKind.Function,
+      kind: ASTEngine.SymbolKind.Function,
       range: this.nodeToRange(node),
       parameters,
       returnType,
@@ -273,7 +272,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
       apiContractPath,
       visibility: this.isGoExported(functionName) ? "public" : "private",
       ownerName: parentStruct,
-      ownerKind: parentStruct ? SymbolKind.Class : undefined,
+      ownerKind: parentStruct ? ASTEngine.SymbolKind.Class : undefined,
       metadata: {
         nodeType: node.type,
         isGoFunction: true,
@@ -288,7 +287,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
   /**
    * Extract Go method declarations (methods with receivers)
    */
-  private extractGoMethod(node: Node, symbols: UniversalSymbol[]) {
+  private extractGoMethod(node: Node, symbols: ASTEngine.UniversalSymbol[]) {
     const nameNode = node.childForFieldName("name")
     if (!nameNode) return
 
@@ -311,7 +310,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
 
     symbols.push({
       name: methodName,
-      kind: SymbolKind.Method,
+      kind: ASTEngine.SymbolKind.Method,
       range: this.nodeToRange(node),
       parameters,
       returnType,
@@ -319,7 +318,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
       apiContractPath,
       visibility: this.isGoExported(methodName) ? "public" : "private",
       ownerName: receiver?.typeName,
-      ownerKind: SymbolKind.Class,
+      ownerKind: ASTEngine.SymbolKind.Class,
       metadata: {
         nodeType: node.type,
         isGoMethod: true,
@@ -337,7 +336,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
   /**
    * Extract Go type declarations (structs, interfaces, type aliases)
    */
-  private extractGoTypeDeclaration(node: Node, symbols: UniversalSymbol[]) {
+  private extractGoTypeDeclaration(node: Node, symbols: ASTEngine.UniversalSymbol[]) {
     // Go type_declaration contains type_spec children
     for (let i = 0; i < node.namedChildCount; i++) {
       const typeSpec = node.namedChild(i)
@@ -350,7 +349,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
   /**
    * Extract individual type specifications (struct, interface, etc.)
    */
-  private extractGoTypeSpec(node: Node, symbols: UniversalSymbol[]) {
+  private extractGoTypeSpec(node: Node, symbols: ASTEngine.UniversalSymbol[]) {
     const nameNode = node.childForFieldName("name")
     if (!nameNode) return
 
@@ -364,19 +363,19 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
     const typeParamsNode = findSymbol(node.children, (c) => c && c.type === "type_parameter_list")
     const hasGenerics = !!typeParamsNode
 
-    let kind: SymbolKind
+    let kind: ASTEngine.SymbolKind
     let isInterface = false
 
     switch (typeNode.type) {
       case "struct_type":
-        kind = SymbolKind.Class
+        kind = ASTEngine.SymbolKind.Class
         break
       case "interface_type":
-        kind = SymbolKind.Interface
+        kind = ASTEngine.SymbolKind.Interface
         isInterface = true
         break
       default:
-        kind = SymbolKind.Type
+        kind = ASTEngine.SymbolKind.Type
     }
 
     symbols.push({
@@ -407,7 +406,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
   /**
    * Extract struct fields
    */
-  private extractStructFields(structNode: Node, symbols: UniversalSymbol[], structName: string) {
+  private extractStructFields(structNode: Node, symbols: ASTEngine.UniversalSymbol[], structName: string) {
     // Look for field_declaration_list
     for (let i = 0; i < structNode.namedChildCount; i++) {
       const child = structNode.namedChild(i)
@@ -434,12 +433,12 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
             if (fieldNameNode) {
               symbols.push({
                 name: fieldNameNode.text,
-                kind: SymbolKind.Property,
+                kind: ASTEngine.SymbolKind.Property,
                 range: this.nodeToRange(fieldDecl),
                 returnType: fieldTypeNode?.text,
                 visibility: this.isGoExported(fieldNameNode.text) ? "public" : "private",
                 ownerName: structName,
-                ownerKind: SymbolKind.Class,
+                ownerKind: ASTEngine.SymbolKind.Class,
                 metadata: {
                   structTags: getObjectKeysLength(structTags) > 0 ? structTags : undefined,
                   nodeType: fieldDecl.type,
@@ -459,7 +458,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
   /**
    * Extract interface methods
    */
-  private extractInterfaceMethods(interfaceNode: Node, symbols: UniversalSymbol[], interfaceName: string) {
+  private extractInterfaceMethods(interfaceNode: Node, symbols: ASTEngine.UniversalSymbol[], interfaceName: string) {
     // Look for method signatures in interface
     for (let i = 0; i < interfaceNode.namedChildCount; i++) {
       const method = interfaceNode.namedChild(i)
@@ -470,14 +469,14 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
           const returnType = this.extractGoMethodSpecReturnType(method)
           symbols.push({
             name: methodName.text,
-            kind: SymbolKind.Method,
+            kind: ASTEngine.SymbolKind.Method,
             range: this.nodeToRange(method),
             isAbstract: true, // Interface methods are abstract
             parameters,
             returnType,
             visibility: this.isGoExported(methodName.text) ? "public" : "private",
             ownerName: interfaceName,
-            ownerKind: SymbolKind.Interface,
+            ownerKind: ASTEngine.SymbolKind.Interface,
             metadata: {
               nodeType: method.type,
               isInterfaceMethod: true,
@@ -489,11 +488,11 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
           if (embeddedType) {
             symbols.push({
               name: embeddedType.text,
-              kind: SymbolKind.Interface,
+              kind: ASTEngine.SymbolKind.Interface,
               range: this.nodeToRange(method),
               visibility: "public",
               ownerName: interfaceName,
-              ownerKind: SymbolKind.Interface,
+              ownerKind: ASTEngine.SymbolKind.Interface,
               metadata: {
                 nodeType: method.type,
                 isEmbeddedInterface: true,
@@ -509,7 +508,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
   /**
    * Extract Go variables and constants
    */
-  private extractGoVariables(node: Node, symbols: UniversalSymbol[], parentStruct?: string) {
+  private extractGoVariables(node: Node, symbols: ASTEngine.UniversalSymbol[], parentStruct?: string) {
     // Process var/const spec children
     for (let i = 0; i < node.namedChildCount; i++) {
       const spec = node.namedChild(i)
@@ -525,11 +524,11 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
             if (!nameNode) continue
             symbols.push({
               name: nameNode.text,
-              kind: isConst ? SymbolKind.Constant : SymbolKind.Variable,
+              kind: isConst ? ASTEngine.SymbolKind.Constant : ASTEngine.SymbolKind.Variable,
               range: this.nodeToRange(spec),
               visibility: this.isGoExported(nameNode.text) ? "public" : "private",
               ownerName: parentStruct,
-              ownerKind: parentStruct ? SymbolKind.Class : undefined,
+              ownerKind: parentStruct ? ASTEngine.SymbolKind.Class : undefined,
               metadata: {
                 nodeType: spec.type,
                 isConst,
@@ -613,8 +612,8 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
     }
   }
 
-  private extractGoParameters(node: Node): Parameter[] {
-    const parameters: Parameter[] = []
+  private extractGoParameters(node: Node): ASTEngine.Parameter[] {
+    const parameters: ASTEngine.Parameter[] = []
 
     // Find parameter_list (skip receiver for methods)
     let paramLists = []
@@ -765,7 +764,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
   // Framework detection
   private detectGoFrameworks(
     rootNode: Node,
-    imports: ImportInfo[],
+    imports: ASTEngine.ImportInfo[],
   ): { name: string; confidence: number; patterns: string[] }[] {
     const frameworks: { name: string; confidence: number; patterns: string[] }[] = []
     const modules = mapSymbols(imports, (imp) => imp.module || "")
@@ -796,7 +795,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
     return frameworks
   }
 
-  private detectGoPatterns(rootNode: Node, symbols: UniversalSymbol[]): string[] {
+  private detectGoPatterns(rootNode: Node, symbols: ASTEngine.UniversalSymbol[]): string[] {
     const patterns: string[] = []
 
     const stack = [rootNode]
@@ -848,8 +847,8 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
    */
   private analyzeGoRelationships(
     rootNode: Node,
-    relationships: UniversalRelationship[],
-    symbols: UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
     ctx: GoContext,
   ) {
     // 1. Analyze struct embedding relationships
@@ -880,8 +879,8 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
    */
   private analyzeGoStructEmbedding(
     rootNode: Node,
-    relationships: UniversalRelationship[],
-    symbols: UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
   ) {
     const stack = [rootNode]
     while (stack.length > 0) {
@@ -899,7 +898,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
                 relationships.push({
                   source: structName,
                   target: embeddedType,
-                  type: RelationshipType.Contains,
+                  type: ASTEngine.RelationshipType.Contains,
                   confidence: 1.0,
                   metadata: {
                     relationshipType: "go_struct_embedding",
@@ -911,7 +910,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
                 relationships.push({
                   source: structName,
                   target: embeddedType,
-                  type: RelationshipType.Extends,
+                  type: ASTEngine.RelationshipType.Extends,
                   confidence: 0.8,
                   metadata: {
                     relationshipType: "go_struct_embedding",
@@ -927,7 +926,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
                   relationships.push({
                     source: structName,
                     target: fieldType,
-                    type: RelationshipType.Uses,
+                    type: ASTEngine.RelationshipType.Uses,
                     confidence: 0.9,
                     metadata: {
                       relationshipType: "go_struct_field",
@@ -954,13 +953,13 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
    */
   private analyzeGoInterfaceImplementation(
     rootNode: Node,
-    relationships: UniversalRelationship[],
-    symbols: UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
   ) {
     // Get all interfaces and their methods
     const interfaces = filterSymbols(symbols, (s) => s.metadata?.isInterface)
     const structs = filterSymbols(symbols, (s) => s.metadata?.isStruct)
-    const methods = filterSymbols(symbols, (s) => s.kind === SymbolKind.Method)
+    const methods = filterSymbols(symbols, (s) => s.kind === ASTEngine.SymbolKind.Method)
 
     forEachSymbol(interfaces, (interfaceSymbol) => {
       const interfaceMethods = this.getGoInterfaceMethods(interfaceSymbol, symbols)
@@ -984,7 +983,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
           relationships.push({
             source: structSymbol.name,
             target: interfaceSymbol.name,
-            type: RelationshipType.Implements,
+            type: ASTEngine.RelationshipType.Implements,
             confidence: valueImpl.confidence,
             metadata: {
               relationshipType: "go_interface_implementation",
@@ -1000,7 +999,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
           relationships.push({
             source: `*${structSymbol.name}`,
             target: interfaceSymbol.name,
-            type: RelationshipType.Implements,
+            type: ASTEngine.RelationshipType.Implements,
             confidence: pointerImpl.confidence,
             metadata: {
               relationshipType: "go_interface_implementation",
@@ -1021,10 +1020,10 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
    */
   private analyzeGoMethodReceivers(
     rootNode: Node,
-    relationships: UniversalRelationship[],
-    symbols: UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
   ) {
-    const methods = filterSymbols(symbols, (s) => s.kind === SymbolKind.Method)
+    const methods = filterSymbols(symbols, (s) => s.kind === ASTEngine.SymbolKind.Method)
 
     forEachSymbol(methods, (method) => {
       const receiverType = method.metadata?.receiverType || method.metadata?.receiver?.typeName
@@ -1034,7 +1033,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
         relationships.push({
           source: receiverType,
           target: method.name,
-          type: RelationshipType.Contains,
+          type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
           metadata: {
             relationshipType: "go_method_receiver",
@@ -1053,12 +1052,12 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
    */
   private analyzeGoFunctionCalls(
     rootNode: Node,
-    relationships: UniversalRelationship[],
-    symbols: UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
   ) {
     const functions = filterSymbols(
       symbols,
-      (s) => s.kind === SymbolKind.Function || s.kind === SymbolKind.Method,
+      (s) => s.kind === ASTEngine.SymbolKind.Function || s.kind === ASTEngine.SymbolKind.Method,
     )
 
     forEachSymbol(functions, (func) => {
@@ -1070,7 +1069,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
           relationships.push({
             source: func.name,
             target: targetFunction,
-            type: RelationshipType.Calls,
+            type: ASTEngine.RelationshipType.Calls,
             confidence: 0.8,
             metadata: {
               relationshipType: "go_function_call",
@@ -1084,7 +1083,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: func.name,
               target: targetFunction,
-              type: RelationshipType.Instantiates,
+              type: ASTEngine.RelationshipType.Instantiates,
               confidence: 0.6,
               metadata: { relationshipType: "go_instantiation", callExpression: call },
             })
@@ -1100,8 +1099,8 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
    */
   private analyzeGoPackageRelationships(
     rootNode: Node,
-    relationships: UniversalRelationship[],
-    symbols: UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
     ctx: GoContext,
   ) {
     // Analyze package-level relationships from imports
@@ -1115,7 +1114,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
         relationships.push({
           source: currentPackage,
           target: symbol.name,
-          type: RelationshipType.Contains,
+          type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
           metadata: {
             relationshipType: "go_package_export",
@@ -1133,8 +1132,8 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
    */
   private analyzeGoSpecificPatterns(
     rootNode: Node,
-    relationships: UniversalRelationship[],
-    symbols: UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
   ) {
     const stack = [rootNode]
     while (stack.length > 0) {
@@ -1147,7 +1146,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: containingFunction,
               target: functionCall,
-              type: RelationshipType.Calls,
+              type: ASTEngine.RelationshipType.Calls,
               confidence: 0.9,
               metadata: {
                 relationshipType: "go_goroutine",
@@ -1166,7 +1165,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
           relationships.push({
             source: containingFunction,
             target: channelVar,
-            type: RelationshipType.Uses,
+            type: ASTEngine.RelationshipType.Uses,
             confidence: 0.8,
             metadata: {
               relationshipType: "go_channel_operation",
@@ -1184,7 +1183,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
           relationships.push({
             source: containingFunction,
             target: channelVar,
-            type: RelationshipType.Uses,
+            type: ASTEngine.RelationshipType.Uses,
             confidence: 0.85,
             metadata: {
               relationshipType: "go_select_channel",
@@ -1202,7 +1201,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
           relationships.push({
             source: containingFunction,
             target: deferredFunction,
-            type: RelationshipType.Calls,
+            type: ASTEngine.RelationshipType.Calls,
             confidence: 0.9,
             metadata: {
               relationshipType: "go_defer",
@@ -1226,8 +1225,8 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
    */
   private analyzeGoSelectorUses(
     rootNode: Node,
-    relationships: UniversalRelationship[],
-    symbols: UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
   ) {
     const stack = [rootNode]
     const seen = new Set<string>()
@@ -1245,7 +1244,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: src,
               target: tgt,
-              type: RelationshipType.Uses,
+              type: ASTEngine.RelationshipType.Uses,
               confidence: 0.7,
               metadata: { relationshipType: "go_selector_use", selectorExpression: key },
             })
@@ -1263,7 +1262,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
    * Go Import Processing
    * Handles Go module paths, vendor imports, and package resolution
    */
-  private processGoImports(rootNode: Node, imports: ImportInfo[]) {
+  private processGoImports(rootNode: Node, imports: ASTEngine.ImportInfo[]) {
     const stack = [rootNode]
     while (stack.length > 0) {
       const node = stack.pop()!
@@ -1280,7 +1279,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
   /**
    * Extract Go import statement with proper module path handling
    */
-  private extractGoImportStatement(node: Node, imports: ImportInfo[]) {
+  private extractGoImportStatement(node: Node, imports: ASTEngine.ImportInfo[]) {
     const specs: Node[] = []
 
     const stack = [node]
@@ -1304,7 +1303,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
   /**
    * Process individual Go import specification
    */
-  private processGoImportSpec(spec: Node, imports: ImportInfo[]) {
+  private processGoImportSpec(spec: Node, imports: ASTEngine.ImportInfo[]) {
     const pathNode = spec.childForFieldName("path")
     const aliasNode = spec.childForFieldName("name")
 
@@ -1334,7 +1333,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
   /**
    * Go Framework Pattern Analysis
    */
-  private getGoFrameworkPatterns(frameworks: string[], symbols: UniversalSymbol[]): any[] {
+  private getGoFrameworkPatterns(frameworks: string[], symbols: ASTEngine.UniversalSymbol[]): any[] {
     const patterns: any[] = []
 
     for (const framework of frameworks) {
@@ -1421,7 +1420,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
             patterns: this.detectGORMPatterns(symbols),
             confidence: 0.9,
             characteristics: {
-              hasModels: someSymbol(symbols, (s) => s.kind === SymbolKind.Class && s.metadata?.isGoStruct),
+              hasModels: someSymbol(symbols, (s) => s.kind === ASTEngine.SymbolKind.Class && s.metadata?.isGoStruct),
               hasMigrations: someSymbol(symbols, (s) =>
                 someSymbol(s.qualified_calls || [], (c) => stringIncludes(c, "AutoMigrate")),
               ),
@@ -1459,8 +1458,8 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
    * Go Architectural Insights
    */
   private generateGoArchitecturalInsights(
-    symbols: UniversalSymbol[],
-    relationships: UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
   ): any[] {
     const insights: any[] = []
 
@@ -1468,7 +1467,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
     const complexFunctions = filterSymbols(
       symbols,
       (s) =>
-        (s.kind === SymbolKind.Function || s.kind === SymbolKind.Method) &&
+        (s.kind === ASTEngine.SymbolKind.Function || s.kind === ASTEngine.SymbolKind.Method) &&
         !!s.qualified_calls &&
         s.qualified_calls.length > 12,
     )
@@ -1518,8 +1517,8 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
     }
 
     // Analyze struct-based design
-    const structs = filterSymbols(symbols, (s) => s.kind === SymbolKind.Class && s.metadata?.isGoStruct)
-    const methods = filterSymbols(symbols, (s) => s.kind === SymbolKind.Method)
+    const structs = filterSymbols(symbols, (s) => s.kind === ASTEngine.SymbolKind.Class && s.metadata?.isGoStruct)
+    const methods = filterSymbols(symbols, (s) => s.kind === ASTEngine.SymbolKind.Method)
 
     if (structs.length > 0) {
       const methodToStructRatio = methods.length / structs.length
@@ -1552,7 +1551,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
     }
 
     // Analyze interface usage
-    const interfaces = filterSymbols(symbols, (s) => s.kind === SymbolKind.Interface)
+    const interfaces = filterSymbols(symbols, (s) => s.kind === ASTEngine.SymbolKind.Interface)
     if (interfaces.length > 0) {
       insights.push({
         type: "design_pattern",
@@ -1568,7 +1567,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
 
   // ======================== GO FRAMEWORK DETECTION METHODS ========================
 
-  private detectGinPatterns(symbols: UniversalSymbol[]): string[] {
+  private detectGinPatterns(symbols: ASTEngine.UniversalSymbol[]): string[] {
     const patterns: string[] = []
 
     if (
@@ -1598,7 +1597,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
     return patterns
   }
 
-  private detectEchoPatterns(symbols: UniversalSymbol[]): string[] {
+  private detectEchoPatterns(symbols: ASTEngine.UniversalSymbol[]): string[] {
     const patterns: string[] = []
 
     if (someSymbol(symbols, (s) => someSymbol(s.qualified_calls || [], (c) => stringIncludes(c, "echo.New")))) {
@@ -1616,7 +1615,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
     return patterns
   }
 
-  private detectFiberPatterns(symbols: UniversalSymbol[]): string[] {
+  private detectFiberPatterns(symbols: ASTEngine.UniversalSymbol[]): string[] {
     const patterns: string[] = []
 
     if (someSymbol(symbols, (s) => someSymbol(s.qualified_calls || [], (c) => stringIncludes(c, "fiber.New")))) {
@@ -1629,7 +1628,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
     return patterns
   }
 
-  private detectGorillaMuxPatterns(symbols: UniversalSymbol[]): string[] {
+  private detectGorillaMuxPatterns(symbols: ASTEngine.UniversalSymbol[]): string[] {
     const patterns: string[] = []
 
     if (someSymbol(symbols, (s) => someSymbol(s.qualified_calls || [], (c) => stringIncludes(c, "mux.NewRouter")))) {
@@ -1645,7 +1644,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
     return patterns
   }
 
-  private detectGORMPatterns(symbols: UniversalSymbol[]): string[] {
+  private detectGORMPatterns(symbols: ASTEngine.UniversalSymbol[]): string[] {
     const patterns: string[] = []
 
     if (someSymbol(symbols, (s) => someSymbol(s.qualified_calls || [], (c) => stringIncludes(c, "gorm.Open")))) {
@@ -1665,13 +1664,13 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
     return patterns
   }
 
-  private detectGRPCPatterns(symbols: UniversalSymbol[]): string[] {
+  private detectGRPCPatterns(symbols: ASTEngine.UniversalSymbol[]): string[] {
     const patterns: string[] = []
 
     if (
       someSymbol(
         symbols,
-        (s) => stringIncludes(s.name.toLowerCase(), "service") && s.kind === SymbolKind.Class,
+        (s) => stringIncludes(s.name.toLowerCase(), "service") && s.kind === ASTEngine.SymbolKind.Class,
       )
     ) {
       patterns.push("grpc_services")
@@ -1750,13 +1749,13 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
     return stringIncludes(importPath, ".") && !this.isGoStandardLibrary(importPath)
   }
 
-  private analyzeGoErrorHandling(symbols: UniversalSymbol[]): {
+  private analyzeGoErrorHandling(symbols: ASTEngine.UniversalSymbol[]): {
     functions: number
     withErrorHandling: number
   } {
     const functions = filterSymbols(
       symbols,
-      (s) => s.kind === SymbolKind.Function || s.kind === SymbolKind.Method,
+      (s) => s.kind === ASTEngine.SymbolKind.Function || s.kind === ASTEngine.SymbolKind.Method,
     )
 
     let withErrorHandling = 0
@@ -1773,8 +1772,8 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
    * Go Architectural Score Calculation
    */
   private calculateArchitecturalScore(
-    symbols: UniversalSymbol[],
-    relationships: UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
     patterns: string[],
   ): number {
     let score = 75 // Base score for Go
@@ -1787,15 +1786,15 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
     if (inArray(patterns, "dependency_injection")) score += 4
 
     // Reward proper struct design
-    const structs = filterSymbols(symbols, (s) => s.kind === SymbolKind.Class && s.metadata?.isGoStruct)
-    const methods = filterSymbols(symbols, (s) => s.kind === SymbolKind.Method)
+    const structs = filterSymbols(symbols, (s) => s.kind === ASTEngine.SymbolKind.Class && s.metadata?.isGoStruct)
+    const methods = filterSymbols(symbols, (s) => s.kind === ASTEngine.SymbolKind.Method)
     if (structs.length > 0) {
       const methodToStructRatio = methods.length / structs.length
       if (methodToStructRatio >= 1 && methodToStructRatio <= 5) score += 3
     }
 
     // Reward interface usage
-    const interfaces = filterSymbols(symbols, (s) => s.kind === SymbolKind.Interface)
+    const interfaces = filterSymbols(symbols, (s) => s.kind === ASTEngine.SymbolKind.Interface)
     if (interfaces.length > 0) {
       score += Math.min(interfaces.length * 2, 6)
     }
@@ -1811,8 +1810,8 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
    * Go Code Quality Assessment
    */
   private assessCodeQuality(
-    symbols: UniversalSymbol[],
-    relationships: UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
     patterns: string[],
   ): string {
     const score = this.calculateArchitecturalScore(symbols, relationships, patterns)
@@ -1826,8 +1825,8 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
   }
 
   private calculateGoComplexity(
-    symbols: UniversalSymbol[],
-    relationships: UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
   ): number {
     return symbols.length + relationships.length
   }
@@ -2013,15 +2012,15 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
    * Get interface methods from interface symbol
    */
   private getGoInterfaceMethods(
-    interfaceSymbol: UniversalSymbol,
-    symbols: UniversalSymbol[],
+    interfaceSymbol: ASTEngine.UniversalSymbol,
+    symbols: ASTEngine.UniversalSymbol[],
   ): Array<{ name: string; signature: string }> {
     const interfaceMethods: Array<{ name: string; signature: string }> = []
 
     // Find methods that belong to this interface
     const methods = filterSymbols(
       symbols,
-      (s) => s.kind === SymbolKind.Method && s.ownerName === interfaceSymbol.name,
+      (s) => s.kind === ASTEngine.SymbolKind.Method && s.ownerName === interfaceSymbol.name,
     )
 
     forEachSymbol(methods, (method) => {
@@ -2036,13 +2035,13 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
       symbols,
       (s) =>
         s.ownerName === interfaceSymbol.name &&
-        s.ownerKind === SymbolKind.Interface &&
+        s.ownerKind === ASTEngine.SymbolKind.Interface &&
         s.metadata?.isEmbeddedInterface,
     )
     forEachSymbol(embedded, (entry) => {
       const target = findSymbol(
         symbols,
-        (s) => s.kind === SymbolKind.Interface && s.name === entry.name && !s.metadata?.isEmbeddedInterface,
+        (s) => s.kind === ASTEngine.SymbolKind.Interface && s.name === entry.name && !s.metadata?.isEmbeddedInterface,
       )
       if (!target) return
 
@@ -2062,7 +2061,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
    */
   private checkGoInterfaceImplementation(
     interfaceMethods: Array<{ name: string; signature: string }>,
-    structMethods: UniversalSymbol[],
+    structMethods: ASTEngine.UniversalSymbol[],
   ): { implements: boolean; confidence: number; matchedMethods: string[] } {
     const matchedMethods: string[] = []
     let totalMethods = interfaceMethods.length
@@ -2094,7 +2093,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
   /**
    * Build Go method signature for comparison
    */
-  private buildGoMethodSignature(method: UniversalSymbol): string {
+  private buildGoMethodSignature(method: ASTEngine.UniversalSymbol): string {
     const params = mapSymbols(method.parameters || [], (p) => p.type || "interface{}").join(", ") || ""
     const returnType = method.returnType || "void"
     return `${method.name}(${params}) ${returnType}`
@@ -2118,7 +2117,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
   /**
    * Resolve Go function call to find target
    */
-  private resolveGoFunctionCall(callExpression: string, symbols: UniversalSymbol[]): string | undefined {
+  private resolveGoFunctionCall(callExpression: string, symbols: ASTEngine.UniversalSymbol[]): string | undefined {
     // Handle package-qualified calls (package.Function)
     if (stringIncludes(callExpression, ".")) {
       const parts = callExpression.split(".")
@@ -2129,7 +2128,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
       const targetFunction = findSymbol(
         symbols,
         (s) =>
-          (s.kind === SymbolKind.Function || s.kind === SymbolKind.Method) &&
+          (s.kind === ASTEngine.SymbolKind.Function || s.kind === ASTEngine.SymbolKind.Method) &&
           s.name === functionName &&
           // If the call is package-qualified, prefer functions from that package
           // but since we only have current-file symbols, only match if the symbol
@@ -2140,7 +2139,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
       // Fall back to name-only match BUT mark confidence lower for cross-package
       if (targetFunction) return targetFunction.name
       const fallback = findSymbol(symbols, (s) =>
-        (s.kind === SymbolKind.Function || s.kind === SymbolKind.Method) &&
+        (s.kind === ASTEngine.SymbolKind.Function || s.kind === ASTEngine.SymbolKind.Method) &&
         s.name === functionName,
       )
       return fallback?.name
@@ -2150,7 +2149,7 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
     const targetFunction = findSymbol(
       symbols,
       (s) =>
-        (s.kind === SymbolKind.Function || s.kind === SymbolKind.Method) &&
+        (s.kind === ASTEngine.SymbolKind.Function || s.kind === ASTEngine.SymbolKind.Method) &&
         s.name === callExpression,
     )
 
@@ -2236,8 +2235,8 @@ export class RealGoAnalyzer implements LanguageAnalyzer {
     return undefined
   }
 
-  private extractGoMethodSpecParameters(node: Node): Parameter[] {
-    const parameters: Parameter[] = []
+  private extractGoMethodSpecParameters(node: Node): ASTEngine.Parameter[] {
+    const parameters: ASTEngine.Parameter[] = []
     const paramList = this.findChildByType(node, "parameter_list")
     if (!paramList) return parameters
 

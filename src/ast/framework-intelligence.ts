@@ -1,8 +1,7 @@
-// @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
 // Framework-Specific Intelligence Engine
 // Deep pattern recognition for popular frameworks across all languages
 
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, Parameter, FileMetadata, LanguageAnalyzer } from "./types.js"
+import { ASTEngine } from "./engine"
 import type { Node } from "web-tree-sitter"
 
 export namespace FrameworkIntelligence {
@@ -24,7 +23,7 @@ export namespace FrameworkIntelligence {
     category: "design_pattern" | "anti_pattern" | "framework_usage" | "performance" | "security"
     impact: "low" | "medium" | "high" | "critical"
     description: string
-    location: UniversalSymbol["range"]
+    location: ASTEngine.UniversalSymbol["range"]
     suggestions: string[]
   }
 
@@ -37,9 +36,9 @@ export namespace FrameworkIntelligence {
     }
 
     public analyzeFrameworkUsage(
-      symbols: UniversalSymbol[],
+      symbols: ASTEngine.UniversalSymbol[],
       relationships: ASTEngine.UniversalRelationship[],
-      imports: ImportInfo[],
+      imports: ASTEngine.ImportInfo[],
       content: string,
       language: string
     ): {
@@ -77,7 +76,7 @@ export namespace FrameworkIntelligence {
       }
     }
 
-    private detectFrameworks(imports: ImportInfo[], content: string, language: string): string[] {
+    private detectFrameworks(imports: ASTEngine.ImportInfo[], content: string, language: string): string[] {
       const frameworks = new Set<string>()
 
       // Language-specific framework detection
@@ -157,7 +156,7 @@ export namespace FrameworkIntelligence {
 
       return Array.from(frameworks)
     }
-    private detectDartFrameworks(imports: ImportInfo[], content: string, frameworks: Set<string>) {
+    private detectDartFrameworks(imports: ASTEngine.ImportInfo[], content: string, frameworks: Set<string>) {
       if (this.hasImport(imports, "package:flutter") || content.includes("Flutter") || content.includes("Widget build") || content.includes("StatelessWidget") || content.includes("StatefulWidget") || content.includes("MaterialApp")) {
         frameworks.add("flutter")
         if (this.hasImport(imports, "package:flutter_bloc") || content.includes("BlocProvider") || content.includes("BlocBuilder")) frameworks.add("flutter-bloc")
@@ -170,7 +169,7 @@ export namespace FrameworkIntelligence {
       if (this.hasImport(imports, "package:test") || content.includes("test(") || content.includes("expect(")) frameworks.add("dart-test")
     }
 
-    private detectElixirFrameworks(imports: ImportInfo[], content: string, frameworks: Set<string>) {
+    private detectElixirFrameworks(imports: ASTEngine.ImportInfo[], content: string, frameworks: Set<string>) {
       if (content.includes("use Phoenix") || content.includes("Phoenix.") || this.hasImport(imports, "phoenix")) {
         frameworks.add("phoenix")
         if (content.includes("Ecto.") || this.hasImport(imports, "ecto")) frameworks.add("ecto")
@@ -180,7 +179,7 @@ export namespace FrameworkIntelligence {
       if (content.includes("Broadway") || this.hasImport(imports, "broadway")) frameworks.add("broadway")
     }
 
-    private detectScalaFrameworks(imports: ImportInfo[], content: string, frameworks: Set<string>) {
+    private detectScalaFrameworks(imports: ASTEngine.ImportInfo[], content: string, frameworks: Set<string>) {
       if (this.hasImport(imports, "play.api") || content.includes("extends Controller")) frameworks.add("play")
       if (this.hasImport(imports, "akka") || content.includes("ActorSystem") || content.includes("ActorRef")) {
         frameworks.add("akka")
@@ -191,21 +190,21 @@ export namespace FrameworkIntelligence {
       if (this.hasImport(imports, "slick") || content.includes("TableQuery")) frameworks.add("slick")
     }
 
-    private detectHaskellFrameworks(imports: ImportInfo[], content: string, frameworks: Set<string>) {
+    private detectHaskellFrameworks(imports: ASTEngine.ImportInfo[], content: string, frameworks: Set<string>) {
       if (this.hasImport(imports, "Yesod") || content.includes("mkYesod")) frameworks.add("yesod")
       if (this.hasImport(imports, "Servant") || content.includes(":>")) frameworks.add("servant")
       if (this.hasImport(imports, "Lens") || content.includes("makeLenses")) frameworks.add("lens")
       if (content.includes("import Test.") || content.includes("QuickCheck")) frameworks.add("hspec-quickcheck")
     }
 
-    private detectErlangFrameworks(imports: ImportInfo[], content: string, frameworks: Set<string>) {
+    private detectErlangFrameworks(imports: ASTEngine.ImportInfo[], content: string, frameworks: Set<string>) {
       if (content.includes("-behaviour(gen_server)") || content.includes("gen_server:") || content.includes("-behaviour(supervisor)")) frameworks.add("otp")
       if (content.includes("cowboy") || content.includes("cowboy_router")) frameworks.add("cowboy")
       if (content.includes("rebar3") || content.includes("rebar.config")) frameworks.add("rebar3")
       if (content.includes("meck:") || content.includes("eunit:") || content.includes("?assert")) frameworks.add("eunit")
     }
 
-    private detectCCppFrameworks(imports: ImportInfo[], content: string, frameworks: Set<string>) {
+    private detectCCppFrameworks(imports: ASTEngine.ImportInfo[], content: string, frameworks: Set<string>) {
       if (content.includes("#include <Q") || content.includes("QApplication") || content.includes("QWidget")) frameworks.add("qt")
       if (content.includes("#include <boost/") || content.includes("boost::")) frameworks.add("boost")
       if (content.includes("glfw") || content.includes("glut") || content.includes("GL/gl") || content.includes("#include <GL/")) frameworks.add("opengl")
@@ -213,14 +212,14 @@ export namespace FrameworkIntelligence {
       if (content.includes("cmake_minimum_required") || content.includes("project(")) frameworks.add("cmake")
     }
 
-    private detectGroovyFrameworks(imports: ImportInfo[], content: string, frameworks: Set<string>) {
+    private detectGroovyFrameworks(imports: ASTEngine.ImportInfo[], content: string, frameworks: Set<string>) {
       if (content.includes("@Grab") || content.includes("grails") || content.includes("GrailsApp")) frameworks.add("grails")
       if (content.includes("gradle") || content.includes("buildscript")) frameworks.add("gradle")
       if (content.includes("spock.lang") || content.includes("expect:")) frameworks.add("spock")
     }
 
 
-    private detectJavaScriptFrameworks(imports: ImportInfo[], content: string, frameworks: Set<string>) {
+    private detectJavaScriptFrameworks(imports: ASTEngine.ImportInfo[], content: string, frameworks: Set<string>) {
       // React ecosystem
       if (this.hasImport(imports, "react") || content.includes("React.")) {
         frameworks.add("react")
@@ -273,7 +272,7 @@ export namespace FrameworkIntelligence {
       }
     }
 
-    private detectPythonFrameworks(imports: ImportInfo[], content: string, frameworks: Set<string>) {
+    private detectPythonFrameworks(imports: ASTEngine.ImportInfo[], content: string, frameworks: Set<string>) {
       // Web frameworks
       if (this.hasImport(imports, "django") || content.includes("from django")) {
         frameworks.add("django")
@@ -308,7 +307,7 @@ export namespace FrameworkIntelligence {
       }
     }
 
-    private detectJavaFrameworks(imports: ImportInfo[], content: string, frameworks: Set<string>) {
+    private detectJavaFrameworks(imports: ASTEngine.ImportInfo[], content: string, frameworks: Set<string>) {
       // Spring ecosystem
       if (this.hasImport(imports, "org.springframework")) {
         frameworks.add("spring")
@@ -337,7 +336,7 @@ export namespace FrameworkIntelligence {
       }
     }
 
-    private detectDotNetFrameworks(imports: ImportInfo[], content: string, frameworks: Set<string>) {
+    private detectDotNetFrameworks(imports: ASTEngine.ImportInfo[], content: string, frameworks: Set<string>) {
       // ASP.NET
       if (this.hasImport(imports, "Microsoft.AspNetCore") || content.includes("using Microsoft.AspNetCore")) {
         frameworks.add("aspnet-core")
@@ -362,7 +361,7 @@ export namespace FrameworkIntelligence {
       }
     }
 
-    private detectRubyFrameworks(imports: ImportInfo[], content: string, frameworks: Set<string>) {
+    private detectRubyFrameworks(imports: ASTEngine.ImportInfo[], content: string, frameworks: Set<string>) {
       // Rails
       if (content.includes("require 'rails'") || content.includes("class ApplicationController")) {
         frameworks.add("rails")
@@ -379,7 +378,7 @@ export namespace FrameworkIntelligence {
       }
     }
 
-    private detectPHPFrameworks(imports: ImportInfo[], content: string, frameworks: Set<string>) {
+    private detectPHPFrameworks(imports: ASTEngine.ImportInfo[], content: string, frameworks: Set<string>) {
       // Laravel
       if (content.includes("use Illuminate\\") || content.includes("Artisan::")) {
         frameworks.add("laravel")
@@ -396,7 +395,7 @@ export namespace FrameworkIntelligence {
       }
     }
 
-    private detectSwiftFrameworks(imports: ImportInfo[], content: string, frameworks: Set<string>) {
+    private detectSwiftFrameworks(imports: ASTEngine.ImportInfo[], content: string, frameworks: Set<string>) {
       // iOS/macOS
       if (this.hasImport(imports, "UIKit")) {
         frameworks.add("uikit")
@@ -409,7 +408,7 @@ export namespace FrameworkIntelligence {
       }
     }
 
-    private detectKotlinFrameworks(imports: ImportInfo[], content: string, frameworks: Set<string>) {
+    private detectKotlinFrameworks(imports: ASTEngine.ImportInfo[], content: string, frameworks: Set<string>) {
       // Android
       if (this.hasImport(imports, "android") || this.hasImport(imports, "androidx")) {
         frameworks.add("android")
@@ -426,7 +425,7 @@ export namespace FrameworkIntelligence {
       }
     }
 
-    private detectGoFrameworks(imports: ImportInfo[], content: string, frameworks: Set<string>) {
+    private detectGoFrameworks(imports: ASTEngine.ImportInfo[], content: string, frameworks: Set<string>) {
       // Web frameworks
       if (this.hasImport(imports, "gin-gonic/gin")) {
         frameworks.add("gin")
@@ -439,7 +438,7 @@ export namespace FrameworkIntelligence {
       }
     }
 
-    private detectRustFrameworks(imports: ImportInfo[], content: string, frameworks: Set<string>) {
+    private detectRustFrameworks(imports: ASTEngine.ImportInfo[], content: string, frameworks: Set<string>) {
       // Web frameworks
       if (this.hasImport(imports, "actix-web")) {
         frameworks.add("actix-web")
@@ -457,7 +456,7 @@ export namespace FrameworkIntelligence {
       }
     }
 
-      private detectLuaFrameworks(imports: ImportInfo[], content: string, frameworks: Set<string>) {
+      private detectLuaFrameworks(imports: ASTEngine.ImportInfo[], content: string, frameworks: Set<string>) {
         const mods = imports
           .map((i) => i.module)
           .filter((m): m is string => typeof m === "string")
@@ -473,7 +472,7 @@ export namespace FrameworkIntelligence {
 
     private analyzeFrameworkPatterns(
       framework: string,
-      symbols: UniversalSymbol[],
+      symbols: ASTEngine.UniversalSymbol[],
       relationships: ASTEngine.UniversalRelationship[],
       content: string,
       language: string
@@ -492,7 +491,7 @@ export namespace FrameworkIntelligence {
 
     private detectPattern(
       pattern: FrameworkPattern,
-      symbols: UniversalSymbol[],
+      symbols: ASTEngine.UniversalSymbol[],
       relationships: ASTEngine.UniversalRelationship[],
       content: string
     ): boolean {
@@ -515,43 +514,43 @@ export namespace FrameworkIntelligence {
       }
     }
 
-    private detectReactHooks(symbols: UniversalSymbol[], content: string): boolean {
+    private detectReactHooks(symbols: ASTEngine.UniversalSymbol[], content: string): boolean {
       const hookPatterns = ["useState", "useEffect", "useContext", "useReducer", "useMemo", "useCallback"]
       return hookPatterns.some(hook => content.includes(hook))
     }
 
-    private detectReduxStore(symbols: UniversalSymbol[], relationships: ASTEngine.UniversalRelationship[]): boolean {
+    private detectReduxStore(symbols: ASTEngine.UniversalSymbol[], relationships: ASTEngine.UniversalRelationship[]): boolean {
       const hasStore = symbols.some(s => s.name.includes("store") || s.name.includes("reducer"))
       const hasActions = symbols.some(s => s.name.includes("action") || s.name.includes("dispatch"))
       return hasStore && hasActions
     }
 
-    private detectDjangoModels(symbols: UniversalSymbol[], content: string): boolean {
+    private detectDjangoModels(symbols: ASTEngine.UniversalSymbol[], content: string): boolean {
       return symbols.some(s =>
-        s.kind === SymbolKind.Class &&
+        s.kind === ASTEngine.SymbolKind.Class &&
         (content.includes("models.Model") || content.includes("class Meta:"))
       )
     }
 
-    private detectSpringDI(symbols: UniversalSymbol[], content: string): boolean {
+    private detectSpringDI(symbols: ASTEngine.UniversalSymbol[], content: string): boolean {
       const diAnnotations = ["@Autowired", "@Component", "@Service", "@Repository", "@Controller"]
       return diAnnotations.some(annotation => content.includes(annotation))
     }
 
-    private detectRailsActiveRecord(symbols: UniversalSymbol[], content: string): boolean {
+    private detectRailsActiveRecord(symbols: ASTEngine.UniversalSymbol[], content: string): boolean {
       return symbols.some(s =>
-        s.kind === SymbolKind.Class &&
+        s.kind === ASTEngine.SymbolKind.Class &&
         content.includes("< ApplicationRecord")
       )
     }
 
-    private detectSwiftUIPatterns(symbols: UniversalSymbol[], content: string): boolean {
+    private detectSwiftUIPatterns(symbols: ASTEngine.UniversalSymbol[], content: string): boolean {
       const swiftuiPatterns = ["@State", "@Binding", "@ObservedObject", "@StateObject", "View"]
       return swiftuiPatterns.some(pattern => content.includes(pattern))
     }
 
     private generateArchitecturalInsights(
-      symbols: UniversalSymbol[],
+      symbols: ASTEngine.UniversalSymbol[],
       relationships: ASTEngine.UniversalRelationship[],
       patterns: FrameworkPattern[],
       content: string
@@ -569,8 +568,8 @@ export namespace FrameworkIntelligence {
       this.analyzeSecurityPatterns(symbols, content)
     }
 
-    private analyzeComplexity(symbols: UniversalSymbol[]) {
-      const functions = symbols.filter(s => s.kind === SymbolKind.Function)
+    private analyzeComplexity(symbols: ASTEngine.UniversalSymbol[]) {
+      const functions = symbols.filter(s => s.kind === ASTEngine.SymbolKind.Function)
 
       for (const func of functions) {
         const complexity = func.metadata?.cyclomaticComplexity || 0
@@ -593,15 +592,15 @@ export namespace FrameworkIntelligence {
     }
 
     private detectAntiPatterns(
-      symbols: UniversalSymbol[],
+      symbols: ASTEngine.UniversalSymbol[],
       relationships: ASTEngine.UniversalRelationship[],
       content: string
     ) {
       // God class detection
-      const classes = symbols.filter(s => s.kind === SymbolKind.Class);
+      const classes = symbols.filter(s => s.kind === ASTEngine.SymbolKind.Class);
       const methodsByOwner = new Map<string, any[]>();
       for (const s of symbols) {
-        if (s.kind === SymbolKind.Method && s.ownerName) {
+        if (s.kind === ASTEngine.SymbolKind.Method && s.ownerName) {
           let list = methodsByOwner.get(s.ownerName);
           if (!list) { list = []; methodsByOwner.set(s.ownerName, list); }
           list.push(s);
@@ -627,7 +626,7 @@ export namespace FrameworkIntelligence {
       }
 
       // Long parameter list
-      const functions = symbols.filter(s => s.kind === SymbolKind.Function)
+      const functions = symbols.filter(s => s.kind === ASTEngine.SymbolKind.Function)
       for (const func of functions) {
         const paramCount = func.parameters?.length || 0
 
@@ -648,7 +647,7 @@ export namespace FrameworkIntelligence {
       }
     }
 
-    private analyzeFrameworkUsageQuality(patterns: FrameworkPattern[], symbols: UniversalSymbol[]) {
+    private analyzeFrameworkUsageQuality(patterns: FrameworkPattern[], symbols: ASTEngine.UniversalSymbol[]) {
       // Check for proper framework patterns usage
       const antiPatterns = patterns.filter(p => p.antiPattern)
 
@@ -664,7 +663,7 @@ export namespace FrameworkIntelligence {
       }
     }
 
-    private analyzeSecurityPatterns(symbols: UniversalSymbol[], content: string) {
+    private analyzeSecurityPatterns(symbols: ASTEngine.UniversalSymbol[], content: string) {
       // Check for potential security issues
       if (content.includes("eval(") || content.includes("Function(")) {
         this.insights.push({
@@ -725,7 +724,7 @@ export namespace FrameworkIntelligence {
       return Math.max(0, Math.min(100, score))
     }
 
-    private hasImport(imports: ImportInfo[], module: string): boolean {
+    private hasImport(imports: ASTEngine.ImportInfo[], module: string): boolean {
       return imports.some(imp => (imp.module || "").includes(module))
     }
 
@@ -817,10 +816,10 @@ export namespace FrameworkIntelligence {
 
   // Integration function to enhance analyzer results
   export function enhanceWithFrameworkIntelligence(
-    result: Omit<ParseResult, "language" | "metadata"> & { metadata?: Partial<FileMetadata> },
+    result: Omit<ASTEngine.ParseResult, "language" | "metadata"> & { metadata?: Partial<ASTEngine.FileMetadata> },
     content: string,
     language: string
-  ): Omit<ParseResult, "language" | "metadata"> & { metadata?: Partial<FileMetadata> } {
+  ): Omit<ASTEngine.ParseResult, "language" | "metadata"> & { metadata?: Partial<ASTEngine.FileMetadata> } {
     const detector = new FrameworkDetector()
 
     const analysis = detector.analyzeFrameworkUsage(

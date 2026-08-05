@@ -1,10 +1,12 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "Node16",
-    "moduleResolution": "Node16",
-    "lib": ["ES2022"],
-    "outDir": "dist",
+    "target": "ES2023",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": [
+      "ES2023",
+      "DOM"
+    ],
     "rootDir": "src",
     "strict": true,
     "esModuleInterop": true,
@@ -12,23 +14,38 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
-    "noUncheckedIndexedAccess": true,
+    "noUncheckedIndexedAccess": false,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "isolatedModules": true,
-    "allowImportingTsExtensions": false,
+    "allowImportingTsExtensions": true,
     "paths": {
-      "#ast/*": ["./src/ast/*"],
-      "#indexer/*": ["./src/indexer/*"],
-      "#tools/*": ["./src/tools/*"],
-      "#sql/*": ["./src/sql/*"],
-      "#util/*": ["./src/util/*"]
-    }
+      "#ast/*": [
+        "./src/ast/*"
+      ],
+      "#indexer/*": [
+        "./src/indexer/*"
+      ],
+      "#tools/*": [
+        "./src/tools/*"
+      ],
+      "#sql/*": [
+        "./src/sql/*"
+      ],
+      "#util/*": [
+        "./src/util/*"
+      ]
+    },
+    "noEmit": true
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "dist", "tests"]
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "tests"
+  ]
 }

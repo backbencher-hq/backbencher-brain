@@ -1,4 +1,3 @@
-// @ts-nocheck — Ported from backbencher.
 function stringIncludes(str: string, val: string): boolean {
   if (!str) return false
   return str.indexOf(val) !== -1
@@ -58,16 +57,16 @@ function forEachSymbol(arr: any[], fn: (s: any) => void): void {
 // Brain Certified: 100% Stateless, Iterative Stack Traversal, No Regex Fallbacks.
 
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import { ASTEngine } from "./engine"
 
 export interface PhpContext {
   content: string
   filePath: string
-  symbols: UniversalSymbol[]
-  relationships: UniversalRelationship[]
-  imports: ImportInfo[]
-  exports: ExportInfo[]
-  errors: ParseError[]
+  symbols: ASTEngine.UniversalSymbol[]
+  relationships: ASTEngine.UniversalRelationship[]
+  imports: ASTEngine.ImportInfo[]
+  exports: ASTEngine.ExportInfo[]
+  errors: ASTEngine.ParseError[]
   globalVariables: Record<string, boolean>
   localVariables: Record<string, boolean>
   traits: Record<string, boolean>
@@ -77,8 +76,8 @@ export interface PhpContext {
   currentClass?: string
 }
 
-export class RealPhpAnalyzer implements LanguageAnalyzer {
-  analyze(rootNode: Node, content: string, filePath: string): ParseResult {
+export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
+  analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
     const ctx: PhpContext = {
       content,
       filePath,
@@ -134,7 +133,7 @@ export class RealPhpAnalyzer implements LanguageAnalyzer {
           if (nextNs) {
             ctx.symbols.push({
               name: nextNs,
-              kind: SymbolKind.Namespace,
+              kind: ASTEngine.SymbolKind.Namespace,
               range: this.nodeToRange(node),
               scope: "global",
               visibility: "public",
@@ -188,7 +187,7 @@ export class RealPhpAnalyzer implements LanguageAnalyzer {
               ctx.relationships.push({
                 source: pClass || ns || "global",
                 target: typeNode.text,
-                type: RelationshipType.References,
+                type: ASTEngine.RelationshipType.References,
                 confidence: 0.8,
                 metadata: { phpSpecific: true, isThrow: true },
               })
@@ -232,7 +231,7 @@ export class RealPhpAnalyzer implements LanguageAnalyzer {
             nextScope.push(enumName.text)
             ctx.symbols.push({
               name: enumName.text,
-              kind: SymbolKind.Enum,
+              kind: ASTEngine.SymbolKind.Enum,
               range: this.nodeToRange(node),
               scope: ns || "global",
               visibility: "public",
@@ -246,7 +245,7 @@ export class RealPhpAnalyzer implements LanguageAnalyzer {
           if (caseName && pClass) {
             ctx.symbols.push({
               name: caseName.text,
-              kind: SymbolKind.EnumMember,
+              kind: ASTEngine.SymbolKind.EnumMember,
               range: this.nodeToRange(node),
               scope: pClass,
               ownerName: pClass,
@@ -261,7 +260,7 @@ export class RealPhpAnalyzer implements LanguageAnalyzer {
           const name = `anon_${node.type === "arrow_function" ? "fn" : "closure"}_${node.startPosition.row + 1}_${node.startPosition.column + 1}`
           ctx.symbols.push({
             name,
-            kind: SymbolKind.Function,
+            kind: ASTEngine.SymbolKind.Function,
             range: this.nodeToRange(node),
             scope: pClass || ns || "global",
             visibility: "public",
@@ -275,7 +274,7 @@ export class RealPhpAnalyzer implements LanguageAnalyzer {
             ctx.relationships.push({
               source: pClass || ns || "global",
               target: right.text,
-              type: RelationshipType.References,
+              type: ASTEngine.RelationshipType.References,
               confidence: 0.6,
               metadata: { phpSpecific: true, isInstanceOf: true },
             })
@@ -300,7 +299,7 @@ export class RealPhpAnalyzer implements LanguageAnalyzer {
     }
 
     if (
-      someSymbol(ctx.symbols, (s) => s.kind === SymbolKind.Class || s.kind === SymbolKind.Interface)
+      someSymbol(ctx.symbols, (s) => s.kind === ASTEngine.SymbolKind.Class || s.kind === ASTEngine.SymbolKind.Interface)
     ) {
       ctx.patterns["Object-Oriented Programming"] = true
     }
@@ -315,7 +314,7 @@ export class RealPhpAnalyzer implements LanguageAnalyzer {
     if (hasTraits) {
       ctx.patterns["Trait Usage"] = true
     }
-    if (ctx.currentNamespace || someSymbol(ctx.symbols, (s) => s.kind === SymbolKind.Namespace)) {
+    if (ctx.currentNamespace || someSymbol(ctx.symbols, (s) => s.kind === ASTEngine.SymbolKind.Namespace)) {
       ctx.patterns["Namespaces"] = true
     }
 
@@ -333,17 +332,17 @@ export class RealPhpAnalyzer implements LanguageAnalyzer {
     // Phantom Symbols: Magic Methods or Injected Models
     if (!!ctx.frameworks["Laravel"]) {
       forEachSymbol(
-        filterSymbols(ctx.symbols, (s) => s.kind === SymbolKind.Class && s.name.endsWith("Controller")),
+        filterSymbols(ctx.symbols, (s) => s.kind === ASTEngine.SymbolKind.Class && s.name.endsWith("Controller")),
         (c) => {
           ctx.patterns["MVC Architecture (Laravel)"] = true
         },
       )
       forEachSymbol(
-        filterSymbols(ctx.symbols, (s) => s.kind === SymbolKind.Class && s.name.endsWith("Model")),
+        filterSymbols(ctx.symbols, (s) => s.kind === ASTEngine.SymbolKind.Class && s.name.endsWith("Model")),
         (m) => {
           ctx.symbols.push({
             name: `getAttribute`,
-            kind: SymbolKind.Method,
+            kind: ASTEngine.SymbolKind.Method,
             range: m.range,
             scope: m.name,
             visibility: "public",
@@ -351,7 +350,7 @@ export class RealPhpAnalyzer implements LanguageAnalyzer {
           })
           ctx.symbols.push({
             name: `setAttribute`,
-            kind: SymbolKind.Method,
+            kind: ASTEngine.SymbolKind.Method,
             range: m.range,
             scope: m.name,
             visibility: "public",
@@ -376,7 +375,7 @@ export class RealPhpAnalyzer implements LanguageAnalyzer {
         ctx.relationships.push({
           source: s.ownerName,
           target: s.name,
-          type: RelationshipType.Contains,
+          type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
           metadata: { isContained: true },
         })
@@ -433,7 +432,7 @@ export class RealPhpAnalyzer implements LanguageAnalyzer {
         ctx.relationships.push({
           source: fullyQualifiedName,
           target: this.resolveFQN(baseClass, ctx, ns),
-          type: RelationshipType.Inheritance,
+          type: ASTEngine.RelationshipType.Inheritance,
           confidence: 1.0,
           metadata: { relationshipType: "php_extends" },
         })
@@ -450,7 +449,7 @@ export class RealPhpAnalyzer implements LanguageAnalyzer {
           ctx.relationships.push({
             source: fullyQualifiedName,
             target: this.resolveFQN(iface, ctx, ns),
-            type: RelationshipType.Implements,
+            type: ASTEngine.RelationshipType.Implements,
             confidence: 1.0,
             metadata: { relationshipType: "php_implements" },
           })
@@ -475,7 +474,7 @@ export class RealPhpAnalyzer implements LanguageAnalyzer {
               ctx.relationships.push({
                 source: fullyQualifiedName,
                 target: this.resolveFQN(nameNode.text, ctx, ns),
-                type: RelationshipType.Uses,
+                type: ASTEngine.RelationshipType.Uses,
                 confidence: 1.0,
                 metadata: { relationshipType: "php_uses_trait" },
               })
@@ -487,7 +486,7 @@ export class RealPhpAnalyzer implements LanguageAnalyzer {
 
     ctx.symbols.push({
       name: className,
-      kind: SymbolKind.Class,
+      kind: ASTEngine.SymbolKind.Class,
       range: this.nodeToRange(node),
       scope: ns || "global",
       visibility: "public",
@@ -529,7 +528,7 @@ export class RealPhpAnalyzer implements LanguageAnalyzer {
           ctx.relationships.push({
             source: fullyQualifiedName,
             target: this.resolveFQN(parentIface, ctx, ns),
-            type: RelationshipType.Inheritance,
+            type: ASTEngine.RelationshipType.Inheritance,
             confidence: 1.0,
             metadata: { relationshipType: "php_extends_interface" },
           })
@@ -550,7 +549,7 @@ export class RealPhpAnalyzer implements LanguageAnalyzer {
 
     ctx.symbols.push({
       name: ifaceName,
-      kind: SymbolKind.Interface,
+      kind: ASTEngine.SymbolKind.Interface,
       range: this.nodeToRange(node),
       scope: ns || "global",
       visibility: "public",
@@ -573,7 +572,7 @@ export class RealPhpAnalyzer implements LanguageAnalyzer {
 
     ctx.symbols.push({
       name: traitName,
-      kind: SymbolKind.Trait,
+      kind: ASTEngine.SymbolKind.Trait,
       range: this.nodeToRange(node),
       scope: ns || "global",
       visibility: "public",
@@ -593,7 +592,7 @@ export class RealPhpAnalyzer implements LanguageAnalyzer {
 
     ctx.symbols.push({
       name: functionName,
-      kind: SymbolKind.Function,
+      kind: ASTEngine.SymbolKind.Function,
       range: this.nodeToRange(node),
       scope: ns || "global",
       visibility: "public",
@@ -621,11 +620,11 @@ export class RealPhpAnalyzer implements LanguageAnalyzer {
 
     ctx.symbols.push({
       name: methodName,
-      kind: SymbolKind.Method,
+      kind: ASTEngine.SymbolKind.Method,
       range: this.nodeToRange(node),
       scope: pClass || scope,
       ownerName: pClass,
-      ownerKind: pClass ? SymbolKind.Class : undefined,
+      ownerKind: pClass ? ASTEngine.SymbolKind.Class : undefined,
       visibility,
       modifiers,
       parameters,
@@ -653,11 +652,11 @@ export class RealPhpAnalyzer implements LanguageAnalyzer {
         if (varNode) {
           ctx.symbols.push({
             name: varNode.text.replace("$", ""),
-            kind: SymbolKind.Property,
+            kind: ASTEngine.SymbolKind.Property,
             range: this.nodeToRange(varNode),
             scope: pClass || scope,
             ownerName: pClass,
-            ownerKind: pClass ? SymbolKind.Class : undefined,
+            ownerKind: pClass ? ASTEngine.SymbolKind.Class : undefined,
             visibility,
             modifiers,
             returnType: propertyType,
@@ -682,11 +681,11 @@ export class RealPhpAnalyzer implements LanguageAnalyzer {
         if (nameNode) {
           ctx.symbols.push({
             name: nameNode.text,
-            kind: SymbolKind.Constant,
+            kind: ASTEngine.SymbolKind.Constant,
             range: this.nodeToRange(nameNode),
             scope: pClass || scope,
             ownerName: pClass,
-            ownerKind: pClass ? SymbolKind.Class : undefined,
+            ownerKind: pClass ? ASTEngine.SymbolKind.Class : undefined,
             visibility,
             modifiers,
             metadata: { phpSpecific: true, isConstant: true },
@@ -702,7 +701,7 @@ export class RealPhpAnalyzer implements LanguageAnalyzer {
       if (child && child.type === "variable_name") {
         ctx.symbols.push({
           name: child.text,
-          kind: SymbolKind.Variable,
+          kind: ASTEngine.SymbolKind.Variable,
           range: this.nodeToRange(child),
           scope: "global",
           visibility: "public",
@@ -720,7 +719,7 @@ export class RealPhpAnalyzer implements LanguageAnalyzer {
     if (left.type === "variable_name") {
       ctx.symbols.push({
         name: left.text,
-        kind: SymbolKind.Variable,
+        kind: ASTEngine.SymbolKind.Variable,
         range: this.nodeToRange(left),
         scope,
         visibility: "private",
@@ -812,7 +811,7 @@ export class RealPhpAnalyzer implements LanguageAnalyzer {
       target: filePath,
       fromSymbol: ns || "global",
       toSymbol: filePath,
-      type: RelationshipType.Uses,
+      type: ASTEngine.RelationshipType.Uses,
       metadata: { phpSpecific: true, includeType },
     })
   }
@@ -827,7 +826,7 @@ export class RealPhpAnalyzer implements LanguageAnalyzer {
       if (args && args.namedChildCount > 0) {
         ctx.symbols.push({
           name: `wp_${callName}_${this.cleanPhpString(args.namedChild(0)?.text || "")}`,
-          kind: SymbolKind.Function,
+          kind: ASTEngine.SymbolKind.Function,
           range: this.nodeToRange(node),
           scope: "global",
           visibility: "public",
@@ -859,7 +858,7 @@ export class RealPhpAnalyzer implements LanguageAnalyzer {
         ctx.relationships.push({
           source: sourceClass,
           target: relatedClass,
-          type: RelationshipType.DependsOn,
+          type: ASTEngine.RelationshipType.DependsOn,
           confidence: 1.0,
           metadata: { relationshipType: `eloquent_${callName}` },
         })
@@ -872,7 +871,7 @@ export class RealPhpAnalyzer implements LanguageAnalyzer {
         ctx.relationships.push({
           source: callName,
           target: scopeNode.text,
-          type: RelationshipType.DependsOn,
+          type: ASTEngine.RelationshipType.DependsOn,
           confidence: 0.9,
           metadata: { relationshipType: "php_static_call" },
         })
@@ -883,7 +882,7 @@ export class RealPhpAnalyzer implements LanguageAnalyzer {
       ctx.relationships.push({
         source: ctx.currentNamespace || "global",
         target: callName,
-        type: RelationshipType.Calls,
+        type: ASTEngine.RelationshipType.Calls,
         confidence: 0.7,
         metadata: { phpSpecific: true },
       })
@@ -899,7 +898,7 @@ export class RealPhpAnalyzer implements LanguageAnalyzer {
       ctx.relationships.push({
         source: "instantiation",
         target: typeNode.text,
-        type: RelationshipType.Instantiates,
+        type: ASTEngine.RelationshipType.Instantiates,
         confidence: 0.9,
         metadata: { relationshipType: "php_new", isNew: true },
       })
@@ -946,11 +945,11 @@ export class RealPhpAnalyzer implements LanguageAnalyzer {
     return null
   }
 
-  private extractPhpParameters(node: Node): Parameter[] {
+  private extractPhpParameters(node: Node): ASTEngine.Parameter[] {
     const paramsList = this.findChildByType(node, "formal_parameters")
     if (!paramsList) return []
 
-    const params: Parameter[] = []
+    const params: ASTEngine.Parameter[] = []
     for (let i = 0; i < paramsList.namedChildCount; i++) {
       const child = paramsList.namedChild(i)
       if (
@@ -1025,7 +1024,7 @@ export class RealPhpAnalyzer implements LanguageAnalyzer {
     return text
   }
 
-  private nodeToRange(node: Node): UniversalSymbol["range"] {
+  private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {
     return {
       startLine: node.startPosition.row + 1,
       startColumn: node.startPosition.column + 1,

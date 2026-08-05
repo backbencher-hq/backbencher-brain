@@ -1,7 +1,4 @@
-// @ts-nocheck
-import { createRequire } from "node:module"
-const require = createRequire(import.meta.url)
-import { UniversalSymbol, ParseResult } from "./types.js"
+import { ASTEngine } from "./engine"
 
 export class ImportInjector {
   /**
@@ -15,13 +12,13 @@ export class ImportInjector {
   ): Promise<string> {
     if (!requiredImports || requiredImports.length === 0) return fileContent
 
-    const lang = (await import("./engine.js")).detectLanguage(filePath)
+    const lang = ASTEngine.detectLanguage(filePath)
     if (!lang) return fileContent
 
     try {
       if (["typescript", "javascript", "tsx", "jsx"].includes(lang)) {
         // Safe await parsing for AST precision
-        const { tree: ast } = await (await import("./engine.js")).parseFile(filePath, fileContent)
+        const { tree: ast } = await ASTEngine.parseFile(filePath, fileContent)
         return this.injectTypeScriptImports(fileContent, ast, requiredImports)
       }
       return this.injectRegexFallback(fileContent, lang, requiredImports)

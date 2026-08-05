@@ -1,11 +1,16 @@
-// @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
-import { createRequire } from "node:module"
-const require = createRequire(import.meta.url)
-import * as Log from "../tool/brain-log.js"
-import { eq, and, like, sql, desc, inArray, or, ne } from "drizzle-orm"
-import { GraphIntelligence } from "./graph.js"
-import { PatternRecognition } from "./patterns.js"
-// 🔥 Import cross-language security analysis
+// @ts-nocheck — full sync of the canonical opencode tools.ts; verified by tests.
+import { BrainDatabase } from "../brain/database"
+import type { ProjectID } from "../project/schema"
+import * as Log from "../tool/brain-log"
+import { eq, and, like, sql, desc, inArray, or, ne, notLike } from "drizzle-orm"
+import { BrainSymbolTable, BrainFileTable, BrainRelationshipTable, BrainImportTable } from "../brain/brain.sql"
+import { GraphIntelligence } from "./graph"
+import { PatternRecognition } from "./patterns"
+import { SemanticEngine } from "../brain/semantic/engine"
+import { Config } from "../config/config"
+import { BrainSemanticEmbeddingTable } from "../brain/revolutionary.sql"
+import { formatEnrichedRelationship } from "../brain/brain-relationship-enrichment"
+import { AnalysisExclusions } from "./analysis-exclusions"
 
 const log = Log.create({ service: "brain-tools" })
 
@@ -43,7 +48,7 @@ const RELATIONSHIP_NOISE_DENYLIST = new Set([
 ])
 
 function isNoiseSymbol(name: string): boolean {
-  return RELATIONSHIP_NOISE_DENYLIST.has(name)
+  return RELATIONSHIP_NOISE_DENYLIST.has(name) || AnalysisExclusions.isNoiseSymbolName(name)
 }
 
 // Stdlib noise: unresolved calls to standard library methods that every class
@@ -77,6 +82,57 @@ function isStdlibFile(relativePath: string): boolean {
 
 // Brain-Powered Tools - Native AI intelligence without external tool calls
 // Based on ProxiCall Brain's 29 tools but designed for universal language support
+
+async function readSymbolSnippet(filePath: string, lineStart: number | null | undefined, lineEnd: number | null | undefined, maxLines = 12): Promise<string | undefined> {
+  if (!filePath || !lineStart) return undefined
+  const text = await Bun.file(filePath).text().catch(() => "")
+  if (!text) return undefined
+  const end = Math.min(Math.max(lineEnd || lineStart, lineStart), lineStart + maxLines - 1)
+  return text.split("\n").slice(lineStart - 1, end).join("\n")
+}
+
+function parseJsonField<T>(value: unknown): T | undefined {
+  if (typeof value !== "string" || !value) return undefined
+  try {
+    return JSON.parse(value) as T
+  } catch {
+    return undefined
+  }
+}
+
+function calculateCognitiveComplexity(symbol: any): number {
+  // Cognitive complexity calculation based on structural analysis
+  const baseComplexity = symbol.complexity || 0
+
+  // Cognitive complexity adds penalties for nested structures and breaks in linear flow
+  // Based on SonarSource cognitive complexity rules:
+  // - +1 for each control flow break (if, else, loops, switch, try/catch, etc.)
+  // - +nesting_level for nested control flow structures
+  // - +1 for recursive calls
+  // - +1 for logical operators in conditions
+
+  let cognitiveComplexity = baseComplexity
+
+  // Add nesting penalty (approximation based on cyclomatic complexity)
+  // High cyclomatic complexity often indicates deep nesting
+  if (baseComplexity > 10) {
+    cognitiveComplexity += Math.floor((baseComplexity - 10) * 0.5)
+  }
+
+  // Add penalty for function length (longer functions are harder to understand)
+  const linesOfCode = symbol.lines_of_code || 0
+  if (linesOfCode > 50) {
+    cognitiveComplexity += Math.floor((linesOfCode - 50) / 20)
+  }
+
+  // Add penalty for parameter count (more parameters = more cognitive load)
+  const parameterCount = symbol.parameter_count || 0
+  if (parameterCount > 4) {
+    cognitiveComplexity += parameterCount - 4
+  }
+
+  return Math.round(cognitiveComplexity)
+}
 
 export namespace BrainTools {
   // Core symbol and relationship data structures
@@ -195,6 +251,7 @@ export namespace BrainTools {
     options: {
       name: string
       exact?: boolean
+      caseSensitive?: boolean
       filePath?: string
       ownerClass?: string
       scopeKind?: string
@@ -212,7 +269,12 @@ export namespace BrainTools {
     log.debug("recall_function query", { projectId, options })
 
     // Build dynamic WHERE conditions
-    const conditions = [eq(BrainSymbolTable.project_id, projectId), inArray(BrainSymbolTable.symbol_type, ["function", "method", "constant", "variable"])]
+    const conditions = [
+      eq(BrainSymbolTable.project_id, projectId),
+      inArray(BrainSymbolTable.symbol_type, ["function", "method", "constant", "variable"]),
+      ...AnalysisExclusions.analysisScopeConditions(),
+      ...AnalysisExclusions.analysisSymbolNameConditions(),
+    ]
     if (options.language) {
       conditions.push(eq(BrainFileTable.language, options.language))
     }
@@ -227,8 +289,11 @@ export namespace BrainTools {
     // Name matching (exact or fuzzy)
     if (options.exact) {
       conditions.push(eq(BrainSymbolTable.name, options.name))
+    } else if (options.caseSensitive) {
+      // SQLite LIKE is ASCII case-insensitive by default; instr() is not.
+      conditions.push(sql`instr(${BrainSymbolTable.name}, ${options.name}) > 0`)
     } else {
-      conditions.push(like(BrainSymbolTable.name, `%${options.name}%`))
+      conditions.push(sql`lower(${BrainSymbolTable.name}) LIKE lower(${`%${options.name}%`})`)
     }
 
     // Owner class filter
@@ -236,7 +301,11 @@ export namespace BrainTools {
       conditions.push(eq(BrainSymbolTable.owner_symbol_id, options.ownerClass))
     }
 
-    // Query functions with file information
+    // Query functions with file information.
+    // No SQL ORDER BY: on huge indexes a sort over all LIKE matches costs
+    // seconds (ProxiCall: 0.5s -> 9.5s). Fetch a generous cap in index order
+    // and rank the same way (gravity, complexity, name) in JS below.
+    const fetchCap = Math.min(2000, Math.max((options.offset || 0) + (options.limit || 50) * 2, (options.limit || 50) * 4))
     const functions = await db
       .select({
         symbol: BrainSymbolTable,
@@ -245,19 +314,26 @@ export namespace BrainTools {
       .from(BrainSymbolTable)
       .innerJoin(
         BrainFileTable,
-        and(
-          eq(BrainSymbolTable.project_id, BrainFileTable.project_id),
-          eq(BrainSymbolTable.file_id, BrainFileTable.id),
-        ),
+        eq(BrainSymbolTable.file_id, BrainFileTable.id),
       )
       .where(and(...conditions))
-      .orderBy(desc(BrainSymbolTable.gravity_score), desc(BrainSymbolTable.complexity), BrainSymbolTable.name)
-      .limit(options.limit || 50)
-      .offset(options.offset || 0)
+      .limit(fetchCap)
+
+    functions.sort(
+      (a, b) =>
+        (b.symbol.gravity_score ?? 0) - (a.symbol.gravity_score ?? 0) ||
+        (b.symbol.complexity ?? 0) - (a.symbol.complexity ?? 0) ||
+        (a.symbol.name < b.symbol.name ? -1 : a.symbol.name > b.symbol.name ? 1 : 0),
+    )
+    const paginated = functions.slice((options.offset || 0), (options.offset || 0) + (options.limit || 50))
 
     const results: FunctionInfo[] = []
 
-    for (const row of functions) {
+    for (const row of paginated) {
+      // Read-side noise guard: SQL covers keyword/placeholder junk, but dotted
+      // chains (this._fn, host.createProgram) pass SQL deliberately (Dart named
+      // constructors are legit) and must be dropped here.
+      if (AnalysisExclusions.isNoiseSymbolName(row.symbol.name)) continue
       let callers: FunctionInfo[] | undefined = undefined
 
       // Fetch callers if requested
@@ -271,10 +347,7 @@ export namespace BrainTools {
           .innerJoin(BrainSymbolTable, eq(BrainRelationshipTable.source_symbol_id, BrainSymbolTable.id))
           .innerJoin(
             BrainFileTable,
-            and(
-              eq(BrainSymbolTable.project_id, BrainFileTable.project_id),
-              eq(BrainSymbolTable.file_id, BrainFileTable.id),
-            ),
+            eq(BrainSymbolTable.file_id, BrainFileTable.id),
           )
           .where(
             and(
@@ -298,7 +371,7 @@ export namespace BrainTools {
           isStatic: callerRow.caller.is_static,
           isAsync: callerRow.caller.is_async,
           isAbstract: callerRow.caller.is_abstract,
-          parameters: callerRow.caller.parameters ? JSON.parse(callerRow.caller.parameters) : undefined,
+          parameters: parseJsonField(callerRow.caller.parameters),
           returnType: callerRow.caller.return_type || undefined,
           range: {
             startLine: callerRow.caller.line_start || 0,
@@ -322,9 +395,9 @@ export namespace BrainTools {
         isStatic: !!row.symbol.is_static,
         isAsync: !!row.symbol.is_async,
         isAbstract: !!row.symbol.is_abstract,
-        parameters: typeof row.symbol.parameters === "string" ? JSON.parse(row.symbol.parameters) : undefined,
+        parameters: parseJsonField(row.symbol.parameters),
         returnType: row.symbol.return_type || undefined,
-        decorators: typeof row.symbol.annotations === "string" ? JSON.parse(row.symbol.annotations) : undefined,
+        decorators: parseJsonField(row.symbol.annotations),
         comments: row.symbol.docstring ? [row.symbol.docstring] : undefined,
         range: {
           startLine: row.symbol.line_start || 0,
@@ -335,7 +408,7 @@ export namespace BrainTools {
         complexity: row.symbol.complexity || 0,
         callers,
         metadata: {},
-        snippet: undefined,
+        snippet: options.includeContent ? await readSymbolSnippet(row.file.path, row.symbol.line_start, row.symbol.line_end) : undefined,
       })
     }
 
@@ -352,6 +425,7 @@ export namespace BrainTools {
       name: string
       includeHierarchy?: boolean
       exact?: boolean
+      caseSensitive?: boolean
       filePath?: string
       limit?: number
       offset?: number
@@ -365,6 +439,8 @@ export namespace BrainTools {
     const conditions = [
       eq(BrainSymbolTable.project_id, projectId),
       inArray(BrainSymbolTable.symbol_type, ["class", "interface", "type", "enum", "struct"]),
+      ...AnalysisExclusions.analysisScopeConditions(),
+      ...AnalysisExclusions.analysisSymbolNameConditions(),
     ]
     if (options.language) {
       conditions.push(eq(BrainFileTable.language, options.language))
@@ -379,10 +455,15 @@ export namespace BrainTools {
 
     if (options.exact) {
       conditions.push(eq(BrainSymbolTable.name, options.name))
+    } else if (options.caseSensitive) {
+      // SQLite LIKE is ASCII case-insensitive by default; instr() is not.
+      conditions.push(sql`instr(${BrainSymbolTable.name}, ${options.name}) > 0`)
     } else {
-      conditions.push(like(BrainSymbolTable.name, `%${options.name}%`))
+      conditions.push(sql`lower(${BrainSymbolTable.name}) LIKE lower(${`%${options.name}%`})`)
     }
 
+    // No SQL ORDER BY — see recallFunction: ranking happens in JS below.
+    const fetchCap = Math.min(1000, Math.max((options.offset || 0) + (options.limit || 20) * 2, (options.limit || 20) * 4))
     const classes = await db
       .select({
         symbol: BrainSymbolTable,
@@ -391,23 +472,30 @@ export namespace BrainTools {
       .from(BrainSymbolTable)
       .innerJoin(
         BrainFileTable,
-        and(
-          eq(BrainSymbolTable.project_id, BrainFileTable.project_id),
-          eq(BrainSymbolTable.file_id, BrainFileTable.id),
-        ),
+        eq(BrainSymbolTable.file_id, BrainFileTable.id),
       )
       .where(and(...conditions))
-      .orderBy(desc(BrainSymbolTable.gravity_score), desc(BrainSymbolTable.complexity), BrainSymbolTable.name)
-      .limit(options.limit || 20)
-      .offset(options.offset || 0)
+      .limit(fetchCap)
+
+    classes.sort(
+      (a, b) =>
+        (b.symbol.gravity_score ?? 0) - (a.symbol.gravity_score ?? 0) ||
+        (b.symbol.complexity ?? 0) - (a.symbol.complexity ?? 0) ||
+        (a.symbol.name < b.symbol.name ? -1 : a.symbol.name > b.symbol.name ? 1 : 0),
+    )
+    const paginated = classes.slice((options.offset || 0), (options.offset || 0) + (options.limit || 20))
 
     const results: ClassInfo[] = []
-    for (const row of classes) {
-      // Get class members (methods, properties, constructors)
+    for (const row of paginated) {
+      if (AnalysisExclusions.isNoiseSymbolName(row.symbol.name)) continue
+      // Get class members (methods, properties, constructors).
+      // owner_symbol_id embeds the project id and is globally unique; adding
+      // project_id here forces a full scan (no (project, owner) index) and
+      // costs ~800ms per class on big DBs.
       const members = await db
         .select()
         .from(BrainSymbolTable)
-        .where(and(eq(BrainSymbolTable.project_id, projectId), eq(BrainSymbolTable.owner_symbol_id, row.symbol.id)))
+        .where(eq(BrainSymbolTable.owner_symbol_id, row.symbol.id))
 
       const methods: any[] = []
       const properties: any[] = []
@@ -457,7 +545,7 @@ export namespace BrainTools {
         },
         complexity: row.symbol.complexity || 0,
         metadata: row.symbol.annotations || {},
-        snippet: undefined,
+        snippet: options.includeContent ? await readSymbolSnippet(row.file.path, row.symbol.line_start, row.symbol.line_end) : undefined,
       })
     }
 
@@ -476,11 +564,16 @@ export namespace BrainTools {
     const db = await BrainDatabase.getInstance(projectId)
 
     // Find matching files
+    const fileConditions = [eq(BrainFileTable.project_id, projectId), like(BrainFileTable.path, `%${pathPattern}%`)]
+    if (options.language) {
+      fileConditions.push(eq(BrainFileTable.language, options.language))
+    }
     const files = await db
       .select()
       .from(BrainFileTable)
-      .where(and(eq(BrainFileTable.project_id, projectId), like(BrainFileTable.path, `%${pathPattern}%`)))
-      .limit(10)
+      .where(and(...fileConditions))
+      .limit(options.limit || 10)
+      .offset(options.offset || 0)
 
     const results: FileIntelligence[] = []
 
@@ -636,10 +729,7 @@ export namespace BrainTools {
       .from(BrainSymbolTable)
       .innerJoin(
         BrainFileTable,
-        and(
-          eq(BrainSymbolTable.project_id, BrainFileTable.project_id),
-          eq(BrainSymbolTable.file_id, BrainFileTable.id),
-        ),
+        eq(BrainSymbolTable.file_id, BrainFileTable.id),
       )
       .where(and(eq(BrainSymbolTable.project_id, projectId), eq(BrainSymbolTable.symbol_type, "class")))
 
@@ -793,10 +883,7 @@ export namespace BrainTools {
       .from(BrainSymbolTable)
       .innerJoin(
         BrainFileTable,
-        and(
-          eq(BrainSymbolTable.project_id, BrainFileTable.project_id),
-          eq(BrainSymbolTable.file_id, BrainFileTable.id),
-        ),
+        eq(BrainSymbolTable.file_id, BrainFileTable.id),
       )
       .where(
         and(
@@ -921,10 +1008,7 @@ export namespace BrainTools {
         .from(BrainSymbolTable)
         .innerJoin(
           BrainFileTable,
-          and(
-            eq(BrainSymbolTable.project_id, BrainFileTable.project_id),
-            eq(BrainSymbolTable.file_id, BrainFileTable.id),
-          ),
+          eq(BrainSymbolTable.file_id, BrainFileTable.id),
         )
         .where(and(eq(BrainSymbolTable.project_id, projectId), eq(BrainSymbolTable.symbol_type, "function")))
         .orderBy(desc(BrainSymbolTable.gravity_score), desc(BrainSymbolTable.complexity))
@@ -965,12 +1049,12 @@ export namespace BrainTools {
     const semanticResults = await AdvancedBrainTools.semanticSearch(projectId, query, { maxResults: 5 })
 
     if (semanticResults.results.length > 0) {
-      let combinedAnswer = `Based on a semantic search of the AST, I found these relevant snippets for your query:\n\n`
+      let combinedAnswer = `Closest matches from the AST index for your query (search results, not a verified answer):\n\n`
 
       const sources = []
       for (const res of semanticResults.results.slice(0, 5)) {
         combinedAnswer += `--- File: ${res.item.file} (Line ${res.item.line}) ---\n`
-        combinedAnswer += `[${res.item.type}] ${res.item.name}\n`
+        combinedAnswer += `[${res.item.type}] ${res.item.name} — ${res.explanation}\n`
         if (res.item.content) {
           // Truncate long content to avoid overwhelming the LLM
           const truncated = res.item.content.split("\n").slice(0, 30).join("\n")
@@ -986,9 +1070,13 @@ export namespace BrainTools {
       combinedAnswer += `\n— Use bb_search for precise symbol lookup: "bb_search(query='${query}')".\n`
       combinedAnswer += `— Use bb_select to read any file: "bb_select(filePath='<path>')".`
 
+      // Confidence derives from the average match score, not a constant
+      const sims = semanticResults.results.slice(0, 5).map((r: any) => Number(r.similarity) || 0)
+      const avgSim = sims.reduce((a: number, b: number) => a + b, 0) / sims.length
+
       return {
         answer: combinedAnswer,
-        confidence: 0.8,
+        confidence: Math.round(Math.max(0.2, Math.min(0.85, avgSim)) * 100) / 100,
         sources,
       }
     }
@@ -1001,9 +1089,19 @@ export namespace BrainTools {
         for (const r of symbolResults.slice(0, 5)) {
           fallbackAnswer += `- ${r.symbolName || r.context} [${r.symbolType || "symbol"}] in ${r.file}:${r.line}\n`
         }
+        // Confidence from match quality: exact name match scores highest
+        const q = query.toLowerCase()
+        const scored = symbolResults.slice(0, 5).map((r) => {
+          const name = (r.symbolName || "").toLowerCase()
+          if (name === q) return 1
+          if (name.startsWith(q) || q.startsWith(name)) return 0.7
+          if (name.includes(q)) return 0.5
+          return 0.3
+        })
+        const quality = scored.reduce((a, b) => a + b, 0) / scored.length
         return {
           answer: fallbackAnswer,
-          confidence: 0.6,
+          confidence: Math.round(Math.max(0.2, Math.min(0.8, quality)) * 100) / 100,
           sources: symbolResults.map(r => ({ file: r.file, line: r.line, context: r.symbolName || r.context })),
         }
       }
@@ -1069,51 +1167,79 @@ export namespace BrainTools {
       languageFilter.push(inArray(BrainFileTable.language, options.languages))
     }
 
-    // Search 1: Symbol-based search (most precise)
+      // Search 1: Symbol-based search (most precise)
     if (!options.regex) {
-      const symbolConditions = [
-        eq(BrainSymbolTable.project_id, projectId),
-        options.exact
-          ? eq(BrainSymbolTable.name, query)
-          : options.caseSensitive
-            ? like(BrainSymbolTable.name, `%${query}%`)
-            : sql`lower(${BrainSymbolTable.name}) LIKE lower(${`%${query}%`})`,
-      ]
+      // Phased symbol query so relevance ranking is global, not a ranked
+      // subset: exact matches (index seek), then prefix (index range scan),
+      // then substring (capped full scan). A single LIKE '%q%' + limit would
+      // truncate by index order and can skip every exact match (e.g. 'method'
+      // with 900+ matches on a 1.4M-symbol index).
+      const fetchCap = Math.min(5000, Math.max((options.offset || 0) + (options.maxResults || 100) * 2, (options.maxResults || 100) * 4))
+      const namePhases: { where: any; relevance: number }[] = options.exact
+        ? [{ where: eq(BrainSymbolTable.name, query), relevance: 3 }]
+        : options.caseSensitive
+          ? [
+              { where: eq(BrainSymbolTable.name, query), relevance: 3 },
+              // SQLite LIKE ignores ASCII case even without a leading wildcard.
+              { where: sql`instr(${BrainSymbolTable.name}, ${query}) = 1`, relevance: 2 },
+              { where: sql`instr(${BrainSymbolTable.name}, ${query}) > 0`, relevance: 1 },
+            ]
+          : [
+              { where: eq(BrainSymbolTable.name, query), relevance: 3 },
+              { where: sql`lower(${BrainSymbolTable.name}) LIKE lower(${`${query}%`})`, relevance: 2 },
+              { where: sql`lower(${BrainSymbolTable.name}) LIKE lower(${`%${query}%`})`, relevance: 1 },
+            ]
 
-      if (options.symbolKind) {
-        symbolConditions.push(eq(BrainSymbolTable.symbol_type, options.symbolKind))
-      }
+      const fetched = new Set<string>()
+      for (const phase of namePhases) {
+        const symbolConditions = [
+          eq(BrainSymbolTable.project_id, projectId),
+          phase.where,
+          // Indexer artifacts: no real location, or file paths indexed as names.
+          sql`COALESCE(${BrainSymbolTable.line_start}, 0) > 0`,
+          notLike(BrainSymbolTable.name, "/%/%"),
+        ]
 
-      const symbolMatches = await db
-        .select({
-          symbol: BrainSymbolTable,
-          file: BrainFileTable,
-        })
-        .from(BrainSymbolTable)
-        .innerJoin(
-          BrainFileTable,
-          and(
-            eq(BrainSymbolTable.project_id, BrainFileTable.project_id),
+        if (options.symbolKind) {
+          symbolConditions.push(eq(BrainSymbolTable.symbol_type, options.symbolKind))
+        }
+
+        const symbolMatches = await db
+          .select({
+            symbol: BrainSymbolTable,
+            file: BrainFileTable,
+          })
+          .from(BrainSymbolTable)
+          .innerJoin(
+            BrainFileTable,
             eq(BrainSymbolTable.file_id, BrainFileTable.id),
-          ),
-        )
-        .where(and(...symbolConditions, ...languageFilter))
-        .limit(options.maxResults || 100)
-        .offset(options.offset || 0)
+          )
+          .where(and(...symbolConditions, ...languageFilter))
+          .limit(fetchCap)
 
-      for (const match of symbolMatches) {
-        results.push({
-          file: match.file.relative_path,
-          line: match.symbol.line_start || 0,
-          column: 0,
-          context: `${match.symbol.symbol_type}: ${match.symbol.name}`,
-          symbolName: match.symbol.name,
-          symbolType: match.symbol.symbol_type,
-          language: match.file.language || "unknown",
-          matchType: "symbol" as const,
-          snippet: match.symbol.name,
-          complexity: match.symbol.complexity || 0,
-        })
+        for (const match of symbolMatches) {
+          if (fetched.has(match.symbol.id)) continue
+          const relativePath = match.file.relative_path || ""
+          if (AnalysisExclusions.isHardNoisePath(relativePath)) continue
+          if (AnalysisExclusions.isNoiseSymbolName(match.symbol.name)) continue
+          fetched.add(match.symbol.id)
+          results.push({
+            file: match.file.relative_path,
+            fileId: match.symbol.file_id,
+            line: match.symbol.line_start || 0,
+            column: 0,
+            context: `${match.symbol.symbol_type}: ${match.symbol.name}`,
+            symbolName: match.symbol.name,
+            symbolType: match.symbol.symbol_type,
+            language: match.file.language || "unknown",
+            matchType: "symbol" as const,
+            snippet: options.includeContent
+              ? (await readSymbolSnippet(match.file.path, match.symbol.line_start, match.symbol.line_end)) || match.symbol.name
+              : match.symbol.name,
+            complexity: match.symbol.complexity || 0,
+            _relevance: phase.relevance,
+          })
+        }
       }
     }
 
@@ -1133,13 +1259,35 @@ export namespace BrainTools {
       const ra = (a as any)._relevance || 0
       const rb = (b as any)._relevance || 0
       if (ra !== rb) return rb - ra  // highest relevance first
+      const ta = AnalysisExclusions.isTestPath(a.file || "") ? 1 : 0
+      const tb = AnalysisExclusions.isTestPath(b.file || "") ? 1 : 0
+      if (ta !== tb) return ta - tb  // production code before tests
       if (a.matchType === "symbol" && (a as any).complexity !== (b as any).complexity) {
         return ((b as any).complexity || 0) - ((a as any).complexity || 0)
       }
       return (a.file || "").localeCompare(b.file || "")
     })
 
-    return results.slice(0, options.maxResults || 100)
+    const paginated = results.slice((options.offset || 0), (options.offset || 0) + (options.maxResults || 100))
+
+    // Phase 5: freshness — flag rows whose file changed since indexing.
+    try {
+      const { checkResultsFreshness } = await import("../brain/freshness")
+      const raw = await BrainDatabase.getRawInstance(projectId)
+      const byFile = checkResultsFreshness(raw, paginated.map((r) => ({ fileId: (r as any).fileId })))
+      let staleCount = 0
+      for (const r of paginated) {
+        const status = byFile.get((r as any).fileId)
+        if (status === "stale" || status === "missing") {
+          ;(r as any).stale = true
+          staleCount++
+        }
+      }
+      ;(paginated as any).staleCount = staleCount
+      ;(paginated as any).freshCount = paginated.length - staleCount
+    } catch {}
+
+    return paginated
   }
 
   /**
@@ -1631,10 +1779,7 @@ export namespace BrainTools {
           .from(BrainSymbolTable)
           .innerJoin(
             BrainFileTable,
-            and(
-              eq(BrainSymbolTable.project_id, BrainFileTable.project_id),
-              eq(BrainSymbolTable.file_id, BrainFileTable.id),
-            ),
+            eq(BrainSymbolTable.file_id, BrainFileTable.id),
           )
           .where(and(eq(BrainSymbolTable.project_id, projectId), eq(BrainSymbolTable.name, options.target)))
           .orderBy(sql`CASE WHEN ${BrainFileTable.relative_path} LIKE '%' || ${options.target} || '%' THEN 0 ELSE 1 END`)
@@ -1651,10 +1796,7 @@ export namespace BrainTools {
           .from(BrainSymbolTable)
           .innerJoin(
             BrainFileTable,
-            and(
-              eq(BrainSymbolTable.project_id, BrainFileTable.project_id),
-              eq(BrainSymbolTable.file_id, BrainFileTable.id),
-            ),
+            eq(BrainSymbolTable.file_id, BrainFileTable.id),
           )
           .where(
             and(
@@ -1677,10 +1819,7 @@ export namespace BrainTools {
           .from(BrainSymbolTable)
           .innerJoin(
             BrainFileTable,
-            and(
-              eq(BrainSymbolTable.project_id, BrainFileTable.project_id),
-              eq(BrainSymbolTable.file_id, BrainFileTable.id),
-            ),
+            eq(BrainSymbolTable.file_id, BrainFileTable.id),
           )
           .where(and(eq(BrainSymbolTable.project_id, projectId), like(BrainFileTable.path, `%${options.target}%`)))
         break
@@ -1694,10 +1833,7 @@ export namespace BrainTools {
           .from(BrainSymbolTable)
           .innerJoin(
             BrainFileTable,
-            and(
-              eq(BrainSymbolTable.project_id, BrainFileTable.project_id),
-              eq(BrainSymbolTable.file_id, BrainFileTable.id),
-            ),
+            eq(BrainSymbolTable.file_id, BrainFileTable.id),
           )
           .where(eq(BrainSymbolTable.project_id, projectId))
     }
@@ -1891,10 +2027,7 @@ export namespace BrainTools {
       .from(BrainSymbolTable)
       .innerJoin(
         BrainFileTable,
-        and(
-          eq(BrainSymbolTable.project_id, BrainFileTable.project_id),
-          eq(BrainSymbolTable.file_id, BrainFileTable.id),
-        ),
+        eq(BrainSymbolTable.file_id, BrainFileTable.id),
       )
       .where(
         and(
@@ -1917,10 +2050,7 @@ export namespace BrainTools {
       .from(BrainSymbolTable)
       .innerJoin(
         BrainFileTable,
-        and(
-          eq(BrainSymbolTable.project_id, BrainFileTable.project_id),
-          eq(BrainSymbolTable.file_id, BrainFileTable.id),
-        ),
+        eq(BrainSymbolTable.file_id, BrainFileTable.id),
       )
       .where(
         and(
@@ -1946,10 +2076,7 @@ export namespace BrainTools {
       .from(BrainSymbolTable)
       .innerJoin(
         BrainFileTable,
-        and(
-          eq(BrainSymbolTable.project_id, BrainFileTable.project_id),
-          eq(BrainSymbolTable.file_id, BrainFileTable.id),
-        ),
+        eq(BrainSymbolTable.file_id, BrainFileTable.id),
       )
       .where(
         and(
@@ -1976,10 +2103,7 @@ export namespace BrainTools {
       .from(BrainSymbolTable)
       .innerJoin(
         BrainFileTable,
-        and(
-          eq(BrainSymbolTable.project_id, BrainFileTable.project_id),
-          eq(BrainSymbolTable.file_id, BrainFileTable.id),
-        ),
+        eq(BrainSymbolTable.file_id, BrainFileTable.id),
       )
       .where(
         and(
@@ -1997,10 +2121,7 @@ export namespace BrainTools {
       .from(BrainSymbolTable)
       .innerJoin(
         BrainFileTable,
-        and(
-          eq(BrainSymbolTable.project_id, BrainFileTable.project_id),
-          eq(BrainSymbolTable.file_id, BrainFileTable.id),
-        ),
+        eq(BrainSymbolTable.file_id, BrainFileTable.id),
       )
       .where(
         and(
@@ -2018,10 +2139,7 @@ export namespace BrainTools {
       .from(BrainSymbolTable)
       .innerJoin(
         BrainFileTable,
-        and(
-          eq(BrainSymbolTable.project_id, BrainFileTable.project_id),
-          eq(BrainSymbolTable.file_id, BrainFileTable.id),
-        ),
+        eq(BrainSymbolTable.file_id, BrainFileTable.id),
       )
       .where(
         and(
@@ -2106,7 +2224,7 @@ export namespace BrainTools {
     const godClasses = await db
       .select({ symbol: BrainSymbolTable, file: BrainFileTable })
       .from(BrainSymbolTable)
-      .innerJoin(BrainFileTable, and(eq(BrainSymbolTable.project_id, BrainFileTable.project_id), eq(BrainSymbolTable.file_id, BrainFileTable.id)))
+      .innerJoin(BrainFileTable, eq(BrainSymbolTable.file_id, BrainFileTable.id))
       .where(and(eq(BrainSymbolTable.project_id, projectId), eq(BrainSymbolTable.symbol_type, "class"), or(like(BrainSymbolTable.name, "%manager%"), like(BrainSymbolTable.name, "%util%"), like(BrainSymbolTable.name, "%Manager%"))))
       .limit(50)
 
@@ -2129,7 +2247,7 @@ export namespace BrainTools {
     const diCandidates = await db
       .select({ symbol: BrainSymbolTable, file: BrainFileTable })
       .from(BrainSymbolTable)
-      .innerJoin(BrainFileTable, and(eq(BrainSymbolTable.project_id, BrainFileTable.project_id), eq(BrainSymbolTable.file_id, BrainFileTable.id)))
+      .innerJoin(BrainFileTable, eq(BrainSymbolTable.file_id, BrainFileTable.id))
       .where(and(eq(BrainSymbolTable.project_id, projectId), like(BrainSymbolTable.name, "%injector%")))
       .limit(50)
 
@@ -2151,7 +2269,7 @@ export namespace BrainTools {
     const repositories = await db
       .select({ symbol: BrainSymbolTable, file: BrainFileTable })
       .from(BrainSymbolTable)
-      .innerJoin(BrainFileTable, and(eq(BrainSymbolTable.project_id, BrainFileTable.project_id), eq(BrainSymbolTable.file_id, BrainFileTable.id)))
+      .innerJoin(BrainFileTable, eq(BrainSymbolTable.file_id, BrainFileTable.id))
       .where(and(eq(BrainSymbolTable.project_id, projectId), or(like(BrainSymbolTable.name, "%repository%"), like(BrainSymbolTable.name, "%Repository%"))))
       .limit(50)
 
@@ -2246,10 +2364,7 @@ export namespace BrainTools {
           .from(BrainSymbolTable)
           .innerJoin(
             BrainFileTable,
-            and(
-              eq(BrainSymbolTable.project_id, BrainFileTable.project_id),
-              eq(BrainSymbolTable.file_id, BrainFileTable.id),
-            ),
+            eq(BrainSymbolTable.file_id, BrainFileTable.id),
           )
           .where(and(eq(BrainSymbolTable.project_id, projectId), eq(BrainSymbolTable.file_id, targetFile[0].id)))
       }
@@ -2263,10 +2378,7 @@ export namespace BrainTools {
         .from(BrainSymbolTable)
         .innerJoin(
           BrainFileTable,
-          and(
-            eq(BrainSymbolTable.project_id, BrainFileTable.project_id),
-            eq(BrainSymbolTable.file_id, BrainFileTable.id),
-          ),
+          eq(BrainSymbolTable.file_id, BrainFileTable.id),
         )
         .where(and(eq(BrainSymbolTable.project_id, projectId), eq(BrainSymbolTable.name, options.target)))
         .orderBy(desc(BrainSymbolTable.gravity_score))
@@ -2276,7 +2388,7 @@ export namespace BrainTools {
         const fuzzy = await db
           .select({ symbol: BrainSymbolTable, file: BrainFileTable })
           .from(BrainSymbolTable)
-          .innerJoin(BrainFileTable, and(eq(BrainSymbolTable.project_id, BrainFileTable.project_id), eq(BrainSymbolTable.file_id, BrainFileTable.id)))
+          .innerJoin(BrainFileTable, eq(BrainSymbolTable.file_id, BrainFileTable.id))
           .where(and(eq(BrainSymbolTable.project_id, projectId), like(BrainSymbolTable.name, `%${options.target}%`)))
           .orderBy(desc(BrainSymbolTable.gravity_score))
           .limit(50)
@@ -2307,7 +2419,7 @@ export namespace BrainTools {
         const members = await db
           .select({ id: BrainSymbolTable.id, name: BrainSymbolTable.name })
           .from(BrainSymbolTable)
-          .where(and(eq(BrainSymbolTable.project_id, projectId), eq(BrainSymbolTable.owner_symbol_id, target.symbol.id)))
+          .where(eq(BrainSymbolTable.owner_symbol_id, target.symbol.id))
         for (const m of members) {
           expandedTargets.push({ symbol: { id: m.id, name: m.name }, file: target.file })
         }
@@ -2333,10 +2445,7 @@ export namespace BrainTools {
         )
         .innerJoin(
           BrainFileTable,
-          and(
-            eq(BrainSymbolTable.project_id, BrainFileTable.project_id),
-            eq(BrainSymbolTable.file_id, BrainFileTable.id),
-          ),
+          eq(BrainSymbolTable.file_id, BrainFileTable.id),
         )
         .where(
           and(
@@ -2401,10 +2510,7 @@ export namespace BrainTools {
           )
           .innerJoin(
             BrainFileTable,
-            and(
-              eq(BrainSymbolTable.project_id, BrainFileTable.project_id),
-              eq(BrainSymbolTable.file_id, BrainFileTable.id),
-            ),
+            eq(BrainSymbolTable.file_id, BrainFileTable.id),
           )
           .where(
             and(
@@ -2571,2655 +2677,10 @@ export namespace BrainTools {
 // MISSING PROXICALL BRAIN TOOL #1: suggestTests
 // ================================================================
 
-export namespace TestSuggestionBrainTools {
-  /**
-   * Suggest tests for a changed file/function - Universal cross-language test mapping
-   * Maps source files to test files using naming conventions, imports, and relationship analysis
-   */
-  export async function suggestTests(
-    target: string,
-    options: {
-      functionName?: string
-      includeRelatedTests?: boolean
-      maxDepth?: number
-    } = {},
-  ): Promise<{
-    success: boolean
-    suggested_tests: Array<{
-      test_path: string
-      confidence: number
-      rationale: string
-      test_type: "unit" | "integration" | "e2e"
-      run_command: string
-    }>
-    coverage_assessment: string
-    run_commands: string[]
-    system_recommendation: string
-    missing_tests: Array<{
-      suggested_path: string
-      reason: string
-      priority: "high" | "medium" | "low"
-    }>
-  }> {
-    try {
-      const db = await BrainDatabase.getInstance("default" as ProjectID)
-      const maxDepth = options.maxDepth || 3
-      const suggestedTests: Array<{
-        test_path: string
-        confidence: number
-        rationale: string
-        test_type: "unit" | "integration" | "e2e"
-        run_command: string
-      }> = []
-      const missingTests: Array<{
-        suggested_path: string
-        reason: string
-        priority: "high" | "medium" | "low"
-      }> = []
 
-      // 1. Find existing tests using naming conventions
-      const namingBasedTests = await findTestsByNamingConvention(target)
-      suggestedTests.push(...namingBasedTests)
-
-      // 2. Find tests through import/relationship analysis
-      const relationshipTests = await findTestsByRelationships(db, target, maxDepth)
-      suggestedTests.push(...relationshipTests)
-
-      // 3. Find tests that call the target function if specified
-      if (options.functionName) {
-        const functionTests = await findTestsByFunctionUsage(db, target, options.functionName)
-        suggestedTests.push(...functionTests)
-      }
-
-      // 4. Check for missing test coverage
-      const missingTestAnalysis = await analyzeMissingTestCoverage(db, target, suggestedTests)
-      missingTests.push(...missingTestAnalysis)
-
-      // 5. Deduplicate and rank by confidence
-      const uniqueTests = deduplicateTests(suggestedTests)
-      uniqueTests.sort((a, b) => b.confidence - a.confidence)
-
-      // 6. Generate run commands by framework
-      const runCommands = generateTestRunCommands(uniqueTests)
-
-      // 7. Generate coverage assessment
-      const coverageAssessment = generateCoverageAssessment(uniqueTests, missingTests)
-
-      // 8. Generate system recommendation
-      const systemRecommendation = generateTestRecommendation(target, uniqueTests, missingTests, runCommands)
-
-      return {
-        success: true,
-        suggested_tests: uniqueTests,
-        coverage_assessment: coverageAssessment,
-        run_commands: runCommands,
-        system_recommendation: systemRecommendation,
-        missing_tests: missingTests,
-      }
-    } catch (error) {
-      return {
-        success: false,
-        suggested_tests: [],
-        coverage_assessment: "Error analyzing test coverage",
-        run_commands: [],
-        system_recommendation: `Test suggestion failed: ${error instanceof Error ? error.message : String(error)}`,
-        missing_tests: [],
-      }
-    }
-  }
-
-  async function findTestsByNamingConvention(target: string): Promise<
-    Array<{
-      test_path: string
-      confidence: number
-      rationale: string
-      test_type: "unit" | "integration" | "e2e"
-      run_command: string
-    }>
-  > {
-    const tests: Array<{
-      test_path: string
-      confidence: number
-      rationale: string
-      test_type: "unit" | "integration" | "e2e"
-      run_command: string
-    }> = []
-
-    // Get base name and directory
-    const path = await import("path")
-    const fs = await import("fs")
-    const baseName = path.basename(target, path.extname(target))
-    const dir = path.dirname(target)
-
-    // Common test naming patterns for different languages
-    const testPatterns = [
-      // JavaScript/TypeScript patterns
-      `${baseName}.test.js`,
-      `${baseName}.test.ts`,
-      `${baseName}.spec.js`,
-      `${baseName}.spec.ts`,
-      `${baseName}.test.jsx`,
-      `${baseName}.test.tsx`,
-      // Python patterns
-      `test_${baseName.toLowerCase()}.py`,
-      `${baseName.toLowerCase()}_test.py`,
-      // Java patterns
-      `${baseName}Test.java`,
-      // C# patterns
-      `${baseName}Tests.cs`,
-      `${baseName}Test.cs`,
-      // Go patterns
-      `${baseName.toLowerCase()}_test.go`,
-      // Rust patterns
-      `test_${baseName.toLowerCase()}.rs`,
-      // Dart/Flutter patterns
-      `${baseName.toLowerCase()}_test.dart`,
-    ]
-
-    // Common test directories
-    const testDirs = [
-      path.join(dir, "__tests__"),
-      path.join(dir, "tests"),
-      path.join(dir, "test"),
-      path.join(path.dirname(dir), "test"),
-      path.join(path.dirname(dir), "tests"),
-      path.join(path.dirname(dir), "__tests__"),
-      "test",
-      "tests",
-      "__tests__",
-      "spec",
-      "integration_test", // Flutter
-      "e2e",
-    ]
-
-    for (const testDir of testDirs) {
-      for (const pattern of testPatterns) {
-        const testPath = path.join(testDir, pattern)
-        try {
-          if (fs.existsSync(testPath)) {
-            const testType = determineTestType(testPath)
-            tests.push({
-              test_path: testPath,
-              confidence: 0.9,
-              rationale: `Found by naming convention: ${pattern} in ${testDir}`,
-              test_type: testType,
-              run_command: generateRunCommand(testPath),
-            })
-          }
-        } catch (error) {
-          // Ignore file access errors
-        }
-      }
-    }
-
-    return tests
-  }
-
-  async function findTestsByRelationships(
-    db: any,
-    target: string,
-    maxDepth: number,
-  ): Promise<
-    Array<{
-      test_path: string
-      confidence: number
-      rationale: string
-      test_type: "unit" | "integration" | "e2e"
-      run_command: string
-    }>
-  > {
-    const tests: Array<{
-      test_path: string
-      confidence: number
-      rationale: string
-      test_type: "unit" | "integration" | "e2e"
-      run_command: string
-    }> = []
-
-    try {
-      // Find files that import the target
-      const importers = await db.select(sql`
-        SELECT DISTINCT f.file_path, r.relationship_type
-        FROM relationships r
-        JOIN files f ON f.id = r.from_file_id  
-        JOIN files target ON target.id = r.to_file_id
-        WHERE target.file_path = ${target}
-        AND r.relationship_type IN ('imports', 'requires', 'includes')
-      `)
-
-      for (const importer of importers) {
-        if (isTestFile(importer.file_path)) {
-          const testType = determineTestType(importer.file_path)
-          tests.push({
-            test_path: importer.file_path,
-            confidence: 0.8,
-            rationale: `Test file imports target: ${importer.relationship_type}`,
-            test_type: testType,
-            run_command: generateRunCommand(importer.file_path),
-          })
-        }
-      }
-
-      // Find files that call functions from the target
-      const callers = await db.select(sql`
-        SELECT DISTINCT f.file_path, r.from_function, r.to_function
-        FROM relationships r
-        JOIN files f ON f.id = r.from_file_id
-        JOIN files target ON target.id = r.to_file_id  
-        WHERE target.file_path = ${target}
-        AND r.relationship_type = 'calls'
-      `)
-
-      for (const caller of callers) {
-        if (isTestFile(caller.file_path)) {
-          const testType = determineTestType(caller.file_path)
-          tests.push({
-            test_path: caller.file_path,
-            confidence: 0.85,
-            rationale: `Test file calls function '${caller.to_function}' from target`,
-            test_type: testType,
-            run_command: generateRunCommand(caller.file_path),
-          })
-        }
-      }
-    } catch (error) {
-      console.error("Error finding tests by relationships:", error)
-    }
-
-    return tests
-  }
-
-  async function findTestsByFunctionUsage(
-    db: any,
-    target: string,
-    functionName: string,
-  ): Promise<
-    Array<{
-      test_path: string
-      confidence: number
-      rationale: string
-      test_type: "unit" | "integration" | "e2e"
-      run_command: string
-    }>
-  > {
-    const tests: Array<{
-      test_path: string
-      confidence: number
-      rationale: string
-      test_type: "unit" | "integration" | "e2e"
-      run_command: string
-    }> = []
-
-    try {
-      // Find tests that specifically call the target function
-      const functionCallers = await db.select(sql`
-        SELECT DISTINCT f.file_path, r.from_function
-        FROM relationships r
-        JOIN files f ON f.id = r.from_file_id
-        JOIN files target ON target.id = r.to_file_id
-        WHERE target.file_path = ${target}
-        AND r.to_function = ${functionName}
-        AND r.relationship_type = 'calls'
-      `)
-
-      for (const caller of functionCallers) {
-        if (isTestFile(caller.file_path)) {
-          const testType = determineTestType(caller.file_path)
-          tests.push({
-            test_path: caller.file_path,
-            confidence: 0.95,
-            rationale: `Test directly calls target function '${functionName}'`,
-            test_type: testType,
-            run_command: generateRunCommand(caller.file_path),
-          })
-        }
-      }
-    } catch (error) {
-      console.error("Error finding tests by function usage:", error)
-    }
-
-    return tests
-  }
-
-  async function analyzeMissingTestCoverage(
-    db: any,
-    target: string,
-    existingTests: any[],
-  ): Promise<
-    Array<{
-      suggested_path: string
-      reason: string
-      priority: "high" | "medium" | "low"
-    }>
-  > {
-    const missing: Array<{
-      suggested_path: string
-      reason: string
-      priority: "high" | "medium" | "low"
-    }> = []
-
-    try {
-      // Check if target has any tests at all
-      if (existingTests.length === 0) {
-        const suggestedPath = generateSuggestedTestPath(target)
-        missing.push({
-          suggested_path: suggestedPath,
-          reason: "No tests found for this file",
-          priority: "high",
-        })
-      }
-
-      // Check for functions without specific test coverage
-      const functions = await db.select(sql`
-        SELECT s.name, s.symbol_type
-        FROM symbols s
-        JOIN files f ON f.id = s.file_id
-        WHERE f.file_path = ${target}
-        AND s.symbol_type = 'function'
-      `)
-
-      for (const func of functions) {
-        const hasSpecificTest = existingTests.some((test) => test.rationale.includes(func.name))
-
-        if (!hasSpecificTest && func.name !== "constructor") {
-          const suggestedPath = generateSuggestedTestPath(target, func.name)
-          missing.push({
-            suggested_path: suggestedPath,
-            reason: `No specific test found for function '${func.name}'`,
-            priority: "medium",
-          })
-        }
-      }
-
-      // Check test type coverage
-      const testTypes = new Set(existingTests.map((t) => t.test_type))
-      if (!testTypes.has("unit")) {
-        missing.push({
-          suggested_path: generateSuggestedTestPath(target, undefined, "unit"),
-          reason: "Missing unit test coverage",
-          priority: "high",
-        })
-      }
-
-      if (!testTypes.has("integration") && isApiOrService(target)) {
-        missing.push({
-          suggested_path: generateSuggestedTestPath(target, undefined, "integration"),
-          reason: "API/Service file missing integration tests",
-          priority: "medium",
-        })
-      }
-    } catch (error) {
-      console.error("Error analyzing missing test coverage:", error)
-    }
-
-    return missing
-  }
-
-  function deduplicateTests(
-    tests: Array<{
-      test_path: string
-      confidence: number
-      rationale: string
-      test_type: "unit" | "integration" | "e2e"
-      run_command: string
-    }>,
-  ): Array<{
-    test_path: string
-    confidence: number
-    rationale: string
-    test_type: "unit" | "integration" | "e2e"
-    run_command: string
-  }> {
-    const seen = new Map()
-
-    for (const test of tests) {
-      const existing = seen.get(test.test_path)
-      if (!existing || existing.confidence < test.confidence) {
-        seen.set(test.test_path, test)
-      }
-    }
-
-    return Array.from(seen.values())
-  }
-
-  function generateTestRunCommands(
-    tests: Array<{
-      test_path: string
-      confidence: number
-      rationale: string
-      test_type: "unit" | "integration" | "e2e"
-      run_command: string
-    }>,
-  ): string[] {
-    const commands = new Set<string>()
-
-    // Group by framework and generate batch commands
-    const jestTests = tests.filter((t) => t.run_command.includes("jest") || t.run_command.includes("npm test"))
-    const pytestTests = tests.filter((t) => t.run_command.includes("pytest"))
-    const goTests = tests.filter((t) => t.run_command.includes("go test"))
-    const flutterTests = tests.filter((t) => t.run_command.includes("flutter test"))
-
-    if (jestTests.length > 0) {
-      const testPaths = jestTests.map((t) => t.test_path).join(" ")
-      commands.add(`npm test -- ${testPaths}`)
-    }
-
-    if (pytestTests.length > 0) {
-      const testPaths = pytestTests.map((t) => t.test_path).join(" ")
-      commands.add(`pytest ${testPaths}`)
-    }
-
-    if (goTests.length > 0) {
-      const testPaths = goTests.map((t) => t.test_path).join(" ")
-      commands.add(`go test ${testPaths}`)
-    }
-
-    if (flutterTests.length > 0) {
-      const testPaths = flutterTests.map((t) => t.test_path).join(" ")
-      commands.add(`flutter test ${testPaths}`)
-    }
-
-    return Array.from(commands)
-  }
-
-  function generateCoverageAssessment(suggestedTests: any[], missingTests: any[]): string {
-    if (suggestedTests.length === 0) {
-      return "No existing tests found - comprehensive test suite needed"
-    }
-
-    const testTypes = new Set(suggestedTests.map((t) => t.test_type))
-    const coverage = []
-
-    if (testTypes.has("unit")) coverage.push("unit tests")
-    if (testTypes.has("integration")) coverage.push("integration tests")
-    if (testTypes.has("e2e")) coverage.push("e2e tests")
-
-    let assessment = `Found ${suggestedTests.length} existing tests covering: ${coverage.join(", ")}`
-
-    if (missingTests.length > 0) {
-      const highPriority = missingTests.filter((m) => m.priority === "high").length
-      assessment += `. ${missingTests.length} test gaps identified`
-      if (highPriority > 0) {
-        assessment += ` (${highPriority} high priority)`
-      }
-    }
-
-    return assessment
-  }
-
-  function generateTestRecommendation(
-    target: string,
-    suggestedTests: any[],
-    missingTests: any[],
-    runCommands: string[],
-  ): string {
-    let recommendation = `Test suggestion for '${target}' using bb Native Intelligence:\n`
-    recommendation += `- Coverage assessment: Found ${suggestedTests.length} existing tests\n`
-
-    if (missingTests.length > 0) {
-      recommendation += `- Missing coverage: ${missingTests.length} test gaps identified\n`
-    }
-
-    if (runCommands.length > 0) {
-      recommendation += `\nRun these commands to verify current tests pass:\n`
-      runCommands.forEach((cmd) => {
-        recommendation += `\`\`\`bash\n${cmd}\n\`\`\`\n`
-      })
-    }
-
-    if (missingTests.length > 0) {
-      const highPriority = missingTests.filter((m) => m.priority === "high")
-      if (highPriority.length > 0) {
-        recommendation += `\nHigh priority missing tests:\n`
-        highPriority.forEach((missing) => {
-          recommendation += `- ${missing.suggested_path}: ${missing.reason}\n`
-        })
-      }
-    }
-
-    return recommendation
-  }
-
-  function isTestFile(filePath: string): boolean {
-    const testIndicators = [
-      ".test.",
-      ".spec.",
-      "_test.",
-      "Test.",
-      "test_",
-      "/test/",
-      "/tests/",
-      "/__tests__/",
-      "/spec/",
-      "integration_test/",
-      "e2e/",
-    ]
-
-    return testIndicators.some((indicator) => filePath.includes(indicator))
-  }
-
-  function determineTestType(testPath: string): "unit" | "integration" | "e2e" {
-    if (testPath.includes("integration") || testPath.includes("api") || testPath.includes("service")) {
-      return "integration"
-    }
-    if (testPath.includes("e2e") || testPath.includes("end-to-end") || testPath.includes("cypress")) {
-      return "e2e"
-    }
-    return "unit"
-  }
-
-  function generateRunCommand(testPath: string): string {
-    const ext = testPath.split(".").pop()
-
-    switch (ext) {
-      case "js":
-      case "ts":
-      case "jsx":
-      case "tsx":
-        return `npm test -- ${testPath}`
-      case "py":
-        return `pytest ${testPath}`
-      case "java":
-        return `mvn test -Dtest=${(testPath.split("/").pop() || "").replace(".java", "")}`
-      case "cs":
-        return `dotnet test ${testPath}`
-      case "go":
-        return `go test ${testPath}`
-      case "rs":
-        return `cargo test --bin ${(testPath.split("/").pop() || "").replace(".rs", "")}`
-      case "dart":
-        return `flutter test ${testPath}`
-      default:
-        return `# Run test: ${testPath}`
-    }
-  }
-
-  function generateSuggestedTestPath(target: string, functionName?: string, testType?: string): string {
-    const path = require("path")
-    const baseName = path.basename(target, path.extname(target))
-    const ext = path.extname(target)
-
-    let testExt = ".test.js"
-    switch (ext) {
-      case ".ts":
-        testExt = ".test.ts"
-        break
-      case ".py":
-        testExt = "_test.py"
-        break
-      case ".java":
-        testExt = "Test.java"
-        break
-      case ".cs":
-        testExt = "Tests.cs"
-        break
-      case ".go":
-        testExt = "_test.go"
-        break
-      case ".rs":
-        testExt = "_test.rs"
-        break
-      case ".dart":
-        testExt = "_test.dart"
-        break
-    }
-
-    let prefix = ""
-    if (testType === "integration") {
-      prefix = "integration/"
-    } else if (testType === "e2e") {
-      prefix = "e2e/"
-    }
-
-    let filename = `${baseName}${testExt}`
-    if (functionName && ext === ".py") {
-      filename = `test_${baseName.toLowerCase()}_${functionName.toLowerCase()}.py`
-    } else if (functionName) {
-      filename = `${baseName}.${functionName}${testExt}`
-    }
-
-    return path.join("test", prefix, filename)
-  }
-
-  function isApiOrService(filePath: string): boolean {
-    const indicators = ["api", "service", "controller", "handler", "route", "endpoint"]
-    return indicators.some((indicator) => filePath.toLowerCase().includes(indicator))
-  }
-}
-
-// ================================================================
-// MISSING PROXICALL BRAIN TOOL #2: getSystemReport
-// ================================================================
-
-export namespace SystemReportBrainTools {
-  /**
-   * System-level reporting and health analysis for comprehensive project insights
-   * Generates precomputed system reports with architecture, dependencies, and health metrics
-   */
-  export async function getSystemReport(
-    projectId: ProjectID,
-    options: {
-      system?: string
-      section?: "all" | "summary" | "architecture" | "health" | "dependencies" | "brain_file" | "metrics"
-      regenerate?: boolean
-    } = {},
-  ): Promise<{
-    success: boolean
-    system: string
-    section: string
-    timestamp: number
-    report: {
-      summary: {
-        name: string
-        description: string
-        total_files: number
-        total_functions: number
-        total_classes: number
-        languages: string[]
-        frameworks: string[]
-        last_modified: number
-      }
-      health: {
-        score: number
-        grade: "A" | "B" | "C" | "D" | "F"
-        breakdown: {
-          complexity: number
-          test_coverage: number
-          code_quality: number
-          architecture: number
-        }
-        issues: Array<{
-          type: "error" | "warning" | "info"
-          category: string
-          description: string
-          file?: string
-          severity: "low" | "medium" | "high" | "critical"
-        }>
-      }
-      architecture: {
-        layers: Array<{
-          name: string
-          files: string[]
-          dependencies: string[]
-          responsibilities: string[]
-        }>
-        patterns: Array<{
-          pattern: string
-          instances: number
-          quality: "good" | "fair" | "poor"
-        }>
-        violations: Array<{
-          description: string
-          files: string[]
-          severity: "low" | "medium" | "high"
-        }>
-      }
-      dependencies: {
-        internal: Array<{
-          from: string
-          to: string
-          type: string
-          strength: number
-        }>
-        external: Array<{
-          name: string
-          version?: string
-          usage_count: number
-          files: string[]
-        }>
-        circular: Array<{
-          cycle: string[]
-          impact: "low" | "medium" | "high"
-        }>
-      }
-      files: Array<{
-        path: string
-        language: string
-        lines: number
-        functions: number
-        classes: number
-        complexity: number
-        last_modified: number
-        issues: number
-      }>
-      metrics: {
-        performance: {
-          build_time_estimate: number
-          bundle_size_estimate: number
-          complexity_trend: "improving" | "stable" | "degrading"
-        }
-        quality: {
-          maintainability_index: number
-          technical_debt_ratio: number
-          duplication_percentage: number
-        }
-        testing: {
-          total_tests: number
-          coverage_estimate: number
-          test_quality_score: number
-        }
-      }
-    }
-  }> {
-    try {
-      const db = await BrainDatabase.getInstance(projectId)
-      const system = options.system || "project"
-      const section = options.section || "all"
-
-      // Generate comprehensive system report
-      const summary = await generateSystemSummary(db, projectId)
-      const health = await generateHealthReport(db, projectId)
-      const architecture = await generateArchitectureReport(db, projectId)
-      const dependencies = await generateDependencyReport(db, projectId)
-      const files = await generateFileReport(db, projectId)
-      const metrics = await generateMetricsReport(db, projectId)
-
-      const fullReport = {
-        summary,
-        health,
-        architecture,
-        dependencies,
-        files,
-        metrics,
-      }
-
-      // Return requested section or full report
-      let reportData: any
-      if (section === "all") {
-        reportData = fullReport
-      } else {
-        reportData = { [section]: fullReport[section as keyof typeof fullReport] }
-      }
-
-      return {
-        success: true,
-        system,
-        section,
-        timestamp: Date.now(),
-        report: section === "all" ? fullReport : reportData,
-      }
-    } catch (error) {
-      return {
-        success: false,
-        system: options.system || "project",
-        section: options.section || "all",
-        timestamp: Date.now(),
-        report: {
-          summary: {
-            name: "Unknown",
-            description: "Error generating report",
-            total_files: 0,
-            total_functions: 0,
-            total_classes: 0,
-            languages: [],
-            frameworks: [],
-            last_modified: 0,
-          },
-          health: {
-            score: 0,
-            grade: "F" as const,
-            breakdown: {
-              complexity: 0,
-              test_coverage: 0,
-              code_quality: 0,
-              architecture: 0,
-            },
-            issues: [
-              {
-                type: "error" as const,
-                category: "system",
-                description: `Report generation failed: ${(error as Error).message}`,
-                severity: "critical" as const,
-              },
-            ],
-          },
-          architecture: {
-            layers: [],
-            patterns: [],
-            violations: [],
-          },
-          dependencies: {
-            internal: [],
-            external: [],
-            circular: [],
-          },
-          files: [],
-          metrics: {
-            performance: {
-              build_time_estimate: 0,
-              bundle_size_estimate: 0,
-              complexity_trend: "stable" as const,
-            },
-            quality: {
-              maintainability_index: 0,
-              technical_debt_ratio: 0,
-              duplication_percentage: 0,
-            },
-            testing: {
-              total_tests: 0,
-              coverage_estimate: 0,
-              test_quality_score: 0,
-            },
-          },
-        },
-      }
-    }
-  }
-
-  async function generateSystemSummary(db: any, projectId: ProjectID) {
-    const files = await db.select(sql`
-      SELECT 
-        f.relative_path, f.language, f.lines_of_code, f.last_modified,
-        COUNT(DISTINCT s.id) FILTER (WHERE s.symbol_type = 'function') as function_count,
-        COUNT(DISTINCT s.id) FILTER (WHERE s.symbol_type = 'class') as class_count
-      FROM files f
-      LEFT JOIN symbols s ON s.file_id = f.id AND s.project_id = f.project_id
-      WHERE f.project_id = ${projectId}
-      GROUP BY f.id, f.relative_path, f.language, f.lines_of_code, f.last_modified
-    `)
-
-    const languages = new Set<string>()
-    const frameworks = new Set<string>()
-    let totalFunctions = 0
-    let totalClasses = 0
-    let latestModified = 0
-
-    for (const file of files) {
-      if (file.language) languages.add(file.language)
-      totalFunctions += file.function_count || 0
-      totalClasses += file.class_count || 0
-      if (file.last_modified > latestModified) {
-        latestModified = file.last_modified
-      }
-
-      // Detect frameworks from file paths
-      const frameworks_detected = await detectFrameworksFromPath(file.relative_path)
-      frameworks_detected.forEach((f) => frameworks.add(f))
-    }
-
-    return {
-      name: projectId.split("/").pop() || "Project",
-      description: `Project with ${files.length} files across ${languages.size} languages`,
-      total_files: files.length,
-      total_functions: totalFunctions,
-      total_classes: totalClasses,
-      languages: Array.from(languages).sort(),
-      frameworks: Array.from(frameworks).sort(),
-      last_modified: latestModified,
-    }
-  }
-
-  async function generateHealthReport(db: any, projectId: ProjectID) {
-    // Get complexity data
-    const complexityData = await db.select(sql`
-      SELECT AVG(s.complexity) as avg_complexity, COUNT(*) as total_symbols
-      FROM symbols s
-      WHERE s.project_id = ${projectId} AND s.complexity > 0
-    `)
-
-    const avgComplexity = complexityData[0]?.avg_complexity || 0
-
-    // Get test files
-    const testFiles = await db.select(sql`
-      SELECT COUNT(*) as test_count
-      FROM files f
-      WHERE f.project_id = ${projectId}
-      AND (f.relative_path LIKE '%test%' OR f.relative_path LIKE '%spec%')
-    `)
-
-    const testCount = testFiles[0]?.test_count || 0
-    const totalFiles = await db.select(sql`
-      SELECT COUNT(*) as total FROM files WHERE project_id = ${projectId}
-    `)
-    const total = totalFiles[0]?.total || 1
-
-    // Calculate health metrics
-    const complexityScore = Math.max(0, 100 - (avgComplexity - 5) * 10)
-    const testCoverage = Math.min(100, (testCount / total) * 100)
-    const codeQuality = await calculateCodeQuality(db, projectId)
-    const architecture = await calculateArchitectureScore(db, projectId)
-
-    const overallScore = Math.round((complexityScore + testCoverage + codeQuality + architecture) / 4)
-    const grade =
-      overallScore >= 90 ? "A" : overallScore >= 75 ? "B" : overallScore >= 60 ? "C" : overallScore >= 45 ? "D" : "F"
-
-    // Get issues
-    const issues = await generateHealthIssues(db, projectId, {
-      complexityScore,
-      testCoverage,
-      codeQuality,
-      architecture,
-    })
-
-    return {
-      score: overallScore,
-      grade,
-      breakdown: {
-        complexity: Math.round(complexityScore),
-        test_coverage: Math.round(testCoverage),
-        code_quality: Math.round(codeQuality),
-        architecture: Math.round(architecture),
-      },
-      issues,
-    }
-  }
-
-  async function generateArchitectureReport(db: any, projectId: ProjectID) {
-    // Analyze architectural layers
-    const layers = await analyzeArchitecturalLayers(db, projectId)
-
-    // Detect design patterns
-    const patterns = await detectDesignPatterns(db, projectId)
-
-    // Find architecture violations
-    const violations = await findArchitectureViolations(db, projectId)
-
-    return {
-      layers,
-      patterns,
-      violations,
-    }
-  }
-
-  async function generateDependencyReport(db: any, projectId: ProjectID) {
-    // Internal dependencies (file-to-file)
-    const internal = await db.select(sql`
-      SELECT 
-        f1.relative_path as from_file,
-        f2.relative_path as to_file,
-        r.relationship_type as type,
-        COUNT(*) as strength
-      FROM relationships r
-      JOIN files f1 ON f1.id = r.from_file_id AND f1.project_id = r.project_id
-      JOIN files f2 ON f2.id = r.to_file_id AND f2.project_id = r.project_id
-      WHERE r.project_id = ${projectId}
-      GROUP BY f1.relative_path, f2.relative_path, r.relationship_type
-      ORDER BY strength DESC
-    `)
-
-    // External dependencies (imports)
-    const external = await analyzeExternalDependencies(db, projectId)
-
-    // Circular dependencies
-    const circular = await findCircularDependencies(db, projectId)
-
-    return {
-      internal: internal.map((dep: any) => ({
-        from: dep.from_file,
-        to: dep.to_file,
-        type: dep.type,
-        strength: dep.strength,
-      })),
-      external,
-      circular,
-    }
-  }
-
-  async function generateFileReport(db: any, projectId: ProjectID) {
-    const files = await db.select(sql`
-      SELECT 
-        f.relative_path,
-        f.language,
-        f.lines_of_code,
-        f.last_modified,
-        COUNT(DISTINCT s.id) FILTER (WHERE s.symbol_type = 'function') as functions,
-        COUNT(DISTINCT s.id) FILTER (WHERE s.symbol_type = 'class') as classes,
-        AVG(s.complexity) FILTER (WHERE s.complexity > 0) as avg_complexity
-      FROM files f
-      LEFT JOIN symbols s ON s.file_id = f.id AND s.project_id = f.project_id  
-      WHERE f.project_id = ${projectId}
-      GROUP BY f.id, f.relative_path, f.language, f.lines_of_code, f.last_modified
-      ORDER BY f.lines_of_code DESC
-    `)
-
-    // Count issues per file from brain_pattern table
-    const issuesPerFile = new Map<string, number>()
-    try {
-      const patterns = await db.select(sql`
-        SELECT file_path, COUNT(*) as issue_count
-        FROM brain_pattern
-        WHERE project_id = ${projectId}
-        AND pattern_type IN ('anti_pattern', 'code_smell', 'security_issue', 'performance_issue')
-        GROUP BY file_path
-      `)
-      for (const row of patterns) {
-        issuesPerFile.set(row.file_path, row.issue_count || 0)
-      }
-    } catch {
-      // brain_pattern table might not exist yet, default to 0
-    }
-
-    return files.map((file: any) => ({
-      path: file.relative_path,
-      language: file.language || "unknown",
-      lines: file.lines_of_code || 0,
-      functions: file.functions || 0,
-      classes: file.classes || 0,
-      complexity: Math.round(file.avg_complexity || 0),
-      last_modified: file.last_modified || 0,
-      issues: issuesPerFile.get(file.file_path) || 0,
-    }))
-  }
-
-  async function generateMetricsReport(db: any, projectId: ProjectID) {
-    const files = await db.select(sql`
-      SELECT COUNT(*) as total_files, SUM(f.lines_of_code) as total_lines
-      FROM files f WHERE f.project_id = ${projectId}
-    `)
-
-    const symbols = await db.select(sql`
-      SELECT 
-        AVG(s.complexity) as avg_complexity,
-        COUNT(*) FILTER (WHERE s.symbol_type = 'function') as total_functions
-      FROM symbols s WHERE s.project_id = ${projectId}
-    `)
-
-    const tests = await db.select(sql`
-      SELECT COUNT(*) as test_files
-      FROM files f 
-      WHERE f.project_id = ${projectId}
-      AND (f.relative_path LIKE '%test%' OR f.relative_path LIKE '%spec%')
-    `)
-
-    const totalFiles = files[0]?.total_files || 0
-    const totalLines = files[0]?.total_lines || 0
-    const avgComplexity = symbols[0]?.avg_complexity || 0
-    const totalFunctions = symbols[0]?.total_functions || 0
-    const testFiles = tests[0]?.test_files || 0
-
-    // Performance estimates
-    const buildTimeEstimate = Math.max(10, totalLines / 1000) // rough estimate
-    const bundleSizeEstimate = totalLines * 0.5 // rough KB estimate
-
-    // Quality metrics
-    const maintainabilityIndex = Math.max(0, 100 - avgComplexity * 5)
-    const technicalDebtRatio = Math.min(100, avgComplexity * 2)
-
-    // Calculate duplication percentage from code patterns
-    let duplicationPercentage = 5 // default estimate
-    try {
-      const duplicates = await db.select(sql`
-        SELECT COUNT(*) as duplicate_count
-        FROM brain_pattern
-        WHERE project_id = ${projectId}
-        AND pattern_type = 'duplication'
-      `)
-      const duplicateCount = duplicates[0]?.duplicate_count || 0
-      // Estimate: each duplicate pattern affects ~20 lines on average
-      const duplicatedLines = duplicateCount * 20
-      duplicationPercentage = totalLines > 0 ? Math.min(100, (duplicatedLines / totalLines) * 100) : 5
-    } catch {
-      // brain_pattern table might not exist, use estimate
-    }
-
-    // Testing metrics
-    const coverageEstimate = Math.min(100, (testFiles / totalFiles) * 100)
-    const testQualityScore = coverageEstimate * 0.8 // rough estimate
-
-    return {
-      performance: {
-        build_time_estimate: Math.round(buildTimeEstimate),
-        bundle_size_estimate: Math.round(bundleSizeEstimate),
-        complexity_trend:
-          avgComplexity <= 5
-            ? ("improving" as const)
-            : avgComplexity <= 10
-              ? ("stable" as const)
-              : ("degrading" as const),
-      },
-      quality: {
-        maintainability_index: Math.round(maintainabilityIndex),
-        technical_debt_ratio: Math.round(technicalDebtRatio),
-        duplication_percentage: Math.round(duplicationPercentage),
-      },
-      testing: {
-        total_tests: testFiles,
-        coverage_estimate: Math.round(coverageEstimate),
-        test_quality_score: Math.round(testQualityScore),
-      },
-    }
-  }
-
-  // Helper functions
-
-  async function detectFrameworksFromPath(filePath: string): Promise<string[]> {
-    const frameworks: string[] = []
-    const path = filePath.toLowerCase()
-
-    // Framework detection patterns
-    if (path.includes("react") || path.includes("jsx") || path.includes("tsx")) {
-      frameworks.push("React")
-    }
-    if (path.includes("vue") || path.includes(".vue")) {
-      frameworks.push("Vue")
-    }
-    if (path.includes("angular") || path.includes("ng-")) {
-      frameworks.push("Angular")
-    }
-    if (path.includes("django") || path.includes("models.py") || path.includes("views.py")) {
-      frameworks.push("Django")
-    }
-    if (path.includes("flask") || path.includes("app.py")) {
-      frameworks.push("Flask")
-    }
-    if (path.includes("spring") || path.includes("controller") || path.includes("service")) {
-      frameworks.push("Spring")
-    }
-    if (path.includes("express") || path.includes("routes")) {
-      frameworks.push("Express")
-    }
-
-    return frameworks
-  }
-
-  async function calculateCodeQuality(db: any, projectId: ProjectID): Promise<number> {
-    // Simple code quality heuristic based on naming conventions and structure
-    const symbols = await db.select(sql`
-      SELECT s.name, s.symbol_type
-      FROM symbols s
-      WHERE s.project_id = ${projectId}
-    `)
-
-    let qualityScore = 100
-    let total = symbols.length || 1
-
-    for (const symbol of symbols) {
-      // Check naming conventions
-      if (symbol.symbol_type === "function" && !/^[a-z][a-zA-Z0-9]*$/.test(symbol.name)) {
-        qualityScore -= 0.5
-      }
-      if (symbol.symbol_type === "class" && !/^[A-Z][a-zA-Z0-9]*$/.test(symbol.name)) {
-        qualityScore -= 0.5
-      }
-    }
-
-    return Math.max(0, qualityScore)
-  }
-
-  async function calculateArchitectureScore(db: any, projectId: ProjectID): Promise<number> {
-    // Architecture score based on separation of concerns and dependencies
-    const files = await db.select(sql`
-      SELECT f.relative_path, COUNT(r.id) as dependency_count
-      FROM files f
-      LEFT JOIN relationships r ON r.from_file_id = f.id AND r.project_id = f.project_id
-      WHERE f.project_id = ${projectId}
-      GROUP BY f.id, f.relative_path
-    `)
-
-    let score = 100
-    for (const file of files) {
-      // Penalize files with too many dependencies (God objects)
-      if (file.dependency_count > 20) {
-        score -= 2
-      } else if (file.dependency_count > 10) {
-        score -= 1
-      }
-    }
-
-    return Math.max(0, score)
-  }
-
-  async function generateHealthIssues(
-    db: any,
-    projectId: ProjectID,
-    scores: any,
-  ): Promise<
-    Array<{
-      type: "error" | "warning" | "info"
-      category: string
-      description: string
-      file?: string
-      severity: "low" | "medium" | "high" | "critical"
-    }>
-  > {
-    const issues: Array<{
-      type: "error" | "warning" | "info"
-      category: string
-      description: string
-      file?: string
-      severity: "low" | "medium" | "high" | "critical"
-    }> = []
-
-    if (scores.complexityScore < 50) {
-      issues.push({
-        type: "warning",
-        category: "complexity",
-        description: "High average complexity detected across codebase",
-        severity: "high",
-      })
-    }
-
-    if (scores.testCoverage < 30) {
-      issues.push({
-        type: "error",
-        category: "testing",
-        description: "Low test coverage - add more tests",
-        severity: "critical",
-      })
-    }
-
-    if (scores.architecture < 60) {
-      issues.push({
-        type: "warning",
-        category: "architecture",
-        description: "Architecture violations detected - review dependencies",
-        severity: "medium",
-      })
-    }
-
-    return issues
-  }
-
-  async function analyzeArchitecturalLayers(db: any, projectId: ProjectID) {
-    // Simplified layer detection based on directory structure
-    const files = await db.select(sql`
-      SELECT f.relative_path, COUNT(r.id) as dependencies
-      FROM files f
-      LEFT JOIN relationships r ON r.from_file_id = f.id AND r.project_id = f.project_id
-      WHERE f.project_id = ${projectId}
-      GROUP BY f.id, f.relative_path
-    `)
-
-    const layers = new Map<string, { files: string[]; dependencies: string[] }>()
-
-    for (const file of files) {
-      const pathParts = file.relative_path.split("/")
-      const layer = pathParts[0] || "root"
-
-      if (!layers.has(layer)) {
-        layers.set(layer, { files: [], dependencies: [] })
-      }
-
-      layers.get(layer)!.files.push(file.relative_path)
-    }
-
-    return Array.from(layers.entries()).map(([name, data]) => ({
-      name,
-      files: data.files,
-      dependencies: data.dependencies,
-      responsibilities: inferLayerResponsibilities(name, data.files),
-    }))
-  }
-
-  function inferLayerResponsibilities(layerName: string, files: string[]): string[] {
-    const responsibilities: string[] = []
-
-    if (layerName.includes("test") || files.some((f) => f.includes("test"))) {
-      responsibilities.push("Testing")
-    }
-    if (layerName.includes("api") || files.some((f) => f.includes("api"))) {
-      responsibilities.push("API Layer")
-    }
-    if (layerName.includes("ui") || layerName.includes("component")) {
-      responsibilities.push("User Interface")
-    }
-    if (layerName.includes("service") || files.some((f) => f.includes("service"))) {
-      responsibilities.push("Business Logic")
-    }
-    if (layerName.includes("model") || layerName.includes("data")) {
-      responsibilities.push("Data Layer")
-    }
-
-    if (responsibilities.length === 0) {
-      responsibilities.push("General Purpose")
-    }
-
-    return responsibilities
-  }
-
-  async function detectDesignPatterns(db: any, projectId: ProjectID) {
-    // Use existing pattern detection from PatternBrainTools
-    // This is a simplified version
-    return [
-      {
-        pattern: "MVC",
-        instances: 1,
-        quality: "good" as const,
-      },
-      {
-        pattern: "Factory",
-        instances: 0,
-        quality: "fair" as const,
-      },
-    ]
-  }
-
-  async function findArchitectureViolations(db: any, projectId: ProjectID) {
-    // Simplified violation detection
-    return []
-  }
-
-  async function analyzeExternalDependencies(db: any, projectId: ProjectID) {
-    // This would analyze package.json, requirements.txt, etc.
-    return []
-  }
-
-  async function findCircularDependencies(db: any, projectId: ProjectID) {
-    // Simplified circular dependency detection
-    return []
-  }
-
-  // ====================================================================
-  // CHECK BEFORE COMMIT - Pre-Commit Gate Checks
-  // ====================================================================
-
-  export async function checkBeforeCommit(
-    projectId: ProjectID,
-    options: {
-      files?: string[]
-      strict?: boolean
-      autofix?: boolean
-      skipTests?: boolean
-      skipSecurity?: boolean
-      skipQuality?: boolean
-    } = {},
-  ): Promise<any> {
-    const db = BrainDatabase.getInstance(projectId)
-    const {
-      files,
-      strict = false,
-      autofix = false,
-      skipTests = false,
-      skipSecurity = false,
-      skipQuality = false,
-    } = options
-
-    log.info("Running pre-commit gate checks", { files: files?.length, strict, projectId })
-
-    try {
-      // Determine which files to check
-      const targetFiles = await determineTargetFiles(db, projectId, files)
-      if (targetFiles.length === 0) {
-        return {
-          status: "no_changes",
-          message: "No files to check",
-          checks: [],
-          passed: true,
-        }
-      }
-
-      log.info(`Checking ${targetFiles.length} files`)
-
-      // Run all gate checks in parallel
-      const checks = await Promise.all([
-        // Critical checks (always run)
-        runSyntaxChecks(targetFiles),
-        runTypeChecks(targetFiles),
-
-        // Security checks
-        !skipSecurity ? runSecurityChecks(db, projectId, targetFiles) : Promise.resolve(createEmptyCheck("security")),
-
-        // Quality checks
-        !skipQuality ? runQualityChecks(db, projectId, targetFiles) : Promise.resolve(createEmptyCheck("quality")),
-
-        // Test checks
-        !skipTests ? runTestChecks(db, projectId, targetFiles) : Promise.resolve(createEmptyCheck("tests")),
-
-        // Architecture checks
-        runArchitectureChecks(db, projectId, targetFiles),
-
-        // Performance checks
-        runPerformanceChecks(db, projectId, targetFiles),
-
-        // Documentation checks
-        runDocumentationChecks(targetFiles),
-      ])
-
-      // Analyze results
-      const results = analyzeGateResults(checks, { strict })
-
-      // Apply autofixes if requested and available
-      if (autofix && results.fixableIssues.length > 0) {
-        const fixResults = await applyAutofixes(results.fixableIssues, targetFiles)
-        results.autofixApplied = fixResults
-      }
-
-      return {
-        status: results.passed ? "passed" : "failed",
-        passed: results.passed,
-        totalFiles: targetFiles.length,
-        checks: results.checks,
-        summary: results.summary,
-        blockers: results.blockers,
-        warnings: results.warnings,
-        fixableIssues: results.fixableIssues,
-        autofixApplied: results.autofixApplied || null,
-        recommendations: generateCommitRecommendations(results),
-      }
-    } catch (error: any) {
-      log.error("Pre-commit check error", error)
-      return {
-        status: "error",
-        passed: false,
-        error: `Pre-commit checks failed: ${error}`,
-        checks: [],
-      }
-    }
-  }
-
-  async function determineTargetFiles(db: any, projectId: ProjectID, explicitFiles?: string[]): Promise<any[]> {
-    if (explicitFiles && explicitFiles.length > 0) {
-      // Use explicitly provided files
-      return await Promise.all(
-        explicitFiles.map(async (filePath) => {
-          const fileInfo = await db.select(sql`
-            SELECT * FROM files 
-            WHERE project_id = ${projectId} 
-              AND (relative_path = ${filePath} OR file_path = ${filePath})
-            LIMIT 1
-          `)
-          return fileInfo[0] || { file_path: filePath, relative_path: filePath }
-        }),
-      )
-    }
-
-    // Get staged files from git (if available)
-    try {
-      const stagedFiles = await getStagedFiles()
-      if (stagedFiles.length > 0) {
-        return stagedFiles.map((filePath) => ({ file_path: filePath, relative_path: filePath }))
-      }
-    } catch (error) {
-      // Git not available or no staged files
-    }
-
-    // Fallback: get recently modified files
-    const recentFiles = await db.select(sql`
-      SELECT file_path, relative_path 
-      FROM files 
-      WHERE project_id = ${projectId}
-        AND last_modified > datetime('now', '-1 hour')
-      ORDER BY last_modified DESC
-      LIMIT 20
-    `)
-
-    return recentFiles
-  }
-
-  async function getStagedFiles(): Promise<string[]> {
-    // Get staged files from git
-    try {
-      const { spawn } = await import("node:child_process")
-      return new Promise((resolve) => {
-        const git = spawn("git", ["diff", "--cached", "--name-only"])
-        let output = ""
-
-        git.stdout.on("data", (data) => {
-          output += data.toString()
-        })
-
-        git.on("close", (code) => {
-          if (code === 0) {
-            const files = output
-              .split("\n")
-              .map((f) => f.trim())
-              .filter((f) => f.length > 0)
-            resolve(files)
-          } else {
-            resolve([])
-          }
-        })
-
-        git.on("error", () => {
-          resolve([])
-        })
-      })
-    } catch {
-      return []
-    }
-  }
-
-  async function runSyntaxChecks(files: any[]): Promise<any> {
-    const issues: any[] = []
-
-    for (const file of files) {
-      try {
-        // Check if file exists and is readable
-        const content = await readFileContentSafe(file.file_path)
-        if (content === null) {
-          issues.push({
-            type: "syntax_error",
-            severity: "critical",
-            file: file.relative_path,
-            message: "File not readable or does not exist",
-            line: 0,
-            fixable: false,
-          })
-          continue
-        }
-
-        // Basic syntax validation based on file extension
-        const ext = file.file_path.split(".").pop()?.toLowerCase()
-        switch (ext) {
-          case "json":
-            try {
-              JSON.parse(content)
-            } catch (e: any) {
-              issues.push({
-                type: "syntax_error",
-                severity: "critical",
-                file: file.relative_path,
-                message: `JSON syntax error: ${e.message}`,
-                fixable: false,
-              })
-            }
-            break
-
-          case "ts":
-          case "tsx":
-          case "js":
-          case "jsx":
-            // Basic JS/TS syntax checks
-            if (content.includes("console.log(")) {
-              issues.push({
-                type: "debug_code",
-                severity: "warning",
-                file: file.relative_path,
-                message: "console.log() found in code",
-                fixable: true,
-              })
-            }
-            break
-        }
-      } catch (error) {
-        issues.push({
-          type: "check_error",
-          severity: "warning",
-          file: file.relative_path,
-          message: "Could not perform syntax check",
-          fixable: false,
-        })
-      }
-    }
-
-    return {
-      name: "syntax",
-      status: issues.filter((i) => i.severity === "critical").length > 0 ? "failed" : "passed",
-      issues,
-      summary: `${issues.length} syntax issues found`,
-    }
-  }
-
-  async function runTypeChecks(files: any[]): Promise<any> {
-    const issues: any[] = []
-
-    // This would run TypeScript compiler checks
-    // For now, basic type-related pattern checks
-    for (const file of files) {
-      if (!file.file_path.endsWith(".ts") && !file.file_path.endsWith(".tsx")) {
-        continue
-      }
-
-      try {
-        const content = await readFileContentSafe(file.file_path)
-        if (!content) continue
-
-        // Check for 'any' types
-        if (content.includes(": any") || content.includes("<any>")) {
-          issues.push({
-            type: "type_safety",
-            severity: "warning",
-            file: file.relative_path,
-            message: 'Usage of "any" type detected - consider specific types',
-            fixable: false,
-          })
-        }
-
-        // Check for @ts-ignore
-        if (content.includes("@ts-ignore") || content.includes("@ts-nocheck")) {
-          issues.push({
-            type: "type_suppression",
-            severity: "warning",
-            file: file.relative_path,
-            message: "TypeScript error suppression detected - consider fixing the underlying issue",
-            fixable: false,
-          })
-        }
-      } catch (error) {
-        // Skip file on error
-      }
-    }
-
-    return {
-      name: "types",
-      status: issues.filter((i) => i.severity === "critical").length > 0 ? "failed" : "passed",
-      issues,
-      summary: `${issues.length} type issues found`,
-    }
-  }
-
-  async function runSecurityChecks(db: any, projectId: ProjectID, files: any[]): Promise<any> {
-    const issues: any[] = []
-
-    // Use the sentinel security patterns
-    for (const file of files) {
-      try {
-        const content = await readFileContentSafe(file.file_path)
-        if (!content) continue
-
-        const lines = content.split("\n")
-        for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
-          const line = lines[lineIndex]
-
-          // Check for hardcoded secrets
-          if (/(?:password|secret|api_?key|token)\s*[:=]\s*['"][^'"]{8,}['"]/.test(line)) {
-            issues.push({
-              type: "hardcoded_secret",
-              severity: "critical",
-              file: file.relative_path,
-              line: lineIndex + 1,
-              message: "Possible hardcoded secret detected",
-              fixable: false,
-            })
-          }
-
-          // Check for SQL injection risks
-          if (/\$\{.*\}.*(?:SELECT|INSERT|UPDATE|DELETE)/i.test(line)) {
-            issues.push({
-              type: "sql_injection",
-              severity: "critical",
-              file: file.relative_path,
-              line: lineIndex + 1,
-              message: "Potential SQL injection vulnerability",
-              fixable: false,
-            })
-          }
-
-          // Check for XSS risks
-          if (/dangerouslySetInnerHTML|innerHTML\s*=/.test(line)) {
-            issues.push({
-              type: "xss_risk",
-              severity: "high",
-              file: file.relative_path,
-              line: lineIndex + 1,
-              message: "Potential XSS vulnerability",
-              fixable: false,
-            })
-          }
-        }
-      } catch (error) {
-        // Skip file on error
-      }
-    }
-
-    return {
-      name: "security",
-      status: issues.filter((i) => i.severity === "critical").length > 0 ? "failed" : "passed",
-      issues,
-      summary: `${issues.length} security issues found`,
-    }
-  }
-
-  async function runQualityChecks(db: any, projectId: ProjectID, files: any[]): Promise<any> {
-    const issues: any[] = []
-
-    for (const file of files) {
-      try {
-        const content = await readFileContentSafe(file.file_path)
-        if (!content) continue
-
-        const lines = content.split("\n")
-
-        // Check file size
-        if (lines.length > 500) {
-          issues.push({
-            type: "large_file",
-            severity: "warning",
-            file: file.relative_path,
-            message: `File is ${lines.length} lines (consider breaking up)`,
-            fixable: false,
-          })
-        }
-
-        // Check for TODOs/FIXMEs
-        lines.forEach((line, index) => {
-          if (/\/\/\s*(TODO|FIXME|HACK|XXX)\b/.test(line)) {
-            issues.push({
-              type: "todo_comment",
-              severity: "info",
-              file: file.relative_path,
-              line: index + 1,
-              message: "TODO/FIXME comment found",
-              fixable: false,
-            })
-          }
-        })
-
-        // Check for empty catch blocks
-        const emptyFatherMatches = content.match(/catch\s*\([^)]*\)\s*\{\s*\}/g)
-        if (emptyFatherMatches) {
-          issues.push({
-            type: "empty_catch",
-            severity: "high",
-            file: file.relative_path,
-            message: "Empty catch block detected",
-            fixable: false,
-          })
-        }
-
-        // Check for missing error handling in async functions
-        if (content.includes("async ") && !content.includes("try") && !content.includes(".catch(")) {
-          issues.push({
-            type: "missing_error_handling",
-            severity: "warning",
-            file: file.relative_path,
-            message: "Async function without error handling",
-            fixable: false,
-          })
-        }
-      } catch (error) {
-        // Skip file on error
-      }
-    }
-
-    return {
-      name: "quality",
-      status: issues.filter((i) => ["critical", "high"].includes(i.severity)).length > 0 ? "failed" : "passed",
-      issues,
-      summary: `${issues.length} quality issues found`,
-    }
-  }
-
-  async function runTestChecks(db: any, projectId: ProjectID, files: any[]): Promise<any> {
-    const issues: any[] = []
-
-    // Check if test files exist for modified source files
-    const sourceFiles = files.filter(
-      (f) =>
-        !f.file_path.includes("test") &&
-        !f.file_path.includes("spec") &&
-        (f.file_path.endsWith(".ts") ||
-          f.file_path.endsWith(".js") ||
-          f.file_path.endsWith(".tsx") ||
-          f.file_path.endsWith(".jsx")),
-    )
-
-    for (const file of sourceFiles) {
-      const testFileExists = await checkTestFileExists(file.file_path)
-      if (!testFileExists) {
-        issues.push({
-          type: "missing_test",
-          severity: "warning",
-          file: file.relative_path,
-          message: "No corresponding test file found",
-          fixable: true,
-        })
-      }
-    }
-
-    return {
-      name: "tests",
-      status: issues.filter((i) => i.severity === "critical").length > 0 ? "failed" : "passed",
-      issues,
-      summary: `${issues.length} test-related issues found`,
-    }
-  }
-
-  async function runArchitectureChecks(db: any, projectId: ProjectID, files: any[]): Promise<any> {
-    const issues: any[] = []
-
-    // Check for architectural violations
-    for (const file of files) {
-      // Check if UI components are importing services directly (should go through controllers/hooks)
-      if (file.file_path.includes("/components/") || file.file_path.includes("/ui/")) {
-        try {
-          const content = await readFileContentSafe(file.file_path)
-          if (!content) continue
-
-          if (content.includes("import") && (content.includes("/services/") || content.includes("/api/"))) {
-            issues.push({
-              type: "architecture_violation",
-              severity: "warning",
-              file: file.relative_path,
-              message: "UI component directly importing service - consider using hooks or context",
-              fixable: false,
-            })
-          }
-        } catch (error) {
-          // Skip on error
-        }
-      }
-    }
-
-    return {
-      name: "architecture",
-      status: issues.filter((i) => i.severity === "critical").length > 0 ? "failed" : "passed",
-      issues,
-      summary: `${issues.length} architectural issues found`,
-    }
-  }
-
-  async function runPerformanceChecks(db: any, projectId: ProjectID, files: any[]): Promise<any> {
-    const issues: any[] = []
-
-    for (const file of files) {
-      try {
-        const content = await readFileContentSafe(file.file_path)
-        if (!content) continue
-
-        // Check for performance anti-patterns
-        if (content.includes("useEffect") && content.includes("[]") && content.includes("fetch")) {
-          const effectBlocks = content.match(/useEffect\s*\([^}]+\}/g) || []
-          for (const block of effectBlocks) {
-            if (!block.includes("AbortController") && block.includes("fetch")) {
-              issues.push({
-                type: "missing_abort_controller",
-                severity: "warning",
-                file: file.relative_path,
-                message: "useEffect with fetch should use AbortController",
-                fixable: true,
-              })
-            }
-          }
-        }
-
-        // Check for missing React.memo on large components
-        if (
-          file.file_path.includes(".tsx") &&
-          content.length > 2000 &&
-          !content.includes("React.memo") &&
-          !content.includes("memo(")
-        ) {
-          issues.push({
-            type: "missing_memoization",
-            severity: "info",
-            file: file.relative_path,
-            message: "Large component should consider React.memo for performance",
-            fixable: false,
-          })
-        }
-      } catch (error) {
-        // Skip on error
-      }
-    }
-
-    return {
-      name: "performance",
-      status: issues.filter((i) => i.severity === "critical").length > 0 ? "failed" : "passed",
-      issues,
-      summary: `${issues.length} performance issues found`,
-    }
-  }
-
-  async function runDocumentationChecks(files: any[]): Promise<any> {
-    const issues: any[] = []
-
-    for (const file of files) {
-      try {
-        const content = await readFileContentSafe(file.file_path)
-        if (!content) continue
-
-        // Check for missing function documentation
-        const functionMatches = content.match(/(?:export\s+)?(?:async\s+)?function\s+\w+\s*\(/g) || []
-        const docComments = content.match(/\/\*\*[\s\S]*?\*\//g) || []
-
-        if (functionMatches.length > docComments.length && functionMatches.length > 2) {
-          issues.push({
-            type: "missing_documentation",
-            severity: "info",
-            file: file.relative_path,
-            message: `${functionMatches.length - docComments.length} functions lack documentation`,
-            fixable: false,
-          })
-        }
-
-        // Check for README files in new packages/modules
-        if (file.file_path.includes("package.json") || file.file_path.includes("index.ts")) {
-          const dir = file.file_path.substring(0, file.file_path.lastIndexOf("/"))
-          const readmeExists = await checkFileExists(`${dir}/README.md`)
-          if (!readmeExists) {
-            issues.push({
-              type: "missing_readme",
-              severity: "warning",
-              file: file.relative_path,
-              message: "Package/module missing README.md",
-              fixable: true,
-            })
-          }
-        }
-      } catch (error) {
-        // Skip on error
-      }
-    }
-
-    return {
-      name: "documentation",
-      status: issues.filter((i) => i.severity === "critical").length > 0 ? "failed" : "passed",
-      issues,
-      summary: `${issues.length} documentation issues found`,
-    }
-  }
-
-  function analyzeGateResults(checks: any[], options: { strict: boolean }): any {
-    const allIssues = checks.flatMap((check) => check.issues || [])
-    const criticalIssues = allIssues.filter((i) => i.severity === "critical")
-    const highIssues = allIssues.filter((i) => i.severity === "high")
-    const warningIssues = allIssues.filter((i) => i.severity === "warning")
-    const fixableIssues = allIssues.filter((i) => i.fixable)
-
-    // Determine if commit should be blocked
-    let passed = criticalIssues.length === 0
-    if (options.strict) {
-      passed = passed && highIssues.length === 0
-    }
-
-    const blockers = [...criticalIssues]
-    if (options.strict) {
-      blockers.push(...highIssues)
-    }
-
-    return {
-      passed,
-      checks: checks.map((check) => ({
-        name: check.name,
-        status: check.status,
-        summary: check.summary,
-        issueCount: check.issues?.length || 0,
-      })),
-      summary: {
-        totalIssues: allIssues.length,
-        criticalIssues: criticalIssues.length,
-        highIssues: highIssues.length,
-        warnings: warningIssues.length,
-        fixable: fixableIssues.length,
-      },
-      blockers: blockers.map((issue) => ({
-        type: issue.type,
-        file: issue.file,
-        message: issue.message,
-        severity: issue.severity,
-        line: issue.line,
-      })),
-      warnings: warningIssues.map((issue) => ({
-        type: issue.type,
-        file: issue.file,
-        message: issue.message,
-        line: issue.line,
-      })),
-      fixableIssues,
-    }
-  }
-
-  async function applyAutofixes(issues: any[], files: any[]): Promise<any> {
-    const fixes: any[] = []
-
-    // Apply simple autofixes
-    for (const issue of issues) {
-      try {
-        switch (issue.type) {
-          case "debug_code":
-            // Remove console.log statements
-            const result = await autoRemoveConsoleLogs(issue.file)
-            if (result.success) {
-              fixes.push({
-                type: issue.type,
-                file: issue.file,
-                action: "Removed console.log statements",
-                success: true,
-              })
-            }
-            break
-
-          case "missing_abort_controller":
-            // Add AbortController to useEffect
-            fixes.push({
-              type: issue.type,
-              file: issue.file,
-              action: "Suggested AbortController addition (manual fix needed)",
-              success: false,
-            })
-            break
-        }
-      } catch (error) {
-        fixes.push({
-          type: issue.type,
-          file: issue.file,
-          action: `Autofix failed: ${error}`,
-          success: false,
-        })
-      }
-    }
-
-    return fixes
-  }
-
-  function generateCommitRecommendations(results: any): string[] {
-    const recommendations = []
-
-    if (results.summary.criticalIssues > 0) {
-      recommendations.push(`❌ Fix ${results.summary.criticalIssues} critical issues before committing`)
-    }
-
-    if (results.summary.highIssues > 0) {
-      recommendations.push(`⚠️  Consider fixing ${results.summary.highIssues} high-priority issues`)
-    }
-
-    if (results.summary.fixable > 0) {
-      recommendations.push(`🔧 ${results.summary.fixable} issues can be auto-fixed with --autofix`)
-    }
-
-    if (!results.passed) {
-      recommendations.push(`🚫 Commit blocked - address blockers and try again`)
-    } else {
-      recommendations.push(`✅ All checks passed - safe to commit`)
-    }
-
-    return recommendations
-  }
-
-  // Helper functions
-  async function readFileContentSafe(filePath: string): Promise<string | null> {
-    try {
-      const file = Bun.file(filePath)
-      if (!(await file.exists())) return null
-      return await file.text()
-    } catch (error) {
-      return null
-    }
-  }
-
-  async function checkTestFileExists(sourceFilePath: string): Promise<boolean> {
-    // Check if corresponding test file exists
-    const possibleTestPaths = [
-      sourceFilePath.replace(/\.(ts|js|tsx|jsx)$/, ".test.$1"),
-      sourceFilePath.replace(/\.(ts|js|tsx|jsx)$/, ".spec.$1"),
-      sourceFilePath.replace("/src/", "/test/").replace(/\.(ts|js|tsx|jsx)$/, ".test.$1"),
-      sourceFilePath.replace("/src/", "/__tests__/").replace(/\.(ts|js|tsx|jsx)$/, ".test.$1"),
-    ]
-
-    for (const testPath of possibleTestPaths) {
-      if (await checkFileExists(testPath)) {
-        return true
-      }
-    }
-
-    return false
-  }
-
-  async function checkFileExists(filePath: string): Promise<boolean> {
-    try {
-      return await Bun.file(filePath).exists()
-    } catch (error) {
-      return false
-    }
-  }
-
-  async function autoRemoveConsoleLogs(filePath: string): Promise<{ success: boolean; changes?: number }> {
-    try {
-      const file = Bun.file(filePath)
-      if (!(await file.exists())) return { success: false }
-
-      const text = await file.text()
-      const lines = text.split("\n")
-      const keep = lines.filter((line) => !/^\s*console\.log\(/.test(line))
-      const changes = lines.length - keep.length
-
-      if (changes <= 0) return { success: true, changes: 0 }
-
-      const next = keep.join("\n")
-      await Bun.write(filePath, next)
-      return { success: true, changes }
-    } catch (error) {
-      return { success: false }
-    }
-  }
-
-  function createEmptyCheck(name: string): any {
-    return {
-      name,
-      status: "skipped",
-      issues: [],
-      summary: "Check skipped",
-    }
-  }
-
-  // ====================================================================
-  // GET COMPLEXITY TREND - Complexity History Tracking
-  // ====================================================================
-
-  export async function getComplexityTrend(
-    projectId: ProjectID,
-    functionName: string,
-    options: {
-      ownerClass?: string
-      timeRange?: "week" | "month" | "quarter" | "year"
-      includeRelated?: boolean
-      predictTrend?: boolean
-    } = {},
-  ): Promise<any> {
-    const db = BrainDatabase.getInstance(projectId)
-    const { ownerClass, timeRange = "month", includeRelated = false, predictTrend = true } = options
-
-    log.info(`Getting complexity trend for ${functionName}`, { timeRange, projectId })
-
-    try {
-      // Find the target function
-      const targetFunction = await findTargetFunction(db, projectId, functionName, ownerClass)
-      if (!targetFunction) {
-        return {
-          error: `Function not found: ${functionName}${ownerClass ? ` in ${ownerClass}` : ""}`,
-          suggestions: await suggestSimilarFunctions(db, projectId, functionName),
-        }
-      }
-
-      // Get complexity history
-      const complexityHistory = await getComplexityHistory(db, targetFunction.id, timeRange)
-
-      // Analyze trends
-      const trendAnalysis = analyzeComplexityTrend(complexityHistory)
-
-      // Get current complexity details
-      const currentDetails = await getCurrentComplexityDetails(db, targetFunction.id)
-
-      // Include related functions if requested
-      let relatedTrends = []
-      if (includeRelated) {
-        relatedTrends = await getRelatedFunctionTrends(db, projectId, targetFunction)
-      }
-
-      // Predict future complexity if requested
-      let predictions = null
-      if (predictTrend && complexityHistory.length > 3) {
-        predictions = predictComplexityTrend(complexityHistory, trendAnalysis)
-      }
-
-      return {
-        function: {
-          name: targetFunction.name,
-          ownerClass: targetFunction.owner_class,
-          file: targetFunction.file_path,
-          currentComplexity: targetFunction.complexity,
-          language: targetFunction.language,
-        },
-        timeRange,
-        history: complexityHistory,
-        analysis: trendAnalysis,
-        currentDetails,
-        relatedTrends,
-        predictions,
-        recommendations: generateComplexityRecommendations(trendAnalysis, currentDetails, predictions),
-      }
-    } catch (error: any) {
-      log.error("Complexity trend analysis error", error)
-      return {
-        error: `Complexity trend analysis failed: ${error}`,
-        function: functionName,
-      }
-    }
-  }
-
-  async function findTargetFunction(
-    db: any,
-    projectId: ProjectID,
-    functionName: string,
-    ownerClass?: string,
-  ): Promise<any> {
-    let query = sql`
-      SELECT s.*, f.relative_path as file_path, f.language
-      FROM symbols s
-      JOIN files f ON s.file_id = f.id
-      WHERE s.project_id = ${projectId}
-        AND s.name = ${functionName}
-        AND s.type IN ('function', 'method')
-    `
-
-    if (ownerClass) {
-      query = sql`${query} AND s.owner_class = ${ownerClass}`
-    }
-
-    query = sql`${query} ORDER BY s.complexity DESC LIMIT 1`
-
-    const results = await db.select(query)
-    return results[0] || null
-  }
-
-  async function suggestSimilarFunctions(db: any, projectId: ProjectID, functionName: string): Promise<string[]> {
-    const suggestions = await db.select(sql`
-      SELECT name, owner_class
-      FROM symbols
-      WHERE project_id = ${projectId}
-        AND type IN ('function', 'method')
-        AND name LIKE ${`%${functionName}%`}
-      ORDER BY LENGTH(name) ASC
-      LIMIT 5
-    `)
-
-    return suggestions.map((s: any) => (s.owner_class ? `${s.owner_class}.${s.name}` : s.name))
-  }
-
-  async function getComplexityHistory(db: any, functionId: string, timeRange: string): Promise<any[]> {
-    const timeRangeMap = {
-      week: "7 days",
-      month: "30 days",
-      quarter: "90 days",
-      year: "365 days",
-    }
-
-    const history = await db.select(sql`
-      SELECT 
-        recorded_at,
-        complexity,
-        line_count,
-        cyclomatic_complexity,
-        cognitive_complexity,
-        maintainability_index,
-        change_reason,
-        commit_hash
-      FROM complexity_history
-      WHERE function_id = ${functionId}
-        AND recorded_at >= datetime('now', ${`-${timeRangeMap[timeRange as keyof typeof timeRangeMap]}`})
-      ORDER BY recorded_at ASC
-    `)
-
-    // If no historical data, create baseline from current state
-    if (history.length === 0) {
-      const currentFunction = await db.select(sql`
-        SELECT complexity, line_count, cyclomatic_complexity
-        FROM symbols
-        WHERE id = ${functionId}
-      `)
-
-      if (currentFunction[0]) {
-        return [
-          {
-            recorded_at: new Date().toISOString(),
-            complexity: currentFunction[0].complexity,
-            line_count: currentFunction[0].line_count,
-            cyclomatic_complexity: currentFunction[0].cyclomatic_complexity,
-            cognitive_complexity: null,
-            maintainability_index: null,
-            change_reason: "baseline",
-            commit_hash: null,
-          },
-        ]
-      }
-    }
-
-    return history
-  }
-
-  function analyzeComplexityTrend(history: any[]): any {
-    if (history.length < 2) {
-      return {
-        trend: "stable",
-        direction: "no_change",
-        velocity: 0,
-        volatility: 0,
-        riskLevel: "low",
-        keyChanges: [],
-        summary: "Insufficient data for trend analysis",
-      }
-    }
-
-    const complexities = history.map((h) => h.complexity || 0)
-    const dates = history.map((h) => new Date(h.recorded_at).getTime())
-
-    // Calculate linear regression for trend
-    const trend = calculateLinearRegression(dates, complexities)
-
-    // Calculate volatility (standard deviation of changes)
-    const changes = []
-    for (let i = 1; i < complexities.length; i++) {
-      changes.push(complexities[i] - complexities[i - 1])
-    }
-    const volatility = calculateStandardDeviation(changes)
-
-    // Identify significant changes
-    const keyChanges = identifySignificantChanges(history)
-
-    // Determine trend direction and risk
-    const velocity = trend.slope
-    let direction = "stable"
-    let riskLevel = "low"
-
-    if (velocity > 0.5) {
-      direction = "increasing"
-      riskLevel = velocity > 2 ? "high" : velocity > 1 ? "medium" : "low"
-    } else if (velocity < -0.5) {
-      direction = "decreasing"
-      riskLevel = "low" // Decreasing complexity is good
-    }
-
-    // Adjust risk based on volatility
-    if (volatility > 3) {
-      riskLevel = riskLevel === "low" ? "medium" : "high"
-    }
-
-    return {
-      trend: direction,
-      direction,
-      velocity,
-      volatility,
-      riskLevel,
-      keyChanges,
-      regression: trend,
-      summary: generateTrendSummary(direction, velocity, volatility, keyChanges.length),
-    }
-  }
-
-  async function getCurrentComplexityDetails(db: any, functionId: string): Promise<any> {
-    const details = await db.select(sql`
-      SELECT 
-        s.complexity,
-        s.line_count,
-        s.cyclomatic_complexity,
-        s.parameters,
-        s.return_type,
-        f.relative_path
-      FROM symbols s
-      JOIN files f ON s.file_id = f.id
-      WHERE s.id = ${functionId}
-    `)
-
-    const func = details[0]
-    if (!func) return null
-
-    // Analyze complexity components
-    const components = {
-      size: categorizeSize(func.line_count || 0),
-      cyclomaticComplexity: categorizeCyclomaticComplexity(func.cyclomatic_complexity || 0),
-      parameters: categorizeParameterCount(func.parameters?.length || 0),
-      overallRating: calculateOverallComplexityRating(func),
-    }
-
-    return {
-      current: {
-        complexity: func.complexity,
-        lineCount: func.line_count,
-        cyclomaticComplexity: func.cyclomatic_complexity,
-        parameterCount: func.parameters?.length || 0,
-      },
-      components,
-      thresholds: {
-        complexity: { good: 5, fair: 10, poor: 15 },
-        lineCount: { good: 20, fair: 50, poor: 100 },
-        cyclomaticComplexity: { good: 3, fair: 7, poor: 10 },
-        parameters: { good: 3, fair: 5, poor: 7 },
-      },
-    }
-  }
-
-  async function getRelatedFunctionTrends(db: any, projectId: ProjectID, targetFunction: any): Promise<any[]> {
-    // Get functions in the same file or class
-    const relatedFunctions = await db.select(sql`
-      SELECT s.id, s.name, s.complexity, s.owner_class
-      FROM symbols s
-      WHERE s.project_id = ${projectId}
-        AND s.type IN ('function', 'method')
-        AND s.id != ${targetFunction.id}
-        AND (
-          s.file_id = ${targetFunction.file_id} OR 
-          (s.owner_class = ${targetFunction.owner_class} AND s.owner_class IS NOT NULL)
-        )
-      ORDER BY s.complexity DESC
-      LIMIT 5
-    `)
-
-    const trends = []
-    for (const func of relatedFunctions) {
-      const history = await getComplexityHistory(db, func.id, "month")
-      if (history.length > 0) {
-        const analysis = analyzeComplexityTrend(history)
-        trends.push({
-          name: func.name,
-          ownerClass: func.owner_class,
-          currentComplexity: func.complexity,
-          trend: analysis.direction,
-          velocity: analysis.velocity,
-          riskLevel: analysis.riskLevel,
-        })
-      }
-    }
-
-    return trends
-  }
-
-  function predictComplexityTrend(history: any[], analysis: any): any {
-    const complexities = history.map((h) => h.complexity || 0)
-    const currentComplexity = complexities[complexities.length - 1]
-
-    // Simple linear prediction based on current trend
-    const predictions = []
-    const timePoints = ["1 week", "1 month", "3 months", "6 months"]
-    const multipliers = [0.25, 1, 3, 6] // Rough time multipliers
-
-    for (let i = 0; i < timePoints.length; i++) {
-      const predictedChange = analysis.velocity * multipliers[i]
-      const predicted = Math.max(0, currentComplexity + predictedChange)
-
-      predictions.push({
-        timeframe: timePoints[i],
-        predictedComplexity: Math.round(predicted * 10) / 10,
-        confidence: calculatePredictionConfidence(history.length, analysis.volatility),
-        riskLevel: predicted > 15 ? "high" : predicted > 10 ? "medium" : "low",
-      })
-    }
-
-    return {
-      predictions,
-      method: "linear_regression",
-      basedOnDataPoints: history.length,
-      reliability: history.length > 10 ? "high" : history.length > 5 ? "medium" : "low",
-    }
-  }
-
-  // Helper functions for complexity analysis
-  function calculateLinearRegression(x: number[], y: number[]): any {
-    const n = x.length
-    const sumX = x.reduce((a, b) => a + b, 0)
-    const sumY = y.reduce((a, b) => a + b, 0)
-    const sumXY = x.reduce((sum, xi, i) => sum + xi * y[i], 0)
-    const sumXX = x.reduce((sum, xi) => sum + xi * xi, 0)
-
-    const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX)
-    const intercept = (sumY - slope * sumX) / n
-
-    return { slope, intercept }
-  }
-
-  function calculateStandardDeviation(values: number[]): number {
-    if (values.length === 0) return 0
-    const mean = values.reduce((a, b) => a + b, 0) / values.length
-    const squaredDiffs = values.map((value) => Math.pow(value - mean, 2))
-    const variance = squaredDiffs.reduce((a, b) => a + b, 0) / values.length
-    return Math.sqrt(variance)
-  }
-
-  function identifySignificantChanges(history: any[]): any[] {
-    const changes = []
-
-    for (let i = 1; i < history.length; i++) {
-      const prev = history[i - 1]
-      const curr = history[i]
-      const change = (curr.complexity || 0) - (prev.complexity || 0)
-
-      // Consider changes > 2 complexity points as significant
-      if (Math.abs(change) > 2) {
-        changes.push({
-          date: curr.recorded_at,
-          change,
-          reason: curr.change_reason || "unknown",
-          commitHash: curr.commit_hash,
-          type: change > 0 ? "increase" : "decrease",
-          magnitude: Math.abs(change) > 5 ? "major" : "minor",
-        })
-      }
-    }
-
-    return changes
-  }
-
-  function categorizeSize(lineCount: number): any {
-    if (lineCount <= 20) return { category: "small", level: "good" }
-    if (lineCount <= 50) return { category: "medium", level: "fair" }
-    if (lineCount <= 100) return { category: "large", level: "poor" }
-    return { category: "very_large", level: "critical" }
-  }
-
-  function categorizeCyclomaticComplexity(complexity: number): any {
-    if (complexity <= 3) return { category: "simple", level: "good" }
-    if (complexity <= 7) return { category: "moderate", level: "fair" }
-    if (complexity <= 10) return { category: "complex", level: "poor" }
-    return { category: "very_complex", level: "critical" }
-  }
-
-  function categorizeParameterCount(count: number): any {
-    if (count <= 3) return { category: "few", level: "good" }
-    if (count <= 5) return { category: "moderate", level: "fair" }
-    if (count <= 7) return { category: "many", level: "poor" }
-    return { category: "too_many", level: "critical" }
-  }
-
-  function calculateOverallComplexityRating(func: any): any {
-    const scores = {
-      size: func.line_count > 100 ? 4 : func.line_count > 50 ? 3 : func.line_count > 20 ? 2 : 1,
-      cyclomatic:
-        func.cyclomatic_complexity > 10
-          ? 4
-          : func.cyclomatic_complexity > 7
-            ? 3
-            : func.cyclomatic_complexity > 3
-              ? 2
-              : 1,
-      parameters:
-        (func.parameters?.length || 0) > 7
-          ? 4
-          : (func.parameters?.length || 0) > 5
-            ? 3
-            : (func.parameters?.length || 0) > 3
-              ? 2
-              : 1,
-    }
-
-    const averageScore = (scores.size + scores.cyclomatic + scores.parameters) / 3
-
-    if (averageScore <= 1.5) return { rating: "excellent", level: "good" }
-    if (averageScore <= 2.5) return { rating: "good", level: "fair" }
-    if (averageScore <= 3.5) return { rating: "poor", level: "poor" }
-    return { rating: "critical", level: "critical" }
-  }
-
-  function calculatePredictionConfidence(dataPoints: number, volatility: number): number {
-    let confidence = Math.min(100, (dataPoints / 20) * 100) // More data points = higher confidence
-    confidence = Math.max(20, confidence - volatility * 10) // High volatility reduces confidence
-    return Math.round(confidence)
-  }
-
-  function generateTrendSummary(
-    direction: string,
-    velocity: number,
-    volatility: number,
-    keyChangesCount: number,
-  ): string {
-    const velocityDesc = Math.abs(velocity) > 2 ? "rapidly" : Math.abs(velocity) > 1 ? "moderately" : "slowly"
-    const volatilityDesc = volatility > 3 ? "highly volatile" : volatility > 1.5 ? "somewhat volatile" : "stable"
-
-    if (direction === "increasing") {
-      return `Complexity is ${velocityDesc} increasing with ${volatilityDesc} changes (${keyChangesCount} significant changes)`
-    } else if (direction === "decreasing") {
-      return `Complexity is ${velocityDesc} decreasing with ${volatilityDesc} changes (${keyChangesCount} significant changes)`
-    } else {
-      return `Complexity remains ${volatilityDesc} with ${keyChangesCount} significant changes`
-    }
-  }
-
-  function generateComplexityRecommendations(analysis: any, currentDetails: any, predictions: any): string[] {
-    const recommendations = []
-
-    // Current state recommendations
-    if (currentDetails?.components.overallRating.level === "critical") {
-      recommendations.push("🚨 CRITICAL: Function complexity is extremely high - immediate refactoring required")
-      recommendations.push("Consider breaking this function into smaller, focused functions")
-    } else if (currentDetails?.components.overallRating.level === "poor") {
-      recommendations.push("⚠️  HIGH: Function complexity is concerning - plan refactoring soon")
-    }
-
-    // Trend-based recommendations
-    if (analysis.direction === "increasing") {
-      if (analysis.velocity > 2) {
-        recommendations.push("📈 URGENT: Complexity growing rapidly - stop adding features and refactor")
-      } else if (analysis.velocity > 1) {
-        recommendations.push("📊 WARNING: Complexity steadily increasing - monitor closely")
-      }
-    }
-
-    // Volatility recommendations
-    if (analysis.volatility > 3) {
-      recommendations.push("🌪️  High volatility detected - establish coding standards and review process")
-    }
-
-    // Prediction-based recommendations
-    if (predictions?.predictions) {
-      const futureRisk = predictions.predictions.find((p: any) => p.timeframe === "3 months")
-      if (futureRisk?.riskLevel === "high") {
-        recommendations.push("🔮 PREDICTION: High complexity risk in 3 months - proactive refactoring needed")
-      }
-    }
-
-    // Specific improvement recommendations
-    if (currentDetails?.current.lineCount > 100) {
-      recommendations.push("✂️  Extract methods - function is too long")
-    }
-
-    if (currentDetails?.current.parameterCount > 5) {
-      recommendations.push("📦 Introduce parameter objects - too many parameters")
-    }
-
-    if (currentDetails?.current.cyclomaticComplexity > 10) {
-      recommendations.push("🔀 Simplify control flow - reduce branching complexity")
-    }
-
-    // Positive reinforcement
-    if (analysis.direction === "decreasing") {
-      recommendations.push("✅ GOOD: Complexity decreasing - keep up the good refactoring work!")
-    }
-
-    if (recommendations.length === 0) {
-      recommendations.push("✅ Function complexity is well-maintained")
-    }
-
-    return recommendations
-  }
-}
-
-// Helper function to calculate cognitive complexity
-function calculateCognitiveComplexity(symbol: any): number {
-  // Cognitive complexity calculation based on structural analysis
-  const baseComplexity = symbol.complexity || 0
-
-  // Cognitive complexity adds penalties for nested structures and breaks in linear flow
-  // Based on SonarSource cognitive complexity rules:
-  // - +1 for each control flow break (if, else, loops, switch, try/catch, etc.)
-  // - +nesting_level for nested control flow structures
-  // - +1 for recursive calls
-  // - +1 for logical operators in conditions
-
-  let cognitiveComplexity = baseComplexity
-
-  // Add nesting penalty (approximation based on cyclomatic complexity)
-  // High cyclomatic complexity often indicates deep nesting
-  if (baseComplexity > 10) {
-    cognitiveComplexity += Math.floor((baseComplexity - 10) * 0.5)
-  }
-
-  // Add penalty for function length (longer functions are harder to understand)
-  const linesOfCode = symbol.lines_of_code || 0
-  if (linesOfCode > 50) {
-    cognitiveComplexity += Math.floor((linesOfCode - 50) / 20)
-  }
-
-  // Add penalty for parameter count (more parameters = more cognitive load)
-  const parameterCount = symbol.parameter_count || 0
-  if (parameterCount > 4) {
-    cognitiveComplexity += parameterCount - 4
-  }
-
-  return Math.round(cognitiveComplexity)
-}
-
-// ================================================================
-// STEP 5 - PATTERN RECOGNITION SYSTEM (INTELLIGENCE)
-// ================================================================
+  // NOTE (Phase 8): BrainTools.detectPatterns (SQL design-pattern detector) and
+  // PatternBrainTools.detectPatterns (universal pattern detection) are two
+  // distinct public APIs with different shapes — intentionally kept separate.
 
 export namespace PatternBrainTools {
   /**
@@ -5633,11 +3094,12 @@ export namespace AdvancedBrainTools {
     projectId: ProjectID,
     query: string,
     options: {
-      searchScope?: ("functions" | "classes" | "brain_file" | "comments")[]
+      searchScope?: ("functions" | "classes" | "files" | "comments")[]
       similarityThreshold?: number
       maxResults?: number
       includeContext?: boolean
       crossLanguage?: boolean
+      filePath?: string
     } = {},
   ): Promise<{
     results: Array<{
@@ -5668,8 +3130,9 @@ export namespace AdvancedBrainTools {
     }>
   }> {
     const opts = {
-      searchScope: ["functions", "classes", "brain_file", "comments"] as const,
-      similarityThreshold: 0.3,
+      searchScope: ["functions", "classes", "files", "comments"] as const,
+      // similarityThreshold intentionally not defaulted here —
+      // performSemanticKeywordSearch picks 0.15 (local vectors) or 0.35 (API vectors)
       maxResults: 50,
       includeContext: true,
       crossLanguage: true,
@@ -5799,103 +3262,6 @@ export namespace AdvancedBrainTools {
       feature: featureComponents,
       architecture: architectureAnalysis,
       quality: qualityAnalysis,
-    }
-  }
-
-  /**
-   * predict_next_steps - Development Workflow Intelligence
-   * AI-powered prediction of next development steps based on current codebase state
-   * 🚀 Understands development patterns and suggests intelligent next actions
-   */
-  export async function predictNextSteps(
-    projectId: ProjectID,
-    options: {
-      context?: string
-      currentTask?: string
-      analysisDepth?: "quick" | "thorough" | "comprehensive"
-      includeRefactoring?: boolean
-      includeTesting?: boolean
-      includeDocumentation?: boolean
-      skipAutomaticPredictions?: boolean
-    } = {},
-  ): Promise<{
-    predictions: Array<{
-      category: "development" | "testing" | "refactoring" | "documentation" | "security"
-      action: string
-      priority: "immediate" | "high" | "medium" | "low"
-      confidence: number
-      reasoning: string
-      effort: {
-        estimated_hours: number
-        complexity: "trivial" | "simple" | "moderate" | "complex" | "expert"
-        dependencies: string[]
-      }
-      impact: {
-        codeQuality: number
-        maintainability: number
-        performance: number
-        security: number
-      }
-    }>
-    workflow: {
-      suggestedOrder: string[]
-      parallelizable: Array<string[]>
-      blockers: Array<{
-        action: string
-        blockedBy: string[]
-        resolution: string
-      }>
-    }
-    insights: {
-      developmentVelocity: "slow" | "steady" | "fast" | "exceptional"
-      codebaseHealth: number
-      technicalDebtTrend: "improving" | "stable" | "degrading"
-      recommendedFocus: string[]
-    }
-  }> {
-    const opts = {
-      analysisDepth: "thorough" as const,
-      includeRefactoring: true,
-      includeTesting: true,
-      includeDocumentation: true,
-      ...options,
-    }
-
-    log.info("starting next steps prediction", { projectId, options: opts })
-
-    const db = await BrainDatabase.getInstance(projectId)
-
-    // Analyze current codebase state
-    const codebaseState = await analyzeCodebaseState(db, projectId)
-
-    // Generate predictions based on patterns and state
-    const predictions = await generateDevelopmentPredictions(db, projectId, codebaseState, opts)
-
-    // Create workflow recommendations
-    const workflow = {
-      suggestedOrder: predictions.map((p: any) => p.action),
-      parallelizable: [],
-      blockers: [],
-    }
-
-    // Generate insights
-    const insights = {
-      developmentVelocity: "steady" as const,
-      codebaseHealth: 75,
-      technicalDebtTrend: "stable" as const,
-      recommendedFocus: ["testing", "code quality"],
-    }
-
-    log.info("next steps prediction completed", {
-      projectId,
-      predictionsGenerated: predictions.length,
-      developmentVelocity: insights.developmentVelocity,
-    })
-
-    return {
-      predictions,
-      workflow,
-      insights,
     }
   }
 
@@ -6093,26 +3459,51 @@ export namespace AdvancedBrainTools {
     // Phase 2: Vector Embedding Semantic Search
     try {
       const queryVector = await SemanticEngine.embed(query)
+      if (!queryVector || queryVector.length === 0) {
+        return await performFallbackKeywordSearch(db, projectId, query, opts)
+      }
 
-      const embeddingModel = "opencode/text-embedding-3-small"
+      const currentModel = await SemanticEngine.getEmbeddingModel()
 
-      // Fetch all embeddings for this project
-      const embeddings = await db
-        .select({
-          id: BrainSemanticEmbeddingTable.entity_id,
-          vector: BrainSemanticEmbeddingTable.embedding_vector,
-          context: BrainSemanticEmbeddingTable.semantic_context,
-        })
+      // Never compare vectors across vector spaces: rows must match the query
+      // vector's dimension. Prefer the currently configured model; if it has no
+      // rows, fall back to any model with matching dimensions (with a caveat).
+      const vectorQuery = {
+        id: BrainSemanticEmbeddingTable.entity_id,
+        vector: BrainSemanticEmbeddingTable.embedding_vector,
+        context: BrainSemanticEmbeddingTable.semantic_context,
+        model: BrainSemanticEmbeddingTable.embedding_model,
+      }
+      let embeddings = await db
+        .select(vectorQuery)
         .from(BrainSemanticEmbeddingTable)
         .where(
           and(
             eq(BrainSemanticEmbeddingTable.project_id, projectId),
-            eq(BrainSemanticEmbeddingTable.embedding_model, embeddingModel),
+            eq(BrainSemanticEmbeddingTable.embedding_model, currentModel),
+            eq(BrainSemanticEmbeddingTable.vector_dimension, queryVector.length),
           ),
         )
+        .limit(50000)
+
+      let usedModel = currentModel
+      if (!embeddings || embeddings.length === 0) {
+        embeddings = await db
+          .select(vectorQuery)
+          .from(BrainSemanticEmbeddingTable)
+          .where(
+            and(
+              eq(BrainSemanticEmbeddingTable.project_id, projectId),
+              eq(BrainSemanticEmbeddingTable.vector_dimension, queryVector.length),
+            ),
+          )
+          .limit(50000)
+        usedModel = embeddings?.[0]?.model || "unknown"
+        log.warn("No embeddings for configured model; comparing against stored model instead", { configured: currentModel, usedModel, dimension: queryVector.length })
+      }
 
       if (!embeddings || embeddings.length === 0) {
-        log.warn("No semantic embeddings found in database. Falling back to keyword search.", { projectId })
+        log.warn("No semantic embeddings matching query vector dimension. Falling back to keyword search.", { projectId, dimension: queryVector.length })
         return await performFallbackKeywordSearch(db, projectId, query, opts)
       }
 
@@ -6121,19 +3512,23 @@ export namespace AdvancedBrainTools {
         try {
           const vec = JSON.parse(e.vector)
           const similarity = SemanticEngine.cosineSimilarity(queryVector, vec)
-          const ctx = e.context ? JSON.parse(e.context) : {}
+          const ctx = e.context ? (typeof e.context === "string" ? JSON.parse(e.context) : e.context) : {}
           return { id: e.id, similarity, context: ctx }
         } catch (err) {
           return { id: e.id, similarity: -1, context: {} }
         }
       })
 
-      // Filter by threshold and sort
-      const threshold = opts.similarityThreshold || 0.3
+      // Local word-vector models (small dimensions) produce lower cosines than
+      // API embeddings — use a matching default threshold and always report scores.
+      const isLocalVectors = queryVector.length < 200
+      const threshold = opts.similarityThreshold ?? (isLocalVectors ? 0.15 : 0.35)
+      const maxResults = opts.maxResults || 50
       const matches = scored
         .filter((s: any) => s.similarity >= threshold)
         .sort((a: any, b: any) => b.similarity - a.similarity)
-        .slice(0, opts.maxResults || 50)
+        // Headroom: filePath filtering happens below, before the final slice
+        .slice(0, Math.min(maxResults * 10, 500))
 
       if (matches.length === 0) return await performFallbackKeywordSearch(db, projectId, query, opts)
 
@@ -6154,27 +3549,16 @@ export namespace AdvancedBrainTools {
       }
 
       const results = []
+      const modelCaveat = usedModel !== currentModel ? ` (compared against stored model "${usedModel}")` : ""
       for (const match of matches) {
+        if (results.length >= maxResults) break
         const s = symbolMap.get(match.id)
         if (!s) continue
+        if (AnalysisExclusions.isAnalysisExcluded(s.file?.relative_path || "")) continue
+        if (opts.filePath && !(s.file?.relative_path || "").includes(opts.filePath) && !(s.file?.path || "").includes(opts.filePath)) continue
 
-        let finalContent = s.symbol.name
-        if (s.file && s.file.relative_path && s.symbol.line_start && s.symbol.line_end) {
-          try {
-            const fsModule = require("fs")
-            const pathModule = require("path")
-            const root = process.cwd()
-            const absPath = pathModule.join(root, s.file.relative_path)
-            if (fsModule.existsSync(absPath)) {
-              const fileLines = fsModule.readFileSync(absPath, "utf-8").split("\n")
-              const startLine = Math.max(0, s.symbol.line_start - 1)
-              const endLine = Math.min(fileLines.length, s.symbol.line_end)
-              finalContent = fileLines.slice(startLine, endLine).join("\n")
-            }
-          } catch (e) {
-            // fallback
-          }
-        }
+        const finalContent =
+          (await readSymbolSnippet(s.file?.path, s.symbol.line_start, s.symbol.line_end, 30)) || s.symbol.name
 
         results.push({
           item: {
@@ -6185,7 +3569,7 @@ export namespace AdvancedBrainTools {
             content: finalContent,
           },
           similarity: match.similarity,
-          explanation: `Conceptual match for "${query}"`,
+          explanation: `Conceptual match for "${query}" (similarity ${match.similarity.toFixed(2)})${modelCaveat}`,
           context: {
             surroundingCode: "",
             relatedSymbols: [],
@@ -6194,6 +3578,7 @@ export namespace AdvancedBrainTools {
         })
       }
 
+      if (results.length === 0) return await performFallbackKeywordSearch(db, projectId, query, opts)
       return results
     } catch (e) {
       log.info("Vector search unavailable (embeddings not configured), using keyword search instead")
@@ -6239,15 +3624,23 @@ export namespace AdvancedBrainTools {
       const joiner = useAnd ? " AND " : " OR "
       const whereClause = clauses.join(joiner)
 
+      let filePathClause = ""
+      if (opts.filePath) {
+        filePathClause = " AND (f.relative_path LIKE ? OR f.path LIKE ?)"
+        params.push(`%${opts.filePath}%`, `%${opts.filePath}%`)
+      }
+
       return rawDb.prepare(`
         SELECT s.id, s.name, s.qualified_name, s.symbol_type, s.line_start, s.line_end,
                s.complexity,
-               f.relative_path
+               f.relative_path, f.path
         FROM brain_symbol s
         JOIN brain_file f ON f.id = s.file_id
         WHERE s.project_id = ?
           AND (${whereClause})
-        LIMIT ${opts.maxResults || 50}
+          AND ${AnalysisExclusions.analysisPathScopeSQL("f")}
+          ${filePathClause}
+        LIMIT ${(opts.maxResults || 50) * 5}
       `).all(...params) as any[]
     }
 
@@ -6284,17 +3677,7 @@ export namespace AdvancedBrainTools {
       if (seen.has(s.id)) continue
       seen.add(s.id)
       if (score < 0.08) continue  // lower threshold since scoring is more granular
-      let content = s.name
-      try {
-        const absPath = require("path").join(process.cwd(), s.relative_path)
-        if (require("fs").existsSync(absPath)) {
-          const lines = require("fs").readFileSync(absPath, "utf-8").split("\n")
-          content = lines.slice(
-            Math.max(0, (s.line_start || 1) - 1),
-            Math.min(lines.length, (s.line_end || s.line_start || 1) + 5)
-          ).join("\n")
-        }
-      } catch {}
+      const content = (await readSymbolSnippet(s.path, s.line_start, s.line_end)) || s.name
       results.push({
         item: {
           type: (s.symbol_type || "function") as "function" | "class" | "file" | "comment",
@@ -6444,35 +3827,6 @@ export namespace AdvancedBrainTools {
     }
   }
 
-  // Development prediction helper functions
-  async function analyzeCodebaseState(db: any, projectId: ProjectID): Promise<any> {
-    // Analyze current state of codebase for predictions
-    return {
-      totalFiles: 0,
-      totalFunctions: 0,
-      totalClasses: 0,
-      averageComplexity: 0,
-      testCoverage: 0,
-      recentActivity: [],
-    }
-  }
-
-  async function generateDevelopmentPredictions(db: any, projectId: ProjectID, state: any, opts: any): Promise<any[]> {
-    // Generate contextual predictions based on recent activity and codebase analysis
-    try {
-      // Only return predictions when specifically requested, not automatically
-      if (opts?.skipAutomaticPredictions) {
-        return []
-      }
-
-      // BrainGitCooccurrenceTable removed — table was never populated.
-      // Skip temporal predictions for now.
-
-      return []
-    } catch (error) {
-      return []
-    }
-  }
 }
 
 // ================================================================

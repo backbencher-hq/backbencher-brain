@@ -1,7 +1,6 @@
-// @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
-import * as Log from "../tool/brain-log.js"
 // @ts-nocheck — data mapping file with intentional duplicate key overrides
-import { CrossLanguageIntelligence } from "./cross-language-intelligence.js"
+import { CrossLanguageIntelligence } from "./cross-language-intelligence"
+import * as Log from "../tool/brain-log"
 
 const log = Log.create({ service: "cross-language-migration" })
 

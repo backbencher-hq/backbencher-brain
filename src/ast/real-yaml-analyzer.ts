@@ -1,24 +1,23 @@
-// @ts-nocheck — Ported from backbencher.
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import { ASTEngine } from "./engine"
 
 interface YamlContext {
   tree: { rootNode: Node }
   content: string
   filePath: string
-  symbols: UniversalSymbol[]
-  imports: ImportInfo[]
-  relationships: UniversalRelationship[]
-  exports: ExportInfo[]
-  metadata: Partial<FileMetadata>
+  symbols: ASTEngine.UniversalSymbol[]
+  imports: ASTEngine.ImportInfo[]
+  relationships: ASTEngine.UniversalRelationship[]
+  exports: ASTEngine.ExportInfo[]
+  metadata: Partial<ASTEngine.FileMetadata>
 }
 
-export class RealYamlAnalyzer implements LanguageAnalyzer {
+export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
   public analyze(
     rootNode: Node,
     content: string,
     filePath: string,
-  ): Omit<ParseResult, "language" | "metadata"> & { metadata: Partial<FileMetadata> } {
+  ): Omit<ASTEngine.ParseResult, "language" | "metadata"> & { metadata: Partial<ASTEngine.FileMetadata> } {
     const ctx: YamlContext = {
       tree: { rootNode },
       content,
@@ -64,7 +63,7 @@ export class RealYamlAnalyzer implements LanguageAnalyzer {
     const MAX_DEPTH = 25
     const MAX_SYMBOLS_PER_FILE = 50000
 
-    const stack: { node: Node; parentSymbol: UniversalSymbol | null; depth: number }[] = [
+    const stack: { node: Node; parentSymbol: ASTEngine.UniversalSymbol | null; depth: number }[] = [
       { node: rootNode, parentSymbol: null, depth: 0 },
     ]
 
@@ -91,11 +90,11 @@ export class RealYamlAnalyzer implements LanguageAnalyzer {
           ctx.metadata.patterns!.push("Multi-document YAML")
         }
         const docName = `document_${docCount}`
-        newParentSymbol = this.createSymbol(docName, SymbolKind.Module, curr, parentSymbol, ctx)
+        newParentSymbol = this.createSymbol(docName, ASTEngine.SymbolKind.Module, curr, parentSymbol, ctx)
       } else if (curr.type === "block_mapping_pair" || curr.type === "flow_mapping_pair") {
         newParentSymbol = this.handleMappingPair(curr, ctx, parentSymbol)
       } else if (curr.type === "block_sequence_item" || curr.type === "flow_sequence_item") {
-        const itemSymbol = this.createSymbol("item", SymbolKind.Variable, curr, parentSymbol, ctx, {
+        const itemSymbol = this.createSymbol("item", ASTEngine.SymbolKind.Variable, curr, parentSymbol, ctx, {
           isYamlSequenceItem: true,
         })
         newParentSymbol = itemSymbol
@@ -139,7 +138,7 @@ export class RealYamlAnalyzer implements LanguageAnalyzer {
       const _owner = s.ownerName || s.scope
       if (_owner) {
         ctx.relationships.push({
-          type: RelationshipType.Contains,
+          type: ASTEngine.RelationshipType.Contains,
           source: _owner,
           target: s.name,
           isExternal: false,
@@ -208,13 +207,13 @@ export class RealYamlAnalyzer implements LanguageAnalyzer {
 
   private createSymbol(
     name: string,
-    kind: SymbolKind,
+    kind: ASTEngine.SymbolKind,
     node: Node,
-    parent: UniversalSymbol | null,
+    parent: ASTEngine.UniversalSymbol | null,
     ctx: YamlContext,
     meta: Record<string, any> = {},
-  ): UniversalSymbol {
-    const symbol: UniversalSymbol = {
+  ): ASTEngine.UniversalSymbol {
+    const symbol: ASTEngine.UniversalSymbol = {
       id: parent ? `${parent.id}.${name}` : name,
       name,
       qualifiedName: parent ? `${parent.id}.${name}` : name,
@@ -240,8 +239,8 @@ export class RealYamlAnalyzer implements LanguageAnalyzer {
   private handleMappingPair(
     node: Node,
     ctx: YamlContext,
-    parent: UniversalSymbol | null,
-  ): UniversalSymbol | null {
+    parent: ASTEngine.UniversalSymbol | null,
+  ): ASTEngine.UniversalSymbol | null {
     let keyNode = node.childForFieldName("key")
     if (!keyNode) {
       for (let i = 0; i < node.childCount; i++) {
@@ -260,7 +259,7 @@ export class RealYamlAnalyzer implements LanguageAnalyzer {
     }
     if (!keyNode) return parent
 
-    const symbol = this.createSymbol(keyNode.text, SymbolKind.Property, keyNode, parent, ctx)
+    const symbol = this.createSymbol(keyNode.text, ASTEngine.SymbolKind.Property, keyNode, parent, ctx)
 
     // Check if the value has an anchor
     const valueNode = node.childForFieldName("value")
@@ -274,7 +273,7 @@ export class RealYamlAnalyzer implements LanguageAnalyzer {
           refValue = refValue.substring(1, refValue.length - 1)
         }
         ctx.relationships.push({
-          type: RelationshipType.Uses,
+          type: ASTEngine.RelationshipType.Uses,
           source: parent ? parent.id : symbol.id,
           target: refValue,
           targetExternal: refValue,
@@ -283,7 +282,7 @@ export class RealYamlAnalyzer implements LanguageAnalyzer {
           metadata: { isYamlRef: true }
         } as any);
         ctx.relationships.push({
-          type: RelationshipType.References,
+          type: ASTEngine.RelationshipType.References,
           source: parent ? parent.id : symbol.id,
           target: refValue,
           isExternal: true,
@@ -300,7 +299,7 @@ export class RealYamlAnalyzer implements LanguageAnalyzer {
         const valText = valueNode.text
         if (valText.startsWith("*")) {
           ctx.relationships.push({
-            type: RelationshipType.Extends,
+            type: ASTEngine.RelationshipType.Extends,
             source: parent ? parent.id : symbol.id,
             target: valText.substring(1),
             isExternal: false,
@@ -314,7 +313,7 @@ export class RealYamlAnalyzer implements LanguageAnalyzer {
     return symbol
   }
 
-  private scanForAnchors(node: Node, ctx: YamlContext, parent: UniversalSymbol) {
+  private scanForAnchors(node: Node, ctx: YamlContext, parent: ASTEngine.UniversalSymbol) {
     const queue: Node[] = [node]
     while (queue.length > 0) {
       const curr = queue.pop()!
@@ -333,16 +332,16 @@ export class RealYamlAnalyzer implements LanguageAnalyzer {
     }
   }
 
-  private handleAnchor(node: Node, ctx: YamlContext, parent: UniversalSymbol | null) {
+  private handleAnchor(node: Node, ctx: YamlContext, parent: ASTEngine.UniversalSymbol | null) {
     const nameNode = node.childCount > 0 ? node.child(0) : node
     if (!nameNode) return
-    this.createSymbol(nameNode.text, SymbolKind.Constant, nameNode, parent, ctx, { isAnchor: true })
+    this.createSymbol(nameNode.text, ASTEngine.SymbolKind.Constant, nameNode, parent, ctx, { isAnchor: true })
     if (!ctx.metadata.patterns!.includes("Anchors and Aliases")) {
       ctx.metadata.patterns!.push("Anchors and Aliases")
     }
   }
 
-  private handleAlias(node: Node, ctx: YamlContext, parent: UniversalSymbol | null) {
+  private handleAlias(node: Node, ctx: YamlContext, parent: ASTEngine.UniversalSymbol | null) {
     if (!ctx.metadata.patterns!.includes("Anchors and Aliases")) {
       ctx.metadata.patterns!.push("Anchors and Aliases")
     }
@@ -351,7 +350,7 @@ export class RealYamlAnalyzer implements LanguageAnalyzer {
     if (!targetNode) return
 
     ctx.relationships.push({
-      type: RelationshipType.Uses,
+      type: ASTEngine.RelationshipType.Uses,
       source: parent.id,
       target: targetNode.text,
       isExternal: false, // Aliases resolve directly to internal document anchors

@@ -1,12 +1,11 @@
-// @ts-nocheck — Ported from backbencher.
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import { ASTEngine } from "./engine"
 
-export class RealGraphqlAnalyzer implements LanguageAnalyzer {
-  public analyze(rootNode: Node, content: string, filePath: string): ParseResult {
-    const symbols: UniversalSymbol[] = []
-    const relationships: UniversalRelationship[] = []
-    const imports: ImportInfo[] = []
+export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
+  public analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
+    const symbols: ASTEngine.UniversalSymbol[] = []
+    const relationships: ASTEngine.UniversalRelationship[] = []
+    const imports: ASTEngine.ImportInfo[] = []
 
     // Extract imports — GraphQL uses #import directive (tool-specific convention)
     // This is a pragma, not part of the GraphQL AST spec, so regex is the practical approach
@@ -17,14 +16,14 @@ export class RealGraphqlAnalyzer implements LanguageAnalyzer {
       relationships.push({
         source: "schema",
         target: importPath,
-        type: RelationshipType.References,
+        type: ASTEngine.RelationshipType.References,
         confidence: 0.8,
         metadata: { isGqlImport: true },
       })
     }
 
-    const exports: ExportInfo[] = []
-    const errors: ParseError[] = []
+    const exports: ASTEngine.ExportInfo[] = []
+    const errors: ASTEngine.ParseError[] = []
 
     const walkStack: { node: Node; scopePath: string[]; ownerName: string; ownerKind: string }[] = [
       { node: rootNode, scopePath: [], ownerName: "", ownerKind: "" },
@@ -48,9 +47,9 @@ export class RealGraphqlAnalyzer implements LanguageAnalyzer {
 
       if (type === "schema_definition" || type === "SchemaDefinition" || type === "schema_extension" || type === "SchemaExtension") {
         const schemaName = type === "schema_extension" ? "SchemaExtension" : "Schema"
-        const schemaSymbol: UniversalSymbol = {
+        const schemaSymbol: ASTEngine.UniversalSymbol = {
           name: schemaName,
-          kind: SymbolKind.Namespace,
+          kind: ASTEngine.SymbolKind.Namespace,
           range: {
             startLine: node.startPosition.row + 1,
             endLine: node.endPosition.row + 1,
@@ -79,9 +78,9 @@ export class RealGraphqlAnalyzer implements LanguageAnalyzer {
             if (opTypeNode) {
               const opType = opTypeNode.text
               const returnType = namedTypeNode ? namedTypeNode.text : undefined
-              const fieldSymbol: UniversalSymbol = {
+              const fieldSymbol: ASTEngine.UniversalSymbol = {
                 name: opType,
-                kind: SymbolKind.Property,
+                kind: ASTEngine.SymbolKind.Property,
                 range: {
                   startLine: child.startPosition.row + 1,
                   endLine: child.endPosition.row + 1,
@@ -119,12 +118,12 @@ export class RealGraphqlAnalyzer implements LanguageAnalyzer {
         const nameNode = this.findChild(node, (n) => n.type === "name" || n.type === "Name")
         if (nameNode) {
           const typeName = nameNode.text
-          let kind = SymbolKind.Class
-          if (type.includes("interface")) kind = SymbolKind.Interface
-          if (type.includes("enum")) kind = SymbolKind.Enum
-          if (type.includes("union")) kind = SymbolKind.Type
-          if (type.includes("scalar")) kind = SymbolKind.Type
-          if (type.includes("input_object") || type.includes("input_object")) kind = SymbolKind.Interface
+          let kind = ASTEngine.SymbolKind.Class
+          if (type.includes("interface")) kind = ASTEngine.SymbolKind.Interface
+          if (type.includes("enum")) kind = ASTEngine.SymbolKind.Enum
+          if (type.includes("union")) kind = ASTEngine.SymbolKind.Type
+          if (type.includes("scalar")) kind = ASTEngine.SymbolKind.Type
+          if (type.includes("input_object") || type.includes("input_object")) kind = ASTEngine.SymbolKind.Interface
 
           const isExtension = type.includes("extension") || type.includes("Extension")
           const graphqlType = type.replace("_type_definition", "").replace("_type_extension", "_extension")
@@ -137,7 +136,7 @@ export class RealGraphqlAnalyzer implements LanguageAnalyzer {
                 .trim()
             : undefined
 
-          const typeSymbol: UniversalSymbol = {
+          const typeSymbol: ASTEngine.UniversalSymbol = {
             name: typeName,
             kind,
             range: {
@@ -168,7 +167,7 @@ export class RealGraphqlAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: symbolId,
               target: typeName,
-              type: RelationshipType.Extends,
+              type: ASTEngine.RelationshipType.Extends,
               metadata: { extensionType: graphqlType },
             })
           }
@@ -188,7 +187,7 @@ export class RealGraphqlAnalyzer implements LanguageAnalyzer {
                 relationships.push({
                   source: symbolId,
                   target: interfaceName,
-                  type: RelationshipType.Implements,
+                  type: ASTEngine.RelationshipType.Implements,
                   metadata: {},
                 })
               }
@@ -214,9 +213,9 @@ export class RealGraphqlAnalyzer implements LanguageAnalyzer {
             n.type === "ArgumentsDefinition"
           )
 
-          const fieldSymbol: UniversalSymbol = {
+          const fieldSymbol: ASTEngine.UniversalSymbol = {
             name: fieldName,
-            kind: SymbolKind.Property,
+            kind: ASTEngine.SymbolKind.Property,
             range: {
               startLine: node.startPosition.row + 1,
               endLine: node.endPosition.row + 1,
@@ -247,7 +246,7 @@ export class RealGraphqlAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: currentOwnerName,
               target: fieldSymbolId,
-              type: RelationshipType.Contains,
+              type: ASTEngine.RelationshipType.Contains,
               metadata: { role: type === "enum_value_definition" ? "enum_value" : "field" },
             })
           }
@@ -258,7 +257,7 @@ export class RealGraphqlAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: fieldSymbolId,
                 target: cleanType,
-                type: RelationshipType.Uses,
+                type: ASTEngine.RelationshipType.Uses,
                 metadata: { relationshipRole: "field_return_type" },
               })
             }
@@ -271,9 +270,9 @@ export class RealGraphqlAnalyzer implements LanguageAnalyzer {
         if (nameNode) {
           const directiveName = `@${nameNode.text}`
           const argumentsNode = this.findChild(node, (n) => n.type === "arguments_definition")
-          const dirDefSymbol: UniversalSymbol = {
+          const dirDefSymbol: ASTEngine.UniversalSymbol = {
             name: directiveName,
-            kind: SymbolKind.Function,
+            kind: ASTEngine.SymbolKind.Function,
             range: {
               startLine: node.startPosition.row + 1,
               endLine: node.endPosition.row + 1,
@@ -301,9 +300,9 @@ export class RealGraphqlAnalyzer implements LanguageAnalyzer {
         const opType = opTypeNode ? opTypeNode.text : type === "fragment_definition" ? "fragment" : "query"
         const opName = nameNode ? nameNode.text : `Anonymous_${opType}_${node.startPosition.row}`
 
-        const opSymbol: UniversalSymbol = {
+        const opSymbol: ASTEngine.UniversalSymbol = {
           name: opName,
-          kind: SymbolKind.Method,
+          kind: ASTEngine.SymbolKind.Method,
           range: {
             startLine: node.startPosition.row + 1,
             endLine: node.endPosition.row + 1,
@@ -326,9 +325,9 @@ export class RealGraphqlAnalyzer implements LanguageAnalyzer {
       if (type === "directive" && node.parent && node.parent.type !== "directive_definition") {
         const nameNode = this.findChild(node, (n) => n.type === "name")
         if (nameNode) {
-          const dirSymbol: UniversalSymbol = {
+          const dirSymbol: ASTEngine.UniversalSymbol = {
             name: `@${nameNode.text}`,
-            kind: SymbolKind.Constructor,
+            kind: ASTEngine.SymbolKind.Constructor,
             range: {
               startLine: node.startPosition.row + 1,
               endLine: node.endPosition.row + 1,
@@ -352,7 +351,7 @@ export class RealGraphqlAnalyzer implements LanguageAnalyzer {
           relationships.push({
             source: currentOwnerName,
             target: nameNode.text,
-            type: RelationshipType.Uses,
+            type: ASTEngine.RelationshipType.Uses,
             metadata: { usageType: "fragment_spread" },
           })
         }
@@ -366,7 +365,7 @@ export class RealGraphqlAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: currentOwnerName,
               target: namedType.text,
-              type: RelationshipType.Uses,
+              type: ASTEngine.RelationshipType.Uses,
               metadata: { usageType: "inline_fragment_type_condition" },
             })
           }
@@ -377,9 +376,9 @@ export class RealGraphqlAnalyzer implements LanguageAnalyzer {
         const varNode = this.findChild(node, (n) => n.type === "variable")
         const typeNode = this.findChild(node, (n) => n.type === "type")
         if (varNode && typeNode) {
-          const varSymbol: UniversalSymbol = {
+          const varSymbol: ASTEngine.UniversalSymbol = {
             name: varNode.text,
-            kind: SymbolKind.Variable,
+            kind: ASTEngine.SymbolKind.Variable,
             range: {
               startLine: node.startPosition.row + 1,
               endLine: node.endPosition.row + 1,
@@ -448,8 +447,8 @@ export class RealGraphqlAnalyzer implements LanguageAnalyzer {
     }
   }
 
-  private extractArguments(argsNode: Node): Parameter[] {
-    const params: Parameter[] = []
+  private extractArguments(argsNode: Node): ASTEngine.Parameter[] {
+    const params: ASTEngine.Parameter[] = []
     for (let i = 0; i < argsNode.namedChildCount; i++) {
       const arg = argsNode.namedChild(i)!
       if (arg.type === "input_value_definition" || arg.type === "argument" || arg.type === "variable_definition") {

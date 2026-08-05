@@ -1,13 +1,12 @@
-// @ts-nocheck — Ported from backbencher.
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import { ASTEngine } from "./engine"
 
 interface CssContext {
-  symbols: UniversalSymbol[]
-  relationships: UniversalRelationship[]
-  imports: ImportInfo[]
-  exports: ExportInfo[]
-  errors: ParseError[]
+  symbols: ASTEngine.UniversalSymbol[]
+  relationships: ASTEngine.UniversalRelationship[]
+  imports: ASTEngine.ImportInfo[]
+  exports: ASTEngine.ExportInfo[]
+  errors: ASTEngine.ParseError[]
   content: string
   keyframeNames: Record<string, boolean>
   mixinNames: Record<string, boolean>
@@ -23,8 +22,8 @@ interface StackFrame {
   currentSelector: string
 }
 
-export class RealCssAnalyzer implements LanguageAnalyzer {
-  analyze(rootNode: Node, content: string, filePath: string): ParseResult {
+export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
+  analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
     const ctx: CssContext = {
       symbols: [],
       relationships: [],
@@ -91,7 +90,7 @@ export class RealCssAnalyzer implements LanguageAnalyzer {
           if (propNode && propNode.text.startsWith("--")) {
             ctx.symbols.push({
               name: propNode.text,
-              kind: SymbolKind.Variable,
+              kind: ASTEngine.SymbolKind.Variable,
               range: this.nodeToRange(node),
               scope: currentSelector || "root",
               visibility: "public",
@@ -154,7 +153,7 @@ export class RealCssAnalyzer implements LanguageAnalyzer {
               if (!ctx.symbols.some((s: any) => s.name === `@mixin ${name}`)) {
                 ctx.symbols.push({
                   name: `@mixin ${name}`,
-                  kind: SymbolKind.Function,
+                  kind: ASTEngine.SymbolKind.Function,
                   range: {
                     startLine: n.startPosition.row + 1,
                     startColumn: n.startPosition.column + 1,
@@ -185,7 +184,7 @@ export class RealCssAnalyzer implements LanguageAnalyzer {
               ctx.relationships.push({
                 source: scope,
                 target: `@mixin ${name}`,
-                type: RelationshipType.Uses,
+                type: ASTEngine.RelationshipType.Uses,
                 metadata: { cssSpecific: true, isMixinRef: true },
               })
             }
@@ -225,7 +224,7 @@ export class RealCssAnalyzer implements LanguageAnalyzer {
         ctx.relationships.push({
           source: _owner,
           target: s.name,
-          type: RelationshipType.Contains,
+          type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
           metadata: {},
         })
@@ -267,18 +266,18 @@ export class RealCssAnalyzer implements LanguageAnalyzer {
     hasPseudoElement: boolean,
     hasAttribute: boolean,
     isComplex: boolean,
-  ): SymbolKind {
-    if (hasPseudoElement && !hasClass && !hasId && !hasTag) return SymbolKind.Property
-    if (hasPseudoClass && !hasClass && !hasId && !hasTag && !hasAttribute) return SymbolKind.Property
+  ): ASTEngine.SymbolKind {
+    if (hasPseudoElement && !hasClass && !hasId && !hasTag) return ASTEngine.SymbolKind.Property
+    if (hasPseudoClass && !hasClass && !hasId && !hasTag && !hasAttribute) return ASTEngine.SymbolKind.Property
     if (hasId && !hasClass && !hasTag && !hasPseudoClass && !hasPseudoElement && !hasAttribute)
-      return SymbolKind.Interface
+      return ASTEngine.SymbolKind.Interface
     if (hasTag && !hasClass && !hasId && !hasPseudoClass && !hasPseudoElement && !hasAttribute)
-      return SymbolKind.Type
+      return ASTEngine.SymbolKind.Type
     if (hasAttribute && !hasClass && !hasId && !hasTag && !hasPseudoClass && !hasPseudoElement)
-      return SymbolKind.Property
+      return ASTEngine.SymbolKind.Property
     if (hasClass && !hasId && !hasTag && !hasPseudoClass && !hasPseudoElement && !hasAttribute && !isComplex)
-      return SymbolKind.Class
-    return SymbolKind.Class
+      return ASTEngine.SymbolKind.Class
+    return ASTEngine.SymbolKind.Class
   }
 
   private findChild(node: Node, predicate: (child: Node) => boolean): Node | null {
@@ -434,7 +433,7 @@ export class RealCssAnalyzer implements LanguageAnalyzer {
           ctx.relationships.push({
             source: chain[i],
             target: chain[i + 1],
-            type: RelationshipType.Contains,
+            type: ASTEngine.RelationshipType.Contains,
             metadata: { cssSpecific: true, isSelectorChain: true },
           })
         }
@@ -495,7 +494,7 @@ export class RealCssAnalyzer implements LanguageAnalyzer {
       ctx.relationships.push({
         source: media,
         target: selectorText,
-        type: RelationshipType.Contains,
+        type: ASTEngine.RelationshipType.Contains,
         metadata: { cssSpecific: true, isMediaScope: true },
       })
     }
@@ -503,7 +502,7 @@ export class RealCssAnalyzer implements LanguageAnalyzer {
       ctx.relationships.push({
         source: layer,
         target: selectorText,
-        type: RelationshipType.Contains,
+        type: ASTEngine.RelationshipType.Contains,
         metadata: { cssSpecific: true, isLayerScope: true },
       })
     }
@@ -511,7 +510,7 @@ export class RealCssAnalyzer implements LanguageAnalyzer {
       ctx.relationships.push({
         source: container,
         target: selectorText,
-        type: RelationshipType.Contains,
+        type: ASTEngine.RelationshipType.Contains,
         metadata: { cssSpecific: true, isContainerScope: true },
       })
     }
@@ -519,7 +518,7 @@ export class RealCssAnalyzer implements LanguageAnalyzer {
       ctx.relationships.push({
         source: parentSelector,
         target: selectorText,
-        type: RelationshipType.Contains,
+        type: ASTEngine.RelationshipType.Contains,
         metadata: { cssSpecific: true, isNestedSelector: true },
       })
     }
@@ -542,7 +541,7 @@ export class RealCssAnalyzer implements LanguageAnalyzer {
       ctx.relationships.push({
         source: "global",
         target: moduleName,
-        type: RelationshipType.References,
+        type: ASTEngine.RelationshipType.References,
         confidence: 0.9,
         metadata: { isCssImport: true }
       })
@@ -568,7 +567,7 @@ export class RealCssAnalyzer implements LanguageAnalyzer {
       const mediaName = `@media ${queryNode.text}`
       ctx.symbols.push({
         name: mediaName,
-        kind: SymbolKind.Interface,
+        kind: ASTEngine.SymbolKind.Interface,
         range: this.nodeToRange(node),
         scope: "",
         visibility: "public",
@@ -589,7 +588,7 @@ export class RealCssAnalyzer implements LanguageAnalyzer {
       const name = nameNode.text.replace(/['"]/g, "")
       ctx.symbols.push({
         name: name,
-        kind: SymbolKind.Function,
+        kind: ASTEngine.SymbolKind.Function,
         range: this.nodeToRange(node),
         scope: "",
         visibility: "public",
@@ -605,7 +604,7 @@ export class RealCssAnalyzer implements LanguageAnalyzer {
     if (queryNode) {
       ctx.symbols.push({
         name: `@supports ${queryNode.text.trim()}`,
-        kind: SymbolKind.Interface,
+        kind: ASTEngine.SymbolKind.Interface,
         range: this.nodeToRange(node),
         scope: "",
         visibility: "public",
@@ -673,7 +672,7 @@ export class RealCssAnalyzer implements LanguageAnalyzer {
 
       ctx.symbols.push({
         name: ruleName,
-        kind: keyword === "@mixin" ? SymbolKind.Function : SymbolKind.Module,
+        kind: keyword === "@mixin" ? ASTEngine.SymbolKind.Function : ASTEngine.SymbolKind.Module,
         range: this.nodeToRange(node),
         scope: keyword === "@include" ? currentSelector : "",
         visibility: "public",
@@ -695,7 +694,7 @@ export class RealCssAnalyzer implements LanguageAnalyzer {
         ctx.relationships.push({
           source: currentSelector,
           target: `@mixin ${namePart}`,
-          type: RelationshipType.Uses,
+          type: ASTEngine.RelationshipType.Uses,
           metadata: { cssSpecific: true, isMixinRef: true },
         })
       }
@@ -716,7 +715,7 @@ export class RealCssAnalyzer implements LanguageAnalyzer {
         ctx.relationships.push({
           source: currentSelector,
           target: propNode.text,
-          type: RelationshipType.Uses,
+          type: ASTEngine.RelationshipType.Uses,
           confidence: 0.9,
           metadata: { cssSpecific: true, isStyleRule: true },
         })
@@ -742,7 +741,7 @@ export class RealCssAnalyzer implements LanguageAnalyzer {
         ctx.relationships.push({
           source: currentSelector,
           target: val.text.trim(),
-          type: RelationshipType.Uses,
+          type: ASTEngine.RelationshipType.Uses,
           metadata: { cssSpecific: true, isComposition: true },
         })
       }
@@ -751,7 +750,7 @@ export class RealCssAnalyzer implements LanguageAnalyzer {
     if (propName.startsWith("--") || propName.startsWith("$") || propName.startsWith("@")) {
       ctx.symbols.push({
         name: propName,
-        kind: SymbolKind.Variable,
+        kind: ASTEngine.SymbolKind.Variable,
         range: this.nodeToRange(node),
         scope: currentSelector,
         visibility: "public",
@@ -772,7 +771,7 @@ export class RealCssAnalyzer implements LanguageAnalyzer {
             ctx.relationships.push({
               source: currentSelector,
               target: text,
-              type: RelationshipType.Uses,
+              type: ASTEngine.RelationshipType.Uses,
               metadata: { cssSpecific: true, isAnimationRef: true },
             })
           }
@@ -803,7 +802,7 @@ export class RealCssAnalyzer implements LanguageAnalyzer {
             ctx.relationships.push({
               source: currentSelector,
               target: n.text.trim(),
-              type: RelationshipType.References,
+              type: ASTEngine.RelationshipType.References,
               metadata: { cssSpecific: true, isVariableRef: true },
             })
             ctx.patterns["CSS Custom Properties"] = true
@@ -818,7 +817,7 @@ export class RealCssAnalyzer implements LanguageAnalyzer {
   }
 
   private detectFrameworksFromClasses(ctx: CssContext) {
-    const selectors: UniversalSymbol[] = []
+    const selectors: ASTEngine.UniversalSymbol[] = []
     for (let i = 0; i < ctx.symbols.length; i++) {
       if (ctx.symbols[i].metadata?.isSelector) selectors.push(ctx.symbols[i])
     }
@@ -856,12 +855,12 @@ export class RealCssAnalyzer implements LanguageAnalyzer {
     let maintainability = 100
     let performance = 100
 
-    const selectors: UniversalSymbol[] = []
+    const selectors: ASTEngine.UniversalSymbol[] = []
     for (let i = 0; i < ctx.symbols.length; i++) {
       if (ctx.symbols[i].metadata?.isSelector) selectors.push(ctx.symbols[i])
     }
 
-    const complexSelectors: UniversalSymbol[] = []
+    const complexSelectors: ASTEngine.UniversalSymbol[] = []
     for (let i = 0; i < selectors.length; i++) {
       if (selectors[i].metadata?.isComplex) complexSelectors.push(selectors[i])
     }
@@ -916,7 +915,7 @@ export class RealCssAnalyzer implements LanguageAnalyzer {
     return insights
   }
 
-  private nodeToRange(node: Node): UniversalSymbol["range"] {
+  private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {
     return {
       startLine: node.startPosition.row + 1,
       startColumn: node.startPosition.column + 1,

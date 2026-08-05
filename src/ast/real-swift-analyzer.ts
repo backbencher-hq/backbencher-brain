@@ -1,21 +1,20 @@
-// @ts-nocheck — Ported from backbencher.
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import { ASTEngine } from "./engine"
 
-export class RealSwiftAnalyzer implements LanguageAnalyzer {
+export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
   public analyze(
     rootNode: Node,
     content: string,
     filePath: string,
-  ): Omit<ParseResult, "language" | "metadata"> & { metadata: Partial<FileMetadata> } {
-    const symbols: UniversalSymbol[] = []
-    const imports: ImportInfo[] = []
-    const relationships: UniversalRelationship[] = []
-    const exports: ExportInfo[] = []
+  ): Omit<ASTEngine.ParseResult, "language" | "metadata"> & { metadata: Partial<ASTEngine.FileMetadata> } {
+    const symbols: ASTEngine.UniversalSymbol[] = []
+    const imports: ASTEngine.ImportInfo[] = []
+    const relationships: ASTEngine.UniversalRelationship[] = []
+    const exports: ASTEngine.ExportInfo[] = []
     const patternsObj: Record<string, boolean> = {}
     const frameworksObj: Record<string, boolean> = {}
 
-    const metadata: Partial<FileMetadata> = {
+    const metadata: Partial<ASTEngine.FileMetadata> = {
       linesOfCode: 0,
       performanceScore: 100,
       architecturalInsights: [],
@@ -54,7 +53,7 @@ export class RealSwiftAnalyzer implements LanguageAnalyzer {
     }
     metadata.linesOfCode = loc
 
-    const stack: { node: Node; parentSymbol: UniversalSymbol | null }[] = [
+    const stack: { node: Node; parentSymbol: ASTEngine.UniversalSymbol | null }[] = [
       { node: rootNode, parentSymbol: null },
     ]
 
@@ -102,17 +101,17 @@ export class RealSwiftAnalyzer implements LanguageAnalyzer {
       } else if (curr.type === "closure_expression") {
         patternsObj["Closures"] = true
         const closureName = `closure_${curr.startPosition.row + 1}_${curr.startPosition.column + 1}`
-        this.createSymbol(closureName, SymbolKind.Function, curr, parentSymbol, symbols, { isClosure: true })
+        this.createSymbol(closureName, ASTEngine.SymbolKind.Function, curr, parentSymbol, symbols, { isClosure: true })
       } else if (curr.type === "enum_entry" || curr.type === "case_statement") {
         const caseName = curr.namedChild ? curr.namedChild(0)?.text : curr.text
         if (caseName && caseName !== "case") {
-          this.createSymbol(caseName, SymbolKind.EnumMember, curr, parentSymbol, symbols, { enumCase: true })
+          this.createSymbol(caseName, ASTEngine.SymbolKind.EnumMember, curr, parentSymbol, symbols, { enumCase: true })
         }
       } else if (curr.type === "typealias_declaration" || curr.type === "typealias_statement") {
         for (let i = 0; i < curr.namedChildCount; i++) {
           const c = curr.namedChild(i)
           if (c && (c.type === "simple_identifier" || c.type === "identifier")) {
-            this.createSymbol(c.text, SymbolKind.Type, curr, parentSymbol, symbols, { isTypeAlias: true })
+            this.createSymbol(c.text, ASTEngine.SymbolKind.Type, curr, parentSymbol, symbols, { isTypeAlias: true })
             break
           }
         }
@@ -120,7 +119,7 @@ export class RealSwiftAnalyzer implements LanguageAnalyzer {
         for (let i = 0; i < curr.namedChildCount; i++) {
           const c = curr.namedChild(i)
           if (c && (c.type === "simple_identifier" || c.type === "identifier")) {
-            this.createSymbol(c.text, SymbolKind.Type, curr, parentSymbol, symbols, { isAssociatedType: true })
+            this.createSymbol(c.text, ASTEngine.SymbolKind.Type, curr, parentSymbol, symbols, { isAssociatedType: true })
             break
           }
         }
@@ -198,7 +197,7 @@ export class RealSwiftAnalyzer implements LanguageAnalyzer {
       const _owner = s.ownerName || s.scope
       if (_owner) {
         relationships.push({
-          type: RelationshipType.Contains,
+          type: ASTEngine.RelationshipType.Contains,
           source: _owner,
           target: s.name,
           isExternal: false,
@@ -210,7 +209,7 @@ export class RealSwiftAnalyzer implements LanguageAnalyzer {
     for (const imp of imports) {
       if (imp.module) {
         relationships.push({
-          type: RelationshipType.References,
+          type: ASTEngine.RelationshipType.References,
           source: "root",
           target: imp.module,
           isExternal: true,
@@ -232,14 +231,14 @@ export class RealSwiftAnalyzer implements LanguageAnalyzer {
 
   private createSymbol(
     name: string,
-    kind: SymbolKind,
+    kind: ASTEngine.SymbolKind,
     node: Node,
-    parent: UniversalSymbol | null,
-    symbols: UniversalSymbol[],
+    parent: ASTEngine.UniversalSymbol | null,
+    symbols: ASTEngine.UniversalSymbol[],
     meta: Record<string, any> = {},
     visibility: string = "internal",
-  ): UniversalSymbol {
-    const symbol: UniversalSymbol = {
+  ): ASTEngine.UniversalSymbol {
+    const symbol: ASTEngine.UniversalSymbol = {
       id: parent ? `${parent.id}.${name}` : name,
       name,
       kind,
@@ -302,7 +301,7 @@ export class RealSwiftAnalyzer implements LanguageAnalyzer {
     return attrs
   }
 
-  private handleImport(node: Node, imports: ImportInfo[], frameworksObj: Record<string, boolean>) {
+  private handleImport(node: Node, imports: ASTEngine.ImportInfo[], frameworksObj: Record<string, boolean>) {
     let moduleName = ""
     for (let i = 0; i < node.childCount; i++) {
       const c = node.child(i)
@@ -339,18 +338,18 @@ export class RealSwiftAnalyzer implements LanguageAnalyzer {
 
   private handleDeclaration(
     node: Node,
-    symbols: UniversalSymbol[],
-    relationships: UniversalRelationship[],
-    parent: UniversalSymbol | null,
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    parent: ASTEngine.UniversalSymbol | null,
     patternsObj: Record<string, boolean>
-  ): UniversalSymbol | null {
+  ): ASTEngine.UniversalSymbol | null {
     let typeIdentifierNode: Node | null = null
-    let kind = SymbolKind.Class
+    let kind = ASTEngine.SymbolKind.Class
     let isValueType = false
     let isExtension = false
 
     if (node.type === "protocol_declaration") {
-       kind = SymbolKind.Interface
+       kind = ASTEngine.SymbolKind.Interface
        patternsObj["Protocol-Oriented Programming"] = true
        for (let i = 0; i < node.childCount; i++) {
           const c = node.child(i)
@@ -361,18 +360,18 @@ export class RealSwiftAnalyzer implements LanguageAnalyzer {
        }
 } else if (node.type === "class_declaration" || node.type === "actor_declaration") {
         if (node.type === "actor_declaration") {
-            kind = SymbolKind.Actor
+            kind = ASTEngine.SymbolKind.Actor
         }
        for (let i = 0; i < node.childCount; i++) {
           const c = node.child(i)
           if (c && c.type === "struct") {
-             kind = SymbolKind.Struct
+             kind = ASTEngine.SymbolKind.Struct
              isValueType = true
           } else if (c && c.type === "enum") {
-             kind = SymbolKind.Enum
+             kind = ASTEngine.SymbolKind.Enum
              isValueType = true
           } else if (c && c.type === "extension") {
-             kind = SymbolKind.Namespace
+             kind = ASTEngine.SymbolKind.Namespace
              isExtension = true
           } else if (c && (c.type === "type_identifier" || c.type === "user_type" || c.type === "simple_identifier" || c.type === "identifier")) {
              if (!typeIdentifierNode) typeIdentifierNode = c
@@ -393,7 +392,7 @@ export class RealSwiftAnalyzer implements LanguageAnalyzer {
 
     const meta: Record<string, any> = { hasGenerics }
     if (isValueType) meta.isValueType = true
-    if (kind === SymbolKind.Interface) meta.isProtocol = true
+    if (kind === ASTEngine.SymbolKind.Interface) meta.isProtocol = true
 
     let rawType = ""
     for (let i = 0; i < node.childCount; i++) {
@@ -407,7 +406,7 @@ export class RealSwiftAnalyzer implements LanguageAnalyzer {
           }
        }
     }
-    if (kind === SymbolKind.Enum && rawType) {
+    if (kind === ASTEngine.SymbolKind.Enum && rawType) {
         meta.rawType = rawType
     }
 
@@ -430,9 +429,9 @@ export class RealSwiftAnalyzer implements LanguageAnalyzer {
 
   private extractInheritance(
     inheritanceClause: Node,
-    relationships: UniversalRelationship[],
-    symbol: UniversalSymbol,
-    symbols: UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    symbol: ASTEngine.UniversalSymbol,
+    symbols: ASTEngine.UniversalSymbol[],
   ) {
     symbol.metadata = symbol.metadata || {}
     symbol.metadata.inheritance = symbol.metadata.inheritance || []
@@ -440,7 +439,7 @@ export class RealSwiftAnalyzer implements LanguageAnalyzer {
     // Build a set of known protocol names for accurate extends vs implements
     const protocolNames = new Set<string>()
     for (const s of symbols) {
-      if (s.kind === SymbolKind.Interface || s.metadata?.isProtocol) {
+      if (s.kind === ASTEngine.SymbolKind.Interface || s.metadata?.isProtocol) {
         protocolNames.add(s.name)
       }
     }
@@ -473,10 +472,10 @@ export class RealSwiftAnalyzer implements LanguageAnalyzer {
         // Determine extends vs implements by checking if target is a known protocol
         const isProtocol = protocolNames.has(name)
         const relType = isProtocol
-          ? RelationshipType.Implements
-          : (symbol.kind === SymbolKind.Class || symbol.kind === SymbolKind.Actor) && i === 0
-            ? RelationshipType.Extends
-            : RelationshipType.Implements
+          ? ASTEngine.RelationshipType.Implements
+          : (symbol.kind === ASTEngine.SymbolKind.Class || symbol.kind === ASTEngine.SymbolKind.Actor) && i === 0
+            ? ASTEngine.RelationshipType.Extends
+            : ASTEngine.RelationshipType.Implements
         relationships.push({
           type: relType,
           source: symbol.name,
@@ -491,10 +490,10 @@ export class RealSwiftAnalyzer implements LanguageAnalyzer {
 
   private handleFunction(
     node: Node,
-    symbols: UniversalSymbol[],
-    relationships: UniversalRelationship[],
-    parent: UniversalSymbol | null,
-  ): UniversalSymbol | null {
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    parent: ASTEngine.UniversalSymbol | null,
+  ): ASTEngine.UniversalSymbol | null {
     let nameNode: Node | null = null
     for (let i = 0; i < node.childCount; i++) {
       const c = node.child(i)
@@ -515,15 +514,15 @@ export class RealSwiftAnalyzer implements LanguageAnalyzer {
 
     if (!nameNode) return parent
 
-    let kind = SymbolKind.Function
-    if (node.type === "init_declaration") kind = SymbolKind.Constructor
+    let kind = ASTEngine.SymbolKind.Function
+    if (node.type === "init_declaration") kind = ASTEngine.SymbolKind.Constructor
     else if (
       parent &&
-      (parent.kind === SymbolKind.Class ||
-        parent.kind === SymbolKind.Interface ||
-        parent.kind === SymbolKind.Namespace)
+      (parent.kind === ASTEngine.SymbolKind.Class ||
+        parent.kind === ASTEngine.SymbolKind.Interface ||
+        parent.kind === ASTEngine.SymbolKind.Namespace)
     ) {
-      kind = SymbolKind.Method
+      kind = ASTEngine.SymbolKind.Method
     }
 
     const vis = this.getVisibility(node)
@@ -579,7 +578,7 @@ export class RealSwiftAnalyzer implements LanguageAnalyzer {
     }
     if (isOverride && parent) {
       relationships.push({
-        type: RelationshipType.Overrides,
+        type: ASTEngine.RelationshipType.Overrides,
         source: symbol.name,
         target: symbol.name, // The overridden method has the same name
         isExternal: true,
@@ -604,7 +603,7 @@ export class RealSwiftAnalyzer implements LanguageAnalyzer {
               }
             }
             if (paramIdentifier) {
-              this.createSymbol(paramIdentifier.text, SymbolKind.Variable, paramIdentifier, symbol, symbols, {
+              this.createSymbol(paramIdentifier.text, ASTEngine.SymbolKind.Variable, paramIdentifier, symbol, symbols, {
                 parameter: true,
               })
             }
@@ -627,8 +626,8 @@ export class RealSwiftAnalyzer implements LanguageAnalyzer {
 
   private handleVariable(
     node: Node,
-    symbols: UniversalSymbol[],
-    parent: UniversalSymbol | null,
+    symbols: ASTEngine.UniversalSymbol[],
+    parent: ASTEngine.UniversalSymbol | null,
     frameworksObj: Record<string, boolean>,
     patternsObj: Record<string, boolean>
   ) {
@@ -698,13 +697,13 @@ export class RealSwiftAnalyzer implements LanguageAnalyzer {
         }
         if (!identifierNode) identifierNode = patternClause
         if (identifierNode) {
-            this.createSymbol(identifierNode.text, SymbolKind.Variable, identifierNode, parent, symbols, meta, vis)
+            this.createSymbol(identifierNode.text, ASTEngine.SymbolKind.Variable, identifierNode, parent, symbols, meta, vis)
         }
     } else {
         for (let i = 0; i < node.childCount; i++) {
            const c = node.child(i)
            if (c && (c.type === "simple_identifier" || c.type === "identifier")) {
-              this.createSymbol(c.text, SymbolKind.Variable, c, parent, symbols, meta, vis)
+              this.createSymbol(c.text, ASTEngine.SymbolKind.Variable, c, parent, symbols, meta, vis)
               break
            }
         }
@@ -713,12 +712,12 @@ export class RealSwiftAnalyzer implements LanguageAnalyzer {
 
   private handleTypeReference(
     node: Node,
-    relationships: UniversalRelationship[],
-    parent: UniversalSymbol | null,
+    relationships: ASTEngine.UniversalRelationship[],
+    parent: ASTEngine.UniversalSymbol | null,
   ) {
     if (!parent) return
     relationships.push({
-      type: RelationshipType.Uses,
+      type: ASTEngine.RelationshipType.Uses,
       source: parent.name,
       target: node.text,
       isExternal: true,
@@ -729,8 +728,8 @@ export class RealSwiftAnalyzer implements LanguageAnalyzer {
 
   private handleCall(
     node: Node,
-    relationships: UniversalRelationship[],
-    parent: UniversalSymbol | null,
+    relationships: ASTEngine.UniversalRelationship[],
+    parent: ASTEngine.UniversalSymbol | null,
   ) {
     if (!parent) return
     let functionNameNode: Node | null = null
@@ -744,7 +743,7 @@ export class RealSwiftAnalyzer implements LanguageAnalyzer {
     if (functionNameNode) {
       const targetName = functionNameNode.text
       relationships.push({
-        type: RelationshipType.Calls,
+        type: ASTEngine.RelationshipType.Calls,
         source: parent.name,
         target: targetName,
         isExternal: true,
@@ -754,7 +753,7 @@ export class RealSwiftAnalyzer implements LanguageAnalyzer {
       // Swift class instantiation: ClassName() or ClassName.init()
       if (targetName && targetName[0] === targetName[0].toUpperCase() && targetName[0] !== targetName[0].toLowerCase()) {
         relationships.push({
-          type: RelationshipType.Instantiates,
+          type: ASTEngine.RelationshipType.Instantiates,
           source: parent.name,
           target: targetName,
           isExternal: true,

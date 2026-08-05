@@ -1,16 +1,15 @@
-// @ts-nocheck — Ported from backbencher.
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import { ASTEngine } from "./engine"
 
-export class RealVueAnalyzer implements LanguageAnalyzer {
-  public analyze(rootNode: Node, content: string, filePath: string): ParseResult {
-    const symbols: UniversalSymbol[] = []
-    const relationships: UniversalRelationship[] = []
-    const imports: ImportInfo[] = []
-    const exports: ExportInfo[] = []
+export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
+  public analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
+    const symbols: ASTEngine.UniversalSymbol[] = []
+    const relationships: ASTEngine.UniversalRelationship[] = []
+    const imports: ASTEngine.ImportInfo[] = []
+    const exports: ASTEngine.ExportInfo[] = []
     // Vue relationships extracted via AST traversal (zero regex)
     // Directives like v-on:, @, v-bind:, :, v-model are parsed as attributes by tree-sitter
-    const errors: ParseError[] = []
+    const errors: ASTEngine.ParseError[] = []
     const patterns: string[] = []
 
     if (rootNode.hasError) {
@@ -48,9 +47,9 @@ export class RealVueAnalyzer implements LanguageAnalyzer {
           const tagName = this.findChild(startTag, (n) => n.type === "tag_name")?.text || "template"
 
           if (tagName === "script" || tagName === "template" || tagName === "style") {
-            const blockSymbol: UniversalSymbol = {
+            const blockSymbol: ASTEngine.UniversalSymbol = {
               name: tagName === "script" ? "vue_script" : `vue_block_${tagName}`,
-              kind: SymbolKind.Module,
+              kind: ASTEngine.SymbolKind.Module,
               range: {
                 startLine: node.startPosition.row + 1,
                 endLine: node.endPosition.row + 1,
@@ -137,7 +136,7 @@ export class RealVueAnalyzer implements LanguageAnalyzer {
                     relationships.push({
                       source: "component",
                       target: exportName,
-                      type: RelationshipType.Exports,
+                      type: ASTEngine.RelationshipType.Exports,
                       confidence: 0.9,
                       metadata: { context: "Vue component export" },
                     } as any)
@@ -156,21 +155,21 @@ export class RealVueAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: parentName,
                 target: tagName,
-                type: RelationshipType.Contains,
+                type: ASTEngine.RelationshipType.Contains,
                 confidence: 0.9,
                 metadata: { context: "Vue component nesting" },
               } as any)
               relationships.push({
                 source: parentName,
                 target: tagName,
-                type: RelationshipType.Instantiates,
+                type: ASTEngine.RelationshipType.Instantiates,
                 confidence: 0.85,
                 metadata: { context: "Vue component usage" },
               } as any)
             }
-            const componentSymbol: UniversalSymbol = {
+            const componentSymbol: ASTEngine.UniversalSymbol = {
               name: tagName,
-              kind: SymbolKind.Class,
+              kind: ASTEngine.SymbolKind.Class,
               range: {
                 startLine: node.startPosition.row + 1,
                 endLine: node.endPosition.row + 1,
@@ -192,9 +191,9 @@ export class RealVueAnalyzer implements LanguageAnalyzer {
         const attrName = this.findChild(node, (n) => n.type === "attribute_name" || n.type === "directive_name")?.text
 
         if (attrName) {
-          const attrSymbol: UniversalSymbol = {
+          const attrSymbol: ASTEngine.UniversalSymbol = {
             name: attrName,
-            kind: SymbolKind.Property,
+            kind: ASTEngine.SymbolKind.Property,
             range: {
               startLine: node.startPosition.row + 1,
               endLine: node.endPosition.row + 1,
@@ -263,7 +262,7 @@ export class RealVueAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: scopeName,
                 target: exprValue || attrName.slice(5),
-                type: RelationshipType.Calls,
+                type: ASTEngine.RelationshipType.Calls,
                 confidence: 0.7,
                 metadata: { context: "Vue event handler " + attrName },
               } as any)
@@ -271,7 +270,7 @@ export class RealVueAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: scopeName,
                 target: exprValue || attrName.slice(1),
-                type: RelationshipType.Calls,
+                type: ASTEngine.RelationshipType.Calls,
                 confidence: 0.7,
                 metadata: { context: "Vue event handler " + attrName },
               } as any)
@@ -281,7 +280,7 @@ export class RealVueAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: scopeName,
                 target: exprValue || attrName.slice(7),
-                type: RelationshipType.Uses,
+                type: ASTEngine.RelationshipType.Uses,
                 confidence: 0.8,
                 metadata: { context: "Vue binding " + attrName },
               } as any)
@@ -290,7 +289,7 @@ export class RealVueAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: scopeName,
                 target: exprValue || attrName.slice(1),
-                type: RelationshipType.Uses,
+                type: ASTEngine.RelationshipType.Uses,
                 confidence: 0.8,
                 metadata: { context: "Vue binding " + attrName },
               } as any)
@@ -300,7 +299,7 @@ export class RealVueAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: scopeName,
                 target: exprValue || attrName,
-                type: RelationshipType.Uses,
+                type: ASTEngine.RelationshipType.Uses,
                 confidence: 0.9,
                 metadata: { context: "Vue v-model directive" },
               } as any)
@@ -310,7 +309,7 @@ export class RealVueAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: scopeName,
                 target: attrName,
-                type: RelationshipType.Uses,
+                type: ASTEngine.RelationshipType.Uses,
                 confidence: 0.6,
                 metadata: { context: "Vue control flow " + attrName },
               } as any)
@@ -325,9 +324,9 @@ export class RealVueAnalyzer implements LanguageAnalyzer {
           const fnName = fnNameNode.text
 
           if (fnName === "defineProps" || fnName === "defineEmits" || fnName === "defineExpose") {
-            const macroSymbol: UniversalSymbol = {
+            const macroSymbol: ASTEngine.UniversalSymbol = {
               name: fnName,
-              kind: SymbolKind.Method,
+              kind: ASTEngine.SymbolKind.Method,
               range: {
                 startLine: node.startPosition.row + 1,
                 endLine: node.endPosition.row + 1,
@@ -345,7 +344,7 @@ export class RealVueAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: scopeName,
               target: fnName,
-              type: RelationshipType.Calls,
+              type: ASTEngine.RelationshipType.Calls,
               confidence: 0.8,
               metadata: { context: "Vue compiler macro" },
             } as any)
@@ -357,7 +356,7 @@ export class RealVueAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: scopeName,
               target: fnName,
-              type: RelationshipType.Calls,
+              type: ASTEngine.RelationshipType.Calls,
               confidence: 0.8,
               metadata: { context: "Vue Composition API" },
             } as any)
@@ -367,7 +366,7 @@ export class RealVueAnalyzer implements LanguageAnalyzer {
               if (varName) {
                 symbols.push({
                   name: varName,
-                  kind: SymbolKind.Variable,
+                  kind: ASTEngine.SymbolKind.Variable,
                   range: {
                     startLine: parent.startPosition.row + 1, endLine: parent.endPosition.row + 1,
                     startColumn: parent.startPosition.column, endColumn: parent.endPosition.column,
@@ -386,7 +385,7 @@ export class RealVueAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: scopeName,
               target: fnName,
-              type: RelationshipType.Calls,
+              type: ASTEngine.RelationshipType.Calls,
               confidence: 0.8,
               metadata: { context: "Vue Router composable" },
             } as any)
@@ -397,7 +396,7 @@ export class RealVueAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: scopeName,
               target: fnName,
-              type: RelationshipType.Calls,
+              type: ASTEngine.RelationshipType.Calls,
               confidence: 0.8,
               metadata: { context: "Pinia store" },
             } as any)
@@ -446,7 +445,7 @@ export class RealVueAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: scopeName,
               target: item,
-              type: RelationshipType.Imports,
+              type: ASTEngine.RelationshipType.Imports,
               confidence: 0.9,
               metadata: { context: "Vue import", module: modulePath },
             } as any)
@@ -457,9 +456,9 @@ export class RealVueAnalyzer implements LanguageAnalyzer {
       if (type === "variable_declarator") {
         const nameNode = this.findChild(node, (n) => n.type === "identifier")
         if (nameNode) {
-          const varSymbol: UniversalSymbol = {
+          const varSymbol: ASTEngine.UniversalSymbol = {
             name: nameNode.text,
-            kind: SymbolKind.Variable,
+            kind: ASTEngine.SymbolKind.Variable,
             range: {
               startLine: node.startPosition.row + 1,
               endLine: node.endPosition.row + 1,
@@ -480,7 +479,7 @@ export class RealVueAnalyzer implements LanguageAnalyzer {
         if (fnNameNode) {
           symbols.push({
             name: fnNameNode.text,
-            kind: SymbolKind.Function,
+            kind: ASTEngine.SymbolKind.Function,
             range: {
               startLine: node.startPosition.row + 1,
               endLine: node.endPosition.row + 1,
@@ -500,7 +499,7 @@ export class RealVueAnalyzer implements LanguageAnalyzer {
         if (classNameNode) {
           symbols.push({
             name: classNameNode.text,
-            kind: SymbolKind.Class,
+            kind: ASTEngine.SymbolKind.Class,
             range: {
               startLine: node.startPosition.row + 1,
               endLine: node.endPosition.row + 1,
@@ -544,7 +543,7 @@ export class RealVueAnalyzer implements LanguageAnalyzer {
         relationships.push({
           source: _owner,
           target: s.name,
-          type: RelationshipType.Contains,
+          type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
           metadata: {},
         })

@@ -1,19 +1,18 @@
-// @ts-nocheck — Ported from backbencher.
 // Real Python Intelligence Engine
 // AST analysis for Python with Django, FastAPI, Flask, Data Science intelligence
 // Brain Certified: 100% Stateless, Iterative Stack Traversal, No Regex Fallbacks.
 
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import { ASTEngine } from "./engine"
 
 export interface PythonContext {
   content: string
   filePath: string
-  symbols: UniversalSymbol[]
-  relationships: UniversalRelationship[]
-  imports: ImportInfo[]
-  exports: ExportInfo[]
-  errors: ParseError[]
+  symbols: ASTEngine.UniversalSymbol[]
+  relationships: ASTEngine.UniversalRelationship[]
+  imports: ASTEngine.ImportInfo[]
+  exports: ASTEngine.ExportInfo[]
+  errors: ASTEngine.ParseError[]
   globalVariables: Record<string, boolean>
   localVariables: Record<string, boolean>
   frameworks: Record<string, boolean>
@@ -23,10 +22,10 @@ export interface PythonContext {
 }
 
 function filterSymbols(
-  arr: UniversalSymbol[],
-  predicate: (item: UniversalSymbol) => boolean,
-): UniversalSymbol[] {
-  const result: UniversalSymbol[] = []
+  arr: ASTEngine.UniversalSymbol[],
+  predicate: (item: ASTEngine.UniversalSymbol) => boolean,
+): ASTEngine.UniversalSymbol[] {
+  const result: ASTEngine.UniversalSymbol[] = []
   if (!arr) return result
   for (let i = 0; i < arr.length; i++) {
     if (predicate(arr[i])) result.push(arr[i])
@@ -35,8 +34,8 @@ function filterSymbols(
 }
 
 function someSymbols(
-  arr: UniversalSymbol[],
-  predicate: (item: UniversalSymbol) => boolean,
+  arr: ASTEngine.UniversalSymbol[],
+  predicate: (item: ASTEngine.UniversalSymbol) => boolean,
 ): boolean {
   if (!arr) return false
   for (let i = 0; i < arr.length; i++) {
@@ -54,8 +53,8 @@ function mapFrameworks(arr: string[], mapper: (item: string) => any): any[] {
   return result
 }
 
-export class RealPythonAnalyzer implements LanguageAnalyzer {
-  analyze(rootNode: Node, content: string, filePath: string): ParseResult {
+export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
+  analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
     const ctx: PythonContext = {
       content,
       filePath,
@@ -138,7 +137,7 @@ export class RealPythonAnalyzer implements LanguageAnalyzer {
           if (right && right.type === "lambda") {
             ctx.symbols.push({
               name: node.namedChild(0)?.text || "lambda",
-              kind: SymbolKind.Function,
+              kind: ASTEngine.SymbolKind.Function,
               range: this.nodeToRange(node),
               metadata: { pythonSpecific: true, isLambda: true },
             })
@@ -157,7 +156,7 @@ export class RealPythonAnalyzer implements LanguageAnalyzer {
                 ctx.relationships.push({
                   source: pFunc || pClass || "global",
                   target: targetName,
-                  type: RelationshipType.References,
+                  type: ASTEngine.RelationshipType.References,
                   confidence: 0.9,
                   metadata: { pythonSpecific: true, isRaise: true },
                 })
@@ -174,7 +173,7 @@ export class RealPythonAnalyzer implements LanguageAnalyzer {
           const name = `${node.type}_${node.startPosition.row + 1}_${node.startPosition.column + 1}`
           ctx.symbols.push({
             name,
-            kind: SymbolKind.Function,
+            kind: ASTEngine.SymbolKind.Function,
             range: this.nodeToRange(node),
             scope: pFunc || pClass || "global",
             metadata: { pythonSpecific: true, isComprehension: true, compType: node.type },
@@ -190,7 +189,7 @@ export class RealPythonAnalyzer implements LanguageAnalyzer {
               ctx.relationships.push({
                 source: pFunc || pClass || "global",
                 target: targetName,
-                type: RelationshipType.Calls,
+                type: ASTEngine.RelationshipType.Calls,
                 confidence: 0.8,
                 metadata: { pythonSpecific: true, isAwait: true },
               })
@@ -207,7 +206,7 @@ export class RealPythonAnalyzer implements LanguageAnalyzer {
               ctx.relationships.push({
                 source: pFunc || pClass || "global",
                 target: c.text,
-                type: RelationshipType.References,
+                type: ASTEngine.RelationshipType.References,
                 confidence: 0.9,
                 metadata: { pythonSpecific: true, isExcept: true },
               })
@@ -224,7 +223,7 @@ export class RealPythonAnalyzer implements LanguageAnalyzer {
               ctx.relationships.push({
                 source: pFunc || pClass || "global",
                 target: targetName,
-                type: RelationshipType.Uses,
+                type: ASTEngine.RelationshipType.Uses,
                 confidence: 0.8,
                 metadata: { pythonSpecific: true, isContextManager: true },
               })
@@ -238,7 +237,7 @@ export class RealPythonAnalyzer implements LanguageAnalyzer {
           if (left) {
             ctx.symbols.push({
               name: left.text,
-              kind: SymbolKind.Type,
+              kind: ASTEngine.SymbolKind.Type,
               range: this.nodeToRange(node),
               scope: pClass || "global",
               metadata: { pythonSpecific: true, isTypeAlias: true },
@@ -254,7 +253,7 @@ export class RealPythonAnalyzer implements LanguageAnalyzer {
             if (c && c.type === "identifier") {
               ctx.symbols.push({
                 name: c.text,
-                kind: SymbolKind.Variable,
+                kind: ASTEngine.SymbolKind.Variable,
                 range: this.nodeToRange(node),
                 scope: "global",
                 visibility: "public",
@@ -312,7 +311,7 @@ export class RealPythonAnalyzer implements LanguageAnalyzer {
     if (!!ctx.frameworks["Django"]) {
       const models = filterSymbols(
         ctx.symbols,
-        (s) => s.kind === SymbolKind.Class && (s.metadata?.baseClasses?.includes("Model") ?? false),
+        (s) => s.kind === ASTEngine.SymbolKind.Class && (s.metadata?.baseClasses?.includes("Model") ?? false),
       )
       for (let i = 0; i < models.length; i++) {
         const c = models[i]
@@ -322,10 +321,10 @@ export class RealPythonAnalyzer implements LanguageAnalyzer {
 
     // Add Contains + DependsOn
     for (const s of ctx.symbols) {
-      if (s.ownerName) ctx.relationships.push({ source: s.ownerName, target: s.name, type: RelationshipType.Contains, confidence: 1.0, metadata: {} })
+      if (s.ownerName) ctx.relationships.push({ source: s.ownerName, target: s.name, type: ASTEngine.RelationshipType.Contains, confidence: 1.0, metadata: {} })
     }
     for (const imp of ctx.imports) {
-      ctx.relationships.push({ source: "root", target: imp.module || "", type: RelationshipType.DependsOn, confidence: 0.9, metadata: {} })
+      ctx.relationships.push({ source: "root", target: imp.module || "", type: ASTEngine.RelationshipType.DependsOn, confidence: 0.9, metadata: {} })
     }
 
     return {
@@ -387,8 +386,8 @@ export class RealPythonAnalyzer implements LanguageAnalyzer {
             target: arg.text,
             fromSymbol: scope ? `${scope}.${className}` : className,
             toSymbol: arg.text,
-            type: RelationshipType.Extends,
-            relationshipType: RelationshipType.Extends,
+            type: ASTEngine.RelationshipType.Extends,
+            relationshipType: ASTEngine.RelationshipType.Extends,
             confidence: 1.0,
             metadata: { relationshipType: "python_inherits" },
           })
@@ -408,7 +407,7 @@ export class RealPythonAnalyzer implements LanguageAnalyzer {
             target: decName,
             fromSymbol: className || "unknown",
             toSymbol: decName,
-            type: RelationshipType.Uses,
+            type: ASTEngine.RelationshipType.Uses,
             confidence: 1.0,
             metadata: { relationshipType: "decorator_usage" },
           })
@@ -421,11 +420,11 @@ export class RealPythonAnalyzer implements LanguageAnalyzer {
     const isGenerator = node.text.includes("yield")
     ctx.symbols.push({
       name: className,
-      kind: SymbolKind.Class,
+      kind: ASTEngine.SymbolKind.Class,
       range: this.nodeToRange(node),
       scope: scope || "global",
       ownerName: scope || "global",
-      ownerKind: SymbolKind.Namespace,
+      ownerKind: ASTEngine.SymbolKind.Namespace,
       visibility: "public",
       decorators,
       docstring,
@@ -461,7 +460,7 @@ export class RealPythonAnalyzer implements LanguageAnalyzer {
             target: decName,
             fromSymbol: funcName,
             toSymbol: decName,
-            type: RelationshipType.Uses,
+            type: ASTEngine.RelationshipType.Uses,
             confidence: 1.0,
             metadata: { relationshipType: "decorator_usage" },
           })
@@ -482,7 +481,7 @@ export class RealPythonAnalyzer implements LanguageAnalyzer {
     const isGenerator = node.text.includes("yield")
     ctx.symbols.push({
       name: funcName,
-      kind: SymbolKind.Function,
+      kind: ASTEngine.SymbolKind.Function,
       range: this.nodeToRange(node),
       scope: scope || "global",
       ownerName: scope || "global",
@@ -536,7 +535,7 @@ export class RealPythonAnalyzer implements LanguageAnalyzer {
             target: decName,
             fromSymbol: methodName,
             toSymbol: decName,
-            type: RelationshipType.Uses,
+            type: ASTEngine.RelationshipType.Uses,
             confidence: 1.0,
             metadata: { relationshipType: "decorator_usage" },
           })
@@ -573,11 +572,11 @@ export class RealPythonAnalyzer implements LanguageAnalyzer {
 
     ctx.symbols.push({
       name: methodName,
-      kind: SymbolKind.Method,
+      kind: ASTEngine.SymbolKind.Method,
       range: this.nodeToRange(node),
       scope: pClass,
       ownerName: pClass,
-      ownerKind: SymbolKind.Class,
+      ownerKind: ASTEngine.SymbolKind.Class,
       visibility:
         methodName.startsWith("_") && !methodName.startsWith("__")
           ? "protected"
@@ -697,11 +696,11 @@ export class RealPythonAnalyzer implements LanguageAnalyzer {
       // Global or local var
       ctx.symbols.push({
         name: left.text,
-        kind: SymbolKind.Variable,
+        kind: ASTEngine.SymbolKind.Variable,
         range: this.nodeToRange(left),
         scope: assignScope,
         ownerName: assignScope,
-        ownerKind: isClassVar ? SymbolKind.Class : SymbolKind.Function,
+        ownerKind: isClassVar ? ASTEngine.SymbolKind.Class : ASTEngine.SymbolKind.Function,
         visibility: "public",
         metadata: { pythonSpecific: true, isClassVariable: isClassVar },
         returnType: this.findChildByType(node, "type")?.text || undefined,
@@ -713,11 +712,11 @@ export class RealPythonAnalyzer implements LanguageAnalyzer {
       if (attr && obj && (obj.text === "self" || obj.text === "cls")) {
         ctx.symbols.push({
           name: attr.text,
-          kind: SymbolKind.Property,
+          kind: ASTEngine.SymbolKind.Property,
           range: this.nodeToRange(attr),
           scope: pClass || "unknown_class",
           ownerName: pClass || "unknown_class",
-          ownerKind: SymbolKind.Class,
+          ownerKind: ASTEngine.SymbolKind.Class,
           visibility: attr.text.startsWith("_") ? "private" : "public",
           metadata: { pythonSpecific: true },
           returnType: this.findChildByType(node, "type")?.text || undefined,
@@ -752,7 +751,7 @@ export class RealPythonAnalyzer implements LanguageAnalyzer {
       target: targetName,
       fromSymbol: caller,
       toSymbol: targetQualified || targetName,
-      type: RelationshipType.Calls,
+      type: ASTEngine.RelationshipType.Calls,
       confidence: 1.0,
       metadata: { relationshipType: "calls", qualified: targetQualified },
     })
@@ -763,7 +762,7 @@ export class RealPythonAnalyzer implements LanguageAnalyzer {
         target: targetName,
         fromSymbol: caller,
         toSymbol: targetQualified || targetName,
-        type: RelationshipType.Instantiates,
+        type: ASTEngine.RelationshipType.Instantiates,
         confidence: 0.7,
         metadata: { relationshipType: "instantiates", qualified: targetQualified },
       })
@@ -779,7 +778,7 @@ export class RealPythonAnalyzer implements LanguageAnalyzer {
               ctx.relationships.push({
                 source: caller,
                 target: a.text,
-                type: RelationshipType.References,
+                type: ASTEngine.RelationshipType.References,
                 confidence: 0.8,
                 metadata: { pythonSpecific: true, isInstanceCheck: true },
               })
@@ -850,11 +849,11 @@ export class RealPythonAnalyzer implements LanguageAnalyzer {
     return null
   }
 
-  private extractParameters(node: Node): Parameter[] {
+  private extractParameters(node: Node): ASTEngine.Parameter[] {
     const paramsList = this.findChildByType(node, "parameters")
     if (!paramsList) return []
 
-    const params: Parameter[] = []
+    const params: ASTEngine.Parameter[] = []
     for (let i = 0; i < paramsList.namedChildCount; i++) {
       const p = paramsList.namedChild(i)
       if (!p) continue
@@ -915,7 +914,7 @@ export class RealPythonAnalyzer implements LanguageAnalyzer {
     return undefined
   }
 
-  private nodeToRange(node: Node): UniversalSymbol["range"] {
+  private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {
     const target = node.parent?.type === "decorated_definition" ? node.parent : node
     return {
       startLine: target.startPosition.row + 1,

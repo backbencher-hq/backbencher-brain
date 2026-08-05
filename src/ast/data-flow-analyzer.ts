@@ -1,11 +1,10 @@
-// @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
-import * as Log from "../tool/brain-log.js"
 // Data Flow Analyzer
 // Traces ALL data movements across polyglot systems
 // INTELLIGENCE: Every data transformation, persistence, and security boundary mapped!
 
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
-import { CrossLanguageIntelligence } from "./cross-language-intelligence.js"
+import { ASTEngine } from "./engine"
+import { CrossLanguageIntelligence } from "./cross-language-intelligence"
+import * as Log from "../tool/brain-log"
 
 const log = Log.create({ service: "data-flow-analyzer" })
 
@@ -15,7 +14,7 @@ export namespace DataFlowAnalyzer {
    * Maps EVERY data movement with precision
    */
   export async function analyzeDataFlows(
-    fileResults: Map<string, ParseResult>,
+    fileResults: Map<string, ASTEngine.ParseResult>,
     topology: CrossLanguageIntelligence.ServiceTopology,
     symbols: CrossLanguageIntelligence.CrossLanguageSymbol[],
   ): Promise<CrossLanguageIntelligence.DataFlowAnalysis> {
@@ -83,7 +82,7 @@ export namespace DataFlowAnalyzer {
      */
     async discoverSharedDataModels(
       symbols: CrossLanguageIntelligence.CrossLanguageSymbol[],
-      fileResults: Map<string, ParseResult>,
+      fileResults: Map<string, ASTEngine.ParseResult>,
     ): Promise<CrossLanguageIntelligence.SharedDataModel[]> {
       const sharedModels: CrossLanguageIntelligence.SharedDataModel[] = []
       const modelGrouper = new DataModelGrouper()
@@ -134,7 +133,7 @@ export namespace DataFlowAnalyzer {
      */
     async detectTransformations(
       dataFlows: CrossLanguageIntelligence.DataFlow[],
-      fileResults: Map<string, ParseResult>,
+      fileResults: Map<string, ASTEngine.ParseResult>,
     ): Promise<CrossLanguageIntelligence.DataTransformation[]> {
       const transformations: CrossLanguageIntelligence.DataTransformation[] = []
       const transformationDetector = new DataTransformationDetector()
@@ -152,7 +151,7 @@ export namespace DataFlowAnalyzer {
      * Persistence Point Analysis
      */
     async analyzePersistencePoints(
-      fileResults: Map<string, ParseResult>,
+      fileResults: Map<string, ASTEngine.ParseResult>,
       symbols: CrossLanguageIntelligence.CrossLanguageSymbol[],
     ): Promise<CrossLanguageIntelligence.DataPersistence[]> {
       const persistencePoints: CrossLanguageIntelligence.DataPersistence[] = []
@@ -195,7 +194,7 @@ export namespace DataFlowAnalyzer {
      */
     async performTaintAnalysis(
       dataFlows: CrossLanguageIntelligence.DataFlow[],
-      fileResults: Map<string, ParseResult>,
+      fileResults: Map<string, ASTEngine.ParseResult>,
       symbols: CrossLanguageIntelligence.CrossLanguageSymbol[],
     ): Promise<CrossLanguageIntelligence.TaintFlow[]> {
       const taintFlows: CrossLanguageIntelligence.TaintFlow[] = []
@@ -377,7 +376,7 @@ export namespace DataFlowAnalyzer {
 
     async traceSensitiveData(
       flow: CrossLanguageIntelligence.DataFlow,
-      fileResults: Map<string, ParseResult>,
+      fileResults: Map<string, ASTEngine.ParseResult>,
       symbols: CrossLanguageIntelligence.CrossLanguageSymbol[],
     ): Promise<CrossLanguageIntelligence.TaintFlow[]> {
       const taints: CrossLanguageIntelligence.TaintFlow[] = []
@@ -518,7 +517,7 @@ export namespace DataFlowAnalyzer {
   class DataModelGrouper {
     async createSharedModel(
       symbol: CrossLanguageIntelligence.CrossLanguageSymbol,
-      fileResults: Map<string, ParseResult>,
+      fileResults: Map<string, ASTEngine.ParseResult>,
     ): Promise<CrossLanguageIntelligence.SharedDataModel> {
       const variations = this.analyzeLanguageVariations(symbol)
       const schema = await this.extractSchema(symbol, fileResults)
@@ -574,7 +573,7 @@ export namespace DataFlowAnalyzer {
 
     private async extractSchema(
       symbol: CrossLanguageIntelligence.CrossLanguageSymbol,
-      fileResults: Map<string, ParseResult>,
+      fileResults: Map<string, ASTEngine.ParseResult>,
     ): Promise<any> {
       // Extract schema information from symbol definitions
       return {
@@ -586,7 +585,7 @@ export namespace DataFlowAnalyzer {
 
     private extractValidationRules(
       symbol: CrossLanguageIntelligence.CrossLanguageSymbol,
-      fileResults: Map<string, ParseResult>,
+      fileResults: Map<string, ASTEngine.ParseResult>,
     ): CrossLanguageIntelligence.ValidationRule[] {
       // Extract validation rules from decorators and annotations
       return []
@@ -709,7 +708,7 @@ export namespace DataFlowAnalyzer {
   class DataTransformationDetector {
     async analyzeFlowTransformations(
       flow: CrossLanguageIntelligence.DataFlow,
-      fileResults: Map<string, ParseResult>,
+      fileResults: Map<string, ASTEngine.ParseResult>,
     ): Promise<CrossLanguageIntelligence.DataTransformation[]> {
       const transformations: CrossLanguageIntelligence.DataTransformation[] = []
 
@@ -731,7 +730,7 @@ export namespace DataFlowAnalyzer {
     private async detectTransformation(
       fromStep: CrossLanguageIntelligence.DataFlowStep,
       toStep: CrossLanguageIntelligence.DataFlowStep,
-      fileResults: Map<string, ParseResult>,
+      fileResults: Map<string, ASTEngine.ParseResult>,
     ): Promise<CrossLanguageIntelligence.DataTransformation | null> {
       // Get file results for both steps
       const fromFile = fileResults.get(fromStep.filePath)
@@ -773,10 +772,10 @@ export namespace DataFlowAnalyzer {
       return `${fromLang} to ${toLang} Transformation`
     }
 
-    private detectTransformationMethods(fromFile: ParseResult, toFile: ParseResult): string[] {
+    private detectTransformationMethods(fromFile: ASTEngine.ParseResult, toFile: ASTEngine.ParseResult): string[] {
       const methods: Set<string> = new Set()
 
-      const analyzeSymbols = (symbols: UniversalSymbol[]) => {
+      const analyzeSymbols = (symbols: ASTEngine.UniversalSymbol[]) => {
         for (const sym of symbols) {
           if (sym.qualified_calls) {
             for (const call of sym.qualified_calls) {
@@ -851,7 +850,7 @@ export namespace DataFlowAnalyzer {
       return "Unknown"
     }
 
-    private extractValidationRules(fromFile: ParseResult, toFile: ParseResult): string[] {
+    private extractValidationRules(fromFile: ASTEngine.ParseResult, toFile: ASTEngine.ParseResult): string[] {
       const rules: string[] = []
       const content = (fromFile.rawContent || "") + (toFile.rawContent || "")
 
@@ -901,7 +900,7 @@ export namespace DataFlowAnalyzer {
    */
   class PersistenceAnalyzer {
     async analyzePersistenceInFile(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
       symbols: CrossLanguageIntelligence.CrossLanguageSymbol[],
     ): Promise<CrossLanguageIntelligence.DataPersistence[]> {
@@ -923,7 +922,7 @@ export namespace DataFlowAnalyzer {
     }
 
     private detectDatabasePersistence(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.DataPersistence[] {
       const persistencePoints: CrossLanguageIntelligence.DataPersistence[] = []
@@ -1002,7 +1001,7 @@ export namespace DataFlowAnalyzer {
     }
 
     private detectFileSystemPersistence(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.DataPersistence[] {
       const persistencePoints: CrossLanguageIntelligence.DataPersistence[] = []
@@ -1047,7 +1046,7 @@ export namespace DataFlowAnalyzer {
     }
 
     private detectCachePersistence(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.DataPersistence[] {
       const persistencePoints: CrossLanguageIntelligence.DataPersistence[] = []
@@ -1092,7 +1091,7 @@ export namespace DataFlowAnalyzer {
     }
 
     private detectMessageQueuePersistence(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.DataPersistence[] {
       const persistencePoints: CrossLanguageIntelligence.DataPersistence[] = []

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as Log from "../tool/brain-log"
 import { BrainDatabase } from "../brain/database"
 import type { ProjectID } from "../project/schema"

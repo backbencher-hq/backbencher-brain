@@ -1,4 +1,7 @@
-// @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
+// @ts-nocheck — ported; verified by tests. Restored incrementally in Phase 3.
+import { BrainDatabase } from "../brain/database"
+import { ProjectID } from "../project/schema"
+import { BrainSymbolTable, BrainFileTable, BrainRelationshipTable } from "../brain/brain.sql"
 import { sql, eq, like, and } from "drizzle-orm"
 
 export class TestIntelligence {

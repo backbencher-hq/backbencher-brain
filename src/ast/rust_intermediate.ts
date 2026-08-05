@@ -1,9 +1,8 @@
-// @ts-nocheck
 // Real Rust Intelligence Engine
 // AST analysis for Rust language
 
 import type { Node } from "web-tree-sitter"
-import { ASTEngine } from "./engine.js"
+import { ASTEngine } from "./engine"
 
 export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
   private currentFile: string = ""
@@ -60,7 +59,6 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     // ========================================================================
     // STAGE 3: PHANTOM SYMBOL INJECTION (Framework Heuristics)
     // ========================================================================
-    this.injectPhantomSymbols(rootNode, symbols, frameworks)
 
     return {
       language: "rust",

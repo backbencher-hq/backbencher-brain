@@ -1,27 +1,26 @@
-// @ts-nocheck — Ported from backbencher.
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import { ASTEngine } from "./engine"
 
 interface Scope {
   node: Node
   name: string
-  kind: SymbolKind
+  kind: ASTEngine.SymbolKind
 }
 
 interface HaskellContext {
-  symbols: UniversalSymbol[]
-  relationships: UniversalRelationship[]
-  imports: ImportInfo[]
-  exports: ExportInfo[]
-  errors: ParseError[]
+  symbols: ASTEngine.UniversalSymbol[]
+  relationships: ASTEngine.UniversalRelationship[]
+  imports: ASTEngine.ImportInfo[]
+  exports: ASTEngine.ExportInfo[]
+  errors: ASTEngine.ParseError[]
   patterns: Record<string, boolean>
   frameworks: Record<string, boolean>
   typeSignatures: Record<string, string>
   functionSymbolIndex: Record<string, number>
 }
 
-export class RealHaskellAnalyzer implements LanguageAnalyzer {
-  analyze(rootNode: Node, content: string, filePath: string): ParseResult {
+export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
+  analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
     const ctx: HaskellContext = {
       symbols: [],
       relationships: [],
@@ -103,12 +102,12 @@ export class RealHaskellAnalyzer implements LanguageAnalyzer {
         ) {
           if (
             currentScope &&
-            (currentScope.kind === SymbolKind.Function || currentScope.kind === SymbolKind.Method)
+            (currentScope.kind === ASTEngine.SymbolKind.Function || currentScope.kind === ASTEngine.SymbolKind.Method)
           ) {
             ctx.relationships.push({
               source: currentScope.name,
               target: funcNode.text,
-              type: RelationshipType.Calls,
+              type: ASTEngine.RelationshipType.Calls,
               metadata: {},
             })
           }
@@ -117,12 +116,12 @@ export class RealHaskellAnalyzer implements LanguageAnalyzer {
         // 4. The Operator Blindspot
         if (
           currentScope &&
-          (currentScope.kind === SymbolKind.Function || currentScope.kind === SymbolKind.Method)
+          (currentScope.kind === ASTEngine.SymbolKind.Function || currentScope.kind === ASTEngine.SymbolKind.Method)
         ) {
           ctx.relationships.push({
             source: currentScope.name,
             target: node.text,
-            type: RelationshipType.Calls,
+            type: ASTEngine.RelationshipType.Calls,
             metadata: {},
           })
         }
@@ -147,12 +146,12 @@ export class RealHaskellAnalyzer implements LanguageAnalyzer {
           }
           if (
             currentScope &&
-            (currentScope.kind === SymbolKind.Function || currentScope.kind === SymbolKind.Method)
+            (currentScope.kind === ASTEngine.SymbolKind.Function || currentScope.kind === ASTEngine.SymbolKind.Method)
           ) {
             ctx.relationships.push({
               source: currentScope.name,
               target: targetName,
-              type: RelationshipType.Calls,
+              type: ASTEngine.RelationshipType.Calls,
               metadata: {},
             })
           }
@@ -170,7 +169,7 @@ export class RealHaskellAnalyzer implements LanguageAnalyzer {
         if (cName) {
           ctx.symbols.push({
             name: cName,
-            kind: SymbolKind.Constructor || SymbolKind.Function,
+            kind: ASTEngine.SymbolKind.Constructor || ASTEngine.SymbolKind.Function,
             range: this.nodeToRange(node),
             scope: currentScope?.name || "",
             visibility: "public",
@@ -184,7 +183,7 @@ export class RealHaskellAnalyzer implements LanguageAnalyzer {
         node.type === "list_comprehension"
       ) {
         const scopeName = `${currentScope?.name || "global"}_${node.type}_${cyclomaticComplexity}_${node.startIndex}`
-        scopeStack.push({ node, name: scopeName, kind: SymbolKind.Namespace })
+        scopeStack.push({ node, name: scopeName, kind: ASTEngine.SymbolKind.Namespace })
         pushedScope = true
       }
 
@@ -226,7 +225,7 @@ export class RealHaskellAnalyzer implements LanguageAnalyzer {
             ctx.relationships.push({
               source: sourceName,
               target: n.text,
-              type: RelationshipType.Calls,
+              type: ASTEngine.RelationshipType.Calls,
               metadata: { haskellSpecific: true },
             })
           }
@@ -266,14 +265,14 @@ export class RealHaskellAnalyzer implements LanguageAnalyzer {
         ctx.relationships.push({
           source: _owner,
           target: s.name,
-          type: RelationshipType.Contains,
+          type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
           metadata: {},
         })
       }
     }
 
-    if (ctx.exports.length === 0) { for (let i = 0; i < ctx.symbols.length; i++) { const s = ctx.symbols[i]; if (!s.ownerName || s.ownerKind === SymbolKind.Module) { ctx.exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: "public" }); } } }
+    if (ctx.exports.length === 0) { for (let i = 0; i < ctx.symbols.length; i++) { const s = ctx.symbols[i]; if (!s.ownerName || s.ownerKind === ASTEngine.SymbolKind.Module) { ctx.exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: "public" }); } } }
     return {
       language: "haskell",
       symbols: ctx.symbols,
@@ -333,13 +332,13 @@ export class RealHaskellAnalyzer implements LanguageAnalyzer {
 
     ctx.symbols.push({
       name: moduleName,
-      kind: SymbolKind.Module,
+      kind: ASTEngine.SymbolKind.Module,
       range: this.nodeToRange(node),
       scope: "",
       visibility: "public",
       metadata: { haskellSpecific: true },
     })
-    scopeStack.push({ node, name: moduleName, kind: SymbolKind.Module })
+    scopeStack.push({ node, name: moduleName, kind: ASTEngine.SymbolKind.Module })
     return true
   }
 
@@ -407,7 +406,7 @@ export class RealHaskellAnalyzer implements LanguageAnalyzer {
       ctx.relationships.push({
         source: mod.name,
         target: mod.name,
-        type: RelationshipType.References,
+        type: ASTEngine.RelationshipType.References,
         confidence: 0.9,
         metadata: { isHaskellImport: true },
       })
@@ -483,9 +482,9 @@ export class RealHaskellAnalyzer implements LanguageAnalyzer {
     if (isHigherOrder) ctx.patterns["Higher-Order Functions"] = true
 
     const kind =
-      currentScope && currentScope.kind === SymbolKind.Interface
-        ? SymbolKind.Method
-        : SymbolKind.Function
+      currentScope && currentScope.kind === ASTEngine.SymbolKind.Interface
+        ? ASTEngine.SymbolKind.Method
+        : ASTEngine.SymbolKind.Function
 
     ctx.symbols.push({
       name,
@@ -521,7 +520,7 @@ export class RealHaskellAnalyzer implements LanguageAnalyzer {
     const currentScope = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1] : undefined
     ctx.symbols.push({
       name,
-      kind: SymbolKind.Type,
+      kind: ASTEngine.SymbolKind.Type,
       range: this.nodeToRange(node),
       scope: currentScope?.name || "",
       visibility: "public",
@@ -541,13 +540,13 @@ export class RealHaskellAnalyzer implements LanguageAnalyzer {
         ctx.relationships.push({
           source: name,
           target: dc?.text || "",
-          type: RelationshipType.Implements,
+          type: ASTEngine.RelationshipType.Implements,
           metadata: { derived: true },
         })
       }
     }
 
-    scopeStack.push({ node, name, kind: SymbolKind.Type })
+    scopeStack.push({ node, name, kind: ASTEngine.SymbolKind.Type })
     return true
   }
 
@@ -574,17 +573,17 @@ export class RealHaskellAnalyzer implements LanguageAnalyzer {
 
     const currentScope = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1] : undefined
     const superClasses = this.collectNamedChildrenByType(node, ["type", "type_constructor", "tycon"]);
-    for (let i = 1; i < superClasses.length; i++) { if (superClasses[i]) { ctx.relationships.push({ source: name, target: superClasses[i].text, type: RelationshipType.Extends, metadata: { isSuperclass: true } }); } }
+    for (let i = 1; i < superClasses.length; i++) { if (superClasses[i]) { ctx.relationships.push({ source: name, target: superClasses[i].text, type: ASTEngine.RelationshipType.Extends, metadata: { isSuperclass: true } }); } }
     ctx.symbols.push({
       name,
-      kind: SymbolKind.Interface,
+      kind: ASTEngine.SymbolKind.Interface,
       range: this.nodeToRange(node),
       scope: currentScope?.name || "",
       visibility: "public",
       metadata: { haskellSpecific: true },
     })
 
-    scopeStack.push({ node, name, kind: SymbolKind.Interface })
+    scopeStack.push({ node, name, kind: ASTEngine.SymbolKind.Interface })
     return true
   }
 
@@ -626,7 +625,7 @@ export class RealHaskellAnalyzer implements LanguageAnalyzer {
     const currentScope = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1] : undefined
     ctx.symbols.push({
       name,
-      kind: SymbolKind.Class,
+      kind: ASTEngine.SymbolKind.Class,
       range: this.nodeToRange(node),
       scope: currentScope?.name || "",
       visibility: "public",
@@ -637,16 +636,16 @@ export class RealHaskellAnalyzer implements LanguageAnalyzer {
       ctx.relationships.push({
         source: targetType,
         target: className,
-        type: RelationshipType.Implements,
+        type: ASTEngine.RelationshipType.Implements,
         metadata: { isInstance: true },
       })
     }
 
-    scopeStack.push({ node, name, kind: SymbolKind.Class })
+    scopeStack.push({ node, name, kind: ASTEngine.SymbolKind.Class })
     return true
   }
 
-  private nodeToRange(node: Node): UniversalSymbol["range"] {
+  private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {
     return {
       startLine: node.startPosition.row + 1,
       startColumn: node.startPosition.column + 1,

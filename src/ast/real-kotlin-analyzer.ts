@@ -1,4 +1,3 @@
-// @ts-nocheck — Ported from backbencher.
 function stringIncludes(str: string, val: string): boolean {
   if (!str) return false
   return str.indexOf(val) !== -1
@@ -32,7 +31,7 @@ function findSymbol(arr: any[], predicate: (s: any) => boolean): any | undefined
 // AST analysis for Kotlin with Android, Spring Boot, Ktor intelligence
 
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import { ASTEngine } from "./engine"
 
 export interface KotlinContext {
   content: string
@@ -43,7 +42,7 @@ export interface KotlinContext {
   annotations: Map<string, string[]>
 }
 
-export class RealKotlinAnalyzer implements LanguageAnalyzer {
+export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
   private findChildByType(node: Node, types: string[]): Node | null {
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
@@ -56,7 +55,7 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
     return null
   }
 
-  analyze(rootNode: Node, content: string, filePath: string): ParseResult {
+  analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
     const ctx: KotlinContext = {
       content,
       currentFile: filePath,
@@ -66,11 +65,11 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
       annotations: new Map(),
     }
 
-    const symbols: UniversalSymbol[] = []
-    const relationships: UniversalRelationship[] = []
-    const imports: ImportInfo[] = []
-    const exports: ExportInfo[] = []
-    const errors: ParseError[] = []
+    const symbols: ASTEngine.UniversalSymbol[] = []
+    const relationships: ASTEngine.UniversalRelationship[] = []
+    const imports: ASTEngine.ImportInfo[] = []
+    const exports: ASTEngine.ExportInfo[] = []
+    const errors: ASTEngine.ParseError[] = []
 
     // ========================================================================
     // STAGE 3: RESILIENT PARSING & ERROR NODE BYPASS
@@ -114,7 +113,6 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
     // ========================================================================
     // STAGE 3: PHANTOM SYMBOL INJECTION (Framework Heuristics)
     // ========================================================================
-    this.injectPhantomSymbols(rootNode, symbols, frameworks, ctx)
 
     // PHASE 5: Kotlin-specific analysis (nullability, coroutines, etc.)
     const typeInference = this.performKotlinTypeInference(symbols, relationships)
@@ -163,7 +161,7 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: sourceName,
               target: targetName,
-              type: RelationshipType.Calls,
+              type: ASTEngine.RelationshipType.Calls,
               metadata: { kotlinSpecific: true }
             });
             // Kotlin constructor calls share call_expression — PascalCase targets are likely instantiations
@@ -171,7 +169,7 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: sourceName,
                 target: targetName,
-                type: RelationshipType.Instantiates,
+                type: ASTEngine.RelationshipType.Instantiates,
                 confidence: 0.7,
                 metadata: { kotlinSpecific: true, isInstantiation: true },
               })
@@ -196,17 +194,17 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
         relationships.push({
           source: _owner,
           target: s.name,
-          type: RelationshipType.Contains,
+          type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
           metadata: { isContained: true },
         })
       }
       // Overrides: methods with 'override' modifier
-      if (s.kind === SymbolKind.Method && s.metadata?.modifiers?.includes?.("override")) {
+      if (s.kind === ASTEngine.SymbolKind.Method && s.metadata?.modifiers?.includes?.("override")) {
         relationships.push({
           source: s.ownerName || "root",
           target: s.name,
-          type: RelationshipType.Overrides,
+          type: ASTEngine.RelationshipType.Overrides,
           confidence: 0.9,
           metadata: { isOverride: true },
         })
@@ -216,13 +214,13 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
       relationships.push({
         source: "root",
         target: imp.module || "",
-        type: RelationshipType.References,
+        type: ASTEngine.RelationshipType.References,
         confidence: 0.9,
         metadata: { isImportDep: true },
       })
     }
 
-    for (let i = 0; i < symbols.length; i++) { const s = symbols[i]; if (!s.metadata?.isPhantom && s.visibility !== "private" && (!s.ownerName || s.ownerKind === SymbolKind.Class)) { exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility || "public" }); } }
+    for (let i = 0; i < symbols.length; i++) { const s = symbols[i]; if (!s.metadata?.isPhantom && s.visibility !== "private" && (!s.ownerName || s.ownerKind === ASTEngine.SymbolKind.Class)) { exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility || "public" }); } }
     return {
       symbols,
       relationships,
@@ -255,7 +253,7 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
    */
   private injectPhantomSymbols(
     rootNode: Node,
-    symbols: UniversalSymbol[],
+    symbols: ASTEngine.UniversalSymbol[],
     frameworks: string[],
     ctx: KotlinContext,
   ): void {
@@ -267,18 +265,18 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
           if (symbol.modifiers[j] === "data") { hasData = true; break; }
         }
       }
-      if (symbol.kind === SymbolKind.Class && hasData) {
-        const properties: UniversalSymbol[] = []
+      if (symbol.kind === ASTEngine.SymbolKind.Class && hasData) {
+        const properties: ASTEngine.UniversalSymbol[] = []
         for (let j = 0; j < symbols.length; j++) {
            const s = symbols[j]
-           if (s.scope === symbol.name && s.kind === SymbolKind.Property) properties.push(s)
+           if (s.scope === symbol.name && s.kind === ASTEngine.SymbolKind.Property) properties.push(s)
         }
 
         for (let index = 0; index < properties.length; index++) {
           const prop = properties[index];
           symbols.push({
             name: `component${index + 1}`,
-            kind: SymbolKind.Method,
+            kind: ASTEngine.SymbolKind.Method,
             scope: symbol.name,
             modifiers: ["phantom", "data_class_generated", "operator"],
             range: symbol.range,
@@ -295,7 +293,7 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
 
         symbols.push({
           name: "copy",
-          kind: SymbolKind.Method,
+          kind: ASTEngine.SymbolKind.Method,
           scope: symbol.name,
           modifiers: ["phantom", "data_class_generated"],
           range: symbol.range,
@@ -314,7 +312,7 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
           const method = stdMethods[j]
           symbols.push({
             name: method.name,
-            kind: SymbolKind.Method,
+            kind: ASTEngine.SymbolKind.Method,
             scope: symbol.name,
             modifiers: ["phantom", "data_class_generated", "override"],
             range: symbol.range,
@@ -330,7 +328,7 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
   private extractSymbolsWithScoping(
     node: Node,
     ctx: KotlinContext,
-    symbols: UniversalSymbol[],
+    symbols: ASTEngine.UniversalSymbol[],
     content: string,
     parentClass?: string,
   ): void {
@@ -419,7 +417,7 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
   /**
    * Extract Kotlin function with extension functions and suspend functions
    */
-  private extractFunction(node: Node, symbols: UniversalSymbol[], ctx: KotlinContext, parentClass?: string) {
+  private extractFunction(node: Node, symbols: ASTEngine.UniversalSymbol[], ctx: KotlinContext, parentClass?: string) {
     const nameNode = this.findChildByType(node, ["simple_identifier", "type_identifier"])
     if (!nameNode) return
 
@@ -461,9 +459,9 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
     // Extract API Contract Path if this is a web handler (Spring/Ktor)
     const apiContractPath = this.extractKotlinApiContractPath(node, ctx)
 
-    const symbol: UniversalSymbol = {
+    const symbol: ASTEngine.UniversalSymbol = {
       name: functionName,
-      kind: parentClass ? SymbolKind.Method : SymbolKind.Function,
+      kind: parentClass ? ASTEngine.SymbolKind.Method : ASTEngine.SymbolKind.Function,
       range: this.nodeToRange(node),
       scope: this.currentScope(ctx),
       visibility,
@@ -475,7 +473,7 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
       qualified_calls: qualifiedCalls,
       apiContractPath,
       ownerName: parentClass,
-      ownerKind: parentClass ? SymbolKind.Class : undefined,
+      ownerKind: parentClass ? ASTEngine.SymbolKind.Class : undefined,
       metadata: {
         modifiers,
         receiverType,
@@ -555,7 +553,7 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
   /**
    * Extract Kotlin class with data classes, sealed classes, and inner classes
    */
-  private extractClass(node: Node, symbols: UniversalSymbol[], ctx: KotlinContext) {
+  private extractClass(node: Node, symbols: ASTEngine.UniversalSymbol[], ctx: KotlinContext) {
     const nameNode = this.findChildByType(node, ["simple_identifier", "type_identifier"])
     if (!nameNode) return
 
@@ -588,9 +586,9 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
       else if (modifiers[i] === "open") isOpen = true
     }
 
-    const symbol: UniversalSymbol = {
+    const symbol: ASTEngine.UniversalSymbol = {
       name: className,
-      kind: SymbolKind.Class,
+      kind: ASTEngine.SymbolKind.Class,
       range: this.nodeToRange(node),
       scope: this.currentScope(ctx),
       visibility,
@@ -622,7 +620,7 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
   /**
    * Extract Kotlin object (singleton)
    */
-  private extractObject(node: Node, symbols: UniversalSymbol[], ctx: KotlinContext) {
+  private extractObject(node: Node, symbols: ASTEngine.UniversalSymbol[], ctx: KotlinContext) {
     const nameNode = this.findChildByType(node, ["simple_identifier", "type_identifier"])
     if (!nameNode) return
 
@@ -631,9 +629,9 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
     const superTypes = this.extractSuperTypes(node, ctx)
     const annotations = this.extractAnnotations(node, ctx)
 
-    const symbol: UniversalSymbol = {
+    const symbol: ASTEngine.UniversalSymbol = {
       name: objectName,
-      kind: SymbolKind.Class, // Using Class for objects
+      kind: ASTEngine.SymbolKind.Class, // Using Class for objects
       range: this.nodeToRange(node),
       scope: this.currentScope(ctx),
       visibility: this.determineVisibility(modifiers, ctx),
@@ -653,7 +651,7 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
   /**
    * Extract Kotlin property with getters/setters and delegation
    */
-  private extractProperty(node: Node, symbols: UniversalSymbol[], ctx: KotlinContext, parentClass?: string) {
+  private extractProperty(node: Node, symbols: ASTEngine.UniversalSymbol[], ctx: KotlinContext, parentClass?: string) {
     const nameNode = this.findChildByType(node, ["simple_identifier", "type_identifier"])
     if (!nameNode) return
 
@@ -672,15 +670,15 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
     }
     const hasDelegate = this.hasDelegate(node)
 
-    const symbol: UniversalSymbol = {
+    const symbol: ASTEngine.UniversalSymbol = {
       name: propertyName,
-      kind: SymbolKind.Property,
+      kind: ASTEngine.SymbolKind.Property,
       range: this.nodeToRange(node),
       scope: this.currentScope(ctx),
       visibility: this.determineVisibility(modifiers, ctx),
       decorators: annotations,
       ownerName: parentClass,
-      ownerKind: parentClass ? SymbolKind.Class : undefined,
+      ownerKind: parentClass ? ASTEngine.SymbolKind.Class : undefined,
       metadata: {
         modifiers,
         propertyType,
@@ -703,8 +701,8 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
    */
   private detectKotlinFrameworks(
     content: string,
-    symbols: UniversalSymbol[],
-    imports: ImportInfo[],
+    symbols: ASTEngine.UniversalSymbol[],
+    imports: ASTEngine.ImportInfo[],
   ): string[] {
     const frameworks: Record<string, boolean> = {}
     const hasImport = (pkg: string) => {
@@ -745,8 +743,8 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
    * Detect Kotlin-specific patterns
    */
   private detectKotlinPatterns(
-    symbols: UniversalSymbol[],
-    relationships: UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
     content: string,
   ): string[] {
     const patterns: string[] = []
@@ -782,8 +780,8 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
     return patterns
   }
 
-  private extractKotlinParameters(node: Node, ctx: KotlinContext): Parameter[] {
-    const parameters: Parameter[] = []
+  private extractKotlinParameters(node: Node, ctx: KotlinContext): ASTEngine.Parameter[] {
+    const parameters: ASTEngine.Parameter[] = []
 
     let paramsNode = this.findChildByType(node, ["function_value_parameters", "value_parameters"])
     if (!paramsNode) return parameters
@@ -821,7 +819,7 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
     return [...ctx.packageStack, ...ctx.classStack].join(".")
   }
 
-  private nodeToRange(node: Node): UniversalSymbol["range"] {
+  private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {
     return {
       startLine: node.startPosition.row + 1,
       startColumn: node.startPosition.column + 1,
@@ -836,7 +834,7 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
   /**
    * Kotlin Interface Extraction
    */
-  private extractInterface(node: Node, symbols: UniversalSymbol[], ctx: KotlinContext): void {
+  private extractInterface(node: Node, symbols: ASTEngine.UniversalSymbol[], ctx: KotlinContext): void {
     const nameNode = this.findChildByType(node, ["simple_identifier", "type_identifier"])
     if (!nameNode) return
 
@@ -846,9 +844,9 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
     const typeParameters = this.extractTypeParameters(node, ctx)
     const annotations = this.extractAnnotations(node, ctx)
 
-    const symbol: UniversalSymbol = {
+    const symbol: ASTEngine.UniversalSymbol = {
       name: interfaceName,
-      kind: SymbolKind.Interface,
+      kind: ASTEngine.SymbolKind.Interface,
       range: this.nodeToRange(node),
       scope: this.currentScope(ctx),
       visibility: this.determineVisibility(modifiers, ctx),
@@ -871,7 +869,7 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
   /**
    * Kotlin Enum Class Extraction
    */
-  private extractEnumClass(node: Node, symbols: UniversalSymbol[], ctx: KotlinContext): void {
+  private extractEnumClass(node: Node, symbols: ASTEngine.UniversalSymbol[], ctx: KotlinContext): void {
     const nameNode = this.findChildByType(node, ["simple_identifier", "type_identifier"])
     if (!nameNode) return
 
@@ -880,9 +878,9 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
     const annotations = this.extractAnnotations(node, ctx)
     const enumValues = this.extractKotlinEnumValues(node)
 
-    const symbol: UniversalSymbol = {
+    const symbol: ASTEngine.UniversalSymbol = {
       name: enumName,
-      kind: SymbolKind.Enum,
+      kind: ASTEngine.SymbolKind.Enum,
       range: this.nodeToRange(node),
       scope: this.currentScope(ctx),
       visibility: this.determineVisibility(modifiers, ctx),
@@ -903,12 +901,12 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
     for (const enumValue of enumValues) {
       symbols.push({
         name: enumValue,
-        kind: SymbolKind.EnumMember,
+        kind: ASTEngine.SymbolKind.EnumMember,
         range: this.nodeToRange(node), // Would need specific range
         scope: this.currentScope(ctx),
         visibility: "public",
         ownerName: enumName,
-        ownerKind: SymbolKind.Enum,
+        ownerKind: ASTEngine.SymbolKind.Enum,
         metadata: {
           isEnumValue: true,
           kotlinSpecific: true,
@@ -922,7 +920,7 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
    */
   private extractConstructor(
     node: Node,
-    symbols: UniversalSymbol[],
+    symbols: ASTEngine.UniversalSymbol[],
     ctx: KotlinContext,
     parentClass?: string,
   ): void {
@@ -961,16 +959,16 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
     }
 
     const constructorName = isPrimaryConstructor ? "constructor" : parentClass || "constructor"
-    const symbol: UniversalSymbol = {
+    const symbol: ASTEngine.UniversalSymbol = {
       name: constructorName,
-      kind: SymbolKind.Constructor,
+      kind: ASTEngine.SymbolKind.Constructor,
       range: this.nodeToRange(node),
       scope: this.currentScope(ctx),
       visibility: this.determineVisibility(modifiers, ctx),
       parameters,
       decorators: annotations,
       ownerName: parentClass,
-      ownerKind: parentClass ? SymbolKind.Class : undefined,
+      ownerKind: parentClass ? ASTEngine.SymbolKind.Class : undefined,
       metadata: {
         modifiers,
         isPrimaryConstructor,
@@ -997,12 +995,12 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
               if (nameNode) {
                 symbols.push({
                   name: nameNode.text,
-                  kind: SymbolKind.Property,
+                  kind: ASTEngine.SymbolKind.Property,
                   range: this.nodeToRange(paramNode),
                   scope: this.currentScope(ctx),
                   visibility: this.determineVisibility(modifiers, ctx),
                   ownerName: parentClass,
-                  ownerKind: SymbolKind.Class,
+                  ownerKind: ASTEngine.SymbolKind.Class,
                   returnType: typeNode ? this.cleanKotlinType(typeNode.text) : undefined,
                   metadata: {
                     isVal: text.startsWith("val "),
@@ -1055,7 +1053,7 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
   /**
    * Kotlin Annotation Extraction
    */
-  private extractAnnotation(node: Node, symbols: UniversalSymbol[], ctx: KotlinContext): void {
+  private extractAnnotation(node: Node, symbols: ASTEngine.UniversalSymbol[], ctx: KotlinContext): void {
     const annotationName = this.getKotlinAnnotationName(node)
     if (!annotationName) return
 
@@ -1639,8 +1637,8 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
     return values
   }
   private calculateRealComplexity(
-    symbols: UniversalSymbol[],
-    relationships: UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
   ): number {
     return symbols.length + relationships.length
   }
@@ -1705,8 +1703,8 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
 
   private analyzeRelationships(
     node: Node,
-    relationships: UniversalRelationship[],
-    symbols: UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
   ): void {
     const stack: Node[] = [node]
 
@@ -1721,7 +1719,7 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
           relationships.push({
             source: nameNode.text,
             target: receiverType,
-            type: RelationshipType.Extends,
+            type: ASTEngine.RelationshipType.Extends,
             confidence: 1.0,
             metadata: {
               relationshipType: "kotlin_extension_function",
@@ -1741,7 +1739,7 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
                 relationships.push({
                   source: nameNode.text,
                   target: call,
-                  type: RelationshipType.Contains,
+                  type: ASTEngine.RelationshipType.Contains,
                   confidence: 0.8,
                   metadata: {
                     relationshipType: "compose_ui_tree",
@@ -1767,7 +1765,7 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: parentName,
                 target: callName,
-                type: RelationshipType.Uses,
+                type: ASTEngine.RelationshipType.Uses,
                 confidence: 1.0,
                 metadata: {
                   relationshipType: "coroutine_dispatch",
@@ -1787,16 +1785,16 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
 
     for (let i = 0; i < symbols.length; i++) {
       const cls = symbols[i]
-      if (cls.kind === SymbolKind.Class || cls.kind === SymbolKind.Interface) {
+      if (cls.kind === ASTEngine.SymbolKind.Class || cls.kind === ASTEngine.SymbolKind.Interface) {
         if (cls.metadata?.superTypes) {
           for (let j = 0; j < cls.metadata.superTypes.length; j++) {
             // First supertype of a class = extends, rest = implements.
             // For interfaces, all supertypes are extends.
-            const isExtends = cls.kind === SymbolKind.Interface || j === 0
+            const isExtends = cls.kind === ASTEngine.SymbolKind.Interface || j === 0
             relationships.push({
               source: cls.name,
               target: cls.metadata.superTypes[j],
-              type: isExtends ? RelationshipType.Extends : RelationshipType.Implements,
+              type: isExtends ? ASTEngine.RelationshipType.Extends : ASTEngine.RelationshipType.Implements,
               confidence: 1.0,
               metadata: { relationshipType: isExtends ? "kotlin_extends" : "kotlin_implements" },
             })
@@ -1806,7 +1804,7 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
     }
   }
 
-  private processImportsExports(node: Node, imports: ImportInfo[], exports: ExportInfo[]): void {
+  private processImportsExports(node: Node, imports: ASTEngine.ImportInfo[], exports: ASTEngine.ExportInfo[]): void {
     const stack: Node[] = [node]
 
     while (stack.length > 0) {
@@ -1840,14 +1838,14 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
   }
 
   private performKotlinTypeInference(
-    symbols: UniversalSymbol[],
-    relationships: UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
   ): any {
     const inferences: Record<string, string> = {}
     let count = 0
 
     for (const sym of symbols) {
-      if (sym.kind === SymbolKind.Variable && !sym.returnType) {
+      if (sym.kind === ASTEngine.SymbolKind.Variable && !sym.returnType) {
         if (sym.name.startsWith("is") || sym.name.startsWith("has")) {
           sym.returnType = "Boolean"
           inferences[sym.name] = "Boolean"
@@ -1871,7 +1869,7 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
     return { inferred: count > 0, count, details: inferences }
   }
 
-  private getKotlinFrameworkPatterns(frameworks: string[], symbols: UniversalSymbol[]): any[] {
+  private getKotlinFrameworkPatterns(frameworks: string[], symbols: ASTEngine.UniversalSymbol[]): any[] {
     const patterns: any[] = []
     for (let i = 0; i < frameworks.length; i++) {
       const fw = frameworks[i]
@@ -1945,8 +1943,8 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
   }
 
   private generateArchitecturalInsights(
-    symbols: UniversalSymbol[],
-    relationships: UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
   ): any[] {
     const insights: any[] = []
 
@@ -2003,8 +2001,8 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
 
 
   private calculateArchitecturalScore(
-    symbols: UniversalSymbol[],
-    relationships: UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
     patterns: string[],
   ): number {
     let score = 80
@@ -2017,8 +2015,8 @@ export class RealKotlinAnalyzer implements LanguageAnalyzer {
   }
 
   private assessKotlinCodeQuality(
-    symbols: UniversalSymbol[],
-    relationships: UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
     patterns: string[],
   ): string {
     const score = this.calculateArchitecturalScore(symbols, relationships, patterns)

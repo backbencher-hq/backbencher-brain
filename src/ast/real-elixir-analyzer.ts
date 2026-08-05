@@ -1,24 +1,23 @@
-// @ts-nocheck — Ported from backbencher.
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import { ASTEngine } from "./engine"
 
 interface ElixirContext {
-  symbols: UniversalSymbol[]
-  relationships: UniversalRelationship[]
-  imports: ImportInfo[]
-  exports: ExportInfo[]
-  errors: ParseError[]
+  symbols: ASTEngine.UniversalSymbol[]
+  relationships: ASTEngine.UniversalRelationship[]
+  imports: ASTEngine.ImportInfo[]
+  exports: ASTEngine.ExportInfo[]
+  errors: ASTEngine.ParseError[]
   patterns: Record<string, boolean>
   frameworks: Record<string, boolean>
   content: string
   aliases: Record<string, string>
-  functionHeads: Record<string, UniversalSymbol>
+  functionHeads: Record<string, ASTEngine.UniversalSymbol>
 }
 
 interface Scope {
   node: Node
   name: string
-  kind: SymbolKind
+  kind: ASTEngine.SymbolKind
 }
 
 const complexityNodes: Record<string, boolean> = {
@@ -40,8 +39,8 @@ const complexityNodes: Record<string, boolean> = {
   "do_block": true
 }
 
-export class RealElixirAnalyzer implements LanguageAnalyzer {
-  analyze(rootNode: Node, content: string, filePath: string): ParseResult {
+export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
+  analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
     const ctx: ElixirContext = { 
         symbols: [], relationships: [], imports: [], exports: [], errors: [], 
         patterns: {}, frameworks: {}, content, 
@@ -100,7 +99,7 @@ export class RealElixirAnalyzer implements LanguageAnalyzer {
           ctx.relationships.push({
             source: currentScope.name,
             target: node.text,
-            type: RelationshipType.References,
+            type: ASTEngine.RelationshipType.References,
             confidence: 0.6,
             metadata: { elixirSpecific: true, isVariableRef: true }
           })
@@ -114,7 +113,7 @@ export class RealElixirAnalyzer implements LanguageAnalyzer {
         if (attrName === "behaviour" || attrName === "behavior") {
           const bhv = attrValue.replace(/['"]/g, "").trim()
           if (bhv) {
-            ctx.relationships.push({ source: currentScope?.name || "Global", target: bhv, type: RelationshipType.Implements, confidence: 0.9, metadata: { elixirSpecific: true, isBehaviour: true } })
+            ctx.relationships.push({ source: currentScope?.name || "Global", target: bhv, type: ASTEngine.RelationshipType.Implements, confidence: 0.9, metadata: { elixirSpecific: true, isBehaviour: true } })
           }
         }
       } else if (node.type === "case_clause" || node.type === "cond_clause" || node.type === "receive_clause" || node.type === "try_clause") {
@@ -123,7 +122,7 @@ export class RealElixirAnalyzer implements LanguageAnalyzer {
         // fn x -> x + 1  or  &(&1 + 1)
         const name = "lambda_" + node.startPosition.row + "_" + node.startPosition.column
         ctx.symbols.push({
-          name, kind: SymbolKind.Function, range: this.nodeToRange(node),
+          name, kind: ASTEngine.SymbolKind.Function, range: this.nodeToRange(node),
           scope: currentScope?.name || "", ownerName: currentScope?.name, ownerKind: currentScope?.kind,
           visibility: "private", metadata: { elixirSpecific: true, isAnonymous: true, isLambda: true }
         })
@@ -176,7 +175,7 @@ export class RealElixirAnalyzer implements LanguageAnalyzer {
     for (const s of ctx.symbols) {
       const isModLevel = !s.ownerName || s.ownerName === s.name
       const isPub = s.visibility === "public"
-      const isExp = [SymbolKind.Module, SymbolKind.Function, SymbolKind.Interface, SymbolKind.Struct].includes(s.kind)
+      const isExp = [ASTEngine.SymbolKind.Module, ASTEngine.SymbolKind.Function, ASTEngine.SymbolKind.Interface, ASTEngine.SymbolKind.Struct].includes(s.kind)
       if (isModLevel && isPub && isExp) { ctx.exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility }) }
     }
 
@@ -187,7 +186,7 @@ export class RealElixirAnalyzer implements LanguageAnalyzer {
         ctx.relationships.push({
           source: _owner,
           target: s.name,
-          type: RelationshipType.Contains,
+          type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
           metadata: {},
         })
@@ -242,10 +241,10 @@ export class RealElixirAnalyzer implements LanguageAnalyzer {
               finalTarget = parts.join(".")
           }
       }
-      ctx.relationships.push({ source: currentScope?.name || "Global", target: finalTarget, type: RelationshipType.Calls, metadata: { elixirSpecific: true, ...meta } })
+      ctx.relationships.push({ source: currentScope?.name || "Global", target: finalTarget, type: ASTEngine.RelationshipType.Calls, metadata: { elixirSpecific: true, ...meta } })
       // Elixir struct/module instantiation: %StructName{} or ModuleName.new()
       if (finalTarget && (finalTarget[0] === finalTarget[0].toUpperCase() && finalTarget[0] !== finalTarget[0].toLowerCase())) {
-        ctx.relationships.push({ source: currentScope?.name || "Global", target: finalTarget, type: RelationshipType.Instantiates, confidence: 0.7, metadata: { elixirSpecific: true, isStruct: true } })
+        ctx.relationships.push({ source: currentScope?.name || "Global", target: finalTarget, type: ASTEngine.RelationshipType.Instantiates, confidence: 0.7, metadata: { elixirSpecific: true, isStruct: true } })
       }
   }
 
@@ -254,12 +253,12 @@ export class RealElixirAnalyzer implements LanguageAnalyzer {
     if (!argsNode) return false
     const name = this.extractName(argsNode)
     const fullName = currentScope ? `${currentScope.name}.${name}` : name
-    const symbol: UniversalSymbol = {
-        name: fullName, kind: SymbolKind.Module, range: this.nodeToRange(node), scope: currentScope?.name || "", visibility: "public",
+    const symbol: ASTEngine.UniversalSymbol = {
+        name: fullName, kind: ASTEngine.SymbolKind.Module, range: this.nodeToRange(node), scope: currentScope?.name || "", visibility: "public",
         metadata: { elixirSpecific: true }
     }
     ctx.symbols.push(symbol)
-    scopeStack.push({ node, name: fullName, kind: SymbolKind.Module })
+    scopeStack.push({ node, name: fullName, kind: ASTEngine.SymbolKind.Module })
     return true
   }
 
@@ -268,8 +267,8 @@ export class RealElixirAnalyzer implements LanguageAnalyzer {
     if (!argsNode) return false
     const name = this.extractName(argsNode)
     const fullName = currentScope ? `${currentScope.name}.${name}` : name
-    ctx.symbols.push({ name: fullName, kind: SymbolKind.Interface, range: this.nodeToRange(node), scope: currentScope?.name || "", visibility: "public", metadata: { elixirSpecific: true, isProtocol: true } })
-    scopeStack.push({ node, name: fullName, kind: SymbolKind.Interface })
+    ctx.symbols.push({ name: fullName, kind: ASTEngine.SymbolKind.Interface, range: this.nodeToRange(node), scope: currentScope?.name || "", visibility: "public", metadata: { elixirSpecific: true, isProtocol: true } })
+    scopeStack.push({ node, name: fullName, kind: ASTEngine.SymbolKind.Interface })
     return true
   }
 
@@ -288,15 +287,15 @@ export class RealElixirAnalyzer implements LanguageAnalyzer {
     if (aliases.length > 0 && aliases[0]) protocol = aliases[0].text
     
     const fullName = `${protocol}.${forType}`
-    ctx.symbols.push({ name: fullName, kind: SymbolKind.Class, range: this.nodeToRange(node), scope: currentScope?.name || "", visibility: "public", metadata: { elixirSpecific: true, isProtocolImplementation: true } })
-    ctx.relationships.push({ source: fullName, target: protocol, type: RelationshipType.Implements, metadata: {} })
-    scopeStack.push({ node, name: fullName, kind: SymbolKind.Class })
+    ctx.symbols.push({ name: fullName, kind: ASTEngine.SymbolKind.Class, range: this.nodeToRange(node), scope: currentScope?.name || "", visibility: "public", metadata: { elixirSpecific: true, isProtocolImplementation: true } })
+    ctx.relationships.push({ source: fullName, target: protocol, type: ASTEngine.RelationshipType.Implements, metadata: {} })
+    scopeStack.push({ node, name: fullName, kind: ASTEngine.SymbolKind.Class })
     return true
   }
 
   private processStruct(node: Node, ctx: ElixirContext, currentScope: Scope | undefined) {
     const structName = currentScope ? `%${currentScope.name}{}` : "struct"
-     ctx.symbols.push({ name: structName, kind: SymbolKind.Struct, range: this.nodeToRange(node), scope: currentScope?.name || "", ownerName: currentScope?.name, ownerKind: currentScope?.kind, visibility: "public", metadata: { elixirSpecific: true, isStruct: true } })
+     ctx.symbols.push({ name: structName, kind: ASTEngine.SymbolKind.Struct, range: this.nodeToRange(node), scope: currentScope?.name || "", ownerName: currentScope?.name, ownerKind: currentScope?.kind, visibility: "public", metadata: { elixirSpecific: true, isStruct: true } })
   }
 
   private processFunction(node: Node, defType: string, ctx: ElixirContext, currentScope: Scope | undefined) {
@@ -307,7 +306,7 @@ export class RealElixirAnalyzer implements LanguageAnalyzer {
     let guardList: string[] = []
     let name = "Unknown"
     let hasPattern = false
-    const parameters: Parameter[] = []
+    const parameters: ASTEngine.Parameter[] = []
 
     let sigNode = sigNodes[0]
     if (sigNode && sigNode.type === "arguments" && sigNode.namedChildCount > 0) {
@@ -386,8 +385,8 @@ export class RealElixirAnalyzer implements LanguageAnalyzer {
         return
     }
 
-    const symbol: UniversalSymbol = {
-        name, kind: SymbolKind.Function, range: this.nodeToRange(node), scope: currentScope?.name || "", ownerName: currentScope?.name, ownerKind: currentScope?.kind, visibility, parameters,
+    const symbol: ASTEngine.UniversalSymbol = {
+        name, kind: ASTEngine.SymbolKind.Function, range: this.nodeToRange(node), scope: currentScope?.name || "", ownerName: currentScope?.name, ownerKind: currentScope?.kind, visibility, parameters,
         metadata: { elixirSpecific: true, isMacro: defType.indexOf("macro") !== -1, arity, heads: 1, hasPatternMatching: hasPattern, guards: guardList, isGenServerCallback: isGenCallback, isSupervisorCallback: isSupCallback }
     }
     ctx.symbols.push(symbol)
@@ -413,7 +412,7 @@ export class RealElixirAnalyzer implements LanguageAnalyzer {
          if (moduleName.indexOf("GenServer") !== -1) {
              ctx.patterns["Actor Model (OTP)"] = true
              if (currentScope) {
-                let sym: UniversalSymbol | undefined
+                let sym: ASTEngine.UniversalSymbol | undefined
                 for (let i = 0; i < ctx.symbols.length; i++) {
                     if (ctx.symbols[i].name === currentScope.name) {
                         sym = ctx.symbols[i]
@@ -427,7 +426,7 @@ export class RealElixirAnalyzer implements LanguageAnalyzer {
              ctx.patterns["Supervision Trees"] = true
              ctx.patterns["Actor Model (OTP)"] = true
              if (currentScope) {
-                let sym: UniversalSymbol | undefined
+                let sym: ASTEngine.UniversalSymbol | undefined
                 for (let i = 0; i < ctx.symbols.length; i++) {
                     if (ctx.symbols[i].name === currentScope.name) {
                         sym = ctx.symbols[i]
@@ -443,12 +442,12 @@ export class RealElixirAnalyzer implements LanguageAnalyzer {
      
      if (target === "import" || target === "alias" || target === "require") {
          ctx.imports.push({ module: moduleName, source: moduleName, imported: ["*"], isTypeOnly: false, range: this.nodeToRange(node) })
-          ctx.relationships.push({ source: currentScope?.name || "Global", target: (argsNode.text || "").replace(/".*"/, "").trim() || node.text, type: RelationshipType.Uses, confidence: 0.8, metadata: { elixirSpecific: true, directiveType: target } })
-          ctx.relationships.push({ source: currentScope?.name || "Global", target: moduleName, type: RelationshipType.References, confidence: 0.9, metadata: { elixirSpecific: true, isModuleDep: true } })
+          ctx.relationships.push({ source: currentScope?.name || "Global", target: (argsNode.text || "").replace(/".*"/, "").trim() || node.text, type: ASTEngine.RelationshipType.Uses, confidence: 0.8, metadata: { elixirSpecific: true, directiveType: target } })
+          ctx.relationships.push({ source: currentScope?.name || "Global", target: moduleName, type: ASTEngine.RelationshipType.References, confidence: 0.9, metadata: { elixirSpecific: true, isModuleDep: true } })
      }
   }
 
-  private nodeToRange(node: Node): UniversalSymbol["range"] {
+  private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {
     return { startLine: node.startPosition.row + 1, startColumn: node.startPosition.column + 1, endLine: node.endPosition.row + 1, endColumn: node.endPosition.column + 1, startIndex: node.startIndex, endIndex: node.endIndex }
   }
 }

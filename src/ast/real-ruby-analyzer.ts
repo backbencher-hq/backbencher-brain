@@ -1,23 +1,22 @@
-// @ts-nocheck — Ported from backbencher.
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import { ASTEngine } from "./engine"
 
-export class RealRubyAnalyzer implements LanguageAnalyzer {
+export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
   public analyze(
     rootNode: Node,
     content: string,
     filePath: string,
-  ): Omit<ParseResult, "language" | "metadata"> & { metadata?: Partial<FileMetadata> } {
-    const symbols: UniversalSymbol[] = []
-    const imports: ImportInfo[] = []
-    const exports: ExportInfo[] = []
-    const relationships: UniversalRelationship[] = []
+  ): Omit<ASTEngine.ParseResult, "language" | "metadata"> & { metadata?: Partial<ASTEngine.FileMetadata> } {
+    const symbols: ASTEngine.UniversalSymbol[] = []
+    const imports: ASTEngine.ImportInfo[] = []
+    const exports: ASTEngine.ExportInfo[] = []
+    const relationships: ASTEngine.UniversalRelationship[] = []
 
     // Use true Objects for O(1) tracking, no Sets or Maps needed for simple flags
     const frameworksObj: Record<string, boolean> = {}
     const patternsObj: Record<string, boolean> = {}
 
-    const metadata: Partial<FileMetadata> = {
+    const metadata: Partial<ASTEngine.FileMetadata> = {
       detectedFrameworks: [],
       frameworkPatterns: [],
       cyclomaticComplexity: 1,
@@ -53,7 +52,7 @@ export class RealRubyAnalyzer implements LanguageAnalyzer {
     metadata.linesOfCode = loc
 
     // Iterative stack
-    const stack: { node: Node; parent: UniversalSymbol | null }[] = [{ node: rootNode, parent: null }]
+    const stack: { node: Node; parent: ASTEngine.UniversalSymbol | null }[] = [{ node: rootNode, parent: null }]
 
     while (stack.length > 0) {
       const popped = stack.pop()
@@ -90,7 +89,7 @@ export class RealRubyAnalyzer implements LanguageAnalyzer {
         const name = `${type}_${node.startPosition.row + 1}_${node.startPosition.column + 1}`
         symbols.push({
           name,
-          kind: SymbolKind.Function,
+          kind: ASTEngine.SymbolKind.Function,
           range: this.getRange(node),
           ownerName: parent ? parent.name : undefined,
           metadata: { rubySpecific: true, isAnonymousBlock: true },
@@ -99,7 +98,7 @@ export class RealRubyAnalyzer implements LanguageAnalyzer {
         const name = `lambda_${node.startPosition.row + 1}_${node.startPosition.column + 1}`
         symbols.push({
           name,
-          kind: SymbolKind.Function,
+          kind: ASTEngine.SymbolKind.Function,
           range: this.getRange(node),
           ownerName: parent ? parent.name : undefined,
           metadata: { rubySpecific: true, isLambda: true },
@@ -138,7 +137,7 @@ export class RealRubyAnalyzer implements LanguageAnalyzer {
         relationships.push({
           source: _owner,
           target: s.name,
-          type: RelationshipType.Contains,
+          type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
           metadata: { rubySpecific: true },
         })
@@ -164,12 +163,12 @@ export class RealRubyAnalyzer implements LanguageAnalyzer {
 
   private handleClass(
     node: Node,
-    symbols: UniversalSymbol[],
-    relationships: UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
     frameworksObj: Record<string, boolean>,
     patternsObj: Record<string, boolean>,
-    parent: UniversalSymbol | null,
-  ): UniversalSymbol | null {
+    parent: ASTEngine.UniversalSymbol | null,
+  ): ASTEngine.UniversalSymbol | null {
     const nameNode = node.childForFieldName("name")
     if (!nameNode) return null
 
@@ -203,14 +202,14 @@ export class RealRubyAnalyzer implements LanguageAnalyzer {
       relationships.push({
         source: name,
         target: superClass,
-        type: RelationshipType.Extends,
+        type: ASTEngine.RelationshipType.Extends,
         metadata: { railsSpecific: isRailsModel || isRailsController },
       })
     }
 
-    const symbol: UniversalSymbol = {
+    const symbol: ASTEngine.UniversalSymbol = {
       name,
-      kind: SymbolKind.Class,
+      kind: ASTEngine.SymbolKind.Class,
       range: this.getRange(node),
       ownerName: parent ? parent.name : undefined,
       parent: parent ? parent.name : undefined,
@@ -238,15 +237,15 @@ export class RealRubyAnalyzer implements LanguageAnalyzer {
 
   private handleModule(
     node: Node,
-    symbols: UniversalSymbol[],
-    parent: UniversalSymbol | null,
-  ): UniversalSymbol | null {
+    symbols: ASTEngine.UniversalSymbol[],
+    parent: ASTEngine.UniversalSymbol | null,
+  ): ASTEngine.UniversalSymbol | null {
     const nameNode = node.childForFieldName("name")
     if (!nameNode) return null
 
-    const symbol: UniversalSymbol = {
+    const symbol: ASTEngine.UniversalSymbol = {
       name: nameNode.text,
-      kind: SymbolKind.Module,
+      kind: ASTEngine.SymbolKind.Module,
       range: this.getRange(node),
       ownerName: parent ? parent.name : undefined,
       parent: parent ? parent.name : undefined,
@@ -258,8 +257,8 @@ export class RealRubyAnalyzer implements LanguageAnalyzer {
 
   private handleMethod(
     node: Node,
-    symbols: UniversalSymbol[],
-    parent: UniversalSymbol | null,
+    symbols: ASTEngine.UniversalSymbol[],
+    parent: ASTEngine.UniversalSymbol | null,
   ): void {
     const nameNode = node.childForFieldName("name")
     if (!nameNode) return
@@ -268,7 +267,7 @@ export class RealRubyAnalyzer implements LanguageAnalyzer {
 
     symbols.push({
       name: nameNode.text,
-      kind: isTopLevel ? SymbolKind.Function : SymbolKind.Method,
+      kind: isTopLevel ? ASTEngine.SymbolKind.Function : ASTEngine.SymbolKind.Method,
       range: this.getRange(node),
       ownerName: parent ? parent.name : undefined,
       parent: parent ? parent.name : undefined,
@@ -278,8 +277,8 @@ export class RealRubyAnalyzer implements LanguageAnalyzer {
 
   private handleSingletonMethod(
     node: Node,
-    symbols: UniversalSymbol[],
-    parent: UniversalSymbol | null,
+    symbols: ASTEngine.UniversalSymbol[],
+    parent: ASTEngine.UniversalSymbol | null,
   ): void {
     const nameNode = node.childForFieldName("name")
     const objectNode = node.childForFieldName("object")
@@ -289,7 +288,7 @@ export class RealRubyAnalyzer implements LanguageAnalyzer {
 
     symbols.push({
       name: fullName,
-      kind: SymbolKind.Method,
+      kind: ASTEngine.SymbolKind.Method,
       range: this.getRange(node),
       ownerName: parent ? parent.name : undefined,
       parent: parent ? parent.name : undefined,
@@ -299,8 +298,8 @@ export class RealRubyAnalyzer implements LanguageAnalyzer {
 
   private handleAssignment(
     node: Node,
-    symbols: UniversalSymbol[],
-    parent: UniversalSymbol | null,
+    symbols: ASTEngine.UniversalSymbol[],
+    parent: ASTEngine.UniversalSymbol | null,
   ): void {
     const left = node.childForFieldName("left")
     if (!left) return
@@ -314,7 +313,7 @@ export class RealRubyAnalyzer implements LanguageAnalyzer {
     ) {
       symbols.push({
         name: left.text,
-        kind: SymbolKind.Variable,
+        kind: ASTEngine.SymbolKind.Variable,
         range: this.getRange(node),
         ownerName: parent ? parent.name : undefined,
         parent: parent ? parent.name : undefined,
@@ -335,12 +334,12 @@ export class RealRubyAnalyzer implements LanguageAnalyzer {
 
   private handleCall(
     node: Node,
-    imports: ImportInfo[],
-    relationships: UniversalRelationship[],
+    imports: ASTEngine.ImportInfo[],
+    relationships: ASTEngine.UniversalRelationship[],
     frameworksObj: Record<string, boolean>,
     patternsObj: Record<string, boolean>,
-    parent: UniversalSymbol | null,
-    symbols: UniversalSymbol[],
+    parent: ASTEngine.UniversalSymbol | null,
+    symbols: ASTEngine.UniversalSymbol[],
   ): void {
     const methodNode = node.childForFieldName("method")
     let methodName = ""
@@ -383,7 +382,7 @@ export class RealRubyAnalyzer implements LanguageAnalyzer {
         target: methodName,
         fromSymbol: parent ? parent.name : "Global",
         toSymbol: qualifiedName,
-        type: RelationshipType.Calls,
+        type: ASTEngine.RelationshipType.Calls,
         metadata: { rubySpecific: true, qualified: qualifiedName },
       })
 
@@ -394,7 +393,7 @@ export class RealRubyAnalyzer implements LanguageAnalyzer {
           target: receiver,
           fromSymbol: parent ? parent.name : "Global",
           toSymbol: receiver,
-          type: RelationshipType.Instantiates,
+          type: ASTEngine.RelationshipType.Instantiates,
           confidence: 0.9,
           metadata: { rubySpecific: true, qualified: receiver, isNew: true },
         })
@@ -425,7 +424,7 @@ export class RealRubyAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: "root",
               target: cleanText,
-              type: RelationshipType.References,
+              type: ASTEngine.RelationshipType.References,
               confidence: 0.9,
               metadata: { rubySpecific: true },
             })
@@ -462,7 +461,7 @@ export class RealRubyAnalyzer implements LanguageAnalyzer {
           const range = this.getRange(node)
           symbols.push({
             name: text,
-            kind: SymbolKind.Property,
+            kind: ASTEngine.SymbolKind.Property,
             range: {
               startLine: range.startLine,
               endLine: range.endLine,
@@ -476,7 +475,7 @@ export class RealRubyAnalyzer implements LanguageAnalyzer {
           relationships.push({
             source: parent ? parent.name : "unknown",
             target: text,
-            type: RelationshipType.Uses,
+            type: ASTEngine.RelationshipType.Uses,
             metadata: { relationshipType: `activerecord_${methodName}` },
           })
         }
@@ -497,7 +496,7 @@ export class RealRubyAnalyzer implements LanguageAnalyzer {
           const range = this.getRange(node)
           symbols.push({
             name: scopeName,
-            kind: SymbolKind.Function,
+            kind: ASTEngine.SymbolKind.Function,
             range: {
               startLine: range.startLine,
               endLine: range.endLine,
@@ -511,7 +510,7 @@ export class RealRubyAnalyzer implements LanguageAnalyzer {
           relationships.push({
             source: parent ? parent.name : "unknown",
             target: scopeName,
-            type: RelationshipType.Uses,
+            type: ASTEngine.RelationshipType.Uses,
             metadata: { relationshipType: `activerecord_${methodName}` },
           })
         }
@@ -535,7 +534,7 @@ export class RealRubyAnalyzer implements LanguageAnalyzer {
             const range = this.getRange(node)
             symbols.push({
               name: fieldName,
-              kind: SymbolKind.Variable,
+              kind: ASTEngine.SymbolKind.Variable,
               range: {
                 startLine: range.startLine,
                 endLine: range.endLine,
@@ -549,7 +548,7 @@ export class RealRubyAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: parent ? parent.name : "unknown",
               target: fieldName,
-              type: RelationshipType.Uses,
+              type: ASTEngine.RelationshipType.Uses,
               metadata: { relationshipType: methodName, validation: true },
             })
           }
@@ -570,7 +569,7 @@ export class RealRubyAnalyzer implements LanguageAnalyzer {
           const range = this.getRange(node)
           symbols.push({
             name: eventName,
-            kind: SymbolKind.Variable,
+            kind: ASTEngine.SymbolKind.Variable,
             range: {
               startLine: range.startLine,
               endLine: range.endLine,
@@ -584,14 +583,14 @@ export class RealRubyAnalyzer implements LanguageAnalyzer {
           relationships.push({
             source: parent ? parent.name : "unknown",
             target: eventName,
-            type: RelationshipType.Uses,
+            type: ASTEngine.RelationshipType.Uses,
             metadata: { relationshipType: `aasm_${methodName}` },
           })
         }
       }
     } else if (methodName === "include" || methodName === "extend" || methodName === "prepend") {
-      const relType = methodName === "extend" ? RelationshipType.Uses
-        : RelationshipType.Implements
+      const relType = methodName === "extend" ? ASTEngine.RelationshipType.Uses
+        : ASTEngine.RelationshipType.Implements
       const args = this.findArgumentList(node)
       if (args) {
         for (let i = 0; i < args.childCount; i++) {
@@ -623,7 +622,7 @@ export class RealRubyAnalyzer implements LanguageAnalyzer {
         if (argName) {
           symbols.push({
             name: argName,
-            kind: SymbolKind.Method,
+            kind: ASTEngine.SymbolKind.Method,
             range: this.getRange(node),
             ownerName: parent ? parent.name : undefined,
             metadata: { rubySpecific: true, isDynamicMethod: true },
@@ -646,7 +645,7 @@ export class RealRubyAnalyzer implements LanguageAnalyzer {
           relationships.push({
             source: parent ? parent.name : "unknown",
             target: names[0],
-            type: RelationshipType.Calls,
+            type: ASTEngine.RelationshipType.Calls,
             metadata: { rubySpecific: true, aliasedTo: names[1] },
           })
         }
@@ -667,7 +666,7 @@ export class RealRubyAnalyzer implements LanguageAnalyzer {
             if (propName.charCodeAt(0) === 58) propName = propName.substring(1)
             symbols.push({
               name: propName,
-              kind: SymbolKind.Property,
+              kind: ASTEngine.SymbolKind.Property,
               range: this.getRange(node),
               ownerName: parent ? parent.name : undefined,
               metadata: { rubySpecific: true, accessorType: methodName },
@@ -685,7 +684,7 @@ export class RealRubyAnalyzer implements LanguageAnalyzer {
             if (propName.charCodeAt(0) === 58) propName = propName.substring(1)
             symbols.push({
               name: propName,
-              kind: SymbolKind.Property,
+              kind: ASTEngine.SymbolKind.Property,
               range: this.getRange(node),
               ownerName: parent ? parent.name : undefined,
               metadata: { rubySpecific: true, delegated: true },
@@ -699,12 +698,12 @@ export class RealRubyAnalyzer implements LanguageAnalyzer {
   // Handle method calls without parentheses: `puts "hello"`, `redirect_to path`
   private handleCommand(
     node: Node,
-    _imports: ImportInfo[],
-    relationships: UniversalRelationship[],
+    _imports: ASTEngine.ImportInfo[],
+    relationships: ASTEngine.UniversalRelationship[],
     frameworksObj: Record<string, boolean>,
     patternsObj: Record<string, boolean>,
-    parent: UniversalSymbol | null,
-    _symbols: UniversalSymbol[],
+    parent: ASTEngine.UniversalSymbol | null,
+    _symbols: ASTEngine.UniversalSymbol[],
   ): void {
     // Find the method name — first named identifier child
     let methodName = ""
@@ -730,7 +729,7 @@ export class RealRubyAnalyzer implements LanguageAnalyzer {
       target: methodName,
       fromSymbol: parent ? parent.name : "Global",
       toSymbol: methodName,
-      type: RelationshipType.Calls,
+      type: ASTEngine.RelationshipType.Calls,
       metadata: { rubySpecific: true, commandStyle: true },
     })
   }
@@ -738,12 +737,12 @@ export class RealRubyAnalyzer implements LanguageAnalyzer {
   // Handle chained commands: `foo.bar arg1, arg2`
   private handleCommandCall(
     node: Node,
-    imports: ImportInfo[],
-    relationships: UniversalRelationship[],
+    imports: ASTEngine.ImportInfo[],
+    relationships: ASTEngine.UniversalRelationship[],
     frameworksObj: Record<string, boolean>,
     patternsObj: Record<string, boolean>,
-    parent: UniversalSymbol | null,
-    symbols: UniversalSymbol[],
+    parent: ASTEngine.UniversalSymbol | null,
+    symbols: ASTEngine.UniversalSymbol[],
   ): void {
     // Find method name — last identifier before arguments
     let methodName = ""
@@ -771,7 +770,7 @@ export class RealRubyAnalyzer implements LanguageAnalyzer {
       target: methodName,
       fromSymbol: parent ? parent.name : "Global",
       toSymbol: qualifiedName,
-      type: RelationshipType.Calls,
+      type: ASTEngine.RelationshipType.Calls,
       metadata: { rubySpecific: true, commandStyle: true, qualified: qualifiedName },
     })
   }
@@ -785,8 +784,8 @@ export class RealRubyAnalyzer implements LanguageAnalyzer {
   }
 
   private detectFrameworks(
-    imports: ImportInfo[],
-    symbols: UniversalSymbol[],
+    imports: ASTEngine.ImportInfo[],
+    symbols: ASTEngine.UniversalSymbol[],
     frameworksObj: Record<string, boolean>,
     patternsObj: Record<string, boolean>,
   ) {

@@ -1,18 +1,17 @@
-// @ts-nocheck — Ported from backbencher.
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import { ASTEngine } from "./engine"
 
-export class RealRAnalyzer implements LanguageAnalyzer {
+export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(
     rootNode: Node,
     content: string,
     filePath: string,
-  ): Omit<ParseResult, "language" | "metadata"> & { metadata?: Partial<FileMetadata> } {
-    const symbols: UniversalSymbol[] = []
-    const imports: ImportInfo[] = []
-    const exports: ExportInfo[] = []
-    const relationships: UniversalRelationship[] = []
-    const metadata: Partial<FileMetadata> = {
+  ): Omit<ASTEngine.ParseResult, "language" | "metadata"> & { metadata?: Partial<ASTEngine.FileMetadata> } {
+    const symbols: ASTEngine.UniversalSymbol[] = []
+    const imports: ASTEngine.ImportInfo[] = []
+    const exports: ASTEngine.ExportInfo[] = []
+    const relationships: ASTEngine.UniversalRelationship[] = []
+    const metadata: Partial<ASTEngine.FileMetadata> = {
       detectedFrameworks: [],
       patterns: [],
       architecturalInsights: [],
@@ -69,7 +68,7 @@ export class RealRAnalyzer implements LanguageAnalyzer {
         const name = `anon_func_${current.startPosition.row + 1}_${current.startPosition.column + 1}`
         symbols.push({
           name,
-          kind: SymbolKind.Function,
+          kind: ASTEngine.SymbolKind.Function,
           range: this.getRange(current),
           signature: this.extractSignature(current),
           parameters: this.extractParameters(current),
@@ -81,7 +80,7 @@ export class RealRAnalyzer implements LanguageAnalyzer {
         const rhs = current.child(2)
         if (lhs && rhs) {
           relationships.push({
-            type: RelationshipType.Calls,
+            type: ASTEngine.RelationshipType.Calls,
             source: lhs.text,
             target: rhs.text,
             metadata: { rSpecific: true, isMemberAccess: true },
@@ -117,7 +116,7 @@ export class RealRAnalyzer implements LanguageAnalyzer {
         relationships.push({
           source: _owner,
           target: s.name,
-          type: RelationshipType.Contains,
+          type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
           metadata: {},
         })
@@ -134,7 +133,7 @@ export class RealRAnalyzer implements LanguageAnalyzer {
     }
   }
 
-  private detectFrameworksFromImports(imports: ImportInfo[], metadata: Partial<FileMetadata>) {
+  private detectFrameworksFromImports(imports: ASTEngine.ImportInfo[], metadata: Partial<ASTEngine.FileMetadata>) {
     let hasTidyverse = false
     let hasGgplot2 = false
     let hasShiny = false
@@ -179,10 +178,10 @@ export class RealRAnalyzer implements LanguageAnalyzer {
 
   private handleBinaryOperator(
     node: Node,
-    symbols: UniversalSymbol[],
-    exports: ExportInfo[],
-    relationships: UniversalRelationship[],
-    metadata: Partial<FileMetadata>,
+    symbols: ASTEngine.UniversalSymbol[],
+    exports: ASTEngine.ExportInfo[],
+    relationships: ASTEngine.UniversalRelationship[],
+    metadata: Partial<ASTEngine.FileMetadata>,
   ): void {
     const operatorNode = node.child(1)
     if (!operatorNode) return
@@ -214,7 +213,7 @@ export class RealRAnalyzer implements LanguageAnalyzer {
 
         symbols.push({
           name,
-          kind: isS3Method ? SymbolKind.Method : SymbolKind.Function,
+          kind: isS3Method ? ASTEngine.SymbolKind.Method : ASTEngine.SymbolKind.Function,
           range: this.getRange(node),
           signature: this.extractSignature(rhs),
           docstring: doc,
@@ -232,12 +231,12 @@ export class RealRAnalyzer implements LanguageAnalyzer {
           relationships.push({
             source: name,
             target: toName,
-            type: RelationshipType.Implements,
+            type: ASTEngine.RelationshipType.Implements,
             metadata: { relationshipSubType: "s3_method" },
           })
         }
 
-        if (doc && doc.indexOf("@export") !== -1) exports.push({ name, kind: SymbolKind.Function })
+        if (doc && doc.indexOf("@export") !== -1) exports.push({ name, kind: ASTEngine.SymbolKind.Function })
         return
       }
 
@@ -250,7 +249,7 @@ export class RealRAnalyzer implements LanguageAnalyzer {
           const baseClasses = this.extractNamedArguments(rhs, "inherit")
           symbols.push({
             name,
-            kind: SymbolKind.Class,
+            kind: ASTEngine.SymbolKind.Class,
             range: this.getRange(node),
             docstring: doc,
             metadata: { rSpecific: true, type: "R6", isR6Class: true, baseClasses },
@@ -259,7 +258,7 @@ export class RealRAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: name,
               target: bc,
-              type: RelationshipType.Extends,
+              type: ASTEngine.RelationshipType.Extends,
               metadata: { relationshipSubType: "r6_inherits" },
             })
           }
@@ -272,7 +271,7 @@ export class RealRAnalyzer implements LanguageAnalyzer {
           const baseClasses = this.extractNamedArguments(rhs, "contains")
           symbols.push({
             name,
-            kind: SymbolKind.Class,
+            kind: ASTEngine.SymbolKind.Class,
             range: this.getRange(node),
             docstring: doc,
             metadata: { rSpecific: true, type: "R5", isR5Class: true, baseClasses },
@@ -281,7 +280,7 @@ export class RealRAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: name,
               target: bc,
-              type: RelationshipType.Extends,
+              type: ASTEngine.RelationshipType.Extends,
               metadata: { relationshipSubType: "r5_inherits" },
             })
           }
@@ -293,7 +292,7 @@ export class RealRAnalyzer implements LanguageAnalyzer {
         if (fnName === "moduleServer") {
           symbols.push({
             name,
-            kind: SymbolKind.Function, // Mapped as functional component
+            kind: ASTEngine.SymbolKind.Function, // Mapped as functional component
             range: this.getRange(node),
             docstring: doc,
             metadata: { rSpecific: true, isShinyModuleServer: true, framework: "Shiny" },
@@ -306,7 +305,7 @@ export class RealRAnalyzer implements LanguageAnalyzer {
         if (fnName === "cppFunction" || fnName === "cxxfunction") {
           symbols.push({
             name,
-            kind: SymbolKind.Function,
+            kind: ASTEngine.SymbolKind.Function,
             range: this.getRange(node),
             docstring: doc,
             metadata: { rSpecific: true, isInlineCpp: true, crossLanguage: "cpp" },
@@ -327,7 +326,7 @@ export class RealRAnalyzer implements LanguageAnalyzer {
         ) {
           symbols.push({
             name,
-            kind: SymbolKind.Function,
+            kind: ASTEngine.SymbolKind.Function,
             range: this.getRange(node),
             docstring: doc,
             metadata: { rSpecific: true, isReactive: true, reactiveType: fnName },
@@ -338,7 +337,7 @@ export class RealRAnalyzer implements LanguageAnalyzer {
 
       symbols.push({
         name,
-        kind: SymbolKind.Variable,
+        kind: ASTEngine.SymbolKind.Variable,
         range: this.getRange(node),
         metadata: { rSpecific: true },
       })
@@ -348,8 +347,8 @@ export class RealRAnalyzer implements LanguageAnalyzer {
   private extractR6Methods(
     callNode: Node,
     className: string,
-    symbols: UniversalSymbol[],
-    relationships: UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
   ) {
     const argsNode = this.getArgumentsNode(callNode)
     if (!argsNode) return
@@ -380,7 +379,7 @@ export class RealRAnalyzer implements LanguageAnalyzer {
                     const methodName = methodNameNode.text
                     symbols.push({
                       name: methodName,
-                      kind: SymbolKind.Function,
+                      kind: ASTEngine.SymbolKind.Function,
                       range: this.getRange(methodVal),
                       signature: this.extractSignature(methodVal),
                       parameters: this.extractParameters(methodVal),
@@ -390,7 +389,7 @@ export class RealRAnalyzer implements LanguageAnalyzer {
                     relationships.push({
                       source: className,
                       target: methodName,
-                      type: RelationshipType.Contains,
+                      type: ASTEngine.RelationshipType.Contains,
                       metadata: { relationshipSubType: "r6_method", visibility: argName },
                     })
                   }
@@ -406,8 +405,8 @@ export class RealRAnalyzer implements LanguageAnalyzer {
   private extractR5Methods(
     callNode: Node,
     className: string,
-    symbols: UniversalSymbol[],
-    relationships: UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
   ) {
     const argsNode = this.getArgumentsNode(callNode)
     if (!argsNode) return
@@ -438,7 +437,7 @@ export class RealRAnalyzer implements LanguageAnalyzer {
                     const methodName = methodNameNode.text
                     symbols.push({
                       name: methodName,
-                      kind: SymbolKind.Function,
+                      kind: ASTEngine.SymbolKind.Function,
                       range: this.getRange(methodVal),
                       signature: this.extractSignature(methodVal),
                       parameters: this.extractParameters(methodVal),
@@ -448,7 +447,7 @@ export class RealRAnalyzer implements LanguageAnalyzer {
                     relationships.push({
                       source: className,
                       target: methodName,
-                      type: RelationshipType.Contains,
+                      type: ASTEngine.RelationshipType.Contains,
                       metadata: { relationshipSubType: "r5_method" },
                     })
                   }
@@ -471,8 +470,8 @@ export class RealRAnalyzer implements LanguageAnalyzer {
     return null
   }
 
-  private extractParameters(node: Node): Parameter[] {
-    const params: Parameter[] = []
+  private extractParameters(node: Node): ASTEngine.Parameter[] {
+    const params: ASTEngine.Parameter[] = []
     const parametersNode = this.getParametersNode(node)
     if (parametersNode) {
       for (let i = 0; i < parametersNode.childCount; i++) {
@@ -492,7 +491,7 @@ export class RealRAnalyzer implements LanguageAnalyzer {
     return params
   }
 
-  private handleComment(node: Node, metadata: Partial<FileMetadata>): void {
+  private handleComment(node: Node, metadata: Partial<ASTEngine.FileMetadata>): void {
     if (node.text.startsWith("#'")) {
       this.pushIfUnique(metadata.patterns, "Roxygen Documentation")
     }
@@ -510,10 +509,10 @@ export class RealRAnalyzer implements LanguageAnalyzer {
 
   private handleCall(
     node: Node,
-    symbols: UniversalSymbol[],
-    imports: ImportInfo[],
-    relationships: UniversalRelationship[],
-    metadata: Partial<FileMetadata>,
+    symbols: ASTEngine.UniversalSymbol[],
+    imports: ASTEngine.ImportInfo[],
+    relationships: ASTEngine.UniversalRelationship[],
+    metadata: Partial<ASTEngine.FileMetadata>,
   ): void {
     const fnNode = node.childForFieldName("function") || node.child(0)
     if (!fnNode) return
@@ -572,7 +571,7 @@ export class RealRAnalyzer implements LanguageAnalyzer {
     const parentFn = this.findParentFunction(node)
     if (parentFn) {
       relationships.push({
-        type: RelationshipType.Calls,
+        type: ASTEngine.RelationshipType.Calls,
         source: parentFn,
         target: fnName,
         metadata: {},
@@ -580,7 +579,7 @@ export class RealRAnalyzer implements LanguageAnalyzer {
       // R class instantiation: ClassName$new() or ClassName()
       if (fnName && (fnName.endsWith("$new") || (fnName[0] === fnName[0].toUpperCase() && fnName[0] !== fnName[0].toLowerCase()))) {
         relationships.push({
-          type: RelationshipType.Instantiates,
+          type: ASTEngine.RelationshipType.Instantiates,
           source: parentFn,
           target: fnName.replace("$new", ""),
           confidence: 0.7,
@@ -611,7 +610,7 @@ export class RealRAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: "global",
                 target: moduleName,
-                type: RelationshipType.References,
+                type: ASTEngine.RelationshipType.References,
                 confidence: 0.9,
                 metadata: { rSpecific: true },
               })
@@ -639,7 +638,7 @@ export class RealRAnalyzer implements LanguageAnalyzer {
             isWildcard: true,
           })
           relationships.push({
-            type: RelationshipType.References,
+            type: ASTEngine.RelationshipType.References,
             source: "sourceCpp",
             target: path,
             metadata: { isCrossLanguage: true, language: "cpp" },
@@ -689,7 +688,7 @@ export class RealRAnalyzer implements LanguageAnalyzer {
           const baseClasses = this.extractNamedArguments(node, "contains")
           symbols.push({
             name: className,
-            kind: SymbolKind.Class,
+            kind: ASTEngine.SymbolKind.Class,
             range: this.getRange(node),
             docstring: this.extractDocstring(node),
             metadata: { rSpecific: true, type: "S4", isS4Class: true, baseClasses },
@@ -698,7 +697,7 @@ export class RealRAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: className,
               target: bc,
-              type: RelationshipType.Extends,
+              type: ASTEngine.RelationshipType.Extends,
               metadata: { relationshipSubType: "s4_inherits" },
             })
           }
@@ -725,7 +724,7 @@ export class RealRAnalyzer implements LanguageAnalyzer {
         if (methodName) {
           symbols.push({
             name: methodName,
-            kind: fnName === "setMethod" ? SymbolKind.Method : SymbolKind.Function,
+            kind: fnName === "setMethod" ? ASTEngine.SymbolKind.Method : ASTEngine.SymbolKind.Function,
             range: this.getRange(node),
             docstring: this.extractDocstring(node),
             metadata: {

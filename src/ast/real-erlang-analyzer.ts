@@ -1,16 +1,15 @@
-// @ts-nocheck — Ported from backbencher.
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import { ASTEngine } from "./engine"
 
 const OTP_BEHAVIOURS = new Set(["gen_server", "gen_statem", "gen_event", "supervisor", "application"])
 
-export class RealErlangAnalyzer implements LanguageAnalyzer {
-  public analyze(rootNode: Node, content: string, filePath: string): ParseResult {
-    const symbols: UniversalSymbol[] = []
-    const relationships: UniversalRelationship[] = []
-    const imports: ImportInfo[] = []
-    const exports: ExportInfo[] = []
-    const errors: ParseError[] = []
+export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
+  public analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
+    const symbols: ASTEngine.UniversalSymbol[] = []
+    const relationships: ASTEngine.UniversalRelationship[] = []
+    const imports: ASTEngine.ImportInfo[] = []
+    const exports: ASTEngine.ExportInfo[] = []
+    const errors: ASTEngine.ParseError[] = []
 
     let currentModule: string | undefined
     let currentLine = 0
@@ -35,7 +34,7 @@ export class RealErlangAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: currentModule || filePath,
               target: includePath,
-              type: RelationshipType.References,
+              type: ASTEngine.RelationshipType.References,
               confidence: 0.9,
               metadata: { erlangSpecific: true, isInclude: type === "include_attribute" || type === "pp_include", isLibInclude: type === "include_lib_attribute" || type === "pp_include_lib" },
             })
@@ -50,7 +49,7 @@ export class RealErlangAnalyzer implements LanguageAnalyzer {
           currentModule = nameNode.text
           symbols.push({
             name: currentModule,
-            kind: SymbolKind.Module,
+            kind: ASTEngine.SymbolKind.Module,
             range: this.nodeToRange(node),
             metadata: { nodeType: "module_attribute" },
           })
@@ -63,14 +62,14 @@ export class RealErlangAnalyzer implements LanguageAnalyzer {
         if (beNode?.text && OTP_BEHAVIOURS.has(beNode.text)) {
           symbols.push({
             name: beNode.text,
-            kind: SymbolKind.Interface,
+            kind: ASTEngine.SymbolKind.Interface,
             range: this.nodeToRange(node),
             metadata: { nodeType: "behaviour", behaviourName: beNode.text },
           })
           relationships.push({
             source: currentModule || filePath,
             target: beNode.text,
-            type: RelationshipType.Implements,
+            type: ASTEngine.RelationshipType.Implements,
             confidence: 1.0,
             metadata: {
               erlangSpecific: true,
@@ -123,7 +122,7 @@ export class RealErlangAnalyzer implements LanguageAnalyzer {
           relationships.push({
             source: currentModule || filePath,
             target: modNode.text,
-            type: RelationshipType.References,
+            type: ASTEngine.RelationshipType.References,
             confidence: 1.0,
             metadata: { erlangSpecific: true, isModuleImport: true, importedFunctions: funcs },
           })
@@ -141,7 +140,7 @@ export class RealErlangAnalyzer implements LanguageAnalyzer {
               if (nifName?.text) {
                 symbols.push({
                   name: nifName.text,
-                  kind: SymbolKind.Function,
+                  kind: ASTEngine.SymbolKind.Function,
                   range: this.nodeToRange(node),
                   ownerName: currentModule,
                   metadata: { nodeType: attrNameNode.text, isNif: true },
@@ -169,7 +168,7 @@ export class RealErlangAnalyzer implements LanguageAnalyzer {
           }
           symbols.push({
             name: recordName,
-            kind: SymbolKind.Struct,
+            kind: ASTEngine.SymbolKind.Struct,
             range: this.nodeToRange(node),
             ownerName: currentModule,
             metadata: { nodeType: "record_decl", fields },
@@ -179,7 +178,7 @@ export class RealErlangAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: `${currentModule ? currentModule + ":" : ""}${recordName}`,
               target: field,
-              type: RelationshipType.Contains,
+              type: ASTEngine.RelationshipType.Contains,
               confidence: 1.0,
               metadata: { erlangSpecific: true, recordField: true },
             })
@@ -203,7 +202,7 @@ export class RealErlangAnalyzer implements LanguageAnalyzer {
         if (macroName) {
           symbols.push({
             name: macroName,
-            kind: SymbolKind.Constant,
+            kind: ASTEngine.SymbolKind.Constant,
             range: this.nodeToRange(node),
             ownerName: currentModule,
             metadata: { nodeType: "macro_definition", isMacro: true },
@@ -218,7 +217,7 @@ export class RealErlangAnalyzer implements LanguageAnalyzer {
         if (typeName) {
           symbols.push({
             name: typeName,
-            kind: SymbolKind.Type,
+            kind: ASTEngine.SymbolKind.Type,
             range: this.nodeToRange(node),
             ownerName: currentModule,
             metadata: { nodeType: "type_alias" },
@@ -232,7 +231,7 @@ export class RealErlangAnalyzer implements LanguageAnalyzer {
         if (nameNode?.text) {
           symbols.push({
             name: nameNode.text,
-            kind: SymbolKind.Interface,
+            kind: ASTEngine.SymbolKind.Interface,
             range: this.nodeToRange(node),
             ownerName: currentModule,
             metadata: { nodeType: "spec", isSpec: true },
@@ -247,7 +246,7 @@ export class RealErlangAnalyzer implements LanguageAnalyzer {
           relationships.push({
             source: currentModule,
             target: destNode.text,
-            type: RelationshipType.Calls,
+            type: ASTEngine.RelationshipType.Calls,
             confidence: 0.8,
             metadata: { erlangSpecific: true, isMessagePass: true },
           })
@@ -262,7 +261,7 @@ export class RealErlangAnalyzer implements LanguageAnalyzer {
           relationships.push({
             source: currentModule,
             target: recordName,
-            type: RelationshipType.Instantiates,
+            type: ASTEngine.RelationshipType.Instantiates,
             confidence: 1.0,
             metadata: { erlangSpecific: true, isRecordExpr: true },
           })
@@ -279,7 +278,7 @@ export class RealErlangAnalyzer implements LanguageAnalyzer {
                 relationships.push({
                   source: currentModule,
                   target: varNode.text,
-                  type: RelationshipType.Uses,
+                  type: ASTEngine.RelationshipType.Uses,
                   confidence: 0.8,
                   metadata: { erlangSpecific: true, isFieldBinding: true, recordField: fieldName?.text },
                 })
@@ -308,7 +307,7 @@ export class RealErlangAnalyzer implements LanguageAnalyzer {
                 registeredFunctions.add(fullKey)
                 symbols.push({
                   name: funcName,
-                  kind: SymbolKind.Function,
+                  kind: ASTEngine.SymbolKind.Function,
                   range: this.nodeToRange(node),
                   ownerName: currentModule,
                   metadata: { nodeType: "function_clause", clauseCount: funcClauses.length },
@@ -317,7 +316,7 @@ export class RealErlangAnalyzer implements LanguageAnalyzer {
                 relationships.push({
                   source: currentModule,
                   target: funcName,
-                  type: RelationshipType.Contains,
+                  type: ASTEngine.RelationshipType.Contains,
                   confidence: 1.0,
                   metadata: { erlangSpecific: true, isModuleMember: true },
                 })
@@ -351,7 +350,7 @@ export class RealErlangAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: currentModule || filePath,
                 target: `timeout_${timeoutNode.text}ms`,
-                type: RelationshipType.References,
+                type: ASTEngine.RelationshipType.References,
                 confidence: 0.8,
                 metadata: { erlangSpecific: true, isReceiveTimeout: true },
               })
@@ -398,8 +397,8 @@ export class RealErlangAnalyzer implements LanguageAnalyzer {
     currentModule: string | undefined,
     funcName: string,
     lineNumber: number,
-    relationships: UniversalRelationship[],
-    imports: ImportInfo[],
+    relationships: ASTEngine.UniversalRelationship[],
+    imports: ASTEngine.ImportInfo[],
     seenCalls: Set<string>,
     registeredFunctions: Set<string>,
   ) {
@@ -418,7 +417,7 @@ export class RealErlangAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: `${currentModule}:${funcName}`,
               target: calleeText,
-              type: RelationshipType.Calls,
+              type: ASTEngine.RelationshipType.Calls,
               confidence: 0.9,
               metadata: { erlangSpecific: true, isProcessSpawn: true },
             })
@@ -439,7 +438,7 @@ export class RealErlangAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: currentModule ? `${currentModule}:${funcName}` : funcName,
                 target: callKey,
-                type: RelationshipType.Calls,
+                type: ASTEngine.RelationshipType.Calls,
                 confidence: 0.9,
                 metadata: { erlangSpecific: true, context: "remote function call" },
               })
@@ -454,7 +453,7 @@ export class RealErlangAnalyzer implements LanguageAnalyzer {
                 relationships.push({
                   source: currentModule || "global",
                   target: targetModule,
-                  type: RelationshipType.References,
+                  type: ASTEngine.RelationshipType.References,
                   confidence: 0.9,
                   metadata: { erlangSpecific: true, isModuleDep: true },
                 })
@@ -471,7 +470,7 @@ export class RealErlangAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: `${currentModule}:${funcName}`,
               target: calleeText,
-              type: RelationshipType.Calls,
+              type: ASTEngine.RelationshipType.Calls,
               confidence: 0.9,
               metadata: { erlangSpecific: true, context: "local function call" },
             })

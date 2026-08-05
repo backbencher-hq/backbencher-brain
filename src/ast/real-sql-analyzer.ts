@@ -1,15 +1,14 @@
-// @ts-nocheck — Ported from backbencher.
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import { ASTEngine } from "./engine"
 
-export class RealSqlAnalyzer implements LanguageAnalyzer {
+export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
   public analyze(
     rootNode: Node,
     content: string,
     filePath: string,
-  ): Omit<ParseResult, "language" | "metadata"> & { metadata: Partial<FileMetadata> } {
-    const symbols: UniversalSymbol[] = []
-    const imports: ImportInfo[] = []
+  ): Omit<ASTEngine.ParseResult, "language" | "metadata"> & { metadata: Partial<ASTEngine.FileMetadata> } {
+    const symbols: ASTEngine.UniversalSymbol[] = []
+    const imports: ASTEngine.ImportInfo[] = []
 
     // SQL imports — non-standard #import/@import directives
     // Extracted via AST comment nodes, pure string ops (zero regex)
@@ -38,11 +37,11 @@ export class RealSqlAnalyzer implements LanguageAnalyzer {
     }
     walkForImports(rootNode)
 
-    const relationships: UniversalRelationship[] = []
-    const exports: ExportInfo[] = []
+    const relationships: ASTEngine.UniversalRelationship[] = []
+    const exports: ASTEngine.ExportInfo[] = []
     const patternsObj: Record<string, boolean> = {}
 
-    const metadata: Partial<FileMetadata> = {
+    const metadata: Partial<ASTEngine.FileMetadata> = {
       linesOfCode: 0,
       performanceScore: 100,
       architecturalInsights: [],
@@ -82,12 +81,12 @@ export class RealSqlAnalyzer implements LanguageAnalyzer {
     }
     metadata.linesOfCode = loc
 
-    const stack: { node: Node; parentSymbol: UniversalSymbol | null }[] = [
+    const stack: { node: Node; parentSymbol: ASTEngine.UniversalSymbol | null }[] = [
       { node: rootNode, parentSymbol: null },
     ]
 
     let tableCount = 0
-    let lastTableSymbol: UniversalSymbol | null = null
+    let lastTableSymbol: ASTEngine.UniversalSymbol | null = null
 
     while (stack.length > 0) {
       const popped = stack.pop()
@@ -122,7 +121,7 @@ export class RealSqlAnalyzer implements LanguageAnalyzer {
         patternsObj["Common Table Expressions (CTE)"] = true
         const cteName = this.getIdentifier(curr)
         if (cteName) {
-          this.createSymbol(cteName.text, SymbolKind.Function, curr, parentSymbol || null, symbols, { isCTE: true })
+          this.createSymbol(cteName.text, ASTEngine.SymbolKind.Function, curr, parentSymbol || null, symbols, { isCTE: true })
         }
       } else if (curr.type === "union" || curr.type === "intersect" || curr.type === "except") {
         patternsObj["Set Operations (UNION/INTERSECT/EXCEPT)"] = true
@@ -131,7 +130,7 @@ export class RealSqlAnalyzer implements LanguageAnalyzer {
       } else if (curr.type === "schema" || curr.type === "create_schema") {
         const schemaName = this.getIdentifier(curr)
         if (schemaName) {
-          this.createSymbol(schemaName.text, SymbolKind.Namespace, curr, null, symbols, { isSchema: true })
+          this.createSymbol(schemaName.text, ASTEngine.SymbolKind.Namespace, curr, null, symbols, { isSchema: true })
         }
       } else if (curr.type === "begin" || curr.type === "start_transaction" || curr.type === "commit" || curr.type === "rollback") {
         patternsObj["Transaction Management"] = true
@@ -152,7 +151,7 @@ export class RealSqlAnalyzer implements LanguageAnalyzer {
         if (curr.text.toUpperCase().indexOf("UNIQUE") !== -1) {
           patternsObj["Unique Constraint"] = true
           const pTable = newParentSymbol || lastTableSymbol
-          if (pTable && pTable.kind === SymbolKind.Class) {
+          if (pTable && pTable.kind === ASTEngine.SymbolKind.Class) {
             let currentLine = ""
             const rawText = curr.text + "\n"
             for (let i = 0; i < rawText.length; i++) {
@@ -175,7 +174,7 @@ export class RealSqlAnalyzer implements LanguageAnalyzer {
                       colName.toUpperCase() !== "CONSTRAINT" &&
                       colName.toUpperCase() !== "CREATE"
                     ) {
-                      this.createSymbol(colName, SymbolKind.Property, curr, pTable, symbols, {
+                      this.createSymbol(colName, ASTEngine.SymbolKind.Property, curr, pTable, symbols, {
                         type: "column",
                         isUnique: true,
                       })
@@ -236,7 +235,7 @@ export class RealSqlAnalyzer implements LanguageAnalyzer {
     for (const s of symbols) {
       const _owner = s.ownerName || s.scope
       if (_owner) {
-        relationships.push({ source: _owner, target: s.name, type: RelationshipType.Contains, confidence: 1.0, metadata: {} })
+        relationships.push({ source: _owner, target: s.name, type: ASTEngine.RelationshipType.Contains, confidence: 1.0, metadata: {} })
       }
     }
 
@@ -252,13 +251,13 @@ export class RealSqlAnalyzer implements LanguageAnalyzer {
 
   private createSymbol(
     name: string,
-    kind: SymbolKind,
+    kind: ASTEngine.SymbolKind,
     node: Node,
-    parent: UniversalSymbol | null,
-    symbols: UniversalSymbol[],
+    parent: ASTEngine.UniversalSymbol | null,
+    symbols: ASTEngine.UniversalSymbol[],
     meta: Record<string, any> = {},
-  ): UniversalSymbol {
-    const symbol: UniversalSymbol = {
+  ): ASTEngine.UniversalSymbol {
+    const symbol: ASTEngine.UniversalSymbol = {
       id: parent ? `${parent.id}.${name}` : name,
       name,
       kind,
@@ -289,11 +288,11 @@ export class RealSqlAnalyzer implements LanguageAnalyzer {
 
   private handleTable(
     node: Node,
-    symbols: UniversalSymbol[],
-    relationships: UniversalRelationship[],
-    metadata: Partial<FileMetadata>,
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    metadata: Partial<ASTEngine.FileMetadata>,
     patternsObj: Record<string, boolean>,
-  ): UniversalSymbol | null {
+  ): ASTEngine.UniversalSymbol | null {
     let nameNode: Node | null = this.getIdentifier(node)
 
     // SQLite: table name might be inside an object_reference
@@ -310,7 +309,7 @@ export class RealSqlAnalyzer implements LanguageAnalyzer {
     let hasPrimaryKey = false
     let hasForeignKey = false
 
-    const tableSymbol = this.createSymbol(nameNode.text, SymbolKind.Class, nameNode, null, symbols, {
+    const tableSymbol = this.createSymbol(nameNode.text, ASTEngine.SymbolKind.Class, nameNode, null, symbols, {
       type: "table",
       isSchemaEntity: true,
     })
@@ -382,7 +381,7 @@ export class RealSqlAnalyzer implements LanguageAnalyzer {
             }
           }
 
-          this.createSymbol(colNameNode.text, SymbolKind.Property, colNameNode, tableSymbol, symbols, {
+          this.createSymbol(colNameNode.text, ASTEngine.SymbolKind.Property, colNameNode, tableSymbol, symbols, {
             type: "column",
             isPrimaryKey: isPK,
             isUnique,
@@ -403,7 +402,7 @@ export class RealSqlAnalyzer implements LanguageAnalyzer {
         if (tableRefNode) {
           hasForeignKey = true
           relationships.push({
-            type: RelationshipType.Uses,
+            type: ASTEngine.RelationshipType.Uses,
             source: tableSymbol.name,
             target: tableRefNode.text,
             isExternal: true,
@@ -411,7 +410,7 @@ export class RealSqlAnalyzer implements LanguageAnalyzer {
             metadata: { constraint: "foreign_key", isForeignKey: true },
           })
           relationships.push({
-            type: RelationshipType.References,
+            type: ASTEngine.RelationshipType.References,
             source: tableSymbol.name,
             target: tableRefNode.text,
             isExternal: true,
@@ -467,7 +466,7 @@ export class RealSqlAnalyzer implements LanguageAnalyzer {
                   for (let j = 0; j < symbols.length; j++) {
                     if (
                       symbols[j].name === colName &&
-                      symbols[j].kind === SymbolKind.Property &&
+                      symbols[j].kind === ASTEngine.SymbolKind.Property &&
                       symbols[j].parentId === tableSymbol.id
                     ) {
                       symbols[j].metadata = symbols[j].metadata || {}
@@ -477,7 +476,7 @@ export class RealSqlAnalyzer implements LanguageAnalyzer {
                     }
                   }
                   if (!exists) {
-                    this.createSymbol(colName, SymbolKind.Property, node, tableSymbol, symbols, {
+                    this.createSymbol(colName, ASTEngine.SymbolKind.Property, node, tableSymbol, symbols, {
                       type: "column",
                       isUnique: true,
                     })
@@ -513,14 +512,14 @@ export class RealSqlAnalyzer implements LanguageAnalyzer {
 
   private handleView(
     node: Node,
-    symbols: UniversalSymbol[],
-    relationships: UniversalRelationship[],
-    metadata: Partial<FileMetadata>,
-  ): UniversalSymbol | null {
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    metadata: Partial<ASTEngine.FileMetadata>,
+  ): ASTEngine.UniversalSymbol | null {
     const nameNode = this.getIdentifier(node)
     if (!nameNode) return null
 
-    const viewSymbol = this.createSymbol(nameNode.text, SymbolKind.Class, nameNode, null, symbols, {
+    const viewSymbol = this.createSymbol(nameNode.text, ASTEngine.SymbolKind.Class, nameNode, null, symbols, {
       type: "view",
       isSchemaEntity: true,
     })
@@ -539,14 +538,14 @@ export class RealSqlAnalyzer implements LanguageAnalyzer {
 
   private handleIndex(
     node: Node,
-    symbols: UniversalSymbol[],
-    relationships: UniversalRelationship[],
-    metadata: Partial<FileMetadata>,
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    metadata: Partial<ASTEngine.FileMetadata>,
     patternsObj: Record<string, boolean>,
   ) {
     const nameNode = this.getIdentifier(node)
     if (nameNode) {
-      const indexSymbol = this.createSymbol(nameNode.text, SymbolKind.Constant, nameNode, null, symbols, {
+      const indexSymbol = this.createSymbol(nameNode.text, ASTEngine.SymbolKind.Constant, nameNode, null, symbols, {
         type: "index",
         indexName: nameNode.text,
       })
@@ -570,7 +569,7 @@ export class RealSqlAnalyzer implements LanguageAnalyzer {
       }
       if (tableName) {
         relationships.push({
-          type: RelationshipType.References,
+          type: ASTEngine.RelationshipType.References,
           source: indexSymbol.name,
           target: tableName,
           isExternal: false,
@@ -587,16 +586,16 @@ export class RealSqlAnalyzer implements LanguageAnalyzer {
 
   private handleFunction(
     node: Node,
-    symbols: UniversalSymbol[],
-    relationships: UniversalRelationship[],
-    metadata: Partial<FileMetadata>,
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    metadata: Partial<ASTEngine.FileMetadata>,
     patternsObj: Record<string, boolean>,
-  ): UniversalSymbol | null {
+  ): ASTEngine.UniversalSymbol | null {
     const nameNode = this.getIdentifier(node)
     if (!nameNode) return null
 
     const fnName = nameNode.text
-    const fnSymbol = this.createSymbol(fnName, SymbolKind.Function, nameNode, null, symbols, {
+    const fnSymbol = this.createSymbol(fnName, ASTEngine.SymbolKind.Function, nameNode, null, symbols, {
       functionName: fnName,
     })
 
@@ -611,7 +610,7 @@ export class RealSqlAnalyzer implements LanguageAnalyzer {
       while (queue.length > 0) {
         const curr = queue.pop()!
         if (curr.type === "identifier" || curr.type === "word") {
-          this.createSymbol(curr.text, SymbolKind.Variable, curr, fnSymbol, symbols, { parameter: true })
+          this.createSymbol(curr.text, ASTEngine.SymbolKind.Variable, curr, fnSymbol, symbols, { parameter: true })
         }
         for (let i = curr.childCount - 1; i >= 0; i--) {
           const child = curr.child(i)
@@ -634,7 +633,7 @@ export class RealSqlAnalyzer implements LanguageAnalyzer {
           this.handleSelect(curr, symbols, relationships, metadata, patternsObj, fnSymbol)
         } else if (curr.type === "identifier" || curr.type === "word") {
           relationships.push({
-            type: RelationshipType.Uses,
+            type: ASTEngine.RelationshipType.Uses,
             source: fnSymbol.name,
             target: curr.text,
             isExternal: true,
@@ -652,41 +651,41 @@ export class RealSqlAnalyzer implements LanguageAnalyzer {
     return fnSymbol
   }
 
-  private handleTrigger(node: Node, symbols: UniversalSymbol[], patternsObj: Record<string, boolean>) {
+  private handleTrigger(node: Node, symbols: ASTEngine.UniversalSymbol[], patternsObj: Record<string, boolean>) {
     const nameNode = this.getIdentifier(node)
     if (nameNode) {
-      this.createSymbol(nameNode.text, SymbolKind.Function, nameNode, null, symbols, { isTrigger: true })
+      this.createSymbol(nameNode.text, ASTEngine.SymbolKind.Function, nameNode, null, symbols, { isTrigger: true })
       patternsObj["Triggers"] = true
     }
   }
 
-  private handleProcedure(node: Node, symbols: UniversalSymbol[], patternsObj: Record<string, boolean>) {
+  private handleProcedure(node: Node, symbols: ASTEngine.UniversalSymbol[], patternsObj: Record<string, boolean>) {
     const nameNode = this.getIdentifier(node)
     if (nameNode) {
-      this.createSymbol(nameNode.text, SymbolKind.Function, nameNode, null, symbols, { isProcedure: true })
+      this.createSymbol(nameNode.text, ASTEngine.SymbolKind.Function, nameNode, null, symbols, { isProcedure: true })
       patternsObj["Stored Procedures"] = true
     }
   }
 
-  private handleAlterTable(node: Node, symbols: UniversalSymbol[], metadata: Partial<FileMetadata>, patternsObj: Record<string, boolean>) {
+  private handleAlterTable(node: Node, symbols: ASTEngine.UniversalSymbol[], metadata: Partial<ASTEngine.FileMetadata>, patternsObj: Record<string, boolean>) {
     patternsObj["Schema Evolution (ALTER)"] = true
     const nameNode = this.getIdentifier(node)
     if (nameNode) {
-      this.createSymbol(`ALTER_${nameNode.text}`, SymbolKind.Class, node, null, symbols, { isAlterTable: true, targetTable: nameNode.text })
+      this.createSymbol(`ALTER_${nameNode.text}`, ASTEngine.SymbolKind.Class, node, null, symbols, { isAlterTable: true, targetTable: nameNode.text })
     }
   }
 
-  private handleTypeDomain(node: Node, symbols: UniversalSymbol[]) {
+  private handleTypeDomain(node: Node, symbols: ASTEngine.UniversalSymbol[]) {
     const nameNode = this.getIdentifier(node)
     if (nameNode) {
-      this.createSymbol(nameNode.text, SymbolKind.Type, nameNode, null, symbols, { customType: true })
+      this.createSymbol(nameNode.text, ASTEngine.SymbolKind.Type, nameNode, null, symbols, { customType: true })
     }
   }
 
-  private handleDML(node: Node, symbols: UniversalSymbol[]) {
+  private handleDML(node: Node, symbols: ASTEngine.UniversalSymbol[]) {
     const nameNode = this.getIdentifier(node)
     if (nameNode) {
-      this.createSymbol(nameNode.text, SymbolKind.Variable, nameNode, null, symbols, {
+      this.createSymbol(nameNode.text, ASTEngine.SymbolKind.Variable, nameNode, null, symbols, {
         isDML: true,
       })
     }
@@ -694,14 +693,14 @@ export class RealSqlAnalyzer implements LanguageAnalyzer {
 
   private handleSelect(
     node: Node,
-    symbols: UniversalSymbol[],
-    relationships: UniversalRelationship[],
-    metadata: Partial<FileMetadata>,
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    metadata: Partial<ASTEngine.FileMetadata>,
     patternsObj: Record<string, boolean>,
-    parentSymbol: UniversalSymbol | null,
+    parentSymbol: ASTEngine.UniversalSymbol | null,
   ) {
     const name = "query_" + node.startPosition.row
-    this.createSymbol(name, SymbolKind.Function, node, parentSymbol, symbols, {
+    this.createSymbol(name, ASTEngine.SymbolKind.Function, node, parentSymbol, symbols, {
       isQuery: true,
     })
 
@@ -746,7 +745,7 @@ export class RealSqlAnalyzer implements LanguageAnalyzer {
           const curr = localQueue.pop()!
           if (curr.type === "identifier" || curr.type === "word") {
             relationships.push({
-              type: RelationshipType.Uses,
+              type: ASTEngine.RelationshipType.Uses,
               source: parentSymbol.name,
               target: curr.text,
               isExternal: true,
@@ -756,7 +755,7 @@ export class RealSqlAnalyzer implements LanguageAnalyzer {
             // View/Function depends on the tables it queries
             if (parentSymbol.metadata?.type === "view" || parentSymbol.metadata?.functionName) {
               relationships.push({
-                type: RelationshipType.References,
+                type: ASTEngine.RelationshipType.References,
                 source: parentSymbol.name,
                 target: curr.text,
                 isExternal: true,

@@ -1,15 +1,14 @@
-// @ts-nocheck — Ported from backbencher.
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import { ASTEngine } from "./engine"
 
-export class RealBashAnalyzer implements LanguageAnalyzer {
-  analyze(rootNode: Node, content: string, filePath: string): ParseResult {
+export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
+  analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
     // 1. ISOLATED STATE (Thread-Safe)
     const exportedVars: Record<string, boolean> = {}
-    const symbols: UniversalSymbol[] = []
-    const relationships: UniversalRelationship[] = []
-    const imports: ImportInfo[] = []
-    const errors: ParseError[] = []
+    const symbols: ASTEngine.UniversalSymbol[] = []
+    const relationships: ASTEngine.UniversalRelationship[] = []
+    const imports: ASTEngine.ImportInfo[] = []
+    const errors: ASTEngine.ParseError[] = []
     const patterns: Record<string, boolean> = {}
 
     // 2. METRICS TRACKED IN-PASS
@@ -117,7 +116,7 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
         relationships.push({
           source: parentScope || "global",
           target: subId,
-          type: RelationshipType.Instantiates,
+          type: ASTEngine.RelationshipType.Instantiates,
           confidence: 0.8,
           metadata: { isSubshell: true, bashSpecific: true },
         })
@@ -163,7 +162,7 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
           relationships.push({
             source: currentScope() || "script",
             target: varName,
-            type: RelationshipType.Uses,
+            type: ASTEngine.RelationshipType.Uses,
             confidence: 0.7,
             metadata: { isVariableReference: true, bashSpecific: true },
           })
@@ -174,7 +173,7 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
         relationships.push({
           source: currentScope() || "script",
           target: refName,
-          type: RelationshipType.Uses,
+          type: ASTEngine.RelationshipType.Uses,
           confidence: 0.6,
           metadata: { isPositionalParam: true, bashSpecific: true },
         })
@@ -192,7 +191,7 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
         if (innerCmd) {
           symbols.push({
             name: `\$${innerCmd}`,
-            kind: SymbolKind.Function,
+            kind: ASTEngine.SymbolKind.Function,
             range: this.nodeToRange(node),
             scope: currentScope(),
             visibility: "private",
@@ -202,7 +201,7 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
           relationships.push({
             source: currentScope() || "global",
             target: innerCmd,
-            type: RelationshipType.Instantiates,
+            type: ASTEngine.RelationshipType.Instantiates,
             confidence: 0.85,
             metadata: { isCommandSubstitution: true, bashSpecific: true },
           })
@@ -221,7 +220,7 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: currentScope() || "global",
                 target: pipeCmd,
-                type: RelationshipType.Calls,
+                type: ASTEngine.RelationshipType.Calls,
                 confidence: 0.9,
                 metadata: { isFunctionCall: true, isPipelineCommand: true },
               })
@@ -242,7 +241,7 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
             if (caseCmd && !caseCmd.startsWith("-")) {
               symbols.push({
                 name: caseCmd,
-                kind: SymbolKind.Function,
+                kind: ASTEngine.SymbolKind.Function,
                 range: this.nodeToRange(node),
                 scope: currentScope(),
                 visibility: "private",
@@ -307,7 +306,7 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
               const aliasName = aliasDef.substring(0, eqIdx).trim()
               symbols.push({
                 name: aliasName,
-                kind: SymbolKind.Function,
+                kind: ASTEngine.SymbolKind.Function,
                 range: this.nodeToRange(node),
                 scope: currentScope(),
                 visibility: "public",
@@ -330,7 +329,7 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
                 relationships.push({
                   source: signal,
                   target: handler,
-                  type: RelationshipType.Calls,
+                  type: ASTEngine.RelationshipType.Calls,
                   confidence: 0.7,
                   metadata: { isTrapHandler: true, bashSpecific: true },
                 })
@@ -387,7 +386,7 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
     // 4. POST-PROCESS PARAMETERS (O(N) on symbols, extremely fast)
     for (let i = 0; i < symbols.length; i++) {
       const sym = symbols[i]
-      if (sym.kind === SymbolKind.Function) {
+      if (sym.kind === ASTEngine.SymbolKind.Function) {
         const params = functionParams[sym.name]
         if (
           params &&
@@ -421,7 +420,7 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
 
     let hasFunction = false
     for (let i = 0; i < symbols.length; i++) {
-      if (symbols[i].kind === SymbolKind.Function) {
+      if (symbols[i].kind === ASTEngine.SymbolKind.Function) {
         hasFunction = true
         break
       }
@@ -435,16 +434,16 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
     const frameworks = this.detectFrameworks(patternsArray)
 
     // Phantom Symbols: e.g. implicit global env variables exported
-    const phantomSymbols: UniversalSymbol[] = []
+    const phantomSymbols: ASTEngine.UniversalSymbol[] = []
     for (let i = 0; i < symbols.length; i++) {
       const s = symbols[i]
       if (
-        (s.kind === SymbolKind.Variable || s.kind === SymbolKind.Constant) &&
+        (s.kind === ASTEngine.SymbolKind.Variable || s.kind === ASTEngine.SymbolKind.Constant) &&
         s.metadata?.isExported
       ) {
         phantomSymbols.push({
           name: `ENV_${s.name}`,
-          kind: SymbolKind.Variable,
+          kind: ASTEngine.SymbolKind.Variable,
           range: s.range,
           metadata: { isPhantom: true, injectedBy: "bash_export_env" },
         })
@@ -454,7 +453,7 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
     // Global scope symbol for top-level relationships
     phantomSymbols.push({
       name: "global",
-      kind: SymbolKind.Function,
+      kind: ASTEngine.SymbolKind.Function,
       range: this.nodeToRange(rootNode),
       scope: "",
       visibility: "public",
@@ -472,7 +471,7 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
         relationships.push({
           source: _owner,
           target: s.name,
-          type: RelationshipType.Contains,
+          type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
           metadata: {},
         })
@@ -511,13 +510,13 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
     }
   }
 
-  private extractFunction(node: Node, symbols: UniversalSymbol[], scope: string) {
+  private extractFunction(node: Node, symbols: ASTEngine.UniversalSymbol[], scope: string) {
     for (let i = 0; i < node.childCount; i++) {
       const c = node.child(i)
       if (c && (c.type === "word" || c.type === "identifier" || c.type === "command_name")) {
         symbols.push({
           name: c.text,
-          kind: SymbolKind.Function,
+          kind: ASTEngine.SymbolKind.Function,
           range: this.nodeToRange(node),
           scope: scope,
           visibility: "public",
@@ -542,7 +541,7 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
     if (nameText && nameText.trim().length > 0) {
       symbols.push({
         name: nameText,
-        kind: SymbolKind.Function,
+        kind: ASTEngine.SymbolKind.Function,
         range: this.nodeToRange(node),
         scope: scope,
         visibility: "public",
@@ -553,7 +552,7 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
     }
   }
 
-  private extractLocal(node: Node, symbols: UniversalSymbol[], scope: string) {
+  private extractLocal(node: Node, symbols: ASTEngine.UniversalSymbol[], scope: string) {
     for (let i = 0; i < node.childCount; i++) {
       const child = node.child(i)
       if (!child) continue
@@ -564,7 +563,7 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
           if (c && c.type === "variable_name" && c.text.trim() !== "") {
             symbols.push({
               name: c.text,
-              kind: SymbolKind.Variable,
+              kind: ASTEngine.SymbolKind.Variable,
               range: this.nodeToRange(child),
               scope: scope,
               visibility: "private",
@@ -582,7 +581,7 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
       ) {
         symbols.push({
           name: child.text,
-          kind: SymbolKind.Variable,
+          kind: ASTEngine.SymbolKind.Variable,
           range: this.nodeToRange(child),
           scope: scope,
           visibility: "private",
@@ -593,7 +592,7 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
     }
   }
 
-  private extractVariable(node: Node, symbols: UniversalSymbol[], scope: string) {
+  private extractVariable(node: Node, symbols: ASTEngine.UniversalSymbol[], scope: string) {
     if (node.parent?.type === "declaration_command") return
 
     for (let i = 0; i < node.childCount; i++) {
@@ -602,7 +601,7 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
         const isImplicitGlobal = !scope.startsWith("subshell_")
         symbols.push({
           name: c.text,
-          kind: SymbolKind.Variable,
+          kind: ASTEngine.SymbolKind.Variable,
           range: this.nodeToRange(node),
           scope: scope,
           visibility: isImplicitGlobal ? "public" : "private",
@@ -616,7 +615,7 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
 
   private extractExport(
     node: Node,
-    symbols: UniversalSymbol[],
+    symbols: ASTEngine.UniversalSymbol[],
     exportedVars: Record<string, boolean>,
     scope: string,
   ) {
@@ -631,7 +630,7 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
             exportedVars[c.text] = true
             symbols.push({
               name: c.text,
-              kind: SymbolKind.Constant,
+              kind: ASTEngine.SymbolKind.Constant,
               range: this.nodeToRange(child),
               scope: scope,
               visibility: "public",
@@ -650,7 +649,7 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
         exportedVars[child.text] = true
         symbols.push({
           name: child.text,
-          kind: SymbolKind.Constant,
+          kind: ASTEngine.SymbolKind.Constant,
           range: this.nodeToRange(child),
           scope: scope,
           visibility: "public",
@@ -663,9 +662,9 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
 
   private extractCommand(
     node: Node,
-    symbols: UniversalSymbol[],
-    imports: ImportInfo[],
-    relationships: UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+    imports: ASTEngine.ImportInfo[],
+    relationships: ASTEngine.UniversalRelationship[],
     scope: string,
   ) {
     let nameNode = null
@@ -697,7 +696,7 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
         relationships.push({
           source: scope || "global",
           target: sourcePath,
-          type: RelationshipType.Imports,
+          type: ASTEngine.RelationshipType.Imports,
           confidence: 1.0,
           metadata: { isSourceImport: true },
         })
@@ -705,7 +704,7 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
         relationships.push({
           source: scope || "global",
           target: sourcePath,
-          type: RelationshipType.References,
+          type: ASTEngine.RelationshipType.References,
           confidence: 1.0,
           metadata: { isSourceDependency: true, bashSpecific: true },
         })
@@ -726,7 +725,7 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
         for (let i = 0; i < node.childCount; i++) {
           const c = node.child(i)
           if (c && c.type === "word" && !c.text.startsWith("-") && c.text !== "export") {
-            const existingFn = symbols.find(s => s.name === c.text && s.kind === SymbolKind.Function)
+            const existingFn = symbols.find(s => s.name === c.text && s.kind === ASTEngine.SymbolKind.Function)
             if (existingFn) {
               existingFn.metadata = { ...existingFn.metadata, isExported: true }
               existingFn.visibility = "public"
@@ -739,7 +738,7 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
           if (c && c.type === "variable_name" && c.text.trim() !== "") {
             symbols.push({
               name: c.text,
-              kind: SymbolKind.Constant,
+              kind: ASTEngine.SymbolKind.Constant,
               range: this.nodeToRange(node),
               scope,
               visibility: "public",
@@ -754,7 +753,7 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
         relationships.push({
           source: caller,
           target: cmdName,
-          type: RelationshipType.Calls,
+          type: ASTEngine.RelationshipType.Calls,
           confidence: 1.0,
           metadata: { isFunctionCall: true, isExternalCommand: true },
         })
@@ -772,7 +771,7 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
   }
 
   private generateInsights(
-    symbols: UniversalSymbol[],
+    symbols: ASTEngine.UniversalSymbol[],
     patterns: string[],
     hasStrictError: boolean,
   ): string[] {
@@ -801,7 +800,7 @@ export class RealBashAnalyzer implements LanguageAnalyzer {
     return insights
   }
 
-  private nodeToRange(node: Node): UniversalSymbol["range"] {
+  private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {
     return {
       startLine: node.startPosition.row + 1,
       startColumn: node.startPosition.column + 1,

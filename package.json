@@ -1,65 +1,66 @@
 {
   "name": "backbencher-brain",
-  "version": "0.1.1",
-  "description": "Universal MCP code intelligence server — index any project with 40+ language analyzers",
+  "version": "0.2.0",
+  "description": "Universal code intelligence: index any project with 40+ language analyzers, query via CLI or any MCP host (Claude Code, Cursor, VS Code).",
   "type": "module",
-  "main": "dist/index.js",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "bin": {
-    "bb-mcp": "./bin/bb"
+    "bb": "./bin/bb"
   },
   "files": [
     "dist/",
     "wasm/",
-    "bin/"
+    "bin/",
+    "README.md",
+    "EMBEDDINGS.md"
   ],
+  "exports": {
+    ".": "./dist/index.js",
+    "./*": "./dist/*.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
-    "dev": "tsx src/index.ts",
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "lint": "tsc --noEmit",
+    "build": "tsup",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "verify": "bun run script/verify-core.ts && bun run script/verify-engine.ts && bun run script/verify-index.ts && bun run script/verify-embed.ts && bun run script/verify-freshness.ts && bun run script/verify-mcp.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "better-sqlite3": "^11.0.0",
+    "commander": "^12.0.0",
+    "drizzle-orm": "^0.45.2",
+    "ignore": "^5.3.0",
+    "tree-sitter-typescript": "^0.23.2",
+    "web-tree-sitter": "0.25.9"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.0",
+    "@types/bun": "^1.3.14",
+    "@types/mime-types": "^3.0.1",
+    "@types/node": "^22.0.0",
+    "glob": "^13.0.6",
+    "tsup": "^8.5.1",
+    "typescript": "^5.5.0"
   },
   "keywords": [
     "mcp",
     "code-intelligence",
     "ast",
     "tree-sitter",
-    "brain",
-    "indexing",
+    "semantic-search",
     "cross-language",
-    "code-analysis",
     "backbencher"
   ],
-  "author": "Backbencher",
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/backbencher-hq/backbencher-brain"
-  },
-  "engines": {
-    "node": ">=18.0.0"
-  },
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.0",
-    "@tree-sitter-grammars/tree-sitter-yaml": "^0.7.1",
-    "better-sqlite3": "^11.0.0",
-    "commander": "^12.0.0",
-    "ignore": "^5.3.0",
-    "tree-sitter-bash": "^0.25.1",
-    "tree-sitter-dart": "^1.0.0",
-    "tree-sitter-typescript": "^0.23.2",
-    "tree-sitter-wasms": "^0.1.13",
-    "tree-sitter-yaml": "^0.5.0",
-    "web-tree-sitter": "^0.24.7"
-  },
-  "devDependencies": {
-    "@types/better-sqlite3": "^7.6.0",
-    "@types/node": "^22.0.0",
-    "tsx": "^4.0.0",
-    "typescript": "^5.5.0",
-    "vitest": "^2.0.0"
+  "imports": {
+    "#db": {
+      "bun": "./src/storage/db.bun.ts",
+      "node": "./src/storage/db.node.ts",
+      "default": "./src/storage/db.node.ts"
+    }
   }
 }

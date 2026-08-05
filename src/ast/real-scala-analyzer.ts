@@ -1,23 +1,22 @@
-// @ts-nocheck — Ported from backbencher.
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import { ASTEngine } from "./engine"
 
-export class RealScalaAnalyzer implements LanguageAnalyzer {
+export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
   public analyze(
     rootNode: Node,
     content: string,
     filePath: string,
-  ): Omit<ParseResult, "language" | "metadata"> & { metadata?: Partial<FileMetadata> } {
-    const symbols: UniversalSymbol[] = []
-    const imports: ImportInfo[] = []
-    const relationships: UniversalRelationship[] = []
-    const exports: ExportInfo[] = []
+  ): Omit<ASTEngine.ParseResult, "language" | "metadata"> & { metadata?: Partial<ASTEngine.FileMetadata> } {
+    const symbols: ASTEngine.UniversalSymbol[] = []
+    const imports: ASTEngine.ImportInfo[] = []
+    const relationships: ASTEngine.UniversalRelationship[] = []
+    const exports: ASTEngine.ExportInfo[] = []
 
     const patternsObj: Record<string, boolean> = {}
     const frameworksObj: Record<string, boolean> = {}
     let hasTypes = false
 
-    const metadata: Partial<FileMetadata> = {
+    const metadata: Partial<ASTEngine.FileMetadata> = {
       linesOfCode: 0,
       complexity: 0,
       architecturalScore: 85,
@@ -61,7 +60,7 @@ export class RealScalaAnalyzer implements LanguageAnalyzer {
     }
     metadata.linesOfCode = loc
 
-    const stack: { node: Node; parent: UniversalSymbol | null }[] = [{ node: rootNode, parent: null }]
+    const stack: { node: Node; parent: ASTEngine.UniversalSymbol | null }[] = [{ node: rootNode, parent: null }]
 
     while (stack.length > 0) {
       const popped = stack.pop()
@@ -97,21 +96,21 @@ export class RealScalaAnalyzer implements LanguageAnalyzer {
       } else if (node.type === "enum_definition") {
         const enumName = this.extractIdentifier(node, "name")
         if (enumName) {
-          const sym = this.createSymbol(enumName, SymbolKind.Enum, node, parent, { type: "enum", scala3: true })
+          const sym = this.createSymbol(enumName, ASTEngine.SymbolKind.Enum, node, parent, { type: "enum", scala3: true })
           symbols.push(sym)
           currentParent = sym
           patternsObj["Scala 3 Enums"] = true
         }
       } else if (node.type === "extension_definition") {
         const extName = node.namedChild(1)?.text || `extension_${node.startPosition.row + 1}`
-        const sym = this.createSymbol(extName, SymbolKind.Function, node, parent, { isExtension: true, scala3: true })
+        const sym = this.createSymbol(extName, ASTEngine.SymbolKind.Function, node, parent, { isExtension: true, scala3: true })
         symbols.push(sym)
         currentParent = sym
       } else if (node.type === "export_declaration") {
         for (let i = 0; i < node.namedChildCount; i++) {
           const c = node.namedChild(i)
           if (c && (c.type === "identifier" || c.type === "namespace_wildcard" || c.type === "namespace_selectors")) {
-            exports.push({ name: c.text, kind: SymbolKind.Class })
+            exports.push({ name: c.text, kind: ASTEngine.SymbolKind.Class })
           }
         }
       } else if (node.type === "given_definition") {
@@ -127,7 +126,7 @@ export class RealScalaAnalyzer implements LanguageAnalyzer {
         patternsObj["Error Handling"] = true
       } else if (node.type === "lambda_expression" || node.type === "anonymous_function") {
         const lambdaName = `lambda_${node.startPosition.row + 1}_${node.startPosition.column + 1}`
-        const sym = this.createSymbol(lambdaName, SymbolKind.Function, node, parent, { isLambda: true })
+        const sym = this.createSymbol(lambdaName, ASTEngine.SymbolKind.Function, node, parent, { isLambda: true })
         symbols.push(sym)
       } else if (node.type === "self_type") {
         patternsObj["Self Types"] = true
@@ -142,7 +141,7 @@ export class RealScalaAnalyzer implements LanguageAnalyzer {
       } else if (node.type === "package") {
         const pkgName = this.extractIdentifier(node, "name") || node.namedChild(0)?.text
         if (pkgName) {
-          const sym = this.createSymbol(pkgName, SymbolKind.Namespace, node, null, { isPackage: true })
+          const sym = this.createSymbol(pkgName, ASTEngine.SymbolKind.Namespace, node, null, { isPackage: true })
           symbols.push(sym)
         }
       } else if (node.type === "package_object") {
@@ -153,7 +152,7 @@ export class RealScalaAnalyzer implements LanguageAnalyzer {
           relationships.push({
             source: parent?.name || "global",
             target: thrown.type === "call_expression" ? (thrown.childForFieldName?.("function")?.text || thrown.text) : thrown.text,
-            type: RelationshipType.References,
+            type: ASTEngine.RelationshipType.References,
             metadata: { scalaSpecific: true, isThrow: true },
           })
         }
@@ -213,10 +212,10 @@ export class RealScalaAnalyzer implements LanguageAnalyzer {
 
     // Add Contains + DependsOn
     for (const s of symbols) {
-      const _owner = s.ownerName || s.scope; if (_owner) relationships.push({ source: _owner, target: s.name, type: RelationshipType.Contains, confidence: 1.0, metadata: {} })
+      const _owner = s.ownerName || s.scope; if (_owner) relationships.push({ source: _owner, target: s.name, type: ASTEngine.RelationshipType.Contains, confidence: 1.0, metadata: {} })
     }
     for (const imp of imports) {
-      relationships.push({ source: "root", target: imp.module || "", type: RelationshipType.References, confidence: 0.9, metadata: {} })
+      relationships.push({ source: "root", target: imp.module || "", type: ASTEngine.RelationshipType.References, confidence: 0.9, metadata: {} })
     }
     
     return {
@@ -229,7 +228,7 @@ export class RealScalaAnalyzer implements LanguageAnalyzer {
     }
   }
 
-  private detectFrameworks(imports: ImportInfo[], frameworksObj: Record<string, boolean>) {
+  private detectFrameworks(imports: ASTEngine.ImportInfo[], frameworksObj: Record<string, boolean>) {
     for (let i = 0; i < imports.length; i++) {
       const source = imports[i].module
       if (!source) continue
@@ -239,14 +238,14 @@ export class RealScalaAnalyzer implements LanguageAnalyzer {
     }
   }
 
-  private detectCompanionObjects(symbols: UniversalSymbol[], patternsObj: Record<string, boolean>) {
+  private detectCompanionObjects(symbols: ASTEngine.UniversalSymbol[], patternsObj: Record<string, boolean>) {
     const classNames: Record<string, boolean> = {}
     const objectNames: Record<string, boolean> = {}
 
     // First pass: index class and object names
     for (let i = 0; i < symbols.length; i++) {
       const sym = symbols[i]
-      if (sym.kind === SymbolKind.Class || sym.metadata?.isTrait) {
+      if (sym.kind === ASTEngine.SymbolKind.Class || sym.metadata?.isTrait) {
         classNames[sym.name] = true
       } else if (sym.metadata?.isObject) {
         objectNames[sym.name] = true
@@ -256,7 +255,7 @@ export class RealScalaAnalyzer implements LanguageAnalyzer {
     // Second pass: link companion objects
     for (let i = 0; i < symbols.length; i++) {
       const sym = symbols[i]
-      if ((sym.kind === SymbolKind.Class || sym.metadata?.isTrait) && objectNames[sym.name]) {
+      if ((sym.kind === ASTEngine.SymbolKind.Class || sym.metadata?.isTrait) && objectNames[sym.name]) {
         if (!sym.metadata) sym.metadata = {}
         sym.metadata.hasCompanionObject = true
         patternsObj["Companion Objects"] = true
@@ -344,11 +343,11 @@ export class RealScalaAnalyzer implements LanguageAnalyzer {
 
   private createSymbol(
     name: string,
-    kind: SymbolKind,
+    kind: ASTEngine.SymbolKind,
     node: Node,
-    parent: UniversalSymbol | null,
+    parent: ASTEngine.UniversalSymbol | null,
     extraMetadata: any = {},
-  ): UniversalSymbol {
+  ): ASTEngine.UniversalSymbol {
     return {
       name,
       kind,
@@ -372,12 +371,12 @@ export class RealScalaAnalyzer implements LanguageAnalyzer {
 
   private handleClass(
     node: Node,
-    symbols: UniversalSymbol[],
-    relationships: UniversalRelationship[],
-    exports: ExportInfo[],
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    exports: ASTEngine.ExportInfo[],
     patternsObj: Record<string, boolean>,
-    parent: UniversalSymbol | null,
-  ): UniversalSymbol | null {
+    parent: ASTEngine.UniversalSymbol | null,
+  ): ASTEngine.UniversalSymbol | null {
     const name = this.extractIdentifier(node, "name")
     if (!name) return null
 
@@ -429,7 +428,7 @@ export class RealScalaAnalyzer implements LanguageAnalyzer {
 
     if (isSealed) patternsObj["Sealed Types"] = true
 
-    const symbol = this.createSymbol(name, SymbolKind.Class, node, parent, {
+    const symbol = this.createSymbol(name, ASTEngine.SymbolKind.Class, node, parent, {
       type: "class",
       isObject: false,
       isCaseClass: isCase,
@@ -446,7 +445,7 @@ export class RealScalaAnalyzer implements LanguageAnalyzer {
     if (this.isPublic(node)) {
       exports.push({
         name,
-        kind: SymbolKind.Class,
+        kind: ASTEngine.SymbolKind.Class,
         range: symbol.range,
       })
     }
@@ -454,7 +453,7 @@ export class RealScalaAnalyzer implements LanguageAnalyzer {
     for (let i = 0; i < node.childCount; i++) {
       const c = node.child(i)
       if (c && c.type === "extends_clause") {
-        this.traceInheritance(c, symbol, relationships, RelationshipType.Extends)
+        this.traceInheritance(c, symbol, relationships, ASTEngine.RelationshipType.Extends)
         break
       }
     }
@@ -464,18 +463,18 @@ export class RealScalaAnalyzer implements LanguageAnalyzer {
 
   private handleObject(
     node: Node,
-    symbols: UniversalSymbol[],
-    relationships: UniversalRelationship[],
-    exports: ExportInfo[],
-    parent: UniversalSymbol | null,
-  ): UniversalSymbol | null {
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    exports: ASTEngine.ExportInfo[],
+    parent: ASTEngine.UniversalSymbol | null,
+  ): ASTEngine.UniversalSymbol | null {
     const name = this.extractIdentifier(node, "name")
     if (!name) return null
 
     const isCase = this.isCaseClass(node) // case object
     const isSealed = this.isSealed(node)
 
-    const symbol = this.createSymbol(name, SymbolKind.Module, node, parent, {
+    const symbol = this.createSymbol(name, ASTEngine.SymbolKind.Module, node, parent, {
       type: "object",
       isObject: true,
       isCaseObject: isCase,
@@ -491,7 +490,7 @@ export class RealScalaAnalyzer implements LanguageAnalyzer {
     if (this.isPublic(node)) {
       exports.push({
         name,
-        kind: SymbolKind.Module,
+        kind: ASTEngine.SymbolKind.Module,
         range: symbol.range,
       })
     }
@@ -499,7 +498,7 @@ export class RealScalaAnalyzer implements LanguageAnalyzer {
     for (let i = 0; i < node.childCount; i++) {
       const c = node.child(i)
       if (c && c.type === "extends_clause") {
-        this.traceInheritance(c, symbol, relationships, RelationshipType.Extends)
+        this.traceInheritance(c, symbol, relationships, ASTEngine.RelationshipType.Extends)
         break
       }
     }
@@ -509,19 +508,19 @@ export class RealScalaAnalyzer implements LanguageAnalyzer {
 
   private handleTrait(
     node: Node,
-    symbols: UniversalSymbol[],
-    relationships: UniversalRelationship[],
-    exports: ExportInfo[],
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    exports: ASTEngine.ExportInfo[],
     patternsObj: Record<string, boolean>,
-    parent: UniversalSymbol | null,
-  ): UniversalSymbol | null {
+    parent: ASTEngine.UniversalSymbol | null,
+  ): ASTEngine.UniversalSymbol | null {
     const name = this.extractIdentifier(node, "name")
     if (!name) return null
 
     const isSealed = this.isSealed(node)
     if (isSealed) patternsObj["Sealed Types"] = true
 
-    const symbol = this.createSymbol(name, SymbolKind.Interface, node, parent, {
+    const symbol = this.createSymbol(name, ASTEngine.SymbolKind.Interface, node, parent, {
       type: "trait",
       isTrait: true,
       scalaSpecific: true,
@@ -532,7 +531,7 @@ export class RealScalaAnalyzer implements LanguageAnalyzer {
     if (this.isPublic(node)) {
       exports.push({
         name,
-        kind: SymbolKind.Interface,
+        kind: ASTEngine.SymbolKind.Interface,
         range: symbol.range,
       })
     }
@@ -540,7 +539,7 @@ export class RealScalaAnalyzer implements LanguageAnalyzer {
     for (let i = 0; i < node.childCount; i++) {
       const c = node.child(i)
       if (c && c.type === "extends_clause") {
-        this.traceInheritance(c, symbol, relationships, RelationshipType.Extends)
+        this.traceInheritance(c, symbol, relationships, ASTEngine.RelationshipType.Extends)
         break
       }
     }
@@ -550,9 +549,9 @@ export class RealScalaAnalyzer implements LanguageAnalyzer {
 
   private traceInheritance(
     extendsClause: Node,
-    sourceSymbol: UniversalSymbol,
-    relationships: UniversalRelationship[],
-    relType: RelationshipType,
+    sourceSymbol: ASTEngine.UniversalSymbol,
+    relationships: ASTEngine.UniversalRelationship[],
+    relType: ASTEngine.RelationshipType,
   ): void {
     let isFirst = true
     for (let i = 0; i < extendsClause.childCount; i++) {
@@ -575,7 +574,7 @@ export class RealScalaAnalyzer implements LanguageAnalyzer {
         relationships.push({
           source: sourceSymbol.name,
           target: typeName,
-          type: isFirst ? RelationshipType.Extends : RelationshipType.Implements,
+          type: isFirst ? ASTEngine.RelationshipType.Extends : ASTEngine.RelationshipType.Implements,
           metadata: {
             isTrait: !isFirst,
           },
@@ -585,22 +584,22 @@ export class RealScalaAnalyzer implements LanguageAnalyzer {
     }
   }
 
-  private handleTypeAlias(node: Node, symbols: UniversalSymbol[], parent: UniversalSymbol | null) {
+  private handleTypeAlias(node: Node, symbols: ASTEngine.UniversalSymbol[], parent: ASTEngine.UniversalSymbol | null) {
     const name = this.extractIdentifier(node, "name")
     if (!name) return
 
-    const symbol = this.createSymbol(name, SymbolKind.Type, node, parent, { isTypeAlias: true })
+    const symbol = this.createSymbol(name, ASTEngine.SymbolKind.Type, node, parent, { isTypeAlias: true })
     symbols.push(symbol)
   }
 
   private handleFunction(
     node: Node,
-    symbols: UniversalSymbol[],
-    relationships: UniversalRelationship[],
-    exports: ExportInfo[],
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    exports: ASTEngine.ExportInfo[],
     patternsObj: Record<string, boolean>,
-    parent: UniversalSymbol | null,
-  ): UniversalSymbol | null {
+    parent: ASTEngine.UniversalSymbol | null,
+  ): ASTEngine.UniversalSymbol | null {
     const name = this.extractIdentifier(node, "name")
     if (!name) return null
 
@@ -609,11 +608,11 @@ export class RealScalaAnalyzer implements LanguageAnalyzer {
       (parent.metadata?.type === "class" ||
         parent.metadata?.type === "trait" ||
         parent.metadata?.type === "object" ||
-        parent.kind === SymbolKind.Class ||
-        parent.kind === SymbolKind.Interface ||
-        parent.kind === SymbolKind.Module)
+        parent.kind === ASTEngine.SymbolKind.Class ||
+        parent.kind === ASTEngine.SymbolKind.Interface ||
+        parent.kind === ASTEngine.SymbolKind.Module)
 
-    const parameters: Parameter[] = []
+    const parameters: ASTEngine.Parameter[] = []
     let returnType: string | undefined = undefined
 
     let numParamsLists = 0
@@ -653,7 +652,7 @@ export class RealScalaAnalyzer implements LanguageAnalyzer {
 
     const symbol = this.createSymbol(
       name,
-      isMethod ? SymbolKind.Method : SymbolKind.Function,
+      isMethod ? ASTEngine.SymbolKind.Method : ASTEngine.SymbolKind.Function,
       node,
       parent,
       {
@@ -668,7 +667,7 @@ export class RealScalaAnalyzer implements LanguageAnalyzer {
     if (this.isPublic(node) && !isMethod) {
       exports.push({
         name,
-        kind: SymbolKind.Function,
+        kind: ASTEngine.SymbolKind.Function,
         range: symbol.range,
       })
     }
@@ -687,7 +686,7 @@ export class RealScalaAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: symbol.name,
               target: p.text,
-              type: RelationshipType.Uses,
+              type: ASTEngine.RelationshipType.Uses,
               metadata: {},
             })
           }
@@ -711,9 +710,9 @@ export class RealScalaAnalyzer implements LanguageAnalyzer {
 
   private handleVariable(
     node: Node,
-    symbols: UniversalSymbol[],
-    exports: ExportInfo[],
-    parent: UniversalSymbol | null,
+    symbols: ASTEngine.UniversalSymbol[],
+    exports: ASTEngine.ExportInfo[],
+    parent: ASTEngine.UniversalSymbol | null,
   ): void {
     let patternNode = node.childForFieldName("pattern")
     if (!patternNode) {
@@ -728,7 +727,7 @@ export class RealScalaAnalyzer implements LanguageAnalyzer {
     if (!patternNode) return
 
     const name = patternNode.text
-    const kind = node.type === "val_definition" ? SymbolKind.Constant : SymbolKind.Variable
+    const kind = node.type === "val_definition" ? ASTEngine.SymbolKind.Constant : ASTEngine.SymbolKind.Variable
     const symbol = this.createSymbol(name, kind, node, parent, { type: node.type })
     symbols.push(symbol)
 
@@ -743,9 +742,9 @@ export class RealScalaAnalyzer implements LanguageAnalyzer {
 
   private handleCall(
     node: Node,
-    relationships: UniversalRelationship[],
+    relationships: ASTEngine.UniversalRelationship[],
     patternsObj: Record<string, boolean>,
-    parent: UniversalSymbol | null,
+    parent: ASTEngine.UniversalSymbol | null,
   ) {
     const fnNode = node.childForFieldName("function")
     if (fnNode && parent) {
@@ -758,14 +757,14 @@ export class RealScalaAnalyzer implements LanguageAnalyzer {
         relationships.push({
           source: parent.name,
           target: calledName,
-          type: RelationshipType.Calls,
+          type: ASTEngine.RelationshipType.Calls,
           metadata: {},
         })
         if (calledName[0] === calledName[0].toUpperCase() && calledName[0] !== calledName[0].toLowerCase()) {
           relationships.push({
             source: parent.name,
             target: calledName,
-            type: RelationshipType.Instantiates,
+            type: ASTEngine.RelationshipType.Instantiates,
             confidence: 0.7,
             metadata: { isInstantiation: true },
           })
@@ -787,7 +786,7 @@ export class RealScalaAnalyzer implements LanguageAnalyzer {
     }
   }
 
-  private handleImport(node: Node, imports: ImportInfo[]): void {
+  private handleImport(node: Node, imports: ASTEngine.ImportInfo[]): void {
     if (node.type !== "import_declaration") return
 
     let pathStr = ""

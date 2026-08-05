@@ -1,22 +1,21 @@
-// @ts-nocheck — Ported from backbencher.
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import { ASTEngine } from "./engine"
 
-export class RealJavaScriptAnalyzer implements LanguageAnalyzer {
+export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(
     rootNode: Node,
     content: string,
     filePath: string
-  ): ParseResult & { metadata: Partial<FileMetadata> } {
-    const symbols: UniversalSymbol[] = []
-    const relationships: UniversalRelationship[] = []
-    const imports: ImportInfo[] = []
-    const exports: ExportInfo[] = []
-    const errors: ParseError[] = []
+  ): ASTEngine.ParseResult & { metadata: Partial<ASTEngine.FileMetadata> } {
+    const symbols: ASTEngine.UniversalSymbol[] = []
+    const relationships: ASTEngine.UniversalRelationship[] = []
+    const imports: ASTEngine.ImportInfo[] = []
+    const exports: ASTEngine.ExportInfo[] = []
+    const errors: ASTEngine.ParseError[] = []
 
     const frameworks: Record<string, boolean> = { JavaScript: true }
     const patterns: Record<string, boolean> = {}
-    const symbolMap = new Map<string, UniversalSymbol>()
+    const symbolMap = new Map<string, ASTEngine.UniversalSymbol>()
 
     if (rootNode.hasError) {
       const errStack: Node[] = [rootNode]
@@ -69,9 +68,9 @@ export class RealJavaScriptAnalyzer implements LanguageAnalyzer {
           if (idNode) {
             const name = idNode.text
             const fqn = scope.length > 0 ? `${scope.join(".")}.${name}` : name
-            const sym: UniversalSymbol = {
+            const sym: ASTEngine.UniversalSymbol = {
               name,
-              kind: SymbolKind.Class,
+              kind: ASTEngine.SymbolKind.Class,
               range: this.nodeToRange(node),
               scope: scope.join("."),
               visibility: "public",
@@ -93,7 +92,7 @@ export class RealJavaScriptAnalyzer implements LanguageAnalyzer {
                   relationships.push({
                     source: name,
                     target: hChild.text,
-                    type: isExtends ? RelationshipType.Extends : RelationshipType.Implements,
+                    type: isExtends ? ASTEngine.RelationshipType.Extends : ASTEngine.RelationshipType.Implements,
                     confidence: 1.0,
                     metadata: { javascriptSpecific: true },
                   })
@@ -104,7 +103,7 @@ export class RealJavaScriptAnalyzer implements LanguageAnalyzer {
                       relationships.push({
                         source: name,
                         target: typeNode.text,
-                        type: hChild.type === "extends_clause" ? RelationshipType.Extends : RelationshipType.Implements,
+                        type: hChild.type === "extends_clause" ? ASTEngine.RelationshipType.Extends : ASTEngine.RelationshipType.Implements,
                         confidence: 1.0,
                         metadata: { javascriptSpecific: true },
                       })
@@ -123,8 +122,8 @@ export class RealJavaScriptAnalyzer implements LanguageAnalyzer {
           if (idNode) {
             const name = idNode.text
             const fqn = scope.length > 0 ? `${scope.join(".")}.${name}` : name
-            const isAsync = !!node.namedChildren?.some((nc: any) => nc?.type === "async"); const kind = isClassScope ? SymbolKind.Method : SymbolKind.Function
-            const sym: UniversalSymbol = {
+            const isAsync = !!node.namedChildren?.some((nc: any) => nc?.type === "async"); const kind = isClassScope ? ASTEngine.SymbolKind.Method : ASTEngine.SymbolKind.Function
+            const sym: ASTEngine.UniversalSymbol = {
               name,
               kind,
               range: this.nodeToRange(node),
@@ -141,7 +140,7 @@ export class RealJavaScriptAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: scope[scope.length - 1],
                 target: name,
-                type: RelationshipType.Contains,
+                type: ASTEngine.RelationshipType.Contains,
                 confidence: 1.0,
                 metadata: { javascriptSpecific: true, isMember: true },
               })
@@ -156,9 +155,9 @@ export class RealJavaScriptAnalyzer implements LanguageAnalyzer {
           const parentType = node.parent?.type
           if (parentType !== "variable_declarator" && parentType !== "assignment_expression" && parentType !== "method_definition") {
              const name = `anonymous_function_${node.startIndex}`
-             const sym: UniversalSymbol = {
+             const sym: ASTEngine.UniversalSymbol = {
                name,
-               kind: SymbolKind.Function,
+               kind: ASTEngine.SymbolKind.Function,
                range: this.nodeToRange(node),
                scope: scope.join("."),
                visibility: "local",
@@ -178,9 +177,9 @@ export class RealJavaScriptAnalyzer implements LanguageAnalyzer {
           if (idNode) {
             const name = idNode.text
             const fqn = scope.length > 0 ? `${scope.join(".")}.${name}` : name
-            const sym: UniversalSymbol = {
+            const sym: ASTEngine.UniversalSymbol = {
               name,
-              kind: SymbolKind.Method,
+              kind: ASTEngine.SymbolKind.Method,
               range: this.nodeToRange(node),
               scope: scope.join("."),
               visibility: "public",
@@ -195,7 +194,7 @@ export class RealJavaScriptAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: scope[scope.length - 1],
                 target: name,
-                type: RelationshipType.Contains,
+                type: ASTEngine.RelationshipType.Contains,
                 confidence: 1.0,
                 metadata: { javascriptSpecific: true, isMember: true },
               })
@@ -219,9 +218,9 @@ export class RealJavaScriptAnalyzer implements LanguageAnalyzer {
               }
             }
 
-            const sym: UniversalSymbol = {
+            const sym: ASTEngine.UniversalSymbol = {
               name,
-              kind: isFunction ? SymbolKind.Function : SymbolKind.Variable,
+              kind: isFunction ? ASTEngine.SymbolKind.Function : ASTEngine.SymbolKind.Variable,
               range: this.nodeToRange(node),
               scope: scope.join("."),
               visibility: "local",
@@ -291,9 +290,9 @@ export class RealJavaScriptAnalyzer implements LanguageAnalyzer {
                    const propertyName = propNode.text !== "prototype" ? propNode.text : (this.findChildByType(leftNode.parent!, "property_identifier")?.text || "method")
                    
                    // Dynamic prototype methods: use the function's own bounds so we capture closures precisely!
-                   const sym: UniversalSymbol = {
+                   const sym: ASTEngine.UniversalSymbol = {
                       name: `${className}.${propertyName}`,
-                      kind: SymbolKind.Method,
+                      kind: ASTEngine.SymbolKind.Method,
                       range: this.nodeToRange(fnNode), // VERY IMPORTANT: Use fnNode bounds to perfectly wrap closure!
                       scope: className,
                       visibility: "public",
@@ -318,7 +317,7 @@ export class RealJavaScriptAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: scope.join("."),
                 target: propNode.text,
-                type: RelationshipType.Uses,
+                type: ASTEngine.RelationshipType.Uses,
                 confidence: 0.9,
                 metadata: { javascriptSpecific: true, isThisAccess: true },
               })
@@ -349,7 +348,7 @@ export class RealJavaScriptAnalyzer implements LanguageAnalyzer {
                 relationships.push({
                   source: scope.join(".") || "global",
                   target: reqPath,
-                  type: RelationshipType.Uses,
+                  type: ASTEngine.RelationshipType.Uses,
                   confidence: 1.0,
                   metadata: { javascriptSpecific: true, isRequire: true },
                 })
@@ -400,7 +399,7 @@ export class RealJavaScriptAnalyzer implements LanguageAnalyzer {
             target: targetName,
             fromSymbol: caller,
             toSymbol: qualifiedName,
-            type: RelationshipType.Calls,
+            type: ASTEngine.RelationshipType.Calls,
             confidence: 0.9,
             metadata: { javascriptSpecific: true, qualified: qualifiedName },
           })
@@ -440,7 +439,7 @@ export class RealJavaScriptAnalyzer implements LanguageAnalyzer {
               target: ctorName,
               fromSymbol: caller,
               toSymbol: ctorName,
-              type: RelationshipType.Instantiates,
+              type: ASTEngine.RelationshipType.Instantiates,
               confidence: 0.95,
               metadata: { javascriptSpecific: true, isNew: true },
             })
@@ -523,7 +522,7 @@ export class RealJavaScriptAnalyzer implements LanguageAnalyzer {
             relationships.push({
                source: scope.join(".") || "global",
                target: srcPath,
-               type: RelationshipType.References,
+               type: ASTEngine.RelationshipType.References,
                confidence: 1.0,
                metadata: { javascriptSpecific: true, isImport: true }
             })
@@ -603,7 +602,7 @@ export class RealJavaScriptAnalyzer implements LanguageAnalyzer {
     return false
   }
 
-  private nodeToRange(node: Node): UniversalSymbol["range"] {
+  private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {
     return {
       startLine: node.startPosition.row + 1,
       startColumn: node.startPosition.column + 1,

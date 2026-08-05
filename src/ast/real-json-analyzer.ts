@@ -1,9 +1,8 @@
-// @ts-nocheck — Ported from backbencher.
 // Real JSON Intelligence Engine
 // AST analysis for JSON with schema validation, API specification, and configuration intelligence
 
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import { ASTEngine } from "./engine"
 
 export interface JsonContext {
   currentFile: string
@@ -12,12 +11,12 @@ export interface JsonContext {
   schemas: Record<string, boolean>
   apiEndpoints: Record<string, boolean>
   configSections: Record<string, boolean>
-  symbols: UniversalSymbol[]
-  symbolMap: Map<string, UniversalSymbol>
-  dependencySymbols: UniversalSymbol[]
-  referenceSymbols: UniversalSymbol[]
-  schemaSymbols: UniversalSymbol[]
-  apiEndpointSymbols: UniversalSymbol[]
+  symbols: ASTEngine.UniversalSymbol[]
+  symbolMap: Map<string, ASTEngine.UniversalSymbol>
+  dependencySymbols: ASTEngine.UniversalSymbol[]
+  referenceSymbols: ASTEngine.UniversalSymbol[]
+  schemaSymbols: ASTEngine.UniversalSymbol[]
+  apiEndpointSymbols: ASTEngine.UniversalSymbol[]
   objectCount: number
   propertyCount: number
   hasNullValues: boolean
@@ -30,22 +29,22 @@ export interface JsonContext {
   docAuthor?: string
   docSchema?: string
   maxDepth: number
-  relationships: UniversalRelationship[]
-  imports: ImportInfo[]
-  exports: ExportInfo[]
-  errors: ParseError[]
+  relationships: ASTEngine.UniversalRelationship[]
+  imports: ASTEngine.ImportInfo[]
+  exports: ASTEngine.ExportInfo[]
+  errors: ASTEngine.ParseError[]
 }
 
-export class RealJsonAnalyzer implements LanguageAnalyzer {
-  private addSymbol(ctx: JsonContext, symbol: UniversalSymbol) {
+export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
+  private addSymbol(ctx: JsonContext, symbol: ASTEngine.UniversalSymbol) {
     ctx.symbols.push(symbol);
     ctx.symbolMap.set(symbol.name, symbol);
     if (symbol.metadata?.fullPath) {
       ctx.symbolMap.set(symbol.metadata.fullPath, symbol);
     }
 
-    if (symbol.kind === SymbolKind.Class) ctx.objectCount++;
-    if (symbol.kind === SymbolKind.Property) ctx.propertyCount++;
+    if (symbol.kind === ASTEngine.SymbolKind.Class) ctx.objectCount++;
+    if (symbol.kind === ASTEngine.SymbolKind.Property) ctx.propertyCount++;
     if (symbol.returnType === "null") ctx.hasNullValues = true;
     if (symbol.returnType === "boolean") ctx.hasBooleanValues = true;
     if (symbol.metadata?.isArray) {
@@ -74,7 +73,7 @@ export class RealJsonAnalyzer implements LanguageAnalyzer {
     }
     return s
   }
-  analyze(rootNode: Node, content: string, filePath: string): ParseResult {
+  analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
     const ctx: JsonContext = {
       currentFile: filePath,
       content,
@@ -143,9 +142,9 @@ export class RealJsonAnalyzer implements LanguageAnalyzer {
     // PHASE 5: JSON-specific analysis (schema validation, API design, data modeling)
     const structuralAnalysis = this.performStructuralAnalysis(ctx)
 
-    const rootSymbol: UniversalSymbol = {
+    const rootSymbol: ASTEngine.UniversalSymbol = {
       name: "root",
-      kind: SymbolKind.Module,
+      kind: ASTEngine.SymbolKind.Module,
       range: this.nodeToRange(ctx, rootNode),
       scope: "",
       visibility: "public",
@@ -174,7 +173,7 @@ export class RealJsonAnalyzer implements LanguageAnalyzer {
     };
     this.addSymbol(ctx, rootSymbol);
 
-    for (let i = 0; i < ctx.symbols.length; i++) { const s = ctx.symbols[i]; if (s.kind !== SymbolKind.Constant || s.name.startsWith("$")) { ctx.exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: "public" }); } }
+    for (let i = 0; i < ctx.symbols.length; i++) { const s = ctx.symbols[i]; if (s.kind !== ASTEngine.SymbolKind.Constant || s.name.startsWith("$")) { ctx.exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: "public" }); } }
 
     // Post-loop: add contains for owned symbols
     for (const s of ctx.symbols) {
@@ -183,7 +182,7 @@ export class RealJsonAnalyzer implements LanguageAnalyzer {
         ctx.relationships.push({
           source: _owner,
           target: s.name,
-          type: RelationshipType.Contains,
+          type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
           metadata: {},
         })
@@ -316,9 +315,9 @@ export class RealJsonAnalyzer implements LanguageAnalyzer {
       ctx.schemas[objectName] = true
     }
 
-    const symbol: UniversalSymbol = {
+    const symbol: ASTEngine.UniversalSymbol = {
       name: objectName,
-      kind: SymbolKind.Class,
+      kind: ASTEngine.SymbolKind.Class,
       range: this.nodeToRange(ctx, node),
       scope: parentPath || "",
       visibility: "public",
@@ -368,7 +367,7 @@ export class RealJsonAnalyzer implements LanguageAnalyzer {
     if (isApiEndpoint) ctx.apiEndpoints[propertyName] = true
     ctx.configSections[propertyName] = true
 
-    const symbol: UniversalSymbol = {
+    const symbol: ASTEngine.UniversalSymbol = {
       name: propertyName,
       kind: this.determinePropertySymbolKind(ctx, propertyName, valueType),
       range: this.nodeToRange(ctx, node),
@@ -400,9 +399,9 @@ export class RealJsonAnalyzer implements LanguageAnalyzer {
     const isHomogeneous = this.isHomogeneousArray(ctx, itemTypes)
     const hasSchemaValidation = this.hasArraySchemaValidation(ctx, parentPath)
 
-    const symbol: UniversalSymbol = {
+    const symbol: ASTEngine.UniversalSymbol = {
       name: arrayName,
-      kind: SymbolKind.Variable,
+      kind: ASTEngine.SymbolKind.Variable,
       range: this.nodeToRange(ctx, node),
       scope: parentPath || "",
       visibility: "public",
@@ -521,12 +520,12 @@ export class RealJsonAnalyzer implements LanguageAnalyzer {
     return `${parentPath}.${key}`;
   }
 
-  private nodeToRange(ctx: JsonContext, node: Node): UniversalSymbol["range"] {
+  private nodeToRange(ctx: JsonContext, node: Node): ASTEngine.UniversalSymbol["range"] {
     return {
-      startLine: node.startPosition.row,
-      startColumn: node.startPosition.column,
-      endLine: node.endPosition.row,
-      endColumn: node.endPosition.column,
+      startLine: node.startPosition.row + 1,
+      startColumn: node.startPosition.column + 1,
+      endLine: node.endPosition.row + 1,
+      endColumn: node.endPosition.column + 1,
       startIndex: node.startIndex,
       endIndex: node.endIndex,
     }
@@ -540,11 +539,11 @@ export class RealJsonAnalyzer implements LanguageAnalyzer {
     return "array"
   }
 
-  private determinePropertySymbolKind(ctx: JsonContext, propertyName: string, valueType: string): SymbolKind {
-    if (valueType === "object") return SymbolKind.Class
-    if (valueType === "array") return SymbolKind.Variable
-    if (propertyName.toUpperCase() === propertyName) return SymbolKind.Constant
-    return SymbolKind.Property
+  private determinePropertySymbolKind(ctx: JsonContext, propertyName: string, valueType: string): ASTEngine.SymbolKind {
+    if (valueType === "object") return ASTEngine.SymbolKind.Class
+    if (valueType === "array") return ASTEngine.SymbolKind.Variable
+    if (propertyName.toUpperCase() === propertyName) return ASTEngine.SymbolKind.Constant
+    return ASTEngine.SymbolKind.Property
   }
 
   private extractValue(ctx: JsonContext, node: Node, parentPath?: string): void {
@@ -563,7 +562,7 @@ export class RealJsonAnalyzer implements LanguageAnalyzer {
 
       this.addSymbol(ctx, {
         name: valueName,
-        kind: SymbolKind.Constant,
+        kind: ASTEngine.SymbolKind.Constant,
         range: this.nodeToRange(ctx, node),
         returnType: valueType,
         metadata: {
@@ -883,7 +882,7 @@ export class RealJsonAnalyzer implements LanguageAnalyzer {
       for (const dep of depSymbols) {
         // dep.name is the package name (e.g. "react" or "lodash")
         // we add it to the imports pool so the Universal Brain links them
-        let versionNode: UniversalSymbol | undefined = undefined;
+        let versionNode: ASTEngine.UniversalSymbol | undefined = undefined;
         for (let i = 0; i < ctx.symbols.length; i++) {
            if (ctx.symbols[i].metadata?.fullPath === dep.metadata?.fullPath + "." + dep.name) {
               versionNode = ctx.symbols[i];
@@ -901,7 +900,7 @@ export class RealJsonAnalyzer implements LanguageAnalyzer {
         ctx.relationships.push({
           source: "package_manifest",
           target: dep.name,
-          type: RelationshipType.Uses,
+          type: ASTEngine.RelationshipType.Uses,
           confidence: 1.0,
           metadata: {
             relationshipType: "package_dependency",
@@ -1044,14 +1043,14 @@ export class RealJsonAnalyzer implements LanguageAnalyzer {
     )
   }
 
-  private determineValueSymbolKind(ctx: JsonContext, node: Node): SymbolKind {
+  private determineValueSymbolKind(ctx: JsonContext, node: Node): ASTEngine.SymbolKind {
     switch (node.type) {
       case "object":
-        return SymbolKind.Class
+        return ASTEngine.SymbolKind.Class
       case "array":
-        return SymbolKind.Variable
+        return ASTEngine.SymbolKind.Variable
       default:
-        return SymbolKind.Constant
+        return ASTEngine.SymbolKind.Constant
     }
   }
 
@@ -1077,7 +1076,7 @@ export class RealJsonAnalyzer implements LanguageAnalyzer {
           ctx.relationships.push({
             source: ref.name,
             target: referencedSymbol.name,
-            type: RelationshipType.References,
+            type: ASTEngine.RelationshipType.References,
             confidence: 1.0,
             metadata: { relationshipType: "json_reference", isReference: true, refPath },
           })
@@ -1086,7 +1085,7 @@ export class RealJsonAnalyzer implements LanguageAnalyzer {
           ctx.relationships.push({
             source: ref.name,
             target: targetName, 
-            type: RelationshipType.References,
+            type: ASTEngine.RelationshipType.References,
             confidence: 0.8,
             metadata: { relationshipType: "json_reference", isReference: true, refPath, isExternal: true, targetExternalFile: externalFile },
           })
@@ -1102,7 +1101,7 @@ export class RealJsonAnalyzer implements LanguageAnalyzer {
         ctx.relationships.push({
           source: schema.name,
           target: "json_schema_root",
-          type: RelationshipType.Uses,
+          type: ASTEngine.RelationshipType.Uses,
           confidence: 0.8,
           metadata: { relationshipType: "json_schema_composition" },
         })
@@ -1116,7 +1115,7 @@ export class RealJsonAnalyzer implements LanguageAnalyzer {
       ctx.relationships.push({
         source: endpoint.name,
         target: "api_specification",
-        type: RelationshipType.Uses,
+        type: ASTEngine.RelationshipType.Uses,
         confidence: 0.9,
         metadata: { relationshipType: "json_api_endpoint", isApiEndpoint: true },
       })

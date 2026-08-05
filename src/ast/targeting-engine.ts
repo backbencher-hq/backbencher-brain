@@ -1,8 +1,8 @@
-// @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import { ASTEngine } from "./engine"
 import * as fs from "fs"
 import { getExecDir } from "../util/exec-dir"
 import * as path from "path"
+import { loadWebTreeSitter, resolveWasmAsset } from "../util/wasm"
 
 export interface ASTTargetResult {
   startIndex: number

@@ -1,4 +1,3 @@
-// @ts-nocheck — Ported from backbencher.
 function stringIncludes(str: string, val: string): boolean {
   return str.indexOf(val) !== -1
 }
@@ -14,19 +13,19 @@ function inArray(arr: any[], val: any): boolean {
 // AST analysis for Java language (Mathematically Perfect O(N) Iterative State Machine)
 
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import { ASTEngine } from "./engine"
 
-export class RealJavaAnalyzer implements LanguageAnalyzer {
+export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(
     rootNode: Node,
     content: string,
     filePath: string,
-  ): Omit<ParseResult, "language" | "metadata"> & { metadata: Partial<FileMetadata> } {
-    const symbols: UniversalSymbol[] = []
-    const relationships: UniversalRelationship[] = []
-    const imports: ImportInfo[] = []
-    const exports: ExportInfo[] = []
-    const errors: ParseError[] = []
+  ): Omit<ASTEngine.ParseResult, "language" | "metadata"> & { metadata: Partial<ASTEngine.FileMetadata> } {
+    const symbols: ASTEngine.UniversalSymbol[] = []
+    const relationships: ASTEngine.UniversalRelationship[] = []
+    const imports: ASTEngine.ImportInfo[] = []
+    const exports: ASTEngine.ExportInfo[] = []
+    const errors: ASTEngine.ParseError[] = []
 
     const frameworks: Record<string, boolean> = {}
     const patterns: Record<string, boolean> = {}
@@ -34,22 +33,22 @@ export class RealJavaAnalyzer implements LanguageAnalyzer {
     let cyclomaticComplexity = 0
 
     // O(1) Quick Lookups
-    const symbolMap = new Map<string, UniversalSymbol>()
+    const symbolMap = new Map<string, ASTEngine.UniversalSymbol>()
     const classHierarchy = new Map<string, string[]>()
     const overrideTasks: { fqn: string; methodName: string; signature: string; ownerFqn: string }[] = []
 
     interface Scope {
       node: Node
       name: string
-      kind: SymbolKind
+      kind: ASTEngine.SymbolKind
       fqn: string
-      symbolRef?: UniversalSymbol
+      symbolRef?: ASTEngine.UniversalSymbol
       visibility: "public" | "private" | "protected" | undefined
       isAbstract: boolean
       isInterface: boolean
       isRecord: boolean
       annotations: string[]
-      fields: UniversalSymbol[]
+      fields: ASTEngine.UniversalSymbol[]
       parents: string[]
     }
 
@@ -125,7 +124,7 @@ export class RealJavaAnalyzer implements LanguageAnalyzer {
           relationships.push({
             source: currentPackage || "root",
             target: moduleName,
-            type: RelationshipType.References,
+            type: ASTEngine.RelationshipType.References,
             confidence: 0.9,
             metadata: { isJavaImport: true, isWildcard: isAsterisk },
           })
@@ -163,7 +162,7 @@ export class RealJavaAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: name,
               target: inheritance.extendsClass,
-              type: RelationshipType.Inheritance,
+              type: ASTEngine.RelationshipType.Inheritance,
               confidence: 1.0,
               metadata: { relationshipType: type === "interface_declaration" ? "extends_interface" : "extends" },
             })
@@ -172,7 +171,7 @@ export class RealJavaAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: name,
               target: iface,
-              type: RelationshipType.Implementation,
+              type: ASTEngine.RelationshipType.Implementation,
               confidence: 1.0,
               metadata: { relationshipType: "implements" },
             })
@@ -204,7 +203,7 @@ export class RealJavaAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: name,
               target: tableName,
-              type: RelationshipType.Uses,
+              type: ASTEngine.RelationshipType.Uses,
               confidence: 1.0,
               metadata: { isDatabase: true, relationshipType: "mapped_table", table: tableName },
             })
@@ -230,14 +229,14 @@ export class RealJavaAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: name,
                 target: targetService,
-                type: RelationshipType.Calls,
+                type: ASTEngine.RelationshipType.Calls,
                 confidence: 1.0,
                 metadata: { isFeignClient: true, microservice: targetService },
               })
             }
           }
 
-          const sym: UniversalSymbol = {
+          const sym: ASTEngine.UniversalSymbol = {
             name,
             kind,
             range: this.nodeToRange(node),
@@ -349,7 +348,7 @@ export class RealJavaAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: localOwnerPrefix,
               target: fullRoute,
-              type: RelationshipType.Exports,
+              type: ASTEngine.RelationshipType.Exports,
               confidence: 1.0,
               metadata: { isApiEndpoint: true, httpMethod, route: fullRoute },
             })
@@ -369,7 +368,7 @@ export class RealJavaAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: localOwnerPrefix,
               target,
-              type: RelationshipType.Uses,
+              type: ASTEngine.RelationshipType.Uses,
               confidence: 1.0,
               metadata: { isDatabase: true, relationshipType: "mapped_column" },
             })
@@ -387,9 +386,9 @@ export class RealJavaAnalyzer implements LanguageAnalyzer {
              })
           }
 
-          const sym: UniversalSymbol = {
+          const sym: ASTEngine.UniversalSymbol = {
             name,
-            kind: isConstructor ? SymbolKind.Constructor : SymbolKind.Method,
+            kind: isConstructor ? ASTEngine.SymbolKind.Constructor : ASTEngine.SymbolKind.Method,
             range: this.nodeToRange(node),
             visibility,
             parameters,
@@ -412,7 +411,7 @@ export class RealJavaAnalyzer implements LanguageAnalyzer {
           newContext = {
             node,
             name,
-            kind: SymbolKind.Method,
+            kind: ASTEngine.SymbolKind.Method,
             fqn,
             symbolRef: sym,
             visibility,
@@ -456,7 +455,7 @@ export class RealJavaAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: localOwnerPrefix,
                 target,
-                type: RelationshipType.Uses,
+                type: ASTEngine.RelationshipType.Uses,
                 confidence: 1.0,
                 metadata: { isDatabase: true, relationshipType: "mapped_column" },
               })
@@ -474,16 +473,16 @@ export class RealJavaAnalyzer implements LanguageAnalyzer {
                 relationships.push({
                   source: localOwnerPrefix,
                   target: configKey,
-                  type: RelationshipType.Uses,
+                  type: ASTEngine.RelationshipType.Uses,
                   confidence: 1.0,
                   metadata: { isConfiguration: true, relationshipType: "config_property" }
                 })
               }
             }
 
-            const sym: UniversalSymbol = {
+            const sym: ASTEngine.UniversalSymbol = {
               name: fieldName,
-              kind: isConstant ? SymbolKind.Constant : SymbolKind.Property,
+              kind: isConstant ? ASTEngine.SymbolKind.Constant : ASTEngine.SymbolKind.Property,
               range: this.nodeToRange(declarator),
               returnType: fieldType,
               visibility,
@@ -506,7 +505,7 @@ export class RealJavaAnalyzer implements LanguageAnalyzer {
         if (nameNode && parentContext) {
           symbols.push({
             name: nameNode.text,
-            kind: SymbolKind.EnumMember,
+            kind: ASTEngine.SymbolKind.EnumMember,
             range: this.nodeToRange(node),
             visibility: "public",
             ownerName: parentContext.name,
@@ -517,7 +516,7 @@ export class RealJavaAnalyzer implements LanguageAnalyzer {
       }
 
       else if (type === "method_invocation") {
-         if (parentContext && parentContext.kind === SymbolKind.Method && parentContext.symbolRef) {
+         if (parentContext && parentContext.kind === ASTEngine.SymbolKind.Method && parentContext.symbolRef) {
             const callExpression = this.buildJavaCallExpression(node)
             if (callExpression && !this.isJavaBuiltin(callExpression)) {
               if (!parentContext.symbolRef.qualified_calls) parentContext.symbolRef.qualified_calls = []
@@ -525,7 +524,7 @@ export class RealJavaAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: parentContext.name || parentContext.symbolRef.name,
                 target: callExpression.split(".").pop() || callExpression,
-                type: RelationshipType.Calls,
+                type: ASTEngine.RelationshipType.Calls,
                 confidence: 0.7,
                 metadata: { javaCallExpression: callExpression },
               })
@@ -535,7 +534,7 @@ export class RealJavaAnalyzer implements LanguageAnalyzer {
                 relationships.push({
                   source: parentContext.name || parentContext.symbolRef.name,
                   target: methodName,
-                  type: RelationshipType.Instantiates,
+                  type: ASTEngine.RelationshipType.Instantiates,
                   confidence: 0.6,
                   metadata: { isPossibleConstructor: true },
                 })
@@ -553,7 +552,7 @@ export class RealJavaAnalyzer implements LanguageAnalyzer {
           relationships.push({
             source,
             target: typeName,
-            type: RelationshipType.Instantiates,
+            type: ASTEngine.RelationshipType.Instantiates,
             confidence: 0.95,
             metadata: { relationshipType: "instantiates", isNew: true },
           })
@@ -608,7 +607,7 @@ export class RealJavaAnalyzer implements LanguageAnalyzer {
         relationships.push({
           source: _owner,
           target: s.name,
-          type: RelationshipType.Contains,
+          type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
           metadata: { isContained: true },
         })
@@ -620,7 +619,7 @@ export class RealJavaAnalyzer implements LanguageAnalyzer {
 
     for (let i = 0; i < symbols.length; i++) {
       const s = symbols[i]
-      if (!s.metadata?.isPhantom && s.visibility === "public" && (!s.ownerName || s.ownerKind === SymbolKind.Class)) {
+      if (!s.metadata?.isPhantom && s.visibility === "public" && (!s.ownerName || s.ownerKind === ASTEngine.SymbolKind.Class)) {
         exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility })
       }
     }
@@ -668,8 +667,8 @@ export class RealJavaAnalyzer implements LanguageAnalyzer {
   private resolveOverrides(
     tasks: { fqn: string; methodName: string; signature: string; ownerFqn: string }[],
     classHierarchy: Map<string, string[]>,
-    symbolMap: Map<string, UniversalSymbol>,
-    relationships: UniversalRelationship[]
+    symbolMap: Map<string, ASTEngine.UniversalSymbol>,
+    relationships: ASTEngine.UniversalRelationship[]
   ) {
     for (let taskIdx = 0; taskIdx < tasks.length; taskIdx++) { const task = tasks[taskIdx]
       let targetFqn: string | null = null
@@ -726,7 +725,7 @@ export class RealJavaAnalyzer implements LanguageAnalyzer {
         relationships.push({
           source: localSource,
           target: localTarget,
-          type: RelationshipType.Overrides,
+          type: ASTEngine.RelationshipType.Overrides,
           confidence: 1.0,
           metadata: { relationshipType: "method_override", isJavaOverride: true },
         })
@@ -736,8 +735,8 @@ export class RealJavaAnalyzer implements LanguageAnalyzer {
 
   private processPhantomSymbols(
     scope: any, 
-    symbols: UniversalSymbol[], 
-    symbolMap: Map<string, UniversalSymbol>,
+    symbols: ASTEngine.UniversalSymbol[], 
+    symbolMap: Map<string, ASTEngine.UniversalSymbol>,
     frameworks: Record<string, boolean>
   ) {
     const isSpringData = frameworks["spring_data"] || frameworks["spring"]
@@ -755,10 +754,10 @@ export class RealJavaAnalyzer implements LanguageAnalyzer {
           const method = defaultMethods[j]
           const sym = {
             name: method,
-            kind: SymbolKind.Method,
+            kind: ASTEngine.SymbolKind.Method,
             scope: scope.name,
             ownerName: scope.name,
-            ownerKind: SymbolKind.Interface,
+            ownerKind: ASTEngine.SymbolKind.Interface,
             modifiers: ["phantom", "framework_generated", "spring-data"],
             range: scope.node ? this.nodeToRange(scope.node) : { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 },
             parameters: [],
@@ -792,10 +791,10 @@ export class RealJavaAnalyzer implements LanguageAnalyzer {
           if (isDataOrGetter) {
             const sym = {
               name: `get${capitalizedName}`,
-              kind: SymbolKind.Method,
+              kind: ASTEngine.SymbolKind.Method,
               scope: scope.name,
               ownerName: scope.name,
-              ownerKind: SymbolKind.Class,
+              ownerKind: ASTEngine.SymbolKind.Class,
               modifiers: ["phantom", "lombok_generated"],
               range: prop.range,
               parameters: [],
@@ -809,10 +808,10 @@ export class RealJavaAnalyzer implements LanguageAnalyzer {
           if (isDataOrSetter) {
              const sym = {
               name: `set${capitalizedName}`,
-              kind: SymbolKind.Method,
+              kind: ASTEngine.SymbolKind.Method,
               scope: scope.name,
               ownerName: scope.name,
-              ownerKind: SymbolKind.Class,
+              ownerKind: ASTEngine.SymbolKind.Class,
               modifiers: ["phantom", "lombok_generated"],
               range: prop.range,
               parameters: [{ name: "value", type: prop.returnType || "Object" }],
@@ -842,18 +841,18 @@ export class RealJavaAnalyzer implements LanguageAnalyzer {
     if (mod.startsWith("javax.ws.rs") || mod.startsWith("jakarta.ws.rs")) frameworks["jax_rs"] = true
   }
 
-  private mapTypeToSymbolKind(type: string): SymbolKind {
-    if (type === "class_declaration" || type === "record_declaration") return SymbolKind.Class
-    if (type === "interface_declaration") return SymbolKind.Interface
-    if (type === "enum_declaration") return SymbolKind.Enum
-    return SymbolKind.Class
+  private mapTypeToSymbolKind(type: string): ASTEngine.SymbolKind {
+    if (type === "class_declaration" || type === "record_declaration") return ASTEngine.SymbolKind.Class
+    if (type === "interface_declaration") return ASTEngine.SymbolKind.Interface
+    if (type === "enum_declaration") return ASTEngine.SymbolKind.Enum
+    return ASTEngine.SymbolKind.Class
   }
 
   private buildFqn(pkg: string, scopeStack: any[], name: string): string {
     const parts = []
     if (pkg) parts.push(pkg)
     for (let idx = 0; idx < scopeStack.length; idx++) { const scope = scopeStack[idx]
-      if (scope.kind !== SymbolKind.Method) {
+      if (scope.kind !== ASTEngine.SymbolKind.Method) {
         parts.push(scope.name)
       }
     }
@@ -894,8 +893,8 @@ export class RealJavaAnalyzer implements LanguageAnalyzer {
    */
   private collectFieldAccessUses(
     rootNode: Node,
-    relationships: UniversalRelationship[],
-    symbols: UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
   ) {
     const stack = [rootNode]
     const seen = new Set<string>()
@@ -910,7 +909,7 @@ export class RealJavaAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: parts[0],
               target: parts[parts.length - 1],
-              type: RelationshipType.Uses,
+              type: ASTEngine.RelationshipType.Uses,
               confidence: 0.6,
               metadata: { isFieldAccess: true },
             })
@@ -991,8 +990,8 @@ export class RealJavaAnalyzer implements LanguageAnalyzer {
     return inheritance
   }
 
-  private extractJavaParameters(node: Node, relationships?: UniversalRelationship[], ownerPrefix?: string): Parameter[] {
-    const parameters: Parameter[] = []
+  private extractJavaParameters(node: Node, relationships?: ASTEngine.UniversalRelationship[], ownerPrefix?: string): ASTEngine.Parameter[] {
+    const parameters: ASTEngine.Parameter[] = []
     const formalParams = this.findChildByType(node, "formal_parameters") || this.findChildByType(node, "record_declaration_body")
     const targetNode = formalParams ? formalParams : node
 
@@ -1016,7 +1015,7 @@ export class RealJavaAnalyzer implements LanguageAnalyzer {
                 relationships.push({
                   source: ownerPrefix + "." + nameNode.text,
                   target: valMatch.substring(2, valMatch.length - 1).split(":")[0],
-                  type: RelationshipType.Uses,
+                  type: ASTEngine.RelationshipType.Uses,
                   confidence: 1.0,
                   metadata: { isConfiguration: true, relationshipType: "config_property" }
                 })
@@ -1216,7 +1215,7 @@ export class RealJavaAnalyzer implements LanguageAnalyzer {
     return params.length > 0 ? params : undefined;
   }
 
-  private hasJavaAnnotation(symbol: UniversalSymbol, annotationName: string): boolean {
+  private hasJavaAnnotation(symbol: ASTEngine.UniversalSymbol, annotationName: string): boolean {
     if (!symbol.decorators) return false
     for (let i = 0; i < symbol.decorators.length; i++) {
        if (symbol.decorators[i].startsWith(annotationName)) return true
@@ -1224,7 +1223,7 @@ export class RealJavaAnalyzer implements LanguageAnalyzer {
     return false
   }
 
-  private getJavaFrameworkPatterns(frameworks: string[], symbols: UniversalSymbol[]): any[] {
+  private getJavaFrameworkPatterns(frameworks: string[], symbols: ASTEngine.UniversalSymbol[]): any[] {
      const patterns: any[] = []
      if (inArray(frameworks, "spring")) {
          const springPatterns: string[] = []

@@ -1,5 +1,4 @@
-// @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
-// was bun shebang
+#!/usr/bin/env bun
 // parse-single-file.ts - Subprocess script for isolated file parsing
 // This runs in a separate process that can be KILLED if it hangs
 // Prevents Tree-sitter WASM from blocking the entire system
@@ -248,7 +247,7 @@ async function parseFile(filePath: string, projectPath: string) {
 
     try {
       // Import and use the AST engine
-      const { ASTEngine } = await import("./engine.js")
+      const { ASTEngine } = await import("./engine")
       const parsed = await ASTEngine.parseFile(filePath, content)
 
       result = {

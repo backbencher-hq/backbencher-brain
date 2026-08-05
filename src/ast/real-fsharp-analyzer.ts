@@ -1,14 +1,13 @@
-// @ts-nocheck — Ported from backbencher.
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import { ASTEngine } from "./engine"
 
-export class RealFsharpAnalyzer implements LanguageAnalyzer {
-  public analyze(rootNode: Node, content: string, filePath: string): ParseResult {
-    const symbols: UniversalSymbol[] = []
-    const relationships: UniversalRelationship[] = []
-    const imports: ImportInfo[] = []
-    const exports: ExportInfo[] = []
-    const errors: ParseError[] = []
+export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
+  public analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
+    const symbols: ASTEngine.UniversalSymbol[] = []
+    const relationships: ASTEngine.UniversalRelationship[] = []
+    const imports: ASTEngine.ImportInfo[] = []
+    const exports: ASTEngine.ExportInfo[] = []
+    const errors: ASTEngine.ParseError[] = []
 
     const walkStack: { node: Node; scopePath: string[] }[] = [{ node: rootNode, scopePath: [] }]
 
@@ -24,7 +23,7 @@ export class RealFsharpAnalyzer implements LanguageAnalyzer {
           const name = nameNode.text
           symbols.push({
             name,
-            kind: type === "namespace" ? SymbolKind.Namespace : SymbolKind.Module,
+            kind: type === "namespace" ? ASTEngine.SymbolKind.Namespace : ASTEngine.SymbolKind.Module,
             range: this.nodeToRange(node),
             ownerName: currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined,
             metadata: { nodeType: type },
@@ -44,21 +43,21 @@ export class RealFsharpAnalyzer implements LanguageAnalyzer {
           const hasDelegateTypeDefn = this.findDescendants(node, (n) => n.type === "delegate_type_defn").length > 0
           const hasTypeAbbrevDefn = this.findDescendants(node, (n) => n.type === "type_abbrev_defn").length > 0
 
-          let kind = SymbolKind.Class
+          let kind = ASTEngine.SymbolKind.Class
           let isInterface = false
           var isMeasure = !!this.findDescendant(node, function(n) { return n.type === "attribute" && (n.text.includes("Measure") || n.text.includes("[<Measure")); });
-          if (isMeasure) kind = SymbolKind.Type;
+          if (isMeasure) kind = ASTEngine.SymbolKind.Type;
           if (hasRecordTypeDefn) {
-            kind = SymbolKind.Struct
+            kind = ASTEngine.SymbolKind.Struct
           } else if (hasUnionTypeDefn) {
-            kind = SymbolKind.Enum
+            kind = ASTEngine.SymbolKind.Enum
           } else if (hasInterfaceTypeDefn) {
-            kind = SymbolKind.Interface
+            kind = ASTEngine.SymbolKind.Interface
             isInterface = true
           } else if (hasEnumTypeDefn) {
-            kind = SymbolKind.Enum
-          } else if (hasDelegateTypeDefn) kind = SymbolKind.Type
-          else if (hasTypeAbbrevDefn) kind = SymbolKind.Type
+            kind = ASTEngine.SymbolKind.Enum
+          } else if (hasDelegateTypeDefn) kind = ASTEngine.SymbolKind.Type
+          else if (hasTypeAbbrevDefn) kind = ASTEngine.SymbolKind.Type
           else if (hasAnonTypeDefn) {
             const anonNode = this.findChild(node, (n) => n.type === "anon_type_defn")
             if (anonNode) {
@@ -73,10 +72,10 @@ export class RealFsharpAnalyzer implements LanguageAnalyzer {
               )
               const hasConcreteMembers = this.findDescendants(anonNode, (n) => n.type === "member_defn").length > 0
               if (hasMemberSig && !hasInherits && !hasInterfaceImpl && !hasConcreteMembers) {
-                kind = SymbolKind.Interface
+                kind = ASTEngine.SymbolKind.Interface
                 isInterface = true
               } else if (hasInterfaceKeyword && !hasInherits && !hasConcreteMembers) {
-                kind = SymbolKind.Interface
+                kind = ASTEngine.SymbolKind.Interface
                 isInterface = true
               } else if (
                 name.startsWith("I") &&
@@ -85,7 +84,7 @@ export class RealFsharpAnalyzer implements LanguageAnalyzer {
                 hasMemberSig &&
                 !hasInherits
               ) {
-                kind = SymbolKind.Interface
+                kind = ASTEngine.SymbolKind.Interface
                 isInterface = true
               }
             }
@@ -101,7 +100,7 @@ export class RealFsharpAnalyzer implements LanguageAnalyzer {
           currentScope.push(name)
 
           // Extract DU cases as EnumMember symbols
-          if (kind === SymbolKind.Enum) {
+          if (kind === ASTEngine.SymbolKind.Enum) {
             const unionDefns = this.findDescendants(node, (n) => n.type === "union_type_defn")
             for (const unionDefn of unionDefns) {
               const cases = this.findDescendants(unionDefn, (n) => n.type === "union_type_case")
@@ -110,7 +109,7 @@ export class RealFsharpAnalyzer implements LanguageAnalyzer {
                 if (caseNameNode && caseNameNode.text) {
                   symbols.push({
                     name: caseNameNode.text,
-                    kind: SymbolKind.EnumMember,
+                    kind: ASTEngine.SymbolKind.EnumMember,
                     range: this.nodeToRange(c),
                     ownerName: name,
                     metadata: { nodeType: "union_type_case" },
@@ -129,7 +128,7 @@ export class RealFsharpAnalyzer implements LanguageAnalyzer {
               if (caseNameNode && caseNameNode.text) {
                 symbols.push({
                   name: caseNameNode.text,
-                  kind: SymbolKind.EnumMember,
+                  kind: ASTEngine.SymbolKind.EnumMember,
                   range: this.nodeToRange(c),
                   ownerName: name,
                   metadata: { nodeType: "enum_type_case" },
@@ -147,7 +146,7 @@ export class RealFsharpAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: name,
                 target: targetName,
-                type: RelationshipType.Implements,
+                type: ASTEngine.RelationshipType.Implements,
                 metadata: { nodeType: "interface_implementation" },
               })
             }
@@ -164,7 +163,7 @@ export class RealFsharpAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: name,
                 target: targetName,
-                type: isIfaceImpl ? RelationshipType.Implements : RelationshipType.Extends,
+                type: isIfaceImpl ? ASTEngine.RelationshipType.Implements : ASTEngine.RelationshipType.Extends,
                 metadata: { nodeType: "class_inherits_decl" },
               })
             }
@@ -210,22 +209,22 @@ export class RealFsharpAnalyzer implements LanguageAnalyzer {
           const hasMethodOrProp = !!this.findChild(node, (n) => n.type === "method_or_prop_defn")
           // Check for override modifier (non-named keyword token in member_defn text)
           const hasOverride = type === "member_defn" && !!(node.text && /^override\b/.test(node.text))
-          let kind: SymbolKind
+          let kind: ASTEngine.SymbolKind
           if (isMember && hasMethodOrProp) {
             const propNameNode = this.findDescendant(node, (n) => n.type === "property_or_ident")
             if (propNameNode) {
               const propText = propNameNode.text
               kind =
                 propText.endsWith("_") || propText.includes("set")
-                  ? SymbolKind.Property
-                  : SymbolKind.Method
+                  ? ASTEngine.SymbolKind.Property
+                  : ASTEngine.SymbolKind.Method
             } else {
-              kind = SymbolKind.Method
+              kind = ASTEngine.SymbolKind.Method
             }
           } else if (isMember) {
-            kind = SymbolKind.Method
+            kind = ASTEngine.SymbolKind.Method
           } else {
-            kind = isFunc ? SymbolKind.Function : SymbolKind.Variable
+            kind = isFunc ? ASTEngine.SymbolKind.Function : ASTEngine.SymbolKind.Variable
           }
 
           if (node.type === "ce_expression" || node.type === "short_comp_expression") {
@@ -233,7 +232,7 @@ export class RealFsharpAnalyzer implements LanguageAnalyzer {
           if (ceBuilder && (ceBuilder.type === "identifier" || ceBuilder.type === "long_identifier") && ceBuilder.text) {
             var ceOwner = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined;
             if (ceOwner) {
-              relationships.push({ source: ceOwner, target: ceBuilder.text, type: RelationshipType.Calls, confidence: 0.75, metadata: { nodeType: type, isComputationExpression: true } });
+              relationships.push({ source: ceOwner, target: ceBuilder.text, type: ASTEngine.RelationshipType.Calls, confidence: 0.75, metadata: { nodeType: type, isComputationExpression: true } });
             }
           }
         }
@@ -258,7 +257,7 @@ export class RealFsharpAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: owner,
                 target: name,
-                type: RelationshipType.Overrides,
+                type: ASTEngine.RelationshipType.Overrides,
                 confidence: 0.9,
                 metadata: { nodeType: type, isOverride: true },
               })
@@ -270,7 +269,7 @@ export class RealFsharpAnalyzer implements LanguageAnalyzer {
         if (nameNode && nameNode.text) {
           symbols.push({
             name: "new " + nameNode.text,
-            kind: SymbolKind.Constructor,
+            kind: ASTEngine.SymbolKind.Constructor,
             range: this.nodeToRange(node),
             ownerName: currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined,
             metadata: { nodeType: "additional_constr_defn" },
@@ -281,7 +280,7 @@ export class RealFsharpAnalyzer implements LanguageAnalyzer {
         if (nameNode && nameNode.text) {
           symbols.push({
             name: nameNode.text,
-            kind: SymbolKind.Method,
+            kind: ASTEngine.SymbolKind.Method,
             range: this.nodeToRange(node),
             ownerName: currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined,
             metadata: { nodeType: "member_signature" },
@@ -292,7 +291,7 @@ export class RealFsharpAnalyzer implements LanguageAnalyzer {
         if (nameNode && nameNode.text) {
           symbols.push({
             name: nameNode.text,
-            kind: SymbolKind.Property,
+            kind: ASTEngine.SymbolKind.Property,
             range: this.nodeToRange(node),
             ownerName: currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined,
             metadata: { nodeType: "val_property_defn" },
@@ -304,7 +303,7 @@ export class RealFsharpAnalyzer implements LanguageAnalyzer {
           const ownerName = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined
           symbols.push({
             name: "new " + ifaceName.text,
-            kind: SymbolKind.Class,
+            kind: ASTEngine.SymbolKind.Class,
             range: this.nodeToRange(node),
             ownerName,
             metadata: { nodeType: "object_expression" },
@@ -313,13 +312,13 @@ export class RealFsharpAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: ownerName,
               target: ifaceName.text,
-              type: RelationshipType.Implements,
+              type: ASTEngine.RelationshipType.Implements,
               metadata: { nodeType: "object_expression" },
             })
             relationships.push({
               source: ownerName,
               target: ifaceName.text,
-              type: RelationshipType.Instantiates,
+              type: ASTEngine.RelationshipType.Instantiates,
               confidence: 0.85,
               metadata: { nodeType: "object_expression", isNew: true },
             })
@@ -330,7 +329,7 @@ export class RealFsharpAnalyzer implements LanguageAnalyzer {
         if (nameNode && nameNode.text) {
           symbols.push({
             name: nameNode.text,
-            kind: SymbolKind.Function,
+            kind: ASTEngine.SymbolKind.Function,
             range: this.nodeToRange(node),
             ownerName: currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined,
             metadata: { nodeType: "active_pattern" },
@@ -341,7 +340,7 @@ export class RealFsharpAnalyzer implements LanguageAnalyzer {
         if (nameNode && nameNode.text) {
           symbols.push({
             name: nameNode.text,
-            kind: SymbolKind.Class,
+            kind: ASTEngine.SymbolKind.Class,
             range: this.nodeToRange(node),
             ownerName: currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined,
             metadata: { nodeType: "exception_definition" },
@@ -353,7 +352,7 @@ export class RealFsharpAnalyzer implements LanguageAnalyzer {
           const name = nameNode.text
           symbols.push({
             name,
-            kind: SymbolKind.Class,
+            kind: ASTEngine.SymbolKind.Class,
             range: this.nodeToRange(node),
             ownerName: currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined,
             metadata: { nodeType: "type_extension" },
@@ -366,7 +365,7 @@ export class RealFsharpAnalyzer implements LanguageAnalyzer {
           if (attrText.includes("TypeProvider") || attrText.includes("TypeProviderAssembly")) {
             symbols.push({
               name: attrText,
-              kind: SymbolKind.Class,
+              kind: ASTEngine.SymbolKind.Class,
               range: this.nodeToRange(node),
               ownerName: currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined,
               metadata: { nodeType: "attribute", isTypeProvider: true },
@@ -378,7 +377,7 @@ export class RealFsharpAnalyzer implements LanguageAnalyzer {
         if (openTarget && openTarget.text) {
           imports.push({ module: openTarget.text, items: ["*"], isDefault: false, range: this.nodeToRange(node) });
           const owner = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined;
-          relationships.push({ source: owner || openTarget.text, target: openTarget.text, type: RelationshipType.References, confidence: 0.9, metadata: { nodeType: type, isOpen: true } });
+          relationships.push({ source: owner || openTarget.text, target: openTarget.text, type: ASTEngine.RelationshipType.References, confidence: 0.9, metadata: { nodeType: type, isOpen: true } });
         }
       } else if (type === "import_decl") {
         const targetNode = this.findChild(node, (n) => n.type === "long_identifier" || n.type === "identifier")
@@ -390,14 +389,14 @@ export class RealFsharpAnalyzer implements LanguageAnalyzer {
             range: this.nodeToRange(node),
           })
           const owner = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined;
-          relationships.push({ source: owner || targetNode.text, target: targetNode.text, type: RelationshipType.References, confidence: 0.9, metadata: { nodeType: type, isImport: true } });
+          relationships.push({ source: owner || targetNode.text, target: targetNode.text, type: ASTEngine.RelationshipType.References, confidence: 0.9, metadata: { nodeType: type, isImport: true } });
         }
       } else if (type === "module_abbrev") {
         const children = this.filterChildren(node, (n) => n.type === "identifier" || n.type === "long_identifier")
         if (children.length >= 2) {
           symbols.push({
             name: children[0].text,
-            kind: SymbolKind.Module,
+            kind: ASTEngine.SymbolKind.Module,
             range: this.nodeToRange(node),
             ownerName: currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined,
             metadata: { nodeType: "module_abbrev" },
@@ -405,7 +404,7 @@ export class RealFsharpAnalyzer implements LanguageAnalyzer {
           relationships.push({
             source: children[0].text,
             target: children[1].text,
-            type: RelationshipType.References,
+            type: ASTEngine.RelationshipType.References,
             metadata: { nodeType: "module_abbrev" },
           })
         }
@@ -418,7 +417,7 @@ export class RealFsharpAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: ownerName,
               target: "record_expression",
-              type: RelationshipType.Instantiates,
+              type: ASTEngine.RelationshipType.Instantiates,
               confidence: 0.7,
               metadata: { nodeType: "brace_expression", isRecord: true, fieldCount: fieldInits.length },
             })
@@ -428,7 +427,7 @@ export class RealFsharpAnalyzer implements LanguageAnalyzer {
                 relationships.push({
                   source: ownerName,
                   target: fieldId.text,
-                  type: RelationshipType.Uses,
+                  type: ASTEngine.RelationshipType.Uses,
                   confidence: 0.7,
                   metadata: { nodeType: "field_initializer", isFieldAccess: true },
                 })
@@ -445,7 +444,7 @@ export class RealFsharpAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: ownerName,
               target: node.text,
-              type: RelationshipType.Uses,
+              type: ASTEngine.RelationshipType.Uses,
               confidence: 0.6,
               metadata: { nodeType: type, isFieldAccess: true },
             })
@@ -458,7 +457,7 @@ export class RealFsharpAnalyzer implements LanguageAnalyzer {
           if (fnName && fnName.length > 1) {
             var ownerName = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined;
             if (ownerName) {
-              relationships.push({ source: ownerName, target: fnName, type: RelationshipType.Calls, confidence: 0.8, metadata: { nodeType: type } });
+              relationships.push({ source: ownerName, target: fnName, type: ASTEngine.RelationshipType.Calls, confidence: 0.8, metadata: { nodeType: type } });
             }
           }
         }
@@ -467,7 +466,7 @@ export class RealFsharpAnalyzer implements LanguageAnalyzer {
         if (nameNode && nameNode.text) {
           symbols.push({
             name: nameNode.text,
-            kind: SymbolKind.Macro,
+            kind: ASTEngine.SymbolKind.Macro,
             range: this.nodeToRange(node),
             ownerName: currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined,
             metadata: { nodeType: type },
@@ -490,7 +489,7 @@ export class RealFsharpAnalyzer implements LanguageAnalyzer {
         relationships.push({
           source: _owner,
           target: s.name,
-          type: RelationshipType.Contains,
+          type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
           metadata: { nodeType: s.metadata?.nodeType || "symbol", isContained: true },
         })
@@ -499,7 +498,7 @@ export class RealFsharpAnalyzer implements LanguageAnalyzer {
 
     // Exports: all public non-variable symbols
     for (const s of symbols) {
-      const isVariable = s.kind === SymbolKind.Variable
+      const isVariable = s.kind === ASTEngine.SymbolKind.Variable
       if (!isVariable) {
         exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: "public" })
       }

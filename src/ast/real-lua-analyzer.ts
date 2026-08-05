@@ -1,4 +1,3 @@
-// @ts-nocheck — Ported from backbencher.
 // Helper functions
 function stringIncludes(str: string, val: string): boolean {
   if (!str) return false
@@ -44,16 +43,16 @@ function mapSymbols<T, U>(arr: T[], mapper: (item: T) => U): U[] {
 // Brain Certified: 100% Stateless, Iterative Stack Traversal, No Regex Fallbacks.
 
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import { ASTEngine } from "./engine"
 
 export interface LuaContext {
   content: string
   filePath: string
-  symbols: UniversalSymbol[]
-  relationships: UniversalRelationship[]
-  imports: ImportInfo[]
-  exports: ExportInfo[]
-  errors: ParseError[]
+  symbols: ASTEngine.UniversalSymbol[]
+  relationships: ASTEngine.UniversalRelationship[]
+  imports: ASTEngine.ImportInfo[]
+  exports: ASTEngine.ExportInfo[]
+  errors: ASTEngine.ParseError[]
   globalVariables: Set<string>
   localVariables: Set<string>
   metatables: Set<string>
@@ -61,8 +60,8 @@ export interface LuaContext {
   patterns: Set<string>
 }
 
-export class RealLuaAnalyzer implements LanguageAnalyzer {
-  analyze(rootNode: Node, content: string, filePath: string): ParseResult {
+export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
+  analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
     const ctx: LuaContext = {
       content,
       filePath,
@@ -130,7 +129,7 @@ export class RealLuaAnalyzer implements LanguageAnalyzer {
     if (ctx.frameworks.has("Love2D")) {
       ctx.symbols.push({
         name: `love_load_hook`,
-        kind: SymbolKind.Function,
+        kind: ASTEngine.SymbolKind.Function,
         range: { startLine: 1, startColumn: 1, endLine: 1, endColumn: 1 },
         metadata: { isPhantom: true, injectedBy: "lua_love2d" },
       })
@@ -145,7 +144,7 @@ export class RealLuaAnalyzer implements LanguageAnalyzer {
         ctx.relationships.push({
           source: _owner,
           target: s.name,
-          type: RelationshipType.Contains,
+          type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
           metadata: {},
         })
@@ -259,7 +258,7 @@ export class RealLuaAnalyzer implements LanguageAnalyzer {
         ctx.relationships.push({
           source: functionName,
           target: parentClass,
-          type: RelationshipType.Extends, // Belongs to that class table
+          type: ASTEngine.RelationshipType.Extends, // Belongs to that class table
           confidence: 1.0,
           metadata: { relationshipType: "lua_oop_method" },
         })
@@ -268,7 +267,7 @@ export class RealLuaAnalyzer implements LanguageAnalyzer {
 
     ctx.symbols.push({
       name: finalFunctionName,
-      kind: isOOPMethod ? SymbolKind.Method : SymbolKind.Function,
+      kind: isOOPMethod ? ASTEngine.SymbolKind.Method : ASTEngine.SymbolKind.Function,
       range: this.nodeToRange(node),
       scope,
       visibility: "public",
@@ -287,7 +286,7 @@ export class RealLuaAnalyzer implements LanguageAnalyzer {
     const functionName = nameNode.text
     ctx.symbols.push({
       name: functionName,
-      kind: SymbolKind.Function,
+      kind: ASTEngine.SymbolKind.Function,
       range: this.nodeToRange(node),
       scope,
       visibility: "private",
@@ -307,7 +306,7 @@ export class RealLuaAnalyzer implements LanguageAnalyzer {
         const name = vNode.type === "variable" ? (this.findChildByType(vNode, "identifier")?.text || vNode.text) : vNode.text
         ctx.symbols.push({
           name,
-          kind: SymbolKind.Variable,
+          kind: ASTEngine.SymbolKind.Variable,
           range: this.nodeToRange(vNode),
           scope,
           visibility: "public",
@@ -328,7 +327,7 @@ export class RealLuaAnalyzer implements LanguageAnalyzer {
         const name = vNode.type === "variable" ? (this.findChildByType(vNode, "identifier")?.text || vNode.text) : vNode.text
         ctx.symbols.push({
           name,
-          kind: SymbolKind.Variable,
+          kind: ASTEngine.SymbolKind.Variable,
           range: this.nodeToRange(vNode),
           scope,
           visibility: "private",
@@ -371,7 +370,7 @@ export class RealLuaAnalyzer implements LanguageAnalyzer {
 
     ctx.symbols.push({
       name: tableName,
-      kind: SymbolKind.Class,
+      kind: ASTEngine.SymbolKind.Class,
       range: this.nodeToRange(node),
       scope,
       metadata: {
@@ -422,7 +421,7 @@ export class RealLuaAnalyzer implements LanguageAnalyzer {
     if (reqName) {
       ctx.symbols.push({
         name: `require_${reqName}`,
-        kind: SymbolKind.Variable,
+        kind: ASTEngine.SymbolKind.Variable,
         range: this.nodeToRange(node),
         scope,
         visibility: "private",
@@ -440,7 +439,7 @@ export class RealLuaAnalyzer implements LanguageAnalyzer {
       ctx.relationships.push({
         source: scope || "global", // Provide a fallback if scope is empty
         target: reqName,
-        type: RelationshipType.Imports,
+        type: ASTEngine.RelationshipType.Imports,
         confidence: 1.0,
         metadata: { relationshipType: "lua_require" },
       })
@@ -460,7 +459,7 @@ export class RealLuaAnalyzer implements LanguageAnalyzer {
     if (callName === "coroutine.create" || callName === "coroutine.wrap") {
       ctx.symbols.push({
         name: "anonymous_coroutine",
-        kind: SymbolKind.Function,
+        kind: ASTEngine.SymbolKind.Function,
         range: this.nodeToRange(node),
         scope,
         visibility: "public",
@@ -483,7 +482,7 @@ export class RealLuaAnalyzer implements LanguageAnalyzer {
           ctx.relationships.push({
             source: targetTable.text,
             target: metatable.text,
-            type: RelationshipType.Inheritance,
+            type: ASTEngine.RelationshipType.Inheritance,
             confidence: 1.0,
             metadata: { relationshipType: "lua_metatable" },
           })
@@ -501,7 +500,7 @@ export class RealLuaAnalyzer implements LanguageAnalyzer {
           const className = this.cleanLuaString(strNode.text)
           ctx.symbols.push({
             name: className,
-            kind: SymbolKind.Class,
+            kind: ASTEngine.SymbolKind.Class,
             range: this.nodeToRange(node),
             scope,
             visibility: "public",
@@ -521,7 +520,7 @@ export class RealLuaAnalyzer implements LanguageAnalyzer {
       ctx.relationships.push({
         source: scope || "global",
         target: callName,
-        type: RelationshipType.Calls,
+        type: ASTEngine.RelationshipType.Calls,
         confidence: 0.8,
         metadata: { relationshipType: "calls", luaSpecific: true },
       })
@@ -530,7 +529,7 @@ export class RealLuaAnalyzer implements LanguageAnalyzer {
         ctx.relationships.push({
           source: scope || "global",
           target: callName,
-          type: RelationshipType.Instantiates,
+          type: ASTEngine.RelationshipType.Instantiates,
           confidence: 0.7,
           metadata: { relationshipType: "instantiates", luaSpecific: true },
         })
@@ -601,11 +600,11 @@ export class RealLuaAnalyzer implements LanguageAnalyzer {
     if (text.startsWith("lovr.")) ctx.frameworks.add("LÖVR (VR/AR)")
   }
 
-  private extractLuaParameters(node: Node): Parameter[] {
+  private extractLuaParameters(node: Node): ASTEngine.Parameter[] {
     const paramsList = node.childForFieldName("parameters") || this.findChildByType(node, "parameters")
     if (!paramsList) return []
 
-    const params: Parameter[] = []
+    const params: ASTEngine.Parameter[] = []
     for (let i = 0; i < paramsList.namedChildCount; i++) {
       const child = paramsList.namedChild(i)
       if (child && child.type === "identifier") {
@@ -650,7 +649,7 @@ export class RealLuaAnalyzer implements LanguageAnalyzer {
     return cleaned
   }
 
-  private nodeToRange(node: Node): UniversalSymbol["range"] {
+  private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {
     return {
       startLine: node.startPosition.row + 1,
       startColumn: node.startPosition.column + 1,

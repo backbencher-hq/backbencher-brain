@@ -1,8 +1,7 @@
-// @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
 // Advanced Type Inference and Flow Analysis Engine
 // Sophisticated type tracking across assignments, method calls, generics, and control flow
 
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, Parameter, FileMetadata, LanguageAnalyzer } from "./types.js"
+import { ASTEngine } from "./engine"
 import type { Node } from "web-tree-sitter"
 
 export namespace TypeInference {
@@ -50,7 +49,7 @@ export namespace TypeInference {
 
   export interface InferenceLocation {
     filePath: string
-    range: UniversalSymbol["range"]
+    range: ASTEngine.UniversalSymbol["range"]
     reason: InferenceReason
   }
 
@@ -600,7 +599,7 @@ export namespace TypeInference {
     }
 
     // Utility methods for AST navigation
-    private nodeToRange(node: Node): UniversalSymbol["range"] {
+    private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {
       return {
         startLine: node.startPosition.row + 1,
         startColumn: node.startPosition.column + 1,
@@ -954,9 +953,9 @@ export namespace TypeInference {
 
   // Integration with existing analyzer system
   export function enhanceAnalyzerWithTypeInference(
-    analyzer: LanguageAnalyzer,
+    analyzer: ASTEngine.LanguageAnalyzer,
     language: string
-  ): LanguageAnalyzer {
+  ): ASTEngine.LanguageAnalyzer {
     const engine = new TypeInferenceEngine()
 
     return {
@@ -968,7 +967,7 @@ export namespace TypeInference {
         const inferredTypes = engine.inferTypesForFile(rootNode, content, filePath, language)
 
         // Add type information to symbols
-        result.symbols.forEach((symbol: UniversalSymbol) => {
+        result.symbols.forEach((symbol: ASTEngine.UniversalSymbol) => {
           const typeInfo = inferredTypes.get(symbol.name)
           if (typeInfo) {
             symbol.metadata = {
@@ -988,7 +987,7 @@ export namespace TypeInference {
               typeRelationships.push({
                 source: symbolName,
                 target: superType.name,
-                type: RelationshipType.Extends,
+                type: ASTEngine.RelationshipType.Extends,
                 confidence: typeInfo.confidence,
                 metadata: {
                   inferredFromTypes: true,

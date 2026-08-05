@@ -1,15 +1,14 @@
-// @ts-nocheck — Ported from backbencher.
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import { ASTEngine } from "./engine"
 
-export class RealGroovyAnalyzer implements LanguageAnalyzer {
-  analyze(rootNode: Node, fileContent: string, filePath: string): ParseResult {
+export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
+  analyze(rootNode: Node, fileContent: string, filePath: string): ASTEngine.ParseResult {
     // LAW 4: 100% Stateless Thread Safety. ZERO mutable class-level properties.
-    const symbols: UniversalSymbol[] = []
-    const relationships: UniversalRelationship[] = []
-    const imports: ImportInfo[] = []
-    const exports: ExportInfo[] = []
-    const errors: ParseError[] = []
+    const symbols: ASTEngine.UniversalSymbol[] = []
+    const relationships: ASTEngine.UniversalRelationship[] = []
+    const imports: ASTEngine.ImportInfo[] = []
+    const exports: ASTEngine.ExportInfo[] = []
+    const errors: ASTEngine.ParseError[] = []
 
     let currentPackage = ""
 
@@ -42,7 +41,7 @@ export class RealGroovyAnalyzer implements LanguageAnalyzer {
           currentPackage = nameNode.text
           symbols.push({
             name: currentPackage,
-            kind: SymbolKind.Namespace,
+            kind: ASTEngine.SymbolKind.Namespace,
             range: this.getRange(node),
             metadata: { groovySpecific: true, isPackage: true },
           })
@@ -59,7 +58,7 @@ export class RealGroovyAnalyzer implements LanguageAnalyzer {
           })
           symbols.push({
              name: nameNode.text,
-             kind: SymbolKind.Import,
+             kind: ASTEngine.SymbolKind.Import,
              range: this.getRange(node),
              metadata: { groovySpecific: true, isStatic },
           })
@@ -67,7 +66,7 @@ export class RealGroovyAnalyzer implements LanguageAnalyzer {
           relationships.push({
             source: currentPackage || filePath,
             target: nameNode.text,
-            type: RelationshipType.References,
+            type: ASTEngine.RelationshipType.References,
             confidence: 0.9,
             metadata: { isImportDep: true },
           })
@@ -80,9 +79,9 @@ export class RealGroovyAnalyzer implements LanguageAnalyzer {
           const className = nameNode.text
           nextScopePath.push(className)
           
-          let kind = SymbolKind.Class
-          if (node.type === "interface_declaration" || node.type === "trait_declaration") kind = SymbolKind.Interface
-          if (node.type === "enum_declaration") kind = SymbolKind.Enum
+          let kind = ASTEngine.SymbolKind.Class
+          if (node.type === "interface_declaration" || node.type === "trait_declaration") kind = ASTEngine.SymbolKind.Interface
+          if (node.type === "enum_declaration") kind = ASTEngine.SymbolKind.Enum
 
           symbols.push({
             name: currentPackage ? `${currentPackage}.${className}` : className,
@@ -97,7 +96,7 @@ export class RealGroovyAnalyzer implements LanguageAnalyzer {
           if (superClass) {
             const scName = this.findChild(superClass, (n) => n.type === "type_identifier")
             if (scName) {
-              relationships.push({ source: className, target: scName.text, type: RelationshipType.Extends, metadata: {} })
+              relationships.push({ source: className, target: scName.text, type: ASTEngine.RelationshipType.Extends, metadata: {} })
             }
           }
           if (extendsClause) {
@@ -111,7 +110,7 @@ export class RealGroovyAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: className,
                 target: tid.text,
-                type: RelationshipType.Implements,
+                type: ASTEngine.RelationshipType.Implements,
                 metadata: {},
               })
             }
@@ -126,14 +125,14 @@ export class RealGroovyAnalyzer implements LanguageAnalyzer {
                   if (annName && ["Slf4j", "Log", "Log4j", "Log4j2", "Commons"].includes(annName)) {
                       symbols.push({
                           name: "log",
-                          kind: SymbolKind.Property,
+                          kind: ASTEngine.SymbolKind.Property,
                           range: this.getRange(node), // synthetic bounds matching class
                           metadata: { groovySpecific: true, synthetic: true, generatedBy: `@${annName}` },
                       })
                       relationships.push({
                          source: "log",
                          target: className,
-                         type: RelationshipType.Uses,
+                         type: ASTEngine.RelationshipType.Uses,
                          metadata: { belongsToClass: true, synthetic: true }
                       })
                   }
@@ -151,7 +150,7 @@ export class RealGroovyAnalyzer implements LanguageAnalyzer {
           
           symbols.push({
             name: methodName,
-            kind: node.type === "constructor_declaration" ? SymbolKind.Constructor : SymbolKind.Method,
+            kind: node.type === "constructor_declaration" ? ASTEngine.SymbolKind.Constructor : ASTEngine.SymbolKind.Method,
             range: this.getRange(node),
             metadata: { groovySpecific: true, isSpockTest: nameNode.type === "string_literal" },
           })
@@ -161,7 +160,7 @@ export class RealGroovyAnalyzer implements LanguageAnalyzer {
             relationships.push({
                source: activeScope,
                target: methodName,
-               type: RelationshipType.Contains,
+               type: ASTEngine.RelationshipType.Contains,
                metadata: { belongsToClass: true }
             })
           }
@@ -175,7 +174,7 @@ export class RealGroovyAnalyzer implements LanguageAnalyzer {
                 relationships.push({
                   source: activeScope,
                   target: methodName,
-                  type: RelationshipType.Overrides,
+                  type: ASTEngine.RelationshipType.Overrides,
                   confidence: 0.9,
                   metadata: { isOverride: true },
                 })
@@ -192,7 +191,7 @@ export class RealGroovyAnalyzer implements LanguageAnalyzer {
           const fieldName = nameNode.text
           symbols.push({
             name: fieldName,
-            kind: node.type === "field_declaration" || node.type === "def_declaration" ? SymbolKind.Property : SymbolKind.Variable,
+            kind: node.type === "field_declaration" || node.type === "def_declaration" ? ASTEngine.SymbolKind.Property : ASTEngine.SymbolKind.Variable,
             range: this.getRange(node),
             metadata: { groovySpecific: true, parentScope: activeScope },
           })
@@ -205,20 +204,20 @@ export class RealGroovyAnalyzer implements LanguageAnalyzer {
              
              symbols.push({
                 name: getterName,
-                kind: SymbolKind.Method,
+                kind: ASTEngine.SymbolKind.Method,
                 range: this.getRange(node),
                 metadata: { groovySpecific: true, synthetic: true, bridgeFrom: fieldName },
              })
              symbols.push({
                 name: setterName,
-                kind: SymbolKind.Method,
+                kind: ASTEngine.SymbolKind.Method,
                 range: this.getRange(node),
                 metadata: { groovySpecific: true, synthetic: true, bridgeFrom: fieldName },
              })
 
              if (activeScope && activeScope !== "global") {
-                 relationships.push({ source: getterName, target: activeScope, type: RelationshipType.Uses, metadata: { synthetic: true } })
-                 relationships.push({ source: setterName, target: activeScope, type: RelationshipType.Uses, metadata: { synthetic: true } })
+                 relationships.push({ source: getterName, target: activeScope, type: ASTEngine.RelationshipType.Uses, metadata: { synthetic: true } })
+                 relationships.push({ source: setterName, target: activeScope, type: ASTEngine.RelationshipType.Uses, metadata: { synthetic: true } })
              }
           }
         }
@@ -233,7 +232,7 @@ export class RealGroovyAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: activeScope,
               target: cmdText,
-              type: RelationshipType.Calls,
+              type: ASTEngine.RelationshipType.Calls,
               metadata: { isCommandExpression: true }
             })
         }
@@ -244,7 +243,7 @@ export class RealGroovyAnalyzer implements LanguageAnalyzer {
          if (!hasParams) {
              symbols.push({
                  name: "it",
-                 kind: SymbolKind.Variable,
+                 kind: ASTEngine.SymbolKind.Variable,
                  range: this.getRange(node), 
                  metadata: { groovySpecific: true, synthetic: true, isImplicitClosureParam: true },
              })
@@ -261,7 +260,7 @@ export class RealGroovyAnalyzer implements LanguageAnalyzer {
                  relationships.push({
                     source: activeScope,
                     target: targetText,
-                    type: RelationshipType.Uses,
+                    type: ASTEngine.RelationshipType.Uses,
                     metadata: { isGStringInterpolation: true }
                  })
              }
@@ -274,7 +273,7 @@ export class RealGroovyAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: activeScope,
               target: nameNode.text,
-              type: RelationshipType.Calls,
+              type: ASTEngine.RelationshipType.Calls,
               metadata: {}
             })
             // Groovy uses new ClassName() — detect instantiation
@@ -282,7 +281,7 @@ export class RealGroovyAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: activeScope,
                 target: nameNode.text,
-                type: RelationshipType.Instantiates,
+                type: ASTEngine.RelationshipType.Instantiates,
                 confidence: 0.8,
                 metadata: { isInstantiation: true },
               })
@@ -296,7 +295,7 @@ export class RealGroovyAnalyzer implements LanguageAnalyzer {
           relationships.push({
             source: activeScope || "global",
             target: typeNode.text,
-            type: RelationshipType.Instantiates,
+            type: ASTEngine.RelationshipType.Instantiates,
             confidence: 0.95,
             metadata: { isConstructor: node.type === "constructor_declaration", isObjectCreation: node.type === "object_creation_expression" },
           })
@@ -311,13 +310,13 @@ export class RealGroovyAnalyzer implements LanguageAnalyzer {
              relationships.push({
                  source: activeScope,
                  target: `get${capitalized}`,
-                 type: RelationshipType.Calls,
+                 type: ASTEngine.RelationshipType.Calls,
                  metadata: { synthetic: true, bridgeFrom: pText }
              })
              relationships.push({
                  source: activeScope,
                  target: `set${capitalized}`,
-                 type: RelationshipType.Calls,
+                 type: ASTEngine.RelationshipType.Calls,
                  metadata: { synthetic: true, bridgeFrom: pText }
              })
          }
@@ -328,7 +327,7 @@ export class RealGroovyAnalyzer implements LanguageAnalyzer {
          if (nameNode) {
              symbols.push({
                  name: `@${nameNode.text}`,
-                 kind: SymbolKind.Property,
+                 kind: ASTEngine.SymbolKind.Property,
                  range: this.getRange(node),
                  metadata: { groovySpecific: true, isAnnotation: true }
              })
@@ -346,13 +345,13 @@ export class RealGroovyAnalyzer implements LanguageAnalyzer {
     }
 
     // LAW 3: O(N) MAP deduplications.
-    const uniqueSymbolsMap = new Map<string, UniversalSymbol>()
+    const uniqueSymbolsMap = new Map<string, ASTEngine.UniversalSymbol>()
     for (let i = 0; i < symbols.length; i++) {
         uniqueSymbolsMap.set(`${symbols[i].kind}:${symbols[i].name}:${symbols[i].range.startLine}:${symbols[i].range.startColumn}`, symbols[i])
     }
     const uniqueSymbols = Array.from(uniqueSymbolsMap.values())
 
-    const uniqueRelMap = new Map<string, UniversalRelationship>()
+    const uniqueRelMap = new Map<string, ASTEngine.UniversalRelationship>()
     for (let i = 0; i < relationships.length; i++) {
         uniqueRelMap.set(`${relationships[i].source}->${relationships[i].target}`, relationships[i])
     }

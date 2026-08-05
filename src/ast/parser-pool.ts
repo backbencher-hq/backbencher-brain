@@ -1,5 +1,4 @@
-// @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
-import * as Log from "../tool/brain-log.js"
+import * as Log from "../tool/brain-log"
 
 const log = Log.create({ service: "parser-pool" })
 
@@ -64,7 +63,7 @@ export async function initializeParser(language: string): Promise<any> {
   let langModule = languageModules.get(language)
   if (!langModule) {
     try {
-      const { ASTEngine } = await import("./engine.js")
+      const { ASTEngine } = await import("./engine")
       langModule = await (ASTEngine as any).loadLanguage(language)
       if (langModule) {
         languageModules.set(language, langModule)
@@ -81,7 +80,8 @@ export async function initializeParser(language: string): Promise<any> {
 
   // Create new parser
   try {
-    const { Parser } = await import("web-tree-sitter")
+    const wts = await import("web-tree-sitter")
+    const Parser = (wts as any).default || (wts as any).Parser || wts
     const parser = new Parser()
     parser.setLanguage(langModule)
     

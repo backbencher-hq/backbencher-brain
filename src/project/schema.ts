@@ -1,2 +1,2 @@
-// Stub — re-exports from our shim module
-export type { ProjectID } from "../indexer/shims.js"
+export type ProjectID = string
+export const ProjectID = String

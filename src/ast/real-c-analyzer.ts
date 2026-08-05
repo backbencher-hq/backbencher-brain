@@ -1,4 +1,3 @@
-// @ts-nocheck — Ported from backbencher.
 function inArray(arr: any[], val: any): boolean {
   for (let i = 0; i < arr.length; i++) {
     if (arr[i] === val) return true
@@ -11,7 +10,7 @@ function stringIncludes(str: string, val: string): boolean {
 }
 
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import { ASTEngine } from "./engine"
 
 // Pre-allocated lookup arrays — avoids per-node allocation overhead
 const MALLOC_FUNCTIONS = ["malloc", "calloc", "realloc", "kmalloc", "vmalloc"]
@@ -81,13 +80,13 @@ class CScopeManager {
   }
 }
 
-export class RealCAnalyzer implements LanguageAnalyzer {
-  analyze(rootNode: Node, content: string, filePath: string): ParseResult {
+export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
+  analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
     // 1. ISOLATED STATE (Thread-Safe)
-    const symbols: UniversalSymbol[] = []
-    const relationships: UniversalRelationship[] = []
-    const imports: ImportInfo[] = []
-    const errors: ParseError[] = []
+    const symbols: ASTEngine.UniversalSymbol[] = []
+    const relationships: ASTEngine.UniversalRelationship[] = []
+    const imports: ASTEngine.ImportInfo[] = []
+    const errors: ASTEngine.ParseError[] = []
     const scopeManager = new CScopeManager()
     const emittedUseRelationships = new Set<string>()
     const functionLocals = new Map<string, Set<string>>()
@@ -99,7 +98,7 @@ export class RealCAnalyzer implements LanguageAnalyzer {
     const patterns: Record<string, boolean> = {}
 
     // Track current active function for localized metadata updates
-    let activeFunctionSymbol: UniversalSymbol | null = null
+    let activeFunctionSymbol: ASTEngine.UniversalSymbol | null = null
 
     // 2. METRICS TRACKED IN-PASS
     let cyclomaticComplexity = 1
@@ -262,7 +261,7 @@ export class RealCAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: scopeManager.getScopeName(),
               target: includePath,
-              type: RelationshipType.References,
+              type: ASTEngine.RelationshipType.References,
               confidence: 1.0,
               metadata: { relationshipType: "include_dependency", isSystem: includePath.startsWith("<") },
             })
@@ -319,7 +318,7 @@ export class RealCAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: scopeManager.getScopeName(),
               target: target,
-              type: RelationshipType.Calls,
+              type: ASTEngine.RelationshipType.Calls,
               confidence: 1.0,
               metadata: { relationshipType: "c_function_call", isFunctionPointer: isFuncPtr },
             })
@@ -335,7 +334,7 @@ export class RealCAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: scopeManager.getScopeName(),
                 target: target,
-                type: RelationshipType.Instantiates,
+                type: ASTEngine.RelationshipType.Instantiates,
                 confidence: 0.9,
                 metadata: { relationshipType: "memory_allocation", allocator: target },
               })
@@ -352,7 +351,7 @@ export class RealCAnalyzer implements LanguageAnalyzer {
                 relationships.push({
                   source: arg.text,
                   target: "KERNEL_EXPORT",
-                  type: RelationshipType.Exports,
+                  type: ASTEngine.RelationshipType.Exports,
                   confidence: 1.0,
                   metadata: { relationshipType: "linux_kernel_export", exportMacro: target },
                 })
@@ -393,7 +392,7 @@ export class RealCAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: sourceScope,
               target: field.text,
-              type: RelationshipType.Uses,
+              type: ASTEngine.RelationshipType.Uses,
               confidence: 0.9,
               metadata: { relationshipType: "field_access", accessedFrom: obj?.text },
             })
@@ -401,7 +400,7 @@ export class RealCAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: sourceScope,
               target: field.text,
-              type: RelationshipType.References,
+              type: ASTEngine.RelationshipType.References,
               confidence: 0.85,
               metadata: { relationshipType: "field_access", accessedFrom: obj?.text },
             })
@@ -417,7 +416,7 @@ export class RealCAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: declName.text,
               target: fnNode.text,
-              type: RelationshipType.Uses,
+              type: ASTEngine.RelationshipType.Uses,
               confidence: 0.85,
               metadata: { relationshipType: "init_from_call", callTarget: fnNode.text },
             })
@@ -459,7 +458,7 @@ export class RealCAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: sourceScope,
               target: text,
-              type: RelationshipType.Uses,
+              type: ASTEngine.RelationshipType.Uses,
               confidence: 1.0,
               metadata: { relationshipType: node.type },
             })
@@ -467,7 +466,7 @@ export class RealCAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: sourceScope,
               target: text,
-              type: RelationshipType.References,
+              type: ASTEngine.RelationshipType.References,
               confidence: 0.8,
               metadata: { relationshipType: "identifier_reference", nodeType: node.type },
             })
@@ -512,7 +511,6 @@ export class RealCAnalyzer implements LanguageAnalyzer {
 
     // Frameworks & Phantoms
     const frameworks = this.detectCFrameworks(imports)
-    this.injectPhantomSymbols(symbols, frameworks)
 
     // 4. METRIC CALCULATION
     let security = 50
@@ -554,7 +552,7 @@ export class RealCAnalyzer implements LanguageAnalyzer {
         relationships.push({
           source: _owner,
           target: s.name,
-          type: RelationshipType.Contains,
+          type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
           metadata: {},
         })
@@ -566,7 +564,7 @@ export class RealCAnalyzer implements LanguageAnalyzer {
       symbols,
       relationships,
       imports,
-      exports: symbols.filter((s) => s.visibility === "public" && (s.kind === SymbolKind.Function || s.kind === SymbolKind.Variable)).map((s) => ({
+      exports: symbols.filter((s) => s.visibility === "public" && (s.kind === ASTEngine.SymbolKind.Function || s.kind === ASTEngine.SymbolKind.Variable)).map((s) => ({
         name: s.name,
         type: s.kind,
         range: s.range,
@@ -612,7 +610,7 @@ export class RealCAnalyzer implements LanguageAnalyzer {
     return pathNode ? pathNode.text.replace(/[<>"]/g, "") : null
   }
 
-  private extractInclude(node: Node, imports: ImportInfo[], onPath: (path: string) => void) {
+  private extractInclude(node: Node, imports: ASTEngine.ImportInfo[], onPath: (path: string) => void) {
     let pathNode = node.childForFieldName("path")
     if (!pathNode) {
       pathNode = this.findChild(node, (c) => c?.type === "string_literal" || c?.type === "system_lib_string") || null
@@ -633,10 +631,10 @@ export class RealCAnalyzer implements LanguageAnalyzer {
   private extractFunction(
     node: Node,
     content: string,
-    symbols: UniversalSymbol[],
+    symbols: ASTEngine.UniversalSymbol[],
     scope: string,
     isConditional: boolean,
-  ): UniversalSymbol | null {
+  ): ASTEngine.UniversalSymbol | null {
     const declaratorNode = node.childForFieldName("declarator")
     const nameNode = this.getIdentifierFromDeclarator(declaratorNode)
     if (!nameNode) return null
@@ -661,7 +659,7 @@ export class RealCAnalyzer implements LanguageAnalyzer {
         ),
       )
 
-    const parameters: Parameter[] = []
+    const parameters: ASTEngine.Parameter[] = []
 
     // Deeper parameter scan without crashing loops
     let pList = this.findFirstChildOfType(declaratorNode, "parameter_list")
@@ -691,9 +689,9 @@ export class RealCAnalyzer implements LanguageAnalyzer {
       }
     }
 
-    const symbol: UniversalSymbol = {
+    const symbol: ASTEngine.UniversalSymbol = {
       name: nameNode.text,
-      kind: SymbolKind.Function,
+      kind: ASTEngine.SymbolKind.Function,
       range: this.recoverFunctionRange(node, content),
       scope: "global",
       visibility: isStatic ? "private" : "public",
@@ -709,7 +707,7 @@ export class RealCAnalyzer implements LanguageAnalyzer {
 
   private extractStruct(
     node: Node,
-    symbols: UniversalSymbol[],
+    symbols: ASTEngine.UniversalSymbol[],
     structs: Record<string, any[]>,
     unions: Record<string, any[]>,
     is64Bit: boolean,
@@ -787,11 +785,11 @@ export class RealCAnalyzer implements LanguageAnalyzer {
                 fields.push({ name: declNode.text, type: typeNode ? typeNode.text : "unknown", arraySize, isPointer })
                 symbols.push({
                   name: declNode.text,
-                  kind: SymbolKind.Property,
+                  kind: ASTEngine.SymbolKind.Property,
                   range: this.nodeToRange(rawDecl),
                   scope: structName,
                   ownerName: structName,
-                  ownerKind: SymbolKind.Type,
+                  ownerKind: ASTEngine.SymbolKind.Type,
                   visibility: "public",
                   metadata: { isStructField: true, cSpecific: true, isConditional },
                 })
@@ -808,7 +806,7 @@ export class RealCAnalyzer implements LanguageAnalyzer {
 
     symbols.push({
       name: structName,
-      kind: SymbolKind.Type,
+      kind: ASTEngine.SymbolKind.Type,
       range: this.nodeToRange(node),
       scope: scope,
       visibility: "public",
@@ -825,7 +823,7 @@ export class RealCAnalyzer implements LanguageAnalyzer {
 
   private extractUnion(
     node: Node,
-    symbols: UniversalSymbol[],
+    symbols: ASTEngine.UniversalSymbol[],
     unions: Record<string, any[]>,
     scope: string,
     isConditional: boolean,
@@ -900,11 +898,11 @@ export class RealCAnalyzer implements LanguageAnalyzer {
                 fields.push({ name: declNode.text, type: typeNode ? typeNode.text : "unknown", arraySize, isPointer })
                 symbols.push({
                   name: declNode.text,
-                  kind: SymbolKind.Property,
+                  kind: ASTEngine.SymbolKind.Property,
                   range: this.nodeToRange(rawDecl),
                   scope: unionName,
                   ownerName: unionName,
-                  ownerKind: SymbolKind.Type,
+                  ownerKind: ASTEngine.SymbolKind.Type,
                   visibility: "public",
                   metadata: { isUnionField: true, cSpecific: true, isConditional },
                 })
@@ -921,7 +919,7 @@ export class RealCAnalyzer implements LanguageAnalyzer {
 
     symbols.push({
       name: unionName,
-      kind: SymbolKind.Type,
+      kind: ASTEngine.SymbolKind.Type,
       range: this.nodeToRange(node),
       scope: scope,
       visibility: "public",
@@ -931,7 +929,7 @@ export class RealCAnalyzer implements LanguageAnalyzer {
 
   private extractEnum(
     node: Node,
-    symbols: UniversalSymbol[],
+    symbols: ASTEngine.UniversalSymbol[],
     enums: Record<string, boolean>,
     scope: string,
     isConditional: boolean,
@@ -971,11 +969,11 @@ export class RealCAnalyzer implements LanguageAnalyzer {
 
             symbols.push({
               name: enumNameNode.text,
-              kind: SymbolKind.EnumMember,
+              kind: ASTEngine.SymbolKind.EnumMember,
               range: this.nodeToRange(enumerator),
               scope: enumName,
               ownerName: enumName,
-              ownerKind: SymbolKind.Enum,
+              ownerKind: ASTEngine.SymbolKind.Enum,
               visibility: "public",
               metadata: { isEnumValue: true, cSpecific: true, isConditional },
             })
@@ -986,7 +984,7 @@ export class RealCAnalyzer implements LanguageAnalyzer {
 
     symbols.push({
       name: enumName,
-      kind: SymbolKind.Enum,
+      kind: ASTEngine.SymbolKind.Enum,
       range: this.nodeToRange(node),
       scope: scope,
       visibility: "public",
@@ -996,7 +994,7 @@ export class RealCAnalyzer implements LanguageAnalyzer {
 
   private extractDeclaration(
     node: Node,
-    symbols: UniversalSymbol[],
+    symbols: ASTEngine.UniversalSymbol[],
     globalVars: Record<string, boolean>,
     scope: string,
     isGlobal: boolean,
@@ -1032,7 +1030,7 @@ export class RealCAnalyzer implements LanguageAnalyzer {
           if (isFuncType) {
             symbols.push({
               name: declNode.text,
-              kind: SymbolKind.Function,
+              kind: ASTEngine.SymbolKind.Function,
               range: this.nodeToRange(node),
               scope: isGlobal ? "global" : scope,
               visibility: "public",
@@ -1042,7 +1040,7 @@ export class RealCAnalyzer implements LanguageAnalyzer {
             if (isGlobal) globalVars[declNode.text] = true
             symbols.push({
               name: declNode.text,
-              kind: SymbolKind.Variable,
+              kind: ASTEngine.SymbolKind.Variable,
               range: this.nodeToRange(child),
               scope: isGlobal ? "global" : scope,
               visibility: isStatic ? "private" : "public",
@@ -1056,7 +1054,7 @@ export class RealCAnalyzer implements LanguageAnalyzer {
 
   private extractTypedef(
     node: Node,
-    symbols: UniversalSymbol[],
+    symbols: ASTEngine.UniversalSymbol[],
     structs: Record<string, any[]>,
     scope: string,
     isConditional: boolean,
@@ -1065,7 +1063,7 @@ export class RealCAnalyzer implements LanguageAnalyzer {
     if (identNode && identNode.text.trim()) {
       symbols.push({
         name: identNode.text,
-        kind: SymbolKind.Type,
+        kind: ASTEngine.SymbolKind.Type,
         range: this.nodeToRange(node),
         scope: scope,
         visibility: "public",
@@ -1074,11 +1072,11 @@ export class RealCAnalyzer implements LanguageAnalyzer {
     }
   }
 
-  private extractMacro(node: Node, symbols: UniversalSymbol[], isConditional: boolean) {
+  private extractMacro(node: Node, symbols: ASTEngine.UniversalSymbol[], isConditional: boolean) {
     const nameNode = node.childForFieldName("name")
     if (nameNode && nameNode.text.trim()) {
       const isFunctionLikeMacro = node.type === "preproc_function_def"
-      const parameters: Parameter[] = []
+      const parameters: ASTEngine.Parameter[] = []
 
       if (isFunctionLikeMacro) {
         const paramsNode = node.childForFieldName("parameters") || this.findFirstChildOfType(node, "preproc_params")
@@ -1096,7 +1094,7 @@ export class RealCAnalyzer implements LanguageAnalyzer {
 
       symbols.push({
         name: nameNode.text,
-        kind: isFunctionLikeMacro ? SymbolKind.Function : SymbolKind.Constant,
+        kind: isFunctionLikeMacro ? ASTEngine.SymbolKind.Function : ASTEngine.SymbolKind.Constant,
         range: this.nodeToRange(node),
         scope: "global",
         visibility: "public",
@@ -1258,7 +1256,7 @@ export class RealCAnalyzer implements LanguageAnalyzer {
   private isResolvableUseTarget(
     name: string,
     nodeType: string,
-    symbols: UniversalSymbol[],
+    symbols: ASTEngine.UniversalSymbol[],
     globalVars: Record<string, boolean>,
     structs: Record<string, any[]>,
     unions: Record<string, any[]>,
@@ -1275,10 +1273,10 @@ export class RealCAnalyzer implements LanguageAnalyzer {
       if (!s || s.name !== name) continue
       if (
         s.scope === "global" ||
-        s.kind === SymbolKind.Type ||
-        s.kind === SymbolKind.Enum ||
-        s.kind === SymbolKind.Function ||
-        s.kind === SymbolKind.Constant
+        s.kind === ASTEngine.SymbolKind.Type ||
+        s.kind === ASTEngine.SymbolKind.Enum ||
+        s.kind === ASTEngine.SymbolKind.Function ||
+        s.kind === ASTEngine.SymbolKind.Constant
       ) {
         return true
       }
@@ -1309,7 +1307,7 @@ export class RealCAnalyzer implements LanguageAnalyzer {
     return stringIncludes(content, "_WIN64") || stringIncludes(content, "windows.h")
   }
 
-  private recoverFunctionRange(node: Node, content: string): UniversalSymbol["range"] {
+  private recoverFunctionRange(node: Node, content: string): ASTEngine.UniversalSymbol["range"] {
     const base = this.nodeToRange(node)
     const body = node.childForFieldName("body")
 
@@ -1463,7 +1461,7 @@ export class RealCAnalyzer implements LanguageAnalyzer {
     return null
   }
 
-  private detectCFrameworks(imports: ImportInfo[]): string[] {
+  private detectCFrameworks(imports: ASTEngine.ImportInfo[]): string[] {
     const frameworks: Record<string, boolean> = {}
     for (let idx = 0; idx < imports.length; idx++) {
       const i = imports[idx]
@@ -1483,12 +1481,12 @@ export class RealCAnalyzer implements LanguageAnalyzer {
     return arr
   }
 
-  private injectPhantomSymbols(symbols: UniversalSymbol[], frameworks: string[]): void {
+  private injectPhantomSymbols(symbols: ASTEngine.UniversalSymbol[], frameworks: string[]): void {
     if (!inArray(frameworks, "GLib") && !inArray(frameworks, "GTK")) return
 
-    const types: UniversalSymbol[] = []
+    const types: ASTEngine.UniversalSymbol[] = []
     for (let i = 0; i < symbols.length; i++) {
-      if (symbols[i].kind === SymbolKind.Type && symbols[i].name.endsWith("Class")) {
+      if (symbols[i].kind === ASTEngine.SymbolKind.Type && symbols[i].name.endsWith("Class")) {
         types.push(symbols[i])
       }
     }
@@ -1496,7 +1494,7 @@ export class RealCAnalyzer implements LanguageAnalyzer {
       const symbol = types[idx]
       symbols.push({
         name: `${symbol.name.replace("Class", "").toLowerCase()}_get_type`,
-        kind: SymbolKind.Function,
+        kind: ASTEngine.SymbolKind.Function,
         scope: "global",
         visibility: "public",
         range: symbol.range,
@@ -1507,7 +1505,7 @@ export class RealCAnalyzer implements LanguageAnalyzer {
     }
   }
 
-  private nodeToRange(node: Node): UniversalSymbol["range"] {
+  private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {
     const startRow =
       node && node.startPosition && typeof node.startPosition.row === "number" ? node.startPosition.row : 0
     const startCol =

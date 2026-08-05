@@ -1,12 +1,11 @@
-// @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
-import * as Log from "../tool/brain-log.js"
 // Cross-Language Symbol Discovery Engine
 // Discovers and correlates symbols across ALL 26 languages
 // NO STONE LEFT UNTURNED - Every API, service, model, config is traced!
 
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
-import { CrossLanguageIntelligence } from "./cross-language-intelligence.js"
+import { ASTEngine } from "./engine"
+import { CrossLanguageIntelligence } from "./cross-language-intelligence"
+import * as Log from "../tool/brain-log"
 
 const log = Log.create({ service: "symbol-discovery" })
 
@@ -16,7 +15,7 @@ export namespace CrossLanguageSymbolDiscovery {
    * Discovers ALL cross-language symbols with precision
    */
   export async function discoverCrossLanguageSymbols(
-    fileResults: Map<string, ParseResult>,
+    fileResults: Map<string, ASTEngine.ParseResult>,
   ): Promise<CrossLanguageIntelligence.CrossLanguageSymbol[]> {
     log.info("🔍 Starting Symbol Discovery across ALL languages")
 
@@ -97,7 +96,7 @@ export namespace CrossLanguageSymbolDiscovery {
    * Discovers API endpoints across ALL web frameworks and languages
    */
   async function discoverAPIEndpoints(
-    fileResults: Map<string, ParseResult>,
+    fileResults: Map<string, ASTEngine.ParseResult>,
   ): Promise<CrossLanguageIntelligence.CrossLanguageSymbol[]> {
     const endpoints: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
     const endpointPatterns = new APIEndpointPatterns(fileResults)
@@ -205,7 +204,7 @@ export namespace CrossLanguageSymbolDiscovery {
    * Discovers data models, schemas, and structures across ALL languages
    */
   async function discoverDataModels(
-    fileResults: Map<string, ParseResult>,
+    fileResults: Map<string, ASTEngine.ParseResult>,
   ): Promise<CrossLanguageIntelligence.CrossLanguageSymbol[]> {
     const models: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
     const modelPatterns = new DataModelPatterns()
@@ -280,14 +279,14 @@ export namespace CrossLanguageSymbolDiscovery {
    * API endpoint detection across ALL frameworks
    */
   class APIEndpointPatterns {
-    private fileResults: Map<string, ParseResult>
+    private fileResults: Map<string, ASTEngine.ParseResult>
 
-    constructor(fileResults: Map<string, ParseResult>) {
+    constructor(fileResults: Map<string, ASTEngine.ParseResult>) {
       this.fileResults = fileResults
     }
 
     discoverJavaScriptEndpoints(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const endpoints: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -382,7 +381,7 @@ export namespace CrossLanguageSymbolDiscovery {
      * GraphQL endpoint detection
      */
     private detectGraphQLEndpoints(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
       endpoints: CrossLanguageIntelligence.CrossLanguageSymbol[],
     ): void {
@@ -407,7 +406,7 @@ export namespace CrossLanguageSymbolDiscovery {
      * Socket.io endpoint detection
      */
     private detectSocketIOEndpoints(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
       endpoints: CrossLanguageIntelligence.CrossLanguageSymbol[],
     ): void {
@@ -431,7 +430,7 @@ export namespace CrossLanguageSymbolDiscovery {
     }
 
     discoverPythonEndpoints(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const endpoints: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -537,7 +536,7 @@ export namespace CrossLanguageSymbolDiscovery {
      * Python GraphQL endpoint detection
      */
     private detectPythonGraphQLEndpoints(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
       endpoints: CrossLanguageIntelligence.CrossLanguageSymbol[],
     ): void {
@@ -556,7 +555,7 @@ export namespace CrossLanguageSymbolDiscovery {
      * Celery task detection
      */
     private detectCeleryTasks(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
       endpoints: CrossLanguageIntelligence.CrossLanguageSymbol[],
     ): void {
@@ -582,7 +581,7 @@ export namespace CrossLanguageSymbolDiscovery {
 
     // Add more language-specific endpoint discovery methods...
     discoverJavaEndpoints(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const endpoints: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -664,7 +663,7 @@ export namespace CrossLanguageSymbolDiscovery {
      * Spring WebFlux detection
      */
     private detectSpringWebFlux(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
       endpoints: CrossLanguageIntelligence.CrossLanguageSymbol[],
     ): void {
@@ -699,7 +698,7 @@ export namespace CrossLanguageSymbolDiscovery {
      * Java GraphQL detection
      */
     private detectJavaGraphQL(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
       endpoints: CrossLanguageIntelligence.CrossLanguageSymbol[],
     ): void {
@@ -711,7 +710,7 @@ export namespace CrossLanguageSymbolDiscovery {
       }
     }
     discoverCSharpEndpoints(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const endpoints: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -772,7 +771,7 @@ export namespace CrossLanguageSymbolDiscovery {
      * SignalR hub detection
      */
     private detectSignalRHubs(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
       endpoints: CrossLanguageIntelligence.CrossLanguageSymbol[],
     ): void {
@@ -796,7 +795,7 @@ export namespace CrossLanguageSymbolDiscovery {
      * C# gRPC detection
      */
     private detectCSharpGRPC(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
       endpoints: CrossLanguageIntelligence.CrossLanguageSymbol[],
     ): void {
@@ -818,7 +817,7 @@ export namespace CrossLanguageSymbolDiscovery {
      * C# GraphQL detection
      */
     private detectCSharpGraphQL(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
       endpoints: CrossLanguageIntelligence.CrossLanguageSymbol[],
     ): void {
@@ -830,7 +829,7 @@ export namespace CrossLanguageSymbolDiscovery {
       }
     }
     discoverGoEndpoints(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const endpoints: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -907,7 +906,7 @@ export namespace CrossLanguageSymbolDiscovery {
      * Go gRPC detection
      */
     private detectGoGRPC(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
       endpoints: CrossLanguageIntelligence.CrossLanguageSymbol[],
     ): void {
@@ -930,7 +929,7 @@ export namespace CrossLanguageSymbolDiscovery {
      * Go GraphQL detection
      */
     private detectGoGraphQL(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
       endpoints: CrossLanguageIntelligence.CrossLanguageSymbol[],
     ): void {
@@ -942,7 +941,7 @@ export namespace CrossLanguageSymbolDiscovery {
       }
     }
     discoverRustEndpoints(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const endpoints: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -1023,7 +1022,7 @@ export namespace CrossLanguageSymbolDiscovery {
      * Rust gRPC (Tonic) detection
      */
     private detectRustGRPC(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
       endpoints: CrossLanguageIntelligence.CrossLanguageSymbol[],
     ): void {
@@ -1046,7 +1045,7 @@ export namespace CrossLanguageSymbolDiscovery {
      * Rust GraphQL detection
      */
     private detectRustGraphQL(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
       endpoints: CrossLanguageIntelligence.CrossLanguageSymbol[],
     ): void {
@@ -1058,7 +1057,7 @@ export namespace CrossLanguageSymbolDiscovery {
       }
     }
     discoverPhpEndpoints(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const endpoints: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -1110,7 +1109,7 @@ export namespace CrossLanguageSymbolDiscovery {
     }
 
     discoverRubyEndpoints(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const endpoints: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -1151,7 +1150,7 @@ export namespace CrossLanguageSymbolDiscovery {
       return endpoints
     }
     discoverKotlinEndpoints(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const endpoints: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -1196,7 +1195,7 @@ export namespace CrossLanguageSymbolDiscovery {
     }
 
     discoverScalaEndpoints(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const endpoints: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -1238,7 +1237,7 @@ export namespace CrossLanguageSymbolDiscovery {
     }
 
     discoverSwiftEndpoints(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const endpoints: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -1275,7 +1274,7 @@ export namespace CrossLanguageSymbolDiscovery {
       return endpoints
     }
     discoverDartEndpoints(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const endpoints: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -1311,7 +1310,7 @@ export namespace CrossLanguageSymbolDiscovery {
     }
 
     discoverElixirEndpoints(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const endpoints: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -1341,7 +1340,7 @@ export namespace CrossLanguageSymbolDiscovery {
     }
 
     discoverClojureEndpoints(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const endpoints: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -1368,7 +1367,7 @@ export namespace CrossLanguageSymbolDiscovery {
     }
 
     discoverCppEndpoints(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const endpoints: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -1393,7 +1392,7 @@ export namespace CrossLanguageSymbolDiscovery {
     }
 
     discoverCEndpoints(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const endpoints: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -1415,7 +1414,7 @@ export namespace CrossLanguageSymbolDiscovery {
     }
 
     discoverHaskellEndpoints(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const endpoints: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -1434,7 +1433,7 @@ export namespace CrossLanguageSymbolDiscovery {
     }
 
     discoverLuaEndpoints(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const endpoints: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -1450,7 +1449,7 @@ export namespace CrossLanguageSymbolDiscovery {
     }
 
     discoverREndpoints(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const endpoints: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -1464,7 +1463,7 @@ export namespace CrossLanguageSymbolDiscovery {
     }
 
     discoverSQLEndpoints(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const endpoints: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -1480,7 +1479,7 @@ export namespace CrossLanguageSymbolDiscovery {
     }
 
     discoverYamlEndpoints(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const endpoints: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -1497,7 +1496,7 @@ export namespace CrossLanguageSymbolDiscovery {
     }
 
     discoverJsonEndpoints(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const endpoints: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -1512,7 +1511,7 @@ export namespace CrossLanguageSymbolDiscovery {
     }
 
     discoverBashEndpoints(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const endpoints: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -1528,7 +1527,7 @@ export namespace CrossLanguageSymbolDiscovery {
 
     private applyPatterns(
       patterns: RegExp[],
-      symbols: UniversalSymbol[],
+      symbols: ASTEngine.UniversalSymbol[],
       endpoints: CrossLanguageIntelligence.CrossLanguageSymbol[],
       filePath: string,
       language: string,
@@ -2031,7 +2030,7 @@ export namespace CrossLanguageSymbolDiscovery {
             filePath,
             language,
             range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 },
-            symbolKind: SymbolKind.Function,
+            symbolKind: ASTEngine.SymbolKind.Function,
             confidence: 0.8,
             context: {
               isDefinition: true,
@@ -2064,7 +2063,7 @@ export namespace CrossLanguageSymbolDiscovery {
    */
   class DataModelPatterns {
     discoverTypeScriptModels(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const models: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -2072,9 +2071,9 @@ export namespace CrossLanguageSymbolDiscovery {
       // Find TypeScript interfaces, types, and classes that look like data models
       for (const symbol of result.symbols) {
         if (
-          symbol.kind === SymbolKind.Interface ||
-          symbol.kind === SymbolKind.Type ||
-          (symbol.kind === SymbolKind.Class && this.isDataModelClass(symbol))
+          symbol.kind === ASTEngine.SymbolKind.Interface ||
+          symbol.kind === ASTEngine.SymbolKind.Type ||
+          (symbol.kind === ASTEngine.SymbolKind.Class && this.isDataModelClass(symbol))
         ) {
           models.push(this.createDataModelSymbol(symbol, filePath, "typescript"))
         }
@@ -2084,14 +2083,14 @@ export namespace CrossLanguageSymbolDiscovery {
     }
 
     discoverPythonModels(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const models: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
 
       // Find Pydantic models, dataclasses, SQLAlchemy models
       for (const symbol of result.symbols) {
-        if (symbol.kind === SymbolKind.Class) {
+        if (symbol.kind === ASTEngine.SymbolKind.Class) {
           if (
             symbol.decorators?.includes("dataclass") ||
             symbol.metadata?.hasSQLAlchemyDecorators ||
@@ -2112,7 +2111,7 @@ export namespace CrossLanguageSymbolDiscovery {
      * Detects JPA entities, POJOs, records, enums
      */
     discoverJavaModels(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const models: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -2126,10 +2125,10 @@ export namespace CrossLanguageSymbolDiscovery {
       return models
     }
 
-    private isJavaDataModel(symbol: UniversalSymbol): boolean {
+    private isJavaDataModel(symbol: ASTEngine.UniversalSymbol): boolean {
       // Java data model patterns
       return (
-        ((symbol.kind === SymbolKind.Class || symbol.kind === SymbolKind.Enum) &&
+        ((symbol.kind === ASTEngine.SymbolKind.Class || symbol.kind === ASTEngine.SymbolKind.Enum) &&
           // JPA Entities
           (symbol.decorators?.some((d) => /@Entity|@Table|@Embeddable/.test(d)) ||
             // Data classes with getters/setters
@@ -2138,7 +2137,7 @@ export namespace CrossLanguageSymbolDiscovery {
             symbol.metadata?.isRecord ||
             // DTOs and value objects
             /DTO|Model|Entity|Data|Record|Value/.test(symbol.name))) ||
-        (symbol.kind === SymbolKind.Interface && /Model|Entity|DTO/.test(symbol.name))
+        (symbol.kind === ASTEngine.SymbolKind.Interface && /Model|Entity|DTO/.test(symbol.name))
       )
     }
 
@@ -2147,7 +2146,7 @@ export namespace CrossLanguageSymbolDiscovery {
      * Detects Entity Framework models, DTOs, records, classes
      */
     discoverCSharpModels(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const models: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -2161,10 +2160,10 @@ export namespace CrossLanguageSymbolDiscovery {
       return models
     }
 
-    private isCSharpDataModel(symbol: UniversalSymbol): boolean {
+    private isCSharpDataModel(symbol: ASTEngine.UniversalSymbol): boolean {
       // C# data model patterns
       return (
-        (symbol.kind === SymbolKind.Class &&
+        (symbol.kind === ASTEngine.SymbolKind.Class &&
           // Entity Framework
           (symbol.decorators?.some((d) => /\[Key\]|\[Table\]|\[Column\]|\[Required\]/.test(d)) ||
             // Data annotations
@@ -2175,8 +2174,8 @@ export namespace CrossLanguageSymbolDiscovery {
             symbol.metadata?.isRecord ||
             // DTOs and models
             /DTO|Model|Entity|Data|Record/.test(symbol.name))) ||
-        symbol.kind === SymbolKind.Record ||
-        (symbol.kind === SymbolKind.Struct && /Model|Data/.test(symbol.name))
+        symbol.kind === ASTEngine.SymbolKind.Record ||
+        (symbol.kind === ASTEngine.SymbolKind.Struct && /Model|Data/.test(symbol.name))
       )
     }
 
@@ -2184,7 +2183,7 @@ export namespace CrossLanguageSymbolDiscovery {
      * Go Data Model Discovery
      * Detects structs with json/bson/db tags, GORM models
      */
-    discoverGoModels(result: ParseResult, filePath: string): CrossLanguageIntelligence.CrossLanguageSymbol[] {
+    discoverGoModels(result: ASTEngine.ParseResult, filePath: string): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const models: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
 
       for (const symbol of result.symbols) {
@@ -2196,10 +2195,10 @@ export namespace CrossLanguageSymbolDiscovery {
       return models
     }
 
-    private isGoDataModel(symbol: UniversalSymbol): boolean {
+    private isGoDataModel(symbol: ASTEngine.UniversalSymbol): boolean {
       // Go data model patterns
       return (
-        symbol.kind === SymbolKind.Struct &&
+        symbol.kind === ASTEngine.SymbolKind.Struct &&
         // Struct tags (json, bson, db, gorm)
         (symbol.metadata?.hasStructTags ||
           // GORM models
@@ -2216,7 +2215,7 @@ export namespace CrossLanguageSymbolDiscovery {
      * Detects Serde structs, Diesel models, database entities
      */
     discoverRustModels(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const models: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -2230,10 +2229,10 @@ export namespace CrossLanguageSymbolDiscovery {
       return models
     }
 
-    private isRustDataModel(symbol: UniversalSymbol): boolean {
+    private isRustDataModel(symbol: ASTEngine.UniversalSymbol): boolean {
       // Rust data model patterns
       return (
-        (symbol.kind === SymbolKind.Struct &&
+        (symbol.kind === ASTEngine.SymbolKind.Struct &&
           // Serde serialization
           (symbol.decorators?.some((d) => /#\[derive\([^)]*Serialize|#\[derive\([^)]*Deserialize/.test(d)) ||
             // Diesel ORM
@@ -2242,7 +2241,7 @@ export namespace CrossLanguageSymbolDiscovery {
             symbol.decorators?.some((d) => /#\[table_name/.test(d)) ||
             // Model naming
             /Model|Entity|Schema|Row/.test(symbol.name))) ||
-        (symbol.kind === SymbolKind.Enum &&
+        (symbol.kind === ASTEngine.SymbolKind.Enum &&
           !!symbol.decorators?.some((d) => /#\[derive\([^)]*Serialize/.test(d)))
       )
     }
@@ -2252,7 +2251,7 @@ export namespace CrossLanguageSymbolDiscovery {
      * Detects data classes, entities, serializable classes
      */
     discoverKotlinModels(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const models: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -2266,10 +2265,10 @@ export namespace CrossLanguageSymbolDiscovery {
       return models
     }
 
-    private isKotlinDataModel(symbol: UniversalSymbol): boolean {
+    private isKotlinDataModel(symbol: ASTEngine.UniversalSymbol): boolean {
       // Kotlin data model patterns
       return (
-        symbol.kind === SymbolKind.Class &&
+        symbol.kind === ASTEngine.SymbolKind.Class &&
         // Data classes
         (symbol.metadata?.isDataClass ||
           // Serializable annotations
@@ -2286,7 +2285,7 @@ export namespace CrossLanguageSymbolDiscovery {
      * Detects case classes, sealed traits, Play JSON models
      */
     discoverScalaModels(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const models: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -2300,12 +2299,12 @@ export namespace CrossLanguageSymbolDiscovery {
       return models
     }
 
-    private isScalaDataModel(symbol: UniversalSymbol): boolean {
+    private isScalaDataModel(symbol: ASTEngine.UniversalSymbol): boolean {
       // Scala data model patterns
       return (
-        (symbol.kind === SymbolKind.Class && symbol.metadata?.isCaseClass) ||
-        (symbol.kind === SymbolKind.Trait && symbol.metadata?.isSealed) ||
-        (symbol.kind === SymbolKind.Object && /Model|Schema/.test(symbol.name)) ||
+        (symbol.kind === ASTEngine.SymbolKind.Class && symbol.metadata?.isCaseClass) ||
+        (symbol.kind === ASTEngine.SymbolKind.Trait && symbol.metadata?.isSealed) ||
+        (symbol.kind === ASTEngine.SymbolKind.Object && /Model|Schema/.test(symbol.name)) ||
         /Model|Entity|Schema|DTO/.test(symbol.name)
       )
     }
@@ -2315,7 +2314,7 @@ export namespace CrossLanguageSymbolDiscovery {
      * Detects Codable structs, Core Data entities, SwiftUI models
      */
     discoverSwiftModels(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const models: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -2329,10 +2328,10 @@ export namespace CrossLanguageSymbolDiscovery {
       return models
     }
 
-    private isSwiftDataModel(symbol: UniversalSymbol): boolean {
+    private isSwiftDataModel(symbol: ASTEngine.UniversalSymbol): boolean {
       // Swift data model patterns
       return (
-        symbol.kind === SymbolKind.Class &&
+        symbol.kind === ASTEngine.SymbolKind.Class &&
         // Codable protocol
         (symbol.metadata?.implementsCodable ||
           // Core Data
@@ -2349,7 +2348,7 @@ export namespace CrossLanguageSymbolDiscovery {
      * Detects JSON serializable classes, Flutter models
      */
     discoverDartModels(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const models: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -2363,10 +2362,10 @@ export namespace CrossLanguageSymbolDiscovery {
       return models
     }
 
-    private isDartDataModel(symbol: UniversalSymbol): boolean {
+    private isDartDataModel(symbol: ASTEngine.UniversalSymbol): boolean {
       // Dart data model patterns
       return (
-        symbol.kind === SymbolKind.Class &&
+        symbol.kind === ASTEngine.SymbolKind.Class &&
         // JSON serialization
         (symbol.decorators?.some((d) => /@JsonSerializable|@JsonKey/.test(d)) ||
           // Factory constructors (fromJson)
@@ -2383,7 +2382,7 @@ export namespace CrossLanguageSymbolDiscovery {
      * Detects Ecto schemas, embedded schemas, structs
      */
     discoverElixirModels(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const models: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -2397,10 +2396,10 @@ export namespace CrossLanguageSymbolDiscovery {
       return models
     }
 
-    private isElixirDataModel(symbol: UniversalSymbol): boolean {
+    private isElixirDataModel(symbol: ASTEngine.UniversalSymbol): boolean {
       // Elixir data model patterns
       return (
-        symbol.kind === SymbolKind.Module &&
+        symbol.kind === ASTEngine.SymbolKind.Module &&
         // Ecto schemas
         (symbol.metadata?.hasEctoSchema ||
           // Embedded schemas
@@ -2417,7 +2416,7 @@ export namespace CrossLanguageSymbolDiscovery {
      * Detects data types, records, type aliases
      */
     discoverHaskellModels(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const models: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -2431,12 +2430,12 @@ export namespace CrossLanguageSymbolDiscovery {
       return models
     }
 
-    private isHaskellDataModel(symbol: UniversalSymbol): boolean {
+    private isHaskellDataModel(symbol: ASTEngine.UniversalSymbol): boolean {
       // Haskell data model patterns
       return (
-        (symbol.kind === SymbolKind.Type && symbol.metadata?.isDataType) ||
-        (symbol.kind === SymbolKind.Type && symbol.metadata?.isRecord) ||
-        (symbol.kind === SymbolKind.Type && symbol.metadata?.isTypeAlias) ||
+        (symbol.kind === ASTEngine.SymbolKind.Type && symbol.metadata?.isDataType) ||
+        (symbol.kind === ASTEngine.SymbolKind.Type && symbol.metadata?.isRecord) ||
+        (symbol.kind === ASTEngine.SymbolKind.Type && symbol.metadata?.isTypeAlias) ||
         /Model|Entity|Schema|Data/.test(symbol.name)
       )
     }
@@ -2446,7 +2445,7 @@ export namespace CrossLanguageSymbolDiscovery {
      * Detects records, specs, schemas
      */
     discoverClojureModels(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const models: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -2460,10 +2459,10 @@ export namespace CrossLanguageSymbolDiscovery {
       return models
     }
 
-    private isClojureDataModel(symbol: UniversalSymbol): boolean {
+    private isClojureDataModel(symbol: ASTEngine.UniversalSymbol): boolean {
       // Clojure data model patterns
       return (
-        symbol.kind === SymbolKind.Function &&
+        symbol.kind === ASTEngine.SymbolKind.Function &&
         // defrecord
         (symbol.metadata?.isRecord ||
           // spec definitions
@@ -2480,7 +2479,7 @@ export namespace CrossLanguageSymbolDiscovery {
      * Detects JSON Schema definitions, OpenAPI schemas
      */
     discoverJsonSchemas(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const models: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -2521,7 +2520,7 @@ export namespace CrossLanguageSymbolDiscovery {
      * Detects YAML schemas, Kubernetes resources, Docker Compose
      */
     discoverYamlSchemas(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const models: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -2567,7 +2566,7 @@ export namespace CrossLanguageSymbolDiscovery {
       return this.createDataModelSymbol(
         {
           name: schemaName,
-          kind: SymbolKind.Interface,
+          kind: ASTEngine.SymbolKind.Interface,
           range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 },
           scope: "public",
           decorators: ["@JsonSchema"],
@@ -2588,7 +2587,7 @@ export namespace CrossLanguageSymbolDiscovery {
       return this.createDataModelSymbol(
         {
           name: schemaName,
-          kind: SymbolKind.Interface,
+          kind: ASTEngine.SymbolKind.Interface,
           range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 },
           scope: "public",
           decorators: ["@OpenAPISchema"],
@@ -2609,7 +2608,7 @@ export namespace CrossLanguageSymbolDiscovery {
       return this.createDataModelSymbol(
         {
           name: schemaName,
-          kind: SymbolKind.Interface,
+          kind: ASTEngine.SymbolKind.Interface,
           range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 },
           scope: "public",
           decorators: ["@AsyncAPISchema"],
@@ -2652,7 +2651,7 @@ export namespace CrossLanguageSymbolDiscovery {
       return this.createDataModelSymbol(
         {
           name: schemaName,
-          kind: SymbolKind.Class,
+          kind: ASTEngine.SymbolKind.Class,
           range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 },
           scope: "public",
           decorators: [`@${schemaType.replace(" ", "")}`],
@@ -2665,13 +2664,13 @@ export namespace CrossLanguageSymbolDiscovery {
       )
     }
 
-    private isDataModelClass(symbol: UniversalSymbol): boolean {
+    private isDataModelClass(symbol: ASTEngine.UniversalSymbol): boolean {
       // Check if this class looks like a data model (has properties, no complex methods)
       return symbol.metadata?.isDataClass || symbol.metadata?.hasProperties || /Model|Entity|DTO|Data/.test(symbol.name)
     }
 
     private createDataModelSymbol(
-      symbol: UniversalSymbol,
+      symbol: ASTEngine.UniversalSymbol,
       filePath: string,
       language: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol {
@@ -2717,9 +2716,9 @@ export namespace CrossLanguageSymbolDiscovery {
    * Phase 1.2: AST-Based Symbol Correlation with Levenshtein distance & structural comparison
    */
   class SymbolCorrelator {
-    private fileResults: Map<string, ParseResult>
+    private fileResults: Map<string, ASTEngine.ParseResult>
 
-    constructor(fileResults: Map<string, ParseResult>) {
+    constructor(fileResults: Map<string, ASTEngine.ParseResult>) {
       this.fileResults = fileResults
     }
 
@@ -2871,9 +2870,9 @@ export namespace CrossLanguageSymbolDiscovery {
     }
 
     private findUniversalSymbol(
-      symbols: UniversalSymbol[],
+      symbols: ASTEngine.UniversalSymbol[],
       name: string,
-    ): UniversalSymbol | undefined {
+    ): ASTEngine.UniversalSymbol | undefined {
       for (const sym of symbols) {
         if (sym.name === name || this.normalizeName(sym.name) === this.normalizeName(name)) {
           return sym
@@ -2886,12 +2885,12 @@ export namespace CrossLanguageSymbolDiscovery {
       return undefined
     }
 
-    private extractProperties(symbol: UniversalSymbol): UniversalSymbol[] {
-      const props: UniversalSymbol[] = []
+    private extractProperties(symbol: ASTEngine.UniversalSymbol): ASTEngine.UniversalSymbol[] {
+      const props: ASTEngine.UniversalSymbol[] = []
 
       if (symbol.children) {
         for (const child of symbol.children) {
-          if (child.kind === SymbolKind.Property || child.kind === SymbolKind.Variable) {
+          if (child.kind === ASTEngine.SymbolKind.Property || child.kind === ASTEngine.SymbolKind.Variable) {
             props.push(child)
           }
         }
@@ -2982,7 +2981,7 @@ export namespace CrossLanguageSymbolDiscovery {
    * Service Discovery - Finds ALL services across ALL languages
    */
   async function discoverServices(
-    fileResults: Map<string, ParseResult>,
+    fileResults: Map<string, ASTEngine.ParseResult>,
   ): Promise<CrossLanguageIntelligence.CrossLanguageSymbol[]> {
     const services: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
     const servicePatterns = new ServicePatterns()
@@ -3022,7 +3021,7 @@ export namespace CrossLanguageSymbolDiscovery {
    * Database Entity Discovery - ALL ORM patterns
    */
   async function discoverDatabaseEntities(
-    fileResults: Map<string, ParseResult>,
+    fileResults: Map<string, ASTEngine.ParseResult>,
   ): Promise<CrossLanguageIntelligence.CrossLanguageSymbol[]> {
     const entities: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
     const dbPatterns = new DatabaseEntityPatterns()
@@ -3049,7 +3048,7 @@ export namespace CrossLanguageSymbolDiscovery {
    * Message Type Discovery - ALL messaging patterns
    */
   async function discoverMessageTypes(
-    fileResults: Map<string, ParseResult>,
+    fileResults: Map<string, ASTEngine.ParseResult>,
   ): Promise<CrossLanguageIntelligence.CrossLanguageSymbol[]> {
     const messageTypes: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
     const messagePatterns = new MessageTypePatterns()
@@ -3085,7 +3084,7 @@ export namespace CrossLanguageSymbolDiscovery {
    * Configuration Discovery - ALL config patterns
    */
   async function discoverConfigurations(
-    fileResults: Map<string, ParseResult>,
+    fileResults: Map<string, ASTEngine.ParseResult>,
   ): Promise<CrossLanguageIntelligence.CrossLanguageSymbol[]> {
     const configurations: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
     const configPatterns = new ConfigurationPatterns()
@@ -3116,7 +3115,7 @@ export namespace CrossLanguageSymbolDiscovery {
    * Shared Library Discovery - ALL module patterns
    */
   async function discoverSharedLibraries(
-    fileResults: Map<string, ParseResult>,
+    fileResults: Map<string, ASTEngine.ParseResult>,
   ): Promise<CrossLanguageIntelligence.CrossLanguageSymbol[]> {
     const libraries: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
     const libraryPatterns = new SharedLibraryPatterns()
@@ -3158,7 +3157,7 @@ export namespace CrossLanguageSymbolDiscovery {
    */
   class ServicePatterns {
     createServiceSymbol(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
       language: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol | null {
@@ -3176,7 +3175,7 @@ export namespace CrossLanguageSymbolDiscovery {
             filePath,
             language,
             range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 },
-            symbolKind: SymbolKind.Module,
+            symbolKind: ASTEngine.SymbolKind.Module,
             confidence: 0.8,
             context: {
               isDefinition: true,
@@ -3202,7 +3201,7 @@ export namespace CrossLanguageSymbolDiscovery {
       }
     }
 
-    private extractServiceName(filePath: string, result: ParseResult): string | null {
+    private extractServiceName(filePath: string, result: ASTEngine.ParseResult): string | null {
       // Extract from file path
       const pathParts = filePath.split("/")
       let serviceName = pathParts[pathParts.length - 1].replace(/\.(js|ts|py|java|go|rs|php|rb)$/, "")
@@ -3215,7 +3214,7 @@ export namespace CrossLanguageSymbolDiscovery {
       return serviceName === "unknown-service" ? null : serviceName
     }
 
-    private detectServiceProtocols(result: ParseResult): string[] {
+    private detectServiceProtocols(result: ASTEngine.ParseResult): string[] {
       const protocols: string[] = []
 
       // Detect HTTP/REST
@@ -3246,7 +3245,7 @@ export namespace CrossLanguageSymbolDiscovery {
    */
   class DatabaseEntityPatterns {
     discoverEntitiesInFile(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const entities: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -3262,7 +3261,7 @@ export namespace CrossLanguageSymbolDiscovery {
     }
 
     discoverLanguageSpecificEntities(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const entities: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -3291,10 +3290,10 @@ export namespace CrossLanguageSymbolDiscovery {
       return entities
     }
 
-    private isEntitySymbol(symbol: UniversalSymbol, language: string): boolean {
+    private isEntitySymbol(symbol: ASTEngine.UniversalSymbol, language: string): boolean {
       // Check for entity-like patterns
       return (
-        symbol.kind === SymbolKind.Class &&
+        symbol.kind === ASTEngine.SymbolKind.Class &&
         (/Model|Entity|Table|Schema/.test(symbol.name) ||
           symbol.decorators?.some((d) => /Entity|Table|Model/.test(d)) ||
           symbol.metadata?.isORMEntity)
@@ -3302,7 +3301,7 @@ export namespace CrossLanguageSymbolDiscovery {
     }
 
     private createEntitySymbol(
-      symbol: UniversalSymbol,
+      symbol: ASTEngine.UniversalSymbol,
       filePath: string,
       language: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol {
@@ -3349,7 +3348,7 @@ export namespace CrossLanguageSymbolDiscovery {
      * Detects Django models, SQLAlchemy models, Pydantic models
      */
     private discovePythonORMEntities(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const entities: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -3363,8 +3362,8 @@ export namespace CrossLanguageSymbolDiscovery {
       return entities
     }
 
-    private isPythonORMEntity(symbol: UniversalSymbol, rawContent: string): boolean {
-      if (symbol.kind !== SymbolKind.Class) return false
+    private isPythonORMEntity(symbol: ASTEngine.UniversalSymbol, rawContent: string): boolean {
+      if (symbol.kind !== ASTEngine.SymbolKind.Class) return false
 
       // Django models
       if (/models\.Model|django\.db\.models/.test(rawContent)) {
@@ -3404,7 +3403,7 @@ export namespace CrossLanguageSymbolDiscovery {
      * Detects JPA entities, Hibernate models, MyBatis mappers
      */
     private discoverJavaORMEntities(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const entities: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -3418,8 +3417,8 @@ export namespace CrossLanguageSymbolDiscovery {
       return entities
     }
 
-    private isJavaORMEntity(symbol: UniversalSymbol, rawContent: string): boolean {
-      if (symbol.kind !== SymbolKind.Class) return false
+    private isJavaORMEntity(symbol: ASTEngine.UniversalSymbol, rawContent: string): boolean {
+      if (symbol.kind !== ASTEngine.SymbolKind.Class) return false
 
       // JPA/Hibernate entities
       const jpaAnnotations = /@Entity|@Table|@Column|@Id|@GeneratedValue|@OneToMany|@ManyToOne|@JoinColumn/
@@ -3451,7 +3450,7 @@ export namespace CrossLanguageSymbolDiscovery {
      * Detects Entity Framework models, Dapper models
      */
     private discoverCSharpORMEntities(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const entities: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -3465,8 +3464,8 @@ export namespace CrossLanguageSymbolDiscovery {
       return entities
     }
 
-    private isCSharpORMEntity(symbol: UniversalSymbol, rawContent: string): boolean {
-      if (symbol.kind !== SymbolKind.Class) return false
+    private isCSharpORMEntity(symbol: ASTEngine.UniversalSymbol, rawContent: string): boolean {
+      if (symbol.kind !== ASTEngine.SymbolKind.Class) return false
 
       // Entity Framework Core
       const efAnnotations = /\[Key\]|\[Table\(|\[Column\(|\[Required\]|\[ForeignKey\(|\[Index\(/
@@ -3499,7 +3498,7 @@ export namespace CrossLanguageSymbolDiscovery {
      * Detects Sequelize, TypeORM, Prisma, Mongoose models
      */
     private discoverJavaScriptORMEntities(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const entities: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -3513,12 +3512,12 @@ export namespace CrossLanguageSymbolDiscovery {
       return entities
     }
 
-    private isJavaScriptORMEntity(symbol: UniversalSymbol, rawContent: string): boolean {
+    private isJavaScriptORMEntity(symbol: ASTEngine.UniversalSymbol, rawContent: string): boolean {
       // Sequelize models
       if (/sequelize\.define|DataTypes\.|Model\.init/.test(rawContent)) {
         return (
-          symbol.kind === SymbolKind.Class ||
-          (symbol.kind === SymbolKind.Variable && /Model/.test(symbol.name))
+          symbol.kind === ASTEngine.SymbolKind.Class ||
+          (symbol.kind === ASTEngine.SymbolKind.Variable && /Model/.test(symbol.name))
         )
       }
 
@@ -3527,7 +3526,7 @@ export namespace CrossLanguageSymbolDiscovery {
       if (typeormDecorators.test(rawContent)) {
         return (
           symbol.decorators?.some((d) => typeormDecorators.test(d)) ||
-          (symbol.kind === SymbolKind.Class && /Entity$/.test(symbol.name))
+          (symbol.kind === ASTEngine.SymbolKind.Class && /Entity$/.test(symbol.name))
         )
       }
 
@@ -3543,7 +3542,7 @@ export namespace CrossLanguageSymbolDiscovery {
       // Mongoose models
       if (/mongoose\.Schema|mongoose\.model|Schema\.Types/.test(rawContent)) {
         return (
-          (symbol.kind === SymbolKind.Variable && /Schema|Model/.test(symbol.name)) ||
+          (symbol.kind === ASTEngine.SymbolKind.Variable && /Schema|Model/.test(symbol.name)) ||
           /new Schema\(/.test(rawContent)
         )
       }
@@ -3562,7 +3561,7 @@ export namespace CrossLanguageSymbolDiscovery {
    */
   class MessageTypePatterns {
     discoverMessageTypesInFile(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const messageTypes: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -3581,7 +3580,7 @@ export namespace CrossLanguageSymbolDiscovery {
      * Parses .proto files for message definitions with complete type intelligence
      */
     discoverProtobufMessages(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const messages: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -3611,7 +3610,7 @@ export namespace CrossLanguageSymbolDiscovery {
               filePath,
               language: "protobuf",
               range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 },
-              symbolKind: SymbolKind.Class,
+              symbolKind: ASTEngine.SymbolKind.Class,
               confidence: 1.0,
               context: {
                 isDefinition: true,
@@ -3661,7 +3660,7 @@ export namespace CrossLanguageSymbolDiscovery {
                 filePath,
                 language: "protobuf",
                 range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 },
-                symbolKind: SymbolKind.Class,
+                symbolKind: ASTEngine.SymbolKind.Class,
                 confidence: 1.0,
                 context: {
                   isDefinition: true,
@@ -3715,7 +3714,7 @@ export namespace CrossLanguageSymbolDiscovery {
               filePath,
               language: "protobuf",
               range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 },
-              symbolKind: SymbolKind.Interface,
+              symbolKind: ASTEngine.SymbolKind.Interface,
               confidence: 1.0,
               context: {
                 isDefinition: true,
@@ -3760,7 +3759,7 @@ export namespace CrossLanguageSymbolDiscovery {
      * Parses GraphQL schema files with complete type system intelligence
      */
     discoverGraphQLTypes(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const types: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -3792,7 +3791,7 @@ export namespace CrossLanguageSymbolDiscovery {
               filePath,
               language: "graphql",
               range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 },
-              symbolKind: SymbolKind.Class,
+              symbolKind: ASTEngine.SymbolKind.Class,
               confidence: 1.0,
               context: {
                 isDefinition: true,
@@ -3848,7 +3847,7 @@ export namespace CrossLanguageSymbolDiscovery {
               filePath,
               language: "graphql",
               range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 },
-              symbolKind: SymbolKind.Class,
+              symbolKind: ASTEngine.SymbolKind.Class,
               confidence: 1.0,
               context: {
                 isDefinition: true,
@@ -3899,7 +3898,7 @@ export namespace CrossLanguageSymbolDiscovery {
               filePath,
               language: "graphql",
               range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 },
-              symbolKind: SymbolKind.Enum,
+              symbolKind: ASTEngine.SymbolKind.Enum,
               confidence: 1.0,
               context: {
                 isDefinition: true,
@@ -3936,7 +3935,7 @@ export namespace CrossLanguageSymbolDiscovery {
       return types
     }
 
-    private isMessageType(symbol: UniversalSymbol): boolean {
+    private isMessageType(symbol: ASTEngine.UniversalSymbol): boolean {
       return (
         /Event|Message|Command|Query|Notification/.test(symbol.name) ||
         !!symbol.decorators?.some((d) => /Event|Message/.test(d))
@@ -3944,7 +3943,7 @@ export namespace CrossLanguageSymbolDiscovery {
     }
 
     private createMessageTypeSymbol(
-      symbol: UniversalSymbol,
+      symbol: ASTEngine.UniversalSymbol,
       filePath: string,
       language: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol {
@@ -4191,7 +4190,7 @@ export namespace CrossLanguageSymbolDiscovery {
    */
   class ConfigurationPatterns {
     discoverConfigurationsInFile(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const configurations: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -4232,7 +4231,7 @@ export namespace CrossLanguageSymbolDiscovery {
             filePath,
             language,
             range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 },
-            symbolKind: SymbolKind.Variable,
+            symbolKind: ASTEngine.SymbolKind.Variable,
             confidence: 1.0,
             context: {
               isDefinition: true,
@@ -4264,7 +4263,7 @@ export namespace CrossLanguageSymbolDiscovery {
    */
   class SharedLibraryPatterns {
     discoverLibrariesInFile(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const libraries: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -4288,7 +4287,7 @@ export namespace CrossLanguageSymbolDiscovery {
      * Parses package.json dependencies with deep intelligence
      */
     private discoverNpmLibraries(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const libraries: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -4318,7 +4317,7 @@ export namespace CrossLanguageSymbolDiscovery {
                 filePath,
                 language: "json",
                 range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 },
-                symbolKind: SymbolKind.Module,
+                symbolKind: ASTEngine.SymbolKind.Module,
                 confidence: 1.0,
                 context: {
                   isDefinition: true,
@@ -4359,7 +4358,7 @@ export namespace CrossLanguageSymbolDiscovery {
      * Parses Cargo.toml dependencies with Rust ecosystem intelligence
      */
     private discoverCargoLibraries(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const libraries: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -4399,7 +4398,7 @@ export namespace CrossLanguageSymbolDiscovery {
                     filePath,
                     language: "toml",
                     range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 },
-                    symbolKind: SymbolKind.Module,
+                    symbolKind: ASTEngine.SymbolKind.Module,
                     confidence: 1.0,
                     context: {
                       isDefinition: true,
@@ -4439,7 +4438,7 @@ export namespace CrossLanguageSymbolDiscovery {
      * Parses pom.xml dependencies with Java ecosystem intelligence
      */
     private discoverMavenLibraries(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const libraries: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -4477,7 +4476,7 @@ export namespace CrossLanguageSymbolDiscovery {
                 filePath,
                 language: "xml",
                 range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 },
-                symbolKind: SymbolKind.Module,
+                symbolKind: ASTEngine.SymbolKind.Module,
                 confidence: 1.0,
                 context: {
                   isDefinition: true,
@@ -4518,7 +4517,7 @@ export namespace CrossLanguageSymbolDiscovery {
      * Parses requirements.txt and setup.py with Python ecosystem intelligence
      */
     private discoverPythonLibraries(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageSymbol[] {
       const libraries: CrossLanguageIntelligence.CrossLanguageSymbol[] = []
@@ -4549,7 +4548,7 @@ export namespace CrossLanguageSymbolDiscovery {
                     filePath,
                     language: "text",
                     range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 },
-                    symbolKind: SymbolKind.Module,
+                    symbolKind: ASTEngine.SymbolKind.Module,
                     confidence: 1.0,
                     context: {
                       isDefinition: true,
@@ -4603,7 +4602,7 @@ export namespace CrossLanguageSymbolDiscovery {
                   filePath,
                   language: filePath.endsWith(".toml") ? "toml" : "python",
                   range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 },
-                  symbolKind: SymbolKind.Module,
+                  symbolKind: ASTEngine.SymbolKind.Module,
                   confidence: 1.0,
                   context: {
                     isDefinition: true,

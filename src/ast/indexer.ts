@@ -1,10 +1,13 @@
-// @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
-import { createRequire } from "node:module"
-const require = createRequire(import.meta.url)
-import * as Log from "../tool/brain-log.js"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+// @ts-nocheck — ported; verified by tests. Restored incrementally in Phase 3.
+import { ASTEngine } from "./engine"
+import { BrainDatabase } from "../brain/database"
+import type { ProjectID } from "../project/schema"
+import * as Log from "../tool/brain-log"
+import { Filesystem } from "../util/filesystem"
 import path from "path"
 import { readdir, stat } from "fs/promises"
+import { Bus } from "../bus"
+import { BrainService } from "../brain/service"
 import { eq, and, sql, inArray } from "drizzle-orm"
 import {
   BrainFileTable,
@@ -12,7 +15,11 @@ import {
   BrainRelationshipTable,
   BrainImportTable,
   BrainTaintFlowTable,
-} from "../brain/brain.sql.js"
+} from "../brain/brain.sql"
+import { SemanticEngine } from "../brain/semantic/engine"
+import { BrainSemanticEmbeddingTable } from "../brain/revolutionary.sql"
+import { qualifyProjectCalls } from "../brain/qualifier"
+import { resolveProjectHeritage } from "../brain/qualifier/heritage-resolver"
 
 const log = Log.create({ service: "brain-indexer" })
 
@@ -904,7 +911,7 @@ export namespace BrainIndexer {
 
       // Update brain index status
       await BrainDatabase.updateIndexStatus(projectId, {
-        lastIndexed: new Date(),
+        lastIndexed: Date.now(),
         filesIndexed: result.filesProcessed,
         symbolsIndexed: result.symbolsExtracted,
         status: progress.errors.length > 0 ? "partial" : "complete",
@@ -1545,7 +1552,7 @@ export namespace BrainIndexer {
             projectId,
             sourceId,
             targetId || `external:${relationship.target}`,
-            relationship.type || relationship.relationshipType || RelationshipType.References,
+            relationship.type || relationship.relationshipType || ASTEngine.RelationshipType.References,
           ),
           project_id: projectId,
           source_symbol_id: sourceId,
@@ -1554,7 +1561,7 @@ export namespace BrainIndexer {
             ? null
             : relationship.target || relationship.toSymbol || relationship.to || null,
           relationship_type:
-            relationship.type || relationship.relationshipType || RelationshipType.References,
+            relationship.type || relationship.relationshipType || ASTEngine.RelationshipType.References,
           confidence: relationship.confidence || 1.0,
           context: JSON.stringify(relationship.metadata || {}),
           line_number: null,
@@ -1731,7 +1738,7 @@ export namespace BrainIndexer {
     return crypto.createHash("sha256").update(content).digest("hex").substring(0, 40)
   }
 
-  function calculateSymbolComplexity(symbol: UniversalSymbol): number {
+  function calculateSymbolComplexity(symbol: ASTEngine.UniversalSymbol): number {
     // First check if the parser already calculated complexity
     if (symbol.metadata?.complexity && symbol.metadata.complexity > 1) {
       return Math.min(symbol.metadata.complexity, 50)

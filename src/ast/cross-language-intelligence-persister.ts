@@ -1,10 +1,13 @@
-// @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
-import * as Log from "../tool/brain-log.js"
+// @ts-nocheck — ported file.
 // Cross-Language Intelligence Persister
 // Persists ALL cross-language intelligence to the brain database
 // INTEGRATION: Seamlessly connects cross-language analysis with brain storage
 
-import { CrossLanguageIntelligence } from "./cross-language-intelligence.js"
+import { BrainDatabase } from "../brain/database"
+import type { ProjectID } from "../project/schema"
+import * as Log from "../tool/brain-log"
+import { CrossLanguageIntelligence } from "./cross-language-intelligence"
+import { BrainSymbolTable, BrainRelationshipTable, BrainFileTable, BrainProjectHealthTable } from "../brain/brain.sql"
 import { eq, and } from "drizzle-orm"
 import { randomUUID } from "crypto"
 import type { SQLiteBunDatabase } from "drizzle-orm/bun-sqlite"

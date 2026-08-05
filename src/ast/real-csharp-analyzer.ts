@@ -1,4 +1,3 @@
-// @ts-nocheck — Ported from backbencher.
 function stringIncludes(str: string, val: string): boolean {
   return str.indexOf(val) !== -1
 }
@@ -13,15 +12,15 @@ function findTableAttr(attributes: string[]): string | undefined {
 }
 
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import { ASTEngine } from "./engine"
 
-export class RealCSharpAnalyzer implements LanguageAnalyzer {
-  analyze(rootNode: Node, content: string, filePath: string): ParseResult {
-    const symbols: UniversalSymbol[] = []
-    const relationships: UniversalRelationship[] = []
-    const imports: ImportInfo[] = []
-    const exports: ExportInfo[] = []
-    const errors: ParseError[] = []
+export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
+  analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
+    const symbols: ASTEngine.UniversalSymbol[] = []
+    const relationships: ASTEngine.UniversalRelationship[] = []
+    const imports: ASTEngine.ImportInfo[] = []
+    const exports: ASTEngine.ExportInfo[] = []
+    const errors: ASTEngine.ParseError[] = []
 
     const patterns: Record<string, boolean> = {}
     const frameworks: Record<string, boolean> = {}
@@ -30,9 +29,9 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
       node: Node
       name: string
       rawName: string
-      kind: SymbolKind
+      kind: ASTEngine.SymbolKind
       visibility: "public" | "private" | "protected" | "internal"
-      symbolRef?: UniversalSymbol
+      symbolRef?: ASTEngine.UniversalSymbol
       isStatic: boolean
     }
 
@@ -48,7 +47,7 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
     let cyclomaticComplexity = 1
 
     // Track namespace-level symbols for export population
-    const namespaceScoped: UniversalSymbol[] = []
+    const namespaceScoped: ASTEngine.UniversalSymbol[] = []
 
     while (stack.length > 0) {
       const item = stack.pop()!
@@ -102,7 +101,7 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
           relationships.push({
             source: "global",
             target: text,
-            type: RelationshipType.References,
+            type: ASTEngine.RelationshipType.References,
             confidence: 0.9,
             metadata: { isUsingDirective: true }
           })
@@ -147,7 +146,7 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
             target: targetName,
             fromSymbol: source,
             toSymbol: qualifiedName,
-            type: RelationshipType.Calls,
+            type: ASTEngine.RelationshipType.Calls,
             metadata: { qualified: qualifiedName },
           })
 
@@ -166,7 +165,7 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source,
               target: routeTarget,
-              type: RelationshipType.Provides,
+              type: ASTEngine.RelationshipType.Provides,
               metadata: { isMinimalApi: true, httpMethod: targetName.replace("Map", "").toUpperCase() },
             })
           }
@@ -177,7 +176,7 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source,
               target: "Service",
-              type: RelationshipType.References,
+              type: ASTEngine.RelationshipType.References,
               metadata: { isDependencyInjection: true, lifetime },
             })
           }
@@ -201,7 +200,7 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
             target: typeNode,
             fromSymbol: source,
             toSymbol: typeNode,
-            type: RelationshipType.Instantiates,
+            type: ASTEngine.RelationshipType.Instantiates,
             metadata: { isNew: true },
           })
         }
@@ -214,7 +213,7 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
       if (type === "query_expression") patterns["LINQ"] = true
 
       let visibility: "public" | "private" | "protected" | "internal" =
-        parentContext?.kind === SymbolKind.Interface ? "public" : "private"
+        parentContext?.kind === ASTEngine.SymbolKind.Interface ? "public" : "private"
       let isStatic = false
       let isAsync = false
       let isAbstract = false
@@ -249,7 +248,7 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
 
         symbols.push({
           name: rawName,
-          kind: SymbolKind.Namespace,
+          kind: ASTEngine.SymbolKind.Namespace,
           range: this.nodeToRange(node),
           visibility: "public",
           metadata: { isCSharpNamespace: true, fullName },
@@ -258,7 +257,7 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
           node,
           name: fullName,
           rawName,
-          kind: SymbolKind.Namespace,
+          kind: ASTEngine.SymbolKind.Namespace,
           visibility: "public",
           isStatic: false,
         }
@@ -282,10 +281,10 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
 
         const fullName = this.buildFullName(scopeStack, rawName)
         const kind = stringIncludes(type, "interface")
-          ? SymbolKind.Interface
+          ? ASTEngine.SymbolKind.Interface
           : stringIncludes(type, "struct")
-            ? SymbolKind.Struct
-            : SymbolKind.Class
+            ? ASTEngine.SymbolKind.Struct
+            : ASTEngine.SymbolKind.Class
 
         const baseClasses: string[] = []
         const baseList = this.findChild(node, "base_list")
@@ -299,8 +298,8 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
                 source: fullName,
                 target: baseType.text,
                 type: isInterfaceBase
-                  ? RelationshipType.Implements
-                  : RelationshipType.Extends,
+                  ? ASTEngine.RelationshipType.Implements
+                  : ASTEngine.RelationshipType.Extends,
                 metadata: {},
               })
             }
@@ -319,7 +318,7 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
         }
         if (this.findChild(node, "type_parameter_constraints_clause")) {
              hasGenericConstraints = true
-             const cc = this.findChild(node, "type_parameter_constraints_clause"); if (cc) { for (let ci = 0; ci < cc.namedChildCount; ci++) { const cn = cc.namedChild(ci); if (cn && cn.type === "type_parameter_constraint") { const ti = this.findChild(cn, "identifier") || this.findChild(cn, "qualified_name"); if (ti && genericTypes.length > 0) { relationships.push({ source: fullName + "." + (genericTypes[0] || "T"), target: ti.text, type: RelationshipType.References, metadata: { isGenericConstraint: true } }) } } } }
+             const cc = this.findChild(node, "type_parameter_constraints_clause"); if (cc) { for (let ci = 0; ci < cc.namedChildCount; ci++) { const cn = cc.namedChild(ci); if (cn && cn.type === "type_parameter_constraint") { const ti = this.findChild(cn, "identifier") || this.findChild(cn, "qualified_name"); if (ti && genericTypes.length > 0) { relationships.push({ source: fullName + "." + (genericTypes[0] || "T"), target: ti.text, type: ASTEngine.RelationshipType.References, metadata: { isGenericConstraint: true } }) } } } }
              // Extract constraint types as references
              const constraintsClause = this.findChild(node, "type_parameter_constraints_clause")
              if (constraintsClause) {
@@ -331,7 +330,7 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
                      relationships.push({
                        source: fullName + "." + (genericTypes[0] || "T"),
                        target: typeId.text,
-                       type: RelationshipType.References,
+                       type: ASTEngine.RelationshipType.References,
                        metadata: { isGenericConstraint: true },
                      })
                    }
@@ -360,7 +359,7 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
             relationships.push({
                 source: fullName,
                 target: tableName,
-                type: RelationshipType.References,
+                type: ASTEngine.RelationshipType.References,
                 metadata: { isDatabase: true, relationshipType: "mapped_table" }
             })
         }
@@ -375,7 +374,7 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
               const pType = this.extractTypeString(p)
               symbols.push({
                 name: pName,
-                kind: SymbolKind.Property,
+                kind: ASTEngine.SymbolKind.Property,
                 range: this.nodeToRange(p),
                 visibility: "public",
                 isStatic: false,
@@ -387,7 +386,7 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
           }
         }
 
-        const sym: UniversalSymbol = {
+        const sym: ASTEngine.UniversalSymbol = {
           name: rawName,
           kind,
           range: this.nodeToRange(node),
@@ -399,8 +398,8 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
           decorators: attributes.length > 0 ? attributes : undefined,
           metadata: {
             isCSharpType: true,
-            isStruct: kind === SymbolKind.Struct,
-            isValueType: kind === SymbolKind.Struct,
+            isStruct: kind === ASTEngine.SymbolKind.Struct,
+            isValueType: kind === ASTEngine.SymbolKind.Struct,
             isRecord,
             baseTypes: baseClasses,
             genericTypes: genericTypes.length > 0 ? genericTypes : undefined,
@@ -409,7 +408,7 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
           },
         }
         symbols.push(sym)
-        if (!parentContext || parentContext.kind === SymbolKind.Namespace) namespaceScoped.push(sym)
+        if (!parentContext || parentContext.kind === ASTEngine.SymbolKind.Namespace) namespaceScoped.push(sym)
         newContext = { node, name: fullName, rawName, kind, visibility, symbolRef: sym, isStatic }
         scopeStack.push(newContext)
         pushedScope = true
@@ -438,7 +437,7 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
 
         symbols.push({
           name: rawName,
-          kind: SymbolKind.Enum,
+          kind: ASTEngine.SymbolKind.Enum,
           range: this.nodeToRange(node),
           visibility,
           ownerName: parentContext?.name,
@@ -446,14 +445,14 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
           decorators: attributes.length > 0 ? attributes : undefined,
           metadata: { isEnum: true, values, baseType, hasFlags, fullName },
         })
-        newContext = { node, name: fullName, rawName, kind: SymbolKind.Enum, visibility, isStatic: false }
+        newContext = { node, name: fullName, rawName, kind: ASTEngine.SymbolKind.Enum, visibility, isStatic: false }
         scopeStack.push(newContext)
         pushedScope = true
       } else if (type === "enum_member_declaration") {
         const name = node.childForFieldName("name")?.text || this.childText(node, "identifier") || "anonymous"
         symbols.push({
           name,
-          kind: SymbolKind.EnumMember,
+          kind: ASTEngine.SymbolKind.EnumMember,
           range: this.nodeToRange(node),
           visibility: "public",
           ownerName: parentContext?.rawName,
@@ -466,7 +465,7 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
         const returnType = this.extractTypeString(node) || "void"
         symbols.push({
           name,
-          kind: SymbolKind.Function, // or Class? Usually represented as a type or function
+          kind: ASTEngine.SymbolKind.Function, // or Class? Usually represented as a type or function
           range: this.nodeToRange(node),
           visibility,
           ownerName: parentContext?.name,
@@ -477,7 +476,7 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
       } else if (type === "operator_declaration" || type === "conversion_operator_declaration") {
         symbols.push({
           name: "operator",
-          kind: SymbolKind.Method,
+          kind: ASTEngine.SymbolKind.Method,
           range: this.nodeToRange(node),
           visibility: "public",
           isStatic: true,
@@ -501,7 +500,7 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
             ? "void"
             : this.extractTypeString(node) || "void"
 
-        const parameters: Parameter[] = []
+        const parameters: ASTEngine.Parameter[] = []
         let isExtensionMethod = false
         const paramList = this.findChild(node, "parameter_list")
         if (paramList) {
@@ -534,7 +533,7 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
 
         symbols.push({
           name,
-          kind: type === "constructor_declaration" ? SymbolKind.Constructor : SymbolKind.Method,
+          kind: type === "constructor_declaration" ? ASTEngine.SymbolKind.Constructor : ASTEngine.SymbolKind.Method,
           range: this.nodeToRange(node),
           visibility,
           isStatic,
@@ -558,12 +557,12 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
           relationships.push({
             source: `${parentContext.name}.${name}`,
             target: name,
-            type: RelationshipType.Overrides,
+            type: ASTEngine.RelationshipType.Overrides,
             confidence: 0.9,
             metadata: { isOverride: true }
           })
         }
-        newContext = { node, name, rawName: name, kind: SymbolKind.Method, visibility, isStatic }
+        newContext = { node, name, rawName: name, kind: ASTEngine.SymbolKind.Method, visibility, isStatic }
         scopeStack.push(newContext)
         pushedScope = true
       } else if (type === "member_access_expression" && !parentContext?.node?.type?.includes("invocation")) {
@@ -574,7 +573,7 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
           relationships.push({
             source: parentContext.name,
             target: `${exprNode.text}.${nameNode.text}`,
-            type: RelationshipType.Uses,
+            type: ASTEngine.RelationshipType.Uses,
             confidence: 0.7,
             metadata: { isFieldAccess: true, field: nameNode.text, object: exprNode.text }
           })
@@ -585,7 +584,7 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
           relationships.push({
             source: parentContext.name,
             target: node.text,
-            type: RelationshipType.References,
+            type: ASTEngine.RelationshipType.References,
             confidence: 0.6,
             metadata: { isVariableRef: true }
           })
@@ -596,7 +595,7 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
           node,
           name,
           rawName: name,
-          kind: SymbolKind.Function,
+          kind: ASTEngine.SymbolKind.Function,
           visibility: "private",
           isStatic: false,
         }
@@ -631,7 +630,7 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
 
         symbols.push({
           name,
-          kind: SymbolKind.Property,
+          kind: ASTEngine.SymbolKind.Property,
           range: this.nodeToRange(node),
           visibility,
           isStatic,
@@ -650,7 +649,7 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
               const name = node.childForFieldName("name")?.text || this.childText(child, "identifier") || "anonymous"
               symbols.push({
                 name,
-                kind: stringIncludes(type, "event") ? SymbolKind.Event : SymbolKind.Property,
+                kind: stringIncludes(type, "event") ? ASTEngine.SymbolKind.Event : ASTEngine.SymbolKind.Property,
                 range: this.nodeToRange(node),
                 visibility,
                 isStatic,
@@ -676,7 +675,7 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
         const dataType = node.childForFieldName("type")?.text || this.extractTypeString(node)
         symbols.push({
           name,
-          kind: SymbolKind.Variable,
+          kind: ASTEngine.SymbolKind.Variable,
           range: this.nodeToRange(node),
           visibility: "private",
           ownerName: parentContext?.rawName,
@@ -693,7 +692,7 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
               const name = node.childForFieldName("name")?.text || this.childText(child, "identifier") || "anonymous"
               symbols.push({
                 name,
-                kind: SymbolKind.Variable,
+                kind: ASTEngine.SymbolKind.Variable,
                 range: this.nodeToRange(node),
                 visibility: "private",
                 ownerName: parentContext?.rawName,
@@ -726,7 +725,7 @@ export class RealCSharpAnalyzer implements LanguageAnalyzer {
         relationships.push({
           source: _owner,
           target: s.name,
-          type: RelationshipType.Contains,
+          type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
           metadata: {},
         })

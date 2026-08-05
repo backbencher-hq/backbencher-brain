@@ -1,63 +1,328 @@
-// Drizzle ORM table definitions — matches backbencher's brain.sql.ts
-// Each column is a proxy that returns { _colName, _tableName } for eq()/like()/etc.
+import { sqliteTable, text, integer, real, index, primaryKey } from "drizzle-orm/sqlite-core"
+import { Timestamps } from "../storage/schema.sql"
+import type { ProjectID } from "../project/schema"
+import { ProjectTable } from "../project/project.sql"
 
-function col(tableName: string, colName: string) {
-  return new Proxy({} as any, {
-    get(_target, prop) {
-      if (prop === "_colName") return colName
-      if (prop === "_tableName") return tableName
-      return col(`${tableName}.${colName}`, prop as string)
-    }
-  })
-}
+// Universal Project Brain Database Schema
+// Supports ANY programming language with cross-language relationship mapping
+// Based on ProxiCall Brain architecture but designed for universal intelligence
 
-function table(name: string): any {
-  const cols: Record<string, any> = {}
-  const known = [
-    "id", "project_id", "path", "relative_path", "file_hash",
-    "size_bytes", "line_count", "language", "framework", "framework_type",
-    "layer", "system", "content", "is_test", "is_test_file", "is_config",
-    "is_documentation", "has_syntax_errors", "error_report", "last_modified",
-    "indexed_at", "time_created", "time_updated",
-    // brain_symbol
-    "file_id", "name", "qualified_name", "symbol_type", "line_start", "line_end",
-    "byte_start", "byte_end", "signature", "return_type", "parameters", "docstring",
-    "body_preview", "body_hash", "visibility", "is_async", "is_static", "is_abstract",
-    "is_override", "is_getter", "is_setter", "complexity", "owner_symbol_id",
-    "scope_kind", "annotations", "generic_parameters", "throws", "qualified_calls",
-    "gravity_score", "api_contract_path",
-    // brain_relationship
-    "source_symbol_id", "target_symbol_id", "target_external", "source_external",
-    "relationship_type", "confidence", "context", "line_number", "is_cross_file",
-    "is_cross_language", "bridge_mechanism", "call_frequency",
-    "is_breaking_change_risk", "metadata",
-    // brain_import
-    "imported_name", "import_path", "import_type", "is_external", "line_number",
-    // brain_taint_flow
-    "source_type", "sink_type", "vulnerability_type", "severity", "flow_path",
-    "is_mitigated", "cross_language_boundaries",
-  ]
+// ================================================================
+// CORE ENTITIES - Universal across all languages
+// ================================================================
 
-  for (const c of known) {
-    Object.defineProperty(cols, c, {
-      get() { return { _colName: `${name}.${c}`, _tableName: name } },
-      enumerable: true,
-      configurable: true,
-    })
-  }
+export const BrainFileTable = sqliteTable(
+  "brain_file",
+  {
+    id: text().primaryKey(),
+    project_id: text()
+      .$type<ProjectID>()
+      .notNull()
+      .references(() => ProjectTable.id, { onDelete: "cascade" }),
+    path: text().notNull(),
+    relative_path: text().notNull(),
+    file_hash: text().notNull(),
+    size_bytes: integer(),
+    line_count: integer(),
+    language: text(),
+    last_modified: real(),
+    indexed_at: text(),
+    layer: text(), // e.g., "ui", "business", "data", "infrastructure"
+    is_test_file: integer({ mode: "boolean" }),
+    is_config_file: integer({ mode: "boolean" }),
+    is_documentation: integer({ mode: "boolean" }),
+    framework_type: text(), // e.g., "react", "flutter", "express", "django"
+    has_syntax_errors: integer({ mode: "boolean" }).notNull().default(false),
+    error_report: text({ mode: "json" }),
+    ...Timestamps,
+  },
+  (table) => [
+    index("brain_file_project_idx").on(table.project_id),
+    index("brain_file_path_idx").on(table.path),
+    index("brain_file_language_idx").on(table.language),
+    index("brain_file_hash_idx").on(table.file_hash),
+    index("brain_file_syntax_errors_idx").on(table.has_syntax_errors),
+    // COMPOUND INDEXES for ultra-fast lookups
+    index("brain_file_proj_path_idx").on(table.project_id, table.path),
+    index("brain_file_proj_hash_idx").on(table.project_id, table.file_hash),
+  ],
+)
 
-  return new Proxy(cols, {
-    get(target, prop) {
-      if (prop === "_tableName") return name
-      if (typeof prop === "string" && prop in target) return (target as any)[prop]
-      return { _colName: `${name}.${String(prop)}`, _tableName: name }
-    }
-  })
-}
+export const BrainSymbolTable = sqliteTable(
+  "brain_symbol",
+  {
+    id: text().primaryKey(),
+    project_id: text()
+      .$type<ProjectID>()
+      .notNull()
+      .references(() => ProjectTable.id, { onDelete: "cascade" }),
+    file_id: text()
+      .notNull()
+      .references(() => BrainFileTable.id, { onDelete: "cascade" }),
+    name: text().notNull(),
+    qualified_name: text(), // Full namespace/module path
+    symbol_type: text().notNull(), // "function", "class", "variable", "interface", "enum", "type", etc.
+    line_start: integer(),
+    line_end: integer(),
+    byte_start: integer(),
+    byte_end: integer(),
+    return_type: text(),
+    parameters: text({ mode: "json" }),
+    docstring: text(),
+    visibility: text(), // "public", "private", "protected", "internal"
+    is_async: integer({ mode: "boolean" }),
+    is_static: integer({ mode: "boolean" }),
+    is_abstract: integer({ mode: "boolean" }),
+    is_override: integer({ mode: "boolean" }),
+    is_getter: integer({ mode: "boolean" }),
+    is_setter: integer({ mode: "boolean" }),
+    complexity: integer(),
+    owner_symbol_id: text(), // Parent class/namespace
+    scope_kind: text(), // "global", "class", "function", "module"
+    annotations: text({ mode: "json" }), // Language-specific annotations/decorators
+    generic_parameters: text({ mode: "json" }),
+    qualified_calls: text({ mode: "json" }), // ProxiCall-style: JSON array of qualified call strings extracted as-is
+    gravity_score: real().default(0),
+    layer: text().default("core"),
+    api_contract_path: text(), // Deterministic mapping: Exact Route URL or Fetch URL for 100% accurate cross-language links
+    ...Timestamps,
+  },
+  (table) => [
+    index("brain_symbol_project_idx").on(table.project_id),
+    index("brain_symbol_file_idx").on(table.file_id),
+    index("brain_symbol_name_idx").on(table.name),
+    index("brain_symbol_type_idx").on(table.symbol_type),
+    index("brain_symbol_qualified_idx").on(table.qualified_name),
+    index("brain_symbol_owner_idx").on(table.owner_symbol_id),
+    // COMPOUND INDEXES for ultra-fast lookups
+    index("brain_sym_proj_file_idx").on(table.project_id, table.file_id),
+    index("brain_sym_proj_name_idx").on(table.project_id, table.name),
+    index("brain_sym_proj_type_idx").on(table.project_id, table.symbol_type),
+    // Tool query: find symbol by project + name + type (callers/callees trace)
+    index("brain_sym_proj_name_type_idx").on(table.project_id, table.name, table.symbol_type),
+  ],
+)
 
-export const BrainFileTable = table("brain_file")
-export const BrainSymbolTable = table("brain_symbol")
-export const BrainRelationshipTable = table("brain_relationship")
-export const BrainImportTable = table("brain_import")
-export const BrainTaintFlowTable = table("brain_taint_flow")
-export const BrainProjectHealthTable = table("brain_project_health")
+// ================================================================
+// RELATIONSHIPS - Cross-language intelligence core
+// ================================================================
+
+export const BrainRelationshipTable = sqliteTable(
+  "brain_relationship",
+  {
+    id: text().primaryKey(),
+    project_id: text()
+      .$type<ProjectID>()
+      .notNull()
+      .references(() => ProjectTable.id, { onDelete: "cascade" }),
+    source_symbol_id: text()
+      .references(() => BrainSymbolTable.id, { onDelete: "cascade" }),
+    target_symbol_id: text().references(() => BrainSymbolTable.id, { onDelete: "set null" }),
+    source_external: text(), // For unresolved / external sources (when source is a string but symbol not declared)
+    target_external: text(), // For external dependencies
+    relationship_type: text().notNull(), // "calls", "extends", "implements", "uses", "imports", "exports", etc.
+    confidence: real().notNull(), // 0.0 to 1.0 - AI confidence in relationship
+    context: text(), // Additional context about the relationship
+    line_number: integer(), // Where relationship occurs
+    is_cross_language: integer({ mode: "boolean" }), // True for relationships across languages
+    bridge_mechanism: text(), // How cross-language bridge works (API, FFI, etc.)
+    is_cross_file: integer({ mode: "boolean" }).notNull().default(false), // Fast UI stat index
+    metadata: text({ mode: "json" }), // Flexible metadata storage
+    ...Timestamps,
+  },
+  (table) => [
+    index("brain_rel_project_idx").on(table.project_id),
+    index("brain_rel_source_idx").on(table.source_symbol_id),
+    index("brain_rel_target_idx").on(table.target_symbol_id),
+    // Enrichment in-degree: GROUP BY target_symbol_id WHERE project_id
+    index("brain_rel_proj_target_idx").on(table.project_id, table.target_symbol_id),
+    index("brain_rel_type_idx").on(table.relationship_type),
+    index("brain_rel_confidence_idx").on(table.confidence),
+    index("brain_rel_cross_lang_idx").on(table.is_cross_language),
+    index("brain_rel_cross_file_idx").on(table.is_cross_file),
+    // COMPOUND INDEXES for ultra-fast lookups
+    index("brain_rel_proj_source_idx").on(table.project_id, table.source_symbol_id),
+    index("brain_rel_proj_target_idx").on(table.project_id, table.target_symbol_id),
+    index("brain_rel_proj_type_idx").on(table.project_id, table.relationship_type),
+    // Tool query: find callers/callees by target symbol + relationship type
+    index("brain_rel_target_type_idx").on(table.target_symbol_id, table.relationship_type),
+  ],
+)
+
+// ================================================================
+// IMPORTS/EXPORTS - Dependency tracking
+// ================================================================
+
+export const BrainImportTable = sqliteTable(
+  "brain_import",
+  {
+    id: text().primaryKey(),
+    project_id: text()
+      .$type<ProjectID>()
+      .notNull()
+      .references(() => ProjectTable.id, { onDelete: "cascade" }),
+    file_id: text()
+      .notNull()
+      .references(() => BrainFileTable.id, { onDelete: "cascade" }),
+    imported_name: text().notNull(),
+    imported_as: text(), // Alias name
+    import_path: text().notNull(),
+    import_type: text().notNull(), // "default", "named", "namespace", "side_effect"
+    is_external: integer({ mode: "boolean" }), // External package vs internal
+    package_name: text(), // For external imports
+    line_number: integer(),
+    is_dynamic: integer({ mode: "boolean" }), // Dynamic imports
+    resolved_symbol_id: text(), // Link to actual symbol if internal
+    ...Timestamps,
+  },
+  (table) => [
+    index("brain_import_project_idx").on(table.project_id),
+    index("brain_import_file_idx").on(table.file_id),
+    index("brain_import_path_idx").on(table.import_path),
+    index("brain_import_name_idx").on(table.imported_name),
+    index("brain_import_external_idx").on(table.is_external),
+  ],
+)
+
+// ================================================================
+// PATTERNS - Framework & architectural intelligence
+// ================================================================
+
+export const BrainPatternTable = sqliteTable(
+  "brain_pattern",
+  {
+    id: text().primaryKey(),
+    project_id: text()
+      .$type<ProjectID>()
+      .notNull()
+      .references(() => ProjectTable.id, { onDelete: "cascade" }),
+    pattern_type: text().notNull(), // "react_hook", "bloc_pattern", "singleton", "factory", etc.
+    pattern_name: text().notNull(),
+    description: text(),
+    framework: text(), // "react", "flutter", "spring", "django", etc.
+    confidence: real().notNull(),
+    symbol_ids: text({ mode: "json" }), // Array of symbol IDs that form this pattern
+    file_ids: text({ mode: "json" }), // Files involved in pattern
+    is_anti_pattern: integer({ mode: "boolean" }),
+    severity: text(), // "info", "warning", "error" for anti-patterns
+    suggestion: text(), // Improvement suggestion
+    metadata: text({ mode: "json" }),
+    ...Timestamps,
+  },
+  (table) => [
+    index("brain_pattern_project_idx").on(table.project_id),
+    index("brain_pattern_type_idx").on(table.pattern_type),
+    index("brain_pattern_framework_idx").on(table.framework),
+    index("brain_pattern_confidence_idx").on(table.confidence),
+  ],
+)
+
+
+
+// ================================================================
+// SECURITY & DATA-FLOW INTELLIGENCE (taint flow)
+// ================================================================
+
+export const BrainTaintFlowTable = sqliteTable(
+  "brain_taint_flow",
+  {
+    id: text().primaryKey(),
+    project_id: text()
+      .$type<ProjectID>()
+      .notNull()
+      .references(() => ProjectTable.id, { onDelete: "cascade" }),
+    source_symbol_id: text().references(() => BrainSymbolTable.id, { onDelete: "cascade" }),
+    sink_symbol_id: text().references(() => BrainSymbolTable.id, { onDelete: "cascade" }),
+    source_type: text().notNull(), // "user_input", "database_read", "network_receive"
+    sink_type: text().notNull(), // "database_write", "log_output", "shell_execution", "http_response"
+    vulnerability_type: text().notNull(), // "sql_injection", "xss", "pii_leak", "command_injection"
+    severity: text().notNull(), // "critical", "high", "medium", "low"
+    is_mitigated: integer({ mode: "boolean" }).notNull().default(false),
+    flow_path: text({ mode: "json" }), // Array of intermediate symbol IDs
+    cross_language_boundaries: integer().notNull().default(0),
+    mitigation_steps: text({ mode: "json" }),
+    ...Timestamps,
+  },
+  (table) => [
+    index("brain_taint_project_idx").on(table.project_id),
+    index("brain_taint_source_idx").on(table.source_symbol_id),
+    index("brain_taint_sink_idx").on(table.sink_symbol_id),
+    index("brain_taint_vuln_idx").on(table.vulnerability_type),
+    index("brain_taint_severity_idx").on(table.severity),
+  ],
+)
+
+// ================================================================
+// INTELLIGENCE CACHE - Query optimization & pattern recognition
+// ================================================================
+
+export const BrainQueryCacheTable = sqliteTable(
+  "brain_query_cache",
+  {
+    id: text().primaryKey(),
+    project_id: text()
+      .$type<ProjectID>()
+      .notNull()
+      .references(() => ProjectTable.id, { onDelete: "cascade" }),
+    query_type: text().notNull(), // "call_graph", "impact_analysis", "feature_map", etc.
+    query_hash: text().notNull(),
+    query_params: text({ mode: "json" }),
+    result_data: text({ mode: "json" }),
+    confidence: real().notNull(),
+    computation_time_ms: integer(),
+    cache_expires_at: integer(),
+    hit_count: integer().notNull().default(0),
+    ...Timestamps,
+  },
+  (table) => [
+    index("brain_cache_project_idx").on(table.project_id),
+    index("brain_cache_query_type_idx").on(table.query_type),
+    index("brain_cache_hash_idx").on(table.query_hash),
+    index("brain_cache_expires_idx").on(table.cache_expires_at),
+  ],
+)
+
+// ================================================================
+// ARCHITECTURAL HEALTH - Project Metrics & Security (Phase 3)
+// ================================================================
+
+export const BrainProjectHealthTable = sqliteTable("brain_project_health", {
+  project_id: text()
+    .$type<ProjectID>()
+    .primaryKey()
+    .references(() => ProjectTable.id, { onDelete: "cascade" }),
+  complexity_score: integer().notNull().default(0), // 0-100
+  maintainability_score: integer().notNull().default(0), // 0-100
+  technical_debt_score: integer().notNull().default(0), // 0-100
+  code_quality_score: integer().notNull().default(0), // 0-100
+  language_distribution: text({ mode: "json" }), // LanguageMetric[]
+  service_metrics: text({ mode: "json" }), // ServiceMetric[]
+  dependency_metrics: text({ mode: "json" }), // DependencyMetric
+  circular_dependencies: text({ mode: "json" }), // string[][]
+  contract_drift: text({ mode: "json" }), // string[]
+  performance_bottlenecks: text({ mode: "json" }), // string[]
+  ...Timestamps,
+})
+
+// ================================================================
+// INDEXING STATUS - Track what's been processed
+// ================================================================
+
+export const BrainIndexStatusTable = sqliteTable("brain_index_status", {
+  project_id: text()
+    .$type<ProjectID>()
+    .primaryKey()
+    .references(() => ProjectTable.id, { onDelete: "cascade" }),
+  last_full_index: integer(), // Timestamp
+  last_incremental_index: integer(),
+  total_files: integer().notNull().default(0),
+  indexed_files: integer().notNull().default(0),
+  total_symbols: integer().notNull().default(0),
+  total_relationships: integer().notNull().default(0),
+  indexing_version: text().notNull(), // Schema version for migrations
+  languages_detected: text({ mode: "json" }), // Array of languages found
+  frameworks_detected: text({ mode: "json" }), // Array of frameworks detected
+  indexing_errors: text({ mode: "json" }), // Array of error messages
+  performance_stats: text({ mode: "json" }), // Indexing performance metrics
+  ...Timestamps,
+})

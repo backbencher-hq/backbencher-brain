@@ -1,5 +1,6 @@
-// @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
-import * as Log from "../tool/brain-log.js"
+import { BrainDatabase } from "../brain/database"
+import type { ProjectID } from "../project/schema"
+import * as Log from "../tool/brain-log"
 
 const log = Log.create({ service: "optimized-call-graph" })
 

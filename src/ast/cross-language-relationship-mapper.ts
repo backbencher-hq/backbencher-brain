@@ -1,12 +1,11 @@
-// @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
-import * as Log from "../tool/brain-log.js"
 // Cross-Language Relationship Mapper
 // Maps EVERY relationship between symbols across ALL 26 languages
 // TRACING: API calls, data flows, service dependencies, FFI bindings - EVERYTHING!
 
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
-import { CrossLanguageIntelligence } from "./cross-language-intelligence.js"
+import { ASTEngine } from "./engine"
+import { CrossLanguageIntelligence } from "./cross-language-intelligence"
+import * as Log from "../tool/brain-log"
 
 const log = Log.create({ service: "relationship-mapper" })
 
@@ -16,7 +15,7 @@ export namespace CrossLanguageRelationshipMapper {
    * Maps ALL relationships between symbols with precision
    */
   export async function mapCrossLanguageRelationships(
-    fileResults: Map<string, ParseResult>,
+    fileResults: Map<string, ASTEngine.ParseResult>,
     symbols: CrossLanguageIntelligence.CrossLanguageSymbol[],
   ): Promise<CrossLanguageIntelligence.CrossLanguageRelationship[]> {
     log.info("🔗 Starting Relationship Mapping across ALL languages")
@@ -130,14 +129,14 @@ export namespace CrossLanguageRelationshipMapper {
    * KOTLIN MULTIPLATFORM (KMP) EXPECT/ACTUAL RELATIONSHIPS
    */
     async function mapKotlinMultiplatformRelationships(
-    fileResults: Map<string, ParseResult>,
+    fileResults: Map<string, ASTEngine.ParseResult>,
     symbols: CrossLanguageIntelligence.CrossLanguageSymbol[],
   ): Promise<CrossLanguageIntelligence.CrossLanguageRelationship[]> {
     const relationships: CrossLanguageIntelligence.CrossLanguageRelationship[] = [];
     
     // 1. Extract all expect and actual symbols directly from file results
-    const expectSymbols: { symbol: UniversalSymbol, file: string, lang: string }[] = [];
-    const actualSymbols: { symbol: UniversalSymbol, file: string, lang: string }[] = [];
+    const expectSymbols: { symbol: ASTEngine.UniversalSymbol, file: string, lang: string }[] = [];
+    const actualSymbols: { symbol: ASTEngine.UniversalSymbol, file: string, lang: string }[] = [];
 
     for (const [filePath, result] of fileResults.entries()) {
       if (result.language !== "kotlin") continue;
@@ -192,7 +191,7 @@ export namespace CrossLanguageRelationshipMapper {
   }
 
   async function mapAPICallRelationships(
-    fileResults: Map<string, ParseResult>,
+    fileResults: Map<string, ASTEngine.ParseResult>,
     symbols: CrossLanguageIntelligence.CrossLanguageSymbol[],
   ): Promise<CrossLanguageIntelligence.CrossLanguageRelationship[]> {
     const relationships: CrossLanguageIntelligence.CrossLanguageRelationship[] = []
@@ -297,7 +296,7 @@ export namespace CrossLanguageRelationshipMapper {
     }
 
     detectJavaScriptAPICalls(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageRelationship[] {
       const relationships: CrossLanguageIntelligence.CrossLanguageRelationship[] = []
@@ -332,7 +331,7 @@ export namespace CrossLanguageRelationshipMapper {
     }
 
     detectPythonAPICalls(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageRelationship[] {
       const relationships: CrossLanguageIntelligence.CrossLanguageRelationship[] = []
@@ -370,7 +369,7 @@ export namespace CrossLanguageRelationshipMapper {
      * Detects RestTemplate, WebClient, OkHttp, HttpClient calls
      */
     detectJavaAPICalls(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageRelationship[] {
       const relationships: CrossLanguageIntelligence.CrossLanguageRelationship[] = []
@@ -411,7 +410,7 @@ export namespace CrossLanguageRelationshipMapper {
      * Detects HttpClient, RestSharp, Refit calls
      */
     detectCSharpAPICalls(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageRelationship[] {
       const relationships: CrossLanguageIntelligence.CrossLanguageRelationship[] = []
@@ -447,7 +446,7 @@ export namespace CrossLanguageRelationshipMapper {
      * Detects net/http, resty, fasthttp calls
      */
     detectGoAPICalls(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageRelationship[] {
       const relationships: CrossLanguageIntelligence.CrossLanguageRelationship[] = []
@@ -477,7 +476,7 @@ export namespace CrossLanguageRelationshipMapper {
      * Detects reqwest, hyper, surf calls
      */
     detectRustAPICalls(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageRelationship[] {
       const relationships: CrossLanguageIntelligence.CrossLanguageRelationship[] = []
@@ -506,7 +505,7 @@ export namespace CrossLanguageRelationshipMapper {
      * Detects cURL, Guzzle, file_get_contents calls
      */
     detectPhpAPICalls(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageRelationship[] {
       const relationships: CrossLanguageIntelligence.CrossLanguageRelationship[] = []
@@ -538,7 +537,7 @@ export namespace CrossLanguageRelationshipMapper {
      * Detects Net::HTTP, HTTParty, Faraday calls
      */
     detectRubyAPICalls(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageRelationship[] {
       const relationships: CrossLanguageIntelligence.CrossLanguageRelationship[] = []
@@ -569,7 +568,7 @@ export namespace CrossLanguageRelationshipMapper {
      * Detects OkHttp, Retrofit, Ktor client calls
      */
     detectKotlinAPICalls(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageRelationship[] {
       const relationships: CrossLanguageIntelligence.CrossLanguageRelationship[] = []
@@ -601,7 +600,7 @@ export namespace CrossLanguageRelationshipMapper {
      * Detects Akka HTTP client, Play WS, sttp calls
      */
     detectScalaAPICalls(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageRelationship[] {
       const relationships: CrossLanguageIntelligence.CrossLanguageRelationship[] = []
@@ -630,7 +629,7 @@ export namespace CrossLanguageRelationshipMapper {
      * Detects URLSession, Alamofire calls
      */
     detectSwiftAPICalls(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageRelationship[] {
       const relationships: CrossLanguageIntelligence.CrossLanguageRelationship[] = []
@@ -656,7 +655,7 @@ export namespace CrossLanguageRelationshipMapper {
      * Detects http package, dio calls
      */
     detectDartAPICalls(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageRelationship[] {
       const relationships: CrossLanguageIntelligence.CrossLanguageRelationship[] = []
@@ -682,7 +681,7 @@ export namespace CrossLanguageRelationshipMapper {
      * Detects HTTPoison, Tesla, Finch calls
      */
     detectElixirAPICalls(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageRelationship[] {
       const relationships: CrossLanguageIntelligence.CrossLanguageRelationship[] = []
@@ -710,7 +709,7 @@ export namespace CrossLanguageRelationshipMapper {
      * Detects clj-http, http-kit calls
      */
     detectClojureAPICalls(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageRelationship[] {
       const relationships: CrossLanguageIntelligence.CrossLanguageRelationship[] = []
@@ -735,7 +734,7 @@ export namespace CrossLanguageRelationshipMapper {
      * Detects cpprestsdk, curl, boost::beast calls
      */
     detectCppAPICalls(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageRelationship[] {
       const relationships: CrossLanguageIntelligence.CrossLanguageRelationship[] = []
@@ -764,7 +763,7 @@ export namespace CrossLanguageRelationshipMapper {
      * Detects libcurl, custom HTTP client calls
      */
     detectCAPICalls(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageRelationship[] {
       const relationships: CrossLanguageIntelligence.CrossLanguageRelationship[] = []
@@ -787,7 +786,7 @@ export namespace CrossLanguageRelationshipMapper {
      */
     private applyHttpPatterns(
       patterns: RegExp[],
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
       language: string,
     ): CrossLanguageIntelligence.CrossLanguageRelationship[] {
@@ -918,7 +917,7 @@ export namespace CrossLanguageRelationshipMapper {
           filePath: sourceFile,
           language: sourceLanguage,
           range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 },
-          symbolKind: SymbolKind.Function,
+          symbolKind: ASTEngine.SymbolKind.Function,
           confidence: 0.8,
           context: {
             isDefinition: false,
@@ -958,7 +957,7 @@ export namespace CrossLanguageRelationshipMapper {
     }
 
     detectDatabaseOperations(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageRelationship[] {
       const relationships: CrossLanguageIntelligence.CrossLanguageRelationship[] = []
@@ -1017,7 +1016,7 @@ export namespace CrossLanguageRelationshipMapper {
           filePath: sourceFile,
           language: sourceLanguage,
           range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 },
-          symbolKind: SymbolKind.Function,
+          symbolKind: ASTEngine.SymbolKind.Function,
           confidence: 0.9,
           context: {
             isDefinition: false,
@@ -1061,7 +1060,7 @@ export namespace CrossLanguageRelationshipMapper {
    * Service Dependency Detection
    */
   async function mapServiceDependencies(
-    fileResults: Map<string, ParseResult>,
+    fileResults: Map<string, ASTEngine.ParseResult>,
     symbols: CrossLanguageIntelligence.CrossLanguageSymbol[],
   ): Promise<CrossLanguageIntelligence.CrossLanguageRelationship[]> {
     const relationships: CrossLanguageIntelligence.CrossLanguageRelationship[] = []
@@ -1080,7 +1079,7 @@ export namespace CrossLanguageRelationshipMapper {
    * Database Relationship Detection
    */
   async function mapDatabaseRelationships(
-    fileResults: Map<string, ParseResult>,
+    fileResults: Map<string, ASTEngine.ParseResult>,
     symbols: CrossLanguageIntelligence.CrossLanguageSymbol[],
   ): Promise<CrossLanguageIntelligence.CrossLanguageRelationship[]> {
     const relationships: CrossLanguageIntelligence.CrossLanguageRelationship[] = []
@@ -1098,7 +1097,7 @@ export namespace CrossLanguageRelationshipMapper {
    * Message Queue Detection
    */
   async function mapMessageQueueRelationships(
-    fileResults: Map<string, ParseResult>,
+    fileResults: Map<string, ASTEngine.ParseResult>,
     symbols: CrossLanguageIntelligence.CrossLanguageSymbol[],
   ): Promise<CrossLanguageIntelligence.CrossLanguageRelationship[]> {
     const relationships: CrossLanguageIntelligence.CrossLanguageRelationship[] = []
@@ -1116,7 +1115,7 @@ export namespace CrossLanguageRelationshipMapper {
    * Data Transfer Detection
    */
   async function mapDataTransferRelationships(
-    fileResults: Map<string, ParseResult>,
+    fileResults: Map<string, ASTEngine.ParseResult>,
     symbols: CrossLanguageIntelligence.CrossLanguageSymbol[],
   ): Promise<CrossLanguageIntelligence.CrossLanguageRelationship[]> {
     const relationships: CrossLanguageIntelligence.CrossLanguageRelationship[] = []
@@ -1134,7 +1133,7 @@ export namespace CrossLanguageRelationshipMapper {
    * Schema Contract Detection
    */
   async function mapSchemaContractRelationships(
-    fileResults: Map<string, ParseResult>,
+    fileResults: Map<string, ASTEngine.ParseResult>,
     symbols: CrossLanguageIntelligence.CrossLanguageSymbol[],
   ): Promise<CrossLanguageIntelligence.CrossLanguageRelationship[]> {
     const relationships: CrossLanguageIntelligence.CrossLanguageRelationship[] = []
@@ -1152,7 +1151,7 @@ export namespace CrossLanguageRelationshipMapper {
    * Configuration Sharing Detection
    */
   async function mapConfigurationRelationships(
-    fileResults: Map<string, ParseResult>,
+    fileResults: Map<string, ASTEngine.ParseResult>,
     symbols: CrossLanguageIntelligence.CrossLanguageSymbol[],
   ): Promise<CrossLanguageIntelligence.CrossLanguageRelationship[]> {
     const relationships: CrossLanguageIntelligence.CrossLanguageRelationship[] = []
@@ -1170,7 +1169,7 @@ export namespace CrossLanguageRelationshipMapper {
    * Build Dependency Detection
    */
   async function mapBuildDependencies(
-    fileResults: Map<string, ParseResult>,
+    fileResults: Map<string, ASTEngine.ParseResult>,
     symbols: CrossLanguageIntelligence.CrossLanguageSymbol[],
   ): Promise<CrossLanguageIntelligence.CrossLanguageRelationship[]> {
     const relationships: CrossLanguageIntelligence.CrossLanguageRelationship[] = []
@@ -1188,7 +1187,7 @@ export namespace CrossLanguageRelationshipMapper {
    * Deployment Relationship Detection
    */
   async function mapDeploymentRelationships(
-    fileResults: Map<string, ParseResult>,
+    fileResults: Map<string, ASTEngine.ParseResult>,
     symbols: CrossLanguageIntelligence.CrossLanguageSymbol[],
   ): Promise<CrossLanguageIntelligence.CrossLanguageRelationship[]> {
     const relationships: CrossLanguageIntelligence.CrossLanguageRelationship[] = []
@@ -1206,7 +1205,7 @@ export namespace CrossLanguageRelationshipMapper {
    * Code Generation Detection
    */
   async function mapCodeGenerationRelationships(
-    fileResults: Map<string, ParseResult>,
+    fileResults: Map<string, ASTEngine.ParseResult>,
     symbols: CrossLanguageIntelligence.CrossLanguageSymbol[],
   ): Promise<CrossLanguageIntelligence.CrossLanguageRelationship[]> {
     const relationships: CrossLanguageIntelligence.CrossLanguageRelationship[] = []
@@ -1224,7 +1223,7 @@ export namespace CrossLanguageRelationshipMapper {
    * FFI/Native Interop Detection
    */
   async function mapFFIRelationships(
-    fileResults: Map<string, ParseResult>,
+    fileResults: Map<string, ASTEngine.ParseResult>,
     symbols: CrossLanguageIntelligence.CrossLanguageSymbol[],
   ): Promise<CrossLanguageIntelligence.CrossLanguageRelationship[]> {
     const relationships: CrossLanguageIntelligence.CrossLanguageRelationship[] = []
@@ -1242,7 +1241,7 @@ export namespace CrossLanguageRelationshipMapper {
    * Protocol Relationship Detection
    */
   async function mapProtocolRelationships(
-    fileResults: Map<string, ParseResult>,
+    fileResults: Map<string, ASTEngine.ParseResult>,
     symbols: CrossLanguageIntelligence.CrossLanguageSymbol[],
   ): Promise<CrossLanguageIntelligence.CrossLanguageRelationship[]> {
     const relationships: CrossLanguageIntelligence.CrossLanguageRelationship[] = []
@@ -1265,14 +1264,14 @@ export namespace CrossLanguageRelationshipMapper {
     constructor(private symbols: CrossLanguageIntelligence.CrossLanguageSymbol[]) {}
 
     detectServiceDependencies(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageRelationship[] {
       const dependencies: CrossLanguageIntelligence.CrossLanguageRelationship[] = []
 
       // Detect import statements that reference other services
       for (const symbol of result.symbols) {
-        if (symbol.kind === SymbolKind.Import) {
+        if (symbol.kind === ASTEngine.SymbolKind.Import) {
           const targetService = this.findServiceFromImport(symbol.name)
           if (targetService) {
             dependencies.push(
@@ -1295,7 +1294,7 @@ export namespace CrossLanguageRelationshipMapper {
       sourceFile: string,
       sourceLanguage: string,
       targetService: CrossLanguageIntelligence.CrossLanguageSymbol,
-      importSymbol: UniversalSymbol,
+      importSymbol: ASTEngine.UniversalSymbol,
     ): CrossLanguageIntelligence.CrossLanguageRelationship {
       return {
         id: `service_dep_${sourceFile}_${targetService.id}`,
@@ -1334,7 +1333,7 @@ export namespace CrossLanguageRelationshipMapper {
     constructor(private symbols: CrossLanguageIntelligence.CrossLanguageSymbol[]) {}
 
     detectMessageQueueOperations(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageRelationship[] {
       const relationships: CrossLanguageIntelligence.CrossLanguageRelationship[] = []
@@ -1404,7 +1403,7 @@ export namespace CrossLanguageRelationshipMapper {
           filePath: sourceFile,
           language: sourceLanguage,
           range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 },
-          symbolKind: SymbolKind.Function,
+          symbolKind: ASTEngine.SymbolKind.Function,
           confidence: 0.8,
           context: {
             isDefinition: false,
@@ -1443,7 +1442,7 @@ export namespace CrossLanguageRelationshipMapper {
     constructor(private symbols: CrossLanguageIntelligence.CrossLanguageSymbol[]) {}
 
     detectDataTransfers(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageRelationship[] {
       const relationships: CrossLanguageIntelligence.CrossLanguageRelationship[] = []
@@ -1498,7 +1497,7 @@ export namespace CrossLanguageRelationshipMapper {
           filePath: sourceFile,
           language: sourceLanguage,
           range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 },
-          symbolKind: SymbolKind.Function,
+          symbolKind: ASTEngine.SymbolKind.Function,
           confidence: 0.7,
           context: {
             isDefinition: false,
@@ -1539,7 +1538,7 @@ export namespace CrossLanguageRelationshipMapper {
     constructor(private symbols: CrossLanguageIntelligence.CrossLanguageSymbol[]) {}
 
     detectSchemaContracts(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageRelationship[] {
       const relationships: CrossLanguageIntelligence.CrossLanguageRelationship[] = []
@@ -1628,7 +1627,7 @@ export namespace CrossLanguageRelationshipMapper {
           filePath,
           language,
           range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 },
-          symbolKind: SymbolKind.Interface,
+          symbolKind: ASTEngine.SymbolKind.Interface,
           confidence: 0.9,
           context: {
             isDefinition: true,
@@ -1659,7 +1658,7 @@ export namespace CrossLanguageRelationshipMapper {
     constructor(private symbols: CrossLanguageIntelligence.CrossLanguageSymbol[]) {}
 
     detectConfigurationSharing(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageRelationship[] {
       const relationships: CrossLanguageIntelligence.CrossLanguageRelationship[] = []
@@ -1745,7 +1744,7 @@ export namespace CrossLanguageRelationshipMapper {
           filePath,
           language,
           range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 },
-          symbolKind: SymbolKind.Variable,
+          symbolKind: ASTEngine.SymbolKind.Variable,
           confidence: 0.8,
           context: {
             isDefinition: false,
@@ -1776,7 +1775,7 @@ export namespace CrossLanguageRelationshipMapper {
     constructor(private symbols: CrossLanguageIntelligence.CrossLanguageSymbol[]) {}
 
     detectBuildDependencies(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageRelationship[] {
       const relationships: CrossLanguageIntelligence.CrossLanguageRelationship[] = []
@@ -1939,7 +1938,7 @@ export namespace CrossLanguageRelationshipMapper {
           filePath,
           language,
           range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 },
-          symbolKind: SymbolKind.Import,
+          symbolKind: ASTEngine.SymbolKind.Import,
           confidence: 0.9,
           context: {
             isDefinition: false,
@@ -1970,7 +1969,7 @@ export namespace CrossLanguageRelationshipMapper {
     constructor(private symbols: CrossLanguageIntelligence.CrossLanguageSymbol[]) {}
 
     detectDeploymentRelationships(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageRelationship[] {
       const relationships: CrossLanguageIntelligence.CrossLanguageRelationship[] = []
@@ -2067,7 +2066,7 @@ export namespace CrossLanguageRelationshipMapper {
           filePath,
           language,
           range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 },
-          symbolKind: SymbolKind.Module,
+          symbolKind: ASTEngine.SymbolKind.Module,
           confidence: 0.8,
           context: {
             isDefinition: true,
@@ -2098,7 +2097,7 @@ export namespace CrossLanguageRelationshipMapper {
     constructor(private symbols: CrossLanguageIntelligence.CrossLanguageSymbol[]) {}
 
     detectCodeGeneration(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageRelationship[] {
       const relationships: CrossLanguageIntelligence.CrossLanguageRelationship[] = []
@@ -2201,7 +2200,7 @@ export namespace CrossLanguageRelationshipMapper {
           filePath,
           language,
           range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 },
-          symbolKind: SymbolKind.Class,
+          symbolKind: ASTEngine.SymbolKind.Class,
           confidence: 0.95,
           context: {
             isDefinition: true,
@@ -2231,7 +2230,7 @@ export namespace CrossLanguageRelationshipMapper {
     constructor(private symbols: CrossLanguageIntelligence.CrossLanguageSymbol[]) {}
 
     detectFFIRelationships(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageRelationship[] {
       const relationships: CrossLanguageIntelligence.CrossLanguageRelationship[] = []
@@ -2361,7 +2360,7 @@ export namespace CrossLanguageRelationshipMapper {
           filePath,
           language,
           range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 },
-          symbolKind: SymbolKind.Function,
+          symbolKind: ASTEngine.SymbolKind.Function,
           confidence: 0.9,
           context: {
             isDefinition: false,
@@ -2392,7 +2391,7 @@ export namespace CrossLanguageRelationshipMapper {
     constructor(private symbols: CrossLanguageIntelligence.CrossLanguageSymbol[]) {}
 
     detectProtocolRelationships(
-      result: ParseResult,
+      result: ASTEngine.ParseResult,
       filePath: string,
     ): CrossLanguageIntelligence.CrossLanguageRelationship[] {
       const relationships: CrossLanguageIntelligence.CrossLanguageRelationship[] = []
@@ -2474,7 +2473,7 @@ export namespace CrossLanguageRelationshipMapper {
           filePath,
           language,
           range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 },
-          symbolKind: SymbolKind.Interface,
+          symbolKind: ASTEngine.SymbolKind.Interface,
           confidence: 0.85,
           context: {
             isDefinition: true,

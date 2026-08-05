@@ -1,24 +1,23 @@
-// @ts-nocheck — Ported from backbencher.
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import { ASTEngine } from "./engine"
 
 interface RustContext {
   tree: { rootNode: Node }
   content: string
   filePath: string
-  symbols: UniversalSymbol[]
-  imports: ImportInfo[]
-  relationships: UniversalRelationship[]
-  exports: ExportInfo[]
-  metadata: Partial<FileMetadata>
+  symbols: ASTEngine.UniversalSymbol[]
+  imports: ASTEngine.ImportInfo[]
+  relationships: ASTEngine.UniversalRelationship[]
+  exports: ASTEngine.ExportInfo[]
+  metadata: Partial<ASTEngine.FileMetadata>
 }
 
-export class RealRustAnalyzer implements LanguageAnalyzer {
+export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
   public analyze(
     rootNode: Node,
     content: string,
     filePath: string,
-  ): Omit<ParseResult, "language" | "metadata"> & { metadata?: Partial<FileMetadata> } {
+  ): Omit<ASTEngine.ParseResult, "language" | "metadata"> & { metadata?: Partial<ASTEngine.FileMetadata> } {
     const ctx: RustContext = {
       tree: { rootNode },
       content,
@@ -57,7 +56,7 @@ export class RealRustAnalyzer implements LanguageAnalyzer {
       }
     }
 
-    const stack: { node: Node; parent: UniversalSymbol | null }[] = [{ node: rootNode, parent: null }]
+    const stack: { node: Node; parent: ASTEngine.UniversalSymbol | null }[] = [{ node: rootNode, parent: null }]
 
     while (stack.length > 0) {
       const popped = stack.pop()
@@ -92,19 +91,19 @@ export class RealRustAnalyzer implements LanguageAnalyzer {
         this.handleMacroInvocation(node, ctx, parent)
       } else if (node.type === "enum_variant") {
         const variantName = this.extractIdentifier(node, "name")
-        if (variantName && parent && parent.kind === SymbolKind.Enum) {
-          const sym = this.createSymbol(variantName, SymbolKind.EnumMember, node, parent)
+        if (variantName && parent && parent.kind === ASTEngine.SymbolKind.Enum) {
+          const sym = this.createSymbol(variantName, ASTEngine.SymbolKind.EnumMember, node, parent)
           ctx.symbols.push(sym)
         }
       } else if (node.type === "type_item" || node.type === "type_alias_declaration") {
         const name = this.extractIdentifier(node, "name")
         if (name) {
-          const sym = this.createSymbol(name, SymbolKind.Type, node, parent, { type: "type_alias" })
+          const sym = this.createSymbol(name, ASTEngine.SymbolKind.Type, node, parent, { type: "type_alias" })
           ctx.symbols.push(sym)
         }
       } else if (node.type === "closure_expression") {
         const name = `closure_${node.startPosition.row + 1}_${node.startPosition.column + 1}`
-        const sym = this.createSymbol(name, SymbolKind.Function, node, parent, { isClosure: true })
+        const sym = this.createSymbol(name, ASTEngine.SymbolKind.Function, node, parent, { isClosure: true })
         ctx.symbols.push(sym)
       } else if (node.type === "extern_crate_declaration") {
         const name = this.extractIdentifier(node, "name")
@@ -131,7 +130,7 @@ export class RealRustAnalyzer implements LanguageAnalyzer {
             ctx.relationships.push({
               source: parent?.name || "global",
               target: fnNode.text,
-              type: RelationshipType.Calls,
+              type: ASTEngine.RelationshipType.Calls,
               metadata: { rustSpecific: true, isAwait: true },
             })
           }
@@ -151,7 +150,7 @@ export class RealRustAnalyzer implements LanguageAnalyzer {
               ctx.relationships.push({
                 source: parent?.name || "global",
                 target: left.text,
-                type: RelationshipType.References,
+                type: ASTEngine.RelationshipType.References,
                 metadata: { rustSpecific: true, whereBound: true },
               })
             }
@@ -187,10 +186,10 @@ export class RealRustAnalyzer implements LanguageAnalyzer {
 
     // Add Contains + References
     for (const s of ctx.symbols) {
-      const _owner = s.ownerName || s.scope; if (_owner) ctx.relationships.push({ source: _owner, target: s.name, type: RelationshipType.Contains, confidence: 1.0, metadata: {} })
+      const _owner = s.ownerName || s.scope; if (_owner) ctx.relationships.push({ source: _owner, target: s.name, type: ASTEngine.RelationshipType.Contains, confidence: 1.0, metadata: {} })
     }
     for (const imp of ctx.imports) {
-      ctx.relationships.push({ source: "root", target: imp.module || "", type: RelationshipType.References, confidence: 0.9, metadata: {} })
+      ctx.relationships.push({ source: "root", target: imp.module || "", type: ASTEngine.RelationshipType.References, confidence: 0.9, metadata: {} })
     }
 
     return {
@@ -236,7 +235,7 @@ export class RealRustAnalyzer implements LanguageAnalyzer {
             ctx.relationships.push({
               source: nameNode.text,
               target: match[1],
-              type: RelationshipType.Exports,
+              type: ASTEngine.RelationshipType.Exports,
               metadata: {},
             })
           }
@@ -287,23 +286,23 @@ export class RealRustAnalyzer implements LanguageAnalyzer {
 
   private createSymbol(
     name: string,
-    kind: SymbolKind,
+    kind: ASTEngine.SymbolKind,
     node: Node,
-    parent: UniversalSymbol | null,
+    parent: ASTEngine.UniversalSymbol | null,
     extraMetadata: any = {},
-  ): UniversalSymbol {
+  ): ASTEngine.UniversalSymbol {
     let ownerName = parent?.name
     let ownerKind = parent?.kind
 
-    if (parent?.kind === SymbolKind.Class && parent.metadata?.type === "impl") {
+    if (parent?.kind === ASTEngine.SymbolKind.Class && parent.metadata?.type === "impl") {
       ownerName = parent.metadata?.target
     }
     // Trait symbols should expose themselves as Interface for ownerKind
-    if (parent?.kind === SymbolKind.Trait) {
-      ownerKind = SymbolKind.Interface
+    if (parent?.kind === ASTEngine.SymbolKind.Trait) {
+      ownerKind = ASTEngine.SymbolKind.Interface
     }
-    if (parent?.kind === SymbolKind.Interface) {
-      ownerKind = SymbolKind.Interface
+    if (parent?.kind === ASTEngine.SymbolKind.Interface) {
+      ownerKind = ASTEngine.SymbolKind.Interface
     }
 
     return {
@@ -328,13 +327,13 @@ export class RealRustAnalyzer implements LanguageAnalyzer {
   private handleStruct(
     node: Node,
     ctx: RustContext,
-    parent: UniversalSymbol | null,
-  ): UniversalSymbol | null {
+    parent: ASTEngine.UniversalSymbol | null,
+  ): ASTEngine.UniversalSymbol | null {
     const name = this.extractIdentifier(node, "name")
     if (!name) return null
 
     // Use SymbolKind.Struct for Rust structs
-    const symbol = this.createSymbol(name, SymbolKind.Struct, node, parent)
+    const symbol = this.createSymbol(name, ASTEngine.SymbolKind.Struct, node, parent)
     if (this.isPublic(node)) symbol.visibility = "public"
     ctx.symbols.push(symbol)
 
@@ -353,7 +352,7 @@ export class RealRustAnalyzer implements LanguageAnalyzer {
         if (fieldNode && fieldNode.type === "field_declaration") {
           const fieldName = this.extractIdentifier(fieldNode, "name")
           if (fieldName) {
-            const fieldSymbol = this.createSymbol(fieldName, SymbolKind.Property, fieldNode, symbol, {
+            const fieldSymbol = this.createSymbol(fieldName, ASTEngine.SymbolKind.Property, fieldNode, symbol, {
               type: "field",
             })
             if (this.isPublic(fieldNode)) fieldSymbol.visibility = "public"
@@ -366,7 +365,7 @@ export class RealRustAnalyzer implements LanguageAnalyzer {
     if (this.isPublic(node)) {
       ctx.exports.push({
         name,
-        type: SymbolKind.Class,
+        type: ASTEngine.SymbolKind.Class,
         range: symbol.range,
         isType: true,
       })
@@ -377,8 +376,8 @@ export class RealRustAnalyzer implements LanguageAnalyzer {
   private handleTrait(
     node: Node,
     ctx: RustContext,
-    parent: UniversalSymbol | null,
-  ): UniversalSymbol | null {
+    parent: ASTEngine.UniversalSymbol | null,
+  ): ASTEngine.UniversalSymbol | null {
     const nameNode = node.childForFieldName("name")
     let name = nameNode ? nameNode.text : null
 
@@ -391,7 +390,7 @@ export class RealRustAnalyzer implements LanguageAnalyzer {
     if (!name) return null
 
     // Use SymbolKind.Trait directly instead of Interface
-    const symbol = this.createSymbol(name, SymbolKind.Trait, node, parent)
+    const symbol = this.createSymbol(name, ASTEngine.SymbolKind.Trait, node, parent)
     ctx.symbols.push(symbol)
 
     // Extract trait bounds → Extends relationships (trait Foo: Bar + Baz)
@@ -403,7 +402,7 @@ export class RealRustAnalyzer implements LanguageAnalyzer {
           ctx.relationships.push({
             source: name,
             target: bound.text,
-            type: RelationshipType.Extends,
+            type: ASTEngine.RelationshipType.Extends,
             confidence: 1.0,
             metadata: { rustSpecific: true, traitBound: true },
           })
@@ -414,7 +413,7 @@ export class RealRustAnalyzer implements LanguageAnalyzer {
     if (this.isPublic(node)) {
       ctx.exports.push({
         name,
-        type: SymbolKind.Trait,
+        type: ASTEngine.SymbolKind.Trait,
         range: symbol.range,
         isType: true,
       })
@@ -425,8 +424,8 @@ export class RealRustAnalyzer implements LanguageAnalyzer {
   private handleImpl(
     node: Node,
     ctx: RustContext,
-    parent: UniversalSymbol | null,
-  ): UniversalSymbol | null {
+    parent: ASTEngine.UniversalSymbol | null,
+  ): ASTEngine.UniversalSymbol | null {
     let traitNode: Node | null = null
     let typeNode: Node | null = null
 
@@ -464,14 +463,14 @@ export class RealRustAnalyzer implements LanguageAnalyzer {
     const implName = traitName ? `${traitName}_for_${typeName}` : typeName
 
     // Use SymbolKind.Impl for Rust impl blocks
-    const symbol = this.createSymbol(implName, SymbolKind.Impl, node, parent)
+    const symbol = this.createSymbol(implName, ASTEngine.SymbolKind.Impl, node, parent)
     ctx.symbols.push(symbol)
 
     if (traitName) {
       ctx.relationships.push({
         source: typeName,
         target: traitName,
-        type: RelationshipType.Implements,
+        type: ASTEngine.RelationshipType.Implements,
         metadata: {},
       })
     }
@@ -482,18 +481,18 @@ export class RealRustAnalyzer implements LanguageAnalyzer {
   private handleMod(
     node: Node,
     ctx: RustContext,
-    parent: UniversalSymbol | null,
-  ): UniversalSymbol | null {
+    parent: ASTEngine.UniversalSymbol | null,
+  ): ASTEngine.UniversalSymbol | null {
     const name = this.extractIdentifier(node, "name")
     if (!name) return null
 
-    const symbol = this.createSymbol(name, SymbolKind.Module, node, parent, { type: "mod" })
+    const symbol = this.createSymbol(name, ASTEngine.SymbolKind.Module, node, parent, { type: "mod" })
     ctx.symbols.push(symbol)
 
     if (this.isPublic(node)) {
       ctx.exports.push({
         name,
-        type: SymbolKind.Module,
+        type: ASTEngine.SymbolKind.Module,
         range: symbol.range,
         isType: false,
       })
@@ -504,18 +503,18 @@ export class RealRustAnalyzer implements LanguageAnalyzer {
   private handleEnum(
     node: Node,
     ctx: RustContext,
-    parent: UniversalSymbol | null,
-  ): UniversalSymbol | null {
+    parent: ASTEngine.UniversalSymbol | null,
+  ): ASTEngine.UniversalSymbol | null {
     const name = this.extractIdentifier(node, "name")
     if (!name) return null
 
-    const symbol = this.createSymbol(name, SymbolKind.Enum, node, parent, { type: "enum" })
+    const symbol = this.createSymbol(name, ASTEngine.SymbolKind.Enum, node, parent, { type: "enum" })
     ctx.symbols.push(symbol)
 
     if (this.isPublic(node)) {
       ctx.exports.push({
         name,
-        type: SymbolKind.Enum,
+        type: ASTEngine.SymbolKind.Enum,
         range: symbol.range,
         isType: true,
       })
@@ -527,8 +526,8 @@ export class RealRustAnalyzer implements LanguageAnalyzer {
   private handleFunction(
     node: Node,
     ctx: RustContext,
-    parent: UniversalSymbol | null,
-  ): UniversalSymbol | null {
+    parent: ASTEngine.UniversalSymbol | null,
+  ): ASTEngine.UniversalSymbol | null {
     const name = this.extractIdentifier(node, "name")
     if (!name) return null
 
@@ -545,7 +544,7 @@ export class RealRustAnalyzer implements LanguageAnalyzer {
 
     const symbol = this.createSymbol(
       name,
-      isMethod ? SymbolKind.Method : SymbolKind.Function,
+      isMethod ? ASTEngine.SymbolKind.Method : ASTEngine.SymbolKind.Function,
       node,
       parent,
       { type: "function", isConstFn, isAsyncFn, isUnsafeFn },
@@ -578,7 +577,7 @@ export class RealRustAnalyzer implements LanguageAnalyzer {
 
     const parametersNode = node.childForFieldName("parameters")
     if (parametersNode) {
-      const params: Parameter[] = []
+      const params: ASTEngine.Parameter[] = []
       for (let i = 0; i < parametersNode.namedChildCount; i++) {
         const p = parametersNode.namedChild(i)
         if (p && (p.type === "parameter" || p.type === "self_parameter")) {
@@ -599,7 +598,7 @@ export class RealRustAnalyzer implements LanguageAnalyzer {
     if (this.isPublic(node) && !isMethod) {
       ctx.exports.push({
         name,
-        type: SymbolKind.Function,
+        type: ASTEngine.SymbolKind.Function,
         range: symbol.range,
         isType: false,
       })
@@ -633,7 +632,7 @@ export class RealRustAnalyzer implements LanguageAnalyzer {
           ctx.relationships.push({
             source: symbol.ownerName ? `${symbol.ownerName}.${symbol.name}` : symbol.name,
             target: target,
-            type: RelationshipType.Calls,
+            type: ASTEngine.RelationshipType.Calls,
             metadata: { callExpression: functionNode.text },
           })
         }
@@ -645,7 +644,7 @@ export class RealRustAnalyzer implements LanguageAnalyzer {
           ctx.relationships.push({
             source: `${symbol.ownerName}.${symbol.name}`,
             target: typeNode.text,
-            type: RelationshipType.Uses,
+            type: ASTEngine.RelationshipType.Uses,
             metadata: { relationshipType: "rust_borrow" },
           })
         }
@@ -660,7 +659,7 @@ export class RealRustAnalyzer implements LanguageAnalyzer {
     return symbol
   }
 
-  private handleVariable(node: Node, ctx: RustContext, parent: UniversalSymbol | null): void {
+  private handleVariable(node: Node, ctx: RustContext, parent: ASTEngine.UniversalSymbol | null): void {
     let patternNode = node.childForFieldName("pattern")
     if (!patternNode) {
       for (let i = 0; i < node.namedChildCount; i++) {
@@ -674,13 +673,13 @@ export class RealRustAnalyzer implements LanguageAnalyzer {
     if (!patternNode) return
 
     const name = patternNode.text
-    const symbol = this.createSymbol(name, SymbolKind.Variable, node, parent, { type: node.type })
+    const symbol = this.createSymbol(name, ASTEngine.SymbolKind.Variable, node, parent, { type: node.type })
     ctx.symbols.push(symbol)
 
     if (this.isPublic(node) && !parent) {
       ctx.exports.push({
         name,
-        type: SymbolKind.Variable,
+        type: ASTEngine.SymbolKind.Variable,
         range: symbol.range,
         isType: false,
       })
@@ -745,7 +744,7 @@ export class RealRustAnalyzer implements LanguageAnalyzer {
     if (isPublic) {
       ctx.exports.push({
         name: modulePath,
-        type: SymbolKind.Module,
+        type: ASTEngine.SymbolKind.Module,
         range: {
           startLine: node.startPosition.row + 1, startColumn: node.startPosition.column + 1,
           endLine: node.endPosition.row + 1, endColumn: node.endPosition.column + 1,
@@ -757,7 +756,7 @@ export class RealRustAnalyzer implements LanguageAnalyzer {
   }
 
   // Extract function calls at any scope (not just inside function bodies)
-  private handleCallExpression(node: Node, ctx: RustContext, parent: UniversalSymbol | null): void {
+  private handleCallExpression(node: Node, ctx: RustContext, parent: ASTEngine.UniversalSymbol | null): void {
     const functionNode = node.childForFieldName("function")
     if (!functionNode) return
 
@@ -801,7 +800,7 @@ export class RealRustAnalyzer implements LanguageAnalyzer {
       target,
       fromSymbol: source,
       toSymbol: qualified,
-      type: RelationshipType.Calls,
+      type: ASTEngine.RelationshipType.Calls,
       metadata: { qualified },
     })
 
@@ -812,7 +811,7 @@ export class RealRustAnalyzer implements LanguageAnalyzer {
         target,
         fromSymbol: source,
         toSymbol: qualified,
-        type: RelationshipType.Instantiates,
+        type: ASTEngine.RelationshipType.Instantiates,
         confidence: 0.75,
         metadata: { qualified, isConstructor: true },
       })
@@ -820,7 +819,7 @@ export class RealRustAnalyzer implements LanguageAnalyzer {
   }
 
   // Extract macro invocations: println!(), vec![], format!(), etc.
-  private handleMacroInvocation(node: Node, ctx: RustContext, parent: UniversalSymbol | null): void {
+  private handleMacroInvocation(node: Node, ctx: RustContext, parent: ASTEngine.UniversalSymbol | null): void {
     const macroNode = node.childForFieldName("macro")
     if (!macroNode) return
 
@@ -843,7 +842,7 @@ export class RealRustAnalyzer implements LanguageAnalyzer {
       target: macroName,
       fromSymbol: source,
       toSymbol: `macro:${macroName}`,
-      type: RelationshipType.Calls,
+      type: ASTEngine.RelationshipType.Calls,
       metadata: { macroInvocation: true },
     })
 
@@ -869,7 +868,7 @@ export class RealRustAnalyzer implements LanguageAnalyzer {
 
     const name = nameNode.text
     // Use symbol type directly instead of metadata for macros
-    const symbol = this.createSymbol(name, SymbolKind.Macro, node, parent)
+    const symbol = this.createSymbol(name, ASTEngine.SymbolKind.Macro, node, parent)
     ctx.symbols.push(symbol)
 
     if (this.isPublic(node) || node.text.includes("#[macro_export]")) {

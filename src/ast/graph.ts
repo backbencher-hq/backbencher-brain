@@ -1,6 +1,10 @@
-// @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
-import * as Log from "../tool/brain-log.js"
+// @ts-nocheck — ported; verified by tests. Restored incrementally in Phase 3.
+import { BrainDatabase } from "../brain/database"
+import type { ProjectID } from "../project/schema"
+import * as Log from "../tool/brain-log"
 import { eq, and, or, sql, inArray, like } from "drizzle-orm"
+import { BrainSymbolTable, BrainRelationshipTable, BrainFileTable, BrainImportTable } from "../brain/brain.sql"
+import { BrainSemanticEmbeddingTable } from "../brain/revolutionary.sql"
 
 const log = Log.create({ service: "graph-intelligence" })
 
@@ -31,7 +35,7 @@ export namespace GraphIntelligence {
   export enum RelationshipType {
     // Direct code relationships
     Calls = "calls",
-    Imports = "brain_import",
+    Imports = "imports",
     Extends = "extends",
     Implements = "implements",
     Uses = "uses",

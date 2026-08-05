@@ -1,16 +1,15 @@
-// @ts-nocheck — Ported from backbencher.
 import type { Node } from "web-tree-sitter"
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
+import { ASTEngine } from "./engine"
 
-export class RealSvelteAnalyzer implements LanguageAnalyzer {
-  public analyze(rootNode: Node, content: string, filePath: string): ParseResult {
-    const symbols: UniversalSymbol[] = []
-    const relationships: UniversalRelationship[] = []
-    const imports: ImportInfo[] = []
-    const exports: ExportInfo[] = []
+export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
+  public analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
+    const symbols: ASTEngine.UniversalSymbol[] = []
+    const relationships: ASTEngine.UniversalRelationship[] = []
+    const imports: ASTEngine.ImportInfo[] = []
+    const exports: ASTEngine.ExportInfo[] = []
     // Svelte relationships extracted via AST traversal (no regex)
     // Directives like on:click, bind:value are parsed as attributes by tree-sitter
-    const errors: ParseError[] = []
+    const errors: ASTEngine.ParseError[] = []
 
     const walkStack: { node: Node; scopePath: string[] }[] = [{ node: rootNode, scopePath: [] }]
 
@@ -26,9 +25,9 @@ export class RealSvelteAnalyzer implements LanguageAnalyzer {
           const tagName = tagNameNode?.text || "template"
 
           if (tagName === "script" || tagName === "template" || tagName === "style") {
-            const blockSymbol: UniversalSymbol = {
+            const blockSymbol: ASTEngine.UniversalSymbol = {
               name: tagName === "script" ? "svelte_script" : `svelte_block_${tagName}`,
-              kind: SymbolKind.Module,
+              kind: ASTEngine.SymbolKind.Module,
               range: {
                 startLine: node.startPosition.row + 1,
                 endLine: node.endPosition.row + 1,
@@ -125,7 +124,7 @@ export class RealSvelteAnalyzer implements LanguageAnalyzer {
                     relationships.push({
                       source: "component",
                       target: exportName,
-                      type: RelationshipType.Exports,
+                      type: ASTEngine.RelationshipType.Exports,
                       confidence: 0.9,
                       metadata: { context: "Svelte component prop (export)" },
                     } as any)
@@ -160,14 +159,14 @@ export class RealSvelteAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: parentName,
                 target: tagName,
-                type: RelationshipType.Contains,
+                type: ASTEngine.RelationshipType.Contains,
                 confidence: 0.9,
                 metadata: { context: "Svelte component nesting" },
               } as any)
               relationships.push({
                 source: parentName,
                 target: tagName,
-                type: RelationshipType.Instantiates,
+                type: ASTEngine.RelationshipType.Instantiates,
                 confidence: 0.85,
                 metadata: { context: "Svelte component usage" },
               } as any)
@@ -181,9 +180,9 @@ export class RealSvelteAnalyzer implements LanguageAnalyzer {
       if (type === "directive_attribute" || type === "attribute") {
         const attrName = this.findChild(node, (n) => n.type === "attribute_name" || n.type === "directive_name")?.text
         if (attrName) {
-          const attrSymbol: UniversalSymbol = {
+          const attrSymbol: ASTEngine.UniversalSymbol = {
             name: attrName,
-            kind: SymbolKind.Property,
+            kind: ASTEngine.SymbolKind.Property,
             range: {
               startLine: node.startPosition.row + 1,
               endLine: node.endPosition.row + 1,
@@ -218,7 +217,7 @@ export class RealSvelteAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: scopeName,
                 target: attrName.slice(3),
-                type: RelationshipType.Calls,
+                type: ASTEngine.RelationshipType.Calls,
                 confidence: 0.7,
                 metadata: { context: `Svelte event handler ${attrName}` },
               } as any)
@@ -226,7 +225,7 @@ export class RealSvelteAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: scopeName,
                 target: attrName.slice(5),
-                type: RelationshipType.Uses,
+                type: ASTEngine.RelationshipType.Uses,
                 confidence: 0.8,
                 metadata: { context: `Svelte binding ${attrName}` },
               } as any)
@@ -234,7 +233,7 @@ export class RealSvelteAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: scopeName,
                 target: attrName.slice(6),
-                type: RelationshipType.Uses,
+                type: ASTEngine.RelationshipType.Uses,
                 confidence: 0.8,
                 metadata: { context: `Svelte class directive ${attrName}` },
               } as any)
@@ -242,7 +241,7 @@ export class RealSvelteAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: scopeName,
                 target: attrName.slice(6),
-                type: RelationshipType.Uses,
+                type: ASTEngine.RelationshipType.Uses,
                 confidence: 0.8,
                 metadata: { context: `Svelte style directive ${attrName}` },
               } as any)
@@ -250,7 +249,7 @@ export class RealSvelteAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: scopeName,
                 target: attrName.slice(4),
-                type: RelationshipType.Calls,
+                type: ASTEngine.RelationshipType.Calls,
                 confidence: 0.85,
                 metadata: { context: `Svelte action ${attrName}` },
               } as any)
@@ -259,7 +258,7 @@ export class RealSvelteAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: scopeName,
                 target: attrName.slice(colonIdx + 1),
-                type: RelationshipType.Uses,
+                type: ASTEngine.RelationshipType.Uses,
                 confidence: 0.8,
                 metadata: { context: `Svelte transition ${attrName}` },
               } as any)
@@ -267,7 +266,7 @@ export class RealSvelteAnalyzer implements LanguageAnalyzer {
               relationships.push({
                 source: scopeName,
                 target: attrName.slice(8),
-                type: RelationshipType.Uses,
+                type: ASTEngine.RelationshipType.Uses,
                 confidence: 0.8,
                 metadata: { context: `Svelte animation ${attrName}` },
               } as any)
@@ -289,9 +288,9 @@ export class RealSvelteAnalyzer implements LanguageAnalyzer {
             fnName === "$render" ||
             fnName === "$inspect"
           ) {
-            const runeSymbol: UniversalSymbol = {
+            const runeSymbol: ASTEngine.UniversalSymbol = {
               name: fnName,
-              kind: SymbolKind.Function,
+              kind: ASTEngine.SymbolKind.Function,
               range: {
                 startLine: node.startPosition.row + 1,
                 endLine: node.endPosition.row + 1,
@@ -309,9 +308,9 @@ export class RealSvelteAnalyzer implements LanguageAnalyzer {
             if (parent && parent.type === "variable_declarator") {
               const varName = this.findChild(parent, (n) => n.type === "identifier")?.text
               if (varName) {
-                const varSymbol: UniversalSymbol = {
+                const varSymbol: ASTEngine.UniversalSymbol = {
                   name: varName,
-                  kind: SymbolKind.Variable,
+                  kind: ASTEngine.SymbolKind.Variable,
                   range: {
                     startLine: parent.startPosition.row + 1,
                     endLine: parent.endPosition.row + 1,
@@ -363,7 +362,7 @@ export class RealSvelteAnalyzer implements LanguageAnalyzer {
           for (const item of importedNames) {
             symbols.push({
               name: item,
-              kind: SymbolKind.Import,
+              kind: ASTEngine.SymbolKind.Import,
               range: {
                 startLine: node.startPosition.row + 1,
                 endLine: node.endPosition.row + 1,
@@ -378,7 +377,7 @@ export class RealSvelteAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: scopeName,
               target: item,
-              type: RelationshipType.Imports,
+              type: ASTEngine.RelationshipType.Imports,
               confidence: 0.9,
               metadata: { context: "Svelte import", module: modulePath },
             } as any)
@@ -414,7 +413,7 @@ export class RealSvelteAnalyzer implements LanguageAnalyzer {
             relationships.push({
               source: scopeName,
               target: nameNode.text,
-              type: RelationshipType.Exports,
+              type: ASTEngine.RelationshipType.Exports,
               confidence: 0.9,
               metadata: { context: "Svelte export" },
             } as any)
@@ -434,9 +433,9 @@ export class RealSvelteAnalyzer implements LanguageAnalyzer {
             }
           }
 
-          const varSymbol: UniversalSymbol = {
+          const varSymbol: ASTEngine.UniversalSymbol = {
             name: nameNode.text,
-            kind: SymbolKind.Variable,
+            kind: ASTEngine.SymbolKind.Variable,
             range: {
               startLine: node.startPosition.row + 1,
               endLine: node.endPosition.row + 1,
@@ -457,7 +456,7 @@ export class RealSvelteAnalyzer implements LanguageAnalyzer {
         if (fnNameNode) {
           symbols.push({
             name: fnNameNode.text,
-            kind: SymbolKind.Function,
+            kind: ASTEngine.SymbolKind.Function,
             range: {
               startLine: node.startPosition.row + 1,
               endLine: node.endPosition.row + 1,
@@ -477,7 +476,7 @@ export class RealSvelteAnalyzer implements LanguageAnalyzer {
         if (classNameNode) {
           symbols.push({
             name: classNameNode.text,
-            kind: SymbolKind.Class,
+            kind: ASTEngine.SymbolKind.Class,
             range: {
               startLine: node.startPosition.row + 1,
               endLine: node.endPosition.row + 1,
@@ -521,7 +520,7 @@ export class RealSvelteAnalyzer implements LanguageAnalyzer {
         relationships.push({
           source: _owner,
           target: s.name,
-          type: RelationshipType.Contains,
+          type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
           metadata: {},
         })

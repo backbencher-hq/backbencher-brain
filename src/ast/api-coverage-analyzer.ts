@@ -1,11 +1,10 @@
-// @ts-nocheck — Ported from backbencher. Kept structurally identical for sync.
-import * as Log from "../tool/brain-log.js"
 // API Coverage Analyzer
 // Analyzes ALL API endpoints across polyglot systems
 // COVERAGE: Documentation, testing, security, monitoring - EVERYTHING tracked!
 
-import { UniversalSymbol, SymbolKind, RelationshipType, ParseResult, ImportInfo, ExportInfo, ParseError, FileMetadata, UniversalRelationship, Parameter, LanguageAnalyzer } from "./types.js"
-import { CrossLanguageIntelligence } from "./cross-language-intelligence.js"
+import { ASTEngine } from "./engine"
+import { CrossLanguageIntelligence } from "./cross-language-intelligence"
+import * as Log from "../tool/brain-log"
 
 const log = Log.create({ service: "api-coverage-analyzer" })
 
@@ -17,7 +16,7 @@ export namespace APICoverageAnalyzer {
    */
   export async function analyzeAPICoverage(
     topology: CrossLanguageIntelligence.ServiceTopology,
-    fileResults: Map<string, ParseResult>
+    fileResults: Map<string, ASTEngine.ParseResult>
   ): Promise<CrossLanguageIntelligence.APICoverageAnalysis> {
 
     log.info("📋 Starting API Coverage Analysis")
@@ -114,7 +113,7 @@ export namespace APICoverageAnalyzer {
      */
     async analyzeDocumentation(
       endpoints: CrossLanguageIntelligence.ServiceEndpoint[],
-      fileResults: Map<string, ParseResult>
+      fileResults: Map<string, ASTEngine.ParseResult>
     ): Promise<DocumentationAnalysis> {
 
       const documentationChecker = new DocumentationChecker()
@@ -146,7 +145,7 @@ export namespace APICoverageAnalyzer {
      */
     async analyzeTesting(
       endpoints: CrossLanguageIntelligence.ServiceEndpoint[],
-      fileResults: Map<string, ParseResult>
+      fileResults: Map<string, ASTEngine.ParseResult>
     ): Promise<TestingAnalysis> {
 
       const testChecker = new TestChecker()
@@ -211,7 +210,7 @@ export namespace APICoverageAnalyzer {
      */
     async analyzeMonitoring(
       endpoints: CrossLanguageIntelligence.ServiceEndpoint[],
-      fileResults: Map<string, ParseResult>
+      fileResults: Map<string, ASTEngine.ParseResult>
     ): Promise<MonitoringAnalysis> {
 
       const monitoringChecker = new MonitoringChecker()
@@ -378,7 +377,7 @@ export namespace APICoverageAnalyzer {
   // ======================== SUPPORTING CLASSES ========================
 
   class DocumentationChecker {
-    async checkEndpointDocumentation(endpoint: CrossLanguageIntelligence.ServiceEndpoint, fileResults: Map<string, ParseResult>): Promise<boolean> {
+    async checkEndpointDocumentation(endpoint: CrossLanguageIntelligence.ServiceEndpoint, fileResults: Map<string, ASTEngine.ParseResult>): Promise<boolean> {
       // Check for OpenAPI, Swagger, JSDoc, docstrings, etc.
       const result = fileResults.get(endpoint.filePath)
       if (!result) return false
@@ -398,7 +397,7 @@ export namespace APICoverageAnalyzer {
       return hasDocumentation
     }
 
-    async identifyDocumentationTypes(fileResults: Map<string, ParseResult>): Promise<string[]> {
+    async identifyDocumentationTypes(fileResults: Map<string, ASTEngine.ParseResult>): Promise<string[]> {
       const types = new Set<string>()
 
       for (const [_, result] of fileResults) {
@@ -413,7 +412,7 @@ export namespace APICoverageAnalyzer {
   }
 
   class TestChecker {
-    async checkEndpointTesting(endpoint: CrossLanguageIntelligence.ServiceEndpoint, fileResults: Map<string, ParseResult>): Promise<boolean> {
+    async checkEndpointTesting(endpoint: CrossLanguageIntelligence.ServiceEndpoint, fileResults: Map<string, ASTEngine.ParseResult>): Promise<boolean> {
       // Look for test files that reference this endpoint
       const endpointName = endpoint.path.replace(/[^\w]/g, '_')
 
@@ -435,7 +434,7 @@ export namespace APICoverageAnalyzer {
              /\.(test|spec)\.(js|ts|py|java|go|rs)$/.test(filePath)
     }
 
-    async identifyTestTypes(fileResults: Map<string, ParseResult>): Promise<string[]> {
+    async identifyTestTypes(fileResults: Map<string, ASTEngine.ParseResult>): Promise<string[]> {
       const types = new Set<string>()
 
       for (const [filePath, result] of fileResults) {
@@ -450,7 +449,7 @@ export namespace APICoverageAnalyzer {
       return Array.from(types)
     }
 
-    async identifyTestFrameworks(fileResults: Map<string, ParseResult>): Promise<string[]> {
+    async identifyTestFrameworks(fileResults: Map<string, ASTEngine.ParseResult>): Promise<string[]> {
       const frameworks = new Set<string>()
 
       for (const [_, result] of fileResults) {
@@ -492,7 +491,7 @@ export namespace APICoverageAnalyzer {
   }
 
   class MonitoringChecker {
-    async checkEndpointMonitoring(endpoint: CrossLanguageIntelligence.ServiceEndpoint, fileResults: Map<string, ParseResult>): Promise<boolean> {
+    async checkEndpointMonitoring(endpoint: CrossLanguageIntelligence.ServiceEndpoint, fileResults: Map<string, ASTEngine.ParseResult>): Promise<boolean> {
       const result = fileResults.get(endpoint.filePath)
       if (!result) return false
 
@@ -507,7 +506,7 @@ export namespace APICoverageAnalyzer {
       return hasMonitoring
     }
 
-    async identifyMonitoringTools(fileResults: Map<string, ParseResult>): Promise<string[]> {
+    async identifyMonitoringTools(fileResults: Map<string, ASTEngine.ParseResult>): Promise<string[]> {
       const tools = new Set<string>()
 
       for (const [_, result] of fileResults) {
