@@ -784,6 +784,48 @@ async function extractFallbackResult(filePath: string, projectPath: string): Pro
 // WORKER POOL PARSER
 // ============================================================================
 
+function findOnPath(name: string): string | null {
+  const paths = (process.env.PATH || "").split(path.delimiter)
+  for (const dir of paths) {
+    const candidate = path.join(dir, name)
+    try {
+      if (require("fs").existsSync(candidate)) return candidate
+    } catch {}
+  }
+  return null
+}
+
+// Resolve the correct fork target for pool workers. fork() always loads its
+// first arg as a script under process.execPath, so the target is always the
+// worker module path — never the executable.
+// - Compiled dist (plain Node): dist/pool-worker.js
+// - Dev (Node + tsx): tsx binary (local .bin, then PATH) + src/ast/pool-worker.ts
+// - Dev (Bun): bun binary + src/ast/pool-worker.ts (runs TypeScript natively)
+function resolvePoolWorkerFork(): { workerPath: string | null; workerArgs: string[] } {
+  const moduleDir = path.dirname(require("url").fileURLToPath(import.meta.url))
+  const isCompiled =
+    (moduleDir.endsWith(`${path.sep}dist`) || moduleDir.includes(`${path.sep}dist${path.sep}`)) &&
+    !moduleDir.includes(`${path.sep}src${path.sep}`)
+  if (isCompiled) {
+    return {
+      workerPath: path.join(moduleDir, "pool-worker.js"),
+      workerArgs: [],
+    }
+  }
+  const projectRoot = path.resolve(moduleDir, "../..")
+  const workerEntry = path.join(projectRoot, "src", "ast", "pool-worker.ts")
+  if (process.execPath.endsWith("node") || process.execPath.endsWith("node.exe")) {
+    // Dev mode with tsx — local bin first, then PATH. If neither exists, the
+    // fork test fails fast and indexing falls back to in-process.
+    const localTsx = path.join(projectRoot, "node_modules", ".bin", "tsx")
+    const tsxPath = require("fs").existsSync(localTsx) ? localTsx : findOnPath("tsx")
+    if (!tsxPath) return { workerPath: null, workerArgs: [] }
+    return { workerPath: tsxPath, workerArgs: [workerEntry] }
+  }
+  // Bun: runs TypeScript natively — fork the worker entry itself
+  return { workerPath: workerEntry, workerArgs: [] }
+}
+
 export async function processWithWorkerPool(
   projectId: ProjectID,
   projectPath: string,
@@ -798,7 +840,6 @@ export async function processWithWorkerPool(
   log.debug("starting worker pool", { numWorkers, files: files.length, batchSize })
 
   // Streaming DB batch
-  const { BrainWorkerClient } = await import("../brain/worker/client")
   let pendingDbBatch: FileResult[] = []
   const dbPromises: Array<Promise<{ symbols: number; relationships: number; imports: number; failed?: boolean }>> = []
 
@@ -914,22 +955,10 @@ export async function processWithWorkerPool(
 
     function createWorker(workerId: number) {
       // Worker pool: fork a child process that enters pool-worker IPC mode.
-      // In compiled binary mode: process.execPath IS the binary
-      // In tsx dev mode: need to fork tsx + our entry point
-      let workerPath: string
-      let workerArgs: string[] = []
-
-      if (process.execPath.endsWith("node") || process.execPath.endsWith("node.exe")) {
-        // Dev mode with tsx — find tsx binary and our entry point
-        const path = require("path")
-        const projectRoot = path.resolve(typeof __dirname !== 'undefined' ? __dirname : require('path').dirname(require('url').fileURLToPath(import.meta.url)), "../..")
-        const tsxPath = path.join(projectRoot, "node_modules", ".bin", "tsx")
-        workerPath = tsxPath
-        workerArgs = [path.join(projectRoot, "src", "index.ts")]
-      } else {
-        // Compiled binary mode
-        workerPath = process.execPath
-        workerArgs = []
+      const { workerPath, workerArgs } = resolvePoolWorkerFork()
+      if (!workerPath) {
+        log.error("worker pool unavailable — no tsx binary found (dev mode)")
+        return
       }
 
       const worker = fork(workerPath, workerArgs, {
@@ -2196,14 +2225,7 @@ export async function indexProjectParallel(
     // Test if fork works by spawning the binary with BB_POOL_WORKER=1
     try {
       const { fork } = await import("child_process")
-      let testWorkerPath: string = process.execPath
-      let testWorkerArgs: string[] = []
-      if (process.execPath.endsWith("node") || process.execPath.endsWith("node.exe")) {
-        const pathMod = require("path")
-        const projectRoot = pathMod.resolve(typeof __dirname !== 'undefined' ? __dirname : pathMod.dirname(require("url").fileURLToPath(import.meta.url)), "../..")
-        testWorkerPath = pathMod.join(projectRoot, "node_modules", ".bin", "tsx")
-        testWorkerArgs = [pathMod.join(projectRoot, "src", "index.ts")]
-      }
+      const { workerPath: testWorkerPath, workerArgs: testWorkerArgs } = resolvePoolWorkerFork()
       const testWorker = fork(testWorkerPath, testWorkerArgs, {
         env: { ...process.env, BB_POOL_WORKER: "1" },
         stdio: ["ignore", "pipe", "pipe", "ipc"],

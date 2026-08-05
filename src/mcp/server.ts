@@ -8,11 +8,18 @@ import {
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js"
 import { BrainDatabase } from "../brain/database"
-import { BrainTools, AdvancedBrainTools } from "../ast/tools"
+import { BrainTools, AdvancedBrainTools, PatternBrainTools } from "../ast/tools"
 import { ASTEngine } from "../ast/engine"
 import { checkResultsFreshness } from "../brain/freshness"
 import { getProjectId } from "../cli/index"
-import { existsSync, readFileSync } from "fs"
+import { BrainSurgicalPatcher } from "../ast/brain-surgical-patcher"
+import { ImportPruner } from "../ast/import-pruner"
+import { CrossLanguageSecurityAnalysis } from "../security/cross-language-security"
+import { DependencyGraphVisualizer } from "../ast/dependency-graph-visualizer"
+import { CrossLanguageIntelligence } from "../ast/cross-language-intelligence"
+import { CrossLanguageMigrationAssistant } from "../ast/cross-language-migration-assistant"
+import { indexProjectParallel } from "../ast/parallel-indexer"
+import { existsSync, readFileSync, writeFileSync } from "fs"
 
 interface ToolContext {
   projectPath: string
@@ -81,6 +88,121 @@ const TOOLS = [
     inputSchema: {
       type: "object",
       properties: {},
+    },
+  },
+  {
+    name: "bb_patterns",
+    description: "Detect orphaned code, framework patterns, anti-patterns, and architecture violations.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        scope: { type: "string", enum: ["orphaned", "all"], description: "orphaned only, or all pattern classes (default all)" },
+        limit: { type: "number", description: "max results (default 20)" },
+      },
+    },
+  },
+  {
+    name: "bb_security",
+    description: "Cross-language security scan: SQL injection, XSS, command injection, hardcoded secrets, weak crypto.",
+    inputSchema: {
+      type: "object",
+      properties: {},
+    },
+  },
+  {
+    name: "bb_visualize",
+    description: "Dependency graph summary: node/link counts and the most-connected symbols.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        maxNodes: { type: "number", description: "max nodes (default 200)" },
+      },
+    },
+  },
+  {
+    name: "bb_migrate",
+    description: "Migration plan for porting a symbol to another language (library equivalents, effort, risk). Read-only.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        symbolName: { type: "string", description: "symbol to migrate" },
+        targetLanguage: { type: "string", description: "e.g. rust, go, python" },
+      },
+      required: ["symbolName", "targetLanguage"],
+    },
+  },
+  {
+    name: "bb_refresh",
+    description: "Re-index the project (incremental by default; use force to rebuild from scratch).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        force: { type: "boolean", description: "wipe and rebuild (default false)" },
+      },
+    },
+  },
+  {
+    name: "bb_write",
+    description: "Create a new file with the given content (overwrites if it exists).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        filePath: { type: "string", description: "path relative to the project root" },
+        content: { type: "string", description: "file content" },
+      },
+      required: ["filePath", "content"],
+    },
+  },
+  {
+    name: "bb_update",
+    description: "Replace a symbol's exact source with new content (byte-precise).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        symbolName: { type: "string", description: "symbol to replace" },
+        newContent: { type: "string", description: "replacement source" },
+        filePath: { type: "string", description: "disambiguate when the name exists in multiple files" },
+      },
+      required: ["symbolName", "newContent"],
+    },
+  },
+  {
+    name: "bb_insert",
+    description: "Insert code relative to an anchor symbol (before, after, inside-top, inside-bottom).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        targetSymbolName: { type: "string", description: "anchor symbol" },
+        position: { type: "string", enum: ["before", "after", "inside-top", "inside-bottom"], description: "insertion position" },
+        newContent: { type: "string", description: "code to insert" },
+        filePath: { type: "string", description: "disambiguate the anchor" },
+      },
+      required: ["targetSymbolName", "position", "newContent"],
+    },
+  },
+  {
+    name: "bb_delete",
+    description: "Delete a symbol's exact source and prune now-unused imports.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        symbolName: { type: "string", description: "symbol to delete" },
+        filePath: { type: "string", description: "disambiguate the symbol" },
+      },
+      required: ["symbolName"],
+    },
+  },
+  {
+    name: "bb_refactor",
+    description: "Rename a symbol across the codebase: declaration plus all caller sites.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        symbolName: { type: "string", description: "current name" },
+        newName: { type: "string", description: "new name" },
+        filePath: { type: "string", description: "disambiguate the declaration" },
+      },
+      required: ["symbolName", "newName"],
     },
   },
 ]
@@ -220,6 +342,169 @@ export async function startMcpServer(projectPath: string): Promise<void> {
           ],
         }
       }
+      if (name === "bb_patterns") {
+        const scope = args.scope === "orphaned" ? "orphaned" : "all"
+        const limit = Number(args.limit ?? 20)
+        if (scope === "orphaned") {
+          const res: any = await PatternBrainTools.findOrphanedCode(projectId, {})
+          const items = (res?.orphaned ?? []).slice(0, limit)
+          const lines = items.map((o: any) => `  ${o.type} ${o.name} — ${o.location} (${Math.round(o.confidence * 100)}%)`)
+          return { content: [{ type: "text", text: `orphaned code (${res?.statistics?.totalOrphaned ?? items.length}):\n` + (lines.join("\n") || "  none") }] }
+        }
+        const res: any = await PatternBrainTools.detectPatterns(projectId, {})
+        const items = (res?.patterns ?? []).slice(0, limit)
+        const lines = items.map((p: any) => `  [${p.severity}] ${p.type} @ ${p.location?.file}:${p.location?.line} (${Math.round(p.confidence * 100)}%)`)
+        return { content: [{ type: "text", text: `patterns (${res?.statistics?.totalFound ?? items.length}):\n` + (lines.join("\n") || "  none") }] }
+      }
+
+      if (name === "bb_security") {
+        const res: any = await CrossLanguageSecurityAnalysis.analyzeSecurityAcrossLanguages(projectId)
+        const vulns = res?.cross_language_vulnerabilities ?? res?.findings ?? []
+        const lines = vulns.slice(0, 20).map((v: any) => `  [${v.severity ?? "?"}] ${v.type} @ ${v.file ?? v.attack_flow?.entry_point?.file ?? "?"}:${v.line ?? v.attack_flow?.entry_point?.line ?? "?"}`)
+        return { content: [{ type: "text", text: `security findings (${vulns.length}):\n` + (lines.join("\n") || "  clean") }] }
+      }
+
+      if (name === "bb_visualize") {
+        const raw = await BrainDatabase.getRawInstance(projectId)
+        const maxNodes = Number(args.maxNodes ?? 200)
+        const symbols = raw.prepare("SELECT id, name, symbol_type FROM brain_symbol WHERE project_id = ? LIMIT ?").all(projectId, maxNodes) as any[]
+        const rels = raw.prepare("SELECT source_symbol_id, target_symbol_id FROM brain_relationship WHERE project_id = ? LIMIT 2000").all(projectId) as any[]
+        const nodes = symbols.map((s) => ({ id: s.id, name: s.name, symbol_type: s.symbol_type }))
+        const links = rels.filter((r) => r.source_symbol_id && r.target_symbol_id).map((r) => ({ source: r.source_symbol_id, target: r.target_symbol_id }))
+        const degree = new Map<string, number>()
+        for (const l of links) {
+          degree.set(l.source, (degree.get(l.source) ?? 0) + 1)
+          degree.set(l.target, (degree.get(l.target) ?? 0) + 1)
+        }
+        const top = [...degree.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10)
+        const topLines = top.map(([id, d]) => {
+          const n = nodes.find((x) => x.id === id)
+          return `  ${n?.name ?? id} (${d} edges)`
+        })
+        return { content: [{ type: "text", text: `graph: ${nodes.length} nodes, ${links.length} links\nmost connected:\n` + (topLines.join("\n") || "  none") }] }
+      }
+
+      if (name === "bb_migrate") {
+        const analysis = await CrossLanguageIntelligence.analyzePolyglotProjectFromDB(projectId)
+        const plan: any = await CrossLanguageMigrationAssistant.generateMigrationPlan(String(args.symbolName), String(args.targetLanguage), analysis)
+        if (!plan) return { content: [{ type: "text", text: `no migration plan for ${args.symbolName} -> ${args.targetLanguage}` }] }
+        const deps = (plan.dependencies ?? []).map((d: any) => `  ${d.source} -> ${d.target} (${Math.round((d.confidence ?? 0) * 100)}%)`).join("\n")
+        return {
+          content: [{
+            type: "text",
+            text: `migrate ${plan.componentName}: ${plan.sourceLanguage} -> ${plan.targetLanguage}\neffort: ${plan.effortEstimateHours}h | complexity: ${plan.complexityScore}/10 | risk: ${plan.riskAssessment?.level}\n${deps ? "dependencies:\n" + deps : ""}`,
+          }],
+        }
+      }
+
+      if (name === "bb_refresh") {
+        const stats: any = await indexProjectParallel(projectId, projectPath, {})
+        const raw = await BrainDatabase.getRawInstance(projectId)
+        const symbols = (raw.prepare("SELECT COUNT(*) c FROM brain_symbol").get() as any).c
+        return { content: [{ type: "text", text: `reindexed: ${stats.totalFiles} files processed, ${symbols} symbols total` }] }
+      }
+
+      if (name === "bb_write") {
+        const abs = resolveProjectPath(projectPath, String(args.filePath))
+        ensureWithinProject(projectPath, abs)
+        writeFileSync(abs, String(args.content ?? ""), "utf8")
+        await BrainSurgicalPatcher.tryAutoFormat(abs).catch(() => {})
+        return { content: [{ type: "text", text: `written ${args.filePath}` }] }
+      }
+
+      if (name === "bb_update") {
+        const found = await ASTEngine.findSymbol(projectId, String(args.symbolName), args.filePath ? String(args.filePath) : undefined)
+        const m = found?.matches?.[0]
+        if (!m || m.byteStart == null || m.byteEnd == null) {
+          return { content: [{ type: "text", text: `symbol ${args.symbolName} not found or has no byte bounds` }], isError: true }
+        }
+        const abs = m.fileId
+        await BrainSurgicalPatcher.patch(abs, m.byteStart, m.byteEnd, String(args.newContent), false, true)
+        return { content: [{ type: "text", text: `updated ${args.symbolName} in ${abs} (bytes ${m.byteStart}-${m.byteEnd})` }] }
+      }
+
+      if (name === "bb_insert") {
+        const found = await ASTEngine.findSymbol(projectId, String(args.targetSymbolName), args.filePath ? String(args.filePath) : undefined)
+        const m = found?.matches?.[0]
+        if (!m || m.byteStart == null || m.byteEnd == null) {
+          return { content: [{ type: "text", text: `anchor ${args.targetSymbolName} not found` }], isError: true }
+        }
+        const abs = m.fileId
+        const text = readFileSync(abs, "utf8")
+        const content = String(args.newContent)
+        const pos = String(args.position ?? "after")
+        let at = -1
+        if (pos === "before") at = m.byteStart
+        else if (pos === "after") at = m.byteEnd
+        else if (pos === "inside-top" || pos === "inside-bottom") {
+          const open = text.indexOf("{", m.byteStart)
+          const close = text.lastIndexOf("}", m.byteEnd != null ? Math.min(m.byteEnd, text.length) : text.length)
+          if (open === -1 || close === -1 || close < open) {
+            return { content: [{ type: "text", text: `cannot find braces for inside insertion in ${args.targetSymbolName}` }], isError: true }
+          }
+          at = pos === "inside-top" ? open + 1 : close
+        }
+        await BrainSurgicalPatcher.patch(abs, at, at, "\n" + content + "\n", false, true)
+        return { content: [{ type: "text", text: `inserted ${pos} ${args.targetSymbolName} in ${abs}` }] }
+      }
+
+      if (name === "bb_delete") {
+        const found = await ASTEngine.findSymbol(projectId, String(args.symbolName), args.filePath ? String(args.filePath) : undefined)
+        const m = found?.matches?.[0]
+        if (!m || m.byteStart == null || m.byteEnd == null) {
+          return { content: [{ type: "text", text: `symbol ${args.symbolName} not found` }], isError: true }
+        }
+        const abs = m.fileId
+        await BrainSurgicalPatcher.patch(abs, m.byteStart, m.byteEnd, "", true, false)
+        const after = readFileSync(abs, "utf8")
+        const pruned = await ImportPruner.prune(after, abs)
+        if (pruned !== after) writeFileSync(abs, pruned, "utf8")
+        await BrainSurgicalPatcher.tryAutoFormat(abs).catch(() => {})
+        return { content: [{ type: "text", text: `deleted ${args.symbolName} from ${abs}` }] }
+      }
+
+      if (name === "bb_refactor") {
+        const found = await ASTEngine.findSymbol(projectId, String(args.symbolName), args.filePath ? String(args.filePath) : undefined)
+        const m = found?.matches?.[0]
+        const newName = String(args.newName)
+        if (!m || m.byteStart == null || m.byteEnd == null) {
+          return { content: [{ type: "text", text: `symbol ${args.symbolName} not found` }], isError: true }
+        }
+        const abs = m.fileId
+        const text = readFileSync(abs, "utf8")
+        const nameAt = text.indexOf(String(args.symbolName), m.byteStart)
+        if (nameAt === -1 || nameAt >= m.byteEnd) {
+          return { content: [{ type: "text", text: `could not locate the ${args.symbolName} identifier token` }], isError: true }
+        }
+        await BrainSurgicalPatcher.patch(abs, nameAt, nameAt + String(args.symbolName).length, newName, false, true)
+        // cascade: rename at caller sites
+        const raw = await BrainDatabase.getRawInstance(projectId)
+        const callers = raw.prepare(
+          `SELECT s.file_id, s.byte_start, s.byte_end FROM brain_relationship r
+           JOIN brain_symbol s ON s.id = r.source_symbol_id
+           WHERE r.target_symbol_id = ? AND r.relationship_type = 'calls'`,
+        ).all(m.id) as any[]
+        const seen = new Set<string>()
+        for (const c of callers) {
+          const key = `${c.file_id}:${c.byte_start}` 
+          if (seen.has(key)) continue
+          seen.add(key)
+          if (c.byte_start == null) continue
+          const callerAbs = c.file_id
+          const cText = readFileSync(callerAbs, "utf8")
+          const body = cText.slice(c.byte_start, c.byte_end ?? cText.length)
+          const re = new RegExp(`\\b${String(args.symbolName)}\\b`, "g")
+          let mm: RegExpExecArray | null
+          let delta = 0
+          while ((mm = re.exec(body)) !== null) {
+            const gStart = c.byte_start + mm.index + delta
+            await BrainSurgicalPatcher.patch(callerAbs, gStart, gStart + String(args.symbolName).length, newName, false, false)
+            delta += newName.length - String(args.symbolName).length
+          }
+        }
+        return { content: [{ type: "text", text: `renamed ${args.symbolName} -> ${newName} (declaration + ${seen.size} caller files)` }] }
+      }
+
       return { content: [{ type: "text", text: `unknown tool: ${name}` }], isError: true }
     } catch (e: any) {
       return { content: [{ type: "text", text: `error: ${e?.message ?? String(e)}` }], isError: true }
@@ -238,6 +523,18 @@ async function readSnippet(filePath: string, lineStart: number, byteEnd?: number
     return lines.slice(lineStart - 1, lineStart + 12).join("\n")
   } catch {
     return null
+  }
+}
+
+import * as path from "path"
+
+function resolveProjectPath(projectPath: string, rel: string): string {
+  return path.resolve(projectPath, rel)
+}
+
+function ensureWithinProject(projectPath: string, abs: string): void {
+  if (!abs.startsWith(projectPath)) {
+    throw new Error(`path escapes project root: ${abs}`)
   }
 }
 

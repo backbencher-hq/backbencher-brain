@@ -656,3 +656,10 @@ process.on("message", async (msg: any) => {
 
 // Prevent exiting
 process.on("disconnect", () => process.exit(0))
+
+// Self-executing worker entry (compiled dist: `node dist/pool-worker.js`).
+// The IPC channel alone keeps a forked child alive, but hold the event loop
+// explicitly so this entry works under every runtime (plain Node, tsx, Bun).
+if (process.env.BB_POOL_WORKER === "1") {
+  setInterval(() => {}, 1 << 30)
+}
