@@ -203,6 +203,16 @@ export const ParallelIndexerConfig = {
     // === OBJECTIVE-C ===
     ".m",
     ".mm",
+    // === CONFIG, DOCS & ASSETS (engine-supported) ===
+    ".toml",
+    ".xml",
+    ".md",
+    ".markdown",
+    ".svelte",
+    ".nim",
+    ".vb",
+    ".vbs",
+    ".proto",
   ]),
 
   // Directories/files to skip entirely
