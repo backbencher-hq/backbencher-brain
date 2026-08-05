@@ -746,7 +746,20 @@ async function extractFallbackResult(filePath: string, projectPath: string): Pro
   const content = await readFile(filePath, "utf-8")
   const ext = path.extname(filePath).slice(1).toLowerCase()
   const stat = await import("fs").then((fs) => fs.statSync(filePath))
-  const hash = Bun.hash(content).toString(36)
+  let hash = ""
+  try {
+    if (typeof Bun !== "undefined") {
+      hash = Bun.hash(content).toString(36)
+    } else {
+      // FNV-1a (32-bit) — deterministic cross-runtime fallback
+      let h = 0x811c9dc5
+      for (let i = 0; i < content.length; i++) {
+        h ^= content.charCodeAt(i)
+        h = Math.imul(h, 0x01000193)
+      }
+      hash = (h >>> 0).toString(36)
+    }
+  } catch {}
   const langMap: Record<string, string> = {
     ts: "typescript", tsx: "tsx", js: "javascript", jsx: "jsx",
     py: "python", rs: "rust", go: "go", rb: "ruby", java: "java",

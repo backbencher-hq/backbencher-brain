@@ -185,7 +185,14 @@ async function parseFile(filePath: string, projectPath: string) {
 
   try {
     // Read file content
-    const file = Bun.file(filePath)
+    let file: any = null
+    if (typeof Bun !== "undefined") {
+      file = Bun.file(filePath)
+    } else {
+      const { readFileSync } = await import("fs")
+      const buf = readFileSync(filePath)
+      file = { size: buf.length, text: async () => buf.toString("utf8"), arrayBuffer: async () => buf.buffer }
+    }
     const content = await file.text()
     const hash = createHash("sha256").update(content).digest("hex").slice(0, 16)
 

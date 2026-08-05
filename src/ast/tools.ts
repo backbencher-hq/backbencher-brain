@@ -85,7 +85,14 @@ function isStdlibFile(relativePath: string): boolean {
 
 async function readSymbolSnippet(filePath: string, lineStart: number | null | undefined, lineEnd: number | null | undefined, maxLines = 12): Promise<string | undefined> {
   if (!filePath || !lineStart) return undefined
-  const text = await Bun.file(filePath).text().catch(() => "")
+  let text = ""
+  try {
+    if (typeof Bun !== "undefined") {
+      text = await Bun.file(filePath).text()
+    } else {
+      text = await import("fs").then((fs) => fs.promises.readFile(filePath, "utf8"))
+    }
+  } catch {}
   if (!text) return undefined
   const end = Math.min(Math.max(lineEnd || lineStart, lineStart), lineStart + maxLines - 1)
   return text.split("\n").slice(lineStart - 1, end).join("\n")
