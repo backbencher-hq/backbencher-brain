@@ -481,7 +481,7 @@ export namespace ASTEngine {
 
       const fallback = {
         "tree-sitter-clean/tree-sitter-clean.wasm": [
-          "$HOME/backbencher/packages/tree-sitter-clean/tree-sitter-clean.wasm",
+          "tree-sitter-clean/tree-sitter-clean.wasm",
         ],
         "tree-sitter-kotlin/tree-sitter-kotlin.wasm": ["tree-sitter-wasms/out/tree-sitter-kotlin.wasm"],
         "tree-sitter-swift/tree-sitter-swift.wasm": ["tree-sitter-wasms/out/tree-sitter-swift.wasm"],
