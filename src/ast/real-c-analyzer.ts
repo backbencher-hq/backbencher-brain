@@ -511,6 +511,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     // Frameworks & Phantoms
     const frameworks = this.detectCFrameworks(imports)
+    this.injectPhantomSymbols(symbols, frameworks)
 
     // 4. METRIC CALCULATION
     let security = 50

@@ -107,14 +107,14 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
       const stack = [rootNode];
       while (stack.length > 0) {
         const node = stack.pop()!;
-        if (node.type === "ERROR" || node.type === "MISSING") {
+        if (node.type === "ERROR" || node.isMissing) {
           ctx.errors.push({
             message: `Syntax ${node.type} detected. The Brain Engine is bypassing this broken node.`,
             range: {
-              startLine: node.startPosition.row,
-              startColumn: node.startPosition.column,
-              endLine: node.endPosition.row,
-              endColumn: node.endPosition.column,
+              startLine: node.startPosition.row + 1,
+              startColumn: node.startPosition.column + 1,
+              endLine: node.endPosition.row + 1,
+              endColumn: node.endPosition.column + 1,
             },
             severity: "warning",
           })

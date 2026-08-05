@@ -106,10 +106,10 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
           errors.push({
             message: "Brain Engine (Go): Bypassed resilient parser error node",
             range: {
-              startLine: n.startPosition.row,
-              startColumn: n.startPosition.column,
-              endLine: n.endPosition.row,
-              endColumn: n.endPosition.column,
+              startLine: n.startPosition.row + 1,
+              startColumn: n.startPosition.column + 1,
+              endLine: n.endPosition.row + 1,
+              endColumn: n.endPosition.column + 1,
             },
             severity: `warning`,
           })

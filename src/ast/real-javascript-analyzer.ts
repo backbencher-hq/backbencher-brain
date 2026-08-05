@@ -151,19 +151,12 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
 
         case "function_expression":
         case "arrow_function": {
-          // If we're not inside a declaration that already named this, record it as a closure
+          // If we're not inside a declaration that already named this, keep an
+          // anonymous scope for nested containment but do NOT index a symbol —
+          // anonymous_function_N entries are pure noise in the symbol table.
           const parentType = node.parent?.type
           if (parentType !== "variable_declarator" && parentType !== "assignment_expression" && parentType !== "method_definition") {
              const name = `anonymous_function_${node.startIndex}`
-             const sym: ASTEngine.UniversalSymbol = {
-               name,
-               kind: ASTEngine.SymbolKind.Function,
-               range: this.nodeToRange(node),
-               scope: scope.join("."),
-               visibility: "local",
-               metadata: { javascriptSpecific: true, isClosure: true },
-             }
-             symbols.push(sym)
              nextScope.push(name)
              nextIsClassScope = false
           }

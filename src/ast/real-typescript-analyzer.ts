@@ -1513,11 +1513,8 @@ class TypeScriptAnalysisRunner {
     const mod = path.basename(filePath, path.extname(filePath))
     this.scopeManager.pushScope(ScopeKind.Module, mod, rootNode)
 
-    // PHASE 1: (removed) phantom symbol injection — injected fake `this`,
-    // line-0 `constructor`, and unconditional window/document/console/process/
-    // global/__dirname/__filename symbols for every file, polluting indexes
-    // with rows that have no real location. The analyzer extracts real
-    // declarations only.
+    // PHASE 1: Inject phantom symbols for better resolution
+    this.injectPhantomSymbols(rootNode, symbols)
 
     // PHASE 2: Extract all symbols with proper scoping
     this.extractSymbols(rootNode, symbols)
@@ -1771,9 +1768,8 @@ class TypeScriptAnalysisRunner {
           break
 
         case "method_definition":
-          if (!this.scopeManager.isInsideClass()) {
-            skipChildren = this.extractMethod(node, symbols, stack)
-          }
+          // Shorthand methods on object literals pollute the symbol table with
+          // unscoped duplicate names; class methods are extracted via extractClass.
           break
 
         case "arrow_function":
@@ -2577,7 +2573,11 @@ class TypeScriptAnalysisRunner {
   private extractNamespace(node: Node, symbols: ASTEngine.UniversalSymbol[], stack: StackEntry[]): boolean {
     const nameNode = node.childForFieldName("name")
     if (!nameNode) return false
-    const name = nameNode.text
+    // String-named modules (`declare module "foo"`) keep their quotes in the
+    // AST; strip them so qualified names stay clean.
+    const rawName = nameNode.text
+    const name = rawName.startsWith('"') || rawName.startsWith("'") ? rawName.slice(1, -1) : rawName
+    if (!name) return false
     const exportStatus = isNodeExported(node)
     const modifiers = extractModifiersFromNode(node)
 
@@ -3669,24 +3669,26 @@ class TypeScriptAnalysisRunner {
     const traverse = (n: Node) => {
       if (n.type === "call_expression") {
         const callee = n.childForFieldName("function")?.text || ""
+        const calleeParts = callee.split(".")
 
         if (
-          callee.indexOf("db.query") !== -1 ||
-          callee.indexOf("execute") !== -1 ||
-          callee.indexOf("sequelize.query") !== -1
+          callee.endsWith(".query") ||
+          callee === "execute" ||
+          callee.endsWith(".execute")
         ) {
           sinks.push({ type: "database_write", snippet: n.text, vulnerability_type: "sql_injection" })
         }
-        if (callee === "exec" || callee === "spawn" || callee === "execSync") {
+        if (callee === "exec" || callee === "spawn" || callee === "execSync" || calleeParts[calleeParts.length - 1] === "exec" || calleeParts[calleeParts.length - 1] === "spawn") {
           sinks.push({ type: "shell_execution", snippet: n.text, vulnerability_type: "command_injection" })
         }
-        if (callee === "res.send" || callee === "res.html" || callee.indexOf("innerHTML") !== -1) {
+        if (callee === "res.send" || callee === "res.html" || callee.endsWith(".innerHTML")) {
           sinks.push({ type: "http_response", snippet: n.text, vulnerability_type: "xss" })
         }
         if (
-          callee.indexOf("fs.readFile") !== -1 ||
-          callee.indexOf("fs.writeFile") !== -1 ||
-          callee.indexOf("fs.readFileSync") !== -1
+          callee === "fs.readFile" ||
+          callee === "fs.writeFile" ||
+          callee === "fs.readFileSync" ||
+          callee === "fs.writeFileSync"
         ) {
           sinks.push({ type: "file_system", snippet: n.text, vulnerability_type: "path_traversal" })
         }
@@ -3739,8 +3741,7 @@ class TypeScriptAnalysisRunner {
     }
 
     return {
-      // tree-sitter rows are 0-indexed; the index convention is 1-based
-      // (readSymbolSnippet and line_start consumers slice at line-1).
+      // tree-sitter rows are 0-indexed; the index convention is 1-based.
       startLine: targetNode.startPosition.row + 1,
       startColumn: targetNode.startPosition.column + 1,
       endLine: targetNode.endPosition.row + 1,

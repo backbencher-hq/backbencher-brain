@@ -736,10 +736,12 @@ async function processInProcess(
     }
   }
 
-  // Flush remaining results to DB
+  // Flush remaining results to DB. skipResolution=false so the cross-file
+  // relationship resolution pass runs once at the end (parity with the
+  // opencode brain's final pass — otherwise cross-file edges are missing).
   if (results.length > 0) {
     try {
-      await storeResults(projectId as any, projectPath, results, { skipResolution: true })
+      await storeResults(projectId as any, projectPath, results, { skipResolution: false })
       log.info(`stored final ${results.length} file results in DB`)
     } catch (e: any) {
       log.error(`final storeResults failed: ${e?.message || String(e)}`)
@@ -1904,8 +1906,10 @@ export async function storeResults(
         rawDb.run(`CREATE TEMP TABLE IF NOT EXISTS _res_name_unique (name TEXT PRIMARY KEY, symbol_id TEXT NOT NULL, file_id TEXT)`)
         rawDb.run(`DELETE FROM _res_qname`)
         rawDb.run(`DELETE FROM _res_name_unique`)
-        rawDb.run(`INSERT INTO _res_qname (qualified_name, symbol_id, file_id) SELECT qualified_name, id, file_id FROM brain_symbol WHERE project_id = '${projectId}' AND qualified_name IS NOT NULL`)
-        rawDb.run(`INSERT INTO _res_name_unique (name, symbol_id, file_id) SELECT name, MIN(id), MIN(file_id) FROM brain_symbol WHERE project_id = '${projectId}' GROUP BY name HAVING COUNT(*) = 1`)
+        // Dedup on insert: duplicate qualified names across files must not
+        // abort the whole resolution pass (PK conflict).
+        rawDb.run(`INSERT OR IGNORE INTO _res_qname (qualified_name, symbol_id, file_id) SELECT qualified_name, id, file_id FROM brain_symbol WHERE project_id = '${projectId}' AND qualified_name IS NOT NULL`)
+        rawDb.run(`INSERT OR IGNORE INTO _res_name_unique (name, symbol_id, file_id) SELECT name, MIN(id), MIN(file_id) FROM brain_symbol WHERE project_id = '${projectId}' GROUP BY name HAVING COUNT(*) = 1`)
 
         // Strategy 1: Qualified name exact match
         rawDb.run(`
@@ -2009,14 +2013,14 @@ async function resolveRelationships(projectId: ProjectID): Promise<void> {
 
     // Populate qualified names (exact matches)
     rawDb.prepare(
-      `INSERT INTO _res_qname (qualified_name, symbol_id, file_id)
+      `INSERT OR IGNORE INTO _res_qname (qualified_name, symbol_id, file_id)
        SELECT qualified_name, id, file_id FROM brain_symbol
        WHERE project_id = ? AND qualified_name IS NOT NULL`
     ).run(projectId)
 
     // Populate names with uniqueness count
     rawDb.prepare(
-      `INSERT INTO _res_name (name, symbol_id, file_id, cnt)
+      `INSERT OR IGNORE INTO _res_name (name, symbol_id, file_id, cnt)
        SELECT name, id, file_id, COUNT(*) OVER (PARTITION BY name)
        FROM brain_symbol WHERE project_id = ?`
     ).run(projectId)
