@@ -1709,6 +1709,11 @@ export namespace ASTEngine {
     }
     let matches = results
 
+    // Consistency with search: symbols in hard-noise files (JSON configs,
+    // minified/d.ts/map assets) are excluded from every read surface.
+    const { isHardNoisePath } = await import("./analysis-exclusions")
+    matches = matches.filter((m: any) => !isHardNoisePath(m.fileId ?? ""))
+
     // If multiple matches at the exact same file, prefer class/interface over constructor/function
     if (matches.length > 1 && filePath) {
       const classSymbols = matches.filter(m => m.symbolType === "class" || m.symbolType === "interface")

@@ -1514,7 +1514,7 @@ class TypeScriptAnalysisRunner {
     this.scopeManager.pushScope(ScopeKind.Module, mod, rootNode)
 
     // PHASE 1: Inject phantom symbols for better resolution
-    this.injectPhantomSymbols(rootNode, symbols)
+    // PHANTOM INJECTION REMOVED (Phase 3): fake this/constructor/globals polluted indexes.
 
     // PHASE 2: Extract all symbols with proper scoping
     this.extractSymbols(rootNode, symbols)

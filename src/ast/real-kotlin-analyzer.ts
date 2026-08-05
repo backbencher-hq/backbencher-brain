@@ -113,7 +113,6 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     // ========================================================================
     // STAGE 3: PHANTOM SYMBOL INJECTION (Framework Heuristics)
     // ========================================================================
-    this.injectPhantomSymbols(rootNode, symbols, frameworks, ctx)
 
     // PHASE 5: Kotlin-specific analysis (nullability, coroutines, etc.)
     const typeInference = this.performKotlinTypeInference(symbols, relationships)

@@ -1908,7 +1908,9 @@ export async function storeResults(
         rawDb.run(`DELETE FROM _res_name_unique`)
         // Dedup on insert: duplicate qualified names across files must not
         // abort the whole resolution pass (PK conflict).
-        rawDb.run(`INSERT OR IGNORE INTO _res_qname (qualified_name, symbol_id, file_id) SELECT qualified_name, id, file_id FROM brain_symbol WHERE project_id = '${projectId}' AND qualified_name IS NOT NULL`)
+        // Deterministic winner for duplicate qualified names (MIN(id)) so
+        // parallel indexing order can't change resolution results.
+        rawDb.run(`INSERT OR IGNORE INTO _res_qname (qualified_name, symbol_id, file_id) SELECT qualified_name, MIN(id), MIN(file_id) FROM brain_symbol WHERE project_id = '${projectId}' AND qualified_name IS NOT NULL GROUP BY qualified_name`)
         rawDb.run(`INSERT OR IGNORE INTO _res_name_unique (name, symbol_id, file_id) SELECT name, MIN(id), MIN(file_id) FROM brain_symbol WHERE project_id = '${projectId}' GROUP BY name HAVING COUNT(*) = 1`)
 
         // Strategy 1: Qualified name exact match
@@ -2014,8 +2016,8 @@ async function resolveRelationships(projectId: ProjectID): Promise<void> {
     // Populate qualified names (exact matches)
     rawDb.prepare(
       `INSERT OR IGNORE INTO _res_qname (qualified_name, symbol_id, file_id)
-       SELECT qualified_name, id, file_id FROM brain_symbol
-       WHERE project_id = ? AND qualified_name IS NOT NULL`
+       SELECT qualified_name, MIN(id), MIN(file_id) FROM brain_symbol
+       WHERE project_id = ? AND qualified_name IS NOT NULL GROUP BY qualified_name`
     ).run(projectId)
 
     // Populate names with uniqueness count
