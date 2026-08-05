@@ -85,6 +85,19 @@ const TOOLS = [
   },
 ]
 
+async function ensureIndexed(ctx: ToolContext): Promise<string | null> {
+  try {
+    const raw = await BrainDatabase.getRawInstance(ctx.projectId)
+    const files = (raw.prepare("SELECT COUNT(*) c FROM brain_file").get() as any).c ?? 0
+    if (files === 0) {
+      return `No index found for ${ctx.projectPath}. Run: bb index "${ctx.projectPath}" (or restart bb mcp after indexing).`
+    }
+    return null
+  } catch {
+    return `No index found for ${ctx.projectPath}. Run: bb index "${ctx.projectPath}".`
+  }
+}
+
 export async function startMcpServer(projectPath: string): Promise<void> {
   const projectId = getProjectId(projectPath)
   const ctx: ToolContext = { projectPath, projectId }
@@ -100,6 +113,12 @@ export async function startMcpServer(projectPath: string): Promise<void> {
     const name = request.params.name
     const args = (request.params.arguments ?? {}) as Record<string, any>
     try {
+      if (name !== "bb_health") {
+        const notIndexed = await ensureIndexed(ctx)
+        if (notIndexed) {
+          return { content: [{ type: "text", text: notIndexed }] }
+        }
+      }
       if (name === "bb_search") {
         const query = String(args.query ?? "")
         const results: any = await BrainTools.searchCode(projectId, query, {
