@@ -26,6 +26,15 @@ export namespace SemanticEngine {
   let _embeddingAvailable: boolean | null = null
   let _checked = false
   let _localAvailable: boolean | null = null
+  // Canonical label for offline word-vector embeddings. Distinct from any API
+  // model name so the vector search never compares across vector spaces.
+  let _lastModel: string | null = null
+  export const LOCAL_MODEL_LABEL = "local-word-vectors"
+
+  /** Model name that produced the most recent embedding (API model or local). */
+  export function getLastEmbeddingModel(): string {
+    return _lastModel || LOCAL_MODEL_LABEL
+  }
 
   export async function isEmbeddingAvailable(): Promise<boolean> {
     if (_checked) return _embeddingAvailable === true
@@ -49,6 +58,13 @@ export namespace SemanticEngine {
 
   export async function getEmbeddingModel(configModel?: string): Promise<string> {
     if (configModel) return configModel
+
+    // If an OpenAI-compatible API is configured, its raw model name is the
+    // canonical label — it must match what embed()/embedMany() record.
+    try {
+      const cfg = await getEmbeddingConfig()
+      if (cfg) return cfg.model
+    } catch {}
 
     try {
       const providers = await Provider.list()
@@ -109,6 +125,7 @@ export namespace SemanticEngine {
           if (res.length > 0) {
             _embeddingAvailable = true
             _checked = true
+            _lastModel = cfg.model
             return res[0]
           }
         }
@@ -123,6 +140,7 @@ export namespace SemanticEngine {
         const localResult = await embedLocal([text])
         if (localResult.length > 0 && localResult[0].length > 0) {
           _embeddingAvailable = true; _checked = true
+          _lastModel = LOCAL_MODEL_LABEL
           return localResult[0]
         }
       }
@@ -147,6 +165,7 @@ export namespace SemanticEngine {
           if (embeddings.length > 0) {
             _embeddingAvailable = true
             _checked = true
+            _lastModel = cfg.model
             return embeddings
           }
         }
@@ -163,6 +182,7 @@ export namespace SemanticEngine {
         const localResult = await embedLocal(texts)
         if (localResult.length > 0) {
           _embeddingAvailable = true; _checked = true
+          _lastModel = LOCAL_MODEL_LABEL
           return localResult
         }
       }

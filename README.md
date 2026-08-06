@@ -101,9 +101,36 @@ Exposed tools:
 
 ## Semantic embeddings
 
-See [EMBEDDINGS.md](./EMBEDDINGS.md) — 3 env vars turn on real embeddings
-(Google / NVIDIA NIM / OpenAI / self-hosted), with offline word-vector
-fallback when unconfigured.
+See [EMBEDDINGS.md](./EMBEDDINGS.md). Real vector embeddings are generated
+when an OpenAI-compatible embeddings API is configured; otherwise a local
+word-vector fallback (50-dim) is used. Both are stored separately and the
+vector search never compares across vector spaces.
+
+Google Gemini (OpenAI-compatible endpoint) — the fastest way to turn on
+real embeddings:
+
+```bash
+export BB_EMBEDDING_BASE_URL="https://generativelanguage.googleapis.com/v1beta/openai"
+export BB_EMBEDDING_API_KEY="<your gemini api key>"
+export BB_EMBEDDING_MODEL="gemini-embedding-001"   # 3072-dim
+bb index --force <project>                          # re-embed everything
+```
+
+Or put the same keys in `~/.bb/config.json`:
+
+```json
+{
+  "embedding_base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
+  "embedding_api_key": "<key>",
+  "embedding_model": "gemini-embedding-001"
+}
+```
+
+Note: the free tier is quota-limited (roughly one 100-doc batch before HTTP
+429) — a paid key is needed for real projects. Vectors are labeled by the
+model that produced them (`gemini-embedding-001` vs `local-word-vectors`),
+and `BB_EMBEDDING_BATCH_LIMIT` controls the max symbols per index batch
+(default 50000) before falling back to offline TF-IDF vectors.
 
 ## Verification
 

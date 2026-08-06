@@ -1,5 +1,4 @@
 // @ts-nocheck — ported; verified by tests. Restored incrementally in Phase 3.
-import { SemanticEngine } from "../brain/semantic/engine"
 // Parallel Indexer v4 - Batch Processing to Avoid Event Loop Blocking
 // Scales gracefully and avoids 500ms setup overhead per file
 
@@ -1139,8 +1138,6 @@ export async function storeResults(
   const now = Date.now()
 
   const semanticBatch: any[] = []
-  // @backbencher: embedding_model from SemanticEngine directly (Config.get() is Effect-only)
-  let embeddingModel = await SemanticEngine.getEmbeddingModel()
 
   const insertFile = rawDb.prepare(`
     INSERT OR REPLACE INTO brain_file 
@@ -1810,9 +1807,14 @@ export async function storeResults(
     // Embeddings are independent of skipResolution (which only gates
     // relationship resolution): real API or local vectors for small projects,
     // tfidf-v1 for huge ones.
-    let useMLModel = semanticBatch.length < 5000
+    // Prefer real embeddings (API → local word vectors) for batches up to a
+    // generous limit; TF-IDF is only the fallback when no real vectors could
+    // be produced (no embedding source, or an enormous batch). The old hard
+    // 5000 cap silently switched real projects to TF-IDF.
+    const embedBatchLimit = Number(process.env.BB_EMBEDDING_BATCH_LIMIT || 50000)
+    let storedRealEmbeddings = false
     try {
-      if (useMLModel) {
+      if (semanticBatch.length < embedBatchLimit) {
         const { SemanticEngine } = await import("../brain/semantic/engine")
         const maxBatch = 100
 
@@ -1833,6 +1835,10 @@ export async function storeResults(
             fn: () => SemanticEngine.embedMany(docs),
           })
           if (!embeddings) continue
+          // Label vectors with the model that actually produced them — the API
+          // may fall back to local vectors mid-run (e.g. on quota errors), and
+          // mixing them under one model name corrupts the vector space.
+          const modelLabel = SemanticEngine.getLastEmbeddingModel()
 
           const txEmbed = rawDb.transaction((rows: any) => {
             for (let k = 0; k < rows.length; k++) {
@@ -1846,7 +1852,7 @@ export async function storeResults(
                 projectId,
                 item.symbolId,
                 item.kind || "symbol",
-                embeddingModel,
+                modelLabel,
                 JSON.stringify(vec),
                 vec.length,
                 contentHash,
@@ -1856,11 +1862,13 @@ export async function storeResults(
                 now,
                 now,
               )
+              storedRealEmbeddings = true
             }
           })
           txEmbed(chunk)
         }
-      } else {
+      }
+      if (!storedRealEmbeddings) {
         // TF-IDF fallback: lightweight token-weight vectors stored as JSON
         // Works for any project size, no external ML dependency
         const tfidfInsert = rawDb.prepare(`

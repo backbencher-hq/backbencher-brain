@@ -30,13 +30,19 @@ const TOOLS = [
   {
     name: "bb_search",
     description:
-      "Search the AST index for symbols (functions, classes, variables). Returns file, line, type, language. Attaches a stale flag when the file changed since indexing.",
+      "Search the AST index for symbols (functions, classes, variables). Exact/prefix/substring ranked, with optional regex, symbol-kind and language filters, code snippets, pagination, and a stale flag when the file changed since indexing.",
     inputSchema: {
       type: "object",
       properties: {
-        query: { type: "string", description: "symbol name or fragment" },
+        query: { type: "string", description: "symbol name or fragment (regex when regex=true)" },
         limit: { type: "number", description: "max results (default 15)" },
-        language: { type: "string", description: "filter by language" },
+        language: { type: "string", description: "filter by language (e.g. typescript, python, go)" },
+        symbolKind: { type: "string", description: "filter by symbol kind (function, class, variable, interface, enum, ...)" },
+        includeContent: { type: "boolean", description: "include a code snippet per result (default false)" },
+        exact: { type: "boolean", description: "only exact name matches (default false)" },
+        caseSensitive: { type: "boolean", description: "case-sensitive matching (default false)" },
+        regex: { type: "boolean", description: "treat query as a regex against symbol names (default false)" },
+        offset: { type: "number", description: "pagination offset (default 0)" },
       },
       required: ["query"],
     },
@@ -58,12 +64,14 @@ const TOOLS = [
   {
     name: "bb_relationships",
     description:
-      "Find who calls a symbol (callers) or what it calls (callees). Returns names, files, and lines. Cross-language aware.",
+      "Find who calls a symbol (callers) or what it calls (callees). Direct by default; set includeIndirect for transitive traversal up to maxDepth. Cross-language aware.",
     inputSchema: {
       type: "object",
       properties: {
         target: { type: "string", description: "symbol name" },
         direction: { type: "string", enum: ["callers", "callees"], description: "direction (default callers)" },
+        includeIndirect: { type: "boolean", description: "traverse transitively (default false)" },
+        maxDepth: { type: "number", description: "max traversal depth when includeIndirect (default 3)" },
         limit: { type: "number", description: "max results (default 15)" },
       },
       required: ["target"],
@@ -84,20 +92,27 @@ const TOOLS = [
   },
   {
     name: "bb_health",
-    description: "Index health: file/symbol/relationship counts and file freshness.",
+    description: "Index health: file/symbol/relationship counts, embedding model + coverage, and file freshness. Set verbose=true for per-language breakdown and stale-file names.",
     inputSchema: {
       type: "object",
-      properties: {},
+      properties: {
+        verbose: { type: "boolean", description: "include per-language counts and stale file names (default false)" },
+      },
     },
   },
   {
     name: "bb_patterns",
-    description: "Detect orphaned code, framework patterns, anti-patterns, and architecture violations.",
+    description:
+      "Detect orphaned code, framework patterns, anti-patterns, and architecture issues. Use scope=orphaned for dead code; scope=all (default) for the full pattern scan with the optional pattern/confidence filters.",
     inputSchema: {
       type: "object",
       properties: {
         scope: { type: "string", enum: ["orphaned", "all"], description: "orphaned only, or all pattern classes (default all)" },
         limit: { type: "number", description: "max results (default 20)" },
+        includeOrphaned: { type: "boolean", description: "include orphaned-code patterns in an 'all' scan (default true)" },
+        includeFramework: { type: "boolean", description: "include framework patterns (default true)" },
+        includeAntiPatterns: { type: "boolean", description: "include anti-patterns (default true)" },
+        confidenceThreshold: { type: "number", description: "minimum confidence 0..1 (default 0.6)" },
       },
     },
   },
@@ -111,11 +126,13 @@ const TOOLS = [
   },
   {
     name: "bb_visualize",
-    description: "Dependency graph summary: node/link counts and the most-connected symbols.",
+    description:
+      "Dependency graph summary: node/link counts and the most-connected symbols, built with the real graph engine. Use format=json for machine-readable nodes+links, format=html for a self-contained 3D interactive map.",
     inputSchema: {
       type: "object",
       properties: {
         maxNodes: { type: "number", description: "max nodes (default 200)" },
+        format: { type: "string", enum: ["text", "json", "html"], description: "output format (default text)" },
       },
     },
   },
@@ -246,10 +263,17 @@ export async function startMcpServer(projectPath: string): Promise<void> {
         const results: any = await BrainTools.searchCode(projectId, query, {
           maxResults: Number(args.limit ?? 15),
           languages: args.language ? [String(args.language)] : undefined,
+          symbolKind: args.symbolKind ? String(args.symbolKind) : undefined,
+          includeContent: args.includeContent === true,
+          exact: args.exact === true,
+          caseSensitive: args.caseSensitive === true,
+          regex: args.regex === true,
+          offset: Number(args.offset ?? 0),
         })
         const lines = results.map((r: any) => {
           const stale = r.stale ? " [STALE]" : ""
-          return `${r.symbolName} [${r.symbolType}] ${r.file}:${r.line} (${r.language})${stale}`
+          const snippet = r.snippet && r.snippet !== r.symbolName ? `\n    ${String(r.snippet).split("\n").slice(0, 8).join("\n    ")}` : ""
+          return `${r.symbolName} [${r.symbolType}] ${r.file}:${r.line} (${r.language})${stale}${snippet}`
         })
         return {
           content: [{ type: "text", text: lines.length ? lines.join("\n") : `no results for "${query}"` }],
@@ -285,10 +309,12 @@ export async function startMcpServer(projectPath: string): Promise<void> {
         const target = String(args.target)
         const direction = args.direction === "callees" ? "callees" : "callers"
         const limit = Number(args.limit ?? 15)
+        const includeIndirect = args.includeIndirect === true
+        const maxDepth = Number(args.maxDepth ?? 3)
         const results =
           direction === "callers"
-            ? await BrainTools.getFunctionCallers(projectId, target)
-            : await BrainTools.getFunctionCallees(projectId, target)
+            ? await BrainTools.getFunctionCallers(projectId, target, { includeIndirect, maxDepth })
+            : await BrainTools.getFunctionCallees(projectId, target, { includeIndirect, maxDepth })
         const lines = (results.slice(0, limit) as any[]).map(
           (r: any) => `${r.name} — ${r.relativePath ?? r.filePath ?? "?"}:${r.range?.startLine ?? "?"}`,
         )
@@ -296,7 +322,7 @@ export async function startMcpServer(projectPath: string): Promise<void> {
           content: [
             {
               type: "text",
-              text: lines.length ? `${direction} of ${target} (${results.length} total):\n` + lines.join("\n") : `no ${direction} found for ${target}`,
+              text: lines.length ? `${direction} of ${target} (${results.length} total${includeIndirect ? ", indirect" : ""}):\n` + lines.join("\n") : `no ${direction} found for ${target}`,
             },
           ],
         }
@@ -333,14 +359,24 @@ export async function startMcpServer(projectPath: string): Promise<void> {
           if (s === "fresh") fresh++
           else stale++
         }
-        return {
-          content: [
-            {
-              type: "text",
-              text: `files=${files} symbols=${symbols} relationships=${rels} embeddings=${emb}\nfreshness: ${fresh} fresh / ${stale} stale (sampled ${fileRows.length})`,
-            },
-          ],
+        let text = `files=${files} symbols=${symbols} relationships=${rels} embeddings=${emb}\nfreshness: ${fresh} fresh / ${stale} stale (sampled ${fileRows.length})`
+        if (args.verbose === true) {
+          try {
+            const langs = raw.prepare("SELECT language, COUNT(*) c FROM brain_file WHERE project_id = ? GROUP BY language ORDER BY c DESC LIMIT 10").all(projectId) as any[]
+            text += "\n\nlanguages:\n" + langs.map((l: any) => `  ${l.language ?? "unknown"}: ${l.c}`).join("\n")
+            const embModels = raw.prepare("SELECT embedding_model, COUNT(*) c FROM brain_semantic_embedding WHERE project_id = ? GROUP BY embedding_model").all(projectId) as any[]
+            text += "\n\nembedding models:\n" + (embModels.length ? embModels.map((m: any) => `  ${m.embedding_model}: ${m.c}`).join("\n") : "  none")
+            const staleFiles: string[] = []
+            for (const r of fileRows) {
+              if (freshness.get(r.id) !== "fresh") {
+                const f = raw.prepare("SELECT relative_path FROM brain_file WHERE id = ?").get(r.id) as any
+                if (f?.relative_path) staleFiles.push(f.relative_path)
+              }
+            }
+            text += "\n\nstale files (" + staleFiles.length + "):\n" + (staleFiles.slice(0, 20).map((f) => `  ${f}`).join("\n") || "  none")
+          } catch {}
         }
+        return { content: [{ type: "text", text }] }
       }
       if (name === "bb_patterns") {
         const scope = args.scope === "orphaned" ? "orphaned" : "all"
@@ -351,7 +387,13 @@ export async function startMcpServer(projectPath: string): Promise<void> {
           const lines = items.map((o: any) => `  ${o.type} ${o.name} — ${o.location} (${Math.round(o.confidence * 100)}%)`)
           return { content: [{ type: "text", text: `orphaned code (${res?.statistics?.totalOrphaned ?? items.length}):\n` + (lines.join("\n") || "  none") }] }
         }
-        const res: any = await PatternBrainTools.detectPatterns(projectId, {})
+        const res: any = await PatternBrainTools.detectPatterns(projectId, {
+          includeOrphaned: args.includeOrphaned !== false,
+          includeFramework: args.includeFramework !== false,
+          includeAntiPatterns: args.includeAntiPatterns !== false,
+          confidenceThreshold: Number(args.confidenceThreshold ?? 0.6),
+          maxResults: Math.max(limit, 100),
+        })
         const items = (res?.patterns ?? []).slice(0, limit)
         const lines = items.map((p: any) => `  [${p.severity}] ${p.type} @ ${p.location?.file}:${p.location?.line} (${Math.round(p.confidence * 100)}%)`)
         return { content: [{ type: "text", text: `patterns (${res?.statistics?.totalFound ?? items.length}):\n` + (lines.join("\n") || "  none") }] }
@@ -367,21 +409,31 @@ export async function startMcpServer(projectPath: string): Promise<void> {
       if (name === "bb_visualize") {
         const raw = await BrainDatabase.getRawInstance(projectId)
         const maxNodes = Number(args.maxNodes ?? 200)
-        const symbols = raw.prepare("SELECT id, name, symbol_type FROM brain_symbol WHERE project_id = ? LIMIT ?").all(projectId, maxNodes) as any[]
-        const rels = raw.prepare("SELECT source_symbol_id, target_symbol_id FROM brain_relationship WHERE project_id = ? LIMIT 2000").all(projectId) as any[]
-        const nodes = symbols.map((s) => ({ id: s.id, name: s.name, symbol_type: s.symbol_type }))
-        const links = rels.filter((r) => r.source_symbol_id && r.target_symbol_id).map((r) => ({ source: r.source_symbol_id, target: r.target_symbol_id }))
+        const format = String(args.format ?? "text")
+        const symbols = raw.prepare(
+          "SELECT s.id, s.name, s.symbol_type, f.language, f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON s.file_id = f.id WHERE s.project_id = ? AND COALESCE(s.line_start,0) > 0 LIMIT ?",
+        ).all(projectId, maxNodes) as any[]
+        const rels = raw.prepare(
+          "SELECT source_symbol_id AS source_id, target_symbol_id AS target_id, relationship_type AS type FROM brain_relationship WHERE project_id = ? AND source_symbol_id IS NOT NULL AND target_symbol_id IS NOT NULL LIMIT 5000",
+        ).all(projectId) as any[]
+        const graph = DependencyGraphVisualizer.generateGraphData(symbols, rels)
+        if (format === "json") {
+          return { content: [{ type: "text", text: JSON.stringify(graph, null, 2).slice(0, 40000) }] }
+        }
+        if (format === "html") {
+          return { content: [{ type: "text", text: DependencyGraphVisualizer.generateHTML(graph) }] }
+        }
         const degree = new Map<string, number>()
-        for (const l of links) {
+        for (const l of graph.links) {
           degree.set(l.source, (degree.get(l.source) ?? 0) + 1)
           degree.set(l.target, (degree.get(l.target) ?? 0) + 1)
         }
         const top = [...degree.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10)
         const topLines = top.map(([id, d]) => {
-          const n = nodes.find((x) => x.id === id)
+          const n = graph.nodes.find((x: any) => x.id === id)
           return `  ${n?.name ?? id} (${d} edges)`
         })
-        return { content: [{ type: "text", text: `graph: ${nodes.length} nodes, ${links.length} links\nmost connected:\n` + (topLines.join("\n") || "  none") }] }
+        return { content: [{ type: "text", text: `graph: ${graph.nodes.length} nodes, ${graph.links.length} links\nmost connected:\n` + (topLines.join("\n") || "  none") }] }
       }
 
       if (name === "bb_migrate") {
