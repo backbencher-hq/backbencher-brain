@@ -4,7 +4,7 @@ import type { ProjectID } from "../project/schema"
 import * as Log from "../tool/brain-log"
 import { eq, and, or, sql, inArray, like } from "drizzle-orm"
 import { BrainSymbolTable, BrainRelationshipTable, BrainFileTable, BrainImportTable } from "../brain/brain.sql"
-import { BrainSemanticEmbeddingTable } from "../brain/revolutionary.sql"
+import { BrainSemanticEmbeddingTable } from "../brain/brain.sql"
 
 const log = Log.create({ service: "graph-intelligence" })
 

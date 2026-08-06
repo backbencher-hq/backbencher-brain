@@ -8,7 +8,7 @@ import { GraphIntelligence } from "./graph"
 import { PatternRecognition } from "./patterns"
 import { SemanticEngine } from "../brain/semantic/engine"
 import { Config } from "../config/config"
-import { BrainSemanticEmbeddingTable } from "../brain/revolutionary.sql"
+import { BrainSemanticEmbeddingTable } from "../brain/brain.sql"
 import { formatEnrichedRelationship } from "../brain/brain-relationship-enrichment"
 import { AnalysisExclusions } from "./analysis-exclusions"
 

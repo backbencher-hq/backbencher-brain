@@ -253,19 +253,36 @@ CREATE TABLE IF NOT EXISTS brain_taint_flow (
 CREATE INDEX IF NOT EXISTS brain_taint_project_idx ON brain_taint_flow(project_id);
 CREATE INDEX IF NOT EXISTS brain_taint_source_idx ON brain_taint_flow(source_symbol_id);
 CREATE INDEX IF NOT EXISTS brain_taint_sink_idx ON brain_taint_flow(sink_symbol_id);
+CREATE INDEX IF NOT EXISTS brain_taint_vuln_idx ON brain_taint_flow(vulnerability_type);
+CREATE INDEX IF NOT EXISTS brain_taint_severity_idx ON brain_taint_flow(severity);
 
-CREATE TABLE IF NOT EXISTS brain_git_cooccurrence (
-              id TEXT PRIMARY KEY NOT NULL,
-              project_id TEXT NOT NULL,
-              file_path_a TEXT NOT NULL,
-              file_path_b TEXT NOT NULL,
-              frequency_score INTEGER NOT NULL,
-              confidence REAL NOT NULL,
-              time_created INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
-              time_updated INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000)
-            );
-CREATE INDEX IF NOT EXISTS brain_git_cooc_proj_idx ON brain_git_cooccurrence(project_id);
-CREATE INDEX IF NOT EXISTS brain_git_cooc_a_idx ON brain_git_cooccurrence(file_path_a);
+-- ================================================================
+-- COMPOUND & MISSING INDEXES - aligned with the drizzle schema
+-- ================================================================
+
+CREATE INDEX IF NOT EXISTS brain_file_proj_path_idx ON brain_file(project_id, path);
+CREATE INDEX IF NOT EXISTS brain_file_proj_hash_idx ON brain_file(project_id, file_hash);
+CREATE INDEX IF NOT EXISTS brain_file_syntax_errors_idx ON brain_file(has_syntax_errors);
+
+CREATE INDEX IF NOT EXISTS brain_sym_proj_file_idx ON brain_symbol(project_id, file_id);
+CREATE INDEX IF NOT EXISTS brain_sym_proj_name_idx ON brain_symbol(project_id, name);
+CREATE INDEX IF NOT EXISTS brain_sym_proj_type_idx ON brain_symbol(project_id, symbol_type);
+CREATE INDEX IF NOT EXISTS brain_sym_proj_name_type_idx ON brain_symbol(project_id, name, symbol_type);
+
+CREATE INDEX IF NOT EXISTS brain_rel_proj_target_idx ON brain_relationship(project_id, target_symbol_id);
+CREATE INDEX IF NOT EXISTS brain_rel_proj_source_idx ON brain_relationship(project_id, source_symbol_id);
+CREATE INDEX IF NOT EXISTS brain_rel_proj_type_idx ON brain_relationship(project_id, relationship_type);
+CREATE INDEX IF NOT EXISTS brain_rel_target_type_idx ON brain_relationship(target_symbol_id, relationship_type);
+CREATE INDEX IF NOT EXISTS brain_rel_cross_lang_idx ON brain_relationship(is_cross_language);
+
+CREATE INDEX IF NOT EXISTS brain_import_name_idx ON brain_import(imported_name);
+CREATE INDEX IF NOT EXISTS brain_import_external_idx ON brain_import(is_external);
+
+CREATE INDEX IF NOT EXISTS brain_pattern_framework_idx ON brain_pattern(framework);
+
+CREATE INDEX IF NOT EXISTS brain_cache_project_idx ON brain_query_cache(project_id);
+CREATE INDEX IF NOT EXISTS brain_cache_query_type_idx ON brain_query_cache(query_type);
+CREATE INDEX IF NOT EXISTS brain_cache_hash_idx ON brain_query_cache(query_hash);
 
 CREATE TABLE IF NOT EXISTS brain_semantic_embedding (
               id TEXT PRIMARY KEY NOT NULL,
@@ -286,6 +303,7 @@ CREATE INDEX IF NOT EXISTS brain_embed_project_idx ON brain_semantic_embedding(p
 CREATE INDEX IF NOT EXISTS brain_embed_entity_idx ON brain_semantic_embedding(entity_id);
 CREATE INDEX IF NOT EXISTS brain_embed_type_idx ON brain_semantic_embedding(entity_type);
 CREATE INDEX IF NOT EXISTS brain_embed_model_idx ON brain_semantic_embedding(embedding_model);
+CREATE INDEX IF NOT EXISTS brain_embed_hash_idx ON brain_semantic_embedding(content_hash);
 
       `
 
