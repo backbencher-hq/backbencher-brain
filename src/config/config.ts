@@ -1,8 +1,9 @@
-// Core config for brain-core. Reads ~/.bb/config.json, then bb.json in the
-// working directory, then environment variables. No opencode dependency.
-import { homedir } from "os"
+// Core config for brain-core. Reads <data-dir>/config.json (default ~/.bb),
+// then bb.json in the working directory, then environment variables. No
+// opencode dependency.
 import path from "path"
 import { existsSync, readFileSync } from "fs"
+import { bbDataDir } from "../util/bb-data-dir"
 
 let cached: Record<string, unknown> | null = null
 
@@ -16,7 +17,7 @@ function readJson(p: string): Record<string, unknown> | null {
 export namespace Config {
   export async function get(): Promise<Record<string, unknown>> {
     if (cached) return cached
-    const home = readJson(path.join(homedir(), ".bb", "config.json"))
+    const home = readJson(path.join(bbDataDir(), "config.json"))
     const local = readJson(path.join(process.cwd(), "bb.json"))
     const merged: Record<string, unknown> = { ...(home ?? {}), ...(local ?? {}) }
     // env overrides: BB_EMBEDDING_MODEL, BB_EMBEDDING_BASE_URL, BB_EMBEDDING_API_KEY, BB_PROVIDER

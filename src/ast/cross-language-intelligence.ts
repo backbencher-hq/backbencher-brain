@@ -18,6 +18,26 @@ import * as Log from "../tool/brain-log"
 
 const log = Log.create({ service: "cross-language-intelligence" })
 
+/**
+ * Defensively parse a stored taint flow_path into an array of symbol IDs.
+ * New writers store JSON arrays; legacy rows may hold '|||'-delimited strings.
+ */
+function parseFlowPath(raw: unknown): string[] {
+  if (raw == null) return []
+  if (Array.isArray(raw)) return raw.map(String)
+  const s = String(raw)
+  if (!s) return []
+  if (s.trim().startsWith("[")) {
+    try {
+      const parsed = JSON.parse(s)
+      return Array.isArray(parsed) ? parsed.map(String) : []
+    } catch {
+      return []
+    }
+  }
+  return s.split("|||").filter(Boolean)
+}
+
 export namespace CrossLanguageIntelligence {
   // ======================== CORE TYPES ========================
 
@@ -382,7 +402,7 @@ export namespace CrossLanguageIntelligence {
     const { BrainSymbolTable, BrainRelationshipTable, BrainFileTable, BrainTaintFlowTable } = await import(
       "../brain/brain.sql"
     )
-    const { eq } = await import("drizzle-orm")
+    const { eq, sql } = await import("drizzle-orm")
 
     const db = await BrainDatabase.getInstance(projectId)
 
@@ -422,7 +442,10 @@ export namespace CrossLanguageIntelligence {
         vulnerability_type: BrainTaintFlowTable.vulnerability_type,
         severity: BrainTaintFlowTable.severity,
         is_mitigated: BrainTaintFlowTable.is_mitigated,
-        flow_path: BrainTaintFlowTable.flow_path,
+        // Read flow_path as raw text — the column is declared json mode but
+        // legacy rows (and older writers) may hold '|||'-delimited strings
+        // that JSON.parse would reject. Parsed defensively in the map below.
+        flow_path: sql<string>`${BrainTaintFlowTable.flow_path}`,
       })
       .from(BrainTaintFlowTable)
       .where(eq(BrainTaintFlowTable.project_id, projectId))
@@ -512,7 +535,7 @@ export namespace CrossLanguageIntelligence {
           vulnerabilityType: t.vulnerability_type,
           severity: (t.severity || "high") as any,
           isMitigated: t.is_mitigated || false,
-          flowPath: [], // Need to map flow_path json IDs to steps, but skipping for simplicity
+          flowPath: parseFlowPath(t.flow_path),
         }
       })
 

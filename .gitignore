@@ -2,3 +2,5 @@ node_modules/
 dist/
 *.tgz
 bun.lock
+bb-ts-core.wasm
+.bb-data/

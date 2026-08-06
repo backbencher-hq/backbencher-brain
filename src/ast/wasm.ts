@@ -8,7 +8,7 @@ const require = createRequire(import.meta.url)
 import { existsSync, readFileSync, mkdirSync } from "fs"
 import { join, dirname } from "path"
 import { fileURLToPath } from "url"
-import { homedir } from "os"
+import { bbWasmDir, bbWasmDirs } from "../util/bb-data-dir"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -69,18 +69,11 @@ function evictLRU(): void {
 // ============================================================================
 
 function getWasmDir(): string {
-  // In development: wasm/ directory at project root
-  const devPath = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "wasm")
-  if (existsSync(devPath)) return devPath
-
-  // In production (npm global install): wasm/ alongside dist/
-  try {
-    const { resolve } = require("path") as typeof import("path")
-    const prodPath = resolve(__dirname, "..", "wasm")
-    if (existsSync(prodPath)) return prodPath
-  } catch {}
-
-  return join(homedir(), ".bb", "wasm")
+  // Check repo wasm/ (source & compiled layouts), then the data-dir cache.
+  for (const dir of bbWasmDirs(__dirname)) {
+    if (existsSync(dir)) return dir
+  }
+  return bbWasmDir()
 }
 
 // npm package name → wasm filename mapping

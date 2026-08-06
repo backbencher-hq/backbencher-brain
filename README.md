@@ -7,15 +7,14 @@ from a CLI, an MCP server, or a library.
 ## Quick start
 
 ```bash
-# index a project (Bun)
-bun run bin/bb index ~/my-project
+# Node (compiled dist, better-sqlite3) — the primary path:
+node bin/bb index ~/my-project
+node bin/bb search "calculateTotal" --dir ~/my-project
+node bin/bb health ~/my-project
 
-# or with Node
-npx tsx bin/bb index ~/my-project
-
-# search the index
-bun run bin/bb search "calculateTotal" --dir ~/my-project
-bun run bin/bb health ~/my-project
+# Bun (from source, bun:sqlite — the compiled dist is Node-only by design):
+bun run src/cli/index.ts index ~/my-project
+bun run src/cli/index.ts search "calculateTotal" --dir ~/my-project
 ```
 
 ## CLI commands
@@ -34,24 +33,67 @@ global config required.
 ## MCP server (Claude Code, Cursor, VS Code, opencode, …)
 
 ```bash
-# run once per project; then point any MCP host at it
-bun run bin/bb mcp --dir ~/my-project
+# Node (compiled dist, better-sqlite3) — the primary path:
+node bin/bb mcp --dir ~/my-project
+
+# Bun (from source, bun:sqlite — the compiled dist is Node-only by design):
+bun run src/mcp/server.ts --dir ~/my-project
 ```
 
-Claude Desktop (`claude_desktop_config.json`):
+Claude Desktop (`claude_desktop_config.json`) — Node:
+
+```json
+{
+  "mcpServers": {
+    "bb-brain": {
+      "command": "node",
+      "args": ["/abs/path/to/backbencher-brain/bin/bb", "mcp", "--dir", "/abs/path/to/project"]
+    }
+  }
+}
+```
+
+Claude Desktop — Bun (from source):
 
 ```json
 {
   "mcpServers": {
     "bb-brain": {
       "command": "bun",
-      "args": ["run", "bin/bb", "mcp", "--dir", "/abs/path/to/project"]
+      "args": ["run", "/abs/path/to/backbencher-brain/src/mcp/server.ts", "--dir", "/abs/path/to/project"]
     }
   }
 }
 ```
 
-Exposed tools (read-only for now — MCP has no permission system):
+### Data directory (`BB_DATA_DIR`)
+
+Indexes live under `~/.bb/projects/<sha1-of-dir>/brain.db` (WASM cache at
+`~/.bb/wasm`) by default. Set `BB_DATA_DIR` to relocate both — useful in
+sandboxes/CI or to keep an index inside the repo:
+
+```bash
+BB_DATA_DIR=/abs/path/to/project/.bb-data node bin/bb index /abs/path/to/project
+BB_DATA_DIR=/abs/path/to/project/.bb-data node bin/bb mcp --dir /abs/path/to/project
+```
+
+VS Code workspace MCP (`<project>/.vscode/mcp.json`):
+
+```json
+{
+  "servers": {
+    "bb-brain": {
+      "type": "stdio",
+      "command": "node",
+      "cwd": "${workspaceFolder}",
+      "args": ["/abs/path/to/backbencher-brain/bin/bb", "mcp", "--dir", "${workspaceFolder}"],
+      "env": { "BB_DATA_DIR": "${workspaceFolder}/.bb-data" }
+    }
+  }
+}
+```
+
+Exposed tools:
 
 - `bb_search` — AST symbol search; results carry a `[STALE]` flag when the
   file changed since indexing
@@ -73,8 +115,13 @@ bun run script/verify-engine.ts && npx tsx script/verify-engine.ts # parser
 bun run script/verify-index.ts && npx tsx script/verify-index.ts   # indexer
 bun run script/verify-embed.ts && npx tsx script/verify-embed.ts   # embeddings
 bun run script/verify-freshness.ts && npx tsx script/verify-freshness.ts # reads
-bun run script/verify-mcp.ts && npx tsx script/verify-mcp.ts       # MCP server
+bun run script/verify-mcp.ts && npx tsx script/verify-mcp.ts       # MCP handshake + core tools
+bun run script/verify-mcp-e2e.ts && npx tsx script/verify-mcp-e2e.ts # all 15 MCP tools end-to-end
 ```
+
+Note: `verify-mcp-e2e.ts` spawns the real runtime entry — `node bin/bb mcp`
+(compiled dist) under Node and `bun src/mcp/server.ts` (source, bun:sqlite)
+under Bun — and exercises all 15 tools including the mutations.
 
 ## Roadmap
 

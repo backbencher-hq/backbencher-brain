@@ -4,11 +4,11 @@
 // database (chain API), getRawInstance returns the raw driver handle.
 import { openDatabase } from "#db"
 import type { CoreDatabase } from "#db"
-import { homedir } from "os"
 import path from "path"
 import { mkdirSync, existsSync } from "fs"
 import * as BrainSchema from "./brain.sql"
 import { ensureSchema } from "./schema-ddl"
+import { bbProjectsDir } from "../util/bb-data-dir"
 
 export type { CoreDatabase, CoreStatement } from "#db"
 
@@ -61,7 +61,7 @@ export namespace BrainDatabase {
   }
 
   export function getDbPath(projectId: string): string {
-    return path.join(homedir(), ".bb", "projects", projectId, "brain.db")
+    return path.join(bbProjectsDir(), projectId, "brain.db")
   }
 
   export function getDbDirectory(projectId: string): string {

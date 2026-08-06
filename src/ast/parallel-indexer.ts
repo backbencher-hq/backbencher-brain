@@ -558,7 +558,10 @@ async function discoverAndFilterFiles(
             continue
           }
 
-          if (shouldSkip(fullPath)) continue
+          // Skip patterns are project-relative: a skip dir must be INSIDE the
+          // project. Matching the absolute path would also skip any project
+          // rooted under a skipped directory (e.g. ~/.vscode/tmp fixtures).
+          if (shouldSkip("/" + relativePath)) continue
 
           if (localIg.ignores(relativePath + (entry.isDirectory() ? "/" : ""))) continue
           if (localIg.ignores(relativePath + (entry.isDirectory() ? "/" : ""))) continue
@@ -2129,7 +2132,10 @@ export async function resolveCrossSymbolTaints(projectId: ProjectID): Promise<nu
 
     const tx = rawDb.transaction((flows: any[]) => {
       for (const flow of flows) {
-        updateFlow.run(flow.target_symbol_id, flow.path, flow.flow_source_id)
+        // flow.path is a '|||'-delimited symbol-id list built in SQL; the
+        // column is declared text({ mode: "json" }), so store a JSON array.
+        const pathArr = String(flow.path ?? "").split("|||").filter(Boolean)
+        updateFlow.run(flow.target_symbol_id, JSON.stringify(pathArr), flow.flow_source_id)
       }
     })
 
@@ -2541,7 +2547,7 @@ export async function reindexFilesParallel(
   const toIndex = changes
     .filter((c) => c?.type !== "deleted")
     .filter((c) => hasValidExtension(c.path))
-    .filter((c) => !shouldSkip(c.path))
+    .filter((c) => !shouldSkip("/" + path.relative(projectPath, c.path)))
     .map((c) => c.path)
 
   if (toIndex.length > 0) {
