@@ -13,7 +13,9 @@ const log = Log.create({ service: "brain-semantic-engine" })
 
 function loadConfigWorkerFallback(): Record<string, unknown> {
   try {
-    const bbJsonPath = path.join(process.cwd(), "bb.json")
+    const bbJsonPath = process.env.BB_CONFIG_FILE
+      ? path.resolve(process.env.BB_CONFIG_FILE)
+      : path.join(process.cwd(), "bb.json")
     if (fs.existsSync(bbJsonPath)) {
       return JSON.parse(fs.readFileSync(bbJsonPath, "utf8"))
     }

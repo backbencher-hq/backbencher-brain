@@ -4,3 +4,4 @@ dist/
 bun.lock
 bb-ts-core.wasm
 .bb-data/
+bb.json
