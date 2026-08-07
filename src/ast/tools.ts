@@ -1157,365 +1157,59 @@ export namespace BrainTools {
       crossLanguageCalls: number
     }
   }> {
-    const db = await BrainDatabase.getInstance(projectId)
-    const maxDepth = Math.min(options.maxDepth || 5, 5) // Cap at 5 — deep enough to trace root callers
+    // Delegate to the strict graph engine (M9.06). It fixes call-site source
+    // locations, independent traversal budgets, edge metadata, and relationship
+    // type filtering. The legacy output shape is reconstructed below.
+    const { graphTraversal } = await import("../intelligence/graph/graph-engine")
+    const graph = await graphTraversal(projectId, functionName, {
+      direction: options.direction,
+      maxDepth: options.maxDepth,
+      relationshipTypes: options.relationshipTypes,
+      includeCrossLanguage: options.includeCrossLanguage,
+    })
 
-    // Global fan-out tracker — prevents exponential query explosion.
-    // Each cascade query is ~4ms but recursion compounds: 15⁴ = 50K queries.
-    // This counter is decremented across ALL recursion levels, keeping total
-    // cascade queries bounded regardless of depth.
-    let fanoutBudget = 50
-
-    // First find the target function — use raw SQL for speed
-    const rawDb = await BrainDatabase.getRawInstance(projectId)
-    let targetResults = rawDb.prepare(`
-      SELECT s.id, s.name, s.symbol_type, s.line_start, s.line_end, s.byte_start, s.byte_end,
-             s.complexity, s.visibility, s.is_static, s.is_async, s.is_abstract,
-             s.owner_symbol_id, s.annotations,
-             f.path, f.relative_path, f.language, s.gravity_score
-      FROM brain_symbol s
-      JOIN brain_file f ON f.id = s.file_id AND f.project_id = s.project_id
-      WHERE s.project_id = ? AND s.name = ?
-        AND s.symbol_type IN ('function','method','class','interface','trait','struct','enum','macro')
-      ORDER BY s.gravity_score DESC
-      LIMIT 20
-    `).all(projectId, functionName) as any[]
-
-    // Fuzzy LIKE fallback — only if exact match fails. Keep limited to avoid scan.
-    if (targetResults.length === 0) {
-      targetResults = rawDb.prepare(`
-        SELECT s.id, s.name, s.symbol_type, s.line_start, s.line_end, s.byte_start, s.byte_end,
-               s.complexity, s.visibility, s.is_static, s.is_async, s.is_abstract,
-               s.owner_symbol_id, s.annotations,
-               f.path, f.relative_path, f.language, s.gravity_score
-        FROM brain_symbol s
-        JOIN brain_file f ON f.id = s.file_id AND f.project_id = s.project_id
-        WHERE s.project_id = ? AND s.name LIKE ?
-          AND s.symbol_type IN ('function','method','class','interface','trait','struct','enum','macro')
-        ORDER BY s.gravity_score DESC
-        LIMIT 10
-      `).all(projectId, `%${functionName}%`) as any[]
-    }
-
-    const targetFunction = targetResults[0]
-
-    if (!targetFunction) {
-      throw new Error(`Function '${functionName}' not found`)
-    }
-
-    const functionInfo: FunctionInfo = {
-      id: targetFunction.id,
-      name: targetFunction.name,
-      filePath: targetFunction.path,
-      relativePath: targetFunction.relative_path,
-      language: targetFunction.language || "unknown",
-      scope: targetFunction.owner_symbol_id || undefined,
-      visibility: targetFunction.visibility || undefined,
-      isStatic: targetFunction.is_static ?? false,
-      isAsync: targetFunction.is_async ?? false,
-      isAbstract: targetFunction.is_abstract ?? false,
-      range: {
-        startLine: targetFunction.line_start || 0,
-        endLine: targetFunction.line_end || 0,
-        startColumn: 0,
-        endColumn: 0,
-      },
-      byteStart: targetFunction.byte_start,
-      byteEnd: targetFunction.byte_end,
-      complexity: targetFunction.complexity || 0,
-      metadata: targetFunction.annotations || {},
-    }
-
-    // Recursive function to trace callers — uses raw SQL to avoid ORM quirks
-    const visitedCallers = new Set<string>()
-    async function traceCallers(symbolId: string, symbolName: string, currentDepth: number): Promise<any[]> {
-      if (currentDepth >= maxDepth) return []
-      if (visitedCallers.has(symbolId)) return []
-      visitedCallers.add(symbolId)
-
-      // Depth 0: LIKE for fuzzy initial match.
-      // Depth 1+: target_symbol_id OR exact target_external match (safe, no explosion).
-      // FIX: Use IN(subquery) instead of OR — OR breaks composite index usage (37s).
-      // The subquery returns the class ID UNION ALL its method IDs via cascade.
-      const callerCascadePrefix = symbolId.includes(":") ? symbolId.slice(0, symbolId.lastIndexOf(":") + 1) : ""
-      const callerCascadeUpper = callerCascadePrefix + ";"
-      const cascadeTargetSubquery = `SELECT ? AS id UNION ALL SELECT m.id FROM brain_symbol m WHERE m.owner_symbol_id >= ? AND m.owner_symbol_id < ? AND m.project_id = ?`
-      const rows = (currentDepth === 0
-        ? rawDb.prepare(`SELECT r.line_number, r.relationship_type, r.metadata as rel_metadata,
-               s.id as sym_id, s.name as sym_name, s.line_start, s.line_end,
-               s.byte_start, s.byte_end, s.complexity, s.annotations,
-               s.owner_symbol_id, s.visibility, s.is_static, s.is_async, s.is_abstract,
-               f.path as file_path, f.relative_path as file_rel, f.language as file_lang
-        FROM brain_relationship r
-        JOIN brain_symbol s ON s.id = r.source_symbol_id AND s.project_id = r.project_id
-        JOIN brain_file f ON f.id = s.file_id
-        WHERE r.project_id = ?
-          AND r.relationship_type IN ('calls', 'instantiates', 'extends', 'implements')
-          AND (
-            r.target_symbol_id IN (${cascadeTargetSubquery})
-          )
-        LIMIT 200
-      `).all(projectId, symbolId, callerCascadePrefix, callerCascadeUpper, projectId)
-        : rawDb.prepare(`SELECT r.line_number, r.relationship_type, r.metadata as rel_metadata,
-               s.id as sym_id, s.name as sym_name, s.line_start, s.line_end,
-               s.byte_start, s.byte_end, s.complexity, s.annotations,
-               s.owner_symbol_id, s.visibility, s.is_static, s.is_async, s.is_abstract,
-               f.path as file_path, f.relative_path as file_rel, f.language as file_lang
-        FROM brain_relationship r
-        JOIN brain_symbol s ON s.id = r.source_symbol_id AND s.project_id = r.project_id
-        JOIN brain_file f ON f.id = s.file_id
-        WHERE r.project_id = ?
-          AND r.relationship_type IN ('calls', 'instantiates', 'extends', 'implements')
-          AND (
-            r.target_symbol_id IN (${cascadeTargetSubquery})
-            OR r.target_external = ?
-          )
-        LIMIT 50
-      `).all(projectId, symbolId, callerCascadePrefix, callerCascadeUpper, projectId, symbolName)) as any[]
-
-      const result = []
-      for (const row of rows) {
-        // Skip noise symbols (exception types, language builtins, keywords)
-        if (isNoiseSymbol(row.sym_name)) continue
-
-        const callerInfo: FunctionInfo = {
-          id: row.sym_id,
-          name: currentDepth > 0 ? `[L${currentDepth}] ${row.sym_name}` : row.sym_name,
-          filePath: row.file_path || "unknown",
-          relativePath: row.file_rel || "unknown",
-          language: row.file_lang || "unknown",
-          scope: row.owner_symbol_id || undefined,
-          visibility: row.visibility || undefined,
-          isStatic: row.is_static ?? false,
-          isAsync: row.is_async ?? false,
-          isAbstract: row.is_abstract ?? false,
-          range: {
-            startLine: row.line_start || 0,
-            endLine: row.line_end || 0,
-            startColumn: 0,
-            endColumn: 0,
-          },
-          byteStart: row.byte_start,
-          byteEnd: row.byte_end,
-          complexity: row.complexity || 0,
-          metadata: row.annotations || {},
-        }
-
-        result.push({
-          function: callerInfo,
-          callSite: {
-            file: row.file_rel || "unknown",
-            line: row.line_number || row.line_start || 0,
-          },
-          depth: currentDepth,
-          enrichment: formatEnrichedRelationship(row),
-          _v: "R7", // audit marker — remove after verifying depth
-        })
+    const toFunctionInfo = (nodeId: string): FunctionInfo => {
+      const node = graph.nodes[nodeId]
+      return {
+        id: node?.id ?? nodeId,
+        name: node?.name ?? nodeId,
+        filePath: node?.filePath ?? "unknown",
+        relativePath: node?.file ?? "unknown",
+        language: node?.language ?? "unknown",
+        isStatic: false,
+        isAsync: false,
+        isAbstract: false,
+        range: {
+          startLine: node?.line ?? 0,
+          endLine: node?.lineEnd ?? 0,
+          startColumn: 0,
+          endColumn: 0,
+        },
+        complexity: node?.complexity ?? 0,
+        metadata: {},
       }
-
-      // Global fan-out budget: only recurse while budget remains.
-      // Prevents exponential explosion (15⁴=50K queries) on large DBs.
-      for (const row of rows) {
-        if (fanoutBudget <= 0) break
-        if (currentDepth >= maxDepth - 1) break
-        if (row.sym_id && !visitedCallers.has(row.sym_id)) {
-          fanoutBudget--
-          const deeperCallers = await traceCallers(row.sym_id, row.sym_name, currentDepth + 1)
-          result.push(...deeperCallers)
-        }
-      }
-
-      // Deduplicate by unique (function.id, depth) — keep shallowest depth
-      const seen = new Map<string, any>()
-      for (const r of result) {
-        const key = r.function.id
-        const existing = seen.get(key)
-        if (!existing || r.depth < existing.depth) {
-          seen.set(key, r)
-        }
-      }
-      return Array.from(seen.values())
     }
 
-    // Recursive function to trace callees — uses raw SQL to handle unresolved refs
-    const visitedCallees = new Set<string>()
-    async function traceCallees(symbolId: string, currentDepth: number): Promise<any[]> {
-      if (currentDepth >= maxDepth) return []
-      if (visitedCallees.has(symbolId)) return []
-      visitedCallees.add(symbolId)
-
-      // Handle ext: prefix — trace callees of an unresolved external symbol
-      const isExternal = symbolId.startsWith("ext:")
-      const externalName = isExternal ? symbolId.slice(4) : ""
-
-      // Pre-compute cascade prefix for class→method owner_symbol_id matching.
-      // Uses range query (>= prefix, < prefix||';') instead of LIKE to hit
-      // the brain_symbol_owner_idx index. LIKE with computed patterns forces
-      // a full table scan (1.5M rows) — 43-minute queries on IntelliJ.
-      const cascadePrefix = symbolId.includes(":") ? symbolId.slice(0, symbolId.lastIndexOf(":") + 1) : ""
-      const cascadeUpper = cascadePrefix + ";" // ':' = 0x3A, ';' = 0x3B - catches all :0, :42, etc.
-
-      // Build cascade subquery returning class ID + all method IDs.
-      // IN(subquery) lets SQLite use composite indexes; OR breaks them.
-      const cascadeSourceSubquery = `SELECT ? AS id UNION ALL SELECT m.id FROM brain_symbol m WHERE m.owner_symbol_id >= ? AND m.owner_symbol_id < ? AND m.project_id = ?`
-
-      // Query: different path for external vs resolved symbols
-      let rows: any[]
-      if (isExternal) {
-        rows = rawDb.prepare(`
-          SELECT r.line_number, r.relationship_type, r.metadata as rel_metadata,
-                 s.id as sym_id, s.name as sym_name, s.line_start, s.line_end,
-                 s.byte_start, s.byte_end, s.complexity, s.annotations,
-                 s.owner_symbol_id, s.visibility, s.is_static, s.is_async, s.is_abstract,
-                 f.path as file_path, f.relative_path as file_rel, f.language as file_lang,
-                 r.target_external as ext_name
-          FROM brain_relationship r
-          LEFT JOIN brain_symbol s ON s.name = r.target_external AND s.project_id = r.project_id
-          LEFT JOIN brain_file f ON f.id = s.file_id
-          WHERE r.project_id = ?
-            AND r.relationship_type IN ('calls', 'instantiates', 'extends', 'implements')
-            AND r.target_symbol_id IS NULL
-            AND r.target_external IS NOT NULL
-            AND r.source_symbol_id IN (${cascadeSourceSubquery})
-        `).all(projectId, symbolId, cascadePrefix, cascadeUpper, projectId) as any[]
-      } else {
-      rows = rawDb.prepare(`
-        SELECT r.line_number, r.relationship_type, r.metadata as rel_metadata,
-               s.id as sym_id, s.name as sym_name, s.line_start, s.line_end,
-               s.byte_start, s.byte_end, s.complexity, s.annotations,
-               s.owner_symbol_id, s.visibility, s.is_static, s.is_async, s.is_abstract,
-               f.path as file_path, f.relative_path as file_rel, f.language as file_lang,
-               NULL as ext_name
-        FROM brain_relationship r
-        JOIN brain_symbol s ON s.id = r.target_symbol_id AND s.project_id = r.project_id
-        JOIN brain_file f ON f.id = s.file_id
-        WHERE r.project_id = ?
-          AND r.relationship_type IN ('calls', 'instantiates', 'extends', 'implements')
-          AND r.target_symbol_id IS NOT NULL
-          AND r.source_symbol_id IN (${cascadeSourceSubquery})
-
-        UNION ALL
-
-        SELECT r.line_number, r.relationship_type, r.metadata as rel_metadata,
-               s.id as sym_id, s.name as sym_name, s.line_start, s.line_end,
-               s.byte_start, s.byte_end, s.complexity, s.annotations,
-               s.owner_symbol_id, s.visibility, s.is_static, s.is_async, s.is_abstract,
-               f.path as file_path, f.relative_path as file_rel, f.language as file_lang,
-               r.target_external as ext_name
-        FROM brain_relationship r
-        LEFT JOIN brain_symbol s ON s.name = r.target_external AND s.project_id = r.project_id
-        LEFT JOIN brain_file f ON f.id = s.file_id
-        WHERE r.project_id = ?
-          AND r.relationship_type IN ('calls', 'instantiates', 'extends', 'implements')
-          AND r.target_symbol_id IS NULL
-          AND r.target_external IS NOT NULL
-          AND r.source_symbol_id IN (${cascadeSourceSubquery})
-      `).all(projectId, symbolId, cascadePrefix, cascadeUpper, projectId, projectId, symbolId, cascadePrefix, cascadeUpper, projectId) as any[]
-      } // end if (isExternal)
-
-      const result = []
-      for (const row of rows) {
-        // Skip noise symbols (exception types, language builtins, keywords)
-        if (isNoiseSymbol(row.sym_name) || (row.ext_name && isNoiseSymbol(row.ext_name))) continue
-
-        // Stdlib noise filter: skip unresolved calls to standard library methods.
-        // These are java.*, javax.*, kotlin.*, org.slf4j.* methods that every class
-        // calls (Logger.info, Thread.run, etc.) — architecturally meaningless.
-        // Only filter UNRESOLVED calls (target_symbol_id IS NULL) with generic names,
-        // because resolved calls are project-internal and always meaningful.
-        const extName = row.ext_name || ""
-        if (!row.sym_id && extName && isStdlibNoise(extName)) continue
-        // Also skip calls resolved to stdlib files
-        if (row.file_rel && isStdlibFile(row.file_rel)) continue
-
-        const calleeInfo: FunctionInfo = {
-          id: row.sym_id || `ext:${row.ext_name || "unknown"}`,
-          name: row.sym_name || row.ext_name || "unknown",
-          filePath: row.file_path || "unknown",
-          relativePath: row.file_rel || "unknown",
-          language: row.file_lang || "unknown",
-          scope: row.owner_symbol_id || undefined,
-          visibility: row.visibility || undefined,
-          isStatic: row.is_static ?? false,
-          isAsync: row.is_async ?? false,
-          isAbstract: row.is_abstract ?? false,
-          range: {
-            startLine: row.line_start || 0,
-            endLine: row.line_end || 0,
-            startColumn: 0,
-            endColumn: 0,
-          },
-          byteStart: row.byte_start,
-          byteEnd: row.byte_end,
-          complexity: row.complexity || 0,
-          metadata: row.annotations || {},
-        }
-
-        result.push({
-          function: calleeInfo,
-          callSite: {
-            file: row.file_rel || "unknown",
-            line: row.line_number || row.line_start || 0,
-          },
-          depth: currentDepth,
-          enrichment: formatEnrichedRelationship(row),
-        })
-      }
-
-      // Global fan-out budget for callees (same budget, shared)
-      for (const row of rows) {
-        if (fanoutBudget <= 0) break
-        if (currentDepth >= maxDepth - 1) break
-        if (row.sym_id && !visitedCallees.has(row.sym_id)) {
-          fanoutBudget--
-          const deeperCallees = await traceCallees(row.sym_id, currentDepth + 1)
-          result.push(...deeperCallees)
-        } else if (row.ext_name && row.ext_name !== "unknown" && !visitedCallees.has("ext:" + row.ext_name)) {
-          fanoutBudget--
-          const deeperCallees = await traceCallees("ext:" + row.ext_name, currentDepth + 1)
-          result.push(...deeperCallees)
-        }
-      }
-
-      // Deduplicate by unique (function.id) — keep shallowest depth
-      const seen = new Map<string, any>()
-      for (const r of result) {
-        const key = r.function.id
-        const existing = seen.get(key)
-        if (!existing || r.depth < existing.depth) {
-          seen.set(key, r)
-        }
-      }
-      return Array.from(seen.values())
-    }
-
-    // Build call graph based on direction
-    let callers: any[] = []
-    let callees: any[] = []
-
-    if (options.direction !== "callees") {
-      callers = await traceCallers(targetFunction.id, targetFunction.name, 0)
-    }
-
-    if (options.direction !== "callers") {
-      callees = await traceCallees(targetFunction.id, 0)
-    }
-
-    // Calculate summary statistics
-    const allCalls = [...callers, ...callees]
-    const crossLanguageCalls = allCalls.filter((call) => call.function.language !== functionInfo.language).length
+    const functionInfo = toFunctionInfo(graph.root.id)
+    const callers = graph.callers.map((edge) => ({
+      function: toFunctionInfo(edge.from),
+      callSite: edge.callSite,
+      depth: edge.depth,
+    }))
+    const callees = graph.callees.map((edge) => ({
+      function: toFunctionInfo(edge.to),
+      callSite: edge.callSite,
+      depth: edge.depth,
+    }))
 
     return {
       function: functionInfo,
-      callGraph: {
-        callers,
-        callees,
-      },
+      callGraph: { callers, callees },
       summary: {
         totalCallers: callers.length,
         totalCallees: callees.length,
-        maxDepth: Math.max(...allCalls.map((call) => call.depth), 0),
-        crossLanguageCalls,
+        maxDepth: graph.summary.maxDepthReached,
+        crossLanguageCalls: graph.summary.crossLanguageEdges,
       },
     }
   }
@@ -4885,6 +4579,14 @@ export namespace TestIntelligenceBrainTools {
   // EXPLAIN FLOW - Cross-Layer Flow Tracing
   // ====================================================================
 
+  /**
+   * explain_flow — Architectural flow view over the graph engine (M9.06).
+   *
+   * Rebuilt as a thin view over the single bounded graph traversal engine.
+   * The previous implementation duplicated traversal and queried obsolete
+   * tables (layer/system columns). Directions map to graph directions:
+   *   downstream -> callees, upstream -> callers, both -> both.
+   */
   export async function explainFlow(
     projectId: ProjectID,
     entryPoint: string,
@@ -4895,564 +4597,67 @@ export namespace TestIntelligenceBrainTools {
       traceAsync?: boolean
     } = {},
   ): Promise<any> {
-    const db = BrainDatabase.getInstance(projectId)
-    const { direction = "downstream", maxDepth = 10, includeExternal = false, traceAsync = true } = options
-
+    const { direction = "downstream", maxDepth = 10, includeExternal = false } = options
     log.info(`Tracing flow from ${entryPoint}`, { direction, maxDepth, projectId })
 
-    try {
-      // Find the entry point symbol
-      const entrySymbol = await findEntryPointSymbol(db, projectId, entryPoint)
-      if (!entrySymbol) {
-        return { error: `Entry point not found: ${entryPoint}` }
-      }
+    const graphDirection = direction === "downstream" ? "callees" : direction === "upstream" ? "callers" : "both"
 
-      // Build the flow trace
-      const flowTrace = await buildFlowTrace(db, projectId, entrySymbol, direction, maxDepth, {
-        includeExternal,
-        traceAsync,
+    try {
+      const { graphTraversal } = await import("../intelligence/graph/graph-engine")
+      const graph = await graphTraversal(projectId, entryPoint, {
+        direction: graphDirection,
+        maxDepth,
+        includeCrossLanguage: includeExternal ? undefined : false,
       })
 
-      // Analyze the flow for architectural patterns and risks
-      const analysis = await analyzeFlowPattern(db, projectId, flowTrace)
+      const edges = [...graph.callers, ...graph.callees]
+        .filter((edge) => includeExternal || !(graph.nodes[edge.to]?.isExternal || graph.nodes[edge.from]?.isExternal))
+        .map((edge) => ({
+          from: { id: edge.from, name: graph.nodes[edge.from]?.name ?? edge.from, file: graph.nodes[edge.from]?.file ?? "" },
+          to: { id: edge.to, name: graph.nodes[edge.to]?.name ?? edge.to, file: graph.nodes[edge.to]?.file ?? "" },
+          relationshipType: edge.relationshipType,
+          confidence: edge.confidence,
+          isCrossLanguage: edge.isCrossLanguage,
+          bridgeMechanism: edge.bridgeMechanism,
+          callSite: edge.callSite,
+          depth: edge.depth,
+        }))
+
+      const languages = new Set<string>()
+      for (const node of Object.values(graph.nodes)) languages.add(node.language)
 
       return {
         entryPoint: {
-          name: entrySymbol.name,
-          type: entrySymbol.type,
-          file: entrySymbol.file_path,
-          layer: entrySymbol.layer,
-          system: entrySymbol.system,
+          name: graph.root.name,
+          type: graph.root.symbolType,
+          file: graph.root.file,
+          language: graph.root.language,
         },
         direction,
         maxDepth,
-        trace: flowTrace,
-        analysis,
-        summary: generateFlowSummary(flowTrace, analysis),
+        trace: {
+          nodes: Object.values(graph.nodes),
+          edges,
+          stats: {
+            totalNodes: Object.keys(graph.nodes).length,
+            totalEdges: edges.length,
+            languagesInvolved: languages.size,
+            crossLanguageEdges: graph.summary.crossLanguageEdges,
+            maxDepthReached: graph.summary.maxDepthReached,
+          },
+        },
+        summary: {
+          overview: `Flow traces ${Object.keys(graph.nodes).length} components across ${languages.size} language(s)`,
+          totalCallers: graph.summary.totalCallers,
+          totalCallees: graph.summary.totalCallees,
+          truncated: graph.summary.truncated,
+          truncationReason: graph.summary.truncationReason,
+        },
       }
     } catch (error: any) {
       log.error("Flow tracing error", error)
       return { error: `Flow tracing failed: ${error}`, entryPoint }
     }
-  }
-
-  async function findEntryPointSymbol(db: any, projectId: ProjectID, entryPoint: string): Promise<any> {
-    // Try to find by exact function name first
-    let symbols = await db.select(sql`
-      SELECT s.*, f.relative_path as file_path, f.layer, f.system
-      FROM symbols s
-      JOIN files f ON s.file_id = f.id
-      WHERE s.project_id = ${projectId} 
-        AND s.name = ${entryPoint}
-        AND s.type IN ('function', 'method', 'class', 'component')
-      ORDER BY 
-        CASE s.type 
-          WHEN 'function' THEN 1
-          WHEN 'method' THEN 2
-          WHEN 'component' THEN 3
-          WHEN 'class' THEN 4
-          ELSE 5
-        END
-      LIMIT 1
-    `)
-
-    if (symbols.length > 0) {
-      return symbols[0]
-    }
-
-    // Try fuzzy matching
-    const searchPattern1 = `%${entryPoint}%`
-    const searchPattern2 = `%${entryPoint}%`
-    symbols = await db.select(sql`
-      SELECT s.*, f.relative_path as file_path, f.layer, f.system
-      FROM symbols s
-      JOIN files f ON s.file_id = f.id
-      WHERE s.project_id = ${projectId}
-        AND (s.name LIKE ${searchPattern1} OR s.name LIKE ${searchPattern2})
-        AND s.type IN ('function', 'method', 'class', 'component')
-      ORDER BY LENGTH(s.name) ASC
-      LIMIT 5
-    `)
-
-    return symbols.length > 0 ? symbols[0] : null
-  }
-
-  async function buildFlowTrace(
-    db: any,
-    projectId: ProjectID,
-    entrySymbol: any,
-    direction: string,
-    maxDepth: number,
-    options: any,
-  ): Promise<any> {
-    const visited = new Set<string>()
-    const trace = {
-      nodes: [] as any[],
-      edges: [] as any[],
-      layers: new Set<string>(),
-      systems: new Set<string>(),
-      asyncPaths: [] as any[],
-      externalCalls: [] as any[],
-    }
-
-    await traceFlowRecursive(db, projectId, entrySymbol, direction, 0, maxDepth, visited, trace, options)
-
-    return {
-      nodes: trace.nodes,
-      edges: trace.edges,
-      layers: Array.from(trace.layers),
-      systems: Array.from(trace.systems),
-      asyncPaths: trace.asyncPaths,
-      externalCalls: trace.externalCalls,
-      stats: {
-        totalNodes: trace.nodes.length,
-        totalEdges: trace.edges.length,
-        layersInvolved: trace.layers.size,
-        systemsInvolved: trace.systems.size,
-      },
-    }
-  }
-
-  async function traceFlowRecursive(
-    db: any,
-    projectId: ProjectID,
-    currentSymbol: any,
-    direction: string,
-    depth: number,
-    maxDepth: number,
-    visited: Set<string>,
-    trace: any,
-    options: any,
-  ): Promise<void> {
-    if (depth >= maxDepth) return
-
-    const symbolKey = `${currentSymbol.id}:${depth}`
-    if (visited.has(symbolKey)) return
-    visited.add(symbolKey)
-
-    // Add current node to trace
-    const node = {
-      id: currentSymbol.id,
-      name: currentSymbol.name,
-      type: currentSymbol.type,
-      file: currentSymbol.file_path,
-      layer: currentSymbol.layer,
-      system: currentSymbol.system,
-      depth,
-      complexity: currentSymbol.complexity || 0,
-      isAsync: currentSymbol.is_async || false,
-      isExternal: !currentSymbol.file_path || currentSymbol.file_path.includes("node_modules"),
-    }
-    trace.nodes.push(node)
-
-    if (currentSymbol.layer) trace.layers.add(currentSymbol.layer)
-    if (currentSymbol.system) trace.systems.add(currentSymbol.system)
-
-    // Find related symbols based on direction
-    let relationships = []
-
-    if (direction === "downstream" || direction === "both") {
-      // Find what this symbol calls
-      relationships.push(
-        ...(await db.select(sql`
-        SELECT r.type, r.confidence, s2.*, f.relative_path as file_path, f.layer, f.system
-        FROM symbol_relationships r
-        JOIN symbols s2 ON r.target_id = s2.id
-        JOIN files f ON s2.file_id = f.id
-        WHERE r.source_id = ${currentSymbol.id}
-          AND r.type IN ('calls', 'invokes', 'imports', 'depends_on')
-        ORDER BY r.confidence DESC
-        LIMIT 20
-      `)),
-      )
-    }
-
-    if (direction === "upstream" || direction === "both") {
-      // Find what calls this symbol
-      relationships.push(
-        ...(await db.select(sql`
-        SELECT r.type, r.confidence, s2.*, f.relative_path as file_path, f.layer, f.system
-        FROM symbol_relationships r
-        JOIN symbols s2 ON r.source_id = s2.id
-        JOIN files f ON s2.file_id = f.id
-        WHERE r.target_id = ${currentSymbol.id}
-          AND r.type IN ('calls', 'invokes', 'imports', 'depends_on')
-        ORDER BY r.confidence DESC
-        LIMIT 20
-      `)),
-      )
-    }
-
-    // Process each relationship
-    for (const rel of relationships) {
-      // Add edge to trace
-      const edge = {
-        source: currentSymbol.id,
-        target: rel.id,
-        type: rel.type,
-        confidence: rel.confidence,
-        isLayerCrossing: currentSymbol.layer !== rel.layer,
-        isSystemCrossing: currentSymbol.system !== rel.system,
-        isAsync: rel.is_async || false,
-      }
-      trace.edges.push(edge)
-
-      // Track async paths
-      if (options.traceAsync && (rel.is_async || currentSymbol.is_async)) {
-        trace.asyncPaths.push({
-          from: currentSymbol.name,
-          to: rel.name,
-          type: "async_call",
-          layer: `${currentSymbol.layer} -> ${rel.layer}`,
-        })
-      }
-
-      // Track external calls
-      const isExternal =
-        !rel.file_path ||
-        rel.file_path.includes("node_modules") ||
-        rel.file_path.includes("@") ||
-        rel.system === "external"
-      if (isExternal) {
-        trace.externalCalls.push({
-          from: currentSymbol.name,
-          to: rel.name,
-          type: rel.type,
-          confidence: rel.confidence,
-        })
-
-        if (!options.includeExternal) continue
-      }
-
-      // Continue tracing recursively
-      await traceFlowRecursive(db, projectId, rel, direction, depth + 1, maxDepth, visited, trace, options)
-    }
-  }
-
-  async function analyzeFlowPattern(db: any, projectId: ProjectID, flowTrace: any): Promise<any> {
-    const analysis = {
-      architecture: analyzeArchitecturalPattern(flowTrace),
-      performance: analyzePerformancePattern(flowTrace),
-      security: analyzeSecurityPattern(flowTrace),
-      maintainability: analyzeMaintainabilityPattern(flowTrace),
-      antipatterns: detectFlowAntipatterns(flowTrace),
-      recommendations: [] as string[],
-    }
-
-    // Generate recommendations based on analysis
-    analysis.recommendations = generateFlowRecommendations(analysis)
-
-    return analysis
-  }
-
-  function analyzeArchitecturalPattern(flowTrace: any): any {
-    const layerFlow = flowTrace.edges
-      .filter((e: any) => e.isLayerCrossing)
-      .map((e: any) => {
-        const source = flowTrace.nodes.find((n: any) => n.id === e.source)
-        const target = flowTrace.nodes.find((n: any) => n.id === e.target)
-        return { from: source?.layer, to: target?.layer }
-      })
-
-    const violations = layerFlow.filter(
-      (flow: any) =>
-        // Common architectural violations
-        (flow.from === "ui" && flow.to === "database") ||
-        (flow.from === "ui" && flow.to === "repository") ||
-        (flow.from === "controller" && flow.to === "view"),
-    )
-
-    return {
-      layerFlow,
-      violations,
-      pattern: inferArchitecturalPattern(layerFlow),
-      complexity: calculateArchitecturalComplexity(flowTrace),
-      adherence: violations.length === 0 ? "good" : violations.length < 3 ? "fair" : "poor",
-    }
-  }
-
-  function analyzePerformancePattern(flowTrace: any): any {
-    const asyncChains = flowTrace.asyncPaths.length
-    const deepestChain = Math.max(...flowTrace.nodes.map((n: any) => n.depth))
-    const externalCalls = flowTrace.externalCalls.length
-
-    const performanceScore = Math.max(0, 100 - asyncChains * 5 - deepestChain * 2 - externalCalls * 10)
-
-    return {
-      asyncChains,
-      deepestChain,
-      externalCalls,
-      performanceScore,
-      risks: identifyPerformanceRisks(flowTrace),
-      bottlenecks: identifyBottlenecks(flowTrace),
-    }
-  }
-
-  function analyzeSecurityPattern(flowTrace: any): any {
-    const dataFlowRisks: any[] = []
-    const privilegeEscalations: any[] = []
-    const inputValidationGaps: any[] = []
-
-    // Analyze data flows for security risks
-    for (const edge of flowTrace.edges) {
-      const source = flowTrace.nodes.find((n: any) => n.id === edge.source)
-      const target = flowTrace.nodes.find((n: any) => n.id === edge.target)
-
-      // Check for privilege escalation
-      if (source?.layer === "ui" && target?.layer === "admin") {
-        privilegeEscalations.push({ from: source.name, to: target.name })
-      }
-
-      // Check for external data flows
-      if (edge.isSystemCrossing && target?.system === "external") {
-        dataFlowRisks.push({
-          from: source?.name,
-          to: target?.name,
-          risk: "data_exposure",
-        })
-      }
-    }
-
-    return {
-      dataFlowRisks,
-      privilegeEscalations,
-      inputValidationGaps,
-      securityScore: Math.max(0, 100 - dataFlowRisks.length * 20 - privilegeEscalations.length * 30),
-      recommendations: generateSecurityFlowRecommendations(dataFlowRisks, privilegeEscalations),
-    }
-  }
-
-  function analyzeMaintainabilityPattern(flowTrace: any): any {
-    const cyclicDependencies = detectCyclicDependencies(flowTrace)
-    const godObjects = flowTrace.nodes.filter((n: any) => n.complexity > 20)
-    const tightCoupling = calculateCouplingScore(flowTrace)
-
-    return {
-      cyclicDependencies,
-      godObjects,
-      tightCoupling,
-      maintainabilityScore: Math.max(
-        0,
-        100 - cyclicDependencies.length * 25 - godObjects.length * 10 - tightCoupling * 2,
-      ),
-      refactoringOpportunities: identifyRefactoringOpportunities(flowTrace),
-    }
-  }
-
-  function detectFlowAntipatterns(flowTrace: any): string[] {
-    const antipatterns = []
-
-    // God Object pattern
-    const complexNodes = flowTrace.nodes.filter((n: any) => n.complexity > 15)
-    if (complexNodes.length > 0) {
-      antipatterns.push(`God Object detected: ${complexNodes[0].name} (complexity: ${complexNodes[0].complexity})`)
-    }
-
-    // Feature Envy
-    const externalCallsPerNode = flowTrace.nodes.map((n: any) => ({
-      name: n.name,
-      externalCalls: flowTrace.edges.filter((e: any) => e.source === n.id && e.isSystemCrossing).length,
-    }))
-    const envyNodes = externalCallsPerNode.filter((n: any) => n.externalCalls > 5)
-    envyNodes.forEach((n: any) => {
-      antipatterns.push(`Feature Envy: ${n.name} makes ${n.externalCalls} external calls`)
-    })
-
-    // Shotgun Surgery
-    const highlyConnectedNodes = flowTrace.nodes.filter((n: any) => {
-      const connections = flowTrace.edges.filter((e: any) => e.source === n.id || e.target === n.id).length
-      return connections > 10
-    })
-    highlyConnectedNodes.forEach((n: any) => {
-      antipatterns.push(`Shotgun Surgery risk: ${n.name} has many connections`)
-    })
-
-    return antipatterns
-  }
-
-  function generateFlowSummary(flowTrace: any, analysis: any): any {
-    return {
-      overview: `Flow traces ${flowTrace.stats.totalNodes} components across ${flowTrace.stats.layersInvolved} layers`,
-      complexity:
-        analysis.architecture.complexity > 20 ? "high" : analysis.architecture.complexity > 10 ? "medium" : "low",
-      architecturalHealth: analysis.architecture.adherence,
-      performanceRisk:
-        analysis.performance.performanceScore < 60
-          ? "high"
-          : analysis.performance.performanceScore < 80
-            ? "medium"
-            : "low",
-      securityRisk:
-        analysis.security.securityScore < 60 ? "high" : analysis.security.securityScore < 80 ? "medium" : "low",
-      maintainabilityRisk:
-        analysis.maintainability.maintainabilityScore < 60
-          ? "high"
-          : analysis.maintainability.maintainabilityScore < 80
-            ? "medium"
-            : "low",
-      keyFindings: [...analysis.antipatterns.slice(0, 3), ...analysis.recommendations.slice(0, 2)],
-    }
-  }
-
-  // Helper functions for flow analysis
-  function inferArchitecturalPattern(layerFlow: any[]): string {
-    const hasControllerLayer = layerFlow.some((f) => f.from === "controller" || f.to === "controller")
-    const hasServiceLayer = layerFlow.some((f) => f.from === "service" || f.to === "service")
-    const hasRepositoryLayer = layerFlow.some((f) => f.from === "repository" || f.to === "repository")
-
-    if (hasControllerLayer && hasServiceLayer && hasRepositoryLayer) {
-      return "layered_architecture"
-    } else if (hasServiceLayer) {
-      return "service_oriented"
-    } else {
-      return "unknown"
-    }
-  }
-
-  function calculateArchitecturalComplexity(flowTrace: any): number {
-    const nodeCount = flowTrace.stats.totalNodes
-    const edgeCount = flowTrace.stats.totalEdges
-    const layerCount = flowTrace.stats.layersInvolved
-
-    // Simple complexity metric based on nodes, edges, and layer crossings
-    return Math.round((edgeCount / nodeCount) * layerCount * 10) / 10
-  }
-
-  function identifyPerformanceRisks(flowTrace: any): string[] {
-    const risks = []
-
-    if (flowTrace.asyncPaths.length > 5) {
-      risks.push(`High async complexity: ${flowTrace.asyncPaths.length} async paths detected`)
-    }
-
-    if (flowTrace.externalCalls.length > 3) {
-      risks.push(`Multiple external dependencies: ${flowTrace.externalCalls.length} external calls`)
-    }
-
-    const deepPaths = flowTrace.nodes.filter((n: any) => n.depth > 8)
-    if (deepPaths.length > 0) {
-      risks.push(`Deep call chains detected: max depth ${Math.max(...deepPaths.map((n: any) => n.depth))}`)
-    }
-
-    return risks
-  }
-
-  function identifyBottlenecks(flowTrace: any): any[] {
-    // Identify nodes with high fan-in or fan-out
-    const nodeMetrics = flowTrace.nodes.map((node: any) => {
-      const fanIn = flowTrace.edges.filter((e: any) => e.target === node.id).length
-      const fanOut = flowTrace.edges.filter((e: any) => e.source === node.id).length
-      return { ...node, fanIn, fanOut, totalConnections: fanIn + fanOut }
-    })
-
-    return nodeMetrics
-      .filter((n: any) => n.totalConnections > 5)
-      .sort((a: any, b: any) => b.totalConnections - a.totalConnections)
-      .slice(0, 5)
-  }
-
-  function detectCyclicDependencies(flowTrace: any): any[] {
-    // Simple cycle detection using DFS
-    const cycles: any[] = []
-    const visited = new Set()
-    const recursionStack = new Set()
-
-    function dfs(nodeId: string, path: string[]): boolean {
-      if (recursionStack.has(nodeId)) {
-        const cycleStart = path.indexOf(nodeId)
-        if (cycleStart >= 0) {
-          cycles.push(path.slice(cycleStart))
-        }
-        return true
-      }
-
-      if (visited.has(nodeId)) return false
-
-      visited.add(nodeId)
-      recursionStack.add(nodeId)
-
-      const outgoingEdges = flowTrace.edges.filter((e: any) => e.source === nodeId)
-      for (const edge of outgoingEdges) {
-        if (dfs(edge.target, [...path, nodeId])) {
-          recursionStack.delete(nodeId)
-          return true
-        }
-      }
-
-      recursionStack.delete(nodeId)
-      return false
-    }
-
-    for (const node of flowTrace.nodes) {
-      if (!visited.has(node.id)) {
-        dfs(node.id, [])
-      }
-    }
-
-    return cycles
-  }
-
-  function calculateCouplingScore(flowTrace: any): number {
-    const totalPossibleConnections = flowTrace.nodes.length * (flowTrace.nodes.length - 1)
-    const actualConnections = flowTrace.edges.length
-    return totalPossibleConnections > 0 ? (actualConnections / totalPossibleConnections) * 100 : 0
-  }
-
-  function identifyRefactoringOpportunities(flowTrace: any): string[] {
-    const opportunities: string[] = []
-
-    // Look for extract method opportunities
-    const complexNodes = flowTrace.nodes.filter((n: any) => n.complexity > 10)
-    complexNodes.forEach((node: any) => {
-      opportunities.push(`Extract method opportunity in ${node.name} (complexity: ${node.complexity})`)
-    })
-
-    // Look for extract class opportunities
-    const highlyConnectedNodes = flowTrace.nodes.filter((n: any) => {
-      const connections = flowTrace.edges.filter((e: any) => e.source === n.id).length
-      return connections > 8
-    })
-    highlyConnectedNodes.forEach((node: any) => {
-      opportunities.push(`Extract class opportunity for ${node.name} (high fan-out)`)
-    })
-
-    return opportunities.slice(0, 5)
-  }
-
-  function generateFlowRecommendations(analysis: any): string[] {
-    const recommendations = []
-
-    if (analysis.architecture.violations.length > 0) {
-      recommendations.push(`Fix ${analysis.architecture.violations.length} architectural layer violations`)
-    }
-
-    if (analysis.performance.performanceScore < 70) {
-      recommendations.push("Optimize performance - consider caching and async patterns")
-    }
-
-    if (analysis.security.securityScore < 80) {
-      recommendations.push("Review data flow security - add input validation")
-    }
-
-    if (analysis.maintainability.maintainabilityScore < 70) {
-      recommendations.push("Reduce coupling and extract complex methods")
-    }
-
-    return recommendations
-  }
-
-  function generateSecurityFlowRecommendations(dataFlowRisks: any[], privilegeEscalations: any[]): string[] {
-    const recommendations = []
-
-    if (dataFlowRisks.length > 0) {
-      recommendations.push("Add data sanitization at system boundaries")
-    }
-
-    if (privilegeEscalations.length > 0) {
-      recommendations.push("Review privilege escalation paths - add authorization checks")
-    }
-
-    return recommendations
   }
 
   // ====================================================================

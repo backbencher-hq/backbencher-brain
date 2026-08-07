@@ -145,3 +145,53 @@ export interface SemanticSearchResults {
     fallbackReason?: string
   }
 }
+
+// Graph traversal contracts
+
+export interface GraphNode {
+  id: string                 // symbol id, or "ext:<name>" for unresolved externals
+  name: string
+  symbolType: string
+  file: string               // relative path ("" for pure externals)
+  filePath: string
+  line: number
+  lineEnd: number
+  language: string
+  complexity: number
+  isExternal: boolean
+}
+
+export interface GraphEdge {
+  from: string               // source node id
+  to: string                 // target node id
+  relationshipType: string
+  confidence: number
+  isCrossLanguage: boolean
+  bridgeMechanism?: string
+  callSite: { file: string; line: number } // source-side location of the edge
+  depth: number
+}
+
+export interface GraphTraversalOptions {
+  direction?: "callers" | "callees" | "both"
+  maxDepth?: number
+  relationshipTypes?: string[]
+  includeCrossLanguage?: boolean
+  callerBudget?: number
+  calleeBudget?: number
+}
+
+export interface GraphTraversalResult {
+  root: GraphNode
+  callers: GraphEdge[]
+  callees: GraphEdge[]
+  nodes: Record<string, GraphNode>
+  summary: {
+    totalCallers: number
+    totalCallees: number
+    maxDepthReached: number
+    crossLanguageEdges: number
+    truncated: boolean
+    truncationReason?: string
+  }
+}
