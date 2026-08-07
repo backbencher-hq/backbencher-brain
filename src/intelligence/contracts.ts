@@ -373,3 +373,85 @@ export interface SecurityOptions {
   includeUnresolved?: boolean
   maxResults?: number
 }
+
+// Test intelligence (static, evidence-based) contracts.
+// Static evidence links test-file symbols to production symbols via the
+// relationship graph. It does NOT prove runtime execution or line coverage.
+
+export type TestEvidenceKind = "direct_call" | "reference" | "import"
+
+export interface TestLink {
+  testSymbolId: string
+  testSymbolName: string
+  testFile: string
+  evidence: TestEvidenceKind
+  relationshipType: string
+  confidence: number   // direct_call > reference > import
+}
+
+export interface TestMappingEntry {
+  symbolId: string
+  name: string
+  symbolType: string
+  file: string
+  line: number
+  complexity: number
+  gravity: number
+  links: TestLink[]
+  strongestEvidence: TestEvidenceKind | "none"
+}
+
+export interface TestMappingReport {
+  entries: TestMappingEntry[]
+  summary: {
+    productionSymbols: number
+    testedSymbols: number
+    untestedSymbols: number
+    testFiles: number
+    scannedTestSymbols: number
+  }
+}
+
+export type TestGapCategory =
+  | "no_evidence"
+  | "weak_evidence"       // only reference/import, no direct call
+  | "indirect_only"       // reached only via transitive graph, not directly
+
+export interface TestGap {
+  symbolId: string
+  name: string
+  symbolType: string
+  file: string
+  line: number
+  category: TestGapCategory
+  complexity: number
+  gravity: number
+  riskScore: number       // ranking: complexity + gravity weighting
+  recommendation: string
+}
+
+export interface TestGapReport {
+  gaps: TestGap[]
+  summary: {
+    total: number
+    byCategory: Record<string, number>
+    highRisk: number
+  }
+}
+
+export interface TestImpactReport {
+  target: string
+  found: boolean
+  directTests: Array<{ testSymbol: string; testFile: string; depth: number }>
+  indirectTests: Array<{ testSymbol: string; testFile: string; depth: number }>
+  affectedTestFiles: string[]
+  truncated: boolean
+  // Runtime coverage is a SEPARATE field; only populated from a real artifact.
+  runtimeCoverage: { available: false } | { available: true; percent: number; source: string }
+}
+
+export interface TestIntelOptions {
+  maxResults?: number
+  includeMethods?: boolean
+  maxDepth?: number
+}

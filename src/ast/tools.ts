@@ -2898,57 +2898,63 @@ export namespace TestIntelligenceBrainTools {
     }
   }
 
-  async function buildFunctionTestMapping(db: any, projectId: ProjectID) {
-    // Get all functions
-    const functions = await db.select(sql`
-      SELECT 
-        s.name as function_name,
-        f.relative_path as function_file,
-        s.complexity,
-        s.id as symbol_id
-      FROM symbols s
-      JOIN files f ON f.id = s.file_id AND f.project_id = s.project_id
-      WHERE s.project_id = ${projectId} 
-      AND s.symbol_type = 'function'
-    `)
-
-    // Get all test files
-    const testFiles = await db.select(sql`
-      SELECT f.relative_path, f.id
-      FROM files f
-      WHERE f.project_id = ${projectId}
-      AND (f.relative_path LIKE '%test%' OR f.relative_path LIKE '%spec%')
-    `)
-
-    const mapping = []
-    let mappedCount = 0
-
-    for (const func of functions) {
-      const testMatches = await findTestsForFunction(db, func, testFiles)
-
-      if (testMatches.length > 0) {
-        mappedCount++
-      }
-
-      const coverageQuality = calculateCoverageQuality(testMatches, func.complexity)
-
-      mapping.push({
-        function_name: func.function_name,
-        function_file: func.function_file,
-        test_files: testMatches,
-        coverage_quality: coverageQuality,
-      })
-    }
-
+  async function buildFunctionTestMapping(_db: any, projectId: ProjectID) {
+    // Delegate to the strict test-intelligence engine (M9.10). Replaces the
+    // obsolete-schema (symbols/files) queries and filename heuristics with
+    // symbol-id-based mapping over brain_* tables and is_test_file.
+    const { testMapping } = await import("../intelligence/testing/test-intel")
+    const report = await testMapping(projectId)
+    const mapping = report.entries.map((e) => ({
+      function_name: e.name,
+      function_file: e.file,
+      test_files: e.links.map((l) => ({
+        path: l.testFile,
+        confidence: l.confidence,
+        coverage_type: (l.evidence === "direct_call" ? "unit" : "integration") as "unit" | "integration" | "e2e",
+      })),
+      coverage_quality: (e.strongestEvidence === "direct_call"
+        ? "good"
+        : e.strongestEvidence === "none"
+          ? "none"
+          : "partial") as "excellent" | "good" | "partial" | "none",
+    }))
     return {
-      total_functions: functions.length,
-      mapped_functions: mappedCount,
-      unmapped_functions: functions.length - mappedCount,
+      total_functions: report.summary.productionSymbols,
+      mapped_functions: report.summary.testedSymbols,
+      unmapped_functions: report.summary.untestedSymbols,
       mapping,
     }
   }
 
-  async function analyzeCoverageGaps(db: any, projectId: ProjectID) {
+  async function analyzeCoverageGaps(_db: any, projectId: ProjectID) {
+    // Delegate to the strict engine (M9.10). Risk-ranked, symbol-id-based.
+    const { testGaps } = await import("../intelligence/testing/test-intel")
+    const report = await testGaps(projectId)
+    const gaps = report.gaps.map((g) => ({
+      function_name: g.name,
+      function_file: g.file,
+      gap_type: (g.category === "no_evidence" ? "no_tests" : "insufficient_coverage") as
+        | "no_tests"
+        | "insufficient_coverage"
+        | "missing_edge_cases",
+      severity: (g.riskScore >= 20 ? "critical" : g.riskScore >= 10 ? "high" : g.riskScore >= 4 ? "medium" : "low") as
+        | "critical"
+        | "high"
+        | "medium"
+        | "low",
+      complexity: g.complexity,
+      lines_of_code: 0,
+      system_criticality: g.gravity,
+      recommended_tests: [g.recommendation],
+    }))
+    return {
+      total_gaps: report.summary.total,
+      critical_gaps: gaps.filter((g) => g.severity === "critical").length,
+      gaps,
+    }
+  }
+
+  async function analyzeCoverageGaps_legacy(db: any, projectId: ProjectID) {
     const functions = await db.select(sql`
       SELECT 
         s.name as function_name,
