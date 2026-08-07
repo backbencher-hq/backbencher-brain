@@ -1871,55 +1871,40 @@ export namespace PatternBrainTools {
 
     log.info("starting specialized orphaned code detection", { projectId, options: opts })
 
-    const orphanedPatterns = await PatternRecognition.detectOrphanedCode(projectId, {
-      confidenceThreshold: opts.confidenceThreshold,
+    // Delegate to the canonical strict orphan engine (M9.08). Correct usage-edge
+    // semantics, entry-point suppression, and exact indexed line counts replace
+    // the previous zero-count bug, inverted file logic, and invented cleanup sizes.
+    const { detectOrphans } = await import("../intelligence/patterns/orphans")
+    const rules: Array<"orphaned_function" | "orphaned_class" | "orphaned_file"> = []
+    if (opts.includeFunctions) rules.push("orphaned_function")
+    if (opts.includeClasses) rules.push("orphaned_class")
+    if (opts.includeFiles) rules.push("orphaned_file")
+    const report = await detectOrphans(projectId, {
+      rules,
+      minConfidence: opts.confidenceThreshold,
+      maxResults: 200,
     })
 
-    // Transform and filter by type
-    const orphaned = orphanedPatterns
-      .filter((pattern) => {
-        const type = pattern.pattern.replace("orphaned_", "").replace("unused_", "")
-        return (
-          (opts.includeFunctions && type === "function") ||
-          (opts.includeClasses && type === "class") ||
-          (opts.includeFiles && type === "file") ||
-          (opts.includeImports && type === "import")
-        )
-      })
-      .map((pattern) => ({
-        type: pattern.pattern.replace("orphaned_", "").replace("unused_", "") as
-          | "function"
-          | "class"
-          | "file"
-          | "import",
-        name: pattern.location?.symbol || pattern.location?.file || "unknown",
-        location: `${pattern.location?.file || "unknown"}:${pattern.location?.startLine || 0}`,
-        confidence: pattern.confidence,
-        reason: pattern.description,
-        suggestion: pattern.suggestion || "Consider removing if truly unused",
-      }))
+    const orphaned = report.findings.map((f) => ({
+      type: (f.rule === "orphaned_function" ? "function" : f.rule === "orphaned_class" ? "class" : "file") as
+        | "function"
+        | "class"
+        | "file"
+        | "import",
+      name: f.location.symbol || f.location.file || "unknown",
+      location: `${f.location.file}:${f.location.line}`,
+      confidence: f.confidence,
+      reason: f.description,
+      // Evidence-aware, never "safe to remove".
+      suggestion: f.remediation,
+    }))
 
-    // Calculate statistics
     const byType: Record<string, number> = {}
-    for (const item of orphaned) {
-      byType[item.type] = (byType[item.type] || 0) + 1
-    }
+    for (const item of orphaned) byType[item.type] = (byType[item.type] || 0) + 1
 
-    // Estimate cleanup impact
-    const estimatedLines = orphaned.reduce((sum, item) => {
-      switch (item.type) {
-        case "function":
-          return sum + 15 // Average function size
-        case "class":
-          return sum + 50 // Average class size
-        case "file":
-          return sum + 100 // Average file size
-        case "import":
-          return sum + 1
-        default:
-          return sum
-      }
-    }, 0)
+    // Exact indexed line counts — not invented averages.
+    const linesRemovable = report.findings.reduce((sum, f) => sum + (f.linesOfCode || 0), 0)
+    const filesAffected = new Set(orphaned.map((o) => o.location.split(":")[0])).size
 
     return {
       orphaned,
@@ -1927,9 +1912,9 @@ export namespace PatternBrainTools {
         totalOrphaned: orphaned.length,
         byType,
         estimatedCleanupImpact: {
-          linesRemovable: estimatedLines,
-          filesAffected: new Set(orphaned.map((o) => o.location.split(":")[0])).size,
-          potentialSavings: `${estimatedLines} lines across ${byType.file || 0} files`,
+          linesRemovable,
+          filesAffected,
+          potentialSavings: `${linesRemovable} indexed lines across ${filesAffected} file(s) (exact spans; verify before removal)`,
         },
       },
     }
@@ -1959,7 +1944,7 @@ export namespace PatternBrainTools {
       recommendations.push({
         priority: "medium" as const,
         action: "cleanup_orphaned_code",
-        description: `${orphanedPatterns.length} orphaned code elements can be safely removed`,
+        description: `${orphanedPatterns.length} orphaned code elements have no detected incoming references; review each (dynamic dispatch, reflection, framework/build wiring) before removal`,
         affectedPatterns: orphanedPatterns.map((p) => p.type),
       })
     }

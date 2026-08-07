@@ -256,3 +256,49 @@ export interface ImpactReport {
   riskLevel: "low" | "medium" | "high" | "critical"
   truncated: boolean
 }
+
+// Pattern findings (orphans / architecture) — one canonical finding schema.
+
+export type PatternRule =
+  | "orphaned_function"
+  | "orphaned_class"
+  | "orphaned_file"
+  | "orphaned_import"
+
+export type PatternSeverity = "info" | "warning" | "error"
+
+export interface PatternEvidence {
+  kind: "relationship" | "import" | "reference" | "heuristic"
+  description: string
+}
+
+export interface PatternFinding {
+  rule: PatternRule
+  engine: string                 // which engine produced it (provenance)
+  severity: PatternSeverity
+  confidence: number             // 0..1
+  location: { file: string; line: number; symbol?: string }
+  linesOfCode: number            // exact indexed span (line_end - line_start), 0 if unknown
+  description: string
+  remediation: string            // evidence-aware, never "safe to remove"
+  evidence: PatternEvidence[]
+  limitations: string[]          // known false-positive classes for this finding
+}
+
+export interface PatternReport {
+  findings: PatternFinding[]
+  summary: {
+    total: number
+    byRule: Record<string, number>
+    scannedSymbols: number
+    scannedFiles: number
+    truncated: boolean
+  }
+}
+
+export interface OrphanOptions {
+  rules?: PatternRule[]
+  minConfidence?: number
+  maxResults?: number
+  includeTests?: boolean
+}
