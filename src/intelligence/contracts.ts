@@ -111,3 +111,37 @@ export interface ProjectStats {
   relationships: number
   projectId: string
 }
+
+// Semantic search contracts
+
+export interface SemanticSearchOptions {
+  similarityThreshold?: number
+  maxResults?: number
+  filePath?: string
+  languages?: string[]
+  symbolKind?: string
+}
+
+export interface SemanticResult {
+  entityId: string
+  symbolName: string
+  symbolType: string
+  file: string
+  line: number
+  snippet: string
+  similarity: number
+  language: string
+}
+
+export interface SemanticSearchResults {
+  results: SemanticResult[]
+  metadata: {
+    queryModel: string      // Model that produced the query vector
+    indexModel: string       // Model of the retrieved embeddings
+    method: "vector" | "keyword-fallback"
+    dimension: number
+    scannedRows: number
+    filteredRows: number
+    fallbackReason?: string
+  }
+}

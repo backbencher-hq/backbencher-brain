@@ -3289,134 +3289,41 @@ export namespace AdvancedBrainTools {
   ])
 
   export async function performSemanticKeywordSearch(db: any, projectId: ProjectID, query: string, opts: any): Promise<any[]> {
-    // Phase 2: Vector Embedding Semantic Search
-    try {
-      const queryVector = await SemanticEngine.embed(query)
-      if (!queryVector || queryVector.length === 0) {
-        return await performFallbackKeywordSearch(db, projectId, query, opts)
-      }
+    // Delegate to strict semantic-search module (corrected model consistency + metadata)
+    const { semanticVectorSearch } = await import("../intelligence/search/semantic-search")
+    const response = await semanticVectorSearch(projectId, query, {
+      similarityThreshold: opts.similarityThreshold,
+      maxResults: opts.maxResults,
+      filePath: opts.filePath,
+    })
 
-      const currentModel = await SemanticEngine.getEmbeddingModel()
-
-      // Never compare vectors across vector spaces: rows must match the query
-      // vector's dimension. Prefer the currently configured model; if it has no
-      // rows, fall back to any model with matching dimensions (with a caveat).
-      const vectorQuery = {
-        id: BrainSemanticEmbeddingTable.entity_id,
-        vector: BrainSemanticEmbeddingTable.embedding_vector,
-        context: BrainSemanticEmbeddingTable.semantic_context,
-        model: BrainSemanticEmbeddingTable.embedding_model,
-      }
-      let embeddings = await db
-        .select(vectorQuery)
-        .from(BrainSemanticEmbeddingTable)
-        .where(
-          and(
-            eq(BrainSemanticEmbeddingTable.project_id, projectId),
-            eq(BrainSemanticEmbeddingTable.embedding_model, currentModel),
-            eq(BrainSemanticEmbeddingTable.vector_dimension, queryVector.length),
-          ),
-        )
-        .limit(50000)
-
-      let usedModel = currentModel
-      if (!embeddings || embeddings.length === 0) {
-        embeddings = await db
-          .select(vectorQuery)
-          .from(BrainSemanticEmbeddingTable)
-          .where(
-            and(
-              eq(BrainSemanticEmbeddingTable.project_id, projectId),
-              eq(BrainSemanticEmbeddingTable.vector_dimension, queryVector.length),
-            ),
-          )
-          .limit(50000)
-        usedModel = embeddings?.[0]?.model || "unknown"
-        log.warn("No embeddings for configured model; comparing against stored model instead", { configured: currentModel, usedModel, dimension: queryVector.length })
-      }
-
-      if (!embeddings || embeddings.length === 0) {
-        log.warn("No semantic embeddings matching query vector dimension. Falling back to keyword search.", { projectId, dimension: queryVector.length })
-        return await performFallbackKeywordSearch(db, projectId, query, opts)
-      }
-
-      // Calculate cosine similarity in memory
-      const scored = embeddings.map((e: any) => {
-        try {
-          const vec = JSON.parse(e.vector)
-          const similarity = SemanticEngine.cosineSimilarity(queryVector, vec)
-          const ctx = e.context ? (typeof e.context === "string" ? JSON.parse(e.context) : e.context) : {}
-          return { id: e.id, similarity, context: ctx }
-        } catch (err) {
-          return { id: e.id, similarity: -1, context: {} }
-        }
-      })
-
-      // Local word-vector models (small dimensions) produce lower cosines than
-      // API embeddings — use a matching default threshold and always report scores.
-      const isLocalVectors = queryVector.length < 200
-      const threshold = opts.similarityThreshold ?? (isLocalVectors ? 0.15 : 0.35)
-      const maxResults = opts.maxResults || 50
-      const matches = scored
-        .filter((s: any) => s.similarity >= threshold)
-        .sort((a: any, b: any) => b.similarity - a.similarity)
-        // Headroom: filePath filtering happens below, before the final slice
-        .slice(0, Math.min(maxResults * 10, 500))
-
-      if (matches.length === 0) return await performFallbackKeywordSearch(db, projectId, query, opts)
-
-      // Fetch the actual symbol data for the matches
-      const matchIds = matches.map((m: any) => m.id)
-      const symbols = await db
-        .select({
-          symbol: BrainSymbolTable,
-          file: BrainFileTable,
-        })
-        .from(BrainSymbolTable)
-        .innerJoin(BrainFileTable, eq(BrainSymbolTable.file_id, BrainFileTable.id))
-        .where(and(eq(BrainSymbolTable.project_id, projectId), inArray(BrainSymbolTable.id, matchIds)))
-
-      const symbolMap = new Map()
-      for (const s of symbols) {
-        symbolMap.set(s.symbol.id, s)
-      }
-
-      const results = []
-      const modelCaveat = usedModel !== currentModel ? ` (compared against stored model "${usedModel}")` : ""
-      for (const match of matches) {
-        if (results.length >= maxResults) break
-        const s = symbolMap.get(match.id)
-        if (!s) continue
-        if (AnalysisExclusions.isAnalysisExcluded(s.file?.relative_path || "")) continue
-        if (opts.filePath && !(s.file?.relative_path || "").includes(opts.filePath) && !(s.file?.path || "").includes(opts.filePath)) continue
-
-        const finalContent =
-          (await readSymbolSnippet(s.file?.path, s.symbol.line_start, s.symbol.line_end, 30)) || s.symbol.name
-
-        results.push({
-          item: {
-            type: s.symbol.symbol_type as "function" | "class" | "file" | "comment",
-            name: s.symbol.name,
-            file: s.file.relative_path,
-            line: s.symbol.line_start,
-            content: finalContent,
-          },
-          similarity: match.similarity,
-          explanation: `Conceptual match for "${query}" (similarity ${match.similarity.toFixed(2)})${modelCaveat}`,
-          context: {
-            surroundingCode: "",
-            relatedSymbols: [],
-            conceptualTags: [],
-          },
-        })
-      }
-
-      if (results.length === 0) return await performFallbackKeywordSearch(db, projectId, query, opts)
-      return results
-    } catch (e) {
-      log.info("Vector search unavailable (embeddings not configured), using keyword search instead")
-      return await performFallbackKeywordSearch(db, projectId, query, opts)
+    // Adapt the strict result shape to the legacy shape for backward compatibility
+    if (response.metadata.method === "keyword-fallback") {
+      log.info("Semantic search used keyword fallback", { reason: response.metadata.fallbackReason })
     }
+
+    const modelNote = response.metadata.method === "vector" && response.metadata.queryModel !== response.metadata.indexModel
+      ? ` (compared against stored model "${response.metadata.indexModel}")`
+      : ""
+
+    return response.results.map((r) => ({
+      item: {
+        type: r.symbolType as "function" | "class" | "file" | "comment",
+        name: r.symbolName,
+        file: r.file,
+        line: r.line,
+        content: r.snippet,
+      },
+      similarity: r.similarity,
+      explanation: response.metadata.method === "vector"
+        ? `Conceptual match for "${query}" (similarity ${r.similarity.toFixed(2)})${modelNote}`
+        : `Keyword match for "${query}"`,
+      context: {
+        surroundingCode: "",
+        relatedSymbols: [],
+        conceptualTags: [],
+      },
+    }))
   }
 
   // Fallback if vectors aren't indexed
