@@ -195,3 +195,64 @@ export interface GraphTraversalResult {
     truncationReason?: string
   }
 }
+
+// Analyze (metrics / dependencies / complexity / impact) contracts
+
+export type AnalyzeMode =
+  | "callers"
+  | "callees"
+  | "trace"
+  | "dependencies"
+  | "statistics"
+  | "complexity"
+  | "impact"
+
+export interface CouplingEntry {
+  symbolId: string
+  name: string
+  file: string
+  incoming: number   // edges where this symbol is the target (fan-in)
+  outgoing: number   // edges where this symbol is the source (fan-out)
+  score: number      // incoming + outgoing
+}
+
+export interface FileDependency {
+  file: string           // relative path
+  fileId: string
+  dependencies: Array<{ path: string; fileId?: string; external: boolean }>
+  dependents: Array<{ path: string; fileId: string }>
+  score: number
+}
+
+export interface ComplexityMetric {
+  value: number | null   // null = not computable / unavailable (never fabricated)
+  available: boolean
+}
+
+export interface ComplexityReport {
+  target: string
+  scope: "project" | "file" | "class" | "function"
+  metrics: {
+    cyclomaticAvg: ComplexityMetric
+    cyclomaticTotal: ComplexityMetric
+    linesOfCode: ComplexityMetric
+    couplingEdges: ComplexityMetric
+    maintainability: ComplexityMetric
+    depthOfInheritance: ComplexityMetric // available:false until real hierarchy analysis
+  }
+  breakdown: Array<{ name: string; type: string; complexity: number; file: string; line: number }>
+  symbolCount: number
+}
+
+export interface ImpactReport {
+  target: string
+  found: boolean
+  scope: "direct" | "transitive" | "global"
+  directSymbols: number
+  affectedFiles: Array<{ file: string; via: string; depth: number; crossLanguage: boolean }>
+  transitiveFiles: number
+  crossLanguageFiles: number
+  unresolvedEdges: number
+  riskLevel: "low" | "medium" | "high" | "critical"
+  truncated: boolean
+}

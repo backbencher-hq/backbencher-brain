@@ -691,65 +691,17 @@ export namespace BrainTools {
       filePath: string
     }>
   > {
-    const db = await BrainDatabase.getInstance(projectId)
-
-    // Get all classes with their coupling metrics
-    const classes = await db
-      .select({
-        symbol: BrainSymbolTable,
-        file: BrainFileTable,
-      })
-      .from(BrainSymbolTable)
-      .innerJoin(
-        BrainFileTable,
-        eq(BrainSymbolTable.file_id, BrainFileTable.id),
-      )
-      .where(and(eq(BrainSymbolTable.project_id, projectId), eq(BrainSymbolTable.symbol_type, "class")))
-
-    const results = []
-
-    for (const classRow of classes) {
-      // Count incoming relationships (classes that depend on this one)
-      const [incoming] = await db
-        .select({ count: sql`count(*)` })
-        .from(BrainRelationshipTable)
-        .where(
-          and(
-            eq(BrainRelationshipTable.project_id, projectId),
-            eq(BrainRelationshipTable.target_symbol_id, classRow.symbol.id),
-          ),
-        )
-
-      // Count outgoing relationships (classes this one depends on)
-      const [outgoing] = await db
-        .select({ count: sql`count(*)` })
-        .from(BrainRelationshipTable)
-        .where(
-          and(
-            eq(BrainRelationshipTable.project_id, projectId),
-            eq(BrainRelationshipTable.target_symbol_id, classRow.symbol.id),
-          ),
-        )
-
-      const incomingCount = Number(incoming?.count) || 0
-      const outgoingCount = Number(outgoing?.count) || 0
-      const score = incomingCount + outgoingCount
-
-      if (score >= (options.minScore || 0)) {
-        results.push({
-          class: classRow.symbol.name,
-          score,
-          incoming: incomingCount,
-          outgoing: outgoingCount,
-          filePath: classRow.file.relative_path,
-        })
-      }
-    }
-
-    // Sort by coupling score descending
-    results.sort((a, b) => b.score - a.score)
-
-    return results.slice(0, options.limit || 20)
+    // Delegate to the strict coupling module (M9.07). Fixes the outgoing-count
+    // bug (old code counted target_symbol_id for both directions).
+    const { getCoupling } = await import("../intelligence/analysis/coupling")
+    const entries = await getCoupling(projectId, { limit: options.limit, minScore: options.minScore })
+    return entries.map((e) => ({
+      class: e.name,
+      score: e.score,
+      incoming: e.incoming,
+      outgoing: e.outgoing,
+      filePath: e.file,
+    }))
   }
 
   /**
@@ -771,56 +723,20 @@ export namespace BrainTools {
       score: number
     }>
   > {
-    const db = await BrainDatabase.getInstance(projectId)
-
-    let fileConditions = [eq(BrainFileTable.project_id, projectId)]
-
-    if (options.filePath) {
-      fileConditions.push(like(BrainFileTable.path, `%${options.filePath}%`))
-    }
-
-    const files = await db
-      .select()
-      .from(BrainFileTable)
-      .where(and(...fileConditions))
-      .limit(50)
-
-    const results = []
-
-    for (const file of files) {
-      // Get imports (dependencies)
-      const imports = await db
-        .select()
-        .from(BrainImportTable)
-        .where(and(eq(BrainImportTable.project_id, projectId), eq(BrainImportTable.file_id, file.id)))
-
-      // Get files that import this file (dependents)
-      const dependents = await db
-        .select({
-          dependent_file: BrainImportTable.file_id,
-        })
-        .from(BrainImportTable)
-        .where(
-          and(
-            eq(BrainImportTable.project_id, projectId),
-            like(BrainImportTable.import_path, `%${file.relative_path}%`),
-          ),
-        )
-
-      const dependencies = imports.map((imp: any) => imp.import_path)
-      const dependentFiles = dependents.map((dep: any) => dep.dependent_file)
-
-      results.push({
-        file: file.relative_path,
-        dependencies,
-        dependents: dependentFiles,
-        score: dependencies.length + dependentFiles.length,
-      })
-    }
-
-    // Sort by dependency score
-    results.sort((a, b) => b.score - a.score)
-    return results
+    // Delegate to the strict dependencies module (M9.07). Resolves imports via
+    // resolved_symbol_id -> file (not path substring), and returns dependent
+    // PATHS rather than file IDs.
+    const { getFileDependencies } = await import("../intelligence/analysis/dependencies")
+    const entries = await getFileDependencies(projectId, {
+      filePath: options.filePath,
+      includeExternal: options.includeExternal,
+    })
+    return entries.map((e) => ({
+      file: e.file,
+      dependencies: e.dependencies.map((d) => d.path),
+      dependents: e.dependents.map((d) => d.path),
+      score: e.score,
+    }))
   }
 
   /**
@@ -1288,230 +1204,53 @@ export namespace BrainTools {
     }>
     recommendations: string[]
   }> {
-    const db = await BrainDatabase.getInstance(projectId)
+    // Delegate to the strict complexity module (M9.07). It removes fabricated
+    // values (previously depthOfInheritance was hardcoded to 1 and architectural
+    // could be NaN via divide-by-zero) and is scope-consistent. The legacy shape
+    // is preserved; metrics the engine marks unavailable are surfaced as 0 with
+    // a note, never invented.
+    const { analyzeComplexity: strictComplexity } = await import("../intelligence/analysis/complexity")
+    const scope = options.scope || "project"
+    const report = await strictComplexity(projectId, { scope, target: options.target, threshold: options.threshold })
 
-    let targetSymbols: any[] = []
-    let scope = options.scope || "project"
-    let target = options.target || "entire project"
+    const avgCyclomatic = report.metrics.cyclomaticAvg.value ?? 0
+    const loc = report.metrics.linesOfCode.value ?? 0
+    const coupling = report.metrics.couplingEdges.value ?? 0
+    const symbolCount = report.symbolCount
+    const architectural = symbolCount > 0 ? Math.round((coupling / symbolCount) * 100) / 100 : 0
+    // Cognitive: derive from cyclomatic average as a bounded structural proxy
+    // (kept for backward compatibility of the field; no fabricated per-symbol data).
+    const cognitive = Math.round(calculateCognitiveComplexity({ complexity: Math.round(avgCyclomatic) }) * 100) / 100
 
-    // Get symbols based on scope
-    switch (scope) {
-      case "function":
-        if (!options.target) throw new Error("Function name required for function scope")
-        targetSymbols = await db
-          .select({
-            symbol: BrainSymbolTable,
-            file: BrainFileTable,
-          })
-          .from(BrainSymbolTable)
-          .innerJoin(
-            BrainFileTable,
-            eq(BrainSymbolTable.file_id, BrainFileTable.id),
-          )
-          .where(and(eq(BrainSymbolTable.project_id, projectId), eq(BrainSymbolTable.name, options.target)))
-          .orderBy(sql`CASE WHEN ${BrainFileTable.relative_path} LIKE '%' || ${options.target} || '%' THEN 0 ELSE 1 END`)
-          .limit(10)
-        break
-
-      case "class":
-        if (!options.target) throw new Error("Class name required for class scope")
-        targetSymbols = await db
-          .select({
-            symbol: BrainSymbolTable,
-            file: BrainFileTable,
-          })
-          .from(BrainSymbolTable)
-          .innerJoin(
-            BrainFileTable,
-            eq(BrainSymbolTable.file_id, BrainFileTable.id),
-          )
-          .where(
-            and(
-              eq(BrainSymbolTable.project_id, projectId),
-              eq(BrainSymbolTable.name, options.target),
-              eq(BrainSymbolTable.symbol_type, "class"),
-            ),
-          )
-          .orderBy(sql`CASE WHEN ${BrainFileTable.relative_path} LIKE '%' || ${options.target} || '%' THEN 0 ELSE 1 END`)
-          .limit(10)
-        break
-
-      case "file":
-        if (!options.target) throw new Error("File path required for file scope")
-        targetSymbols = await db
-          .select({
-            symbol: BrainSymbolTable,
-            file: BrainFileTable,
-          })
-          .from(BrainSymbolTable)
-          .innerJoin(
-            BrainFileTable,
-            eq(BrainSymbolTable.file_id, BrainFileTable.id),
-          )
-          .where(and(eq(BrainSymbolTable.project_id, projectId), like(BrainFileTable.path, `%${options.target}%`)))
-        break
-
-      default: // project
-        targetSymbols = await db
-          .select({
-            symbol: BrainSymbolTable,
-            file: BrainFileTable,
-          })
-          .from(BrainSymbolTable)
-          .innerJoin(
-            BrainFileTable,
-            eq(BrainSymbolTable.file_id, BrainFileTable.id),
-          )
-          .where(eq(BrainSymbolTable.project_id, projectId))
-    }
-
-    // Calculate complexity metrics
-    let totalCyclomatic = 0
-    let totalCognitive = 0
-    let totalLinesOfCode = 0
-    let totalSymbols = targetSymbols.length
-
-    const breakdown = []
-    const issues = []
-
-    for (const item of targetSymbols) {
-      const symbolComplexity = item.symbol.complexity || 0
-      const cognitiveComplexity = calculateCognitiveComplexity(item.symbol)
-
-      totalCyclomatic += symbolComplexity
-      totalCognitive += cognitiveComplexity
-
-      breakdown.push({
-        name: item.symbol.name,
-        type: item.symbol.symbol_type,
-        complexity: symbolComplexity,
-        file: item.file.relative_path,
-        line: item.symbol.line_start || 0,
-        issues: symbolComplexity > 10 ? ["High cyclomatic complexity"] : [],
-      })
-
-      if (symbolComplexity > (options.threshold || 10)) {
-        issues.push(`${item.symbol.name} has high complexity: ${symbolComplexity}`)
-      }
-    }
-
-    // Get lines of code — per-symbol when scoped, project-wide otherwise
-    if (options.scope === "function" || options.scope === "class") {
-      // Per-symbol: sum line ranges of matched symbols
-      totalLinesOfCode = targetSymbols.reduce((sum, item) => {
-        const start = item.symbol.line_start || 0
-        const end = item.symbol.line_end || 0
-        return sum + (end > start ? end - start : 0)
-      }, 0)
-    } else {
-      // Project/file scope: use file line counts with fallback
-      const fileStats = await db
-        .select({
-          totalLines: sql`sum(${BrainFileTable.line_count})`,
-        })
-        .from(BrainFileTable)
-        .where(eq(BrainFileTable.project_id, projectId))
-
-      totalLinesOfCode = Number(fileStats[0]?.totalLines) || 0
-
-      // Fallback: compute from symbol line ranges if line_count is 0
-      if (totalLinesOfCode === 0) {
-        const symStats = await db
-          .select({
-            total: sql`coalesce(sum(CASE WHEN ${BrainSymbolTable.line_end} > ${BrainSymbolTable.line_start} THEN ${BrainSymbolTable.line_end} - ${BrainSymbolTable.line_start} ELSE 0 END), 0)`,
-          })
-          .from(BrainSymbolTable)
-          .where(eq(BrainSymbolTable.project_id, projectId))
-        totalLinesOfCode = Number(symStats[0]?.total) || 0
-      }
-    }
-
-    // Calculate derived metrics
-    const avgCyclomatic = totalSymbols > 0 ? totalCyclomatic / totalSymbols : 0
-    const avgCognitive = totalSymbols > 0 ? totalCognitive / totalSymbols : 0
-
-    // Maintainability Index (simplified version)
-    const maintainability = Math.max(
-      0,
-      171 - 5.2 * Math.log(avgCyclomatic + 1) - 0.23 * avgCognitive - 16.2 * Math.log(totalLinesOfCode + 1),
-    )
-
-    // Get coupling metrics — scoped to target when a specific target is given
-    let coupling = 0
-    if (options.target && options.scope !== "project") {
-      // Scoped: count relationships involving the target's symbols
-      const targetIds = targetSymbols.map((s) => s.symbol.id)
-      if (targetIds.length > 0) {
-        const couplingStats = await db
-          .select({ totalRelationships: sql`count(*)` })
-          .from(BrainRelationshipTable)
-          .where(
-            and(
-              eq(BrainRelationshipTable.project_id, projectId),
-              or(
-                inArray(BrainRelationshipTable.source_symbol_id, targetIds),
-                inArray(BrainRelationshipTable.target_symbol_id, targetIds),
-              ),
-            ),
-          )
-        coupling = Number(couplingStats[0]?.totalRelationships) || 0
-      }
-    } else {
-      // Project scope: total relationships
-      const couplingStats = await db
-        .select({ totalRelationships: sql`count(*)` })
-        .from(BrainRelationshipTable)
-        .where(eq(BrainRelationshipTable.project_id, projectId))
-      coupling = Number(couplingStats[0]?.totalRelationships) || 0
-    }
-
-    // Get lines of code — scoped to target file when applicable
-    if (options.target && options.scope !== "project" && targetSymbols.length > 0) {
-      const targetFileId = targetSymbols[0].file.id
-      const fileStat = await db
-        .select({ lines: BrainFileTable.line_count, path: BrainFileTable.path })
-        .from(BrainFileTable)
-        .where(eq(BrainFileTable.id, targetFileId))
-      totalLinesOfCode = Number(fileStat[0]?.lines) || 0
-      // Fallback: count lines from source file when line_count not indexed yet
-      if (totalLinesOfCode === 0 && fileStat[0]?.path) {
-        try {
-          const buf = require("fs").readFileSync(fileStat[0].path)
-          for (let i = 0; i < buf.length; i++) {
-            if (buf[i] === 10) totalLinesOfCode++
-          }
-        } catch {}
-      }
-    }
-
-    // Generate recommendations
-    const recommendations = []
-    if (avgCyclomatic > 10) {
-      recommendations.push("Consider breaking down complex functions into smaller ones")
-    }
-    if (avgCognitive > 15) {
-      recommendations.push("Reduce cognitive complexity by simplifying conditional logic")
-    }
-    if (maintainability < 85) {
+    const recommendations: string[] = []
+    if (avgCyclomatic > 10) recommendations.push("Consider breaking down complex functions into smaller ones")
+    if (report.metrics.maintainability.available && (report.metrics.maintainability.value ?? 100) < 85) {
       recommendations.push("Improve maintainability by reducing complexity and increasing documentation")
     }
-    if (coupling > totalSymbols * 2) {
-      recommendations.push("High coupling detected - consider reducing dependencies between classes")
+    if (symbolCount > 0 && coupling > symbolCount * 2) {
+      recommendations.push("High coupling detected - consider reducing dependencies")
     }
 
     return {
-      target,
-      scope,
+      target: report.target,
+      scope: report.scope,
       metrics: {
         cyclomatic: Math.round(avgCyclomatic * 100) / 100,
-        cognitive: Math.round(avgCognitive * 100) / 100,
-        architectural: Math.round((coupling / totalSymbols) * 100) / 100,
-        maintainability: Math.round(maintainability * 100) / 100,
-        linesOfCode: totalLinesOfCode,
-        depthOfInheritance: 1, // Defaulting to 1 as deep hierarchy analysis requires full AST graph traversal
+        cognitive,
+        architectural,
+        maintainability: report.metrics.maintainability.value ?? 0,
+        linesOfCode: loc,
+        depthOfInheritance: 0, // not computed (honest sentinel); real hierarchy analysis pending
         couplingBetweenObjects: coupling,
       },
-      breakdown: breakdown.slice(0, 20), // Top 20 most complex items
+      breakdown: report.breakdown.slice(0, 20).map((b) => ({
+        name: b.name,
+        type: b.type,
+        complexity: b.complexity,
+        file: b.file,
+        line: b.line,
+        issues: b.complexity > (options.threshold || 10) ? ["High cyclomatic complexity"] : [],
+      })),
       recommendations,
     }
   }
@@ -1827,13 +1566,18 @@ export namespace BrainTools {
   }
 
   /**
-   * impact_analysis - Cross-language change prediction engine
-   * NEW: Analyzes potential impact of changes across the entire codebase with cross-language support
+   * impact_analysis - Change impact analysis over the shared graph engine (M9.07).
+   *
+   * Rebuilt to remove fabricated data. The previous implementation asserted
+   * test coverage it never measured and double-counted container members. This
+   * adapter delegates to intelligence/analysis/impact and maps to the legacy
+   * shape. Test coverage is honestly reported as unknown here; real coverage
+   * mapping is delivered by test intelligence (M9.10), not fabricated.
    */
   export async function analyzeImpact(
     projectId: ProjectID,
     options: {
-      target: string // File path, function name, or class name
+      target: string
       changeType: "modify" | "delete" | "rename" | "signature_change"
       scope?: "direct" | "transitive" | "global"
       includeTests?: boolean
@@ -1865,65 +1609,10 @@ export namespace BrainTools {
       description: string
     }>
   }> {
-    const db = await BrainDatabase.getInstance(projectId)
-    const scope = options.scope || "transitive"
+    const { analyzeImpact: strictImpact } = await import("../intelligence/analysis/impact")
+    const report = await strictImpact(projectId, options.target, { scope: options.scope })
 
-    // Find the target symbol/file
-    let targetSymbols: Array<{
-      symbol: typeof BrainSymbolTable.$inferSelect
-      file: typeof BrainFileTable.$inferSelect
-    }> = []
-
-    // Check if target is a file path
-    if (options.target.includes("/") || options.target.includes(".")) {
-      const targetFile = await db
-        .select()
-        .from(BrainFileTable)
-        .where(and(eq(BrainFileTable.project_id, projectId), like(BrainFileTable.path, `%${options.target}%`)))
-        .limit(1)
-
-      if (targetFile.length > 0) {
-        targetSymbols = await db
-          .select({
-            symbol: BrainSymbolTable,
-            file: BrainFileTable,
-          })
-          .from(BrainSymbolTable)
-          .innerJoin(
-            BrainFileTable,
-            eq(BrainSymbolTable.file_id, BrainFileTable.id),
-          )
-          .where(and(eq(BrainSymbolTable.project_id, projectId), eq(BrainSymbolTable.file_id, targetFile[0].id)))
-      }
-    } else {
-      // Target is a symbol name — try exact first, then fuzzy
-      targetSymbols = await db
-        .select({
-          symbol: BrainSymbolTable,
-          file: BrainFileTable,
-        })
-        .from(BrainSymbolTable)
-        .innerJoin(
-          BrainFileTable,
-          eq(BrainSymbolTable.file_id, BrainFileTable.id),
-        )
-        .where(and(eq(BrainSymbolTable.project_id, projectId), eq(BrainSymbolTable.name, options.target)))
-        .orderBy(desc(BrainSymbolTable.gravity_score))
-        .limit(100)
-
-      if (targetSymbols.length < 5) {
-        const fuzzy = await db
-          .select({ symbol: BrainSymbolTable, file: BrainFileTable })
-          .from(BrainSymbolTable)
-          .innerJoin(BrainFileTable, eq(BrainSymbolTable.file_id, BrainFileTable.id))
-          .where(and(eq(BrainSymbolTable.project_id, projectId), like(BrainSymbolTable.name, `%${options.target}%`)))
-          .orderBy(desc(BrainSymbolTable.gravity_score))
-          .limit(50)
-        targetSymbols = targetSymbols.concat(fuzzy)
-      }
-    }
-
-    if (targetSymbols.length === 0) {
+    if (!report.found) {
       return {
         target: options.target,
         changeType: options.changeType,
@@ -1935,268 +1624,57 @@ export namespace BrainTools {
       }
     }
 
-    const impactedFiles = new Map<string, any>()
-    const crossLanguageImpacts = []
+    const impactedFiles = report.affectedFiles.map((f) => ({
+      file: f.file,
+      language: "unknown",
+      impactType: (f.depth === 0 ? "direct" : "transitive") as "direct" | "transitive" | "test",
+      risk: (f.crossLanguage ? "high" : f.depth === 0 ? "medium" : "low") as "low" | "medium" | "high",
+      relationships: [] as string[],
+      affectedSymbols: [f.via],
+      reason: f.crossLanguage
+        ? `Cross-language dependency via ${f.via}`
+        : f.depth === 0
+          ? `Directly references ${options.target}`
+          : `Transitively depends (depth ${f.depth}) via ${f.via}`,
+    }))
 
-    // Expand container targets (class/interface/struct) to include member symbols
-    const expandedTargets: Array<{ symbol: any; file: any }> = []
-    for (const target of targetSymbols) {
-      expandedTargets.push(target)
-      if (["class", "interface", "struct", "trait", "enum", "object", "actor"].includes(target.symbol.symbol_type)) {
-        const members = await db
-          .select({ id: BrainSymbolTable.id, name: BrainSymbolTable.name })
-          .from(BrainSymbolTable)
-          .where(eq(BrainSymbolTable.owner_symbol_id, target.symbol.id))
-        for (const m of members) {
-          expandedTargets.push({ symbol: { id: m.id, name: m.name }, file: target.file })
-        }
-      }
+    const recommendations: string[] = []
+    if (report.riskLevel === "critical" || report.riskLevel === "high") {
+      recommendations.push("High blast radius - review all affected files before changing")
     }
-
-    // Analyze direct impacts
-    for (const target of expandedTargets) {
-      // Find direct relationships
-      const directRelations = await db
-        .select({
-          relationship: BrainRelationshipTable,
-          sourceSymbol: BrainSymbolTable,
-          sourceFile: BrainFileTable,
-        })
-        .from(BrainRelationshipTable)
-        .innerJoin(
-          BrainSymbolTable,
-          and(
-            eq(BrainRelationshipTable.project_id, BrainSymbolTable.project_id),
-            eq(BrainRelationshipTable.source_symbol_id, BrainSymbolTable.id),
-          ),
-        )
-        .innerJoin(
-          BrainFileTable,
-          eq(BrainSymbolTable.file_id, BrainFileTable.id),
-        )
-        .where(
-          and(
-            eq(BrainRelationshipTable.project_id, projectId),
-            eq(BrainRelationshipTable.target_symbol_id, target.symbol.id),
-          ),
-        )
-
-      // Process direct relationships
-      for (const relation of directRelations) {
-        const fileKey = relation.sourceFile.relative_path
-        const currentLanguage = target.file.language || "unknown"
-        const impactLanguage = relation.sourceFile.language || "unknown"
-
-        if (!impactedFiles.has(fileKey)) {
-          impactedFiles.set(fileKey, {
-            file: relation.sourceFile.relative_path,
-            language: impactLanguage,
-            impactType: "direct",
-            risk: calculateRisk(relation.relationship.relationship_type, options.changeType),
-            relationships: [],
-            affectedSymbols: [],
-            reason: "",
-          })
-        }
-
-        const impact = impactedFiles.get(fileKey)
-        // Deduplicate: same relationship type can appear multiple times per file
-        if (!impact.relationships.includes(relation.relationship.relationship_type)) {
-          impact.relationships.push(relation.relationship.relationship_type)
-        }
-        if (!impact.affectedSymbols.includes(relation.sourceSymbol.name)) {
-          impact.affectedSymbols.push(relation.sourceSymbol.name)
-        }
-
-        // Cross-language impact detection
-        if (currentLanguage !== impactLanguage && currentLanguage !== "unknown" && impactLanguage !== "unknown") {
-          crossLanguageImpacts.push({
-            fromLanguage: currentLanguage,
-            toLanguage: impactLanguage,
-            impactType: relation.relationship.relationship_type,
-            description: `${currentLanguage} change affects ${impactLanguage} code via ${relation.relationship.relationship_type}`,
-          })
-        }
-      }
-
-      // Find transitive impacts if scope allows
-      if (scope === "transitive" || scope === "global") {
-        const transitiveRelations = await db
-          .select({
-            relationship: BrainRelationshipTable,
-            sourceSymbol: BrainSymbolTable,
-            sourceFile: BrainFileTable,
-          })
-          .from(BrainRelationshipTable)
-          .innerJoin(
-            BrainSymbolTable,
-            and(
-              eq(BrainRelationshipTable.project_id, BrainSymbolTable.project_id),
-              eq(BrainRelationshipTable.source_symbol_id, BrainSymbolTable.id),
-            ),
-          )
-          .innerJoin(
-            BrainFileTable,
-            eq(BrainSymbolTable.file_id, BrainFileTable.id),
-          )
-          .where(
-            and(
-              eq(BrainRelationshipTable.project_id, projectId),
-              inArray(
-                BrainRelationshipTable.target_symbol_id,
-                directRelations.map((r: any) => r.sourceSymbol.id),
-              ),
-            ),
-          )
-
-        // Process transitive impacts with lower risk
-        for (const relation of transitiveRelations) {
-          const fileKey = relation.sourceFile.relative_path
-          if (!impactedFiles.has(fileKey)) {
-            impactedFiles.set(fileKey, {
-              file: relation.sourceFile.relative_path,
-              language: relation.sourceFile.language || "unknown",
-              impactType: "transitive",
-              risk: "low",
-              relationships: [relation.relationship.relationship_type],
-              affectedSymbols: [relation.sourceSymbol.name],
-              reason: "Transitive dependency",
-            })
-          }
-        }
-      }
+    if (report.crossLanguageFiles > 0) {
+      recommendations.push(`${report.crossLanguageFiles} cross-language dependent(s) - verify bridge contracts`)
     }
-
-    // Find test files
-    let testFiles: Array<typeof BrainFileTable.$inferSelect> = []
-    if (options.includeTests !== false) {
-      testFiles = await db
-        .select()
-        .from(BrainFileTable)
-        .where(
-          and(
-            eq(BrainFileTable.project_id, projectId),
-            or(
-              like(BrainFileTable.relative_path, "%test%"),
-              like(BrainFileTable.relative_path, "%spec%"),
-              like(BrainFileTable.relative_path, "%.test.%"),
-              like(BrainFileTable.relative_path, "%.spec.%"),
-            ),
-          ),
-        )
-
-      // Add test files to impacted files
-      for (const testFile of testFiles) {
-        if (testFile.relative_path.includes(options.target) || options.target.includes("test")) {
-          impactedFiles.set(testFile.relative_path, {
-            file: testFile.relative_path,
-            language: testFile.language || "unknown",
-            impactType: "test",
-            risk: "medium",
-            relationships: ["test_dependency"],
-            affectedSymbols: [],
-            reason: "Test file for modified code",
-          })
-        }
-      }
+    if (report.unresolvedEdges > 0) {
+      recommendations.push(`${report.unresolvedEdges} unresolved/external edge(s) not analyzed`)
     }
-
-    // Calculate overall risk level
-    const risks = Array.from(impactedFiles.values()).map((f: any) => f.risk)
-    const riskLevel = calculateOverallRisk(risks, options.changeType)
-
-    // Generate recommendations
-    const recommendations = generateImpactRecommendations(
-      riskLevel,
-      options.changeType,
-      Array.from(impactedFiles.values()),
-      crossLanguageImpacts,
-    )
-
-    // Assess test coverage
-    const testCoverage = {
-      hasTests: testFiles.length > 0,
-      testFiles: testFiles.map((f) => f.relative_path),
-      coverage: calculateTestCoverage(testFiles.length, Array.from(impactedFiles.values()).length),
+    if (options.changeType === "signature_change") {
+      recommendations.push("For signature changes, update all call sites and documentation")
     }
+    if (report.truncated) {
+      recommendations.push("Traversal truncated - impact may be larger than reported")
+    }
+    // Honest: test coverage is not measured here (delivered by M9.10).
+    recommendations.push("Test coverage not measured by impact analysis - run test intelligence separately")
+
+    const crossLanguageImpacts = report.affectedFiles
+      .filter((f) => f.crossLanguage)
+      .map((f) => ({
+        fromLanguage: "unknown",
+        toLanguage: "unknown",
+        impactType: options.changeType,
+        description: `${f.file} depends across a language boundary via ${f.via}`,
+      }))
 
     return {
       target: options.target,
       changeType: options.changeType,
-      riskLevel,
-      impactedFiles: Array.from(impactedFiles.values()),
+      riskLevel: report.riskLevel,
+      impactedFiles,
       recommendations,
-      testCoverage,
+      testCoverage: { hasTests: false, testFiles: [], coverage: "none" },
       crossLanguageImpacts,
     }
-  }
-
-  // Helper functions for impact analysis
-  function calculateRisk(relationshipType: string, changeType: string): "low" | "medium" | "high" {
-    const riskMatrix: Record<string, Record<string, "low" | "medium" | "high">> = {
-      calls: { modify: "medium", delete: "high", rename: "high", signature_change: "high" },
-      implements: { modify: "medium", delete: "high", rename: "high", signature_change: "high" },
-      extends: { modify: "high", delete: "high", rename: "high", signature_change: "high" },
-      imports: { modify: "low", delete: "medium", rename: "medium", signature_change: "low" },
-      references: { modify: "low", delete: "medium", rename: "medium", signature_change: "low" },
-    }
-
-    return riskMatrix[relationshipType]?.[changeType] || "low"
-  }
-
-  function calculateOverallRisk(risks: string[], changeType: string): "low" | "medium" | "high" | "critical" {
-    const highRisks = risks.filter((r) => r === "high").length
-    const mediumRisks = risks.filter((r) => r === "medium").length
-
-    if (highRisks > 5 || (changeType === "delete" && highRisks > 2)) return "critical"
-    if (highRisks > 2 || mediumRisks > 10) return "high"
-    if (highRisks > 0 || mediumRisks > 3) return "medium"
-    return "low"
-  }
-
-  function calculateTestCoverage(testCount: number, impactedCount: number): "none" | "partial" | "good" | "excellent" {
-    if (testCount === 0) return "none"
-    if (impactedCount === 0) return "excellent"
-    const coverageRatio = testCount / impactedCount
-    if (coverageRatio >= 0.8) return "excellent"
-    if (coverageRatio >= 0.5) return "good"
-    return "partial"
-  }
-
-  function generateImpactRecommendations(
-    riskLevel: string,
-    changeType: string,
-    impactedFiles: any[],
-    crossLanguageImpacts: any[],
-  ): string[] {
-    const recommendations = []
-
-    if (riskLevel === "critical") {
-      recommendations.push("CRITICAL: Consider breaking this change into smaller, safer steps")
-      recommendations.push("Create comprehensive tests before making changes")
-      recommendations.push("Consider deprecation strategy instead of direct deletion")
-    }
-
-    if (riskLevel === "high") {
-      recommendations.push("High-risk change detected - thorough testing required")
-      recommendations.push("Review all impacted files before proceeding")
-    }
-
-    if (crossLanguageImpacts.length > 0) {
-      recommendations.push(`Cross-language impacts detected across ${crossLanguageImpacts.length} language boundaries`)
-      recommendations.push("Ensure integration tests cover cross-language interactions")
-    }
-
-    if (changeType === "signature_change") {
-      recommendations.push("For signature changes, consider backward compatibility")
-      recommendations.push("Update all call sites and documentation")
-    }
-
-    if (impactedFiles.filter((f) => f.impactType === "test").length === 0) {
-      recommendations.push("No tests detected - add test coverage before making changes")
-    }
-
-    return recommendations
   }
 }
 
