@@ -10,3 +10,11 @@ export { BrainTools } from "./ast/tools"
 export { SemanticEngine } from "./brain/semantic/engine"
 export { checkFileFreshness, checkResultsFreshness, hashFileContent } from "./brain/freshness"
 export { getProjectId } from "./cli/index"
+export { BACKBENCHER_BRAIN_VERSION } from "./version"
+export {
+  TOOL_DESCRIPTORS,
+  serializeToolMetadata,
+  toMcpToolList,
+  validateToolDescriptors,
+} from "./mcp/tool-registry"
+export type { ToolDescriptor, ToolDocumentation, ToolInputSchema } from "./mcp/tool-registry"

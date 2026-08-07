@@ -162,7 +162,7 @@ export const CURRENT_CLI_CONTRACTS = [
   { name: "search", required: ["query"], options: ["dir", "limit", "language"] },
   { name: "health", required: [], options: ["dir"] },
   { name: "mcp", required: [], options: ["dir"] },
-  { name: "version", required: [], options: [] },
+  { name: "--version", required: [], options: [] },
 ] as const
 
 export const CURRENT_LIBRARY_EXPORTS = [

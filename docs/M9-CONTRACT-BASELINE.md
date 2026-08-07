@@ -32,7 +32,7 @@ Input property names, required fields, and handler defaults are frozen in `CURRE
 
 ### CLI
 
-The CLI currently supports `index`, `search`, `health`, `mcp`, and the Commander-provided `version` command. The manifest records required arguments and options. M9 does not remove these commands.
+The CLI currently supports `index`, `search`, `health`, `mcp`, and the Commander-provided `--version` flag. The manifest records required arguments and options. M9 does not remove these commands or add a separate `version` subcommand.
 
 ### Library
 

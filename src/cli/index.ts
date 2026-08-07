@@ -12,6 +12,7 @@ import { BrainDatabase } from "../brain/database"
 import { indexProjectParallel } from "../ast/parallel-indexer"
 import { BrainTools } from "../ast/tools"
 import { checkResultsFreshness } from "../brain/freshness"
+import { BACKBENCHER_BRAIN_VERSION } from "../version"
 
 export function getProjectId(projectPath: string): string {
   return createHash("sha1").update(path.resolve(projectPath)).digest("hex").substring(0, 40)
@@ -116,7 +117,7 @@ async function cmdHealth(dir?: string) {
 export async function runCli(argv: string[]): Promise<void> {
   const program = new Command()
   program.name("bb").description("Backbencher Brain — universal code intelligence (40+ languages)")
-  program.version("0.2.0")
+  program.version(BACKBENCHER_BRAIN_VERSION)
 
   program
     .command("index")
