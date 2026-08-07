@@ -302,3 +302,74 @@ export interface OrphanOptions {
   maxResults?: number
   includeTests?: boolean
 }
+
+// Security (taint-flow) contracts — brain_taint_flow is the primary evidence.
+
+export type SecurityMode = "findings" | "flow" | "summary" | "hotspots"
+
+export type FlowState = "confirmed" | "mitigated" | "unresolved" | "source_only"
+
+export interface FlowNode {
+  symbolId: string | null
+  name: string | null
+  file: string | null
+  line: number | null
+}
+
+export interface SecurityEvidenceItem {
+  kind: "taint_flow" | "source_scan"
+  description: string
+}
+
+export interface SecurityFindingV2 {
+  id: string
+  vulnerabilityType: string        // normalized (e.g. sql_injection)
+  label: string
+  severity: "critical" | "high" | "medium" | "low" | "unknown"
+  confidence: number               // 0..1, calibrated by flow state
+  state: FlowState
+  file: string | null
+  line: number | null
+  symbol: string | null
+  language: string | null
+  sourceType: string | null
+  sinkType: string | null
+  source: FlowNode
+  sink: FlowNode
+  path: FlowNode[]                 // fully resolved intermediate nodes (id+location)
+  crossLanguage: boolean
+  mitigated: boolean
+  evidence: SecurityEvidenceItem[]
+  limitations: string[]
+}
+
+export interface SecurityHotspot {
+  key: string                      // file or symbol
+  kind: "file" | "symbol"
+  findings: number
+  maxSeverity: "critical" | "high" | "medium" | "low" | "unknown"
+}
+
+export interface SecuritySummaryV2 {
+  total: number
+  bySeverity: Record<string, number>
+  byType: Record<string, number>
+  byState: Record<FlowState, number>
+  crossLanguage: number
+  scannedFlows: number
+  deduplicatedFlows: number
+}
+
+export interface SecurityReport {
+  findings: SecurityFindingV2[]
+  summary: SecuritySummaryV2
+  hotspots: SecurityHotspot[]
+}
+
+export interface SecurityOptions {
+  mode?: SecurityMode
+  minConfidence?: number
+  includeMitigated?: boolean
+  includeUnresolved?: boolean
+  maxResults?: number
+}

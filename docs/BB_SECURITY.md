@@ -1,0 +1,81 @@
+# bb_security Reference (M9.09)
+
+`bb_security` reports security findings from the project's taint-flow index. The
+strict engine (`src/intelligence/security/taint.ts`) treats `brain_taint_flow`
+as the **primary evidence source**, resolves every flow to symbols/files,
+deduplicates, and classifies each by state with calibrated confidence.
+
+## Evidence model
+
+Each finding derives from one or more `brain_taint_flow` rows (source → sink
+data-flow observations written by the indexer's taint analyzer). Source scanning,
+when integrated, contributes only lower-confidence corroborating evidence — it
+never overrides flow evidence.
+
+## Finding schema (`SecurityFindingV2`)
+
+| Field | Meaning |
+| --- | --- |
+| `vulnerabilityType` | Normalized type (e.g. `sql_injection`) |
+| `label` | Human label |
+| `severity` | `critical` / `high` / `medium` / `low` / `unknown` |
+| `confidence` | 0..1, calibrated by state |
+| `state` | `confirmed` / `mitigated` / `unresolved` / `source_only` |
+| `source`, `sink` | Resolved `FlowNode` (symbolId + name + file + line) |
+| `path` | All intermediate nodes, each resolvable by id/location |
+| `crossLanguage` | `cross_language_boundaries > 0` |
+| `mitigated` | From `is_mitigated` |
+| `evidence` | Array of `{ kind, description }` |
+| `limitations` | Known false-positive classes |
+
+## States
+
+- **confirmed** — both source and sink resolve to indexed symbols; unmitigated.
+- **mitigated** — `is_mitigated = 1`; kept but low actionable confidence.
+- **unresolved** — one endpoint does not resolve to an indexed symbol.
+- **source_only** — no source symbol (sink observation only).
+
+## Severity & confidence
+
+Severity comes from the flow row. Confidence is calibrated by evidence quality:
+`confirmed` = 0.7, `unresolved`/`source_only` = 0.4, `mitigated` = 0.3.
+
+## Deduplication
+
+The indexer emits multiple rows per real issue (one per `source_type` variant,
+plus intermediate-variable flows). Findings are deduplicated by flow-equivalence
+(`vulnerabilityType | sink | sinkType | file:line | state`). `summary.scannedFlows`
+vs `summary.deduplicatedFlows` shows the reduction.
+
+## Vulnerability-type normalization
+
+Aliases are normalized (e.g. `sqli`/`sql` → `sql_injection`, `rce` →
+`code_injection`, `xss_reflected`/`xss_stored` → `xss`). Findings never retain a
+raw alias.
+
+## Modes
+
+`analyzeSecurity(projectId, { mode })` supports:
+- `findings` — the finding list.
+- `flow` — per-finding resolved path nodes.
+- `summary` — `bySeverity`, `byType`, `byState`, `crossLanguage`, scan/dedup counts.
+- `hotspots` — files/symbols with the most findings.
+
+Options: `minConfidence`, `includeMitigated`, `includeUnresolved`, `maxResults`.
+
+## Limitations & safe interpretation
+
+- Flows are **indexer heuristics**. A parameterized or escaped sink can still be
+  reported (the engine surfaces this as a per-finding limitation rather than
+  silently trusting or dropping it).
+- `source_only`/`unresolved` findings are observations, not confirmed
+  exploitable paths — treat as leads, not verdicts.
+- This tool reports **project-code** findings. Hardening of the MCP server
+  itself is a separate concern and is not mixed into these results.
+
+## Verification
+
+`script/verify-security.ts` covers same-language SQLi, deduplication, resolved
+path nodes, confidence calibration, and — via deterministic row insertion —
+mitigated state, cross-language flags, `includeMitigated` filtering, hotspots,
+and alias normalization.
