@@ -116,6 +116,15 @@ export BB_EMBEDDING_MODEL="gemini-embedding-001"   # 3072-dim
 bb index --force <project>                          # re-embed everything
 ```
 
+**Free option — OpenRouter** (`:free` models, $0, rate-limited but plenty
+for moderate projects; fully verified end-to-end):
+
+```bash
+export BB_EMBEDDING_BASE_URL="https://openrouter.ai/api/v1"
+export BB_EMBEDDING_API_KEY="sk-or-v1-..."           # your openrouter key
+export BB_EMBEDDING_MODEL="nvidia/nemotron-3-embed-1b:free"   # 2048-dim
+```
+
 Or put the same keys in `~/.bb/config.json`:
 
 ```json
