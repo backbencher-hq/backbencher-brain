@@ -411,9 +411,22 @@ export async function startMcpServer(projectPath: string): Promise<void> {
 
       if (name === "bb_security") {
         const res: any = await CrossLanguageSecurityAnalysis.analyzeSecurityAcrossLanguages(projectId)
-        const vulns = res?.cross_language_vulnerabilities ?? res?.findings ?? []
-        const lines = vulns.slice(0, 20).map((v: any) => `  [${v.severity ?? "?"}] ${v.type} @ ${v.file ?? v.attack_flow?.entry_point?.file ?? "?"}:${v.line ?? v.attack_flow?.entry_point?.line ?? "?"}`)
-        return { content: [{ type: "text", text: `security findings (${vulns.length}):\n` + (lines.join("\n") || "  clean") }] }
+        const findings = res?.findings ?? []
+        const suspicious = res?.suspiciousSources ?? []
+        const sum = res?.summary
+        const head = sum
+          ? `security: ${sum.critical} critical / ${sum.high} high / ${sum.medium} medium / ${sum.low} low (${sum.resolved} resolved flows, ${sum.unresolvedSources} unvalidated sources, ${sum.mitigated} mitigated)`
+          : `security findings (${findings.length})`
+        const lines = findings.slice(0, 20).map(
+          (v: any) =>
+            `  [${v.severity}] ${v.label ?? v.type}${v.symbol ? ` (${v.symbol})` : ""} @ ${v.file}:${v.line ?? "?"}${v.sinkType ? ` -> ${v.sinkType}` : ""}${v.mitigated ? " [mitigated]" : ""}`,
+        )
+        const srcLines = suspicious
+          .slice(0, 5)
+          .map((s: any) => `  [info] unvalidated input${s.symbol ? ` ${s.symbol}` : ""} @ ${s.file}:${s.line ?? "?"} (no sink reached)`)
+        const text =
+          head + "\n" + (lines.length ? lines.join("\n") : "  clean") + (srcLines.length ? "\n\nunvalidated input sources:\n" + srcLines.join("\n") : "")
+        return { content: [{ type: "text", text }] }
       }
 
       if (name === "bb_visualize") {
