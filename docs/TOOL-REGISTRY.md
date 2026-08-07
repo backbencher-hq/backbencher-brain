@@ -52,3 +52,24 @@ This is the initial source for future generated documentation. The website at `$
 Issue M9.02 changes ownership and dispatch architecture only. All 15 existing names, schemas, defaults, text outputs, index gates, and side effects remain protected by `script/verify-contracts.ts` and MCP E2E verification.
 
 The target ten-tool contracts remain in `src/contracts/tool-contracts.ts`. They are not registered by this issue. Compatibility aliases and deprecations are activated in M9.18 after the replacement engines are complete.
+
+## Internal Engine Extraction
+
+M9.03 establishes the first strict internal modules under `src/intelligence/`:
+
+| Module | Current responsibility | Public adapters |
+| --- | --- | --- |
+| `contracts.ts` | Shared source, search, graph, and statistics DTOs | `BrainTools` result types remain compatible |
+| `source-utils.ts` | Safe snippet and JSON-field helpers | Search and future documentation engines |
+| `search/symbol-search.ts` | Current-schema symbol search and freshness flags | `BrainTools.searchCode`, CLI, `bb_search` |
+| `analysis/project-stats.ts` | Typed current-schema project aggregates | `BrainTools.getStats` |
+
+These modules are strict and use the active `brain_*` schema. The adapters are deliberately lazy-loaded so the existing namespace remains available while extraction proceeds.
+
+The following areas are intentionally not moved as if they were established:
+
+- Graph traversal remains in `tools.ts` until M9.06 repairs its semantics.
+- Pattern orchestration remains until M9.08 consolidates detectors and orphan rules.
+- Semantic retrieval remains until M9.05 repairs model identity and fallback behavior.
+- Test Intelligence remains quarantined until M9.10 replaces its obsolete schema queries.
+- Patrol, flow explanation, test generation, and architecture prototypes remain quarantined until their dedicated issues establish them.
