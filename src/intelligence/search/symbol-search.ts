@@ -22,7 +22,14 @@ export async function searchSymbols(projectId: ProjectID, query: string, options
   const raw = await BrainDatabase.getRawInstance(projectId)
   const maxResults = options.maxResults || 100
   const offset = options.offset || 0
-  if (options.regex) return []
+  if (options.mode === "content") {
+    const { searchContent } = await import("./content-search")
+    return searchContent(projectId, query, options)
+  }
+  if (options.mode === "regex" || options.regex) {
+    const { searchRegex } = await import("./regex-search")
+    return searchRegex(projectId, query, options)
+  }
 
   const candidates: Candidate[] = []
   const seen = new Set<string>()
@@ -76,6 +83,7 @@ export async function searchSymbols(projectId: ProjectID, query: string, options
 
   const page = candidates.slice(offset, offset + maxResults)
   const results: SearchResults = []
+  results.searchMode = "symbol"
   for (const row of page) {
     results.push({
       file: row.relativePath,

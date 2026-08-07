@@ -38,6 +38,7 @@ export interface FunctionInfo {
 }
 
 export interface SearchOptions {
+  mode?: "symbols" | "content" | "regex"
   languages?: string[]
   symbolKind?: string
   includeContent?: boolean
@@ -68,6 +69,8 @@ export interface SearchResult {
 export type SearchResults = SearchResult[] & {
   staleCount?: number
   freshCount?: number
+  searchMode?: string
+  truncated?: boolean
 }
 
 export interface CallGraphEntry {
