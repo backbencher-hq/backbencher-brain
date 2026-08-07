@@ -2508,6 +2508,40 @@ export interface FileChange {
   type: "added" | "modified" | "deleted"
 }
 
+/**
+ * Wipe a project's data IN PLACE — same DB file, never delete/recreate it.
+ * Deleting + recreating the file orphans any process that has it open (e.g.
+ * a running MCP server) into a stale handle. An in-place wipe keeps the file
+ * (and inode) intact, so every open connection sees the fresh index right
+ * away with no restart needed.
+ */
+export function wipeProjectData(rawDb: any): void {
+  rawDb.run("PRAGMA foreign_keys = OFF")
+  const tables = [
+    "brain_semantic_embedding",
+    "brain_taint_flow",
+    "brain_relationship",
+    "brain_import",
+    "brain_symbol",
+    "brain_pattern",
+    "brain_query_cache",
+    "brain_project_health",
+    "brain_index_status",
+    "brain_file",
+  ]
+  for (const t of tables) {
+    try {
+      rawDb.run(`DELETE FROM ${t}`)
+    } catch {}
+  }
+  // temp resolution tables (per-connection; safe to clear if present)
+  for (const t of ["_res_qname", "_res_name", "_res_name_unique"]) {
+    try {
+      rawDb.run(`DELETE FROM ${t}`)
+    } catch {}
+  }
+}
+
 export async function reindexFilesParallel(
   projectId: ProjectID,
   projectPath: string,

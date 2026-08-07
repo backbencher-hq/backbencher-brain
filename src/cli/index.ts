@@ -30,12 +30,18 @@ async function cmdIndex(dir: string, opts: { force?: boolean }) {
   const abs = requireDir(dir)
   const pid = getProjectId(abs)
   if (opts.force) {
-    // wipe the project DB and reindex from scratch
-    const dbPath = BrainDatabase.getDbPath(pid)
+    // In-place wipe (never delete the DB file): deleting + recreating the file
+    // orphans any running MCP server's open handle into a stale view. An
+    // in-place wipe keeps the same file, so live connections see the fresh
+    // index immediately.
     try {
-      const { rmSync } = await import("fs")
-      rmSync(path.dirname(dbPath), { recursive: true, force: true })
-    } catch {}
+      const { wipeProjectData } = await import("../ast/parallel-indexer")
+      const raw = await BrainDatabase.getRawInstance(pid)
+      wipeProjectData(raw)
+      console.log(`wiped ${pid.slice(0, 8)} index in place (file kept)`)
+    } catch (e: any) {
+      console.error(`✗ wipe failed: ${e?.message}`)
+    }
   }
   console.log(`indexing ${abs} (project ${pid.slice(0, 8)}…)`)
   const t = Date.now()

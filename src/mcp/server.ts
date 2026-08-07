@@ -18,7 +18,7 @@ import { CrossLanguageSecurityAnalysis } from "../security/cross-language-securi
 import { DependencyGraphVisualizer } from "../ast/dependency-graph-visualizer"
 import { CrossLanguageIntelligence } from "../ast/cross-language-intelligence"
 import { CrossLanguageMigrationAssistant } from "../ast/cross-language-migration-assistant"
-import { indexProjectParallel } from "../ast/parallel-indexer"
+import { indexProjectParallel, wipeProjectData, reindexFilesParallel } from "../ast/parallel-indexer"
 import { existsSync, readFileSync, writeFileSync } from "fs"
 
 interface ToolContext {
@@ -223,6 +223,16 @@ const TOOLS = [
     },
   },
 ]
+
+/**
+ * Reindex a single file in place after a mutation so the index stays current
+ * (no manual bb_refresh, no stale byte offsets, no server restart needed).
+ */
+async function autoRefreshFile(projectId: string, projectPath: string, absPath: string, type: "added" | "modified" = "modified"): Promise<void> {
+  try {
+    await reindexFilesParallel(projectId as any, projectPath, [{ path: absPath, type }])
+  } catch {}
+}
 
 async function ensureIndexed(ctx: ToolContext): Promise<string | null> {
   try {
@@ -450,10 +460,15 @@ export async function startMcpServer(projectPath: string): Promise<void> {
       }
 
       if (name === "bb_refresh") {
+        if (args.force === true) {
+          // in-place wipe — keeps the same DB file so all open handles stay live
+          const raw = await BrainDatabase.getRawInstance(projectId)
+          wipeProjectData(raw)
+        }
         const stats: any = await indexProjectParallel(projectId, projectPath, {})
         const raw = await BrainDatabase.getRawInstance(projectId)
         const symbols = (raw.prepare("SELECT COUNT(*) c FROM brain_symbol").get() as any).c
-        return { content: [{ type: "text", text: `reindexed: ${stats.totalFiles} files processed, ${symbols} symbols total` }] }
+        return { content: [{ type: "text", text: `reindexed: ${stats.totalFiles} files processed, ${symbols} symbols total${args.force === true ? " (forced, in-place)" : ""}` }] }
       }
 
       if (name === "bb_write") {
@@ -461,7 +476,8 @@ export async function startMcpServer(projectPath: string): Promise<void> {
         ensureWithinProject(projectPath, abs)
         writeFileSync(abs, String(args.content ?? ""), "utf8")
         await BrainSurgicalPatcher.tryAutoFormat(abs).catch(() => {})
-        return { content: [{ type: "text", text: `written ${args.filePath}` }] }
+        await autoRefreshFile(projectId, projectPath, abs, "added")
+        return { content: [{ type: "text", text: `written ${args.filePath} (indexed)` }] }
       }
 
       if (name === "bb_update") {
@@ -472,7 +488,8 @@ export async function startMcpServer(projectPath: string): Promise<void> {
         }
         const abs = m.fileId
         await BrainSurgicalPatcher.patch(abs, m.byteStart, m.byteEnd, String(args.newContent), false, true)
-        return { content: [{ type: "text", text: `updated ${args.symbolName} in ${abs} (bytes ${m.byteStart}-${m.byteEnd})` }] }
+        await autoRefreshFile(projectId, projectPath, abs)
+        return { content: [{ type: "text", text: `updated ${args.symbolName} in ${abs} (bytes ${m.byteStart}-${m.byteEnd}, reindexed)` }] }
       }
 
       if (name === "bb_insert") {
@@ -497,7 +514,8 @@ export async function startMcpServer(projectPath: string): Promise<void> {
           at = pos === "inside-top" ? open + 1 : close
         }
         await BrainSurgicalPatcher.patch(abs, at, at, "\n" + content + "\n", false, true)
-        return { content: [{ type: "text", text: `inserted ${pos} ${args.targetSymbolName} in ${abs}` }] }
+        await autoRefreshFile(projectId, projectPath, abs)
+        return { content: [{ type: "text", text: `inserted ${pos} ${args.targetSymbolName} in ${abs} (reindexed)` }] }
       }
 
       if (name === "bb_delete") {
@@ -512,7 +530,8 @@ export async function startMcpServer(projectPath: string): Promise<void> {
         const pruned = await ImportPruner.prune(after, abs)
         if (pruned !== after) writeFileSync(abs, pruned, "utf8")
         await BrainSurgicalPatcher.tryAutoFormat(abs).catch(() => {})
-        return { content: [{ type: "text", text: `deleted ${args.symbolName} from ${abs}` }] }
+        await autoRefreshFile(projectId, projectPath, abs)
+        return { content: [{ type: "text", text: `deleted ${args.symbolName} from ${abs} (reindexed)` }] }
       }
 
       if (name === "bb_refactor") {
@@ -554,7 +573,11 @@ export async function startMcpServer(projectPath: string): Promise<void> {
             delta += newName.length - String(args.symbolName).length
           }
         }
-        return { content: [{ type: "text", text: `renamed ${args.symbolName} -> ${newName} (declaration + ${seen.size} caller files)` }] }
+        // refresh the declaration file plus every caller file that was edited
+        const changedFiles = new Set<string>([abs])
+        for (const c of callers) if (c.file_id) changedFiles.add(c.file_id)
+        for (const f of changedFiles) await autoRefreshFile(projectId, projectPath, f)
+        return { content: [{ type: "text", text: `renamed ${args.symbolName} -> ${newName} (declaration + ${seen.size} caller files, reindexed)` }] }
       }
 
       return { content: [{ type: "text", text: `unknown tool: ${name}` }], isError: true }
