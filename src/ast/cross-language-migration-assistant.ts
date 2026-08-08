@@ -1,4 +1,4 @@
-// @ts-nocheck — data mapping file with intentional duplicate key overrides
+// @ts-nocheck — large static polyglot mapping dataset
 import { CrossLanguageIntelligence } from "./cross-language-intelligence"
 import * as Log from "../tool/brain-log"
 
@@ -29,7 +29,7 @@ export namespace CrossLanguageMigrationAssistant {
   }
 
   // A hardcoded knowledge base of polyglot equivalents for migration
-  const POLYGLOT_LIBRARY_DICTIONARY: Record<
+  const BASE_POLYGLOT_LIBRARY_DICTIONARY: Record<
     string,
     Record<string, Record<string, { target: string; notes?: string }>>
   > = {
@@ -61,6 +61,14 @@ export namespace CrossLanguageMigrationAssistant {
         provider: { target: "react context + hooks", notes: "Provider pattern → React Context + useReducer." },
         get_it: { target: "tsyringe / inversify", notes: "Service locator → DI container." },
         mockito: { target: "jest mocks / vitest", notes: "Standard JS testing mocks." },
+      },
+      javascript: {
+        express: { target: "express", notes: "Same framework; remove type annotations." },
+        "drizzle-orm": { target: "drizzle-orm", notes: "Drizzle works in JS; use JSDoc for types." },
+        jest: { target: "jest", notes: "Jest works without TypeScript." },
+        axios: { target: "axios", notes: "Axios works in plain JS." },
+        prisma: { target: "prisma", notes: "Prisma works with JS; use JSDoc." },
+        next: { target: "next", notes: "Next.js supports plain JS." },
       },
     },
     dart: {
@@ -243,7 +251,6 @@ export namespace CrossLanguageMigrationAssistant {
         stripe: { target: "stripe + @types/stripe", notes: "Stripe SDK has full TS types." },
       },
       dart: {
-        express: { target: "shelf", notes: "Shelf is the Dart equivalent of Express for HTTP servers." },
         firebase: { target: "firebase_dart / cloud_firestore", notes: "Firebase has first-class Dart/Flutter SDKs." },
         stripe: { target: "flutter_stripe / stripe_sdk", notes: "Stripe has official Flutter/Dart packages." },
         axios: { target: "dio / http", notes: "Dio is the most popular Dart HTTP client." },
@@ -391,16 +398,6 @@ export namespace CrossLanguageMigrationAssistant {
       dart: { laravel: { target: "serverpod / shelf", notes: "Laravel → Serverpod or Shelf." } },
       go: { laravel: { target: "beego", notes: "Laravel → Beego." } },
       javascript: { laravel: { target: "adonis / nestjs", notes: "Laravel → AdonisJS." } },
-    },
-    typescript: {
-      javascript: {
-        express: { target: "express", notes: "Same framework; remove type annotations." },
-        "drizzle-orm": { target: "drizzle-orm", notes: "Drizzle works in JS; use JSDoc for types." },
-        jest: { target: "jest", notes: "Jest works without TypeScript." },
-        axios: { target: "axios", notes: "Axios works in plain JS." },
-        prisma: { target: "prisma", notes: "Prisma works with JS; use JSDoc." },
-        next: { target: "next", notes: "Next.js supports plain JS." },
-      },
     },
     java: {
       typescript: {
@@ -600,7 +597,13 @@ export namespace CrossLanguageMigrationAssistant {
       },
       svelte: { vue: { target: "svelte", notes: "Vue → Svelte." } },
     },
-    // === DIRECT CROSS-LANGUAGE MIGRATION PATHS (not via TypeScript bridge) ===
+  }
+
+  // Direct migration paths supplement rather than replace the base language maps.
+  const DIRECT_POLYGLOT_LIBRARY_DICTIONARY: Record<
+    string,
+    Record<string, Record<string, { target: string; notes?: string }>>
+  > = {
     swift: {
       kotlin: { swiftui: { target: "compose", notes: "SwiftUI → Compose." }, vapor: { target: "ktor", notes: "Vapor → Ktor." }, coredata: { target: "room", notes: "CoreData → Room." }, combine: { target: "coroutines flow", notes: "Combine → Kotlin Flow." } },
       go: { vapor: { target: "gin", notes: "Vapor → Gin." } },
@@ -668,6 +671,22 @@ export namespace CrossLanguageMigrationAssistant {
       julia: { tidyverse: { target: "dataframes.jl", notes: "Tidyverse → DataFrames.jl." } },
     },
   }
+
+  const POLYGLOT_LIBRARY_DICTIONARY = Object.fromEntries(
+    [...new Set([...Object.keys(BASE_POLYGLOT_LIBRARY_DICTIONARY), ...Object.keys(DIRECT_POLYGLOT_LIBRARY_DICTIONARY)])].map(
+      (sourceLanguage) => {
+        const baseTargets = BASE_POLYGLOT_LIBRARY_DICTIONARY[sourceLanguage] ?? {}
+        const directTargets = DIRECT_POLYGLOT_LIBRARY_DICTIONARY[sourceLanguage] ?? {}
+        const targets = Object.fromEntries(
+          [...new Set([...Object.keys(baseTargets), ...Object.keys(directTargets)])].map((targetLanguage) => [
+            targetLanguage,
+            { ...(baseTargets[targetLanguage] ?? {}), ...(directTargets[targetLanguage] ?? {}) },
+          ]),
+        )
+        return [sourceLanguage, targets]
+      },
+    ),
+  ) as Record<string, Record<string, Record<string, { target: string; notes?: string }>>>
 
   /**
    * Analyzes a component (symbol) in the AST and generates a deep migration plan
