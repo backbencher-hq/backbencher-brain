@@ -18,6 +18,8 @@ import { executeEdit, type EditRequest } from "../intelligence/edit/edit-engine"
 import { getUnifiedHealth, formatUnifiedHealth } from "../intelligence/health/health-provider"
 import { getAnalysisHistory, startAnalysisRun, completeAnalysisRun, failAnalysisRun } from "../intelligence/analysis/run-history"
 import { generateDocumentation, formatDocumentation, type DocRequest } from "../intelligence/documentation/doc-engine"
+import { visualizeProject, formatVisualization, type VisualizationRequest } from "../intelligence/visualization/visualization-engine"
+import { generateMigrationPlans, formatMigrationPlans } from "../intelligence/migration/migration-engine"
 import type { AnalysisFindingInput } from "../intelligence/contracts"
 
 export interface ToolContext {
@@ -222,32 +224,16 @@ const handlers: Record<string, ToolHandler> = {
   },
 
   bb_visualize: async (args, { projectId }) => {
-    const raw = await BrainDatabase.getRawInstance(projectId)
-    const maxNodes = Number(args.maxNodes ?? 200)
-    const format = String(args.format ?? "text")
-    const symbols = raw.prepare("SELECT s.id, s.name, s.symbol_type, f.language, f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON s.file_id = f.id WHERE s.project_id = ? AND COALESCE(s.line_start,0) > 0 LIMIT ?").all(projectId, maxNodes) as any[]
-    const relationships = raw.prepare("SELECT source_symbol_id AS source_id, target_symbol_id AS target_id, relationship_type AS type FROM brain_relationship WHERE project_id = ? AND source_symbol_id IS NOT NULL AND target_symbol_id IS NOT NULL LIMIT 5000").all(projectId) as any[]
-    const graph = DependencyGraphVisualizer.generateGraphData(symbols, relationships)
-    if (format === "json") return textResult(JSON.stringify(graph, null, 2).slice(0, 40000))
-    if (format === "html") return textResult(DependencyGraphVisualizer.generateHTML(graph))
-    const degree = new Map<string, number>()
-    for (const link of graph.links) {
-      degree.set(link.source, (degree.get(link.source) ?? 0) + 1)
-      degree.set(link.target, (degree.get(link.target) ?? 0) + 1)
-    }
-    const lines = [...degree.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(([id, count]) => {
-      const node = graph.nodes.find((candidate: any) => candidate.id === id)
-      return `  ${node?.name ?? id} (${count} edges)`
-    })
-    return textResult(`graph: ${graph.nodes.length} nodes, ${graph.links.length} links\nmost connected:\n${lines.join("\n") || "  none"}`)
+    const request: VisualizationRequest = { scope: ["project", "file", "module", "symbol", "feature"].includes(String(args.scope)) ? args.scope : "project", target: args.target ? String(args.target) : undefined, format: ["text", "json", "html"].includes(String(args.format)) ? args.format : "text", maxNodes: args.maxNodes == null ? undefined : Number(args.maxNodes), maxLinks: args.maxLinks == null ? undefined : Number(args.maxLinks), relationshipTypes: Array.isArray(args.relationshipTypes) ? args.relationshipTypes.map(String) : undefined, languages: Array.isArray(args.languages) ? args.languages.map(String) : undefined }
+    const result = await visualizeProject(projectId, request)
+    return textResult(formatVisualization(result))
   },
 
   bb_migrate: async (args, { projectId }) => {
-    const analysis = await CrossLanguageIntelligence.analyzePolyglotProjectFromDB(projectId)
-    const plan: any = await CrossLanguageMigrationAssistant.generateMigrationPlan(String(args.symbolName), String(args.targetLanguage), analysis)
-    if (!plan) return textResult(`no migration plan for ${args.symbolName} -> ${args.targetLanguage}`)
-    const dependencies = (plan.dependencies ?? []).map((dependency: any) => `  ${dependency.source} -> ${dependency.target} (${Math.round((dependency.confidence ?? 0) * 100)}%)`).join("\n")
-    return textResult(`migrate ${plan.componentName}: ${plan.sourceLanguage} -> ${plan.targetLanguage}\neffort: ${plan.effortEstimateHours}h | complexity: ${plan.complexityScore}/10 | risk: ${plan.riskAssessment?.level}\n${dependencies ? `dependencies:\n${dependencies}` : ""}`)
+    const symbolNames = Array.isArray(args.symbolNames) ? args.symbolNames.map(String) : args.symbolName ? [String(args.symbolName)] : []
+    if (!symbolNames.length || !args.targetLanguage) return textResult("bb_migrate requires symbolNames (or symbolName) and targetLanguage", true)
+    const result = await generateMigrationPlans(projectId, { symbolNames, targetLanguage: String(args.targetLanguage) })
+    return textResult(formatMigrationPlans(result, args.format === "json" ? "json" : "text"))
   },
 
   bb_doc: async (args, { projectId, projectPath }) => {

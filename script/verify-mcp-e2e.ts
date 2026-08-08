@@ -138,11 +138,11 @@ try {
   r = await call("bb_security", {})
   check("bb_security returns findings", r.text.length > 0 && !r.text.startsWith("error:"), r.text.slice(0, 140))
 
-  r = await call("bb_visualize", {})
-  check("bb_visualize returns graph summary", r.text.includes("nodes") && r.text.includes("links"), r.text.slice(0, 140))
+  r = await call("bb_visualize", { scope: "project", format: "json", maxNodes: 20, maxLinks: 50 })
+  check("bb_visualize returns graph provenance", r.text.includes('"provenance"') && r.text.includes('"truncation"'), r.text.slice(0, 180))
 
-  r = await call("bb_migrate", { symbolName: "handleRequest", targetLanguage: "go" })
-  check("bb_migrate returns a plan", r.text.length > 0 && !r.text.startsWith("error:"), r.text.slice(0, 160))
+  r = await call("bb_migrate", { symbolNames: ["handleRequest", "missingSymbol"], targetLanguage: "go", format: "json" })
+  check("bb_migrate returns normalized batch result", r.text.includes('"dependencyOrder"') && r.text.includes('"unsupported"'), r.text.slice(0, 180))
 
   r = await call("bb_doc", { mode: "symbol", target: "handleRequest", format: "json", includeTests: true })
   check("bb_doc returns cited structured documentation", r.text.includes('"mode": "symbol"') && r.text.includes('"citations"'), r.text.slice(0, 180))
