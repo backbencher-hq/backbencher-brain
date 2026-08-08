@@ -96,6 +96,15 @@ export const CURRENT_MCP_TOOL_CONTRACTS = [
     replacement: "bb_migrate",
   },
   {
+    name: "bb_doc",
+    mutability: "read",
+    required: ["mode"],
+    properties: ["mode", "target", "format", "audience", "detail", "includeExamples", "includeDiagrams", "includeTests", "limit", "maxTokens"],
+    defaults: { format: "markdown", audience: "developer", detail: "standard", includeExamples: false, includeDiagrams: false, includeTests: false, limit: 20, maxTokens: 4000 },
+    output: "text",
+    replacement: "bb_doc",
+  },
+  {
     name: "bb_refresh",
     mutability: "index",
     required: [],

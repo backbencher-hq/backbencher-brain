@@ -17,6 +17,7 @@ import { testSuggestions } from "../intelligence/testing/suggestions"
 import { executeEdit, type EditRequest } from "../intelligence/edit/edit-engine"
 import { getUnifiedHealth, formatUnifiedHealth } from "../intelligence/health/health-provider"
 import { getAnalysisHistory, startAnalysisRun, completeAnalysisRun, failAnalysisRun } from "../intelligence/analysis/run-history"
+import { generateDocumentation, formatDocumentation, type DocRequest } from "../intelligence/documentation/doc-engine"
 import type { AnalysisFindingInput } from "../intelligence/contracts"
 
 export interface ToolContext {
@@ -247,6 +248,15 @@ const handlers: Record<string, ToolHandler> = {
     if (!plan) return textResult(`no migration plan for ${args.symbolName} -> ${args.targetLanguage}`)
     const dependencies = (plan.dependencies ?? []).map((dependency: any) => `  ${dependency.source} -> ${dependency.target} (${Math.round((dependency.confidence ?? 0) * 100)}%)`).join("\n")
     return textResult(`migrate ${plan.componentName}: ${plan.sourceLanguage} -> ${plan.targetLanguage}\neffort: ${plan.effortEstimateHours}h | complexity: ${plan.complexityScore}/10 | risk: ${plan.riskAssessment?.level}\n${dependencies ? `dependencies:\n${dependencies}` : ""}`)
+  },
+
+  bb_doc: async (args, { projectId, projectPath }) => {
+    const mode = String(args.mode ?? "") as DocRequest["mode"]
+    if (!["symbol", "file", "module", "feature", "api", "project", "coverage"].includes(mode)) return textResult("bb_doc requires mode: symbol|file|module|feature|api|project|coverage", true)
+    if (["symbol", "file", "module", "feature"].includes(mode) && !args.target) return textResult(`bb_doc ${mode} mode requires target`, true)
+    const request: DocRequest = { mode, target: args.target ? String(args.target) : undefined, format: args.format === "json" ? "json" : "markdown", audience: args.audience, detail: args.detail, includeExamples: args.includeExamples === true, includeDiagrams: args.includeDiagrams === true, includeTests: args.includeTests === true, limit: args.limit == null ? undefined : Number(args.limit), maxTokens: args.maxTokens == null ? undefined : Number(args.maxTokens) }
+    const result = await generateDocumentation(projectId, projectPath, request)
+    return textResult(formatDocumentation(result, request.format))
   },
 
   bb_refresh: async (args, { projectId, projectPath }) => {

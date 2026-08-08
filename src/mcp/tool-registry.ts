@@ -153,6 +153,17 @@ const descriptors = [
     documentation: { category: "analysis", summary: "Cross-language migration plan generation.", defaults: {}, examples: [{ symbolName: "handleRequest", targetLanguage: "go" }] },
   },
   {
+    name: "bb_doc",
+    description: "Generate read-only, evidence-backed documentation with resolvable citations. Supports symbol, file, module, feature, API, project, and documentation-coverage modes in Markdown or JSON.",
+    inputSchema: { type: "object", properties: { mode: { type: "string", enum: ["symbol", "file", "module", "feature", "api", "project", "coverage"], description: "documentation mode" }, target: { type: "string", description: "symbol, file, module, feature, or API target; optional for project and coverage" }, format: { type: "string", enum: ["markdown", "json"], description: "output format (default markdown)" }, audience: { type: "string", enum: ["developer", "maintainer", "user", "website"], description: "documentation audience" }, detail: { type: "string", enum: ["brief", "standard", "deep"], description: "detail level" }, includeExamples: { type: "boolean", description: "include only source-backed examples" }, includeDiagrams: { type: "boolean", description: "include cited diagrams when available" }, includeTests: { type: "boolean", description: "include indexed test evidence" }, limit: { type: "number", description: "maximum evidence items" }, maxTokens: { type: "number", description: "output token budget" } }, required: ["mode"] },
+    mutability: "read",
+    requiresIndex: true,
+    modes: ["symbol", "file", "module", "feature", "api", "project", "coverage"],
+    aliases: [],
+    deprecated: false,
+    documentation: { category: "analysis", summary: "Cited Markdown or JSON documentation over indexed source and relationships.", defaults: { format: "markdown", audience: "developer", detail: "standard", includeExamples: false, includeDiagrams: false, includeTests: false, limit: 20, maxTokens: 4000 }, examples: [{ mode: "symbol", target: "handleRequest" }, { mode: "feature", target: "request handling", format: "json" }, { mode: "coverage", target: "src" }] },
+  },
+  {
     name: "bb_refresh",
     description: "Re-index the project (incremental by default; use force to rebuild from scratch). Requires an existing index.",
     inputSchema: { type: "object", properties: { force: { type: "boolean", description: "wipe and rebuild (default false)" }, wait: { type: "boolean", description: "wait for the reindex to finish (default true)" }, freshness: { type: "string", enum: ["sampled", "complete"], description: "freshness mode for the post-refresh report (default sampled)" } } },

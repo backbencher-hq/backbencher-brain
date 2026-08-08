@@ -98,11 +98,11 @@ try {
   const names = tools.tools.map((t: any) => t.name)
   const EXPECTED = [
     "bb_search", "bb_select", "bb_relationships", "bb_ask", "bb_health",
-    "bb_patterns", "bb_security", "bb_visualize", "bb_migrate", "bb_refresh",
+    "bb_patterns", "bb_security", "bb_visualize", "bb_migrate", "bb_doc", "bb_refresh",
     "bb_write", "bb_update", "bb_insert", "bb_delete", "bb_refactor", "bb_edit",
     "bb_test_quality", "bb_test_suggestions",
   ]
-  check("tools/list exposes all 18 tools", EXPECTED.every((t) => names.includes(t)), `got ${names.length}: ${names.join(",")}`)
+  check("tools/list exposes all 19 tools", EXPECTED.every((t) => names.includes(t)), `got ${names.length}: ${names.join(",")}`)
 
   // ---- read-only tools ----
   let r = await call("bb_search", { query: "handleRequest", limit: 5 })
@@ -143,6 +143,9 @@ try {
 
   r = await call("bb_migrate", { symbolName: "handleRequest", targetLanguage: "go" })
   check("bb_migrate returns a plan", r.text.length > 0 && !r.text.startsWith("error:"), r.text.slice(0, 160))
+
+  r = await call("bb_doc", { mode: "symbol", target: "handleRequest", format: "json", includeTests: true })
+  check("bb_doc returns cited structured documentation", r.text.includes('"mode": "symbol"') && r.text.includes('"citations"'), r.text.slice(0, 180))
 
   r = await call("bb_test_quality", {})
   check("bb_test_quality returns a report", r.text.length > 0 && !r.text.startsWith("error:"), r.text.slice(0, 140))
@@ -185,5 +188,5 @@ rmSync(root, { recursive: true, force: true })
 const { BrainDatabase } = await import("../src/brain/database")
 const { getProjectId } = await import("../src/cli/index")
 rmSync(path.dirname(BrainDatabase.getDbPath(getProjectId(root))), { recursive: true, force: true })
-console.log(failures === 0 ? "\nMCP E2E: ALL 18 TOOLS PASS" : `\nMCP E2E: ${failures} FAILURES`)
+console.log(failures === 0 ? "\nMCP E2E: ALL 19 TOOLS PASS" : `\nMCP E2E: ${failures} FAILURES`)
 process.exit(failures > 0 ? 1 : 0)
