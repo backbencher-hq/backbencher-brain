@@ -14,6 +14,7 @@ import { indexProjectParallel, reindexFilesParallel, wipeProjectData } from "../
 import { TOOL_DESCRIPTORS } from "./tool-registry"
 import { testQuality } from "../intelligence/testing/quality"
 import { testSuggestions } from "../intelligence/testing/suggestions"
+import { executeEdit, type EditRequest } from "../intelligence/edit/edit-engine"
 import { getAnalysisHistory, startAnalysisRun, completeAnalysisRun, failAnalysisRun } from "../intelligence/analysis/run-history"
 import type { AnalysisFindingInput } from "../intelligence/contracts"
 
@@ -281,90 +282,36 @@ const handlers: Record<string, ToolHandler> = {
     return textResult(`reindexed: ${stats.totalFiles} files processed, ${symbols} symbols total${args.force === true ? " (forced, in-place)" : ""}`)
   },
 
-  bb_write: async (args, { projectId, projectPath }) => {
-    const absolutePath = resolveProjectPath(projectPath, String(args.filePath))
-    ensureWithinProject(projectPath, absolutePath)
-    writeFileSync(absolutePath, String(args.content ?? ""), "utf8")
-    await BrainSurgicalPatcher.tryAutoFormat(absolutePath).catch(() => {})
-    await autoRefreshFile(projectId, projectPath, absolutePath, "added")
-    return textResult(`written ${args.filePath} (indexed)`)
+  bb_edit: async (args, { projectId, projectPath }) => {
+    const request = args as EditRequest
+    if (!(["write", "update", "insert", "delete", "refactor"] as const).includes(request.mode as any)) return textResult("bb_edit requires mode: write|update|insert|delete|refactor", true)
+    const result = await executeEdit(projectPath, projectId, request)
+    return textResult(JSON.stringify(result, null, 2))
   },
 
-  bb_update: async (args, { projectId, projectPath }) => {
-    const found = await ASTEngine.findSymbol(projectId, String(args.symbolName), args.filePath ? String(args.filePath) : undefined)
-    const match = found?.matches?.[0]
-    if (!match || match.byteStart == null || match.byteEnd == null) return textResult(`symbol ${args.symbolName} not found or has no byte bounds`, true)
-    await BrainSurgicalPatcher.patch(match.fileId, match.byteStart, match.byteEnd, String(args.newContent), false, true)
-    await autoRefreshFile(projectId, projectPath, match.fileId)
-    return textResult(`updated ${args.symbolName} in ${match.fileId} (bytes ${match.byteStart}-${match.byteEnd}, reindexed)`)
+  bb_write: async (args, context) => {
+    const result = await executeEdit(context.projectPath, context.projectId, { mode: "write", filePath: String(args.filePath), content: String(args.content ?? ""), dryRun: args.dryRun === true, format: args.format !== false })
+    return textResult(result.dryRun ? JSON.stringify(result, null, 2) : `written ${args.filePath} (validated, indexed)`)
   },
 
-  bb_insert: async (args, { projectId, projectPath }) => {
-    const found = await ASTEngine.findSymbol(projectId, String(args.targetSymbolName), args.filePath ? String(args.filePath) : undefined)
-    const match = found?.matches?.[0]
-    if (!match || match.byteStart == null || match.byteEnd == null) return textResult(`anchor ${args.targetSymbolName} not found`, true)
-    const text = readFileSync(match.fileId, "utf8")
-    const content = String(args.newContent)
-    const position = String(args.position ?? "after")
-    let offset = -1
-    if (position === "before") offset = match.byteStart
-    else if (position === "after") offset = match.byteEnd
-    else if (position === "inside-top" || position === "inside-bottom") {
-      const open = text.indexOf("{", match.byteStart)
-      const close = text.lastIndexOf("}", Math.min(match.byteEnd, text.length))
-      if (open === -1 || close === -1 || close < open) return textResult(`cannot find braces for inside insertion in ${args.targetSymbolName}`, true)
-      offset = position === "inside-top" ? open + 1 : close
-    }
-    await BrainSurgicalPatcher.patch(match.fileId, offset, offset, `\n${content}\n`, false, true)
-    await autoRefreshFile(projectId, projectPath, match.fileId)
-    return textResult(`inserted ${position} ${args.targetSymbolName} in ${match.fileId} (reindexed)`)
+  bb_update: async (args, context) => {
+    const result = await executeEdit(context.projectPath, context.projectId, { mode: "update", symbolName: String(args.symbolName), newContent: String(args.newContent ?? ""), filePath: args.filePath ? String(args.filePath) : undefined, lineStart: args.lineStart ? Number(args.lineStart) : undefined, dryRun: args.dryRun === true, allowStaleIndex: true })
+    return textResult(result.dryRun ? JSON.stringify(result, null, 2) : `updated ${args.symbolName} (validated, reindexed)`)
   },
 
-  bb_delete: async (args, { projectId, projectPath }) => {
-    const found = await ASTEngine.findSymbol(projectId, String(args.symbolName), args.filePath ? String(args.filePath) : undefined)
-    const match = found?.matches?.[0]
-    if (!match || match.byteStart == null || match.byteEnd == null) return textResult(`symbol ${args.symbolName} not found`, true)
-    await BrainSurgicalPatcher.patch(match.fileId, match.byteStart, match.byteEnd, "", true, false)
-    const after = readFileSync(match.fileId, "utf8")
-    const pruned = await ImportPruner.prune(after, match.fileId)
-    if (pruned !== after) writeFileSync(match.fileId, pruned, "utf8")
-    await BrainSurgicalPatcher.tryAutoFormat(match.fileId).catch(() => {})
-    await autoRefreshFile(projectId, projectPath, match.fileId)
-    return textResult(`deleted ${args.symbolName} from ${match.fileId} (reindexed)`)
+  bb_insert: async (args, context) => {
+    const result = await executeEdit(context.projectPath, context.projectId, { mode: "insert", targetSymbolName: String(args.targetSymbolName), newContent: String(args.newContent ?? ""), filePath: args.filePath ? String(args.filePath) : undefined, lineStart: args.lineStart ? Number(args.lineStart) : undefined, position: args.position, dryRun: args.dryRun === true, allowStaleIndex: true })
+    return textResult(result.dryRun ? JSON.stringify(result, null, 2) : `inserted ${args.position ?? "after"} ${args.targetSymbolName} (validated, reindexed)`)
   },
 
-  bb_refactor: async (args, { projectId, projectPath }) => {
-    const found = await ASTEngine.findSymbol(projectId, String(args.symbolName), args.filePath ? String(args.filePath) : undefined)
-    const match = found?.matches?.[0]
-    const newName = String(args.newName)
-    if (!match || match.byteStart == null || match.byteEnd == null) return textResult(`symbol ${args.symbolName} not found`, true)
-    const text = readFileSync(match.fileId, "utf8")
-    const nameOffset = text.indexOf(String(args.symbolName), match.byteStart)
-    if (nameOffset === -1 || nameOffset >= match.byteEnd) return textResult(`could not locate the ${args.symbolName} identifier token`, true)
-    await BrainSurgicalPatcher.patch(match.fileId, nameOffset, nameOffset + String(args.symbolName).length, newName, false, true)
-    const raw = await BrainDatabase.getRawInstance(projectId)
-    const callers = raw.prepare(`SELECT s.file_id, s.byte_start, s.byte_end FROM brain_relationship r JOIN brain_symbol s ON s.id = r.source_symbol_id WHERE r.target_symbol_id = ? AND r.relationship_type = 'calls'`).all(match.id) as any[]
-    const seen = new Set<string>()
-    for (const caller of callers) {
-      const key = `${caller.file_id}:${caller.byte_start}`
-      if (seen.has(key)) continue
-      seen.add(key)
-      if (caller.byte_start == null) continue
-      const callerText = readFileSync(caller.file_id, "utf8")
-      const body = callerText.slice(caller.byte_start, caller.byte_end ?? callerText.length)
-      const expression = new RegExp(`\\b${String(args.symbolName)}\\b`, "g")
-      let occurrence: RegExpExecArray | null
-      let delta = 0
-      while ((occurrence = expression.exec(body)) !== null) {
-        const start = caller.byte_start + occurrence.index + delta
-        await BrainSurgicalPatcher.patch(caller.file_id, start, start + String(args.symbolName).length, newName, false, false)
-        delta += newName.length - String(args.symbolName).length
-      }
-    }
-    const changedFiles = new Set<string>([match.fileId])
-    for (const caller of callers) if (caller.file_id) changedFiles.add(caller.file_id)
-    for (const file of changedFiles) await autoRefreshFile(projectId, projectPath, file)
-    return textResult(`renamed ${args.symbolName} -> ${newName} (declaration + ${seen.size} caller files, reindexed)`)
+  bb_delete: async (args, context) => {
+    const result = await executeEdit(context.projectPath, context.projectId, { mode: "delete", symbolName: String(args.symbolName), filePath: args.filePath ? String(args.filePath) : undefined, lineStart: args.lineStart ? Number(args.lineStart) : undefined, force: args.force === true, dryRun: args.dryRun === true, allowStaleIndex: true })
+    return textResult(result.dryRun ? JSON.stringify(result, null, 2) : `deleted ${args.symbolName} (validated, reindexed)`)
+  },
+
+  bb_refactor: async (args, context) => {
+    const result = await executeEdit(context.projectPath, context.projectId, { mode: "refactor", symbolName: String(args.symbolName), newName: String(args.newName), filePath: args.filePath ? String(args.filePath) : undefined, lineStart: args.lineStart ? Number(args.lineStart) : undefined, dryRun: args.dryRun === true, allowStaleIndex: true })
+    return textResult(result.dryRun ? JSON.stringify(result, null, 2) : `renamed ${args.symbolName} -> ${args.newName} (identifier tokens only, validated, reindexed)`)
   },
   bb_test_quality: async (args, { projectId }) => {
     const report = await testQuality(projectId, { maxFiles: args.maxFiles != null ? Number(args.maxFiles) : undefined })

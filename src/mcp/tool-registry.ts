@@ -225,6 +225,17 @@ const descriptors = [
     documentation: { category: "operations", summary: "Rename a symbol declaration and caller references.", defaults: {}, examples: [{ symbolName: "oldName", newName: "newName" }] },
   },
   {
+    name: "bb_edit",
+    description: "Unified, validated source mutation. Discriminated by mode: write, update, insert, delete, or refactor. Supports dry-run previews, separator/symlink-safe paths, AST byte bounds, caller protection, rollback on validation failure, formatting, and reindexing.",
+    inputSchema: { type: "object", properties: { mode: { type: "string", enum: ["write", "update", "insert", "delete", "refactor"] }, dryRun: { type: "boolean" }, filePath: { type: "string" }, symbolName: { type: "string" }, lineStart: { type: "number" }, content: { type: "string" }, newContent: { type: "string" }, targetSymbolName: { type: "string" }, position: { type: "string", enum: ["before", "after", "inside-top", "inside-bottom"] }, newName: { type: "string" }, force: { type: "boolean" }, format: { type: "boolean" } }, required: ["mode"] },
+    mutability: "write",
+    requiresIndex: true,
+    modes: ["write", "update", "insert", "delete", "refactor"],
+    aliases: [],
+    deprecated: false,
+    documentation: { category: "operations", summary: "Unified safe source editing with preview, validation, rollback, and reindex.", defaults: { dryRun: false, format: true, force: false }, examples: [{ mode: "update", symbolName: "helper", newContent: "export function helper() { return 2 }" }, { mode: "insert", targetSymbolName: "main", position: "inside-top", newContent: "const started = true" }, { mode: "write", filePath: "src/new.ts", content: "export const value = 1" }] },
+  },
+  {
     name: "bb_test_quality",
     description: "Evidence-based per-test-file quality from brain_* tables + file content: independently-measured dimensions (assertions, mocking, error handling, parameterization, docs, fixtures) with capability flags and explicit unknown states (never fabricated). Replaces the legacy LOC-based test-quality heuristic.",
     inputSchema: { type: "object", properties: { maxFiles: { type: "number", description: "max test files to content-analyze (default 50)" } } },

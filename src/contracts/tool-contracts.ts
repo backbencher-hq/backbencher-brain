@@ -156,6 +156,15 @@ export const CURRENT_MCP_TOOL_CONTRACTS = [
     replacementMode: "refactor",
   },
   {
+    name: "bb_edit",
+    mutability: "write",
+    required: ["mode"],
+    properties: ["mode", "dryRun", "filePath", "symbolName", "lineStart", "content", "newContent", "targetSymbolName", "position", "newName", "force", "format"],
+    defaults: { dryRun: false, format: true, force: false },
+    output: "text",
+    replacement: "bb_edit",
+  },
+  {
     name: "bb_test_quality",
     mutability: "read",
     required: [],
