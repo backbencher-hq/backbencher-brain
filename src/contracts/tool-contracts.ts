@@ -155,6 +155,24 @@ export const CURRENT_MCP_TOOL_CONTRACTS = [
     replacement: "bb_edit",
     replacementMode: "refactor",
   },
+  {
+    name: "bb_test_quality",
+    mutability: "read",
+    required: [],
+    properties: ["maxFiles"],
+    defaults: { maxFiles: 50 },
+    output: "text",
+    replacement: "bb_test_quality",
+  },
+  {
+    name: "bb_test_suggestions",
+    mutability: "read",
+    required: ["changed"],
+    properties: ["changed"],
+    defaults: {},
+    output: "text",
+    replacement: "bb_test_suggestions",
+  },
 ] as const satisfies readonly CurrentToolContract[]
 
 export const CURRENT_CLI_CONTRACTS = [

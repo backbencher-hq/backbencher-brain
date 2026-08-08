@@ -12,6 +12,8 @@ import { CrossLanguageIntelligence } from "../ast/cross-language-intelligence"
 import { CrossLanguageMigrationAssistant } from "../ast/cross-language-migration-assistant"
 import { indexProjectParallel, reindexFilesParallel, wipeProjectData } from "../ast/parallel-indexer"
 import { TOOL_DESCRIPTORS } from "./tool-registry"
+import { testQuality } from "../intelligence/testing/quality"
+import { testSuggestions } from "../intelligence/testing/suggestions"
 
 export interface ToolContext {
   projectPath: string
@@ -312,6 +314,17 @@ const handlers: Record<string, ToolHandler> = {
     for (const caller of callers) if (caller.file_id) changedFiles.add(caller.file_id)
     for (const file of changedFiles) await autoRefreshFile(projectId, projectPath, file)
     return textResult(`renamed ${args.symbolName} -> ${newName} (declaration + ${seen.size} caller files, reindexed)`)
+  },
+  bb_test_quality: async (args, { projectId }) => {
+    const report = await testQuality(projectId, { maxFiles: args.maxFiles != null ? Number(args.maxFiles) : undefined })
+    return textResult(JSON.stringify(report, null, 2))
+  },
+  bb_test_suggestions: async (args, { projectId }) => {
+    const raw = args.changed
+    if (!Array.isArray(raw) || raw.length === 0) return textResult("error: 'changed' must be a non-empty array of {name,file,kind}", true)
+    const changed = raw.map((c: any) => ({ name: String(c.name), file: String(c.file), kind: (c.kind === "added" || c.kind === "deleted" ? c.kind : "modified") as "added" | "modified" | "deleted" }))
+    const report = await testSuggestions(projectId, changed)
+    return textResult(JSON.stringify(report, null, 2))
   },
 }
 

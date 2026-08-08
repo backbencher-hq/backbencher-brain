@@ -100,8 +100,9 @@ try {
     "bb_search", "bb_select", "bb_relationships", "bb_ask", "bb_health",
     "bb_patterns", "bb_security", "bb_visualize", "bb_migrate", "bb_refresh",
     "bb_write", "bb_update", "bb_insert", "bb_delete", "bb_refactor",
+    "bb_test_quality", "bb_test_suggestions",
   ]
-  check("tools/list exposes all 15 tools", EXPECTED.every((t) => names.includes(t)), `got ${names.length}: ${names.join(",")}`)
+  check("tools/list exposes all 17 tools", EXPECTED.every((t) => names.includes(t)), `got ${names.length}: ${names.join(",")}`)
 
   // ---- read-only tools ----
   let r = await call("bb_search", { query: "handleRequest", limit: 5 })
@@ -130,6 +131,12 @@ try {
 
   r = await call("bb_migrate", { symbolName: "handleRequest", targetLanguage: "go" })
   check("bb_migrate returns a plan", r.text.length > 0 && !r.text.startsWith("error:"), r.text.slice(0, 160))
+
+  r = await call("bb_test_quality", {})
+  check("bb_test_quality returns a report", r.text.length > 0 && !r.text.startsWith("error:"), r.text.slice(0, 140))
+
+  r = await call("bb_test_suggestions", { changed: [{ name: "handleRequest", file: "src/app.ts", kind: "modified" }] })
+  check("bb_test_suggestions returns suggestions", r.text.length > 0 && !r.text.startsWith("error:"), r.text.slice(0, 140))
 
   // ---- mutation tools (on the throwaway fixture) ----
   r = await call("bb_write", { filePath: "src/new.ts", content: "export function brandNew(): string {\n  return \"hi\"\n}\n" })
@@ -163,5 +170,5 @@ rmSync(root, { recursive: true, force: true })
 const { BrainDatabase } = await import("../src/brain/database")
 const { getProjectId } = await import("../src/cli/index")
 rmSync(path.dirname(BrainDatabase.getDbPath(getProjectId(root))), { recursive: true, force: true })
-console.log(failures === 0 ? "\nMCP E2E: ALL 15 TOOLS PASS" : `\nMCP E2E: ${failures} FAILURES`)
+console.log(failures === 0 ? "\nMCP E2E: ALL 17 TOOLS PASS" : `\nMCP E2E: ${failures} FAILURES`)
 process.exit(failures > 0 ? 1 : 0)

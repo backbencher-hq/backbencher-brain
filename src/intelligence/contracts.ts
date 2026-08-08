@@ -455,3 +455,97 @@ export interface TestIntelOptions {
   includeMethods?: boolean
   maxDepth?: number
 }
+
+// ============================================================================
+// Test quality & suggestions (M9.11) — verify-driven, capability flags only.
+// The static metric semantics live in docs/BB_TEST_QUALITY.md (methodology).
+// ============================================================================
+
+export type TestSuggestionAction =
+  | "extend_existing_test"
+  | "create_test"
+  | "review_deleted_symbol_coverage"
+
+export interface TestQualityIssue {
+  category: string                              // e.g. no_assertion_signal
+  description: string
+}
+
+export type TestQualityDimensionId =
+  | "assertions"
+  | "mocking"
+  | "error_handling"
+  | "parameterization"
+  | "docs"
+  | "fixtures"
+
+/** A single independently-measured dimension. Never a multiplier of an overall score. */
+export interface TestQualityDimension {
+  id: TestQualityDimensionId
+  supported: boolean
+  /** Normalized 0..1, or null when node has no branches to measure (relevant-not-applicable). */
+  relevance: number | null
+  /** Observed modifier (accumulated bonus/penalty), or null when not measured. */
+  evidenceStrength: number | null
+  /** 0..1 penalty-signal share, or null when not measured. */
+  penaltyPotential: number | null
+  /** Strongest observed basis symbol, or null. */
+  observedAnchor: string | null
+  /** Confidence 0..1, or null when not measured/unknown. */
+  confidence: number | null
+}
+
+export interface TestQualityFile {
+  relativePath: string
+  /** Weighted mean of measured dimensions only, or null when unknown. */
+  overall: number | null
+  dimensions: TestQualityDimension[]
+  unsupported: string[]
+  issues: TestQualityIssue[]
+  strengths: string[]
+}
+
+export interface TestQualityReport {
+  files: TestQualityFile[]
+  aggregate: { mean: number | null; perDimension: Record<string, number | null> }
+  summary: {
+    filesWithContent: number
+    filesUnknown: number
+    unsupportedDimensionCount: number
+  }
+}
+
+export interface TestSuggestionActionItem {
+  action: TestSuggestionAction
+  evidence: { evidenceKind: TestEvidenceKind; confidence: number; testFile?: string; testSymbol?: string }
+  /** "existing_test_ref" | "expected_convention" | "dangling_impact_edge" | "naming_fallback" */
+  targetBasis: string
+  priority: "critical" | "high" | "medium" | "low"
+  estimatedEffort: "small" | "medium" | "large"
+  text: string                          // recommendation text only; NO generated test code
+}
+
+export interface TestSymbolChangeSuggestion {
+  symbolId: string
+  symbolName: string
+  filePath: string                      // "" when deletion removed the file scope
+  changeType: "added" | "modified" | "deleted"
+  blastRadius: number                   // unique reachable caller count from graph engine
+  actions: TestSuggestionActionItem[]
+  namingFallback: boolean
+}
+
+export interface AffectedTestEntry {
+  testSymbol: string
+  testFile: string
+  depth: number
+  changedSymbol: string
+}
+
+export interface TestSuggestionsReport {
+  changedSymbols: TestSymbolChangeSuggestion[]
+  /** Existing tests affected by changed production symbols (recommended first). */
+  affectedExistingTests: AffectedTestEntry[]
+  unknowns: string[]
+  summary: { actionCount: number; extendExisting: number; createNew: number }
+}

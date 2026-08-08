@@ -224,6 +224,28 @@ const descriptors = [
     replacement: { tool: "bb_edit", mode: "refactor" },
     documentation: { category: "operations", summary: "Rename a symbol declaration and caller references.", defaults: {}, examples: [{ symbolName: "oldName", newName: "newName" }] },
   },
+  {
+    name: "bb_test_quality",
+    description: "Evidence-based per-test-file quality from brain_* tables + file content: independently-measured dimensions (assertions, mocking, error handling, parameterization, docs, fixtures) with capability flags and explicit unknown states (never fabricated). Replaces the legacy LOC-based test-quality heuristic.",
+    inputSchema: { type: "object", properties: { maxFiles: { type: "number", description: "max test files to content-analyze (default 50)" } } },
+    mutability: "read",
+    requiresIndex: true,
+    modes: ["analyze"],
+    aliases: [],
+    deprecated: false,
+    documentation: { category: "analysis", summary: "Static, capability-flagged test quality report.", defaults: { maxFiles: 50 }, examples: [{}] },
+  },
+  {
+    name: "bb_test_suggestions",
+    description: "Test recommendations for changed production symbols (added/modified/deleted). Evidence-first: existing affected tests are recommended before creating new files. Naming conventions are only a low-confidence flagged fallback. Recommendation text only; no test code is generated or written.",
+    inputSchema: { type: "object", properties: { changed: { type: "array", description: "array of {name,file,kind}; kind is added|modified|deleted" } }, required: ["changed"] },
+    mutability: "read",
+    requiresIndex: true,
+    modes: ["suggest"],
+    aliases: [],
+    deprecated: false,
+    documentation: { category: "analysis", summary: "Changed-symbol test suggestions, evidence-first.", defaults: {}, examples: [{ changed: [{ name: "add", file: "src/calc.ts", kind: "modified" }] }] },
+  },
 ] as const satisfies readonly ToolDescriptor[]
 
 export const TOOL_DESCRIPTORS: readonly ToolDescriptor[] = descriptors
