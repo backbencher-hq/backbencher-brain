@@ -35,6 +35,7 @@ const EXPECTED_TABLES = [
   "brain_file", "brain_symbol", "brain_relationship", "brain_import",
   "brain_pattern", "brain_taint_flow", "brain_query_cache",
   "brain_project_health", "brain_index_status", "brain_semantic_embedding",
+  "brain_analysis_run", "brain_analysis_finding", "brain_analysis_occurrence",
 ]
 for (const t of EXPECTED_TABLES) check(`table ${t}`, tables.includes(t))
 
@@ -63,6 +64,10 @@ const EXPECTED_INDEXES = [
   "brain_cache_project_idx", "brain_cache_query_type_idx", "brain_cache_hash_idx",
   "brain_embed_project_idx", "brain_embed_entity_idx", "brain_embed_type_idx",
   "brain_embed_model_idx", "brain_embed_hash_idx",
+  "brain_analysis_finding_identity_idx", "brain_analysis_run_project_idx",
+  "brain_analysis_run_kind_idx", "brain_analysis_run_started_idx",
+  "brain_analysis_finding_project_idx", "brain_analysis_finding_state_idx",
+  "brain_analysis_occurrence_finding_idx", "brain_analysis_occurrence_run_idx",
 ]
 const missing = EXPECTED_INDEXES.filter((i) => !indexes.includes(i))
 check("all drizzle indexes created", missing.length === 0, `missing: ${missing.join(", ")}`)

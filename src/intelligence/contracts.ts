@@ -1,3 +1,5 @@
+import type { ProjectID } from "../project/schema"
+
 export interface SourceRange {
   startLine: number
   endLine: number
@@ -548,4 +550,89 @@ export interface TestSuggestionsReport {
   affectedExistingTests: AffectedTestEntry[]
   unknowns: string[]
   summary: { actionCount: number; extendExisting: number; createNew: number }
+}
+
+// ============================================================================
+// Analysis runs and finding history (M9.12).
+// ============================================================================
+
+export type AnalysisRunKind = "security" | "patterns" | "test" | "analyze" | "health"
+export type AnalysisRunStatus = "running" | "completed" | "failed"
+export type AnalysisFindingState = "open" | "resolved" | "suppressed" | "reopened" | "mitigated" | "stale"
+
+export interface AnalysisRunRecord {
+  id: string
+  projectId: ProjectID
+  kind: AnalysisRunKind
+  status: AnalysisRunStatus
+  engineVersion: string
+  inputHash: string
+  startedAt: number
+  completedAt: number | null
+  findingCount: number
+  error: string | null
+}
+
+export interface AnalysisFindingRecord {
+  id: string
+  projectId: ProjectID
+  kind: AnalysisRunKind
+  fingerprint: string
+  rule: string
+  title: string
+  severity: string
+  state: AnalysisFindingState
+  confidence: number | null
+  evidence: unknown[]
+  firstSeenAt: number
+  lastSeenAt: number
+  resolvedAt: number | null
+  suppressedAt: number | null
+  mitigatedAt: number | null
+  occurrenceCount: number
+}
+
+export interface AnalysisFindingOccurrence {
+  id: string
+  findingId: string
+  runId: string
+  state: AnalysisFindingState
+  location: string | null
+  evidence: unknown[]
+  observedAt: number
+}
+
+export interface AnalysisRunInput {
+  projectId: ProjectID
+  kind: AnalysisRunKind
+  input?: unknown
+  engineVersion?: string
+  retentionDays?: number
+}
+
+export interface AnalysisFindingInput {
+  fingerprint?: string
+  rule: string
+  title: string
+  severity: string
+  confidence?: number | null
+  evidence?: unknown[]
+  location?: string | null
+  state?: AnalysisFindingState
+}
+
+export interface AnalysisRunReport {
+  run: AnalysisRunRecord
+  findings: AnalysisFindingRecord[]
+  newFindings: number
+  repeatedFindings: number
+  resolvedFindings: number
+  reopenedFindings: number
+  staleFindings: number
+}
+
+export interface AnalysisHistoryReport {
+  runs: AnalysisRunRecord[]
+  findings: AnalysisFindingRecord[]
+  summary: Record<AnalysisFindingState, number>
 }

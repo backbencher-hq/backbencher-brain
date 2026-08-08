@@ -257,6 +257,81 @@ export const BrainTaintFlowTable = sqliteTable(
   ],
 )
 
+
+
+// ============================================================================
+// ANALYSIS HISTORY - reusable run/finding lifecycle
+// ============================================================================
+
+export const BrainAnalysisRunTable = sqliteTable(
+  "brain_analysis_run",
+  {
+    id: text().primaryKey(),
+    project_id: text().$type<ProjectID>().notNull().references(() => ProjectTable.id, { onDelete: "cascade" }),
+    kind: text().notNull(),
+    status: text().notNull(),
+    engine_version: text().notNull(),
+    input_hash: text().notNull(),
+    started_at: integer().notNull(),
+    completed_at: integer(),
+    finding_count: integer().notNull().default(0),
+    error: text(),
+    ...Timestamps,
+  },
+  (table) => [
+    index("brain_analysis_run_project_idx").on(table.project_id),
+    index("brain_analysis_run_kind_idx").on(table.kind),
+    index("brain_analysis_run_started_idx").on(table.started_at),
+  ],
+)
+
+export const BrainAnalysisFindingTable = sqliteTable(
+  "brain_analysis_finding",
+  {
+    id: text().primaryKey(),
+    project_id: text().$type<ProjectID>().notNull().references(() => ProjectTable.id, { onDelete: "cascade" }),
+    kind: text().notNull(),
+    fingerprint: text().notNull(),
+    rule: text().notNull(),
+    title: text().notNull(),
+    severity: text().notNull(),
+    state: text().notNull(),
+    confidence: real(),
+    evidence: text({ mode: "json" }),
+    first_seen_at: integer().notNull(),
+    last_seen_at: integer().notNull(),
+    resolved_at: integer(),
+    suppressed_at: integer(),
+    mitigated_at: integer(),
+    occurrence_count: integer().notNull().default(0),
+    ...Timestamps,
+  },
+  (table) => [
+    index("brain_analysis_finding_project_idx").on(table.project_id),
+    index("brain_analysis_finding_fingerprint_idx").on(table.project_id, table.kind, table.fingerprint),
+    index("brain_analysis_finding_state_idx").on(table.project_id, table.state),
+  ],
+)
+
+export const BrainAnalysisOccurrenceTable = sqliteTable(
+  "brain_analysis_occurrence",
+  {
+    id: text().primaryKey(),
+    finding_id: text().notNull().references(() => BrainAnalysisFindingTable.id, { onDelete: "cascade" }),
+    run_id: text().notNull().references(() => BrainAnalysisRunTable.id, { onDelete: "cascade" }),
+    state: text().notNull(),
+    location: text(),
+    evidence: text({ mode: "json" }),
+    observed_at: integer().notNull(),
+    ...Timestamps,
+  },
+  (table) => [
+    index("brain_analysis_occurrence_finding_idx").on(table.finding_id),
+    index("brain_analysis_occurrence_run_idx").on(table.run_id),
+  ],
+)
+
+
 // ================================================================
 // INTELLIGENCE CACHE - Query optimization & pattern recognition
 // ================================================================

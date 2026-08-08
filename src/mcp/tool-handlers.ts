@@ -14,6 +14,8 @@ import { indexProjectParallel, reindexFilesParallel, wipeProjectData } from "../
 import { TOOL_DESCRIPTORS } from "./tool-registry"
 import { testQuality } from "../intelligence/testing/quality"
 import { testSuggestions } from "../intelligence/testing/suggestions"
+import { getAnalysisHistory, startAnalysisRun, completeAnalysisRun, failAnalysisRun } from "../intelligence/analysis/run-history"
+import type { AnalysisFindingInput } from "../intelligence/contracts"
 
 export interface ToolContext {
   projectPath: string
@@ -125,6 +127,10 @@ const handlers: Record<string, ToolHandler> = {
   },
 
   bb_health: async (args, { projectId }) => {
+    if (args.history === true) {
+      const history = await getAnalysisHistory(projectId, undefined, Number(args.limit ?? 20))
+      return textResult(JSON.stringify(history, null, 2))
+    }
     const raw = await BrainDatabase.getRawInstance(projectId)
     const files = (raw.prepare("SELECT COUNT(*) c FROM brain_file").get() as any).c
     const symbols = (raw.prepare("SELECT COUNT(*) c FROM brain_symbol").get() as any).c
@@ -156,6 +162,10 @@ const handlers: Record<string, ToolHandler> = {
   },
 
   bb_patterns: async (args, { projectId }) => {
+    if (args.history === true) {
+      const history = await getAnalysisHistory(projectId, "patterns", Number(args.limit ?? 20))
+      return textResult(JSON.stringify(history, null, 2))
+    }
     const scope = args.scope === "orphaned" ? "orphaned" : "all"
     const limit = Number(args.limit ?? 20)
     if (scope === "orphaned") {
@@ -173,10 +183,32 @@ const handlers: Record<string, ToolHandler> = {
     })
     const items = (result?.patterns ?? []).slice(0, limit)
     const lines = items.map((item: any) => `  [${item.severity}] ${item.type} @ ${item.location?.file}:${item.location?.line} (${Math.round(item.confidence * 100)}%)`)
+    if (args.recordRun === true) {
+      const run = await startAnalysisRun({ projectId, kind: "patterns", input: { options: args } })
+      try {
+        const persisted = await completeAnalysisRun(projectId, run.id, items.map((item: any): AnalysisFindingInput => ({
+          fingerprint: item.fingerprint ?? `${item.type}:${item.location?.file ?? "?"}:${item.location?.line ?? "?"}`,
+          rule: item.type ?? "pattern",
+          title: item.description ?? item.type ?? "pattern finding",
+          severity: item.severity ?? "info",
+          confidence: item.confidence ?? null,
+          evidence: item.evidence ?? [],
+          location: item.location?.file ? `${item.location.file}:${item.location.line ?? "?"}` : null,
+        })))
+        return textResult(`patterns (${result?.statistics?.totalFound ?? items.length}) recorded run ${persisted.run.id}: new=${persisted.newFindings} repeated=${persisted.repeatedFindings} resolved=${persisted.resolvedFindings}\n${lines.join("\n") || "  none"}`)
+      } catch (error) {
+        await failAnalysisRun(projectId, run.id, error)
+        throw error
+      }
+    }
     return textResult(`patterns (${result?.statistics?.totalFound ?? items.length}):\n${lines.join("\n") || "  none"}`)
   },
 
-  bb_security: async (_args, { projectId }) => {
+  bb_security: async (args, { projectId }) => {
+    if (args.history === true) {
+      const history = await getAnalysisHistory(projectId, "security", Number(args.limit ?? 20))
+      return textResult(JSON.stringify(history, null, 2))
+    }
     const result: any = await CrossLanguageSecurityAnalysis.analyzeSecurityAcrossLanguages(projectId)
     const findings = result?.findings ?? []
     const suspicious = result?.suspiciousSources ?? []
@@ -190,6 +222,25 @@ const handlers: Record<string, ToolHandler> = {
     const sourceLines = suspicious.slice(0, 5).map(
       (source: any) => `  [info] unvalidated input${source.symbol ? ` ${source.symbol}` : ""} @ ${source.file}:${source.line ?? "?"} (no sink reached)`,
     )
+    if (args.recordRun === true) {
+      const run = await startAnalysisRun({ projectId, kind: "security", input: { options: args } })
+      try {
+        const persisted = await completeAnalysisRun(projectId, run.id, findings.map((finding: any): AnalysisFindingInput => ({
+          fingerprint: finding.fingerprint ?? `${finding.file}:${finding.line ?? "?"}:${finding.label ?? finding.type}`,
+          rule: finding.label ?? finding.type ?? "security",
+          title: finding.label ?? finding.type ?? "security finding",
+          severity: finding.severity ?? "medium",
+          confidence: finding.confidence ?? null,
+          evidence: finding.evidence ?? [],
+          location: finding.file ? `${finding.file}:${finding.line ?? "?"}` : null,
+          state: finding.mitigated ? "mitigated" : undefined,
+        })))
+        return textResult(head + `\nrecorded run: ${persisted.run.id}\nnew=${persisted.newFindings} repeated=${persisted.repeatedFindings} resolved=${persisted.resolvedFindings}` + "\n" + (lines.length ? lines.join("\n") : "  clean") + (sourceLines.length ? `\n\nunvalidated input sources:\n${sourceLines.join("\n")}` : ""))
+      } catch (error) {
+        await failAnalysisRun(projectId, run.id, error)
+        throw error
+      }
+    }
     return textResult(head + "\n" + (lines.length ? lines.join("\n") : "  clean") + (sourceLines.length ? `\n\nunvalidated input sources:\n${sourceLines.join("\n")}` : ""))
   },
 
