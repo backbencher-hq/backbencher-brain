@@ -74,7 +74,7 @@ try {
   check("bb_relationships defaults to callers", textOf(result).includes("callers of handleRequest"), textOf(result).slice(0, 180))
 
   result = await client.callTool({ name: "bb_health", arguments: {} })
-  check("bb_health default output includes counts and freshness", /files=\d+ symbols=\d+ relationships=\d+ embeddings=\d+/.test(textOf(result)) && textOf(result).includes("freshness:"), textOf(result).slice(0, 180))
+  check("bb_health default output includes counts and freshness", /files=\d+ symbols=\d+ relationships=\d+ imports=\d+/.test(textOf(result)) && textOf(result).includes("freshness:"), textOf(result).slice(0, 180))
 
   writeFileSync(fixture.sourceFile, `${readFileSync(fixture.sourceFile, "utf8")}\n// stale marker\n`)
   result = await client.callTool({ name: "bb_search", arguments: { query: "handleRequest" } })

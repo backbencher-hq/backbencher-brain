@@ -11,8 +11,8 @@ import path from "path"
 import { BrainDatabase } from "../brain/database"
 import { indexProjectParallel } from "../ast/parallel-indexer"
 import { BrainTools } from "../ast/tools"
-import { checkResultsFreshness } from "../brain/freshness"
 import { BACKBENCHER_BRAIN_VERSION } from "../version"
+import { getUnifiedHealth, formatUnifiedHealth } from "../intelligence/health/health-provider"
 
 export function getProjectId(projectPath: string): string {
   return createHash("sha1").update(path.resolve(projectPath)).digest("hex").substring(0, 40)
@@ -81,7 +81,7 @@ async function cmdSearch(query: string, opts: { dir?: string; limit?: number; la
   console.log(`\n${results.length} results${results.staleCount ? ` (${results.staleCount} stale — run bb index --force)` : ""}`)
 }
 
-async function cmdHealth(dir?: string) {
+async function cmdHealth(dir: string | undefined, opts: { refresh?: boolean; force?: boolean; wait?: boolean; complete?: boolean; integrity?: boolean; sampleSize?: number }) {
   const abs = dir ? requireDir(dir) : process.cwd()
   const pid = getProjectId(abs)
   const dbPath = BrainDatabase.getDbPath(pid)
@@ -89,29 +89,16 @@ async function cmdHealth(dir?: string) {
     console.error(`✗ no index for ${abs}. Run: bb index "${abs}"`)
     process.exit(1)
   }
-  const raw = await BrainDatabase.getRawInstance(pid)
-  const files = (raw.prepare("SELECT COUNT(*) c FROM brain_file").get() as any).c
-  const symbols = (raw.prepare("SELECT COUNT(*) c FROM brain_symbol").get() as any).c
-  const rels = (raw.prepare("SELECT COUNT(*) c FROM brain_relationship").get() as any).c
-  const emb = (raw.prepare("SELECT COUNT(*) c FROM brain_semantic_embedding").get() as any).c
-  // freshness sample: check up to 200 files
-  const fileRows = raw.prepare("SELECT id FROM brain_file LIMIT 200").all() as any[]
-  const freshness = checkResultsFreshness(raw, fileRows.map((r: any) => ({ fileId: r.id })))
-  let fresh = 0
-  let stale = 0
-  let missing = 0
-  for (const s of freshness.values()) {
-    if (s === "fresh") fresh++
-    else if (s === "stale") stale++
-    else missing++
-  }
-  console.log(`project:   ${abs}`)
-  console.log(`projectId: ${pid}`)
-  console.log(`files:     ${files}`)
-  console.log(`symbols:   ${symbols}`)
-  console.log(`relations: ${rels}`)
-  console.log(`embeddings:${emb}`)
-  console.log(`freshness: ${fresh} fresh / ${stale} stale / ${missing} missing (of ${fileRows.length} sampled)`)
+  const report = await getUnifiedHealth(pid, abs, {
+    refresh: opts.refresh === true || opts.force === true,
+    force: opts.force === true,
+    wait: opts.wait !== false,
+    freshness: opts.complete === true ? "complete" : "sampled",
+    sampleSize: opts.sampleSize,
+    integrity: opts.integrity === true,
+  })
+  console.log(formatUnifiedHealth(report))
+  if (report.warnings.some((w) => w.severity === "error")) process.exitCode = 1
 }
 
 export async function runCli(argv: string[]): Promise<void> {
@@ -143,8 +130,14 @@ export async function runCli(argv: string[]): Promise<void> {
     .command("health")
     .description("index health and freshness")
     .argument("[dir]", "project directory (default: cwd)")
-    .action(async (dir: string | undefined) => {
-      await cmdHealth(dir)
+    .option("--refresh", "reindex the project before reporting")
+    .option("--force", "force a full in-place reindex (implies --refresh)")
+    .option("--no-wait", "do not wait for the refresh to finish")
+    .option("--complete", "check freshness for all files (not just a sample)")
+    .option("--integrity", "run the 12-point index integrity check")
+    .option("--sample-size <n>", "freshness sample size (default: 200)", "200")
+    .action(async (dir: string | undefined, opts: any) => {
+      await cmdHealth(dir, { ...opts, sampleSize: parseInt(opts.sampleSize, 10) })
     })
 
   program

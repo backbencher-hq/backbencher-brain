@@ -15,6 +15,7 @@ import { TOOL_DESCRIPTORS } from "./tool-registry"
 import { testQuality } from "../intelligence/testing/quality"
 import { testSuggestions } from "../intelligence/testing/suggestions"
 import { executeEdit, type EditRequest } from "../intelligence/edit/edit-engine"
+import { getUnifiedHealth, formatUnifiedHealth } from "../intelligence/health/health-provider"
 import { getAnalysisHistory, startAnalysisRun, completeAnalysisRun, failAnalysisRun } from "../intelligence/analysis/run-history"
 import type { AnalysisFindingInput } from "../intelligence/contracts"
 
@@ -127,39 +128,13 @@ const handlers: Record<string, ToolHandler> = {
     return textResult(head + (lines.length ? lines.join("\n") : `no semantic matches for "${args.query}"`))
   },
 
-  bb_health: async (args, { projectId }) => {
+  bb_health: async (args, { projectId, projectPath }) => {
+    const report = await getUnifiedHealth(projectId, projectPath, { refresh: args.refresh === true, force: args.force === true, wait: args.wait !== false, freshness: args.freshness === "complete" ? "complete" : "sampled", sampleSize: args.sampleSize != null ? Number(args.sampleSize) : undefined, integrity: args.integrity === true, includeAnalysisRuns: args.includeAnalysisRuns === true })
     if (args.history === true) {
       const history = await getAnalysisHistory(projectId, undefined, Number(args.limit ?? 20))
-      return textResult(JSON.stringify(history, null, 2))
+      return textResult(JSON.stringify({ health: report, history }, null, 2))
     }
-    const raw = await BrainDatabase.getRawInstance(projectId)
-    const files = (raw.prepare("SELECT COUNT(*) c FROM brain_file").get() as any).c
-    const symbols = (raw.prepare("SELECT COUNT(*) c FROM brain_symbol").get() as any).c
-    const relationships = (raw.prepare("SELECT COUNT(*) c FROM brain_relationship").get() as any).c
-    const embeddings = (raw.prepare("SELECT COUNT(*) c FROM brain_semantic_embedding").get() as any).c
-    const fileRows = raw.prepare("SELECT id FROM brain_file LIMIT 200").all() as any[]
-    const freshness = checkResultsFreshness(raw, fileRows.map((row: any) => ({ fileId: row.id })))
-    let fresh = 0
-    let stale = 0
-    for (const status of freshness.values()) status === "fresh" ? fresh++ : stale++
-    let text = `files=${files} symbols=${symbols} relationships=${relationships} embeddings=${embeddings}\nfreshness: ${fresh} fresh / ${stale} stale (sampled ${fileRows.length})`
-    if (args.verbose === true) {
-      try {
-        const languages = raw.prepare("SELECT language, COUNT(*) c FROM brain_file WHERE project_id = ? GROUP BY language ORDER BY c DESC LIMIT 10").all(projectId) as any[]
-        text += "\n\nlanguages:\n" + languages.map((language: any) => `  ${language.language ?? "unknown"}: ${language.c}`).join("\n")
-        const models = raw.prepare("SELECT embedding_model, COUNT(*) c FROM brain_semantic_embedding WHERE project_id = ? GROUP BY embedding_model").all(projectId) as any[]
-        text += "\n\nembedding models:\n" + (models.length ? models.map((model: any) => `  ${model.embedding_model}: ${model.c}`).join("\n") : "  none")
-        const staleFiles: string[] = []
-        for (const row of fileRows) {
-          if (freshness.get(row.id) !== "fresh") {
-            const file = raw.prepare("SELECT relative_path FROM brain_file WHERE id = ?").get(row.id) as any
-            if (file?.relative_path) staleFiles.push(file.relative_path)
-          }
-        }
-        text += `\n\nstale files (${staleFiles.length}):\n` + (staleFiles.slice(0, 20).map((file) => `  ${file}`).join("\n") || "  none")
-      } catch {}
-    }
-    return textResult(text)
+    return textResult(formatUnifiedHealth(report))
   },
 
   bb_patterns: async (args, { projectId }) => {
@@ -275,11 +250,8 @@ const handlers: Record<string, ToolHandler> = {
   },
 
   bb_refresh: async (args, { projectId, projectPath }) => {
-    if (args.force === true) wipeProjectData(await BrainDatabase.getRawInstance(projectId))
-    const stats: any = await indexProjectParallel(projectId, projectPath, {})
-    const raw = await BrainDatabase.getRawInstance(projectId)
-    const symbols = (raw.prepare("SELECT COUNT(*) c FROM brain_symbol").get() as any).c
-    return textResult(`reindexed: ${stats.totalFiles} files processed, ${symbols} symbols total${args.force === true ? " (forced, in-place)" : ""}`)
+    const report = await getUnifiedHealth(projectId, projectPath, { refresh: true, force: args.force === true, wait: args.wait !== false, freshness: args.freshness === "complete" ? "complete" : "sampled" })
+    return textResult(formatUnifiedHealth(report))
   },
 
   bb_edit: async (args, { projectId, projectPath }) => {

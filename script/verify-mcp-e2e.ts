@@ -120,6 +120,18 @@ try {
   r = await call("bb_health", {})
   check("bb_health returns counts", /symbols=\d+/.test(r.text), r.text.slice(0, 120))
 
+  r = await call("bb_health", { verbose: true })
+  check("bb_health verbose includes freshness", /freshness:/.test(r.text), r.text.slice(0, 160))
+
+  r = await call("bb_health", { freshness: "complete" })
+  check("bb_health complete mode surfaces mode", /complete/.test(r.text), r.text.slice(0, 160))
+
+  r = await call("bb_health", { includeAnalysisRuns: true })
+  check("bb_health includeAnalysisRuns emits analysis or no error", !r.text.startsWith("error:"), r.text.slice(0, 160))
+
+  r = await call("bb_refresh", {})
+  check("bb_refresh reindexes and reports", /symbols=\d+/.test(r.text), r.text.slice(0, 160))
+
   r = await call("bb_patterns", {})
   check("bb_patterns returns analysis", r.text.length > 0 && !r.text.startsWith("error:"), r.text.slice(0, 140))
 

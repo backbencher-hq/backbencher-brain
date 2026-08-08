@@ -54,8 +54,8 @@ export const CURRENT_MCP_TOOL_CONTRACTS = [
     name: "bb_health",
     mutability: "read",
     required: [],
-    properties: ["verbose", "history", "limit"],
-    defaults: { verbose: false, limit: 20 },
+    properties: ["verbose", "history", "limit", "refresh", "force", "wait", "freshness", "sampleSize", "integrity", "includeAnalysisRuns"],
+    defaults: { verbose: false, history: false, limit: 20, refresh: false, force: false, wait: true, freshness: "sampled", sampleSize: 200, integrity: false, includeAnalysisRuns: false },
     output: "text",
     replacement: "bb_health",
   },
@@ -99,8 +99,8 @@ export const CURRENT_MCP_TOOL_CONTRACTS = [
     name: "bb_refresh",
     mutability: "index",
     required: [],
-    properties: ["force"],
-    defaults: { force: false },
+    properties: ["force", "wait", "freshness"],
+    defaults: { force: false, wait: true, freshness: "sampled" },
     output: "text",
     replacement: "bb_health",
     replacementMode: "refresh",
@@ -237,7 +237,7 @@ export type TargetToolInput =
   | { tool: "bb_visualize"; scope?: "project" | "file" | "symbol" | "feature"; target?: string }
   | { tool: "bb_migrate"; symbolNames: string[]; targetLanguage: string }
   | { tool: "bb_edit"; mode: EditMode; dryRun?: boolean }
-  | { tool: "bb_health"; refresh?: boolean; wait?: boolean; verbose?: boolean }
+  | { tool: "bb_health"; refresh?: boolean; force?: boolean; wait?: boolean; freshness?: "sampled" | "complete"; sampleSize?: number; integrity?: boolean; includeAnalysisRuns?: boolean; verbose?: boolean; history?: boolean; limit?: number }
 
 export interface TargetToolContract {
   name: TargetToolInput["tool"]
