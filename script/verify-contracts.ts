@@ -68,10 +68,7 @@ try {
   check("bb_search accepts pagination offset", secondPage.includes("duplicateName") || secondPage.includes("no results"), secondPage.slice(0, 180))
 
   result = await client.callTool({ name: "bb_select", arguments: { symbolName: "missingContractSymbol" } })
-  check("bb_select missing symbol is stable text", textOf(result).includes("DEPRECATED bb_select") && textOf(result).includes('symbol "missingContractSymbol" not found'))
-
-  result = await client.callTool({ name: "bb_relationships", arguments: { target: "handleRequest" } })
-  check("bb_relationships compatibility warning identifies replacement", textOf(result).includes("DEPRECATED bb_relationships") && textOf(result).includes("bb_analyze"), textOf(result).slice(0, 220))
+  check("removed alias returns unknown tool", result.isError === true && textOf(result).includes("unknown tool: bb_select"))
 
   result = await client.callTool({ name: "bb_health", arguments: {} })
   check("bb_health default output includes counts and freshness", /files=\d+ symbols=\d+ relationships=\d+ imports=\d+/.test(textOf(result)) && textOf(result).includes("freshness:"), textOf(result).slice(0, 180))
@@ -80,21 +77,24 @@ try {
   result = await client.callTool({ name: "bb_search", arguments: { query: "handleRequest" } })
   check("bb_search reports stale indexed files", textOf(result).includes("[STALE]"), textOf(result).slice(0, 180))
 
-  result = await client.callTool({ name: "bb_write", arguments: { filePath: "src/contract-new.ts", content: "export const contractNew = true\n" } })
-  check("bb_write reports indexed mutation", textOf(result).includes("DEPRECATED bb_write") && textOf(result).includes("written") && textOf(result).includes("indexed"), textOf(result))
-  check("bb_write side effect reaches disk", readFileSync(path.join(root, "src", "contract-new.ts"), "utf8").includes("contractNew"))
+  result = await client.callTool({ name: "bb_health", arguments: { refresh: true, wait: true } })
+  check("bb_health refreshes before canonical mutation", !result.isError && /symbols=\d+/.test(textOf(result)), textOf(result).slice(0, 180))
 
-  result = await client.callTool({ name: "bb_update", arguments: { symbolName: "helper", newContent: "export function helper(): number { return 99 }\n" } })
-  check("bb_update reports reindex", textOf(result).includes("updated helper") && textOf(result).includes("reindexed"), textOf(result))
+  result = await client.callTool({ name: "bb_edit", arguments: { mode: "write", filePath: "src/contract-new.ts", content: "export const contractNew = true\n" } })
+  check("bb_edit write reports indexed mutation", textOf(result).includes('"reindexed": true'), textOf(result))
+  check("bb_edit write side effect reaches disk", readFileSync(path.join(root, "src", "contract-new.ts"), "utf8").includes("contractNew"))
 
-  result = await client.callTool({ name: "bb_insert", arguments: { targetSymbolName: "handleRequest", position: "after", newContent: "export const insertedContract = true\n" } })
-  check("bb_insert reports position", textOf(result).includes("inserted after handleRequest"), textOf(result))
+  result = await client.callTool({ name: "bb_edit", arguments: { mode: "update", symbolName: "helper", newContent: "export function helper(): number { return 99 }\n" } })
+  check("bb_edit update reports reindex", textOf(result).includes('"mode": "update"') && textOf(result).includes('"reindexed": true'), textOf(result))
 
-  result = await client.callTool({ name: "bb_delete", arguments: { symbolName: "orphanedFunction" } })
-  check("bb_delete reports reindex", textOf(result).includes("deleted orphanedFunction") && textOf(result).includes("reindexed"), textOf(result))
+  result = await client.callTool({ name: "bb_edit", arguments: { mode: "insert", targetSymbolName: "handleRequest", position: "after", newContent: "export const insertedContract = true\n" } })
+  check("bb_edit insert reports mode", textOf(result).includes('"mode": "insert"'), textOf(result))
 
-  result = await client.callTool({ name: "bb_refactor", arguments: { symbolName: "handleRequest", newName: "handleRequestContract" } })
-  check("bb_refactor reports declaration rename", textOf(result).includes("renamed handleRequest -> handleRequestContract"), textOf(result))
+  result = await client.callTool({ name: "bb_edit", arguments: { mode: "delete", symbolName: "orphanedFunction" } })
+  check("bb_edit delete reports reindex", textOf(result).includes('"mode": "delete"') && textOf(result).includes('"reindexed": true'), textOf(result))
+
+  result = await client.callTool({ name: "bb_edit", arguments: { mode: "refactor", symbolName: "handleRequest", newName: "handleRequestContract" } })
+  check("bb_edit refactor reports mode", textOf(result).includes('"mode": "refactor"'), textOf(result))
   check("mutation sequence changed fixture only", readFileSync(fixture.sourceFile, "utf8").includes("handleRequestContract"))
 
   await client.close()

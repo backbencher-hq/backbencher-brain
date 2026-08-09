@@ -4,8 +4,6 @@ import { BrainDatabase } from "../brain/database"
 import { BrainTools, PatternBrainTools } from "../ast/tools"
 import { ASTEngine } from "../ast/engine"
 import { checkResultsFreshness } from "../brain/freshness"
-import { BrainSurgicalPatcher } from "../ast/brain-surgical-patcher"
-import { ImportPruner } from "../ast/import-pruner"
 import { CrossLanguageSecurityAnalysis } from "../security/cross-language-security"
 import { DependencyGraphVisualizer } from "../ast/dependency-graph-visualizer"
 import { CrossLanguageIntelligence } from "../ast/cross-language-intelligence"
@@ -13,7 +11,6 @@ import { CrossLanguageMigrationAssistant } from "../ast/cross-language-migration
 import { indexProjectParallel, reindexFilesParallel, wipeProjectData } from "../ast/parallel-indexer"
 import { TOOL_DESCRIPTORS } from "./tool-registry"
 import { testQuality } from "../intelligence/testing/quality"
-import { testSuggestions } from "../intelligence/testing/suggestions"
 import { executeEdit, type EditRequest } from "../intelligence/edit/edit-engine"
 import { getUnifiedHealth, formatUnifiedHealth } from "../intelligence/health/health-provider"
 import { getAnalysisHistory, startAnalysisRun, completeAnalysisRun, failAnalysisRun } from "../intelligence/analysis/run-history"
@@ -101,44 +98,6 @@ const handlers: Record<string, ToolHandler> = {
       return `${result.symbolName} [${result.symbolType}] ${result.file}:${result.line} (${result.language})${stale}${snippet}`
     })
     return textResult(lines.length ? lines.join("\n") : `no results for "${query}"`)
-  },
-
-  bb_select: async (args, { projectId }) => {
-    const found = await ASTEngine.findSymbol(
-      projectId,
-      String(args.symbolName),
-      args.filePath ? String(args.filePath) : undefined,
-      args.lineStart ? Number(args.lineStart) : undefined,
-    )
-    const match = found?.matches?.[0]
-    if (!match) return textResult(`symbol "${args.symbolName}" not found`)
-    const snippet = await readSnippet(match.fileId, match.lineStart)
-    const text = [
-      `name: ${match.name}`,
-      `type: ${match.symbolType ?? "unknown"}`,
-      `file: ${match.fileId}`,
-      `line: ${match.lineStart}`,
-      match.byteStart != null ? `bytes: ${match.byteStart}-${match.byteEnd}` : null,
-      snippet ? `\n${snippet}` : null,
-    ].filter(Boolean).join("\n")
-    return textResult(text)
-  },
-
-  bb_relationships: async (args, { projectId }) => {
-    const target = String(args.target)
-    const direction = args.direction === "callees" ? "callees" : "callers"
-    const limit = Number(args.limit ?? 15)
-    const includeIndirect = args.includeIndirect === true
-    const maxDepth = Number(args.maxDepth ?? 3)
-    const results = direction === "callers"
-      ? await BrainTools.getFunctionCallers(projectId, target, { includeIndirect, maxDepth })
-      : await BrainTools.getFunctionCallees(projectId, target, { includeIndirect, maxDepth })
-    const lines = (results.slice(0, limit) as any[]).map(
-      (result: any) => `${result.name} — ${result.relativePath ?? result.filePath ?? "?"}:${result.range?.startLine ?? "?"}`,
-    )
-    return textResult(lines.length
-      ? `${direction} of ${target} (${results.length} total${includeIndirect ? ", indirect" : ""}):\n${lines.join("\n")}`
-      : `no ${direction} found for ${target}`)
   },
 
   bb_ask: async (args, { projectId }) => {
@@ -287,11 +246,6 @@ const handlers: Record<string, ToolHandler> = {
     return textResult(formatDocumentation(result, request.format))
   },
 
-  bb_refresh: async (args, { projectId, projectPath }) => {
-    const report = await getUnifiedHealth(projectId, projectPath, { refresh: true, force: args.force === true, wait: args.wait !== false, freshness: args.freshness === "complete" ? "complete" : "sampled" })
-    return textResult(formatUnifiedHealth(report))
-  },
-
   bb_edit: async (args, { projectId, projectPath }) => {
     const request = args as EditRequest
     if (!(["write", "update", "insert", "delete", "refactor"] as const).includes(request.mode as any)) return textResult("bb_edit requires mode: write|update|insert|delete|refactor", true)
@@ -299,41 +253,6 @@ const handlers: Record<string, ToolHandler> = {
     return textResult(JSON.stringify(result, null, 2))
   },
 
-  bb_write: async (args, context) => {
-    const result = await executeEdit(context.projectPath, context.projectId, { mode: "write", filePath: String(args.filePath), content: String(args.content ?? ""), dryRun: args.dryRun === true, format: args.format !== false })
-    return textResult(result.dryRun ? JSON.stringify(result, null, 2) : `written ${args.filePath} (validated, indexed)`)
-  },
-
-  bb_update: async (args, context) => {
-    const result = await executeEdit(context.projectPath, context.projectId, { mode: "update", symbolName: String(args.symbolName), newContent: String(args.newContent ?? ""), filePath: args.filePath ? String(args.filePath) : undefined, lineStart: args.lineStart ? Number(args.lineStart) : undefined, dryRun: args.dryRun === true, allowStaleIndex: true })
-    return textResult(result.dryRun ? JSON.stringify(result, null, 2) : `updated ${args.symbolName} (validated, reindexed)`)
-  },
-
-  bb_insert: async (args, context) => {
-    const result = await executeEdit(context.projectPath, context.projectId, { mode: "insert", targetSymbolName: String(args.targetSymbolName), newContent: String(args.newContent ?? ""), filePath: args.filePath ? String(args.filePath) : undefined, lineStart: args.lineStart ? Number(args.lineStart) : undefined, position: args.position, dryRun: args.dryRun === true, allowStaleIndex: true })
-    return textResult(result.dryRun ? JSON.stringify(result, null, 2) : `inserted ${args.position ?? "after"} ${args.targetSymbolName} (validated, reindexed)`)
-  },
-
-  bb_delete: async (args, context) => {
-    const result = await executeEdit(context.projectPath, context.projectId, { mode: "delete", symbolName: String(args.symbolName), filePath: args.filePath ? String(args.filePath) : undefined, lineStart: args.lineStart ? Number(args.lineStart) : undefined, force: args.force === true, dryRun: args.dryRun === true, allowStaleIndex: true })
-    return textResult(result.dryRun ? JSON.stringify(result, null, 2) : `deleted ${args.symbolName} (validated, reindexed)`)
-  },
-
-  bb_refactor: async (args, context) => {
-    const result = await executeEdit(context.projectPath, context.projectId, { mode: "refactor", symbolName: String(args.symbolName), newName: String(args.newName), filePath: args.filePath ? String(args.filePath) : undefined, lineStart: args.lineStart ? Number(args.lineStart) : undefined, dryRun: args.dryRun === true, allowStaleIndex: true })
-    return textResult(result.dryRun ? JSON.stringify(result, null, 2) : `renamed ${args.symbolName} -> ${args.newName} (identifier tokens only, validated, reindexed)`)
-  },
-  bb_test_quality: async (args, { projectId }) => {
-    const report = await testQuality(projectId, { maxFiles: args.maxFiles != null ? Number(args.maxFiles) : undefined })
-    return textResult(JSON.stringify(report, null, 2))
-  },
-  bb_test_suggestions: async (args, { projectId }) => {
-    const raw = args.changed
-    if (!Array.isArray(raw) || raw.length === 0) return textResult("error: 'changed' must be a non-empty array of {name,file,kind}", true)
-    const changed = raw.map((c: any) => ({ name: String(c.name), file: String(c.file), kind: (c.kind === "added" || c.kind === "deleted" ? c.kind : "modified") as "added" | "modified" | "deleted" }))
-    const report = await testSuggestions(projectId, changed)
-    return textResult(JSON.stringify(report, null, 2))
-  },
 }
 
 export function createToolHandlers(): Readonly<Record<string, ToolHandler>> {

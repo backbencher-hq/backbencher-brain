@@ -95,8 +95,8 @@ VS Code workspace MCP (`<project>/.vscode/mcp.json`):
 
 The MCP server advertises exactly ten public tools: `bb_search`, `bb_ask`,
 `bb_analyze`, `bb_patterns`, `bb_security`, `bb_doc`, `bb_visualize`,
-`bb_migrate`, `bb_edit`, and `bb_health`. Compatibility aliases remain callable
-for the migration window but are hidden from discovery. See the generated
+`bb_migrate`, `bb_edit`, and `bb_health`. Removed pre-`0.3.0` aliases are documented
+in the migration guide and changelog. See the generated
 [canonical tool metadata](./docs/data/public-tools.json) and [tool references](./docs/tools/).
 
 ## Semantic embeddings
@@ -175,7 +175,8 @@ under Bun, exercising the ten advertised tools and hidden compatibility calls.
 
 ## Public API lifecycle
 
-Version `0.2.0` exposes the ten-tool MCP surface above. Deprecated hidden aliases
-and their replacements are listed in [MCP_TOOL_MIGRATION.md](./docs/MCP_TOOL_MIGRATION.md).
+Version `0.3.0` exposes the ten-tool MCP surface above. Removed aliases and their
+replacements are listed in [MCP_TOOL_MIGRATION.md](./docs/MCP_TOOL_MIGRATION.md) and
+[CHANGELOG.md](./CHANGELOG.md).
 The machine-readable artifact is standalone JSON, so website and host integrations
 do not need to import server runtime code or parse prose.

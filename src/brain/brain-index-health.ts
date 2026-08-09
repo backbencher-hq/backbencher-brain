@@ -2,7 +2,7 @@
  * Brain Index Health — Integrity Validation System
  *
  * Runs 12 validation queries against the brain database to detect:
- * - Null byte/line bounds that break bb_delete/bb_update
+  * - Null byte/line bounds that break canonical bb_edit mutations
  * - Orphan relationships (dangling source or target symbol IDs)
  * - Stale files (hash mismatch or missing from disk)
  * - Embedding coverage gaps
@@ -131,8 +131,8 @@ async function checkByteBounds(rawDb: any, projectId: ProjectID): Promise<Health
     total,
     percentage: Math.round((100 - pct) * 10) / 10,
     threshold: { warn: 1, error: 5 },
-    description: `${nullCount} of ${total} symbols have NULL byte bounds. Without byte bounds, bb_delete and bb_update cannot safely edit these symbols.`,
-    remediation: nullCount > 0 ? "Run bb_refresh --force to reindex affected files." : undefined,
+    description: `${nullCount} of ${total} symbols have NULL byte bounds. Without byte bounds, bb_edit cannot safely mutate these symbols.`,
+    remediation: nullCount > 0 ? "Run bb_health with refresh=true and force=true to reindex affected files." : undefined,
     sample: sample.length > 0 ? sample : undefined,
   }
 }
@@ -190,8 +190,8 @@ async function checkOrphanTargets(rawDb: any, projectId: ProjectID): Promise<Hea
     status: orphanCount > 100 ? "error" : orphanCount > 10 ? "warn" : "ok",
     value: orphanCount,
     threshold: { warn: 10, error: 100 },
-    description: `${orphanCount} relationships point to symbols that no longer exist. These inflate bb_relationships results but lead nowhere.`,
-    remediation: orphanCount > 0 ? "Run bb_refresh --force to rebuild the index." : undefined,
+    description: `${orphanCount} relationships point to symbols that no longer exist. These inflate bb_analyze graph results but lead nowhere.`,
+    remediation: orphanCount > 0 ? "Run bb_health with refresh=true and force=true to rebuild the index." : undefined,
     sample: sample.length > 0 ? sample : undefined,
   }
 }
@@ -211,7 +211,7 @@ async function checkDanglingSources(rawDb: any, projectId: ProjectID): Promise<H
     value: danglingCount,
     threshold: { warn: 10, error: 100 },
     description: `${danglingCount} relationships have a source symbol that no longer exists. These are dead edges in the call graph.`,
-    remediation: danglingCount > 0 ? "Run bb_refresh --force to rebuild the index." : undefined,
+      remediation: danglingCount > 0 ? "Run bb_health with refresh=true and force=true to rebuild the index." : undefined,
   }
 }
 
@@ -232,7 +232,7 @@ async function checkOrphanOwners(rawDb: any, projectId: ProjectID): Promise<Heal
     value: orphanCount,
     threshold: { warn: 50, error: 500 },
     description: `${orphanCount} symbols reference an owner_symbol_id that doesn't exist. This breaks containment chains in bb_trace.`,
-    remediation: orphanCount > 0 ? "Run bb_refresh --force to rebuild the index." : undefined,
+      remediation: orphanCount > 0 ? "Run bb_health with refresh=true and force=true to rebuild the index." : undefined,
   }
 }
 
@@ -280,7 +280,7 @@ async function checkHashDrift(rawDb: any, projectId: ProjectID): Promise<HealthC
     percentage: Math.round((100 - pct) * 10) / 10,
     threshold: { warn: 3, error: 10 },
     description: `${driftCount} of ${sampleSize} sampled files have changed on disk since indexing (estimated ${estimatedTotal} total). Tools may operate on stale data.`,
-    remediation: driftCount > 0 ? "Run bb_refresh to reindex changed files." : undefined,
+      remediation: driftCount > 0 ? "Run bb_health with refresh=true to reindex changed files." : undefined,
     sample: driftSamples.length > 0 ? driftSamples : undefined,
   }
 }
@@ -317,7 +317,7 @@ async function checkMissingFiles(rawDb: any, projectId: ProjectID): Promise<Heal
     percentage: files.length > 0 ? Math.round((1 - missing / files.length) * 1000) / 10 : 100,
     threshold: { warn: 2, error: 10 },
     description: `${missing} of ${files.length} sampled files no longer exist on disk. Estimated ${estimatedMissing} total missing. Tools will fail when trying to read these.`,
-    remediation: missing > 0 ? "Run bb_refresh to remove deleted files from the index." : undefined,
+      remediation: missing > 0 ? "Run bb_health with refresh=true to remove deleted files from the index." : undefined,
     sample: missingSamples.length > 0 ? missingSamples : undefined,
   }
 }
@@ -539,7 +539,7 @@ export async function preFlightCheck(
     `).get(context.fileId, projectId) as any
     if (syntaxRow?.has_syntax_errors) {
       warnings.push("Target file has recorded syntax errors. Byte bounds may be incorrect.")
-      fixes.push("Use bb_select to manually review the file. Avoid bb_delete/bb_update on this file.")
+      fixes.push("Use bb_search mode=symbol to manually review the file. Avoid bb_edit on this file.")
     }
   }
 
@@ -552,7 +552,7 @@ export async function preFlightCheck(
     `).get(context.fileId, context.symbolName, projectId) as any
     if (boundsRow && (boundsRow.byte_start === null || boundsRow.byte_end === null)) {
       warnings.push(`Symbol "${context.symbolName}" has NULL byte bounds. Edits may be imprecise.`)
-      fixes.push("Run bb_refresh --wait to reindex this file, or use line-based editing.")
+      fixes.push("Run bb_health with refresh=true and wait=true to reindex this file, or use line-based editing.")
     }
   }
 
@@ -563,7 +563,7 @@ export async function preFlightCheck(
 
   if (symbolCount < 100) {
     warnings.push("Brain index is nearly empty. Most tools will return no results.")
-    fixes.push("Run bb_refresh to index the project first.")
+    fixes.push("Run bb_health with refresh=true to index the project first.")
   }
 
   return {

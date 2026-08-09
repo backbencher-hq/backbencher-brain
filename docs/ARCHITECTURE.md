@@ -15,7 +15,7 @@ adapters so MCP, CLI, and library consumers share behavior.
 4. `src/mcp/tool-registry.ts` defines the public contracts. Shared handlers route
    both MCP and `bb tool` CLI calls to the intelligence engines.
 5. `src/mcp/server.ts` advertises exactly the ten public tools and validates
-   arguments before dispatch. Hidden aliases exist only for documented migration.
+   arguments before dispatch. The `0.3.0` breaking release removed all hidden aliases.
 
 ## Evidence
 

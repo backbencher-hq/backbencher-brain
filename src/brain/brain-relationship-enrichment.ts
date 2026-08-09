@@ -273,7 +273,7 @@ function inferRole(
 
 /**
  * Fetch enriched relationships for a symbol, including all computed dimensions.
- * Used by bb_relationships, bb_trace, bb_visualize.
+ * Used by bb_analyze graph modes and bb_visualize.
  */
 export function formatEnrichedRelationship(row: any): string {
   let meta: any = {}

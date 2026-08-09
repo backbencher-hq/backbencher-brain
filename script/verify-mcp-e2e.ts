@@ -103,8 +103,8 @@ try {
   let r = await call("bb_search", { query: "handleRequest", limit: 5 })
   check("bb_search finds handleRequest", r.text.includes("handleRequest") && r.text.includes("app.ts"), r.text.slice(0, 120))
 
-  r = await call("bb_select", { symbolName: "handleRequest" })
-  check("bb_select extracts symbol source", r.text.includes("handleRequest") && r.text.includes("src/app.ts"), r.text.slice(0, 140))
+  r = await call("bb_search", { mode: "symbol", symbolName: "handleRequest" })
+  check("bb_search symbol mode extracts source", r.text.includes("handleRequest") && r.text.includes("src/app.ts"), r.text.slice(0, 140))
 
   r = await call("bb_analyze", { mode: "callees", target: "handle" })
   check("bb_analyze returns graph evidence", r.text.includes('"callees"'), r.text.slice(0, 160))
@@ -127,8 +127,8 @@ try {
   r = await call("bb_health", { includeAnalysisRuns: true })
   check("bb_health includeAnalysisRuns emits analysis or no error", !r.text.startsWith("error:"), r.text.slice(0, 160))
 
-  r = await call("bb_refresh", {})
-  check("bb_refresh compatibility warning and report", r.text.includes("DEPRECATED bb_refresh") && /symbols=\d+/.test(r.text), r.text.slice(0, 180))
+  r = await call("bb_health", { refresh: true })
+  check("bb_health refresh returns report", /symbols=\d+/.test(r.text), r.text.slice(0, 180))
 
   r = await call("bb_patterns", {})
   check("bb_patterns returns analysis", r.text.length > 0 && !r.text.startsWith("error:"), r.text.slice(0, 140))
@@ -145,35 +145,32 @@ try {
   r = await call("bb_doc", { mode: "symbol", target: "handleRequest", format: "json", includeTests: true })
   check("bb_doc returns cited structured documentation", r.text.includes('"mode": "symbol"') && r.text.includes('"citations"'), r.text.slice(0, 180))
 
-  r = await call("bb_test_quality", {})
-  check("bb_test_quality returns a report", r.text.length > 0 && !r.text.startsWith("error:"), r.text.slice(0, 140))
-
-  r = await call("bb_test_suggestions", { changed: [{ name: "handleRequest", file: "src/app.ts", kind: "modified" }] })
-  check("bb_test_suggestions returns suggestions", r.text.length > 0 && !r.text.startsWith("error:"), r.text.slice(0, 140))
+  r = await call("bb_analyze", { mode: "test_quality" })
+  check("bb_analyze test quality returns a report", r.text.length > 0 && !r.text.startsWith("error:"), r.text.slice(0, 140))
 
   // ---- mutation tools (on the throwaway fixture) ----
   r = await call("bb_edit", { mode: "write", filePath: "src/edit-created.ts", content: "export const editCreated = true\n" })
   check("bb_edit write creates a file", r.text.includes('"reindexed": true') && r.text.includes('"validated": true'), r.text.slice(0, 160))
 
-  r = await call("bb_write", { filePath: "src/new.ts", content: "export function brandNew(): string {\n  return \"hi\"\n}\n" })
-  check("bb_write creates a file", r.text.includes("written"), r.text.slice(0, 120))
+  r = await call("bb_edit", { mode: "write", filePath: "src/new.ts", content: "export function brandNew(): string {\n  return \"hi\"\n}\n" })
+  check("bb_edit write creates another file", r.text.includes('"reindexed": true'), r.text.slice(0, 120))
 
-  r = await call("bb_update", { symbolName: "helper", newContent: "export function helper(): number {\n  return 99\n}\n" })
-  check("bb_update replaces symbol", r.text.includes("updated helper"), r.text.slice(0, 120))
+  r = await call("bb_edit", { mode: "update", symbolName: "helper", newContent: "export function helper(): number {\n  return 99\n}\n" })
+  check("bb_edit update replaces symbol", r.text.includes('"mode": "update"'), r.text.slice(0, 120))
 
-  r = await call("bb_insert", { targetSymbolName: "handleRequest", position: "after", newContent: "export function insertedAfter(): string {\n  return \"x\"\n}\n" })
-  check("bb_insert inserts code", r.text.includes("inserted after"), r.text.slice(0, 120))
+  r = await call("bb_edit", { mode: "insert", targetSymbolName: "handleRequest", position: "after", newContent: "export function insertedAfter(): string {\n  return \"x\"\n}\n" })
+  check("bb_edit insert adds source", r.text.includes('"mode": "insert"'), r.text.slice(0, 120))
 
-  r = await call("bb_delete", { symbolName: "orphanedFunction" })
-  check("bb_delete removes symbol", r.text.includes("deleted orphanedFunction"), r.text.slice(0, 120))
+  r = await call("bb_edit", { mode: "delete", symbolName: "orphanedFunction" })
+  check("bb_edit delete removes symbol", r.text.includes('"mode": "delete"'), r.text.slice(0, 120))
 
-  r = await call("bb_refactor", { symbolName: "handleRequest", newName: "handleRequestV2" })
-  check("bb_refactor renames symbol", r.text.includes("renamed handleRequest -> handleRequestV2"), r.text.slice(0, 140))
+  r = await call("bb_edit", { mode: "refactor", symbolName: "handleRequest", newName: "handleRequestV2" })
+  check("bb_edit refactor renames symbol", r.text.includes('"mode": "refactor"'), r.text.slice(0, 140))
 
   // mutation actually landed on disk?
   const disk = (await import("fs")).readFileSync
   const newFileText = disk(path.join(root, "src", "new.ts"), "utf8")
-  check("bb_write file exists on disk", newFileText.includes("brandNew"))
+  check("bb_edit write file exists on disk", newFileText.includes("brandNew"))
   const appText = disk(path.join(root, "src", "app.ts"), "utf8")
   check("bb_refactor applied on disk", appText.includes("handleRequestV2") && !appText.includes("export function handleRequest("))
 
@@ -186,5 +183,5 @@ rmSync(root, { recursive: true, force: true })
 const { BrainDatabase } = await import("../src/brain/database")
 const { getProjectId } = await import("../src/cli/index")
 rmSync(path.dirname(BrainDatabase.getDbPath(getProjectId(root))), { recursive: true, force: true })
-console.log(failures === 0 ? "\nMCP E2E: 10 PUBLIC TOOLS + LEGACY ALIASES PASS" : `\nMCP E2E: ${failures} FAILURES`)
+console.log(failures === 0 ? "\nMCP E2E: 10 PUBLIC TOOLS PASS" : `\nMCP E2E: ${failures} FAILURES`)
 process.exit(failures > 0 ? 1 : 0)

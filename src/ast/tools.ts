@@ -1,4 +1,4 @@
-// @ts-nocheck — full sync of the canonical opencode tools.ts; verified by tests.
+// Internal engine adapter retained for library compatibility; canonical MCP handlers use src/intelligence/.
 import { BrainDatabase } from "../brain/database"
 import type { ProjectID } from "../project/schema"
 import * as Log from "../tool/brain-log"
@@ -327,7 +327,7 @@ export namespace BrainTools {
       .limit(fetchCap)
 
     functions.sort(
-      (a, b) =>
+      (a: any, b: any) =>
         (b.symbol.gravity_score ?? 0) - (a.symbol.gravity_score ?? 0) ||
         (b.symbol.complexity ?? 0) - (a.symbol.complexity ?? 0) ||
         (a.symbol.name < b.symbol.name ? -1 : a.symbol.name > b.symbol.name ? 1 : 0),
@@ -485,7 +485,7 @@ export namespace BrainTools {
       .limit(fetchCap)
 
     classes.sort(
-      (a, b) =>
+      (a: any, b: any) =>
         (b.symbol.gravity_score ?? 0) - (a.symbol.gravity_score ?? 0) ||
         (b.symbol.complexity ?? 0) - (a.symbol.complexity ?? 0) ||
         (a.symbol.name < b.symbol.name ? -1 : a.symbol.name > b.symbol.name ? 1 : 0),
@@ -637,7 +637,7 @@ export namespace BrainTools {
         functions,
         classes,
         variables,
-        imports: importsData.map((imp) => ({
+        imports: importsData.map((imp: any) => ({
           module: imp.import_path,
           items: [imp.imported_name],
           isDefault: imp.imported_name === "default",
@@ -645,8 +645,8 @@ export namespace BrainTools {
           lineNumber: imp.line_number || 0,
         })),
         exports: symbols
-          .filter((s) => s.visibility === "public")
-          .map((s) => ({
+          .filter((s: any) => s.visibility === "public")
+          .map((s: any) => ({
             name: s.name,
             isDefault: s.name === "default",
             type: s.symbol_type,
@@ -957,7 +957,7 @@ export namespace BrainTools {
       }
 
       combinedAnswer += `\n— Use bb_search for precise symbol lookup: "bb_search(query='${query}')".\n`
-      combinedAnswer += `— Use bb_select to read any file: "bb_select(filePath='<path>')".`
+      combinedAnswer += `— Use bb_search with mode="file" to read any indexed file.`
 
       // Confidence derives from the average match score, not a constant
       const sims = semanticResults.results.slice(0, 5).map((r: any) => Number(r.similarity) || 0)
@@ -974,7 +974,7 @@ export namespace BrainTools {
     try {
       const symbolResults = await searchCode(projectId, query, { maxResults: 5, includeContent: true })
       if (symbolResults.length > 0) {
-        let fallbackAnswer = `I found these symbols matching "${query}" (use bb_select to read their code):\n\n`
+        let fallbackAnswer = `I found these symbols matching "${query}" (use bb_search with mode="symbol" to read their code):\n\n`
         for (const r of symbolResults.slice(0, 5)) {
           fallbackAnswer += `- ${r.symbolName || r.context} [${r.symbolType || "symbol"}] in ${r.file}:${r.line}\n`
         }
@@ -1427,7 +1427,7 @@ export namespace BrainTools {
         pattern: "Singleton",
         type: "design" as const,
         confidence: 0.85,
-        instances: singletonCandidates.map((s) => ({
+        instances: singletonCandidates.map((s: any) => ({
           file: s.file.relative_path,
           symbols: [s.symbol.name],
           description: "Class with singleton characteristics detected",
@@ -1446,7 +1446,7 @@ export namespace BrainTools {
         instances: [
           {
             file: "Multiple files",
-            symbols: factoryMethods.slice(0, 5).map((s) => s.symbol.name),
+            symbols: factoryMethods.slice(0, 5).map((s: any) => s.symbol.name),
             description: `${factoryMethods.length} factory-like methods found`,
           },
         ],
@@ -1460,7 +1460,7 @@ export namespace BrainTools {
         pattern: "Observer",
         type: "design" as const,
         confidence: 0.8,
-        instances: observerCandidates.slice(0, 5).map((s) => ({
+        instances: observerCandidates.slice(0, 5).map((s: any) => ({
           file: s.file.relative_path,
           symbols: [s.symbol.name],
           description: "Observer/listener pattern component",
@@ -1499,7 +1499,7 @@ export namespace BrainTools {
         pattern: "God Class",
         type: "antipattern" as const,
         confidence: 0.8,
-        instances: godClasses.map((s) => ({
+        instances: godClasses.map((s: any) => ({
           file: s.file.relative_path,
           symbols: [s.symbol.name],
           description: "Overly large or complex class detected",
@@ -1522,7 +1522,7 @@ export namespace BrainTools {
         pattern: "Dependency Injection",
         type: "design" as const,
         confidence: 0.85,
-        instances: diCandidates.map((s) => ({
+        instances: diCandidates.map((s: any) => ({
           file: s.file.relative_path,
           symbols: [s.symbol.name],
           description: "Dependency injection implementation",
@@ -1544,7 +1544,7 @@ export namespace BrainTools {
         pattern: "Repository",
         type: "design" as const,
         confidence: 0.9,
-        instances: repositories.map((s) => ({
+        instances: repositories.map((s: any) => ({
           file: s.file.relative_path,
           symbols: [s.symbol.name],
           description: "Data access layer abstraction",

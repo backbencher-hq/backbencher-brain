@@ -22,7 +22,7 @@ npm run verify
 | Patterns, security, test intelligence | yes | yes | `npm run verify` |
 | Documentation and generated metadata | yes | yes | `docs:verify`, `verify-doc*` |
 | Safe edit and rollback fixtures | yes | yes | `verify-edit`, MCP E2E |
-| MCP handshake and public surface | yes | yes | `verify-mcp`, `verify-mcp-e2e` |
+| MCP handshake and exact public surface | yes | yes | `verify-mcp`, `verify-mcp-e2e` |
 | Shared CLI gateway | yes | yes | `verify-cli-surface` |
 
 ## Fixture Coverage
@@ -36,8 +36,8 @@ migration plans, health/integrity, and all edit modes.
 Mutation fixtures explicitly cover project-root containment, sibling-prefix
 escapes, symlink escapes, stale AST byte bounds, caller-protected deletion,
 atomic writes, syntax validation, rollback, identifier-aware rename, and dry-run
-non-mutation. MCP E2E exercises all ten advertised tools plus hidden deprecated
-aliases; aliases are checked for replacement warnings.
+non-mutation. MCP E2E exercises all ten advertised tools. Removed aliases are
+checked to return the stable unknown-tool error rather than remaining callable.
 
 ## Budgets And Policy
 
@@ -55,8 +55,7 @@ static test links as executed coverage.
   language-grammar dependent.
 - Static security analysis can have false positives and false negatives.
 - Semantic quality depends on configured embedding model and coverage.
-- Compatibility aliases are intentionally temporary and scheduled for removal in
-  release `0.3.0`; issue #112 is the removal gate.
+- Static analysis remains evidence for review, not a substitute for runtime tests.
 
 `script/verify-quality-gate.ts` checks this matrix, package scripts, aggregate
 verification membership, and canonical artifact presence. It is included in the

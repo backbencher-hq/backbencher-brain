@@ -3,7 +3,7 @@ import { ASTEngine } from "./engine"
 export class ImportPruner {
   /**
    * Surgically analyzes an AST to detect and remove orphaned imports.
-   * Used by bb_delete to perform Garbage Collection on dependencies.
+   * Used by bb_edit delete mode to perform garbage collection on dependencies.
    */
   static async prune(fileContent: string, filePath: string): Promise<string> {
     const lang = ASTEngine.detectLanguage(filePath)

@@ -1,4 +1,4 @@
-import { PUBLIC_TOOL_DESCRIPTORS, COMPATIBILITY_ALIASES } from "../src/mcp/tool-registry"
+import { PUBLIC_TOOL_DESCRIPTORS, TOOL_DESCRIPTORS } from "../src/mcp/tool-registry"
 import { createToolHandlers } from "../src/mcp/tool-handlers"
 import { TARGET_TOOL_CONTRACTS } from "../src/contracts/tool-contracts"
 
@@ -10,7 +10,7 @@ const targetNames = TARGET_TOOL_CONTRACTS.map((tool) => tool.name)
 check("exactly ten public descriptors", publicNames.length === 10)
 check("public descriptors match target contracts", JSON.stringify([...publicNames].sort()) === JSON.stringify([...targetNames].sort()), publicNames.join(","))
 check("all public tools have centralized handlers", publicNames.every((name) => Boolean(createToolHandlers()[name])))
-check("all compatibility aliases identify replacement/mode/removal", Object.values(COMPATIBILITY_ALIASES).every((alias) => alias.replacement && alias.mode && alias.removalRelease === "0.3.0"))
+check("registry contains only public tools", TOOL_DESCRIPTORS.length === PUBLIC_TOOL_DESCRIPTORS.length)
 check("public descriptions are distinct", new Set(PUBLIC_TOOL_DESCRIPTORS.map((tool) => tool.description)).size === 10)
 check("composite modes are unique", PUBLIC_TOOL_DESCRIPTORS.every((tool) => new Set(tool.modes).size === tool.modes.length))
 

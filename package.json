@@ -1,6 +1,6 @@
 {
   "name": "backbencher-brain",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Universal code intelligence: index any project with 40+ language analyzers, query via CLI or any MCP host (Claude Code, Cursor, VS Code).",
   "type": "module",
   "main": "./dist/index.js",
@@ -15,7 +15,8 @@
     "docs/data/",
     "docs/tools/",
     "README.md",
-    "EMBEDDINGS.md"
+    "EMBEDDINGS.md",
+    "CHANGELOG.md"
   ],
   "exports": {
     ".": "./dist/index.js",

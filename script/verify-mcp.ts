@@ -74,13 +74,13 @@ try {
   const healthText = (healthRes.content ?? []).map((c: any) => c.text ?? "").join("\n")
   check("bb_health returns counts", /symbols=\d+/.test(healthText), healthText.slice(0, 120))
 
-  const selectRes: any = await client.callTool({ name: "bb_select", arguments: { symbolName: "handleRequest" } })
+  const selectRes: any = await client.callTool({ name: "bb_search", arguments: { mode: "symbol", symbolName: "handleRequest" } })
   const selectText = (selectRes.content ?? []).map((c: any) => c.text ?? "").join("\n")
-  check("bb_select extracts the symbol", selectText.includes("handleRequest") && selectText.includes("src/app.ts"), selectText.slice(0, 140))
+  check("bb_search symbol mode extracts the symbol", selectText.includes("handleRequest") && selectText.includes("src/app.ts"), selectText.slice(0, 140))
 
-  const relRes: any = await client.callTool({ name: "bb_relationships", arguments: { target: "handle", direction: "callees" } })
+  const relRes: any = await client.callTool({ name: "bb_analyze", arguments: { mode: "callees", target: "handle" } })
   const relText = (relRes.content ?? []).map((c: any) => c.text ?? "").join("\n")
-  check("bb_relationships returns callees", relText.includes("callees of handle"), relText.slice(0, 140))
+  check("bb_analyze returns callees", relText.includes('"callees"'), relText.slice(0, 140))
 
   const askRes: any = await client.callTool({ name: "bb_ask", arguments: { query: "how does the request handler respond" } })
   const askText = (askRes.content ?? []).map((c: any) => c.text ?? "").join("\n")
