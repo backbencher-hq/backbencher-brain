@@ -4,6 +4,7 @@ import { AnalysisExclusions } from "../../ast/analysis-exclusions"
 import type { ProjectID } from "../../project/schema"
 import type { SemanticResult, SemanticSearchOptions, SemanticSearchResults } from "../contracts"
 import { readSymbolSnippet } from "../source-utils"
+import { makeProvenance } from "../evidence"
 
 // Hard cap on candidate vectors loaded into memory for the dense scan. This
 // bounds memory and CPU; when exceeded the scan is truncated deterministically
@@ -55,6 +56,7 @@ export async function semanticVectorSearch(
 
   const emptyMeta = (method: "vector" | "keyword-fallback", reason: string, model = "unknown", dimension = 0): SemanticSearchResults => ({
     results: [],
+    provenance: makeProvenance({ evidenceClass: method === "vector" ? "unknown" : "semantic_candidate", engine: "semantic-search@intelligence", engineVersion: "m10.02", projectId, source: method === "vector" ? "no-result" : "content-search-fallback", limitations: ["Semantic retrieval is candidate discovery, not behavioral proof."], unknowns: [reason] }),
     metadata: { queryModel: model, indexModel: model, method, dimension, scannedRows: 0, filteredRows: 0, fallbackReason: reason },
   })
 
@@ -118,6 +120,7 @@ export async function semanticVectorSearch(
 
   return {
     results,
+    provenance: makeProvenance({ evidenceClass: "semantic_candidate", engine: "semantic-search@intelligence", engineVersion: "m10.02", projectId, source: "brain_semantic_embedding", limitations: ["Semantic similarity is candidate discovery and does not prove behavior, ownership, or architecture."], truncated: rows.length >= VECTOR_SCAN_CAP }),
     metadata: {
       queryModel,
       indexModel: queryModel,
@@ -200,6 +203,7 @@ async function keywordFallback(
   }))
   return {
     results,
+    provenance: makeProvenance({ evidenceClass: "semantic_candidate", engine: "semantic-search@intelligence", engineVersion: "m10.02", projectId, source: "content-search-fallback", limitations: ["Keyword fallback is not vector-ranked and similarity is not meaningful."], unknowns: [reason] }),
     metadata: {
       queryModel: "none",
       indexModel: "none",

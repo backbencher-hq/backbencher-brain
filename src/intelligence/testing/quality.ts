@@ -15,6 +15,7 @@ import type {
   TestQualityFile,
   TestQualityReport,
 } from "../contracts"
+import { makeProvenance } from "../evidence"
 
 const MOCK_LIBS = /^(jest|vitest|mocha|chai|sinon|@sinonjs|testdouble|nock|msw|@testing-library|ava|tap|node:test)/
 
@@ -242,6 +243,7 @@ export async function testQuality(projectId: ProjectID, options: QualityOptions 
   return {
     files: report,
     aggregate: { mean: overalls.length > 0 ? overalls.reduce((a, b) => a + b, 0) / overalls.length : null, perDimension: perDim },
+    provenance: makeProvenance({ evidenceClass: "static_finding", engine: "test-quality@intelligence", engineVersion: "m10.02", projectId, source: "brain_file+brain_import+bounded-source-content", limitations: ["Content heuristics do not measure runtime assertion effectiveness, branch coverage, mutation score, or flakiness."], sampled: files.length > maxFiles, unknowns: report.flatMap((file) => file.unsupported).filter((value, index, values) => values.indexOf(value) === index) }),
     summary: {
       filesWithContent: report.filter((r) => r.dimensions.some((d) => d.supported)).length,
       filesUnknown: report.filter((r) => r.overall === null).length,

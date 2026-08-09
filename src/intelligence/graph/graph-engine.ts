@@ -2,6 +2,7 @@ import { BrainDatabase } from "../../brain/database"
 import { AnalysisExclusions } from "../../ast/analysis-exclusions"
 import type { ProjectID } from "../../project/schema"
 import type { GraphEdge, GraphNode, GraphTraversalOptions, GraphTraversalResult } from "../contracts"
+import { makeProvenance } from "../evidence"
 
 const DEFAULT_REL_TYPES = ["calls", "instantiates", "extends", "implements"]
 const DEFAULT_MAX_DEPTH = 5
@@ -274,6 +275,7 @@ export async function graphTraversal(
     callers,
     callees,
     nodes,
+    provenance: makeProvenance({ evidenceClass: "inferred", engine: "graph@intelligence", engineVersion: "m10.02", projectId, source: "brain_relationship", limitations: ["Traversal is bounded and unresolved external nodes cannot be recursively traversed."], truncated }),
     summary: {
       totalCallers: callers.length,
       totalCallees: callees.length,

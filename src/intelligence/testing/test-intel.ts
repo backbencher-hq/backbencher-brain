@@ -11,6 +11,7 @@ import type {
   TestMappingEntry,
   TestMappingReport,
 } from "../contracts"
+import { makeProvenance } from "../evidence"
 
 const DIRECT_TYPES = new Set(["calls", "instantiates"])
 const REFERENCE_TYPES = new Set(["references", "uses", "extends", "implements"])
@@ -129,6 +130,7 @@ export async function testMapping(projectId: ProjectID, options: TestIntelOption
 
   return {
     entries: entries.slice(0, maxResults),
+    provenance: makeProvenance({ evidenceClass: "inferred", engine: "test-intel@intelligence", engineVersion: "m10.02", projectId, source: "brain_symbol+brain_relationship+brain_file", limitations: ["Static relationships do not prove runtime execution or line coverage."] }),
     summary: {
       productionSymbols: entries.length,
       testedSymbols: tested,
@@ -176,6 +178,7 @@ export async function testGaps(projectId: ProjectID, options: TestIntelOptions =
 
   return {
     gaps: gaps.slice(0, maxResults),
+    provenance: makeProvenance({ evidenceClass: "inferred", engine: "test-gaps@intelligence", engineVersion: "m10.02", projectId, source: "static-test-mapping", limitations: ["A missing static link does not prove that runtime coverage is absent."], truncated: gaps.length > maxResults }),
     summary: { total: gaps.length, byCategory, highRisk },
   }
 }
@@ -203,7 +206,7 @@ export async function testImpact(projectId: ProjectID, target: string, options: 
   try {
     graph = await graphTraversal(projectId, target, { direction: "callers", maxDepth: options.maxDepth ?? 4 })
   } catch {
-    return { target, found: false, directTests: [], indirectTests: [], affectedTestFiles: [], truncated: false, runtimeCoverage: { available: false } }
+    return { target, found: false, directTests: [], indirectTests: [], affectedTestFiles: [], truncated: false, provenance: makeProvenance({ evidenceClass: "unknown", engine: "test-impact@intelligence", engineVersion: "m10.02", projectId, source: "graph-resolution", limitations: ["The target could not be resolved in the indexed graph."], unknowns: ["target-not-found"] }), runtimeCoverage: { available: false } }
   }
 
   const direct: TestImpactReport["directTests"] = []
@@ -229,6 +232,7 @@ export async function testImpact(projectId: ProjectID, target: string, options: 
     indirectTests: indirect,
     affectedTestFiles: Array.from(affected).sort(),
     truncated: graph.summary.truncated,
+    provenance: makeProvenance({ evidenceClass: "inferred", engine: "test-impact@intelligence", engineVersion: "m10.02", projectId, source: "brain_relationship", limitations: ["Static test impact does not prove runtime execution or coverage."], truncated: graph.summary.truncated, unknowns: ["runtime-coverage-unavailable"] }),
     runtimeCoverage: { available: false },
   }
 }

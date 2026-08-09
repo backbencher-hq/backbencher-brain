@@ -1,4 +1,5 @@
 import type { ProjectID } from "../project/schema"
+import type { EvidenceProvenance } from "./evidence"
 
 export interface SourceRange {
   startLine: number
@@ -137,6 +138,7 @@ export interface SemanticResult {
 
 export interface SemanticSearchResults {
   results: SemanticResult[]
+  provenance: EvidenceProvenance
   metadata: {
     queryModel: string      // Model that produced the query vector
     indexModel: string       // Model of the retrieved embeddings
@@ -188,6 +190,7 @@ export interface GraphTraversalResult {
   callers: GraphEdge[]
   callees: GraphEdge[]
   nodes: Record<string, GraphNode>
+  provenance: EvidenceProvenance
   summary: {
     totalCallers: number
     totalCallees: number
@@ -289,6 +292,7 @@ export interface PatternFinding {
 
 export interface PatternReport {
   findings: PatternFinding[]
+  provenance: EvidenceProvenance
   summary: {
     total: number
     byRule: Record<string, number>
@@ -366,6 +370,7 @@ export interface SecurityReport {
   findings: SecurityFindingV2[]
   summary: SecuritySummaryV2
   hotspots: SecurityHotspot[]
+  provenance: EvidenceProvenance
 }
 
 export interface SecurityOptions {
@@ -405,6 +410,7 @@ export interface TestMappingEntry {
 
 export interface TestMappingReport {
   entries: TestMappingEntry[]
+  provenance: EvidenceProvenance
   summary: {
     productionSymbols: number
     testedSymbols: number
@@ -434,6 +440,7 @@ export interface TestGap {
 
 export interface TestGapReport {
   gaps: TestGap[]
+  provenance: EvidenceProvenance
   summary: {
     total: number
     byCategory: Record<string, number>
@@ -448,6 +455,7 @@ export interface TestImpactReport {
   indirectTests: Array<{ testSymbol: string; testFile: string; depth: number }>
   affectedTestFiles: string[]
   truncated: boolean
+  provenance: EvidenceProvenance
   // Runtime coverage is a SEPARATE field; only populated from a real artifact.
   runtimeCoverage: { available: false } | { available: true; percent: number; source: string }
 }
@@ -510,6 +518,7 @@ export interface TestQualityFile {
 export interface TestQualityReport {
   files: TestQualityFile[]
   aggregate: { mean: number | null; perDimension: Record<string, number | null> }
+  provenance: EvidenceProvenance
   summary: {
     filesWithContent: number
     filesUnknown: number

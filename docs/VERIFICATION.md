@@ -69,3 +69,7 @@ aggregate `npm run verify` command.
 ordered issues, closure template, claim policy, and final-audit rule.
 `script/verify-m10-baseline.ts` checks the M10 runtime descriptor snapshot, CLI surface,
 library exports, handler coverage, legacy inventory markers, and aggregate gate wiring.
+`script/verify-evidence-governance.ts` checks that canonical intelligence results carry
+evidence provenance (evidence class, engine identity, source, limitations, bounds), that
+runtime coverage stays separate from static test evidence, that unknown/stale states are
+represented from real fixtures, and that malformed provenance is rejected.

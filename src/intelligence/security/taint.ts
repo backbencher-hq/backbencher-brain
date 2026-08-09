@@ -1,5 +1,6 @@
 import { BrainDatabase } from "../../brain/database"
 import type { FlowNode, SecurityFindingV2, SecurityHotspot, SecurityOptions, SecurityReport } from "../contracts"
+import { makeProvenance } from "../evidence"
 
 const ENGINE = "taint@intelligence"
 
@@ -232,5 +233,6 @@ export async function analyzeTaintFlows(projectId: string, options: SecurityOpti
     findings,
     summary: { total: findings.length, bySeverity, byType, byState, crossLanguage, scannedFlows, deduplicatedFlows },
     hotspots,
+    provenance: makeProvenance({ evidenceClass: "static_finding", engine: ENGINE, engineVersion: "m10.02", projectId, source: "brain_taint_flow", limitations: ["Static taint flows can contain false positives and false negatives and are not runtime exploit proofs."], truncated: deduplicatedFlows > maxResults }),
   }
 }

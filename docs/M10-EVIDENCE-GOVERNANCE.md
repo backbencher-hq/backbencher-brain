@@ -65,6 +65,28 @@ Rules:
 - A hard-coded empty result is not evidence of a clean project.
 - An unsupported detector must return `unknown` or an explicit unsupported result.
 
+### Provenance Schema (normative)
+
+Every canonical claim-producing report attaches an `EvidenceProvenance` envelope defined in
+`src/intelligence/evidence.ts`:
+
+- `evidenceClass`: one of the seven classes above.
+- `engine` and `engineVersion`: which engine produced the result.
+- `projectId`: the analyzed project.
+- `source`: the indexed table(s) or derivation the result is built from.
+- `limitations`: honest, non-empty caveats for interpreting the result.
+- `truncated` and `sampled`: whether budgets bounded the result.
+- `unknowns`: explicit unavailable or non-applicable states.
+
+`makeProvenance` constructs the envelope with safe defaults; `assertProvenance` rejects any
+malformed envelope. The following canonical reports carry provenance today:
+`SemanticSearchResults`, `GraphTraversalResult`, `PatternReport`, `SecurityReport`,
+`TestMappingReport`, `TestGapReport`, `TestImpactReport`, and `TestQualityReport`.
+
+`script/verify-evidence-governance.ts` enforces this schema against a real indexed fixture,
+including semantic candidate fallback, inferred graph/test paths, static findings, unknown
+states, runtime-coverage separation, and on-disk stale detection.
+
 ## Non-Negotiable Closure Standard
 
 An M10 issue may close only when all applicable evidence exists:

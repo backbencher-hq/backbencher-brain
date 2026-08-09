@@ -2,6 +2,7 @@ import { BrainDatabase } from "../../brain/database"
 import { AnalysisExclusions } from "../../ast/analysis-exclusions"
 import type { ProjectID } from "../../project/schema"
 import type { OrphanOptions, PatternFinding, PatternReport } from "../contracts"
+import { makeProvenance } from "../evidence"
 
 const ENGINE = "orphans@intelligence"
 const USAGE_TYPES = ["calls", "instantiates", "extends", "implements", "uses"]
@@ -200,6 +201,7 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
 
   return {
     findings: page,
+    provenance: makeProvenance({ evidenceClass: "static_finding", engine: ENGINE, engineVersion: "m10.02", projectId, source: "brain_symbol+brain_relationship+brain_file", limitations: ["Dynamic dispatch, reflection, string references, and external manifests are not fully observable."], truncated }),
     summary: {
       total: page.length,
       byRule,
