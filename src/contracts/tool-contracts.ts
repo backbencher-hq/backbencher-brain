@@ -15,9 +15,9 @@ export const CURRENT_MCP_TOOL_CONTRACTS = [
   {
     name: "bb_search",
     mutability: "read",
-    required: ["query"],
-    properties: ["query", "limit", "language", "symbolKind", "includeContent", "exact", "caseSensitive", "regex", "offset"],
-    defaults: { limit: 15, includeContent: false, exact: false, caseSensitive: false, regex: false, offset: 0 },
+    required: [],
+    properties: ["mode", "query", "symbolName", "filePath", "limit", "language", "symbolKind", "includeContent", "exact", "caseSensitive", "regex", "offset"],
+    defaults: { mode: "symbols", limit: 15, includeContent: false, exact: false, caseSensitive: false, regex: false, offset: 0 },
     output: "text",
     replacement: "bb_search",
   },
@@ -94,6 +94,15 @@ export const CURRENT_MCP_TOOL_CONTRACTS = [
     defaults: { format: "text" },
     output: "text",
     replacement: "bb_migrate",
+  },
+  {
+    name: "bb_analyze",
+    mutability: "read",
+    required: ["mode"],
+    properties: ["mode", "target", "filePath", "limit"],
+    defaults: { limit: 20 },
+    output: "text",
+    replacement: "bb_analyze",
   },
   {
     name: "bb_doc",

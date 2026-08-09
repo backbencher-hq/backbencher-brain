@@ -39,11 +39,14 @@ export interface ToolDescriptor {
 const descriptors = [
   {
     name: "bb_search",
-    description: "Search the AST index for symbols (functions, classes, variables). Exact/prefix/substring ranked, with optional regex, symbol-kind and language filters, code snippets, pagination, and a stale flag when the file changed since indexing.",
+    description: "Unified indexed retrieval for symbol lists, content, exact symbol source, or files. This is retrieval, not natural-language explanation or code analysis.",
     inputSchema: {
       type: "object",
       properties: {
-        query: { type: "string", description: "symbol name or fragment (regex when regex=true)" },
+        mode: { type: "string", enum: ["symbols", "content", "symbol", "file"], description: "retrieval mode (default symbols)" },
+        query: { type: "string", description: "symbol/content query; also accepted as the exact symbol name" },
+        symbolName: { type: "string", description: "exact symbol name for symbol mode" },
+        filePath: { type: "string", description: "file target or symbol disambiguation" },
         limit: { type: "number", description: "max results (default 15)" },
         language: { type: "string", description: "filter by language (e.g. typescript, python, go)" },
         symbolKind: { type: "string", description: "filter by symbol kind (function, class, variable, interface, enum, ...)" },
@@ -53,14 +56,14 @@ const descriptors = [
         regex: { type: "boolean", description: "treat query as a regex against symbol names (default false)" },
         offset: { type: "number", description: "pagination offset (default 0)" },
       },
-      required: ["query"],
+      required: [],
     },
     mutability: "read",
     requiresIndex: true,
-    modes: ["symbols"],
+    modes: ["symbols", "content", "symbol", "file"],
     aliases: [],
     deprecated: false,
-    documentation: { category: "search", summary: "Ranked symbol search over the indexed project.", defaults: { limit: 15, includeContent: false, exact: false, caseSensitive: false, regex: false, offset: 0 }, examples: [{ query: "handleRequest", limit: 5 }] },
+    documentation: { category: "search", summary: "Unified lexical, content, exact-symbol, and file retrieval.", defaults: { mode: "symbols", limit: 15, includeContent: false, exact: false, caseSensitive: false, regex: false, offset: 0 }, examples: [{ mode: "symbols", query: "handleRequest", limit: 5 }, { mode: "symbol", symbolName: "handleRequest" }, { mode: "file", filePath: "src/app.ts" }] },
   },
   {
     name: "bb_select",
@@ -151,6 +154,17 @@ const descriptors = [
     aliases: [],
     deprecated: false,
     documentation: { category: "analysis", summary: "Batch cross-language migration plans with ordering, methodology, and unsupported mappings.", defaults: { format: "text" }, examples: [{ symbolName: "handleRequest", targetLanguage: "go" }, { symbolNames: ["parse", "handle"], targetLanguage: "rust", format: "json" }] },
+  },
+  {
+    name: "bb_analyze",
+    description: "Unified evidence-backed analysis over graph relationships, dependencies, statistics, complexity, impact, and test intelligence. Select exactly one mode.",
+    inputSchema: { type: "object", properties: { mode: { type: "string", enum: ["callers", "callees", "trace", "dependencies", "stats", "complexity", "impact", "test_mapping", "test_gaps", "test_impact", "test_quality"], description: "analysis mode" }, target: { type: "string", description: "symbol or analysis target" }, filePath: { type: "string", description: "file scope for file-based analysis" }, limit: { type: "number", description: "result limit" } }, required: ["mode"] },
+    mutability: "read",
+    requiresIndex: true,
+    modes: ["callers", "callees", "trace", "dependencies", "stats", "complexity", "impact", "test_mapping", "test_gaps", "test_impact", "test_quality"],
+    aliases: [],
+    deprecated: false,
+    documentation: { category: "analysis", summary: "One typed analysis surface replacing standalone relationship and test intelligence names.", defaults: { limit: 20 }, examples: [{ mode: "callers", target: "handleRequest" }, { mode: "complexity", target: "src/api" }, { mode: "test_quality" }] },
   },
   {
     name: "bb_doc",
@@ -271,6 +285,28 @@ const descriptors = [
 ] as const satisfies readonly ToolDescriptor[]
 
 export const TOOL_DESCRIPTORS: readonly ToolDescriptor[] = descriptors
+
+
+export const PUBLIC_TOOL_NAMES = new Set([
+  "bb_search", "bb_ask", "bb_analyze", "bb_patterns", "bb_security",
+  "bb_doc", "bb_visualize", "bb_migrate", "bb_edit", "bb_health",
+])
+
+export const PUBLIC_TOOL_DESCRIPTORS: readonly ToolDescriptor[] = descriptors.filter((descriptor) => PUBLIC_TOOL_NAMES.has(descriptor.name))
+
+export const COMPATIBILITY_ALIASES = {
+  bb_select: { replacement: "bb_search", mode: "symbol", removalRelease: "0.3.0" },
+  bb_relationships: { replacement: "bb_analyze", mode: "callers|callees|trace", removalRelease: "0.3.0" },
+  bb_refresh: { replacement: "bb_health", mode: "refresh", removalRelease: "0.3.0" },
+  bb_write: { replacement: "bb_edit", mode: "write", removalRelease: "0.3.0" },
+  bb_update: { replacement: "bb_edit", mode: "update", removalRelease: "0.3.0" },
+  bb_insert: { replacement: "bb_edit", mode: "insert", removalRelease: "0.3.0" },
+  bb_delete: { replacement: "bb_edit", mode: "delete", removalRelease: "0.3.0" },
+  bb_refactor: { replacement: "bb_edit", mode: "refactor", removalRelease: "0.3.0" },
+  bb_test_quality: { replacement: "bb_analyze", mode: "test_quality", removalRelease: "0.3.0" },
+  bb_test_suggestions: { replacement: "bb_analyze", mode: "test_impact", removalRelease: "0.3.0" },
+} as const
+
 
 export function validateToolDescriptors(items: readonly ToolDescriptor[]): void {
   const names = new Set<string>()

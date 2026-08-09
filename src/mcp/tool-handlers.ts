@@ -20,6 +20,12 @@ import { getAnalysisHistory, startAnalysisRun, completeAnalysisRun, failAnalysis
 import { generateDocumentation, formatDocumentation, type DocRequest } from "../intelligence/documentation/doc-engine"
 import { visualizeProject, formatVisualization, type VisualizationRequest } from "../intelligence/visualization/visualization-engine"
 import { generateMigrationPlans, formatMigrationPlans } from "../intelligence/migration/migration-engine"
+import { graphTraversal } from "../intelligence/graph/graph-engine"
+import { getProjectStats } from "../intelligence/analysis/project-stats"
+import { getFileDependencies } from "../intelligence/analysis/dependencies"
+import { analyzeComplexity } from "../intelligence/analysis/complexity"
+import { analyzeImpact } from "../intelligence/analysis/impact"
+import { testMapping, testGaps, testImpact } from "../intelligence/testing/test-intel"
 import type { AnalysisFindingInput } from "../intelligence/contracts"
 
 export interface ToolContext {
@@ -63,6 +69,15 @@ function ensureWithinProject(projectPath: string, absolutePath: string): void {
 
 const handlers: Record<string, ToolHandler> = {
   bb_search: async (args, { projectId }) => {
+    const mode = args.mode === "content" ? "content" : args.mode === "symbol" || args.mode === "file" ? args.mode : "symbols"
+    if (mode === "content") {
+      const { searchContent } = await import("../intelligence/search/content-search")
+      return textResult(JSON.stringify(await searchContent(projectId as any, String(args.query ?? ""), { maxResults: Number(args.limit ?? 15), languages: args.language ? [String(args.language)] : undefined, symbolKind: args.symbolKind ? String(args.symbolKind) : undefined }), null, 2))
+    }
+    if (mode === "symbol") {
+      const found = await ASTEngine.findSymbol(projectId, String(args.symbolName ?? args.query ?? ""), args.filePath ? String(args.filePath) : undefined)
+      return textResult(JSON.stringify(found, null, 2))
+    }
     const query = String(args.query ?? "")
     const results: any = await BrainTools.searchCode(projectId, query, {
       maxResults: Number(args.limit ?? 15),
@@ -74,6 +89,10 @@ const handlers: Record<string, ToolHandler> = {
       regex: args.regex === true,
       offset: Number(args.offset ?? 0),
     })
+    if (mode === "file") {
+      const filePath = String(args.filePath ?? query)
+      return textResult(JSON.stringify(results.filter((result: any) => result.file === filePath || result.file.includes(filePath)), null, 2))
+    }
     const lines = results.map((result: any) => {
       const stale = result.stale ? " [STALE]" : ""
       const snippet = result.snippet && result.snippet !== result.symbolName
@@ -129,6 +148,29 @@ const handlers: Record<string, ToolHandler> = {
       .map((source: any, index: number) => `${index + 1}. ${source.file}:${source.line}\n   ${source.context ?? ""}`)
     const head = result?.answer ? `answer: ${result.answer}\n\n` : ""
     return textResult(head + (lines.length ? lines.join("\n") : `no semantic matches for "${args.query}"`))
+  },
+
+  bb_analyze: async (args, { projectId }) => {
+    const mode = String(args.mode ?? "")
+    const allowed = new Set(["mode", "target", "filePath", "limit"])
+    const unused = Object.keys(args).filter((key) => !allowed.has(key))
+    if (unused.length) return textResult(`bb_analyze ${mode || "unknown"}: irrelevant options: ${unused.join(", ")}`, true)
+    const target = args.target ? String(args.target) : ""
+    const targetModes = new Set(["callers", "callees", "trace", "complexity", "impact", "test_impact"])
+    const fileModes = new Set(["dependencies"])
+    if (args.target && !targetModes.has(mode)) return textResult(`bb_analyze ${mode}: irrelevant options: target`, true)
+    if (args.filePath && !fileModes.has(mode)) return textResult(`bb_analyze ${mode}: irrelevant options: filePath`, true)
+    if (["callers", "callees", "trace", "impact", "test_impact"].includes(mode) && !target) return textResult(`bb_analyze ${mode} requires target`, true)
+    if (mode === "callers" || mode === "callees" || mode === "trace") return textResult(JSON.stringify(await graphTraversal(projectId as any, target, { direction: mode === "trace" ? "both" : mode, maxDepth: 3 }), null, 2))
+    if (mode === "dependencies") return textResult(JSON.stringify(await getFileDependencies(projectId as any, { filePath: args.filePath ? String(args.filePath) : target || undefined, limit: Number(args.limit ?? 20) }), null, 2))
+    if (mode === "stats") return textResult(JSON.stringify(await getProjectStats(projectId as any), null, 2))
+    if (mode === "complexity") return textResult(JSON.stringify(await analyzeComplexity(projectId as any, { scope: target ? "file" : "project", target: target || undefined }), null, 2))
+    if (mode === "impact") return textResult(JSON.stringify(await analyzeImpact(projectId as any, target), null, 2))
+    if (mode === "test_mapping") return textResult(JSON.stringify(await testMapping(projectId as any), null, 2))
+    if (mode === "test_gaps") return textResult(JSON.stringify(await testGaps(projectId as any), null, 2))
+    if (mode === "test_impact") return textResult(JSON.stringify(await testImpact(projectId as any, target), null, 2))
+    if (mode === "test_quality") return textResult(JSON.stringify(await testQuality(projectId as any, { maxFiles: Number(args.limit ?? 50) }), null, 2))
+    return textResult("bb_analyze requires mode: callers|callees|trace|dependencies|stats|complexity|impact|test_mapping|test_gaps|test_impact|test_quality", true)
   },
 
   bb_health: async (args, { projectId, projectPath }) => {

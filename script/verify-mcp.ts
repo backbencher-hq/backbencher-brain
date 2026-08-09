@@ -64,7 +64,7 @@ try {
 
   const tools = await client.listTools()
   const names = tools.tools.map((t: any) => t.name)
-  check("tools/list exposes all 5 tools", ["bb_search","bb_select","bb_relationships","bb_ask","bb_health"].every((t) => names.includes(t)), `got ${names.join(",")}`)
+  check("tools/list exposes ten public tools", names.length === 10 && ["bb_search","bb_ask","bb_analyze","bb_patterns","bb_security","bb_doc","bb_visualize","bb_migrate","bb_edit","bb_health"].every((t) => names.includes(t)), `got ${names.join(",")}`)
 
   const searchRes: any = await client.callTool({ name: "bb_search", arguments: { query: "handleRequest", limit: 5 } })
   const searchText = (searchRes.content ?? []).map((c: any) => c.text ?? "").join("\n")

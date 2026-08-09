@@ -7,7 +7,7 @@ import { BrainDatabase } from "../brain/database"
 import { getProjectId } from "../cli/index"
 import { BACKBENCHER_BRAIN_VERSION } from "../version"
 import { createToolHandlers, type ToolContext } from "./tool-handlers"
-import { TOOL_DESCRIPTORS, toMcpToolList } from "./tool-registry"
+import { TOOL_DESCRIPTORS, PUBLIC_TOOL_DESCRIPTORS, COMPATIBILITY_ALIASES, toMcpToolList } from "./tool-registry"
 
 const handlers = createToolHandlers()
 const descriptors = new Map(TOOL_DESCRIPTORS.map((descriptor) => [descriptor.name, descriptor]))
@@ -32,7 +32,7 @@ export async function startMcpServer(projectPath: string): Promise<void> {
     { capabilities: { tools: {} } },
   )
 
-  server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: toMcpToolList() as any }))
+  server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: toMcpToolList(PUBLIC_TOOL_DESCRIPTORS) as any }))
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const descriptor = descriptors.get(request.params.name)
     const handler = handlers[request.params.name]
@@ -41,11 +41,21 @@ export async function startMcpServer(projectPath: string): Promise<void> {
     }
 
     try {
+      const argumentsObject = (request.params.arguments ?? {}) as Record<string, any>
+      const declared = new Set(Object.keys(descriptor.inputSchema.properties ?? {}))
+      const unknownOptions = Object.keys(argumentsObject).filter((key) => !declared.has(key))
+      if (unknownOptions.length) return { content: [{ type: "text", text: `${request.params.name}: unknown or irrelevant options: ${unknownOptions.join(", ")}` }], isError: true }
       if (descriptor.requiresIndex) {
         const notIndexed = await ensureIndexed(context)
         if (notIndexed) return { content: [{ type: "text", text: notIndexed }] }
       }
-      return await handler((request.params.arguments ?? {}) as Record<string, any>, context)
+      const result = await handler(argumentsObject, context)
+      const alias = (COMPATIBILITY_ALIASES as Record<string, { replacement: string; mode: string; removalRelease: string }>)[request.params.name]
+      if (alias) {
+        const warning = `DEPRECATED ${request.params.name}: use ${alias.replacement} mode=${alias.mode}; removal planned for ${alias.removalRelease}.`
+        return { ...result, content: [{ type: "text", text: `${warning}\n\n${result.content.map((item) => item.text).join("\n")}` }] }
+      }
+      return result
     } catch (error: any) {
       return { content: [{ type: "text", text: `error: ${error?.message ?? String(error)}` }], isError: true }
     }

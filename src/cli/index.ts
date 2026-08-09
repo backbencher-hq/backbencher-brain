@@ -101,10 +101,37 @@ async function cmdHealth(dir: string | undefined, opts: { refresh?: boolean; for
   if (report.warnings.some((w) => w.severity === "error")) process.exitCode = 1
 }
 
+async function cmdTool(name: string, opts: { dir?: string; args?: string }): Promise<void> {
+  const projectPath = opts.dir ? requireDir(opts.dir) : process.cwd()
+  const { PUBLIC_TOOL_DESCRIPTORS } = await import("../mcp/tool-registry")
+  const { createToolHandlers } = await import("../mcp/tool-handlers")
+  const descriptor = PUBLIC_TOOL_DESCRIPTORS.find((tool) => tool.name === name)
+  if (!descriptor) throw new Error(`unknown public tool ${name}; expected: ${PUBLIC_TOOL_DESCRIPTORS.map((tool) => tool.name).join(", ")}`)
+  let args: Record<string, unknown> = {}
+  try { args = opts.args ? JSON.parse(opts.args) : {} } catch { throw new Error("--args must be a JSON object") }
+  if (!args || Array.isArray(args) || typeof args !== "object") throw new Error("--args must be a JSON object")
+  const unknown = Object.keys(args).filter((key) => !(key in descriptor.inputSchema.properties))
+  if (unknown.length) throw new Error(`${name}: unknown or irrelevant options: ${unknown.join(", ")}`)
+  const handler = createToolHandlers()[name]
+  const result = await handler(args, { projectPath, projectId: getProjectId(projectPath) })
+  console.log(result.content.map((item) => item.text).join("\n"))
+  if (result.isError) process.exitCode = 1
+}
+
+
+
 export async function runCli(argv: string[]): Promise<void> {
   const program = new Command()
   program.name("bb").description("Backbencher Brain — universal code intelligence (40+ languages)")
   program.version(BACKBENCHER_BRAIN_VERSION)
+
+  program
+    .command("tool")
+    .description("run one of the 10 public tools with JSON arguments")
+    .argument("<name>", "public tool name, e.g. bb_search or bb_doc")
+    .option("--dir <dir>", "project directory (default: cwd)")
+    .option("--args <json>", "tool arguments as a JSON object", "{}")
+    .action(async (name: string, opts: any) => { await cmdTool(name, opts) })
 
   program
     .command("index")

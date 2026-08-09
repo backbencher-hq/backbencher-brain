@@ -43,9 +43,9 @@ try {
 
   const listed = await client.listTools()
   const byName = new Map(listed.tools.map((tool: any) => [tool.name, tool]))
-  check("exact current tool count", listed.tools.length === CURRENT_MCP_TOOL_CONTRACTS.length, `got ${listed.tools.length}`)
+  check("exact public tool count", listed.tools.length === TARGET_TOOL_CONTRACTS.length, `got ${listed.tools.length}`)
 
-  for (const contract of CURRENT_MCP_TOOL_CONTRACTS) {
+  for (const contract of CURRENT_MCP_TOOL_CONTRACTS.filter((contract) => TARGET_TOOL_CONTRACTS.some((target) => target.name === contract.name))) {
     const tool: any = byName.get(contract.name)
     check(`${contract.name} is registered`, !!tool)
     if (!tool) continue
@@ -68,10 +68,10 @@ try {
   check("bb_search accepts pagination offset", secondPage.includes("duplicateName") || secondPage.includes("no results"), secondPage.slice(0, 180))
 
   result = await client.callTool({ name: "bb_select", arguments: { symbolName: "missingContractSymbol" } })
-  check("bb_select missing symbol is stable text", textOf(result).includes('symbol "missingContractSymbol" not found'))
+  check("bb_select missing symbol is stable text", textOf(result).includes("DEPRECATED bb_select") && textOf(result).includes('symbol "missingContractSymbol" not found'))
 
   result = await client.callTool({ name: "bb_relationships", arguments: { target: "handleRequest" } })
-  check("bb_relationships defaults to callers", textOf(result).includes("callers of handleRequest"), textOf(result).slice(0, 180))
+  check("bb_relationships compatibility warning identifies replacement", textOf(result).includes("DEPRECATED bb_relationships") && textOf(result).includes("bb_analyze"), textOf(result).slice(0, 220))
 
   result = await client.callTool({ name: "bb_health", arguments: {} })
   check("bb_health default output includes counts and freshness", /files=\d+ symbols=\d+ relationships=\d+ imports=\d+/.test(textOf(result)) && textOf(result).includes("freshness:"), textOf(result).slice(0, 180))
@@ -81,7 +81,7 @@ try {
   check("bb_search reports stale indexed files", textOf(result).includes("[STALE]"), textOf(result).slice(0, 180))
 
   result = await client.callTool({ name: "bb_write", arguments: { filePath: "src/contract-new.ts", content: "export const contractNew = true\n" } })
-  check("bb_write reports indexed mutation", textOf(result).includes("written") && textOf(result).includes("indexed"), textOf(result))
+  check("bb_write reports indexed mutation", textOf(result).includes("DEPRECATED bb_write") && textOf(result).includes("written") && textOf(result).includes("indexed"), textOf(result))
   check("bb_write side effect reaches disk", readFileSync(path.join(root, "src", "contract-new.ts"), "utf8").includes("contractNew"))
 
   result = await client.callTool({ name: "bb_update", arguments: { symbolName: "helper", newContent: "export function helper(): number { return 99 }\n" } })

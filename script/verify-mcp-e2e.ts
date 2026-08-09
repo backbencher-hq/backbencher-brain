@@ -96,13 +96,8 @@ try {
 
   const tools = await client.listTools()
   const names = tools.tools.map((t: any) => t.name)
-  const EXPECTED = [
-    "bb_search", "bb_select", "bb_relationships", "bb_ask", "bb_health",
-    "bb_patterns", "bb_security", "bb_visualize", "bb_migrate", "bb_doc", "bb_refresh",
-    "bb_write", "bb_update", "bb_insert", "bb_delete", "bb_refactor", "bb_edit",
-    "bb_test_quality", "bb_test_suggestions",
-  ]
-  check("tools/list exposes all 19 tools", EXPECTED.every((t) => names.includes(t)), `got ${names.length}: ${names.join(",")}`)
+  const EXPECTED = ["bb_search", "bb_ask", "bb_analyze", "bb_patterns", "bb_security", "bb_doc", "bb_visualize", "bb_migrate", "bb_edit", "bb_health"]
+  check("tools/list exposes exactly 10 public tools", names.length === 10 && EXPECTED.every((t) => names.includes(t)), `got ${names.length}: ${names.join(",")}`)
 
   // ---- read-only tools ----
   let r = await call("bb_search", { query: "handleRequest", limit: 5 })
@@ -111,8 +106,11 @@ try {
   r = await call("bb_select", { symbolName: "handleRequest" })
   check("bb_select extracts symbol source", r.text.includes("handleRequest") && r.text.includes("src/app.ts"), r.text.slice(0, 140))
 
-  r = await call("bb_relationships", { target: "handle", direction: "callees" })
-  check("bb_relationships returns callees", r.text.includes("callees of handle"), r.text.slice(0, 140))
+  r = await call("bb_analyze", { mode: "callees", target: "handle" })
+  check("bb_analyze returns graph evidence", r.text.includes('"callees"'), r.text.slice(0, 160))
+
+  r = await call("bb_analyze", { mode: "stats", target: "ignored" })
+  check("bb_analyze rejects irrelevant mode options", r.isError && r.text.includes("irrelevant options"), r.text.slice(0, 160))
 
   r = await call("bb_ask", { query: "how does the request handler respond" })
   check("bb_ask returns semantic matches", r.text.length > 0 && !r.text.startsWith("error:"), r.text.slice(0, 140))
@@ -130,7 +128,7 @@ try {
   check("bb_health includeAnalysisRuns emits analysis or no error", !r.text.startsWith("error:"), r.text.slice(0, 160))
 
   r = await call("bb_refresh", {})
-  check("bb_refresh reindexes and reports", /symbols=\d+/.test(r.text), r.text.slice(0, 160))
+  check("bb_refresh compatibility warning and report", r.text.includes("DEPRECATED bb_refresh") && /symbols=\d+/.test(r.text), r.text.slice(0, 180))
 
   r = await call("bb_patterns", {})
   check("bb_patterns returns analysis", r.text.length > 0 && !r.text.startsWith("error:"), r.text.slice(0, 140))
@@ -188,5 +186,5 @@ rmSync(root, { recursive: true, force: true })
 const { BrainDatabase } = await import("../src/brain/database")
 const { getProjectId } = await import("../src/cli/index")
 rmSync(path.dirname(BrainDatabase.getDbPath(getProjectId(root))), { recursive: true, force: true })
-console.log(failures === 0 ? "\nMCP E2E: ALL 19 TOOLS PASS" : `\nMCP E2E: ${failures} FAILURES`)
+console.log(failures === 0 ? "\nMCP E2E: 10 PUBLIC TOOLS + LEGACY ALIASES PASS" : `\nMCP E2E: ${failures} FAILURES`)
 process.exit(failures > 0 ? 1 : 0)
