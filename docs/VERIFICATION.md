@@ -11,6 +11,10 @@ npm run docs:verify
 npm run verify
 ```
 
+M10 baseline and governance gates run first inside `npm run verify`. They freeze the
+runtime MCP registry, CLI options, package exports, legacy-intelligence inventory, and
+the evidence-based decision rules before later M10 issues migrate or remove anything.
+
 ## Runtime Matrix
 
 | Surface | Node compiled | Bun source | Gate |
@@ -60,3 +64,8 @@ static test links as executed coverage.
 `script/verify-quality-gate.ts` checks this matrix, package scripts, aggregate
 verification membership, and canonical artifact presence. It is included in the
 aggregate `npm run verify` command.
+
+`script/verify-m10-governance.ts` checks the M10 evidence taxonomy, disposition classes,
+ordered issues, closure template, claim policy, and final-audit rule.
+`script/verify-m10-baseline.ts` checks the M10 runtime descriptor snapshot, CLI surface,
+library exports, handler coverage, legacy inventory markers, and aggregate gate wiring.
