@@ -1,6 +1,6 @@
 # Unified Health (M9.14)
 
-`bb_health` is the canonical read-only health report for an indexed project.
+`bb_health` is the canonical health and index-lifecycle report for a project.
 The CLI and MCP handler use the same provider, so the core metrics are
 consistent across both interfaces.
 
@@ -28,8 +28,9 @@ bb health [dir] --integrity
 ```
 
 `--refresh` reindexes before producing the report. `--force` performs an
-in-place full rebuild and implies refresh. `--no-wait` disables waiting for a
-refresh operation. A health command exits non-zero when the provider reports
+in-place full rebuild and implies refresh. `--no-wait` starts the refresh in the
+background and returns the current snapshot. Refreshes are serialized per project.
+A health command exits non-zero when the provider reports
 an error-severity warning.
 
 ## MCP
@@ -38,8 +39,8 @@ an error-severity warning.
 `integrity`, and `includeAnalysisRuns`. `history` retains the persisted
 analysis-history response and combines it with the health report.
 
-`bb_refresh` is a compatibility adapter that runs the same provider with
-`refresh: true` and returns the post-refresh health report.
+The former `bb_refresh` alias was removed in `0.3.0`; use `bb_health` with
+`refresh: true`.
 
 ## Safety
 

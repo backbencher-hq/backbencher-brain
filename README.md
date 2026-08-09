@@ -99,6 +99,10 @@ The MCP server advertises exactly ten public tools: `bb_search`, `bb_ask`,
 in the migration guide and changelog. See the generated
 [canonical tool metadata](./docs/data/public-tools.json) and [tool references](./docs/tools/).
 
+For the complete operational lifecycle, including CLI/MCP parity, project identity,
+database storage, indexing stages, host setup, every public tool, evidence semantics,
+and known integration risks, see [MCP, CLI, and Indexer Guide](./docs/MCP_CLI_INDEXER_GUIDE.md).
+
 ## Semantic embeddings
 
 See [EMBEDDINGS.md](./EMBEDDINGS.md). Real vector embeddings are generated

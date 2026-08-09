@@ -14,6 +14,7 @@ export interface UnifiedHealthOptions {
   sampleSize?: number
   integrity?: boolean
   includeAnalysisRuns?: boolean
+  logger?: { log: (...args: any[]) => void; write: (s: string) => void }
 }
 export interface UnifiedHealthReport {
   projectId: string
@@ -37,22 +38,50 @@ function parseArray(value: unknown): unknown[] {
   try { const parsed = JSON.parse(value); return Array.isArray(parsed) ? parsed : [] } catch { return [] }
 }
 
+const refreshQueues = new Map<string, Promise<unknown>>()
+
+function queueRefresh(
+  projectId: string,
+  projectPath: string,
+  force: boolean,
+  logger?: UnifiedHealthOptions["logger"],
+): Promise<any> {
+  const previous = refreshQueues.get(projectId) ?? Promise.resolve()
+  const current = previous.catch(() => undefined).then(async () => {
+    const database = await BrainDatabase.getRawInstance(projectId)
+    if (force) wipeProjectData(database)
+    return indexProjectParallel(projectId as any, projectPath, logger ? { logger } : {})
+  })
+  refreshQueues.set(projectId, current)
+  void current.finally(() => {
+    if (refreshQueues.get(projectId) === current) refreshQueues.delete(projectId)
+  }).catch(() => undefined)
+  return current
+}
+
+
 export async function getUnifiedHealth(projectId: string, projectPath: string, options: UnifiedHealthOptions = {}): Promise<UnifiedHealthReport> {
   const warnings: HealthWarning[] = []
-  const refresh = { requested: options.refresh === true, force: options.force === true, wait: options.wait !== false, completed: false, durationMs: null as number | null, processedFiles: null as number | null }
+  const refresh = { requested: options.refresh === true || options.force === true, force: options.force === true, wait: options.wait !== false, completed: false, durationMs: null as number | null, processedFiles: null as number | null }
   let raw = await BrainDatabase.getRawInstance(projectId)
-  if (options.refresh === true) {
+  if (options.refresh === true || options.force === true) {
     const started = Date.now()
-    try {
-      if (options.force === true) wipeProjectData(raw)
-      const stats: any = await indexProjectParallel(projectId as any, projectPath, {})
-      refresh.completed = true
-      refresh.durationMs = Date.now() - started
-      refresh.processedFiles = stats.processedFiles ?? stats.totalFiles ?? 0
-      raw = await BrainDatabase.getRawInstance(projectId)
-    } catch (error) {
-      warnings.push({ code: "REFRESH_FAILED", message: error instanceof Error ? error.message : String(error), severity: "error" })
-      refresh.durationMs = Date.now() - started
+    const refreshPromise = queueRefresh(projectId, projectPath, options.force === true, options.logger)
+    if (options.wait === false) {
+      refresh.wait = false
+      warnings.push({ code: "REFRESH_STARTED", message: "refresh started in the background; returning the current snapshot", severity: "warning" })
+      void refreshPromise.catch(() => undefined)
+    } else {
+      try {
+        const stats: any = await refreshPromise
+        refresh.completed = true
+        refresh.durationMs = Date.now() - started
+        refresh.processedFiles = stats.processedFiles ?? stats.totalFiles ?? 0
+        raw = await BrainDatabase.getRawInstance(projectId)
+      } catch (error) {
+        warnings.push({ code: "REFRESH_FAILED", message: error instanceof Error ? error.message : String(error), severity: "error" })
+        refresh.durationMs = Date.now() - started
+      }
     }
   }
 

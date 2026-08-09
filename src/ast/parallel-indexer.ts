@@ -2169,8 +2169,10 @@ export async function indexProjectParallel(
     excludePatterns?: string[]
     isIncremental?: boolean
     skipDiscovery?: boolean // @backbencher: skip discoverAndFilterFiles entirely
+    logger?: { log: (...args: any[]) => void; write: (s: string) => void }
   } = {},
 ): Promise<ParallelIndexingStats> {
+  const _log = options.logger ?? { log: (...args: any[]) => console.log(...args), write: (s: string) => process.stdout.write(s) }
   const stats: ParallelIndexingStats = {
     totalFiles: 0,
     processedFiles: 0,
@@ -2275,10 +2277,10 @@ export async function indexProjectParallel(
         // Send warmup so the worker initializes and responds with "ready"
         testWorker.send({ type: "warmup", workerId: 0 })
       })
-      console.log("[brain] ✓ worker pool available — using parallel indexing with 45s timeouts")
+      _log.log("[brain] ✓ worker pool available — using parallel indexing with 45s timeouts")
       log.info("worker pool fork test passed — using parallel workers")
     } catch (e: any) {
-      console.log(`[brain] ⚠ worker pool unavailable (${e?.message}), falling back to in-process indexing`)
+      _log.log(`[brain] ⚠ worker pool unavailable (${e?.message}), falling back to in-process indexing`)
       log.warn("worker pool fork unavailable, falling back to in-process", { error: e?.message })
       processFn = processInProcess
     }
@@ -2410,39 +2412,39 @@ export async function indexProjectParallel(
             skippedFiles: stats.skippedFiles,
           },
         })
-        console.log("  Resolving cross-file relationships...")
+        _log.log("  Resolving cross-file relationships...")
         let _t = Date.now()
         await resolveRelationships(projectId)
-        console.log(`  ✓ resolved in ${Date.now()-_t}ms`)
+        _log.log(`  ✓ resolved in ${Date.now()-_t}ms`)
 
         // Enrich relationships with architectural reasoning (Phase 1+2)
         try {
           const { enrichRelationships } = await import("../brain/brain-relationship-enrichment")
-          console.log("  Enriching relationships with architectural context...")
+          _log.log("  Enriching relationships with architectural context...")
           _t = Date.now()
           const enrichResult = await enrichRelationships(projectId, (step: string, pct: number) => {
-            process.stdout.write(`\r  Enriching: ${step} ${pct}%\x1b[K`)
+            _log.write(`\r  Enriching: ${step} ${pct}%\x1b[K`)
           })
-          console.log(`  ✅ Enriched ${enrichResult.enriched.toLocaleString()} relationships (${enrichResult.patternsFound.toLocaleString()} patterns) in ${Date.now()-_t}ms`)
+          _log.log(`  ✅ Enriched ${enrichResult.enriched.toLocaleString()} relationships (${enrichResult.patternsFound.toLocaleString()} patterns) in ${Date.now()-_t}ms`)
         } catch (enrichErr) {
           log.warn("relationship enrichment failed", { error: enrichErr })
         }
 
-        console.log("  Computing gravity scores...")
+        _log.log("  Computing gravity scores...")
         _t = Date.now()
         await calculateGravityScores(projectId)
-        console.log(`  ✓ gravity in ${Date.now()-_t}ms`)
+        _log.log(`  ✓ gravity in ${Date.now()-_t}ms`)
 
-        console.log("  Analyzing taint flows & security...")
+        _log.log("  Analyzing taint flows & security...")
         _t = Date.now()
         try {
           const taints = await resolveCrossSymbolTaints(projectId)
           const _t2 = Date.now()
           await (await import("./project-health")).computeAndStoreProjectHealth(projectId)
-          console.log(`  ✓ taint(${Date.now()-_t2}ms) + health(${_t2-_t}ms) in ${Date.now()-_t}ms`)
+          _log.log(`  ✓ taint(${Date.now()-_t2}ms) + health(${_t2-_t}ms) in ${Date.now()-_t}ms`)
         } catch (postErr: any) {
           log.warn("post-indexing taint/health failed", { error: postErr?.message })
-          console.log(`  ⚠ taint/health failed in ${Date.now()-_t}ms`)
+          _log.log(`  ⚠ taint/health failed in ${Date.now()-_t}ms`)
         }
 
         // Lightweight post-index integrity validation (4 fast checks)
@@ -2450,15 +2452,15 @@ export async function indexProjectParallel(
           _t = Date.now()
           const { runIndexHealthCheck } = await import("../brain/brain-index-health")
           const health = await runIndexHealthCheck(projectId)
-          console.log(`  ✓ health check in ${Date.now()-_t}ms`)
+          _log.log(`  ✓ health check in ${Date.now()-_t}ms`)
           const warnCount = health.checks.filter((c) => c.status !== "ok").length
           if (warnCount > 0) {
-            console.log(`  ⚠️  Index health: ${health.overallHealth}% — ${warnCount} warnings (run bb_health(integrity=true) for details)`)
+            _log.log(`  ⚠️  Index health: ${health.overallHealth}% — ${warnCount} warnings (run bb_health(integrity=true) for details)`)
             for (const c of health.checks.filter((c) => c.status === "error")) {
-              console.log(`    ❌ ${c.name}: ${c.description}`)
+              _log.log(`    ❌ ${c.name}: ${c.description}`)
             }
           } else {
-            console.log(`  ✅ Index health: 100% — all checks passed`)
+            _log.log(`  ✅ Index health: 100% — all checks passed`)
           }
         } catch (healthErr) {
           log.warn("post-index health check failed", { error: healthErr })

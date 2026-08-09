@@ -1,9 +1,9 @@
 # MCP Tool Migration Guide
 
-Version `0.2.x` advertises the ten-tool public surface while retaining legacy
-tool names as callable compatibility aliases. Aliases emit a deprecation
-warning with replacement, mode, and planned removal release. Removal is planned
-for `0.3.0` after one compatibility release.
+Version `0.2.x` advertised the ten-tool public surface while retaining legacy
+tool names as callable compatibility aliases. Version `0.3.0` removed those
+aliases as announced. The table below is retained as historical migration guidance;
+the legacy names now return `unknown tool`.
 
 | Legacy tool | Replacement | Mode |
 | --- | --- | --- |

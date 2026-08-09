@@ -11,7 +11,7 @@ const requiredChecks = [
   "verify-search-modes.ts", "verify-semantic.ts", "verify-graph.ts", "verify-analyze.ts", "verify-patterns.ts",
   "verify-security.ts", "verify-test-intel.ts", "verify-test-quality.ts", "verify-analysis-history.ts", "verify-edit.ts",
   "verify-health.ts", "verify-doc-design.ts", "verify-doc.ts", "verify-visualize-migrate.ts", "verify-cli-surface.ts",
-  "verify-mcp.ts", "verify-contracts.ts", "verify-mcp-e2e.ts",
+  "verify-mcp.ts", "verify-contracts.ts", "verify-mcp-e2e.ts", "verify-integration-runtime.ts",
 ]
 let failures = 0
 const check = (label: string, condition: boolean): void => {

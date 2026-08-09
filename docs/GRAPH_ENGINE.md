@@ -66,8 +66,8 @@ per-direction budgets bound total work regardless of index size.
 ## Adapters
 
 - `BrainTools.traceFunctionCalls` — legacy shape reconstructed from engine edges.
-- `BrainTools.getFunctionCallers` / `getFunctionCallees` — thin wrappers, drive
-  the MCP `bb_relationships` tool.
+- `BrainTools.getFunctionCallers` / `getFunctionCallees` — internal/library
+  wrappers; MCP graph access is through `bb_analyze` callers/callees/trace modes.
 - `BrainTools.explainFlow` — architectural flow view; `downstream`→callees,
   `upstream`→callers, `both`→both. Rebuilt over the engine (previously queried
   obsolete `layer`/`system` columns).

@@ -8,6 +8,7 @@ import { getProjectId } from "../cli/index"
 import { BACKBENCHER_BRAIN_VERSION } from "../version"
 import { createToolHandlers, type ToolContext } from "./tool-handlers"
 import { TOOL_DESCRIPTORS, PUBLIC_TOOL_DESCRIPTORS, toMcpToolList } from "./tool-registry"
+import { validateToolArguments } from "./tool-validation"
 
 const handlers = createToolHandlers()
 const descriptors = new Map(TOOL_DESCRIPTORS.map((descriptor) => [descriptor.name, descriptor]))
@@ -15,7 +16,7 @@ const descriptors = new Map(TOOL_DESCRIPTORS.map((descriptor) => [descriptor.nam
 async function ensureIndexed(context: ToolContext): Promise<string | null> {
   try {
     const raw = await BrainDatabase.getRawInstance(context.projectId)
-    const files = (raw.prepare("SELECT COUNT(*) c FROM brain_file").get() as any).c ?? 0
+    const files = (raw.prepare("SELECT COUNT(*) c FROM brain_file WHERE project_id=?").get(context.projectId) as any).c ?? 0
     if (files === 0) {
       return `No index found for ${context.projectPath}. Run: bb index "${context.projectPath}" (or restart bb mcp after indexing).`
     }
@@ -41,10 +42,7 @@ export async function startMcpServer(projectPath: string): Promise<void> {
     }
 
     try {
-      const argumentsObject = (request.params.arguments ?? {}) as Record<string, any>
-      const declared = new Set(Object.keys(descriptor.inputSchema.properties ?? {}))
-      const unknownOptions = Object.keys(argumentsObject).filter((key) => !declared.has(key))
-      if (unknownOptions.length) return { content: [{ type: "text", text: `${request.params.name}: unknown or irrelevant options: ${unknownOptions.join(", ")}` }], isError: true }
+      const argumentsObject = validateToolArguments(descriptor, request.params.arguments ?? {})
       if (descriptor.requiresIndex) {
         const notIndexed = await ensureIndexed(context)
         if (notIndexed) return { content: [{ type: "text", text: notIndexed }] }

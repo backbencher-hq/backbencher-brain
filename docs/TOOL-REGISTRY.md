@@ -14,7 +14,7 @@ Each `ToolDescriptor` contains:
 | `mutability` | `read`, `index`, or `write` |
 | `requiresIndex` | Whether the protocol adapter blocks calls without an index |
 | `modes` | Supported behavior modes for this contract generation |
-| `aliases` | Alternate public names, currently empty until compatibility migration |
+| `aliases` | Alternate public names; empty in the `0.3.0` public surface |
 | `deprecated` | Whether clients should migrate away from the descriptor |
 | `replacement` | Replacement tool and optional mode |
 | `documentation` | Category, summary, defaults, and examples for generated references |
@@ -49,9 +49,9 @@ This is the initial source for future generated documentation. The website at `$
 
 ## Compatibility Boundary
 
-Issue M9.02 changes ownership and dispatch architecture only. All 15 existing names, schemas, defaults, text outputs, index gates, and side effects remain protected by `script/verify-contracts.ts` and MCP E2E verification.
-
-The target ten-tool contracts remain in `src/contracts/tool-contracts.ts`. They are not registered by this issue. Compatibility aliases and deprecations are activated in M9.18 after the replacement engines are complete.
+Version `0.3.0` exposes exactly ten descriptors. The compatibility aliases from
+`0.2.x` were removed after the migration window and are preserved only in the
+historical migration guide and changelog.
 
 ## Internal Engine Extraction
 
