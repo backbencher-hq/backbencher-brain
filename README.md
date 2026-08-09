@@ -103,6 +103,11 @@ For the complete operational lifecycle, including CLI/MCP parity, project identi
 database storage, indexing stages, host setup, every public tool, evidence semantics,
 and known integration risks, see [MCP, CLI, and Indexer Guide](./docs/MCP_CLI_INDEXER_GUIDE.md).
 
+Future intelligence decisions are governed by
+[M10: Intelligence Consolidation and Evidence Governance](./docs/M10-EVIDENCE-GOVERNANCE.md),
+which defines the evidence taxonomy, disposition rules, issue order, and proof required
+before capabilities can be kept, migrated, improved, quarantined, removed, or declared complete.
+
 ## Semantic embeddings
 
 See [EMBEDDINGS.md](./EMBEDDINGS.md). Real vector embeddings are generated

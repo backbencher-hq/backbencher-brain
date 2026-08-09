@@ -6,7 +6,7 @@ const root = resolve(fileURLToPath(new URL("..", import.meta.url)))
 const pkg = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8")) as { scripts: Record<string, string> }
 const requiredScripts = ["typecheck", "build", "verify", "docs:verify"]
 const requiredChecks = [
-  "verify-core.ts", "verify-engine.ts", "verify-index.ts", "verify-embed.ts", "verify-freshness.ts",
+  "verify-m10-governance.ts", "verify-core.ts", "verify-engine.ts", "verify-index.ts", "verify-embed.ts", "verify-freshness.ts",
   "verify-schema.ts", "verify-tool-registry.ts", "verify-public-surface.ts", "verify-tool-docs.ts",
   "verify-search-modes.ts", "verify-semantic.ts", "verify-graph.ts", "verify-analyze.ts", "verify-patterns.ts",
   "verify-security.ts", "verify-test-intel.ts", "verify-test-quality.ts", "verify-analysis-history.ts", "verify-edit.ts",
