@@ -1,0 +1,72 @@
+# `bb_security`
+
+Cross-language security scan: SQL injection, XSS, command injection, hardcoded secrets, weak crypto.
+
+## Contract
+
+- Category: `analysis`
+- Mutability: `read`
+- Requires index: `true`
+- Modes: `findings`
+- Defaults: `{"history":false,"recordRun":false,"limit":20}`
+
+## Input Schema
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "history": {
+      "type": "boolean",
+      "description": "return persisted security history"
+    },
+    "recordRun": {
+      "type": "boolean",
+      "description": "persist this scan as an analysis run"
+    },
+    "limit": {
+      "type": "number",
+      "description": "history run limit (default 20)"
+    }
+  }
+}
+```
+
+## Returns
+
+- Normalized security findings
+- Cross-language source-to-sink flow evidence
+- Optional persisted run history
+
+## Examples
+
+`{}`
+
+`{"recordRun":true}`
+
+`{"history":true}`
+
+## Errors
+
+- Unavailable index
+- Invalid history limit
+- Unknown option
+
+## Limitations
+
+- Static taint analysis can produce false positives and false negatives
+- It is not runtime testing or a penetration test
+
+## Performance
+
+Indexed flow analysis and output/history limits bound work and response size.
+
+## Safety
+
+Source is read-only. recordRun writes only analysis-history records in the brain database.
+
+## Evidence Semantics
+
+A finding is supported by indexed source/sink locations and relationship paths; severity does not imply exploitability.
+
+This page is generated from the executable registry and curated documentation. Run `npm run docs:generate` to update it.

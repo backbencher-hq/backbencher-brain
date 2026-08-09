@@ -65,6 +65,16 @@ BB_EMBEDDING_MODEL=nvidia/nv-embedqa-e5-v5
 - No key configured? The index falls back to local word vectors and semantic
   search degrades to keyword-level matching — nothing breaks.
 
+## Tool evidence semantics
+
+`bb_ask` uses embeddings to discover and rank candidate symbols. Similarity is
+not proof: factual claims should resolve to indexed symbols, source locations,
+and relationships. `bb_doc` follows the same rule and classifies unsupported
+claims as unknown rather than treating semantic proximity as evidence. `bb_health`
+reports the active model, vector dimensions, and coverage; coverage describes
+stored vectors, not answer quality. Changing model or dimensions requires a
+forced reindex because vectors from different spaces are never compared.
+
 ## Verification
 
 ```bash

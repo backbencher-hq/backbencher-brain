@@ -1,0 +1,115 @@
+# `bb_search`
+
+Unified indexed retrieval for symbol lists, content, exact symbol source, or files. This is retrieval, not natural-language explanation or code analysis.
+
+## Contract
+
+- Category: `search`
+- Mutability: `read`
+- Requires index: `true`
+- Modes: `symbols`, `content`, `symbol`, `file`
+- Defaults: `{"mode":"symbols","limit":15,"includeContent":false,"exact":false,"caseSensitive":false,"regex":false,"offset":0}`
+
+## Input Schema
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "mode": {
+      "type": "string",
+      "enum": [
+        "symbols",
+        "content",
+        "symbol",
+        "file"
+      ],
+      "description": "retrieval mode (default symbols)"
+    },
+    "query": {
+      "type": "string",
+      "description": "symbol/content query; also accepted as the exact symbol name"
+    },
+    "symbolName": {
+      "type": "string",
+      "description": "exact symbol name for symbol mode"
+    },
+    "filePath": {
+      "type": "string",
+      "description": "file target or symbol disambiguation"
+    },
+    "limit": {
+      "type": "number",
+      "description": "max results (default 15)"
+    },
+    "language": {
+      "type": "string",
+      "description": "filter by language (e.g. typescript, python, go)"
+    },
+    "symbolKind": {
+      "type": "string",
+      "description": "filter by symbol kind (function, class, variable, interface, enum, ...)"
+    },
+    "includeContent": {
+      "type": "boolean",
+      "description": "include a code snippet per result (default false)"
+    },
+    "exact": {
+      "type": "boolean",
+      "description": "only exact name matches (default false)"
+    },
+    "caseSensitive": {
+      "type": "boolean",
+      "description": "case-sensitive matching (default false)"
+    },
+    "regex": {
+      "type": "boolean",
+      "description": "treat query as a regex against symbol names (default false)"
+    },
+    "offset": {
+      "type": "number",
+      "description": "pagination offset (default 0)"
+    }
+  },
+  "required": []
+}
+```
+
+## Returns
+
+- Indexed matches with file and line provenance
+- Exact symbol or bounded file source in retrieval modes
+- Freshness state where available
+
+## Examples
+
+`{"mode":"symbols","query":"handleRequest","limit":5}`
+
+`{"mode":"symbol","symbolName":"handleRequest"}`
+
+`{"mode":"file","filePath":"src/app.ts"}`
+
+## Errors
+
+- Missing mode-specific query, symbolName, or filePath
+- Invalid regular expression
+- Unknown or mode-irrelevant option
+
+## Limitations
+
+- Results reflect the current index and may be stale
+- Content search is lexical; use bb_ask for semantic discovery
+
+## Performance
+
+Pagination and result limits bound retrieval; exact indexed lookup is preferred over content scanning.
+
+## Safety
+
+Read-only. It does not refresh the index or modify source files.
+
+## Evidence Semantics
+
+Paths, line ranges, symbol kinds, and source snippets are indexed evidence; stale flags qualify that evidence.
+
+This page is generated from the executable registry and curated documentation. Run `npm run docs:generate` to update it.

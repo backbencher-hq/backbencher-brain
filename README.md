@@ -93,11 +93,11 @@ VS Code workspace MCP (`<project>/.vscode/mcp.json`):
 }
 ```
 
-Exposed tools:
-
-- `bb_search` — AST symbol search; results carry a `[STALE]` flag when the
-  file changed since indexing
-- `bb_health` — index counts + freshness sample
+The MCP server advertises exactly ten public tools: `bb_search`, `bb_ask`,
+`bb_analyze`, `bb_patterns`, `bb_security`, `bb_doc`, `bb_visualize`,
+`bb_migrate`, `bb_edit`, and `bb_health`. Compatibility aliases remain callable
+for the migration window but are hidden from discovery. See the generated
+[canonical tool metadata](./docs/data/public-tools.json) and [tool references](./docs/tools/).
 
 ## Semantic embeddings
 
@@ -141,6 +141,20 @@ model that produced them (`gemini-embedding-001` vs `local-word-vectors`),
 and `BB_EMBEDDING_BATCH_LIMIT` controls the max symbols per index batch
 (default 50000) before falling back to offline TF-IDF vectors.
 
+## Architecture and verification
+
+Tree-sitter analyzers and the SQLite index provide the evidence substrate;
+`src/intelligence/` contains strict domain engines; the MCP server and CLI are
+thin adapters over the shared registry and handlers. Read-only tools never
+refresh implicitly. Mutation goes through `bb_edit`, which protects project-root
+paths, validates ASTs, writes atomically, and reindexes affected files. See the
+[tool registry](./docs/TOOL-REGISTRY.md), [MCP migration](./docs/MCP_TOOL_MIGRATION.md),
+and [canonical documentation](./docs/data/public-tools.json).
+
+Run `npm run docs:verify` to detect registry, schema, default, example, or
+curated-reference drift. Embedding setup and evidence limitations are documented
+in [EMBEDDINGS.md](./EMBEDDINGS.md).
+
 ## Verification
 
 Every suite runs under Bun and Node:
@@ -152,16 +166,16 @@ bun run script/verify-index.ts && npx tsx script/verify-index.ts   # indexer
 bun run script/verify-embed.ts && npx tsx script/verify-embed.ts   # embeddings
 bun run script/verify-freshness.ts && npx tsx script/verify-freshness.ts # reads
 bun run script/verify-mcp.ts && npx tsx script/verify-mcp.ts       # MCP handshake + core tools
-bun run script/verify-mcp-e2e.ts && npx tsx script/verify-mcp-e2e.ts # all 15 MCP tools end-to-end
+bun run script/verify-mcp-e2e.ts && npx tsx script/verify-mcp-e2e.ts # public tools plus compatibility calls
 ```
 
 Note: `verify-mcp-e2e.ts` spawns the real runtime entry — `node bin/bb mcp`
 (compiled dist) under Node and `bun src/mcp/server.ts` (source, bun:sqlite)
-under Bun — and exercises all 15 tools including the mutations.
+under Bun, exercising the ten advertised tools and hidden compatibility calls.
 
-## Roadmap
+## Public API lifecycle
 
-- `bb update` / `bb delete` (mutation tools — opt-in under MCP)
-- `bb select` (byte-precise symbol extraction)
-- publish as npm package (compiled dist for plain Node)
-- opencode adapter: the 12 opencode tools become thin wrappers over this core
+Version `0.2.0` exposes the ten-tool MCP surface above. Deprecated hidden aliases
+and their replacements are listed in [MCP_TOOL_MIGRATION.md](./docs/MCP_TOOL_MIGRATION.md).
+The machine-readable artifact is standalone JSON, so website and host integrations
+do not need to import server runtime code or parse prose.
