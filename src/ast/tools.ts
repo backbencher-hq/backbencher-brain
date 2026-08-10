@@ -1747,13 +1747,27 @@ export namespace PatternBrainTools {
 
     const allPatterns: any[] = []
 
-    // 1. Orphaned code detection (core ProxiCall Brain capability)
+    // 1. Orphaned code detection — M10.03 routes to the canonical orphan engine
+    // (src/intelligence/patterns/orphans.ts) so results carry evidence,
+    // limitations, remediation, and exact line counts. The legacy
+    // PatternRecognition.detectOrphanedCode SQL path is bypassed here.
     if (opts.includeOrphaned) {
-      const orphanedPatterns = await PatternRecognition.detectOrphanedCode(projectId, {
-        confidenceThreshold: opts.confidenceThreshold,
+      const { detectOrphans } = await import("../intelligence/patterns/orphans")
+      const canonical = await detectOrphans(projectId, {
+        minConfidence: opts.confidenceThreshold,
         maxResults: Math.floor(opts.maxResults * 0.4),
       })
-      allPatterns.push(...orphanedPatterns)
+      for (const f of canonical.findings) {
+        allPatterns.push({
+          pattern: f.rule,
+          confidence: f.confidence,
+          location: { file: f.location.file, startLine: f.location.line, symbol: f.location.symbol },
+          description: f.description,
+          severity: "info",
+          suggestion: f.remediation,
+          evidence: f.evidence,
+        })
+      }
     }
 
     // 2. Framework-specific patterns

@@ -2,6 +2,8 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { BrainDatabase } from "../brain/database"
 import { BrainTools, PatternBrainTools } from "../ast/tools"
+import { quickAnswer } from "../intelligence/search/quick-answer"
+import { detectOrphans } from "../intelligence/patterns/orphans"
 import { ASTEngine } from "../ast/engine"
 import { checkResultsFreshness } from "../brain/freshness"
 import { CrossLanguageSecurityAnalysis } from "../security/cross-language-security"
@@ -101,12 +103,13 @@ const handlers: Record<string, ToolHandler> = {
   },
 
   bb_ask: async (args, { projectId }) => {
-    const result: any = await BrainTools.quickAnswer(projectId, String(args.query))
-    const lines = ((result?.sources ?? []) as any[])
+    const result = await quickAnswer(projectId, String(args.query))
+    const lines = result.sources
       .slice(0, Number(args.limit ?? 5))
-      .map((source: any, index: number) => `${index + 1}. ${source.file}:${source.line}\n   ${source.context ?? ""}`)
-    const head = result?.answer ? `answer: ${result.answer}\n\n` : ""
-    return textResult(head + (lines.length ? lines.join("\n") : `no semantic matches for "${args.query}"`))
+      .map((source, index) => `${index + 1}. ${source.file}:${source.line}\n   ${source.context ?? ""}`)
+    const head = result.answer ? `answer: ${result.answer}\n\n` : ""
+    const prov = `[provenance: ${result.provenance.evidenceClass} via ${result.provenance.engine}${result.provenance.unknowns.length ? `; unknowns: ${result.provenance.unknowns.join("; ")}` : ""}]`
+    return textResult(head + (lines.length ? lines.join("\n") : `no semantic matches for "${args.query}"`) + `\n${prov}`)
   },
 
   bb_analyze: async (args, { projectId }) => {
@@ -150,10 +153,11 @@ const handlers: Record<string, ToolHandler> = {
     const scope = args.scope === "orphaned" ? "orphaned" : "all"
     const limit = Number(args.limit ?? 20)
     if (scope === "orphaned") {
-      const result: any = await PatternBrainTools.findOrphanedCode(projectId, {})
-      const items = (result?.orphaned ?? []).slice(0, limit)
-      const lines = items.map((item: any) => `  ${item.type} ${item.name} — ${item.location} (${Math.round(item.confidence * 100)}%)`)
-      return textResult(`orphaned code (${result?.statistics?.totalOrphaned ?? items.length}):\n${lines.join("\n") || "  none"}`)
+      const report = await detectOrphans(projectId, { minConfidence: Number(args.confidenceThreshold ?? 0.6), maxResults: Math.max(limit, 100) })
+      const items = report.findings.slice(0, limit)
+      const lines = items.map((f) => `  ${f.rule} ${f.location.symbol || f.location.file} — ${f.location.file}:${f.location.line} (${Math.round(f.confidence * 100)}%)`)
+      const prov = `\n[provenance: ${report.provenance.evidenceClass} via ${report.provenance.engine}; ${report.findings.length} findings${report.provenance.truncated ? "; truncated" : ""}; limitations: ${report.provenance.limitations.length}]`
+      return textResult(`orphaned code (${report.summary?.total ?? items.length}):\n${lines.join("\n") || "  none"}${prov}`)
     }
     const result: any = await PatternBrainTools.detectPatterns(projectId, {
       includeOrphaned: args.includeOrphaned !== false,
