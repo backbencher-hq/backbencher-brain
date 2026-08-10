@@ -1,0 +1,121 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-10T03:25:51.105Z",
+  "fixture": "contract-fixture",
+  "measurements": [
+    {
+      "name": "bb_search_symbol",
+      "ms": 2.54,
+      "budget": 400,
+      "pass": true
+    },
+    {
+      "name": "bb_search_content",
+      "ms": 51.87,
+      "budget": 500,
+      "pass": true
+    },
+    {
+      "name": "bb_ask_stat",
+      "ms": 1.16,
+      "budget": 300,
+      "pass": true
+    },
+    {
+      "name": "bb_ask_semantic",
+      "ms": 145.51,
+      "budget": 2500,
+      "pass": true
+    },
+    {
+      "name": "bb_analyze_graph",
+      "ms": 2.92,
+      "budget": 400,
+      "pass": true
+    },
+    {
+      "name": "bb_analyze_impact",
+      "ms": 2.62,
+      "budget": 400,
+      "pass": true
+    },
+    {
+      "name": "bb_analyze_stats",
+      "ms": 1.2,
+      "budget": 400,
+      "pass": true
+    },
+    {
+      "name": "bb_analyze_complexity",
+      "ms": 2.06,
+      "budget": 400,
+      "pass": true
+    },
+    {
+      "name": "bb_analyze_dependencies",
+      "ms": 4.95,
+      "budget": 400,
+      "pass": true
+    },
+    {
+      "name": "bb_patterns_orphaned",
+      "ms": 5.75,
+      "budget": 600,
+      "pass": true
+    },
+    {
+      "name": "bb_security_taint",
+      "ms": 8.49,
+      "budget": 1200,
+      "pass": true
+    },
+    {
+      "name": "bb_analyze_testMapping",
+      "ms": 2.8,
+      "budget": 400,
+      "pass": true
+    },
+    {
+      "name": "bb_analyze_testGaps",
+      "ms": 2.49,
+      "budget": 400,
+      "pass": true
+    },
+    {
+      "name": "bb_analyze_testImpact",
+      "ms": 3.65,
+      "budget": 400,
+      "pass": true
+    },
+    {
+      "name": "bb_analyze_testQuality",
+      "ms": 8.27,
+      "budget": 400,
+      "pass": true
+    },
+    {
+      "name": "bb_history_lookup",
+      "ms": 1.78,
+      "budget": 300,
+      "pass": true
+    }
+  ],
+  "budgetViolations": [],
+  "summary": {
+    "toolCount": 10,
+    "toolNames": [
+      "bb_analyze",
+      "bb_ask",
+      "bb_doc",
+      "bb_edit",
+      "bb_health",
+      "bb_migrate",
+      "bb_patterns",
+      "bb_search",
+      "bb_security",
+      "bb_visualize"
+    ],
+    "measurementCount": 16,
+    "violationCount": 0
+  }
+}

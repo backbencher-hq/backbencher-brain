@@ -129,10 +129,13 @@ any table outside the canonical `brain_*` schema.
   legacy heuristics without provenance. M10.06 must calibrate evidence or
   quarantine.
 - `analyzeImpact`, `getFileDependencies`, `getProjectStats`,
-  `analyzeComplexity` reports do not yet carry `provenance`. M10.04 owns
-  this.
+  `analyzeComplexity`, and `graphTraversal` now carry `provenance` (M10.04
+  fixed).
 - The legacy `BrainTools.quickAnswer` and `AdvancedBrainTools.semanticSearch`
   remain in `src/ast/tools.ts` as dead-but-reachable code. M10.06 owns their
   quarantine or removal.
+- `script/verify-m10-benchmarks.ts` emits `docs/data/m10-benchmark-last-run.json`
+  with measurement artifacts; budgets are declared in `docs/M10-BENCHMARKS.md`
+  and `docs/data/m10-benchmark-baseline.json`.
 - `script/demo-tools.ts` remains an untracked developer script and is not part
   of any M10 issue.

@@ -21,7 +21,7 @@ caller, import, export, schema, fixture, verification, and public-contract evide
 | Analysis run/finding history | `brain_analysis_*`; `verify-analysis-history.ts` + `verify-analysis-governance.ts`; governance doc + executeAnalysis wrapper | `keep` — M10.04 schema migration (evidence/limitations/location/provenance), deterministic ordering, shared executeAnalysis wrapper all done | M10.04 (done) |
 | Canonical semantic search | `src/intelligence/search/semantic-search.ts`; `verify-semantic.ts` | `keep` — bb_ask fallback now routes to canonical, provenance-bearing M10.03 | M10.03 (done) |
 | Legacy quick-answer adapter | `BrainTools.quickAnswer()` superseded by canonical `src/intelligence/search/quick-answer.ts` M10.03 | `migrate` done — active bb_ask routes to canonical; legacy export quarantined for removal | M10.03 (done active path); M10.06 (remove legacy export) |
-| Canonical graph and impact | `src/intelligence/graph`, `analysis/impact`; verifiers | `keep` — provenance added M10.04 (impact); M10.05 for performance budgets | M10.04 (done for analyze modes) |
+| Canonical graph and impact | `src/intelligence/graph`, `analysis/impact`; verifiers | `keep` — provenance attached M10.04; budget declared M10.05 | M10.04 (provenance done); M10.05 (budget done) |
 | Legacy visualization projection | `src/ast/dependency-graph-visualizer.ts` behind canonical adapter | `migrate` or quarantine adapter | M10.06 |
 | Legacy migration internals | AST cross-language intelligence and migration assistant | `migrate` behind typed canonical plan | M10.06 |
 | Canonical documentation engine | `src/intelligence/documentation/doc-engine.ts`; `verify-doc.ts` | `keep` and improve direct coverage | keep |
