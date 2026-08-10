@@ -6,16 +6,34 @@
 //   bb version
 import { Command } from "commander"
 import { createHash } from "crypto"
-import { existsSync, statSync } from "fs"
+import { existsSync, mkdirSync, realpathSync, renameSync, statSync } from "fs"
 import path from "path"
 import { BrainDatabase } from "../brain/database"
 import { indexProjectParallel } from "../ast/parallel-indexer"
 import { BrainTools } from "../ast/tools"
 import { BACKBENCHER_BRAIN_VERSION } from "../version"
 import { getUnifiedHealth, formatUnifiedHealth } from "../intelligence/health/health-provider"
+import { bbProjectsDir } from "../util/bb-data-dir"
 
 export function getProjectId(projectPath: string): string {
-  return createHash("sha1").update(path.resolve(projectPath)).digest("hex").substring(0, 40)
+  const resolved = path.resolve(projectPath)
+  let canonical = resolved
+  try {
+    canonical = realpathSync.native(resolved)
+  } catch {
+    // Nonexistent paths retain deterministic lexical identity for validation.
+  }
+  const canonicalId = createHash("sha1").update(canonical).digest("hex").substring(0, 40)
+  if (canonical !== resolved) {
+    const legacyId = createHash("sha1").update(resolved).digest("hex").substring(0, 40)
+    const legacyDir = path.join(bbProjectsDir(), legacyId)
+    const canonicalDir = path.join(bbProjectsDir(), canonicalId)
+    if (existsSync(legacyDir) && !existsSync(canonicalDir)) {
+      mkdirSync(bbProjectsDir(), { recursive: true })
+      try { renameSync(legacyDir, canonicalDir) } catch {}
+    }
+  }
+  return canonicalId
 }
 
 function requireDir(p: string): string {

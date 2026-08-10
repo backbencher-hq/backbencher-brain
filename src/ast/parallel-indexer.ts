@@ -17,6 +17,7 @@ import { BrainService } from "../brain/service"
 import { readdir, stat } from "fs/promises"
 import { computeAndStoreProjectHealth } from "./project-health"
 import { CrossLanguageIntelligencePersister } from "./cross-language-intelligence-persister"
+import { detectLanguageFromPath } from "./language-detection"
 
 const log = Log.create({ service: "parallel-indexer" })
 
@@ -242,7 +243,6 @@ export const ParallelIndexerConfig = {
     /\/\.gradle\//,
     /\/\.idea\//,
     /\/\.vs\//,
-    /\/\.vscode\//,
     /\/Pods\//,
     /\/\.dart_tool\//,
     /\/\.pub-cache\//,
@@ -357,9 +357,7 @@ function shouldSkipCli(filePath: string): boolean {
 }
 
 function hasValidExtension(filePath: string): boolean {
-  const ext = path.extname(filePath).toLowerCase()
-  if (filePath.endsWith("source")) return true
-  return ParallelIndexerConfig.extensions.has(ext)
+  return detectLanguageFromPath(filePath) !== null
 }
 
 /**
@@ -530,10 +528,11 @@ async function discoverAndFilterFiles(
         const promises = []
 
         for (const entry of entries) {
-          // Skip hidden directories (but allow dot-prefixed files like .eslintrc.json)
-          if (entry.name.startsWith(".")) {
-            if (entry.isDirectory()) continue
-          }
+          // Useful hidden directories such as .github, .vscode, and
+          // .devcontainer contain supported source/configuration files. Skip
+          // only metadata and cache directories; normal skip/ignore rules
+          // handle the rest.
+          if (entry.isDirectory() && [".git", ".svn", ".hg", ".cache", ".nyc_output", ".venv", ".next", ".nuxt", ".svelte-kit", ".turbo"].includes(entry.name)) continue
           const fullPath = path.join(dir, entry.name)
           const relativePath = path.relative(projectPath, fullPath)
 
