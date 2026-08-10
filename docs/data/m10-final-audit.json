@@ -1,0 +1,215 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M10",
+  "issue": 115,
+  "generatedAt": "2026-08-10",
+  "releaseDecision": "ready",
+  "releaseVersion": "0.3.0",
+  "issues": [
+    {
+      "order": 1,
+      "issue": 116,
+      "title": "Freeze evidence and contract baseline",
+      "status": "closed",
+      "commit": "06086ca",
+      "artifacts": [
+        "docs/M10-CONTRACT-BASELINE.md",
+        "docs/data/m10-baseline.json",
+        "docs/M10-DISPOSITION-LEDGER.md"
+      ],
+      "verifiers": ["script/verify-m10-baseline.ts"]
+    },
+    {
+      "order": 2,
+      "issue": 118,
+      "title": "Define canonical evidence taxonomy and provenance contracts",
+      "status": "closed",
+      "commit": "8714980",
+      "artifacts": [
+        "src/intelligence/evidence.ts",
+        "src/intelligence/contracts.ts"
+      ],
+      "verifiers": ["script/verify-evidence-governance.ts"]
+    },
+    {
+      "order": 3,
+      "issue": 113,
+      "title": "Consolidate canonical intelligence engines and public adapters",
+      "status": "closed",
+      "commit": "19d9bdd",
+      "artifacts": [
+        "docs/M10-INTELLIGENCE-OWNERSHIP.md",
+        "src/intelligence/search/quick-answer.ts"
+      ],
+      "fixtures": ["script/fixtures/contract-fixture.ts"],
+      "verifiers": ["script/verify-intelligence-consolidation.ts"]
+    },
+    {
+      "order": 4,
+      "issue": 117,
+      "title": "Govern analysis runs, finding identity, and reproducibility",
+      "status": "closed",
+      "commit": "74cacde",
+      "artifacts": [
+        "docs/M10-ANALYSIS-GOVERNANCE.md",
+        "src/intelligence/analysis/run-history.ts"
+      ],
+      "verifiers": ["script/verify-analysis-governance.ts"]
+    },
+    {
+      "order": 5,
+      "issue": 114,
+      "title": "Establish correctness and performance regression budgets",
+      "status": "closed",
+      "commit": "7e8df02",
+      "artifacts": [
+        "docs/M10-BENCHMARKS.md",
+        "docs/data/m10-benchmark-baseline.json",
+        "docs/data/m10-benchmark-last-run.json"
+      ],
+      "fixtures": ["script/fixtures/contract-fixture.ts"],
+      "verifiers": ["script/verify-m10-benchmarks.ts"]
+    },
+    {
+      "order": 6,
+      "issue": 121,
+      "title": "Prove deletion and quarantine safety for legacy intelligence",
+      "status": "closed",
+      "commit": "032a093",
+      "artifacts": [
+        "docs/M10-DELETION-LEDGER.md",
+        "docs/M10-DISPOSITION-LEDGER.md"
+      ],
+      "verifiers": ["script/verify-deletion-safety.ts"]
+    },
+    {
+      "order": 7,
+      "issue": 120,
+      "title": "Re-verify and preserve the public CLI/MCP contracts",
+      "status": "closed",
+      "commit": "c18b821",
+      "artifacts": [
+        "docs/M10-PUBLIC-CONTRACT-ATTESTATION.md",
+        "docs/data/m10-baseline.json"
+      ],
+      "verifiers": [
+        "script/verify-contract-diff.ts",
+        "script/verify-public-surface.ts",
+        "script/verify-contracts.ts",
+        "script/verify-cli-surface.ts",
+        "script/verify-mcp.ts",
+        "script/verify-mcp-e2e.ts"
+      ]
+    },
+    {
+      "order": 8,
+      "issue": 115,
+      "title": "Final evidence audit and release-readiness decision",
+      "status": "ready_to_close",
+      "commit": "audit-commit-containing-this-artifact",
+      "artifacts": [
+        "docs/M10-FINAL-AUDIT.md",
+        "docs/data/m10-final-audit.json"
+      ],
+      "verifiers": ["script/verify-m10-final-audit.ts"]
+    }
+  ],
+  "publicContract": {
+    "baseline": "docs/data/m10-baseline.json",
+    "changed": false,
+    "toolCount": 10,
+    "aliases": 0,
+    "deprecatedDescriptors": 0,
+    "libraryExportCount": 21,
+    "cliCommands": ["index", "search", "health", "mcp", "tool", "--version"]
+  },
+  "correctness": {
+    "regressions": 0,
+    "fixture": "script/fixtures/contract-fixture.ts",
+    "verifier": "script/verify-m10-benchmarks.ts",
+    "result": "pass"
+  },
+  "performance": {
+    "baseline": "docs/data/m10-benchmark-baseline.json",
+    "lastRun": "docs/data/m10-benchmark-last-run.json",
+    "measurementCount": 16,
+    "passed": 16,
+    "violations": 0,
+    "result": "pass"
+  },
+  "deletion": {
+    "ledger": "docs/M10-DELETION-LEDGER.md",
+    "removedLinesNet": 5453,
+    "removedNamespaces": [
+      "AdvancedBrainTools",
+      "TestIntelligenceBrainTools",
+      "revolutionaryArchitectureIntelligence"
+    ],
+    "unsupportedClaimMarkersAbsent": [
+      "WORLD'S FIRST",
+      "No other tool in the world",
+      "BREAKTHROUGH"
+    ],
+    "result": "pass"
+  },
+  "runtimeEvidence": {
+    "bunSource": [
+      "script/verify-public-surface.ts",
+      "script/verify-contract-diff.ts",
+      "script/verify-mcp-e2e.ts"
+    ],
+    "compiledNode": [
+      "script/verify-integration-runtime.ts",
+      "npm run build"
+    ],
+    "result": "pass"
+  },
+  "requiredGates": [
+    "npm run typecheck",
+    "npm run build",
+    "npm run docs:verify",
+    "npm run verify",
+    "git diff --check"
+  ],
+  "m10Verifiers": [
+    "script/verify-m10-governance.ts",
+    "script/verify-m10-baseline.ts",
+    "script/verify-evidence-governance.ts",
+    "script/verify-intelligence-consolidation.ts",
+    "script/verify-analysis-governance.ts",
+    "script/verify-m10-benchmarks.ts",
+    "script/verify-deletion-safety.ts",
+    "script/verify-contract-diff.ts",
+    "script/verify-m10-final-audit.ts"
+  ],
+  "residualRisks": [
+    {
+      "id": "R1",
+      "status": "accepted",
+      "severity": "low",
+      "description": "BrainTools.searchCode remains as a thin delegating compatibility alias for out-of-tree library consumers."
+    },
+    {
+      "id": "R2",
+      "status": "accepted",
+      "severity": "medium",
+      "description": "Static evidence cannot prove runtime execution coverage; test intelligence reports this limitation explicitly."
+    },
+    {
+      "id": "R3",
+      "status": "accepted",
+      "severity": "medium",
+      "description": "Heuristic orphan, security, complexity, and impact analysis can produce false positives and false negatives."
+    },
+    {
+      "id": "R4",
+      "status": "accepted",
+      "severity": "low",
+      "description": "Benchmark measurements are fixture-local upper-bound SLO checks, not cross-machine performance guarantees."
+    }
+  ],
+  "claimsPolicy": {
+    "unsupportedClaimsPresentedAsProven": false,
+    "statement": "Unsupported claims are not presented as proven. Every M10 intelligence result carries evidence provenance and explicit limitations where applicable."
+  }
+}
