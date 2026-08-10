@@ -31,6 +31,18 @@ caller, import, export, schema, fixture, verification, and public-contract evide
 ## Ledger Rules
 
 - `keep` does not mean perfect; it means valuable enough to remain canonical while gaps are named.
+
+## Obsolete persistence markers audited by M10.06
+
+These markers are expected to be absent from shipped source after M10.06 (see ledger and public surface checkers).
+
+| Marker | Was | Now |
+| --- | --- | --- |
+| sentinel_runs | Legacy Sentinel orchestration table | Removed (not used by active handlers) |
+| sentinel_findings | Legacy Sentinel findings table | Removed (not used by active handlers) |
+| FROM symbols | Alias for non-canonical pre-brain_* schema | Removed (canonical brain_symbol survives) |
+| FROM files | Alias for non-canonical pre-brain_* schema | Removed (canonical brain_file survives) |
+| symbol_relationships | Alias for non-canonical pre-brain_* schema | Removed (canonical brain_relationship survives) |
 - `migrate` requires fixture comparison before behavior is moved.
 - `improve` requires a measurable acceptance target before implementation.
 - `quarantine` requires an owner, compatibility/research rationale, and removal criteria.

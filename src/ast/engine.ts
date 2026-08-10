@@ -1326,7 +1326,7 @@ export namespace ASTEngine {
           codeQuality: meta.codeQuality || "unknown",
           hasTypeInference: true,
           hasFrameworkIntelligence: true,
-          analysisVersion: "2.0-revolutionary",
+          analysisVersion: "m10.06-cut",
         },
       }
     } finally {

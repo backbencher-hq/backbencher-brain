@@ -65,12 +65,12 @@ if (probe) {
 } else {
   console.log("  (no probe symbol)")
 }
-const qa: any = await BrainTools.quickAnswer(pid, "what does this project do")
-check("ask answers", qa?.answer?.length > 0 || (qa?.sources?.length ?? 0) > 0, JSON.stringify(qa).slice(0, 60))
-const fn = await BrainTools.recallFunction(pid, { name: probe ?? "init", limit: 3 })
-check("recallFunction works", Array.isArray(fn))
-const cls = await BrainTools.recallClass(pid, { name: "C", limit: 3 })
-check("recallClass works", Array.isArray(cls))
+  const qa: any = await (await import("../src/intelligence/search/quick-answer")).quickAnswer(pid, "what does this project do")
+  check("ask answers", qa?.answer?.length > 0 || (qa?.sources?.length ?? 0) > 0, JSON.stringify(qa).slice(0, 60))
+  const fn = await BrainTools.searchCode(pid, probe ?? "init", { maxResults: 3 })
+  check("searchCode returns results array", Array.isArray(fn) && fn.length >= 0)
+  const cls = await BrainTools.searchCode(pid, "C", { symbolKind: "class", maxResults: 3 })
+  check("class search returns results array", Array.isArray(cls) && cls.length >= 0)
 
 console.log(failures === 0 ? `RESULT: ${projName} — PASS` : `RESULT: ${projName} — ${failures} FAILURES`)
 process.exit(failures > 0 ? 1 : 0)

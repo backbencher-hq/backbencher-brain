@@ -9,7 +9,7 @@ import { indexProjectParallel } from "../src/ast/parallel-indexer"
 import { BrainDatabase } from "../src/brain/database"
 import { quickAnswer } from "../src/intelligence/search/quick-answer"
 import { detectOrphans } from "../src/intelligence/patterns/orphans"
-import { BrainTools, PatternBrainTools, AdvancedBrainTools } from "../src/ast/tools"
+import { PatternBrainTools } from "../src/ast/tools"
 import { CrossLanguageSecurityAnalysis } from "../src/security/cross-language-security"
 import { createContractFixture } from "./fixtures/contract-fixture"
 
@@ -79,10 +79,11 @@ try {
   check("bb_security canonical taint engine source has no sentinel/obsoleted table refs", !joinGrep(taintSrc))
   check("bb_security thin adapter source has no sentinel/obsoleted table refs", !joinGrep(crossSecSrc))
 
-  // --- Legacy paths still exist as dead code (M10.06 will remove) ---
-  check("legacy BrainTools.quickAnswer still exported (deferred to M10.06)", typeof BrainTools.quickAnswer === "function")
-  check("legacy AdvancedBrainTools.semanticSearch still exported (deferred to M10.06)", typeof AdvancedBrainTools.semanticSearch === "function")
-  check("legacy PatternBrainTools.findOrphanedCode still exported (deferred to M10.06)", typeof PatternBrainTools.findOrphanedCode === "function")
+  // --- M10.06: legacy paths are REMOVED, not dead-but-reachable ---
+  const { BrainTools: checkBt } = await import("../src/ast/tools")
+  check("legacy BrainTools.quickAnswer is removed (M10.06)", typeof (checkBt as any).quickAnswer !== "function")
+  check("legacy BrainTools.recallFunction is removed (M10.06)", typeof (checkBt as any).recallFunction !== "function")
+  check("legacy PatternBrainTools.findOrphanedCode is removed (M10.06)", typeof (PatternBrainTools as any).findOrphanedCode !== "function")
 
   // --- bb_security still routes through thin adapter to canonical engine (no duplicate logic) ---
   const securityResult = await CrossLanguageSecurityAnalysis.analyzeSecurityAcrossLanguages(projectId)
