@@ -3,6 +3,7 @@ import { createHash } from "crypto"
 import { createRequire } from "node:module"
 import path from "path"
 import fs from "fs"
+import { detectLanguageFromPath } from "./language-detection"
 
 const require = createRequire(import.meta.url)
 
@@ -386,65 +387,7 @@ export async function parseFile(filePath: string, projectPath: string) {
   const sizeBytes = stat.size
   const lastModified = stat.mtimeMs
   const ext = path.extname(filePath).toLowerCase()
-  const langMap: Record<string, string> = {
-    ".ts": "typescript",
-    ".tsx": "tsx",
-    ".js": "javascript",
-    ".jsx": "javascript",
-    ".mjs": "javascript",
-    ".cjs": "javascript",
-    ".json": "json",
-    ".css": "css",
-    ".html": "html",
-    ".py": "python",
-    ".rb": "ruby",
-    ".go": "go",
-    ".rs": "rust",
-    ".java": "java",
-    ".kt": "kotlin",
-    ".kts": "kotlin",
-    ".scala": "scala",
-    ".c": "c",
-    ".cpp": "cpp",
-    ".h": "c",
-    ".hpp": "cpp",
-    ".cs": "csharp",
-    ".php": "php",
-    ".swift": "swift",
-    ".dart": "dart",
-    ".lua": "lua",
-    ".r": "r",
-    ".R": "r",
-    ".sql": "sql",
-    ".sh": "bash",
-    ".bash": "bash",
-    ".zsh": "bash",
-    ".ps1": "powershell",
-    ".perl": "perl",
-    ".ex": "elixir",
-    ".exs": "elixir",
-    ".erl": "erlang",
-    ".hrl": "erlang",
-    ".zig": "zig",
-    ".nim": "nim",
-    ".fsharp": "fsharp",
-    ".graphql": "graphql",
-    ".gql": "graphql",
-    ".vue": "vue",
-    ".svelte": "svelte",
-    ".scss": "css",
-    ".sass": "css",
-    ".less": "css",
-    ".yaml": "yaml",
-    ".yml": "yaml",
-    ".toml": "toml",
-    ".xml": "xml",
-    ".md": "markdown",
-    ".proto": "protobuf",
-    ".m": "objective-c",
-    ".mm": "objective-c",
-  }
-  const language = filePath.endsWith("source") ? "html" : langMap[ext] || "unknown"
+  const language = detectLanguageFromPath(filePath) ?? "unknown"
 
   const STRUCTURAL_LIMIT = 5 * 1024 * 1024 // 5 MB
   if (sizeBytes > STRUCTURAL_LIMIT) {
@@ -596,7 +539,7 @@ export async function parseFile(filePath: string, projectPath: string) {
       errMsg.includes("Failed to determine WASM path") ||
       errMsg.includes("not yet implemented")
     // Use a local var — `language` from outer scope may not be accessible in compiled mode
-    const lang = filePath.endsWith("source") ? "html" : (langMap[ext] || "unknown")
+    const lang = detectLanguageFromPath(filePath) ?? "unknown"
     if (!isExpected) {
       process.stderr.write(`[BB-PARSE-ERR] ${lang} | ${filePath} | ${errMsg.substring(0, 300)}\n`)
     }

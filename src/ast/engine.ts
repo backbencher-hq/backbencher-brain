@@ -5,6 +5,7 @@ import { lazy } from "../util/lazy"
 import { fileURLToPath } from "url"
 import { createRequire } from "node:module"
 import { resolveWasmAsset, loadWebTreeSitter, hasWasmInRegistry, ensureWasmRegistry, isWasmRegistryLoaded } from "../util/wasm"
+import { detectLanguageFromPath } from "./language-detection"
 
 const require = createRequire(import.meta.url)
 
@@ -138,8 +139,9 @@ export namespace ASTEngine {
     return resolveWasmAsset(asset)
   }
 
-  // Language definitions with Tree-sitter grammar paths
-  // 🚀 26 programming languages supported - most comprehensive AST engine ever built!
+  // Language definitions with Tree-sitter grammar paths. Generic entries are
+  // explicit fallback classifications and must not be treated as dedicated
+  // Tree-sitter parser support.
   const SUPPORTED_LANGUAGES = {
     // === CORE WEB TECHNOLOGIES ===
     typescript: "tree-sitter-typescript/typescript",
@@ -844,178 +846,9 @@ export namespace ASTEngine {
     return parser
   }
 
-  // Detect language from file path/content
-  // 🚀 Universal language detection for 26+ programming languages
+  // Detect language from the shared filename policy used by the worker path.
   export function detectLanguage(filePath: string, content?: string): SupportedLanguage | null {
-    if (filePath.endsWith("source")) return "html"
-    const ext = filePath.split(".").pop()?.toLowerCase()
-
-    switch (ext) {
-      // === WEB TECHNOLOGIES ===
-      case "ts":
-        return "typescript"
-      case "tsx":
-        return "tsx"
-      case "js":
-      case "cjs":
-      case "mjs":
-        return "javascript"
-      case "jsx":
-        return "javascript"
-      case "html":
-      case "htm":
-        return "html"
-      case "vue":
-        return "vue"
-      case "svelte":
-        return "svelte"
-      case "css":
-      case "scss":
-      case "sass":
-      case "less":
-        return "css"
-      case "json":
-        return "json"
-      case "yml":
-      case "yaml":
-        return "yaml"
-      case "graphql":
-      case "gql":
-        return "graphql"
-
-      // === SYSTEMS PROGRAMMING ===
-      case "c":
-      case "h":
-        return "c"
-      case "cpp":
-      case "cc":
-      case "cxx":
-      case "c++":
-      case "hpp":
-      case "hxx":
-        return "cpp"
-      case "rs":
-        return "rust"
-      case "go":
-        return "go"
-      case "zig":
-        return "zig"
-      case "nim":
-        return "nim"
-
-      // === ENTERPRISE & JVM ===
-      case "java":
-        return "java"
-      case "kt":
-      case "kts":
-        return "kotlin"
-      case "scala":
-      case "sc":
-        return "scala"
-      case "groovy":
-      case "gsp":
-        return "groovy"
-
-      // === SCRIPTING & DYNAMIC ===
-      case "py":
-      case "pyw":
-      case "pyi":
-      case "pyx":
-        return "python"
-      case "rb":
-        return "ruby"
-      case "php":
-        return "php"
-      case "lua":
-        return "lua"
-      case "pl":
-      case "pm":
-      case "t":
-      case "perl":
-        return "perl"
-      case "ex":
-      case "exs":
-        return "elixir"
-      case "erl":
-      case "hrl":
-        return "erlang"
-
-      // === FUNCTIONAL PROGRAMMING ===
-      case "hs":
-      case "lhs":
-        return "haskell"
-      case "icl":
-      case "dcl":
-        return "clean"
-      case "clj":
-      case "cljs":
-      case "cljc":
-      case "edn":
-        return "clojure"
-
-      // === MOBILE & MODERN ===
-      case "swift":
-        return "swift"
-      case "dart":
-        return "dart"
-
-      // === MICROSOFT ECOSYSTEM ===
-      case "cs":
-      case "csx":
-        return "csharp"
-      case "vb":
-        return "vb"
-
-      // === FUNCTIONAL (.NET) ===
-      case "fs":
-      case "fsi":
-      case "fsx":
-        return "fsharp"
-
-      // === DATA SCIENCE & STATS ===
-      case "r":
-        return "r"
-      case "sql":
-        return "sql"
-
-      // === SHELL & SYSTEM ===
-      case "sh":
-      case "bash":
-      case "zsh":
-        return "bash"
-      case "ps1":
-      case "psm1":
-      case "psd1":
-        return "powershell"
-
-      // === INFRASTRUCTURE AS CODE ===
-      case "tf":
-      case "tfvars":
-      case "tofu":
-      case "hcl":
-        return "hcl"
-
-      // === OBJECTIVE-C ===
-      case "m":
-      case "mm":
-        return "objective-c"
-
-      // === MARKUP & DATA ===
-      case "md":
-      case "markdown":
-        return "markdown"
-      case "toml":
-        return "toml"
-      case "xml":
-        return "xml"
-      case "proto":
-        return "protobuf"
-
-      default:
-        // Special case for .R (uppercase) since toLowerCase() makes it .r
-        if (ext === "r" && filePath.endsWith(".R")) return "r"
-        return null
-    }
+    return detectLanguageFromPath(filePath, content) as SupportedLanguage | null
   }
 
   // Parse file and extract universal symbols and relationships with INTELLIGENCE
