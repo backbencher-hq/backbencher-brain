@@ -1,6 +1,7 @@
 import { BrainDatabase } from "../../brain/database"
 import type { ProjectID } from "../../project/schema"
 import type { ProjectStats } from "../contracts"
+import { makeProvenance } from "../evidence"
 
 type AggregateRow = {
   files: number | null
@@ -10,6 +11,9 @@ type AggregateRow = {
   avgComplexity: number | null
   relationships: number | null
 }
+
+const ENGINE = "project-stats@intelligence"
+const ENGINE_VERSION = "m10.04"
 
 export async function getProjectStats(projectId: ProjectID): Promise<ProjectStats> {
   const raw = await BrainDatabase.getRawInstance(projectId)
@@ -31,5 +35,6 @@ export async function getProjectStats(projectId: ProjectID): Promise<ProjectStat
     avgComplexity: Number(row.avgComplexity ?? 0),
     relationships: Number(row.relationships ?? 0),
     projectId,
+    provenance: makeProvenance({ evidenceClass: "indexed", engine: ENGINE, engineVersion: ENGINE_VERSION, projectId, source: "brain_file+brain_symbol+brain_relationship", limitations: ["Aggregates are over indexed rows only; unindexed sources are not counted."] }),
   }
 }

@@ -18,10 +18,10 @@ caller, import, export, schema, fixture, verification, and public-contract evide
 | Broad legacy pattern aggregator | `PatternBrainTools.detectPatterns()` and legacy `tools.ts` rules | orphan rule migrated to canonical M10.03; framework/anti-pattern rules remain for M10.06 calibration or quarantine | M10.03 (orphan rule done); M10.06 |
 | Legacy architecture intelligence | `revolutionaryArchitectureIntelligence()`; heuristic detectors; no direct coverage | `improve` into evidence-backed rules or `remove` | M10.06 |
 | Architecture superiority claims | "WORLD'S FIRST", "revolutionary", "no other tool" | `remove` and replace with factual scope | M10.06 |
-| Analysis run/finding history | `brain_analysis_*`; `verify-analysis-history.ts` | `keep` and improve shared orchestration | M10.04 |
+| Analysis run/finding history | `brain_analysis_*`; `verify-analysis-history.ts` + `verify-analysis-governance.ts`; governance doc + executeAnalysis wrapper | `keep` — M10.04 schema migration (evidence/limitations/location/provenance), deterministic ordering, shared executeAnalysis wrapper all done | M10.04 (done) |
 | Canonical semantic search | `src/intelligence/search/semantic-search.ts`; `verify-semantic.ts` | `keep` — bb_ask fallback now routes to canonical, provenance-bearing M10.03 | M10.03 (done) |
 | Legacy quick-answer adapter | `BrainTools.quickAnswer()` superseded by canonical `src/intelligence/search/quick-answer.ts` M10.03 | `migrate` done — active bb_ask routes to canonical; legacy export quarantined for removal | M10.03 (done active path); M10.06 (remove legacy export) |
-| Canonical graph and impact | `src/intelligence/graph`, `analysis/impact`; verifiers | `keep` and improve options/coverage | M10.04 (provenance on analyze modes) |
+| Canonical graph and impact | `src/intelligence/graph`, `analysis/impact`; verifiers | `keep` — provenance added M10.04 (impact); M10.05 for performance budgets | M10.04 (done for analyze modes) |
 | Legacy visualization projection | `src/ast/dependency-graph-visualizer.ts` behind canonical adapter | `migrate` or quarantine adapter | M10.06 |
 | Legacy migration internals | AST cross-language intelligence and migration assistant | `migrate` behind typed canonical plan | M10.06 |
 | Canonical documentation engine | `src/intelligence/documentation/doc-engine.ts`; `verify-doc.ts` | `keep` and improve direct coverage | keep |

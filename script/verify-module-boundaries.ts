@@ -27,7 +27,7 @@ try {
   check("strict search module returns freshness metadata", results.freshCount !== undefined && results.staleCount !== undefined)
   check("strict stats module returns project identity", stats.projectId === projectId)
   check("strict stats module returns positive indexed counts", stats.files > 0 && stats.symbols > 0)
-  check("strict stats module returns numeric aggregates", Object.values(stats).every((value) => typeof value === "number" || typeof value === "string"))
+  check("strict stats module returns numeric aggregates", Object.entries(stats).filter(([k]) => k !== "provenance").every(([, value]) => typeof value === "number" || typeof value === "string"))
 } catch (error) {
   check("strict module boundary session", false, error instanceof Error ? error.message : String(error))
 } finally {

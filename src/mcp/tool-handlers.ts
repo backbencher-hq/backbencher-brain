@@ -15,7 +15,7 @@ import { TOOL_DESCRIPTORS } from "./tool-registry"
 import { testQuality } from "../intelligence/testing/quality"
 import { executeEdit, type EditRequest } from "../intelligence/edit/edit-engine"
 import { getUnifiedHealth, formatUnifiedHealth } from "../intelligence/health/health-provider"
-import { getAnalysisHistory, startAnalysisRun, completeAnalysisRun, failAnalysisRun } from "../intelligence/analysis/run-history"
+import { getAnalysisHistory, executeAnalysis } from "../intelligence/analysis/run-history"
 import { generateDocumentation, formatDocumentation, type DocRequest } from "../intelligence/documentation/doc-engine"
 import { visualizeProject, formatVisualization, type VisualizationRequest } from "../intelligence/visualization/visualization-engine"
 import { generateMigrationPlans, formatMigrationPlans } from "../intelligence/migration/migration-engine"
@@ -169,9 +169,11 @@ const handlers: Record<string, ToolHandler> = {
     const items = (result?.patterns ?? []).slice(0, limit)
     const lines = items.map((item: any) => `  [${item.severity}] ${item.type} @ ${item.location?.file}:${item.location?.line} (${Math.round(item.confidence * 100)}%)`)
     if (args.recordRun === true) {
-      const run = await startAnalysisRun({ projectId, kind: "patterns", input: { options: args } })
-      try {
-        const persisted = await completeAnalysisRun(projectId, run.id, items.map((item: any): AnalysisFindingInput => ({
+      const recorded = await executeAnalysis({
+        projectId,
+        kind: "patterns",
+        input: { options: args },
+        persist: () => items.map((item: any): AnalysisFindingInput => ({
           fingerprint: item.fingerprint ?? `${item.type}:${item.location?.file ?? "?"}:${item.location?.line ?? "?"}`,
           rule: item.type ?? "pattern",
           title: item.description ?? item.type ?? "pattern finding",
@@ -179,12 +181,9 @@ const handlers: Record<string, ToolHandler> = {
           confidence: item.confidence ?? null,
           evidence: item.evidence ?? [],
           location: item.location?.file ? `${item.location.file}:${item.location.line ?? "?"}` : null,
-        })))
-        return textResult(`patterns (${result?.statistics?.totalFound ?? items.length}) recorded run ${persisted.run.id}: new=${persisted.newFindings} repeated=${persisted.repeatedFindings} resolved=${persisted.resolvedFindings}\n${lines.join("\n") || "  none"}`)
-      } catch (error) {
-        await failAnalysisRun(projectId, run.id, error)
-        throw error
-      }
+        })),
+      })
+      return textResult(`patterns (${result?.statistics?.totalFound ?? items.length}) recorded run ${recorded.report.run.id}: new=${recorded.report.newFindings} repeated=${recorded.report.repeatedFindings} resolved=${recorded.report.resolvedFindings}\n${lines.join("\n") || "  none"}`)
     }
     return textResult(`patterns (${result?.statistics?.totalFound ?? items.length}):\n${lines.join("\n") || "  none"}`)
   },
@@ -208,9 +207,12 @@ const handlers: Record<string, ToolHandler> = {
       (source: any) => `  [info] unvalidated input${source.symbol ? ` ${source.symbol}` : ""} @ ${source.file}:${source.line ?? "?"} (no sink reached)`,
     )
     if (args.recordRun === true) {
-      const run = await startAnalysisRun({ projectId, kind: "security", input: { options: args } })
-      try {
-        const persisted = await completeAnalysisRun(projectId, run.id, findings.map((finding: any): AnalysisFindingInput => ({
+      const findingCount = findings.length
+      const recorded = await executeAnalysis({
+        projectId,
+        kind: "security",
+        input: { options: args },
+        persist: () => findings.map((finding: any): AnalysisFindingInput => ({
           fingerprint: finding.fingerprint ?? `${finding.file}:${finding.line ?? "?"}:${finding.label ?? finding.type}`,
           rule: finding.label ?? finding.type ?? "security",
           title: finding.label ?? finding.type ?? "security finding",
@@ -219,12 +221,9 @@ const handlers: Record<string, ToolHandler> = {
           evidence: finding.evidence ?? [],
           location: finding.file ? `${finding.file}:${finding.line ?? "?"}` : null,
           state: finding.mitigated ? "mitigated" : undefined,
-        })))
-        return textResult(head + `\nrecorded run: ${persisted.run.id}\nnew=${persisted.newFindings} repeated=${persisted.repeatedFindings} resolved=${persisted.resolvedFindings}` + "\n" + (lines.length ? lines.join("\n") : "  clean") + (sourceLines.length ? `\n\nunvalidated input sources:\n${sourceLines.join("\n")}` : ""))
-      } catch (error) {
-        await failAnalysisRun(projectId, run.id, error)
-        throw error
-      }
+        })),
+      })
+      return textResult(head + `\nrecorded run: ${recorded.report.run.id}\nnew=${recorded.report.newFindings} repeated=${recorded.report.repeatedFindings} resolved=${recorded.report.resolvedFindings}` + "\n" + `${findingCount} findings recorded` + (lines.length ? "\n" + lines.join("\n") : ""))
     }
     return textResult(head + "\n" + (lines.length ? lines.join("\n") : "  clean") + (sourceLines.length ? `\n\nunvalidated input sources:\n${sourceLines.join("\n")}` : ""))
   },

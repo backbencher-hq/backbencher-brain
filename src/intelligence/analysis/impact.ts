@@ -1,6 +1,10 @@
 import { graphTraversal } from "../graph/graph-engine"
 import type { ProjectID } from "../../project/schema"
 import type { ImpactReport } from "../contracts"
+import { makeProvenance } from "../evidence"
+
+const ENGINE = "impact@intelligence"
+const ENGINE_VERSION = "m10.04"
 
 // Change impact: who is affected when the target changes. Built over the shared
 // graph engine (callers direction). Distinguishes direct (depth 0), transitive
@@ -29,6 +33,7 @@ export async function analyzeImpact(
       unresolvedEdges: 0,
       riskLevel: "low",
       truncated: false,
+      provenance: makeProvenance({ evidenceClass: "unknown", engine: ENGINE, engineVersion: ENGINE_VERSION, projectId, source: "graph-engine-not-available", limitations: ["Target not found or graph engine errored."], unknowns: ["graph-traversal-failed"] }),
     }
   }
 
@@ -75,5 +80,6 @@ export async function analyzeImpact(
     unresolvedEdges,
     riskLevel,
     truncated: graph.summary.truncated,
+    provenance: makeProvenance({ evidenceClass: "inferred", engine: ENGINE, engineVersion: ENGINE_VERSION, projectId, source: "brain_relationship+brain_symbol+brain_file", limitations: ["Impact is bounded by graph traversal depth and indexed edges; unresolved external edges are reported but not followed."], truncated: graph.summary.truncated }),
   }
 }

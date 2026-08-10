@@ -113,6 +113,7 @@ export interface ProjectStats {
   avgComplexity: number
   relationships: number
   projectId: string
+  provenance: EvidenceProvenance
 }
 
 // Semantic search contracts
@@ -227,6 +228,7 @@ export interface FileDependency {
   dependencies: Array<{ path: string; fileId?: string; external: boolean }>
   dependents: Array<{ path: string; fileId: string }>
   score: number
+  provenance: EvidenceProvenance
 }
 
 export interface ComplexityMetric {
@@ -247,6 +249,7 @@ export interface ComplexityReport {
   }
   breakdown: Array<{ name: string; type: string; complexity: number; file: string; line: number }>
   symbolCount: number
+  provenance: EvidenceProvenance
 }
 
 export interface ImpactReport {
@@ -260,6 +263,7 @@ export interface ImpactReport {
   unresolvedEdges: number
   riskLevel: "low" | "medium" | "high" | "critical"
   truncated: boolean
+  provenance: EvidenceProvenance
 }
 
 // Pattern findings (orphans / architecture) — one canonical finding schema.
@@ -593,6 +597,14 @@ export interface AnalysisFindingRecord {
   state: AnalysisFindingState
   confidence: number | null
   evidence: unknown[]
+  /** Stable location identifier (file:line or symbol), used in dedup key. */
+  location: string | null
+  /** Known false-positive classes for this finding; retained alongside evidence. */
+  limitations: string[]
+  /** Per-finding provenance identity (evidence class + engine + version). */
+  evidenceClass: string | null
+  engine: string | null
+  engineVersion: string | null
   firstSeenAt: number
   lastSeenAt: number
   resolvedAt: number | null
@@ -608,6 +620,10 @@ export interface AnalysisFindingOccurrence {
   state: AnalysisFindingState
   location: string | null
   evidence: unknown[]
+  limitations: string[]
+  evidenceClass: string | null
+  engine: string | null
+  engineVersion: string | null
   observedAt: number
 }
 
@@ -627,6 +643,10 @@ export interface AnalysisFindingInput {
   confidence?: number | null
   evidence?: unknown[]
   location?: string | null
+  limitations?: string[]
+  evidenceClass?: string
+  engine?: string
+  engineVersion?: string
   state?: AnalysisFindingState
 }
 
@@ -638,6 +658,8 @@ export interface AnalysisRunReport {
   resolvedFindings: number
   reopenedFindings: number
   staleFindings: number
+  // All findings read back in deterministic order (state priority ASC, last_seen_at DESC, fingerprint ASC).
+  orderedFindings: AnalysisFindingRecord[]
 }
 
 export interface AnalysisHistoryReport {

@@ -1,6 +1,7 @@
 import { BrainDatabase } from "../../brain/database"
 import type { ProjectID } from "../../project/schema"
 import type { FileDependency } from "../contracts"
+import { makeProvenance } from "../evidence"
 
 type FileRow = { id: string; relativePath: string }
 type ImportRow = {
@@ -13,6 +14,9 @@ type EdgeRow = {
   targetFileId: string | null
   targetExternal: string | null
 }
+
+const ENGINE = "dependencies@intelligence"
+const ENGINE_VERSION = "m10.04"
 
 // File dependency analysis.
 //
@@ -119,12 +123,23 @@ export async function getFileDependencies(
     fileRows = fileRows.filter((f) => f.relativePath.includes(options.filePath!))
   }
 
+  const prov = makeProvenance({
+    evidenceClass: "inferred",
+    engine: ENGINE,
+    engineVersion: ENGINE_VERSION,
+    projectId,
+    source: "brain_relationship+brain_import",
+    limitations: [
+      "File-level edges are derived from symbol-level import relationships; alias/barrel re-exports may flatten multi-hop edges.",
+    ],
+  })
+
   const results: FileDependency[] = []
   for (const file of fileRows) {
     const deps = rawDepsByFile.get(file.id) ?? []
     const dependents = Array.from(dependentsByFile.get(file.id) ?? [])
       .map((depFileId) => ({ path: fileById.get(depFileId) ?? depFileId, fileId: depFileId }))
-    results.push({ file: file.relativePath, fileId: file.id, dependencies: deps, dependents, score: deps.length + dependents.length })
+    results.push({ file: file.relativePath, fileId: file.id, dependencies: deps, dependents, score: deps.length + dependents.length, provenance: prov })
   }
 
   results.sort((a, b) => b.score - a.score || a.file.localeCompare(b.file))

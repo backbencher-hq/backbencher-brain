@@ -1,6 +1,7 @@
 import { BrainDatabase } from "../../brain/database"
 import type { ProjectID } from "../../project/schema"
 import type { ComplexityMetric, ComplexityReport } from "../contracts"
+import { makeProvenance } from "../evidence"
 
 type SymRow = {
   id: string
@@ -12,6 +13,9 @@ type SymRow = {
   file: string
   fileId: string
 }
+
+const ENGINE = "complexity@intelligence"
+const ENGINE_VERSION = "m10.04"
 
 const metric = (value: number | null): ComplexityMetric => ({ value, available: value !== null })
 
@@ -109,5 +113,6 @@ export async function analyzeComplexity(
     },
     breakdown: breakdown.slice(0, 20),
     symbolCount,
+    provenance: makeProvenance({ evidenceClass: "indexed", engine: ENGINE, engineVersion: ENGINE_VERSION, projectId, source: "brain_symbol+brain_file+brain_relationship", limitations: ["depthOfInheritance unavailable; cyclomatics use indexed heuristics not dynamic dispatch."] }),
   }
 }
