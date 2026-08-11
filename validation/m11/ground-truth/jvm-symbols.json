@@ -1,0 +1,89 @@
+{
+  "BaseService.java": [
+    {"name":"BaseService","kind":"class","line":6},
+    {"name":"prefix","kind":"property","line":7},
+    {"name":"format","kind":"method","line":9},
+    {"name":"findAll","kind":"method","line":11},
+    {"name":"findByFilter","kind":"method","line":15},
+    {"name":"Entity","kind":"interface","line":19},
+    {"name":"getId","kind":"method","line":20},
+    {"name":"getName","kind":"method","line":21}
+  ],
+  "Models.kt": [
+    {"name":"User","kind":"class","line":5},
+    {"name":"constructor","kind":"constructor","line":5},
+    {"name":"id","kind":"property","line":5},
+    {"name":"name","kind":"property","line":5},
+    {"name":"Repository","kind":"interface","line":7},
+    {"name":"save","kind":"method","line":8},
+    {"name":"BaseService","kind":"class","line":11},
+    {"name":"prefix","kind":"property","line":12},
+    {"name":"format","kind":"method","line":13},
+    {"name":"Entity","kind":"interface","line":15},
+    {"name":"id","kind":"property","line":16},
+    {"name":"name","kind":"property","line":17},
+    {"name":"VERSION","kind":"property","line":21},
+    {"name":"Result","kind":"class","line":25},
+    {"name":"Success","kind":"class","line":26},
+    {"name":"constructor","kind":"constructor","line":26},
+    {"name":"value","kind":"property","line":26},
+    {"name":"Failure","kind":"class","line":27},
+    {"name":"constructor","kind":"constructor","line":27},
+    {"name":"error","kind":"property","line":27},
+    {"name":"Loading","kind":"class","line":28}
+  ],
+  "Repository.java": [
+    {"name":"Repository","kind":"interface","line":6},
+    {"name":"save","kind":"method","line":7},
+    {"name":"findAll","kind":"method","line":8}
+  ],
+  "UserService.java": [
+    {"name":"UserService","kind":"class","line":9},
+    {"name":"store","kind":"property","line":11},
+    {"name":"constructor","kind":"constructor","line":13},
+    {"name":"format","kind":"method","line":16},
+    {"name":"save","kind":"method","line":21},
+    {"name":"User","kind":"class","line":27},
+    {"name":"id","kind":"property","line":28},
+    {"name":"name","kind":"property","line":29},
+    {"name":"constructor","kind":"constructor","line":31},
+    {"name":"getId","kind":"method","line":36},
+    {"name":"getName","kind":"method","line":39}
+  ],
+  "UserService.kt": [
+    {"name":"UserService","kind":"class","line":7},
+    {"name":"constructor","kind":"constructor","line":7},
+    {"name":"_store","kind":"property","line":8},
+    {"name":"format","kind":"method","line":10},
+    {"name":"save","kind":"method","line":12},
+    {"name":"find","kind":"method","line":17},
+    {"name":"createService","kind":"function","line":20}
+  ],
+  "ScalaService.scala": [
+    {"name":"Formatter","kind":"interface","line":3},
+    {"name":"ScalaService","kind":"class","line":7},
+    {"name":"format","kind":"method","line":8},
+    {"name":"find","kind":"method","line":9},
+    {"name":"ScalaService","kind":"module","line":12},
+    {"name":"version","kind":"constant","line":13},
+    {"name":"create","kind":"method","line":14}
+  ],
+  "service.clj": [
+    {"name":"Formatter","kind":"interface","line":3},
+    {"name":"ClojureService","kind":"class","line":6},
+    {"name":"prefix","kind":"property","line":6},
+    {"name":"create-service","kind":"function","line":10}
+  ],
+  "GroovyService.groovy": [
+    {"name":"com.example.groovy","kind":"namespace","line":1},
+    {"name":"Formatter","kind":"interface","line":3},
+    {"name":"format","kind":"method","line":4},
+    {"name":"GroovyService","kind":"class","line":7},
+    {"name":"prefix","kind":"property","line":8},
+    {"name":"getPrefix","kind":"method","line":8},
+    {"name":"setPrefix","kind":"method","line":8},
+    {"name":"constructor","kind":"constructor","line":10},
+    {"name":"format","kind":"method","line":14},
+    {"name":"find","kind":"method","line":19}
+  ]
+}

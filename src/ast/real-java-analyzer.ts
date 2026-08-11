@@ -387,7 +387,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
 
           const sym: ASTEngine.UniversalSymbol = {
-            name,
+            name: isConstructor ? "constructor" : name,
             kind: isConstructor ? ASTEngine.SymbolKind.Constructor : ASTEngine.SymbolKind.Method,
             range: this.nodeToRange(node),
             visibility,

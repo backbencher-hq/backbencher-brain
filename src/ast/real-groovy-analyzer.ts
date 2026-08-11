@@ -84,7 +84,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (node.type === "enum_declaration") kind = ASTEngine.SymbolKind.Enum
 
           symbols.push({
-            name: currentPackage ? `${currentPackage}.${className}` : className,
+            name: className,
             kind,
             range: this.getRange(node),
             metadata: { groovySpecific: true, type: node.type, localName: className },
@@ -149,7 +149,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           nextScopePath.push(methodName)
           
           symbols.push({
-            name: methodName,
+            name: node.type === "constructor_declaration" ? "constructor" : methodName,
             kind: node.type === "constructor_declaration" ? ASTEngine.SymbolKind.Constructor : ASTEngine.SymbolKind.Method,
             range: this.getRange(node),
             metadata: { groovySpecific: true, isSpockTest: nameNode.type === "string_literal" },
@@ -321,19 +321,6 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
              })
          }
       }
-      // 8. Annotations (`@CompileStatic`, `@SpringBootApplication`, etc)
-      else if (node.type === "annotation" || node.type === "marker_annotation") {
-         const nameNode = this.findChild(node, (n) => n.type === "identifier" || n.type === "scoped_identifier")
-         if (nameNode) {
-             symbols.push({
-                 name: `@${nameNode.text}`,
-                 kind: ASTEngine.SymbolKind.Property,
-                 range: this.getRange(node),
-                 metadata: { groovySpecific: true, isAnnotation: true }
-             })
-         }
-      }
-
       // LAW 2: Absolute Zero WASM-bridge arrays. O(D) memory safety.
       const childCount = node.namedChildCount
       for (let i = childCount - 1; i >= 0; i--) {

@@ -652,7 +652,16 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
    * Extract Kotlin property with getters/setters and delegation
    */
   private extractProperty(node: Node, symbols: ASTEngine.UniversalSymbol[], ctx: KotlinContext, parentClass?: string) {
-    const nameNode = this.findChildByType(node, ["simple_identifier", "type_identifier"])
+    let ancestor = node.parent
+    while (ancestor && ancestor.type !== "class_declaration" && ancestor.type !== "object_declaration" && ancestor.type !== "source_file") {
+      if (ancestor.type === "function_declaration") return
+      ancestor = ancestor.parent
+    }
+
+    const declarationNode = this.findChildByType(node, ["variable_declaration"])
+    const nameNode = declarationNode
+      ? this.findChildByType(declarationNode, ["simple_identifier", "type_identifier"])
+      : this.findChildByType(node, ["simple_identifier", "type_identifier"])
     if (!nameNode) return
 
     const propertyName = nameNode.text
@@ -929,6 +938,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     const annotations = this.extractAnnotations(node, ctx)
 
     const isPrimaryConstructor = node.type === "primary_constructor"
+    const constructorProperties: Node[] = []
     if (isPrimaryConstructor) {
       parameters.length = 0
       for (let i = 0; i < node.namedChildCount; i++) {
@@ -949,6 +959,11 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
               name: nameNode.text,
               type: typeNode ? this.cleanKotlinType(typeNode.text) : "Any",
             })
+          }
+
+          const bindingKind = this.findChildByType(paramNode, ["binding_pattern_kind"])
+          if (bindingKind && (bindingKind.text === "val" || bindingKind.text === "var")) {
+            constructorProperties.push(paramNode)
           }
         }
       }
@@ -980,39 +995,30 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     symbols.push(symbol)
 
-    // In Kotlin, primary constructors can define properties (val/var)
-    if (isPrimaryConstructor && parentClass) {
-      let paramsNode = node.childForFieldName("parameters") || findSymbol(node.children, (c) => c?.type === "value_parameters")
-      if (paramsNode) {
-        for (let i = 0; i < paramsNode.namedChildCount; i++) {
-          const paramNode = paramsNode.namedChild(i)
-          if (paramNode && paramNode.type === "parameter") {
-            const text = paramNode.text
-            if (text.startsWith("val ") || text.startsWith("var ")) {
-              const nameNode =
-                paramNode.childForFieldName("name") || findSymbol(paramNode.children, (c) => c?.type === "simple_identifier")
-              const typeNode = paramNode.childForFieldName("type")
-              if (nameNode) {
-                symbols.push({
-                  name: nameNode.text,
-                  kind: ASTEngine.SymbolKind.Property,
-                  range: this.nodeToRange(paramNode),
-                  scope: this.currentScope(ctx),
-                  visibility: this.determineVisibility(modifiers, ctx),
-                  ownerName: parentClass,
-                  ownerKind: ASTEngine.SymbolKind.Class,
-                  returnType: typeNode ? this.cleanKotlinType(typeNode.text) : undefined,
-                  metadata: {
-                    isVal: text.startsWith("val "),
-                    isVar: text.startsWith("var "),
-                    isConstructorProperty: true,
-                    kotlinSpecific: true,
-                  },
-                })
-              }
-            }
-          }
-        }
+    if (parentClass) {
+      for (let i = 0; i < constructorProperties.length; i++) {
+        const paramNode = constructorProperties[i]
+        const nameNode = this.findChildByType(paramNode, ["simple_identifier"])
+        const typeNode = this.findChildByType(paramNode, ["user_type", "nullable_type", "type_identifier"])
+        const bindingKind = this.findChildByType(paramNode, ["binding_pattern_kind"])
+        if (!nameNode || !bindingKind) continue
+
+        symbols.push({
+          name: nameNode.text,
+          kind: ASTEngine.SymbolKind.Property,
+          range: this.nodeToRange(paramNode),
+          scope: this.currentScope(ctx),
+          visibility: this.determineVisibility(this.extractModifiers(paramNode, ctx), ctx),
+          ownerName: parentClass,
+          ownerKind: ASTEngine.SymbolKind.Class,
+          returnType: typeNode ? this.cleanKotlinType(typeNode.text) : undefined,
+          metadata: {
+            isVal: bindingKind.text === "val",
+            isVar: bindingKind.text === "var",
+            isConstructorProperty: true,
+            kotlinSpecific: true,
+          },
+        })
       }
     }
   }
