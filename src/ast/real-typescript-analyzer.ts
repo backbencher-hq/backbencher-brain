@@ -24,6 +24,7 @@ enum ScopeKind {
   Constructor = "constructor",
   Interface = "interface",
   Enum = "enum",
+  Type = "type",
 }
 
 interface ScopeEntry {
@@ -1423,6 +1424,7 @@ class TypeScriptAnalysisRunner {
   private moduleResolver: TypeScriptModuleResolver | null = null
   private typeInference: TypeInferenceEngine
   private symbolsById = new Map<string, ASTEngine.UniversalSymbol>()
+  private _pendingReExportImports: ASTEngine.ImportInfo[] = []
 
   constructor() {
     this.scopeManager = new ScopeManager()
@@ -1531,7 +1533,10 @@ class TypeScriptAnalysisRunner {
 
     // PHASE 3: Extract imports and exports
     this.extractImports(rootNode, imports)
+    this._pendingReExportImports = []
     this.extractExports(rootNode, exports, symbols)
+    imports.push(...this._pendingReExportImports)
+    this._pendingReExportImports = []
 
     // PHASE 4: Analyze relationships between symbols
     this.extractRelationships(rootNode, relationships, symbols, exports)
@@ -2105,6 +2110,54 @@ class TypeScriptAnalysisRunner {
 
     symbols.push(symbol)
     this.scopeManager.registerSymbol(symbol)
+
+    // For object-shaped type aliases (export type X = { id: string; name: string }),
+    // extract members as Property symbols so they appear alongside interface members.
+    if (typeValue && typeValue.type === "object_type") {
+      this.scopeManager.pushScope(ScopeKind.Type, name, node)
+      for (let i = 0; i < typeValue.namedChildCount; i++) {
+        const member = typeValue.namedChild(i)
+        if (!member) continue
+        if (member.type === "property_signature") {
+          const propName = member.childForFieldName("name")
+          if (!propName) continue
+          const typeAnnotation = member.childForFieldName("type")
+          symbols.push({
+            name: propName.text,
+            kind: ASTEngine.SymbolKind.Property,
+            range: this.nodeRange(member),
+            scope: name,
+            visibility: exportStatus.isExported ? "public" : "private",
+            returnType: typeAnnotation?.text.replace(/^:\s*/, ""),
+            ownerName: name,
+            ownerKind: ASTEngine.SymbolKind.Type,
+            isStatic: false,
+            metadata: {
+              isOptional: this.hasToken(member, "?"),
+              isTypeAliasMember: true,
+            },
+          })
+        } else if (member.type === "method_signature") {
+          const methodName = member.childForFieldName("name")
+          if (!methodName) continue
+          symbols.push({
+            name: methodName.text,
+            kind: ASTEngine.SymbolKind.Method,
+            range: this.nodeRange(member),
+            scope: name,
+            visibility: exportStatus.isExported ? "public" : "private",
+            returnType: this.extractReturnType(member),
+            parameters: this.extractParameters(member),
+            ownerName: name,
+            ownerKind: ASTEngine.SymbolKind.Type,
+            isStatic: false,
+            metadata: { isTypeAliasMember: true },
+          })
+        }
+      }
+      this.scopeManager.popScope()
+    }
+
     return true
   }
 
@@ -2747,6 +2800,31 @@ class TypeScriptAnalysisRunner {
           type: "default_export_expression",
           range: this.nodeRange(node),
         })
+      }
+
+      // Re-export records a module dependency: `export { X } from "./mod"`
+      // The analyzer surface includes this in `imports` via a synthetic
+      // ImportInfo with `reExport: true`. This ensures downstream consumers
+      // see the dependency edge without a separate pass.
+      if (sourceNode) {
+        const modulePath = sourceNode.text.replace(/['"]/g, "")
+        const reExportedNames: string[] = []
+        // Walk the already-pushed exports for this statement to collect names
+        for (let i = exports.length - 1; i >= 0; i--) {
+          const e = exports[i]
+          if (e.range && e.range.endLine !== undefined && e.range.endLine <= this.nodeRange(node).endLine && e.range.startLine >= this.nodeRange(node).startLine) {
+            reExportedNames.unshift(e.name)
+          }
+        }
+        if (reExportedNames.length > 0) {
+          this._pendingReExportImports.push({
+            module: modulePath,
+            items: reExportedNames,
+            isDefault: false,
+            range: this.nodeRange(node),
+            metadata: { reExport: true },
+          })
+        }
       }
     }
 

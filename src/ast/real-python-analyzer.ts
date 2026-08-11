@@ -170,14 +170,13 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "set_comprehension":
         case "dict_comprehension":
         case "generator_expression": {
-          const name = `${node.type}_${node.startPosition.row + 1}_${node.startPosition.column + 1}`
-          ctx.symbols.push({
-            name,
-            kind: ASTEngine.SymbolKind.Function,
-            range: this.nodeToRange(node),
-            scope: pFunc || pClass || "global",
-            metadata: { pythonSpecific: true, isComprehension: true, compType: node.type },
-          })
+          // Comprehensions are expression-level patterns inside their enclosing
+          // function/method, not standalone documents symbols. Track them via
+          // the parent scope's patterns — NOT via a synthetic named symbol
+          // that would contaminate symbol inventory and produce false-positive
+          // mismatch differentially.
+          const enclosingSymbol = ctx.symbols[ctx.symbols.length - 1]
+          if (enclosingSymbol?.metadata) enclosingSymbol.metadata.usesComprehension = true
           break
         }
 
@@ -420,7 +419,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     const isGenerator = node.text.includes("yield")
     ctx.symbols.push({
       name: className,
-      kind: ASTEngine.SymbolKind.Class,
+      kind: isEnum ? ASTEngine.SymbolKind.Enum : ASTEngine.SymbolKind.Class,
       range: this.nodeToRange(node),
       scope: scope || "global",
       ownerName: scope || "global",
@@ -437,6 +436,38 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         inheritsFromModel,
       },
     })
+
+    // Walk class body to extract enum members (Enum subclasses with simple value assignments)
+    if (isEnum) {
+      const bodyNode = this.findChildByType(node, "block")
+      if (bodyNode) {
+        for (let i = 0; i < bodyNode.namedChildCount; i++) {
+          const stmt = bodyNode.namedChild(i)
+          if (!stmt) continue
+          if (stmt.type === "expression_statement") {
+            const assign = stmt.namedChild(0)
+            if (assign && assign.type === "assignment") {
+              const left = assign.namedChild(0)
+              const right = assign.namedChild(1)
+              if (left && left.type === "identifier" && right && right.type !== "identifier") {
+                // Only members (constant values), not functions, properties, or descriptors
+                ctx.symbols.push({
+                  name: left.text,
+                  kind: ASTEngine.SymbolKind.EnumMember,
+                  range: this.nodeToRange(left),
+                  scope: className,
+                  ownerName: className,
+                  ownerKind: ASTEngine.SymbolKind.Enum,
+                  visibility: "public",
+                  returnType: right.type === "string" ? "str" : right.type === "integer" ? "int" : right.type,
+                  metadata: {},  // UniversalSymbol requires metadata
+                })
+              }
+            }
+          }
+        }
+      }
+    }
   }
 
   private extractFunction(node: Node, scope: string, ctx: PythonContext) {
@@ -696,7 +727,10 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       // Global or local var
       ctx.symbols.push({
         name: left.text,
-        kind: ASTEngine.SymbolKind.Variable,
+        // Class-level variables are more accurately properties/fields in
+        // object models (Django, SQLAlchemy, dataclasses). Only locals/test
+        // assignments should be variable kind.
+        kind: isClassVar ? ASTEngine.SymbolKind.Property : ASTEngine.SymbolKind.Variable,
         range: this.nodeToRange(left),
         scope: assignScope,
         ownerName: assignScope,

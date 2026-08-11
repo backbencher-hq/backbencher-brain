@@ -71,9 +71,22 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "function_declaration":
         case "method_declaration":
         case "getter_declaration":
-        case "setter_declaration":
+        case "setter_declaration": {
+          // Skip constructors mistakenly classified as method_declaration by
+          // tree-sitter-dart — detect by heuristic: name matches the enclosing
+          // class and has no return type.
+          const nameNode = node.childForFieldName("name")
+          if (nameNode && currentScope && currentScope.kind === ASTEngine.SymbolKind.Class &&
+              nameNode.text === currentScope.name) {
+            // This is a constructor that tree-sitter typed as method_declaration
+            // — reclassify and push a constructor symbol instead.
+            if (type.indexOf("declaration") !== -1)
+              pushedScope = this.processConstructor(node, symbols, relationships, currentScope, patterns)
+            break
+          }
           pushedScope = this.processFunctionOrMethod(node, symbols, currentScope, patterns)
           break
+        }
         case "function_signature":
         case "method_signature":
         case "getter_signature":
@@ -86,26 +99,81 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "factory_constructor_signature":
         case "constructor_declaration":
         case "factory_constructor_declaration":
-          if (type.indexOf("declaration") !== -1)
-            pushedScope = this.processConstructor(node, symbols, relationships, currentScope, patterns)
-          else if (!node.parent || node.parent.type.indexOf("declaration") === -1)
-            this.processConstructor(node, symbols, relationships, currentScope, patterns)
+          if (!currentScope) {
+            // Constructor without a containing class scope — fallback: find
+            // enclosing class by walking up parents (some tree-sitter-dart
+            // versions attach constructor nodes incorrectly to the class body).
+            let parent: any = node.parent
+            while (parent && parent.type !== "class_definition" && parent.type !== "mixin_declaration") parent = parent.parent
+            if (parent) {
+              const className = parent.childForFieldName("name")?.text
+              if (className) {
+                symbols.push({
+                  name: className,
+                  kind: ASTEngine.SymbolKind.Class,
+                  range: this.nodeToRange(parent),
+                  scope: "",
+                  visibility: className.startsWith("_") ? "private" : "public",
+                  metadata: { syntheticClassWrapper: true, dartSpecific: true },
+                })
+                processFieldOrVariableFallback: {
+                  // Process constructor via synthetic scope once the parent class
+                  // has been surfaced. Then continue normal traversal.
+                  const ctorSym = {
+                    name: className,
+                    kind: ASTEngine.SymbolKind.Constructor,
+                    range: this.nodeToRange(node),
+                    scope: className,
+                    visibility: "public",
+                    parameters: this.extractDartParameters(node),
+                    ownerName: className,
+                    ownerKind: ASTEngine.SymbolKind.Class,
+                    metadata: { isFactory: this.hasModifier(node, "factory"), dartSpecific: true },
+                  }
+                  symbols.push(ctorSym)
+                  break processFieldOrVariableFallback
+                }
+              }
+            }
+          } else {
+            if (type.indexOf("declaration") !== -1)
+              pushedScope = this.processConstructor(node, symbols, relationships, currentScope, patterns)
+            else if (!node.parent || node.parent.type.indexOf("declaration") === -1)
+              this.processConstructor(node, symbols, relationships, currentScope, patterns)
+          }
           break
-        case "declaration":
-          let hasSignature = false
+        case "declaration": {
+          let hasFunctionSig = false
+          let isConstructorInDecl = false
           for (let i = 0; i < node.namedChildCount; i++) {
             const c = node.namedChild(i)
-            if (c && c.type.indexOf("signature") !== -1) {
-              hasSignature = true
-              break
+            if (!c) continue
+            const ct = c.type
+            if (ct === "function_signature" || ct === "method_signature" || ct === "getter_signature" || ct === "setter_signature") {
+              hasFunctionSig = true
+            }
+            if (ct === "constructor_signature" || ct === "factory_constructor_signature" ||
+                ct === "constant_constructor_signature" || ct === "redirecting_factory_constructor_signature") {
+              isConstructorInDecl = true
             }
           }
-          if (hasSignature) {
-            pushedScope = this.processFunctionOrMethod(node, symbols, currentScope, patterns)
+          if (isConstructorInDecl) {
+            if (!currentScope) break
+            pushedScope = this.processConstructor(node, symbols, relationships, currentScope, patterns)
+          } else if (hasFunctionSig) {
+            const ctorCheck = this.findChild(node, (c) => c?.type.indexOf("signature") !== -1)
+            const actualSigType = ctorCheck?.type || "none"
+            if (actualSigType.indexOf("constructor") !== -1 || actualSigType.indexOf("factory") !== -1) {
+              if (!currentScope) break
+              pushedScope = this.processConstructor(node, symbols, relationships, currentScope, patterns)
+            } else {
+              pushedScope = this.processFunctionOrMethod(node, symbols, currentScope, patterns)
+            }
           } else {
             this.processFieldOrVariable(node, symbols, currentScope, patterns)
           }
           break
+        }
         case "initialized_identifier_list":
         case "initialized_variable_declaration":
           if (node.parent?.type === "program" || node.parent?.type === "static_final_declaration_list")
@@ -556,7 +624,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     patterns["Mixins"] = true
     symbols.push({
       name: nameNode?.text,
-      kind: ASTEngine.SymbolKind.Class,
+      kind: ASTEngine.SymbolKind.Mixin,
       range: this.nodeToRange(node),
       scope: currentScope?.name || "",
       visibility: nameNode?.text.startsWith("_") ? "private" : "public",
@@ -598,7 +666,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     patterns["Extensions"] = true
     symbols.push({
       name: nameNode?.text,
-      kind: ASTEngine.SymbolKind.Class,
+      kind: ASTEngine.SymbolKind.Extension,
       range: this.nodeToRange(node),
       scope: currentScope?.name || "",
       visibility: nameNode?.text.startsWith("_") ? "private" : "public",
@@ -670,6 +738,23 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     currentScope: Scope | undefined,
     patterns: Record<string, boolean>,
   ): boolean {
+    // tree-sitter-dart labels every class member as `declaration` with a
+    // signature child; the kind of that signature child determines the actual
+    // symbol kind. Constructor signatures must produce Constructor symbols,
+    // not Method symbols, which is what a naive name-extraction would do.
+    const sigT = node.type.indexOf("signature") !== -1
+      ? node.type
+      : (this.findChild(node, (c) => c?.type.indexOf("signature") !== -1)?.type ?? "")
+    if (
+      sigT === "constructor_signature" ||
+      sigT === "factory_constructor_signature" ||
+      sigT === "constant_constructor_signature" ||
+      sigT === "redirect_factory_constructor_signature"
+    ) {
+      // Constructor — delegate to processConstructor which handles ownerName,
+      // factory flag, named-constructor naming, and annotation lifting.
+      return this.processConstructor(node, symbols, [], currentScope, patterns)
+    }
     const isDecl = node.type.indexOf("declaration") !== -1
     const sigNode = isDecl ? this.findChild(node, (c) => c?.type.indexOf("signature") !== -1) || node : node
     const nameNode =
@@ -914,6 +999,12 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (this.hasModifier(node.parent, "const")) isConst = true
     }
     if (isLate) patterns["Late Initialization"] = true
+    if (node.type === "initialized_identifier_list" || node.type === "initialized_variable_declaration" ||
+      node.type === "static_final_declaration_list") {
+      // These are leaf containers for the actual declarations — don't re-process
+      // (they'll be visited individually by the traversal when they're named children).
+      return
+    }
     const declList =
       node.type === "initialized_identifier_list" ||
       node.type === "initialized_variable_declaration" ||

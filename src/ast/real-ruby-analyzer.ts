@@ -313,7 +313,10 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     ) {
       symbols.push({
         name: left.text,
-        kind: ASTEngine.SymbolKind.Variable,
+        // Ruby constants (UPPER_SNAKE_CASE) are distinct from variables —
+        // they're immutable macro-style bindings. Use Enum for UPPER_CASE
+        // constants at class level, Variable for other mutables.
+        kind: leftType === "constant" ? ASTEngine.SymbolKind.EnumMember : ASTEngine.SymbolKind.Variable,
         range: this.getRange(node),
         ownerName: parent ? parent.name : undefined,
         parent: parent ? parent.name : undefined,

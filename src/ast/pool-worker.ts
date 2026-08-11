@@ -470,7 +470,9 @@ export async function parseFile(filePath: string, projectPath: string) {
             "window", "document", "console",
             "process", "global", "__dirname", "__filename",
             "this", "super", "self", "Self", "me", "My",
-            "constructor", "destructor",
+            // "constructor" is a first-class declaration in TS/JS —
+            // do NOT filter it here. Only truly synthetic/noise names below.
+            "destructor",
             "module", "exports", "default", "globalThis",
             "root", "program", "source_file", "module_declaration",
             "package_manifest", "GlobalScope", "SCSS_FILE_SCOPE",
@@ -513,13 +515,36 @@ export async function parseFile(filePath: string, projectPath: string) {
           snippet,
         }
       }),
-      imports: parsed.imports.map((i: any) => ({
-        name: i.items?.[0] || i.module || "",
-        path: i.module || i.path || "",
-        type: i.isDefault ? "default" : i.isNamespace ? "namespace" : "named",
-        isExternal: i.module ? !i.module.startsWith(".") : false,
-        line: i.range?.startLine || 0,
-      })),
+      imports: (parsed.imports || []).flatMap((i: any) => {
+        // Emit one BasicImport per imported name so that a multi-item named
+        // import (e.g. `import { a, b, type C } from "./mod"`) produces one
+        // brain_import row per symbol — i.e. don't lose items[1..]. The
+        // analyzer's per-file granularity is the row that ends up being
+        // queried by intelligence layers, so fidelity here directly
+        // determines audit precision.
+        const items: string[] = Array.isArray(i.items) && i.items.length > 0
+          ? i.items
+          : [i.localName || i.module || ""]
+        const baseType = i.isDefault || i.isDefaultImport ? "default" : i.isNamespace || i.isNamespaceImport ? "namespace" : "named"
+        const external = typeof i.module === "string" ? !i.module.startsWith(".") && !i.module.startsWith("/") : !!i.isExternal
+        const line = i.range?.startLine ?? i.line ?? 0
+        return items
+          .filter((name: string) => typeof name === "string" && name.length > 0)
+          .map((name: string) => {
+            // "X as Y" → keep the alias form: name imported-as local alias
+            const asMatch = name.match(/^(\S+)\s+as\s+(\S+)$/)
+            const importedName = asMatch ? asMatch[2] : name
+            // Strip `type` qualifier: "type Repository" → "Repository"
+            const cleanName = importedName.replace(/^type\s+/, "").trim()
+            return {
+              name: cleanName,
+              path: i.module || i.path || "",
+              type: asMatch ? "alias" : baseType,
+              isExternal: external,
+              line,
+            }
+          })
+      }),
       relationships: filterNoiseRelationships(parsed.relationships, language),
       errors: parsed.errors || [], // <-- Stage 4: propagate syntax errors from the AST Engine
     }

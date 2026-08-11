@@ -275,6 +275,8 @@ export namespace ASTEngine {
     Struct = "struct", // Rust struct
     Impl = "impl", // Rust impl block
     Actor = "actor", // Swift actor
+    Mixin = "mixin", // Dart mixin declaration
+    Extension = "extension", // Dart extension declaration
   }
 
   export interface Parameter {
@@ -1409,6 +1411,8 @@ export namespace ASTEngine {
       if (nodeType.includes("struct")) return SymbolKind.Struct
       if (nodeType.includes("trait")) return SymbolKind.Trait
       if (nodeType.includes("impl")) return SymbolKind.Impl
+    if (nodeType.includes("mixin")) return SymbolKind.Mixin
+    if (nodeType.includes("extension")) return SymbolKind.Extension
       if (nodeType.includes("namespace") || nodeType.includes("module")) return SymbolKind.Namespace
       if (nodeType.includes("constructor")) return SymbolKind.Constructor
       if (nodeType.includes("property") || nodeType.includes("field")) return SymbolKind.Property
