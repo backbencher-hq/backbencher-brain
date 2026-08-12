@@ -74,10 +74,21 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
       } else if (node.type === "import_declaration" || node.type === "import") {
         this.processImport(node, ctx)
       } else if (node.type === "signature" || node.type === "type_signature") {
-        this.processSignature(node, ctx)
+        this.processSignature(node, ctx, currentScope)
         continue
       } else if (node.type === "function" || node.type === "bind" || node.type === "function_declaration") {
-        pushedScope = this.processFunction(node, ctx, currentScope, scopeStack)
+        // Skip local bindings inside where/let/do blocks (scopeKind === Namespace):
+        // those are internal scoped declarations, not module-level symbols.
+        const localScope = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1] : undefined
+        const insideLocalBlock = localScope?.kind === ASTEngine.SymbolKind.Namespace
+        if (!insideLocalBlock) pushedScope = this.processFunction(node, ctx, currentScope, scopeStack)
+        else {
+          scopeStack.push({ node, name: "local", kind: ASTEngine.SymbolKind.Namespace })
+          // Balance the synthetic scope with an exit marker so the namespace is
+          // popped once the local binding's subtree finishes — otherwise the
+          // leaked scope poisons every later module-level declaration.
+          stack.push({ node, isExit: true })
+        }
       } else if (node.type === "class" || node.type === "class_declaration") {
         pushedScope = this.processClass(node, ctx, scopeStack)
       } else if (node.type === "instance" || node.type === "instance_declaration") {
@@ -176,11 +187,37 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
             metadata: { isDataConstructor: true },
           })
         }
+        // Record fields (data Stream a = Stream { run :: IO a, ... }) → property
+        // symbols owned by the data type. Universal contract: struct/record
+        // fields are Property, matching C/Rust/Zig struct members.
+        const recordNode = this.findNamedChildByType(node, ["record"])
+        if (recordNode) {
+          const fields = this.collectFields(recordNode)
+          for (const field of fields) {
+            const fNameNode = this.findNamedChildByType(field, ["field_name"])
+            const varNode = fNameNode ? fNameNode.namedChild(0) : null
+            if (varNode?.text) {
+              ctx.symbols.push({
+                name: varNode.text,
+                kind: ASTEngine.SymbolKind.Property,
+                range: this.nodeToRange(field),
+                scope: currentScope?.name || "",
+                ownerName: currentScope?.name,
+                ownerKind: currentScope?.kind,
+                visibility: "public",
+                metadata: { haskellSpecific: true, isRecordField: true },
+              })
+            }
+          }
+        }
       } else if (
         node.type === "where" ||
         node.type === "let" ||
         node.type === "let_in" ||
-        node.type === "list_comprehension"
+        node.type === "list_comprehension" ||
+        node.type === "local_binds" ||
+        node.type === "do" ||
+        node.type === "do_expression"
       ) {
         const scopeName = `${currentScope?.name || "global"}_${node.type}_${cyclomaticComplexity}_${node.startIndex}`
         scopeStack.push({ node, name: scopeName, kind: ASTEngine.SymbolKind.Namespace })
@@ -419,7 +456,7 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
-  private processSignature(node: Node, ctx: HaskellContext) {
+  private processSignature(node: Node, ctx: HaskellContext, currentScope: Scope | undefined) {
     const nameNode = this.findNamedChildByType(node, ["variable", "identifier", "varid"])
     const typeNode = this.findNamedChildByType(node, ["signature_type"], (t: string) => t.indexOf("type") !== -1)
 
@@ -429,6 +466,27 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
       const parts = node.text.split("::")
       if (parts.length === 2) {
         ctx.typeSignatures[parts[0].trim()] = parts[1].trim()
+      }
+    }
+
+    // Interface/class method declarations: `class Mergeable s where merge :: ...`
+    // — the signature inside a class body is a Method symbol owned by the
+    // interface, matching C#/Rust/Elixir interface member handling.
+    if (nameNode && currentScope && (currentScope.kind === ASTEngine.SymbolKind.Interface || currentScope.kind === ASTEngine.SymbolKind.Class)) {
+      const existing = ctx.symbols.find(
+        (s) => s.name === nameNode.text && s.kind === ASTEngine.SymbolKind.Method && s.ownerName === currentScope.name,
+      )
+      if (!existing) {
+        ctx.symbols.push({
+          name: nameNode.text,
+          kind: ASTEngine.SymbolKind.Method,
+          range: this.nodeToRange(node),
+          scope: currentScope.name || "",
+          ownerName: currentScope.name,
+          ownerKind: currentScope.kind,
+          visibility: "public",
+          metadata: { haskellSpecific: true, isInterfaceMethod: true },
+        })
       }
     }
   }
@@ -482,7 +540,8 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (isHigherOrder) ctx.patterns["Higher-Order Functions"] = true
 
     const kind =
-      currentScope && currentScope.kind === ASTEngine.SymbolKind.Interface
+      currentScope &&
+      (currentScope.kind === ASTEngine.SymbolKind.Interface || currentScope.kind === ASTEngine.SymbolKind.Class)
         ? ASTEngine.SymbolKind.Method
         : ASTEngine.SymbolKind.Function
 
@@ -604,7 +663,14 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     ])
     if (typeNodes.length >= 2) {
       className = typeNodes[0]?.text || ""
-      targetType = typeNodes[1]?.text || ""
+      const tpNode = typeNodes[1]
+      if (tpNode && tpNode.type === "type_patterns") {
+        // instance Mergeable (Stream a) → target type constructor is `Stream`
+        const typeCon = this.findDescendant(tpNode, (n) => n.type === "name" || n.type === "type_constructor" || n.type === "tycon")
+        targetType = typeCon?.text || tpNode.text.replace(/[()]/g, "").trim().split(/\s+/)[0] || ""
+      } else {
+        targetType = tpNode?.text || ""
+      }
     } else if (typeNodes.length === 1) {
       const parts = (typeNodes[0]?.text || "").split(/\s+/)
       if (parts.length >= 2) {
@@ -619,7 +685,9 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    const name = `${className} ${targetType}`.trim()
+    // Name the implementation class by its target type (Stream), matching the
+    // universal impl-naming contract (Rust `impl User`, Elixir `defimpl`).
+    const name = targetType || className
     if (!name || name === " ") return false
 
     const currentScope = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1] : undefined
@@ -676,6 +744,32 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (found || (extraPredicate && extraPredicate(child.type))) return child
     }
     return null
+  }
+
+  private findDescendant(node: Node, predicate: (n: Node) => boolean): Node | null {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const child = node.namedChild(i)
+      if (!child) continue
+      if (predicate(child)) return child
+      const nested = this.findDescendant(child, predicate)
+      if (nested) return nested
+    }
+    return null
+  }
+
+  private collectFields(recordNode: Node): Node[] {
+    const fields: Node[] = []
+    const stack: Node[] = [recordNode]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const child = n.namedChild(i)
+        if (!child) continue
+        if (child.type === "field") fields.push(child)
+        else stack.push(child)
+      }
+    }
+    return fields
   }
 
   private collectNamedChildrenByType(node: Node, types: string[]): Node[] {

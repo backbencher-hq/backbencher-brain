@@ -60,12 +60,8 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
       else if (type === "behaviour_attribute") {
         const beNode = this.getChildByType(node, "atom")
         if (beNode?.text && OTP_BEHAVIOURS.has(beNode.text)) {
-          symbols.push({
-            name: beNode.text,
-            kind: ASTEngine.SymbolKind.Interface,
-            range: this.nodeToRange(node),
-            metadata: { nodeType: "behaviour", behaviourName: beNode.text },
-          })
+          // The behaviour is a cross-module contract, not a declaration in this
+          // file: emit the Implements edge only, never a standalone symbol.
           relationships.push({
             source: currentModule || filePath,
             target: beNode.text,
@@ -163,6 +159,16 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
               const fieldNameNode = this.getChildByType(child, "atom")
               if (fieldNameNode?.text) {
                 fields.push(fieldNameNode.text)
+                // Record fields → property symbols owned by the record (struct),
+                // matching the universal struct-field contract (C/Rust/Zig).
+                symbols.push({
+                  name: fieldNameNode.text,
+                  kind: ASTEngine.SymbolKind.Property,
+                  range: this.nodeToRange(child),
+                  ownerName: recordName,
+                  ownerKind: ASTEngine.SymbolKind.Struct,
+                  metadata: { nodeType: "record_field", isRecordField: true },
+                })
               }
             }
           }
@@ -227,16 +233,9 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       // ---- -spec name(...) :: ... ----
       else if (type === "spec") {
-        const nameNode = this.getChildByType(node, "function_name") || this.getChildByType(node, "atom")
-        if (nameNode?.text) {
-          symbols.push({
-            name: nameNode.text,
-            kind: ASTEngine.SymbolKind.Interface,
-            range: this.nodeToRange(node),
-            ownerName: currentModule,
-            metadata: { nodeType: "spec", isSpec: true },
-          })
-        }
+        // Specs are type annotations for the function that follows; the function
+        // declaration itself emits the symbol. Record nothing as a standalone
+        // symbol — avoids phantom interface/function duplicates.
       }
 
       // ---- ! (send_expression) ----

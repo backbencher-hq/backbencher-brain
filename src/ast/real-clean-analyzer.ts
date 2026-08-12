@@ -14,12 +14,14 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
     const commentRanges: { start: number; end: number }[] = []
 
     // O(N) TIME & O(D) SPACE COMPLEXITY CEILING: Iterative State Stack for DFS
-    const walkStack: Array<{ node: Node; activeFunction: string }> = [
+    // owner: the enclosing class/instance container (name + kind) used to emit
+    // interface/impl member methods, matching the universal method contract.
+    const walkStack: Array<{ node: Node; activeFunction: string; owner?: { name: string; kind: ASTEngine.SymbolKind } }> = [
       { node: rootNode, activeFunction: "" },
     ]
 
     while (walkStack.length > 0) {
-      const { node, activeFunction } = walkStack.pop()!
+      const { node, activeFunction, owner } = walkStack.pop()!
 
       if (node.isMissing) continue
 
@@ -45,6 +47,7 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
 
       let nextActiveFunction = activeFunction
+    let nextOwner = owner
 
       if (node.type === "function_declaration") {
         const identifiers = this.filterChildren(node, (n) => n.type === "identifier")
@@ -55,10 +58,11 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (nameNode) {
           const name = nameNode.text
           nextActiveFunction = name
+          const isMethod = !!owner && (owner.kind === ASTEngine.SymbolKind.Interface || owner.kind === ASTEngine.SymbolKind.Class)
 
           symbols.push({
             name,
-            kind: ASTEngine.SymbolKind.Function,
+            kind: isMethod ? ASTEngine.SymbolKind.Method : ASTEngine.SymbolKind.Function,
             range: {
               startLine: node.startPosition.row + 1,
               startColumn: node.startPosition.column,
@@ -67,6 +71,9 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
               startIndex: node.startIndex,
               endIndex: node.endIndex,
             },
+            ownerName: isMethod ? owner?.name : undefined,
+            ownerKind: isMethod ? owner?.kind : undefined,
+            visibility: "public",
             metadata: { cleanSpecific: true },
           })
         }
@@ -75,15 +82,19 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
         node.type === "class_declaration" ||
         node.type === "instance_declaration"
       ) {
-        const nameNode = node.childForFieldName("name") || this.findChild(node, (n) => n.type === "identifier")
-        if (nameNode) {
-          let kind = ASTEngine.SymbolKind.Type
-          if (node.type === "class_declaration") kind = ASTEngine.SymbolKind.Interface
-          else if (node.type === "instance_declaration") kind = ASTEngine.SymbolKind.Class
+        const identifiers = this.filterChildren(node, (n) => n.type === "identifier")
+        let nameNode = node.childForFieldName("name") || identifiers[0]
+        let kind = ASTEngine.SymbolKind.Type
+        if (node.type === "class_declaration") kind = ASTEngine.SymbolKind.Interface
+        else if (node.type === "instance_declaration") {
+          kind = ASTEngine.SymbolKind.Class
+          // instance ClassName Type where — name the impl by its target type
+          if (identifiers.length >= 2) nameNode = identifiers[1]
+        }
 
+        if (nameNode) {
           // Track Implements: instance ClassName Type where ...
           if (node.type === "instance_declaration") {
-            const identifiers = this.filterChildren(node, (n) => n.type === "identifier")
             if (identifiers.length >= 2) {
               relationships.push({
                 source: identifiers[1].text,
@@ -108,6 +119,61 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
             },
             metadata: { cleanSpecific: true },
           })
+          nextOwner = { name: nameNode.text, kind }
+        }
+
+        // Record fields (:: Vec = { x :: Int, ... }) → property symbols owned
+        // by the type, matching the universal struct-field contract.
+        if (node.type === "type_definition") {
+          const recordDef = this.findChild(node, (n) => n.type === "record_definition")
+          if (recordDef) {
+            for (let i = 0; i < recordDef.namedChildCount; i++) {
+              const rf = recordDef.namedChild(i)
+              if (!rf || rf.type !== "record_field") continue
+              const fieldId = this.findChild(rf, (n) => n.type === "identifier")
+              if (!fieldId) continue
+              symbols.push({
+                name: fieldId.text,
+                kind: ASTEngine.SymbolKind.Property,
+                range: {
+                  startLine: rf.startPosition.row + 1,
+                  startColumn: rf.startPosition.column,
+                  endLine: rf.endPosition.row + 1,
+                  endColumn: rf.endPosition.column,
+                  startIndex: rf.startIndex,
+                  endIndex: rf.endIndex,
+                },
+                ownerName: nameNode ? nameNode.text : undefined,
+                ownerKind: ASTEngine.SymbolKind.Type,
+                visibility: "public",
+                metadata: { cleanSpecific: true, isRecordField: true },
+              })
+            }
+          }
+        }
+      } else if (node.type === "type_signature") {
+        // class Summarize a where summarize :: a -> Int — the signature inside a
+        // class/instance body is a Method symbol owned by the container.
+        if (owner && (owner.kind === ASTEngine.SymbolKind.Interface || owner.kind === ASTEngine.SymbolKind.Class)) {
+          const sigId = this.findChild(node, (n) => n.type === "identifier")
+          if (sigId) {
+            symbols.push({
+              name: sigId.text,
+              kind: ASTEngine.SymbolKind.Method,
+              range: {
+                startLine: node.startPosition.row + 1,
+                startColumn: node.startPosition.column,
+                endLine: node.endPosition.row + 1,
+                endColumn: node.endPosition.column,
+                startIndex: node.startIndex,
+                endIndex: node.endIndex,
+              },
+              ownerName: owner.name,
+              ownerKind: owner.kind,
+              visibility: "public",
+              metadata: { cleanSpecific: true, isClassMethod: true },
+            })
+          }
         }
       } else if (node.type === "module_declaration") {
         const nameNode = this.findChild(node, (n) => n.type === "identifier")
@@ -344,7 +410,7 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
       for (let i = childCount - 1; i >= 0; i--) {
         const child = node.namedChild(i)
         if (child) {
-          walkStack.push({ node: child, activeFunction: nextActiveFunction })
+          walkStack.push({ node: child, activeFunction: nextActiveFunction, owner: nextOwner })
         }
       }
     }

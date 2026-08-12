@@ -110,6 +110,22 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (attrName === "moduledoc" || attrName === "doc") ctx.patterns["Documentation"] = true
         if (attrName === "spec" || attrName === "type" || attrName === "typep" || attrName === "opaque") ctx.patterns["Typespecs"] = true
         if (attrName === "callback" || attrName === "macrocallback") ctx.patterns["Behaviours"] = true
+        // @type name :: ... — type aliases are declaration-site symbols (Type
+        // kind), mirroring Erlang -type handling. M11.11 universal contract.
+        const attrCallNode = node.child(1)
+        const attrCallId = attrCallNode?.type === "call" ? this.findChild(attrCallNode, (c) => c?.type === "identifier") : undefined
+        if (attrCallId && (attrCallId.text === "type" || attrCallId.text === "typep" || attrCallId.text === "opaque")) {
+          const argsNode = this.findChild(attrCallNode!, (c) => c?.type === "arguments")
+          const binOp = argsNode ? this.findChild(argsNode, (c) => c?.type === "binary_operator") : undefined
+          const typeNameNode = binOp
+            ? this.findChild(binOp, (c) => c?.type === "identifier")
+            : argsNode
+              ? this.findChild(argsNode, (c) => c?.type === "identifier")
+              : undefined
+          if (typeNameNode?.text) {
+            ctx.symbols.push({ name: typeNameNode.text, kind: ASTEngine.SymbolKind.Type, range: this.nodeToRange(node), ownerName: currentScope?.name, ownerKind: currentScope?.kind, scope: currentScope?.name || "", visibility: "public", metadata: { elixirSpecific: true, isTypeSpec: true } })
+          }
+        }
         if (attrName === "behaviour" || attrName === "behavior") {
           const bhv = attrValue.replace(/['"]/g, "").trim()
           if (bhv) {
@@ -119,13 +135,10 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
       } else if (node.type === "case_clause" || node.type === "cond_clause" || node.type === "receive_clause" || node.type === "try_clause") {
           cyclomaticComplexity++;
       } else if (node.type === "anonymous_function" || node.type === "stab_clause") {
-        // fn x -> x + 1  or  &(&1 + 1)
-        const name = "lambda_" + node.startPosition.row + "_" + node.startPosition.column
-        ctx.symbols.push({
-          name, kind: ASTEngine.SymbolKind.Function, range: this.nodeToRange(node),
-          scope: currentScope?.name || "", ownerName: currentScope?.name, ownerKind: currentScope?.kind,
-          visibility: "private", metadata: { elixirSpecific: true, isAnonymous: true, isLambda: true }
-        })
+        // fn x -> x + 1  or  &(&1 + 1) — closures are scoped declarations, not
+        // module symbols. M11.11 closure/macro boundaries: mark pattern usage
+        // but never emit synthetic lambda symbols into the symbol table.
+        ctx.patterns["Closures"] = true
       } else if (node.type === "binary_operator") {
           const op = node.child(1)?.text
           if (op === "|>") {
@@ -285,17 +298,42 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
     
     const aliases = this.filterChildren(argsNode, (c) => c?.type === "alias")
     if (aliases.length > 0 && aliases[0]) protocol = aliases[0].text
-    
-    const fullName = `${protocol}.${forType}`
-    ctx.symbols.push({ name: fullName, kind: ASTEngine.SymbolKind.Class, range: this.nodeToRange(node), scope: currentScope?.name || "", visibility: "public", metadata: { elixirSpecific: true, isProtocolImplementation: true } })
+
+    // Name the implementation by its target type (OrderBook), not the
+    // protocol-qualified form — the containing scope provides the file/module
+    // context and the Implements edge records the protocol relationship.
+    const forTypeAlias = aliases.length > 1 ? aliases[1].text : forType
+    const implName = forTypeAlias && forTypeAlias !== "Unknown" ? forTypeAlias : protocol
+    const fullName = implName
+    ctx.symbols.push({ name: fullName, kind: ASTEngine.SymbolKind.Class, range: this.nodeToRange(node), scope: currentScope?.name || "", visibility: "public", metadata: { elixirSpecific: true, isProtocolImplementation: true, protocol, forType } })
     ctx.relationships.push({ source: fullName, target: protocol, type: ASTEngine.RelationshipType.Implements, metadata: {} })
     scopeStack.push({ node, name: fullName, kind: ASTEngine.SymbolKind.Class })
     return true
   }
 
   private processStruct(node: Node, ctx: ElixirContext, currentScope: Scope | undefined) {
-    const structName = currentScope ? `%${currentScope.name}{}` : "struct"
-     ctx.symbols.push({ name: structName, kind: ASTEngine.SymbolKind.Struct, range: this.nodeToRange(node), scope: currentScope?.name || "", ownerName: currentScope?.name, ownerKind: currentScope?.kind, visibility: "public", metadata: { elixirSpecific: true, isStruct: true } })
+    if (!currentScope) return
+    const structName = currentScope.name
+    ctx.symbols.push({ name: structName, kind: ASTEngine.SymbolKind.Struct, range: this.nodeToRange(node), scope: currentScope.name, ownerName: currentScope.name, ownerKind: currentScope.kind, visibility: "public", metadata: { elixirSpecific: true, isStruct: true } })
+    // Struct fields (defstruct bids: [], asks: []) → property symbols owned by
+    // the enclosing module. M11.11: defstruct keyword pairs are the universal
+    // property-equivalent of struct fields in C/Rust/Zig.
+    const argsNode = this.findChild(node, (c) => c?.type === "arguments")
+    if (argsNode) {
+      for (let i = 0; i < argsNode.namedChildCount; i++) {
+        const kwGroup = argsNode.namedChild(i)
+        if (!kwGroup || kwGroup.type !== "keywords") continue
+        for (let j = 0; j < kwGroup.namedChildCount; j++) {
+          const pair = kwGroup.namedChild(j)
+          if (!pair || pair.type !== "pair") continue
+          const kwNode = this.findChild(pair, (c) => c?.type === "keyword")
+          if (!kwNode?.text) continue
+          const fieldName = kwNode.text.replace(/:.*$/, "").trim()
+          if (!fieldName) continue
+          ctx.symbols.push({ name: fieldName, kind: ASTEngine.SymbolKind.Property, range: this.nodeToRange(pair), ownerName: currentScope.name, ownerKind: currentScope.kind, scope: currentScope.name, visibility: "public", metadata: { elixirSpecific: true, isStructField: true } })
+        }
+      }
+    }
   }
 
   private processFunction(node: Node, defType: string, ctx: ElixirContext, currentScope: Scope | undefined) {
@@ -385,8 +423,17 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
         return
     }
 
+    // Universal-kind mapping: defmacro/defmacrop → Macro; interface (defprotocol)
+    // and class (defimpl) members → Method; module functions stay Function.
+    let symbolKind = ASTEngine.SymbolKind.Function
+    if (defType.indexOf("macro") !== -1) {
+      symbolKind = ASTEngine.SymbolKind.Macro
+    } else if (currentScope && (currentScope.kind === ASTEngine.SymbolKind.Interface || currentScope.kind === ASTEngine.SymbolKind.Class)) {
+      symbolKind = ASTEngine.SymbolKind.Method
+    }
+
     const symbol: ASTEngine.UniversalSymbol = {
-        name, kind: ASTEngine.SymbolKind.Function, range: this.nodeToRange(node), scope: currentScope?.name || "", ownerName: currentScope?.name, ownerKind: currentScope?.kind, visibility, parameters,
+        name, kind: symbolKind, range: this.nodeToRange(node), scope: currentScope?.name || "", ownerName: currentScope?.name, ownerKind: currentScope?.kind, visibility, parameters,
         metadata: { elixirSpecific: true, isMacro: defType.indexOf("macro") !== -1, arity, heads: 1, hasPatternMatching: hasPattern, guards: guardList, isGenServerCallback: isGenCallback, isSupervisorCallback: isSupCallback }
     }
     ctx.symbols.push(symbol)
