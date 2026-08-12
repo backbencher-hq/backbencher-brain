@@ -723,6 +723,11 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
       const declNode = this.getIdentifierFromDeclarator(node.parent.childForFieldName("declarator"))
       if (declNode && declNode.text.trim()) structName = declNode.text.trim()
     }
+    // A struct_specifier without a body is a forward/reference declaration
+    // (e.g. `typedef struct Point Point;` or `struct Point *p;`). It is not a
+    // definition site — skip it to avoid phantom duplicates; the definition
+    // with a body emits the symbol once.
+    if (!node.childForFieldName("body")) return
     const isPacked = this.isPacked(node)
 
     const fields: any[] = []
@@ -806,7 +811,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     symbols.push({
       name: structName,
-      kind: ASTEngine.SymbolKind.Type,
+      kind: ASTEngine.SymbolKind.Struct,
       range: this.nodeToRange(node),
       scope: scope,
       visibility: "public",
@@ -935,7 +940,13 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     isConditional: boolean,
   ) {
     const nameNode = node.childForFieldName("name")
-    const enumName = nameNode && nameNode.text.trim() ? nameNode.text : "anonymous_enum"
+    let enumName = nameNode && nameNode.text.trim() ? nameNode.text : "anonymous_enum"
+    // Anonymous `typedef enum { ... } Name;` — name the enum from the typedef
+    // declarator so the symbol identity is the exported type name.
+    if (enumName === "anonymous_enum" && node.parent && node.parent.type === "type_definition") {
+      const declNode = this.getIdentifierFromDeclarator(node.parent.childForFieldName("declarator"))
+      if (declNode && declNode.text.trim()) enumName = declNode.text.trim()
+    }
     enums[enumName] = true
 
     const values: string[] = []
@@ -1002,6 +1013,11 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
   ) {
     const isStatic = this.hasStorageClass(node, "static")
 
+    // Function-local declarations (variables inside function bodies) are
+    // execution artifacts, not declaration sites — only file/global-scope
+    // declarations become symbols.
+    if (!isGlobal) return
+
     for (let i = 0; i < node.namedChildCount; i++) {
       const child = node.namedChild(i)
       if (
@@ -1060,48 +1076,73 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     isConditional: boolean,
   ) {
     const identNode = this.getIdentifierFromDeclarator(node.childForFieldName("declarator"))
-    if (identNode && identNode.text.trim()) {
-      symbols.push({
-        name: identNode.text,
-        kind: ASTEngine.SymbolKind.Type,
-        range: this.nodeToRange(node),
-        scope: scope,
-        visibility: "public",
-        metadata: { isTypedef: true, cSpecific: true, isConditional },
-      })
+    if (!identNode || !identNode.text.trim()) return
+    const typeName = identNode.text
+
+    // The typedef alias points at a struct/union/enum specifier.
+    const specNode = this.findChild(node, (c) =>
+      inArray(["struct_specifier", "union_specifier", "enum_specifier"], c?.type || ""),
+    )
+    if (specNode) {
+      const specNameNode = specNode.childForFieldName("name")
+      const specName = specNameNode && specNameNode.text.trim() ? specNameNode.text.trim() : null
+      // Anonymous definition (`typedef struct {...} Buffer;`): the struct/union/
+      // enum extractor already emitted the symbol under the typedef name — do
+      // not emit a duplicate type alias.
+      if (!specName) return
+      // Self-alias (`typedef struct Point Point;`): identical identity — skip
+      // the redundant alias symbol; the struct definition is the declaration.
+      if (specName === typeName) return
     }
+
+    symbols.push({
+      name: typeName,
+      kind: ASTEngine.SymbolKind.Type,
+      range: this.nodeToRange(node),
+      scope: scope,
+      visibility: "public",
+      metadata: { isTypedef: true, cSpecific: true, isConditional },
+    })
   }
 
   private extractMacro(node: Node, symbols: ASTEngine.UniversalSymbol[], isConditional: boolean) {
     const nameNode = node.childForFieldName("name")
-    if (nameNode && nameNode.text.trim()) {
-      const isFunctionLikeMacro = node.type === "preproc_function_def"
-      const parameters: ASTEngine.Parameter[] = []
+    if (!nameNode || !nameNode.text.trim()) return
 
-      if (isFunctionLikeMacro) {
-        const paramsNode = node.childForFieldName("parameters") || this.findFirstChildOfType(node, "preproc_params")
-        if (paramsNode) {
-          for (let i = 0; i < paramsNode.childCount; i++) {
-            const param = paramsNode.child(i)
-            if (param && param.isNamed) {
-              parameters.push({ name: param.text, type: "any" })
-            } else if (param && (param.type === "..." || param.text === "...")) {
-              parameters.push({ name: "...", type: "variadic", modifiers: [] })
-            }
+    const isFunctionLikeMacro = node.type === "preproc_function_def"
+
+    // Skip include guards: `#define NAME` with no value body (the name matches
+    // an enclosing #ifndef/#ifdef guard). They are file artifacts, not symbols.
+    if (!isFunctionLikeMacro) {
+      const valueNode = node.childForFieldName("value")
+      const hasBody = valueNode && valueNode.text.trim().length > 0
+      if (!hasBody) return
+    }
+
+    const parameters: ASTEngine.Parameter[] = []
+    if (isFunctionLikeMacro) {
+      const paramsNode = node.childForFieldName("parameters") || this.findFirstChildOfType(node, "preproc_params")
+      if (paramsNode) {
+        for (let i = 0; i < paramsNode.childCount; i++) {
+          const param = paramsNode.child(i)
+          if (param && param.isNamed) {
+            parameters.push({ name: param.text, type: "any" })
+          } else if (param && (param.type === "..." || param.text === "...")) {
+            parameters.push({ name: "...", type: "variadic", modifiers: [] })
           }
         }
       }
-
-      symbols.push({
-        name: nameNode.text,
-        kind: isFunctionLikeMacro ? ASTEngine.SymbolKind.Function : ASTEngine.SymbolKind.Constant,
-        range: this.nodeToRange(node),
-        scope: "global",
-        visibility: "public",
-        parameters: isFunctionLikeMacro ? parameters : undefined,
-        metadata: { isMacro: true, isFunctionLikeMacro, cSpecific: true, isConditional },
-      })
     }
+
+    symbols.push({
+      name: nameNode.text,
+      kind: isFunctionLikeMacro ? ASTEngine.SymbolKind.Macro : ASTEngine.SymbolKind.Constant,
+      range: this.nodeToRange(node),
+      scope: "global",
+      visibility: "public",
+      parameters: isFunctionLikeMacro ? parameters : undefined,
+      metadata: { isMacro: true, isFunctionLikeMacro, cSpecific: true, isConditional },
+    })
   }
 
   // --- Shallow Memory Math ---

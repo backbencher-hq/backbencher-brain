@@ -32,18 +32,43 @@ const BASENAME_LANGUAGE: Readonly<Record<string, DetectedLanguage>> = {
 }
 
 /**
- * Detect syntax from filename conventions only. Content is reserved for a
- * future independently-validated shebang/modeline detector; it is not used to
- * guess ambiguous grammars today.
+ * Detect syntax from filename conventions. Content is used ONLY to disambiguate
+ * ambiguous extensions — currently the `.h` header which is shared by C, C++,
+ * and Objective-C. Deterministic marker-based sniffing (not ML):
+ *   Objective-C if @interface/@protocol/@implementation/@property present,
+ *   C++ if class/namespace/template/virtual/override or std::/C++ includes,
+ *   else C. Everything else stays filename-only.
  */
-export function detectLanguageFromPath(filePath: string, _content?: string): DetectedLanguage | null {
+export function detectLanguageFromPath(filePath: string, content?: string): DetectedLanguage | null {
   const normalized = filePath.replace(/\\/g, "/")
   const basename = normalized.slice(normalized.lastIndexOf("/") + 1)
   const basenameMatch = BASENAME_LANGUAGE[basename.toLowerCase()]
   if (basenameMatch) return basenameMatch
   const dot = basename.lastIndexOf(".")
   if (dot < 0 || dot === basename.length - 1) return null
-  return EXTENSION_LANGUAGE[basename.slice(dot + 1).toLowerCase()] ?? null
+  const ext = basename.slice(dot + 1).toLowerCase()
+  const byExtension = EXTENSION_LANGUAGE[ext]
+  if (ext === "h" && content && content.length > 0) {
+    const head = content.length > 65536 ? content.slice(0, 65536) : content
+    // Objective-C markers are unambiguous (@interface/@protocol/@implementation).
+    if (/@(?:interface|protocol|implementation)\s+[A-Za-z_]/m.test(head)) return "objective-c"
+    // C++ markers: class declarations with access sections, templates,
+    // namespaces, virtual/override, or C++ standard headers.
+    const cppMarkers = [
+      /\bnamespace\s+[A-Za-z_][\w:]*\s*\{/m,
+      /\btemplate\s*</m,
+      /\bclass\s+[A-Za-z_][\w:]*\s*(?::\s*[^\n{]*)?\s*\{/m,
+      /\b(?:public|private|protected)\s*:/m,
+      /\b(?:virtual|override|constexpr|explicit)\b/m,
+      /\bstd::[A-Za-z_]/m,
+      /#include\s*[<"](?:algorithm|array|bits\/|cassert|cctype|cerrno|cfloat|climits|cmath|cstddef|cstdint|cstdio|cstdlib|cstring|ctime|deque|exception|fstream|functional|iomanip|ios|iosfwd|iostream|istream|iterator|limits|list|locale|map|memory|mutex|new|numeric|ostream|queue|regex|set|sstream|stack|stdexcept|streambuf|string|typeinfo|unordered_map|unordered_set|utility|valarray|vector)[">]/m,
+    ]
+    for (let i = 0; i < cppMarkers.length; i++) {
+      if (cppMarkers[i].test(head)) return "cpp"
+    }
+    return "c"
+  }
+  return byExtension ?? null
 }
 
 export function languageExtensionEntries(): ReadonlyArray<readonly [string, DetectedLanguage]> {

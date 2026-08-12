@@ -276,6 +276,7 @@ export namespace ASTEngine {
     Struct = "struct", // Rust struct
     Impl = "impl", // Rust impl block
     Actor = "actor", // Swift actor
+    Union = "union", // Zig/C union types
     Mixin = "mixin", // Dart mixin declaration
     Extension = "extension", // Dart extension declaration
   }
@@ -856,7 +857,7 @@ export namespace ASTEngine {
 
   // Parse file and extract universal symbols and relationships with INTELLIGENCE
   export async function parseFile(filePath: string, content: string): Promise<ParseResult> {
-    const language = detectLanguage(filePath)
+    const language = detectLanguage(filePath, content)
     if (!language) {
       throw new Error(`Unsupported file type: ${filePath}`)
     }

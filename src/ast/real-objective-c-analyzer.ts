@@ -47,47 +47,77 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       // Law 1: Flawless Database Extraction (cover all major Obj-C constructs)
       
-      // 1. Classes & Implementations
+      // 1. Classes & Implementations. tree-sitter-objc parses BOTH plain classes
+      // and categories as class_interface/class_implementation. A category is
+      // distinguished by a SECOND identifier child (the category name) before
+      // any method/property: `@interface MyClass (MyCategory)`. Detect it and
+      // emit an Extension symbol instead of a duplicate Class.
       if (node.type === "class_interface" || node.type === "class_implementation") {
+        const identNodes: string[] = []
+        for (let ci = 0; ci < node.namedChildCount; ci++) {
+          const cn = node.namedChild(ci)
+          if (cn && cn.type === "identifier") identNodes.push(cn.text)
+        }
         const nameNode = this.findChild(node, (n) => n.type === "identifier" || n.type === "type_identifier")
         if (nameNode) {
           nextActiveScope = nameNode.text
-          // Extract superclass (after nameNode, look for identifier/type_identifier)
-          let foundName = false
-          let superName: string | null = null
-          let protocols: string[] = []
-          for (let ci = 0; ci < node.namedChildCount; ci++) {
-            const cn = node.namedChild(ci)
-            if (!cn) continue
-            if (cn.type === "identifier" && !foundName) { foundName = true; continue }
-            if ((cn.type === "type_identifier" || cn.type === "superclass_reference" || cn.type === "identifier") && !superName) { superName = cn.text }
-            if (cn.type === "protocol_qualifiers" || cn.type === "protocol_list" || cn.type === "parameterized_arguments") {
-              for (let pj = 0; pj < cn.namedChildCount; pj++) {
-                const pn = cn.namedChild(pj)
-                if (pn && (pn.type === "type_identifier" || pn.type === "identifier" || pn.type === "type_name")) protocols.push(pn.text)
+          // Category detection: a category is `@interface Name (CategoryName)`
+          // which carries an anonymous `(` token. A plain class has `:` then a
+          // superclass identifier — never a paren. This is exact, not heuristic.
+          let hasParen = false
+          for (let ci = 0; ci < node.childCount; ci++) {
+            const c = node.child(ci)
+            if (c && !c.isNamed && c.type === "(") { hasParen = true; break }
+          }
+          const isCategory = hasParen
+
+          if (isCategory) {
+            symbols.push({
+              name: nameNode.text,
+              kind: ASTEngine.SymbolKind.Extension,
+              range: this.getRange(node),
+              ownerName: activeScope !== "global" ? activeScope : undefined,
+              metadata: { objcSpecific: true, isCategory: true, categoryName: identNodes[1] },
+            })
+          } else {
+            // Plain class: extract superclass + protocols for relationships.
+            let foundName = false
+            let superName: string | null = null
+            let protocols: string[] = []
+            for (let ci = 0; ci < node.namedChildCount; ci++) {
+              const cn = node.namedChild(ci)
+              if (!cn) continue
+              if (cn.type === "identifier" && !foundName) { foundName = true; continue }
+              if ((cn.type === "type_identifier" || cn.type === "superclass_reference" || cn.type === "identifier") && !superName) { superName = cn.text }
+              if (cn.type === "protocol_qualifiers" || cn.type === "protocol_list" || cn.type === "parameterized_arguments") {
+                for (let pj = 0; pj < cn.namedChildCount; pj++) {
+                  const pn = cn.namedChild(pj)
+                  if (pn && (pn.type === "type_identifier" || pn.type === "identifier" || pn.type === "type_name")) protocols.push(pn.text)
+                }
               }
             }
+            if (superName) { relationships.push({ source: nameNode.text, target: superName, type: ASTEngine.RelationshipType.Extends, metadata: { objcSpecific: true } }) }
+            for (let pk = 0; pk < protocols.length; pk++) { relationships.push({ source: nameNode.text, target: protocols[pk], type: ASTEngine.RelationshipType.Implements, metadata: { objcSpecific: true, isProtocol: true } }) }
+            symbols.push({
+              name: nameNode.text,
+              kind: ASTEngine.SymbolKind.Class,
+              range: this.getRange(node),
+              ownerName: activeScope !== "global" ? activeScope : undefined,
+              metadata: { objcSpecific: true, type: node.type, superClass: superName, protocols },
+            })
           }
-          if (superName) { relationships.push({ source: nameNode.text, target: superName, type: ASTEngine.RelationshipType.Extends, metadata: { objcSpecific: true } }) }
-          for (let pk = 0; pk < protocols.length; pk++) { relationships.push({ source: nameNode.text, target: protocols[pk], type: ASTEngine.RelationshipType.Implements, metadata: { objcSpecific: true, isProtocol: true } }) }
-          symbols.push({
-            name: nameNode.text,
-            kind: ASTEngine.SymbolKind.Class,
-            range: this.getRange(node),
-            ownerName: activeScope !== "global" ? activeScope : undefined,
-            metadata: { objcSpecific: true, type: node.type, superClass: superName, protocols },
-          })
         }
       } 
-      // 2. Categories (e.g., @interface MyClass (MyCategory))
+      // 2. Explicit category node types (some grammars emit these directly).
       else if (node.type === "category_interface" || node.type === "category_implementation") {
         const nameNode = this.findChild(node, (n) => n.type === "identifier" || n.type === "type_identifier")
         if (nameNode) {
           nextActiveScope = nameNode.text
           symbols.push({
             name: nameNode.text,
-            kind: ASTEngine.SymbolKind.Namespace, // Representing category extension
+            kind: ASTEngine.SymbolKind.Extension,
             range: this.getRange(node),
+            ownerName: activeScope !== "global" ? activeScope : undefined,
             metadata: { objcSpecific: true, isCategory: true },
           })
         }
@@ -135,28 +165,39 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
           })
         }
       }
-      // 6. Properties (@property)
+      // 6. Properties (@property) — the name lives deep inside the trailing
+      // struct_declaration (`NSString *prefix` → struct_declaration →
+      // struct_declarator → pointer_declarator → identifier).
       else if (node.type === "property_declaration") {
-         const nameNode = this.findChild(node, (n) => n.type === "identifier" || n.type === "property_identifier")
-         if (nameNode) {
-           symbols.push({
-             name: nameNode.text,
-             kind: ASTEngine.SymbolKind.Property,
-             range: this.getRange(node),
-             ownerName: activeScope !== "global" ? activeScope : undefined,
-             metadata: { objcSpecific: true },
-           })
-         }
+        const nameNode = this.findDeclaredName(node)
+        if (nameNode) {
+          symbols.push({
+            name: nameNode,
+            kind: ASTEngine.SymbolKind.Property,
+            range: this.getRange(node),
+            ownerName: activeScope !== "global" ? activeScope : undefined,
+            metadata: { objcSpecific: true },
+          })
+        }
       }
-      // 7. Variables (C-style declarations)
+      // 6b. Instance variables (@implementation X { ... }) — declarations, not locals.
+      else if (node.type === "instance_variable") {
+        const nameNode = this.findDeclaredName(node)
+        if (nameNode) {
+          symbols.push({
+            name: nameNode,
+            kind: ASTEngine.SymbolKind.Property,
+            range: this.getRange(node),
+            ownerName: activeScope !== "global" ? activeScope : undefined,
+            metadata: { objcSpecific: true, isInstanceVariable: true },
+          })
+        }
+      }
+      // 7. Variables (C-style declarations) — file-scope only; method-body
+      // declarations are locals (execution artifacts) and blocks are generated.
       else if (node.type === "block_literal" || node.type === "block_expression") {
-         symbols.push({
-           name: "block_" + node.startPosition.row + "_" + node.startPosition.column,
-           kind: ASTEngine.SymbolKind.Function,
-           range: this.getRange(node),
-           metadata: { objcSpecific: true, isBlock: true },
-         })
-      } else if (node.type === "declaration") {
+        // Anonymous blocks have generated names — skip as symbols.
+      } else if (node.type === "declaration" && activeScope === "global") {
          const declarator = this.findChild(node, (n) => n.type === "init_declarator" || n.type === "identifier")
          const nameNode = declarator ? (declarator.type === "init_declarator" ? this.findChild(declarator, (n) => n.type === "identifier") : declarator) : null
          if (nameNode) {
@@ -209,10 +250,13 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    // Law 3: O(1) MAP deduplications — include ownerName for methods to avoid collision
+    // Law 3: O(1) MAP deduplications — include ownerName AND start line so a
+    // class_interface and a same-named category (or two distinct declarations)
+    // never collapse into one symbol.
     const uniqueSymbolsMap = new Map<string, ASTEngine.UniversalSymbol>()
     for (let i = 0; i < symbols.length; i++) {
-        uniqueSymbolsMap.set(`${symbols[i].kind}:${symbols[i].ownerName || ''}:${symbols[i].name}`, symbols[i])
+        const s = symbols[i]
+        uniqueSymbolsMap.set(`${s.kind}:${s.ownerName || ''}:${s.name}:${s.range?.startLine || 0}`, s)
     }
     const uniqueSymbols = Array.from(uniqueSymbolsMap.values())
 
@@ -245,6 +289,35 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
       errors,
       metadata: { complexity: uniqueSymbols.length, linesOfCode: content.split("\n").length, detectedFrameworks: [...frameworks], framework: [...frameworks][0] },
     }
+  }
+
+  // Walk struct_declaration → struct_declarator → (pointer/reference) →
+  // identifier to find the declared property/ivar name.
+  private findDeclaredName(node: Node): string | null {
+    const walkForIdentifier = (n: Node | null): Node | null => {
+      if (!n) return null
+      if (n.type === "identifier" || n.type === "property_identifier") return n
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const found = walkForIdentifier(n.namedChild(i))
+        if (found) return found
+      }
+      return null
+    }
+    const idNode = walkForIdentifier(node)
+    if (!idNode) return null
+    // Exclude type identifiers (NSString, NSObject, id, etc.) that appear
+    // BEFORE the declarator — the declared name is the LAST identifier in a
+    // struct_declaration subtree. Prefer identifiers that are NOT in the
+    // type position (first child).
+    const structDecl = this.findChild(node, (n) => n.type === "struct_declaration")
+    if (structDecl) {
+      const sd = this.findChild(structDecl, (n) => n.type === "struct_declarator")
+      if (sd) {
+        const deep = walkForIdentifier(sd)
+        if (deep) return deep.text
+      }
+    }
+    return idNode.text
   }
 
   // Pure cursor helper protecting V8 from GC Thrashing

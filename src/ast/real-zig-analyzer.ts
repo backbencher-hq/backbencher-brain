@@ -2,17 +2,18 @@ import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 
 /**
- * REAL ZIG ANALYZER v5.0 - Grounded in real tree-sitter-zig 0.2.0 AST
+ * REAL ZIG ANALYZER v6.0 — declaration-site-only extraction.
  *
- * ALL node type names verified by direct WASM parsing of Zig source files.
- * Grammar uses: for_statement, while_statement, comptime_declaration,
- * error_set_declaration, error_type, switch_expression, etc.
- *
- * 4 LAWS:
- * 1. Flawless Database Extraction (UniversalSymbol, UniversalRelationship)
- * 2. Zero WASM arrays (O(1) namedChildCount + namedChild access per symbol)
- * 3. O(N) iterative DFS (single while loop, push children in reverse)
- * 4. 100% stateless (pure helper functions only)
+ * Grounded in the verified tree-sitter-zig AST shape:
+ *   - Top-level and container-level `variable_declaration` nodes carry the
+ *     container kinds: `const X = struct {...}`, `enum {...}`, `union(enum) {...}`,
+ *     `error{...}`, or plain constants/type aliases.
+ *   - `container_field` nodes are struct/union members (→ Property) or enum
+ *     members (→ EnumMember).
+ *   - `function_declaration` nodes are Methods inside containers, Functions at
+ *     file scope.
+ *   - Control-flow, type-annotation, call, block, and field-access nodes are
+ *     EXECUTION ARTIFACTS, not declaration sites — they never become symbols.
  */
 export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
   public analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
@@ -22,91 +23,31 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
     const exports: ASTEngine.ExportInfo[] = []
     const errors: ASTEngine.ParseError[] = []
 
-    const walkStack: { node: Node; scopePath: string[] }[] = [{ node: rootNode, scopePath: [] }]
+    // Walk context: node + the nearest enclosing declaration context.
+    // Context is null (file scope), a container symbol (struct/enum/union), or
+    // a function symbol (whose body must not produce declaration symbols).
+    const walkStack: { node: Node; container: ASTEngine.UniversalSymbol | null; inFunction: boolean }[] = [
+      { node: rootNode, container: null, inFunction: false },
+    ]
 
     while (walkStack.length > 0) {
-      const { node, scopePath } = walkStack.pop()!
+      const item = walkStack.pop()!
+      const { node, container, inFunction } = item
       const type = node.type
-      let currentScope = [...scopePath]
       const nodeText = this.nodeText(node)
 
-      // ─── FUNCTION DECLARATION: pub fn name(...) { ... } ───
-      if (type === "function_declaration" || type === "function_signature") {
-        const isExported = nodeText.startsWith("pub ") || nodeText.startsWith("export ")
-        const isInline = nodeText.includes("inline ")
-        const isExported_ = isExported
-
-        let fnName = ""
-        const identNode = this.anyChild(node, (n) => n.type === "identifier")
-        if (identNode) fnName = identNode.text
-
-        if (fnName && fnName.length < 100) {
-          const params: ASTEngine.Parameter[] = []
-          const paramsNode = this.anyChild(node, (n) => n.type === "parameters")
-          if (paramsNode) {
-            for (let i = 0; i < paramsNode.namedChildCount; i++) {
-              const child = paramsNode.namedChild(i)
-              if (!child || child.type === ",") continue
-              if (child.type === "parameter") {
-                const pNameNode = this.anyChild(child, (n) => n.type === "identifier")
-                const pTypeNode = this.anyChild(
-                  child,
-                  (n) =>
-                    n.type === "builtin_type" ||
-                    n.type === "nullable_type" ||
-                    n.type === "slice_type" ||
-                    n.type === "pointer_type" ||
-                    n.type === "identifier" ||
-                    n.type === "error_union_type",
-                )
-                if (pNameNode) {
-                  params.push({
-                    name: pNameNode.text,
-                    type: pTypeNode ? this.nodeText(pTypeNode) : undefined,
-                  })
-                }
-              }
-            }
-          }
-
-          symbols.push({
-            name: fnName,
-            kind: ASTEngine.SymbolKind.Function,
-            visibility: isExported_ ? "public" : "private",
-            range: this.nodeRange(node),
-            scope: currentScope.join("."),
-            parameters: params,
-            returnType: "void",
-            metadata: {
-              zigFunction: true,
-              inline: isInline,
-              paramCount: params.length,
-            },
-          })
-          currentScope.push(fnName)
-          if (isExported_) {
-            exports.push({ name: fnName, kind: ASTEngine.SymbolKind.Function })
-          }
-        }
-      }
-
-      // ─── VARIABLE / CONSTANT DECLARATION: const X = ... ───
+      // ─── CONTAINER / CONSTANT DECLARATION: const X = ... ───
       if (type === "variable_declaration") {
-        const identNode = this.anyChild(node, (n) => n.type === "identifier")
-        if (!identNode) {
-          for (let i = node.namedChildCount - 1; i >= 0; i--) {
-            const child = node.namedChild(i)
-            if (child) walkStack.push({ node: child, scopePath: currentScope })
-          }
+        // Inside a function body: locals are execution artifacts — skip.
+        if (inFunction) {
+          this.pushChildren(node, walkStack, container, inFunction)
           continue
         }
 
-        const varName = identNode.text
+        const identNode = this.anyChild(node, (n) => n.type === "identifier")
+        const varName = identNode ? identNode.text : ""
         if (!varName || varName.length > 80) {
-          for (let i = node.namedChildCount - 1; i >= 0; i--) {
-            const child = node.namedChild(i)
-            if (child) walkStack.push({ node: child, scopePath: currentScope })
-          }
+          this.pushChildren(node, walkStack, container, inFunction)
           continue
         }
 
@@ -116,430 +57,147 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         const rhsType = rhs?.type || ""
         const rhsText = rhs ? this.nodeText(rhs) : ""
 
-        if (rhsType === "enum_declaration" || rhsText.includes("enum{")) {
-          symbols.push({
-            name: varName,
-            kind: ASTEngine.SymbolKind.Enum,
-            visibility: isExported ? "public" : "private",
-            range: this.nodeRange(node),
-            scope: currentScope.join("."),
-            metadata: { zigDeclaration: "enum", zigEnum: true },
-          })
-          if (isExported) exports.push({ name: varName, kind: ASTEngine.SymbolKind.Enum })
-          currentScope.push(varName)
-        } else if (rhsType === "error_set_declaration" || rhsText.startsWith("error{")) {
-          symbols.push({
-            name: varName,
-            kind: ASTEngine.SymbolKind.Enum,
-            visibility: isExported ? "public" : "private",
-            range: this.nodeRange(node),
-            scope: currentScope.join("."),
-            metadata: { zigDeclaration: "error_set", zigErrorSet: true },
-          })
-          if (isExported) exports.push({ name: varName, kind: ASTEngine.SymbolKind.Enum })
-          currentScope.push(varName)
-        } else if (rhsType === "struct_declaration" || rhsText.includes("struct{") || rhsText.startsWith("struct{")) {
-          symbols.push({
-            name: varName,
-            kind: ASTEngine.SymbolKind.Class,
-            visibility: isExported ? "public" : "private",
-            range: this.nodeRange(node),
-            scope: currentScope.join("."),
-            metadata: { zigDeclaration: "struct", zigStruct: true },
-          })
-          if (isExported) exports.push({ name: varName, kind: ASTEngine.SymbolKind.Class })
-          currentScope.push(varName)
-        } else if (varName[0] === varName[0].toUpperCase() && varName[0] !== varName[0].toLowerCase()) {
-          symbols.push({
-            name: varName,
-            kind: ASTEngine.SymbolKind.Type,
-            visibility: isExported ? "public" : "private",
-            range: this.nodeRange(node),
-            scope: currentScope.join("."),
-            metadata: { zigDeclaration: "type_alias" },
-          })
-          if (isExported) exports.push({ name: varName, kind: ASTEngine.SymbolKind.Type })
-        } else {
-          symbols.push({
-            name: varName,
-            kind: ASTEngine.SymbolKind.Constant,
-            visibility: isExported ? "public" : "private",
-            range: this.nodeRange(node),
-            scope: currentScope.join("."),
-            metadata: { zigDeclaration: "constant" },
-          })
-          if (currentScope.length > 0) {
-            relationships.push({
-              source: currentScope[currentScope.length - 1],
-              target: varName,
-              type: ASTEngine.RelationshipType.Contains,
-              metadata: {},
-            })
-          }
-          if (isExported) exports.push({ name: varName, kind: ASTEngine.SymbolKind.Constant })
-        }
-      }
-
-      // ─── FOR STATEMENT: for (...) |...| { ... } ───
-      if (type === "for_statement") {
-        const isInline = nodeText.includes("inline ")
-        symbols.push({
-          name: isInline ? "inline for" : "for",
-          kind: ASTEngine.SymbolKind.Function,
-          visibility: "private",
-          range: this.nodeRange(node),
-          scope: currentScope.join("."),
-          metadata: {
-            zigLoop: true,
-            zigFor: true,
-            inline: isInline,
-            loopType: isInline ? "inline_for" : "for",
-          },
-        })
-        currentScope.push(isInline ? "inline for" : "for")
-      }
-
-      // ─── WHILE STATEMENT: while (...) { ... } ───
-      if (type === "while_statement") {
-        const isInline = nodeText.includes("inline ")
-        symbols.push({
-          name: isInline ? "inline while" : "while",
-          kind: ASTEngine.SymbolKind.Function,
-          visibility: "private",
-          range: this.nodeRange(node),
-          scope: currentScope.join("."),
-          metadata: {
-            zigLoop: true,
-            zigWhile: true,
-            inline: isInline,
-            loopType: isInline ? "inline_while" : "while",
-          },
-        })
-        currentScope.push(isInline ? "inline while" : "while")
-      }
-
-      // ─── LABELED STATEMENT: inline for/while blocks (line 88 in lang.zig uses labeled_statement for comptime blocks)
-      // Check if it's a labeled block containing a loop
-      if (type === "labeled_statement") {
-        if (
-          nodeText.includes("inline for") ||
-          nodeText.includes("inline while") ||
-          nodeText.includes("for (") ||
-          nodeText.includes("while (")
-        ) {
-          const isInline = nodeText.includes("inline ")
-          const isFor = nodeText.includes("for (")
-          const isWhile = nodeText.includes("while (")
-
-          if (isFor) {
-            symbols.push({
-              name: isInline ? "inline for" : "for",
-              kind: ASTEngine.SymbolKind.Function,
-              visibility: "private",
-              range: this.nodeRange(node),
-              scope: currentScope.join("."),
-              metadata: {
-                zigLoop: true,
-                zigFor: true,
-                inline: isInline,
-                loopType: isInline ? "inline_for" : "for",
-                labeled: true,
-              },
-            })
-            currentScope.push(isInline ? "inline for" : "for")
-          } else if (isWhile) {
-            symbols.push({
-              name: isInline ? "inline while" : "while",
-              kind: ASTEngine.SymbolKind.Function,
-              visibility: "private",
-              range: this.nodeRange(node),
-              scope: currentScope.join("."),
-              metadata: {
-                zigLoop: true,
-                zigWhile: true,
-                inline: isInline,
-                loopType: isInline ? "inline_while" : "while",
-                labeled: true,
-              },
-            })
-            currentScope.push(isInline ? "inline while" : "while")
-          }
-        }
-      }
-
-      // ─── COMPTIME DECLARATION: comptime { ... } ───
-      if (type === "comptime_declaration") {
-        symbols.push({
-          name: "comptime",
-          kind: ASTEngine.SymbolKind.Function,
-          visibility: "private",
-          range: this.nodeRange(node),
-          scope: currentScope.join("."),
-          metadata: {
-            zigComptimeBlock: true,
-            zigComptime: true,
-            snippet: nodeText.substring(0, 80),
-          },
-        })
-        currentScope.push("comptime")
-      }
-
-      // ─── COMPTIME EXPRESSION: comptime blk: { ... } (labeled comptime block)
-      if (type === "comptime_expression") {
-        symbols.push({
-          name: "comptime",
-          kind: ASTEngine.SymbolKind.Function,
-          visibility: "private",
-          range: this.nodeRange(node),
-          scope: currentScope.join("."),
-          metadata: {
-            zigComptimeBlock: true,
-            zigComptime: true,
-            comptimeExpression: true,
-            snippet: nodeText.substring(0, 80),
-          },
-        })
-        currentScope.push("comptime")
-      }
-
-      // ─── LABELED TYPE EXPRESSION (comptime blk: form) ───
-      if (type === "labeled_type_expression") {
-        if (nodeText.includes("comptime")) {
-          symbols.push({
-            name: "comptime",
-            kind: ASTEngine.SymbolKind.Function,
-            visibility: "private",
-            range: this.nodeRange(node),
-            scope: currentScope.join("."),
-            metadata: {
-              zigComptimeBlock: true,
-              zigComptime: true,
-              labeled: true,
-              snippet: nodeText.substring(0, 80),
-            },
-          })
-          currentScope.push("comptime")
-        }
-      }
-
-      // ─── ERROR SET DECLARATION: error { ... } ───
-      if (type === "error_set_declaration") {
-        symbols.push({
-          name: "error_set",
-          kind: ASTEngine.SymbolKind.Enum,
-          visibility: "private",
-          range: this.nodeRange(node),
-          scope: currentScope.join("."),
-          metadata: { zigErrorSet: true },
-        })
-      }
-
-      // ─── ERROR TYPE (error union): error!T ───
-      if (type === "error_type" || type === "error_union_type") {
-        symbols.push({
-          name: "error",
-          kind: ASTEngine.SymbolKind.Type,
-          visibility: "private",
-          range: this.nodeRange(node),
-          scope: currentScope.join("."),
-          metadata: { zigErrorType: true },
-        })
-      }
-
-      // ─── ENUM DECLARATION (inline) ───
-      if (type === "enum_declaration") {
-        symbols.push({
-          name: "enum",
-          kind: ASTEngine.SymbolKind.Enum,
-          visibility: "private",
-          range: this.nodeRange(node),
-          scope: currentScope.join("."),
-          metadata: { zigEnum: true },
-        })
-      }
-
-      // ─── STRUCT DECLARATION (inline) ───
-      if (type === "struct_declaration") {
-        symbols.push({
-          name: "struct",
-          kind: ASTEngine.SymbolKind.Class,
-          visibility: "private",
-          range: this.nodeRange(node),
-          scope: currentScope.join("."),
-          metadata: { zigStruct: true },
-        })
-      }
-
-      // ─── SWITCH EXPRESSION: switch (x) { ... } ───
-      if (type === "switch_expression") {
-        symbols.push({
-          name: "switch",
-          kind: ASTEngine.SymbolKind.Function,
-          visibility: "private",
-          range: this.nodeRange(node),
-          scope: currentScope.join("."),
-          metadata: {
-            zigSwitch: true,
-            snippet: nodeText.substring(0, 80),
-          },
-        })
-        currentScope.push("switch")
-      }
-
-      // ─── SWITCH CASE (arm): .Tag => { ... } ───
-      if (type === "switch_case") {
-        symbols.push({
-          name: "switch_case",
-          kind: ASTEngine.SymbolKind.Method,
-          visibility: "private",
-          range: this.nodeRange(node),
-          scope: currentScope.join("."),
-          metadata: { zigSwitchCase: true, snippet: nodeText.substring(0, 50) },
-        })
-      }
-
-      // ─── TRY EXPRESSION: try expr ───
-      if (type === "try_expression") {
-        symbols.push({
-          name: "try",
-          kind: ASTEngine.SymbolKind.Function,
-          visibility: "private",
-          range: this.nodeRange(node),
-          scope: currentScope.join("."),
-          metadata: { zigTry: true },
-        })
-      }
-
-      // ─── RETURN EXPRESSION: return expr ───
-      if (type === "return_expression") {
-        symbols.push({
-          name: "return",
-          kind: ASTEngine.SymbolKind.Function,
-          visibility: "private",
-          range: this.nodeRange(node),
-          scope: currentScope.join("."),
-          metadata: { zigReturn: true },
-        })
-      }
-
-      // ─── BREAK EXPRESSION: break ───
-      if (type === "break_expression") {
-        symbols.push({
-          name: "break",
-          kind: ASTEngine.SymbolKind.Function,
-          visibility: "private",
-          range: this.nodeRange(node),
-          scope: currentScope.join("."),
-          metadata: { zigBreak: true },
-        })
-      }
-
-      // ─── CONTINUE EXPRESSION: continue ───
-      if (type === "continue_expression") {
-        symbols.push({
-          name: "continue",
-          kind: ASTEngine.SymbolKind.Function,
-          visibility: "private",
-          range: this.nodeRange(node),
-          scope: currentScope.join("."),
-          metadata: { zigContinue: true },
-        })
-      }
-
-      // ─── BUILTIN FUNCTION CALL: @import, @cImport, @TypeOf, etc. ───
-      if (type === "builtin_function") {
-        const identNode = this.anyChild(node, (n) => n.type === "builtin_identifier")
-        const argsNode = this.anyChild(node, (n) => n.type === "arguments")
-        const fnName = identNode?.text || ""
-
-        if (fnName === "@import" || fnName === "@cImport") {
-          if (argsNode) {
-            const strNode = this.anyChild(argsNode, (n) => n.type === "string" || n.type === "string_content")
+        // @import / @cImport: an import, not a symbol.
+        if (rhsType === "call_expression" || rhsType === "builtin_function") {
+          const builtin = this.anyChild(rhs, (n) => n.type === "builtin_identifier")
+          if (builtin && (builtin.text === "@import" || builtin.text === "@cImport")) {
+            const argsNode = this.anyChild(rhs, (n) => n.type === "arguments")
+            const strNode = argsNode ? this.anyChild(argsNode, (n) => n.type === "string" || n.type === "string_content") : null
             if (strNode) {
-              // Strip quotes without regex
               let importTarget = strNode.text
-              if ((importTarget.startsWith('"') && importTarget.endsWith('"')) || (importTarget.startsWith("'") && importTarget.endsWith("'"))) {
+              if (
+                (importTarget.startsWith('"') && importTarget.endsWith('"')) ||
+                (importTarget.startsWith("'") && importTarget.endsWith("'"))
+              ) {
                 importTarget = importTarget.substring(1, importTarget.length - 1)
               }
               imports.push({
                 module: importTarget,
                 isDefaultImport: false,
                 range: this.nodeRange(node),
+                metadata: { zigImport: true, builtin: builtin.text },
               })
-              // Import relationship
-              const scopeName = currentScope.length > 0 ? currentScope[currentScope.length - 1] : "global"
               relationships.push({
-                source: scopeName,
+                source: container?.name || "global",
                 target: importTarget,
                 type: ASTEngine.RelationshipType.Imports,
                 confidence: 0.9,
                 metadata: { zigImport: true },
               } as any)
-              if (fnName === "@cImport") {
-                symbols.push({
-                  name: importTarget,
-                  kind: ASTEngine.SymbolKind.Namespace,
-                  visibility: "private",
-                  range: this.nodeRange(node),
-                  scope: currentScope.join("."),
-                  metadata: { cImport: true, importedModule: importTarget },
+            }
+            this.pushChildren(node, walkStack, container, inFunction)
+            continue
+          }
+        }
+
+        let kind: ASTEngine.SymbolKind = ASTEngine.SymbolKind.Constant
+        const isContainer =
+          rhsType === "struct_declaration" ||
+          rhsType === "enum_declaration" ||
+          rhsType === "union_declaration" ||
+          rhsType === "error_set_declaration"
+
+        if (rhsType === "struct_declaration") kind = ASTEngine.SymbolKind.Struct
+        else if (rhsType === "enum_declaration") kind = ASTEngine.SymbolKind.Enum
+        else if (rhsType === "union_declaration") kind = ASTEngine.SymbolKind.Union
+        else if (rhsType === "error_set_declaration") kind = ASTEngine.SymbolKind.Enum
+        else if (
+          rhsType === "number_literal" ||
+          rhsType === "integer" ||
+          rhsType === "float" ||
+          rhsType === "string" ||
+          rhsType === "boolean_literal" ||
+          rhsType === "char_literal" ||
+          rhsType === "builtin_type"
+        ) {
+          // Value constant (`const MAX_POINTS: usize = 1024`) — not a type.
+          kind = ASTEngine.SymbolKind.Constant
+        } else if (varName[0] === varName[0].toUpperCase() && varName[0] !== varName[0].toLowerCase()) {
+          kind = ASTEngine.SymbolKind.Type
+        }
+
+        const sym: ASTEngine.UniversalSymbol = {
+          name: varName,
+          kind,
+          visibility: isExported ? "public" : "private",
+          range: this.nodeRange(node),
+          scope: container ? container.name : undefined,
+          ownerName: container?.name,
+          ownerKind: container?.kind,
+          metadata: {
+            zigDeclaration: kind,
+            ...(rhsType === "error_set_declaration" ? { zigErrorSet: true } : {}),
+          },
+        }
+        symbols.push(sym)
+        if (isExported) exports.push({ name: varName, kind })
+
+        // Container members belong to the new container symbol.
+        const newContainer = isContainer ? sym : container
+        this.pushChildren(node, walkStack, newContainer, inFunction)
+        continue
+      }
+
+      // ─── FUNCTION DECLARATION: pub fn name(...) ───
+      if (type === "function_declaration" || type === "function_signature") {
+        const identNode = this.anyChild(node, (n) => n.type === "identifier")
+        const fnName = identNode ? identNode.text : ""
+        const isExported = nodeText.startsWith("pub ") || nodeText.startsWith("export ")
+        const isInline = nodeText.includes("inline ")
+
+        if (fnName && fnName.length < 100) {
+          const params: ASTEngine.Parameter[] = []
+          const paramsNode = this.anyChild(node, (n) => n.type === "parameters")
+          if (paramsNode) {
+            for (let i = 0; i < paramsNode.namedChildCount; i++) {
+              const child = paramsNode.namedChild(i)
+              if (!child || child.type !== "parameter") continue
+              const pNameNode = this.anyChild(child, (n) => n.type === "identifier")
+              const pTypeNode = this.anyChild(
+                child,
+                (n) =>
+                  n.type === "builtin_type" ||
+                  n.type === "nullable_type" ||
+                  n.type === "slice_type" ||
+                  n.type === "pointer_type" ||
+                  n.type === "error_union_type",
+              )
+              if (pNameNode) {
+                params.push({
+                  name: pNameNode.text,
+                  type: pTypeNode ? this.nodeText(pTypeNode) : undefined,
                 })
               }
             }
           }
-        } else if (fnName.startsWith("@")) {
-          symbols.push({
+
+          // Inside a struct/union/enum container → method; else free function.
+          const isMethod = !!container && container.kind !== ASTEngine.SymbolKind.Type
+          const sym: ASTEngine.UniversalSymbol = {
             name: fnName,
-            kind: ASTEngine.SymbolKind.Function,
-            visibility: "private",
+            kind: isMethod ? ASTEngine.SymbolKind.Method : ASTEngine.SymbolKind.Function,
+            visibility: isExported ? "public" : "private",
             range: this.nodeRange(node),
-            scope: currentScope.join("."),
-            metadata: { zigBuiltin: true, builtin: fnName },
-          })
-        }
-      }
-
-      // ─── CALL EXPRESSION: func(args) ───
-      if (type === "call_expression") {
-        const fnField = this.anyChild(node, (n) => n.type === "identifier" || n.type === "field_expression")
-        if (fnField) {
-          const fnText = this.nodeText(fnField)
-          if (fnText && fnText.length < 60 && !fnText.startsWith("@")) {
-            symbols.push({
-              name: fnText,
-              kind: ASTEngine.SymbolKind.Function,
-              visibility: "private",
-              range: this.nodeRange(node),
-              scope: currentScope.join("."),
-              metadata: { zigCall: true },
-            })
-            // Push call relationship
-            relationships.push({
-              source: currentScope.join(".") || "global",
-              target: fnText,
-              type: ASTEngine.RelationshipType.Calls,
-              confidence: 0.8,
-              metadata: { zigSpecific: true },
-            })
-            // Zig instantiation: Foo.init() or Foo{} struct literal
-            if (fnText.endsWith(".init") || (fnText[0] === fnText[0].toUpperCase() && fnText[0] !== fnText[0].toLowerCase())) {
-              relationships.push({
-                source: currentScope.join(".") || "global",
-                target: fnText.replace(".init", ""),
-                type: ASTEngine.RelationshipType.Instantiates,
-                confidence: 0.75,
-                metadata: { zigSpecific: true, isConstructor: true },
-              })
-            }
+            scope: container ? container.name : undefined,
+            parameters: params,
+            ownerName: container?.name,
+            ownerKind: container?.kind,
+            metadata: { zigFunction: true, inline: isInline, paramCount: params.length },
           }
+          symbols.push(sym)
+          if (isExported && !isMethod) exports.push({ name: fnName, kind: ASTEngine.SymbolKind.Function })
         }
+        // Function body: execution artifacts only — no declaration symbols.
+        this.pushChildren(node, walkStack, container, true)
+        continue
       }
 
-      // ─── CONTAINER FIELD (struct/enum property): field: Type ───
+      // ─── CONTAINER FIELD: struct/union member or enum member ───
       if (type === "container_field") {
         const nameNode = this.anyChild(node, (n) => n.type === "identifier")
-        const fieldName = nameNode?.text || ""
+        const fieldName = nameNode ? nameNode.text : ""
         if (fieldName && fieldName.length < 50) {
+          const isEnumMember = container?.kind === ASTEngine.SymbolKind.Enum
           const typeNode = this.anyChild(
             node,
             (n) =>
@@ -547,132 +205,53 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
               n.type === "nullable_type" ||
               n.type === "slice_type" ||
               n.type === "pointer_type" ||
-              n.type === "identifier" ||
               n.type === "error_union_type",
           )
           symbols.push({
             name: fieldName,
-            kind: ASTEngine.SymbolKind.Property,
+            kind: isEnumMember ? ASTEngine.SymbolKind.EnumMember : ASTEngine.SymbolKind.Property,
             visibility: "public",
             range: this.nodeRange(node),
-            scope: currentScope.join("."),
-            returnType: typeNode ? this.nodeText(typeNode) : undefined,
-            metadata: { zigField: true },
-          })
-          if (currentScope.length > 0) {
-            relationships.push({
-              source: currentScope[currentScope.length - 1],
-              target: fieldName,
-              type: ASTEngine.RelationshipType.Contains,
-              metadata: {},
-            })
-          }
-        }
-      }
-
-      // ─── BLOCK: { ... } ───
-      if (type === "block") {
-        if (nodeText.length < 300 && node.startPosition.row < 100) {
-          symbols.push({
-            name: "block",
-            kind: ASTEngine.SymbolKind.Function,
-            visibility: "private",
-            range: this.nodeRange(node),
-            scope: currentScope.join("."),
-            metadata: { zigBlock: true },
-          })
-          currentScope.push("block")
-        }
-      }
-
-      // ─── FIELD EXPRESSION: std.math, x.field ───
-      if (type === "field_expression") {
-        const children = this.getAllNamedChildren(node)
-        if (children.length >= 2) {
-          const fieldName = children[children.length - 1].text
-          if (fieldName && fieldName.length < 50) {
-            symbols.push({
-              name: fieldName,
-              kind: ASTEngine.SymbolKind.Property,
-              visibility: "private",
-              range: this.nodeRange(node),
-              scope: currentScope.join("."),
-              metadata: { zigFieldAccess: true },
-            })
-          }
-        }
-      }
-
-      // ─── BUILTIN TYPE: u32, i64, bool, f32, noreturn, type ───
-      if (type === "builtin_type") {
-        if (nodeText && nodeText.length < 30) {
-          symbols.push({
-            name: nodeText,
-            kind: ASTEngine.SymbolKind.Type,
-            visibility: "private",
-            range: this.nodeRange(node),
-            scope: currentScope.join("."),
-            metadata: { zigBuiltinType: true },
+            scope: container?.name,
+            ownerName: container?.name,
+            ownerKind: container?.kind,
+            returnType: isEnumMember ? undefined : typeNode ? this.nodeText(typeNode) : undefined,
+            metadata: { zigField: true, ...(isEnumMember ? { zigEnumMember: true } : {}) },
           })
         }
+        this.pushChildren(node, walkStack, container, inFunction)
+        continue
       }
 
-      // ─── NULLABLE TYPE: ?T ───
-      if (type === "nullable_type") {
-        if (nodeText.length < 50) {
-          symbols.push({
-            name: nodeText,
-            kind: ASTEngine.SymbolKind.Type,
-            visibility: "private",
-            range: this.nodeRange(node),
-            scope: currentScope.join("."),
-            metadata: { zigNullable: true },
-          })
-        }
-      }
-
-      // ─── SLICE TYPE: []T ───
-      if (type === "slice_type") {
-        if (nodeText.length < 50) {
-          symbols.push({
-            name: nodeText,
-            kind: ASTEngine.SymbolKind.Type,
-            visibility: "private",
-            range: this.nodeRange(node),
-            scope: currentScope.join("."),
-            metadata: { zigSlice: true },
-          })
-        }
-      }
-
-      // ─── IDENTIFIER (type reference, PascalCase) ───
-      if (type === "identifier") {
+      // ─── ERROR SET MEMBERS: error{ InvalidPoint, OutOfMemory } ───
+      // Only identifiers that are DIRECT children of the error_set node are
+      // members; the declaring variable's LHS identifier is not one.
+      if (type === "identifier" && container && container.metadata?.zigErrorSet && node.parent?.type === "error_set_declaration") {
         const identText = node.text
-        if (identText && identText.length > 0 && identText.length < 80 && !(identText[0] >= "0" && identText[0] <= "9")) {
-          if (identText[0] === identText[0].toUpperCase() && identText[0] !== identText[0].toLowerCase()) {
-            symbols.push({
-              name: identText,
-              kind: ASTEngine.SymbolKind.Type,
-              visibility: "private",
-              range: this.nodeRange(node),
-              scope: currentScope.join("."),
-              metadata: { zigTypeIdentifier: true },
-            })
-          }
+        if (identText && identText.length < 50) {
+          symbols.push({
+            name: identText,
+            kind: ASTEngine.SymbolKind.EnumMember,
+            visibility: "public",
+            range: this.nodeRange(node),
+            scope: container.name,
+            ownerName: container.name,
+            ownerKind: container.kind,
+            metadata: { zigErrorSetMember: true },
+          })
         }
+        continue
       }
 
-      // ─── IF STATEMENT ───
-      if (type === "if_statement" || type === "if_expression") {
-        symbols.push({
-          name: "if",
-          kind: ASTEngine.SymbolKind.Function,
-          visibility: "private",
-          range: this.nodeRange(node),
-          scope: currentScope.join("."),
-          metadata: { zigIf: true },
+      // ─── SWITCH EXPRESSION: complexity tracking only ───
+      if (type === "switch_expression") {
+        relationships.push({
+          source: container?.name || "global",
+          target: "switch",
+          type: ASTEngine.RelationshipType.References,
+          confidence: 0.5,
+          metadata: { zigSwitch: true },
         })
-        currentScope.push("if")
       }
 
       // ─── ERROR REPORTING ───
@@ -690,21 +269,15 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         })
       }
 
-      // ─── PUSH CHILDREN ───
-      for (let i = node.namedChildCount - 1; i >= 0; i--) {
-        const child = node.namedChild(i)
-        if (child) {
-          walkStack.push({ node: child, scopePath: currentScope })
-        }
-      }
+      // ─── PUSH CHILDREN (default: preserve container/function context) ───
+      this.pushChildren(node, walkStack, container, inFunction)
     }
 
-    // Post-loop: add contains for owned symbols and references for imports
+    // Contains relationships for owned symbols
     for (const s of symbols) {
-      const _owner = s.ownerName || s.scope
-      if (_owner) {
+      if (s.ownerName) {
         relationships.push({
-          source: _owner,
+          source: s.ownerName,
           target: s.name,
           type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
@@ -712,6 +285,7 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         })
       }
     }
+    // Import reference relationships
     for (const imp of imports) {
       if (imp.module) {
         relationships.push({
@@ -724,7 +298,7 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         })
       }
     }
-    // Add export relationships from the exports array
+    // Export relationships
     for (const exp of exports) {
       relationships.push({
         source: "module",
@@ -750,6 +324,18 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         hasFrameworkIntelligence: true,
         hasTypeInference: true,
       },
+    }
+  }
+
+  private pushChildren(
+    node: Node,
+    walkStack: { node: Node; container: ASTEngine.UniversalSymbol | null; inFunction: boolean }[],
+    container: ASTEngine.UniversalSymbol | null,
+    inFunction: boolean,
+  ): void {
+    for (let i = node.namedChildCount - 1; i >= 0; i--) {
+      const child = node.namedChild(i)
+      if (child) walkStack.push({ node: child, container, inFunction })
     }
   }
 

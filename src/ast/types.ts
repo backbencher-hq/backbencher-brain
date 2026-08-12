@@ -37,6 +37,7 @@ export enum SymbolKind {
   Struct = "struct",
   Impl = "impl",
   Actor = "actor",
+  Union = "union",
   // Language-specific kinds — map mixin/extension to their own kind for
   // semantic fidelity (they're distinct language constructs, not classes).
   Mixin = "mixin",

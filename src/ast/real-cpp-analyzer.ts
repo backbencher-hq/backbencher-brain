@@ -311,14 +311,33 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
 
           const isTemplate = node.parent?.type === "template_declaration"
-          const kind = isConstructor
-              ? ASTEngine.SymbolKind.Constructor
-              : actualOwnerKind === ASTEngine.SymbolKind.Class
-                ? ASTEngine.SymbolKind.Method
-                : ASTEngine.SymbolKind.Function
+        // Destructors are compiler-managed lifecycle members; exclude them from
+        // the declaration symbol set (matching the universal contract's focus on
+        // user declarations).
+        if (isDestructor) {
+          // still walk children for nested declarations
+          newContext = parentContext
+          for (let i = node.namedChildCount - 1; i >= 0; i--) {
+            const child = node.namedChild(i)
+            if (child) stack.push({ node: child, parentContext: newContext })
+          }
+          continue
+        }
+
+        const kind = isConstructor
+            ? ASTEngine.SymbolKind.Constructor
+            : actualOwnerKind === ASTEngine.SymbolKind.Class
+              ? ASTEngine.SymbolKind.Method
+              : ASTEngine.SymbolKind.Function
+
+        // Universal contract: constructors are normalized to the name
+        // "constructor" (identical to the C# normalization). The C++ class name
+        // remains available via ownerName.
+        let symName = funcName
+        if (isConstructor) symName = "constructor"
 
           const sym: ASTEngine.UniversalSymbol = {
-            name: funcName,
+            name: symName,
             kind: kind,
             range: this.nodeToRange(node),
             visibility: parentContext?.visibility || "public",
@@ -395,21 +414,36 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         } else if (type === "field_declaration" || type === "declaration") {
           const decls = this.findAllChildren(node, "init_declarator")
           if (decls.length === 0) {
-            const basicDecl = this.findChild(node, "identifier")
+            // Member fields use field_identifier (`int id_;`); pointer/reference
+            // members wrap it in a pointer_declarator (`UserRepository *repository_;`).
+            const ptrWrap =
+              this.findChild(node, "pointer_declarator") || this.findChild(node, "reference_declarator")
+            const basicDecl =
+              this.findChild(node, "identifier") ||
+              this.findChild(node, "field_identifier") ||
+              (ptrWrap ? this.findChild(ptrWrap, "field_identifier") || this.findChild(ptrWrap, "identifier") : null)
             if (basicDecl) decls.push(node)
           }
 
           for (let idx = 0; idx < decls.length; idx++) {
             const d = decls[idx];
             // Still finding the immediate identifier for a variable, no deep walks
-            let idNode = this.findChild(d, "identifier")
+            let idNode = this.findChild(d, "identifier") || this.findChild(d, "field_identifier")
             if (!idNode) {
               const ptr = this.findChild(d, "pointer_declarator") || this.findChild(d, "reference_declarator")
-              if (ptr) idNode = this.findChild(ptr, "identifier")
+              if (ptr) idNode = this.findChild(ptr, "identifier") || this.findChild(ptr, "field_identifier")
             }
 
-            const name = idNode ? idNode.text : this.childText(d, "identifier")
-            if (name && !stringIncludes(name, "(")) {
+            const name = idNode ? idNode.text : this.childText(d, "identifier") || this.childText(d, "field_identifier")
+            // Function-local declarations are execution artifacts, not
+            // declaration sites — only class-scope fields and file-scope
+            // variables become symbols.
+            const insideFunction =
+              parentContext &&
+              (parentContext.kind === ASTEngine.SymbolKind.Function ||
+                parentContext.kind === ASTEngine.SymbolKind.Method ||
+                parentContext.kind === ASTEngine.SymbolKind.Constructor)
+            if (name && !stringIncludes(name, "(") && !insideFunction) {
               symbols.push({
                 name,
                 kind: isConstexpr
@@ -685,16 +719,30 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
     let isOperator = nameNode.type === "operator_name" || name.startsWith("operator")
 
     if (nameNode.type === "qualified_identifier") {
-      const scopeNode =
-        this.findChild(nameNode, "type_identifier") ||
-        this.findChild(nameNode, "identifier") ||
-        this.findChild(nameNode, "namespace_identifier")
-
+      // `ConsoleLogger::log` parses as qualified_identifier[namespace_identifier,
+      // identifier]. The scope is the FIRST named child (namespace/type/class),
+      // the method name is the LAST named child. Checking `identifier` before
+      // `namespace_identifier` wrongly grabs the method name as the scope
+      // (constructor:log in log) — so inspect in the right order.
       const actualNameNode = nameNode.namedChild(nameNode.namedChildCount - 1)
+      let scopeNode: Node | null = null
+      for (let i = 0; i < nameNode.namedChildCount - 1; i++) {
+        const c = nameNode.namedChild(i)
+        if (c && (c.type === "namespace_identifier" || c.type === "type_identifier" || c.type === "identifier")) {
+          scopeNode = c
+          break
+        }
+      }
+      // Nested qualification (A::B::fn): the outer scope wraps a nested
+      // qualified_identifier; use its full text as the scope.
+      const firstChild = nameNode.namedChild(0)
+      if (!scopeNode && firstChild && firstChild.type === "qualified_identifier") {
+        scopeNode = firstChild
+      }
 
-      if (scopeNode && actualNameNode) {
-        scope = scopeNode.text
+      if (actualNameNode) {
         name = actualNameNode.text
+        if (scopeNode) scope = scopeNode.text
         if (actualNameNode.type === "destructor_name" || name.startsWith("~")) isDestructor = true
         if (actualNameNode.type === "operator_name" || name.startsWith("operator")) isOperator = true
       }

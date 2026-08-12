@@ -102,9 +102,9 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
           ctx.symbols.push(sym)
         }
       } else if (node.type === "closure_expression") {
-        const name = `closure_${node.startPosition.row + 1}_${node.startPosition.column + 1}`
-        const sym = this.createSymbol(name, ASTEngine.SymbolKind.Function, node, parent, { isClosure: true })
-        ctx.symbols.push(sym)
+        // Anonymous closures have generated names (closure_68_23) and are
+        // function-local execution artifacts, not declaration sites. Skip them
+        // as symbols — call sites are captured via call_expression.
       } else if (node.type === "extern_crate_declaration") {
         const name = this.extractIdentifier(node, "name")
         if (name) {
@@ -274,6 +274,11 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     return null
   }
 
+  /** Strip a trailing generic parameter list: `UserService<T>` → `UserService`. */
+  private stripGenerics(name: string): string {
+    return name.replace(/<.*$/, "")
+  }
+
   private isPublic(node: Node): boolean {
     for (let i = 0; i < node.namedChildCount; i++) {
       const child = node.namedChild(i)
@@ -381,16 +386,21 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     const nameNode = node.childForFieldName("name")
     let name = nameNode ? nameNode.text : null
 
-    if (nameNode) {
-      const nextSibling = nameNode.nextNamedSibling
-      if (nextSibling && nextSibling.type === "type_parameters") {
-        name += nextSibling.text
-      }
-    }
     if (!name) return null
 
-    // Use SymbolKind.Trait directly instead of Interface
-    const symbol = this.createSymbol(name, ASTEngine.SymbolKind.Trait, node, parent)
+    // Use SymbolKind.Trait directly instead of Interface. Strip generic
+    // parameter lists (Repository<T> → Repository) so the symbol name is a
+    // stable, unqualified identity — generics go into genericParameters.
+    const genericParams: string[] = []
+    const nextSibling = nameNode ? nameNode.nextNamedSibling : null
+    if (nextSibling && nextSibling.type === "type_parameters") {
+      genericParams.push(nextSibling.text)
+    }
+    const symbol = this.createSymbol(name, ASTEngine.SymbolKind.Trait, node, parent, {
+      type: "trait",
+      ...(genericParams.length > 0 ? { genericParameters: genericParams } : {}),
+    })
+    if (genericParams.length > 0) symbol.genericParameters = genericParams
     ctx.symbols.push(symbol)
 
     // Extract trait bounds → Extends relationships (trait Foo: Bar + Baz)
@@ -458,12 +468,16 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     if (!typeNode) return null
 
-    const typeName = typeNode.text
+    const typeName = this.stripGenerics(typeNode.text)
     const traitName = traitNode ? traitNode.text : undefined
-    const implName = traitName ? `${traitName}_for_${typeName}` : typeName
+    // Impl symbols are named after the type they implement (stable identity);
+    // the trait lives on the Implements relationship emitted below. Generic
+    // parameter lists are stripped: `impl<T: Repository<User>> UserService<T>`
+    // → `UserService`.
+    const implName = typeName
 
     // Use SymbolKind.Impl for Rust impl blocks
-    const symbol = this.createSymbol(implName, ASTEngine.SymbolKind.Impl, node, parent)
+    const symbol = this.createSymbol(implName, ASTEngine.SymbolKind.Impl, node, parent, { type: "impl" })
     ctx.symbols.push(symbol)
 
     if (traitName) {
@@ -531,7 +545,12 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     const name = this.extractIdentifier(node, "name")
     if (!name) return null
 
-    const isMethod = parent && (parent.metadata?.type === "impl" || parent.metadata?.type === "trait")
+    const isMethod =
+      parent &&
+      (parent.metadata?.type === "impl" ||
+        parent.metadata?.type === "trait" ||
+        parent.kind === ASTEngine.SymbolKind.Trait ||
+        parent.kind === ASTEngine.SymbolKind.Impl)
     let isConstFn = false
     let isAsyncFn = false
     let isUnsafeFn = false
@@ -673,6 +692,16 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (!patternNode) return
 
     const name = patternNode.text
+
+    // Module/impl-level const/static/let are declarations; function-local
+    // `let` bindings are execution artifacts (noise), not declaration sites.
+    // A parent whose kind is Function/Method/Closure means we are inside a
+    // function body — skip those. A parent of a function itself (the symbol
+    // pushed by handleFunction) is also a body marker.
+    if (parent && (parent.kind === ASTEngine.SymbolKind.Function || parent.kind === ASTEngine.SymbolKind.Method)) {
+      return
+    }
+
     const symbol = this.createSymbol(name, ASTEngine.SymbolKind.Variable, node, parent, { type: node.type })
     ctx.symbols.push(symbol)
 
