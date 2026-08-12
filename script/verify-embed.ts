@@ -10,7 +10,7 @@
 //   bun run script/verify-embed.ts      (and npx tsx under Node)
 import { SemanticEngine } from "../src/brain/semantic/engine"
 import { BrainDatabase } from "../src/brain/database"
-import { indexProjectParallel } from "../src/ast/parallel-indexer"
+import { indexProjectParallel, flushBackgroundEmbeddings } from "../src/ast/parallel-indexer"
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "fs"
 import { tmpdir } from "os"
 import path from "path"
@@ -98,6 +98,9 @@ export function listNotes(): string[] {
 const pid = "verify-embed"
 const result = await indexProjectParallel(pid, root, {})
 console.log(`  indexed: totalFiles=${result.totalFiles}`)
+// Embeddings are generated on the background queue — wait for them so the
+// assertions below read durable vectors.
+await flushBackgroundEmbeddings()
 
 const raw = await BrainDatabase.getRawInstance(pid)
 const embRows = raw

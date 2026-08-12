@@ -33,7 +33,8 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       } else if (type === "type_definition") {
         const nameNode = this.findDescendant(node, (n) => n.type === "type_name" || n.type === "identifier")
         const typeNameNode = nameNode ? this.findChild(nameNode, (n) => n.type === "identifier") : undefined
-        const name = typeNameNode && typeNameNode.text ? typeNameNode.text : nameNode ? nameNode.text : null
+        const rawName = typeNameNode && typeNameNode.text ? typeNameNode.text : nameNode ? nameNode.text : null
+        const name = rawName ? rawName.replace(/<.*$/, "") : null
         if (name) {
           const hasAnonTypeDefn = !!this.findChild(node, (n) => n.type === "anon_type_defn")
           const hasRecordTypeDefn = this.findDescendants(node, (n) => n.type === "record_type_defn").length > 0
@@ -48,7 +49,7 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           var isMeasure = !!this.findDescendant(node, function(n) { return n.type === "attribute" && (n.text.includes("Measure") || n.text.includes("[<Measure")); });
           if (isMeasure) kind = ASTEngine.SymbolKind.Type;
           if (hasRecordTypeDefn) {
-            kind = ASTEngine.SymbolKind.Struct
+            kind = ASTEngine.SymbolKind.Class
           } else if (hasUnionTypeDefn) {
             kind = ASTEngine.SymbolKind.Enum
           } else if (hasInterfaceTypeDefn) {
@@ -70,7 +71,10 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
                 anonNode,
                 (n) => n.type === "identifier" && n.text === "interface",
               )
-              const hasConcreteMembers = this.findDescendants(anonNode, (n) => n.type === "member_defn").length > 0
+              const hasConcreteMembers = this.findDescendants(
+                anonNode,
+                (n) => n.type === "member_defn" && !this.findDescendant(n, (child) => child.type === "member_signature"),
+              ).length > 0
               if (hasMemberSig && !hasInherits && !hasInterfaceImpl && !hasConcreteMembers) {
                 kind = ASTEngine.SymbolKind.Interface
                 isInterface = true
@@ -95,9 +99,26 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             kind,
             range: this.nodeToRange(node),
             ownerName: currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined,
+            genericParameters: rawName && rawName !== name ? rawName.match(/'[\p{L}\d_]+/gu) || undefined : undefined,
             metadata: { nodeType: type },
           })
           currentScope.push(name)
+
+          if (hasRecordTypeDefn) {
+            const fields = this.findDescendants(node, (n) => n.type === "record_field")
+            for (const field of fields) {
+              const fieldName = this.findChild(field, (n) => n.type === "identifier")
+              if (!fieldName?.text) continue
+              symbols.push({
+                name: fieldName.text,
+                kind: ASTEngine.SymbolKind.Property,
+                range: this.nodeToRange(field),
+                ownerName: name,
+                ownerKind: kind,
+                metadata: { nodeType: "record_field", isRecordField: true },
+              })
+            }
+          }
 
           // Extract DU cases as EnumMember symbols
           if (kind === ASTEngine.SymbolKind.Enum) {

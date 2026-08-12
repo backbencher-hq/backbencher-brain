@@ -65,6 +65,28 @@ BB_EMBEDDING_MODEL=nvidia/nv-embedqa-e5-v5
 - No key configured? The index falls back to local word vectors and semantic
   search degrades to keyword-level matching — nothing breaks.
 
+## How indexing generates them (background queue)
+
+Embedding generation is **non-blocking**: `bb index` completes and returns
+usable code intelligence immediately, while vectors populate lazily on a
+shared background queue (one serialized drainer per process). To wait for the
+queue before reading vectors back programmatically, call
+`flushBackgroundEmbeddings()` from `src/ast/parallel-indexer`.
+
+Two knobs bound the work so huge repositories never stall indexing or exhaust
+memory:
+
+- `BB_EMBEDDING_BATCH_LIMIT` (default `50000`) — a single storeResults batch
+  at or above this limit is skipped entirely (no vectors).
+- `BB_EMBEDDING_QUEUE_LIMIT` (default `25000`) — total queued snippet-items
+  across the process. Once the queue is at capacity, further batches are
+  dropped with a debug log rather than accumulated in memory.
+
+Dropped batches are recoverable: run `bb index --force <project>` (or re-run
+`bb_refresh(force)`) to generate vectors for the whole project at once. For
+measurement harnesses that must not touch the embedding API at all (e.g. the
+M11 corpus benchmarks), set `BB_EMBEDDING_BATCH_LIMIT=0` in the harness scope.
+
 ## Tool evidence semantics
 
 `bb_ask` uses embeddings to discover and rank candidate symbols. Similarity is

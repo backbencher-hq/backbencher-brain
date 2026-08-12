@@ -267,7 +267,8 @@ export namespace ASTEngine {
     Service = "class", // Legacy alias
     Resource = "class", // Legacy alias
     TypeAlias = "type", // Legacy alias
-    Event = "property", // Legacy alias
+    Event = "event",
+    Delegate = "delegate",
     Object = "class", // Legacy alias
     Record = "type", // Legacy alias
     Macro = "macro", // Rust macro_rules!

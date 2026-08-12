@@ -462,14 +462,26 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         })
       } else if (type === "delegate_declaration") {
         const name = node.childForFieldName("name")?.text || this.childText(node, "identifier") || "anonymous"
-        const returnType = this.extractTypeString(node) || "void"
+        const returnType = node.childForFieldName("type")?.text || "void"
+        const parameters: ASTEngine.Parameter[] = []
+        const paramList = this.findChild(node, "parameter_list")
+        if (paramList) {
+          for (let i = 0; i < paramList.namedChildCount; i++) {
+            const parameter = paramList.namedChild(i)
+            if (parameter?.type !== "parameter") continue
+            const parameterName = parameter.childForFieldName("name")?.text || "anonymous"
+            parameters.push({ name: parameterName, type: parameter.childForFieldName("type")?.text })
+          }
+        }
         symbols.push({
           name,
-          kind: ASTEngine.SymbolKind.Function, // or Class? Usually represented as a type or function
+          kind: ASTEngine.SymbolKind.Delegate,
           range: this.nodeToRange(node),
           visibility,
           ownerName: parentContext?.name,
           ownerKind: parentContext?.kind,
+          parameters,
+          returnType,
           decorators: attributes.length > 0 ? attributes : undefined,
           metadata: { isDelegate: true, returnType },
         })
@@ -495,10 +507,12 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           (type === "constructor_declaration" ? parentContext?.rawName : "anonymous") ||
           "anonymous"
 
+        if (type === "constructor_declaration") name = "constructor"
+
         const returnType =
           type === "constructor_declaration" || type === "destructor_declaration"
             ? "void"
-            : this.extractTypeString(node) || "void"
+            : node.childForFieldName("type")?.text || "void"
 
         const parameters: ASTEngine.Parameter[] = []
         let isExtensionMethod = false
@@ -542,6 +556,7 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           ownerName: parentContext?.rawName,
           ownerKind: parentContext?.kind,
           parameters,
+          returnType,
           decorators: attributes.length > 0 ? attributes : undefined,
           metadata: {
             isVirtual,
@@ -663,12 +678,13 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       } else if (
         type === "parameter" &&
+        !this.hasAncestor(node, "delegate_declaration") &&
         parentContext?.node?.type !== "record_declaration" &&
         parentContext?.node?.type !== "record_struct_declaration" &&
         parentContext?.node?.type !== "method_declaration" &&
         parentContext?.node?.type !== "constructor_declaration" &&
         parentContext?.node?.type !== "destructor_declaration" &&
-        parentContext?.node?.type !== "delegate_declaration" &&
+        node.parent?.type !== "delegate_declaration" &&
         parentContext?.node?.type !== "indexer_declaration"
       ) {
         const name = node.childForFieldName("name")?.text || this.childText(node, "identifier") || "anonymous"
@@ -826,5 +842,14 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
   private childText(node: Node, type: string): string | null {
     const child = this.findChild(node, type)
     return child ? child.text : null
+  }
+
+  private hasAncestor(node: Node, type: string): boolean {
+    let current = node.parent
+    while (current) {
+      if (current.type === type) return true
+      current = current.parent
+    }
+    return false
   }
 }

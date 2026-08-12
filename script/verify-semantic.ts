@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { getProjectId } from "../src/cli/index"
-import { indexProjectParallel } from "../src/ast/parallel-indexer"
+import { indexProjectParallel, flushBackgroundEmbeddings } from "../src/ast/parallel-indexer"
 import { BrainDatabase } from "../src/brain/database"
 import { semanticVectorSearch } from "../src/intelligence/search/semantic-search"
 import { createContractFixture } from "./fixtures/contract-fixture"
@@ -21,6 +21,10 @@ const projectId = getProjectId(root)
 try {
   createContractFixture(root)
   await indexProjectParallel(projectId, root, {})
+  // Embeddings are generated on the background queue — wait for them so the
+  // assertions below read durable vectors and the final wipe cannot race
+  // with a still-draining queue.
+  await flushBackgroundEmbeddings()
   const raw = await BrainDatabase.getRawInstance(projectId)
 
   const embCount = (raw.prepare("SELECT COUNT(*) c FROM brain_semantic_embedding WHERE project_id = ?").get(projectId) as { c: number }).c

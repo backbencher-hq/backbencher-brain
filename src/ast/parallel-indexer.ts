@@ -1120,6 +1120,167 @@ export async function processWithWorkerPool(
 
 const fileRelCounters = new Map<string, number>()
 
+// ============================================================================
+// BACKGROUND SEMANTIC EMBEDDING QUEUE (module-level, serialized)
+// Embeddings must never block indexing, and they must never accumulate
+// unbounded memory on huge corpora. All storeResults calls share one queue
+// drained by a single background loop with a total-item cap; overflow batches
+// are dropped with a warning (they can be re-embedded later via `bb index --force`).
+// ============================================================================
+interface BackgroundEmbedJob {
+  rawDb: any
+  projectId: ProjectID
+  projectPath: string
+  items: any[]
+}
+const backgroundEmbedJobs: BackgroundEmbedJob[] = []
+let backgroundEmbedActive = false
+let backgroundEmbedQueuedItems = 0
+let embeddingFlushWaiters: Array<() => void> = []
+const EMBED_QUEUE_ITEM_CAP = Number(process.env.BB_EMBEDDING_QUEUE_LIMIT || 25000)
+
+/**
+ * Await completion of all queued background embedding jobs. Returns when the
+ * queue is fully drained and idle. Note: the queue is shared process-wide, so
+ * this waits for every project's queued jobs, not just the caller's. Used by
+ * tests and tools that need semantic vectors durable before reading them back
+ * (verify-embed, verify-semantic).
+ */
+export async function flushBackgroundEmbeddings(): Promise<void> {
+  while (backgroundEmbedActive || backgroundEmbedJobs.length > 0) {
+    await new Promise<void>((resolve) => embeddingFlushWaiters.push(resolve))
+  }
+}
+
+function queueBackgroundEmbeddings(rawDb: any, projectId: ProjectID, projectPath: string, items: any[]) {
+  if (items.length === 0) return
+  const embedBatchLimit = Number(process.env.BB_EMBEDDING_BATCH_LIMIT || 50000)
+  if (items.length >= embedBatchLimit) {
+    log.debug("skipping embeddings for oversized batch", { count: items.length, limit: embedBatchLimit })
+    return
+  }
+  if (backgroundEmbedQueuedItems + items.length > EMBED_QUEUE_ITEM_CAP) {
+    // Debug level: a saturated queue drops batches on huge corpora and this
+    // would otherwise spam warns (hundreds per full index). The behavior is
+    // documented in EMBEDDINGS.md; vectors are recoverable via `bb index --force`.
+    log.debug("embedding queue at capacity — batch dropped (re-embed later with bb index --force)", {
+      queued: backgroundEmbedQueuedItems,
+      dropped: items.length,
+      cap: EMBED_QUEUE_ITEM_CAP,
+    })
+    return
+  }
+  backgroundEmbedQueuedItems += items.length
+  backgroundEmbedJobs.push({ rawDb, projectId, projectPath, items })
+  if (!backgroundEmbedActive) {
+    backgroundEmbedActive = true
+    setImmediate(() => {
+      drainBackgroundEmbeddings().catch((e: any) =>
+        log.warn("background embedding drainer failed", { error: e?.message }),
+      )
+    })
+  }
+}
+
+async function drainBackgroundEmbeddings() {
+  try {
+    while (backgroundEmbedJobs.length > 0) {
+      const job = backgroundEmbedJobs.shift()!
+      backgroundEmbedQueuedItems -= job.items.length
+      try {
+        const { SemanticEngine } = await import("../brain/semantic/engine")
+        const { Instance } = await import("../project/instance")
+        const { createHash } = await import("crypto")
+        const insertEmbed = job.rawDb.prepare(`
+          INSERT OR REPLACE INTO brain_semantic_embedding
+          (id, project_id, entity_id, entity_type, embedding_model, embedding_vector, vector_dimension, content_hash, semantic_context, similarity_threshold, last_updated, time_created, time_updated)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+
+        const maxBatch = 100
+        for (let j = 0; j < job.items.length; j += maxBatch) {
+          const chunk: any[] = job.items.slice(j, j + maxBatch)
+          const docs = chunk.map((i: any) => i.snippet)
+
+          const embeddings: any = await Instance.provide({
+            directory: job.projectPath,
+            fn: () => SemanticEngine.embedMany(docs),
+          })
+          if (!embeddings) continue
+
+          const modelLabel = SemanticEngine.getLastEmbeddingModel()
+          const txEmbed = job.rawDb.transaction((rows: any) => {
+            for (let k = 0; k < rows.length; k++) {
+              const item = chunk[k]
+              const vec = embeddings[k]
+              if (!vec) continue
+              const contentHash = createHash("sha256").update(item.snippet).digest("hex")
+              insertEmbed.run(
+                `${item.symbolId}:embed`,
+                job.projectId,
+                item.symbolId,
+                item.kind || "symbol",
+                modelLabel,
+                JSON.stringify(vec),
+                vec.length,
+                contentHash,
+                JSON.stringify({ name: item.name, kind: item.kind }),
+                0.7,
+                Date.now(),
+                Date.now(),
+                Date.now(),
+              )
+            }
+          })
+          txEmbed(chunk)
+        }
+        log.debug("background embedding pass completed", { embedded: job.items.length })
+      } catch (e: any) {
+        log.warn("background semantic embedding failed", { error: e?.message })
+        // Fall back to TF-IDF for the failed batch
+        try {
+          const { createHash } = await import("crypto")
+          const tfidfInsert = job.rawDb.prepare(`
+            INSERT OR REPLACE INTO brain_semantic_embedding
+            (id, project_id, entity_id, entity_type, embedding_model, embedding_vector, vector_dimension, content_hash, semantic_context, similarity_threshold, last_updated, time_created, time_updated)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `)
+          for (const item of job.items) {
+            const tokens = tokenizeCodeForEmbedding(item.snippet, item.name)
+            if (tokens.length === 0) continue
+            const contentHash = createHash("sha256").update(item.snippet).digest("hex")
+            tfidfInsert.run(
+              `${item.symbolId}:tfidf`, job.projectId, item.symbolId, item.kind || "symbol",
+              "tfidf-v1", JSON.stringify(tokens), tokens.length, contentHash,
+              JSON.stringify({ name: item.name, kind: item.kind }), 0.15, Date.now(), Date.now(), Date.now(),
+            )
+          }
+        } catch (fallbackErr: any) {
+          log.warn("TF-IDF fallback also failed", { error: fallbackErr?.message })
+        }
+      }
+      // Yield to the event loop between jobs so the indexer is never starved.
+      await new Promise((r) => setTimeout(r, 0))
+    }
+  } finally {
+    backgroundEmbedActive = false
+    // Race guard: a job queued while the loop was finishing.
+    if (backgroundEmbedJobs.length > 0) {
+      backgroundEmbedActive = true
+      setImmediate(() => {
+        drainBackgroundEmbeddings().catch((e: any) =>
+          log.warn("background embedding drainer failed", { error: e?.message }),
+        )
+      })
+    }
+    // Wake flushBackgroundEmbeddings awaiters; they re-check the idle
+    // condition in a loop, so a re-activated drainer is still awaited.
+    const waiters = embeddingFlushWaiters
+    embeddingFlushWaiters = []
+    for (const w of waiters) w()
+  }
+}
+
 export async function storeResults(
   projectId: ProjectID,
   projectPath: string,
@@ -1303,24 +1464,26 @@ export async function storeResults(
           now,
         )
 
+        // Hoisted per-file index structures — used by both symbol storage and
+        // relationship source resolution (which runs outside the symbols block).
+        const SYMBOL_NAME_DENYLIST = new Set([
+          "this", "super", "self", "Self", "me", "My",
+          "true", "false", "null", "nil", "None", "True", "False",
+          "undefined", "NaN", "Infinity",
+          "global", "Global", "window", "Window", "document",
+          "module", "exports", "default", "globalThis",
+          "root", "program", "source_file", "module_declaration",
+          "package_manifest", "GlobalScope", "SCSS_FILE_SCOPE",
+          "unknown",
+        ])
+        const nameToSymbol = new Map<string, any>()
+        const containersByStart: { name: string; start: number; end: number }[] = []
+        let firstContainerSymbol: any = undefined
+
         if (result.symbols) {
           const insertedSymbolIds = new Set<string>()
           // Names that should NEVER become standalone symbols — language keywords,
           // scope objects, and root-level nodes that are always noise.
-          const SYMBOL_NAME_DENYLIST = new Set([
-            // Language keywords (cross-language)
-            "this", "super", "self", "Self", "me", "My",
-            "true", "false", "null", "nil", "None", "True", "False",
-            "undefined", "NaN", "Infinity",
-            // Scope/introspection objects
-            "global", "Global", "window", "Window", "document",
-            "module", "exports", "default", "globalThis",
-            // Root-level file artifacts (tree-sitter program/module nodes)
-            "root", "program", "source_file", "module_declaration",
-            "package_manifest", "GlobalScope", "SCSS_FILE_SCOPE",
-            // Unknown classifier default
-            "unknown",
-          ])
           // Sort symbols: container types first (class, interface, etc.) so FK
           // references from methods to their containers resolve successfully.
           const CONTAINER_PRIORITY: Record<string, number> = {
@@ -1334,6 +1497,51 @@ export async function storeResults(
             const pb = CONTAINER_PRIORITY[b.type || b.kind] ?? 3
             return pa - pb
           })
+
+          // Pre-build fast lookup structures to eliminate per-symbol O(n) scans.
+          // nameToSymbol: first symbol with each name (mirrors Array.find semantics).
+          // containersByStart: container symbols sorted by startLine ascending for
+          // line-containment lookups (replaces two full-array scans per symbol).
+          const CONTAINER_TYPES_LOOKUP = new Set([
+            "class", "interface", "struct", "trait", "enum", "object", "actor",
+            "module", "namespace", "package", "impl", "type",
+          ])
+          for (const s of result.symbols) {
+            const nm = s.name || ""
+            if (nm && !nameToSymbol.has(nm)) nameToSymbol.set(nm, s)
+            const k = s.type || s.kind || "unknown"
+            if (CONTAINER_TYPES_LOOKUP.has(k)) {
+              const cStart = s.startLine ?? s.range?.startLine ?? 0
+              const cEnd = s.endLine ?? s.range?.endLine ?? cStart
+              containersByStart.push({ name: nm, start: cStart, end: cEnd })
+            }
+          }
+          containersByStart.sort((a, b) => a.start - b.start || b.end - a.end)
+          // First container-kind symbol in sorted order (used for this/self resolution)
+          const INTRA_CONTAINER_KINDS = new Set(["class", "interface", "struct", "trait", "enum", "object", "actor", "impl"])
+          firstContainerSymbol = result.symbols.find((s: any) => INTRA_CONTAINER_KINDS.has(s.type || s.kind || "unknown"))
+
+          // Pre-build contains-pair set for O(1) dedupe of auto-generated contains
+          // relationships (replaces per-symbol O(rels) scan).
+          const containsPairs = new Set<string>()
+          if (result.relationships) {
+            for (const r of result.relationships) {
+              if ((r.type || r.relationshipType || "") !== "contains") continue
+              const rSrc = r.source || r.sourceId || r.fromSymbol || r.from || ""
+              const rTgt = r.target || r.targetId || r.toSymbol || r.to || ""
+              const srcLeaf = rSrc.replace(/^.*:([^:]+):?\d*$/, "$1")
+              const tgtLeaf = rTgt.replace(/^.*:([^:]+):?\d*$/, "$1")
+              if (srcLeaf && tgtLeaf) {
+                // Space separator (deliberate): must match the has() lookup
+                // below. Symbol names containing spaces (e.g. F# backtick
+                // names) can only cause a benign false-positive dedupe that
+                // skips a redundant edge — never a missing relationship.
+                containsPairs.add(`${srcLeaf} ${tgtLeaf}`)
+                containsPairs.add(`${tgtLeaf} ${srcLeaf}`)
+              }
+            }
+          }
+
           for (const symbol of result.symbols) {
             // Skip symbols that would cause SQL insert failures
             const symbolKind = symbol.type || symbol.kind || "unknown"
@@ -1376,7 +1584,7 @@ export async function storeResults(
             const _ownerName = symbol.ownerName || symbol.scope
             if (_ownerName) {
               ownerSymbolId = `${fileId}:${_ownerName}:0`
-              const parentSymbol = result.symbols.find((s: any) => s.name === _ownerName)
+              const parentSymbol = nameToSymbol.get(_ownerName)
               if (parentSymbol) {
                 const parentStartLine = parentSymbol.startLine ?? parentSymbol.range?.startLine ?? 0
                 ownerSymbolId = `${fileId}:${parentSymbol.name}:${parentStartLine}`
@@ -1392,40 +1600,26 @@ export async function storeResults(
               ])
               const symbolType = symbol.type || symbol.kind || "unknown"
               if (OWNABLE_TYPES.has(symbolType)) {
-                const CONTAINER_TYPES = new Set([
-                  "class", "interface", "struct", "trait", "enum", "object", "actor",
-                  "module", "namespace", "package", "impl", "type",
-                ])
-                // Tier 1: Exact line-range containment (tree-sitter parsed results)
-                for (const candidate of result.symbols) {
-                  const cKind = candidate.type || candidate.kind || "unknown"
-                  if (!CONTAINER_TYPES.has(cKind)) continue
-                  const cName = candidate.name || ""
-                  if (cName === symbol.name) continue
-                  const cStart = candidate.startLine ?? candidate.range?.startLine ?? 0
-                  const cEnd = candidate.endLine ?? candidate.range?.endLine ?? cStart
-                  if (cStart < symbolStartLine && (cEnd >= symbolEndLine || cEnd === cStart) && cStart > 0) {
-                    ownerSymbolId = `${fileId}:${cName}:${cStart}`
+                // Tier 1: Exact line-range containment (tree-sitter parsed results).
+                // containersByStart is sorted ascending by start; the first
+                // container whose [start,end] encloses the symbol wins (widest
+                // container first on equal starts), preserving original scan order.
+                for (const c of containersByStart) {
+                  if (c.start >= symbolStartLine) break // sorted: no later container starts earlier
+                  if (c.name === symbol.name) continue
+                  if (c.start > 0 && (c.end >= symbolEndLine || c.end === c.start)) {
+                    ownerSymbolId = `${fileId}:${c.name}:${c.start}`
                     break
                   }
                 }
                 // Tier 2: Nearest preceding container (regex fallback — single-line symbols)
                 if (!ownerSymbolId) {
-                  let bestCandidate: any = null
-                  let bestLine = 0
-                  for (const candidate of result.symbols) {
-                    const cKind = candidate.type || candidate.kind || "unknown"
-                    if (!CONTAINER_TYPES.has(cKind)) continue
-                    const cName = candidate.name || ""
-                    if (cName === symbol.name) continue
-                    const cStart = candidate.startLine ?? candidate.range?.startLine ?? 0
-                    if (cStart < symbolStartLine && cStart > bestLine) {
-                      bestLine = cStart
-                      bestCandidate = candidate
-                    }
-                  }
-                  if (bestCandidate) {
-                    ownerSymbolId = `${fileId}:${bestCandidate.name}:${bestLine}`
+                  for (let ci = containersByStart.length - 1; ci >= 0; ci--) {
+                    const c = containersByStart[ci]
+                    if (c.start >= symbolStartLine) continue
+                    if (c.name === symbol.name) continue
+                    ownerSymbolId = `${fileId}:${c.name}:${c.start}`
+                    break
                   }
                 }
               }
@@ -1476,15 +1670,7 @@ export async function storeResults(
             if (ownerSymbolId && insertedSymbolIds.has(ownerSymbolId)) {
               // Dedup: skip if the engine already generated a contains for this (owner, child) pair
               const ownerLeaf = ownerSymbolId.replace(/^.*:([^:]+):\d+$/, "$1")
-              const alreadyHasContains = result.relationships?.some((r: any) => {
-                if ((r.type || r.relationshipType || "") !== "contains") return false
-                const rSrc = r.source || r.sourceId || r.fromSymbol || r.from || ""
-                const rTgt = r.target || r.targetId || r.toSymbol || r.to || ""
-                const srcLeaf = rSrc.replace(/^.*:([^:]+):?\d*$/, "$1")
-                const tgtLeaf = rTgt.replace(/^.*:([^:]+):?\d*$/, "$1")
-                return (srcLeaf === ownerLeaf && tgtLeaf === symbol.name) ||
-                       (tgtLeaf === ownerLeaf && srcLeaf === symbol.name)
-              })
+              const alreadyHasContains = containsPairs.has(`${ownerLeaf} ${symbol.name}`)
               if (!alreadyHasContains) {
                 const fileCount = (fileRelCounters.get(fileId) || 0) + 1
                 fileRelCounters.set(fileId, fileCount)
@@ -1671,18 +1857,21 @@ export async function storeResults(
             const sourceLeaf = extractLeaf(sourceName)
             const targetLeaf = extractLeaf(targetName)
 
-            // Find source symbol: try exact match, ends-with, leaf match, qualified name
-            const sourceSymbol = result.symbols?.find((s: any) => {
-              if (!sourceName || sourceName === "unknown") return false
-              if (s.name === sourceName) return true
-              if (s.name === sourceLeaf) return true
-              if (sourceName.endsWith(`:${s.name}`)) return true
-              if (sourceName.endsWith(`.${s.name}`)) return true
-              if (s.qualifiedName && sourceName === s.qualifiedName) return true
-              if (s.qualifiedName && sourceName.endsWith(`:${s.qualifiedName}`)) return true
-              if (s.qualifiedName && s.qualifiedName.endsWith(`.${sourceLeaf}`)) return true
-              return false
-            })
+            // Find source symbol: O(1) name match first, then ends-with/qualified
+            // fallbacks over a pre-built list (avoids Array.find closure per rel).
+            let sourceSymbol: any = undefined
+            if (sourceName && sourceName !== "unknown") {
+              sourceSymbol = nameToSymbol.get(sourceName) ?? nameToSymbol.get(sourceLeaf)
+              if (!sourceSymbol) {
+                for (const s of result.symbols) {
+                  if (sourceName.endsWith(`:${s.name}`)) { sourceSymbol = s; break }
+                  if (sourceName.endsWith(`.${s.name}`)) { sourceSymbol = s; break }
+                  if (s.qualifiedName && sourceName === s.qualifiedName) { sourceSymbol = s; break }
+                  if (s.qualifiedName && sourceName.endsWith(`:${s.qualifiedName}`)) { sourceSymbol = s; break }
+                  if (s.qualifiedName && s.qualifiedName.endsWith(`.${sourceLeaf}`)) { sourceSymbol = s; break }
+                }
+              }
+            }
 
             let sourceId: string | null
             let sourceExternal: string | null = null
@@ -1726,10 +1915,8 @@ export async function storeResults(
 
             // BUG 4 FIX: Resolve intra-class receivers (this/self/me) to the enclosing class
             if (INTRA_CLASS_RECEIVERS.has(leafForCheck)) {
-              const enclosingSymbol = result.symbols?.find((s: any) => {
-                const kind = s.type || s.kind || "unknown"
-                return ["class", "interface", "struct", "trait", "enum", "object", "actor", "impl"].includes(kind)
-              })
+              // First container-kind symbol in the sorted array — matches original find().
+              const enclosingSymbol = firstContainerSymbol
               if (enclosingSymbol) {
                 const enclosingStartLine = enclosingSymbol.startLine ?? enclosingSymbol.range?.startLine ?? 0
                 sourceId = `${fileId}:${enclosingSymbol.name}:${enclosingStartLine}`
@@ -1799,104 +1986,19 @@ export async function storeResults(
     await new Promise((r) => setTimeout(r, 1))
   }
 
-  // Generate and store semantic embeddings for symbols (skip for large batches)
-  // @backbencher: skip embedding when called with skipResolution (compiled binary)
-  // BUG 7 FIX: Use TF-IDF fallback when ML model is skipped or batch is too large
+  // ========================================================================
+  // ASYNC SEMANTIC EMBEDDINGS (BACKGROUND QUEUE)
+  // Embeddings are non-blocking for indexing: they are queued on a shared,
+  // serialized background drainer and processed after the main indexing
+  // completes, so users get usable code intelligence immediately while
+  // semantic vectors populate lazily. See queueBackgroundEmbeddings above.
+  // ========================================================================
   if (semanticBatch.length > 0) {
-    // Embeddings are independent of skipResolution (which only gates
-    // relationship resolution): real API or local vectors for small projects,
-    // tfidf-v1 for huge ones.
-    // Prefer real embeddings (API → local word vectors) for batches up to a
-    // generous limit; TF-IDF is only the fallback when no real vectors could
-    // be produced (no embedding source, or an enormous batch). The old hard
-    // 5000 cap silently switched real projects to TF-IDF.
-    const embedBatchLimit = Number(process.env.BB_EMBEDDING_BATCH_LIMIT || 50000)
-    let storedRealEmbeddings = false
-    try {
-      if (semanticBatch.length < embedBatchLimit) {
-        const { SemanticEngine } = await import("../brain/semantic/engine")
-        const maxBatch = 100
-
-        const insertEmbed = rawDb.prepare(`
-          INSERT OR REPLACE INTO brain_semantic_embedding
-          (id, project_id, entity_id, entity_type, embedding_model, embedding_vector, vector_dimension, content_hash, semantic_context, similarity_threshold, last_updated, time_created, time_updated)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `)
-
-        const { Instance } = await import("../project/instance")
-        const { createHash } = await import("crypto")
-        for (let j = 0; j < semanticBatch.length; j += maxBatch) {
-          const chunk: any[] = semanticBatch.slice(j, j + maxBatch)
-          const docs = chunk.map((i: any) => i.snippet)
-
-          const embeddings: any = await Instance.provide({
-            directory: projectPath,
-            fn: () => SemanticEngine.embedMany(docs),
-          })
-          if (!embeddings) continue
-          // Label vectors with the model that actually produced them — the API
-          // may fall back to local vectors mid-run (e.g. on quota errors), and
-          // mixing them under one model name corrupts the vector space.
-          const modelLabel = SemanticEngine.getLastEmbeddingModel()
-
-          const txEmbed = rawDb.transaction((rows: any) => {
-            for (let k = 0; k < rows.length; k++) {
-              const item = chunk[k]
-              const vec = embeddings[k]
-              if (!vec) continue
-              const contentHash = createHash("sha256").update(item.snippet).digest("hex")
-              const embedId = `${item.symbolId}:embed`
-              insertEmbed.run(
-                embedId,
-                projectId,
-                item.symbolId,
-                item.kind || "symbol",
-                modelLabel,
-                JSON.stringify(vec),
-                vec.length,
-                contentHash,
-                JSON.stringify({ name: item.name, kind: item.kind }),
-                0.7,
-                now,
-                now,
-                now,
-              )
-              storedRealEmbeddings = true
-            }
-          })
-          txEmbed(chunk)
-        }
-      }
-      if (!storedRealEmbeddings) {
-        // TF-IDF fallback: lightweight token-weight vectors stored as JSON
-        // Works for any project size, no external ML dependency
-        const tfidfInsert = rawDb.prepare(`
-          INSERT OR REPLACE INTO brain_semantic_embedding
-          (id, project_id, entity_id, entity_type, embedding_model, embedding_vector, vector_dimension, content_hash, semantic_context, similarity_threshold, last_updated, time_created, time_updated)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `)
-        const { createHash } = await import("crypto")
-
-        for (const item of semanticBatch) {
-          const tokens = tokenizeCodeForEmbedding(item.snippet, item.name)
-          if (tokens.length === 0) continue
-          const contentHash = createHash("sha256").update(item.snippet).digest("hex")
-          const embedId = `${item.symbolId}:tfidf`
-          tfidfInsert.run(
-            embedId, projectId, item.symbolId, item.kind || "symbol",
-            "tfidf-v1",
-            JSON.stringify(tokens),
-            tokens.length,
-            contentHash,
-            JSON.stringify({ name: item.name, kind: item.kind }),
-            0.15,
-            now, now, now,
-          )
-        }
-      }
-    } catch (e: any) {
-      log.warn("semantic embedding generation failed", { error: e?.message })
-    }
+    // Copy, never reference: semanticBatch is cleared below and must not
+    // take the queued items down with it.
+    const items = [...semanticBatch]
+    semanticBatch.length = 0 // Clear to prevent double-processing
+    queueBackgroundEmbeddings(rawDb, projectId, projectPath, items)
   }
 
   // ========================================================================
@@ -2336,16 +2438,39 @@ export async function indexProjectParallel(
       )
       const missed = files.filter(f => !stored.has(f) && !shouldSkipCli(f))
       if (missed.length > 0) {
-        process.stderr.write(`[brain] ⚠ ${missed.length} files missed, re-processing...\n`)
-        const { parseFile } = await import("./pool-worker")
-        for (const file of missed) {
-          try {
-            const result = await parseFile(file as any, projectPath) as any
-            if (result?.success) {
-              await storeResults(projectId, projectPath, [{ filePath: file, success: true, ...result }], { skipResolution: true })
-              process.stderr.write(`  ✓ ${file.split('/').pop()}\n`)
+        process.stderr.write(`[brain] ⚠ ${missed.length} files missed, re-processing via worker pool...\n`)
+        // Retry through the ISOLATED worker pool, never in-process. A file that
+        // hangs the tree-sitter parser must die inside a worker (the parent
+        // SIGKILLs it after the per-file timeout and retries), not in this
+        // process — an in-process parse lets the engine's 120s self-destruct
+        // timer call process.exit(1) on pathological inputs (e.g.
+        // dotnet/fsharp's Cancellable.fs), taking the whole index run and any
+        // unsaved evidence down with it. processWithWorkerPool stores successes
+        // itself, so no extra storeResults call is needed here.
+        const reprocessed = await processWithWorkerPool(projectId, projectPath, missed, () => {})
+        // Map of files already tallied in the main pass, so a file that failed
+        // there but recovered here is counted ONCE (as a success), not twice.
+        const mainOutcomes = new Map<string, { success: boolean; timeout: boolean }>()
+        for (const r of results) mainOutcomes.set(r.filePath, { success: r.success, timeout: !!r.timeout })
+        for (const r of reprocessed) {
+          if (r.success) {
+            const prev = mainOutcomes.get(r.filePath)
+            if (prev) {
+              if (!prev.success) {
+                // Recovery: move the stale failure tally to success.
+                if (prev.timeout) stats.timeoutFiles = Math.max(0, stats.timeoutFiles - 1)
+                else stats.errorFiles = Math.max(0, stats.errorFiles - 1)
+                stats.successFiles++
+              }
+              // prev.success: already counted as success — don't count again
+            } else {
+              stats.successFiles++
             }
-          } catch (e: any) { process.stderr.write(`  ✗ ${file.split('/').pop()}\n`) }
+            process.stderr.write(`  ✓ ${r.filePath.split('/').pop()}\n`)
+          } else {
+            stats.errorFiles++
+            process.stderr.write(`  ✗ ${r.filePath.split('/').pop()}\n`)
+          }
         }
       }
     } catch (e: any) {
