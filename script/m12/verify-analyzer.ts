@@ -100,81 +100,12 @@ function relationshipFacts(relationships: any[], fileBase: string): ObservedFact
   return facts
 }
 
-// Resolve override targets against the full fixture corpus the way the
-// production indexer resolves relationships across files: build a per-type
-// method index from every fixture's symbols, then for each observed override
-// edge walk the class hierarchy (extends/implements edges) to find the parent
-// that actually declares the method. This is the same name-based cross-file
-// resolution parallel-indexer.ts applies at storage time.
-interface CorpusSymbol {
-  name: string
-  kind: string
-  ownerName?: string
-}
-interface CorpusRel {
-  type: string
-  source: string
-  target: string
-}
-function resolveOverridesCrossFile(
-  observed: ObservedFact[],
-  corpusSymbols: CorpusSymbol[],
-  corpusRels: CorpusRel[],
-) {
-  const methodsByType = new Map<string, Set<string>>()
-  const hierarchy = new Map<string, string[]>()
-
-  for (const s of corpusSymbols) {
-    const owner = s.ownerName
-    if (owner && s.name && s.kind === "method") {
-      if (!methodsByType.has(owner)) methodsByType.set(owner, new Set())
-      methodsByType.get(owner)!.add(s.name)
-    }
-  }
-  for (const r of corpusRels) {
-    if ((r.type === "extends" || r.type === "implements") && r.source && r.target) {
-      if (!hierarchy.has(r.source)) hierarchy.set(r.source, [])
-      hierarchy.get(r.source)!.push(r.target)
-    }
-  }
-
-  for (const fact of observed) {
-    if (fact.layer !== "relationships" || (fact.attributes as any)?.type !== "overrides") continue
-    const src = fact.sourceId ?? ""
-    const dot = src.lastIndexOf(".")
-    if (dot <= 0) continue
-    const owner = src.slice(0, dot)
-    const method = src.slice(dot + 1)
-
-    // BFS through the class hierarchy to find the declaring parent.
-    const queue = [...(hierarchy.get(owner) ?? [])]
-    const seen = new Set<string>([owner])
-    let declaringParent: string | null = null
-    while (queue.length > 0 && !declaringParent) {
-      const parent = queue.shift()!
-      if (seen.has(parent)) continue
-      seen.add(parent)
-      if (methodsByType.get(parent)?.has(method)) {
-        declaringParent = parent
-        break
-      }
-      queue.push(...(hierarchy.get(parent) ?? []))
-    }
-    if (declaringParent) {
-      fact.targetId = `${declaringParent}.${method}`
-      fact.id = `rel:${fact.file}:overrides:${fact.sourceId}:${fact.targetId}`
-    }
-  }
-}
-
 async function main() {
   const fixtureFiles = readdirSync(FIXTURE_DIR)
     .filter((f) => !f.startsWith(".") && statSync(join(FIXTURE_DIR, f)).isFile())
     .sort()
 
   const observed: ObservedFact[] = []
-  const corpusSymbols: CorpusSymbol[] = []
-  const corpusRels: CorpusRel[] = []
   let errors = 0
   const perFile: Record<string, { symbols: number; relationships: number }> = {}
 
@@ -188,8 +119,6 @@ async function main() {
           const syms = p.symbols ?? []
           const rels = p.relationships ?? []
           perFile[f] = { symbols: syms.length, relationships: rels.length }
-          for (const s of syms) corpusSymbols.push({ name: s.name ?? "", kind: String(s.kind ?? ""), ownerName: s.ownerName ?? "" })
-          for (const r of rels) corpusRels.push({ type: r.type ?? r.relationshipType ?? "", source: String(r.source ?? r.sourceId ?? ""), target: String(r.target ?? r.targetId ?? "") })
           observed.push(...symbolFacts(syms, f), ...relationshipFacts(rels, f))
         } catch (e: any) {
           errors++
@@ -200,10 +129,15 @@ async function main() {
     },
   )
 
-  // Cross-file override resolution mirrors the production indexer and runs
-  // before the differential so override targets are compared as resolved
-  // identities, not raw per-file guesses.
-  resolveOverridesCrossFile(observed, corpusSymbols, corpusRels)
+  // NOTE (honesty): observed facts are compared as the analyzer emits them.
+  // The production indexer resolves relationship *sources* in-file and
+  // relationship *targets* by global leaf-name lookup (parallel-indexer.ts
+  // storeResults → resolveTargetStmt); it performs NO cross-file override
+  // target resolution and no hierarchy walking. The analyzer's per-file
+  // override emission (first hierarchy parent when no in-file symbol declares
+  // the method) is therefore compared verbatim — any cross-file override
+  // limitation is a real, visible FP/FN in the differential, not a
+  // post-processed artifact.
 
   // Dedupe observed facts: overloads and repeated field accesses produce
   // multiple edges with the same identity (file:type:source:target). The

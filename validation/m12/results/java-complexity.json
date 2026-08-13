@@ -8,41 +8,41 @@
       "name": "fixtures",
       "measurement": {
         "name": "fixtures:java",
-        "wallTimeMs": 164.7017,
-        "userCpuMs": 192.973,
-        "systemCpuMs": 83.921,
-        "peakRssBytes": 183308288,
-        "rssDeltaBytes": 141254656,
+        "wallTimeMs": 160.200626,
+        "userCpuMs": 183.061,
+        "systemCpuMs": 90.64,
+        "peakRssBytes": 186503168,
+        "rssDeltaBytes": 144703488,
         "databaseBytes": null,
         "files": 4,
         "symbols": 40,
-        "relationships": 77,
-        "filesPerSecond": 24.286330985047517,
-        "symbolsPerSecond": 242.86330985047516,
-        "relationshipsPerSecond": 467.51187146216466
+        "relationships": 78,
+        "filesPerSecond": 24.968691445687607,
+        "symbolsPerSecond": 249.68691445687608,
+        "relationshipsPerSecond": 486.8894831909083
       },
       "symbols": 40,
-      "relationships": 77
+      "relationships": 78
     },
     {
       "name": "corpus_subset",
       "measurement": {
         "name": "corpus_subset:java",
-        "wallTimeMs": 4801.899544,
-        "userCpuMs": 7980.547,
-        "systemCpuMs": 741.618,
-        "peakRssBytes": 506019840,
-        "rssDeltaBytes": 155205632,
+        "wallTimeMs": 4462.696496,
+        "userCpuMs": 7761.812,
+        "systemCpuMs": 611.027,
+        "peakRssBytes": 537477120,
+        "rssDeltaBytes": 250974208,
         "databaseBytes": null,
         "files": 400,
         "symbols": 7812,
-        "relationships": 29972,
-        "filesPerSecond": 83.30036818446196,
-        "symbolsPerSecond": 1626.856190642542,
-        "relationshipsPerSecond": 6241.6965880617345
+        "relationships": 30483,
+        "filesPerSecond": 89.63190760530716,
+        "symbolsPerSecond": 1750.511155531649,
+        "relationshipsPerSecond": 6830.623598831446
       },
       "symbols": 7812,
-      "relationships": 29972
+      "relationships": 30483
     }
   ],
   "note": "Complexity envelope per analyzer: wall time, symbols/s, relationships/s, peak RSS. Fixtures + real-corpus subset (intellij-community 400-file sample).",

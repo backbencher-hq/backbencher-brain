@@ -19,11 +19,12 @@
         "sample": "400 tracked *.java files (deterministic first-400 sorted)",
         "fixtures": 4,
         "fixtureFacts": 115,
-        "precision": 1,
-        "recall": 1,
+        "precision": 0.991,
+        "recall": 0.991,
         "corpusSymbols": 7812,
-        "corpusRelationships": 29972,
-        "measuredAt": "2026-08-13T02:41:49.999Z"
+        "corpusRelationships": 30483,
+        "measuredAt": "2026-08-13T02:41:49.999Z",
+        "note": "cross-file override target (UserService.save -> Repository.save) is a declared per-file limitation: analyzer emits first-parent BaseService.save"
       }
     },
     {

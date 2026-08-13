@@ -36,7 +36,7 @@
 | uses | ✅ | field accesses (`field_access`) with `this`/`super` receiver resolved to enclosing type; Spring DB mappings (entity table, mapped column, `@Value` config keys) | 0.6 field access / 1.0 framework-derived |
 | imports | ✅ | `import_declaration` → `scoped_identifier`/`identifier`; metadata for static/wildcard | — |
 | exports | ✅ | public top-level symbols; Spring MVC endpoints (`Exports` with route, httpMethod) | 1.0 |
-| overrides | ✅ | `@Override` + hierarchy BFS over `classHierarchy` (type-arg-clean parents) | 1.0 |
+| overrides | ✅ | `@Override` + hierarchy BFS over `classHierarchy` (type-arg-clean parents); when no in-file symbol declares the method, the target is the first hierarchy parent — see declared limitation below | 1.0 (in-file) / first-parent guess (cross-file) |
 | references | ✅ | imports, source rewritten post-pass from package → file's primary type (first top-level class/interface/enum) | 0.9 |
 | contains | ✅ | owner → owned symbols (deduped against engine-generated contains in `storeResults`) | 1.0 |
 | depends | ✅ | imports → `References` (Java import edge) | 0.9 |
@@ -54,6 +54,7 @@
 
 ## Unsupported / explicit-unknown constructs
 
+- **Cross-file override targets** (declared limitation, fixture `UserService.java`): the analyzer is per-file. When the true declaring parent of an `@Override` method is declared in another file, the analyzer cannot verify which hierarchy parent declares the method — it deterministically emits the first hierarchy parent. `UserService.save` overrides `Repository.save`, but the analyzer emits `BaseService.save` (first parent; `BaseService` does not declare `save`). This is a visible FP/FN in the differential (0.991/0.991), not a masked artifact. Cross-file override resolution is a downstream indexer concern (global leaf-name target lookup in `parallel-indexer.ts` `storeResults`), tracked by M12.44 — it is not performed by this analyzer, and the harness does not post-process it.
 - Static imports of specific members: `import static` metadata captured; member-level import resolution is not expanded into per-member symbols (explicit non-goal for M12.02).
 - Annotation processor–generated code (beyond the two phantom generators above) is not materialized.
 - ERROR-node parameter text (malformed source) is recovered best-effort; recovered types are heuristic (`unknown` when nothing is derivable). See fixture-negative note in regex inventory.
@@ -66,8 +67,8 @@ Baseline at M12.01: **18 usages**. After M12.02 elimination: **2 usages** — bo
 
 | Line | Regex | Receiver category | Classification | Justification |
 | --- | --- | --- | --- | --- |
-| 1142 | `/\s+/` (split) | identifier (`pt`) | unavoidable | ERROR-node recovery: tree-sitter exposes no structure for malformed parameter text; whitespace-run tokenization of garbage text is not grammar-expressible |
-| 1153 | `/@[\w\.]+\s*/g` (replace) | identifier (`typeGuess`) | unavoidable | ERROR-node recovery: stripping `@Annotation` tokens from a type guess requires whitespace-aware scanning that no grammar node can express (the text is a parse error) |
+| 1145 | `/\s+/` (split) | identifier (`pt`) | unavoidable | ERROR-node recovery: tree-sitter exposes no structure for malformed parameter text; whitespace-run tokenization of garbage text is not grammar-expressible |
+| 1156 | `/@[\w\.]+\s*/g` (replace) | identifier (`typeGuess`) | unavoidable | ERROR-node recovery: stripping `@Annotation` tokens from a type guess requires whitespace-aware scanning that no grammar node can express (the text is a parse error) |
 
 Eliminated (14): annotation classification (`@Service|@Entity|@GetMapping…|@Column…` tests) → `getJavaAnnotationNames` (AST identifier fields); annotation-name extraction (`/^@([A-Za-z0-9_]+)/`) → same; class route extraction (`/"([^"]+)"/`, `/value\s*=\s*"([^"]+)"/`) → `getAnnotationValue` (AST `annotation_argument_list`); route slash-collapse (`/\/\/+/g`) → single-pass loop; ERROR-node comma strip (`/^,\s*/`) → `startsWith`/`slice`; name sanitize (`/[^a-zA-Z0-9_]/g`) → char filter; varargs (`/\.\.\./g`) → `split("…").join("[]")`; quote stripping (`/^"|"$/g` ×2) → `extractStringValue` (AST `string_fragment`).
 
@@ -79,8 +80,8 @@ From `validation/m12/results/java-complexity.json`:
 
 | Run | files | symbols | relationships | wall ms | symbols/s | relationships/s | peak RSS |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| fixtures | 4 | 40 | 77 | 164.7 | 243 | 468 | 174.8 MB |
-| corpus subset (intellij-community @ cfda6881) | 400 | 7,812 | 29,972 | 4,801.9 | 1,627 | 6,242 | 482.6 MB |
+| fixtures | 4 | 40 | 78 | 160.2 | 250 | 487 | 177.9 MB |
+| corpus subset (intellij-community @ cfda6881) | 400 | 7,812 | 30,483 | 4,462.7 | 1,751 | 6,831 | 512.6 MB |
 
 Declared budget: fixture wall < 500 ms; corpus subset (400 files) < 15 s, symbols/s ≥ 1,000, relationships/s ≥ 4,000. **Met.**
 
@@ -90,14 +91,18 @@ Hot-path audit: single-pass iterative stack walk (no recursion), O(N) with pre-b
 
 - Ground truth: `validation/m12/ground-truth/java.json` (authority: `manual_audit` of fixture semantics — types, inheritance, method contracts)
 - Result: `validation/m12/results/java-differential.json`
-- **Precision 1.000 / Recall 1.000** — FP 0 / FN 0 / unknown 0 / unsupported 0 over **115 facts** (symbols + relationships, cross-file override targets resolved exactly as the production indexer does)
+- **Precision 0.991 / Recall 0.991** over **116 facts**: TP 115, FP 1, FN 1, unknown 0, unsupported 0
+  - FN: `overrides UserService.save → Repository.save` (semantically true; declaring parent `Repository` is in another file)
+  - FP: `overrides UserService.save → BaseService.save` (analyzer's deterministic first-parent guess — declared limitation above)
+  - Verified true during deep audit (M12.02 correction): `instantiates UserService → HashMap` (diamond `new HashMap<>()` — previously missed because the type parses as `generic_type`; analyzer fixed to handle it, +511 corpus relationships)
+- Facts are compared **as emitted** — the harness performs no cross-file post-processing (the production indexer resolves targets by global leaf-name lookup, not hierarchy walking; it has no override-specific resolution)
 - Baseline (M12.01): precision 0.790 / recall 0.754 — defects fixed: package-name reference sources, missing `extends`/`implements` on generic-bounded classes (type-arg stripping), override targets mangled by generic suffixes, unresolved `this` receivers
 
 ## Corpus validation
 
 - Corpus target: `validation/m12/corpus-manifest.json` → `intellij_community@cfda6881ef1c86081f9ad4f993906b84004b65f2` (local clone, repo state dirty — unrelated `.agents/skills` deletions; Java sources intact)
 - Measured subset: first 400 tracked `*.java` files (lexicographic, deterministic at pinned revision) — `validation/m12/results/java-corpus-sample.txt`
-- **400 files, 7,812 symbols, 29,972 relationships, 0 errors, 0 timeouts** (4.8 s wall)
+- **400 files, 7,812 symbols, 30,483 relationships, 0 thrown parse exceptions, 0 files with grammar errors, 0 timeouts** — errors measured by direct re-parse with `result.errors` counting (the measure tool alone swallows exceptions; the doc claim is backed by an explicit error-counting run)
 
 ## Evidence pointers
 

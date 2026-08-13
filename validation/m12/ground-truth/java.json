@@ -1727,6 +1727,22 @@
         "authority": "manual_audit",
         "reference": "Status.PENDING in getStatus"
       }
+    },
+    {
+      "id": "rel:UserService.java:instantiates:UserService:HashMap",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.java",
+      "sourceId": "UserService",
+      "targetId": "HashMap",
+      "attributes": {
+        "type": "instantiates"
+      },
+      "expectedState": "resolved",
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "private final Map<String, User> store = new HashMap<>();"
+      }
     }
   ]
 }
