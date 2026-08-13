@@ -118,78 +118,66 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     const typeInference = this.performKotlinTypeInference(symbols, relationships)
 
     // --- KOTLIN CALL GRAPH EXTRACTION ---
-    // Walks the full AST and extracts caller→callee relationships
-    // using tree-sitter Kotlin node types: call_expression, invocation_expression, method_invocation
+    // Walks the full AST and extracts caller→callee relationships from
+    // call_expression nodes. Targets are built from the navigation structure
+    // (receiver.selector); stdlib calls are filtered; PascalCase callees are
+    // constructor calls → Instantiates (not Calls).
     try {
       const extractKotlinCalls = (n: Node) => {
-        if (n.type === 'call_expression' || n.type === 'invocation_expression' || n.type === 'method_invocation') {
-          let targetName: string | null = null;
-          if (n.childForFieldName) {
-             const fnNode = n.childForFieldName('function') || n.childForFieldName('name') || n.childForFieldName('method');
-             if (fnNode) targetName = fnNode.text;
-          }
-          if (!targetName && n.namedChildCount > 0) {
-             for (let i=0; i<n.namedChildCount; i++) {
-                const c = n.namedChild(i);
-                if (c && (c.type === 'identifier' || c.type === 'simple_identifier')) {
-                   targetName = c.text;
-                   break;
-                }
-             }
-          }
-          if (targetName && targetName !== "print" && targetName !== "println") {
-            let p: Node | null = n.parent;
-            let sourceName = "Global";
+        if (n.type === 'call_expression') {
+          const callExpr = this.buildKotlinCallExpression(n)
+          const targetName = callExpr
+          const leaf = targetName.split(".").pop() || targetName
+          // Exact-leaf stdlib filter: substring matching would wrongly drop
+          // in-file calls (e.g. a local `plus` operator or `mapFirst`).
+          const isStdlib = this.kotlinStdlibExact.has(targetName) || this.kotlinStdlibExact.has(leaf)
+          if (targetName && targetName !== "print" && targetName !== "println" && !isStdlib) {
+            let p: Node | null = n.parent
+            let sourceName = "Global"
             while (p) {
-               if (p.type === 'function_declaration' || p.type === 'method_declaration') {
-                  const nameNode = p.childForFieldName('name');
-                  if (nameNode) {
-                      sourceName = nameNode.text;
-                  } else {
-                      for (let i=0; i<p.namedChildCount; i++) {
-                          const c = p.namedChild(i);
-                          if (c && (c.type === 'identifier' || c.type === 'simple_identifier')) {
-                              sourceName = c.text;
-                              break;
-                          }
-                      }
-                  }
-                  break;
-               }
-               p = p.parent;
+              if (p.type === 'function_declaration') {
+                const nameNode = this.findChildByType(p, ["simple_identifier", "type_identifier"])
+                if (nameNode) sourceName = nameNode.text
+                break
+              }
+              p = p.parent
             }
-            relationships.push({
-              source: sourceName,
-              target: targetName,
-              type: ASTEngine.RelationshipType.Calls,
-              metadata: { kotlinSpecific: true }
-            });
-            // Kotlin constructor calls share call_expression — PascalCase targets are likely instantiations
-            if (targetName && targetName[0] === targetName[0].toUpperCase() && targetName[0] !== targetName[0].toLowerCase()) {
+            const isPascal = leaf.length > 0 && leaf[0] >= "A" && leaf[0] <= "Z"
+            if (isPascal) {
               relationships.push({
                 source: sourceName,
-                target: targetName,
+                target: leaf,
                 type: ASTEngine.RelationshipType.Instantiates,
                 confidence: 0.7,
                 metadata: { kotlinSpecific: true, isInstantiation: true },
+              })
+            } else {
+              relationships.push({
+                source: sourceName,
+                target: leaf,
+                type: ASTEngine.RelationshipType.Calls,
+                confidence: 0.7,
+                metadata: { kotlinSpecific: true },
               })
             }
           }
         }
         for (let i = 0; i < n.namedChildCount; i++) {
-          const child = n.namedChild(i);
-          if (child) extractKotlinCalls(child);
+          const child = n.namedChild(i)
+          if (child) extractKotlinCalls(child)
         }
-      };
-      extractKotlinCalls(rootNode);
+      }
+      extractKotlinCalls(rootNode)
     } catch (e) {
       // Graceful degradation
     }
     // --- END KOTLIN CALL GRAPH EXTRACTION ---
 
-    // Add Contains + Overrides + DependsOn
+    // Add Contains + Overrides + DependsOn. `ownerName` is the enclosing type
+    // name — NOT scope — so top-level declarations (no owner) never produce a
+    // self-contain edge.
     for (const s of symbols) {
-      const _owner = s.ownerName || s.scope
+      const _owner = s.ownerName
       if (_owner) {
         relationships.push({
           source: _owner,
@@ -199,15 +187,34 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
           metadata: { isContained: true },
         })
       }
-      // Overrides: methods with 'override' modifier
-      if (s.kind === ASTEngine.SymbolKind.Method && s.metadata?.modifiers?.includes?.("override")) {
-        relationships.push({
-          source: s.ownerName || "root",
-          target: s.name,
-          type: ASTEngine.RelationshipType.Overrides,
-          confidence: 0.9,
-          metadata: { isOverride: true },
-        })
+      // Overrides: real methods with 'override' modifier, keyed by
+      // owner-qualified method name → first-hierarchy-parent method name.
+      // The parents come from the ENCLOSING CLASS's supertypes (a method
+      // symbol does not carry them). Phantom/generated symbols are excluded
+      // (their override targets are stdlib, not project symbols).
+      if (
+        s.kind === ASTEngine.SymbolKind.Method &&
+        s.ownerName &&
+        !s.metadata?.isPhantom &&
+        s.metadata?.modifiers?.includes?.("override")
+      ) {
+        let parents: string[] = []
+        for (const maybeOwner of symbols) {
+          if (maybeOwner.name === s.ownerName &&
+              (maybeOwner.kind === ASTEngine.SymbolKind.Class || maybeOwner.kind === ASTEngine.SymbolKind.Interface)) {
+            parents = maybeOwner.metadata?.superTypes ?? []
+            break
+          }
+        }
+        if (parents.length > 0) {
+          relationships.push({
+            source: `${s.ownerName}.${s.name}`,
+            target: `${parents[0]}.${s.name}`,
+            type: ASTEngine.RelationshipType.Overrides,
+            confidence: 0.9,
+            metadata: { isOverride: true, overrideParent: parents[0] },
+          })
+        }
       }
     }
     for (const imp of imports) {
@@ -218,6 +225,23 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
         confidence: 0.9,
         metadata: { isImportDep: true },
       })
+    }
+
+    // Rewrite import-reference sources from the placeholder "root" to the
+    // file's primary top-level type so references carry a symbol identity
+    // (imports precede declarations in source order).
+    const primaryType = symbols.find((s) => {
+      if (s.ownerName) return false
+      return s.kind === ASTEngine.SymbolKind.Class ||
+             s.kind === ASTEngine.SymbolKind.Interface ||
+             s.kind === ASTEngine.SymbolKind.Enum
+    })
+    if (primaryType) {
+      for (const rel of relationships) {
+        if (rel.type === ASTEngine.RelationshipType.References && rel.source === "root") {
+          rel.source = primaryType.name
+        }
+      }
     }
 
     for (let i = 0; i < symbols.length; i++) { const s = symbols[i]; if (!s.metadata?.isPhantom && s.visibility !== "private" && (!s.ownerName || s.ownerKind === ASTEngine.SymbolKind.Class)) { exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility || "public" }); } }
@@ -362,11 +386,11 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
             nextParentClass = cName
           }
           if (isInterface) {
-            this.extractInterface(n, symbols, ctx)
+            this.extractInterface(n, symbols, ctx, pClass)
           } else if (isEnum) {
-            this.extractEnumClass(n, symbols, ctx)
+            this.extractEnumClass(n, symbols, ctx, pClass)
           } else {
-            this.extractClass(n, symbols, ctx)
+            this.extractClass(n, symbols, ctx, pClass)
           }
           break
         }
@@ -377,7 +401,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
             pushedName = oName
             nextParentClass = oName
           }
-          this.extractObject(n, symbols, ctx)
+          this.extractObject(n, symbols, ctx, pClass)
           break
         }
         case "property_declaration":
@@ -553,12 +577,12 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
   /**
    * Extract Kotlin class with data classes, sealed classes, and inner classes
    */
-  private extractClass(node: Node, symbols: ASTEngine.UniversalSymbol[], ctx: KotlinContext) {
+  private extractClass(node: Node, symbols: ASTEngine.UniversalSymbol[], ctx: KotlinContext, parentClass?: string) {
     const nameNode = this.findChildByType(node, ["simple_identifier", "type_identifier"])
     if (!nameNode) return
 
     const className = nameNode.text
-    const qualifiedName = this.buildQualifiedName(className, ctx)
+    const qualifiedName = this.buildQualifiedName(className, ctx, parentClass)
 
     // Extract modifiers
     const modifiers = this.extractModifiers(node, ctx)
@@ -590,9 +614,13 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       name: className,
       kind: ASTEngine.SymbolKind.Class,
       range: this.nodeToRange(node),
-      scope: this.currentScope(ctx),
+      // Scope = package + enclosing types, EXCLUDING this class's own name,
+      // so a class is never a container of itself.
+      scope: this.enclosingScope(ctx),
       visibility,
       isAbstract,
+      ownerName: parentClass,
+      ownerKind: parentClass ? ASTEngine.SymbolKind.Class : undefined,
       decorators: annotations,
       comments: kdoc ? [kdoc] : [],
       metadata: {
@@ -620,8 +648,8 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
   /**
    * Extract Kotlin object (singleton)
    */
-  private extractObject(node: Node, symbols: ASTEngine.UniversalSymbol[], ctx: KotlinContext) {
-    const nameNode = this.findChildByType(node, ["simple_identifier", "type_identifier"])
+  private extractObject(node: Node, symbols: ASTEngine.UniversalSymbol[], ctx: KotlinContext, parentClass?: string) {
+    const nameNode = this.findChildByType(node, ["type_identifier", "simple_identifier"])
     if (!nameNode) return
 
     const objectName = nameNode.text
@@ -633,8 +661,10 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       name: objectName,
       kind: ASTEngine.SymbolKind.Class, // Using Class for objects
       range: this.nodeToRange(node),
-      scope: this.currentScope(ctx),
+      scope: this.enclosingScope(ctx),
       visibility: this.determineVisibility(modifiers, ctx),
+      ownerName: parentClass,
+      ownerKind: parentClass ? ASTEngine.SymbolKind.Class : undefined,
       decorators: annotations,
       metadata: {
         modifiers,
@@ -686,6 +716,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       scope: this.currentScope(ctx),
       visibility: this.determineVisibility(modifiers, ctx),
       decorators: annotations,
+      returnType: propertyType,
       ownerName: parentClass,
       ownerKind: parentClass ? ASTEngine.SymbolKind.Class : undefined,
       metadata: {
@@ -828,6 +859,16 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     return [...ctx.packageStack, ...ctx.classStack].join(".")
   }
 
+  /**
+   * Scope of a type declaration = package + ENCLOSING types, excluding the
+   * declaration's own name (which has already been pushed onto classStack by
+   * the time the extractor runs). A container must never contain itself.
+   */
+  private enclosingScope(ctx: KotlinContext): string {
+    const enclosing = ctx.classStack.slice(0, ctx.classStack.length - 1)
+    return [...ctx.packageStack, ...enclosing].join(".")
+  }
+
   private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {
     return {
       startLine: node.startPosition.row + 1,
@@ -843,7 +884,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
   /**
    * Kotlin Interface Extraction
    */
-  private extractInterface(node: Node, symbols: ASTEngine.UniversalSymbol[], ctx: KotlinContext): void {
+  private extractInterface(node: Node, symbols: ASTEngine.UniversalSymbol[], ctx: KotlinContext, parentClass?: string): void {
     const nameNode = this.findChildByType(node, ["simple_identifier", "type_identifier"])
     if (!nameNode) return
 
@@ -857,9 +898,11 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       name: interfaceName,
       kind: ASTEngine.SymbolKind.Interface,
       range: this.nodeToRange(node),
-      scope: this.currentScope(ctx),
+      scope: this.enclosingScope(ctx),
       visibility: this.determineVisibility(modifiers, ctx),
       isAbstract: true, // All interfaces are abstract
+      ownerName: parentClass,
+      ownerKind: parentClass ? ASTEngine.SymbolKind.Class : undefined,
       decorators: annotations,
       metadata: {
         modifiers,
@@ -878,7 +921,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
   /**
    * Kotlin Enum Class Extraction
    */
-  private extractEnumClass(node: Node, symbols: ASTEngine.UniversalSymbol[], ctx: KotlinContext): void {
+  private extractEnumClass(node: Node, symbols: ASTEngine.UniversalSymbol[], ctx: KotlinContext, parentClass?: string): void {
     const nameNode = this.findChildByType(node, ["simple_identifier", "type_identifier"])
     if (!nameNode) return
 
@@ -891,8 +934,10 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       name: enumName,
       kind: ASTEngine.SymbolKind.Enum,
       range: this.nodeToRange(node),
-      scope: this.currentScope(ctx),
+      scope: this.enclosingScope(ctx),
       visibility: this.determineVisibility(modifiers, ctx),
+      ownerName: parentClass,
+      ownerKind: parentClass ? ASTEngine.SymbolKind.Class : undefined,
       decorators: annotations,
       metadata: {
         modifiers,
@@ -973,7 +1018,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (parameters[i].defaultValue !== undefined) { hasDefaults = true; break; }
     }
 
-    const constructorName = isPrimaryConstructor ? "constructor" : parentClass || "constructor"
+    const constructorName = "constructor"
     const symbol: ASTEngine.UniversalSymbol = {
       name: constructorName,
       kind: ASTEngine.SymbolKind.Constructor,
@@ -1027,7 +1072,8 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
    * Kotlin Package Extraction
    */
   private extractPackage(node: Node, ctx: KotlinContext): void {
-    const packageNameNode = this.findChildByType(node, ["simple_identifier", "type_identifier"])
+    // The package_header child is a dotted `identifier` node (e.g. "com.example.service")
+    const packageNameNode = this.findChildByType(node, ["identifier", "simple_identifier", "type_identifier"])
     if (packageNameNode) {
       const packageName = packageNameNode.text
       ctx.packageStack = packageName.split(".")
@@ -1092,50 +1138,6 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    // Also check direct text for common modifiers, but only before body/args
-    const prefixText = node.text.split(/[\{\(\=]/)[0] || node.text
-    const kotlinModifiers = [
-      "public",
-      "private",
-      "protected",
-      "internal",
-      "final",
-      "open",
-      "abstract",
-      "sealed",
-      "override",
-      "virtual",
-      "static",
-      "const",
-      "inline",
-      "infix",
-      "operator",
-      "suspend",
-      "expect",
-      "actual",
-      "data",
-      "inner",
-      "enum",
-      "annotation",
-      "companion",
-      "lateinit",
-      "tailrec",
-      "external",
-    ]
-
-    for (let i = 0; i < kotlinModifiers.length; i++) {
-      const mod = kotlinModifiers[i]
-      if (stringIncludes(prefixText, `${mod} `)) {
-        let hasMod = false
-        for (let j = 0; j < modifiers.length; j++) {
-          if (modifiers[j] === mod) { hasMod = true; break; }
-        }
-        if (!hasMod) {
-          modifiers.push(mod)
-        }
-      }
-    }
-
     return modifiers
   }
 
@@ -1165,26 +1167,15 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
    * Kotlin Receiver Type Extraction (for extension functions)
    */
   private extractReceiverType(node: Node, ctx: KotlinContext): string | undefined {
-    let receiverNode: Node | undefined = undefined
+    // The receiver of an extension function is the leading user_type child
+    // before the function name (fun String.shout → user_type "String").
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
       if (c?.type === "simple_identifier") break
       if (c?.type === "user_type" || c?.type === "nullable_type" || c?.type === "type_identifier") {
-        receiverNode = c
-        break
+        return this.cleanKotlinType(c.text)
       }
     }
-    if (receiverNode) {
-      return this.cleanKotlinType(receiverNode.text)
-    }
-
-    // Check if this is an extension function by looking at function declaration
-    const functionText = node.text
-    const extensionMatch = functionText.match(/fun\s+(\w+(?:<[^>]*>)?)\s*\./)
-    if (extensionMatch) {
-      return extensionMatch[1]
-    }
-
     return undefined
   }
   /**
@@ -1223,13 +1214,14 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (modifiers.includes("expect")) annotations.push("@expect");
     if (modifiers.includes("actual")) annotations.push("@actual");
 
-    const modifiersNode = this.findChildByType(node, ["modifiers"])
     if (node) {
       const stack: Node[] = [node]
       while (stack.length > 0) {
         const n = stack.pop()!
-        if (n.type === "annotation" || n.type === "user_type" || n.type === "marker_annotation") {
-          annotations.push(n.text.replace(/^@/, ""))
+        // ONLY annotation nodes are collected — never user_type nodes, which
+        // are ordinary types (types were leaking into decorators before).
+        if (n.type === "annotation" || n.type === "marker_annotation") {
+          annotations.push(n.text.startsWith("@") ? n.text.slice(1) : n.text)
         }
         for (let i = n.namedChildCount - 1; i >= 0; i--) {
           const child = n.namedChild(i)
@@ -1308,20 +1300,42 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
   /**
    * Kotlin Super Types Extraction
    */
+  /**
+   * Extract the clean base type name of every supertype. A delegation_specifier
+   * contains either a user_type directly (Repository<User>) or a
+   * constructor_invocation (BaseService<User>()) wrapping one. The base name
+   * strips type arguments and nullability so relationship targets are valid
+   * symbol leaves (pool-worker's noise filter rejects targets containing <>).
+   */
   private extractSuperTypes(node: Node, ctx: KotlinContext): string[] {
     const superTypes: string[] = []
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
       if (c?.type === "delegation_specifier") {
-        const userType = this.findChildByType(c, ["user_type"])
+        let userType = this.findChildByType(c, ["user_type"])
+        if (!userType) {
+          const invocation = this.findChildByType(c, ["constructor_invocation"])
+          if (invocation) userType = this.findChildByType(invocation, ["user_type"])
+        }
         if (userType) {
-          superTypes.push(this.cleanKotlinType(userType.text))
-        } else {
-          superTypes.push(this.cleanKotlinType(c.text.replace(/\(.*\)/, "")))
+          superTypes.push(this.cleanKotlinBaseType(userType.text))
         }
       }
     }
     return superTypes
+  }
+
+  /**
+   * Reduce a (possibly generic/nullable) type to its base name:
+   * "BaseService<User>" → "BaseService", "User?" → "User",
+   * "Map<String, List<Int>>" → "Map".
+   */
+  private cleanKotlinBaseType(typeText: string): string {
+    let t = typeText
+    while (t.endsWith("?")) t = t.slice(0, -1)
+    const lt = t.indexOf("<")
+    if (lt !== -1) t = t.slice(0, lt)
+    return t.trim()
   }
 
   /**
@@ -1416,15 +1430,31 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
    * Kotlin Property Type Extraction
    */
   private extractPropertyType(node: Node, ctx: KotlinContext): string | undefined {
-    const typeNode = this.findChildByType(node, ["user_type", "nullable_type", "function_type", "type_identifier"])
+    // The declared type lives inside the variable_declaration child
+    // (property_declaration → variable_declaration → user_type).
+    const declarationNode = this.findChildByType(node, ["variable_declaration"])
+    const typeNode =
+      this.findChildByType(node, ["user_type", "nullable_type", "function_type", "type_identifier"]) ||
+      (declarationNode ? this.findChildByType(declarationNode, ["user_type", "nullable_type", "function_type", "type_identifier"]) : null)
     if (typeNode) {
       return this.cleanKotlinType(typeNode.text)
     }
 
-    // Try to infer from initializer
-    const initializer = node.childForFieldName("initializer")
+    // Infer from the initializer: it may live inside variable_declaration
+    // (with an initializer field) or as a literal/expression child directly
+    // under the property node (e.g. `const val VERSION = 1`).
+    const initializer =
+      (declarationNode ? declarationNode.childForFieldName("initializer") : null) ||
+      node.childForFieldName("initializer")
     if (initializer) {
       return this.inferKotlinTypeFromInitializer(initializer)
+    }
+    const LITERAL_TYPES = ["integer_literal", "real_literal", "float_literal", "string_literal", "character_literal", "boolean_literal", "call_expression"]
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (c && LITERAL_TYPES.indexOf(c.type) !== -1) {
+        return this.inferKotlinTypeFromInitializer(c)
+      }
     }
 
     return undefined
@@ -1478,9 +1508,15 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       case "navigation_expression":
         return this.buildKotlinNavigationExpression(node)
 
-      case "call_expression":
-        const functionName = this.findChildByType(node, ["simple_identifier", "identifier"])?.text
-        return functionName || node.text
+      case "call_expression": {
+        // A call like `"hi".shout(2)` has a navigation_expression child (the
+        // callee path) plus a call_suffix (the arguments) — the arguments must
+        // NOT leak into the callee name.
+        const nav = this.findChildByType(node, ["navigation_expression"])
+        if (nav) return this.buildKotlinNavigationExpression(nav)
+        const functionName = this.findChildByType(node, ["simple_identifier", "identifier"])
+        return functionName ? functionName.text : node.text.split("(")[0]
+      }
 
       default:
         return node.text
@@ -1525,6 +1561,56 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       "hashCode",
       "copy",
       "componentN",
+      // stdlib collection/factory functions and common scope helpers
+      "mutableMapOf",
+      "mapOf",
+      "mutableListOf",
+      "listOf",
+      "setOf",
+      "mutableSetOf",
+      "arrayOf",
+      "emptyList",
+      "emptyMap",
+      "emptySet",
+      "repeat",
+      "uppercase",
+      "lowercase",
+      "trim",
+      "startsWith",
+      "endsWith",
+      "contains",
+      "substring",
+      "map",
+      "filter",
+      "reduce",
+      "fold",
+      "forEach",
+      "sorted",
+      "sortedBy",
+      "distinct",
+      "first",
+      "last",
+      "add",
+      "remove",
+      "size",
+      "isEmpty",
+      "isNotEmpty",
+      "put",
+      "get",
+      "getOrElse",
+      "getOrDefault",
+      "any",
+      "all",
+      "none",
+      "count",
+      "sum",
+      "max",
+      "min",
+      "take",
+      "drop",
+      "plus",
+      "minus",
+      "times",
     ]
 
     for (let i = 0; i < builtins.length; i++) {
@@ -1535,17 +1621,39 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
+   * Exact stdlib names used by the call-graph filter (leaf-level). Operators
+   * like plus/minus/times are deliberately excluded so in-file operator
+   * overloads produce real Calls edges.
+   */
+  private kotlinStdlibExact: Set<string> = new Set([
+    "println", "print", "readLine", "require", "check", "error",
+    "let", "run", "with", "apply", "also", "takeIf", "takeUnless",
+    "toString", "equals", "hashCode", "copy", "componentN",
+    "mutableMapOf", "mapOf", "mutableListOf", "listOf", "setOf", "mutableSetOf",
+    "arrayOf", "emptyList", "emptyMap", "emptySet",
+    "repeat", "uppercase", "lowercase", "trim", "startsWith", "endsWith",
+    "contains", "substring", "map", "filter", "reduce", "fold", "forEach",
+    "sorted", "sortedBy", "distinct", "first", "last", "add", "remove",
+    "size", "isEmpty", "isNotEmpty", "put", "get", "getOrElse", "getOrDefault",
+    "any", "all", "none", "count", "sum", "max", "min", "take", "drop",
+  ])
+
+  /**
    * Kotlin Annotation Name Extraction
    */
   private getKotlinAnnotationName(node: Node): string | undefined {
-    const nameNode = this.findChildByType(node, ["simple_identifier", "type_identifier"])
-    if (nameNode) {
-      return `@${nameNode.text}`
+    // Direct name child (marker annotations, plain @Foo).
+    const direct = this.findChildByType(node, ["simple_identifier", "type_identifier"])
+    if (direct) return `@${direct.text}`
+    // Use-site annotations (@field:JvmField) wrap the name in a user_type:
+    // annotation → user_type → type_identifier. Reading the type_identifier
+    // avoids matching the use-site target as the name.
+    const userType = this.findChildByType(node, ["user_type"])
+    if (userType) {
+      const inner = this.findChildByType(userType, ["type_identifier"])
+      if (inner) return `@${inner.text}`
     }
-
-    // Extract from text
-    const match = node.text.match(/@(\w+)/)
-    return match ? `@${match[1]}` : undefined
+    return undefined
   }
 
   /**
@@ -1571,9 +1679,13 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
    * Kotlin Annotation Target Extraction
    */
   private extractKotlinAnnotationTarget(node: Node): string | undefined {
-    // Look for use-site targets like @field:, @get:, @set:, etc.
-    const match = node.text.match(/@(\w+):/)
-    return match ? match[1] : undefined
+    // Use-site targets like @field:, @get:, @set: are first-class AST nodes.
+    const targetNode = this.findChildByType(node, ["use_site_target"])
+    if (targetNode) {
+      const text = targetNode.text
+      return text.endsWith(":") ? text.slice(0, -1) : text
+    }
+    return undefined
   }
 
   /**
@@ -1591,34 +1703,40 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
   /**
    * Kotlin Type Inference from Initializer
    */
+  /**
+   * Infer the type of a property from its initializer using the initializer
+   * NODE TYPE — never by regex-testing its text. Kotlin literal nodes carry
+   * their kind in the grammar: integer_literal, real_literal, float_literal,
+   * string_literal, character_literal, boolean_literal, call_expression.
+   */
   private inferKotlinTypeFromInitializer(initNode: Node): string {
     const text = initNode.text.trim()
-
-    // Number literals
-    if (/^\d+$/.test(text)) return "Int"
-    if (/^\d+L$/.test(text)) return "Long"
-    if (/^\d+\.\d+f?$/i.test(text)) return "Double"
-    if (/^true|false$/.test(text)) return "Boolean"
-
-    // String literals
-    if (/^".*"$/.test(text) || /^'.*'$/.test(text)) return "String"
-
-    // Collection literals
-    if (text.startsWith("listOf")) return "List<*>"
-    if (text.startsWith("mutableListOf")) return "MutableList<*>"
-    if (text.startsWith("setOf")) return "Set<*>"
-    if (text.startsWith("mapOf")) return "Map<*, *>"
-
-    // Array literals
-    if (text.startsWith("arrayOf")) return "Array<*>"
-
-    // Constructor calls
-    const constructorMatch = text.match(/^(\w+)\s*\(/)
-    if (constructorMatch) {
-      return constructorMatch[1]
+    switch (initNode.type) {
+      case "integer_literal":
+        return text.endsWith("L") ? "Long" : "Int"
+      case "real_literal":
+        return text.endsWith("f") || text.endsWith("F") ? "Float" : "Double"
+      case "float_literal":
+        return "Float"
+      case "string_literal":
+        return "String"
+      case "character_literal":
+        return "Char"
+      case "boolean_literal":
+        return "Boolean"
+      case "call_expression": {
+        const callee = this.buildKotlinCallExpression(initNode)
+        const name = callee.split(".").pop() || callee
+        if (name === "listOf" || name === "emptyList") return "List<*>"
+        if (name === "mutableListOf") return "MutableList<*>"
+        if (name === "setOf" || name === "emptySet") return "Set<*>"
+        if (name === "mapOf" || name === "emptyMap") return "Map<*, *>"
+        if (name === "arrayOf") return "Array<*>"
+        return name
+      }
+      default:
+        return "Any"
     }
-
-    return "Any" // Fallback
   }
 
   /**
@@ -1741,7 +1859,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
             const bodyCalls = this.extractFunctionCalls(bodyNode)
             for (let i = 0; i < bodyCalls.length; i++) {
               const call = bodyCalls[i]
-              if (/^[A-Z]/.test(call)) {
+              if (call.length > 0 && call[0] >= "A" && call[0] <= "Z") {
                 relationships.push({
                   source: nameNode.text,
                   target: call,
