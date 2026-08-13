@@ -8,18 +8,18 @@
       "name": "fixtures",
       "measurement": {
         "name": "fixtures:kotlin",
-        "wallTimeMs": 237.240068,
-        "userCpuMs": 246.654,
-        "systemCpuMs": 89.724,
-        "peakRssBytes": 209903616,
-        "rssDeltaBytes": 167833600,
+        "wallTimeMs": 179.94947,
+        "userCpuMs": 212.479,
+        "systemCpuMs": 97.377,
+        "peakRssBytes": 211759104,
+        "rssDeltaBytes": 169791488,
         "databaseBytes": null,
         "files": 3,
         "symbols": 34,
         "relationships": 45,
-        "filesPerSecond": 12.64541873255575,
-        "symbolsPerSecond": 143.31474563563182,
-        "relationshipsPerSecond": 189.68128098833625
+        "filesPerSecond": 16.67134668415528,
+        "symbolsPerSecond": 188.94192908709317,
+        "relationshipsPerSecond": 250.0702002623292
       },
       "symbols": 34,
       "relationships": 45
@@ -28,24 +28,24 @@
       "name": "corpus_subset",
       "measurement": {
         "name": "corpus_subset:kotlin",
-        "wallTimeMs": 9416.372376,
-        "userCpuMs": 15240.441,
-        "systemCpuMs": 775.415,
-        "peakRssBytes": 399998976,
-        "rssDeltaBytes": 59383808,
+        "wallTimeMs": 8865.918019,
+        "userCpuMs": 14811.284,
+        "systemCpuMs": 729.151,
+        "peakRssBytes": 401616896,
+        "rssDeltaBytes": 84832256,
         "databaseBytes": null,
         "files": 300,
         "symbols": 11286,
         "relationships": 43364,
-        "filesPerSecond": 31.859402753084158,
-        "symbolsPerSecond": 1198.550731571026,
-        "relationshipsPerSecond": 4605.170469949137
+        "filesPerSecond": 33.83744349508856,
+        "symbolsPerSecond": 1272.9646242852316,
+        "relationshipsPerSecond": 4891.089665736734
       },
       "symbols": 11286,
       "relationships": 43364
     }
   ],
-  "note": "Complexity envelope per analyzer: wall time, symbols/s, relationships/s, peak RSS. Fixtures + real-corpus subset (intellij-community 300-file Kotlin sample). Grammar errors counted separately by explicit re-parse: 50/300 files carry tree-sitter-kotlin grammar ERROR/MISSING nodes (fun interface, object-with-delegation, some extension+object expressions) — the analyzer reports them as warning ParseErrors rather than silently dropping; symbol extraction continues on the rest of each file.",
+  "note": "Complexity envelope per analyzer: wall time, symbols/s, relationships/s, peak RSS. Fixtures + real-corpus subset (intellij-community 300-file Kotlin sample). Grammar errors counted separately by explicit re-parse: 51/300 files carry tree-sitter-kotlin grammar ERROR/MISSING nodes (fun interface, object-with-delegation, some extension+object expressions, plus one hidden-MISSING when-entry case in HttpClient.kt whose MISSING _alpha_identifier tokens are not iterable via the web-tree-sitter binding — the engine now emits a root-level warning so it is never silently clean) — the analyzer reports them as warning ParseErrors rather than silently dropping; symbol extraction continues on the rest of each file.",
   "corpusProvenance": {
     "repository": "intellij-community",
     "revision": "cfda6881ef1c86081f9ad4f993906b84004b65f2",

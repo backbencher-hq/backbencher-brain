@@ -57,7 +57,7 @@
 ## Unsupported / explicit-unknown constructs
 
 - **Cross-file override targets** (declared limitation, fixture `UserService.kt`): the analyzer is per-file; when the true declaring parent is in another file it emits the first hierarchy parent. `UserService.save` overrides `Repository.save` (semantically), but the analyzer emits `BaseService.save` (first parent). Visible FP/FN in the differential (0.987/0.987), tracked downstream by M12.44. `format` resolves correctly because `BaseService` is the first parent and declares it.
-- **Grammar gaps on advanced Kotlin** (real-corpus evidence, `kotlin-corpus-sample.txt`): tree-sitter-kotlin produces ERROR/MISSING nodes for `fun interface` declarations, object-with-delegation expressions (`= object : X by y {`), and some extension-function+object patterns. The analyzer REPORTS these as warning ParseErrors (50/300 corpus files) and continues extraction on the rest of the file — never silent. These constructs are absent from the fixture corpus (0 fixture errors) so the differential tests the supported grammar surface.
+- **Grammar gaps on advanced Kotlin** (real-corpus evidence, `kotlin-corpus-sample.txt`): tree-sitter-kotlin produces ERROR/MISSING nodes for `fun interface` declarations, object-with-delegation expressions (`= object : X by y {`), and some extension-function+object patterns. The analyzer REPORTS these as warning ParseErrors (51/300 corpus files) and continues extraction on the rest of the file — never silent. (One of the 51 — `HttpClient.kt` — carries only hidden `MISSING _alpha_identifier` recovery tokens in multi-condition `when` entries that the web-tree-sitter binding does not expose via child iteration; the engine now flags such files via a root-level warning so they are never silently clean.) These constructs are absent from the fixture corpus (0 fixture errors) so the differential tests the supported grammar surface.
 - **Data-class compiler methods** (componentN, copy, equals/hashCode/toString): not materialized as symbols; the data class + val properties are extracted. Documented non-goal for M12.03 (the analyzer's `injectPhantomSymbols` is not wired).
 - **field_access edges**: property-access relationships are not emitted as separate edges in M12.03 (covered by calls/uses); documented non-goal.
 
@@ -98,7 +98,7 @@ Hot-path audit: iterative stack walks (no recursion) for scoping, relationships,
 
 - Corpus target: `validation/m12/corpus-manifest.json` → `intellij_community@cfda6881ef1c86081f9ad4f993906b84004b65f2` (local clone; repo state dirty — unrelated `.agents/skills` deletions)
 - Measured subset: 300 tracked `*.kt` files > 5KB (deterministic lexicographic at pinned revision) — `validation/m12/results/kotlin-corpus-sample.txt`
-- **300 files, 11,286 symbols, 43,364 relationships, 0 thrown exceptions, 0 timeouts**; **50/300 files carry grammar ERROR/MISSING nodes** (fun interface, object delegation, some extension+object patterns) — reported as warnings, extraction continues; measured by explicit error-counting re-parse (the measure tool alone swallows exceptions)
+- **300 files, 11,286 symbols, 43,364 relationships, 0 thrown exceptions, 0 timeouts**; **51/300 files carry grammar ERROR/MISSING nodes** (fun interface, object delegation, some extension+object patterns, plus one hidden-MISSING `when`-entry case) — reported as warnings, extraction continues; measured by explicit error-counting re-parse (the measure tool alone swallows exceptions)
 
 ## Evidence pointers
 

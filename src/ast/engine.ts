@@ -995,6 +995,23 @@ export namespace ASTEngine {
         }
       }
       traverse(tree.rootNode)
+      // Some MISSING nodes (e.g. hidden `_alpha_identifier` recovery tokens in
+      // tree-sitter-kotlin `when` entries) are not iterable via child(i)/children
+      // in the web-tree-sitter binding, so the walk above can surface nothing
+      // even though rootNode.hasError is true. Emit a generic warning so the
+      // file is still reported as having a syntax error (never silently clean).
+      if (treeErrors.length === 0) {
+        treeErrors.push({
+          message: `Syntax error present in file (hidden MISSING node)`,
+          range: {
+            startLine: tree.rootNode.startPosition.row + 1,
+            startColumn: tree.rootNode.startPosition.column + 1,
+            endLine: tree.rootNode.endPosition.row + 1,
+            endColumn: tree.rootNode.endPosition.column + 1,
+          },
+          severity: `warning`,
+        })
+      }
     }
 
     log.debug("parsed file", {
