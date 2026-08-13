@@ -556,11 +556,14 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
 
       else if (type === "object_creation_expression") {
-        // new Foo() → Instantiates relationship
-        const typeNode = this.findChildByType(node, "type_identifier") || this.findChildByType(node, "identifier")
+        // new Foo() → Instantiates relationship. The type is a type_identifier
+        // for plain types but a generic_type for diamond constructions
+        // (new HashMap<>()) — both must be handled or diamond instantiations
+        // are silently dropped.
+        const typeNode = this.findChildByType(node, "type_identifier") || this.findChildByType(node, "generic_type") || this.findChildByType(node, "identifier")
         if (typeNode) {
           const source = parentContext?.name || parentContext?.symbolRef?.name || "global"
-          const typeName = typeNode.text
+          const typeName = typeNode.type === "generic_type" ? this.extractJavaTypeBaseName(typeNode) : typeNode.text
           relationships.push({
             source,
             target: typeName,

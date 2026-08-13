@@ -25,29 +25,29 @@
     },
     "UserService.java": {
       "symbols": 11,
-      "relationships": 28
+      "relationships": 29
     }
   },
   "passing": {
     "schemaVersion": 1,
-    "passed": true,
+    "passed": false,
     "metrics": {
-      "expected": 115,
-      "observedResolved": 115,
+      "expected": 116,
+      "observedResolved": 116,
       "truePositive": 115,
-      "falsePositive": 0,
-      "falseNegative": 0,
+      "falsePositive": 1,
+      "falseNegative": 1,
       "unknown": 0,
       "unsupported": 0,
       "correctlyClassifiedUnknown": 0,
       "correctlyClassifiedUnsupported": 0,
-      "precision": 1,
-      "recall": 1,
-      "falsePositiveRate": 0,
-      "falseNegativeRate": 0,
+      "precision": 0.9913793103448276,
+      "recall": 0.9913793103448276,
+      "falsePositiveRate": 0.008620689655172414,
+      "falseNegativeRate": 0.008620689655172414,
       "unknownRate": 0
     },
-    "earliestFailingLayer": null,
+    "earliestFailingLayer": "relationships",
     "truePositiveIds": [
       "rel:AdvancedFeatures.java:calls:genericBound:intValue",
       "rel:AdvancedFeatures.java:calls:mapFirst:apply",
@@ -113,10 +113,10 @@
       "rel:UserService.java:extends:UserService:BaseService",
       "rel:UserService.java:implements:User:BaseService.Entity",
       "rel:UserService.java:implements:UserService:Repository",
+      "rel:UserService.java:instantiates:UserService:HashMap",
       "rel:UserService.java:overrides:User.getId:Entity.getId",
       "rel:UserService.java:overrides:User.getName:Entity.getName",
       "rel:UserService.java:overrides:UserService.format:BaseService.format",
-      "rel:UserService.java:overrides:UserService.save:Repository.save",
       "rel:UserService.java:references:UserService:com.example.base.BaseService",
       "rel:UserService.java:references:UserService:com.example.base.Repository",
       "rel:UserService.java:references:UserService:java.util.HashMap",
@@ -165,21 +165,57 @@
       "symbol:UserService.java:39:method:getName",
       "symbol:UserService.java:9:class:UserService"
     ],
-    "falsePositiveIds": [],
-    "falseNegativeIds": [],
+    "falsePositiveIds": [
+      "rel:UserService.java:overrides:UserService.save:BaseService.save"
+    ],
+    "falseNegativeIds": [
+      "rel:UserService.java:overrides:UserService.save:Repository.save"
+    ],
     "unknownIds": [],
     "unsupportedIds": [],
-    "minimizedFailure": null
+    "minimizedFailure": {
+      "expected": [
+        {
+          "id": "rel:UserService.java:overrides:UserService.save:Repository.save",
+          "layer": "relationships",
+          "kind": "relationship",
+          "file": "UserService.java",
+          "sourceId": "UserService.save",
+          "targetId": "Repository.save",
+          "attributes": {
+            "type": "overrides"
+          },
+          "evidence": {
+            "authority": "manual_audit",
+            "reference": "@Override public CompletableFuture<User> save(User value)"
+          }
+        }
+      ],
+      "observed": [
+        {
+          "id": "rel:UserService.java:overrides:UserService.save:BaseService.save",
+          "layer": "relationships",
+          "kind": "relationship",
+          "file": "UserService.java",
+          "sourceId": "UserService.save",
+          "targetId": "BaseService.save",
+          "attributes": {
+            "type": "overrides"
+          },
+          "state": "resolved"
+        }
+      ]
+    }
   },
   "intentionalFailure": null,
   "measurements": [
     {
       "name": "verify-analyzer:java",
-      "wallTimeMs": 165.418347,
-      "userCpuMs": 177.274,
-      "systemCpuMs": 91.592,
-      "peakRssBytes": 184811520,
-      "rssDeltaBytes": 142184448,
+      "wallTimeMs": 220.957158,
+      "userCpuMs": 213.776,
+      "systemCpuMs": 100.581,
+      "peakRssBytes": 184561664,
+      "rssDeltaBytes": 142295040,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
