@@ -1,0 +1,372 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M12",
+  "purpose": "per_analyzer_ast_perfection_corpus_targets",
+  "externalCloneRoot": "$HOME/fixtures/repositories",
+  "evidenceRoot": "validation/m12",
+  "externalDirectoryPolicy": "cloned_repositories_only",
+  "note": "corpusTarget refers to a repository id in validation/m11/corpus-manifest.json (pinned revisions). planned_acquisition means a clean representative corpus must be cloned under the external clone root before the analyzer issue closes.",
+  "analyzers": [
+    {
+      "analyzer": "java",
+      "corpusTarget": "clojure",
+      "status": "measured",
+      "candidates": [
+        "flutter@68dc5cf4(dirty)",
+        "intellij_community@cfda6881(dirty)",
+        "clojure@2cea6925(clean)",
+        "scala3@18df09c0(clean)"
+      ]
+    },
+    {
+      "analyzer": "kotlin",
+      "corpusTarget": "intellij_community",
+      "status": "dirty_or_unpinned",
+      "candidates": [
+        "intellij_community@cfda6881(dirty)"
+      ]
+    },
+    {
+      "analyzer": "clojure",
+      "corpusTarget": "clojure",
+      "status": "measured",
+      "candidates": [
+        "clojure@2cea6925(clean)"
+      ]
+    },
+    {
+      "analyzer": "scala",
+      "corpusTarget": "scala3",
+      "status": "measured",
+      "candidates": [
+        "intellij_community@cfda6881(dirty)",
+        "scala3@18df09c0(clean)"
+      ]
+    },
+    {
+      "analyzer": "groovy",
+      "corpusTarget": "intellij_community",
+      "status": "dirty_or_unpinned",
+      "candidates": [
+        "intellij_community@cfda6881(dirty)"
+      ]
+    },
+    {
+      "analyzer": "csharp",
+      "corpusTarget": "roslyn",
+      "status": "measured",
+      "candidates": [
+        "roslyn@73241b4b(clean)",
+        "fsharp@22a8a5dc(clean)",
+        "powershell@91ce9844(clean)"
+      ]
+    },
+    {
+      "analyzer": "fsharp",
+      "corpusTarget": "fsharp",
+      "status": "measured",
+      "candidates": [
+        "fsharp@22a8a5dc(clean)"
+      ]
+    },
+    {
+      "analyzer": "typescript",
+      "corpusTarget": "typescript",
+      "status": "measured",
+      "candidates": [
+        "typescript@b465fdbf(clean)",
+        "vscode@46ed260b(dirty)",
+        "proxicall@383e603e(dirty)",
+        "graphql_js@9c245018(clean)",
+        "vue_core@f8975657(clean)"
+      ]
+    },
+    {
+      "analyzer": "javascript",
+      "corpusTarget": "typescript",
+      "status": "measured",
+      "candidates": [
+        "typescript@b465fdbf(clean)",
+        "vscode@46ed260b(dirty)",
+        "proxicall@383e603e(dirty)",
+        "mojo@93f59174(clean)",
+        "graphql_js@9c245018(clean)",
+        "vue_core@f8975657(clean)",
+        "svelte@26786e92(clean)"
+      ]
+    },
+    {
+      "analyzer": "dart",
+      "corpusTarget": "flutter",
+      "status": "dirty_or_unpinned",
+      "candidates": [
+        "flutter@68dc5cf4(dirty)",
+        "proxicall@383e603e(dirty)"
+      ]
+    },
+    {
+      "analyzer": "vue",
+      "corpusTarget": "vue_core",
+      "status": "measured",
+      "candidates": [
+        "vue_core@f8975657(clean)"
+      ]
+    },
+    {
+      "analyzer": "svelte",
+      "corpusTarget": "svelte",
+      "status": "measured",
+      "candidates": [
+        "svelte@26786e92(clean)"
+      ]
+    },
+    {
+      "analyzer": "html",
+      "corpusTarget": "svelte",
+      "status": "measured",
+      "candidates": [
+        "vscode@46ed260b(dirty)",
+        "intellij_community@cfda6881(dirty)",
+        "svelte@26786e92(clean)"
+      ]
+    },
+    {
+      "analyzer": "css",
+      "corpusTarget": "svelte",
+      "status": "measured",
+      "candidates": [
+        "vscode@46ed260b(dirty)",
+        "svelte@26786e92(clean)"
+      ]
+    },
+    {
+      "analyzer": "c",
+      "corpusTarget": "swift_nio",
+      "status": "measured",
+      "candidates": [
+        "flutter@68dc5cf4(dirty)",
+        "swift_nio@ec51fff0(clean)",
+        "zig@738d2be9(clean)",
+        "cython@51a460b7(clean)"
+      ]
+    },
+    {
+      "analyzer": "cpp",
+      "corpusTarget": "zig",
+      "status": "measured",
+      "candidates": [
+        "flutter@68dc5cf4(dirty)",
+        "zig@738d2be9(clean)",
+        "dplyr@d5e94e7f(clean)"
+      ]
+    },
+    {
+      "analyzer": "rust",
+      "corpusTarget": "cargo",
+      "status": "measured",
+      "candidates": [
+        "cargo@94faf917(clean)"
+      ]
+    },
+    {
+      "analyzer": "objective-c",
+      "corpusTarget": "clyde",
+      "status": "measured",
+      "candidates": [
+        "flutter@68dc5cf4(dirty)",
+        "clyde@8fec41dd(clean)"
+      ]
+    },
+    {
+      "analyzer": "zig",
+      "corpusTarget": "zig",
+      "status": "measured",
+      "candidates": [
+        "zig@738d2be9(clean)"
+      ]
+    },
+    {
+      "analyzer": "swift",
+      "corpusTarget": "swift_nio",
+      "status": "measured",
+      "candidates": [
+        "swift_nio@ec51fff0(clean)"
+      ]
+    },
+    {
+      "analyzer": "go",
+      "corpusTarget": "go_tools",
+      "status": "measured",
+      "candidates": [
+        "go_tools@bf54bcd2(clean)",
+        "terraform@2e1710bf(clean)"
+      ]
+    },
+    {
+      "analyzer": "elixir",
+      "corpusTarget": "elixir",
+      "status": "measured",
+      "candidates": [
+        "elixir@024beb1b(clean)"
+      ]
+    },
+    {
+      "analyzer": "erlang",
+      "corpusTarget": "elixir",
+      "status": "measured",
+      "candidates": [
+        "elixir@024beb1b(clean)",
+        "rebar3@0c947d3b(clean)"
+      ]
+    },
+    {
+      "analyzer": "haskell",
+      "corpusTarget": "cabal",
+      "status": "measured",
+      "candidates": [
+        "cabal@670955a4(clean)"
+      ]
+    },
+    {
+      "analyzer": "clean",
+      "corpusTarget": "tree_sitter_clean",
+      "status": "dirty_or_unpinned",
+      "candidates": [
+        "tree_sitter_clean@2b0fe499(clean)"
+      ]
+    },
+    {
+      "analyzer": "python",
+      "corpusTarget": "cython",
+      "status": "measured",
+      "candidates": [
+        "proxicall@383e603e(dirty)",
+        "intellij_community@cfda6881(dirty)",
+        "cython@51a460b7(clean)"
+      ]
+    },
+    {
+      "analyzer": "ruby",
+      "corpusTarget": "rake",
+      "status": "measured",
+      "candidates": [
+        "rake@dd5e851d(clean)"
+      ]
+    },
+    {
+      "analyzer": "php",
+      "corpusTarget": "phpunit",
+      "status": "measured",
+      "candidates": [
+        "phpunit@c8d6921f(clean)"
+      ]
+    },
+    {
+      "analyzer": "perl",
+      "corpusTarget": "mojo",
+      "status": "measured",
+      "candidates": [
+        "mojo@93f59174(clean)"
+      ]
+    },
+    {
+      "analyzer": "r",
+      "corpusTarget": "dplyr",
+      "status": "measured",
+      "candidates": [
+        "dplyr@d5e94e7f(clean)"
+      ]
+    },
+    {
+      "analyzer": "lua",
+      "corpusTarget": "luarocks",
+      "status": "measured",
+      "candidates": [
+        "luarocks@665f160b(clean)"
+      ]
+    },
+    {
+      "analyzer": "sql",
+      "corpusTarget": "proxicall",
+      "status": "dirty_or_unpinned",
+      "candidates": [
+        "proxicall@383e603e(dirty)"
+      ]
+    },
+    {
+      "analyzer": "json",
+      "corpusTarget": "roslyn",
+      "status": "measured",
+      "candidates": [
+        "vscode@46ed260b(dirty)",
+        "flutter@68dc5cf4(dirty)",
+        "roslyn@73241b4b(clean)"
+      ]
+    },
+    {
+      "analyzer": "xml",
+      "corpusTarget": "roslyn",
+      "status": "measured",
+      "candidates": [
+        "proxicall@383e603e(dirty)",
+        "roslyn@73241b4b(clean)",
+        "intellij_community@cfda6881(dirty)",
+        "phpunit@c8d6921f(clean)",
+        "powershell@91ce9844(clean)"
+      ]
+    },
+    {
+      "analyzer": "yaml",
+      "corpusTarget": "flutter",
+      "status": "dirty_or_unpinned",
+      "candidates": [
+        "flutter@68dc5cf4(dirty)"
+      ]
+    },
+    {
+      "analyzer": "hcl",
+      "corpusTarget": "terraform",
+      "status": "measured",
+      "candidates": [
+        "terraform@2e1710bf(clean)"
+      ]
+    },
+    {
+      "analyzer": "graphql",
+      "corpusTarget": "graphql_js",
+      "status": "measured",
+      "candidates": [
+        "graphql_js@9c245018(clean)"
+      ]
+    },
+    {
+      "analyzer": "bash",
+      "corpusTarget": "proxicall",
+      "status": "dirty_or_unpinned",
+      "candidates": [
+        "proxicall@383e603e(dirty)"
+      ]
+    },
+    {
+      "analyzer": "powershell",
+      "corpusTarget": "roslyn",
+      "status": "measured",
+      "candidates": [
+        "roslyn@73241b4b(clean)",
+        "powershell@91ce9844(clean)"
+      ]
+    },
+    {
+      "analyzer": "make",
+      "corpusTarget": null,
+      "status": "planned_acquisition",
+      "candidates": []
+    },
+    {
+      "analyzer": "markdown",
+      "corpusTarget": null,
+      "status": "planned_acquisition",
+      "candidates": []
+    }
+  ]
+}
