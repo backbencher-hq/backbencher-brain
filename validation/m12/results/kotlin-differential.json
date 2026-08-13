@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 1,
+  "kind": "per_analyzer_differential:kotlin",
+  "truthSource": "manual_audit",
+  "truthReference": "validation/m12/fixtures/kotlin/ (Models.kt, UserService.kt, Extensions.kt) — hand-audited against Kotlin semantics",
+  "fixtureDir": "validation/m12/fixtures/kotlin",
+  "fixtures": [
+    "Extensions.kt",
+    "Models.kt",
+    "UserService.kt"
+  ],
+  "perFile": {
+    "Extensions.kt": {
+      "symbols": 6,
+      "relationships": 11
+    },
+    "Models.kt": {
+      "symbols": 21,
+      "relationships": 21
+    },
+    "UserService.kt": {
+      "symbols": 7,
+      "relationships": 13
+    }
+  },
+  "passing": {
+    "schemaVersion": 1,
+    "passed": false,
+    "metrics": {
+      "expected": 77,
+      "observedResolved": 77,
+      "truePositive": 76,
+      "falsePositive": 1,
+      "falseNegative": 1,
+      "unknown": 0,
+      "unsupported": 0,
+      "correctlyClassifiedUnknown": 0,
+      "correctlyClassifiedUnsupported": 0,
+      "precision": 0.987012987012987,
+      "recall": 0.987012987012987,
+      "falsePositiveRate": 0.012987012987012988,
+      "falseNegativeRate": 0.012987012987012988,
+      "unknownRate": 0
+    },
+    "earliestFailingLayer": "relationships",
+    "truePositiveIds": [
+      "rel:Extensions.kt:calls:main:describe",
+      "rel:Extensions.kt:calls:main:shout",
+      "rel:Extensions.kt:extends:plus:User",
+      "rel:Extensions.kt:extends:shout:String",
+      "rel:Extensions.kt:instantiates:buildUsers:User",
+      "rel:Extensions.kt:instantiates:main:User",
+      "rel:Extensions.kt:instantiates:plus:User",
+      "rel:Extensions.kt:references:root:com.example.models.BaseService",
+      "rel:Extensions.kt:references:root:com.example.models.User",
+      "rel:Models.kt:contains:BaseService:Entity",
+      "rel:Models.kt:contains:BaseService:VERSION",
+      "rel:Models.kt:contains:BaseService:format",
+      "rel:Models.kt:contains:BaseService:prefix",
+      "rel:Models.kt:contains:Entity:id",
+      "rel:Models.kt:contains:Entity:name",
+      "rel:Models.kt:contains:Failure:constructor",
+      "rel:Models.kt:contains:Failure:error",
+      "rel:Models.kt:contains:Repository:save",
+      "rel:Models.kt:contains:Result:Failure",
+      "rel:Models.kt:contains:Result:Loading",
+      "rel:Models.kt:contains:Result:Success",
+      "rel:Models.kt:contains:Success:constructor",
+      "rel:Models.kt:contains:Success:value",
+      "rel:Models.kt:contains:User:constructor",
+      "rel:Models.kt:contains:User:id",
+      "rel:Models.kt:contains:User:name",
+      "rel:Models.kt:extends:Failure:Result",
+      "rel:Models.kt:extends:Loading:Result",
+      "rel:Models.kt:extends:Success:Result",
+      "rel:Models.kt:references:User:com.example.base.BaseService",
+      "rel:UserService.kt:contains:UserService:_store",
+      "rel:UserService.kt:contains:UserService:constructor",
+      "rel:UserService.kt:contains:UserService:find",
+      "rel:UserService.kt:contains:UserService:format",
+      "rel:UserService.kt:contains:UserService:save",
+      "rel:UserService.kt:extends:UserService:BaseService",
+      "rel:UserService.kt:implements:UserService:Repository",
+      "rel:UserService.kt:instantiates:createService:UserService",
+      "rel:UserService.kt:overrides:UserService.format:BaseService.format",
+      "rel:UserService.kt:references:UserService:com.example.base.BaseService",
+      "rel:UserService.kt:references:UserService:com.example.models.Repository",
+      "rel:UserService.kt:references:UserService:com.example.models.User",
+      "symbol:Extensions.kt:11:property:DEFAULT_SCALE",
+      "symbol:Extensions.kt:14:function:shout",
+      "symbol:Extensions.kt:18:function:plus",
+      "symbol:Extensions.kt:20:function:describe",
+      "symbol:Extensions.kt:27:function:buildUsers",
+      "symbol:Extensions.kt:37:function:main",
+      "symbol:Models.kt:11:class:BaseService",
+      "symbol:Models.kt:12:property:prefix",
+      "symbol:Models.kt:13:method:format",
+      "symbol:Models.kt:15:interface:Entity",
+      "symbol:Models.kt:16:property:id",
+      "symbol:Models.kt:17:property:name",
+      "symbol:Models.kt:21:property:VERSION",
+      "symbol:Models.kt:25:class:Result",
+      "symbol:Models.kt:26:class:Success",
+      "symbol:Models.kt:26:constructor:constructor",
+      "symbol:Models.kt:26:property:value",
+      "symbol:Models.kt:27:class:Failure",
+      "symbol:Models.kt:27:constructor:constructor",
+      "symbol:Models.kt:27:property:error",
+      "symbol:Models.kt:28:class:Loading",
+      "symbol:Models.kt:5:class:User",
+      "symbol:Models.kt:5:constructor:constructor",
+      "symbol:Models.kt:5:property:id",
+      "symbol:Models.kt:5:property:name",
+      "symbol:Models.kt:7:interface:Repository",
+      "symbol:Models.kt:8:method:save",
+      "symbol:UserService.kt:10:method:format",
+      "symbol:UserService.kt:12:method:save",
+      "symbol:UserService.kt:17:method:find",
+      "symbol:UserService.kt:20:function:createService",
+      "symbol:UserService.kt:7:class:UserService",
+      "symbol:UserService.kt:7:constructor:constructor",
+      "symbol:UserService.kt:8:property:_store"
+    ],
+    "falsePositiveIds": [
+      "rel:UserService.kt:overrides:UserService.save:BaseService.save"
+    ],
+    "falseNegativeIds": [
+      "rel:UserService.kt:overrides:UserService.save:Repository.save"
+    ],
+    "unknownIds": [],
+    "unsupportedIds": [],
+    "minimizedFailure": {
+      "expected": [
+        {
+          "id": "rel:UserService.kt:overrides:UserService.save:Repository.save",
+          "layer": "relationships",
+          "kind": "relationship",
+          "file": "UserService.kt",
+          "sourceId": "UserService.save",
+          "targetId": "Repository.save",
+          "attributes": {
+            "type": "overrides"
+          },
+          "expectedState": "resolved",
+          "evidence": {
+            "authority": "manual_audit",
+            "reference": "override suspend fun save — true declaring parent Repository (cross-file); per-file analyzer emits first-parent BaseService.save — declared limitation"
+          }
+        }
+      ],
+      "observed": [
+        {
+          "id": "rel:UserService.kt:overrides:UserService.save:BaseService.save",
+          "layer": "relationships",
+          "kind": "relationship",
+          "file": "UserService.kt",
+          "sourceId": "UserService.save",
+          "targetId": "BaseService.save",
+          "attributes": {
+            "type": "overrides"
+          },
+          "state": "resolved"
+        }
+      ]
+    }
+  },
+  "intentionalFailure": null,
+  "measurements": [
+    {
+      "name": "verify-analyzer:kotlin",
+      "wallTimeMs": 204.884575,
+      "userCpuMs": 244.337,
+      "systemCpuMs": 109.989,
+      "peakRssBytes": 212226048,
+      "rssDeltaBytes": 169914368,
+      "databaseBytes": null,
+      "files": null,
+      "symbols": null,
+      "relationships": null,
+      "filesPerSecond": null,
+      "symbolsPerSecond": null,
+      "relationshipsPerSecond": null
+    }
+  ],
+  "note": "M12 per-analyzer differential for kotlin. Precision/recall/fp/fn/unknown computed against independent ground truth. Identity contract: symbol facts keyed by file:line:kind:name; relationship facts keyed by file:type:sourceId:targetId with attributes={type} only (no line, no extra fields) so the comparison measures extraction correctness, not naming noise."
+}

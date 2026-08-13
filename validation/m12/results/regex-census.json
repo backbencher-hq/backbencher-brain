@@ -2,21 +2,21 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-08-13T02:53:03.743Z",
+  "generatedAt": "2026-08-13T03:05:29.443Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 190,
+  "totalRegexUsages": 176,
   "analyzersScanned": 41,
   "byClassification": {
+    "unavoidable": 19,
+    "normalization": 85,
     "needs_review": 70,
-    "normalization": 90,
-    "unavoidable": 28,
     "replaceable": 2
   },
   "byReceiverCategory": {
-    "literal": 26,
-    "node_text": 90,
-    "identifier": 43,
+    "literal": 19,
+    "node_text": 85,
+    "identifier": 41,
     "other": 29,
     "raw_content": 2
   },
@@ -590,166 +590,6 @@
           "receiver": "cls",
           "receiverCategory": "identifier",
           "classification": "needs_review",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-kotlin-analyzer.ts",
-      "count": 14,
-      "usages": [
-        {
-          "file": "real-kotlin-analyzer.ts",
-          "line": 1096,
-          "column": 40,
-          "source": "/[\\{\\(\\=]/",
-          "operation": "split",
-          "receiver": "node.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-kotlin-analyzer.ts",
-          "line": 1183,
-          "column": 47,
-          "source": "/fun\\s+(\\w+(?:<[^>]*>)?)\\s*\\./",
-          "operation": "match",
-          "receiver": "functionText",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-kotlin-analyzer.ts",
-          "line": 1232,
-          "column": 43,
-          "source": "/^@/",
-          "operation": "replace",
-          "receiver": "n.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-kotlin-analyzer.ts",
-          "line": 1320,
-          "column": 63,
-          "source": "/\\(.*\\)/",
-          "operation": "replace",
-          "receiver": "c.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-kotlin-analyzer.ts",
-          "line": 1547,
-          "column": 35,
-          "source": "/@(\\w+)/",
-          "operation": "match",
-          "receiver": "node.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-kotlin-analyzer.ts",
-          "line": 1575,
-          "column": 35,
-          "source": "/@(\\w+):/",
-          "operation": "match",
-          "receiver": "node.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-kotlin-analyzer.ts",
-          "line": 1598,
-          "column": 9,
-          "source": "/^\\d+$/",
-          "operation": "test",
-          "receiver": "/^\\d+$/",
-          "receiverCategory": "literal",
-          "classification": "unavoidable",
-          "justification": ""
-        },
-        {
-          "file": "real-kotlin-analyzer.ts",
-          "line": 1599,
-          "column": 9,
-          "source": "/^\\d+L$/",
-          "operation": "test",
-          "receiver": "/^\\d+L$/",
-          "receiverCategory": "literal",
-          "classification": "unavoidable",
-          "justification": ""
-        },
-        {
-          "file": "real-kotlin-analyzer.ts",
-          "line": 1600,
-          "column": 9,
-          "source": "/^\\d+\\.\\d+f?$/i",
-          "operation": "test",
-          "receiver": "/^\\d+\\.\\d+f?$/i",
-          "receiverCategory": "literal",
-          "classification": "unavoidable",
-          "justification": ""
-        },
-        {
-          "file": "real-kotlin-analyzer.ts",
-          "line": 1601,
-          "column": 9,
-          "source": "/^true|false$/",
-          "operation": "test",
-          "receiver": "/^true|false$/",
-          "receiverCategory": "literal",
-          "classification": "unavoidable",
-          "justification": ""
-        },
-        {
-          "file": "real-kotlin-analyzer.ts",
-          "line": 1604,
-          "column": 9,
-          "source": "/^\".*\"$/",
-          "operation": "test",
-          "receiver": "/^\".*\"$/",
-          "receiverCategory": "literal",
-          "classification": "unavoidable",
-          "justification": ""
-        },
-        {
-          "file": "real-kotlin-analyzer.ts",
-          "line": 1604,
-          "column": 32,
-          "source": "/^'.*'$/",
-          "operation": "test",
-          "receiver": "/^'.*'$/",
-          "receiverCategory": "literal",
-          "classification": "unavoidable",
-          "justification": ""
-        },
-        {
-          "file": "real-kotlin-analyzer.ts",
-          "line": 1616,
-          "column": 41,
-          "source": "/^(\\w+)\\s*\\(/",
-          "operation": "match",
-          "receiver": "text",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-kotlin-analyzer.ts",
-          "line": 1744,
-          "column": 19,
-          "source": "/^[A-Z]/",
-          "operation": "test",
-          "receiver": "/^[A-Z]/",
-          "receiverCategory": "literal",
-          "classification": "unavoidable",
           "justification": ""
         }
       ]
@@ -2068,8 +1908,8 @@
           "operation": "split",
           "receiver": "pt",
           "receiverCategory": "identifier",
-          "classification": "unavoidable",
-          "justification": "ERROR-node recovery: tree-sitter exposes no structure for malformed parameter text; whitespace-run tokenization of garbage text is not grammar-expressible."
+          "classification": "needs_review",
+          "justification": ""
         },
         {
           "file": "real-java-analyzer.ts",
@@ -2079,8 +1919,8 @@
           "operation": "replace",
           "receiver": "typeGuess",
           "receiverCategory": "identifier",
-          "classification": "unavoidable",
-          "justification": "ERROR-node recovery: stripping @Annotation tokens from a type guess requires whitespace-aware scanning that no grammar node can express (the text is a parse error)."
+          "classification": "needs_review",
+          "justification": ""
         }
       ]
     },
