@@ -14,12 +14,14 @@ function inArray(arr: any[], val: any): boolean {
 
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
+import { findDeclaringParent } from "./override-context"
 
 export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(
     rootNode: Node,
     content: string,
     filePath: string,
+    context?: ASTEngine.AnalyzeContext,
   ): Omit<ASTEngine.ParseResult, "language" | "metadata"> & { metadata: Partial<ASTEngine.FileMetadata> } {
     const symbols: ASTEngine.UniversalSymbol[] = []
     const relationships: ASTEngine.UniversalRelationship[] = []
@@ -593,7 +595,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    this.resolveOverrides(overrideTasks, classHierarchy, symbolMap, relationships)
+    this.resolveOverrides(overrideTasks, classHierarchy, symbolMap, relationships, context?.overrideCompanion)
 
     // Rewrite import-reference sources from the package name to the file's
     // primary type (the first top-level type declared). Imports precede the
@@ -701,22 +703,25 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
     tasks: { fqn: string; methodName: string; signature: string; ownerFqn: string }[],
     classHierarchy: Map<string, string[]>,
     symbolMap: Map<string, ASTEngine.UniversalSymbol>,
-    relationships: ASTEngine.UniversalRelationship[]
+    relationships: ASTEngine.UniversalRelationship[],
+    companion?: Map<string, Set<string>>
   ) {
     for (let taskIdx = 0; taskIdx < tasks.length; taskIdx++) { const task = tasks[taskIdx]
       let targetFqn: string | null = null
 
+      // Pass 1: exact-signature BFS over the hierarchy (in-file declarations;
+      // works without any project context).
       const queue: string[] = []
       const ownerH = classHierarchy.get(task.ownerFqn)
       if (ownerH) {
          for (let i = 0; i < ownerH.length; i++) queue.push(ownerH[i])
       }
-      const seen: Record<string, boolean> = {}
+      const seen: Set<string> = new Set()
 
       while (queue.length > 0) {
         const parent = queue.shift()!
-        if (seen[parent]) continue
-        seen[parent] = true
+        if (seen.has(parent)) continue
+        seen.add(parent)
 
         const potentialTargetFqn = `${parent}.${task.methodName}${task.signature}`
         if (symbolMap.has(potentialTargetFqn)) {
@@ -730,25 +735,26 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
 
-      const ownerH2 = classHierarchy.get(task.ownerFqn)
-      if (!targetFqn && ownerH2 && ownerH2.length > 0) {
-        let deepest = "";
-        const q2: string[] = [];
-        for (let i = 0; i < ownerH2.length; i++) q2.push(ownerH2[i])
-        let found = false;
-        while(q2.length > 0) {
-           const p = q2.shift()!;
-           if (symbolMap.has(p + "." + task.methodName + task.signature)) {
-               deepest = p + "." + task.methodName + task.signature;
-               found = true; break;
-           }
-           const pH2 = classHierarchy.get(p)
-           if (pH2) {
-              for (let i = 0; i < pH2.length; i++) q2.push(pH2[i])
-           }
-        }
-        if (found) targetFqn = deepest;
-        else targetFqn = `${ownerH2[0]}.${task.methodName}${task.signature}`
+      // Pass 2: declaring-parent resolution via the project companion index
+      // (cross-file parents, and generic-signature mismatches like save(T) vs
+      // save(User)). Matches Java semantics: the first ancestor in declaration
+      // order that actually declares the method — interface-over-superclass
+      // when the interface is the declaring parent.
+      if (!targetFqn && companion && ownerH && ownerH.length > 0) {
+        const declaring = findDeclaringParent(
+          task.methodName,
+          ownerH,
+          companion,
+          (t) => classHierarchy.get(t) ?? [],
+        )
+        if (declaring) targetFqn = `${declaring}.${task.methodName}${task.signature}`
+      }
+
+      // Pass 3: deterministic per-file fallback — first hierarchy parent. Only
+      // reached when no context was provided or no ancestor declares the
+      // method (the true declaring parent is unknowable from this file alone).
+      if (!targetFqn && ownerH && ownerH.length > 0) {
+        targetFqn = `${ownerH[0]}.${task.methodName}${task.signature}`
       }
 
       if (targetFqn) {

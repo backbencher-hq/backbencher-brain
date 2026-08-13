@@ -25,24 +25,24 @@
   },
   "passing": {
     "schemaVersion": 1,
-    "passed": false,
+    "passed": true,
     "metrics": {
       "expected": 77,
       "observedResolved": 77,
-      "truePositive": 76,
-      "falsePositive": 1,
-      "falseNegative": 1,
+      "truePositive": 77,
+      "falsePositive": 0,
+      "falseNegative": 0,
       "unknown": 0,
       "unsupported": 0,
       "correctlyClassifiedUnknown": 0,
       "correctlyClassifiedUnsupported": 0,
-      "precision": 0.987012987012987,
-      "recall": 0.987012987012987,
-      "falsePositiveRate": 0.012987012987012988,
-      "falseNegativeRate": 0.012987012987012988,
+      "precision": 1,
+      "recall": 1,
+      "falsePositiveRate": 0,
+      "falseNegativeRate": 0,
       "unknownRate": 0
     },
-    "earliestFailingLayer": "relationships",
+    "earliestFailingLayer": null,
     "truePositiveIds": [
       "rel:Extensions.kt:calls:main:describe",
       "rel:Extensions.kt:calls:main:shout",
@@ -83,6 +83,7 @@
       "rel:UserService.kt:implements:UserService:Repository",
       "rel:UserService.kt:instantiates:createService:UserService",
       "rel:UserService.kt:overrides:UserService.format:BaseService.format",
+      "rel:UserService.kt:overrides:UserService.save:Repository.save",
       "rel:UserService.kt:references:UserService:com.example.base.BaseService",
       "rel:UserService.kt:references:UserService:com.example.models.Repository",
       "rel:UserService.kt:references:UserService:com.example.models.User",
@@ -121,58 +122,21 @@
       "symbol:UserService.kt:7:constructor:constructor",
       "symbol:UserService.kt:8:property:_store"
     ],
-    "falsePositiveIds": [
-      "rel:UserService.kt:overrides:UserService.save:BaseService.save"
-    ],
-    "falseNegativeIds": [
-      "rel:UserService.kt:overrides:UserService.save:Repository.save"
-    ],
+    "falsePositiveIds": [],
+    "falseNegativeIds": [],
     "unknownIds": [],
     "unsupportedIds": [],
-    "minimizedFailure": {
-      "expected": [
-        {
-          "id": "rel:UserService.kt:overrides:UserService.save:Repository.save",
-          "layer": "relationships",
-          "kind": "relationship",
-          "file": "UserService.kt",
-          "sourceId": "UserService.save",
-          "targetId": "Repository.save",
-          "attributes": {
-            "type": "overrides"
-          },
-          "expectedState": "resolved",
-          "evidence": {
-            "authority": "manual_audit",
-            "reference": "override suspend fun save — true declaring parent Repository (cross-file); per-file analyzer emits first-parent BaseService.save — declared limitation"
-          }
-        }
-      ],
-      "observed": [
-        {
-          "id": "rel:UserService.kt:overrides:UserService.save:BaseService.save",
-          "layer": "relationships",
-          "kind": "relationship",
-          "file": "UserService.kt",
-          "sourceId": "UserService.save",
-          "targetId": "BaseService.save",
-          "attributes": {
-            "type": "overrides"
-          },
-          "state": "resolved"
-        }
-      ]
-    }
+    "minimizedFailure": null
   },
   "intentionalFailure": null,
   "measurements": [
     {
       "name": "verify-analyzer:kotlin",
-      "wallTimeMs": 185.93686,
-      "userCpuMs": 217.512,
-      "systemCpuMs": 105.633,
-      "peakRssBytes": 210882560,
-      "rssDeltaBytes": 167800832,
+      "wallTimeMs": 28.232774,
+      "userCpuMs": 107.825,
+      "systemCpuMs": 12.483,
+      "peakRssBytes": 224497664,
+      "rssDeltaBytes": 14811136,
       "databaseBytes": null,
       "files": null,
       "symbols": null,

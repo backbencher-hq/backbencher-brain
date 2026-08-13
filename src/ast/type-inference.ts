@@ -959,9 +959,9 @@ export namespace TypeInference {
     const engine = new TypeInferenceEngine()
 
     return {
-      analyze(rootNode: Node, content: string, filePath: string) {
+      analyze(rootNode: Node, content: string, filePath: string, context?: ASTEngine.AnalyzeContext) {
         // Run original analysis
-        const result = analyzer.analyze(rootNode, content, filePath)
+        const result = analyzer.analyze(rootNode, content, filePath, context)
 
         // Enhance with type inference
         const inferredTypes = engine.inferTypesForFile(rootNode, content, filePath, language)

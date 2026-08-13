@@ -19,12 +19,12 @@
         "sample": "400 tracked *.java files (deterministic first-400 sorted)",
         "fixtures": 4,
         "fixtureFacts": 115,
-        "precision": 0.991,
-        "recall": 0.991,
+        "precision": 1,
+        "recall": 1,
         "corpusSymbols": 7812,
         "corpusRelationships": 30483,
-        "measuredAt": "2026-08-13T02:41:49.999Z",
-        "note": "cross-file override target (UserService.save -> Repository.save) is a declared per-file limitation: analyzer emits first-parent BaseService.save"
+        "measuredAt": "2026-08-13T17:44:00.000Z",
+        "note": "cross-file override targets resolved inside the analyzer via the optional AnalyzeContext companion index (owner type -> declared method names) built by the harness pre-pass; without context the analyzer keeps its deterministic first-parent per-file default; production wiring of the same context tracked by M12.44"
       }
     },
     {
@@ -39,22 +39,14 @@
         "sample": "300 tracked *.kt files > 5KB (deterministic lexicographic)",
         "fixtures": 3,
         "fixtureFacts": 77,
-        "precision": 0.987,
-        "recall": 0.987,
+        "precision": 1,
+        "recall": 1,
         "corpusSymbols": 11286,
         "corpusRelationships": 43364,
         "grammarErrorFiles": 51,
-        "note": "cross-file override target (UserService.save -> Repository.save) is a declared per-file limitation (first-parent BaseService.save); 51/300 corpus files have tree-sitter-kotlin grammar ERROR nodes (fun interface, object delegation, one hidden-MISSING when-entry case) reported as warnings",
-        "measuredAt": "2026-08-13T03:09:03.951Z"
+        "note": "cross-file override targets resolved inside the analyzer via the optional AnalyzeContext companion index (owner type -> declared method names) built by the harness pre-pass; without context the analyzer keeps its deterministic first-parent per-file default; production wiring of the same context tracked by M12.44; 51/300 corpus files have tree-sitter-kotlin grammar ERROR nodes (fun interface, object delegation, one hidden-MISSING when-entry case) reported as warnings",
+        "measuredAt": "2026-08-13T17:44:00.000Z"
       }
-    },
-    {
-      "analyzer": "clojure",
-      "corpusTarget": "clojure",
-      "status": "measured",
-      "candidates": [
-        "clojure@2cea6925(clean)"
-      ]
     },
     {
       "analyzer": "scala",

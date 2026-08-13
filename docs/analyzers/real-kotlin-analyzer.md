@@ -56,7 +56,7 @@
 
 ## Unsupported / explicit-unknown constructs
 
-- **Cross-file override targets** (declared limitation, fixture `UserService.kt`): the analyzer is per-file; when the true declaring parent is in another file it emits the first hierarchy parent. `UserService.save` overrides `Repository.save` (semantically), but the analyzer emits `BaseService.save` (first parent). Visible FP/FN in the differential (0.987/0.987), tracked downstream by M12.44. `format` resolves correctly because `BaseService` is the first parent and declares it.
+- **Cross-file override targets** (resolved, fixture `UserService.kt`): the analyzer is per-file, but accepts an optional project context (`AnalyzeContext.overrideCompanion` — owner type → declared method names) built by the caller from previously parsed files. With context, the override target is the first ancestor in declaration order that actually declares the method (`src/ast/override-context.ts`, shared with the Java analyzer): `UserService.save` → `Repository.save` (the interface declares it, `BaseService` does not), `UserService.format` → `BaseService.format` (the superclass declares it). Without context the analyzer deterministically emits the first hierarchy parent — the honest per-file default, since the true declaring parent is unknowable from one file alone. The M12 harness feeds the companion index (pre-pass over the fixture corpus); production wiring of the same context from the indexer's global symbol space is tracked by M12.44.
 - **Grammar gaps on advanced Kotlin** (real-corpus evidence, `kotlin-corpus-sample.txt`): tree-sitter-kotlin produces ERROR/MISSING nodes for `fun interface` declarations, object-with-delegation expressions (`= object : X by y {`), and some extension-function+object patterns. The analyzer REPORTS these as warning ParseErrors (51/300 corpus files) and continues extraction on the rest of the file — never silent. (One of the 51 — `HttpClient.kt` — carries only hidden `MISSING _alpha_identifier` recovery tokens in multi-condition `when` entries that the web-tree-sitter binding does not expose via child iteration; the engine now flags such files via a root-level warning so they are never silently clean.) These constructs are absent from the fixture corpus (0 fixture errors) so the differential tests the supported grammar surface.
 - **Data-class compiler methods** (componentN, copy, equals/hashCode/toString): not materialized as symbols; the data class + val properties are extracted. Documented non-goal for M12.03 (the analyzer's `injectPhantomSymbols` is not wired).
 - **field_access edges**: property-access relationships are not emitted as separate edges in M12.03 (covered by calls/uses); documented non-goal.
@@ -88,10 +88,9 @@ Hot-path audit: iterative stack walks (no recursion) for scoping, relationships,
 
 - Ground truth: `validation/m12/ground-truth/kotlin.json` (authority: `manual_audit` of fixture semantics — data/sealed/generic/extension/operator contracts)
 - Result: `validation/m12/results/kotlin-differential.json`
-- **Precision 0.987 / Recall 0.987** over **77 facts**: TP 76, FP 1, FN 1, unknown 0, unsupported 0
-  - FN: `overrides UserService.save → Repository.save` (semantically true; declaring parent `Repository` is in another file)
-  - FP: `overrides UserService.save → BaseService.save` (first-parent guess — declared limitation above)
-- Facts compared as emitted — no harness post-processing (see `script/m12/verify-analyzer.ts` honesty note)
+- **Precision 1.000 / Recall 1.000** over **77 facts**: TP 77, FP 0, FN 0, unknown 0, unsupported 0
+  - Cross-file override targets resolved inside the analyzer via the companion index: `UserService.save → Repository.save` (declaring parent is the interface `Repository`, not the superclass `BaseService`)
+- Facts compared as emitted — no harness post-processing; the companion index is fed to the analyzer as input context (see `script/m12/verify-analyzer.ts` honesty note)
 - Baseline (M12.01): types leaked into decorators, class self-contain edges, extends/implements dropped by the noise filter (generic-suffixed targets), overrides with bare-name identity, package missing from scopes, weak property typing. All fixed.
 
 ## Corpus validation

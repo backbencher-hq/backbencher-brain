@@ -861,7 +861,7 @@ export namespace ASTEngine {
   }
 
   // Parse file and extract universal symbols and relationships with INTELLIGENCE
-  export async function parseFile(filePath: string, content: string): Promise<ParseResult> {
+  export async function parseFile(filePath: string, content: string, context?: AnalyzeContext): Promise<ParseResult> {
     const language = detectLanguage(filePath, content)
     if (!language) {
       throw new Error(`Unsupported file type: ${filePath}`)
@@ -1029,7 +1029,7 @@ export namespace ASTEngine {
       // STEP 2: 🧠 ENHANCE WITH ADVANCED TYPE INFERENCE
       const TypeInference = (await import("./type-inference")).TypeInference
       const enhancedAnalyzer = TypeInference.enhanceAnalyzerWithTypeInference(analyzer, language)
-      analysisResult = enhancedAnalyzer.analyze(tree.rootNode, content, filePath)
+      analysisResult = enhancedAnalyzer.analyze(tree.rootNode, content, filePath, context)
 
       // STEP 3: 🚀 ENHANCE WITH FRAMEWORK-SPECIFIC INTELLIGENCE
       const FrameworkIntelligence = (await import("./framework-intelligence")).FrameworkIntelligence
@@ -1291,12 +1291,23 @@ export namespace ASTEngine {
     }
   }
 
+  // Project-level context passed to analyzers for cross-file resolution
+  // (e.g. the override companion index). Optional: per-file-only callers
+  // omit it and analyzers keep their deterministic per-file defaults.
+  export interface AnalyzeContext {
+    /** Owner type name → declared method names, built from previously parsed
+     *  files. Used for cross-file override-target resolution. */
+    overrideCompanion?: Map<string, Set<string>>
+    [key: string]: any
+  }
+
   // Base analyzer interface
   export interface LanguageAnalyzer {
     analyze(
       rootNode: Node,
       content: string,
       filePath: string,
+      context?: AnalyzeContext,
     ): Omit<ParseResult, "language" | "metadata"> & { metadata?: Partial<FileMetadata> }
   }
 
@@ -1357,7 +1368,7 @@ export namespace ASTEngine {
 
   // Generic analyzer for unsupported languages (basic symbol extraction)
   class GenericAnalyzer implements LanguageAnalyzer {
-    analyze(rootNode: Node, content: string, filePath: string) {
+    analyze(rootNode: Node, content: string, filePath: string, _context?: AnalyzeContext) {
       const symbols: UniversalSymbol[] = []
       const relationships: UniversalRelationship[] = []
       const imports: ImportInfo[] = []

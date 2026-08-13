@@ -2,21 +2,21 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-08-13T03:05:29.443Z",
+  "generatedAt": "2026-08-13T17:10:25.241Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 176,
+  "totalRegexUsages": 174,
   "analyzersScanned": 41,
   "byClassification": {
     "unavoidable": 19,
-    "normalization": 85,
-    "needs_review": 70,
+    "normalization": 84,
+    "needs_review": 69,
     "replaceable": 2
   },
   "byReceiverCategory": {
     "literal": 19,
-    "node_text": 85,
-    "identifier": 41,
+    "node_text": 84,
+    "identifier": 40,
     "other": 29,
     "raw_content": 2
   },
@@ -1841,34 +1841,6 @@
       ]
     },
     {
-      "file": "real-clojure-analyzer.ts",
-      "count": 2,
-      "usages": [
-        {
-          "file": "real-clojure-analyzer.ts",
-          "line": 211,
-          "column": 48,
-          "source": "/\\.$/",
-          "operation": "replace",
-          "receiver": "node.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-clojure-analyzer.ts",
-          "line": 496,
-          "column": 59,
-          "source": "/\\.$/",
-          "operation": "replace",
-          "receiver": "func",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        }
-      ]
-    },
-    {
       "file": "real-html-analyzer.ts",
       "count": 2,
       "usages": [
@@ -1902,7 +1874,7 @@
       "usages": [
         {
           "file": "real-java-analyzer.ts",
-          "line": 1145,
+          "line": 1151,
           "column": 38,
           "source": "/\\s+/",
           "operation": "split",
@@ -1913,7 +1885,7 @@
         },
         {
           "file": "real-java-analyzer.ts",
-          "line": 1156,
+          "line": 1162,
           "column": 46,
           "source": "/@[\\w\\.]+\\s*/g",
           "operation": "replace",

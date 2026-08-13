@@ -36,7 +36,7 @@
 | uses | ✅ | field accesses (`field_access`) with `this`/`super` receiver resolved to enclosing type; Spring DB mappings (entity table, mapped column, `@Value` config keys) | 0.6 field access / 1.0 framework-derived |
 | imports | ✅ | `import_declaration` → `scoped_identifier`/`identifier`; metadata for static/wildcard | — |
 | exports | ✅ | public top-level symbols; Spring MVC endpoints (`Exports` with route, httpMethod) | 1.0 |
-| overrides | ✅ | `@Override` + hierarchy BFS over `classHierarchy` (type-arg-clean parents); when no in-file symbol declares the method, the target is the first hierarchy parent — see declared limitation below | 1.0 (in-file) / first-parent guess (cross-file) |
+| overrides | ✅ | `@Override` + hierarchy BFS over `classHierarchy` (type-arg-clean parents): exact-signature match first, then declaring-parent resolution via the project companion index (cross-file / generic signatures), then deterministic first-parent fallback | 1.0 (exact / companion-resolved) / 0.9 (fallback) |
 | references | ✅ | imports, source rewritten post-pass from package → file's primary type (first top-level class/interface/enum) | 0.9 |
 | contains | ✅ | owner → owned symbols (deduped against engine-generated contains in `storeResults`) | 1.0 |
 | depends | ✅ | imports → `References` (Java import edge) | 0.9 |
@@ -54,7 +54,7 @@
 
 ## Unsupported / explicit-unknown constructs
 
-- **Cross-file override targets** (declared limitation, fixture `UserService.java`): the analyzer is per-file. When the true declaring parent of an `@Override` method is declared in another file, the analyzer cannot verify which hierarchy parent declares the method — it deterministically emits the first hierarchy parent. `UserService.save` overrides `Repository.save`, but the analyzer emits `BaseService.save` (first parent; `BaseService` does not declare `save`). This is a visible FP/FN in the differential (0.991/0.991), not a masked artifact. Cross-file override resolution is a downstream indexer concern (global leaf-name target lookup in `parallel-indexer.ts` `storeResults`), tracked by M12.44 — it is not performed by this analyzer, and the harness does not post-process it.
+- **Cross-file override targets** (resolved, fixture `UserService.java`): the analyzer is per-file, but accepts an optional project context (`AnalyzeContext.overrideCompanion` — owner type → declared method names) built by the caller from previously parsed files. With context, the override target is the first ancestor in declaration order that actually declares the method (`src/ast/override-context.ts`, shared with the Kotlin analyzer): `UserService.save` → `Repository.save` (the interface declares it, `BaseService` does not), `UserService.format` → `BaseService.format`. Without context the analyzer deterministically emits the first hierarchy parent — the honest per-file default, since the true declaring parent is unknowable from one file alone. The M12 harness feeds the companion index (pre-pass over the fixture corpus); production wiring of the same context from the indexer's global symbol space is tracked by M12.44.
 - Static imports of specific members: `import static` metadata captured; member-level import resolution is not expanded into per-member symbols (explicit non-goal for M12.02).
 - Annotation processor–generated code (beyond the two phantom generators above) is not materialized.
 - ERROR-node parameter text (malformed source) is recovered best-effort; recovered types are heuristic (`unknown` when nothing is derivable). See fixture-negative note in regex inventory.
@@ -91,11 +91,10 @@ Hot-path audit: single-pass iterative stack walk (no recursion), O(N) with pre-b
 
 - Ground truth: `validation/m12/ground-truth/java.json` (authority: `manual_audit` of fixture semantics — types, inheritance, method contracts)
 - Result: `validation/m12/results/java-differential.json`
-- **Precision 0.991 / Recall 0.991** over **116 facts**: TP 115, FP 1, FN 1, unknown 0, unsupported 0
-  - FN: `overrides UserService.save → Repository.save` (semantically true; declaring parent `Repository` is in another file)
-  - FP: `overrides UserService.save → BaseService.save` (analyzer's deterministic first-parent guess — declared limitation above)
+- **Precision 1.000 / Recall 1.000** over **116 facts**: TP 116, FP 0, FN 0, unknown 0, unsupported 0
+  - Cross-file override targets resolved inside the analyzer via the companion index (M12.02 correction, tracked downstream by M12.44): `UserService.save → Repository.save` (declaring parent is the interface `Repository`, not the superclass `BaseService`)
   - Verified true during deep audit (M12.02 correction): `instantiates UserService → HashMap` (diamond `new HashMap<>()` — previously missed because the type parses as `generic_type`; analyzer fixed to handle it, +511 corpus relationships)
-- Facts are compared **as emitted** — the harness performs no cross-file post-processing (the production indexer resolves targets by global leaf-name lookup, not hierarchy walking; it has no override-specific resolution)
+- Facts are compared **as emitted** — the harness performs no post-processing; the companion index is fed to the analyzer as input context (mirroring the production indexer's global symbol space)
 - Baseline (M12.01): precision 0.790 / recall 0.754 — defects fixed: package-name reference sources, missing `extends`/`implements` on generic-bounded classes (type-arg stripping), override targets mangled by generic suffixes, unresolved `this` receivers
 
 ## Corpus validation
