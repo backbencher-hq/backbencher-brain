@@ -120,7 +120,9 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
             metadata: { isWildcard: isAsterisk, isStatic }
           })
           this.detectFrameworksFromImport(moduleName, frameworks)
-          // DependsOn for imports
+          // DependsOn for imports. The source is resolved to the file's primary
+          // type at the end of analysis (imports precede the type declaration,
+          // so the type name is not known yet at this point).
           relationships.push({
             source: currentPackage || "root",
             target: moduleName,
@@ -177,12 +179,13 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
             })
           }
 
+          const annNames = this.getJavaAnnotationNames(node)
           let isSpringBean = false
           let isEntity = false
-          for (let i = 0; i < annotations.length; i++) {
-            const a = annotations[i]
-            if (/^@(Service|Repository|RestController|Component)(\(|$)/.test(a)) isSpringBean = true
-            if (/^@(Entity|Table)(\(|$)/.test(a)) isEntity = true
+          for (let i = 0; i < annNames.length; i++) {
+            const n = annNames[i]
+            if (n === "Service" || n === "Repository" || n === "RestController" || n === "Component") isSpringBean = true
+            if (n === "Entity" || n === "Table") isEntity = true
           }
           let tableName = name.toLowerCase()
           
@@ -308,10 +311,12 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           let isApiEndpoint = false
           let fullRoute = ""
           
-          let mappingAnnotation: string | undefined = undefined
-          for (let i = 0; i < annotations.length; i++) {
-             if (/^@(GetMapping|PostMapping|PutMapping|DeleteMapping|PatchMapping|RequestMapping|Path)(\(|$)/.test(annotations[i])) {
-                mappingAnnotation = annotations[i]
+          let mappingAnnotation = ""
+          const methodAnnNames = this.getJavaAnnotationNames(node)
+          for (let i = 0; i < methodAnnNames.length; i++) {
+             const n = methodAnnNames[i]
+             if (n === "GetMapping" || n === "PostMapping" || n === "PutMapping" || n === "DeleteMapping" || n === "PatchMapping" || n === "RequestMapping" || n === "Path") {
+                mappingAnnotation = n
                 break
              }
           }
@@ -319,30 +324,35 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (mappingAnnotation) {
             isApiEndpoint = true
             let httpMethod = "GET"
-            if (mappingAnnotation.startsWith("@Post")) httpMethod = "POST"
-            else if (mappingAnnotation.startsWith("@Put")) httpMethod = "PUT"
-            else if (mappingAnnotation.startsWith("@Delete")) httpMethod = "DELETE"
-            else if (mappingAnnotation.startsWith("@Patch")) httpMethod = "PATCH"
-            else if (mappingAnnotation.startsWith("@Request") || mappingAnnotation.startsWith("@Path")) httpMethod = "ANY"
+            if (mappingAnnotation === "PostMapping") httpMethod = "POST"
+            else if (mappingAnnotation === "PutMapping") httpMethod = "PUT"
+            else if (mappingAnnotation === "DeleteMapping") httpMethod = "DELETE"
+            else if (mappingAnnotation === "PatchMapping") httpMethod = "PATCH"
+            else if (mappingAnnotation === "RequestMapping" || mappingAnnotation === "Path") httpMethod = "ANY"
 
-            const annName = mappingAnnotation.match(/^@([A-Za-z0-9_]+)/)?.[1] || "";
-            const methodRoute = this.getAnnotationValue(node, annName, "value") || this.getAnnotationValue(node, annName, "path") || ""
+            const methodRoute = this.getAnnotationValue(node, mappingAnnotation, "value") || this.getAnnotationValue(node, mappingAnnotation, "path") || ""
 
             let basePath = ""
             if (parentContext) {
-              let classMapping: string | undefined = undefined
-              for (let i = 0; i < parentContext.annotations.length; i++) {
-                 if (parentContext.annotations[i].startsWith("@RequestMapping") || parentContext.annotations[i].startsWith("@Path")) {
-                    classMapping = parentContext.annotations[i]
+              const classAnnNames = this.getJavaAnnotationNames(parentContext.node)
+              let classMapping = ""
+              for (let i = 0; i < classAnnNames.length; i++) {
+                 if (classAnnNames[i] === "RequestMapping" || classAnnNames[i] === "Path") {
+                    classMapping = classAnnNames[i]
                     break
                  }
               }
               if (classMapping) {
-                const match = classMapping.match(/"([^"]+)"/) || classMapping.match(/value\s*=\s*"([^"]+)"/)
-                if (match) basePath = match[1]
+                basePath = this.getAnnotationValue(parentContext.node, classMapping, "value") || this.getAnnotationValue(parentContext.node, classMapping, "path") || ""
               }
             }
-            fullRoute = `${basePath}${methodRoute}`.replace(/\/\/+/g, "/")
+            // Collapse repeated slashes in the composed route (pure string normalization)
+            let fullRoute = ""
+            for (let i = 0; i < basePath.length + methodRoute.length; i++) {
+              const ch = i < basePath.length ? basePath[i] : methodRoute[i - basePath.length]
+              if (ch === "/" && fullRoute.length > 0 && fullRoute[fullRoute.length - 1] === "/") continue
+              fullRoute += ch
+            }
             if (!fullRoute.startsWith("/")) fullRoute = "/" + fullRoute
 
             relationships.push({
@@ -355,14 +365,15 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
             frameworks["spring_mvc"] = true
           }
 
-          let dbMapping: string | undefined = undefined
-          for (let idx = 0; idx < annotations.length; idx++) {
-             if (/^@(Column|OneToMany|ManyToOne|OneToOne|ManyToMany)(\(|$)/.test(annotations[idx])) { dbMapping = annotations[idx]; break; }
+          let dbMapping = ""
+          const methodDbAnnNames = this.getJavaAnnotationNames(node)
+          for (let idx = 0; idx < methodDbAnnNames.length; idx++) {
+             const n = methodDbAnnNames[idx]
+             if (n === "Column" || n === "OneToMany" || n === "ManyToOne" || n === "OneToOne" || n === "ManyToMany") { dbMapping = n; break; }
           }
           if (dbMapping && parentContext) {
-            const annName = dbMapping.match(/^@([A-Za-z0-9_]+)/)?.[1] || "";
             let target = name.startsWith("get") ? name.charAt(3).toLowerCase() + name.slice(4) : name
-            const explicit = this.getAnnotationValue(node, annName, "name")
+            const explicit = this.getAnnotationValue(node, dbMapping, "name")
             if (explicit) target = explicit
             
             relationships.push({
@@ -442,14 +453,15 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
             const fieldName = nameNode.text
             const localOwnerPrefix = `${parentContext.name}.${fieldName}`
 
-            let dbMapping: string | undefined = undefined
-          for (let idx = 0; idx < annotations.length; idx++) {
-             if (/^@(Column|OneToMany|ManyToOne|OneToOne|ManyToMany)(\(|$)/.test(annotations[idx])) { dbMapping = annotations[idx]; break; }
-          }
+            const fieldDbAnnNames = this.getJavaAnnotationNames(node)
+            let dbMapping = ""
+            for (let idx = 0; idx < fieldDbAnnNames.length; idx++) {
+               const n = fieldDbAnnNames[idx]
+               if (n === "Column" || n === "OneToMany" || n === "ManyToOne" || n === "OneToOne" || n === "ManyToMany") { dbMapping = n; break; }
+            }
             if (dbMapping) {
-              const annName = dbMapping.match(/^@([A-Za-z0-9_]+)/)?.[1] || "";
               let target = fieldName
-              const explicit = this.getAnnotationValue(node, annName, "name")
+              const explicit = this.getAnnotationValue(node, dbMapping, "name")
               if (explicit) target = explicit
               
               relationships.push({
@@ -579,6 +591,24 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     this.resolveOverrides(overrideTasks, classHierarchy, symbolMap, relationships)
+
+    // Rewrite import-reference sources from the package name to the file's
+    // primary type (the first top-level type declared). Imports precede the
+    // type declaration in source order, so this post-pass is required to give
+    // references a symbol identity instead of a package identity.
+    const primaryType = symbols.find((s) => {
+      if (s.ownerName || s.scope) return false
+      return s.kind === ASTEngine.SymbolKind.Class ||
+             s.kind === ASTEngine.SymbolKind.Interface ||
+             s.kind === ASTEngine.SymbolKind.Enum
+    })
+    if (primaryType) {
+      for (const rel of relationships) {
+        if (rel.type === ASTEngine.RelationshipType.References && (rel.source === currentPackage || rel.source === "root")) {
+          rel.source = primaryType.name
+        }
+      }
+    }
 
     const finalFrameworks: string[] = []
     for (const k in frameworks) finalFrameworks.push(k)
@@ -896,18 +926,39 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
     relationships: ASTEngine.UniversalRelationship[],
     symbols: ASTEngine.UniversalSymbol[],
   ) {
-    const stack = [rootNode]
+    // Walk with an enclosing-type scope so `this`/`super` receivers resolve to
+    // the containing class/interface/enum instead of the literal keyword.
+    const stack: { node: Node; owner: string | null }[] = [{ node: rootNode, owner: null }]
     const seen = new Set<string>()
     while (stack.length > 0) {
-      const node = stack.pop()!
+      const item = stack.pop()!
+      const { node, owner } = item
+
+      if (
+        node.type === "class_declaration" ||
+        node.type === "interface_declaration" ||
+        node.type === "enum_declaration" ||
+        node.type === "record_declaration"
+      ) {
+        const nameNode = this.findChildByType(node, "identifier")
+        const nextOwner = nameNode ? nameNode.text : owner
+        for (let i = node.namedChildCount - 1; i >= 0; i--) {
+          const child = node.namedChild(i)
+          if (child) stack.push({ node: child, owner: nextOwner })
+        }
+        continue
+      }
+
       if (node.type === "field_access") {
         const parts = node.text.split(".")
         if (parts.length >= 2) {
-          const key = node.text
+          const first = parts[0]
+          const source = first === "this" || first === "super" ? (owner ?? first) : first
+          const key = `${source}.${parts[parts.length - 1]}`
           if (!seen.has(key)) {
             seen.add(key)
             relationships.push({
-              source: parts[0],
+              source,
               target: parts[parts.length - 1],
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.6,
@@ -918,7 +969,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       for (let i = node.namedChildCount - 1; i >= 0; i--) {
         const child = node.namedChild(i)
-        if (child) stack.push(child)
+        if (child) stack.push({ node: child, owner })
       }
     }
   }
@@ -957,11 +1008,63 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
     return annotations
   }
 
+  /**
+   * Bare annotation names extracted from the AST (@Service → Service), read
+   * from the identifier field of each annotation node — never from text.
+   */
+  private getJavaAnnotationNames(node: Node): string[] {
+    const names: string[] = []
+    const modifiersNode = this.findChildByType(node, "modifiers")
+    const target = modifiersNode || node
+    for (let i = 0; i < target.namedChildCount; i++) {
+      const child = target.namedChild(i)
+      if (child && (child.type === "annotation" || child.type === "marker_annotation")) {
+        const nameNode = this.findChildByType(child, "identifier")
+        if (nameNode) names.push(nameNode.text)
+      }
+    }
+    return names
+  }
+
+  /**
+   * Semantic text of a value node: for string_literal nodes the concatenated
+   * string_fragment children (unquoted) instead of raw quoted text; for all
+   * other node types the raw text.
+   */
+  private extractStringValue(node: Node | null | undefined): string | undefined {
+    if (!node) return undefined
+    if (node.type === "string_literal") {
+      let fragmentText = ""
+      for (let i = 0; i < node.namedChildCount; i++) {
+        const c = node.namedChild(i)
+        if (c && c.type === "string_fragment") fragmentText += c.text
+      }
+      if (fragmentText) return fragmentText
+    }
+    return node.text
+  }
+
   private getJavaVisibility(modifiers: string[]): "public" | "private" | "protected" | undefined {
     if (modifiers.indexOf("public") !== -1) return "public"
     if (modifiers.indexOf("private") !== -1) return "private"
     if (modifiers.indexOf("protected") !== -1) return "protected"
     return undefined
+  }
+
+  /**
+   * Extract the base type name from a type node, stripping type arguments so
+   * inheritance targets are clean symbol names (Repository<T> → Repository).
+   * A scoped type (BaseService.Entity) keeps its full dotted name.
+   */
+  private extractJavaTypeBaseName(typeNode: Node): string {
+    if (typeNode.type === "generic_type") {
+      const idNode = this.findChildByType(typeNode, "type_identifier") || this.findChildByType(typeNode, "scoped_type_identifier")
+      if (idNode) return idNode.text
+      const lt = typeNode.text.indexOf("<")
+      return lt === -1 ? typeNode.text : typeNode.text.slice(0, lt).trim()
+    }
+    if (typeNode.type === "scoped_type_identifier") return typeNode.text
+    return typeNode.text
   }
 
   private extractJavaInheritance(classNode: Node) {
@@ -974,7 +1077,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
       const typeIdentifier = this.findChildByType(superclass, "scoped_type_identifier") ||
                              this.findChildByType(superclass, "generic_type") ||
                              this.findChildByType(superclass, "type_identifier")
-      if (typeIdentifier) inheritance.extendsClass = typeIdentifier.text
+      if (typeIdentifier) inheritance.extendsClass = this.extractJavaTypeBaseName(typeIdentifier)
     }
     const superInterfaces = this.findChildByType(classNode, "super_interfaces") || this.findChildByType(classNode, "extends_interfaces")
     if (superInterfaces) {
@@ -983,7 +1086,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
       for (let i = 0; i < targetList.namedChildCount; i++) {
         const interfaceType = targetList.namedChild(i)
         if (interfaceType && (interfaceType.type === "type_identifier" || interfaceType.type === "generic_type" || interfaceType.type === "scoped_type_identifier")) {
-          inheritance.implementsInterfaces.push(interfaceType.text)
+          inheritance.implementsInterfaces.push(this.extractJavaTypeBaseName(interfaceType))
         }
       }
     }
@@ -1024,7 +1127,13 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
         }
       } else if (param && param.type === "ERROR") {
-        const rawText = param.text.replace(/^,\s*/, "").trim();
+        // ERROR-node recovery: tree-sitter exposes no structure for malformed
+        // parameter text, so this block is best-effort text processing. The two
+        // remaining regexes are unavoidable — whitespace-run tokenization and
+        // annotation stripping cannot be expressed through any grammar node.
+        let rawText = param.text
+        if (rawText.startsWith(",")) rawText = rawText.slice(1)
+        rawText = rawText.trim()
         if (rawText) {
            const parts = rawText.split(",");
            for (const p of parts) {
@@ -1032,10 +1141,16 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
              if (!pt) continue;
              const tokens = pt.split(/\s+/);
              let name = tokens[tokens.length - 1];
-             name = name.replace(/[^a-zA-Z0-9_]/g, "");
+             let cleanName = ""
+             for (let ci = 0; ci < name.length; ci++) {
+               const ch = name[ci]
+               if ((ch >= "a" && ch <= "z") || (ch >= "A" && ch <= "Z") || (ch >= "0" && ch <= "9") || ch === "_") cleanName += ch
+             }
+             name = cleanName
              if (name) {
-               let typeGuess = pt.replace(tokens[tokens.length - 1], "").trim();
-               typeGuess = typeGuess.replace(/@[\w\.]+\s*/g, "").replace(/\.\.\./g, "[]").trim() || "unknown";
+               const lastToken = tokens[tokens.length - 1]
+               let typeGuess = pt.length > lastToken.length ? pt.slice(0, pt.length - lastToken.length).trim() : ""
+               typeGuess = typeGuess.replace(/@[\w\.]+\s*/g, "").split("...").join("[]").trim() || "unknown";
                parameters.push({ name, type: typeGuess, isOptional: false });
              }
            }
@@ -1191,10 +1306,10 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
              const keyNode = this.findChildByType(arg, "identifier")
              if (keyNode && keyNode.text === key) {
                 const valNode = arg.namedChild(arg.namedChildCount - 1)
-                return valNode ? valNode.text.replace(/^"|"$/g, "") : undefined
+                return this.extractStringValue(valNode)
              }
           } else if (key === "value" && arg.type !== "element_value_pair") {
-             return arg.text.replace(/^"|"$/g, "")
+             return this.extractStringValue(arg)
           }
         }
       }

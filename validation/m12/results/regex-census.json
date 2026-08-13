@@ -2,24 +2,23 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-08-13T02:06:55.953Z",
+  "generatedAt": "2026-08-13T02:38:55.943Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 206,
+  "totalRegexUsages": 190,
   "analyzersScanned": 41,
   "byClassification": {
-    "unavoidable": 32,
-    "normalization": 93,
-    "needs_review": 79,
+    "needs_review": 70,
+    "normalization": 90,
+    "unavoidable": 28,
     "replaceable": 2
   },
   "byReceiverCategory": {
-    "literal": 31,
-    "node_text": 93,
-    "identifier": 49,
-    "other": 30,
-    "raw_content": 2,
-    "string_literal": 1
+    "literal": 26,
+    "node_text": 90,
+    "identifier": 43,
+    "other": 29,
+    "raw_content": 2
   },
   "perFile": [
     {
@@ -418,210 +417,6 @@
           "source": "/^=\\s*/",
           "operation": "replace",
           "receiver": "defaultNode.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-java-analyzer.ts",
-      "count": 18,
-      "usages": [
-        {
-          "file": "real-java-analyzer.ts",
-          "line": 184,
-          "column": 17,
-          "source": "/^@(Service|Repository|RestController|Component)(\\(|$)/",
-          "operation": "test",
-          "receiver": "/^@(Service|Repository|RestController|Component)(\\(|$)/",
-          "receiverCategory": "literal",
-          "classification": "unavoidable",
-          "justification": ""
-        },
-        {
-          "file": "real-java-analyzer.ts",
-          "line": 185,
-          "column": 17,
-          "source": "/^@(Entity|Table)(\\(|$)/",
-          "operation": "test",
-          "receiver": "/^@(Entity|Table)(\\(|$)/",
-          "receiverCategory": "literal",
-          "classification": "unavoidable",
-          "justification": ""
-        },
-        {
-          "file": "real-java-analyzer.ts",
-          "line": 313,
-          "column": 18,
-          "source": "/^@(GetMapping|PostMapping|PutMapping|DeleteMapping|PatchMapping|RequestMapping|Path)(\\(|$)/",
-          "operation": "test",
-          "receiver": "/^@(GetMapping|PostMapping|PutMapping|DeleteMapping|PatchMapping|RequestMapping|Path)(\\(|$)/",
-          "receiverCategory": "literal",
-          "classification": "unavoidable",
-          "justification": ""
-        },
-        {
-          "file": "real-java-analyzer.ts",
-          "line": 328,
-          "column": 53,
-          "source": "/^@([A-Za-z0-9_]+)/",
-          "operation": "match",
-          "receiver": "mappingAnnotation",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-java-analyzer.ts",
-          "line": 341,
-          "column": 50,
-          "source": "/\"([^\"]+)\"/",
-          "operation": "match",
-          "receiver": "classMapping",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-java-analyzer.ts",
-          "line": 341,
-          "column": 85,
-          "source": "/value\\s*=\\s*\"([^\"]+)\"/",
-          "operation": "match",
-          "receiver": "classMapping",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-java-analyzer.ts",
-          "line": 345,
-          "column": 61,
-          "source": "/\\/\\/+/g",
-          "operation": "replace",
-          "receiver": "`${basePath}${methodRoute}`",
-          "receiverCategory": "string_literal",
-          "classification": "unavoidable",
-          "justification": ""
-        },
-        {
-          "file": "real-java-analyzer.ts",
-          "line": 360,
-          "column": 18,
-          "source": "/^@(Column|OneToMany|ManyToOne|OneToOne|ManyToMany)(\\(|$)/",
-          "operation": "test",
-          "receiver": "/^@(Column|OneToMany|ManyToOne|OneToOne|ManyToMany)(\\(|$)/",
-          "receiverCategory": "literal",
-          "classification": "unavoidable",
-          "justification": ""
-        },
-        {
-          "file": "real-java-analyzer.ts",
-          "line": 363,
-          "column": 45,
-          "source": "/^@([A-Za-z0-9_]+)/",
-          "operation": "match",
-          "receiver": "dbMapping",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-java-analyzer.ts",
-          "line": 447,
-          "column": 18,
-          "source": "/^@(Column|OneToMany|ManyToOne|OneToOne|ManyToMany)(\\(|$)/",
-          "operation": "test",
-          "receiver": "/^@(Column|OneToMany|ManyToOne|OneToOne|ManyToMany)(\\(|$)/",
-          "receiverCategory": "literal",
-          "classification": "unavoidable",
-          "justification": ""
-        },
-        {
-          "file": "real-java-analyzer.ts",
-          "line": 450,
-          "column": 47,
-          "source": "/^@([A-Za-z0-9_]+)/",
-          "operation": "match",
-          "receiver": "dbMapping",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-java-analyzer.ts",
-          "line": 1027,
-          "column": 44,
-          "source": "/^,\\s*/",
-          "operation": "replace",
-          "receiver": "param.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-java-analyzer.ts",
-          "line": 1033,
-          "column": 38,
-          "source": "/\\s+/",
-          "operation": "split",
-          "receiver": "pt",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-java-analyzer.ts",
-          "line": 1035,
-          "column": 34,
-          "source": "/[^a-zA-Z0-9_]/g",
-          "operation": "replace",
-          "receiver": "name",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-java-analyzer.ts",
-          "line": 1038,
-          "column": 46,
-          "source": "/@[\\w\\.]+\\s*/g",
-          "operation": "replace",
-          "receiver": "typeGuess",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-java-analyzer.ts",
-          "line": 1038,
-          "column": 74,
-          "source": "/\\.\\.\\./g",
-          "operation": "replace",
-          "receiver": "typeGuess.replace(/@[\\w\\.]+\\s*/g, \"\")",
-          "receiverCategory": "other",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-java-analyzer.ts",
-          "line": 1194,
-          "column": 55,
-          "source": "/^\"|\"$/g",
-          "operation": "replace",
-          "receiver": "valNode.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-java-analyzer.ts",
-          "line": 1197,
-          "column": 38,
-          "source": "/^\"|\"$/g",
-          "operation": "replace",
-          "receiver": "arg.text",
           "receiverCategory": "node_text",
           "classification": "normalization",
           "justification": ""
@@ -2258,6 +2053,34 @@
           "receiverCategory": "node_text",
           "classification": "normalization",
           "justification": ""
+        }
+      ]
+    },
+    {
+      "file": "real-java-analyzer.ts",
+      "count": 2,
+      "usages": [
+        {
+          "file": "real-java-analyzer.ts",
+          "line": 1142,
+          "column": 38,
+          "source": "/\\s+/",
+          "operation": "split",
+          "receiver": "pt",
+          "receiverCategory": "identifier",
+          "classification": "unavoidable",
+          "justification": "ERROR-node recovery: tree-sitter exposes no structure for malformed parameter text; whitespace-run tokenization of garbage text is not grammar-expressible."
+        },
+        {
+          "file": "real-java-analyzer.ts",
+          "line": 1153,
+          "column": 46,
+          "source": "/@[\\w\\.]+\\s*/g",
+          "operation": "replace",
+          "receiver": "typeGuess",
+          "receiverCategory": "identifier",
+          "classification": "unavoidable",
+          "justification": "ERROR-node recovery: stripping @Annotation tokens from a type guess requires whitespace-aware scanning that no grammar node can express (the text is a parse error)."
         }
       ]
     },

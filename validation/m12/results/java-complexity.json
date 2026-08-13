@@ -2,28 +2,55 @@
   "schemaVersion": 1,
   "kind": "per_analyzer_complexity:java",
   "fixtureDir": "validation/m12/fixtures/java",
-  "corpusDir": null,
+  "corpusDir": "/tmp/bb-java-sample",
   "runs": [
     {
       "name": "fixtures",
       "measurement": {
         "name": "fixtures:java",
-        "wallTimeMs": 141.864744,
-        "userCpuMs": 142.602,
-        "systemCpuMs": 77.065,
-        "peakRssBytes": 178380800,
-        "rssDeltaBytes": 136359936,
+        "wallTimeMs": 164.7017,
+        "userCpuMs": 192.973,
+        "systemCpuMs": 83.921,
+        "peakRssBytes": 183308288,
+        "rssDeltaBytes": 141254656,
         "databaseBytes": null,
-        "files": 3,
-        "symbols": 22,
-        "relationships": 40,
-        "filesPerSecond": 21.14690313754064,
-        "symbolsPerSecond": 155.07728967529803,
-        "relationshipsPerSecond": 281.9587085005419
+        "files": 4,
+        "symbols": 40,
+        "relationships": 77,
+        "filesPerSecond": 24.286330985047517,
+        "symbolsPerSecond": 242.86330985047516,
+        "relationshipsPerSecond": 467.51187146216466
       },
-      "symbols": 22,
-      "relationships": 40
+      "symbols": 40,
+      "relationships": 77
+    },
+    {
+      "name": "corpus_subset",
+      "measurement": {
+        "name": "corpus_subset:java",
+        "wallTimeMs": 4801.899544,
+        "userCpuMs": 7980.547,
+        "systemCpuMs": 741.618,
+        "peakRssBytes": 506019840,
+        "rssDeltaBytes": 155205632,
+        "databaseBytes": null,
+        "files": 400,
+        "symbols": 7812,
+        "relationships": 29972,
+        "filesPerSecond": 83.30036818446196,
+        "symbolsPerSecond": 1626.856190642542,
+        "relationshipsPerSecond": 6241.6965880617345
+      },
+      "symbols": 7812,
+      "relationships": 29972
     }
   ],
-  "note": "Complexity envelope per analyzer: wall time, symbols/s, relationships/s, peak RSS. Budgets are declared per analyzer in docs/analyzers/."
+  "note": "Complexity envelope per analyzer: wall time, symbols/s, relationships/s, peak RSS. Fixtures + real-corpus subset (intellij-community 400-file sample).",
+  "corpusProvenance": {
+    "repository": "intellij-community",
+    "revision": "cfda6881ef1c86081f9ad4f993906b84004b65f2",
+    "selection": "first 400 tracked *.java files sorted lexicographically (git ls-files) — deterministic at pinned revision",
+    "fileList": "validation/m12/results/java-corpus-sample.txt",
+    "repoState": "dirty (unrelated .agents/skills deletions; Java sources intact)"
+  }
 }
