@@ -32,6 +32,7 @@ function findSymbol(arr: any[], predicate: (s: any) => boolean): any | undefined
 
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
+import { findDeclaringParent } from "./override-context"
 
 export interface KotlinContext {
   content: string
@@ -55,7 +56,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     return null
   }
 
-  analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
+  analyze(rootNode: Node, content: string, filePath: string, context?: ASTEngine.AnalyzeContext): ASTEngine.ParseResult {
     const ctx: KotlinContext = {
       content,
       currentFile: filePath,
@@ -196,10 +197,13 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
         })
       }
       // Overrides: real methods with 'override' modifier, keyed by
-      // owner-qualified method name → first-hierarchy-parent method name.
-      // The parents come from the ENCLOSING CLASS's supertypes (a method
-      // symbol does not carry them). Phantom/generated symbols are excluded
-      // (their override targets are stdlib, not project symbols).
+      // owner-qualified method name → declaring-parent method name. The
+      // parents come from the ENCLOSING CLASS's supertypes (a method symbol
+      // does not carry them). Phantom/generated symbols are excluded (their
+      // override targets are stdlib, not project symbols). The target is the
+      // first ancestor in declaration order that actually declares the method
+      // (companion index when provided); without context it falls back to the
+      // first hierarchy parent — the deterministic per-file default.
       if (
         s.kind === ASTEngine.SymbolKind.Method &&
         s.ownerName &&
@@ -208,13 +212,23 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       ) {
         const ownerSym = typeIndex.get(s.ownerName)
         const parents: string[] = ownerSym?.metadata?.superTypes ?? []
-        if (parents.length > 0) {
+        let overrideParent = parents.length > 0 ? parents[0] : ""
+        if (context?.overrideCompanion && parents.length > 0) {
+          const declaring = findDeclaringParent(
+            s.name,
+            parents,
+            context.overrideCompanion,
+            (t) => typeIndex.get(t)?.metadata?.superTypes ?? [],
+          )
+          if (declaring) overrideParent = declaring
+        }
+        if (overrideParent) {
           relationships.push({
             source: `${s.ownerName}.${s.name}`,
-            target: `${parents[0]}.${s.name}`,
+            target: `${overrideParent}.${s.name}`,
             type: ASTEngine.RelationshipType.Overrides,
             confidence: 0.9,
-            metadata: { isOverride: true, overrideParent: parents[0] },
+            metadata: { isOverride: true, overrideParent },
           })
         }
       }

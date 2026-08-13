@@ -210,11 +210,24 @@ export interface ParseResult {
 // LANGUAGE ANALYZER INTERFACE — Identical between backbencher and mcp-brain
 // ============================================================================
 
+export interface AnalyzeContext {
+  /**
+   * Project-level companion index for cross-file override-target resolution:
+   * owner type name → declared method names. Built by the caller (M12
+   * differential harness; production indexer via M12.44) from the symbols of
+   * previously parsed files. Absent for per-file-only callers — analyzers then
+   * fall back to their deterministic first-parent default.
+   */
+  overrideCompanion?: Map<string, Set<string>>
+  [key: string]: any
+}
+
 export interface LanguageAnalyzer {
   analyze(
     rootNode: any,
     content: string,
     filePath: string,
+    context?: AnalyzeContext,
   ): Omit<ParseResult, "language" | "metadata"> & { metadata?: Partial<FileMetadata> }
 }
 

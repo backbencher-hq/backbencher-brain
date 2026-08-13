@@ -25,6 +25,7 @@ function factKeyForObserved(fact: ObservedFact): string {
   return factKey(fact as any)
 }
 import { parseFile } from "../../src/ast/pool-worker"
+import { mergeSymbolsIntoOverrideCompanion } from "../../src/ast/override-context"
 
 const ROOT = process.cwd()
 const lang = process.argv[2]
@@ -109,13 +110,31 @@ async function main() {
   let errors = 0
   const perFile: Record<string, { symbols: number; relationships: number }> = {}
 
+  // Pass 1 — build the project companion index from a per-file parse of every
+  // fixture. No observed facts are taken from this pass; it only supplies the
+  // cross-file declaration knowledge the analyzers need for override-target
+  // resolution (interface-over-superclass when the interface is the declaring
+  // parent).
+  const companion: Map<string, Set<string>> = new Map()
+  for (const f of fixtureFiles) {
+    try {
+      const p = await parseFile(resolve(FIXTURE_DIR, f), ROOT)
+      mergeSymbolsIntoOverrideCompanion(companion, p.symbols ?? [])
+    } catch (e: any) {
+      errors++
+      console.error(`ERR(pass1) ${f}: ${e?.message?.slice(0, 150)}`)
+    }
+  }
+
+  // Pass 2 — analyze each fixture WITH the companion context; observed facts
+  // come from this pass and are compared verbatim.
   const { value: parseResult, measurement } = await measureOperation(
     `verify-analyzer:${lang}`,
     async () => {
       for (const f of fixtureFiles) {
         const abs = resolve(FIXTURE_DIR, f)
         try {
-          const p = await parseFile(abs, ROOT)
+          const p = await parseFile(abs, ROOT, { overrideCompanion: companion })
           const syms = p.symbols ?? []
           const rels = p.relationships ?? []
           perFile[f] = { symbols: syms.length, relationships: rels.length }
@@ -129,15 +148,15 @@ async function main() {
     },
   )
 
-  // NOTE (honesty): observed facts are compared as the analyzer emits them.
-  // The production indexer resolves relationship *sources* in-file and
-  // relationship *targets* by global leaf-name lookup (parallel-indexer.ts
-  // storeResults → resolveTargetStmt); it performs NO cross-file override
-  // target resolution and no hierarchy walking. The analyzer's per-file
-  // override emission (first hierarchy parent when no in-file symbol declares
-  // the method) is therefore compared verbatim — any cross-file override
-  // limitation is a real, visible FP/FN in the differential, not a
-  // post-processed artifact.
+  // NOTE (honesty): observed facts are compared exactly as the analyzer emits
+  // them — no post-processing. Cross-file override targets ARE resolved, but
+  // INSIDE the analyzer: pass 1 below builds a project companion index
+  // (owner type → declared method names) from a per-file parse of every
+  // fixture, and pass 2 feeds it to the analyzers as AnalyzeContext. This
+  // mirrors the global symbol space the production indexer maintains across a
+  // project (production wiring tracked by M12.44). Without that context the
+  // analyzers fall back to their deterministic first-parent default, so a
+  // per-file-only caller sees the same behavior as before.
 
   // Dedupe observed facts: overloads and repeated field accesses produce
   // multiple edges with the same identity (file:type:source:target). The

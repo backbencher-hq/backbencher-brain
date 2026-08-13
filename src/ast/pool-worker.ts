@@ -3,6 +3,7 @@ import { createHash } from "crypto"
 import { createRequire } from "node:module"
 import path from "path"
 import fs from "fs"
+import type { ASTEngine } from "./engine"
 import { detectLanguageFromPath } from "./language-detection"
 
 const require = createRequire(import.meta.url)
@@ -370,8 +371,11 @@ function filterNoiseRelationships(rels: any[], language: string): any[] {
       return rt === "contains"
     }
 
-    // Block targets with hyphens (CSS properties: font-size, align-items, etc.)
-    if (lower.includes("-")) return false
+    // NOTE: no blanket hyphen block here. Hyphens are valid identifier
+    // characters in Clojure/Lisp-family and shell languages (create-service,
+    // multi-arity, format-value); a global `lower.includes("-")` filter would
+    // silently drop legitimate relationships for those analyzers. CSS property
+    // leakage is already fully handled by the language-specific branch above.
 
     // Block tree-sitter AST internals
     if (NOISE_TARGETS.has(leaf)) return false
@@ -382,7 +386,7 @@ function filterNoiseRelationships(rels: any[], language: string): any[] {
 
 let engineModule: any = null
 
-export async function parseFile(filePath: string, projectPath: string) {
+export async function parseFile(filePath: string, projectPath: string, context?: ASTEngine.AnalyzeContext) {
   const stat = await import("fs/promises").then((fs) => fs.stat(filePath))
   const sizeBytes = stat.size
   const lastModified = stat.mtimeMs
@@ -428,7 +432,7 @@ export async function parseFile(filePath: string, projectPath: string) {
     if (!engineModule) {
       engineModule = await import("./engine")
     }
-    const parsed = await engineModule.ASTEngine.parseFile(filePath, content)
+    const parsed = await engineModule.ASTEngine.parseFile(filePath, content, context)
 
     // Log when engine returns 0 symbols (silent failure — no exception thrown)
     if ((parsed?.symbols?.length || 0) === 0 && (parsed?.errors?.length || 0) > 0) {
