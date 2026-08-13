@@ -176,6 +176,14 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Add Contains + Overrides + DependsOn. `ownerName` is the enclosing type
     // name — NOT scope — so top-level declarations (no owner) never produce a
     // self-contain edge.
+    // Pre-built type-index so the override parent lookup is O(1) per method
+    // (no per-method symbol scans — the hot path stays linear).
+    const typeIndex = new Map<string, ASTEngine.UniversalSymbol>()
+    for (const s of symbols) {
+      if (s.kind === ASTEngine.SymbolKind.Class || s.kind === ASTEngine.SymbolKind.Interface) {
+        if (!typeIndex.has(s.name)) typeIndex.set(s.name, s)
+      }
+    }
     for (const s of symbols) {
       const _owner = s.ownerName
       if (_owner) {
@@ -198,14 +206,8 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
         !s.metadata?.isPhantom &&
         s.metadata?.modifiers?.includes?.("override")
       ) {
-        let parents: string[] = []
-        for (const maybeOwner of symbols) {
-          if (maybeOwner.name === s.ownerName &&
-              (maybeOwner.kind === ASTEngine.SymbolKind.Class || maybeOwner.kind === ASTEngine.SymbolKind.Interface)) {
-            parents = maybeOwner.metadata?.superTypes ?? []
-            break
-          }
-        }
+        const ownerSym = typeIndex.get(s.ownerName)
+        const parents: string[] = ownerSym?.metadata?.superTypes ?? []
         if (parents.length > 0) {
           relationships.push({
             source: `${s.ownerName}.${s.name}`,
@@ -951,12 +953,22 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     symbols.push(symbol)
 
-    // Extract enum values as symbols
-    for (const enumValue of enumValues) {
+    // Extract enum values as symbols with the enum_entry node range
+    const enumBody = this.findChildByType(node, ["enum_class_body", "class_body"])
+    const entryNodes: Node[] = []
+    if (enumBody) {
+      for (let i = 0; i < enumBody.namedChildCount; i++) {
+        const c = enumBody.namedChild(i)
+        if (c?.type === "enum_entry") entryNodes.push(c)
+      }
+    }
+    for (let i = 0; i < enumValues.length; i++) {
+      const enumValue = enumValues[i]
+      const entryNode = entryNodes[i] ?? node
       symbols.push({
         name: enumValue,
         kind: ASTEngine.SymbolKind.EnumMember,
-        range: this.nodeToRange(node), // Would need specific range
+        range: this.nodeToRange(entryNode),
         scope: this.currentScope(ctx),
         visibility: "public",
         ownerName: enumName,
@@ -1214,20 +1226,21 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (modifiers.includes("expect")) annotations.push("@expect");
     if (modifiers.includes("actual")) annotations.push("@actual");
 
-    if (node) {
-      const stack: Node[] = [node]
-      while (stack.length > 0) {
-        const n = stack.pop()!
-        // ONLY annotation nodes are collected — never user_type nodes, which
-        // are ordinary types (types were leaking into decorators before).
-        if (n.type === "annotation" || n.type === "marker_annotation") {
-          annotations.push(n.text.startsWith("@") ? n.text.slice(1) : n.text)
-        }
-        for (let i = n.namedChildCount - 1; i >= 0; i--) {
-          const child = n.namedChild(i)
-          if (child) stack.push(child)
+    // Collect ONLY this declaration's own annotations — those in its
+    // `modifiers` child (or direct annotation children). A subtree walk would
+    // leak member annotations into the container's decorators.
+    const collect = (n: Node) => {
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c && (c.type === "annotation" || c.type === "marker_annotation")) {
+          annotations.push(c.text.startsWith("@") ? c.text.slice(1) : c.text)
         }
       }
+    }
+    if (node) {
+      collect(node)
+      const modifiersNode = this.findChildByType(node, ["modifiers"])
+      if (modifiersNode) collect(modifiersNode)
     }
     return annotations
   }

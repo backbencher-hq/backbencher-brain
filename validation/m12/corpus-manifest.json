@@ -43,8 +43,8 @@
         "recall": 0.987,
         "corpusSymbols": 11286,
         "corpusRelationships": 43364,
-        "grammarErrorFiles": 50,
-        "note": "cross-file override target (UserService.save -> Repository.save) is a declared per-file limitation (first-parent BaseService.save); 50/300 corpus files have tree-sitter-kotlin grammar ERROR nodes (fun interface, object delegation) reported as warnings",
+        "grammarErrorFiles": 51,
+        "note": "cross-file override target (UserService.save -> Repository.save) is a declared per-file limitation (first-parent BaseService.save); 51/300 corpus files have tree-sitter-kotlin grammar ERROR nodes (fun interface, object delegation, one hidden-MISSING when-entry case) reported as warnings",
         "measuredAt": "2026-08-13T03:09:03.951Z"
       }
     },
