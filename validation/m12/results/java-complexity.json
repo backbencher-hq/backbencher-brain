@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "kind": "per_analyzer_complexity:java",
+  "fixtureDir": "validation/m12/fixtures/java",
+  "corpusDir": null,
+  "runs": [
+    {
+      "name": "fixtures",
+      "measurement": {
+        "name": "fixtures:java",
+        "wallTimeMs": 141.864744,
+        "userCpuMs": 142.602,
+        "systemCpuMs": 77.065,
+        "peakRssBytes": 178380800,
+        "rssDeltaBytes": 136359936,
+        "databaseBytes": null,
+        "files": 3,
+        "symbols": 22,
+        "relationships": 40,
+        "filesPerSecond": 21.14690313754064,
+        "symbolsPerSecond": 155.07728967529803,
+        "relationshipsPerSecond": 281.9587085005419
+      },
+      "symbols": 22,
+      "relationships": 40
+    }
+  ],
+  "note": "Complexity envelope per analyzer: wall time, symbols/s, relationships/s, peak RSS. Budgets are declared per analyzer in docs/analyzers/."
+}

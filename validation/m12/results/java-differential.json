@@ -1,0 +1,185 @@
+{
+  "schemaVersion": 1,
+  "kind": "per_analyzer_differential:java",
+  "truthSource": "manual_audit",
+  "truthReference": "validation/m12/fixtures/java (BaseService.java, Repository.java, UserService.java) hand-audited from source; symbol truth cross-checked against M11 validation/m11/ground-truth/jvm-symbols.json",
+  "fixtureDir": "validation/m12/fixtures/java",
+  "fixtures": [
+    "BaseService.java",
+    "Repository.java",
+    "UserService.java"
+  ],
+  "perFile": {
+    "BaseService.java": {
+      "symbols": 8,
+      "relationships": 10
+    },
+    "Repository.java": {
+      "symbols": 3,
+      "relationships": 4
+    },
+    "UserService.java": {
+      "symbols": 11,
+      "relationships": 26
+    }
+  },
+  "passing": {
+    "schemaVersion": 1,
+    "passed": false,
+    "metrics": {
+      "expected": 65,
+      "observedResolved": 62,
+      "truePositive": 49,
+      "falsePositive": 13,
+      "falseNegative": 16,
+      "unknown": 0,
+      "unsupported": 0,
+      "correctlyClassifiedUnknown": 0,
+      "correctlyClassifiedUnsupported": 0,
+      "precision": 0.7903225806451613,
+      "recall": 0.7538461538461538,
+      "falsePositiveRate": 0.20967741935483872,
+      "falseNegativeRate": 0.24615384615384617,
+      "unknownRate": 0
+    },
+    "earliestFailingLayer": "relationships",
+    "truePositiveIds": [
+      "rel:BaseService.java:calls:findAll:findByFilter",
+      "rel:BaseService.java:contains:BaseService:Entity",
+      "rel:BaseService.java:contains:BaseService:findAll",
+      "rel:BaseService.java:contains:BaseService:findByFilter",
+      "rel:BaseService.java:contains:BaseService:format",
+      "rel:BaseService.java:contains:BaseService:prefix",
+      "rel:BaseService.java:contains:Entity:getId",
+      "rel:BaseService.java:contains:Entity:getName",
+      "rel:Repository.java:contains:Repository:findAll",
+      "rel:Repository.java:contains:Repository:save",
+      "rel:UserService.java:calls:format:trim",
+      "rel:UserService.java:calls:save:completedFuture",
+      "rel:UserService.java:calls:save:getId",
+      "rel:UserService.java:calls:save:put",
+      "rel:UserService.java:contains:User:constructor",
+      "rel:UserService.java:contains:User:getId",
+      "rel:UserService.java:contains:User:getName",
+      "rel:UserService.java:contains:User:id",
+      "rel:UserService.java:contains:User:name",
+      "rel:UserService.java:contains:UserService:User",
+      "rel:UserService.java:contains:UserService:constructor",
+      "rel:UserService.java:contains:UserService:format",
+      "rel:UserService.java:contains:UserService:save",
+      "rel:UserService.java:contains:UserService:store",
+      "rel:UserService.java:implements:User:BaseService.Entity",
+      "rel:UserService.java:overrides:User.getId:Entity.getId",
+      "rel:UserService.java:overrides:User.getName:Entity.getName",
+      "symbol:BaseService.java:11:method:findAll",
+      "symbol:BaseService.java:15:method:findByFilter",
+      "symbol:BaseService.java:19:interface:Entity",
+      "symbol:BaseService.java:20:method:getId",
+      "symbol:BaseService.java:21:method:getName",
+      "symbol:BaseService.java:6:class:BaseService",
+      "symbol:BaseService.java:7:property:prefix",
+      "symbol:BaseService.java:9:method:format",
+      "symbol:Repository.java:6:interface:Repository",
+      "symbol:Repository.java:7:method:save",
+      "symbol:Repository.java:8:method:findAll",
+      "symbol:UserService.java:11:property:store",
+      "symbol:UserService.java:13:constructor:constructor",
+      "symbol:UserService.java:16:method:format",
+      "symbol:UserService.java:21:method:save",
+      "symbol:UserService.java:27:class:User",
+      "symbol:UserService.java:28:property:id",
+      "symbol:UserService.java:29:property:name",
+      "symbol:UserService.java:31:constructor:constructor",
+      "symbol:UserService.java:36:method:getId",
+      "symbol:UserService.java:39:method:getName",
+      "symbol:UserService.java:9:class:UserService"
+    ],
+    "falsePositiveIds": [
+      "rel:BaseService.java:references:com.example.base:java.util.List",
+      "rel:BaseService.java:references:com.example.base:java.util.Optional",
+      "rel:Repository.java:references:com.example.base:java.util.List",
+      "rel:Repository.java:references:com.example.base:java.util.concurrent.CompletableFuture",
+      "rel:UserService.java:overrides:UserService.format:User>.format",
+      "rel:UserService.java:overrides:UserService.save:User>.save",
+      "rel:UserService.java:references:com.example.service:com.example.base.BaseService",
+      "rel:UserService.java:references:com.example.service:com.example.base.Repository",
+      "rel:UserService.java:references:com.example.service:java.util.HashMap",
+      "rel:UserService.java:references:com.example.service:java.util.Map",
+      "rel:UserService.java:references:com.example.service:java.util.concurrent.CompletableFuture",
+      "rel:UserService.java:uses:this:id",
+      "rel:UserService.java:uses:this:name"
+    ],
+    "falseNegativeIds": [
+      "rel:BaseService.java:implements:BaseService:Repository",
+      "rel:BaseService.java:references:BaseService:java.util.List",
+      "rel:BaseService.java:references:BaseService:java.util.Optional",
+      "rel:Repository.java:references:Repository:java.util.List",
+      "rel:Repository.java:references:Repository:java.util.concurrent.CompletableFuture",
+      "rel:UserService.java:extends:UserService:BaseService",
+      "rel:UserService.java:implements:UserService:Repository",
+      "rel:UserService.java:overrides:UserService.format:BaseService.format",
+      "rel:UserService.java:overrides:UserService.save:Repository.save",
+      "rel:UserService.java:references:UserService:com.example.base.BaseService",
+      "rel:UserService.java:references:UserService:com.example.base.Repository",
+      "rel:UserService.java:references:UserService:java.util.HashMap",
+      "rel:UserService.java:references:UserService:java.util.Map",
+      "rel:UserService.java:references:UserService:java.util.concurrent.CompletableFuture",
+      "rel:UserService.java:uses:User:id",
+      "rel:UserService.java:uses:User:name"
+    ],
+    "unknownIds": [],
+    "unsupportedIds": [],
+    "minimizedFailure": {
+      "expected": [
+        {
+          "id": "rel:BaseService.java:implements:BaseService:Repository",
+          "layer": "relationships",
+          "kind": "relationship",
+          "file": "BaseService.java",
+          "sourceId": "BaseService",
+          "targetId": "Repository",
+          "attributes": {
+            "type": "implements"
+          },
+          "evidence": {
+            "authority": "manual_audit",
+            "reference": "public abstract class BaseService ... implements Repository<T>"
+          }
+        }
+      ],
+      "observed": [
+        {
+          "id": "rel:BaseService.java:references:com.example.base:java.util.List",
+          "layer": "relationships",
+          "kind": "relationship",
+          "file": "BaseService.java",
+          "sourceId": "com.example.base",
+          "targetId": "java.util.List",
+          "attributes": {
+            "type": "references"
+          },
+          "state": "resolved"
+        }
+      ]
+    }
+  },
+  "intentionalFailure": null,
+  "measurements": [
+    {
+      "name": "verify-analyzer:java",
+      "wallTimeMs": 143.576351,
+      "userCpuMs": 148.849,
+      "systemCpuMs": 72.536,
+      "peakRssBytes": 178749440,
+      "rssDeltaBytes": 136564736,
+      "databaseBytes": null,
+      "files": null,
+      "symbols": null,
+      "relationships": null,
+      "filesPerSecond": null,
+      "symbolsPerSecond": null,
+      "relationshipsPerSecond": null
+    }
+  ],
+  "note": "M12 per-analyzer differential for java. Precision/recall/fp/fn/unknown computed against independent ground truth. Identity contract: symbol facts keyed by file:line:kind:name; relationship facts keyed by file:type:sourceId:targetId with attributes={type} only (no line, no extra fields) so the comparison measures extraction correctness, not naming noise."
+}
