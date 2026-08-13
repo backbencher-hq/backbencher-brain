@@ -47,14 +47,27 @@ export class RealHclAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
 
         if (blockType) {
-          const blockName = `${blockType}${labels.length > 0 ? "_" + labels.join("_") : ""}`
+          // Name blocks by their semantic identity rather than blockType prefix:
+          //   variable "region"      -> region
+          //   output "vpc_id"        -> vpc_id
+          //   provider "aws"         -> aws
+          //   module "database"      -> database
+          //   resource "aws_vpc" "main" -> aws_vpc_main  (type_instance)
+          //   data "aws_ami" "ubuntu"   -> aws_ami_ubuntu
+          //   terraform / locals / nested blocks -> blockType itself
+          const blockName = labels.length > 0 ? labels.join("_") : blockType
 
           let kind = ASTEngine.SymbolKind.Class
-          if (blockType === "module" || blockType === "provider" || blockType === "terraform")
+          if (
+            blockType === "module" ||
+            blockType === "provider" ||
+            blockType === "terraform" ||
+            blockType === "locals"
+          )
             kind = ASTEngine.SymbolKind.Module
-          else if (blockType === "variable" || blockType === "output" || blockType === "locals")
-            kind = ASTEngine.SymbolKind.Variable
-          else if (blockType === "data") kind = ASTEngine.SymbolKind.Interface
+          else if (blockType === "variable" || blockType === "output") kind = ASTEngine.SymbolKind.Variable
+          // data sources behave like resources (they produce values), so data
+          // blocks get the same Class treatment as resource blocks.
 
           const blockSymbol: ASTEngine.UniversalSymbol = {
             name: blockName,

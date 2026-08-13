@@ -143,7 +143,7 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
     const structuralAnalysis = this.performStructuralAnalysis(ctx)
 
     const rootSymbol: ASTEngine.UniversalSymbol = {
-      name: "root",
+      name: this.documentName(ctx.currentFile),
       kind: ASTEngine.SymbolKind.Module,
       range: this.nodeToRange(ctx, rootNode),
       scope: "",
@@ -315,25 +315,12 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
       ctx.schemas[objectName] = true
     }
 
-    const symbol: ASTEngine.UniversalSymbol = {
-      name: objectName,
-      kind: ASTEngine.SymbolKind.Class,
-      range: this.nodeToRange(ctx, node),
-      scope: parentPath || "",
-      visibility: "public",
-      metadata: {
-        fullPath: currentPath,
-        properties,
-        isNested,
-        depth,
-        hasRequiredFields,
-        isSchemaObject,
-        propertyCount: properties.length,
-        jsonSpecific: true,
-      },
-    }
-
-    this.addSymbol(ctx, symbol)
+    // NOTE: The anonymous object_<N> class is deliberately NOT emitted as a
+    // symbol. Every object value is already represented by its containing key
+    // (a pair whose value is an object becomes a Class symbol), and the
+    // top-level object is represented by the "root" module symbol. Emitting an
+    // extra anonymous class here was pure duplication noise. We still track
+    // scoping metadata for depth/path bookkeeping.
     ctx.objectStack.push(objectName)
   }
 
@@ -391,32 +378,14 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private extractArray(ctx: JsonContext, node: Node, parentPath?: string) {
-    const arrayName = this.generateArrayName(ctx, parentPath)
-          const currentPath = parentPath || "root";
-
-    const itemCount = node.namedChildCount
-    const itemTypes = this.analyzeArrayItemTypes(ctx, node)
-    const isHomogeneous = this.isHomogeneousArray(ctx, itemTypes)
-    const hasSchemaValidation = this.hasArraySchemaValidation(ctx, parentPath)
-
-    const symbol: ASTEngine.UniversalSymbol = {
-      name: arrayName,
-      kind: ASTEngine.SymbolKind.Variable,
-      range: this.nodeToRange(ctx, node),
-      scope: parentPath || "",
-      visibility: "public",
-      metadata: {
-        fullPath: currentPath,
-        itemCount,
-        itemTypes,
-        isHomogeneous,
-        hasSchemaValidation,
-        isArray: true,
-        jsonSpecific: true,
-      },
-    }
-
-    this.addSymbol(ctx, symbol)
+    // NOTE: The anonymous "array" symbol is deliberately NOT emitted as a
+    // standalone symbol. A pair whose value is an array is already represented
+    // by its key (Variable/Property kind), and emitting an anonymous "array"
+    // symbol here was duplicate noise. The array still counts toward the
+    // document-level array metrics.
+    void parentPath
+    ctx.hasArrays = true
+    ctx.arrayCount++
   }
 
   private detectJsonFrameworks(ctx: JsonContext): string[] {
@@ -513,6 +482,15 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (hasSymbol("type") && hasSymbol("properties")) analysis.schemaValidationScore += 10
 
     return analysis
+  }
+
+  private documentName(filePath: string): string {
+    // Name the module after the file stem (appsettings.json -> "appsettings")
+    // so the root symbol is meaningful, mirroring the YAML module contract.
+    const parts = filePath.split("/")
+    const base = parts.length > 0 ? parts[parts.length - 1] : filePath
+    const cleaned = base.replace(/\.json$/i, "").trim()
+    return cleaned || "root"
   }
 
   private buildPath(ctx: JsonContext, key: string, parentPath?: string): string {

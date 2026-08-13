@@ -228,7 +228,11 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
         }
       } else if (node.type === "case_item") {
-        // case patterns
+        // case patterns: commands inside a case branch are CALLS, not
+        // declarations — emitting them as Function symbols pollutes the
+        // symbol table with builtins like shift/exit/echo. Record a Calls
+        // relationship instead; the enclosing function_definition provides
+        // the declaration symbol.
         for (let i = 0; i < node.namedChildCount; i++) {
           const child = node.namedChild(i)
           if (!child) continue
@@ -239,13 +243,12 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
               if (c && c.type === "command_name") { caseCmd = c.text; break }
             }
             if (caseCmd && !caseCmd.startsWith("-")) {
-              symbols.push({
-                name: caseCmd,
-                kind: ASTEngine.SymbolKind.Function,
-                range: this.nodeToRange(node),
-                scope: currentScope(),
-                visibility: "private",
-                metadata: { isCaseCommand: true, bashSpecific: true },
+              relationships.push({
+                source: currentScope() || "global",
+                target: caseCmd,
+                type: ASTEngine.RelationshipType.Calls,
+                confidence: 0.9,
+                metadata: { isCaseCommand: true, isFunctionCall: true, bashSpecific: true },
               })
             }
           }

@@ -39,14 +39,19 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
     let currentFunction = ""
 
     const pushSymbol = (name: string, kind: ASTEngine.SymbolKind, range: Node, meta: Record<string, unknown> = {}) => {
-      const key = `${currentFunction}:${name}`
+      // Top-level declarations (function/class/enum) are owned by the script,
+      // not by the previously visited function. Nested members (methods,
+      // properties, parameters) are owned by their enclosing class/function.
+      const isTopLevel = kind === ASTEngine.SymbolKind.Function || kind === ASTEngine.SymbolKind.Class || kind === ASTEngine.SymbolKind.Enum
+      const scope = isTopLevel ? "global" : currentFunction || "global"
+      const key = `${scope}:${name}`
       if (symbolMap.has(key) || name.startsWith("$global:") || name.startsWith("$script:")) return null
       const sym: ASTEngine.UniversalSymbol = {
         name: name.replace(/^\$/, ""),
         kind,
         range: this.nodeToRange(range),
-        scope: currentFunction || "global",
-        ownerName: (meta.ownerClass as string) || undefined,
+        scope,
+        ownerName: isTopLevel ? undefined : (meta.ownerClass as string) || currentFunction || undefined,
         visibility: "public",
         metadata: { powershellSpecific: true, ...meta },
       }
@@ -80,7 +85,7 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
             this.findChildByType(node, "identifier") ||
             this.findChildByType(node, "function_name")
           if (nameNode) {
-            currentFunction = nameNode.text
+            const fnName = nameNode.text
 
             const params: ASTEngine.Parameter[] = []
             const paramDecl = this.findChildByType(node, "function_parameter_declaration")
@@ -121,10 +126,13 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
                 patterns["Input Validation"] = true
             }
 
-            pushSymbol(nameNode.text, ASTEngine.SymbolKind.Function, node, {
+            // Push the function symbol BEFORE setting currentFunction so it
+            // doesn't own itself (scope must be "global", not its own name).
+            pushSymbol(fnName, ASTEngine.SymbolKind.Function, node, {
               parameters: params.length > 0 ? params : undefined,
               annotations: annotations.length > 0 ? annotations : undefined,
             })
+            currentFunction = fnName
           }
           break
         }
@@ -156,7 +164,6 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
 
           if (!className) break
-          currentFunction = className
 
           if (baseClass) {
             relationships.push({
@@ -178,7 +185,9 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
             })
           }
 
+          // Push class BEFORE setting currentFunction so it doesn't own itself
           pushSymbol(className, ASTEngine.SymbolKind.Class, node)
+          currentFunction = className
 
           for (let i = 0; i < node.namedChildCount; i++) {
             const child = node.namedChild(i)
@@ -248,7 +257,10 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
                 }
               }
             }
-            pushSymbol(nameNode.text, ASTEngine.SymbolKind.Method, node, {
+            // A class method whose name matches the enclosing class is a
+            // constructor in PowerShell (e.g. Deployment([string]$name)).
+            const isCtor = nameNode.text === currentFunction
+            pushSymbol(nameNode.text, isCtor ? ASTEngine.SymbolKind.Constructor : ASTEngine.SymbolKind.Method, node, {
               ownerClass: currentFunction,
               parameters: params.length > 0 ? params : undefined,
             })
@@ -277,8 +289,8 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
 
         case "script_block":
         case "script_block_expression": {
-          const name = `scriptblock_${node.startPosition.row + 1}_${node.startPosition.column + 1}`
-          pushSymbol(name, ASTEngine.SymbolKind.Function, node, { isScriptBlock: true })
+          // Script blocks are anonymous inline closures — emitting synthetic
+          // scriptblock_N_N symbols pollutes the symbol table. Skip.
           break
         }
 

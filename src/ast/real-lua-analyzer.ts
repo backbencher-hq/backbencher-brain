@@ -303,7 +303,15 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (let i = 0; i < varList.namedChildCount; i++) {
       const vNode = varList.namedChild(i)
       if (vNode && (vNode.type === "identifier" || vNode.type === "dot_index_expression" || vNode.type === "variable")) {
-        const name = vNode.type === "variable" ? (this.findChildByType(vNode, "identifier")?.text || vNode.text) : vNode.text
+        const rawText = vNode.text
+        const name = vNode.type === "variable" ? (this.findChildByType(vNode, "identifier")?.text || rawText) : rawText
+        // Field mutations (Order.__index = Order, order.status = "...") are NOT
+        // declarations — skip them so the mutated table/param is not re-emitted
+        // as a fresh variable symbol (fixes duplicate Order/order symbols).
+        if (rawText.indexOf(".") !== -1 || rawText.indexOf(":") !== -1) continue
+        // Reassigning an already-declared local (sum = sum + item.qty) is not a
+        // declaration either.
+        if (ctx.localVariables.has(name)) continue
         ctx.symbols.push({
           name,
           kind: ASTEngine.SymbolKind.Variable,

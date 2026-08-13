@@ -138,52 +138,52 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
             idMap[attributes["id"]] = currentId
           }
 
-          // 1. Symbol Registration (All elements extracted)
-          const symbol: ASTEngine.UniversalSymbol = {
-            name: currentId,
-            kind: ASTEngine.SymbolKind.Class,
-            range,
-            scope: "",
-            visibility: "public",
-            ownerName: parentId,
-            ownerKind: parentId ? ASTEngine.SymbolKind.Class : undefined,
-            metadata: {
-              tagName: currentTagName,
-              attributes,
-              htmlSpecific: true,
-              isSemantic,
-              isInteractive,
-              isForm,
-              isId: hasId,
-              isClass: hasClass,
-            },
+          // 1. Symbol Registration — only elements with an explicit id or
+          // class attribute become symbols (named by the id, else class).
+          // Auto-generated counter ids (html_0, head_1, ...) and anonymous
+          // structural tags are noise, not symbols.
+          if (!hasId && !hasClass) {
+            // still track the generated id for ownership of child symbols
+            // but do NOT emit a symbol for this anonymous element
+            currentId = parentId || undefined
+            // Keep the tag name for context of descendants
+            const _skip = currentTagName
+            // process children and continue (ownership unchanged)
           }
-          symbols.push(symbol)
 
-          // Extract individual classes as symbols to satisfy tests
-          const classStr = attributes["class"] || attributes["className"]
-          if (classStr) {
-            const classNamesParts = classStr.split(/\s+/)
-            const classNames: string[] = []
-            for (let i = 0; i < classNamesParts.length; i++) {
-                if (classNamesParts[i]) classNames.push(classNamesParts[i])
+          let currentSymbol: ASTEngine.UniversalSymbol | null = null
+          if (hasId || hasClass) {
+            const symName = (hasId
+              ? attributes["id"]
+              : attributes["class"] || attributes["className"] || currentId) || currentId || currentTagName
+            currentSymbol = {
+              name: symName,
+              kind: ASTEngine.SymbolKind.Class,
+              range,
+              scope: "",
+              visibility: "public",
+              ownerName: parentId,
+              ownerKind: parentId ? ASTEngine.SymbolKind.Class : undefined,
+              metadata: {
+                tagName: currentTagName,
+                attributes,
+                htmlSpecific: true,
+                isSemantic,
+                isInteractive,
+                isForm,
+                isId: hasId,
+                isClass: hasClass,
+              },
             }
-            for (let i = 0; i < classNames.length; i++) {
-              const cn = classNames[i]
-              symbols.push({
-                name: cn,
-                kind: ASTEngine.SymbolKind.Variable,
-                range,
-                scope: "",
-                visibility: "public",
-                ownerName: currentId,
-                metadata: { htmlSpecific: true, isClass: true },
-              })
-            }
+            symbols.push(currentSymbol)
           }
+
+          // Individual class tokens are NOT symbols — the class attribute
+          // names the element symbol itself (above). Emitting each token as
+          // a Variable is noise.
 
           // 2. Structural Relationship (Topology mapped to nearest significant ancestor)
-          if (parentId) {
+          if (parentId && currentId !== parentId) {
             relationships.push({
               source: parentId,
               target: currentId,
@@ -224,12 +224,12 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
                 type: ASTEngine.RelationshipType.Uses,
                 metadata: { htmlSpecific: true, resourceType: "script" },
               })
-            } else {
+            } else if (currentSymbol) {
               // Brain Injection Hook: Inline Script content mapped for JS parser pass
-              symbols[symbols.length - 1].metadata!.embeddedScriptContent = true
+              currentSymbol.metadata!.embeddedScriptContent = true
             }
           } else if (currentTagName === "style") {
-            symbols[symbols.length - 1].metadata!.embeddedStyleContent = true
+            if (currentSymbol) currentSymbol.metadata!.embeddedStyleContent = true
           } else if (currentTagName === "link" && attributes["href"]) {
             hasExternals = true
             const isStylesheet = attributes["rel"] === "stylesheet"

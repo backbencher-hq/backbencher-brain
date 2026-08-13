@@ -466,6 +466,13 @@ export async function parseFile(filePath: string, projectPath: string) {
         .filter((s: any) => {
           const name = s.name || ""
           if (s.qualifiedName?.startsWith("__global__")) return false
+          // The denylist targets JS/TS global-object noise (window, process,
+          // module, exports, ...). XML/Make/Markdown use names like "module"
+          // and "export" as legitimate declaration identifiers, so the filter
+          // must not apply there — their dedicated analyzers already exclude
+          // real noise (xmlns, CharData, comments, .PHONY, ...).
+          const lang = parsed.language || language
+          if (lang === "xml" || lang === "make" || lang === "markdown") return true
           const DENYLIST = new Set([
             "window", "document", "console",
             "process", "global", "__dirname", "__filename",

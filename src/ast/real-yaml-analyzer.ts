@@ -89,15 +89,10 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (docCount > 1 && !ctx.metadata.patterns!.includes("Multi-document YAML")) {
           ctx.metadata.patterns!.push("Multi-document YAML")
         }
-        const docName = `document_${docCount}`
+        const docName = this.documentName(filePath, docCount)
         newParentSymbol = this.createSymbol(docName, ASTEngine.SymbolKind.Module, curr, parentSymbol, ctx)
       } else if (curr.type === "block_mapping_pair" || curr.type === "flow_mapping_pair") {
         newParentSymbol = this.handleMappingPair(curr, ctx, parentSymbol)
-      } else if (curr.type === "block_sequence_item" || curr.type === "flow_sequence_item") {
-        const itemSymbol = this.createSymbol("item", ASTEngine.SymbolKind.Variable, curr, parentSymbol, ctx, {
-          isYamlSequenceItem: true,
-        })
-        newParentSymbol = itemSymbol
       } else if (curr.type === "anchor" || curr.type === "anchor_node" || curr.type === "anchor_name") {
         this.handleAnchor(curr, ctx, parentSymbol)
       } else if (curr.type === "alias" || curr.type === "alias_node" || curr.type === "alias_name") {
@@ -155,6 +150,15 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
       exports: ctx.exports,
       metadata: ctx.metadata,
     }
+  }
+
+  private documentName(filePath: string, docCount: number): string {
+    // Name the module after the file stem (config.yaml -> "config") so the
+    // root symbol is meaningful, mirroring JSON's filename-based root contract.
+    const parts = filePath.split("/")
+    const base = parts.length > 0 ? parts[parts.length - 1] : filePath
+    const cleaned = base.replace(/\.yaml\.template$/i, "").replace(/\.ya?ml$/i, "").trim()
+    return cleaned || `document_${docCount}`
   }
 
   private detectFrameworks(ctx: YamlContext) {

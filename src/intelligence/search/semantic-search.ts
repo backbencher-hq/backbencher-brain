@@ -203,7 +203,7 @@ async function keywordFallback(
   }))
   return {
     results,
-    provenance: makeProvenance({ evidenceClass: "semantic_candidate", engine: "semantic-search@intelligence", engineVersion: "m10.02", projectId, source: "content-search-fallback", limitations: ["Keyword fallback is not vector-ranked and similarity is not meaningful."], unknowns: [reason] }),
+    provenance: makeProvenance({ evidenceClass: "semantic_candidate", engine: "semantic-search@intelligence", engineVersion: "m10.02", projectId, source: "content-search-fallback", limitations: ["Keyword fallback is not vector-ranked and similarity is not meaningful; results are candidate discovery, not behavioral proof."], unknowns: [reason] }),
     metadata: {
       queryModel: "none",
       indexModel: "none",

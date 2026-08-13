@@ -699,10 +699,9 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
     patternsObj: Record<string, boolean>,
     parentSymbol: ASTEngine.UniversalSymbol | null,
   ) {
-    const name = "query_" + node.startPosition.row
-    this.createSymbol(name, ASTEngine.SymbolKind.Function, node, parentSymbol, symbols, {
-      isQuery: true,
-    })
+    // NOTE: An anonymous SELECT is a statement, not a declaration — it is NOT
+    // emitted as a query_<row> symbol (that was noise). It still contributes
+    // FROM-table relationships and query patterns below.
 
     const queue: Node[] = [node]
     while (queue.length > 0) {

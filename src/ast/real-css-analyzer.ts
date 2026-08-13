@@ -85,18 +85,8 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
         }
         case "declaration": {
-          // CSS custom property: --name: value
-          const propNode = node.childForFieldName("property") || this.findChild(node, (c: Node) => c.type === "property_name")
-          if (propNode && propNode.text.startsWith("--")) {
-            ctx.symbols.push({
-              name: propNode.text,
-              kind: ASTEngine.SymbolKind.Variable,
-              range: this.nodeToRange(node),
-              scope: currentSelector || "root",
-              visibility: "public",
-              metadata: { isCustomProperty: true, cssSpecific: true },
-            })
-          }
+          // CSS custom properties are handled inside processDeclaration —
+          // pushing them here too created duplicate --var symbols.
           this.processDeclaration(node, currentSelector, ctx)
           break
         }
@@ -313,6 +303,17 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (let i = 0; i < rawParts.length; i++) {
       rawSelectors.push(rawParts[i].trim())
     }
+
+    // Universal reset rules (*, *::before, *::after) are boilerplate that
+    // carries no semantic symbol — suppress them to keep output clean.
+    let isResetRule = rawSelectors.length > 0
+    for (let i = 0; i < rawSelectors.length; i++) {
+      if (!/^\*(?:::[a-z-]+)?$/.test(rawSelectors[i])) {
+        isResetRule = false
+        break
+      }
+    }
+    if (isResetRule) return null
 
     let parentSelectors: string[] = [""]
     if (parentSelector) {
@@ -565,14 +566,9 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     )
     if (queryNode) {
       const mediaName = `@media ${queryNode.text}`
-      ctx.symbols.push({
-        name: mediaName,
-        kind: ASTEngine.SymbolKind.Interface,
-        range: this.nodeToRange(node),
-        scope: "",
-        visibility: "public",
-        metadata: { isMedia: true },
-      })
+      // NOTE: a media query is a structural scope, not a symbol — it is NOT
+      // emitted as a standalone symbol. It still scopes contained selectors
+      // via the returned name (used for contains relationships).
       ctx.patterns["Responsive Design (Media Queries)"] = true
       return mediaName
     }

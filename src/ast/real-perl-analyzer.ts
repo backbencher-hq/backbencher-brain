@@ -98,11 +98,20 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
             const name = nameNode.text
             const block = this.findChildByType(node, "block")
             pushPackage(name)
-            pushSymbol(name, kind, node, {
+            const packageSym = pushSymbol(name, kind, node, {
               isPackage: node.type === "package_statement",
               isClass: node.type === "class_statement",
               isRole: node.type === "role_statement",
             })
+            // The package itself is top-level — it must not own itself.
+            // pushSymbol assigns scope = currentPackage (= its own name), so
+            // reset it to keep the package a root-level symbol.
+            packageSym.scope = ""
+            packageSym.ownerName = undefined
+            // pushSymbol keyed the package under "Orders::Orders" (currentPackage
+            // was already pushed). Re-key by the bare name so a sub literally
+            // named like the package is not wrongly deduped via symbolMap.
+            symbolMap.set(name, packageSym)
             if (node.type === "package_statement") {
               if (name.includes("::Schema::Result::") || name.includes("::Schema::ResultSet::"))
                 frameworks["DBIx::Class"] = true
@@ -135,10 +144,11 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
         }
 
+        // NOTE: anonymous subroutine/method expressions (closures used as
+        // values, e.g. default => sub { [] }) are deliberately NOT emitted as
+        // symbols — they are expressions, not named declarations.
         case "anonymous_subroutine_expression":
         case "anonymous_method_expression": {
-          const name = `anon_${node.type === "anonymous_method_expression" ? "method" : "sub"}_${node.startPosition.row + 1}_${node.startPosition.column + 1}`
-          pushSymbol(name, ASTEngine.SymbolKind.Function, node, { isAnonymous: true })
           break
         }
 
@@ -150,7 +160,10 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
           for (const v of allDeclVars) {
             const varnameNode = this.findChildByType(v, "varname")
             if (varnameNode) {
-              pushSymbol(varnameNode.text.replace(/^[\$@%#]/, ""), ASTEngine.SymbolKind.Variable, v, { perlDeclType: declType, sigil: v.type })
+              const bareName = varnameNode.text.replace(/^[\$@%#]/, "")
+              // All-caps declarations like our $VERSION are constants.
+              const kind = this.isAllCapsName(bareName) ? ASTEngine.SymbolKind.Constant : ASTEngine.SymbolKind.Variable
+              pushSymbol(bareName, kind, v, { perlDeclType: declType, sigil: v.type })
             }
           }
           break
@@ -371,6 +384,19 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
         analysisVersion: "2.0.0-perl-full",
       },
     }
+  }
+
+  private isAllCapsName(name: string): boolean {
+    if (!name || name.length < 2) return false
+    let hasLetter = false
+    for (let i = 0; i < name.length; i++) {
+      const c = name[i]
+      if ((c >= "a" && c <= "z") || (c >= "A" && c <= "Z")) {
+        hasLetter = true
+        if (c >= "a" && c <= "z") return false
+      }
+    }
+    return hasLetter
   }
 
   private findChildByType(node: Node, type: string): Node | null {

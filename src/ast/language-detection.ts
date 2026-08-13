@@ -6,7 +6,7 @@ export type DetectedLanguage =
   | "haskell" | "clean" | "clojure" | "swift" | "dart"
   | "csharp" | "vb" | "fsharp" | "r" | "sql"
   | "bash" | "powershell" | "hcl" | "objective-c"
-  | "markdown" | "toml" | "xml" | "protobuf"
+  | "markdown" | "toml" | "xml" | "protobuf" | "make"
 
 const EXTENSION_LANGUAGE: Readonly<Record<string, DetectedLanguage>> = {
   ts: "typescript", tsx: "tsx", js: "javascript", cjs: "javascript", mjs: "javascript", jsx: "javascript",
@@ -23,12 +23,17 @@ const EXTENSION_LANGUAGE: Readonly<Record<string, DetectedLanguage>> = {
   r: "r", sql: "sql", sh: "bash", bash: "bash", zsh: "bash", ps1: "powershell", psm1: "powershell", psd1: "powershell",
   tf: "hcl", tfvars: "hcl", tofu: "hcl", hcl: "hcl", m: "objective-c", mm: "objective-c",
   md: "markdown", markdown: "markdown", toml: "toml", xml: "xml", proto: "protobuf",
+  mk: "make", mak: "make", makefile: "make",
 }
 
 const BASENAME_LANGUAGE: Readonly<Record<string, DetectedLanguage>> = {
   "bashrc": "bash",
   ".bashrc": "bash",
   ".zshrc": "bash",
+  "makefile": "make",
+  "gnumakefile": "make",
+  ".makefile": "make",
+  ".gnumakefile": "make",
 }
 
 /**

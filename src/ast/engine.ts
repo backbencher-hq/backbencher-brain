@@ -205,6 +205,7 @@ export namespace ASTEngine {
     markdown: "tree-sitter-markdown",
     toml: "tree-sitter-toml",
     xml: "tree-sitter-xml",
+    make: "tree-sitter-make",
     // === LANGUAGES WITHOUT DEDICATED PARSER (fallback to GenericAnalyzer) ===
     nim: "__generic__",
     vb: "__generic__",
@@ -802,6 +803,10 @@ export namespace ASTEngine {
           languageWasmPath = resolveWasm("tree-sitter-xml/tree-sitter-xml.wasm")
           break
         }
+        case "make": {
+          languageWasmPath = resolveWasm("tree-sitter-make/tree-sitter-make.wasm")
+          break
+        }
 
         default:
           throw new Error(`Language ${language} parser not yet implemented. Add the WASM loading case.`)
@@ -1258,6 +1263,12 @@ export namespace ASTEngine {
         return new (await import("./real-fsharp-analyzer")).RealFsharpAnalyzer()
       case "powershell":
         return new (await import("./real-powershell-analyzer")).RealPowershellAnalyzer()
+      case "make":
+        return new (await import("./real-makefile-analyzer")).RealMakefileAnalyzer()
+      case "xml":
+        return new (await import("./real-xml-analyzer")).RealXmlAnalyzer()
+      case "markdown":
+        return new (await import("./real-markdown-analyzer")).RealMarkdownAnalyzer()
       default:
         return new GenericAnalyzer()
     }
