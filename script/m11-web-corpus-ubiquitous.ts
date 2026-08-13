@@ -16,6 +16,10 @@ const repos = {
   terraform: "$HOME/fixtures/repositories/terraform",
   graphql_js: "$HOME/fixtures/repositories/graphql-js",
   vue_core: "$HOME/fixtures/repositories/vue-core",
+  // SQL corpus: ProxiCall is the only real SQL corpus on disk (185 committed
+  // .sql files: production PostgreSQL schema + migrations). The M11 plan
+  // explicitly lists $HOME/ProxiCall as an allowed external corpus.
+  proxicall: "$HOME/ProxiCall",
 }
 
 const repositories = [
@@ -38,6 +42,9 @@ const repositories = [
   { id: "yaml-terraform", path: repos.terraform, extensions: [".yaml", ".yml"] },
   { id: "make-luarocks", path: repos.luarocks, makefiles: true },
   { id: "make-terraform", path: repos.terraform, makefiles: true },
+  // SQL: tracked-only discovery (git ls-files) so evidence pins exactly the
+  // committed file set at the recorded revision, excluding untracked work.
+  { id: "sql-proxicall", path: repos.proxicall, extensions: [".sql"], trackedOnly: true },
 ]
 
 const repoFilter = process.argv[2]
@@ -50,22 +57,30 @@ async function measure(repo: (typeof repositories)[0]) {
   const result: Record<string, any> = { id: repo.id, path: repo.path }
 
   const discoveryStart = performance.now()
-  let findArgs: string[]
-  if (repo.makefiles) {
+  let files: string[]
+  if (repo.trackedOnly) {
+    // git ls-files returns repo-relative paths; absolutize them so the rest of
+    // the harness (indexing + per-subset file_id derivation) is unchanged.
+    const ls = Bun.spawn(["git", "-C", repo.path, "ls-files", ...repo.extensions.flatMap((e: string) => ["*" + e])], { stdout: "pipe" })
+    files = (await new Response(ls.stdout).text()).trim().split("\n").filter(Boolean).map((f) => `${repo.path}/${f}`).sort()
+  } else if (repo.makefiles) {
     // Makefiles have no extension — discover by basename.
-    findArgs = ["find", repo.path, "-type", "f", "(",
+    const findArgs = ["find", repo.path, "-type", "f", "(",
       "-name", "Makefile", "-o", "-name", "GNUmakefile", "-o", "-name", "*.mk",
       ")", "!", "-path", "*/bin/*", "!", "-path", "*/obj/*", "!", "-path", "*/.git/*",
       "!", "-path", "*/node_modules/*", "!", "-path", "*/dist/*"]
+    const find = Bun.spawn(findArgs, { stdout: "pipe", stderr: "pipe" })
+    files = (await new Response(find.stdout).text()).trim().split("\n").filter(Boolean).sort()
+    await find.exited
   } else {
-    const flags = repo.extensions.flatMap(ext => ["-name", `*${ext}`, "-o"]).slice(0, -1)
-    findArgs = ["find", repo.path, "-type", "f", "(", ...flags, ")",
+    const flags = repo.extensions.flatMap((ext: string) => ["-name", `*${ext}`, "-o"]).slice(0, -1)
+    const findArgs = ["find", repo.path, "-type", "f", "(", ...flags, ")",
       "!", "-path", "*/bin/*", "!", "-path", "*/obj/*", "!", "-path", "*/.git/*",
       "!", "-path", "*/node_modules/*", "!", "-path", "*/dist/*"]
+    const find = Bun.spawn(findArgs, { stdout: "pipe", stderr: "pipe" })
+    files = (await new Response(find.stdout).text()).trim().split("\n").filter(Boolean).sort()
+    await find.exited
   }
-  const find = Bun.spawn(findArgs, { stdout: "pipe", stderr: "pipe" })
-  const files = (await new Response(find.stdout).text()).trim().split("\n").filter(Boolean).sort()
-  await find.exited
   result.discoveryMs = performance.now() - discoveryStart
   result.candidateFiles = files.length
 
@@ -87,6 +102,11 @@ async function measure(repo: (typeof repositories)[0]) {
   })
   const indexWallMs = performance.now() - indexStart
 
+  // NOTE: index.stats.symbolsExtracted / relationshipsFound are populated by
+  // indexProjectParallel from getIndexingStats(projectId) — i.e. PROJECT-WIDE
+  // totals, not per-subset. For shared-path entries they can be far larger
+  // than this run's subset (e.g. make-terraform stats ~30k vs after 11).
+  // result.after.* below are the authoritative PER-SUBSET figures.
   result.index = {
     wallMs: Math.round(indexWallMs),
     stats: {
