@@ -9,14 +9,22 @@
   "analyzers": [
     {
       "analyzer": "java",
-      "corpusTarget": "clojure",
+      "corpusTarget": "intellij_community",
       "status": "measured",
       "candidates": [
-        "flutter@68dc5cf4(dirty)",
-        "intellij_community@cfda6881(dirty)",
-        "clojure@2cea6925(clean)",
-        "scala3@18df09c0(clean)"
-      ]
+        "intellij_community@cfda6881(dirty)"
+      ],
+      "measured": {
+        "revision": "cfda6881ef1c86081f9ad4f993906b84004b65f2",
+        "sample": "400 tracked *.java files (deterministic first-400 sorted)",
+        "fixtures": 4,
+        "fixtureFacts": 115,
+        "precision": 1,
+        "recall": 1,
+        "corpusSymbols": 7812,
+        "corpusRelationships": 29972,
+        "measuredAt": "2026-08-13T02:41:49.999Z"
+      }
     },
     {
       "analyzer": "kotlin",
