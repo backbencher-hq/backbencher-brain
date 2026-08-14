@@ -922,6 +922,12 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
   ) {
     const fnNode = node.childForFieldName("function")
     if (fnNode && parent) {
+      // Curried application wrapper: `self.add(1)(2)` parses as an outer
+      // call_expression whose function is the inner call `self.add(1)`. The
+      // inner call is visited separately by the walker and emits the correct
+      // `calls → add` edge — emitting here too would produce the noise target
+      // `self.add(1)` AND a duplicate `add` edge.
+      if (fnNode.type === "call_expression") return
       let calledName = fnNode.text
       if (fnNode.type === "field_expression") {
         // obj.method — the leaf identifier is the method name
@@ -979,14 +985,27 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       } else if (child.type === "namespace_selectors") {
         for (let j = 0; j < child.childCount; j++) {
           const sel = child.child(j)
-          if (sel && sel.type === "identifier") {
+          if (!sel) continue
+          if (sel.type === "identifier") {
             selectors.push({ local: sel.text, imported: sel.text })
+          } else if (sel.type === "arrow_renamed_identifier") {
+            // `D => Renamed` — local alias is the RHS, imported name is the LHS
+            const imported = sel.namedChild(0)
+            const local = sel.namedChild(1)
+            if (imported && local) {
+              selectors.push({ local: local.text, imported: imported.text })
+            }
           }
         }
       } else if (child.type === "as_renamed_identifier") {
+        // `Z as W` — the module path keeps the ORIGINAL segment (`x.y.Z`),
+        // the alias is the local name. Losing `Z` truncated the module path
+        // and broke the references edge for renamed imports.
         const original = child.namedChild(0)
+        const alias = child.namedChild(1)
         if (original && original.type === "identifier") {
-          selectors.push({ local: original.text, imported: original.text })
+          parts.push(original.text)
+          selectors.push({ local: alias && alias.type === "identifier" ? alias.text : original.text, imported: original.text })
         }
       }
     }

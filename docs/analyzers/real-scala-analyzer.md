@@ -113,8 +113,14 @@ over the (tiny) hierarchy. No O(n²) or per-symbol O(n) scans.
   (authority: `manual_audit`)
 - Result: `validation/m12/results/scala-differential.json`
 - Precision / recall / FP / FN / unknown rates:
-  **1.000 / 1.000 / 0 / 0 / 0** — 111/111 facts across 6 fixtures (5
-  positive + 1 negative), zero parse errors.
+  **1.000 / 1.000 / 0 / 0 / 0** — 124/124 facts across 7 fixtures (6
+  positive + 1 negative), zero parse errors. Edge-case verification added
+  `EdgeCases.scala` covering curried calls (`self.add(1)(2)` → one `add`
+  edge, no `self.add(1)` noise), function-type parameters
+  (`def process(f: Int => Int)` — previously dropped by a cross-language
+  denylist bug in the pool-worker), and renamed imports
+  (`import x.y.Z as W` keeps the full `x.y.Z` module path; `D => Renamed`
+  selectors captured).
 
 ## Corpus validation
 
