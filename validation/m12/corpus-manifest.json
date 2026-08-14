@@ -93,11 +93,24 @@
     },
     {
       "analyzer": "groovy",
-      "corpusTarget": "intellij_community",
-      "status": "dirty_or_unpinned",
+      "corpusTarget": "grails_core",
+      "status": "measured",
       "candidates": [
-        "intellij_community@cfda6881(dirty)"
-      ]
+        "grails_core@a83f8748(clean)"
+      ],
+      "measured": {
+        "revision": "a83f87480e0c0138caa5a7191a053b1e59a64066",
+        "sample": "400 tracked *.groovy files (deterministic first-400 sorted)",
+        "fixtures": 5,
+        "fixtureFacts": 130,
+        "precision": 1,
+        "recall": 1,
+        "corpusSymbols": 2953,
+        "corpusRelationships": 14053,
+        "grammarErrorFiles": 0,
+        "note": "corpus upgraded from the dirty intellij_community to grails-core (clean, 6,564 committed .groovy files, pinned a83f8748); grammar patched in-repo (grammars/tree-sitter-groovy) to parse untyped params, safe-nav ?., spread *., elvis ?:, trait, Spock names, [:] maps, newline terminators, command chains — upstream amaanq v0.1.2 and murtaza v0.0.1 both fail these; 0/400 grammar errors and 0 missing tokens; analyzer rewritten pure-AST (no synthetic getters/setters, no phantom it), differential 130/130 (1.000/1.000), fully regex-free",
+        "measuredAt": "2026-08-14T04:12:26.115Z"
+      }
     },
     {
       "analyzer": "csharp",
