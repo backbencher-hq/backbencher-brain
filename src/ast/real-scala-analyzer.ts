@@ -1,11 +1,13 @@
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
+import { findDeclaringParent } from "./override-context"
 
 export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
   public analyze(
     rootNode: Node,
     content: string,
     filePath: string,
+    context?: ASTEngine.AnalyzeContext,
   ): Omit<ASTEngine.ParseResult, "language" | "metadata"> & { metadata?: Partial<ASTEngine.FileMetadata> } {
     const symbols: ASTEngine.UniversalSymbol[] = []
     const imports: ASTEngine.ImportInfo[] = []
@@ -23,7 +25,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       codeQuality: "excellent",
       hasTypeInference: false,
       hasFrameworkIntelligence: true,
-      analysisVersion: "scala-1.0",
+      analysisVersion: "scala-2.0",
       detectedFrameworks: [],
       patterns: [],
     }
@@ -60,6 +62,23 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     metadata.linesOfCode = loc
 
+    // ─────────────────────────────────────────────────────────────────────
+    // Type-index for O(1) owner lookups during the relationship post-pass.
+    // Container kinds: class / trait(interface) / object(module) / enum /
+    // given — exactly the symbol kinds that can own members.
+    // ─────────────────────────────────────────────────────────────────────
+    const typeIndex = new Map<string, ASTEngine.UniversalSymbol>()
+    const indexType = (s: ASTEngine.UniversalSymbol) => {
+      if (!typeIndex.has(s.name)) typeIndex.set(s.name, s)
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // Single-pass traversal. `parent` is the enclosing symbol (class/trait/
+    // object/enum/given); ownership comes from it, so top-level declarations
+    // (no parent) never produce self-contain edges. handleCall runs exactly
+    // once per call_expression (the previous double-invocation produced
+    // duplicate calls/instantiates edges).
+    // ─────────────────────────────────────────────────────────────────────
     const stack: { node: Node; parent: ASTEngine.UniversalSymbol | null }[] = [{ node: rootNode, parent: null }]
 
     while (stack.length > 0) {
@@ -69,16 +88,35 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       const { node, parent } = popped
       let currentParent = parent
 
-      if (node.type === "class_definition") {
+      if (node.type === "package_clause") {
+        // package com.example.service — namespace marker only (no symbol,
+        // matching the Java/Kotlin contract where packages are not symbols).
+        const pkgChildren: string[] = []
+        const walkPkg = (n: Node) => {
+          if (n.type === "identifier") pkgChildren.push(n.text)
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const ch = n.namedChild(i)
+            if (ch) walkPkg(ch)
+          }
+        }
+        walkPkg(node)
+        if (pkgChildren.length > 0) {
+          metadata.packageName = pkgChildren.join(".")
+          patternsObj["Packages"] = true
+        }
+      } else if (node.type === "class_definition") {
         const cls = this.handleClass(node, symbols, relationships, exports, patternsObj, parent)
-        if (cls) currentParent = cls
+        if (cls) { currentParent = cls; indexType(cls) }
       } else if (node.type === "object_definition") {
-        const obj = this.handleObject(node, symbols, relationships, exports, parent)
-        if (obj) currentParent = obj
+        const obj = this.handleObject(node, symbols, relationships, exports, patternsObj, parent)
+        if (obj) { currentParent = obj; indexType(obj) }
       } else if (node.type === "trait_definition") {
         const tr = this.handleTrait(node, symbols, relationships, exports, patternsObj, parent)
-        if (tr) currentParent = tr
-      } else if (node.type === "function_definition") {
+        if (tr) { currentParent = tr; indexType(tr) }
+      } else if (node.type === "function_definition" || node.type === "function_declaration") {
+        // function_declaration = abstract method (trait signatures, e.g.
+        // `def save(item: T): T`). The old analyzer only handled
+        // function_definition, silently dropping every abstract trait method.
         const fn = this.handleFunction(node, symbols, relationships, exports, patternsObj, parent)
         if (fn) currentParent = fn
       } else if (node.type === "val_definition" || node.type === "var_definition") {
@@ -87,35 +125,27 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         this.handleTypeAlias(node, symbols, parent)
       } else if (node.type === "import_declaration") {
         this.handleImport(node, imports)
+      } else if (node.type === "enum_definition") {
+        const en = this.handleEnum(node, symbols, relationships, exports, patternsObj, parent)
+        if (en) { currentParent = en; indexType(en) }
+      } else if (node.type === "given_definition") {
+        const g = this.handleGiven(node, symbols, relationships, patternsObj, parent)
+        if (g) { currentParent = g; indexType(g) }
+      } else if (node.type === "extension_definition") {
+        // Scala 3 extension: `extension (s: String) { def shout(...) }`.
+        // The extension wrapper itself is NOT a symbol — its inner
+        // function_definitions are the extension methods and are emitted by
+        // the generic function handler below (parent unchanged, so they stay
+        // top-level functions unless the extension is nested in a type).
+        patternsObj["Extension Methods (Scala 3)"] = true
+      } else if (node.type === "export_declaration") {
+        patternsObj["Exports (Scala 3)"] = true
       } else if (node.type === "match_expression") {
         patternsObj["Case Classes & Pattern Matching"] = true
       } else if (node.type === "for_expression") {
         patternsObj["For Comprehensions"] = true
       } else if (node.type === "type_identifier" || node.type === "type") {
         hasTypes = true
-      } else if (node.type === "enum_definition") {
-        const enumName = this.extractIdentifier(node, "name")
-        if (enumName) {
-          const sym = this.createSymbol(enumName, ASTEngine.SymbolKind.Enum, node, parent, { type: "enum", scala3: true })
-          symbols.push(sym)
-          currentParent = sym
-          patternsObj["Scala 3 Enums"] = true
-        }
-      } else if (node.type === "extension_definition") {
-        const extName = node.namedChild(1)?.text || `extension_${node.startPosition.row + 1}`
-        const sym = this.createSymbol(extName, ASTEngine.SymbolKind.Function, node, parent, { isExtension: true, scala3: true })
-        symbols.push(sym)
-        currentParent = sym
-      } else if (node.type === "export_declaration") {
-        for (let i = 0; i < node.namedChildCount; i++) {
-          const c = node.namedChild(i)
-          if (c && (c.type === "identifier" || c.type === "namespace_wildcard" || c.type === "namespace_selectors")) {
-            exports.push({ name: c.text, kind: ASTEngine.SymbolKind.Class })
-          }
-        }
-      } else if (node.type === "given_definition") {
-        patternsObj["Given/Using (Scala 3)"] = true
-        patternsObj["Contextual Abstractions"] = true
       } else if (node.type === "annotation") {
         const annText = node.text
         if (annText.includes("main") || annText.includes("Test")) patternsObj["Annotations"] = true
@@ -125,25 +155,17 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       } else if (node.type === "catch_clause") {
         patternsObj["Error Handling"] = true
       } else if (node.type === "lambda_expression" || node.type === "anonymous_function") {
-        const lambdaName = `lambda_${node.startPosition.row + 1}_${node.startPosition.column + 1}`
-        const sym = this.createSymbol(lambdaName, ASTEngine.SymbolKind.Function, node, parent, { isLambda: true })
-        symbols.push(sym)
+        patternsObj["Lambdas"] = true
       } else if (node.type === "self_type") {
         patternsObj["Self Types"] = true
       } else if (node.type === "context_bound") {
         patternsObj["Type Classes (Context Bounds)"] = true
       } else if (node.type === "infix_expression" || node.type === "infix_type") {
         patternsObj["Infix Notation"] = true
-      } else if (node.type === "string_interpolation" || node.type === "interpolation") {
+      } else if (node.type === "interpolated_string_expression" || node.type === "interpolated_string" || node.type === "string_interpolation") {
         patternsObj["String Interpolation"] = true
       } else if (node.type === "derives_clause") {
         patternsObj["Derives (Typeclass Derivation)"] = true
-      } else if (node.type === "package") {
-        const pkgName = this.extractIdentifier(node, "name") || node.namedChild(0)?.text
-        if (pkgName) {
-          const sym = this.createSymbol(pkgName, ASTEngine.SymbolKind.Namespace, node, null, { isPackage: true })
-          symbols.push(sym)
-        }
       } else if (node.type === "package_object") {
         patternsObj["Package Objects"] = true
       } else if (node.type === "throw_expression" || node.type === "throw") {
@@ -160,37 +182,29 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         patternsObj["Opaque Types (Scala 3)"] = true
       } else if (node.type === "inline_modifier" || node.type === "transparent_modifier") {
         patternsObj["Inline Methods (Scala 3)"] = true
-      }
-      if (node.type === "call_expression") {
-        this.handleCall(node, relationships, patternsObj, parent)
+      } else if (node.type === "using_clause" || node.type === "using") {
+        patternsObj["Using Clauses (Scala 3)"] = true
+      } else if (node.type === "implicit") {
+        patternsObj["Implicit Parameters & Conversions"] = true
+      } else if (node.type === "lazy") {
+        patternsObj["Lazy Initialization"] = true
+      } else if (node.type === "override") {
+        patternsObj["Override/Polymorphism"] = true
       }
 
-      if (node.type === "modifiers" || node.type === "parameters") {
-        for (let i = 0; i < node.namedChildCount; i++) {
-          const child = node.namedChild(i)
-          if (child && child.type === "implicit") {
-            patternsObj["Implicit Parameters & Conversions"] = true
-            patternsObj["Type Classes"] = true
-          }
-          if (child && child.type === "lazy") {
-            patternsObj["Lazy Initialization"] = true
-          }
-          if (child && child.type === "override") {
-            patternsObj["Override/Polymorphism"] = true
-          }
-          if (child && child.type === "using") {
-            patternsObj["Using Clauses (Scala 3)"] = true
-          }
-        }
+      if (node.type === "call_expression") {
+        this.handleCall(node, relationships, patternsObj, parent)
+      } else if (node.type === "instance_expression") {
+        // `new Type(...)` — constructor invocation. In v0.26.2 the grammar
+        // models this as instance_expression (type_identifier + arguments),
+        // NOT a call_expression wrapping it, so the old analyzer missed every
+        // constructor. Emit instantiates from the enclosing symbol.
+        this.handleInstantiation(node, relationships, parent)
       }
 
       if (node.type === "if_expression" || node.type === "while_expression" || node.type === "do_while_expression" || node.type === "match_expression" || node.type === "for_expression" || node.type === "try_expression") {
         if (!metadata.cyclomaticComplexity) metadata.cyclomaticComplexity = 1
         metadata.cyclomaticComplexity++
-      }
-
-      if (node.type === "call_expression") {
-        this.handleCall(node, relationships, patternsObj, parent)
       }
 
       for (let i = node.namedChildCount - 1; i >= 0; i--) {
@@ -210,14 +224,62 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (const fw in frameworksObj) metadata.detectedFrameworks!.push(fw)
     for (const pat in patternsObj) metadata.patterns!.push(pat)
 
-    // Add Contains + DependsOn
+    // ─────────────────────────────────────────────────────────────────────
+    // Relationship post-pass (matches the Kotlin/Java contract):
+    //   contains    owner → member
+    //   overrides   real methods with 'override' modifier → declaring parent
+    //   references  imports → root
+    // ─────────────────────────────────────────────────────────────────────
     for (const s of symbols) {
-      const _owner = s.ownerName || s.scope; if (_owner) relationships.push({ source: _owner, target: s.name, type: ASTEngine.RelationshipType.Contains, confidence: 1.0, metadata: {} })
+      const _owner = s.ownerName
+      if (_owner) {
+        relationships.push({
+          source: _owner,
+          target: s.name,
+          type: ASTEngine.RelationshipType.Contains,
+          confidence: 1.0,
+          metadata: { isContained: true },
+        })
+      }
+      if (
+        s.kind === ASTEngine.SymbolKind.Method &&
+        s.ownerName &&
+        !s.metadata?.isPhantom &&
+        s.metadata?.isOverride
+      ) {
+        const ownerSym = typeIndex.get(s.ownerName)
+        const parents: string[] = ownerSym?.metadata?.superTypes ?? []
+        let overrideParent = parents.length > 0 ? parents[0] : ""
+        if (context?.overrideCompanion && parents.length > 0) {
+          const declaring = findDeclaringParent(
+            s.name,
+            parents,
+            context.overrideCompanion,
+            (t) => typeIndex.get(t)?.metadata?.superTypes ?? [],
+          )
+          if (declaring) overrideParent = declaring
+        }
+        if (overrideParent) {
+          relationships.push({
+            source: `${s.ownerName}.${s.name}`,
+            target: `${overrideParent}.${s.name}`,
+            type: ASTEngine.RelationshipType.Overrides,
+            confidence: 0.9,
+            metadata: { isOverride: true, overrideParent },
+          })
+        }
+      }
     }
     for (const imp of imports) {
-      relationships.push({ source: "root", target: imp.module || "", type: ASTEngine.RelationshipType.References, confidence: 0.9, metadata: {} })
+      relationships.push({
+        source: "root",
+        target: imp.module || "",
+        type: ASTEngine.RelationshipType.References,
+        confidence: 0.9,
+        metadata: { isImportDep: true },
+      })
     }
-    
+
     return {
       symbols,
       relationships,
@@ -289,6 +351,24 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     return null
   }
 
+  /** Collect modifiers (sealed/abstract/final/case/implicit/override/etc). */
+  private collectModifiers(node: Node): Set<string> {
+    const mods = new Set<string>()
+    for (let i = 0; i < node.childCount; i++) {
+      const c = node.child(i)
+      if (!c) continue
+      if (c.type === "modifiers") {
+        for (let j = 0; j < c.childCount; j++) {
+          const m = c.child(j)
+          if (m) mods.add(m.type)
+        }
+      } else {
+        mods.add(c.type) // case / sealed / etc. as direct unnamed children
+      }
+    }
+    return mods
+  }
+
   private getVisibility(node: Node): string {
     let modifiersNode: Node | null = null
     for (let i = 0; i < node.childCount; i++) {
@@ -313,24 +393,6 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private isPublic(node: Node): boolean {
     return this.getVisibility(node) === "public"
-  }
-
-  private isSealed(node: Node): boolean {
-    let modifiersNode: Node | null = null
-    for (let i = 0; i < node.childCount; i++) {
-      const c = node.child(i)
-      if (c && c.type === "modifiers") {
-        modifiersNode = c
-        break
-      }
-    }
-    if (modifiersNode) {
-      for (let i = 0; i < modifiersNode.childCount; i++) {
-        const mod = modifiersNode.child(i)
-        if (mod && mod.type === "sealed") return true
-      }
-    }
-    return false
   }
 
   private isCaseClass(node: Node): boolean {
@@ -369,6 +431,34 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
+  /** Extract supertypes from an extends_clause (direct type children in v0.26.2). */
+  private extractSupertypes(extendsClause: Node): string[] {
+    const out: string[] = []
+    for (let i = 0; i < extendsClause.childCount; i++) {
+      const c = extendsClause.child(i)
+      if (!c || !c.isNamed) continue
+      if (c.type === "type_identifier" || c.type === "identifier") {
+        out.push(c.text)
+      } else if (c.type === "generic_type" || c.type === "applied_type") {
+        for (let j = 0; j < c.childCount; j++) {
+          const ch = c.child(j)
+          if (ch && ch.type === "type_identifier") {
+            out.push(ch.text)
+            break
+          }
+        }
+      } else if (c.type === "compound_type") {
+        for (let j = 0; j < c.namedChildCount; j++) {
+          const ch = c.namedChild(j)
+          if (ch && (ch.type === "type_identifier" || ch.type === "generic_type")) {
+            out.push(ch.type === "type_identifier" ? ch.text : this.extractSupertypes(ch)[0] || ch.text)
+          }
+        }
+      }
+    }
+    return out
+  }
+
   private handleClass(
     node: Node,
     symbols: ASTEngine.UniversalSymbol[],
@@ -380,48 +470,48 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     const name = this.extractIdentifier(node, "name")
     if (!name) return null
 
+    const mods = this.collectModifiers(node)
     const isCase = this.isCaseClass(node)
-    const isSealed = this.isSealed(node)
-    let isAbstract = false
-    let isFinal = false
-    let isImplicit = false
-    for (let i = 0; i < node.namedChildCount; i++) {
-      const c = node.namedChild(i)
-      if (c && c.type === "modifiers") {
-        for (let j = 0; j < c.namedChildCount; j++) {
-          const m = c.namedChild(j)
-          if (m && m.type === "abstract") isAbstract = true
-          if (m && m.type === "final") isFinal = true
-          if (m && m.type === "implicit") isImplicit = true
-        }
-      }
-    }
+    const isSealed = mods.has("sealed")
+    const isAbstract = mods.has("abstract")
+    const isFinal = mods.has("final")
+    const isImplicit = mods.has("implicit")
 
-    let classParamsNode: Node | null = null
-    for (let i = 0; i < node.childCount; i++) {
-      const c = node.child(i)
-      if (c && c.type === "class_parameters") {
-        classParamsNode = c
-        break
-      }
-    }
-
+    // Constructor parameters: emit a constructor symbol + property symbols
+    // for val/var params (case class params are implicitly val).
+    const classParamsNode = this.findChild(node, "class_parameters")
     const constructorParams: string[] = []
     if (classParamsNode) {
-      for (let i = 0; i < classParamsNode.childCount; i++) {
-        const c = classParamsNode.child(i)
-        if (c && c.type === "class_parameter") {
-          let pName = c.childForFieldName("name")?.text
-          if (!pName) {
-            for (let j = 0; j < c.childCount; j++) {
-              const ch = c.child(j)
-              if (ch && ch.type === "identifier") {
-                pName = ch.text
-                break
-              }
-            }
-          }
-          if (pName) constructorParams.push(pName)
+      const ctor = this.createSymbol("constructor", ASTEngine.SymbolKind.Constructor, classParamsNode, null, {
+        type: "constructor",
+        ownerName: name,
+        ownerKind: ASTEngine.SymbolKind.Class,
+        scalaSpecific: true,
+      })
+      // ownerName must point at the class so contains resolves
+      ctor.ownerName = name
+      symbols.push(ctor)
+
+      for (let i = 0; i < classParamsNode.namedChildCount; i++) {
+        const cp = classParamsNode.namedChild(i)
+        if (cp?.type !== "class_parameter") continue
+        const pName = cp.childForFieldName("name")?.text
+        if (!pName) continue
+        constructorParams.push(pName)
+        const pMods = this.collectModifiers(cp)
+        const isVal = pMods.has("val")
+        const isVar = pMods.has("var")
+        if (isVal || isVar || isCase) {
+          // val/var constructor params and case class params are real fields
+          const prop = this.createSymbol(pName, ASTEngine.SymbolKind.Property, cp, null, {
+            type: isVar ? "var" : "val",
+            isConstructorProperty: true,
+            ownerName: name,
+            ownerKind: ASTEngine.SymbolKind.Class,
+            isCaseClassParam: isCase,
+          })
+          prop.ownerName = name
+          symbols.push(prop)
         }
       }
     }
@@ -450,11 +540,17 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       })
     }
 
-    for (let i = 0; i < node.childCount; i++) {
-      const c = node.child(i)
-      if (c && c.type === "extends_clause") {
-        this.traceInheritance(c, symbol, relationships, ASTEngine.RelationshipType.Extends)
-        break
+    const extendsClause = this.findChild(node, "extends_clause")
+    if (extendsClause) {
+      const supertypes = this.extractSupertypes(extendsClause)
+      symbol.metadata!.superTypes = supertypes
+      for (let i = 0; i < supertypes.length; i++) {
+        relationships.push({
+          source: symbol.name,
+          target: supertypes[i],
+          type: i === 0 ? ASTEngine.RelationshipType.Extends : ASTEngine.RelationshipType.Implements,
+          metadata: { isTrait: i > 0 },
+        })
       }
     }
 
@@ -466,13 +562,15 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     symbols: ASTEngine.UniversalSymbol[],
     relationships: ASTEngine.UniversalRelationship[],
     exports: ASTEngine.ExportInfo[],
+    patternsObj: Record<string, boolean>,
     parent: ASTEngine.UniversalSymbol | null,
   ): ASTEngine.UniversalSymbol | null {
     const name = this.extractIdentifier(node, "name")
     if (!name) return null
 
-    const isCase = this.isCaseClass(node) // case object
-    const isSealed = this.isSealed(node)
+    const mods = this.collectModifiers(node)
+    const isCase = this.isCaseClass(node)
+    const isSealed = mods.has("sealed")
 
     const symbol = this.createSymbol(name, ASTEngine.SymbolKind.Module, node, parent, {
       type: "object",
@@ -495,11 +593,17 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       })
     }
 
-    for (let i = 0; i < node.childCount; i++) {
-      const c = node.child(i)
-      if (c && c.type === "extends_clause") {
-        this.traceInheritance(c, symbol, relationships, ASTEngine.RelationshipType.Extends)
-        break
+    const extendsClause = this.findChild(node, "extends_clause")
+    if (extendsClause) {
+      const supertypes = this.extractSupertypes(extendsClause)
+      symbol.metadata!.superTypes = supertypes
+      for (let i = 0; i < supertypes.length; i++) {
+        relationships.push({
+          source: symbol.name,
+          target: supertypes[i],
+          type: i === 0 ? ASTEngine.RelationshipType.Extends : ASTEngine.RelationshipType.Implements,
+          metadata: { isTrait: i > 0 },
+        })
       }
     }
 
@@ -517,7 +621,8 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     const name = this.extractIdentifier(node, "name")
     if (!name) return null
 
-    const isSealed = this.isSealed(node)
+    const mods = this.collectModifiers(node)
+    const isSealed = mods.has("sealed")
     if (isSealed) patternsObj["Sealed Types"] = true
 
     const symbol = this.createSymbol(name, ASTEngine.SymbolKind.Interface, node, parent, {
@@ -536,52 +641,69 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       })
     }
 
-    for (let i = 0; i < node.childCount; i++) {
-      const c = node.child(i)
-      if (c && c.type === "extends_clause") {
-        this.traceInheritance(c, symbol, relationships, ASTEngine.RelationshipType.Extends)
-        break
+    const extendsClause = this.findChild(node, "extends_clause")
+    if (extendsClause) {
+      const supertypes = this.extractSupertypes(extendsClause)
+      symbol.metadata!.superTypes = supertypes
+      for (let i = 0; i < supertypes.length; i++) {
+        relationships.push({
+          source: symbol.name,
+          target: supertypes[i],
+          type: i === 0 ? ASTEngine.RelationshipType.Extends : ASTEngine.RelationshipType.Implements,
+          metadata: { isTrait: i > 0 },
+        })
       }
     }
 
     return symbol
   }
 
-  private traceInheritance(
-    extendsClause: Node,
-    sourceSymbol: ASTEngine.UniversalSymbol,
+  private handleEnum(
+    node: Node,
+    symbols: ASTEngine.UniversalSymbol[],
     relationships: ASTEngine.UniversalRelationship[],
-    relType: ASTEngine.RelationshipType,
-  ): void {
-    let isFirst = true
-    for (let i = 0; i < extendsClause.childCount; i++) {
-      const c = extendsClause.child(i)
-      if (!c) continue
-      let typeName: string | null = null
-      if (c.type === "type_identifier" || c.type === "identifier") {
-        typeName = c.text
-      } else if (c.type === "generic_type") {
-        for (let j = 0; j < c.childCount; j++) {
-          const ch = c.child(j)
-          if (ch && ch.type === "type_identifier") {
-            typeName = ch.text
-            break
+    exports: ASTEngine.ExportInfo[],
+    patternsObj: Record<string, boolean>,
+    parent: ASTEngine.UniversalSymbol | null,
+  ): ASTEngine.UniversalSymbol | null {
+    const name = this.extractIdentifier(node, "name")
+    if (!name) return null
+
+    const symbol = this.createSymbol(name, ASTEngine.SymbolKind.Enum, node, parent, { type: "enum", scala3: true })
+    symbols.push(symbol)
+    patternsObj["Scala 3 Enums"] = true
+
+    if (this.isPublic(node)) {
+      exports.push({ name, kind: ASTEngine.SymbolKind.Enum, range: symbol.range })
+    }
+
+    // Enum cases: simple_enum_case (`case Red`) and full_enum_case
+    // (`case Red extends Color(0xff0000)` / `case B(val x: Int) extends E`).
+    const walkEnumBody = (n: Node) => {
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (!c) continue
+        if (c.type === "simple_enum_case" || c.type === "full_enum_case") {
+          const caseName = this.findChildIdentifier(c)
+          if (caseName) {
+            const member = this.createSymbol(caseName, ASTEngine.SymbolKind.EnumMember, c, symbol, {
+              type: "enum_case",
+              ownerName: name,
+              ownerKind: ASTEngine.SymbolKind.Enum,
+              scala3: true,
+            })
+            member.ownerName = name
+            symbols.push(member)
           }
+        } else {
+          walkEnumBody(c)
         }
       }
-
-      if (typeName) {
-        relationships.push({
-          source: sourceSymbol.name,
-          target: typeName,
-          type: isFirst ? ASTEngine.RelationshipType.Extends : ASTEngine.RelationshipType.Implements,
-          metadata: {
-            isTrait: !isFirst,
-          },
-        })
-        isFirst = false
-      }
     }
+    const enumBody = this.findChild(node, "enum_body")
+    if (enumBody) walkEnumBody(enumBody)
+
+    return symbol
   }
 
   private handleTypeAlias(node: Node, symbols: ASTEngine.UniversalSymbol[], parent: ASTEngine.UniversalSymbol | null) {
@@ -590,6 +712,29 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     const symbol = this.createSymbol(name, ASTEngine.SymbolKind.Type, node, parent, { isTypeAlias: true })
     symbols.push(symbol)
+  }
+
+  private handleGiven(
+    node: Node,
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    patternsObj: Record<string, boolean>,
+    parent: ASTEngine.UniversalSymbol | null,
+  ): ASTEngine.UniversalSymbol | null {
+    patternsObj["Given/Using (Scala 3)"] = true
+    patternsObj["Contextual Abstractions"] = true
+
+    const explicitName = this.findChildIdentifier(node)
+    const name = explicitName || `given_${node.startPosition.row + 1}`
+
+    const symbol = this.createSymbol(name, ASTEngine.SymbolKind.Constant, node, parent, {
+      type: "given",
+      isGiven: true,
+      scala3: true,
+      anonymous: !explicitName,
+    })
+    symbols.push(symbol)
+    return symbol
   }
 
   private handleFunction(
@@ -612,16 +757,20 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         parent.kind === ASTEngine.SymbolKind.Interface ||
         parent.kind === ASTEngine.SymbolKind.Module)
 
+    const mods = this.collectModifiers(node)
+    const isAbstract = node.type === "function_declaration" || mods.has("abstract")
+    const isOverride = mods.has("override")
+    const isImplicit = mods.has("implicit")
+    const isInline = mods.has("inline_modifier") || mods.has("transparent_modifier")
+
     const parameters: ASTEngine.Parameter[] = []
     let returnType: string | undefined = undefined
 
-    let numParamsLists = 0
     for (let i = 0; i < node.childCount; i++) {
       const child = node.child(i)
       if (!child) continue
 
       if (child.type === "parameters") {
-        numParamsLists++
         let hasImplicit = false
         for (let j = 0; j < child.namedChildCount; j++) {
           const paramChild = child.namedChild(j)
@@ -638,7 +787,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
             parameters.push({
               name: paramName,
               type: paramType,
-              isImplicit: hasImplicit
+              isImplicit: hasImplicit,
             })
           }
         }
@@ -658,7 +807,12 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       {
         type: "function",
         parameters: parameters.length > 0 ? parameters : undefined,
-        returnType
+        returnType,
+        isAbstract,
+        isOverride,
+        isImplicit,
+        isInline,
+        isExtension: parent?.type === "extension_definition",
       },
     )
 
@@ -670,36 +824,6 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         kind: ASTEngine.SymbolKind.Function,
         range: symbol.range,
       })
-    }
-
-    let numParams = numParamsLists
-    for (let i = 0; i < node.childCount; i++) {
-      const child = node.child(i)
-      if (!child) continue
-
-      if (child.isNamed && (child.type === "parameters" || child.type === "type" || child.type === "type_identifier")) {
-        const nestedStack = [child]
-        while (nestedStack.length > 0) {
-          const p = nestedStack.pop()
-          if (!p) continue
-          if (p.type === "type_identifier" || p.type === "identifier") {
-            relationships.push({
-              source: symbol.name,
-              target: p.text,
-              type: ASTEngine.RelationshipType.Uses,
-              metadata: {},
-            })
-          }
-          for (let j = p.childCount - 1; j >= 0; j--) {
-            const c = p.child(j)
-            if (c && c.isNamed) nestedStack.push(c)
-          }
-        }
-      }
-    }
-
-    if (numParams > 1) {
-      patternsObj["Currying"] = true
     }
 
     if (name === "apply") patternsObj["Factory Pattern (apply)"] = true
@@ -714,6 +838,32 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     exports: ASTEngine.ExportInfo[],
     parent: ASTEngine.UniversalSymbol | null,
   ): void {
+    // Skip LOCAL variables inside function bodies (val/var declared in a
+    // method/extension/lambda body are not project-level symbols — matches
+    // the Kotlin contract where `val store` inside `createService()` is not
+    // emitted). Class-level and top-level val/var ARE emitted.
+    let ancestor = node.parent
+    while (ancestor && ancestor.type !== "source_file") {
+      if (
+        ancestor.type === "function_definition" ||
+        ancestor.type === "function_declaration" ||
+        ancestor.type === "lambda_expression" ||
+        ancestor.type === "anonymous_function" ||
+        ancestor.type === "block" && ancestor.parent?.type === "function_definition"
+      ) {
+        return
+      }
+      if (
+        ancestor.type === "class_definition" ||
+        ancestor.type === "trait_definition" ||
+        ancestor.type === "object_definition" ||
+        ancestor.type === "enum_definition"
+      ) {
+        break
+      }
+      ancestor = ancestor.parent
+    }
+
     let patternNode = node.childForFieldName("pattern")
     if (!patternNode) {
       for (let i = 0; i < node.childCount; i++) {
@@ -740,6 +890,30 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
+  private handleInstantiation(
+    node: Node,
+    relationships: ASTEngine.UniversalRelationship[],
+    parent: ASTEngine.UniversalSymbol | null,
+  ) {
+    // instance_expression :: type_identifier | arguments  (v0.26.2)
+    if (!parent) return
+    const typeNode = node.namedChild(0)
+    if (!typeNode) return
+    let typeName = typeNode.text
+    if (typeNode.type === "generic_type" || typeNode.type === "applied_type") {
+      typeName = this.extractSupertypes(typeNode)[0] || typeNode.text
+    }
+    if (typeName && typeName !== "unknown") {
+      relationships.push({
+        source: parent.name,
+        target: typeName,
+        type: ASTEngine.RelationshipType.Instantiates,
+        confidence: 0.9,
+        metadata: { isInstantiation: true },
+      })
+    }
+  }
+
   private handleCall(
     node: Node,
     relationships: ASTEngine.UniversalRelationship[],
@@ -750,23 +924,34 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (fnNode && parent) {
       let calledName = fnNode.text
       if (fnNode.type === "field_expression") {
-        const field = fnNode.childForFieldName("field")
-        if (field) calledName = field.text
+        // obj.method — the leaf identifier is the method name
+        const kids: string[] = []
+        for (let i = 0; i < fnNode.namedChildCount; i++) {
+          const c = fnNode.namedChild(i)
+          if (c && c.type === "identifier") kids.push(c.text)
+        }
+        calledName = kids.length > 0 ? kids[kids.length - 1] : calledName
       }
       if (calledName) {
-        relationships.push({
-          source: parent.name,
-          target: calledName,
-          type: ASTEngine.RelationshipType.Calls,
-          metadata: {},
-        })
-        if (calledName[0] === calledName[0].toUpperCase() && calledName[0] !== calledName[0].toLowerCase()) {
+        // Companion-apply constructor idiom (Type(...)) — capitalized target
+        // emits ONLY Instantiates (matches the Kotlin contract: a capitalized
+        // call like `User(...)` is an instantiation, not a plain call).
+        const first = calledName.charCodeAt(0)
+        const isCapitalized = first >= 65 && first <= 90
+        if (isCapitalized) {
           relationships.push({
             source: parent.name,
             target: calledName,
             type: ASTEngine.RelationshipType.Instantiates,
             confidence: 0.7,
             metadata: { isInstantiation: true },
+          })
+        } else {
+          relationships.push({
+            source: parent.name,
+            target: calledName,
+            type: ASTEngine.RelationshipType.Calls,
+            metadata: {},
           })
         }
         if (["map", "filter", "flatMap", "foreach", "fold", "reduce", "collect"].includes(calledName)) {
@@ -775,21 +960,12 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
     }
-
-    const fieldNode = fnNode || node.namedChild(0)
-    if (fieldNode && fieldNode.type === "field_expression") {
-      const field = fieldNode.childForFieldName("field")
-      if (field && ["map", "filter", "flatMap", "foreach", "fold", "reduce", "collect"].includes(field.text)) {
-        patternsObj["Higher-Order Functions"] = true
-        patternsObj["Functional Programming"] = true
-      }
-    }
   }
 
   private handleImport(node: Node, imports: ASTEngine.ImportInfo[]): void {
     if (node.type !== "import_declaration") return
 
-    let pathStr = ""
+    const parts: string[] = []
     const selectors: { local: string; imported: string }[] = []
 
     for (let i = 0; i < node.childCount; i++) {
@@ -797,10 +973,9 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (!child) continue
 
       if (child.type === "identifier" || child.type === ".") {
-        pathStr += child.text
+        if (child.type === "identifier") parts.push(child.text)
       } else if (child.type === "namespace_wildcard") {
         selectors.push({ local: "*", imported: "*" })
-        pathStr += ".*"
       } else if (child.type === "namespace_selectors") {
         for (let j = 0; j < child.childCount; j++) {
           const sel = child.child(j)
@@ -808,22 +983,21 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
             selectors.push({ local: sel.text, imported: sel.text })
           }
         }
+      } else if (child.type === "as_renamed_identifier") {
+        const original = child.namedChild(0)
+        if (original && original.type === "identifier") {
+          selectors.push({ local: original.text, imported: original.text })
+        }
       }
     }
 
-    if (pathStr.length > 0 && pathStr.charCodeAt(pathStr.length - 1) === 46) {
-      // '.'
-      pathStr = pathStr.substring(0, pathStr.length - 1)
-    }
+    const pathStr = parts.join(".")
 
     if (selectors.length === 0) {
       let last = "*"
-      for (let i = pathStr.length - 1; i >= 0; i--) {
-        if (pathStr.charCodeAt(i) === 46) {
-          // '.'
-          last = pathStr.substring(i + 1)
-          break
-        }
+      if (pathStr.length > 0) {
+        const idx = pathStr.lastIndexOf(".")
+        last = idx >= 0 ? pathStr.substring(idx + 1) : pathStr
       }
       if (last === "*") last = pathStr
       selectors.push({ local: last, imported: last })
@@ -841,5 +1015,21 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         endIndex: node.endIndex,
       },
     })
+  }
+
+  private findChild(node: Node, type: string): Node | null {
+    for (let i = 0; i < node.childCount; i++) {
+      const c = node.child(i)
+      if (c && c.type === type) return c
+    }
+    return null
+  }
+
+  private findChildIdentifier(node: Node): string | null {
+    for (let i = 0; i < node.childCount; i++) {
+      const c = node.child(i)
+      if (c && c.isNamed && c.type === "identifier") return c.text
+    }
+    return null
   }
 }

@@ -132,11 +132,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:kotlin",
-      "wallTimeMs": 28.232774,
-      "userCpuMs": 107.825,
-      "systemCpuMs": 12.483,
-      "peakRssBytes": 224497664,
-      "rssDeltaBytes": 14811136,
+      "wallTimeMs": 138.38285,
+      "userCpuMs": 231.595,
+      "systemCpuMs": 17.057,
+      "peakRssBytes": 214568960,
+      "rssDeltaBytes": 2437120,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
