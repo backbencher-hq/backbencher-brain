@@ -199,11 +199,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:scala",
-      "wallTimeMs": 93.533916,
-      "userCpuMs": 170.375,
-      "systemCpuMs": 4.997,
-      "peakRssBytes": 228139008,
-      "rssDeltaBytes": 6557696,
+      "wallTimeMs": 80.513481,
+      "userCpuMs": 165.638,
+      "systemCpuMs": 7.207,
+      "peakRssBytes": 224395264,
+      "rssDeltaBytes": 7110656,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
