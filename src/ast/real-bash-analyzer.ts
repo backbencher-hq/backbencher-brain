@@ -453,15 +453,12 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    // Global scope symbol for top-level relationships
-    phantomSymbols.push({
-      name: "global",
-      kind: ASTEngine.SymbolKind.Function,
-      range: this.nodeToRange(rootNode),
-      scope: "",
-      visibility: "public",
-      metadata: { isPhantom: true, injectedBy: "bash_global_scope" },
-    })
+    // NOTE: no synthetic `global` scope-marker symbol here. Top-level
+    // relationships already reference "global" as a source string, and the
+    // engine resolves unresolved sources via source_external (Phase 4:
+    // "No dummy symbols"). Emitting a phantom `function:global` polluted the
+    // symbol table with a name that is never a real declaration — the old
+    // cross-language denylist masked it by name coincidence.
 
     for (let i = 0; i < phantomSymbols.length; i++) {
       symbols.push(phantomSymbols[i])
