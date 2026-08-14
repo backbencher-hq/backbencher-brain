@@ -2,20 +2,20 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-08-14T02:14:36.505Z",
+  "generatedAt": "2026-08-14T04:13:46.057Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 174,
+  "totalRegexUsages": 173,
   "analyzersScanned": 41,
   "byClassification": {
     "unavoidable": 19,
-    "normalization": 84,
+    "normalization": 83,
     "needs_review": 69,
     "replaceable": 2
   },
   "byReceiverCategory": {
     "literal": 19,
-    "node_text": 84,
+    "node_text": 83,
     "identifier": 40,
     "other": 29,
     "raw_content": 2
@@ -2047,23 +2047,6 @@
           "source": "/\"/g",
           "operation": "replace",
           "receiver": "stringLit.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-groovy-analyzer.ts",
-      "count": 1,
-      "usages": [
-        {
-          "file": "real-groovy-analyzer.ts",
-          "line": 148,
-          "column": 52,
-          "source": "/[\"']/g",
-          "operation": "replace",
-          "receiver": "nameNode.text",
           "receiverCategory": "node_text",
           "classification": "normalization",
           "justification": ""

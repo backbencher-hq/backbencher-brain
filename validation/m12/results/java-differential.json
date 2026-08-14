@@ -176,11 +176,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:java",
-      "wallTimeMs": 127.959843,
-      "userCpuMs": 232.452,
-      "systemCpuMs": 16.655,
-      "peakRssBytes": 205705216,
-      "rssDeltaBytes": 17379328,
+      "wallTimeMs": 46.156318,
+      "userCpuMs": 74.715,
+      "systemCpuMs": 9.45,
+      "peakRssBytes": 198987776,
+      "rssDeltaBytes": 10883072,
       "databaseBytes": null,
       "files": null,
       "symbols": null,

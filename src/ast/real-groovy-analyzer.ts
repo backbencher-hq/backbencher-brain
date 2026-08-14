@@ -1,9 +1,70 @@
+// Pure-AST Groovy analyzer — M12 per-analyzer perfection contract.
+//
+// Emits exactly the M12 differential contract (mirroring the Java family):
+//   Symbols: class, interface (trait/interface), enum, enum_member, method,
+//            constructor, property. NO namespace/import/variable symbols and
+//            NO synthetic members (getters/setters, `log`, closure `it`).
+//   Relationships: contains, extends, implements, calls, instantiates,
+//            overrides (qualified Owner.method -> Parent.method), uses
+//            (field access), references (imports -> full module paths).
+//
+// Grammar notes (patched amaanq grammar, see grammars/tree-sitter-groovy/):
+//   * formal params may be untyped  (def foo(a, b = 2))
+//   * method/constructor bodies may be single-expression closures
+//   * Spock test methods use string names  (def "addition works"())
+//   * trait_declaration (extends/implements), enum bodies without `;`
+//   * safe-nav ?. spread *. elvis ?: `[:]` empty map, `as` casts
+
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
+import { findDeclaringParent } from "./override-context"
+
+interface Scope {
+  node: Node
+  name: string
+  kind: ASTEngine.SymbolKind
+  fqn: string
+  symbolRef?: ASTEngine.UniversalSymbol
+  visibility: "public" | "private" | "protected" | undefined
+  isInterface: boolean
+  parents: string[]
+}
+
+interface OverrideTask {
+  fqn: string
+  methodName: string
+  signature: string
+  ownerFqn: string
+}
+
+interface StackItem {
+  node: Node
+  parentContext?: Scope
+  isExit?: boolean
+}
+
+const GROOVY_BUILTINS = new Set([
+  // Groovy language builtins
+  "println", "print", "printf", "sprintf",
+  "assert", "sleep", "synchronized",
+  // JVM Object methods
+  "toString", "hashCode", "equals", "getClass", "notify", "notifyAll",
+  "wait", "clone", "finalize",
+  // Common java.* entry points
+  "System.out.println", "System.out.print", "System.out.printf",
+  "System.err.println", "System.err.print",
+  "System.exit", "System.gc", "System.currentTimeMillis", "System.nanoTime",
+  "System.getProperty", "System.getenv", "System.identityHashCode",
+  "System.arraycopy", "System.lineSeparator",
+])
 
 export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
-  analyze(rootNode: Node, fileContent: string, filePath: string): ASTEngine.ParseResult {
-    // LAW 4: 100% Stateless Thread Safety. ZERO mutable class-level properties.
+  analyze(
+    rootNode: Node,
+    content: string,
+    filePath: string,
+    context?: ASTEngine.AnalyzeContext,
+  ): Omit<ASTEngine.ParseResult, "language" | "metadata"> & { metadata: Partial<ASTEngine.FileMetadata> } {
     const symbols: ASTEngine.UniversalSymbol[] = []
     const relationships: ASTEngine.UniversalRelationship[] = []
     const imports: ASTEngine.ImportInfo[] = []
@@ -12,387 +73,662 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     let currentPackage = ""
 
-    // LAW 3: O(N) iterative Depth-First Search. No Recursive GC leaks.
-    const walkStack: Array<{ 
-      node: Node; 
-      isExit: boolean; 
-      scopePath: string[]; // Maintaining FQNs (Fully Qualified Names)
-    }> = [
-      { node: rootNode, isExit: false, scopePath: [] }
-    ]
+    const symbolMap = new Map<string, ASTEngine.UniversalSymbol>()
+    const classHierarchy = new Map<string, string[]>()
+    const overrideTasks: OverrideTask[] = []
 
-    while (walkStack.length > 0) {
-      const state = walkStack.pop()!
-      if (!state) continue
-      
-      const { node, isExit, scopePath } = state
-      if (isExit || !node || node.isMissing) continue
+    const scopeStack: Scope[] = []
+    const stack: StackItem[] = [{ node: rootNode }]
 
-      let nextScopePath = [...scopePath]
-      const activeScope = nextScopePath.length > 0 ? nextScopePath[nextScopePath.length - 1] : "global"
-      const fqn = nextScopePath.join(".")
+    while (stack.length > 0) {
+      const item = stack.pop()!
+      const { node, parentContext, isExit } = item
 
-      // LAW 1: Flawless Database Extraction
-      
-      // 1. Package space (namespace)
-      if (node.type === "package_declaration") {
-        const nameNode = this.findChild(node, (n) => n.type === "identifier" || n.type === "scoped_identifier")
-        if (nameNode) {
-          currentPackage = nameNode.text
-          symbols.push({
-            name: currentPackage,
-            kind: ASTEngine.SymbolKind.Namespace,
-            range: this.getRange(node),
-            metadata: { groovySpecific: true, isPackage: true },
+      if (isExit) {
+        if (parentContext) {
+          if (scopeStack.length > 0 && scopeStack[scopeStack.length - 1] === parentContext) {
+            scopeStack.pop()
+          }
+        }
+        continue
+      }
+
+      if (node.isMissing || node.hasError) {
+        if (node.type === "ERROR" || node.type === "MISSING") {
+          errors.push({
+            message: `Syntax ${node.type} detected.`,
+            range: this.nodeToRange(node),
+            severity: "warning",
           })
         }
       }
-      // 2. Imports (Very important for Java/Groovy JVM boundary resolution)
-      else if (node.type === "import_declaration") {
-        const nameNode = this.findChild(node, (n) => n.type === "identifier" || n.type === "scoped_identifier")
+
+      let newContext = parentContext
+      const type = node.type
+      let pushedScope = false
+
+      if (type === "package_declaration") {
+        const nameNode = this.findChild(node, (n) => n.type === "scoped_identifier" || n.type === "identifier")
+        if (nameNode) currentPackage = nameNode.text
+      } else if (type === "import_declaration") {
+        const nameNode = this.findChild(node, (n) => n.type === "scoped_identifier" || n.type === "identifier")
         if (nameNode) {
-          const isStatic = this.findChild(node, (n) => n.text === "static") !== null
+          const moduleName = nameNode.text
+          const isStatic = this.hasDirectChildText(node, "static")
           imports.push({
-            source: nameNode.text,
-            specifiers: [{ name: nameNode.text, isDefault: true }],
+            module: moduleName,
+            items: [],
+            isDefault: false,
+            range: this.nodeToRange(node),
+            isNamespace: moduleName.endsWith(".*"),
+            metadata: { isWildcard: moduleName.endsWith(".*"), isStatic },
           })
-          symbols.push({
-             name: nameNode.text,
-             kind: ASTEngine.SymbolKind.Import,
-             range: this.getRange(node),
-             metadata: { groovySpecific: true, isStatic },
-          })
-          // DependsOn for imports
+          // DependsOn for imports — source rewritten to the file's primary
+          // type after the walk (imports precede type declarations).
           relationships.push({
-            source: currentPackage || filePath,
-            target: nameNode.text,
+            source: currentPackage || "root",
+            target: moduleName,
             type: ASTEngine.RelationshipType.References,
             confidence: 0.9,
-            metadata: { isImportDep: true },
+            metadata: { isGroovyImport: true, isWildcard: moduleName.endsWith(".*") },
           })
         }
-      }
-      // 3. Classes, Traits, Interfaces, Enums
-      else if (["class_declaration", "interface_declaration", "trait_declaration", "enum_declaration"].includes(node.type)) {
+      } else if (
+        type === "class_declaration" ||
+        type === "interface_declaration" ||
+        type === "trait_declaration" ||
+        type === "enum_declaration"
+      ) {
         const nameNode = this.findChild(node, (n) => n.type === "identifier")
         if (nameNode) {
-          const className = nameNode.text
-          nextScopePath.push(className)
-          
-          let kind = ASTEngine.SymbolKind.Class
-          if (node.type === "interface_declaration" || node.type === "trait_declaration") kind = ASTEngine.SymbolKind.Interface
-          if (node.type === "enum_declaration") kind = ASTEngine.SymbolKind.Enum
+          const name = nameNode.text
+          const kind = type === "interface_declaration" || type === "trait_declaration"
+            ? ASTEngine.SymbolKind.Interface
+            : type === "enum_declaration"
+              ? ASTEngine.SymbolKind.Enum
+              : ASTEngine.SymbolKind.Class
+          const fqn = this.buildFqn(currentPackage, scopeStack, name)
+          const visibility = this.extractVisibility(node)
 
-          symbols.push({
-            name: className,
-            kind,
-            range: this.getRange(node),
-            metadata: { groovySpecific: true, type: node.type, localName: className },
-          })
+          const parents = this.extractInheritance(node, type)
+          classHierarchy.set(fqn, parents)
 
-          // Extract Implements / Extends relationships (Traits / Superclasses)
-          const extendsClause = this.findChild(node, (n) => n.type === "super_interfaces" || n.type === "interfaces")
-          const superClass = this.findChild(node, (n) => n.type === "superclass")
-          if (superClass) {
-            const scName = this.findChild(superClass, (n) => n.type === "type_identifier")
-            if (scName) {
-              relationships.push({ source: className, target: scName.text, type: ASTEngine.RelationshipType.Extends, metadata: {} })
-            }
-          }
-          if (extendsClause) {
-            // type_identifier may be nested under type_list
-            let typeIds = this.filterChildren(extendsClause, (n) => n.type === "type_identifier")
-            if (typeIds.length === 0) {
-              const typeList = this.findChild(extendsClause, (n) => n.type === "type_list")
-              if (typeList) typeIds = this.filterChildren(typeList, (n) => n.type === "type_identifier")
-            }
-            for (const tid of typeIds) {
-              relationships.push({
-                source: className,
-                target: tid.text,
-                type: ASTEngine.RelationshipType.Implements,
-                metadata: {},
-              })
-            }
-          }
-
-          // FIX 5: Synthesize compile-time AST Annotations (@Slf4j, @Log, etc.)
-          const modifiers = this.findChild(node, (n) => n.type === "modifiers")
-          if (modifiers) {
-              const annotations = this.filterChildren(modifiers, (n) => n.type === "annotation")
-              for (const ann of annotations) {
-                  const annName = this.findChild(ann, (n) => n.type === "identifier")?.text
-                  if (annName && ["Slf4j", "Log", "Log4j", "Log4j2", "Commons"].includes(annName)) {
-                      symbols.push({
-                          name: "log",
-                          kind: ASTEngine.SymbolKind.Property,
-                          range: this.getRange(node), // synthetic bounds matching class
-                          metadata: { groovySpecific: true, synthetic: true, generatedBy: `@${annName}` },
-                      })
-                      relationships.push({
-                         source: "log",
-                         target: className,
-                         type: ASTEngine.RelationshipType.Uses,
-                         metadata: { belongsToClass: true, synthetic: true }
-                      })
-                  }
-              }
-          }
-        }
-      }
-      // 4. Methods, Constructors, and Spock Tests
-      else if (node.type === "method_declaration" || node.type === "constructor_declaration") {
-        // Handle standard identifiers or Spock Strings (`def "should calculate tax correctly"()`)
-        const nameNode = this.findChild(node, (n) => n.type === "identifier" || n.type === "string_literal")
-        if (nameNode) {
-          const methodName = nameNode.text.replace(/["']/g, "")
-          nextScopePath.push(methodName)
-          
-          symbols.push({
-            name: node.type === "constructor_declaration" ? "constructor" : methodName,
-            kind: node.type === "constructor_declaration" ? ASTEngine.SymbolKind.Constructor : ASTEngine.SymbolKind.Method,
-            range: this.getRange(node),
-            metadata: { groovySpecific: true, isSpockTest: nameNode.type === "string_literal" },
-          })
-          
-          // Map method to parent class (skip constructors with same name as class)
-          if (activeScope && activeScope !== "global" && methodName !== activeScope) {
-            relationships.push({
-               source: activeScope,
-               target: methodName,
-               type: ASTEngine.RelationshipType.Contains,
-               metadata: { belongsToClass: true }
-            })
-          }
-          // Check for @Override annotation → Overrides relationship
-          const modifiers = this.findChild(node, (n) => n.type === "modifiers")
-          if (modifiers) {
-            const annotations = this.filterChildren(modifiers, (n) => n.type === "annotation" || n.type === "marker_annotation")
-            for (const ann of annotations) {
-              const annName = this.findChild(ann, (n) => n.type === "identifier")?.text
-              if (annName === "Override") {
+          // extends (superclass / interface-extends)
+          if (type === "class_declaration") {
+            const superClass = this.findChild(node, (n) => n.type === "superclass")
+            if (superClass) {
+              const sc = this.findChild(superClass, (n) => n.type === "type_identifier" || n.type === "identifier" || n.type === "generic_type")
+              if (sc) {
                 relationships.push({
-                  source: activeScope,
-                  target: methodName,
-                  type: ASTEngine.RelationshipType.Overrides,
-                  confidence: 0.9,
-                  metadata: { isOverride: true },
+                  source: name,
+                  target: this.baseTypeName(sc),
+                  type: ASTEngine.RelationshipType.Extends,
+                  confidence: 1.0,
+                  metadata: { relationshipType: "extends" },
+                })
+              }
+            }
+          } else if (type === "interface_declaration") {
+            const ext = this.findChild(node, (n) => n.type === "extends_interfaces")
+            if (ext) {
+              for (const tid of this.collectTypeNodes(ext)) {
+                relationships.push({
+                  source: name,
+                  target: this.baseTypeName(tid),
+                  type: ASTEngine.RelationshipType.Extends,
+                  confidence: 1.0,
+                  metadata: { relationshipType: "extends_interface" },
+                })
+              }
+            }
+          } else if (type === "trait_declaration") {
+            const superClass = this.findChild(node, (n) => n.type === "superclass")
+            if (superClass) {
+              const sc = this.findChild(superClass, (n) => n.type === "type_identifier" || n.type === "identifier" || n.type === "generic_type")
+              if (sc) {
+                relationships.push({
+                  source: name,
+                  target: this.baseTypeName(sc),
+                  type: ASTEngine.RelationshipType.Extends,
+                  confidence: 1.0,
+                  metadata: { relationshipType: "extends_trait" },
                 })
               }
             }
           }
-        }
-      }
-      // 5. Fields & Variables (Dynamic `def` vs Static typing)
-      else if (node.type === "field_declaration" || node.type === "def_declaration" || node.type === "variable_declaration") {
-        const declarator = this.findChild(node, (n) => n.type === "variable_declarator")
-        const nameNode = declarator ? this.findChild(declarator, (n) => n.type === "identifier") : null
-        if (nameNode) {
-          const fieldName = nameNode.text
-          symbols.push({
-            name: fieldName,
-            kind: node.type === "field_declaration" || node.type === "def_declaration" ? ASTEngine.SymbolKind.Property : ASTEngine.SymbolKind.Variable,
-            range: this.getRange(node),
-            metadata: { groovySpecific: true, parentScope: activeScope },
-          })
 
-          // FIX 4: Property-to-Getter/Setter Bridging (Class level fields)
-          if (node.type === "field_declaration" || node.type === "def_declaration") {
-             const capitalized = fieldName.charAt(0).toUpperCase() + fieldName.slice(1)
-             const getterName = `get${capitalized}`
-             const setterName = `set${capitalized}`
-             
-             symbols.push({
-                name: getterName,
-                kind: ASTEngine.SymbolKind.Method,
-                range: this.getRange(node),
-                metadata: { groovySpecific: true, synthetic: true, bridgeFrom: fieldName },
-             })
-             symbols.push({
-                name: setterName,
-                kind: ASTEngine.SymbolKind.Method,
-                range: this.getRange(node),
-                metadata: { groovySpecific: true, synthetic: true, bridgeFrom: fieldName },
-             })
-
-             if (activeScope && activeScope !== "global") {
-                 relationships.push({ source: getterName, target: activeScope, type: ASTEngine.RelationshipType.Uses, metadata: { synthetic: true } })
-                 relationships.push({ source: setterName, target: activeScope, type: ASTEngine.RelationshipType.Uses, metadata: { synthetic: true } })
-             }
-          }
-        }
-      }
-      // FIX 1: Command Expressions & Gradle DSL Blocks
-      else if (node.type === "command_expression") {
-        const cmdName = this.findChild(node, (n) => n.type === "identifier")
-        if (cmdName) {
-            const cmdText = cmdName.text
-            nextScopePath.push(cmdText)
-            
-            relationships.push({
-              source: activeScope,
-              target: cmdText,
-              type: ASTEngine.RelationshipType.Calls,
-              metadata: { isCommandExpression: true }
-            })
-        }
-      }
-      // FIX 2: Implicit `it` Parameter in Closures
-      else if (node.type === "closure") {
-         const hasParams = this.findChild(node, (n) => n.type === "lambda_expression") !== null
-         if (!hasParams) {
-             symbols.push({
-                 name: "it",
-                 kind: ASTEngine.SymbolKind.Variable,
-                 range: this.getRange(node), 
-                 metadata: { groovySpecific: true, synthetic: true, isImplicitClosureParam: true },
-             })
-         }
-      }
-      // FIX 3: GString (Interpolated String) Relationship Extraction
-      else if (node.type === "string_interpolation" || node.type === "interpolated_string") {
-         // Some tree-sitter grammars nest the identifier in expressions inside the interpolation
-         const expr = this.findChild(node, (n) => n.type === "expression") || node
-         const ids = this.filterChildren(expr, (n) => n.type === "identifier" || n.type === "field_access")
-         for (const idNode of ids) {
-             const targetText = idNode.type === "field_access" ? this.findChild(idNode, (n) => n.type === "identifier")?.text : idNode.text
-             if (targetText && activeScope !== "global") {
-                 relationships.push({
-                    source: activeScope,
-                    target: targetText,
-                    type: ASTEngine.RelationshipType.Uses,
-                    metadata: { isGStringInterpolation: true }
-                 })
-             }
-         }
-      }
-      // 7. Standard Method Invocations (Cross-file Calls)
-      else if (node.type === "method_invocation") {
-        const nameNode = this.findChild(node, (n) => n.type === "identifier")
-        if (nameNode && activeScope !== "global") {
-            relationships.push({
-              source: activeScope,
-              target: nameNode.text,
-              type: ASTEngine.RelationshipType.Calls,
-              metadata: {}
-            })
-            // Groovy uses new ClassName() — detect instantiation
-            if (nameNode.text[0] === nameNode.text[0].toUpperCase() && nameNode.text[0] !== nameNode.text[0].toLowerCase()) {
+          // implements (super_interfaces — classes and traits)
+          const superInterfaces = this.findChild(node, (n) => n.type === "super_interfaces")
+          if (superInterfaces) {
+            for (const tid of this.collectTypeNodes(superInterfaces)) {
               relationships.push({
-                source: activeScope,
-                target: nameNode.text,
-                type: ASTEngine.RelationshipType.Instantiates,
-                confidence: 0.8,
-                metadata: { isInstantiation: true },
+                source: name,
+                target: this.baseTypeName(tid),
+                type: ASTEngine.RelationshipType.Implements,
+                confidence: 1.0,
+                metadata: { relationshipType: "implements" },
               })
             }
+          }
+
+          const sym: ASTEngine.UniversalSymbol = {
+            name,
+            kind,
+            range: this.nodeToRange(node),
+            visibility,
+            ownerName: scopeStack.length > 0 ? scopeStack[scopeStack.length - 1].name : undefined,
+            ownerKind: scopeStack.length > 0 ? scopeStack[scopeStack.length - 1].kind : undefined,
+            metadata: { nodeType: type },
+          }
+          symbols.push(sym)
+          symbolMap.set(fqn, sym)
+          symbolMap.set(name, sym)
+
+          newContext = {
+            node,
+            name,
+            kind,
+            fqn,
+            symbolRef: sym,
+            visibility,
+            isInterface: type === "interface_declaration" || type === "trait_declaration",
+            parents,
+          }
+          scopeStack.push(newContext)
+          pushedScope = true
         }
-      }
-      // 8. Constructor calls: new ClassName() → Instantiates
-      else if (node.type === "constructor_declaration" || node.type === "object_creation_expression") {
-        const typeNode = this.findChild(node, (n) => n.type === "type_identifier" || n.type === "identifier")
+      } else if (type === "method_declaration" || type === "constructor_declaration" || type === "function_definition") {
+        const isConstructor = type === "constructor_declaration"
+        const nameNode = this.findChild(node, (n) => n.type === "identifier" || n.type === "string_literal")
+        if (nameNode) {
+          const rawName = nameNode.type === "string_literal"
+            ? this.stripQuotes(nameNode.text)
+            : nameNode.text
+          const name = isConstructor ? "constructor" : rawName
+          const modifiers = this.extractModifiers(node)
+          const visibility = this.extractVisibility(node)
+          const annotations = this.extractAnnotations(node)
+
+          const parameters: ASTEngine.Parameter[] = []
+          const paramList = this.findChild(node, (n) => n.type === "formal_parameters")
+          if (paramList) {
+            for (let i = 0; i < paramList.namedChildCount; i++) {
+              const p = paramList.namedChild(i)
+              if (!p || (p.type !== "formal_parameter" && p.type !== "spread_parameter")) continue
+              const pName = this.findChild(p, (n) => n.type === "identifier")
+              const pType = this.findChild(p, (n) => n.type === "type_identifier" || n.type === "integral_type" || n.type === "floating_point_type" || n.type === "boolean_type" || n.type === "void_type" || n.type === "generic_type" || n.type === "array_type")
+              parameters.push({
+                name: pName?.text ?? "anonymous",
+                type: pType ? this.baseTypeName(pType) : undefined,
+              })
+            }
+          }
+          const signature = `(${parameters.map((p) => p.type ?? "").join(",")})`
+
+          const ownerName = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1].name : undefined
+          const ownerKind = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1].kind : undefined
+          const fqn = this.buildFqn(currentPackage, scopeStack, name)
+
+          // Abstract: no body in an interface/trait, or body-less declaration.
+          const hasBody = !!this.findChild(node, (n) => n.type === "block" || n.type === "closure" || n.type === "constructor_body")
+          const isAbstract = !hasBody || (!!(newContext?.isInterface) && !hasBody)
+
+          if (annotations.indexOf("Override") !== -1 && newContext) {
+            overrideTasks.push({
+              fqn,
+              methodName: name,
+              signature,
+              ownerFqn: newContext.fqn,
+            })
+          }
+
+          const sym: ASTEngine.UniversalSymbol = {
+            name,
+            kind: isConstructor ? ASTEngine.SymbolKind.Constructor : ASTEngine.SymbolKind.Method,
+            range: this.nodeToRange(node),
+            visibility,
+            parameters,
+            ownerName,
+            ownerKind,
+            metadata: { nodeType: type, modifiers, annotations, isAbstract },
+          }
+          symbols.push(sym)
+          symbolMap.set(fqn, sym)
+          // Raw `Owner.method(signature)` key so the override BFS (which walks
+          // raw parent names) can match in-file declarations.
+          const rawKey = ownerName ? `${ownerName}.${name}${signature}` : `${name}${signature}`
+          symbolMap.set(rawKey, sym)
+
+          newContext = {
+            node,
+            name,
+            kind: isConstructor ? ASTEngine.SymbolKind.Constructor : ASTEngine.SymbolKind.Method,
+            fqn,
+            symbolRef: sym,
+            visibility,
+            isInterface: false,
+            parents: [],
+          }
+          scopeStack.push(newContext)
+          pushedScope = true
+        }
+      } else if (type === "field_declaration" || type === "constant_declaration") {
+        const modifiers = this.extractModifiers(node)
+        const visibility = this.extractVisibility(node)
+        const isStatic = modifiers.indexOf("static") !== -1
+        const isConstant = modifiers.indexOf("final") !== -1 && isStatic
+        const ownerName = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1].name : undefined
+        const ownerKind = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1].kind : undefined
+
+        for (let i = 0; i < node.namedChildCount; i++) {
+          const child = node.namedChild(i)
+          if (child?.type !== "variable_declarator") continue
+          const idNode = this.findChild(child, (n) => n.type === "identifier")
+          if (!idNode || !ownerName) continue
+          symbols.push({
+            name: idNode.text,
+            kind: isConstant ? ASTEngine.SymbolKind.Constant : ASTEngine.SymbolKind.Property,
+            range: this.nodeToRange(child),
+            visibility,
+            ownerName,
+            ownerKind,
+            metadata: { nodeType: type, modifiers, isConstant },
+          })
+        }
+      } else if (type === "enum_constant") {
+        const nameNode = this.findChild(node, (n) => n.type === "identifier")
+        const ownerName = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1].name : undefined
+        if (nameNode && ownerName) {
+          symbols.push({
+            name: nameNode.text,
+            kind: ASTEngine.SymbolKind.EnumMember,
+            range: this.nodeToRange(node),
+            visibility: "public",
+            ownerName,
+            ownerKind: ASTEngine.SymbolKind.Enum,
+            metadata: { nodeType: type },
+          })
+        }
+      } else if (type === "method_invocation") {
+        const nameNode = node.childForFieldName("name")
+        if (nameNode && parentContext && parentContext.symbolRef) {
+          const methodName = nameNode.text
+          const objectNode = node.childForFieldName("object")
+          const callExpr = objectNode ? `${objectNode.text}.${methodName}` : methodName
+          if (!this.isGroovyBuiltin(callExpr)) {
+            relationships.push({
+              source: parentContext.name,
+              target: methodName,
+              type: ASTEngine.RelationshipType.Calls,
+              confidence: 0.7,
+              metadata: { groovyCallExpression: callExpr },
+            })
+          }
+        }
+      } else if (type === "object_creation_expression") {
+        // new Foo(...) → Instantiates. Type is a type_identifier for plain
+        // types or a generic_type for diamond/generic constructions.
+        const typeNode = this.findChild(node, (n) => n.type === "type_identifier" || n.type === "generic_type" || n.type === "identifier")
         if (typeNode) {
+          const source = parentContext?.name || parentContext?.symbolRef?.name || "global"
           relationships.push({
-            source: activeScope || "global",
-            target: typeNode.text,
+            source,
+            target: this.baseTypeName(typeNode),
             type: ASTEngine.RelationshipType.Instantiates,
             confidence: 0.95,
-            metadata: { isConstructor: node.type === "constructor_declaration", isObjectCreation: node.type === "object_creation_expression" },
+            metadata: { relationshipType: "instantiates", isNew: true },
           })
         }
       }
-      // FIX 4 (Caller side): Property/Field Access mapped to synthetic Get/Set calls
-      else if (node.type === "field_access" || node.type === "property_access") {
-         const propName = this.findChild(node, (n) => n.type === "identifier")
-         if (propName && activeScope !== "global") {
-             const pText = propName.text
-             const capitalized = pText.charAt(0).toUpperCase() + pText.slice(1)
-             relationships.push({
-                 source: activeScope,
-                 target: `get${capitalized}`,
-                 type: ASTEngine.RelationshipType.Calls,
-                 metadata: { synthetic: true, bridgeFrom: pText }
-             })
-             relationships.push({
-                 source: activeScope,
-                 target: `set${capitalized}`,
-                 type: ASTEngine.RelationshipType.Calls,
-                 metadata: { synthetic: true, bridgeFrom: pText }
-             })
-         }
+      // Closures, local variables, gstrings, command expressions: intentionally
+      // produce NO symbols and NO relationships (pure AST contract).
+
+      if (pushedScope) {
+        stack.push({ node, parentContext: newContext, isExit: true })
       }
-      // LAW 2: Absolute Zero WASM-bridge arrays. O(D) memory safety.
-      const childCount = node.namedChildCount
-      for (let i = childCount - 1; i >= 0; i--) {
+      for (let i = node.namedChildCount - 1; i >= 0; i--) {
         const child = node.namedChild(i)
         if (child) {
-           walkStack.push({ node: child, isExit: false, scopePath: nextScopePath })
+          stack.push({ node: child, parentContext: newContext })
         }
       }
     }
 
-    // LAW 3: O(N) MAP deduplications.
-    const uniqueSymbolsMap = new Map<string, ASTEngine.UniversalSymbol>()
+    this.resolveOverrides(overrideTasks, classHierarchy, symbolMap, relationships, context?.overrideCompanion)
+
+    // Rewrite import-reference sources from the package name to the file's
+    // primary type (first top-level type declared).
+    const primaryType = symbols.find((s) => {
+      if (s.ownerName || s.scope) return false
+      return s.kind === ASTEngine.SymbolKind.Class ||
+             s.kind === ASTEngine.SymbolKind.Interface ||
+             s.kind === ASTEngine.SymbolKind.Enum
+    })
+    if (primaryType) {
+      for (const rel of relationships) {
+        if (rel.type === ASTEngine.RelationshipType.References && (rel.source === currentPackage || rel.source === "root")) {
+          rel.source = primaryType.name
+        }
+      }
+    }
+
+    // Contains relationships: owner → owned symbols
+    for (const s of symbols) {
+      const _owner = s.ownerName || s.scope
+      if (_owner) {
+        relationships.push({
+          source: _owner,
+          target: s.name,
+          type: ASTEngine.RelationshipType.Contains,
+          confidence: 1.0,
+          metadata: { isContained: true },
+        })
+      }
+    }
+
+    // Uses relationships for field accesses (this.x, obj.x — incl. ?. and *.)
+    this.collectFieldAccessUses(rootNode, relationships, symbols)
+
     for (let i = 0; i < symbols.length; i++) {
-        uniqueSymbolsMap.set(`${symbols[i].kind}:${symbols[i].name}:${symbols[i].range.startLine}:${symbols[i].range.startColumn}`, symbols[i])
-    }
-    const uniqueSymbols = Array.from(uniqueSymbolsMap.values())
-
-    const uniqueRelMap = new Map<string, ASTEngine.UniversalRelationship>()
-    for (let i = 0; i < relationships.length; i++) {
-        uniqueRelMap.set(`${relationships[i].source}->${relationships[i].target}`, relationships[i])
-    }
-    const uniqueRelationships = Array.from(uniqueRelMap.values())
-
-    for (let i = 0; i < uniqueSymbols.length; i++) {
-      const s = uniqueSymbols[i]
-      if (!s.metadata?.synthetic && s.visibility !== "private") {
-        exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: "public" })
+      const s = symbols[i]
+      if (s.visibility === "public" && (!s.ownerName || s.ownerKind === ASTEngine.SymbolKind.Class)) {
+        exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility })
       }
     }
     return {
-      language: "groovy",
-      symbols: uniqueSymbols,
-      relationships: uniqueRelationships,
+      symbols,
+      relationships,
       imports,
       exports,
       errors,
-      metadata: { 
-          complexity: uniqueSymbols.length + uniqueRelationships.length, 
-          linesOfCode: fileContent.split("\n").length 
+      metadata: {
+        complexity: symbols.length + relationships.length,
+        linesOfCode: content.split("\n").length,
+        currentPackage,
+        analysisVersion: "5.0.0-groovy-pure-ast",
       },
     }
   }
 
-  // Pure cursor helper protecting V8 from GC Thrashing (Law 2)
+  private resolveOverrides(
+    tasks: OverrideTask[],
+    classHierarchy: Map<string, string[]>,
+    symbolMap: Map<string, ASTEngine.UniversalSymbol>,
+    relationships: ASTEngine.UniversalRelationship[],
+    companion?: Map<string, Set<string>>,
+  ) {
+    for (let ti = 0; ti < tasks.length; ti++) { const task = tasks[ti]
+      let targetFqn: string | null = null
+
+      // Pass 1: exact-signature BFS over the in-file hierarchy.
+      const queue: string[] = []
+      const ownerH = classHierarchy.get(task.ownerFqn)
+      if (ownerH) {
+        for (let i = 0; i < ownerH.length; i++) queue.push(ownerH[i])
+      }
+      const seen: Set<string> = new Set()
+      while (queue.length > 0) {
+        const parent = queue.shift()!
+        if (seen.has(parent)) continue
+        seen.add(parent)
+        const potential = `${parent}.${task.methodName}${task.signature}`
+        if (symbolMap.has(potential)) {
+          targetFqn = potential
+          break
+        }
+        const pH = classHierarchy.get(parent)
+        if (pH) {
+          for (let i = 0; i < pH.length; i++) queue.push(pH[i])
+        }
+      }
+
+      // Pass 2: declaring-parent via the project companion index (cross-file).
+      if (!targetFqn && companion && ownerH && ownerH.length > 0) {
+        const declaring = findDeclaringParent(
+          task.methodName,
+          ownerH,
+          companion,
+          (t) => classHierarchy.get(t) ?? [],
+        )
+        if (declaring) targetFqn = `${declaring}.${task.methodName}${task.signature}`
+      }
+
+      // Pass 3: deterministic per-file fallback — first hierarchy parent.
+      if (!targetFqn && ownerH && ownerH.length > 0) {
+        targetFqn = `${ownerH[0]}.${task.methodName}${task.signature}`
+      }
+
+      if (targetFqn) {
+        const localSource = task.fqn.split("(")[0].split(".").slice(-2).join(".")
+        const localTarget = targetFqn.split("(")[0].split(".").slice(-2).join(".")
+        relationships.push({
+          source: localSource,
+          target: localTarget,
+          type: ASTEngine.RelationshipType.Overrides,
+          confidence: 1.0,
+          metadata: { relationshipType: "method_override", isGroovyOverride: true },
+        })
+      }
+    }
+  }
+
+  private collectFieldAccessUses(
+    rootNode: Node,
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+  ) {
+    const stack: { node: Node; owner: string | null }[] = [{ node: rootNode, owner: null }]
+    const seen = new Set<string>()
+    while (stack.length > 0) {
+      const item = stack.pop()!
+      const { node, owner } = item
+
+      if (
+        node.type === "class_declaration" ||
+        node.type === "interface_declaration" ||
+        node.type === "trait_declaration" ||
+        node.type === "enum_declaration"
+      ) {
+        const nameNode = this.findChild(node, (n) => n.type === "identifier")
+        const nextOwner = nameNode ? nameNode.text : owner
+        for (let i = node.namedChildCount - 1; i >= 0; i--) {
+          const child = node.namedChild(i)
+          if (child) stack.push({ node: child, owner: nextOwner })
+        }
+        continue
+      }
+
+      if (node.type === "field_access") {
+        // Handle ?. and *. operators: p?.x / list*.name
+        const parts = node.text.split(".").map((p) => (p.endsWith("?") || p.endsWith("*")) ? p.slice(0, -1) : p)
+        if (parts.length >= 2) {
+          const first = parts[0]
+          const source = first === "this" || first === "super" ? (owner ?? first) : first
+          const key = `${source}.${parts[parts.length - 1]}`
+          if (!seen.has(key)) {
+            seen.add(key)
+            relationships.push({
+              source,
+              target: parts[parts.length - 1],
+              type: ASTEngine.RelationshipType.Uses,
+              confidence: 0.6,
+              metadata: { isFieldAccess: true },
+            })
+          }
+        }
+      }
+      for (let i = node.namedChildCount - 1; i >= 0; i--) {
+        const child = node.namedChild(i)
+        if (child) stack.push({ node: child, owner })
+      }
+    }
+  }
+
+  private isGroovyBuiltin(call: string): boolean {
+    if (GROOVY_BUILTINS.has(call)) return true
+    // Prefix-based stdlib filtering: first segment identifies the class/package.
+    const firstDot = call.indexOf(".")
+    const root = firstDot > 0 ? call.slice(0, firstDot) : call
+    const STDLIB_ROOTS = new Set([
+      "System", "String", "Integer", "Long", "Double", "Float", "Boolean",
+      "Byte", "Short", "Character", "Math", "StrictMath", "Object", "Class",
+      "Thread", "Runnable", "Runtime", "Process", "ProcessBuilder",
+      "Throwable", "Error", "Exception", "StackTraceElement",
+      "Enum", "Void", "Compiler", "Package",
+      "ArrayList", "LinkedList", "HashMap", "HashSet", "TreeMap", "TreeSet",
+      "LinkedHashMap", "LinkedHashSet", "ArrayDeque", "PriorityQueue",
+      "Collections", "Arrays", "Objects", "Optional", "Comparator",
+      "List", "Map", "Set", "Collection", "Iterator", "Iterable",
+      "Calendar", "Date", "UUID", "Locale", "Currency",
+      "File", "Path", "Paths", "Files",
+      "BigDecimal", "BigInteger", "AtomicInteger", "AtomicLong",
+      "StringBuilder", "StringBuffer", "Pattern", "Matcher", "Random",
+      "Logger", "Level", "OutputStream", "InputStream", "Reader", "Writer",
+      "URL", "URI", "Socket", "ServerSocket",
+    ])
+    if (STDLIB_ROOTS.has(root)) return true
+    return false
+  }
+
+  private extractInheritance(node: Node, type: string): string[] {
+    const parents: string[] = []
+    if (type === "class_declaration" || type === "trait_declaration") {
+      const superClass = this.findChild(node, (n) => n.type === "superclass")
+      if (superClass) {
+        const sc = this.findChild(superClass, (n) => n.type === "type_identifier" || n.type === "identifier" || n.type === "generic_type")
+        if (sc) parents.push(this.baseTypeName(sc))
+      }
+    } else if (type === "interface_declaration") {
+      const ext = this.findChild(node, (n) => n.type === "extends_interfaces")
+      if (ext) {
+        for (const tid of this.collectTypeNodes(ext)) {
+          parents.push(this.baseTypeName(tid))
+        }
+      }
+    }
+    const superInterfaces = this.findChild(node, (n) => n.type === "super_interfaces")
+    if (superInterfaces) {
+      for (const tid of this.collectTypeNodes(superInterfaces)) {
+        parents.push(this.baseTypeName(tid))
+      }
+    }
+    return parents
+  }
+
+  /** Collect type nodes within a type_list/super_interfaces/etc (DFS). */
+  private collectTypeNodes(node: Node): Node[] {
+    const out: Node[] = []
+    const stack: Node[] = [node]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (!c) continue
+        if (c.type === "type_identifier" || c.type === "generic_type") {
+          out.push(c)
+        } else {
+          stack.push(c)
+        }
+      }
+    }
+    return out
+  }
+
+  private stripQuotes(text: string): string {
+    if (text.length >= 2) {
+      const first = text[0]
+      const last = text[text.length - 1]
+      if ((first === '"' && last === '"') || (first === "'" && last === "'")) {
+        return text.slice(1, -1)
+      }
+    }
+    return text
+  }
+
+  private baseTypeName(node: Node): string {
+    if (node.type === "generic_type") {
+      const id = this.findChild(node, (n) => n.type === "type_identifier" || n.type === "identifier")
+      return id ? id.text : node.text
+    }
+    return node.text
+  }
+
+  private extractModifiers(node: Node): string[] {
+    const mods: string[] = []
+    const modifiers = this.findChild(node, (n) => n.type === "modifiers")
+    if (modifiers) {
+      for (let i = 0; i < modifiers.namedChildCount; i++) {
+        const c = modifiers.namedChild(i)
+        if (c && (c.type === "identifier" || c.isNamed)) mods.push(c.text)
+      }
+    }
+    return mods
+  }
+
+  private extractVisibility(node: Node): "public" | "private" | "protected" | undefined {
+    const mods = this.extractModifiers(node)
+    if (mods.indexOf("private") !== -1) return "private"
+    if (mods.indexOf("protected") !== -1) return "protected"
+    return "public"
+  }
+
+  private extractAnnotations(node: Node): string[] {
+    const anns: string[] = []
+    const modifiers = this.findChild(node, (n) => n.type === "modifiers")
+    if (modifiers) {
+      for (let i = 0; i < modifiers.namedChildCount; i++) {
+        const c = modifiers.namedChild(i)
+        if (c && (c.type === "annotation" || c.type === "marker_annotation")) {
+          const id = this.findChild(c, (n) => n.type === "identifier")
+          if (id) anns.push(id.text)
+        }
+      }
+    }
+    return anns
+  }
+
+  private buildFqn(currentPackage: string, scopeStack: Scope[], name: string): string {
+    if (scopeStack.length > 0) {
+      return `${scopeStack[scopeStack.length - 1].fqn}.${name}`
+    }
+    return currentPackage ? `${currentPackage}.${name}` : name
+  }
+
+  private hasDirectChildText(node: Node, text: string): boolean {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (c && c.text === text) return true
+    }
+    return false
+  }
+
   private findChild(node: Node, predicate: (n: Node) => boolean): Node | null {
     const count = node.namedChildCount
     for (let i = 0; i < count; i++) {
-        const child = node.namedChild(i)
-        if (child && predicate(child)) return child
+      const child = node.namedChild(i)
+      if (child && predicate(child)) return child
     }
     return null
   }
 
-  // Pure collection cursor helper (Law 2)
-  private filterChildren(node: Node, predicate: (n: Node) => boolean): Node[] {
-     const results: Node[] = []
-     const count = node.namedChildCount
-     for (let i = 0; i < count; i++) {
-         const child = node.namedChild(i)
-         if (child && predicate(child)) results.push(child)
-     }
-     return results
+  private findAllChildren(node: Node, predicate: (n: Node) => boolean): Node[] {
+    const out: Node[] = []
+    const count = node.namedChildCount
+    for (let i = 0; i < count; i++) {
+      const child = node.namedChild(i)
+      if (child && predicate(child)) out.push(child)
+    }
+    return out
   }
 
-  private getRange(node: Node) {
+  private nodeToRange(node: Node) {
     return {
-        startLine: node.startPosition.row + 1,
-        startColumn: node.startPosition.column,
-        endLine: node.endPosition.row + 1,
-        endColumn: node.endPosition.column,
-        startIndex: node.startIndex,
-        endIndex: node.endIndex
+      startLine: node.startPosition.row + 1,
+      startColumn: node.startPosition.column,
+      endLine: node.endPosition.row + 1,
+      endColumn: node.endPosition.column,
+      startIndex: node.startIndex,
+      endIndex: node.endIndex,
     }
   }
 }

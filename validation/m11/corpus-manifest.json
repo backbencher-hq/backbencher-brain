@@ -388,6 +388,20 @@
       ]
     },
     {
+      "id": "grails_core",
+      "path": "$HOME/fixtures/repositories/grails-core",
+      "remote": "https://github.com/grails/grails-core.git",
+      "revision": "a83f87480e0c0138caa5a7191a053b1e59a64066",
+      "trackedFiles": 14026,
+      "trackedBytes": 71662509,
+      "sizeClass": "large",
+      "clean": true,
+      "evidenceEligible": true,
+      "languages": [
+        "groovy"
+      ]
+    },
+    {
       "id": "graphql_js",
       "path": "$HOME/fixtures/repositories/graphql-js",
       "remote": "https://github.com/graphql/graphql-js.git",
