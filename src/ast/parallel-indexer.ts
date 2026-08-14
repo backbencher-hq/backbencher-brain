@@ -1466,16 +1466,31 @@ export async function storeResults(
 
         // Hoisted per-file index structures — used by both symbol storage and
         // relationship source resolution (which runs outside the symbols block).
+        const fileLang = (result.language || "").toLowerCase()
+        // JS-global names are only noise for JS-family languages; a Scala
+        // `object Global` or `def process` is a legitimate declaration and
+        // must survive indexing. Universal entries below are keywords,
+        // literals, and synthetic tree-sitter artifacts — noise everywhere.
+        const JS_FAMILY = new Set(["javascript", "typescript", "tsx", "vue", "svelte"])
         const SYMBOL_NAME_DENYLIST = new Set([
           "this", "super", "self", "Self", "me", "My",
           "true", "false", "null", "nil", "None", "True", "False",
           "undefined", "NaN", "Infinity",
-          "global", "Global", "window", "Window", "document",
-          "module", "exports", "default", "globalThis",
           "root", "program", "source_file", "module_declaration",
           "package_manifest", "GlobalScope", "SCSS_FILE_SCOPE",
           "unknown",
         ])
+        if (JS_FAMILY.has(fileLang)) {
+          SYMBOL_NAME_DENYLIST.add("global")
+          SYMBOL_NAME_DENYLIST.add("Global")
+          SYMBOL_NAME_DENYLIST.add("window")
+          SYMBOL_NAME_DENYLIST.add("Window")
+          SYMBOL_NAME_DENYLIST.add("document")
+          SYMBOL_NAME_DENYLIST.add("module")
+          SYMBOL_NAME_DENYLIST.add("exports")
+          SYMBOL_NAME_DENYLIST.add("default")
+          SYMBOL_NAME_DENYLIST.add("globalThis")
+        }
         const nameToSymbol = new Map<string, any>()
         const containersByStart: { name: string; start: number; end: number }[] = []
         let firstContainerSymbol: any = undefined

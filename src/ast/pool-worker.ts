@@ -477,19 +477,29 @@ export async function parseFile(filePath: string, projectPath: string, context?:
           // real noise (xmlns, CharData, comments, .PHONY, ...).
           const lang = parsed.language || language
           if (lang === "xml" || lang === "make" || lang === "markdown") return true
-          const DENYLIST = new Set([
-            "window", "document", "console",
-            "process", "global", "__dirname", "__filename",
+          // JS-global names are only noise for JS-family languages. A method
+          // named `process` (Scala/Python/Java), `window` or `module` is a
+          // legitimate declaration elsewhere — applying the JS global list
+          // cross-language silently dropped real symbols.
+          const JS_FAMILY = new Set(["javascript", "typescript", "tsx", "vue", "svelte"])
+          const JS_GLOBALS = new Set([
+            "window", "document", "console", "process", "global",
+            "__dirname", "__filename", "module", "exports", "default", "globalThis",
+          ])
+          if (JS_FAMILY.has(lang) && JS_GLOBALS.has(name)) return false
+          // Universal denylist: language keywords / conventions and synthetic
+          // tree-sitter artifact names — never legitimate declarations in any
+          // language.
+          const UNIVERSAL = new Set([
             "this", "super", "self", "Self", "me", "My",
             // "constructor" is a first-class declaration in TS/JS —
             // do NOT filter it here. Only truly synthetic/noise names below.
             "destructor",
-            "module", "exports", "default", "globalThis",
             "root", "program", "source_file", "module_declaration",
             "package_manifest", "GlobalScope", "SCSS_FILE_SCOPE",
             "unknown",
           ])
-          if (DENYLIST.has(name)) return false
+          if (UNIVERSAL.has(name)) return false
           return true
         })
         .map((s: any) => {

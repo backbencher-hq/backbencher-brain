@@ -80,14 +80,14 @@
       "measured": {
         "revision": "18df09c0",
         "sample": "400 tracked compiler/**/*.scala files (deterministic first-400 sorted)",
-        "fixtures": 6,
-        "fixtureFacts": 111,
+        "fixtures": 7,
+        "fixtureFacts": 124,
         "precision": 1,
         "recall": 1,
         "corpusSymbols": 25008,
         "corpusRelationships": 79260,
         "grammarErrorFiles": 0,
-        "note": "grammar upgraded to tree-sitter-scala v0.26.2 (wasm/ + ~/.bb/wasm) — the wired grammar failed on 90.7% of the scala3 corpus (cannot parse match/for/sealed trait/private params/enum/extension/given/opaque); v0.26.2 parses all 400 sample files with 0 errors and every construct in the Scala 2+3 matrix. Analyzer rewritten against v0.26.2 AST: abstract function_declaration methods, instance_expression constructors (instantiates), extension/given/enum-case/constructor-property symbols, single-pass call extraction (no duplicates), locals in function bodies suppressed (Kotlin contract), overrides via companion index. Differential 111/111 (1.000/1.000); analyzer fully regex-free.",
+        "note": "grammar upgraded to tree-sitter-scala v0.26.2 (wasm/ + ~/.bb/wasm) — the wired grammar failed on 90.7% of the scala3 corpus (cannot parse match/for/sealed trait/private params/enum/extension/given/opaque); v0.26.2 parses all 400 sample files with 0 errors and every construct in the Scala 2+3 matrix. Analyzer rewritten against v0.26.2 AST: abstract function_declaration methods, instance_expression constructors (instantiates), extension/given/enum-case/constructor-property symbols, single-pass call extraction (no duplicates), locals in function bodies suppressed (Kotlin contract), overrides via companion index. Edge-case verification added fixture EdgeCases.scala (curried calls, function-type params, as/=> renamed imports) and fixed a cross-language denylist bug that dropped legitimate Scala symbols named process/window/module. Differential 124/124 (1.000/1.000); analyzer fully regex-free.",
         "measuredAt": "2026-08-14T02:16:04.129Z"
       }
     },

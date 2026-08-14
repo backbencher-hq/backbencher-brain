@@ -2,10 +2,11 @@
   "schemaVersion": 1,
   "kind": "per_analyzer_differential:scala",
   "truthSource": "manual_audit",
-  "truthReference": "validation/m12/fixtures/scala/ (Models.scala, BaseService.scala, Repository.scala, UserService.scala, Extensions.scala, Negative.scala) — hand-audited against Scala 2/3 semantics",
+  "truthReference": "validation/m12/fixtures/scala/ (Models.scala, BaseService.scala, Repository.scala, UserService.scala, Extensions.scala, Negative.scala, EdgeCases.scala) — hand-audited against Scala 2/3 semantics",
   "fixtureDir": "validation/m12/fixtures/scala",
   "fixtures": [
     "BaseService.scala",
+    "EdgeCases.scala",
     "Extensions.scala",
     "Models.scala",
     "Negative.scala",
@@ -16,6 +17,10 @@
     "BaseService.scala": {
       "symbols": 3,
       "relationships": 2
+    },
+    "EdgeCases.scala": {
+      "symbols": 4,
+      "relationships": 9
     },
     "Extensions.scala": {
       "symbols": 6,
@@ -42,9 +47,9 @@
     "schemaVersion": 1,
     "passed": true,
     "metrics": {
-      "expected": 111,
-      "observedResolved": 111,
-      "truePositive": 111,
+      "expected": 124,
+      "observedResolved": 124,
+      "truePositive": 124,
       "falsePositive": 0,
       "falseNegative": 0,
       "unknown": 0,
@@ -61,6 +66,15 @@
     "truePositiveIds": [
       "rel:BaseService.scala:contains:BaseService:format",
       "rel:BaseService.scala:contains:BaseService:save",
+      "rel:EdgeCases.scala:calls:process:f",
+      "rel:EdgeCases.scala:calls:useSelf:add",
+      "rel:EdgeCases.scala:calls:useSelf:process",
+      "rel:EdgeCases.scala:contains:EdgeCases:add",
+      "rel:EdgeCases.scala:contains:EdgeCases:process",
+      "rel:EdgeCases.scala:contains:EdgeCases:useSelf",
+      "rel:EdgeCases.scala:references:root:a.b",
+      "rel:EdgeCases.scala:references:root:q.r",
+      "rel:EdgeCases.scala:references:root:x.y.Z",
       "rel:Extensions.scala:contains:given_12:compare",
       "rel:Extensions.scala:references:root:scala.collection.mutable.ArrayBuffer",
       "rel:Models.scala:contains:Circle:constructor",
@@ -119,6 +133,10 @@
       "symbol:BaseService.scala:3:interface:BaseService",
       "symbol:BaseService.scala:4:method:save",
       "symbol:BaseService.scala:5:method:format",
+      "symbol:EdgeCases.scala:10:method:useSelf",
+      "symbol:EdgeCases.scala:7:module:EdgeCases",
+      "symbol:EdgeCases.scala:8:method:add",
+      "symbol:EdgeCases.scala:9:method:process",
       "symbol:Extensions.scala:12:constant:given_12",
       "symbol:Extensions.scala:13:function:compare",
       "symbol:Extensions.scala:16:function:buildBuffer",
@@ -181,11 +199,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:scala",
-      "wallTimeMs": 19.812435,
-      "userCpuMs": 58.02,
-      "systemCpuMs": 4.577,
-      "peakRssBytes": 240611328,
-      "rssDeltaBytes": 5373952,
+      "wallTimeMs": 93.533916,
+      "userCpuMs": 170.375,
+      "systemCpuMs": 4.997,
+      "peakRssBytes": 228139008,
+      "rssDeltaBytes": 6557696,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
