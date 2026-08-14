@@ -49,6 +49,27 @@
       }
     },
     {
+      "analyzer": "clojure",
+      "corpusTarget": "clojure",
+      "status": "measured",
+      "candidates": [
+        "clojure@2cea6925(clean)"
+      ],
+      "measured": {
+        "revision": "2cea69253b9ed27436e93632b9a27c2f99088a49",
+        "sample": "141 tracked *.clj files (full corpus, deterministic git ls-files)",
+        "fixtures": 2,
+        "fixtureFacts": 48,
+        "precision": 1,
+        "recall": 1,
+        "corpusSymbols": 4450,
+        "corpusRelationships": 8708,
+        "grammarErrorFiles": 0,
+        "note": "grammar upgraded to @yogthos/tree-sitter-clojure 0.0.14 (wasm/ + ~/.bb/wasm) — parses ^Type hints and ^{:meta} metadata maps the old 0.4.0 grammar failed on (128/141 errored); 0/141 grammar errors now; analyzer rewritten against new AST vocabulary (list_lit/sym_lit/sym_name/sym_ns/vec_lit/kwd_lit/anon_fn_lit), fully regex-free",
+        "measuredAt": "2026-08-13T04:11:09.180Z"
+      }
+    },
+    {
       "analyzer": "scala",
       "corpusTarget": "scala3",
       "status": "measured",
