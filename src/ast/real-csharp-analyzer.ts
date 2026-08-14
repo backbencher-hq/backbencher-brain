@@ -1,61 +1,108 @@
-function stringIncludes(str: string, val: string): boolean {
-  return str.indexOf(val) !== -1
-}
-
-function findTableAttr(attributes: string[]): string | undefined {
-  for (let i = 0; i < attributes.length; i++) {
-    if (attributes[i] === "Table" || attributes[i].startsWith("Table(")) {
-      return attributes[i];
-    }
-  }
-  return undefined;
-}
+// Pure-AST C# analyzer — M12 per-analyzer perfection contract.
+//
+// Emits exactly the M12 differential contract (mirroring the Java family):
+//   Symbols: namespace, class, interface, struct, record, enum, enum_member,
+//            delegate, event, method, constructor, property. NO locals, NO
+//            parameters, NO accessor scopes, NO synthetic members.
+//   Relationships: contains, extends, implements, calls, instantiates,
+//            overrides (qualified Owner.method -> Parent.method), uses
+//            (field access), references (imports -> module paths).
+//
+// Grammar notes (tree-sitter-c-sharp v0.23.5, upgraded for M12.07):
+//   * primary constructors (C# 12) parse cleanly (the previously wired
+//     grammar failed on them)
+//   * C# base lists have no keyword distinction (unlike Java's
+//     extends/implements): the first entry may be a base class OR an
+//     interface. Kind is resolved via the optional type-kind companion
+//     (context.typeKinds, built by the harness pre-pass from the cross-file
+//     symbol space — same machinery as the override companion); unknown
+//     external types use the deterministic C# language rule: first base =
+//     extends, remaining = implements.
 
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
+import { findDeclaringParent } from "./override-context"
+
+interface Scope {
+  node: Node
+  name: string // full name (namespace-qualified for types)
+  rawName: string
+  kind: ASTEngine.SymbolKind
+  fqn: string
+  symbolRef?: ASTEngine.UniversalSymbol
+  visibility: "public" | "private" | "protected" | "internal" | undefined
+  isInterface: boolean
+  parents: string[]
+}
+
+interface OverrideTask {
+  fqn: string
+  methodName: string
+  signature: string
+  ownerFqn: string
+}
+
+interface StackItem {
+  node: Node
+  parentContext?: Scope
+  isExit?: boolean
+}
+
+const CSHARP_BUILTINS = new Set([
+  // Console output — filtered (like Java's System.out.println)
+  "Console.WriteLine", "Console.Write", "Console.WriteAsync",
+  "Console.Error.WriteLine", "Console.Error.Write", "Console.Error.WriteAsync",
+  "Console.Out.WriteLine", "Console.Out.Write", "Console.Out.WriteAsync",
+  // System-level noise
+  "Environment.Exit", "Environment.GetEnvironmentVariable",
+  "Environment.GetEnvironmentVariables", "Environment.SetEnvironmentVariable",
+  "GC.Collect", "GC.SuppressFinalize", "GC.WaitForPendingFinalizers",
+  "Debug.WriteLine", "Debug.Write", "Debug.Print",
+  "Trace.WriteLine", "Trace.Write",
+  // Object methods (C# equivalent of Java's Object methods)
+  "ToString", "GetHashCode", "Equals", "GetType", "ReferenceEquals",
+])
 
 export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
-  analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
+  analyze(
+    rootNode: Node,
+    content: string,
+    filePath: string,
+    context?: ASTEngine.AnalyzeContext,
+  ): Omit<ASTEngine.ParseResult, "language" | "metadata"> & { metadata: Partial<ASTEngine.FileMetadata> } {
     const symbols: ASTEngine.UniversalSymbol[] = []
     const relationships: ASTEngine.UniversalRelationship[] = []
     const imports: ASTEngine.ImportInfo[] = []
     const exports: ASTEngine.ExportInfo[] = []
     const errors: ASTEngine.ParseError[] = []
 
-    const patterns: Record<string, boolean> = {}
-    const frameworks: Record<string, boolean> = {}
-
-    interface Scope {
-      node: Node
-      name: string
-      rawName: string
-      kind: ASTEngine.SymbolKind
-      visibility: "public" | "private" | "protected" | "internal"
-      symbolRef?: ASTEngine.UniversalSymbol
-      isStatic: boolean
-    }
+    const symbolMap = new Map<string, ASTEngine.UniversalSymbol>()
+    const classHierarchy = new Map<string, string[]>()
+    const overrideTasks: OverrideTask[] = []
+    // In-file declared type name -> kind. Built in a pre-pass so base-list
+    // kind resolution works regardless of declaration order (C# allows a
+    // class to implement an interface declared later in the same file).
+    const typeKinds = new Map<string, string>()
+    this.collectDeclaredTypeKinds(rootNode, typeKinds)
 
     const scopeStack: Scope[] = []
-
-    interface StackItem {
-      node: Node
-      parentContext?: Scope
-      isExit?: boolean
-    }
-
+    // File-scoped namespaces (C# 10: `namespace A.B;`) apply to every type
+    // declared after them in the file — the type declarations are SIBLINGS of
+    // the namespace node, so the namespace scope is tracked here instead of
+    // the scope stack (which only handles true lexical nesting).
+    let fileScopedNamespace: Scope | undefined = undefined
     const stack: StackItem[] = [{ node: rootNode }]
     let cyclomaticComplexity = 1
-
-    // Track namespace-level symbols for export population
-    const namespaceScoped: ASTEngine.UniversalSymbol[] = []
 
     while (stack.length > 0) {
       const item = stack.pop()!
       const { node, parentContext, isExit } = item
 
       if (isExit) {
-        if (parentContext && scopeStack.length > 0 && scopeStack[scopeStack.length - 1] === parentContext) {
-          scopeStack.pop()
+        if (parentContext) {
+          if (scopeStack.length > 0 && scopeStack[scopeStack.length - 1] === parentContext) {
+            scopeStack.pop()
+          }
         }
         continue
       }
@@ -71,23 +118,20 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
 
       let newContext = parentContext
-      let pushedScope = false
       const type = node.type
+      let pushedScope = false
 
-      // Complexity metrics
-      const complexityNodes = (function(){ const r: Record<string, boolean> = {}; const arr = [
-        "if_statement", "for_statement", "foreach_statement", "while_statement", 
-        "case_switch_label", "catch_declaration", "conditional_expression", 
-        "logical_and_expression", "logical_or_expression"
-      ]; for(let i=0;i<arr.length;i++) r[arr[i]] = true; return r; })()
-      if (!!complexityNodes[type]) {
-        cyclomaticComplexity++
-      }
+      // Cyclomatic complexity
+      const complexityNodes = new Set([
+        "if_statement", "for_statement", "foreach_statement", "while_statement",
+        "case_switch_label", "catch_declaration", "conditional_expression",
+        "logical_and_expression", "logical_or_expression",
+      ])
+      if (complexityNodes.has(type)) cyclomaticComplexity++
 
       if (type === "using_directive" || type === "using_static_directive") {
-        const isStatic = type === "using_static_directive"
         const nameNode =
-          this.findChild(node, "identifier") || this.findChild(node, "qualified_name") || this.findChild(node, "name")
+          this.findChild(node, (n) => n.type === "identifier" || n.type === "qualified_name" || n.type === "name")
         if (nameNode) {
           const text = nameNode.text
           imports.push({
@@ -97,155 +141,21 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             range: this.nodeToRange(node),
             isTypeOnly: false,
           })
-          // depends: using directive = compile-time dependency
           relationships.push({
-            source: "global",
+            source: "root",
             target: text,
             type: ASTEngine.RelationshipType.References,
             confidence: 0.9,
-            metadata: { isUsingDirective: true }
+            metadata: { isUsingDirective: true },
           })
-
           const lowerText = text.toLowerCase()
-          if (lowerText.startsWith("system.linq")) patterns["LINQ"] = true
-          if (lowerText.startsWith("system.threading.tasks")) patterns["Async/Await"] = true
-          if (lowerText.startsWith("microsoft.aspnetcore") || lowerText.startsWith("microsoft.extensions"))
-            frameworks["ASP.NET Core"] = true
-          if (lowerText.startsWith("microsoft.entityframeworkcore")) frameworks["Entity Framework"] = true
-          if (lowerText.startsWith("unityengine")) frameworks["Unity3D"] = true
-          if (lowerText.startsWith("xunit") || lowerText.startsWith("nunit")) frameworks["Testing"] = true
-          if (text === "Microsoft.AspNetCore.Mvc") patterns["MVC Pattern"] = true
+          if (lowerText.startsWith("system.linq")) (this as any)._patterns ? null : null
         }
       }
 
-      if (type === "invocation_expression") {
-        const methodNode = this.findChild(node, "identifier") || this.findChild(node, "member_access_expression")
-        if (methodNode) {
-          let targetName = methodNode.text
-          let qualifiedName = targetName
-
-          if (methodNode.type === "member_access_expression") {
-            // obj.Method() or Class.StaticMethod()
-            const nameNode = methodNode.childForFieldName("name")
-            const exprNode = methodNode.childForFieldName("expression")
-            if (nameNode) {
-              if (nameNode.type === "generic_name") {
-                targetName = nameNode.childForFieldName("name")?.text || nameNode.text.split("<")[0]
-              } else {
-                targetName = nameNode.text
-              }
-              qualifiedName = exprNode ? `${exprNode.text}.${targetName}` : targetName
-            }
-          }
-
-          const source = parentContext?.name || "global"
-
-          // Skip simple property access disguised as invocation
-          relationships.push({
-            source,
-            target: targetName,
-            fromSymbol: source,
-            toSymbol: qualifiedName,
-            type: ASTEngine.RelationshipType.Calls,
-            metadata: { qualified: qualifiedName },
-          })
-
-          // Minimal API detection
-          if (targetName === "MapGet" || targetName === "MapPost" || targetName === "MapPut" || targetName === "MapDelete" || targetName === "MapGroup") {
-            patterns["Minimal API"] = true
-            const argList = this.findChild(node, "argument_list")
-            const firstArg = argList?.namedChild(0)
-            let routeTarget = "Route"
-            if (firstArg) {
-              const stringLit = this.findChild(firstArg, "string_literal") || (firstArg.type === "string_literal" ? firstArg : null)
-              if (stringLit) {
-                routeTarget = stringLit.text.replace(/"/g, "")
-              }
-            }
-            relationships.push({
-              source,
-              target: routeTarget,
-              type: ASTEngine.RelationshipType.Provides,
-              metadata: { isMinimalApi: true, httpMethod: targetName.replace("Map", "").toUpperCase() },
-            })
-          }
-
-          // Dependency Injection detection
-          if (targetName === "AddScoped" || targetName === "AddSingleton" || targetName === "AddTransient") {
-            const lifetime = targetName.replace("Add", "")
-            relationships.push({
-              source,
-              target: "Service",
-              type: ASTEngine.RelationshipType.References,
-              metadata: { isDependencyInjection: true, lifetime },
-            })
-          }
-
-          // ASP.NET / Framework detection
-          if (targetName === "UseRouting" || targetName === "UseEndpoints" || targetName === "UseAuthorization") {
-            frameworks["ASP.NET Core"] = true
-          }
-          if (qualifiedName.includes("DbContext") || targetName === "SaveChanges") {
-            frameworks["Entity Framework"] = true
-          }
-        }
-      }
-
-      if (type === "object_creation_expression") {
-        const typeNode = this.extractTypeString(node)
-        if (typeNode) {
-          const source = parentContext?.name || "global"
-          relationships.push({
-            source,
-            target: typeNode,
-            fromSymbol: source,
-            toSymbol: typeNode,
-            type: ASTEngine.RelationshipType.Instantiates,
-            metadata: { isNew: true },
-          })
-        }
-      }
-
-      if (type === "lambda_expression") patterns["Lambda"] = true
-      if (type === "record_declaration" || type === "record_struct_declaration") patterns["Records"] = true
-      if (type === "yield_statement") patterns["Yield Iterators"] = true
-      if (type === "await_expression") patterns["Async/Await"] = true
-      if (type === "query_expression") patterns["LINQ"] = true
-
-      let visibility: "public" | "private" | "protected" | "internal" =
-        parentContext?.kind === ASTEngine.SymbolKind.Interface ? "public" : "private"
-      let isStatic = false
-      let isAsync = false
-      let isAbstract = false
-      let isVirtual = false
-      let isOverride = false
-      let isReadOnly = false
-      let isConst = false
-
-      const attributes = this.extractAttributes(node)
-
-      for (let i = 0; i < node.namedChildCount; i++) {
-        const child = node.namedChild(i)
-        if (child && child.type === "modifier") {
-          const text = child.text
-          if (text === "public") visibility = "public"
-          else if (text === "private") visibility = "private"
-          else if (text === "protected") visibility = "protected"
-          else if (text === "internal") visibility = "internal"
-          else if (text === "static") isStatic = true
-          else if (text === "async") isAsync = true
-          else if (text === "abstract") isAbstract = true
-          else if (text === "virtual") isVirtual = true
-          else if (text === "override") isOverride = true
-          else if (text === "readonly") isReadOnly = true
-          else if (text === "const") isConst = true
-        }
-      }
-
-      if (type === "namespace_declaration" || type === "file_scoped_namespace_declaration") {
-        const rawName = node.childForFieldName("name")?.text || this.childText(node, "identifier") || this.childText(node, "qualified_name") || "anonymous"
+      if (type === "namespace_declaration") {
+        const rawName = this.extractNamespaceName(node)
         const fullName = this.buildFullName(scopeStack, rawName)
-
         symbols.push({
           name: rawName,
           kind: ASTEngine.SymbolKind.Namespace,
@@ -255,14 +165,37 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         })
         newContext = {
           node,
-          name: fullName,
+          name: rawName,
           rawName,
           kind: ASTEngine.SymbolKind.Namespace,
+          fqn: fullName,
           visibility: "public",
-          isStatic: false,
+          isInterface: false,
+          parents: [],
         }
         scopeStack.push(newContext)
         pushedScope = true
+      } else if (type === "file_scoped_namespace_declaration") {
+        const rawName = this.extractNamespaceName(node)
+        const fullName = this.buildFullName(scopeStack, rawName)
+        symbols.push({
+          name: rawName,
+          kind: ASTEngine.SymbolKind.Namespace,
+          range: this.nodeToRange(node),
+          visibility: "public",
+          metadata: { isCSharpNamespace: true, fullName, isFileScoped: true },
+        })
+        // File-scoped namespace: applies to all following sibling declarations.
+        fileScopedNamespace = {
+          node,
+          name: rawName,
+          rawName,
+          kind: ASTEngine.SymbolKind.Namespace,
+          fqn: fullName,
+          visibility: "public",
+          isInterface: false,
+          parents: [],
+        }
       } else if (
         type === "class_declaration" ||
         type === "struct_declaration" ||
@@ -271,99 +204,93 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         type === "record_struct_declaration"
       ) {
         let rawName = node.childForFieldName("name")?.text || this.childText(node, "identifier") || "anonymous"
-        
-        if (rawName.endsWith("Controller")) {
-            patterns["MVC Pattern"] = true
-        }
-        if (stringIncludes(rawName, "Repository")) {
-            patterns["Repository Pattern"] = true
-        }
+        if (rawName.endsWith("Controller")) (this as any).mvcPattern = true
 
         const fullName = this.buildFullName(scopeStack, rawName)
-        const kind = stringIncludes(type, "interface")
+        const isInterface = type === "interface_declaration"
+        const kind = isInterface
           ? ASTEngine.SymbolKind.Interface
           : stringIncludes(type, "struct")
             ? ASTEngine.SymbolKind.Struct
             : ASTEngine.SymbolKind.Class
 
-        const baseClasses: string[] = []
+        const visibility = this.extractVisibility(node)
+        typeKinds.set(rawName, kind)
+        // The owner of a top-level type: a file-scoped namespace if one is in
+        // effect (its scope is lexical-file-wide, not a tree ancestor), else
+        // the enclosing block namespace (a true tree ancestor).
+        const ownerScope =
+          parentContext?.kind === ASTEngine.SymbolKind.Namespace
+            ? parentContext
+            : fileScopedNamespace && !parentContext
+              ? fileScopedNamespace
+              : undefined
+
+        // Base list: C# has no keyword distinction. Resolve each base type's
+        // kind: in-file declarations first, then the cross-file type-kind
+        // companion; unknown external types use the deterministic language
+        // rule (first base = extends, rest = implements; interfaces: all
+        // bases are extends).
+        const parents: string[] = []
         const baseList = this.findChild(node, "base_list")
         if (baseList) {
+          const baseTypes: string[] = []
           for (let i = 0; i < baseList.namedChildCount; i++) {
             const baseType = baseList.namedChild(i)
-            if (baseType) {
-              baseClasses.push(baseType.text)
-              const isInterfaceBase = baseType.text.startsWith("I") && baseType.text.length > 1 && baseType.text[1] === baseType.text[1].toUpperCase()
+            if (baseType) baseTypes.push(this.cleanTypeName(baseType.text))
+          }
+          if (isInterface) {
+            // All base types of an interface are extended interfaces.
+            for (const b of baseTypes) {
+              parents.push(b)
               relationships.push({
                 source: fullName,
-                target: baseType.text,
-                type: isInterfaceBase
-                  ? ASTEngine.RelationshipType.Implements
-                  : ASTEngine.RelationshipType.Extends,
-                metadata: {},
+                target: b,
+                type: ASTEngine.RelationshipType.Extends,
+                confidence: 1.0,
+                metadata: { isInterfaceBase: true },
+              })
+            }
+          } else {
+            const crossFileKinds = context?.typeKinds as Map<string, string> | undefined
+            for (let i = 0; i < baseTypes.length; i++) {
+              const b = baseTypes[i]
+              parents.push(b)
+              // Resolve the declared kind: exact in-file name, then exact
+              // cross-file companion name, then qualified-name leaf (a nested
+              // type like BaseService.Entity is keyed by its leaf Entity in
+              // both the in-file map and the companion).
+              const dotIdx = b.lastIndexOf(".")
+              const leaf = dotIdx > 0 ? b.slice(dotIdx + 1) : b
+              const declaredKind =
+                typeKinds.get(b) || crossFileKinds?.get(b) ||
+                typeKinds.get(leaf) || crossFileKinds?.get(leaf)
+              // Unknown externals follow the deterministic C# rule: the base
+              // class, if any, is listed first and the rest are interfaces.
+              const isImplements = declaredKind === ASTEngine.SymbolKind.Interface || (i > 0 && !declaredKind)
+              relationships.push({
+                source: fullName,
+                target: b,
+                type: isImplements ? ASTEngine.RelationshipType.Implements : ASTEngine.RelationshipType.Extends,
+                confidence: 1.0,
+                metadata: { isImplements },
               })
             }
           }
         }
-        
-        let hasGenericConstraints = false
+        classHierarchy.set(fullName, parents)
+
+        // Generic type parameters (no symbols — suppressed like Java)
         const typeParamsNode = this.findChild(node, "type_parameter_list")
         const genericTypes: string[] = []
         if (typeParamsNode) {
-            patterns["Generics"] = true
-            for(let i = 0; i < typeParamsNode.namedChildCount; i++) {
-                const child = typeParamsNode.namedChild(i)
-                if (child) genericTypes.push(child.text)
-            }
-        }
-        if (this.findChild(node, "type_parameter_constraints_clause")) {
-             hasGenericConstraints = true
-             const cc = this.findChild(node, "type_parameter_constraints_clause"); if (cc) { for (let ci = 0; ci < cc.namedChildCount; ci++) { const cn = cc.namedChild(ci); if (cn && cn.type === "type_parameter_constraint") { const ti = this.findChild(cn, "identifier") || this.findChild(cn, "qualified_name"); if (ti && genericTypes.length > 0) { relationships.push({ source: fullName + "." + (genericTypes[0] || "T"), target: ti.text, type: ASTEngine.RelationshipType.References, metadata: { isGenericConstraint: true } }) } } } }
-             // Extract constraint types as references
-             const constraintsClause = this.findChild(node, "type_parameter_constraints_clause")
-             if (constraintsClause) {
-               for (let ci = 0; ci < constraintsClause.namedChildCount; ci++) {
-                 const cn = constraintsClause.namedChild(ci)
-                 if (cn && cn.type === "type_parameter_constraint") {
-                   const typeId = this.findChild(cn, "identifier") || this.findChild(cn, "qualified_name")
-                   if (typeId && genericTypes.length > 0) {
-                     relationships.push({
-                       source: fullName + "." + (genericTypes[0] || "T"),
-                       target: typeId.text,
-                       type: ASTEngine.RelationshipType.References,
-                       metadata: { isGenericConstraint: true },
-                     })
-                   }
-                 }
-               }
-             }
-        }
-        
-        // Check for Entity Framework Table attribute
-        const tableAttr = findTableAttr(attributes)
-        if (tableAttr) {
-            frameworks["Entity Framework"] = true
-            // Extract table name from [Table("name")] — pure string ops
-            let tableName = rawName
-            const tableIdx = tableAttr.indexOf("Table(")
-            if (tableIdx !== -1) {
-              const afterTable = tableAttr.substring(tableIdx + 6)
-              const quoteIdx = afterTable.indexOf('"')
-              if (quoteIdx !== -1) {
-                const endQuoteIdx = afterTable.indexOf('"', quoteIdx + 1)
-                if (endQuoteIdx !== -1) {
-                  tableName = afterTable.substring(quoteIdx + 1, endQuoteIdx)
-                }
-              }
-            }
-            relationships.push({
-                source: fullName,
-                target: tableName,
-                type: ASTEngine.RelationshipType.References,
-                metadata: { isDatabase: true, relationshipType: "mapped_table" }
-            })
+          for (let i = 0; i < typeParamsNode.namedChildCount; i++) {
+            const child = typeParamsNode.namedChild(i)
+            if (child) genericTypes.push(child.text)
+          }
         }
 
+        // Record positional properties (Roslyn: record params are properties)
         const isRecord = stringIncludes(type, "record")
         const paramList = this.findChild(node, "parameter_list")
         if (isRecord && paramList) {
@@ -377,7 +304,6 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
                 kind: ASTEngine.SymbolKind.Property,
                 range: this.nodeToRange(p),
                 visibility: "public",
-                isStatic: false,
                 ownerName: rawName,
                 ownerKind: kind,
                 metadata: { hasGet: true, hasInit: true, dataType: pType, isRecordProperty: true },
@@ -391,61 +317,75 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           kind,
           range: this.nodeToRange(node),
           visibility,
-          isStatic,
-          isAbstract,
-          ownerName: parentContext?.name,
-          ownerKind: parentContext?.kind,
-          decorators: attributes.length > 0 ? attributes : undefined,
+          ownerName: ownerScope ? ownerScope.rawName : parentContext?.rawName,
+          ownerKind: ownerScope ? ownerScope.kind : parentContext?.kind,
+          decorators: this.extractAttributes(node),
           metadata: {
             isCSharpType: true,
             isStruct: kind === ASTEngine.SymbolKind.Struct,
             isValueType: kind === ASTEngine.SymbolKind.Struct,
             isRecord,
-            baseTypes: baseClasses,
             genericTypes: genericTypes.length > 0 ? genericTypes : undefined,
-            hasGenericConstraints,
-            fullName
+            fullName,
+            isInterface,
           },
         }
         symbols.push(sym)
-        if (!parentContext || parentContext.kind === ASTEngine.SymbolKind.Namespace) namespaceScoped.push(sym)
-        newContext = { node, name: fullName, rawName, kind, visibility, symbolRef: sym, isStatic }
+        if (!parentContext || parentContext.kind === ASTEngine.SymbolKind.Namespace) {
+          exports.push({ name: sym.name, kind: sym.kind, range: sym.range, visibility: visibility || "public" })
+        }
+        newContext = {
+          node,
+          name: fullName,
+          rawName,
+          kind,
+          fqn: fullName,
+          visibility,
+          symbolRef: sym,
+          isInterface,
+          parents,
+        }
         scopeStack.push(newContext)
         pushedScope = true
       } else if (type === "enum_declaration") {
         const rawName = node.childForFieldName("name")?.text || this.childText(node, "identifier") || "anonymous"
         const fullName = this.buildFullName(scopeStack, rawName)
-        
-        let baseType = undefined
-        const baseList = this.findChild(node, "base_list")
-        if (baseList) {
-           baseType = baseList.namedChild(0)?.text
-        }
+        const visibility = this.extractVisibility(node)
+        typeKinds.set(rawName, ASTEngine.SymbolKind.Enum)
+        const ownerScope =
+          parentContext?.kind === ASTEngine.SymbolKind.Namespace
+            ? parentContext
+            : fileScopedNamespace && !parentContext
+              ? fileScopedNamespace
+              : undefined
 
-        const values: string[] = []
-        const enumBody = this.findChild(node, "enum_member_declaration_list")
-        if (enumBody) {
-            for (let i = 0; i < enumBody.namedChildCount; i++) {
-                const member = enumBody.namedChild(i)
-                if (member && member.type === "enum_member_declaration") {
-                    values.push(this.childText(member, "identifier") || member.text)
-                }
-            }
-        }
-        
-        let hasFlags = false; for(let i=0; i<attributes.length; i++) { if (attributes[i] === "Flags" || attributes[i] === "System.Flags") { hasFlags = true; break; } }
+        let baseType: string | undefined
+        const baseList = this.findChild(node, "base_list")
+        if (baseList) baseType = baseList.namedChild(0)?.text
 
         symbols.push({
           name: rawName,
           kind: ASTEngine.SymbolKind.Enum,
           range: this.nodeToRange(node),
           visibility,
-          ownerName: parentContext?.name,
-          ownerKind: parentContext?.kind,
-          decorators: attributes.length > 0 ? attributes : undefined,
-          metadata: { isEnum: true, values, baseType, hasFlags, fullName },
+          ownerName: ownerScope ? ownerScope.rawName : parentContext?.rawName,
+          ownerKind: ownerScope ? ownerScope.kind : parentContext?.kind,
+          decorators: this.extractAttributes(node),
+          metadata: { isEnum: true, baseType, fullName },
         })
-        newContext = { node, name: fullName, rawName, kind: ASTEngine.SymbolKind.Enum, visibility, isStatic: false }
+        if (!parentContext || parentContext.kind === ASTEngine.SymbolKind.Namespace) {
+          exports.push({ name: rawName, kind: ASTEngine.SymbolKind.Enum, range: this.nodeToRange(node), visibility: visibility || "public" })
+        }
+        newContext = {
+          node,
+          name: rawName,
+          rawName,
+          kind: ASTEngine.SymbolKind.Enum,
+          fqn: fullName,
+          visibility,
+          isInterface: false,
+          parents: [],
+        }
         scopeStack.push(newContext)
         pushedScope = true
       } else if (type === "enum_member_declaration") {
@@ -457,7 +397,6 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           visibility: "public",
           ownerName: parentContext?.rawName,
           ownerKind: parentContext?.kind,
-          decorators: attributes.length > 0 ? attributes : undefined,
           metadata: {},
         })
       } else if (type === "delegate_declaration") {
@@ -473,25 +412,53 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             parameters.push({ name: parameterName, type: parameter.childForFieldName("type")?.text })
           }
         }
+        const visibility = this.extractVisibility(node)
+        const ownerScope =
+          parentContext?.kind === ASTEngine.SymbolKind.Namespace
+            ? parentContext
+            : fileScopedNamespace && !parentContext
+              ? fileScopedNamespace
+              : undefined
         symbols.push({
           name,
           kind: ASTEngine.SymbolKind.Delegate,
           range: this.nodeToRange(node),
           visibility,
-          ownerName: parentContext?.name,
-          ownerKind: parentContext?.kind,
+          ownerName: ownerScope ? ownerScope.rawName : parentContext?.rawName,
+          ownerKind: ownerScope ? ownerScope.kind : parentContext?.kind,
           parameters,
           returnType,
-          decorators: attributes.length > 0 ? attributes : undefined,
+          decorators: this.extractAttributes(node),
           metadata: { isDelegate: true, returnType },
         })
+      } else if (type === "event_field_declaration") {
+        const varDecl = this.findChild(node, "variable_declaration")
+        const visibility = this.extractVisibility(node)
+        if (varDecl) {
+          for (let i = 0; i < varDecl.namedChildCount; i++) {
+            const child = varDecl.namedChild(i)
+            if (child && child.type === "variable_declarator") {
+              const name = this.childText(child, "identifier") || "anonymous"
+              symbols.push({
+                name,
+                kind: ASTEngine.SymbolKind.Event,
+                range: this.nodeToRange(node),
+                visibility,
+                ownerName: parentContext?.rawName,
+                ownerKind: parentContext?.kind,
+                decorators: this.extractAttributes(node),
+                metadata: { isEvent: true },
+              })
+            }
+          }
+        }
       } else if (type === "operator_declaration" || type === "conversion_operator_declaration") {
+        const visibility = this.extractVisibility(node)
         symbols.push({
           name: "operator",
           kind: ASTEngine.SymbolKind.Method,
           range: this.nodeToRange(node),
-          visibility: "public",
-          isStatic: true,
+          visibility,
           ownerName: parentContext?.rawName,
           ownerKind: parentContext?.kind,
           metadata: { isOperatorOverload: true },
@@ -508,117 +475,127 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           "anonymous"
 
         if (type === "constructor_declaration") name = "constructor"
+        if (type === "destructor_declaration") name = "Finalize"
 
+        const visibility = this.extractVisibility(node)
         const returnType =
           type === "constructor_declaration" || type === "destructor_declaration"
             ? "void"
-            : node.childForFieldName("type")?.text || "void"
+            : node.childForFieldName("type")?.text || this.extractTypeString(node) || "void"
 
         const parameters: ASTEngine.Parameter[] = []
         let isExtensionMethod = false
+        let sigParams = ""
         const paramList = this.findChild(node, "parameter_list")
         if (paramList) {
           for (let i = 0; i < paramList.namedChildCount; i++) {
             const p = paramList.namedChild(i)
             if (p && p.type === "parameter") {
               const pName = p.childForFieldName("name")?.text || this.childText(p, "identifier") || "anonymous"
-              const pType = p.childForFieldName("type")?.text || this.extractTypeString(p)
-              if (p.text.startsWith("this ")) {
-                  isExtensionMethod = true
-                  patterns["Extension Methods"] = true
-              }
-              parameters.push({
-                name: pName,
-                type: pType,
-              })
+              const pType = p.childForFieldName("type")?.text || this.extractTypeString(p) || "unknown"
+              if (p.text.startsWith("this ")) isExtensionMethod = true
+              parameters.push({ name: pName, type: pType })
+              if (sigParams.length > 0) sigParams += ","
+              sigParams += pType
             }
           }
         }
+        const signature = `(${sigParams})`
 
-        const typeParamsNode = this.findChild(node, "type_parameter_list")
-        const genericTypes: string[] = []
-        if (typeParamsNode) {
-            patterns["Generics"] = true
-            for(let i = 0; i < typeParamsNode.namedChildCount; i++) {
-                const child = typeParamsNode.namedChild(i)
-                if (child) genericTypes.push(child.text)
-            }
-        }
+        const ownerFqn = parentContext ? parentContext.fqn : ""
+        const fqn = parentContext ? `${ownerFqn}.${name}${signature}` : `${name}${signature}`
+        const localOwnerPrefix = parentContext ? `${parentContext.rawName}.${name}${signature}` : `${name}${signature}`
 
-        symbols.push({
+        const sym: ASTEngine.UniversalSymbol = {
           name,
           kind: type === "constructor_declaration" ? ASTEngine.SymbolKind.Constructor : ASTEngine.SymbolKind.Method,
           range: this.nodeToRange(node),
           visibility,
-          isStatic,
-          isAsync,
-          isAbstract,
           ownerName: parentContext?.rawName,
           ownerKind: parentContext?.kind,
           parameters,
           returnType,
-          decorators: attributes.length > 0 ? attributes : undefined,
+          decorators: this.extractAttributes(node),
           metadata: {
-            isVirtual,
-            isOverride,
             returnType,
-            isAsync,
             isExtensionMethod,
-            genericTypes: genericTypes.length > 0 ? genericTypes : undefined
+            isVirtual: this.hasModifier(node, "virtual"),
+            isOverride: this.hasModifier(node, "override"),
+            isAbstract: this.hasModifier(node, "abstract"),
+            isStatic: this.hasModifier(node, "static"),
           },
-        })
-        // Push override relationship
-        if (isOverride && parentContext?.name) {
-          relationships.push({
-            source: `${parentContext.name}.${name}`,
-            target: name,
-            type: ASTEngine.RelationshipType.Overrides,
-            confidence: 0.9,
-            metadata: { isOverride: true }
+        }
+        symbols.push(sym)
+        symbolMap.set(fqn, sym)
+        symbolMap.set(localOwnerPrefix, sym)
+
+        if (this.hasModifier(node, "override")) {
+          overrideTasks.push({
+            fqn: localOwnerPrefix,
+            methodName: name,
+            signature,
+            ownerFqn,
           })
         }
-        newContext = { node, name, rawName: name, kind: ASTEngine.SymbolKind.Method, visibility, isStatic }
-        scopeStack.push(newContext)
-        pushedScope = true
-      } else if (type === "member_access_expression" && !parentContext?.node?.type?.includes("invocation")) {
-        // Field/member access outside invocation: obj.Field or obj.Property
-        const exprNode = node.childForFieldName("expression")
-        const nameNode = node.childForFieldName("name")
-        if (exprNode && nameNode && parentContext?.name) {
-          relationships.push({
-            source: parentContext.name,
-            target: `${exprNode.text}.${nameNode.text}`,
-            type: ASTEngine.RelationshipType.Uses,
-            confidence: 0.7,
-            metadata: { isFieldAccess: true, field: nameNode.text, object: exprNode.text }
-          })
-        }
-      } else if (type === "identifier" && parentContext?.name && !node.text.startsWith("_")) {
-        // Simple variable reference (not field access, not invocation function position)
-        if (node.parent?.type !== "invocation_expression" && node.parent?.type !== "member_access_expression" && node.parent?.type !== "variable_declarator") {
-          relationships.push({
-            source: parentContext.name,
-            target: node.text,
-            type: ASTEngine.RelationshipType.References,
-            confidence: 0.6,
-            metadata: { isVariableRef: true }
-          })
-        }
-      } else if (type === "accessor_declaration") {
-        const name = node.childForFieldName("name")?.text || this.childText(node, "identifier") || node.text.split(" ")[0] || "accessor"
+
         newContext = {
           node,
           name,
           rawName: name,
-          kind: ASTEngine.SymbolKind.Function,
-          visibility: "private",
-          isStatic: false,
+          kind: type === "constructor_declaration" ? ASTEngine.SymbolKind.Constructor : ASTEngine.SymbolKind.Method,
+          fqn: ownerFqn,
+          visibility,
+          symbolRef: sym,
+          isInterface: parentContext?.isInterface ?? false,
+          parents: [],
         }
         scopeStack.push(newContext)
         pushedScope = true
+      } else if (type === "invocation_expression") {
+        const callExpr = this.buildCSharpCallExpression(node)
+        if (callExpr && parentContext?.name && parentContext.kind === ASTEngine.SymbolKind.Method) {
+          if (!this.isCSharpBuiltin(callExpr)) {
+            relationships.push({
+              source: parentContext.rawName,
+              target: callExpr.split(".").pop() || callExpr,
+              type: ASTEngine.RelationshipType.Calls,
+              confidence: 0.9,
+              metadata: { csharpCallExpression: callExpr },
+            })
+          }
+        }
+      } else if (type === "object_creation_expression") {
+        const typeNode = this.findChild(node, (n) =>
+          n.type === "identifier" || n.type === "generic_name" || n.type === "qualified_name" || n.type === "predefined_type",
+        )
+        if (typeNode) {
+          const source = parentContext?.rawName || "global"
+          relationships.push({
+            source,
+            target: this.cleanTypeName(typeNode.text),
+            type: ASTEngine.RelationshipType.Instantiates,
+            confidence: 0.95,
+            metadata: { isNew: true },
+          })
+        }
+      } else if (type === "implicit_object_creation_expression") {
+        // Target-typed `new()` — the type comes from the enclosing
+        // variable_declarator (pure AST resolution).
+        const declaredType = this.resolveImplicitNewType(node)
+        if (declaredType) {
+          const source = parentContext?.rawName || "global"
+          relationships.push({
+            source,
+            target: declaredType,
+            type: ASTEngine.RelationshipType.Instantiates,
+            confidence: 0.95,
+            metadata: { isNew: true, isImplicit: true },
+          })
+        }
       } else if (type === "property_declaration" || type === "indexer_declaration") {
         const name = type === "indexer_declaration" ? "this" : node.childForFieldName("name")?.text || this.childText(node, "identifier") || "anonymous"
         const dataType = this.extractTypeString(node)
+        const visibility = this.extractVisibility(node)
 
         let hasGet = false
         let hasSet = false
@@ -626,7 +603,7 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         let isAutoProperty = false
         const accessorList = this.findChild(node, "accessor_list")
         if (accessorList) {
-          isAutoProperty = true // assume true, verify below
+          isAutoProperty = true
           for (let i = 0; i < accessorList.namedChildCount; i++) {
             const acc = accessorList.namedChild(i)
             if (acc && acc.type === "accessor_declaration") {
@@ -635,7 +612,7 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
               if (stringIncludes(accText, "set")) hasSet = true
               if (stringIncludes(accText, "init")) hasInit = true
               if (this.findChild(acc, "block") || this.findChild(acc, "arrow_expression_clause")) {
-                  isAutoProperty = false
+                isAutoProperty = false
               }
             }
           }
@@ -648,72 +625,29 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           kind: ASTEngine.SymbolKind.Property,
           range: this.nodeToRange(node),
           visibility,
-          isStatic,
           ownerName: parentContext?.rawName,
           ownerKind: parentContext?.kind,
-          decorators: attributes.length > 0 ? attributes : undefined,
+          decorators: this.extractAttributes(node),
           metadata: { hasGet, hasSet, hasInit, isAutoProperty, dataType },
         })
-      } else if (type === "field_declaration" || type === "event_field_declaration") {
+      } else if (type === "field_declaration") {
         const dataType = this.extractTypeString(node)
         const varDecl = this.findChild(node, "variable_declaration")
+        const visibility = this.extractVisibility(node)
         if (varDecl) {
           for (let i = 0; i < varDecl.namedChildCount; i++) {
             const child = varDecl.namedChild(i)
             if (child && child.type === "variable_declarator") {
-              const name = node.childForFieldName("name")?.text || this.childText(child, "identifier") || "anonymous"
+              const name = this.childText(child, "identifier") || "anonymous"
               symbols.push({
                 name,
-                kind: stringIncludes(type, "event") ? ASTEngine.SymbolKind.Event : ASTEngine.SymbolKind.Property,
+                kind: ASTEngine.SymbolKind.Property,
                 range: this.nodeToRange(node),
                 visibility,
-                isStatic,
                 ownerName: parentContext?.rawName,
                 ownerKind: parentContext?.kind,
-                decorators: attributes.length > 0 ? attributes : undefined,
-                metadata: { isReadonly: isReadOnly, isReadOnly, isConst, dataType, isField: true, isEvent: stringIncludes(type, "event") },
-              })
-            }
-          }
-        }
-      } else if (
-        type === "parameter" &&
-        !this.hasAncestor(node, "delegate_declaration") &&
-        parentContext?.node?.type !== "record_declaration" &&
-        parentContext?.node?.type !== "record_struct_declaration" &&
-        parentContext?.node?.type !== "method_declaration" &&
-        parentContext?.node?.type !== "constructor_declaration" &&
-        parentContext?.node?.type !== "destructor_declaration" &&
-        node.parent?.type !== "delegate_declaration" &&
-        parentContext?.node?.type !== "indexer_declaration"
-      ) {
-        const name = node.childForFieldName("name")?.text || this.childText(node, "identifier") || "anonymous"
-        const dataType = node.childForFieldName("type")?.text || this.extractTypeString(node)
-        symbols.push({
-          name,
-          kind: ASTEngine.SymbolKind.Variable,
-          range: this.nodeToRange(node),
-          visibility: "private",
-          ownerName: parentContext?.rawName,
-          ownerKind: parentContext?.kind,
-          metadata: { isParameter: true, dataType },
-        })
-      } else if (type === "local_declaration_statement") {
-        const varDecl = this.findChild(node, "variable_declaration")
-        if (varDecl) {
-          const dataType = this.extractTypeString(varDecl)
-          for (let i = 0; i < varDecl.namedChildCount; i++) {
-            const child = varDecl.namedChild(i)
-            if (child && child.type === "variable_declarator") {
-              const name = node.childForFieldName("name")?.text || this.childText(child, "identifier") || "anonymous"
-              symbols.push({
-                name,
-                kind: ASTEngine.SymbolKind.Variable,
-                range: this.nodeToRange(node),
-                visibility: "private",
-                ownerName: parentContext?.rawName,
-                ownerKind: parentContext?.kind,
-                metadata: { isLocal: true, dataType },
+                decorators: this.extractAttributes(node),
+                metadata: { dataType, isField: true },
               })
             }
           }
@@ -732,9 +666,34 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    for (const s of namespaceScoped) { if (s.visibility !== "private") exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility || "public" }) }
+    // Override resolution: exact-signature BFS first (in-file), then the
+    // cross-file companion (interface-over-superclass), then deterministic
+    // first-parent fallback. Mirrors Java/Kotlin/Scala/Groovy semantics.
+    this.resolveOverrides(overrideTasks, classHierarchy, symbolMap, relationships, context?.overrideCompanion)
 
-    // Post-loop: add contains for owned symbols
+    // Rewrite using-directive reference sources from "root" to the file's
+    // primary type (first top-level type declared). Top-level types live
+    // inside a namespace (block or file-scoped), so the owner may be a
+    // namespace — never a class/interface/enum/struct.
+    const primaryType = symbols.find((s) => {
+      if (s.kind === ASTEngine.SymbolKind.Namespace) return false
+      if (s.ownerKind && s.ownerKind !== ASTEngine.SymbolKind.Namespace) return false
+      return s.kind === ASTEngine.SymbolKind.Class ||
+             s.kind === ASTEngine.SymbolKind.Interface ||
+             s.kind === ASTEngine.SymbolKind.Enum ||
+             s.kind === ASTEngine.SymbolKind.Struct ||
+             s.kind === ASTEngine.SymbolKind.Delegate
+    })
+    if (primaryType) {
+      for (const rel of relationships) {
+        if (rel.type === ASTEngine.RelationshipType.References && rel.source === "root") {
+          rel.source = primaryType.name
+        }
+      }
+    }
+
+    // Contains: owner -> owned members via ownerName (top-level declarations
+    // inside a namespace have the namespace as owner).
     for (const s of symbols) {
       const _owner = s.ownerName || s.scope
       if (_owner) {
@@ -758,34 +717,216 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         cyclomaticComplexity,
         complexity: cyclomaticComplexity,
         linesOfCode: content.split("\n").length,
-        patterns: (() => { const arr: string[] = []; for (const p in patterns) arr.push(p); return arr; })(),
-        detectedFrameworks: (() => { const arr: string[] = []; for (const f in frameworks) arr.push(f); return arr; })(),
         hasTypeInference: true,
-        hasFrameworkIntelligence: true,
-        analysisVersion: "4.0.2-stateless-dfs-final",
+        analysisVersion: "4.1.0-pure-ast-m12",
       },
     }
   }
 
+  /** Pre-pass: record every type declaration's kind for in-file base-list resolution. */
+  private collectDeclaredTypeKinds(rootNode: Node, typeKinds: Map<string, string>): void {
+    const stack: Node[] = [rootNode]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      const t = n.type
+      if (
+        t === "class_declaration" || t === "struct_declaration" ||
+        t === "interface_declaration" || t === "record_declaration" ||
+        t === "record_struct_declaration" || t === "enum_declaration"
+      ) {
+        const name = n.childForFieldName("name")?.text || this.childText(n, "identifier")
+        if (name) {
+          const kind = t === "interface_declaration"
+            ? ASTEngine.SymbolKind.Interface
+            : t === "enum_declaration"
+              ? ASTEngine.SymbolKind.Enum
+              : stringIncludes(t, "struct")
+                ? ASTEngine.SymbolKind.Struct
+                : ASTEngine.SymbolKind.Class
+          typeKinds.set(name, kind)
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const child = n.namedChild(i)
+        if (child) stack.push(child)
+      }
+    }
+  }
+
+  private resolveOverrides(
+    tasks: OverrideTask[],
+    classHierarchy: Map<string, string[]>,
+    symbolMap: Map<string, ASTEngine.UniversalSymbol>,
+    relationships: ASTEngine.UniversalRelationship[],
+    companion?: Map<string, Set<string>>,
+  ) {
+    for (const task of tasks) {
+      let targetFqn: string | null = null
+
+      // Pass 1: exact-signature BFS over the in-file hierarchy.
+      const queue: string[] = []
+      const ownerH = classHierarchy.get(task.ownerFqn)
+      if (ownerH) {
+        for (let i = 0; i < ownerH.length; i++) queue.push(ownerH[i])
+      }
+      const seen: Set<string> = new Set()
+
+      while (queue.length > 0) {
+        const parent = queue.shift()!
+        if (seen.has(parent)) continue
+        seen.add(parent)
+
+        const potentialTargetFqn = `${parent}.${task.methodName}${task.signature}`
+        if (symbolMap.has(potentialTargetFqn)) {
+          targetFqn = potentialTargetFqn
+          break
+        }
+        const pH = classHierarchy.get(parent)
+        if (pH) {
+          for (let i = 0; i < pH.length; i++) queue.push(pH[i])
+        }
+      }
+
+      // Pass 2: cross-file companion declaring-parent resolution.
+      if (!targetFqn && companion && ownerH && ownerH.length > 0) {
+        const declaring = findDeclaringParent(
+          task.methodName,
+          ownerH,
+          companion,
+          (t) => classHierarchy.get(t) ?? [],
+        )
+        if (declaring) targetFqn = `${declaring}.${task.methodName}${task.signature}`
+      }
+
+      // Pass 3: deterministic per-file fallback — first hierarchy parent.
+      if (!targetFqn && ownerH && ownerH.length > 0) {
+        targetFqn = `${ownerH[0]}.${task.methodName}${task.signature}`
+      }
+
+      if (targetFqn) {
+        const localSource = task.fqn.split("(")[0].split(".").slice(-2).join(".")
+        const localTarget = targetFqn.split("(")[0].split(".").slice(-2).join(".")
+        relationships.push({
+          source: localSource,
+          target: localTarget,
+          type: ASTEngine.RelationshipType.Overrides,
+          confidence: 1.0,
+          metadata: { relationshipType: "method_override", isCSharpOverride: true },
+        })
+      }
+    }
+  }
+
+  private buildCSharpCallExpression(node: Node): string | null {
+    const func = node.childForFieldName("function") || this.findChild(node, (n) => n.type === "identifier" || n.type === "generic_name" || n.type === "member_access_expression")
+    if (!func) return null
+    if (func.type === "member_access_expression") {
+      const nameNode = func.childForFieldName("name")
+      const exprNode = func.childForFieldName("expression")
+      if (!nameNode) return null
+      const leaf = nameNode.type === "generic_name" ? nameNode.childForFieldName("name")?.text || nameNode.text.split("<")[0] : nameNode.text
+      if (exprNode) {
+        const expr = this.cleanTypeName(exprNode.text)
+        return `${expr}.${leaf}`
+      }
+      return leaf
+    }
+    if (func.type === "generic_name") {
+      return func.childForFieldName("name")?.text || func.text.split("<")[0]
+    }
+    return func.text
+  }
+
+  private resolveImplicitNewType(node: Node): string | null {
+    // `= new()` inside a variable_declarator: type from the declaration.
+    let cur: Node | null = node.parent
+    while (cur) {
+      if (cur.type === "variable_declarator") {
+        const parentDecl = cur.parent
+        if (parentDecl && parentDecl.type === "variable_declaration") {
+          const typeNode = this.findChild(parentDecl, (n) =>
+            n.type === "generic_name" || n.type === "identifier" || n.type === "qualified_name" || n.type === "predefined_type" || n.type === "nullable_type" || n.type === "array_type",
+          )
+          if (typeNode) return this.cleanTypeName(typeNode.text)
+        }
+        return null
+      }
+      if (cur.type === "field_declaration") return null
+      if (cur.type === "property_declaration") {
+        const typeNode = this.findChild(cur, (n) =>
+          n.type === "generic_name" || n.type === "identifier" || n.type === "qualified_name" || n.type === "predefined_type" || n.type === "nullable_type",
+        )
+        if (typeNode) return this.cleanTypeName(typeNode.text)
+        return null
+      }
+      cur = cur.parent
+    }
+    return null
+  }
+
+  private isCSharpBuiltin(call: string): boolean {
+    if (CSHARP_BUILTINS.has(call)) return true
+    // Leaf Object methods (toString-style calls without qualification)
+    const leaf = call.split(".").pop() || call
+    if (leaf === "ToString" || leaf === "GetHashCode" || leaf === "Equals" || leaf === "GetType" || leaf === "ReferenceEquals") return true
+    // System.* roots are external framework calls — kept (like Java's JDK
+    // calls). Only the explicit builtin list is filtered.
+    return false
+  }
+
+  private extractVisibility(node: Node): "public" | "private" | "protected" | "internal" | undefined {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const child = node.namedChild(i)
+      if (child && child.type === "modifier") {
+        const text = child.text
+        if (text === "public") return "public"
+        if (text === "private") return "private"
+        if (text === "protected") return "protected"
+        if (text === "internal") return "internal"
+      }
+    }
+    return undefined
+  }
+
+  private hasModifier(node: Node, modifier: string): boolean {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const child = node.namedChild(i)
+      if (child && child.type === "modifier" && child.text === modifier) return true
+    }
+    return false
+  }
+
+  private extractNamespaceName(node: Node): string {
+    // file-scoped: `namespace A.B;` → qualified_name; block: `namespace A.B {`
+    const nameNode = this.findChild(node, (n) => n.type === "qualified_name" || n.type === "identifier" || n.type === "name")
+    return nameNode ? nameNode.text : "anonymous"
+  }
+
+  private cleanTypeName(text: string): string {
+    // Strip generic arguments and nullable/array suffixes for identity.
+    const lt = text.indexOf("<")
+    const base = lt > 0 ? text.slice(0, lt) : text
+    const q = base.indexOf("?")
+    return (q > 0 ? base.slice(0, q) : base).trim()
+  }
+
   private buildFullName(scopeStack: { rawName: string }[], name: string): string {
     if (scopeStack.length === 0) return name
-    let res = ""; for (let i = 0; i < scopeStack.length; i++) { res += scopeStack[i].rawName + "."; } return res + name;
+    let res = ""
+    for (let i = 0; i < scopeStack.length; i++) {
+      res += scopeStack[i].rawName + "."
+    }
+    return res + name
   }
 
   private extractTypeString(node: Node): string | undefined {
     const typeNodes = [
-      "predefined_type",
-      "type_identifier",
-      "identifier",
-      "generic_name",
-      "array_type",
-      "nullable_type",
-      "tuple_type",
-      "implicit_type",
+      "predefined_type", "type_identifier", "identifier", "generic_name",
+      "array_type", "nullable_type", "tuple_type", "implicit_type",
     ]
     for (let idx = 0; idx < typeNodes.length; idx++) {
-      const t = typeNodes[idx];
-      const found = this.findChild(node, t)
+      const t = typeNodes[idx]
+      const found = this.findChild(node, (n) => n.type === t)
       if (found) return found.text
     }
     return undefined
@@ -795,16 +936,12 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     const attrs: string[] = []
     const attrLists = this.findAllChildren(node, "attribute_list")
     for (let idx = 0; idx < attrLists.length; idx++) {
-      const list = attrLists[idx];
+      const list = attrLists[idx]
       for (let i = 0; i < list.namedChildCount; i++) {
         const attr = list.namedChild(i)
         if (attr && attr.type === "attribute") {
-          const nameNode = this.findChild(attr, "identifier") || this.findChild(attr, "qualified_name") || this.findChild(attr, "name")
-          let attrText = nameNode?.text || attr.text
-          if (stringIncludes(attr.text, "(")) {
-             attrText = attr.text
-          }
-          if (attrText) attrs.push(attrText)
+          const nameNode = this.findChild(attr, (n) => n.type === "identifier" || n.type === "qualified_name" || n.type === "name")
+          if (nameNode) attrs.push(nameNode.text)
         }
       }
     }
@@ -822,10 +959,11 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
-  private findChild(node: Node, type: string): Node | null {
+  private findChild(node: Node, type: string | ((n: Node) => boolean)): Node | null {
     for (let i = 0; i < node.namedChildCount; i++) {
       const child = node.namedChild(i)
-      if (child && child.type === type) return child
+      if (!child) continue
+      if (typeof type === "string" ? child.type === type : type(child)) return child
     }
     return null
   }
@@ -843,13 +981,8 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     const child = this.findChild(node, type)
     return child ? child.text : null
   }
+}
 
-  private hasAncestor(node: Node, type: string): boolean {
-    let current = node.parent
-    while (current) {
-      if (current.type === type) return true
-      current = current.parent
-    }
-    return false
-  }
+function stringIncludes(str: string, val: string): boolean {
+  return str.indexOf(val) !== -1
 }

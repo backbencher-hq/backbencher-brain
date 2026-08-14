@@ -120,7 +120,20 @@
         "roslyn@73241b4b(clean)",
         "fsharp@22a8a5dc(clean)",
         "powershell@91ce9844(clean)"
-      ]
+      ],
+      "measured": {
+        "revision": "73241b4beaccbdb6e8f7eb78f5377a01c88ddc21",
+        "sample": "400 tracked *.cs files (deterministic first-400 sorted)",
+        "fixtures": 5,
+        "fixtureFacts": 166,
+        "precision": 1,
+        "recall": 1,
+        "corpusSymbols": 4451,
+        "corpusRelationships": 17563,
+        "grammarErrorFiles": 0,
+        "note": "grammar upgraded to tree-sitter-c-sharp v0.23.5 (wasm/ + ~/.bb/wasm) — the wired grammar failed on primary constructors (C# 12); v0.23.5 parses all 30 constructs in the matrix and 0/400 roslyn sample files error (0 missing tokens). Analyzer rewritten pure-AST: no locals/params/accessor scopes/bare-identifier reference noise, no synthetic members; base-list kind resolution via the shared type-kind companion (C# has no extends/implements keyword — first base may be a class OR an interface); overrides via the shared companion (interface-over-superclass); target-typed new() resolves from the enclosing variable declarator; indexers named this, operators named operator, records -> class, record params -> property. Differential 166/166 (1.000/1.000); analyzer fully regex-free.",
+        "measuredAt": "2026-08-14T05:01:22.568Z"
+      }
     },
     {
       "analyzer": "fsharp",
