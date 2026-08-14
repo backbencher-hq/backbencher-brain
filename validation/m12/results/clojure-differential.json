@@ -98,11 +98,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:clojure",
-      "wallTimeMs": 25.84971,
-      "userCpuMs": 44.064,
-      "systemCpuMs": 4.087,
-      "peakRssBytes": 204173312,
-      "rssDeltaBytes": 5021696,
+      "wallTimeMs": 30.07771,
+      "userCpuMs": 38.603,
+      "systemCpuMs": 4.521,
+      "peakRssBytes": 184434688,
+      "rssDeltaBytes": 2519040,
       "databaseBytes": null,
       "files": null,
       "symbols": null,

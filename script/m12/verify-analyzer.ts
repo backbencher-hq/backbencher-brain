@@ -25,7 +25,7 @@ function factKeyForObserved(fact: ObservedFact): string {
   return factKey(fact as any)
 }
 import { parseFile } from "../../src/ast/pool-worker"
-import { mergeSymbolsIntoOverrideCompanion } from "../../src/ast/override-context"
+import { mergeSymbolsIntoOverrideCompanion, mergeTypeKindsIntoCompanion, type TypeKindCompanion } from "../../src/ast/override-context"
 
 const ROOT = process.cwd()
 const lang = process.argv[2]
@@ -110,16 +110,19 @@ async function main() {
   let errors = 0
   const perFile: Record<string, { symbols: number; relationships: number }> = {}
 
-  // Pass 1 — build the project companion index from a per-file parse of every
-  // fixture. No observed facts are taken from this pass; it only supplies the
-  // cross-file declaration knowledge the analyzers need for override-target
-  // resolution (interface-over-superclass when the interface is the declaring
-  // parent).
+  // Pass 1 — build the project companion indexes from a per-file parse of
+  // every fixture. No observed facts are taken from this pass; it only
+  // supplies the cross-file declaration knowledge the analyzers need for
+  // override-target resolution (interface-over-superclass when the interface
+  // is the declaring parent) and, for grammars without a base-kind keyword
+  // (C#), the declared kind of each cross-file type.
   const companion: Map<string, Set<string>> = new Map()
+  const typeKinds: TypeKindCompanion = new Map()
   for (const f of fixtureFiles) {
     try {
       const p = await parseFile(resolve(FIXTURE_DIR, f), ROOT)
       mergeSymbolsIntoOverrideCompanion(companion, p.symbols ?? [])
+      mergeTypeKindsIntoCompanion(typeKinds, p.symbols ?? [])
     } catch (e: any) {
       errors++
       console.error(`ERR(pass1) ${f}: ${e?.message?.slice(0, 150)}`)
@@ -134,7 +137,7 @@ async function main() {
       for (const f of fixtureFiles) {
         const abs = resolve(FIXTURE_DIR, f)
         try {
-          const p = await parseFile(abs, ROOT, { overrideCompanion: companion })
+          const p = await parseFile(abs, ROOT, { overrideCompanion: companion, typeKinds })
           const syms = p.symbols ?? []
           const rels = p.relationships ?? []
           perFile[f] = { symbols: syms.length, relationships: rels.length }

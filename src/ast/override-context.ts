@@ -27,6 +27,29 @@
 /** Owner type name → set of declared method names. */
 export type OverrideCompanion = Map<string, Set<string>>
 
+/** Owner type name → declared type kind (class/interface/struct/record). */
+export type TypeKindCompanion = Map<string, string>
+
+/**
+ * Merge declared type kinds from parsed symbols into a companion index.
+ * Used by analyzers whose grammar cannot distinguish a base class from an
+ * implemented interface in the base list (C# has no keyword, unlike Java's
+ * extends/implements): the companion supplies the declared kind from the
+ * cross-file symbol space, exactly like the override companion.
+ */
+export function mergeTypeKindsIntoCompanion(
+  companion: TypeKindCompanion,
+  symbols: readonly any[],
+): void {
+  for (const s of symbols) {
+    if (!s || !s.name) continue
+    const kind = String(s.kind ?? "")
+    if (kind === "class" || kind === "interface" || kind === "struct" || kind === "record" || kind === "enum") {
+      if (!companion.has(s.name)) companion.set(s.name, kind)
+    }
+  }
+}
+
 /**
  * Merge declared methods from parsed symbols into a companion index.
  * `kind` must be the method symbol kind (the analyzers emit
