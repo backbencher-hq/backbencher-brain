@@ -1,5 +1,29 @@
+// Pure-AST F# analyzer — M12 per-analyzer perfection contract.
+//
+// Emits exactly the M12 differential contract (mirroring the C# family):
+//   Symbols: namespace, module, class, interface, enum, enum_member,
+//            property, method, function, constructor (named "constructor").
+//            NO locals, NO lambda params, NO synthetic members.
+//   Relationships: contains, extends, implements, calls (source = enclosing
+//            function/method/constructor, target = leaf name), instantiates,
+//            overrides (qualified Owner.method -> Parent.method), references
+//            (open -> module paths). NO uses (C# family emits none).
+//
+// Pure AST: no regex on source text; override/default/member keywords are read
+// from tree-sitter token nodes. Builtins (console output, Object leaf methods)
+// are filtered like the C# family.
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
+
+// F# console output + .NET Console — filtered like C#'s Console.WriteLine.
+// NOTE: sprintf/sprintfn are string formatting (analog of string.Format),
+// which the C# family KEEPS (e.g. calls:CompareTo:Compare). Only console
+// output and Object leaf methods are filtered.
+const FSHARP_CONSOLE_BUILTINS = new Set([
+  "printfn", "printf", "eprintfn", "eprintf", "fprintfn", "fprintf",
+  "Console.WriteLine", "Console.Write", "Console.Error.WriteLine", "Console.Error.Write",
+])
+const OBJECT_LEAF_METHODS = new Set(["ToString", "GetHashCode", "Equals", "GetType", "ReferenceEquals"])
 
 export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
   public analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
@@ -9,13 +33,27 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     const exports: ASTEngine.ExportInfo[] = []
     const errors: ASTEngine.ParseError[] = []
 
-    const walkStack: { node: Node; scopePath: string[] }[] = [{ node: rootNode, scopePath: [] }]
+    // Per-type abstract member names — used to dedup abstract+default pairs
+    // (F# `abstract member X` + `default _.X()` is ONE logical member).
+    const abstractMemberNames = new Set<string>()
+    // baseType per type name (from `inherit Base()`) — for qualified overrides.
+    const baseTypes = new Map<string, string>()
+
+    interface WalkFrame {
+      node: Node
+      scopePath: string[]
+      callOwner: string | undefined // nearest enclosing function/method/constructor
+      bodyDepth: number // >0 => inside a function/member body (locals live here)
+    }
+    const walkStack: WalkFrame[] = [{ node: rootNode, scopePath: [], callOwner: undefined, bodyDepth: 0 }]
 
     while (walkStack.length > 0) {
-      const { node, scopePath } = walkStack.pop()!
+      const { node, scopePath, callOwner, bodyDepth } = walkStack.pop()!
       const type = node.type
 
       let currentScope = [...scopePath]
+      let childCallOwner = callOwner
+      let childBodyDepth = bodyDepth
 
       if (type === "namespace" || type === "named_module" || type === "module_defn") {
         const nameNode = this.findChild(node, (n) => n.type === "identifier" || n.type === "long_identifier")
@@ -46,8 +84,10 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
 
           let kind = ASTEngine.SymbolKind.Class
           let isInterface = false
-          var isMeasure = !!this.findDescendant(node, function(n) { return n.type === "attribute" && (n.text.includes("Measure") || n.text.includes("[<Measure")); });
-          if (isMeasure) kind = ASTEngine.SymbolKind.Type;
+          var isMeasure = !!this.findDescendant(node, function (n) {
+            return n.type === "attribute" && (n.text.includes("Measure") || n.text.includes("[<Measure"))
+          })
+          if (isMeasure) kind = ASTEngine.SymbolKind.Type
           if (hasRecordTypeDefn) {
             kind = ASTEngine.SymbolKind.Class
           } else if (hasUnionTypeDefn) {
@@ -67,27 +107,11 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
               const hasInherits = this.findDescendants(anonNode, (n) => n.type === "class_inherits_decl").length > 0
               const hasInterfaceImpl =
                 this.findDescendants(anonNode, (n) => n.type === "interface_implementation").length > 0
-              const hasInterfaceKeyword = !!this.findDescendant(
-                anonNode,
-                (n) => n.type === "identifier" && n.text === "interface",
-              )
               const hasConcreteMembers = this.findDescendants(
                 anonNode,
                 (n) => n.type === "member_defn" && !this.findDescendant(n, (child) => child.type === "member_signature"),
               ).length > 0
               if (hasMemberSig && !hasInherits && !hasInterfaceImpl && !hasConcreteMembers) {
-                kind = ASTEngine.SymbolKind.Interface
-                isInterface = true
-              } else if (hasInterfaceKeyword && !hasInherits && !hasConcreteMembers) {
-                kind = ASTEngine.SymbolKind.Interface
-                isInterface = true
-              } else if (
-                name.startsWith("I") &&
-                name.length > 1 &&
-                name[1] === name[1].toUpperCase() &&
-                hasMemberSig &&
-                !hasInherits
-              ) {
                 kind = ASTEngine.SymbolKind.Interface
                 isInterface = true
               }
@@ -103,6 +127,14 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             metadata: { nodeType: type },
           })
           currentScope.push(name)
+
+          // Base type from `inherit Base()` — needed for qualified override targets.
+          const inherits = this.findDescendants(node, (n) => n.type === "class_inherits_decl", 8)
+          if (inherits.length > 0) {
+            const firstInherit = inherits[0]
+            const baseType = this.findDescendant(firstInherit, (n) => n.type === "long_identifier" || n.type === "identifier")
+            if (baseType?.text) baseTypes.set(name, baseType.text)
+          }
 
           if (hasRecordTypeDefn) {
             const fields = this.findDescendants(node, (n) => n.type === "record_field")
@@ -174,7 +206,6 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
 
           // Extract class inherits as relationships (search recursively within type)
-          const inherits = this.findDescendants(node, (n) => n.type === "class_inherits_decl", 8)
           for (const inh of inherits) {
             const baseType = this.findDescendant(inh, (n) => n.type === "long_identifier" || n.type === "identifier")
             const targetName = baseType ? baseType.text : null
@@ -191,121 +222,167 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
         }
       } else if (type === "value_declaration" || type === "function_or_value_defn" || type === "member_defn") {
-        let nameNode = this.findChild(
-          node,
-          (n) =>
-            !!n.text && (n.type === "identifier" || n.type === "long_identifier" || n.type === "identifier_pattern"),
-        )
-        if (!nameNode) {
-          const leftNode = this.findChild(
-            node,
-            (n) => n.type === "function_declaration_left" || n.type === "value_declaration_left",
-          )
-          if (leftNode)
-            nameNode = this.findChild(leftNode, (n) => n.type === "identifier" || n.type === "identifier_pattern")
-        }
-        // Fallback for member_defn: method_or_prop_defn → property_or_ident → identifiers
-        if (!nameNode) {
-          const mopNode = this.findChild(node, (n) => n.type === "method_or_prop_defn")
-          if (mopNode) {
-            const propNode = this.findChild(mopNode, (n) => n.type === "property_or_ident")
-            if (propNode) {
-              // Get the method/property name (second identifier, e.g. "this.Speak" → "Speak")
-              const idents = this.filterChildren(propNode, (n) => n.type === "identifier")
-              nameNode = idents.length >= 2 ? idents[1] : idents[0]
-            }
-          }
-        }
-        if (nameNode && nameNode.text) {
-          const name = nameNode.text
-          const isFunc = !!this.findChild(
+        // Locals (value_declaration/function_or_value_defn nested inside a
+        // function body) are NOT symbols — same contract as the C# family.
+        if (bodyDepth > 0 && (type === "value_declaration" || type === "function_or_value_defn")) {
+          // Still walk children so calls inside locals attribute to the
+          // enclosing function (e.g. `let doubled = items |> List.map ...`).
+          childCallOwner = callOwner
+          childBodyDepth = bodyDepth
+        } else {
+          let nameNode = this.findChild(
             node,
             (n) =>
-              n.type === "function_declaration_left" ||
-              n.type === "argument_patterns" ||
-              n.type === "argument_spec" ||
-              n.type === "arguments_spec",
+              !!n.text && (n.type === "identifier" || n.type === "long_identifier" || n.type === "identifier_pattern"),
           )
-          const isMember = type === "member_defn"
-          const hasMethodOrProp = !!this.findChild(node, (n) => n.type === "method_or_prop_defn")
-          // Check for override modifier (non-named keyword token in member_defn text)
-          const hasOverride = type === "member_defn" && !!(node.text && /^override\b/.test(node.text))
-          let kind: ASTEngine.SymbolKind
-          if (isMember && hasMethodOrProp) {
-            const propNameNode = this.findDescendant(node, (n) => n.type === "property_or_ident")
-            if (propNameNode) {
-              const propText = propNameNode.text
-              kind =
-                propText.endsWith("_") || propText.includes("set")
-                  ? ASTEngine.SymbolKind.Property
-                  : ASTEngine.SymbolKind.Method
-            } else {
-              kind = ASTEngine.SymbolKind.Method
-            }
-          } else if (isMember) {
-            kind = ASTEngine.SymbolKind.Method
-          } else {
-            kind = isFunc ? ASTEngine.SymbolKind.Function : ASTEngine.SymbolKind.Variable
+          if (!nameNode) {
+            const leftNode = this.findChild(
+              node,
+              (n) => n.type === "function_declaration_left" || n.type === "value_declaration_left",
+            )
+            if (leftNode)
+              nameNode = this.findChild(leftNode, (n) => n.type === "identifier" || n.type === "identifier_pattern")
           }
-
-          if (node.type === "ce_expression" || node.type === "short_comp_expression") {
-          var ceBuilder = node.namedChild(0);
-          if (ceBuilder && (ceBuilder.type === "identifier" || ceBuilder.type === "long_identifier") && ceBuilder.text) {
-            var ceOwner = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined;
-            if (ceOwner) {
-              relationships.push({ source: ceOwner, target: ceBuilder.text, type: ASTEngine.RelationshipType.Calls, confidence: 0.75, metadata: { nodeType: type, isComputationExpression: true } });
+          // Fallback for member_defn: method_or_prop_defn → property_or_ident → identifiers
+          if (!nameNode) {
+            const mopNode = this.findChild(node, (n) => n.type === "method_or_prop_defn")
+            if (mopNode) {
+              const propNode = this.findChild(mopNode, (n) => n.type === "property_or_ident")
+              if (propNode) {
+                // Get the method/property name (second identifier, e.g. "this.Speak" → "Speak")
+                const idents = this.filterChildren(propNode, (n) => n.type === "identifier")
+                nameNode = idents.length >= 2 ? idents[idents.length - 1] : idents[0]
+              }
             }
           }
-        }
-        const isAsync = !!this.findDescendant(
-            node,
-            (n) => n.type === "ce_expression" || n.type === "short_comp_expression",
-            4,
-          )
-
-          symbols.push({
-            name,
-            kind,
-            range: this.nodeToRange(node),
-            ownerName: currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined,
-            isAsync,
-            metadata: { nodeType: type },
-          })
-          // Overrides relationship
-          if (hasOverride) {
+          if (nameNode && nameNode.text) {
+            const name = nameNode.text
+            const isFunc = !!this.findChild(
+              node,
+              (n) =>
+                n.type === "function_declaration_left" ||
+                n.type === "argument_patterns" ||
+                n.type === "argument_spec" ||
+                n.type === "arguments_spec",
+            )
+            const isMember = type === "member_defn"
+            const hasMethodOrProp = !!this.findChild(node, (n) => n.type === "method_or_prop_defn")
             const owner = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined
-            if (owner) {
-              relationships.push({
-                source: owner,
-                target: name,
-                type: ASTEngine.RelationshipType.Overrides,
-                confidence: 0.9,
-                metadata: { nodeType: type, isOverride: true },
+
+            // abstract+default dedup: if the owner already has an abstract
+            // member_signature with this name, this member_defn is the default
+            // implementation of that member — skip the duplicate symbol.
+            const isAbstractDefaultImpl = isMember && !!owner && abstractMemberNames.has(`${owner}:${name}`)
+
+            if (!isAbstractDefaultImpl) {
+              let kind: ASTEngine.SymbolKind
+              let isProperty = false
+              if (isMember && hasMethodOrProp) {
+                const mopNode = this.findChild(node, (n) => n.type === "method_or_prop_defn")
+                // Pure AST classification: a method has an argument list after
+                // the property_or_ident (paren_pattern / argument_patterns /
+                // const "()" unit); a computed property has none.
+                if (mopNode) {
+                  let afterIdent = false
+                  for (let i = 0; i < mopNode.namedChildCount; i++) {
+                    const c = mopNode.namedChild(i)
+                    if (!c) continue
+                    if (c.type === "property_or_ident") {
+                      afterIdent = true
+                      continue
+                    }
+                    if (afterIdent) {
+                      if (c.type === "paren_pattern" || c.type === "argument_patterns") {
+                        isProperty = false
+                        break
+                      }
+                      if (c.type === "const" && c.text === "()") {
+                        isProperty = false
+                        break
+                      }
+                      // A computed property: value expression (no args).
+                      isProperty = true
+                      break
+                    }
+                  }
+                }
+                kind = isProperty ? ASTEngine.SymbolKind.Property : ASTEngine.SymbolKind.Method
+              } else if (isMember) {
+                kind = ASTEngine.SymbolKind.Method
+              } else {
+                kind = isFunc ? ASTEngine.SymbolKind.Function : ASTEngine.SymbolKind.Variable
+              }
+
+              const isAsync = !!this.findDescendant(
+                node,
+                (n) => n.type === "ce_expression" || n.type === "short_comp_expression",
+                4,
+              )
+
+              symbols.push({
+                name,
+                kind,
+                range: this.nodeToRange(node),
+                ownerName: owner,
+                isAsync,
+                metadata: { nodeType: type },
               })
+
+              // Qualified override: source = Owner.method, target = Base.method.
+              if (isMember && this.firstTokenIs(node, "override")) {
+                const baseName = owner ? baseTypes.get(owner) : undefined
+                relationships.push({
+                  source: owner ? `${owner}.${name}` : name,
+                  target: baseName ? `${baseName}.${name}` : name,
+                  type: ASTEngine.RelationshipType.Overrides,
+                  confidence: 1.0,
+                  metadata: { nodeType: type, isOverride: true },
+                })
+              }
+
+              // Calls inside this member/function attribute to it; computed
+              // property getters emit no calls (C# family contract).
+              if (kind === ASTEngine.SymbolKind.Method || kind === ASTEngine.SymbolKind.Function) {
+                childCallOwner = name
+              } else if (kind === ASTEngine.SymbolKind.Property) {
+                childCallOwner = undefined
+              } else {
+                childCallOwner = callOwner
+              }
+              childBodyDepth = bodyDepth + 1
+            } else {
+              // Default impl of an abstract member: walk body, no symbol.
+              childCallOwner = callOwner
+              childBodyDepth = bodyDepth + 1
             }
           }
         }
       } else if (type === "additional_constr_defn") {
         const nameNode = this.findDescendant(node, (n) => n.type === "identifier" || n.type === "long_identifier")
         if (nameNode && nameNode.text) {
+          const owner = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined
           symbols.push({
-            name: "new " + nameNode.text,
+            name: "constructor",
             kind: ASTEngine.SymbolKind.Constructor,
             range: this.nodeToRange(node),
-            ownerName: currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined,
+            ownerName: owner,
             metadata: { nodeType: "additional_constr_defn" },
           })
+          childCallOwner = "constructor"
+          childBodyDepth = bodyDepth + 1
         }
       } else if (type === "member_signature") {
         const nameNode = this.findChild(node, (n) => n.type === "identifier" || n.type === "property_or_ident")
         if (nameNode && nameNode.text) {
+          const owner = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined
           symbols.push({
             name: nameNode.text,
             kind: ASTEngine.SymbolKind.Method,
             range: this.nodeToRange(node),
-            ownerName: currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined,
+            ownerName: owner,
             metadata: { nodeType: "member_signature" },
           })
+          if (owner) abstractMemberNames.add(`${owner}:${nameNode.text}`)
         }
       } else if (type === "val_property_defn") {
         const nameNode = this.findChild(node, (n) => n.type === "identifier")
@@ -336,28 +413,20 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
               type: ASTEngine.RelationshipType.Implements,
               metadata: { nodeType: "object_expression" },
             })
-            relationships.push({
-              source: ownerName,
-              target: ifaceName.text,
-              type: ASTEngine.RelationshipType.Instantiates,
-              confidence: 0.85,
-              metadata: { nodeType: "object_expression", isNew: true },
-            })
           }
         }
       } else if (type === "active_pattern") {
-        const nameNode = this.findChild(node, (n) => n.type === "active_pattern_op_name" || n.type === "identifier")
-        if (nameNode && nameNode.text) {
-          symbols.push({
-            name: nameNode.text,
-            kind: ASTEngine.SymbolKind.Function,
-            range: this.nodeToRange(node),
-            ownerName: currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined,
-            metadata: { nodeType: "active_pattern" },
-          })
-        }
+        // One function symbol named by the full active pattern, e.g. (|Even|Odd|)
+        symbols.push({
+          name: node.text,
+          kind: ASTEngine.SymbolKind.Function,
+          range: this.nodeToRange(node),
+          ownerName: currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined,
+          metadata: { nodeType: "active_pattern" },
+        })
       } else if (type === "exception_definition") {
-        const nameNode = this.findChild(node, (n) => n.type === "identifier")
+        // `exception NotFound of string` — NotFound is under long_identifier.
+        const nameNode = this.findDescendant(node, (n) => n.type === "identifier")
         if (nameNode && nameNode.text) {
           symbols.push({
             name: nameNode.text,
@@ -394,11 +463,19 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
         }
       } else if (type === "open_statement" || type === "open_decl") {
-        var openTarget = this.findDescendant(node, function(n) { return n.type === "long_identifier" || n.type === "identifier"; });
+        var openTarget = this.findDescendant(node, function (n) {
+          return n.type === "long_identifier" || n.type === "identifier"
+        })
         if (openTarget && openTarget.text) {
-          imports.push({ module: openTarget.text, items: ["*"], isDefault: false, range: this.nodeToRange(node) });
-          const owner = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined;
-          relationships.push({ source: owner || openTarget.text, target: openTarget.text, type: ASTEngine.RelationshipType.References, confidence: 0.9, metadata: { nodeType: type, isOpen: true } });
+          imports.push({ module: openTarget.text, items: ["*"], isDefault: false, range: this.nodeToRange(node) })
+          const owner = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined
+          relationships.push({
+            source: owner || openTarget.text,
+            target: openTarget.text,
+            type: ASTEngine.RelationshipType.References,
+            confidence: 0.9,
+            metadata: { nodeType: type, isOpen: true },
+          })
         }
       } else if (type === "import_decl") {
         const targetNode = this.findChild(node, (n) => n.type === "long_identifier" || n.type === "identifier")
@@ -409,8 +486,14 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             isDefault: true,
             range: this.nodeToRange(node),
           })
-          const owner = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined;
-          relationships.push({ source: owner || targetNode.text, target: targetNode.text, type: ASTEngine.RelationshipType.References, confidence: 0.9, metadata: { nodeType: type, isImport: true } });
+          const owner = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined
+          relationships.push({
+            source: owner || targetNode.text,
+            target: targetNode.text,
+            type: ASTEngine.RelationshipType.References,
+            confidence: 0.9,
+            metadata: { nodeType: type, isImport: true },
+          })
         }
       } else if (type === "module_abbrev") {
         const children = this.filterChildren(node, (n) => n.type === "identifier" || n.type === "long_identifier")
@@ -429,56 +512,50 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             metadata: { nodeType: "module_abbrev" },
           })
         }
-      } else if (type === "brace_expression") {
-        // Record creation: { Name = value; Age = value }
-        const ownerName = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined
-        if (ownerName) {
-          const fieldInits = this.findDescendants(node, (n) => n.type === "field_initializer", 4)
-          if (fieldInits.length > 0) {
-            relationships.push({
-              source: ownerName,
-              target: "record_expression",
-              type: ASTEngine.RelationshipType.Instantiates,
-              confidence: 0.7,
-              metadata: { nodeType: "brace_expression", isRecord: true, fieldCount: fieldInits.length },
-            })
-            for (const fi of fieldInits) {
-              const fieldId = this.findChild(fi, (n) => n.type === "long_identifier" || n.type === "identifier")
-              if (fieldId?.text) {
-                relationships.push({
-                  source: ownerName,
-                  target: fieldId.text,
-                  type: ASTEngine.RelationshipType.Uses,
-                  confidence: 0.7,
-                  metadata: { nodeType: "field_initializer", isFieldAccess: true },
-                })
-              }
-            }
-          }
-        }
-      } else if (type === "dot_expression" || type === "property_or_ident") {
-        // this.Name, obj.Method — field/property access
-        const identifiers = this.filterChildren(node, (n) => n.type === "identifier")
-        if (identifiers.length >= 2) {
-          const ownerName = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined
-          if (ownerName) {
-            relationships.push({
-              source: ownerName,
-              target: node.text,
-              type: ASTEngine.RelationshipType.Uses,
-              confidence: 0.6,
-              metadata: { nodeType: type, isFieldAccess: true },
-            })
-          }
-        }
       } else if (type === "app_expression" || type === "application_expression") {
-        var fnNode = node.namedChild(0);
+        // Call/instantiation: source = enclosing function/method/constructor,
+        // target = leaf name of the callee (C# family contract).
+        let fnName = ""
+        const fnNode = node.namedChild(0)
         if (fnNode) {
-          var fnName = (fnNode.type === "long_identifier" || fnNode.type === "identifier" || fnNode.type === "long_identifier_or_op") ? fnNode.text : fnNode.type === "dot_expression" ? fnNode.text : "";
-          if (fnName && fnName.length > 1) {
-            var ownerName = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined;
-            if (ownerName) {
-              relationships.push({ source: ownerName, target: fnName, type: ASTEngine.RelationshipType.Calls, confidence: 0.8, metadata: { nodeType: type } });
+          if (
+            fnNode.type === "long_identifier" ||
+            fnNode.type === "identifier" ||
+            fnNode.type === "long_identifier_or_op"
+          ) {
+            fnName = fnNode.text
+          } else if (fnNode.type === "infix_expression") {
+            // Pipeline `a |> f` — the callee is the RHS operand.
+            const rhs = fnNode.namedChild(fnNode.namedChildCount - 1)
+            if (rhs && (rhs.type === "long_identifier" || rhs.type === "identifier" || rhs.type === "long_identifier_or_op")) {
+              fnName = rhs.text
+            }
+          } else if (fnNode.type === "dot_expression") {
+            fnName = fnNode.text
+          }
+        }
+        if (fnName && fnName.length > 1 && callOwner) {
+          const leaf = fnName.split(".").pop() || fnName
+          if (!this.isFSharpBuiltin(fnName, leaf)) {
+            // Constructor chaining `new() = Point(0, 0)` — instantiation of the
+            // enclosing type from the constructor body.
+            const enclosingType = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined
+            if (callOwner === "constructor" && leaf === enclosingType) {
+              relationships.push({
+                source: callOwner,
+                target: leaf,
+                type: ASTEngine.RelationshipType.Instantiates,
+                confidence: 0.95,
+                metadata: { nodeType: type, isConstructorChain: true },
+              })
+            } else {
+              relationships.push({
+                source: callOwner,
+                target: leaf,
+                type: ASTEngine.RelationshipType.Calls,
+                confidence: 0.8,
+                metadata: { nodeType: type },
+              })
             }
           }
         }
@@ -498,7 +575,7 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       for (let i = node.namedChildCount - 1; i >= 0; i--) {
         const child = node.namedChild(i)
         if (child) {
-          walkStack.push({ node: child, scopePath: currentScope })
+          walkStack.push({ node: child, scopePath: currentScope, callOwner: childCallOwner, bodyDepth: childBodyDepth })
         }
       }
     }
@@ -540,6 +617,24 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         hasTypeInference: true,
       },
     }
+  }
+
+  private isFSharpBuiltin(call: string, leaf: string): boolean {
+    if (FSHARP_CONSOLE_BUILTINS.has(call)) return true
+    if (OBJECT_LEAF_METHODS.has(leaf)) return true
+    if (call === "Console.WriteLine" || call.startsWith("Console.")) return true
+    return false
+  }
+
+  private firstTokenIs(node: Node, text: string): boolean {
+    for (let i = 0; i < node.childCount; i++) {
+      const c = node.child(i)
+      if (!c) continue
+      if (c.type === text) return true
+      // Skip leading attribute/comment trivia tokens
+      if (c.isNamed) break
+    }
+    return false
   }
 
   private findChild(node: Node, predicate: (n: Node) => boolean): Node | undefined {
