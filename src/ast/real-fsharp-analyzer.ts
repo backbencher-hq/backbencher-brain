@@ -69,10 +69,12 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           currentScope.push(name)
         }
       } else if (type === "type_definition") {
-        const nameNode = this.findDescendant(node, (n) => n.type === "type_name" || n.type === "identifier")
-        const typeNameNode = nameNode ? this.findChild(nameNode, (n) => n.type === "identifier") : undefined
-        const rawName = typeNameNode && typeNameNode.text ? typeNameNode.text : nameNode ? nameNode.text : null
-        const name = rawName ? rawName.replace(/<.*$/, "") : null
+        // Pure AST: the clean name is type_name -> long_identifier -> identifier;
+        // declared generic params are type_arguments -> type_argument_defn ->
+        // type_argument (no source-text regex needed).
+        const typeNameNode = this.findDescendant(node, (n) => n.type === "type_name")
+        const typeInfo = typeNameNode ? this.typeInfoOf(typeNameNode) : null
+        const name = typeInfo?.name ?? null
         if (name) {
           const hasAnonTypeDefn = !!this.findChild(node, (n) => n.type === "anon_type_defn")
           const hasRecordTypeDefn = this.findDescendants(node, (n) => n.type === "record_type_defn").length > 0
@@ -123,7 +125,7 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             kind,
             range: this.nodeToRange(node),
             ownerName: currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined,
-            genericParameters: rawName && rawName !== name ? rawName.match(/'[\p{L}\d_]+/gu) || undefined : undefined,
+            genericParameters: typeInfo?.genericParameters,
             metadata: { nodeType: type },
           })
           currentScope.push(name)
@@ -616,6 +618,33 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         hasFrameworkIntelligence: true,
         hasTypeInference: true,
       },
+    }
+  }
+
+  /**
+   * Pure-AST name + declared generic-parameter extraction for a type_name
+   * node. The clean name is long_identifier -> identifier (generics live in a
+   * sibling type_arguments node, never inside the identifier).
+   */
+  private typeInfoOf(node: Node): { name: string; genericParameters?: string[] } | null {
+    const liNode = this.findChild(node, (n) => n.type === "long_identifier")
+    const idNode = liNode
+      ? this.findDescendant(liNode, (n) => n.type === "identifier")
+      : this.findChild(node, (n) => n.type === "identifier")
+    if (!idNode?.text) return null
+    const genericParameters: string[] = []
+    const taNode = this.findChild(node, (n) => n.type === "type_arguments")
+    if (taNode) {
+      for (let i = 0; i < taNode.namedChildCount; i++) {
+        const c = taNode.namedChild(i)
+        if (c?.type !== "type_argument_defn") continue
+        const argNode = this.findChild(c, (n) => n.type === "type_argument")
+        if (argNode?.text) genericParameters.push(argNode.text)
+      }
+    }
+    return {
+      name: idNode.text,
+      genericParameters: genericParameters.length > 0 ? genericParameters : undefined,
     }
   }
 

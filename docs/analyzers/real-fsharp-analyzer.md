@@ -86,7 +86,9 @@ over upstream tree-sitter-fsharp:
 
 ## Regex inventory
 
-The analyzer is **fully regex-free** — no `RegExp`, no `.match(`/`.replace(` with patterns. Kind classification (record → class, DU → enum, anon member-signatures → interface), override detection (`firstTokenIs(node, "override")` reads the tree-sitter token), and property-vs-method (argument-list presence in `method_or_prop_defn`) are all pure AST decisions. The only string operations are exact-set membership (`Set.has`) and `split(".")` for leaf names.
+The analyzer is **fully regex-free** — the regex census (`validation/m12/results/regex-census.json`) reports **0 usages** for `real-fsharp-analyzer.ts`. Kind classification (record → class, DU → enum, anon member-signatures → interface), override detection (`firstTokenIs(node, "override")` reads the tree-sitter token), property-vs-method (argument-list presence in `method_or_prop_defn`), and generic-parameter extraction are all pure AST decisions:
+- **Generic type names**: `type_name → long_identifier → identifier` gives the clean name; declared type parameters come from sibling `type_arguments → type_argument_defn → type_argument` nodes (e.g. `Repository<'T>` → name `Repository`, params `['T']`; `Pair<'a, 'b>` → `['a', 'b']`). No source-text regex needed.
+- The only string operations are exact-set membership (`Set.has`) and `split(".")` for leaf names.
 
 ## Complexity envelope
 
