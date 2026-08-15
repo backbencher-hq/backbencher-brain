@@ -141,7 +141,20 @@
       "status": "measured",
       "candidates": [
         "fsharp@22a8a5dc(clean)"
-      ]
+      ],
+      "measured": {
+        "revision": "22a8a5dcc724ea58041b8bc0b95e51268d7b656d",
+        "sample": "400 tracked *.fs files (deterministic first-400 sorted; 376 unique basenames in flat sample dir)",
+        "fixtures": 4,
+        "fixtureFacts": 115,
+        "precision": 1,
+        "recall": 1,
+        "corpusSymbols": 36901,
+        "corpusRelationships": 128401,
+        "grammarErrorFiles": 968,
+        "note": "grammar patched: upstream tree-sitter-fsharp mis-dispatches the FIRST 'interface T' inside an implicit class body into a bogus union_type_cases node (losing Implements + inventing phantom enum members). Vendored patched scanner (interface probe with token-type lookahead, no global keyword reservation) + grammar; wasm rebuilt and installed (wasm/ + ~/.bb/wasm). Analyzer rewritten pure-AST to the C#-family contract: no locals/params/lambda-params as symbols, no '_.X'/'this.X' phantom uses, exceptions extracted, active patterns named by full pattern text, abstract+default deduped to one method, additional constructor named 'constructor', computed members without args -> property, calls sourced from the enclosing function/method/constructor with leaf targets, pipes (a |> List.map -> map), qualified overrides (Dog.Speak -> Animal.Speak), builtins filtered (printfn/Console.*/Object leaf methods). Differential 115/115 (1.000/1.000); analyzer fully regex-free. Corpus: 968/5,836 fs files with error nodes (16.6%), 6,234 ERROR nodes, 0 crashes.",
+        "measuredAt": "2026-08-15T03:00:00.000Z"
+      }
     },
     {
       "analyzer": "typescript",
