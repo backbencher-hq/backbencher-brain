@@ -2,20 +2,20 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-08-15T22:35:54.359Z",
+  "generatedAt": "2026-08-15T23:32:08.600Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 133,
+  "totalRegexUsages": 131,
   "analyzersScanned": 41,
   "byClassification": {
     "unavoidable": 17,
-    "normalization": 62,
+    "normalization": 60,
     "needs_review": 52,
     "replaceable": 2
   },
   "byReceiverCategory": {
     "literal": 17,
-    "node_text": 62,
+    "node_text": 60,
     "identifier": 32,
     "other": 20,
     "raw_content": 2
@@ -1451,34 +1451,6 @@
           "receiver": "typeGuess",
           "receiverCategory": "identifier",
           "classification": "needs_review",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-javascript-analyzer.ts",
-      "count": 2,
-      "usages": [
-        {
-          "file": "real-javascript-analyzer.ts",
-          "line": 332,
-          "column": 50,
-          "source": "/['\"`]/g",
-          "operation": "replace",
-          "receiver": "arg.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-javascript-analyzer.ts",
-          "line": 481,
-          "column": 55,
-          "source": "/['\"`]/g",
-          "operation": "replace",
-          "receiver": "srcNode.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
           "justification": ""
         }
       ]
