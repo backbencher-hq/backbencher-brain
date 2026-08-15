@@ -166,7 +166,20 @@
         "proxicall@383e603e(dirty)",
         "graphql_js@9c245018(clean)",
         "vue_core@f8975657(clean)"
-      ]
+      ],
+      "measured": {
+        "revision": "b465fdbfe175304d9b977da137b2c178ae1091d3",
+        "sample": "400 tracked *.ts files (deterministic first-400 sorted, excluding *.d.ts and tests/cases; 399 measured — src/compiler/checker.ts at 3.1MB exceeds the 1MB measurement cap)",
+        "fixtures": 5,
+        "fixtureFacts": 171,
+        "precision": 1.0,
+        "recall": 1.0,
+        "corpusSymbols": 26513,
+        "corpusRelationships": 100594,
+        "grammarErrorFiles": 5,
+        "note": "Analyzer rewritten pure-AST to the C#-family contract: no locals/params/lambda-params as symbols, overload dedup (first occurrence per owner+name), accessors -> property, relationship sources are leaf identities (calls: Distance -> Sqrt), phantom super() filtered, TS builtins filtered (console.*, Object leaf methods), imports/exports as module-level leaf relationships, decorators metadata-only (no rels, matching C#/Java/F# family). Differential 171/171 (1.000/1.000, 0 FP / 0 FN); analyzer fully regex-free (census 36 -> 0, baseline was the single largest regex user). Corpus (fresh parser per file, 0 crashes, 0 timeouts): 5/400 sample files with error nodes (1.3%, 7 ERROR nodes) — all genuine upstream tree-sitter-typescript 0.23.2 gaps: import() type expressions in return/var annotation positions, 'in out' variance annotations (upstream issue #364, open), and tuple element labels. All 5 error files still extract full symbols (recoverable: types.ts 5,269 symbols).",
+        "measuredAt": "2026-08-16T00:00:00.000Z"
+      }
     },
     {
       "analyzer": "javascript",
