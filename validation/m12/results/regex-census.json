@@ -2,21 +2,21 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-08-14T05:00:01.936Z",
+  "generatedAt": "2026-08-15T14:51:27.623Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 172,
+  "totalRegexUsages": 169,
   "analyzersScanned": 41,
   "byClassification": {
-    "unavoidable": 19,
+    "unavoidable": 18,
     "normalization": 82,
-    "needs_review": 69,
+    "needs_review": 67,
     "replaceable": 2
   },
   "byReceiverCategory": {
-    "literal": 19,
+    "literal": 18,
     "node_text": 82,
-    "identifier": 40,
+    "identifier": 38,
     "other": 29,
     "raw_content": 2
   },
@@ -1730,45 +1730,6 @@
           "receiver": "typeNode.text",
           "receiverCategory": "node_text",
           "classification": "normalization",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-fsharp-analyzer.ts",
-      "count": 3,
-      "usages": [
-        {
-          "file": "real-fsharp-analyzer.ts",
-          "line": 37,
-          "column": 48,
-          "source": "/<.*$/",
-          "operation": "replace",
-          "receiver": "rawName",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-fsharp-analyzer.ts",
-          "line": 102,
-          "column": 76,
-          "source": "/'[\\p{L}\\d_]+/gu",
-          "operation": "match",
-          "receiver": "rawName",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-fsharp-analyzer.ts",
-          "line": 232,
-          "column": 73,
-          "source": "/^override\\b/",
-          "operation": "test",
-          "receiver": "/^override\\b/",
-          "receiverCategory": "literal",
-          "classification": "unavoidable",
           "justification": ""
         }
       ]
