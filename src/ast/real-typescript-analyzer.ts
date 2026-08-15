@@ -9,6 +9,105 @@ import * as path from "path"
 import * as fs from "fs"
 
 // ============================================================================
+// BUILTIN FILTER - C#-family contract
+// Console output (console.log) and Object universal leaf methods are filtered;
+// framework/static calls (Map.set, Promise.resolve, String.trim, array.map,
+// RegExp.test) are KEPT like Java's JDK calls (save -> put) and C#'s
+// Math.Sqrt -> Sqrt. `super` is a language keyword, not a callable.
+// ============================================================================
+
+const TS_CONSOLE_BUILTINS = new Set([
+  "console.log", "console.warn", "console.error", "console.info", "console.debug",
+  "console.trace", "console.table", "console.group", "console.groupEnd",
+  "console.groupCollapsed", "console.time", "console.timeEnd", "console.assert",
+  "console.count", "console.countReset", "console.dir", "console.dirxml",
+  "console.clear", "console.profile", "console.profileEnd",
+])
+const TS_OBJECT_LEAF_METHODS = new Set([
+  "toString", "valueOf", "hasOwnProperty", "isPrototypeOf",
+  "propertyIsEnumerable", "toLocaleString", "__defineGetter__", "__defineSetter__",
+])
+
+// ============================================================================
+// PURE-STRING HELPERS (regex-free normalization)
+// All token/type text normalization uses startsWith/endsWith + slice — never
+// regex literals — keeping the analyzer fully regex-free (criterion 1). These
+// are module-level pure functions shared by all classes in this file.
+// ============================================================================
+
+function stripLeading(text: string, prefix: string): string {
+  return text.startsWith(prefix) ? text.slice(prefix.length).trimStart() : text
+}
+
+function stripLeadingColon(text: string): string {
+  return stripLeading(text, ":")
+}
+
+function stripLeadingEquals(text: string): string {
+  return stripLeading(text, "=")
+}
+
+function stripTrailingDot(text: string): string {
+  return text.endsWith(".") ? text.slice(0, -1) : text
+}
+
+function stripTrailingQuestion(text: string): string {
+  return text.endsWith("?") ? text.slice(0, -1) : text
+}
+
+function stripPrivatePrefix(name: string): string {
+  return name.startsWith("#") ? name.slice(1) : name
+}
+
+function unquote(text: string): string {
+  // Strip one level of matching surrounding quotes ("...", '...', `...`).
+  if (text.length >= 2) {
+    const first = text[0]
+    if ((first === '"' || first === "'" || first === "`") && text[text.length - 1] === first) {
+      return text.slice(1, -1)
+    }
+  }
+  return text
+}
+
+function stringContent(node: Node): string {
+  // Pure-AST string content: prefer the string_fragment child (tree-sitter
+  // splits quoted literals into string + string_fragment), else unquote.
+  for (let i = 0; i < node.namedChildCount; i++) {
+    const c = node.namedChild(i)
+    if (c && c.type === "string_fragment") return c.text
+  }
+  return unquote(node.text)
+}
+
+function stripCommentMarkers(text: string): string {
+  if (text.startsWith("//")) return text.slice(2).trimStart()
+  if (text.startsWith("/*")) {
+    const end = text.endsWith("*/") ? text.length - 2 : text.length
+    return text.slice(2, end).trim()
+  }
+  return text.trim()
+}
+
+function hasBraceEquals(text: string): boolean {
+  // Malformed-call guard: any of { } ; = present (no regex).
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i]
+    if (ch === "{" || ch === "}" || ch === ";" || ch === "=") return true
+  }
+  return false
+}
+
+function stripWhitespace(text: string): string {
+  let out = ""
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i]
+    if (ch !== " " && ch !== "\t" && ch !== "\n" && ch !== "\r") out += ch
+  }
+  return out
+}
+
+// ============================================================================
 // SCOPE MANAGEMENT - Proper scope tracking with push/pop for all scope types
 // ============================================================================
 
@@ -299,7 +398,7 @@ class TypeScriptModuleResolver {
       "worker_threads",
       "wasi",
     ])
-    return builtins.has(specifier.replace(/^node:/, ""))
+    return builtins.has(stripLeading(specifier, "node:"))
   }
 
   isExternalModule(specifier: string): boolean {
@@ -904,7 +1003,7 @@ class TypeInferenceEngine {
     }
 
     return {
-      type: text.replace(/\?$/, "").trim(),
+      type: stripTrailingQuestion(text).trim(),
       isOptional,
       isNullable,
       isArray,
@@ -926,10 +1025,10 @@ class TypeInferenceEngine {
             const extendsNode = param.childForFieldName("extends")
             const defaultNode = param.childForFieldName("default")
             if (extendsNode) {
-              paramStr += ` extends ${extendsNode.text.replace(/^:\\s*/, "")}`
+              paramStr += ` extends ${stripLeadingColon(extendsNode.text)}`
             }
             if (defaultNode) {
-              paramStr += ` = ${defaultNode.text.replace(/^=\s*/, "")}`
+              paramStr += ` = ${stripLeadingEquals(defaultNode.text)}`
             }
             typeParams.push(paramStr)
           } else {
@@ -957,7 +1056,7 @@ class TypeInferenceEngine {
     // Look for explicit return type
     const returnType = funcNode.childForFieldName("return_type")
     if (returnType) {
-      return returnType.text.replace(/^:\s*/, "")
+      return stripLeadingColon(returnType.text)
     }
 
     // Try to infer from return statements
@@ -1425,6 +1524,10 @@ class TypeScriptAnalysisRunner {
   private typeInference: TypeInferenceEngine
   private symbolsById = new Map<string, ASTEngine.UniversalSymbol>()
   private _pendingReExportImports: ASTEngine.ImportInfo[] = []
+  // Depth of nested function bodies being walked for symbol extraction.
+  // Locals/params/lambda-params inside a function body are NOT symbols
+  // (C#-family contract); only module/namespace/class-level declarations are.
+  private insideFunctionDepth = 0
 
   constructor() {
     this.scopeManager = new ScopeManager()
@@ -1444,10 +1547,10 @@ class TypeScriptAnalysisRunner {
             const extendsNode = param.childForFieldName("extends")
             const defaultNode = param.childForFieldName("default")
             if (extendsNode) {
-              paramStr += ` extends ${extendsNode.text.replace(/^:\s*/, "")}`
+              paramStr += ` extends ${stripLeadingColon(extendsNode.text)}`
             }
             if (defaultNode) {
-              paramStr += ` = ${defaultNode.text.replace(/^=\s*/, "")}`
+              paramStr += ` = ${stripLeadingEquals(defaultNode.text)}`
             }
             typeParams.push(paramStr)
           } else {
@@ -1753,7 +1856,14 @@ class TypeScriptAnalysisRunner {
 
         case "lexical_declaration":
         case "variable_declaration":
-          skipChildren = this.extractVariables(node, symbols, stack)
+          // C#-family contract: variables declared inside a function body are
+          // locals — not symbols. Only module/namespace/class-level declarations
+          // become symbols (and do not descend into them at function depth).
+          if (this.insideFunctionDepth === 0) {
+            skipChildren = this.extractVariables(node, symbols, stack)
+          } else {
+            skipChildren = true
+          }
           break
 
         case "internal_module":
@@ -1818,7 +1928,7 @@ class TypeScriptAnalysisRunner {
       name,
       kind: ASTEngine.SymbolKind.Function,
       range: this.nodeRange(node),
-      scope: this.scopeManager.buildQualifiedName("").replace(/\.$/, "") || undefined,
+      scope: stripTrailingDot(this.scopeManager.buildQualifiedName("")) || undefined,
       visibility: exportStatus.isExported ? "public" : "private",
       isStatic: modifiers.isStatic,
       isAsync: modifiers.isAsync,
@@ -1848,7 +1958,11 @@ class TypeScriptAnalysisRunner {
     this.scopeManager.pushScope(ScopeKind.Function, name, node)
     stack.push({ action: () => this.scopeManager.popScope() })
     const body = node.childForFieldName("body")
-    if (body) stack.push({ node: body })
+    if (body) {
+      this.insideFunctionDepth++
+      stack.push({ action: () => this.insideFunctionDepth-- })
+      stack.push({ node: body })
+    }
     return true
   }
 
@@ -1867,7 +1981,7 @@ class TypeScriptAnalysisRunner {
       name,
       kind: ASTEngine.SymbolKind.Class,
       range: this.nodeRange(node),
-      scope: this.scopeManager.buildQualifiedName("").replace(/\.$/, "") || undefined,
+      scope: stripTrailingDot(this.scopeManager.buildQualifiedName("")) || undefined,
       visibility: exportStatus.isExported ? "public" : "private",
       isAbstract: modifiers.isAbstract,
       decorators: modifiers.decorators.length > 0 ? modifiers.decorators : undefined,
@@ -1891,6 +2005,11 @@ class TypeScriptAnalysisRunner {
 
     const body = node.childForFieldName("body")
     if (body) {
+      // Overload dedup: an overload signature + its implementation are ONE
+      // logical method (C#-family contract). Keep the first occurrence per
+      // name; skip later duplicates (implementation or further signatures).
+      const seenMethodNames = new Set<string>()
+      const seenPropertyNames = new Set<string>()
       for (let i = 0; i < body.namedChildCount; i++) {
         const member = body.namedChild(i)
         if (!member) continue
@@ -1898,20 +2017,30 @@ class TypeScriptAnalysisRunner {
         switch (member.type) {
           case "method_definition":
           case "method_signature":
-          case "abstract_method_signature":
-            // Check if this is a constructor
-            if (member.childForFieldName("name")?.text === "constructor") {
+          case "abstract_method_signature": {
+            const memberName = member.childForFieldName("name")?.text
+            if (memberName === "constructor") {
               this.extractConstructor(member, symbols, stack)
-            } else {
-              this.extractMethod(member, symbols, stack)
+              break
             }
+            if (memberName && seenMethodNames.has(memberName)) {
+              // Skip overload duplicate (signature or implementation)
+              break
+            }
+            if (memberName) seenMethodNames.add(memberName)
+            this.extractMethod(member, symbols, stack)
             break
+          }
 
           case "public_field_definition":
           case "property_definition":
-          case "field_definition":
+          case "field_definition": {
+            const propName = member.childForFieldName("name")?.text
+            if (propName && seenPropertyNames.has(propName)) break
+            if (propName) seenPropertyNames.add(propName)
             this.extractProperty(member, symbols)
             break
+          }
 
           case "constructor_definition":
             this.extractConstructor(member, symbols, stack)
@@ -1926,9 +2055,15 @@ class TypeScriptAnalysisRunner {
             break
 
           case "getter":
-          case "setter":
+          case "setter": {
+            // get/set pair over the same name is ONE property (family contract:
+            // computed/accessor members are properties). Keep the first.
+            const accName = member.childForFieldName("name")?.text
+            if (accName && seenPropertyNames.has(accName)) break
+            if (accName) seenPropertyNames.add(accName)
             this.extractAccessor(member, symbols)
             break
+          }
         }
       }
     }
@@ -1951,7 +2086,7 @@ class TypeScriptAnalysisRunner {
       name,
       kind: ASTEngine.SymbolKind.Interface,
       range: this.nodeRange(node),
-      scope: this.scopeManager.buildQualifiedName("").replace(/\.$/, "") || undefined,
+      scope: stripTrailingDot(this.scopeManager.buildQualifiedName("")) || undefined,
       visibility: exportStatus.isExported ? "public" : "private",
       comments: this.extractComments(node),
       genericParameters: typeParams.length > 0 ? typeParams : undefined,
@@ -1997,7 +2132,7 @@ class TypeScriptAnalysisRunner {
               range: this.nodeRange(member),
               scope: interfaceName,
               isStatic: false,
-              returnType: typeAnnotation?.text.replace(/^:\s*/, ""),
+              returnType: typeAnnotation ? stripLeadingColon(typeAnnotation.text) : undefined,
               ownerName: interfaceName,
               ownerKind: ASTEngine.SymbolKind.Interface,
               metadata: {
@@ -2092,7 +2227,7 @@ class TypeScriptAnalysisRunner {
       name,
       kind: ASTEngine.SymbolKind.Type,
       range: this.nodeRange(node),
-      scope: this.scopeManager.buildQualifiedName("").replace(/\.$/, "") || undefined,
+      scope: stripTrailingDot(this.scopeManager.buildQualifiedName("")) || undefined,
       visibility: exportStatus.isExported ? "public" : "private",
       returnType: typeValue?.text,
       genericParameters: typeParams.length > 0 ? typeParams : undefined,
@@ -2128,7 +2263,7 @@ class TypeScriptAnalysisRunner {
             range: this.nodeRange(member),
             scope: name,
             visibility: exportStatus.isExported ? "public" : "private",
-            returnType: typeAnnotation?.text.replace(/^:\s*/, ""),
+            returnType: typeAnnotation ? stripLeadingColon(typeAnnotation.text) : undefined,
             ownerName: name,
             ownerKind: ASTEngine.SymbolKind.Type,
             isStatic: false,
@@ -2172,7 +2307,7 @@ class TypeScriptAnalysisRunner {
       name,
       kind: ASTEngine.SymbolKind.Enum,
       range: this.nodeRange(node),
-      scope: this.scopeManager.buildQualifiedName("").replace(/\.$/, "") || undefined,
+      scope: stripTrailingDot(this.scopeManager.buildQualifiedName("")) || undefined,
       visibility: exportStatus.isExported ? "public" : "private",
       comments: this.extractComments(node),
       ...this.scopeManager.getOwnerInfo(),
@@ -2276,7 +2411,7 @@ class TypeScriptAnalysisRunner {
         name,
         kind,
         range: this.nodeRange(declarator),
-        scope: this.scopeManager.buildQualifiedName("").replace(/\.$/, "") || undefined,
+        scope: stripTrailingDot(this.scopeManager.buildQualifiedName("")) || undefined,
         visibility: exportStatus.isExported ? "public" : "private",
         isStatic: modifiers.isStatic,
         isAsync,
@@ -2302,12 +2437,16 @@ class TypeScriptAnalysisRunner {
       symbols.push(symbol)
       this.scopeManager.registerSymbol(symbol)
 
-      // If arrow function, process body for nested symbols
+      // If arrow function, process body for nested symbols (locals suppressed)
       if (valueNode?.type === "arrow_function" || valueNode?.type === "function") {
         this.scopeManager.pushScope(ScopeKind.ArrowFunction, name, valueNode)
         stack.push({ action: () => this.scopeManager.popScope() })
         const body = valueNode.childForFieldName("body")
-        if (body) stack.push({ node: body })
+        if (body) {
+          this.insideFunctionDepth++
+          stack.push({ action: () => this.insideFunctionDepth-- })
+          stack.push({ node: body })
+        }
       }
     }
     return true
@@ -2358,7 +2497,7 @@ class TypeScriptAnalysisRunner {
         name,
         kind: isConst ? ASTEngine.SymbolKind.Constant : ASTEngine.SymbolKind.Variable,
         range: this.nodeRange(declarator),
-        scope: this.scopeManager.buildQualifiedName("").replace(/\.$/, "") || undefined,
+        scope: stripTrailingDot(this.scopeManager.buildQualifiedName("")) || undefined,
         visibility: exportStatus.isExported ? "public" : "private",
         ...this.scopeManager.getOwnerInfo(),
         metadata: {
@@ -2378,6 +2517,27 @@ class TypeScriptAnalysisRunner {
     const returnType = this.extractReturnType(node)
     const typeParams = this.extractTypeParameters(node)
 
+    // get/set accessors parse as method_definition with a `get`/`set` token
+    // child — classify as Property (family contract: accessors are properties).
+    let isAccessor = false
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (c && (c.text === "get" || c.text === "set") && (c.type === "get" || c.type === "set" || c.type === "identifier")) {
+        isAccessor = true
+        break
+      }
+    }
+    // Also check the direct token children (get/set are often anonymous tokens)
+    if (!isAccessor) {
+      for (let i = 0; i < node.childCount; i++) {
+        const c = node.child(i)
+        if (c && (c.text === "get" || c.text === "set") && !c.isNamed) {
+          isAccessor = true
+          break
+        }
+      }
+    }
+
     // Determine visibility
     let visibility: "public" | "private" | "protected" = "public"
     if (modifiers.isPrivate || name.startsWith("#")) {
@@ -2389,8 +2549,8 @@ class TypeScriptAnalysisRunner {
     const ownerInfo = this.scopeManager.getOwnerInfo()
 
     const symbol: ASTEngine.UniversalSymbol = {
-      name: name.replace(/^#/, ""), // Normalize private field name
-      kind: ASTEngine.SymbolKind.Method,
+      name: stripPrivatePrefix(name), // Normalize private field name
+      kind: isAccessor ? ASTEngine.SymbolKind.Property : ASTEngine.SymbolKind.Method,
       range: this.nodeRange(node),
       scope: ownerInfo?.ownerName,
       visibility,
@@ -2411,17 +2571,22 @@ class TypeScriptAnalysisRunner {
         isOverride: modifiers.isOverride,
         isPrivateField: name.startsWith("#"),
         isGenerator: node.type === "generator_method_definition",
+        isAccessor,
         complexity: this.calculateComplexity(node),
       },
     }
 
     symbols.push(symbol)
 
-    // Process method body for nested symbols
+    // Process method body for nested symbols (function depth suppresses locals)
     this.scopeManager.pushScope(ScopeKind.Method, name, node)
     stack.push({ action: () => this.scopeManager.popScope() })
     const body = node.childForFieldName("body")
-    if (body) stack.push({ node: body })
+    if (body) {
+      this.insideFunctionDepth++
+      stack.push({ action: () => this.insideFunctionDepth-- })
+      stack.push({ node: body })
+    }
     return true
   }
 
@@ -2475,11 +2640,15 @@ class TypeScriptAnalysisRunner {
       })
     }
 
-    // Process constructor body
+    // Process constructor body (function depth suppresses locals)
     this.scopeManager.pushScope(ScopeKind.Constructor, "constructor", node)
     stack.push({ action: () => this.scopeManager.popScope() })
     const body = node.childForFieldName("body")
-    if (body) stack.push({ node: body })
+    if (body) {
+      this.insideFunctionDepth++
+      stack.push({ action: () => this.insideFunctionDepth-- })
+      stack.push({ node: body })
+    }
     return true
   }
 
@@ -2493,7 +2662,7 @@ class TypeScriptAnalysisRunner {
     const valueNode = node.childForFieldName("value")
 
     // Infer type if not explicitly annotated
-    let returnType = typeAnnotation?.text.replace(/^:\s*/, "")
+    let returnType = typeAnnotation ? stripLeadingColon(typeAnnotation.text) : undefined
     if (!returnType && valueNode) {
       const typeInfo = this.typeInference.inferFromInitializer(valueNode)
       returnType = typeInfo.type !== "unknown" ? typeInfo.type : undefined
@@ -2509,7 +2678,7 @@ class TypeScriptAnalysisRunner {
     const ownerInfo = this.scopeManager.getOwnerInfo()
 
     const symbol: ASTEngine.UniversalSymbol = {
-      name: name.replace(/^#/, ""),
+      name: stripPrivatePrefix(name),
       kind: ASTEngine.SymbolKind.Property,
       range: this.nodeRange(node),
       scope: ownerInfo?.ownerName,
@@ -2606,7 +2775,9 @@ class TypeScriptAnalysisRunner {
 
     const symbol: ASTEngine.UniversalSymbol = {
       name,
-      kind: ASTEngine.SymbolKind.Method,
+      // Family contract: accessor (get/set) members are properties, not methods
+      // (mirrors C# computed/expression-bodied properties).
+      kind: ASTEngine.SymbolKind.Property,
       range: this.nodeRange(node),
       scope: ownerInfo?.ownerName,
       visibility: modifiers.isPrivate ? "private" : modifiers.isProtected ? "protected" : "public",
@@ -2638,7 +2809,7 @@ class TypeScriptAnalysisRunner {
       name,
       kind: ASTEngine.SymbolKind.Namespace,
       range: this.nodeRange(node),
-      scope: this.scopeManager.buildQualifiedName("").replace(/\.$/, "") || undefined,
+      scope: stripTrailingDot(this.scopeManager.buildQualifiedName("")) || undefined,
       visibility: exportStatus.isExported ? "public" : "private",
       comments: this.extractComments(node),
       ...this.scopeManager.getOwnerInfo(),
@@ -2668,7 +2839,7 @@ class TypeScriptAnalysisRunner {
       const sourceNode = node.childForFieldName("source")
       if (!sourceNode) return
 
-      const modulePath = sourceNode.text.replace(/['"]/g, "")
+      const modulePath = stringContent(sourceNode)
       const items = extractImportItems(node)
       const clause = extractImportClause(node)
 
@@ -2695,7 +2866,7 @@ class TypeScriptAnalysisRunner {
         if (args && args.namedChildCount > 0) {
           const pathArg = args.namedChild(0)
           if (pathArg && (pathArg.type === "string" || pathArg.type === "template_string")) {
-            const modulePath = pathArg.text.replace(/['"`]/g, "")
+            const modulePath = stringContent(pathArg)
             imports.push({
               module: modulePath,
               items: ["*"],
@@ -2807,7 +2978,7 @@ class TypeScriptAnalysisRunner {
       // ImportInfo with `reExport: true`. This ensures downstream consumers
       // see the dependency edge without a separate pass.
       if (sourceNode) {
-        const modulePath = sourceNode.text.replace(/['"]/g, "")
+        const modulePath = stringContent(sourceNode)
         const reExportedNames: string[] = []
         // Walk the already-pushed exports for this statement to collect names
         for (let i = exports.length - 1; i >= 0; i--) {
@@ -2885,7 +3056,7 @@ class TypeScriptAnalysisRunner {
         if (extendsTypes) {
           for (const baseType of extendsTypes) {
             relationships.push({
-              source: this.generateSymbolId(symbol),
+              source: symbol.name,
               target: baseType,
               type: ASTEngine.RelationshipType.Extends,
               confidence: 1.0,
@@ -2909,7 +3080,7 @@ class TypeScriptAnalysisRunner {
         if (implementsTypes) {
           for (const iface of implementsTypes) {
             relationships.push({
-              source: this.generateSymbolId(symbol),
+              source: symbol.name,
               target: iface,
               type: ASTEngine.RelationshipType.Implements,
               confidence: 1.0,
@@ -2939,6 +3110,7 @@ class TypeScriptAnalysisRunner {
           const callee = n.namedChild(0)
           if (callee) {
             let targetName = callee.text
+            let fullCallee = callee.text
 
             // Handle member expressions (obj.method())
             if (callee.type === "member_expression") {
@@ -2958,13 +3130,15 @@ class TypeScriptAnalysisRunner {
               targetName.includes("\n") ||
               targetName.includes("`") ||
               targetName.includes("${") ||
-              /[{};=]/.test(targetName)
+              hasBraceEquals(targetName)
             ) {
               // Skip — malformed call_expression from tree-sitter error recovery
+            } else if (this.isTypeScriptBuiltinCall(targetName, fullCallee)) {
+              // Filtered builtins (console output, Object leaf methods, super)
             } else {
 
             relationships.push({
-              source: this.generateSymbolId(callSource),
+              source: callSource.name,
               target: targetName,
               type: ASTEngine.RelationshipType.Calls,
               confidence: 0.9,
@@ -2985,7 +3159,7 @@ class TypeScriptAnalysisRunner {
               // Only components (capitalized)
               if (char && char === char.toUpperCase() && char !== char.toLowerCase()) {
                 relationships.push({
-                  source: this.generateSymbolId(callSource),
+                  source: callSource.name,
                   target: identifier.text,
                   type: ASTEngine.RelationshipType.Uses,
                   confidence: 0.9,
@@ -3038,7 +3212,7 @@ class TypeScriptAnalysisRunner {
               if (!!!processed[key]) {
                 processed[key] = true
                 relationships.push({
-                  source: this.generateSymbolId(currentSymbol),
+                  source: currentSymbol.name,
                   target: name,
                   type: ASTEngine.RelationshipType.Instantiates,
                   confidence: 0.95,
@@ -3085,7 +3259,7 @@ class TypeScriptAnalysisRunner {
             processed[key] = true
 
             relationships.push({
-              source: this.generateSymbolId(currentSymbol),
+              source: currentSymbol.name,
               target: name,
               type: ASTEngine.RelationshipType.References,
               confidence: 0.8,
@@ -3107,7 +3281,7 @@ class TypeScriptAnalysisRunner {
             processed[key] = true
 
             relationships.push({
-              source: this.generateSymbolId(currentSymbol),
+              source: currentSymbol.name,
               target: typeName,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.9,
@@ -3156,7 +3330,7 @@ class TypeScriptAnalysisRunner {
           }
 
           relationships.push({
-            source: this.generateSymbolId(instSource),
+            source: instSource.name,
             target: className,
             type: ASTEngine.RelationshipType.Instantiates,
             confidence: 1.0,
@@ -3187,8 +3361,8 @@ class TypeScriptAnalysisRunner {
       if (symbol.decorators && symbol.decorators.length > 0) {
         for (const decorator of symbol.decorators) {
           relationships.push({
-            source: decorator,
-            target: this.generateSymbolId(symbol),
+            source: symbol.name,
+            target: decorator,
             type: ASTEngine.RelationshipType.References,
             confidence: 1.0,
             metadata: {
@@ -3215,7 +3389,7 @@ class TypeScriptAnalysisRunner {
           const baseClasses = parentClass.metadata.extends as string[]
           for (const baseClass of baseClasses) {
             relationships.push({
-              source: this.generateSymbolId(symbol),
+              source: `${symbol.ownerName}.${symbol.name}`,
               target: `${baseClass}.${symbol.name}`,
               type: ASTEngine.RelationshipType.Overrides,
               confidence: 0.95,
@@ -3238,15 +3412,15 @@ class TypeScriptAnalysisRunner {
       const sourceNode = node.childForFieldName("source")
       if (!sourceNode) return
 
-      const modulePath = sourceNode.text.replace(/['"]/g, "")
+      const modulePath = stringContent(sourceNode)
       const items = extractImportItems(node)
 
-      // Create import relationships
+      // Create import relationships (leaf identity: source is the module leaf)
       for (const item of items) {
         const itemName = item.split(" as ")[0].replace("* as ", "")
 
         relationships.push({
-          source: this.currentFile,
+          source: this.moduleLeafName(),
           target: `${modulePath}:${itemName}`,
           type: ASTEngine.RelationshipType.Imports,
           confidence: 1.0,
@@ -3273,11 +3447,9 @@ class TypeScriptAnalysisRunner {
     symbols: ASTEngine.UniversalSymbol[],
   ): void {
     for (const item of exports) {
-      const target = findItem(symbols, (s) => s.name === item.name)
-
       relationships.push({
-        source: this.currentFile,
-        target: target ? this.generateSymbolId(target) : `${this.currentFile}:${item.name}`,
+        source: this.moduleLeafName(),
+        target: item.name,
         type: ASTEngine.RelationshipType.Exports,
         confidence: 1.0,
         metadata: {
@@ -3288,6 +3460,14 @@ class TypeScriptAnalysisRunner {
     }
   }
 
+  private moduleLeafName(): string {
+    return path.basename(this.currentFile, path.extname(this.currentFile))
+  }
+
+  // ========================================================================
+  // RELATIONSHIP HELPERS (regex-free)
+  // ========================================================================
+
   private addContainmentRelationships(
     symbols: ASTEngine.UniversalSymbol[],
     relationships: ASTEngine.UniversalRelationship[],
@@ -3296,9 +3476,11 @@ class TypeScriptAnalysisRunner {
       if (symbol.ownerName) {
         const owner = findItem(symbols, (s) => s.name === symbol.ownerName)
         if (owner) {
+          // Leaf identity: container is the namespace full name (Example.Domain)
+          // or class/interface/enum leaf (UserService); member is the leaf name.
           relationships.push({
-            source: this.generateSymbolId(owner),
-            target: this.generateSymbolId(symbol),
+            source: owner.name,
+            target: symbol.name,
             type: ASTEngine.RelationshipType.Contains,
             confidence: 1.0,
             metadata: {},
@@ -3337,7 +3519,7 @@ class TypeScriptAnalysisRunner {
     if (node.type === "method_definition" || node.type === "generator_method_definition") {
       const raw = node.childForFieldName("name")?.text
       if (!raw) return current
-      const name = raw.replace(/^#/, "")
+      const name = stripPrivatePrefix(raw)
       const owner = this.findEnclosingClassName(node)
       return (
         byPos(name, ASTEngine.SymbolKind.Method, node.startPosition.row, node.startPosition.column, owner) ||
@@ -3429,7 +3611,7 @@ class TypeScriptAnalysisRunner {
       // Extract type annotation
       const typeAnnotation = paramNode.childForFieldName("type")
       if (typeAnnotation) {
-        type = typeAnnotation.text.replace(/^:\s*/, "")
+        type = stripLeadingColon(typeAnnotation.text)
         // Check for optional type T?
         if (type.endsWith("?")) {
           isOptional = true
@@ -3478,14 +3660,14 @@ class TypeScriptAnalysisRunner {
   private extractReturnType(node: Node): string {
     const returnType = node.childForFieldName("return_type")
     if (returnType) {
-      return returnType.text.replace(/^:\s*/, "")
+      return stripLeadingColon(returnType.text)
     }
 
     // Try to find type annotation in the node
     for (let i = 0; i < node.namedChildCount; i++) {
       const child = node.namedChild(i)
       if (child && child.type === "type_annotation") {
-        return child.text.replace(/^:\s*/, "")
+        return stripLeadingColon(child.text)
       }
     }
 
@@ -3565,12 +3747,7 @@ class TypeScriptAnalysisRunner {
     // Look for leading comments
     let prev = node.previousSibling
     while (prev && (prev.type === "comment" || prev.type === "line_comment" || prev.type === "block_comment")) {
-      comments.unshift(
-        prev.text
-          .replace(/^\/\/\s*/, "")
-          .replace(/^\/\*\s*|\s*\*\/$/g, "")
-          .trim(),
-      )
+      comments.unshift(stripCommentMarkers(prev.text))
       prev = prev.previousSibling
     }
 
@@ -3593,18 +3770,48 @@ class TypeScriptAnalysisRunner {
     for (let i = 0; i < node.namedChildCount; i++) {
       const child = node.namedChild(i)
       if (child && child.type === "decorator") {
-        const decText = child.text
-        const decUpper = decText.toUpperCase()
-        const methods = ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"]
-        for (const method of methods) {
-          if (decUpper.includes(method)) {
-            // Precise regex to parse @Get('/path'), @PostMapping("/api"), etc.
-            const match = decText.match(
-              /@(?:[A-Za-z0-9_]*)(Get|Post|Put|Delete|Patch|Head|Options)[A-Za-z0-9_]*\s*\(\s*['"`]?([^'"`]*)['"`]?\s*\)/i,
-            )
-            if (match) {
-              return `${method} ${match[2] ? match[2] : "/"}`.trim()
+        // Pure-AST route extraction: @Get('/path'), @PostMapping("/api"), ...
+        // The decorator body is a call_expression whose callee identifier
+        // carries the HTTP method (possibly suffixed, e.g. PostMapping) and
+        // whose first string argument is the route.
+        const methods = new Set(["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"])
+        let decName = ""
+        let route = "/"
+        let sawCall = false
+        const scan = (n: any) => {
+          if (sawCall) return
+          if (n.type === "call_expression") {
+            sawCall = true
+            const callee = n.namedChild(0)
+            if (callee) {
+              // callee may be an identifier or a member_expression chain
+              let base = callee
+              if (callee.type === "member_expression") {
+                base = callee.childForFieldName("property") || callee.namedChild(callee.namedChildCount - 1) || callee
+              }
+              decName = base.text || ""
             }
+            const args = n.childForFieldName("arguments")
+            if (args && args.namedChildCount > 0) {
+              const firstArg = args.namedChild(0)
+              if (firstArg && (firstArg.type === "string" || firstArg.type === "template_string")) {
+                route = stringContent(firstArg)
+              }
+            }
+            return
+          }
+          for (let j = 0; j < n.namedChildCount; j++) {
+            const c = n.namedChild(j)
+            if (c) scan(c)
+          }
+        }
+        scan(child)
+        const upper = decName.toUpperCase()
+        for (const method of methods) {
+          // Match exact method name or method-prefixed names (PostMapping,
+          // GetJson, ...) — pure string startsWith, no regex.
+          if (upper === method || (upper.length > method.length && upper.startsWith(method))) {
+            return `${method} ${route}`.trim()
           }
         }
       }
@@ -3622,7 +3829,7 @@ class TypeScriptAnalysisRunner {
               let url = ""
               const firstArg = args.namedChild(0)
               if (firstArg && (firstArg.type === "string" || firstArg.type === "template_string")) {
-                url = firstArg.text.replace(/['"`]/g, "")
+                url = stringContent(firstArg)
               }
 
               let method = "GET"
@@ -3640,7 +3847,7 @@ class TypeScriptAnalysisRunner {
                       const key = prop.childForFieldName("key")
                       const val = prop.childForFieldName("value")
                       if (key && key.text === "method" && val) {
-                        method = val.text.replace(/['"`]/g, "").toUpperCase()
+                        method = stringContent(val).toUpperCase()
                       }
                     }
                   }
@@ -3834,6 +4041,30 @@ class TypeScriptAnalysisRunner {
     if (symbol.scope) parts.push(symbol.scope)
     parts.push(symbol.name)
     return parts.join(":")
+  }
+
+  private isTypeScriptBuiltinCall(targetName: string, fullCallee?: string): boolean {
+    if (targetName === "super") return true
+    // Full expression match first: console.log, console.warn, ...
+    if (TS_CONSOLE_BUILTINS.has(fullCallee || "")) return true
+    // console.* accessed via optional chaining (console?.log) or spaces
+    const trimmed = stripWhitespace(fullCallee || "")
+    if (TS_CONSOLE_BUILTINS.has(trimmed)) return true
+    // Leaf Object universal methods are always filtered (toString, valueOf,
+    // hasOwnProperty, isPrototypeOf, toLocaleString, ...)
+    if (TS_OBJECT_LEAF_METHODS.has(targetName)) return true
+    return false
+  }
+
+  // Relationship identity contract (C#-family): sources/targets are LEAF names
+  // — the enclosing method/class/namespace leaf, never file-qualified ids.
+  // Calls: Distance -> Sqrt; contains: Example.Features -> Status (namespace
+  // qualified for top-level containers, class leaf for members); overrides:
+  // UserService.format -> BaseService.format (qualified on both sides).
+  // Containers qualify by owner (namespace/class); members use their leaf name.
+  private relContainer(symbol: ASTEngine.UniversalSymbol | null | undefined): string {
+    if (!symbol) return "module"
+    return symbol.name
   }
 
   private hasToken(node: Node, token: string): boolean {
@@ -4168,10 +4399,10 @@ export class RealTypeScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             const extendsNode = param.childForFieldName("extends")
             const defaultNode = param.childForFieldName("default")
             if (extendsNode) {
-              paramStr += ` extends ${extendsNode.text.replace(/^:\s*/, "")}`
+              paramStr += ` extends ${stripLeadingColon(extendsNode.text)}`
             }
             if (defaultNode) {
-              paramStr += ` = ${defaultNode.text.replace(/^=\s*/, "")}`
+              paramStr += ` = ${stripLeadingEquals(defaultNode.text)}`
             }
             typeParams.push(paramStr)
           } else {
