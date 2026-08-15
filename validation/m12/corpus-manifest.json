@@ -183,17 +183,27 @@
     },
     {
       "analyzer": "javascript",
-      "corpusTarget": "typescript",
+      "corpusTarget": "svelte",
       "status": "measured",
       "candidates": [
-        "typescript@b465fdbf(clean)",
-        "vscode@46ed260b(dirty)",
-        "proxicall@383e603e(dirty)",
-        "mojo@93f59174(clean)",
+        "svelte@26786e92(clean)",
         "graphql_js@9c245018(clean)",
         "vue_core@f8975657(clean)",
-        "svelte@26786e92(clean)"
-      ]
+        "typescript@b465fdbf(clean)"
+      ],
+      "measured": {
+        "revision": "26786e92985842a6d563c67049a43bc5857bf792",
+        "sample": "400 tracked *.js/*.mjs/*.cjs files (deterministic first-400 sorted, excluding tests; svelte repo — real package sources)",
+        "fixtures": 5,
+        "fixtureFacts": 112,
+        "precision": 1.0,
+        "recall": 1.0,
+        "corpusSymbols": 2935,
+        "corpusRelationships": 17483,
+        "grammarErrorFiles": 0,
+        "note": "Analyzer rewritten pure-AST to the C#-family contract (mirrors M12.09 TypeScript): no locals/params/lambda-params/destructured-params as symbols; CJS require bindings are imports (never symbols); overload/dup dedup; accessors -> property; prototype methods (X.prototype.m = function) -> Method with owner + contains; relationship sources are leaf identities (calls: Distance -> Sqrt); phantom super() filtered; computed/dynamic calls (o[key]()) filtered; console.* and Object leaf builtins filtered; imports/exports as module-level leaf relationships (ESM + CJS); cross-file overrides via harness companion (User.format -> BaseService.format). Differential 112/112 (1.000/1.000, 0 FP / 0 FN); analyzer fully regex-free (census 2 -> 0). Corpus svelte@26786e92 (fresh parser per file): 0/400 error files, 0 crashes, 0 timeouts — clean corpus validation.",
+        "measuredAt": "2026-08-16T01:40:00.000Z"
+      }
     },
     {
       "analyzer": "dart",
