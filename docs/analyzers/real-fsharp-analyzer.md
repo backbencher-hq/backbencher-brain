@@ -3,7 +3,7 @@
 ## Language
 
 - Analyzer file: `src/ast/real-fsharp-analyzer.ts`
-- Parser: `tree-sitter-fsharp` (patched grammar — see Grammar below; WASM in `wasm/tree-sitter-fsharp.wasm`; also mirrored to `~/.bb/wasm`)
+- Parser: `tree-sitter-fsharp` (patched grammar — see Grammar below; WASM in `wasm/tree-sitter-fsharp.wasm`; the `~/.bb/wasm` mirror is STALE — old 5MB build — refresh it or rely on the repo copy, which the engine loads first)
 - Language detection: extension `.fs` / `.fsi` → `language-detection.ts`
 - Wired in: `engine.ts getAnalyzer` → `RealFsharpAnalyzer`
 
@@ -25,10 +25,11 @@ over upstream tree-sitter-fsharp:
    patterns in prim-types.fs); the scanner probe alone is sufficient.
 2. **First-element `interface` fix**: with the probe, every
    `interface_implementation` node in the implicit-body form is emitted
-   correctly (corpus check: fsharp@22a8a5dc — 5,836 `.fs`/`.fsi` files,
-   968 files with error nodes / 6,234 error nodes; the previous wired
-   build hid ~1,000 more errors inside a single giant 1,900-line ERROR
-   node — the current build surfaces small, recoverable errors instead).
+   correctly (corpus check: fsharp@22a8a5dc — 6,627 git-tracked
+   `.fs`/`.fsi`/`.fsx` files, 1,156 with error nodes / 8,437 ERROR nodes,
+   0 crashes, fresh parser per file; the previous wired build hid ~1,000
+   more errors inside a single giant 1,900-line ERROR node — the current
+   build surfaces small, recoverable errors instead).
 
 ## Symbol contract
 
@@ -125,12 +126,14 @@ string split. No O(n²) or per-symbol O(n) scans.
 ## Corpus validation
 
 - Corpus target: `validation/m12/corpus-manifest.json` → `fsharp@22a8a5dc`
-  (clean repo, 5,836 committed `.fs`/`.fsi` files)
+  (clean repo, 6,627 git-tracked `.fs`/`.fsi`/`.fsx` files)
 - 400 tracked `*.fs` files (deterministic first-400 sorted; 376 unique
   basenames in the flat sample dir)
-- Parse quality: 968/5,836 files with error nodes (16.6%), 6,234 total
-  ERROR nodes, 0 crashes. Errors are small and recoverable (the previous
-  grammar build swallowed ~1,000 more errors inside one giant ERROR node).
+- Parse quality (fresh parser per file, 0 crashes): sample 108/400 files
+  with error nodes (27.0%, 1,222 ERROR nodes); full corpus 1,156/6,627
+  files (17.4%, 8,437 ERROR nodes). Errors are small and recoverable (the
+  previous grammar build swallowed ~1,000 more errors inside one giant
+  ERROR node).
 
 ## Evidence pointers
 
