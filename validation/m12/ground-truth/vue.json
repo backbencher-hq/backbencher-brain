@@ -544,6 +544,21 @@
    }
   },
   {
+   "id": "rel:UserList.vue:calls:UserList:ref",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "UserList.vue",
+   "sourceId": "UserList",
+   "targetId": "ref",
+   "attributes": {
+    "type": "calls"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "users = ref<Array<...>>([]) at setup scope (generic call, requires the TS sub-parse the engine's lang detection now provides)"
+   }
+  },
+  {
    "id": "rel:UserList.vue:calls:loadMore:fetch",
    "layer": "relationships",
    "kind": "relationship",

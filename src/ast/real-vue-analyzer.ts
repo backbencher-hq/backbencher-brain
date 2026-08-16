@@ -4,7 +4,7 @@
 //     component root, template component usages, and the <script> block whose
 //     body is a `raw_text` node with exact byte offsets; (2) the script body
 //     is parsed with tree-sitter-javascript/typescript (engine pre-parse, see
-//     ASTEngine.parseFile → context.vueScriptTree) and extracted via the
+//     ASTEngine.parseFile → context.sfcScriptTrees[0]) and extracted via the
 //     JS/TS family analyzers, with ranges offset back to SFC lines.
 //   - Symbols: component (name = file module, Class), script bindings via the
 //     JS/TS contract (no locals/params), Options API declarations owned by the
@@ -147,9 +147,9 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     // --- 3. Script pass: nested JS/TS parse (engine-provided tree) -------------
-    const scriptTree: Tree | undefined = context?.vueScriptTree
-    const scriptStartLine: number | undefined = context?.vueScriptStartLine
-    const scriptStartColumn: number | undefined = context?.vueScriptStartColumn
+    const scriptTree: Tree | undefined = context?.sfcScriptTrees?.[0]
+    const scriptStartLine: number | undefined = context?.sfcScriptLines?.[0]
+    const scriptStartColumn: number | undefined = context?.sfcScriptCols?.[0]
     if (scriptTree && scriptStartLine !== undefined) {
       const scriptContent = scriptTree.rootNode?.text ?? ""
       const lineOffset = scriptStartLine - 1

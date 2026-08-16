@@ -862,15 +862,16 @@ export namespace ASTEngine {
 
   // Parse file and extract universal symbols and relationships with INTELLIGENCE
   /**
-   * Find the first `<script>` block of a Vue SFC and return its raw body text
-   * (the grammar exposes it as a `raw_text` node with exact byte offsets) plus
-   * the block's language (`js`/`ts`) and body start position. Pure AST — no
-   * source-text scanning of the file.
+   * Find the `<script>` blocks of a Vue/Svelte SFC and return their raw body
+   * text (the grammar exposes each as a `raw_text` node with exact byte
+   * offsets) plus each block's language (`js`/`ts`) and body start position.
+   * Pure AST — no source-text scanning of the file.
    */
-  function extractVueScriptBlock(
+  function extractSfcScriptBlocks(
     rootNode: Node,
     content: string
-  ): { body: string; lang: string; startLine: number; startColumn: number } | null {
+  ): { body: string; lang: string; startLine: number; startColumn: number }[] {
+    const out: { body: string; lang: string; startLine: number; startColumn: number }[] = []
     const stack: Node[] = [rootNode]
     while (stack.length > 0) {
       const n = stack.pop()!
@@ -885,15 +886,9 @@ export namespace ASTEngine {
             for (let j = 0; j < c.namedChildCount; j++) {
               const a = c.namedChild(j)
               if (a && a.type === "attribute") {
-                const attrName = a.childForFieldName?.("name")?.text || (a.type === "attribute" ? findAttributeName(a) : "")
+                const attrName = findAttributeName(a)
                 if (attrName === "lang") {
-                  let v = a.childForFieldName?.("value")?.text || ""
-                  if (v.length >= 2) {
-                    const first = v[0]
-                    if ((first === '"' || first === "'") && v[v.length - 1] === first) {
-                      v = v.slice(1, -1)
-                    }
-                  }
+                  let v = findAttributeValue(a)
                   if (v === "ts" || v === "tsx") lang = "ts"
                 }
               }
@@ -902,27 +897,48 @@ export namespace ASTEngine {
         }
         if (rawText) {
           const body = content.substring(rawText.startIndex, rawText.endIndex)
-          return {
-            body,
-            lang,
-            startLine: rawText.startPosition.row + 1,
-            startColumn: rawText.startPosition.column,
+          if (body.trim().length > 0) {
+            out.push({
+              body,
+              lang,
+              startLine: rawText.startPosition.row + 1,
+              startColumn: rawText.startPosition.column,
+            })
           }
         }
-        return null
       }
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const c = n.namedChild(i)
         if (c) stack.push(c)
       }
     }
-    return null
+    return out
   }
 
   function findAttributeName(attr: Node): string {
     for (let i = 0; i < attr.namedChildCount; i++) {
       const c = attr.namedChild(i)
       if (c && c.type === "attribute_name") return c.text
+    }
+    return ""
+  }
+
+  // Attribute value text with quotes stripped: handles both the vue shape
+  // (`attribute_value` child) and the svelte shape
+  // (`quoted_attribute_value > attribute_value`). Pure string ops — no regex.
+  function findAttributeValue(attr: Node): string {
+    const stack: Node[] = []
+    for (let i = 0; i < attr.namedChildCount; i++) {
+      const c = attr.namedChild(i)
+      if (c) stack.push(c)
+    }
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "attribute_value") return n.text
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
     }
     return ""
   }
@@ -1092,29 +1108,37 @@ export namespace ASTEngine {
       const analyzer = await getAnalyzer(language)
       let analysisResult
 
-      // VUE SFC: pre-parse the <script> block body with the JS/TS grammar and
-      // hand the parsed tree to the analyzer via context (the vue grammar
-      // exposes the script body as a raw_text node; the analyzer is sync and
-      // cannot load parsers itself). This replaces the old regex-based
-      // POLYGLOT INJECTION for vue — the new analyzer does NOT set
+      // VUE/SVELTE SFC: pre-parse each <script> block body with the JS/TS
+      // grammar and hand the parsed trees to the analyzer via context (these
+      // grammars expose the script body as a raw_text node; the analyzer is
+      // sync and cannot load parsers itself). This replaces the old regex-based
+      // POLYGLOT INJECTION for vue/svelte — the new analyzers do NOT set
       // embeddedScriptContent, so the polyglot path below is skipped.
-      if (language === "vue" && tree?.rootNode) {
+      if ((language === "vue" || language === "svelte") && tree?.rootNode) {
         try {
-          const scriptInfo = extractVueScriptBlock(tree.rootNode, content)
-          if (scriptInfo && scriptInfo.body.trim().length > 0) {
-            const subLang = scriptInfo.lang === "ts" ? "typescript" : "javascript"
-            const subParser = await getParser(subLang)
-            const subTree = subParser.parse(scriptInfo.body)
+          const scriptBlocks = extractSfcScriptBlocks(tree.rootNode, content)
+          if (scriptBlocks.length > 0) {
+            const sfcScriptTrees: Tree[] = []
+            const sfcScriptLines: number[] = []
+            const sfcScriptCols: number[] = []
+            for (const block of scriptBlocks) {
+              const subLang = block.lang === "ts" ? "typescript" : "javascript"
+              const subParser = await getParser(subLang)
+              const subTree = subParser.parse(block.body)
+              sfcScriptTrees.push(subTree)
+              sfcScriptLines.push(block.startLine)
+              sfcScriptCols.push(block.startColumn)
+            }
             context = {
               ...context,
-              vueScriptTree: subTree,
-              vueScriptStartLine: scriptInfo.startLine,
-              vueScriptStartColumn: scriptInfo.startColumn,
-              vueScriptLang: scriptInfo.lang,
+              sfcScriptTrees,
+              sfcScriptLines,
+              sfcScriptCols,
+              sfcScriptLangs: scriptBlocks.map((b) => b.lang),
             }
           }
         } catch (e) {
-          log.debug("vue script sub-parse failed", { error: (e as Error)?.message })
+          log.debug("sfc script sub-parse failed", { error: (e as Error)?.message })
         }
       }
 

@@ -255,7 +255,20 @@
       "status": "measured",
       "candidates": [
         "svelte@26786e92(clean)"
-      ]
+      ],
+      "measured": {
+        "revision": "26786e92985842a6d563c67049a43bc5857bf792",
+        "sample": "396 tracked *.svelte files (deterministic stratified sample across 20 svelte-repo test categories, excluding 4 deliberately-broken loose-invalid/loose-unclosed parser error-recovery fixtures)",
+        "fixtures": 5,
+        "fixtureFacts": 63,
+        "precision": 1.0,
+        "recall": 1.0,
+        "corpusSymbols": 913,
+        "corpusRelationships": 655,
+        "grammarErrorFiles": 12,
+        "note": "Analyzer rewritten from legacy source-text scanning to pure-AST family contract (mirrors M12.09 TS / M12.10 JS): SFC component -> class; script top-level let/const -> variable/constant, function -> function, export let/function = component public API (exports + contains to component); template pass emits instantiates for non-builtin element tags (leaf tag as written) and on: directives -> calls to handler leaf (first identifier followed by ( or bare identifier); bind:/class:/transition: never emit; script content parsed by the real JavaScript analyzer (family consistency, whether or not lang=ts) via engine pre-parse passed through AnalyzeContext (generic SFC context keys, shared with Vue); runes ($state/$derived/$props/$effect etc.) are compiler keywords, not symbols; no locals/params/closures as symbols; imports/exports from import/export directives; contains from ownerName. Differential 63/63 (1.000/1.000, 0 FP / 0 FN); analyzer fully regex-free (census 2 -> 0; raw_text_expr handler leaf uses pure-String scanning, the documented fallback for grammar-opaque expressions). GRAMMAR UPGRADE: tree-sitter-svelte wasm rebuilt from the maintained tree-sitter-grammars fork (2025-06, Svelte 5) - the previously pinned npm grammar (2023) errored on 30/400 (7.5%); upgraded grammar halves it to 12/396 (3.0%), all 12 residual files use Svelte 5.2+ syntax no tree-sitter grammar supports ({@attach} attachments, generic snippets, #each shorthand without as, comments inside tags, self-closing <script/>, {@const} division) - verified identical gaps on the 2026-02 svelte-next fork. 0 crashes / 0 timeouts. Fixture shapes re-verified against the new grammar (attribute expression value moved from expr_attribute_value>raw_text_expr to expression>svelte_raw_text).",
+        "measuredAt": "2026-08-16T05:30:00.000Z"
+      }
     },
     {
       "analyzer": "html",
