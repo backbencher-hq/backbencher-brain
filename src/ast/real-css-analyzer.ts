@@ -22,6 +22,121 @@ interface StackFrame {
   currentSelector: string
 }
 
+// ============================================================================
+// PURE-STRING HELPERS (regex-free)
+// ============================================================================
+
+// Strip ALL quote characters from a string (multi-quote values like
+// `url("theme.css")` inner text). Pure-String scan.
+function stripAllQuotes(text: string): string {
+  let out = ""
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]
+    if (c !== '"' && c !== "'") out += c
+  }
+  return out
+}
+
+// Unwrap `url(...)` / `url("...")` into the inner value. Pure-String.
+function unwrapUrl(text: string): string {
+  if (text.startsWith("url(") && text.endsWith(")")) {
+    return stripAllQuotes(text.slice(4, -1).trim())
+  }
+  return stripAllQuotes(text)
+}
+
+// Replace every `&` in a nesting selector with the parent selector.
+// Pure-String scan (the grammar exposes nesting as a `nesting_selector`
+// node, but the resolved text needs this substitution).
+function replaceAll(text: string, needle: string, replacement: string): string {
+  let out = ""
+  let i = 0
+  while (i < text.length) {
+    if (text.startsWith(needle, i)) {
+      out += replacement
+      i += needle.length
+    } else {
+      out += text[i]
+      i++
+    }
+  }
+  return out
+}
+
+// Universal reset selector: `*` or `*::before`/`*::after`/`*::selection`.
+// Pure-String check (the M11 contract suppresses these as boilerplate).
+function isResetSelector(text: string): boolean {
+  if (text === "*") return true
+  if (text.startsWith("*::")) {
+    const rest = text.slice(3)
+    if (rest.length === 0) return false
+    for (let i = 0; i < rest.length; i++) {
+      const c = rest[i]
+      if (!((c >= "a" && c <= "z") || c === "-")) return false
+    }
+    return true
+  }
+  return false
+}
+
+// Class-name framework heuristics (pure-String; the old analyzer used regex).
+function isTailwindClass(cls: string): boolean {
+  if (cls.startsWith("tw-")) return true
+  for (const p of ["sm:", "md:", "lg:", "xl:", "2xl:", "hover:", "focus:", "dark:"]) {
+    if (cls.startsWith(p)) return true
+  }
+  return false
+}
+
+function isBootstrapClass(cls: string): boolean {
+  if (cls === "container" || cls === "btn-primary" || cls === "navbar-expand") return true
+  // col-(sm|md|lg|xl)-<digits>
+  for (const size of ["sm-", "md-", "lg-", "xl-"]) {
+    if (cls.startsWith(`col-${size}`)) {
+      const rest = cls.slice(`col-${size}`.length)
+      if (rest.length > 0) {
+        let allDigits = true
+        for (let i = 0; i < rest.length; i++) {
+          const c = rest[i]
+          if (!(c >= "0" && c <= "9")) { allDigits = false; break }
+        }
+        if (allDigits) return true
+      }
+    }
+  }
+  return false
+}
+
+function isBulmaClass(cls: string): boolean {
+  for (const p of ["is-", "has-"]) {
+    if (cls.startsWith(p)) {
+      const rest = cls.slice(p.length)
+      if (
+        rest === "primary" || rest === "info" || rest === "success" ||
+        rest === "warning" || rest === "danger" || rest === "text-centered"
+      ) return true
+    }
+  }
+  return false
+}
+
+function isFoundationClass(cls: string): boolean {
+  if (cls === "foundation") return true
+  for (const p of ["small-", "medium-", "large-"]) {
+    if (cls.startsWith(p)) {
+      const rest = cls.slice(p.length)
+      if (rest.length === 0) return false
+      let allDigits = true
+      for (let i = 0; i < rest.length; i++) {
+        const c = rest[i]
+        if (!(c >= "0" && c <= "9")) { allDigits = false; break }
+      }
+      if (allDigits) return true
+    }
+  }
+  return false
+}
+
 export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
     const ctx: CssContext = {
@@ -90,7 +205,6 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           this.processDeclaration(node, currentSelector, ctx)
           break
         }
-          break
         case "call_expression":
           this.processCallExpression(node, currentSelector, ctx)
           break
@@ -108,81 +222,6 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           })
         }
       }
-    }
-
-    // SCSS mixin/include extracted via AST (mixin_statement / include_statement in processAtRule)
-    if (false && (filePath.endsWith(".scss") || filePath.endsWith(".sass"))) {
-      const getScope = (content: string, index: number) => {
-        let depth = 0
-        for (let i = index; i >= 0; i--) {
-          if (content[i] === "}") depth--
-          else if (content[i] === "{") {
-            depth++
-            if (depth > 0) {
-              let j = i - 1
-              while (j >= 0 && /[\s]/.test(content[j])) j--
-              let start = j
-              while (start >= 0 && !/[}{;]/.test(content[start])) start--
-              let sel = content.substring(start + 1, j + 1).trim()
-              sel = sel.split(/\r?\n/).pop()?.trim() || ""
-              if (sel.startsWith("//")) sel = sel.replace(/^\/\/\s*/, "")
-              return sel || "SCSS_FILE_SCOPE"
-            }
-          }
-        }
-        return "SCSS_FILE_SCOPE"
-      }
-
-      // SCSS mixin detection — AST-based walk (zero regex)
-      const findMixins = (n: Node) => {
-        if (n.type === "mixin_statement" || n.type === "mixin_declaration") {
-          for (let i = 0; i < n.childCount; i++) {
-            const c = n.child(i)
-            if (c && (c.type === "mixin_name" || c.type === "identifier" || c.type === "tag_name")) {
-              const name = c.text
-              if (!ctx.symbols.some((s: any) => s.name === `@mixin ${name}`)) {
-                ctx.symbols.push({
-                  name: `@mixin ${name}`,
-                  kind: ASTEngine.SymbolKind.Function,
-                  range: {
-                    startLine: n.startPosition.row + 1,
-                    startColumn: n.startPosition.column + 1,
-                    endLine: n.endPosition.row + 1,
-                    endColumn: n.endPosition.column + 1,
-                  },
-                  scope: "",
-                  visibility: "public",
-                  metadata: { isAtRule: true, atKeyword: "@mixin" },
-                })
-              }
-            }
-          }
-        }
-        for (let i = 0; i < n.childCount; i++) { const c = n.child(i); if (c) findMixins(c) }
-      }
-      findMixins((ctx as any).tree?.rootNode || rootNode)
-
-      // SCSS mixin usage — AST-based detection
-      // Tree-sitter-css: include_statement nodes for @include mixin-name
-      const findIncludes = (n: Node) => {
-        if (n.type === "include_statement" || n.type === "call_expression") {
-          for (let i = 0; i < n.childCount; i++) {
-            const c = n.child(i)
-            if (c && (c.type === "identifier" || c.type === "tag_name" || c.type === "mixin_name")) {
-              const name = c.text
-              const scope = "SCSS_FILE_SCOPE"
-              ctx.relationships.push({
-                source: scope,
-                target: `@mixin ${name}`,
-                type: ASTEngine.RelationshipType.Uses,
-                metadata: { cssSpecific: true, isMixinRef: true },
-              })
-            }
-          }
-        }
-        for (let i = 0; i < n.childCount; i++) { const c = n.child(i); if (c) findIncludes(c) }
-      }
-      findIncludes((ctx as any).tree?.rootNode || rootNode)
     }
 
     for (const s of ctx.symbols) { if (!s.scope || s.scope === "") { ctx.exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility || "public" }) } }
@@ -205,20 +244,6 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         framework: frameworks[i],
         patterns: [{ type: "usage", detected: true, description: `${frameworks[i]} usage detected` }],
       })
-    }
-
-    // Post-loop: add contains for owned symbols
-    for (const s of ctx.symbols) {
-      const _owner = s.ownerName || s.scope
-      if (_owner) {
-        ctx.relationships.push({
-          source: _owner,
-          target: s.name,
-          type: ASTEngine.RelationshipType.Contains,
-          confidence: 1.0,
-          metadata: {},
-        })
-      }
     }
 
     return {
@@ -308,7 +333,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // carries no semantic symbol — suppress them to keep output clean.
     let isResetRule = rawSelectors.length > 0
     for (let i = 0; i < rawSelectors.length; i++) {
-      if (!/^\*(?:::[a-z-]+)?$/.test(rawSelectors[i])) {
+      if (!isResetSelector(rawSelectors[i])) {
         isResetRule = false
         break
       }
@@ -331,7 +356,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         const r = rawSelectors[j]
         if (p) {
           if (r.indexOf("&") !== -1) {
-            resolvedSelectors.push(r.replace(/&/g, p))
+            resolvedSelectors.push(replaceAll(r, "&", p))
           } else {
             resolvedSelectors.push(`${p} ${r}`)
           }
@@ -406,7 +431,11 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (n.type === "class_name") {
           specClass += 1
           classNames.push(n.text)
-          chain.push(n.text)
+          // Chain identities must match symbol names: class_name nodes carry
+          // the bare identifier (`card`) but the selector symbol is named
+          // with its `.` prefix (`.card`). Emit the prefixed form so the
+          // contains edge source/target resolve to real symbols.
+          chain.push(`.${n.text}`)
         }
         if (n.type === "universal_selector") {
           specTag += 1
@@ -530,7 +559,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
   private processImport(node: Node, ctx: CssContext) {
     const stringNode = this.findChild(node, (c) => c?.type === "string_value" || c?.type === "call_expression")
     if (stringNode) {
-      const moduleName = stringNode.text.replace(/["']/g, "").replace(/^url\((.*)\)$/, "$1")
+      const moduleName = unwrapUrl(stringNode.text)
       ctx.imports.push({
         module: moduleName,
         source: moduleName,
@@ -581,7 +610,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       (c) => c && (c.type === "keyframes_name" || c.type === "identifier" || c.type === "string_value"),
     )
     if (nameNode) {
-      const name = nameNode.text.replace(/['"]/g, "")
+      const name = stripAllQuotes(nameNode.text)
       ctx.symbols.push({
         name: name,
         kind: ASTEngine.SymbolKind.Function,
@@ -648,7 +677,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       const texts: string[] = []
       for (let i = 0; i < identifiers.length; i++) {
-        let nodeToText = identifiers[i]
+        const nodeToText = identifiers[i]
         if (nodeToText.type === "call_expression") {
           const identChild = this.findChild(
             nodeToText,
@@ -657,7 +686,10 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (identChild) {
             texts.push(identChild.text)
           } else {
-            texts.push(nodeToText.text.split("(")[0])
+            // first token before `(` — pure-String (call_expression text)
+            const raw = nodeToText.text
+            const parenIdx = raw.indexOf("(")
+            texts.push(parenIdx === -1 ? raw : raw.slice(0, parenIdx))
           }
         } else {
           texts.push(nodeToText.text)
@@ -752,6 +784,18 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         visibility: "public",
         metadata: { isCustomProperty: true },
       })
+      // contains for the custom property scoped to its selector — emitted
+      // here (not by the post-loop) to avoid double-emission with nested
+      // selector contains.
+      if (currentSelector) {
+        ctx.relationships.push({
+          source: currentSelector,
+          target: propName,
+          type: ASTEngine.RelationshipType.Contains,
+          confidence: 1.0,
+          metadata: { cssSpecific: true, isCustomPropertyScope: true },
+        })
+      }
       if (propName.startsWith("--")) ctx.patterns["CSS Custom Properties"] = true
       if (propName.startsWith("$")) ctx.frameworks["SCSS/SASS"] = true
       if (propName.startsWith("@")) ctx.frameworks["LESS"] = true
@@ -762,7 +806,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       while (valStack.length > 0) {
         const n = valStack.pop()!
         if (n.type === "plain_value" || n.type === "identifier" || n.type === "string_value") {
-          const text = n.text.trim().replace(/['"]/g, "")
+          const text = stripAllQuotes(n.text.trim())
           if (ctx.keyframeNames[text]) {
             ctx.relationships.push({
               source: currentSelector,
@@ -830,12 +874,12 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       const classNames = (s.metadata?.classNames as string[]) || []
       for (let j = 0; j < classNames.length; j++) {
         const cls = classNames[j]
-        if (cls.match(/^(sm|md|lg|xl|2xl|hover|focus|dark):/) || cls.match(/^tw-/)) tailwindScore += 5
-        if (cls.match(/^(col-(sm|md|lg|xl)-\d+|btn-primary|navbar-expand|container)/)) bootstrapScore += 5
+        if (isTailwindClass(cls)) tailwindScore += 5
+        if (isBootstrapClass(cls)) bootstrapScore += 5
         if (cls.startsWith("Mui")) muiScore += 5
         if (cls.startsWith("v-btn") || cls.startsWith("v-card") || cls.startsWith("v-col")) vuetifyScore += 5
-        if (cls.match(/^(is-|has-)(primary|info|success|warning|danger|text-centered)/)) bulmaScore += 5
-        if (cls.match(/^(small|medium|large)-\d+$/) || cls === "foundation") foundationScore += 5
+        if (isBulmaClass(cls)) bulmaScore += 5
+        if (isFoundationClass(cls)) foundationScore += 5
       }
     }
 

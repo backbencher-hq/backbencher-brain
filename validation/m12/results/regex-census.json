@@ -2,196 +2,25 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-08-16T03:37:04.901Z",
+  "generatedAt": "2026-08-16T21:28:13.669Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 119,
+  "totalRegexUsages": 104,
   "analyzersScanned": 41,
   "byClassification": {
-    "unavoidable": 14,
-    "normalization": 53,
-    "needs_review": 50,
+    "unavoidable": 11,
+    "normalization": 49,
+    "needs_review": 42,
     "replaceable": 2
   },
   "byReceiverCategory": {
-    "literal": 14,
-    "node_text": 53,
-    "identifier": 31,
+    "literal": 11,
+    "node_text": 49,
+    "identifier": 23,
     "other": 19,
     "raw_content": 2
   },
   "perFile": [
-    {
-      "file": "real-css-analyzer.ts",
-      "count": 15,
-      "usages": [
-        {
-          "file": "real-css-analyzer.ts",
-          "line": 123,
-          "column": 32,
-          "source": "/[\\s]/",
-          "operation": "test",
-          "receiver": "/[\\s]/",
-          "receiverCategory": "literal",
-          "classification": "unavoidable",
-          "justification": ""
-        },
-        {
-          "file": "real-css-analyzer.ts",
-          "line": 125,
-          "column": 37,
-          "source": "/[}{;]/",
-          "operation": "test",
-          "receiver": "/[}{;]/",
-          "receiverCategory": "literal",
-          "classification": "unavoidable",
-          "justification": ""
-        },
-        {
-          "file": "real-css-analyzer.ts",
-          "line": 127,
-          "column": 31,
-          "source": "/\\r?\\n/",
-          "operation": "split",
-          "receiver": "sel",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-css-analyzer.ts",
-          "line": 128,
-          "column": 59,
-          "source": "/^\\/\\/\\s*/",
-          "operation": "replace",
-          "receiver": "sel",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-css-analyzer.ts",
-          "line": 311,
-          "column": 12,
-          "source": "/^\\*(?:::[a-z-]+)?$/",
-          "operation": "test",
-          "receiver": "/^\\*(?:::[a-z-]+)?$/",
-          "receiverCategory": "literal",
-          "classification": "unavoidable",
-          "justification": ""
-        },
-        {
-          "file": "real-css-analyzer.ts",
-          "line": 334,
-          "column": 46,
-          "source": "/&/g",
-          "operation": "replace",
-          "receiver": "r",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-css-analyzer.ts",
-          "line": 533,
-          "column": 50,
-          "source": "/[\"']/g",
-          "operation": "replace",
-          "receiver": "stringNode.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-css-analyzer.ts",
-          "line": 533,
-          "column": 71,
-          "source": "/^url\\((.*)\\)$/",
-          "operation": "replace",
-          "receiver": "stringNode.text.replace(/[\"']/g, \"\")",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-css-analyzer.ts",
-          "line": 584,
-          "column": 42,
-          "source": "/['\"]/g",
-          "operation": "replace",
-          "receiver": "nameNode.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-css-analyzer.ts",
-          "line": 765,
-          "column": 46,
-          "source": "/['\"]/g",
-          "operation": "replace",
-          "receiver": "n.text.trim()",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-css-analyzer.ts",
-          "line": 833,
-          "column": 23,
-          "source": "/^(sm|md|lg|xl|2xl|hover|focus|dark):/",
-          "operation": "match",
-          "receiver": "cls",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-css-analyzer.ts",
-          "line": 833,
-          "column": 76,
-          "source": "/^tw-/",
-          "operation": "match",
-          "receiver": "cls",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-css-analyzer.ts",
-          "line": 834,
-          "column": 23,
-          "source": "/^(col-(sm|md|lg|xl)-\\d+|btn-primary|navbar-expand|container)/",
-          "operation": "match",
-          "receiver": "cls",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-css-analyzer.ts",
-          "line": 837,
-          "column": 23,
-          "source": "/^(is-|has-)(primary|info|success|warning|danger|text-centered)/",
-          "operation": "match",
-          "receiver": "cls",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-css-analyzer.ts",
-          "line": 838,
-          "column": 23,
-          "source": "/^(small|medium|large)-\\d+$/",
-          "operation": "match",
-          "receiver": "cls",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        }
-      ]
-    },
     {
       "file": "real-bash-analyzer.ts",
       "count": 12,
