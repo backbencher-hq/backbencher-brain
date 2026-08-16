@@ -2,20 +2,20 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-08-15T23:32:08.600Z",
+  "generatedAt": "2026-08-16T01:02:54.431Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 131,
+  "totalRegexUsages": 123,
   "analyzersScanned": 41,
   "byClassification": {
-    "unavoidable": 17,
-    "normalization": 60,
+    "unavoidable": 14,
+    "normalization": 55,
     "needs_review": 52,
     "replaceable": 2
   },
   "byReceiverCategory": {
-    "literal": 17,
-    "node_text": 60,
+    "literal": 14,
+    "node_text": 55,
     "identifier": 32,
     "other": 20,
     "raw_content": 2
@@ -768,100 +768,6 @@
           "receiver": "(typeNodes[0]?.text || \"\")",
           "receiverCategory": "other",
           "classification": "needs_review",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-dart-analyzer.ts",
-      "count": 8,
-      "usages": [
-        {
-          "file": "real-dart-analyzer.ts",
-          "line": 301,
-          "column": 59,
-          "source": "/[^a-zA-Z0-9_]/g",
-          "operation": "replace",
-          "receiver": "n.text.split(\"(\")[0]",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-dart-analyzer.ts",
-          "line": 370,
-          "column": 56,
-          "source": "/^[.?]/",
-          "operation": "replace",
-          "receiver": "child.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-dart-analyzer.ts",
-          "line": 695,
-          "column": 58,
-          "source": "/['\"]/g",
-          "operation": "replace",
-          "receiver": "stringLiteral.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-dart-analyzer.ts",
-          "line": 1077,
-          "column": 47,
-          "source": "/['\"]/g",
-          "operation": "replace",
-          "receiver": "uriNode?.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-dart-analyzer.ts",
-          "line": 1105,
-          "column": 35,
-          "source": "/['\"]/g",
-          "operation": "replace",
-          "receiver": "uriNode.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-dart-analyzer.ts",
-          "line": 1150,
-          "column": 24,
-          "source": "/Widget$|Element$|Builder$|Painter$|Delegate$/",
-          "operation": "test",
-          "receiver": "/Widget$|Element$|Builder$|Painter$|Delegate$/",
-          "receiverCategory": "literal",
-          "classification": "unavoidable",
-          "justification": ""
-        },
-        {
-          "file": "real-dart-analyzer.ts",
-          "line": 1157,
-          "column": 24,
-          "source": "/^Material$|^Scaffold$|^Container$|^Column$|^Row$|^Text$|^Center$|^Padding$|^SizedBox$|^Expanded$/",
-          "operation": "test",
-          "receiver": "/^Material$|^Scaffold$|^Container$|^Column$|^Row$|^Text$|^Center$|^Padding$|^SizedBox$|^Expanded$/",
-          "receiverCategory": "literal",
-          "classification": "unavoidable",
-          "justification": ""
-        },
-        {
-          "file": "real-dart-analyzer.ts",
-          "line": 1181,
-          "column": 22,
-          "source": "/^[A-Z]/",
-          "operation": "test",
-          "receiver": "/^[A-Z]/",
-          "receiverCategory": "literal",
-          "classification": "unavoidable",
           "justification": ""
         }
       ]

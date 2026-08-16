@@ -1,441 +1,383 @@
+// Dart Intelligence Engine
+// M12.11 rewrite: C#-family contract, pure-AST, fully regex-free.
+//   - Symbols: classes, mixins, extensions, enums (+enum members), typedefs,
+//     methods, getters/setters -> property, fields, top-level functions,
+//     constructors -> "constructor"; NO locals/params/lambda-params as symbols.
+//   - Relationships: leaf identities (calls: Counter -> Sqrt); contains from
+//     ownerName; extends/implements/mixin-uses; instantiates (capitalized
+//     constructor invocations + constructor_invocation nodes); imports/exports
+//     (import/export/part directives); overrides (@override or same-name in
+//     base, in-file or cross-file via override companion); global builtins
+//     (print/assert) filtered.
+//   - Dart call syntax: no `new` — capitalized identifier + argument_part
+//     selector = constructor invocation (instantiates); lowercase identifier +
+//     argument_part = function call; selector chains (obj.method(...)) resolve
+//     to the leaf method name; cascade_section calls resolve to the selector.
+
 import type { Node } from "web-tree-sitter"
+import * as path from "path"
 import { ASTEngine } from "./engine"
-interface DartContext {
-  currentFile: string
-  content: string
-  libraryName: string
-}
-interface Scope {
-  node: Node
-  name: string
-  kind: ASTEngine.SymbolKind
-  isStatic: boolean
+
+// ============================================================================
+// PURE-STRING HELPERS (regex-free normalization)
+// ============================================================================
+
+function unquote(text: string): string {
+  if (text.length >= 2) {
+    const first = text[0]
+    if ((first === '"' || first === "'") && text[text.length - 1] === first) {
+      return text.slice(1, -1)
+    }
+  }
+  return text
 }
 
+function stripCommentMarkers(text: string): string {
+  if (text.startsWith("///")) return text.slice(3).trimStart()
+  if (text.startsWith("//")) return text.slice(2).trimStart()
+  if (text.startsWith("/*")) {
+    const end = text.endsWith("*/") ? text.length - 2 : text.length
+    return text.slice(2, end).trim()
+  }
+  return text.trim()
+}
+
+function isCapitalized(text: string): boolean {
+  if (text.length === 0) return false
+  const code = text.charCodeAt(0)
+  return code >= 65 && code <= 90 // 'A'..'Z'
+}
+
+
+// ============================================================================
+// SCOPE MANAGEMENT — frames carry an immutable snapshot of the scope chain
+// ============================================================================
+
+enum DartScopeKind {
+  Global = "global",
+  Class = "class",
+  Function = "function",
+}
+
+interface DartScopeEntry {
+  name: string
+  kind: DartScopeKind
+}
+
+function scopeOwnerName(scopes: DartScopeEntry[]): string | undefined {
+  for (let i = scopes.length - 1; i >= 0; i--) {
+    if (scopes[i].kind === DartScopeKind.Class) return scopes[i].name
+  }
+  return undefined
+}
+
+function scopeString(scopes: DartScopeEntry[]): string {
+  const parts: string[] = []
+  for (let i = 1; i < scopes.length; i++) {
+    const s = scopes[i]
+    if (s.kind !== DartScopeKind.Global) parts.push(s.name)
+  }
+  return parts.join(".")
+}
+
+// ============================================================================
+// ANALYZER
+// ============================================================================
+
 export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
-  analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
-    const ctx: DartContext = { currentFile: filePath, content, libraryName: "" }
+  analyze(
+    rootNode: Node,
+    content: string,
+    filePath: string,
+    context?: ASTEngine.AnalyzeContext
+  ): ASTEngine.ParseResult & { metadata: Partial<ASTEngine.FileMetadata> } {
     const symbols: ASTEngine.UniversalSymbol[] = []
     const relationships: ASTEngine.UniversalRelationship[] = []
     const imports: ASTEngine.ImportInfo[] = []
     const exports: ASTEngine.ExportInfo[] = []
     const errors: ASTEngine.ParseError[] = []
-    const patterns: Record<string, boolean> = {}
-    const frameworks: Record<string, boolean> = {}
-    let cyclomaticComplexity = 1
-    const scopeStack: Scope[] = []
-    const stack: { node: Node; isExit?: boolean }[] = [{ node: rootNode }]
 
-    const complexityNodes: Record<string, boolean> = {
-      if_statement: true,
-      for_statement: true,
-      while_statement: true,
-      do_statement: true,
-      switch_statement: true,
-      catch_clause: true,
-      conditional_expression: true,
-      logical_and_expression: true,
-      logical_or_expression: true,
+    const frameworks: Record<string, boolean> = { Dart: true }
+    const patterns: Record<string, boolean> = {}
+    const scopes: DartScopeEntry[] = [{ name: "__global__", kind: DartScopeKind.Global }]
+    const moduleName = path.basename(filePath, path.extname(filePath))
+
+    // --- Error collection --------------------------------------------------
+    if (rootNode.hasError) {
+      const errStack: Node[] = [rootNode]
+      while (errStack.length > 0) {
+        const n = errStack.pop()!
+        if (n.type === "ERROR" || n.isMissing) {
+          errors.push({
+            message: `Syntax ${n.type} detected. The Brain Engine is bypassing this broken node.`,
+            range: this.nodeToRange(n),
+            severity: "warning",
+          })
+        }
+        for (let i = n.namedChildCount - 1; i >= 0; i--) {
+          const child = n.namedChild(i)
+          if (child) errStack.push(child)
+        }
+      }
     }
 
+    // --- Symbol + import/export extraction (single iterative traversal) ----
+    interface Frame {
+      node: Node
+      scopes: DartScopeEntry[]
+      functionDepth: number
+    }
+
+    const stack: Frame[] = [{ node: rootNode, scopes, functionDepth: 0 }]
+    let cyclomaticComplexity = 1
+    const seenMembers = new Set<string>() // owner:name — overload dedup
+
     while (stack.length > 0) {
-      const { node, isExit } = stack.pop()!
-      if (isExit) {
-        if (scopeStack.length > 0 && scopeStack[scopeStack.length - 1].node === node) scopeStack.pop()
-        continue
-      }
-      if (node.hasError || node.isMissing) {
-        if (node.type === "ERROR" || node.type === "MISSING") {
-          errors.push({ message: `Syntax ${node.type} detected.`, range: this.nodeToRange(node), severity: "warning" })
-        }
-      }
-      const type = node.type
-      let pushedScope = false
-      const currentScope = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1] : undefined
+      const { node, scopes: frameScopes, functionDepth } = stack.pop()!
+      const scopeStack = [...frameScopes]
+      let nextFunctionDepth = functionDepth
 
-      if (complexityNodes[type]) cyclomaticComplexity++
+      const t = node.type
+      if (
+        t === "if_statement" ||
+        t === "for_statement" ||
+        t === "while_statement" ||
+        t === "do_statement" ||
+        t === "switch_statement" ||
+        t === "catch_clause" ||
+        t === "conditional_expression" ||
+        t === "logical_and_expression" ||
+        t === "logical_or_expression"
+      ) {
+        cyclomaticComplexity++
+      }
 
-      switch (type) {
-        case "class_definition":
-          pushedScope = this.processClass(node, symbols, relationships, currentScope, patterns, frameworks)
-          break
-        case "mixin_declaration":
-          pushedScope = this.processMixin(node, symbols, currentScope, patterns)
-          break
-        case "extension_declaration":
-          pushedScope = this.processExtension(node, symbols, currentScope, patterns)
-          break
-        case "enum_declaration":
-          pushedScope = this.processEnum(node, symbols, currentScope)
-          break
-        case "function_declaration":
-        case "method_declaration":
-        case "getter_declaration":
-        case "setter_declaration": {
-          // Skip constructors mistakenly classified as method_declaration by
-          // tree-sitter-dart — detect by heuristic: name matches the enclosing
-          // class and has no return type.
-          const nameNode = node.childForFieldName("name")
-          if (nameNode && currentScope && currentScope.kind === ASTEngine.SymbolKind.Class &&
-              nameNode.text === currentScope.name) {
-            // This is a constructor that tree-sitter typed as method_declaration
-            // — reclassify and push a constructor symbol instead.
-            if (type.indexOf("declaration") !== -1)
-              pushedScope = this.processConstructor(node, symbols, relationships, currentScope, patterns)
-            break
-          }
-          pushedScope = this.processFunctionOrMethod(node, symbols, currentScope, patterns)
-          break
-        }
-        case "function_signature":
-        case "method_signature":
-        case "getter_signature":
-        case "setter_signature":
-          if (!node.parent || (node.parent.type.indexOf("declaration") === -1 && node.parent.type !== "declaration")) {
-            this.processFunctionOrMethod(node, symbols, currentScope, patterns)
+      switch (t) {
+        case "class_definition": {
+          const name = node.childForFieldName("name")?.text
+          if (name) {
+            const comments = this.collectComments(node)
+            const isAbstract = this.hasModifier(node, "abstract")
+            symbols.push({
+              name,
+              kind: ASTEngine.SymbolKind.Class,
+              range: this.nodeToRange(node),
+              scope: scopeString(scopeStack),
+              visibility: name.startsWith("_") ? "private" : "public",
+              comments,
+              isAbstract,
+              genericParameters: this.extractTypeParameters(node),
+              metadata: { isClass: true, isAbstract },
+            })
+            scopeStack.push({ name, kind: DartScopeKind.Class })
+
+            // heritage: extends / with / implements
+            this.extractClassHeritage(node, name, relationships, patterns)
           }
           break
-        case "constructor_signature":
-        case "factory_constructor_signature":
-        case "constructor_declaration":
-        case "factory_constructor_declaration":
-          if (!currentScope) {
-            // Constructor without a containing class scope — fallback: find
-            // enclosing class by walking up parents (some tree-sitter-dart
-            // versions attach constructor nodes incorrectly to the class body).
-            let parent: any = node.parent
-            while (parent && parent.type !== "class_definition" && parent.type !== "mixin_declaration") parent = parent.parent
-            if (parent) {
-              const className = parent.childForFieldName("name")?.text
-              if (className) {
-                symbols.push({
-                  name: className,
-                  kind: ASTEngine.SymbolKind.Class,
-                  range: this.nodeToRange(parent),
-                  scope: "",
-                  visibility: className.startsWith("_") ? "private" : "public",
-                  metadata: { syntheticClassWrapper: true, dartSpecific: true },
-                })
-                processFieldOrVariableFallback: {
-                  // Process constructor via synthetic scope once the parent class
-                  // has been surfaced. Then continue normal traversal.
-                  const ctorSym = {
-                    name: className,
-                    kind: ASTEngine.SymbolKind.Constructor,
-                    range: this.nodeToRange(node),
-                    scope: className,
-                    visibility: "public",
-                    parameters: this.extractDartParameters(node),
-                    ownerName: className,
-                    ownerKind: ASTEngine.SymbolKind.Class,
-                    metadata: { isFactory: this.hasModifier(node, "factory"), dartSpecific: true },
+        }
+
+        case "mixin_declaration": {
+          // tree-sitter-dart exposes the mixin name as a direct `identifier`
+          // child (no name field): `mixin_declaration > identifier > class_body`
+          const name =
+            node.childForFieldName("name")?.text ||
+            this.findChildByType(node, "identifier")?.text
+          if (name) {
+            const comments = this.collectComments(node)
+            patterns["Mixins"] = true
+            symbols.push({
+              name,
+              kind: ASTEngine.SymbolKind.Mixin,
+              range: this.nodeToRange(node),
+              scope: scopeString(scopeStack),
+              visibility: name.startsWith("_") ? "private" : "public",
+              comments,
+              metadata: { isMixin: true },
+            })
+            scopeStack.push({ name, kind: DartScopeKind.Class })
+          }
+          break
+        }
+
+        case "extension_declaration": {
+          const targetType = this.extensionTargetType(node)
+          // Unnamed extensions (`extension on String {...}`) take the target
+          // type as their name so their members keep an owner scope.
+          const name = node.childForFieldName("name")?.text || targetType
+          if (name) {
+            const comments = this.collectComments(node)
+            patterns["Extensions"] = true
+            symbols.push({
+              name,
+              kind: ASTEngine.SymbolKind.Extension,
+              range: this.nodeToRange(node),
+              scope: scopeString(scopeStack),
+              visibility: name.startsWith("_") ? "private" : "public",
+              comments,
+              metadata: { isExtension: true, targetType, isUnnamedExtension: !node.childForFieldName("name") },
+            })
+            scopeStack.push({ name, kind: DartScopeKind.Class })
+          }
+          break
+        }
+
+        case "enum_declaration": {
+          const name = node.childForFieldName("name")?.text
+          if (name) {
+            const comments = this.collectComments(node)
+            symbols.push({
+              name,
+              kind: ASTEngine.SymbolKind.Enum,
+              range: this.nodeToRange(node),
+              scope: scopeString(scopeStack),
+              visibility: name.startsWith("_") ? "private" : "public",
+              comments,
+              metadata: { isEnum: true },
+            })
+            // enum members
+            const body = this.findChildByType(node, "enum_body")
+            if (body) {
+              for (let i = 0; i < body.namedChildCount; i++) {
+                const c = body.namedChild(i)
+                if (c && c.type === "enum_constant") {
+                  const mname = c.childForFieldName("name")?.text
+                  if (mname) {
+                    symbols.push({
+                      name: mname,
+                      kind: ASTEngine.SymbolKind.EnumMember,
+                      range: this.nodeToRange(c),
+                      scope: name,
+                      ownerName: name,
+                      ownerKind: ASTEngine.SymbolKind.Enum,
+                      visibility: mname.startsWith("_") ? "private" : "public",
+                      metadata: { isEnumMember: true },
+                    })
                   }
-                  symbols.push(ctorSym)
-                  break processFieldOrVariableFallback
                 }
               }
             }
-          } else {
-            if (type.indexOf("declaration") !== -1)
-              pushedScope = this.processConstructor(node, symbols, relationships, currentScope, patterns)
-            else if (!node.parent || node.parent.type.indexOf("declaration") === -1)
-              this.processConstructor(node, symbols, relationships, currentScope, patterns)
-          }
-          break
-        case "declaration": {
-          let hasFunctionSig = false
-          let isConstructorInDecl = false
-          for (let i = 0; i < node.namedChildCount; i++) {
-            const c = node.namedChild(i)
-            if (!c) continue
-            const ct = c.type
-            if (ct === "function_signature" || ct === "method_signature" || ct === "getter_signature" || ct === "setter_signature") {
-              hasFunctionSig = true
-            }
-            if (ct === "constructor_signature" || ct === "factory_constructor_signature" ||
-                ct === "constant_constructor_signature" || ct === "redirecting_factory_constructor_signature") {
-              isConstructorInDecl = true
-            }
-          }
-          if (isConstructorInDecl) {
-            if (!currentScope) break
-            pushedScope = this.processConstructor(node, symbols, relationships, currentScope, patterns)
-          } else if (hasFunctionSig) {
-            const ctorCheck = this.findChild(node, (c) => c?.type.indexOf("signature") !== -1)
-            const actualSigType = ctorCheck?.type || "none"
-            if (actualSigType.indexOf("constructor") !== -1 || actualSigType.indexOf("factory") !== -1) {
-              if (!currentScope) break
-              pushedScope = this.processConstructor(node, symbols, relationships, currentScope, patterns)
-            } else {
-              pushedScope = this.processFunctionOrMethod(node, symbols, currentScope, patterns)
-            }
-          } else {
-            this.processFieldOrVariable(node, symbols, currentScope, patterns)
+            scopeStack.push({ name, kind: DartScopeKind.Class })
           }
           break
         }
+
+        case "type_alias": {
+          const nameNode = node.childForFieldName("name") || this.findChildByType(node, "type_identifier")
+          const name = nameNode?.text
+          if (name && name !== "Function") {
+            const comments = this.collectComments(node)
+            symbols.push({
+              name,
+              kind: ASTEngine.SymbolKind.TypeAlias,
+              range: this.nodeToRange(node),
+              scope: scopeString(scopeStack),
+              visibility: name.startsWith("_") ? "private" : "public",
+              comments,
+              metadata: { isTypeAlias: true },
+            })
+          }
+          break
+        }
+
+        case "declaration": {
+          const sig = this.findSignatureIn(node)
+          if (sig) {
+            if (this.isConstructorSignature(sig.type)) {
+              const owner = scopeOwnerName(scopeStack)
+              if (owner) {
+                this.processConstructor(node, sig, owner, symbols, relationships, patterns)
+              }
+            } else {
+              this.processFunctionOrMethod(node, sig, symbols, scopeStack, patterns, seenMembers)
+            }
+          } else {
+            // field / top-level variable declaration
+            this.processFieldOrVariable(node, symbols, scopeStack)
+          }
+          break
+        }
+
+        case "method_signature":
+        case "function_signature":
+        case "getter_signature":
+        case "setter_signature":
+        case "function_declaration": {
+          // Bare signatures (mixin bodies, extension bodies, top-level
+          // functions) WITHOUT a `declaration` wrapper. Class members wrapped
+          // in `declaration` are handled by that case — skip them here to
+          // avoid double-processing.
+          if (node.parent?.type === "declaration") break
+          const owner = scopeOwnerName(scopeStack)
+          // Factories surface as `method_signature > factory_constructor_signature`
+          // — dispatch constructors to processConstructor.
+          const inner = this.findInnerSignature(node)
+          if (owner && this.isConstructorSignature(inner.type)) {
+            this.processConstructor(node, inner, owner, symbols, relationships, patterns)
+          } else if (owner || t === "function_declaration") {
+            this.processFunctionOrMethod(node, node, symbols, scopeStack, patterns, seenMembers)
+          } else if (t === "function_signature") {
+            // top-level function — signature with sibling function_body
+            this.processTopLevelFunction(node, symbols, scopeStack, patterns)
+          }
+          break
+        }
+
+        case "constructor_signature":
+        case "factory_constructor_signature":
+        case "constant_constructor_signature":
+        case "redirecting_factory_constructor_signature": {
+          // Wrapped by `declaration` (plain constructors) or `method_signature`
+          // (factories) — both handled by their wrapper cases.
+          const ptype = node.parent?.type
+          if (ptype === "declaration" || ptype === "method_signature") break
+          const owner = scopeOwnerName(scopeStack)
+          if (owner) {
+            this.processConstructor(node, node, owner, symbols, relationships, patterns)
+          }
+          break
+        }
+
         case "initialized_identifier_list":
         case "initialized_variable_declaration":
-          if (node.parent?.type === "program" || node.parent?.type === "static_final_declaration_list")
-            this.processFieldOrVariable(node, symbols, currentScope, patterns)
+        case "static_final_declaration_list": {
+          const parent = node.parent
+          if (parent && (parent.type === "program" || parent.type === "compilation_unit" || parent.type === "library_definition")) {
+            this.processTopLevelVariables(node, symbols, scopeStack)
+          }
           break
+        }
+
         case "import_specification":
         case "library_export":
-          this.processImportExport(node, imports, exports, frameworks, relationships)
+        case "part_directive": {
+          this.processImportExport(node, imports, exports, frameworks, relationships, moduleName)
           break
-        case "import_or_export":
-        case "library_import":
-        case "import_directive":
-        case "export_directive":
-          // Wrapper nodes — skip, the leaf nodes above handle the actual URI
-          break
-        case "part_directive":
-          this.processPart(node, imports, patterns)
-          break
-        case "type_identifier":
-        case "identifier":
-        case "simple_identifier":
-          this.processMethodChannelIdentifier(node, relationships, currentScope)
-          // General variable reference tracking
-          if (currentScope && node.text && !node.text.startsWith("_") &&
-              node.parent?.type !== "function_signature" && node.parent?.type !== "method_signature" &&
-              node.parent?.type !== "class_definition" && node.parent?.type !== "superclass" &&
-              node.parent?.type !== "interfaces" && node.parent?.type !== "mixins" &&
-              node.parent?.type !== "variable_declaration" && node.parent?.type !== "initialized_variable_declaration") {
-            relationships.push({
-              source: currentScope.name,
-              target: node.text,
-              type: ASTEngine.RelationshipType.References,
-              confidence: 0.6,
-              metadata: { isVariableRef: true, dartSpecific: true }
-            })
-          }
-          break
-        case "creation_expression":
-        case "invocation_expression":
-          this.processInvocation(node, relationships, currentScope, patterns)
-          break
-        case "cascade_expression":
-        case "cascade_section":
-          this.processCascade(node, relationships, currentScope, patterns)
-          break
-        case "type_arguments":
-          this.processSelector(node, relationships, currentScope, patterns)
-          break
-      }
-
-      if (pushedScope && symbols.length > 0) {
-        const lastSymbol = symbols[symbols.length - 1]
-        scopeStack.push({ node, name: lastSymbol.name, kind: lastSymbol.kind, isStatic: lastSymbol.isStatic || false })
-        stack.push({ node, isExit: true })
-      }
-      if (type === "null_assert_expression" || type === "conditional_property_access" || type === "if_null_expression")
-        patterns["Null Safety"] = true
-      if (type === "type_identifier" && (node.text === "List" || node.text === "Map" || node.text === "Set")) {
-        if (node.nextNamedSibling && node.nextNamedSibling.type === "type_arguments") {
-          patterns["Typed Collections"] = true
-          patterns["Generics"] = true
         }
       }
+
+      // Recurse children
       for (let i = node.namedChildCount - 1; i >= 0; i--) {
         const child = node.namedChild(i)
-        if (child) stack.push({ node: child })
-      }
-    }
-
-    const frameworkArray: string[] = []
-    for (const f in frameworks) frameworkArray.push(f)
-
-    // --- DART CALL GRAPH EXTRACTION (rewritten for correctness) ---
-    // Walks the full AST and extracts caller→callee relationships.
-    // Uses tree-sitter Dart node types: argument_part indicates a call site,
-    // selector chains (e.g. obj.method) resolve to the last identifier.
-    try {
-      // Track which function/method scope we're currently inside
-      let currentFunction: string | null = null
-
-      const extractCalls = (n: Node): void => {
-        const t = n.type
-
-        // Update current function scope when entering/leaving declarations
-        if (t === "function_declaration" || t === "method_declaration" || t === "getter_declaration" ||
-            t === "setter_declaration" || t === "constructor_declaration" || t === "factory_constructor_declaration" ||
-            t === "declaration" ||
-            t === "function_signature" || t === "method_signature" || t === "getter_signature" ||
-            t === "setter_signature" || t === "constructor_signature" || t === "factory_constructor_signature") {
-          const prev = currentFunction
-          const sigNode = this.findChild(n, (c) => c?.type.indexOf("signature") !== -1) || n
-          const nameNode = sigNode.childForFieldName("name") || this.findChild(sigNode, (c) => c?.type === "identifier")
-          if (nameNode) currentFunction = nameNode.text
-          for (let i = 0; i < n.childCount; i++) extractCalls(n.child(i)!)
-
-          // Walk sibling function_body (for signature and declaration nodes where
-          // the body is not a child but a following sibling in the tree)
-          let sib: Node | null = n.nextSibling
-          while (sib) {
-            if (sib.type === "function_body" || sib.type === "block") {
-              for (let i = 0; i < sib.childCount; i++) extractCalls(sib.child(i)!)
-              break
-            }
-            if (sib.type.indexOf("declaration") !== -1 || sib.type.indexOf("signature") !== -1 ||
-                sib.type === "}" || sib.type === "class_body") break
-            sib = sib.nextSibling
-          }
-
-          currentFunction = prev
-          return
-        }
-
-        // Handle selector chains: obj.method() or just method()
-        // In Dart tree-sitter, function calls are selector + argument_part, not invocation_expression.
-        if (t === "selector") {
-          const hasCall = this.findChild(n, (c) => c?.type === "argument_part")
-          if (hasCall && currentFunction) {
-            let callee = ""
-            const prevSib = n.previousNamedSibling
-            if (prevSib && (prevSib.type === "identifier" || prevSib.type === "type_identifier")) {
-              callee = prevSib.text
-            } else {
-              const idNode = this.findChild(n, (c) => c?.type === "identifier" || c?.type === "type_identifier")
-              if (idNode) callee = idNode.text
-              else callee = n.text.split("(")[0]?.replace(/[^a-zA-Z0-9_]/g, "") || ""
-            }
-            if (callee && callee !== "print" && callee !== "super" && callee !== "this" &&
-                callee !== "true" && callee !== "false" && callee !== "null" && callee.length > 0) {
-              const alreadyAdded = relationships.some(
-                (r) => r.source === currentFunction && r.target === callee && r.type === ASTEngine.RelationshipType.Calls
-              )
-              if (!alreadyAdded) {
-                relationships.push({
-                  source: currentFunction,
-                  target: callee,
-                  type: ASTEngine.RelationshipType.Calls,
-                  confidence: 0.9,
-                  metadata: { line: n.startPosition.row },
-                })
-              }
-            }
-          }
-        }
-
-        // Handle invocation_expression: function calls like emit(), print(), context.read()
-        if (t === "invocation_expression") {
-          const fnNode = n.childForFieldName("function") ||
-            this.findChild(n, (c) => c?.type === "identifier" || c?.type === "type_identifier")
-          if (fnNode && currentFunction) {
-            const callee = fnNode.text
-            if (callee && callee !== "print" && callee !== "super" && callee !== "this" &&
-                callee !== "true" && callee !== "false" && callee !== "null") {
-              relationships.push({
-                source: currentFunction,
-                target: callee,
-                type: ASTEngine.RelationshipType.Calls,
-                confidence: 0.9,
-                metadata: { line: n.startPosition.row },
-              })
-            }
-          }
-        }
-
-        // Handle creation_expression: constructor calls like MyWidget(), PaymentState()
-        if (t === "creation_expression") {
-          const typeNode = n.childForFieldName("type") ||
-            this.findChild(n, (c) => c?.type === "type_identifier" || c?.type === "identifier")
-          if (typeNode && currentFunction) {
-            relationships.push({
-              source: currentFunction,
-              target: typeNode.text,
-              type: ASTEngine.RelationshipType.Instantiates,
-              confidence: 0.9,
-              metadata: { line: n.startPosition.row },
-            })
-          }
-        }
-
-        // Find calls: any named child followed by argument_part as next named sibling
-        for (let i = 0; i < n.namedChildCount - 1; i++) {
-          const child = n.namedChild(i)
-          const next = n.namedChild(i + 1)
-          if (!child || !next) continue
-          if (next.type !== "argument_part") continue
-
-          let callee = ""
-          const ct = child.type
-
-          if (ct === "identifier" || ct === "type_identifier") {
-            callee = child.text
-          } else if (ct === "selector") {
-            const inner = this.findChild(child, (c) =>
-              c?.type === "_assignable_selector" || c?.type === "identifier")
-            callee = inner?.text || child.text.replace(/^[.?]/, "")
-          }
-
-          if (!callee || callee === "print" || callee === "super" || callee === "this" ||
-              callee === "true" || callee === "false" || callee === "null" ||
-              callee.length === 0) continue
-
-          if (currentFunction) {
-            // Skip if already added by invocation_expression handling above
-            const alreadyAdded = relationships.some(
-              (r) => r.source === currentFunction && r.target === callee && r.type === ASTEngine.RelationshipType.Calls
-            )
-            if (!alreadyAdded) {
-              relationships.push({
-                source: currentFunction,
-                target: callee,
-                type: ASTEngine.RelationshipType.Calls,
-                confidence: 0.9,
-                metadata: { line: n.startPosition.row },
-              })
-            }
-          }
-        }
-
-        // Walk into child nodes
-        for (let i = 0; i < n.childCount; i++) {
-          const child = n.child(i)
-          if (child) extractCalls(child)
+        if (child) {
+          stack.push({ node: child, scopes: scopeStack, functionDepth: nextFunctionDepth })
         }
       }
-
-      // Always extract call graph (no sparse threshold)
-      extractCalls(rootNode)
-    } catch (e) {
-      // Graceful degradation — call graph extraction should never crash the analyzer
-    }
-    // --- END DART CALL GRAPH EXTRACTION ---
-
-    // --- END DART CALL GRAPH EXTRACTION ---
-
-    const patternsArray: string[] = []
-    for (const p in patterns) patternsArray.push(p)
-
-    const frameworkPatterns: {
-      framework: string
-      patterns: { type: string; detected: boolean; description: string }[]
-    }[] = []
-    for (let i = 0; i < frameworkArray.length; i++) {
-      frameworkPatterns.push({
-        framework: frameworkArray[i],
-        patterns: [{ type: "usage", detected: true, description: `${frameworkArray[i]} usage detected` }],
-      })
     }
 
-    for (const s of symbols) { const tl = !s.ownerName && !s.ownerKind; const pub = s.visibility !== "private" && !s.name.startsWith("_"); const exp = [ASTEngine.SymbolKind.Class, ASTEngine.SymbolKind.Enum, ASTEngine.SymbolKind.Function, ASTEngine.SymbolKind.Method, ASTEngine.SymbolKind.Variable, ASTEngine.SymbolKind.Constructor].includes(s.kind); if (tl && pub && exp) { exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility || "public" }) } }
+    // --- Relationship passes -------------------------------------------------
+    this.addContainmentRelationships(symbols, relationships)
+    this.extractOverrideRelationships(symbols, relationships, context?.overrideCompanion)
+    this.extractCallRelationships(rootNode, relationships, moduleName)
 
-    // Post-loop: add contains for owned symbols
-    for (const s of symbols) {
-      const _owner = s.ownerName || s.scope
-      if (_owner) {
-        relationships.push({
-          source: _owner,
-          target: s.name,
-          type: ASTEngine.RelationshipType.Contains,
-          confidence: 1.0,
-          metadata: {},
-        })
-      }
-    }
+    // --- Metadata ------------------------------------------------------------
+    const architecturalScore = Math.min(100, Math.max(0, 100 - errors.length * 5))
+    const detectedPatterns = Object.keys(patterns)
+    const detectedFrameworks = Object.keys(frameworks)
+    const frameworkPatterns = detectedPatterns.map((p) => ({
+      framework: "Dart",
+      patterns: [{ type: "usage", detected: true, description: p }],
+    }))
 
     return {
       language: "dart",
@@ -445,622 +387,266 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       exports,
       errors,
       metadata: {
-        complexity: cyclomaticComplexity,
+        complexity: symbols.length + relationships.length,
         linesOfCode: content.split("\n").length,
         cyclomaticComplexity,
-        framework: frameworkArray[0],
-        patterns: patternsArray,
-        detectedFrameworks: frameworkArray,
+        framework: detectedFrameworks.length > 1 ? detectedFrameworks[1] : detectedFrameworks[0],
+        patterns: detectedPatterns,
+        detectedFrameworks,
         frameworkPatterns,
-        architecturalScore: Math.min(100, Math.max(0, 100 - errors.length * 5)),
+        architecturalInsights: [],
+        architecturalScore,
         codeQuality: errors.length === 0 ? "Excellent" : "Fair",
         hasTypeInference: true,
         hasFrameworkIntelligence: true,
-        analysisVersion: "6.0.1-dart-dfs-strict",
+        analysisVersion: "4.0.0-m12.11-family-contract",
       },
     }
   }
 
-  private findChild(node: Node, predicate: (child: Node) => boolean): Node | null {
-    for (let i = 0; i < node.childCount; i++) {
-      const child = node.child(i)
-      if (child && predicate(child)) return child
-    }
-    return null
-  }
+  // ============================================================================
+  // SYMBOL PROCESSORS
+  // ============================================================================
 
-  private findDescendant(node: Node, predicate: (child: Node) => boolean): Node | null {
-    if (predicate(node)) return node
-    for (let i = 0; i < node.childCount; i++) {
-      const child = node.child(i)
-      if (!child) continue
-      const found = this.findDescendant(child, predicate)
-      if (found) return found
-    }
-    return null
-  }
-
-  private filterChildren(node: Node, predicate: (child: Node) => boolean): Node[] {
-    const res: Node[] = []
-    for (let i = 0; i < node.childCount; i++) {
-      const child = node.child(i)
-      if (child && predicate(child)) res.push(child)
-    }
-    return res
-  }
-
-  private processClass(
+  private processConstructor(
     node: Node,
+    sig: Node,
+    owner: string,
     symbols: ASTEngine.UniversalSymbol[],
     relationships: ASTEngine.UniversalRelationship[],
-    currentScope: Scope | undefined,
     patterns: Record<string, boolean>,
-    frameworks: Record<string, boolean>,
-  ): boolean {
-    const nameNode = node.childForFieldName("name")
-    if (!nameNode) return false
-    const className = nameNode?.text
-    let superclassText: string | undefined = undefined
-    let isStatefulWidget = false,
-      isStatelessWidget = false,
-      isWidget = false
+  ): void {
+    const isFactory =
+      sig.type === "factory_constructor_signature" || sig.type === "redirecting_factory_constructor_signature"
+    const isConst = sig.type === "constant_constructor_signature"
+    if (isFactory) patterns["Factory"] = true
 
-    const superclassNode = node.childForFieldName("superclass")
-    if (superclassNode) {
-      const typeId = this.findChild(superclassNode, (c) => c?.type === "type_identifier" || c?.type === "identifier")
-      if (typeId) {
-        superclassText = typeId.text
-        relationships.push({
-          source: className,
-          target: superclassText,
-          type: ASTEngine.RelationshipType.Extends,
-          metadata: {},
-        })
-        if (superclassText.indexOf("Widget") !== -1) isWidget = true
-        if (superclassText === "StatefulWidget") isStatefulWidget = true
-        if (superclassText === "StatelessWidget") isStatelessWidget = true
-        if (superclassText.indexOf("Bloc") !== -1 || superclassText.indexOf("Cubit") !== -1) patterns["BLoC"] = true
-        if (superclassText.indexOf("Notifier") !== -1) patterns["Provider/Riverpod"] = true
-      }
+    // Named constructors: `Counter.initial()` / `factory Counter.zero() = ...`
+    // — the named segment is a DIRECT identifier child of the signature (the
+    // class name arrives via the name field, parameters live inside the
+    // formal_parameter_list, so direct identifiers are unambiguous).
+    let isNamed = false
+    let namedSegment: string | undefined
+    const directIds = this.directIdentifiers(sig)
+    const named = directIds.find((id) => id !== owner)
+    if (named) {
+      isNamed = true
+      namedSegment = named
     }
 
-    const interfacesNode = node.childForFieldName("interfaces")
-    if (interfacesNode) {
-      for (let i = 0; i < interfacesNode.namedChildCount; i++) {
-        const child = interfacesNode.namedChild(i)
-        if (child?.type === "type_identifier" || child?.type === "identifier")
-          relationships.push({
-            source: className,
-            target: child?.text,
-            type: ASTEngine.RelationshipType.Implements,
-            metadata: {},
-          })
-      }
-    }
-
-    let mixins: Node | null | undefined =
-      this.findChild(node, (c) => c?.type === "mixins") || node.childForFieldName("mixins")
-    if (!mixins && superclassNode) mixins = this.findChild(superclassNode, (c) => c?.type === "mixins")
-    if (mixins) {
-      patterns["Mixins"] = true
-      for (let i = 0; i < mixins.namedChildCount; i++) {
-        const child = mixins.namedChild(i)
-        if (child?.type === "type_identifier" || child?.type === "identifier")
-          relationships.push({
-            source: className,
-            target: child?.text,
-            type: ASTEngine.RelationshipType.Uses,
-            metadata: { isMixin: true },
-          })
-      }
-    }
-
+    const params = this.extractParameters(sig)
+    const comments = this.collectComments(node)
     const annotations = this.extractAnnotations(node)
-    // Dart 3 class modifiers: sealed, final, base, interface, abstract, mixin
-    // tree-sitter-dart (GitHub master) produces these as named children of class_definition
-    let isAbstract = this.hasModifier(node, "abstract")
-    let isSealed = false, isFinal = false, isBase = false, isInterface = false, isMixinClass = false
-    if (!isAbstract) {
-      for (let i = 0; i < Math.min(5, node.childCount); i++) {
-        const child = node.child(i)
-        if (!child) continue
-        if (child.type === "abstract" || child.text === "abstract") isAbstract = true
-        if (child.type === "sealed" || child.text === "sealed") isSealed = true
-        if (child.type === "base" || child.text === "base") isBase = true
-        if (child.type === "interface" || child.text === "interface") isInterface = true
-        if (child.text === "final" || child.type === "final") isFinal = true
-        if (child.type === "mixin" || child.text === "mixin") isMixinClass = true
-      }
-    }
-    const typeParams = this.findChild(node, (c) => c?.type === "type_parameters")
-    const typeParametersList: string[] = []
-    if (typeParams) {
-      patterns["Generics"] = true
-      for (let i = 0; i < typeParams.namedChildCount; i++) {
-        const child = typeParams.namedChild(i)
-        if (child?.type === "type_parameter") typeParametersList.push(child?.text)
-      }
-    }
 
-    if (isWidget) {
-      frameworks["Flutter"] = true
-      patterns["Widget Architecture"] = true
-    }
     symbols.push({
-      name: className,
-      kind: ASTEngine.SymbolKind.Class,
+      name: "constructor",
+      kind: ASTEngine.SymbolKind.Constructor,
       range: this.nodeToRange(node),
-      scope: currentScope?.name || "",
-      visibility: className.startsWith("_") ? "private" : "public",
+      scope: owner,
+      ownerName: owner,
+      ownerKind: ASTEngine.SymbolKind.Class,
+      visibility: "public",
+      parameters: params,
+      comments,
       decorators: annotations,
-      isAbstract,
-      metadata: {
-        superclass: superclassText,
-        isWidget,
-        isStatefulWidget,
-        isStatelessWidget,
-        typeParameters: typeParametersList,
-        dartSpecific: true,
-        isAbstract,
-        isSealed,
-        isFinal,
-        isBase,
-        isInterface,
-        isMixinClass,
-        hasNamedConstructors: false,
-      },
+      metadata: { isFactory, isConst, isNamed, namedSegment, isConstructor: true },
     })
-    return true
-  }
 
-  private processMixin(
-    node: Node,
-    symbols: ASTEngine.UniversalSymbol[],
-    currentScope: Scope | undefined,
-    patterns: Record<string, boolean>,
-  ): boolean {
-    const nameNode = node.childForFieldName("name") || this.findChild(node, (c) => c?.type === "identifier")
-    if (!nameNode) return false
-    patterns["Mixins"] = true
-    symbols.push({
-      name: nameNode?.text,
-      kind: ASTEngine.SymbolKind.Mixin,
-      range: this.nodeToRange(node),
-      scope: currentScope?.name || "",
-      visibility: nameNode?.text.startsWith("_") ? "private" : "public",
-      metadata: { isMixin: true, dartSpecific: true },
-    })
-    return true
-  }
-
-  private processExtension(
-    node: Node,
-    symbols: ASTEngine.UniversalSymbol[],
-    currentScope: Scope | undefined,
-    patterns: Record<string, boolean>,
-  ): boolean {
-    const nameNode = node.childForFieldName("name") || this.findChild(node, (c) => c?.type === "identifier")
-    if (!nameNode) return false
-    let targetType: string | undefined
-    const typeIdNodes = this.filterChildren(node, (c) => c?.type === "type_identifier" || c?.type === "builtin_type")
-    if (typeIdNodes.length > 0) {
-      let targetNode: Node | undefined
-      for (let i = 0; i < typeIdNodes.length; i++) {
-        if (typeIdNodes[i] && typeIdNodes[i] !== nameNode) {
-          targetNode = typeIdNodes[i]
-          break
-        }
-      }
-      if (targetNode) targetType = targetNode.text
-    }
-    if (!targetType) {
-      const onNode = this.findChild(
-        node,
-        (c) =>
-          c &&
-          c !== nameNode &&
-          (c?.type === "type_identifier" || c?.type === "identifier" || c?.type === "builtin_type"),
-      )
-      if (onNode) targetType = onNode.text
-    }
-    patterns["Extensions"] = true
-    symbols.push({
-      name: nameNode?.text,
-      kind: ASTEngine.SymbolKind.Extension,
-      range: this.nodeToRange(node),
-      scope: currentScope?.name || "",
-      visibility: nameNode?.text.startsWith("_") ? "private" : "public",
-      metadata: { isExtension: true, targetType, dartSpecific: true },
-    })
-    return true
-  }
-
-  private processMethodChannelIdentifier(
-    node: Node,
-    relationships: ASTEngine.UniversalRelationship[],
-    currentScope: Scope | undefined,
-  ) {
-    if (node.text === "MethodChannel" || node.text === "EventChannel" || node.text === "BasicMessageChannel") {
-      let searchArea = node.parent
-      if (searchArea) searchArea = searchArea.parent
-      if (searchArea) searchArea = searchArea.parent
-      if (searchArea) searchArea = searchArea.parent
-
-      if (searchArea) {
-        const stringLiteral = this.findDescendant(
-          searchArea,
-          (c) => c.type === "string_literal" && c.startIndex > node.startIndex && c.startIndex - node.endIndex < 50,
-        )
-        if (stringLiteral) {
-          const channelName = stringLiteral.text.replace(/['"]/g, "")
-          // Avoid pushing duplicates within the same scope
-          const isDuplicate = relationships.some(
-            (r) => r.target === channelName && r.metadata?.bridgeMechanism === node.text,
-          )
-          if (!isDuplicate) {
-            relationships.push({
-              source: currentScope?.name || "Global",
-              target: channelName,
-              type: ASTEngine.RelationshipType.Uses,
-              metadata: { isCrossLanguage: true, bridgeMechanism: node.text },
-            })
-          }
-        }
+    // factory redirection: `factory Counter.zero() = Counter.initial;` —
+    // ONLY the redirecting form carries the target inside the signature;
+    // expression-bodied factories (`factory X.y() => X(...)`) construct via
+    // the normal constructor-invocation path in the calls pass.
+    if (isFactory && sig.type === "redirecting_factory_constructor_signature") {
+      const redirectNode = this.findChildByType(sig, "type_identifier")
+      if (redirectNode) {
+        relationships.push({
+          source: owner,
+          target: redirectNode.text,
+          type: ASTEngine.RelationshipType.Instantiates,
+          confidence: 0.95,
+          metadata: { isFactoryRedirection: true },
+        })
       }
     }
-  }
-
-  private processEnum(node: Node, symbols: ASTEngine.UniversalSymbol[], currentScope: Scope | undefined): boolean {
-    const nameNode = node.childForFieldName("name") || this.findChild(node, (c) => c?.type === "identifier")
-    if (!nameNode) return false
-    let isEnhancedEnum = false
-    for (let i = 0; i < node.namedChildCount; i++) {
-      const c = node.namedChild(i)
-      if (c?.type === "enum_body" && c?.text.indexOf(";") !== -1) {
-        isEnhancedEnum = true
-        break
-      }
-    }
-    symbols.push({
-      name: nameNode?.text,
-      kind: ASTEngine.SymbolKind.Enum,
-      range: this.nodeToRange(node),
-      scope: currentScope?.name || "",
-      visibility: nameNode?.text.startsWith("_") ? "private" : "public",
-      metadata: { dartSpecific: true, isEnhancedEnum },
-    })
-    return true
   }
 
   private processFunctionOrMethod(
     node: Node,
+    sig: Node,
     symbols: ASTEngine.UniversalSymbol[],
-    currentScope: Scope | undefined,
+    scopeStack: DartScopeEntry[],
     patterns: Record<string, boolean>,
-  ): boolean {
-    // tree-sitter-dart labels every class member as `declaration` with a
-    // signature child; the kind of that signature child determines the actual
-    // symbol kind. Constructor signatures must produce Constructor symbols,
-    // not Method symbols, which is what a naive name-extraction would do.
-    const sigT = node.type.indexOf("signature") !== -1
-      ? node.type
-      : (this.findChild(node, (c) => c?.type.indexOf("signature") !== -1)?.type ?? "")
-    if (
-      sigT === "constructor_signature" ||
-      sigT === "factory_constructor_signature" ||
-      sigT === "constant_constructor_signature" ||
-      sigT === "redirect_factory_constructor_signature"
-    ) {
-      // Constructor — delegate to processConstructor which handles ownerName,
-      // factory flag, named-constructor naming, and annotation lifting.
-      return this.processConstructor(node, symbols, [], currentScope, patterns)
-    }
-    const isDecl = node.type.indexOf("declaration") !== -1
-    const sigNode = isDecl ? this.findChild(node, (c) => c?.type.indexOf("signature") !== -1) || node : node
-    const nameNode =
-      sigNode.childForFieldName("name") ||
-      this.findChild(sigNode, (c) => c?.type === "identifier" || c?.type === "operator")
-    if (!nameNode) return false
+    seenMembers: Set<string>,
+  ): void {
+    // Dig through method_signature wrappers to the inner getter/setter/function
+    // signature which carries the name field.
+    const inner = this.findInnerSignature(sig)
+    const nameNode = inner.childForFieldName("name") || this.findChildByType(inner, "identifier")
+    if (!nameNode) return
 
-    const functionName = nameNode?.text
-    const parameters = this.extractDartParameters(sigNode)
-    const returnType = this.extractDartReturnType(sigNode)
+    const name = nameNode.text
+    const owner = scopeOwnerName(scopeStack)
+    const dedupKey = `${owner ?? "module"}:${name}`
+    if (seenMembers.has(dedupKey)) return
+    seenMembers.add(dedupKey)
 
-    let annotations = this.extractAnnotations(node)
-    if (!isDecl && node.parent && node.parent.type.indexOf("declaration") !== -1) {
-      const parentAnnotations = this.extractAnnotations(node.parent)
-      for (let i = 0; i < parentAnnotations.length; i++) annotations.push(parentAnnotations[i])
-    }
-
-    const isGetter = sigNode.type === "getter_signature" || node.type === "getter_declaration"
-    const isSetter = sigNode.type === "setter_signature" || node.type === "setter_declaration"
+    const isGetter = inner.type === "getter_signature"
+    const isSetter = inner.type === "setter_signature"
     if (isGetter || isSetter) patterns["Getters and Setters"] = true
 
-    let sibling = node.nextNamedSibling
-    if (
-      !sibling &&
-      node.parent &&
-      (node.parent.type.indexOf("declaration") !== -1 || node.parent.type.indexOf("signature") !== -1)
-    )
-      sibling = node.parent.nextNamedSibling
-    let isAsync = false,
-      isGenerator = false
+    const params = this.extractParameters(inner)
+    const returnType = this.extractReturnType(inner)
+    const isAsync = this.isAsyncSignature(node, inner)
+    const isStatic = this.hasModifier(node, "static") || this.hasModifier(inner, "static")
+    const isAbstract = !this.hasBody(node) && (this.hasModifier(node, "abstract") || owner !== undefined)
+    const comments = this.collectComments(node)
+    const annotations = this.extractAnnotations(node)
 
-    // Helper to safely check starts without allocating massive strings
-    const checkModifiers = (n: Node) => {
-      for (let i = 0; i < Math.min(3, n.childCount); i++) {
-        const c = n.child(i)
-        if (c?.text === "async" || c?.type === "async") isAsync = true
-        if (c?.text === "sync*" || c?.text === "async*" || c?.type === "sync*" || c?.type === "async*")
-          isGenerator = true
-      }
-    }
+    if (isAsync || (returnType && returnType.startsWith("Future"))) patterns["Async Programming"] = true
 
-    if (sibling && sibling.type === "function_body") {
-      checkModifiers(sibling)
-    }
-    if (!sibling) {
-      const bodyNode = isDecl ? node.childForFieldName("body") : sigNode.childForFieldName("body")
-      if (bodyNode) {
-        checkModifiers(bodyNode)
-      }
-    }
-    if (isAsync || returnType?.startsWith("Future")) patterns["Async Programming"] = true
-
-    let hasNullSafety = false
-    if (returnType && returnType.indexOf("?") !== -1) hasNullSafety = true
-    for (let i = 0; i < parameters.length; i++) {
-      if (parameters[i].type && parameters[i].type!.indexOf("?") !== -1) hasNullSafety = true
-    }
-    // Only check the actual signature nodes, not the body!
-    const sigToCheck = isDecl ? this.findChild(node, (c) => c?.type.indexOf("signature") !== -1) || node : node
-    if (sigToCheck.type.indexOf("signature") !== -1) {
-      if (sigToCheck.text.indexOf("?") !== -1 || sigToCheck.text.indexOf("!") !== -1) hasNullSafety = true
-    }
-    if (hasNullSafety) patterns["Null Safety"] = true
-
-    let isStatic = this.hasModifier(node, "static") || this.hasModifier(sigNode, "static")
-
-    let isOverride = false
-    for (let i = 0; i < annotations.length; i++) {
-      if (annotations[i] === "@override") isOverride = true
-    }
+    const kind =
+      isGetter || isSetter
+        ? ASTEngine.SymbolKind.Property
+        : owner
+          ? ASTEngine.SymbolKind.Method
+          : ASTEngine.SymbolKind.Function
 
     const symbol: ASTEngine.UniversalSymbol = {
-      name: functionName,
-      kind:
-        isGetter || isSetter
-          ? ASTEngine.SymbolKind.Property
-          : currentScope
-            ? ASTEngine.SymbolKind.Method
-            : ASTEngine.SymbolKind.Function,
-      range: this.nodeToRange(node),
-      scope: currentScope?.name || "",
-      visibility: functionName.startsWith("_") ? "private" : "public",
-      parameters,
+      name,
+      kind,
+      range: this.rangeIncludingBody(node, inner),
+      scope: scopeString(scopeStack),
+      ownerName: owner,
+      ownerKind: owner ? scopeOwnerKind(scopeStack) : undefined,
+      visibility: name.startsWith("_") ? "private" : "public",
+      parameters: params,
       returnType,
+      comments,
       decorators: annotations,
-      ownerName: currentScope?.name,
-      ownerKind: currentScope?.kind,
+      isStatic,
       isAsync,
-      metadata: { isAsync, isGenerator, isStatic, isOverride, isGetter, isSetter, dartSpecific: true, hasNullSafety },
+      isAbstract,
+      complexity: this.methodComplexity(node),
+      metadata: { isGetter, isSetter, isStatic, isAsync, isAbstract, hasBody: this.hasBody(node) },
     }
-
-    // FIX: When node is a signature or generic declaration, function_body
-    // may be a SIBLING not a child. Extend range to include it.
-    const isSigOrDecl = node.type === "declaration" || node.type.indexOf("signature") !== -1
-    if (isSigOrDecl) {
-      let sib: Node | null = node.nextSibling
-      while (sib) {
-        if (sib.type === "function_body" || sib.type === "block") {
-          symbol.range.endLine = sib.endPosition.row + 1
-          symbol.range.endColumn = sib.endPosition.column + 1
-          symbol.range.endIndex = sib.endIndex
-          break
-        }
-        if (sib.type.indexOf("declaration") !== -1 || sib.type.indexOf("signature") !== -1 ||
-            sib.type === "}" || sib.type === "class_body") break
-        sib = sib.nextSibling
-      }
-    }
-
-    const relationships: any[] = []
     symbols.push(symbol)
-    // Push overrides relationship
-    if (isOverride && currentScope?.name) {
-      relationships.push({
-        source: `${currentScope.name}.${functionName}`,
-        target: functionName,
-        type: ASTEngine.RelationshipType.Overrides,
-        confidence: 0.9,
-        metadata: { isOverride: true, dartSpecific: true }
-      })
-    }
-    return isDecl
+
+    scopeStack.push({ name, kind: DartScopeKind.Function })
   }
 
-  private processConstructor(
+  private processTopLevelFunction(
     node: Node,
     symbols: ASTEngine.UniversalSymbol[],
-    relationships: ASTEngine.UniversalRelationship[],
-    currentScope: Scope | undefined,
+    scopeStack: DartScopeEntry[],
     patterns: Record<string, boolean>,
-  ): boolean {
-    if (!currentScope) return false
-    const isDecl = node.type.indexOf("declaration") !== -1
-    const sigNode = isDecl ? this.findChild(node, (c) => c?.type.indexOf("signature") !== -1) || node : node
-    const isFactory = this.hasModifier(node, "factory") || sigNode.type === "factory_constructor_signature"
-    if (isFactory) patterns["Factory"] = true
-
-    let name = currentScope.name,
-      isNamed = false
-    const nameNode = sigNode.childForFieldName("name")
-    if (nameNode) {
-      name = `${currentScope.name}.${nameNode.text}`
-      isNamed = true
-    } else {
-      const idNodes = this.filterChildren(sigNode, (c) => c?.type === "identifier")
-      if (idNodes.length >= 2 && idNodes[0] && idNodes[0].text === currentScope.name && idNodes[1]) {
-        name = `${currentScope.name}.${idNodes[1].text}`
-        isNamed = true
-      }
-    }
-
-    const parameters = this.extractDartParameters(sigNode)
-    if (isNamed) {
-      let classSymbol: ASTEngine.UniversalSymbol | undefined
-      for (let i = 0; i < symbols.length; i++) {
-        if (symbols[i].name === currentScope.name && symbols[i].kind === ASTEngine.SymbolKind.Class) {
-          classSymbol = symbols[i]
-          break
-        }
-      }
-      if (classSymbol && classSymbol.metadata) classSymbol.metadata.hasNamedConstructors = true
-    }
-    const isConst = this.hasModifier(node, "const") || sigNode.type === "constant_constructor_signature"
-    let annotations = this.extractAnnotations(node)
-    if (!isDecl && node.parent && node.parent.type.indexOf("declaration") !== -1) {
-      const parentAnnotations = this.extractAnnotations(node.parent)
-      for (let i = 0; i < parentAnnotations.length; i++) annotations.push(parentAnnotations[i])
-    }
+  ): void {
+    const nameNode = node.childForFieldName("name") || this.findChildByType(node, "identifier")
+    if (!nameNode) return
+    const name = nameNode.text
+    const params = this.extractParameters(node)
+    const returnType = this.extractReturnType(node)
+    const isAsync = this.isAsyncSignature(node, node)
+    if (isAsync || (returnType && returnType.startsWith("Future"))) patterns["Async Programming"] = true
+    const comments = this.collectComments(node)
 
     symbols.push({
       name,
-      kind: ASTEngine.SymbolKind.Constructor,
-      range: this.nodeToRange(node),
-      scope: currentScope.name,
+      kind: ASTEngine.SymbolKind.Function,
+      range: this.rangeIncludingBody(node, node),
+      scope: scopeString(scopeStack),
       visibility: name.startsWith("_") ? "private" : "public",
-      parameters,
-      decorators: annotations,
-      ownerName: currentScope.name,
-      ownerKind: ASTEngine.SymbolKind.Class,
-      metadata: { isFactory, isConst, isNamed, dartSpecific: true },
+      parameters: params,
+      returnType,
+      comments,
+      isAsync,
+      complexity: this.methodComplexity(node),
+      metadata: { isAsync, isTopLevelFunction: true },
     })
-
-    if (isFactory) {
-      const redirectNode = this.findChild(
-        sigNode,
-        (c) =>
-          c?.type === "redirecting_factory_constructor_signature" || c?.type === "redirecting_constructor_invocation",
-      )
-      let targetName = ""
-      if (redirectNode) {
-        const typeId = this.findChild(redirectNode, (c) => c?.type === "type_identifier" || c?.type === "identifier")
-        if (typeId) targetName = typeId.text
-      } else {
-        let equalsIdx = -1
-        for (let i = 0; i < sigNode.childCount; i++) {
-          if (sigNode.child(i)?.text === "=") {
-            equalsIdx = i
-            break
-          }
-        }
-        if (equalsIdx !== -1 && sigNode.childCount > equalsIdx + 1) {
-          let target: Node | undefined
-          for (let i = equalsIdx + 1; i < sigNode.childCount; i++) {
-            const c = sigNode.child(i)
-            if (c?.type === "identifier" || c?.type === "type_identifier") {
-              target = c
-              break
-            }
-          }
-          if (target) targetName = target.text
-        }
-      }
-      if (targetName)
-        relationships.push({
-          source: currentScope.name,
-          target: targetName,
-          type: ASTEngine.RelationshipType.Instantiates,
-          metadata: { isFactoryRedirection: true },
-        })
-    }
-    return isDecl
+    scopeStack.push({ name, kind: DartScopeKind.Function })
   }
 
   private processFieldOrVariable(
     node: Node,
     symbols: ASTEngine.UniversalSymbol[],
-    currentScope: Scope | undefined,
-    patterns: Record<string, boolean>,
-  ) {
-    let isStatic = this.hasModifier(node, "static"),
-      isFinal = this.hasModifier(node, "final"),
-      isLate = this.hasModifier(node, "late"),
-      isConst = this.hasModifier(node, "const")
-    if (node.type === "initialized_identifier_list" && node.parent) {
-      if (node.parent.type === "static_final_declaration_list" || node.parent.text.indexOf("static") !== -1) {
-        isStatic = true
-        isFinal = true
-      }
-      if (this.hasModifier(node.parent, "static")) isStatic = true
-      if (this.hasModifier(node.parent, "final")) isFinal = true
-      if (this.hasModifier(node.parent, "late")) isLate = true
-      if (this.hasModifier(node.parent, "const")) isConst = true
-    }
-    if (isLate) patterns["Late Initialization"] = true
-    if (node.type === "initialized_identifier_list" || node.type === "initialized_variable_declaration" ||
-      node.type === "static_final_declaration_list") {
-      // These are leaf containers for the actual declarations — don't re-process
-      // (they'll be visited individually by the traversal when they're named children).
-      return
-    }
-    const declList =
-      node.type === "initialized_identifier_list" ||
-      node.type === "initialized_variable_declaration" ||
-      node.type === "static_final_declaration_list"
+    scopeStack: DartScopeEntry[],
+  ): void {
+    const declList = this.findChildByType(node, "initialized_identifier_list") ||
+      this.findChildByType(node, "initialized_variable_declaration") ||
+      this.findChildByType(node, "static_final_declaration_list") ||
+      (node.type === "initialized_identifier_list" || node.type === "initialized_variable_declaration" ||
+        node.type === "static_final_declaration_list"
         ? node
-        : this.findChild(
-            node,
-            (c) =>
-              c?.type === "initialized_identifier_list" ||
-              c?.type === "initialized_variable_declaration" ||
-              c?.type === "static_final_declaration_list",
-          )
+        : undefined)
     if (!declList) return
-    let typeNode = this.findChild(
-      node,
-      (c) => c?.type === "type_identifier" || c?.type === "builtin_type" || c?.type === "generic_type",
-    )
-    if (!typeNode && node.parent)
-      typeNode = this.findChild(node.parent, (c) => c?.type === "type_identifier" || c?.type === "builtin_type")
-    const typeString = typeNode?.text || "dynamic"
+
+    const owner = scopeOwnerName(scopeStack)
+    const isStatic = this.hasModifier(node, "static") || node.type === "static_final_declaration_list"
+    const isFinal = this.hasModifier(node, "final") || node.type === "static_final_declaration_list"
+    const isConst = this.hasModifier(node, "const")
+    const isLate = this.hasModifier(node, "late")
+    const dataType = this.extractFieldType(node, declList)
 
     for (let i = 0; i < declList.namedChildCount; i++) {
       const child = declList.namedChild(i)
-      if (child?.type === "initialized_identifier" || child?.type === "static_final_declaration") {
-        const nameNode = this.findChild(child, (c) => c?.type === "identifier")
-        if (nameNode)
-          symbols.push({
-            name: nameNode?.text,
-            kind:
-              currentScope && currentScope.kind === ASTEngine.SymbolKind.Class
-                ? ASTEngine.SymbolKind.Property
-                : ASTEngine.SymbolKind.Variable,
-            range: this.nodeToRange(node),
-            scope: currentScope?.name || "",
-            visibility: nameNode.text.startsWith("_") ? "private" : "public",
-            ownerName: currentScope?.name,
-            ownerKind: currentScope?.kind,
-            isStatic,
-            metadata: { isStatic, isFinal, isLate, isConst, dataType: typeString, dartSpecific: true },
-          })
-      } else if (child?.type === "identifier") {
-        symbols.push({
-          name: child?.text,
-          kind:
-            currentScope && currentScope.kind === ASTEngine.SymbolKind.Class
-              ? ASTEngine.SymbolKind.Property
-              : ASTEngine.SymbolKind.Variable,
-          range: this.nodeToRange(node),
-          scope: currentScope?.name || "",
-          visibility: child?.text.startsWith("_") ? "private" : "public",
-          ownerName: currentScope?.name,
-          ownerKind: currentScope?.kind,
-          isStatic,
-          metadata: { isStatic, isFinal, isLate, isConst, dataType: typeString, dartSpecific: true },
-        })
+      if (!child) continue
+      let name: string | undefined
+      if (child.type === "initialized_identifier" || child.type === "static_final_declaration") {
+        const id = this.findChildByType(child, "identifier")
+        name = id?.text
+      } else if (child.type === "identifier") {
+        name = child.text
       }
+      if (!name) continue
+
+      const kind =
+        owner
+          ? ASTEngine.SymbolKind.Property
+          : isConst || isFinal
+            ? ASTEngine.SymbolKind.Constant
+            : ASTEngine.SymbolKind.Variable
+
+      symbols.push({
+        name,
+        kind,
+        range: this.nodeToRange(node),
+        scope: scopeString(scopeStack),
+        ownerName: owner,
+        ownerKind: owner ? scopeOwnerKind(scopeStack) : undefined,
+        visibility: name.startsWith("_") ? "private" : "public",
+        isStatic,
+        metadata: { isStatic, isFinal, isConst, isLate, dataType, isField: owner !== undefined },
+      })
+    }
+  }
+
+  private processTopLevelVariables(
+    node: Node,
+    symbols: ASTEngine.UniversalSymbol[],
+    scopeStack: DartScopeEntry[],
+  ): void {
+    const isFinal = this.hasModifier(node, "final") || this.hasModifier(node.parent!, "final")
+    const isConst = this.hasModifier(node, "const") || this.hasModifier(node.parent!, "const")
+    const dataType = this.extractFieldType(node, node)
+
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const child = node.namedChild(i)
+      if (!child) continue
+      let name: string | undefined
+      if (child.type === "initialized_identifier" || child.type === "static_final_declaration") {
+        const id = this.findChildByType(child, "identifier")
+        name = id?.text
+      } else if (child.type === "identifier") {
+        name = child.text
+      }
+      if (!name) continue
+      symbols.push({
+        name,
+        kind: isConst || isFinal ? ASTEngine.SymbolKind.Constant : ASTEngine.SymbolKind.Variable,
+        range: this.nodeToRange(node),
+        scope: scopeString(scopeStack),
+        visibility: name.startsWith("_") ? "private" : "public",
+        metadata: { isStatic: false, isFinal, isConst, dataType, isField: false, isTopLevelVariable: true },
+      })
     }
   }
 
@@ -1070,253 +656,668 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     exports: ASTEngine.ExportInfo[],
     frameworks: Record<string, boolean>,
     relationships: ASTEngine.UniversalRelationship[],
-  ) {
-    const isExport = node.text.startsWith("export")
-    const uriNode = this.findDescendant(node, (c) => c?.type === "string_literal")
-    if (uriNode) {
-      const moduleUri = uriNode?.text.replace(/['"]/g, "")
-      if (moduleUri.startsWith("package:flutter/")) frameworks["Flutter"] = true
-      if (moduleUri.startsWith("package:angular/")) frameworks["AngularDart"] = true
-      if (moduleUri.indexOf("bloc") !== -1) frameworks["BLoC"] = true
-      if (isExport) exports.push({ name: moduleUri, isDefault: false, range: this.nodeToRange(node) })
-      else
-        imports.push({
-          module: moduleUri,
-          source: moduleUri,
-          imported: ["*"],
-          isTypeOnly: false,
-          range: this.nodeToRange(node),
+    moduleName: string,
+  ): void {
+    if (node.type === "part_directive") {
+      const uriNode = this.findDescendantByType(node, "string_literal") || this.findDescendantByType(node, "uri")
+      const uri = uriNode ? unquote(uriNode.text) : ""
+      if (uri) {
+        imports.push({ module: uri, source: uri, imported: ["*"], isPart: true, range: this.nodeToRange(node) })
+        relationships.push({
+          source: moduleName,
+          target: `${uri}:*`,
+          type: ASTEngine.RelationshipType.Imports,
+          confidence: 1.0,
+          metadata: { isPart: true },
         })
-      // depends: import = compile-time dependency
-      relationships.push({
-        source: "global",
-        target: moduleUri,
-        type: ASTEngine.RelationshipType.References,
-        confidence: 0.9,
-        metadata: { isDartImport: true }
-      })
-    }
-  }
-
-  private processPart(node: Node, imports: ASTEngine.ImportInfo[], patterns: Record<string, boolean>) {
-    let uriNode = this.findDescendant(node, (c) => c?.type === "string_literal")
-    if (uriNode) {
-      imports.push({
-        uri: uriNode.text.replace(/['"]/g, ""),
-        isExport: false,
-        isPart: true,
-      })
-      patterns["Code Generation (part)"] = true
+      }
       return
     }
+
+    const isExport = node.type === "library_export" || node.text.startsWith("export")
+    const uriNode = this.findDescendantByType(node, "string_literal") || this.findDescendantByType(node, "uri")
+    const uri = uriNode ? unquote(uriNode.text) : ""
+    if (!uri) return
+
+    if (uri.startsWith("package:flutter/")) frameworks["Flutter"] = true
+    if (uri.startsWith("package:angular/")) frameworks["AngularDart"] = true
+
+    if (isExport) {
+      exports.push({ name: uri, isDefault: false, range: this.nodeToRange(node) })
+      relationships.push({
+        source: moduleName,
+        target: uri,
+        type: ASTEngine.RelationshipType.Exports,
+        confidence: 1.0,
+        metadata: {},
+      })
+    } else {
+      imports.push({ module: uri, source: uri, imported: ["*"], isTypeOnly: false, range: this.nodeToRange(node) })
+      relationships.push({
+        source: moduleName,
+        target: `${uri}:*`,
+        type: ASTEngine.RelationshipType.Imports,
+        confidence: 1.0,
+        metadata: {},
+      })
+    }
   }
 
-  private processSelector(
-    node: Node,
+  // ============================================================================
+  // RELATIONSHIP PASSES
+  // ============================================================================
+
+  private addContainmentRelationships(
+    symbols: ASTEngine.UniversalSymbol[],
     relationships: ASTEngine.UniversalRelationship[],
-    currentScope: Scope | undefined,
-    patterns: Record<string, boolean>,
-  ) {
-    if (!currentScope) return
-    for (let i = 0; i < node.namedChildCount; i++) {
-      const child = node.namedChild(i)
-      if (child && (child.type === "type_identifier" || child.type === "identifier")) {
-        if (child.text.includes("Bloc") || child.text.includes("Cubit")) patterns["BLoC"] = true
+  ): void {
+    for (const symbol of symbols) {
+      if (symbol.ownerName) {
         relationships.push({
-          source: currentScope.name,
-          target: child.text,
-          type: ASTEngine.RelationshipType.Instantiates,
-          metadata: { isWidgetTree: true },
+          source: symbol.ownerName,
+          target: symbol.name,
+          type: ASTEngine.RelationshipType.Contains,
+          confidence: 1.0,
+          metadata: {},
         })
       }
     }
   }
 
-  private processInvocation(
-    node: Node,
+  private extractOverrideRelationships(
+    symbols: ASTEngine.UniversalSymbol[],
     relationships: ASTEngine.UniversalRelationship[],
-    currentScope: Scope | undefined,
-    patterns: Record<string, boolean>,
-  ) {
-    let targetName = "",
-      isWidgetTree = false
-    if (node.type === "creation_expression") {
-      const typeNode =
-        node.childForFieldName("type") ||
-        this.findChild(node, (c) => c?.type === "type_identifier" || c?.type === "identifier")
-      if (typeNode) {
-        targetName = typeNode.text
-        // Only mark as widget tree if the created type is a known Flutter widget
-        isWidgetTree = /Widget$|Element$|Builder$|Painter$|Delegate$/.test(targetName)
-      }
-    } else if (node.type === "invocation_expression") {
-      const fnNode = node.childForFieldName("function") || this.findChild(node, (c) => c?.type === "identifier")
-      if (fnNode) {
-        targetName = fnNode.text
-        // Only mark as widget tree for known widget-returning functions
-        isWidgetTree = /^Material$|^Scaffold$|^Container$|^Column$|^Row$|^Text$|^Center$|^Padding$|^SizedBox$|^Expanded$/.test(targetName)
+    overrideCompanion?: Map<string, Set<string>>,
+  ): void {
+    const byName = new Map<string, ASTEngine.UniversalSymbol[]>()
+    for (const s of symbols) {
+      const list = byName.get(s.name) ?? []
+      list.push(s)
+      byName.set(s.name, list)
+    }
+    const baseByClass = new Map<string, string>()
+    for (const r of relationships) {
+      if (r.type === ASTEngine.RelationshipType.Extends && r.source && r.target) {
+        baseByClass.set(r.source, r.target)
       }
     }
-
-    if (targetName) {
-      if (
-        targetName === "BlocProvider" ||
-        targetName === "ChangeNotifierProvider" ||
-        targetName.indexOf("Provider") !== -1
-      )
-        patterns["Provider/Riverpod"] = true
-      let sourceName = currentScope?.name || "Global"
-      let p: Node | null = node.parent
-      while (p && p !== currentScope?.node) {
-        if (p.type === "creation_expression") {
-          const pt =
-            p.childForFieldName("type") ||
-            this.findChild(p, (c) => c?.type === "type_identifier" || c?.type === "identifier")
-          if (pt) {
-            sourceName = pt.text
-            break
-          }
-        } else if (p.type === "invocation_expression") {
-          const pfn = p.childForFieldName("function") || this.findChild(p, (c) => c?.type === "identifier")
-          if (pfn && /^[A-Z]/.test(pfn.text)) {
-            sourceName = pfn.text
-            break
-          }
-        }
-        p = p.parent
-      }
-      relationships.push({
-        source: sourceName,
-        target: targetName,
-        type: isWidgetTree ? ASTEngine.RelationshipType.Instantiates : ASTEngine.RelationshipType.Calls,
-        metadata: isWidgetTree ? { isWidgetTree: true } : {},
-      })
+    const baseDeclares = (base: string, method: string): boolean => {
+      const inFile = byName.get(method)?.some((bm) => bm.ownerName === base) ?? false
+      if (inFile) return true
+      const companion = overrideCompanion?.get(base)
+      return !!companion && companion.has(method)
     }
-  }
-
-  private processCascade(
-    node: Node,
-    relationships: ASTEngine.UniversalRelationship[],
-    currentScope: Scope | undefined,
-    patterns: Record<string, boolean>,
-  ) {
-    if (node.type === "cascade_expression") {
-      const receiver = node.namedChildren[0]
-      if (!receiver) return
-      let receiverName = "UnknownReceiver"
-      if (receiver.type === "identifier" || receiver.type === "simple_identifier") {
-        receiverName = receiver.text
-      } else if (receiver.type === "creation_expression") {
-        const typeNode =
-          receiver.childForFieldName("type") ||
-          this.findChild(receiver, (c) => c?.type === "type_identifier" || c?.type === "identifier")
-        if (typeNode) receiverName = typeNode.text
-      }
-      const sections = this.filterChildren(node, (c) => c?.type === "cascade_section")
-      for (let i = 0; i < sections.length; i++) {
-        const section = sections[i]
-        if (!section) continue
-        const methodNode = this.findChild(
-          section,
-          (c) => c?.type === "identifier" || c?.type === "invocation_expression",
-        )
-        if (methodNode) {
-          let methodName = methodNode.text
-          if (methodNode.type === "invocation_expression") {
-            const fn =
-              methodNode.childForFieldName("function") || this.findChild(methodNode, (c) => c?.type === "identifier")
-            if (fn) methodName = fn.text
-          } else if (methodNode.type === "identifier") {
-            const args = this.findChild(section, (c) => c?.type === "argument_part")
-            if (args) methodName = methodNode.text
-          }
-          if (methodName && methodName !== receiverName)
-            relationships.push({
-              source: currentScope?.name || "Global",
-              target: `${receiverName}.${methodName}`,
-              type: ASTEngine.RelationshipType.Calls,
-              metadata: { cascade: true },
-            })
-        }
+    for (const s of symbols) {
+      if ((s.kind === ASTEngine.SymbolKind.Method || s.kind === ASTEngine.SymbolKind.Property) && s.ownerName) {
+        const base = baseByClass.get(s.ownerName)
+        if (!base) continue
+        if (!baseDeclares(base, s.name)) continue
+        relationships.push({
+          source: `${s.ownerName}.${s.name}`,
+          target: `${base}.${s.name}`,
+          type: ASTEngine.RelationshipType.Overrides,
+          confidence: 0.95,
+          metadata: {},
+        })
       }
     }
   }
 
-  private extractDartParameters(node: Node): ASTEngine.Parameter[] {
-    const parameters: ASTEngine.Parameter[] = []
-    const paramsNode =
-      node.childForFieldName("parameters") || this.findChild(node, (c) => c?.type === "formal_parameter_list")
-    if (!paramsNode) return parameters
-    const paramStack = [paramsNode]
-    while (paramStack.length > 0) {
-      const pNode = paramStack.pop()!
+  private extractCallRelationships(
+    node: Node,
+    relationships: ASTEngine.UniversalRelationship[],
+    moduleName: string,
+  ): void {
+    // Current call source = enclosing function/method/constructor leaf name.
+    const resolveCurrent = (n: Node, current: string | null): string | null => {
+      if (n.type === "function_declaration") {
+        const nm = n.childForFieldName("name")?.text
+        if (nm) return nm
+      }
+      // Only signature-bearing nodes change the call context. `declaration`
+      // nodes matter only when they DIRECTLY wrap a signature (class members);
+      // class/enum/extension containers must NOT leak their first member name.
+      let sig: Node | null = null
+      if (this.isSignatureNode(n.type)) {
+        sig = n
+      } else if (n.type === "declaration") {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c && this.isSignatureNode(c.type)) {
+            sig = c
+            break
+          }
+        }
+      }
+      if (sig) {
+        const inner = this.findInnerSignature(sig)
+        if (this.isConstructorSignature(sig.type) || this.isConstructorSignature(inner.type)) return "constructor"
+        const nm = inner.childForFieldName("name")?.text
+        if (nm) return nm
+      }
+      return current
+    }
+
+    const processNode = (n: Node, current: string | null): void => {
+      const prev = current
+      const t = n.type
+      current = resolveCurrent(n, current)
+      // Dart grammar: a function_body/function_expression_body is a named
+      // child of the CONTAINER (class_body, extension_body, program) that
+      // FOLLOWS the signature node it belongs to — the previous named sibling
+      // carries the call context (e.g. `method_signature` then `function_body`).
       if (
-        pNode.type === "formal_parameter" ||
-        pNode.type === "optional_formal_parameter" ||
-        pNode.type === "named_formal_parameter" ||
-        pNode.type === "default_formal_parameter" ||
-        pNode.type === "constructor_param"
+        (t === "function_body" || t === "block" || t === "function_expression_body") &&
+        current === prev
       ) {
-        const nameNode = pNode.childForFieldName("name") || this.findChild(pNode, (c) => c?.type === "identifier")
-        const typeNode = pNode.childForFieldName("type") || this.findChild(pNode, (c) => c?.type === "type_identifier")
-        if (nameNode) {
-          const isNamed =
-            pNode.type === "named_formal_parameter" ||
-            pNode.type === "default_formal_parameter" ||
-            pNode.parent?.type === "named_formal_parameters" ||
-            (pNode.parent?.type === "optional_formal_parameters" && pNode.parent?.text.indexOf("{") !== -1)
-          const isOptional =
-            pNode.type === "optional_formal_parameter" ||
-            pNode.parent?.type === "optional_formal_parameters" ||
-            pNode.text.indexOf("required") === -1
-
-          let found = false
-          for (let i = 0; i < parameters.length; i++) {
-            if (parameters[i].name === nameNode?.text) {
-              found = true
-              break
-            }
-          }
-          if (!found)
-            parameters.push({ name: nameNode?.text, type: typeNode ? typeNode?.text : "dynamic", isOptional, isNamed })
+        const prevSib = n.previousNamedSibling
+        if (prevSib) {
+          const sigSource = resolveCurrent(prevSib, current)
+          if (sigSource !== current) current = sigSource
         }
       }
-      for (let i = pNode.namedChildCount - 1; i >= 0; i--) {
-        const c = pNode.namedChild(i)
-        if (c) paramStack.push(c)
+      const callSource = current || moduleName
+
+      // Constructor invocation: `List<int>.filled(3, 0)` → instantiates List
+      if (t === "constructor_invocation") {
+        const typeNode = this.findChildByType(n, "type_identifier")
+        if (typeNode && isCapitalized(typeNode.text)) {
+          relationships.push({
+            source: callSource,
+            target: typeNode.text,
+            type: ASTEngine.RelationshipType.Instantiates,
+            confidence: 0.95,
+            metadata: { isConstructorInvocation: true },
+          })
+        }
+      }
+
+      // selector + argument_part = call site (Dart has no invocation_expression)
+      if (t === "selector" && this.findChildByType(n, "argument_part")) {
+        const leaf = this.resolveSelectorCallee(n)
+        if (leaf) {
+          if (this.isDartGlobalBuiltin(leaf)) {
+            // filtered
+          } else if (isCapitalized(leaf) && this.selectorIsBareCall(n)) {
+            // Capitalized identifier directly before argument_part = Dart
+            // constructor invocation (types are capitalized): `Counter(1)`,
+            // `MyWidget(...)`, `Duration(seconds: 1)`.
+            relationships.push({
+              source: callSource,
+              target: leaf,
+              type: ASTEngine.RelationshipType.Instantiates,
+              confidence: 0.95,
+              metadata: {},
+            })
+          } else {
+            relationships.push({
+              source: callSource,
+              target: leaf,
+              type: ASTEngine.RelationshipType.Calls,
+              confidence: 0.9,
+              metadata: {},
+            })
+          }
+        }
+      }
+
+      // cascade calls: `list.add(1)..remove(2)` → calls remove/clear
+      if (t === "cascade_section") {
+        const sel = this.findChildByType(n, "cascade_selector")
+        const hasArgs = this.findChildByType(n, "argument_part")
+        if (sel && hasArgs) {
+          const mname = this.findChildByType(sel, "identifier")?.text
+          if (mname && !this.isDartGlobalBuiltin(mname)) {
+            relationships.push({
+              source: callSource,
+              target: mname,
+              type: ASTEngine.RelationshipType.Calls,
+              confidence: 0.9,
+              metadata: { isCascade: true },
+            })
+          }
+        }
+      }
+
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const child = n.namedChild(i)
+        if (child) processNode(child, current)
+      }
+
+      current = prev
+    }
+
+    processNode(node, null)
+  }
+
+  // ============================================================================
+  // CLASS HERITAGE
+  // ============================================================================
+
+  private extractClassHeritage(
+    node: Node,
+    className: string,
+    relationships: ASTEngine.UniversalRelationship[],
+    patterns: Record<string, boolean>,
+  ): void {
+    // superclass: `extends X with M1, M2` — first type_identifier is the base,
+    // the `mixins` child carries the with-clause.
+    const superclass = this.findChildByType(node, "superclass")
+    if (superclass) {
+      const base = this.firstTypeIdentifier(superclass, /*excludeMixins*/ true)
+      if (base) {
+        relationships.push({
+          source: className,
+          target: base.text,
+          type: ASTEngine.RelationshipType.Extends,
+          confidence: 1.0,
+          metadata: {},
+        })
       }
     }
-    return parameters
+
+    // interfaces: `implements A, B<C>`
+    const interfaces = this.findChildByType(node, "interfaces")
+    if (interfaces) {
+      for (const ti of this.allTypeIdentifiers(interfaces)) {
+        relationships.push({
+          source: className,
+          target: ti.text,
+          type: ASTEngine.RelationshipType.Implements,
+          confidence: 1.0,
+          metadata: {},
+        })
+      }
+    }
+
+    // mixins (with-clause): inside superclass OR directly on the class
+    let mixinsNode = superclass ? this.findChildByType(superclass, "mixins") : undefined
+    if (!mixinsNode) mixinsNode = this.findChildByType(node, "mixins")
+    if (mixinsNode) {
+      patterns["Mixins"] = true
+      for (const ti of this.allTypeIdentifiers(mixinsNode)) {
+        relationships.push({
+          source: className,
+          target: ti.text,
+          type: ASTEngine.RelationshipType.Uses,
+          confidence: 1.0,
+          metadata: { isMixin: true },
+        })
+      }
+    }
   }
 
-  private extractDartReturnType(node: Node): string | undefined {
-    const typeNode =
-      node.childForFieldName("return_type") ||
-      this.findChild(node, (c) => c?.type === "type_identifier" || c?.type === "void_type")
-    if (typeNode) return typeNode?.text
-    return undefined
+  // ============================================================================
+  // HELPERS
+  // ============================================================================
+
+  private isDartGlobalBuiltin(name: string): boolean {
+    // Global functions (filtered) + Object leaf methods (mirrors the JS
+    // family contract: `toString`, `hashCode`, ... are universal, not real
+    // project call targets).
+    if (name === "print" || name === "assert" || name === "identical") return true
+    if (name === "toString" || name === "hashCode" || name === "runtimeType" || name === "noSuchMethod") return true
+    return false
   }
 
-  private extractAnnotations(node: Node): string[] {
-    const annotations: string[] = []
-    let prev: Node | null = node.previousNamedSibling
-    while (prev && (prev.type === "annotation" || prev.type === "marker_annotation")) {
-      annotations.push(prev.text)
-      prev = prev.previousNamedSibling
+  private selectorIsBareCall(selector: Node): boolean {
+    // true when the node directly before the selector is a plain
+    // identifier/type_identifier (no assignable selector chain).
+    const prev = selector.previousNamedSibling
+    if (!prev) return false
+    return prev.type === "identifier" || prev.type === "type_identifier" || prev.type === "simple_identifier"
+  }
+
+  private resolveSelectorCallee(selector: Node): string | null {
+    const prev = selector.previousNamedSibling
+    if (!prev) return null
+    if (prev.type === "unconditional_assignable_selector" || prev.type === "conditional_assignable_selector" ||
+        prev.type === "assignable_selector" || prev.type === "selector") {
+      // obj.method(...) / Future.delayed(...) / super.toString()
+      const inner = this.findChildByType(prev, "identifier")
+      if (inner) return inner.text
+      // nested selector chain (e.g. a.b.c()) — last identifier wins
+      const chain = this.lastIdentifier(prev)
+      return chain
     }
-    for (let i = 0; i < node.namedChildCount; i++) {
-      const child = node.namedChild(i)
-      if (child?.type === "annotation" || child?.type === "marker_annotation") annotations.push(child?.text)
+    if (prev.type === "identifier" || prev.type === "type_identifier" || prev.type === "simple_identifier") {
+      return prev.text
     }
-    return annotations
+    return null
+  }
+
+  private lastIdentifier(node: Node): string | null {
+    let result: string | null = null
+    const stack: Node[] = [node]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "identifier" || n.type === "type_identifier") result = n.text
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return result
+  }
+
+  private isSignatureNode(type: string): boolean {
+    return (
+      type === "function_signature" || type === "method_signature" ||
+      type === "getter_signature" || type === "setter_signature" ||
+      type === "constructor_signature" || type === "factory_constructor_signature" ||
+      type === "constant_constructor_signature" || type === "redirecting_factory_constructor_signature"
+    )
+  }
+
+  private isConstructorSignature(type: string): boolean {
+    return (
+      type === "constructor_signature" || type === "factory_constructor_signature" ||
+      type === "constant_constructor_signature" || type === "redirecting_factory_constructor_signature"
+    )
+  }
+
+  private findSignatureIn(node: Node): Node | null {
+    const stack: Node[] = [node]
+    let guard = 0
+    while (stack.length > 0 && guard++ < 64) {
+      const n = stack.pop()!
+      if (this.isSignatureNode(n.type)) return n
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return null
+  }
+
+  private findInnerSignature(node: Node): Node {
+    if (node.type !== "method_signature") return node
+    const stack: Node[] = [node]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (this.isSignatureNode(n.type) && n.type !== "method_signature") {
+        return n
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return node
+  }
+
+  private hasBody(node: Node): boolean {
+    const sib = node.nextNamedSibling
+    if (sib && (sib.type === "function_body" || sib.type === "block")) return true
+    return this.findChildByType(node, "function_body") !== null
+  }
+
+  private rangeIncludingBody(node: Node, sig: Node): ASTEngine.UniversalSymbol["range"] {
+    const range = this.nodeToRange(node)
+    let sib: Node | null = node.nextSibling
+    let guard = 0
+    while (sib && guard++ < 8) {
+      if (sib.type === "function_body" || sib.type === "block") {
+        range.endLine = sib.endPosition.row + 1
+        range.endColumn = sib.endPosition.column + 1
+        range.endIndex = sib.endIndex
+        break
+      }
+      if (sib.type === "}" || sib.type === "class_body" || sib.type === "extension_body") break
+      sib = sib.nextSibling
+    }
+    return range
+  }
+
+  private isAsyncSignature(node: Node, sig: Node): boolean {
+    // `async` appears as a token child of the function_body or as a modifier
+    const body = this.findChildByType(node, "function_body")
+    if (body) {
+      if (this.hasToken(body, "async")) return true
+    } else {
+      const sib = node.nextSibling
+      if (sib && sib.type === "function_body" && this.hasToken(sib, "async")) return true
+    }
+    return false
+  }
+
+  private hasToken(node: Node, token: string): boolean {
+    for (let i = 0; i < node.childCount; i++) {
+      const c = node.child(i)
+      if (c && (c.type === token || c.text === token)) return true
+    }
+    return false
   }
 
   private hasModifier(node: Node, modifier: string): boolean {
     for (let i = 0; i < node.childCount; i++) {
       const c = node.child(i)
-      if (c && (c?.type === "modifier" || c?.type === modifier || c?.text === modifier)) return true
+      if (c && (c.type === modifier || c.text === modifier)) return true
+    }
+    // modifiers may live on the parent declaration wrapper
+    if (node.parent) {
+      for (let i = 0; i < node.parent.childCount; i++) {
+        const c = node.parent.child(i)
+        if (c && (c.type === modifier || c.text === modifier)) return true
+      }
     }
     return false
+  }
+
+  private extractParameters(node: Node): ASTEngine.Parameter[] {
+    const out: ASTEngine.Parameter[] = []
+    const paramsNode = this.findChildByType(node, "formal_parameter_list")
+    if (!paramsNode) return out
+    const stack: Node[] = [paramsNode]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (
+        n.type === "formal_parameter" || n.type === "optional_formal_parameter" ||
+        n.type === "named_formal_parameter" || n.type === "default_formal_parameter" ||
+        n.type === "constructor_param" || n.type === "typed_identifier"
+      ) {
+        const nameNode = n.childForFieldName("name") || this.findChildByType(n, "identifier")
+        if (nameNode && nameNode.text !== "this" && nameNode.text !== "super") {
+          const typeNode = n.childForFieldName("type") ||
+            (n.type === "typed_identifier" ? this.firstTypeIdentifier(n, false) : undefined)
+          const isNamed =
+            n.type === "named_formal_parameter" || n.type === "default_formal_parameter" ||
+            n.parent?.type === "named_formal_parameters"
+          const isOptional = n.type === "optional_formal_parameter" || n.type === "default_formal_parameter"
+          const already = out.some((p) => p.name === nameNode.text)
+          if (!already) out.push({ name: nameNode.text, type: typeNode?.text ?? "dynamic", isOptional, isNamed })
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return out
+  }
+
+  private extractReturnType(node: Node): string | undefined {
+    const rt = node.childForFieldName("return_type")
+    if (rt) return rt.text
+    const voidType = this.findChildByType(node, "void_type")
+    if (voidType) return "void"
+    // first type_identifier BEFORE the name field
+    const nameNode = node.childForFieldName("name")
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (!c) continue
+      if (c === nameNode) break
+      if (c.type === "type_identifier" || c.type === "builtin_type" || c.type === "generic_type") return c.text
+    }
+    return undefined
+  }
+
+  private extractFieldType(node: Node, declList: Node): string | undefined {
+    const candidates: Node[] = [node, declList]
+    for (const cand of candidates) {
+      for (let i = 0; i < cand.namedChildCount; i++) {
+        const c = cand.namedChild(i)
+        if (!c) continue
+        if (c.type === "type_identifier" || c.type === "builtin_type" || c.type === "generic_type" ||
+            c.type === "void_type") {
+          return c.text
+        }
+      }
+    }
+    if (node.parent) {
+      for (let i = 0; i < node.parent.namedChildCount; i++) {
+        const c = node.parent.namedChild(i)
+        if (!c) continue
+        if (c.type === "type_identifier" || c.type === "builtin_type" || c.type === "generic_type") return c.text
+      }
+    }
+    return undefined
+  }
+
+  private extractTypeParameters(node: Node): string[] | undefined {
+    const tp = this.findChildByType(node, "type_parameters")
+    if (!tp) return undefined
+    const out: string[] = []
+    for (let i = 0; i < tp.namedChildCount; i++) {
+      const c = tp.namedChild(i)
+      if (c && c.type === "type_parameter") out.push(c.text)
+    }
+    return out.length > 0 ? out : undefined
+  }
+
+  private extensionTargetType(node: Node): string | undefined {
+    // `extension NumExt on int` — the target type follows the `on` keyword;
+    // first type-ish named child that isn't the name.
+    const name = node.childForFieldName("name")?.text
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (!c || c.type === "extension_body" || c.type === "identifier") continue
+      if (c.type === "type_identifier" || c.type === "builtin_type" || c.type === "generic_type" ||
+          c.type === "void_type") {
+        if (c.text === name) continue
+        return c.text
+      }
+    }
+    // `extension on String` (unnamed extension) — the first type identifier
+    return undefined
+  }
+
+  private extractAnnotations(node: Node): string[] | undefined {
+    const annotations: string[] = []
+    let prev: Node | null = node.previousNamedSibling
+    let guard = 0
+    while (prev && guard++ < 8) {
+      if (prev.type === "annotation" || prev.type === "marker_annotation") {
+        annotations.unshift(prev.text)
+        prev = prev.previousNamedSibling
+      } else {
+        break
+      }
+    }
+    return annotations.length > 0 ? annotations : undefined
+  }
+
+  private collectComments(node: Node): string[] | undefined {
+    const comments: string[] = []
+    // Dart doc comments and annotations precede the declaration; annotations
+    // (`@override`) sit between the doc comment and the node, so skip them.
+    let sibling = node.previousSibling
+    let guard = 0
+    while (sibling && guard++ < 12) {
+      if (sibling.type === "comment" || sibling.type === "documentation_comment") {
+        comments.unshift(stripCommentMarkers(sibling.text))
+        sibling = sibling.previousSibling
+      } else if (sibling.type === "annotation" || sibling.type === "marker_annotation") {
+        sibling = sibling.previousSibling
+      } else {
+        break
+      }
+    }
+    return comments.length > 0 ? comments : undefined
+  }
+
+  private directIdentifiers(node: Node): string[] {
+    const out: string[] = []
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (c && (c.type === "identifier" || c.type === "type_identifier")) out.push(c.text)
+    }
+    return out
+  }
+
+  private methodComplexity(node: Node): number {
+    let c = 1
+    const stack: Node[] = [node]
+    let guard = 0
+    while (stack.length > 0 && guard++ < 200000) {
+      const n = stack.pop()!
+      if (
+        n.type === "if_statement" || n.type === "for_statement" || n.type === "while_statement" ||
+        n.type === "do_statement" || n.type === "switch_statement" || n.type === "catch_clause" ||
+        n.type === "conditional_expression" || n.type === "logical_and_expression" || n.type === "logical_or_expression"
+      ) {
+        c++
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const child = n.namedChild(i)
+        if (child) stack.push(child)
+      }
+    }
+    return c
+  }
+
+  private firstTypeIdentifier(node: Node, excludeMixins: boolean): Node | null {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (!c) continue
+      if (excludeMixins && c.type === "mixins") continue
+      if (c.type === "type_identifier" || c.type === "generic_type" || c.type === "builtin_type") {
+        const ti = this.findChildByType(c, "type_identifier") || c
+        return ti
+      }
+      if (c.type === "identifier") return c
+    }
+    return null
+  }
+
+  private allTypeIdentifiers(node: Node): Node[] {
+    const out: Node[] = []
+    const stack: Node[] = [node]
+    let guard = 0
+    while (stack.length > 0 && guard++ < 64) {
+      const n = stack.pop()!
+      if (n.type === "type_identifier" && n.parent && n.parent.type !== "type_arguments") {
+        out.push(n)
+      } else if (n.type === "identifier" && n.parent && n.parent.type === "mixins") {
+        out.push(n)
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return out
+  }
+
+  private findChildByType(node: Node, type: string): Node | null {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const child = node.namedChild(i)
+      if (child && child.type === type) return child
+    }
+    return null
+  }
+
+  private findDescendantByType(node: Node, type: string): Node | null {
+    const stack: Node[] = [node]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === type) return n
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return null
   }
 
   private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {
@@ -1329,4 +1330,15 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       endIndex: node.endIndex,
     }
   }
+}
+
+function scopeOwnerKind(scopes: DartScopeEntry[]): ASTEngine.SymbolKind | undefined {
+  for (let i = scopes.length - 1; i >= 0; i--) {
+    if (scopes[i].kind === DartScopeKind.Class) {
+      // The scope entry does not carry its kind beyond class-ness; the caller
+      // resolves the concrete kind via the last symbol of that name.
+      return ASTEngine.SymbolKind.Class
+    }
+  }
+  return undefined
 }
