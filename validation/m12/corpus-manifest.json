@@ -1,535 +1,548 @@
 {
-  "schemaVersion": 1,
-  "milestone": "M12",
-  "purpose": "per_analyzer_ast_perfection_corpus_targets",
-  "externalCloneRoot": "$HOME/fixtures/repositories",
-  "evidenceRoot": "validation/m12",
-  "externalDirectoryPolicy": "cloned_repositories_only",
-  "note": "corpusTarget refers to a repository id in validation/m11/corpus-manifest.json (pinned revisions). planned_acquisition means a clean representative corpus must be cloned under the external clone root before the analyzer issue closes.",
-  "analyzers": [
-    {
-      "analyzer": "java",
-      "corpusTarget": "intellij_community",
-      "status": "measured",
-      "candidates": [
-        "intellij_community@cfda6881(dirty)"
-      ],
-      "measured": {
-        "revision": "cfda6881ef1c86081f9ad4f993906b84004b65f2",
-        "sample": "400 tracked *.java files (deterministic first-400 sorted)",
-        "fixtures": 4,
-        "fixtureFacts": 115,
-        "precision": 1,
-        "recall": 1,
-        "corpusSymbols": 7812,
-        "corpusRelationships": 30483,
-        "measuredAt": "2026-08-13T17:44:00.000Z",
-        "note": "cross-file override targets resolved inside the analyzer via the optional AnalyzeContext companion index (owner type -> declared method names) built by the harness pre-pass; without context the analyzer keeps its deterministic first-parent per-file default; production wiring of the same context tracked by M12.44"
-      }
-    },
-    {
-      "analyzer": "kotlin",
-      "corpusTarget": "intellij_community",
-      "status": "measured",
-      "candidates": [
-        "intellij_community@cfda6881(dirty)"
-      ],
-      "measured": {
-        "revision": "cfda6881ef1c86081f9ad4f993906b84004b65f2",
-        "sample": "300 tracked *.kt files > 5KB (deterministic lexicographic)",
-        "fixtures": 3,
-        "fixtureFacts": 77,
-        "precision": 1,
-        "recall": 1,
-        "corpusSymbols": 11286,
-        "corpusRelationships": 43364,
-        "grammarErrorFiles": 51,
-        "note": "cross-file override targets resolved inside the analyzer via the optional AnalyzeContext companion index (owner type -> declared method names) built by the harness pre-pass; without context the analyzer keeps its deterministic first-parent per-file default; production wiring of the same context tracked by M12.44; 51/300 corpus files have tree-sitter-kotlin grammar ERROR nodes (fun interface, object delegation, one hidden-MISSING when-entry case) reported as warnings",
-        "measuredAt": "2026-08-13T17:44:00.000Z"
-      }
-    },
-    {
-      "analyzer": "clojure",
-      "corpusTarget": "clojure",
-      "status": "measured",
-      "candidates": [
-        "clojure@2cea6925(clean)"
-      ],
-      "measured": {
-        "revision": "2cea69253b9ed27436e93632b9a27c2f99088a49",
-        "sample": "141 tracked *.clj files (full corpus, deterministic git ls-files)",
-        "fixtures": 2,
-        "fixtureFacts": 48,
-        "precision": 1,
-        "recall": 1,
-        "corpusSymbols": 4450,
-        "corpusRelationships": 8708,
-        "grammarErrorFiles": 0,
-        "note": "grammar upgraded to @yogthos/tree-sitter-clojure 0.0.14 (wasm/ + ~/.bb/wasm) — parses ^Type hints and ^{:meta} metadata maps the old 0.4.0 grammar failed on (128/141 errored); 0/141 grammar errors now; analyzer rewritten against new AST vocabulary (list_lit/sym_lit/sym_name/sym_ns/vec_lit/kwd_lit/anon_fn_lit), fully regex-free",
-        "measuredAt": "2026-08-13T04:11:09.180Z"
-      }
-    },
-    {
-      "analyzer": "scala",
-      "corpusTarget": "scala3",
-      "status": "measured",
-      "candidates": [
-        "intellij_community@cfda6881(dirty)",
-        "scala3@18df09c0(clean)"
-      ],
-      "measured": {
-        "revision": "18df09c0",
-        "sample": "400 tracked compiler/**/*.scala files (deterministic first-400 sorted)",
-        "fixtures": 7,
-        "fixtureFacts": 124,
-        "precision": 1,
-        "recall": 1,
-        "corpusSymbols": 25008,
-        "corpusRelationships": 79260,
-        "grammarErrorFiles": 0,
-        "note": "grammar upgraded to tree-sitter-scala v0.26.2 (wasm/ + ~/.bb/wasm) — the wired grammar failed on 90.7% of the scala3 corpus (cannot parse match/for/sealed trait/private params/enum/extension/given/opaque); v0.26.2 parses all 400 sample files with 0 errors and every construct in the Scala 2+3 matrix. Analyzer rewritten against v0.26.2 AST: abstract function_declaration methods, instance_expression constructors (instantiates), extension/given/enum-case/constructor-property symbols, single-pass call extraction (no duplicates), locals in function bodies suppressed (Kotlin contract), overrides via companion index. Edge-case verification added fixture EdgeCases.scala (curried calls, function-type params, as/=> renamed imports) and fixed a cross-language denylist bug that dropped legitimate Scala symbols named process/window/module. Differential 124/124 (1.000/1.000); analyzer fully regex-free.",
-        "measuredAt": "2026-08-14T02:16:04.129Z"
-      }
-    },
-    {
-      "analyzer": "groovy",
-      "corpusTarget": "grails_core",
-      "status": "measured",
-      "candidates": [
-        "grails_core@a83f8748(clean)"
-      ],
-      "measured": {
-        "revision": "a83f87480e0c0138caa5a7191a053b1e59a64066",
-        "sample": "400 tracked *.groovy files (deterministic first-400 sorted)",
-        "fixtures": 5,
-        "fixtureFacts": 130,
-        "precision": 1,
-        "recall": 1,
-        "corpusSymbols": 2953,
-        "corpusRelationships": 14053,
-        "grammarErrorFiles": 0,
-        "note": "corpus upgraded from the dirty intellij_community to grails-core (clean, 6,564 committed .groovy files, pinned a83f8748); grammar patched in-repo (grammars/tree-sitter-groovy) to parse untyped params, safe-nav ?., spread *., elvis ?:, trait, Spock names, [:] maps, newline terminators, command chains — upstream amaanq v0.1.2 and murtaza v0.0.1 both fail these; 0/400 grammar errors and 0 missing tokens; analyzer rewritten pure-AST (no synthetic getters/setters, no phantom it), differential 130/130 (1.000/1.000), fully regex-free",
-        "measuredAt": "2026-08-14T04:12:26.115Z"
-      }
-    },
-    {
-      "analyzer": "csharp",
-      "corpusTarget": "roslyn",
-      "status": "measured",
-      "candidates": [
-        "roslyn@73241b4b(clean)",
-        "fsharp@22a8a5dc(clean)",
-        "powershell@91ce9844(clean)"
-      ],
-      "measured": {
-        "revision": "73241b4beaccbdb6e8f7eb78f5377a01c88ddc21",
-        "sample": "400 tracked *.cs files (deterministic first-400 sorted)",
-        "fixtures": 5,
-        "fixtureFacts": 166,
-        "precision": 1,
-        "recall": 1,
-        "corpusSymbols": 4451,
-        "corpusRelationships": 17563,
-        "grammarErrorFiles": 0,
-        "note": "grammar upgraded to tree-sitter-c-sharp v0.23.5 (wasm/ + ~/.bb/wasm) — the wired grammar failed on primary constructors (C# 12); v0.23.5 parses all 30 constructs in the matrix and 0/400 roslyn sample files error (0 missing tokens). Analyzer rewritten pure-AST: no locals/params/accessor scopes/bare-identifier reference noise, no synthetic members; base-list kind resolution via the shared type-kind companion (C# has no extends/implements keyword — first base may be a class OR an interface); overrides via the shared companion (interface-over-superclass); target-typed new() resolves from the enclosing variable declarator; indexers named this, operators named operator, records -> class, record params -> property. Differential 166/166 (1.000/1.000); analyzer fully regex-free.",
-        "measuredAt": "2026-08-14T05:01:22.568Z"
-      }
-    },
-    {
-      "analyzer": "fsharp",
-      "corpusTarget": "fsharp",
-      "status": "measured",
-      "candidates": [
-        "fsharp@22a8a5dc(clean)"
-      ],
-      "measured": {
-        "revision": "22a8a5dcc724ea58041b8bc0b95e51268d7b656d",
-        "sample": "400 tracked *.fs files (deterministic first-400 sorted; 376 unique basenames in flat sample dir)",
-        "fixtures": 4,
-        "fixtureFacts": 121,
-        "precision": 1,
-        "recall": 1,
-        "corpusSymbols": 36901,
-        "corpusRelationships": 128401,
-        "grammarErrorFiles": 108,
-        "note": "grammar patched: upstream tree-sitter-fsharp mis-dispatches the FIRST 'interface T' inside an implicit class body into a bogus union_type_cases node (losing Implements + inventing phantom enum members). Vendored patched scanner (interface probe with token-type lookahead, no global keyword reservation) + grammar; wasm rebuilt from vendored sources and installed at wasm/tree-sitter-fsharp.wasm (the ~/.bb/wasm mirror is stale). Analyzer rewritten pure-AST to the C#-family contract: no locals/params/lambda-params as symbols, no '_.X'/'this.X' phantom uses, exceptions extracted, active patterns named by full pattern text, abstract+default deduped to one method, additional constructor named 'constructor', computed members without args -> property, calls sourced from the enclosing function/method/constructor with leaf targets, pipes (a |> List.map -> map), qualified overrides (Dog.Speak -> Animal.Speak), builtins filtered (printfn/Console.*/Object leaf methods). Differential 115/115 (1.000/1.000); analyzer fully regex-free. Corpus (fresh parser per file, 0 crashes): sample 108/400 tracked *.fs files with error nodes (27.0%, 1,222 ERROR nodes); full corpus 1,156/6,627 git-tracked *.fs/.fsi/.fsx files (17.4%, 8,437 ERROR nodes). Post-close review (M12.09/10 extreme review): measure types ([<Measure>] type kg) added to fixtures + ground truth (6 new facts, 115 -> 121) — previously a required-scope item with zero fixture coverage; differential re-verified 121/121 (1.000/1.000).",
-        "measuredAt": "2026-08-15T23:50:00.000Z"
-      }
-    },
-    {
-      "analyzer": "typescript",
-      "corpusTarget": "typescript",
-      "status": "measured",
-      "candidates": [
-        "typescript@b465fdbf(clean)",
-        "vscode@46ed260b(dirty)",
-        "proxicall@383e603e(dirty)",
-        "graphql_js@9c245018(clean)",
-        "vue_core@f8975657(clean)"
-      ],
-      "measured": {
-        "revision": "b465fdbfe175304d9b977da137b2c178ae1091d3",
-        "sample": "400 tracked *.ts files (deterministic first-400 sorted, excluding *.d.ts and tests/cases; 399 measured — src/compiler/checker.ts at 3.1MB exceeds the 1MB measurement cap)",
-        "fixtures": 5,
-        "fixtureFacts": 171,
-        "precision": 1.0,
-        "recall": 1.0,
-        "corpusSymbols": 26513,
-        "corpusRelationships": 100594,
-        "grammarErrorFiles": 5,
-        "note": "Analyzer rewritten pure-AST to the C#-family contract: no locals/params/lambda-params as symbols, overload dedup (first occurrence per owner+name), accessors -> property, relationship sources are leaf identities (calls: Distance -> Sqrt), phantom super() filtered, TS builtins filtered (console.*, Object leaf methods), imports/exports as module-level leaf relationships, decorators metadata-only (no rels, matching C#/Java/F# family). Differential 171/171 (1.000/1.000, 0 FP / 0 FN); analyzer fully regex-free (census 36 -> 0, baseline was the single largest regex user). Corpus (fresh parser per file, 0 crashes, 0 timeouts): 5/400 sample files with error nodes (1.3%, 7 ERROR nodes) — all genuine upstream tree-sitter-typescript 0.23.2 gaps: import() type expressions in return/var annotation positions, 'in out' variance annotations (upstream issue #364, open), and tuple element labels. All 5 error files still extract full symbols (recoverable: types.ts 5,269 symbols).",
-        "measuredAt": "2026-08-16T00:00:00.000Z"
-      }
-    },
-    {
-      "analyzer": "javascript",
-      "corpusTarget": "svelte",
-      "status": "measured",
-      "candidates": [
-        "svelte@26786e92(clean)",
-        "graphql_js@9c245018(clean)",
-        "vue_core@f8975657(clean)",
-        "typescript@b465fdbf(clean)"
-      ],
-      "measured": {
-        "revision": "26786e92985842a6d563c67049a43bc5857bf792",
-        "sample": "400 tracked *.js/*.mjs/*.cjs files (deterministic first-400 sorted, excluding tests; svelte repo — real package sources)",
-        "fixtures": 5,
-        "fixtureFacts": 112,
-        "precision": 1.0,
-        "recall": 1.0,
-        "corpusSymbols": 2935,
-        "corpusRelationships": 17483,
-        "grammarErrorFiles": 0,
-        "note": "Analyzer rewritten pure-AST to the C#-family contract (mirrors M12.09 TypeScript): no locals/params/lambda-params/destructured-params as symbols; CJS require bindings are imports (never symbols); overload/dup dedup; accessors -> property; prototype methods (X.prototype.m = function) -> Method with owner + contains; relationship sources are leaf identities (calls: Distance -> Sqrt); phantom super() filtered; computed/dynamic calls (o[key]()) filtered; console.* and Object leaf builtins filtered; imports/exports as module-level leaf relationships (ESM + CJS); cross-file overrides via harness companion (User.format -> BaseService.format). Differential 112/112 (1.000/1.000, 0 FP / 0 FN); analyzer fully regex-free (census 2 -> 0). Corpus svelte@26786e92 (fresh parser per file): 0/400 error files, 0 crashes, 0 timeouts — clean corpus validation.",
-        "measuredAt": "2026-08-16T01:40:00.000Z"
-      }
-    },
-    {
-      "analyzer": "dart",
-      "corpusTarget": "flutter",
-      "status": "measured",
-      "candidates": [
-        "flutter@68dc5cf4(dirty)",
-        "proxicall@383e603e(dirty)"
-      ],
-      "measured": {
-        "revision": "68dc5cf4e76472eeb6162c33138550dc821fd5ae",
-        "sample": "400 tracked *.dart files (deterministic first-400 sorted from packages/flutter - real framework source)",
-        "fixtures": 5,
-        "fixtureFacts": 119,
-        "precision": 1.0,
-        "recall": 1.0,
-        "corpusSymbols": 23952,
-        "corpusRelationships": 88098,
-        "grammarErrorFiles": 0,
-        "note": "Analyzer rewritten pure-AST to the C#-family contract (mirrors M12.09 TS / M12.10 JS): classes, mixins, extensions (named + unnamed), enums + enum_member, typedefs, methods, getters/setters -> property, fields, top-level functions/constants, constructors -> 'constructor' (named + factory); no locals/params/closures as symbols; relationship sources are leaf identities; capitalized identifier + argument_part selector = Dart constructor invocation (instantiates); selector chains resolve to leaf method name; cascade calls resolve to the cascade selector; print/assert and Object-leaf methods (toString/hashCode/runtimeType) filtered; contains from ownerName; extends/implements/mixin-uses from heritage clauses; overrides via extends-base only (cross-file via harness companion); imports/exports from import/export/part directives. Differential 119/119 (1.000/1.000, 0 FP / 0 FN); analyzer fully regex-free (census 8 -> 0). GRAMMAR UPGRADE: tree-sitter-dart wasm rebuilt from upstream master (UserNobody14/tree-sitter-dart be07cf7, 2026-07-06) - the previously pinned grammar predated Dart 3 class modifiers (abstract final class, sealed, base) and errored on 302/400 (75.5%) of the flutter sample; the upgraded grammar parses 0/400 error files, 0 crashes, 0 timeouts (clean corpus validation). Fixtures/exercised shapes re-verified against the new grammar before commit.",
-        "measuredAt": "2026-08-16T03:10:00.000Z"
-      }
-    },
-    {
-      "analyzer": "vue",
-      "corpusTarget": "vue_core",
-      "status": "measured",
-      "candidates": [
-        "vue_core@f8975657(clean)",
-        "element-plus@1b45ace0(clean)"
-      ],
-      "measured": {
-        "revision": "1b45ace0a08d77b3fc1807c5688b42f7d7362ab7",
-        "sample": "400 tracked *.vue files (deterministic: all 164 packages/components + 62 ssr-testing + first-174 docs sorted - real component library source)",
-        "fixtures": 5,
-        "fixtureFacts": 55,
-        "precision": 1.0,
-        "recall": 1.0,
-        "corpusSymbols": 2033,
-        "corpusRelationships": 8532,
-        "grammarErrorFiles": 0,
-        "note": "Analyzer rewritten from legacy source-text scanning to pure-AST family contract (mirrors M12.09 TS / M12.10 JS): SFC component -> class; <script setup> top-level const -> constant / let,var -> variable / function -> function; Options API props -> property, emits -> event, data/computed -> property, methods + lifecycle hooks -> method; defineProps/defineEmits are compiler macros (no symbols, no calls); script content parsed by the real JavaScript analyzer (family consistency, whether or not lang=ts) via engine pre-parse passed through AnalyzeContext; template pass emits instantiates only for PascalCase component tags and kebab-case tags matching an import (router-link/router-view); builtin HTML tags and template bindings (v-if/v-for/v-model/@input/{{ }}) are NOT symbols or calls; imports from import directives; calls use leaf identities (ref/computed/fetch/json/slice/$emit/toggle); $emit kept as a legit $-prefixed target (pool-worker $ denylist removed in M12.12 - cross-language bug); no locals/params as symbols (tmp, e not emitted); contains from ownerName for Options API members only. Differential 55/55 (1.000/1.000, 0 FP / 0 FN); analyzer fully regex-free (0 census entries). CORPUS: element-plus@1b45ace0 (1,008 .vue files) - 400-file deterministic sample, 0 error files / 0 crashes / 0 timeouts, 2,033 symbols / 8,532 relationships in 7.9s.",
-        "measuredAt": "2026-08-16T03:40:00.000Z"
-      }
-    },
-    {
-      "analyzer": "svelte",
-      "corpusTarget": "svelte",
-      "status": "measured",
-      "candidates": [
-        "svelte@26786e92(clean)"
-      ],
-      "measured": {
-        "revision": "26786e92985842a6d563c67049a43bc5857bf792",
-        "sample": "396 tracked *.svelte files (deterministic stratified sample across 20 svelte-repo test categories, excluding 4 deliberately-broken loose-invalid/loose-unclosed parser error-recovery fixtures)",
-        "fixtures": 5,
-        "fixtureFacts": 63,
-        "precision": 1.0,
-        "recall": 1.0,
-        "corpusSymbols": 913,
-        "corpusRelationships": 655,
-        "grammarErrorFiles": 12,
-        "note": "Analyzer rewritten from legacy source-text scanning to pure-AST family contract (mirrors M12.09 TS / M12.10 JS): SFC component -> class; script top-level let/const -> variable/constant, function -> function, export let/function = component public API (exports + contains to component); template pass emits instantiates for non-builtin element tags (leaf tag as written) and on: directives -> calls to handler leaf (first identifier followed by ( or bare identifier); bind:/class:/transition: never emit; script content parsed by the real JavaScript analyzer (family consistency, whether or not lang=ts) via engine pre-parse passed through AnalyzeContext (generic SFC context keys, shared with Vue); runes ($state/$derived/$props/$effect etc.) are compiler keywords, not symbols; no locals/params/closures as symbols; imports/exports from import/export directives; contains from ownerName. Differential 63/63 (1.000/1.000, 0 FP / 0 FN); analyzer fully regex-free (census 2 -> 0; raw_text_expr handler leaf uses pure-String scanning, the documented fallback for grammar-opaque expressions). GRAMMAR UPGRADE: tree-sitter-svelte wasm rebuilt from the maintained tree-sitter-grammars fork (2025-06, Svelte 5) - the previously pinned npm grammar (2023) errored on 30/400 (7.5%); upgraded grammar halves it to 12/396 (3.0%), all 12 residual files use Svelte 5.2+ syntax no tree-sitter grammar supports ({@attach} attachments, generic snippets, #each shorthand without as, comments inside tags, self-closing <script/>, {@const} division) - verified identical gaps on the 2026-02 svelte-next fork. 0 crashes / 0 timeouts. Fixture shapes re-verified against the new grammar (attribute expression value moved from expr_attribute_value>raw_text_expr to expression>svelte_raw_text).",
-        "measuredAt": "2026-08-16T05:30:00.000Z"
-      }
-    },
-    {
-      "analyzer": "html",
-      "corpusTarget": "svelte",
-      "status": "measured",
-      "candidates": [
-        "vscode@46ed260b(dirty)",
-        "intellij_community@cfda6881(dirty)",
-        "svelte@26786e92(clean)"
-      ],
-      "measured": {
-        "revision": "26786e92985842a6d563c67049a43bc5857bf792",
-        "sample": "238 tracked *.html files (deterministic all-tracked sorted from svelte@26786e92, excluding 8 deliberately-malformed XSS/escape/invalid-nesting test outputs — negative fixtures, not corpus source)",
-        "fixtures": 2,
-        "fixtureFacts": 33,
-        "precision": 1.0,
-        "recall": 1.0,
-        "corpusSymbols": 251,
-        "corpusRelationships": 41,
-        "grammarErrorFiles": 0,
-        "note": "Analyzer cleaned to the M11 HTML contract (elements with id/class -> class symbols, named by id then class; anonymous structural tags are noise) with M12 family fixes: the 2 baseline regexes eliminated (srcset candidate split -> pure-String firstToken scan; quote-strip -> attribute_value node text is already unquoted, empty values unquoted via pure-String unquote) — census 121 -> 119; duplicate contains fixed (DFS topology only, the ownerName post-loop was double-emitting); exports emptied (isClass flag was never set so every symbol was exported — HTML has no export keyword); error collection added (ERROR/missing nodes surfaced); class-only elements now keep their class name as symbol identity (was generated counter id, mismatching the symbol name); resource relationships guard empty attribute values (src=\"\" emits nothing); file-scoped relationships (head script/link) source from the file stem, not the absolute path. Differential 33/33 (1.000/1.000, 0 FP / 0 FN). CORPUS: svelte@26786e92 .html files — 238-file sample, 0 error files / 0 crashes / 0 timeouts, 251 symbols / 41 relationships in 0.34s.",
-        "measuredAt": "2026-08-16T06:15:00.000Z"
-      }
-    },
-    {
-      "analyzer": "css",
-      "corpusTarget": "svelte",
-      "status": "measured",
-      "candidates": [
-        "vscode@46ed260b(dirty)",
-        "svelte@26786e92(clean)"
-      ]
-    },
-    {
-      "analyzer": "c",
-      "corpusTarget": "swift_nio",
-      "status": "measured",
-      "candidates": [
-        "flutter@68dc5cf4(dirty)",
-        "swift_nio@ec51fff0(clean)",
-        "zig@738d2be9(clean)",
-        "cython@51a460b7(clean)"
-      ]
-    },
-    {
-      "analyzer": "cpp",
-      "corpusTarget": "zig",
-      "status": "measured",
-      "candidates": [
-        "flutter@68dc5cf4(dirty)",
-        "zig@738d2be9(clean)",
-        "dplyr@d5e94e7f(clean)"
-      ]
-    },
-    {
-      "analyzer": "rust",
-      "corpusTarget": "cargo",
-      "status": "measured",
-      "candidates": [
-        "cargo@94faf917(clean)"
-      ]
-    },
-    {
-      "analyzer": "objective-c",
-      "corpusTarget": "clyde",
-      "status": "measured",
-      "candidates": [
-        "flutter@68dc5cf4(dirty)",
-        "clyde@8fec41dd(clean)"
-      ]
-    },
-    {
-      "analyzer": "zig",
-      "corpusTarget": "zig",
-      "status": "measured",
-      "candidates": [
-        "zig@738d2be9(clean)"
-      ]
-    },
-    {
-      "analyzer": "swift",
-      "corpusTarget": "swift_nio",
-      "status": "measured",
-      "candidates": [
-        "swift_nio@ec51fff0(clean)"
-      ]
-    },
-    {
-      "analyzer": "go",
-      "corpusTarget": "go_tools",
-      "status": "measured",
-      "candidates": [
-        "go_tools@bf54bcd2(clean)",
-        "terraform@2e1710bf(clean)"
-      ]
-    },
-    {
-      "analyzer": "elixir",
-      "corpusTarget": "elixir",
-      "status": "measured",
-      "candidates": [
-        "elixir@024beb1b(clean)"
-      ]
-    },
-    {
-      "analyzer": "erlang",
-      "corpusTarget": "elixir",
-      "status": "measured",
-      "candidates": [
-        "elixir@024beb1b(clean)",
-        "rebar3@0c947d3b(clean)"
-      ]
-    },
-    {
-      "analyzer": "haskell",
-      "corpusTarget": "cabal",
-      "status": "measured",
-      "candidates": [
-        "cabal@670955a4(clean)"
-      ]
-    },
-    {
-      "analyzer": "clean",
-      "corpusTarget": "tree_sitter_clean",
-      "status": "dirty_or_unpinned",
-      "candidates": [
-        "tree_sitter_clean@2b0fe499(clean)"
-      ]
-    },
-    {
-      "analyzer": "python",
-      "corpusTarget": "cython",
-      "status": "measured",
-      "candidates": [
-        "proxicall@383e603e(dirty)",
-        "intellij_community@cfda6881(dirty)",
-        "cython@51a460b7(clean)"
-      ]
-    },
-    {
-      "analyzer": "ruby",
-      "corpusTarget": "rake",
-      "status": "measured",
-      "candidates": [
-        "rake@dd5e851d(clean)"
-      ]
-    },
-    {
-      "analyzer": "php",
-      "corpusTarget": "phpunit",
-      "status": "measured",
-      "candidates": [
-        "phpunit@c8d6921f(clean)"
-      ]
-    },
-    {
-      "analyzer": "perl",
-      "corpusTarget": "mojo",
-      "status": "measured",
-      "candidates": [
-        "mojo@93f59174(clean)"
-      ]
-    },
-    {
-      "analyzer": "r",
-      "corpusTarget": "dplyr",
-      "status": "measured",
-      "candidates": [
-        "dplyr@d5e94e7f(clean)"
-      ]
-    },
-    {
-      "analyzer": "lua",
-      "corpusTarget": "luarocks",
-      "status": "measured",
-      "candidates": [
-        "luarocks@665f160b(clean)"
-      ]
-    },
-    {
-      "analyzer": "sql",
-      "corpusTarget": "proxicall",
-      "status": "dirty_or_unpinned",
-      "candidates": [
-        "proxicall@383e603e(dirty)"
-      ]
-    },
-    {
-      "analyzer": "json",
-      "corpusTarget": "roslyn",
-      "status": "measured",
-      "candidates": [
-        "vscode@46ed260b(dirty)",
-        "flutter@68dc5cf4(dirty)",
-        "roslyn@73241b4b(clean)"
-      ]
-    },
-    {
-      "analyzer": "xml",
-      "corpusTarget": "roslyn",
-      "status": "measured",
-      "candidates": [
-        "proxicall@383e603e(dirty)",
-        "roslyn@73241b4b(clean)",
-        "intellij_community@cfda6881(dirty)",
-        "phpunit@c8d6921f(clean)",
-        "powershell@91ce9844(clean)"
-      ]
-    },
-    {
-      "analyzer": "yaml",
-      "corpusTarget": "flutter",
-      "status": "dirty_or_unpinned",
-      "candidates": [
-        "flutter@68dc5cf4(dirty)"
-      ]
-    },
-    {
-      "analyzer": "hcl",
-      "corpusTarget": "terraform",
-      "status": "measured",
-      "candidates": [
-        "terraform@2e1710bf(clean)"
-      ]
-    },
-    {
-      "analyzer": "graphql",
-      "corpusTarget": "graphql_js",
-      "status": "measured",
-      "candidates": [
-        "graphql_js@9c245018(clean)"
-      ]
-    },
-    {
-      "analyzer": "bash",
-      "corpusTarget": "proxicall",
-      "status": "dirty_or_unpinned",
-      "candidates": [
-        "proxicall@383e603e(dirty)"
-      ]
-    },
-    {
-      "analyzer": "powershell",
-      "corpusTarget": "roslyn",
-      "status": "measured",
-      "candidates": [
-        "roslyn@73241b4b(clean)",
-        "powershell@91ce9844(clean)"
-      ]
-    },
-    {
-      "analyzer": "make",
-      "corpusTarget": null,
-      "status": "planned_acquisition",
-      "candidates": []
-    },
-    {
-      "analyzer": "markdown",
-      "corpusTarget": null,
-      "status": "planned_acquisition",
-      "candidates": []
-    }
-  ]
+ "schemaVersion": 1,
+ "milestone": "M12",
+ "purpose": "per_analyzer_ast_perfection_corpus_targets",
+ "externalCloneRoot": "$HOME/fixtures/repositories",
+ "evidenceRoot": "validation/m12",
+ "externalDirectoryPolicy": "cloned_repositories_only",
+ "note": "corpusTarget refers to a repository id in validation/m11/corpus-manifest.json (pinned revisions). planned_acquisition means a clean representative corpus must be cloned under the external clone root before the analyzer issue closes.",
+ "analyzers": [
+  {
+   "analyzer": "java",
+   "corpusTarget": "intellij_community",
+   "status": "measured",
+   "candidates": [
+    "intellij_community@cfda6881(dirty)"
+   ],
+   "measured": {
+    "revision": "cfda6881ef1c86081f9ad4f993906b84004b65f2",
+    "sample": "400 tracked *.java files (deterministic first-400 sorted)",
+    "fixtures": 4,
+    "fixtureFacts": 115,
+    "precision": 1,
+    "recall": 1,
+    "corpusSymbols": 7812,
+    "corpusRelationships": 30483,
+    "measuredAt": "2026-08-13T17:44:00.000Z",
+    "note": "cross-file override targets resolved inside the analyzer via the optional AnalyzeContext companion index (owner type -> declared method names) built by the harness pre-pass; without context the analyzer keeps its deterministic first-parent per-file default; production wiring of the same context tracked by M12.44"
+   }
+  },
+  {
+   "analyzer": "kotlin",
+   "corpusTarget": "intellij_community",
+   "status": "measured",
+   "candidates": [
+    "intellij_community@cfda6881(dirty)"
+   ],
+   "measured": {
+    "revision": "cfda6881ef1c86081f9ad4f993906b84004b65f2",
+    "sample": "300 tracked *.kt files > 5KB (deterministic lexicographic)",
+    "fixtures": 3,
+    "fixtureFacts": 77,
+    "precision": 1,
+    "recall": 1,
+    "corpusSymbols": 11286,
+    "corpusRelationships": 43364,
+    "grammarErrorFiles": 51,
+    "note": "cross-file override targets resolved inside the analyzer via the optional AnalyzeContext companion index (owner type -> declared method names) built by the harness pre-pass; without context the analyzer keeps its deterministic first-parent per-file default; production wiring of the same context tracked by M12.44; 51/300 corpus files have tree-sitter-kotlin grammar ERROR nodes (fun interface, object delegation, one hidden-MISSING when-entry case) reported as warnings",
+    "measuredAt": "2026-08-13T17:44:00.000Z"
+   }
+  },
+  {
+   "analyzer": "clojure",
+   "corpusTarget": "clojure",
+   "status": "measured",
+   "candidates": [
+    "clojure@2cea6925(clean)"
+   ],
+   "measured": {
+    "revision": "2cea69253b9ed27436e93632b9a27c2f99088a49",
+    "sample": "141 tracked *.clj files (full corpus, deterministic git ls-files)",
+    "fixtures": 2,
+    "fixtureFacts": 48,
+    "precision": 1,
+    "recall": 1,
+    "corpusSymbols": 4450,
+    "corpusRelationships": 8708,
+    "grammarErrorFiles": 0,
+    "note": "grammar upgraded to @yogthos/tree-sitter-clojure 0.0.14 (wasm/ + ~/.bb/wasm) \u2014 parses ^Type hints and ^{:meta} metadata maps the old 0.4.0 grammar failed on (128/141 errored); 0/141 grammar errors now; analyzer rewritten against new AST vocabulary (list_lit/sym_lit/sym_name/sym_ns/vec_lit/kwd_lit/anon_fn_lit), fully regex-free",
+    "measuredAt": "2026-08-13T04:11:09.180Z"
+   }
+  },
+  {
+   "analyzer": "scala",
+   "corpusTarget": "scala3",
+   "status": "measured",
+   "candidates": [
+    "intellij_community@cfda6881(dirty)",
+    "scala3@18df09c0(clean)"
+   ],
+   "measured": {
+    "revision": "18df09c0",
+    "sample": "400 tracked compiler/**/*.scala files (deterministic first-400 sorted)",
+    "fixtures": 7,
+    "fixtureFacts": 124,
+    "precision": 1,
+    "recall": 1,
+    "corpusSymbols": 25008,
+    "corpusRelationships": 79260,
+    "grammarErrorFiles": 0,
+    "note": "grammar upgraded to tree-sitter-scala v0.26.2 (wasm/ + ~/.bb/wasm) \u2014 the wired grammar failed on 90.7% of the scala3 corpus (cannot parse match/for/sealed trait/private params/enum/extension/given/opaque); v0.26.2 parses all 400 sample files with 0 errors and every construct in the Scala 2+3 matrix. Analyzer rewritten against v0.26.2 AST: abstract function_declaration methods, instance_expression constructors (instantiates), extension/given/enum-case/constructor-property symbols, single-pass call extraction (no duplicates), locals in function bodies suppressed (Kotlin contract), overrides via companion index. Edge-case verification added fixture EdgeCases.scala (curried calls, function-type params, as/=> renamed imports) and fixed a cross-language denylist bug that dropped legitimate Scala symbols named process/window/module. Differential 124/124 (1.000/1.000); analyzer fully regex-free.",
+    "measuredAt": "2026-08-14T02:16:04.129Z"
+   }
+  },
+  {
+   "analyzer": "groovy",
+   "corpusTarget": "grails_core",
+   "status": "measured",
+   "candidates": [
+    "grails_core@a83f8748(clean)"
+   ],
+   "measured": {
+    "revision": "a83f87480e0c0138caa5a7191a053b1e59a64066",
+    "sample": "400 tracked *.groovy files (deterministic first-400 sorted)",
+    "fixtures": 5,
+    "fixtureFacts": 130,
+    "precision": 1,
+    "recall": 1,
+    "corpusSymbols": 2953,
+    "corpusRelationships": 14053,
+    "grammarErrorFiles": 0,
+    "note": "corpus upgraded from the dirty intellij_community to grails-core (clean, 6,564 committed .groovy files, pinned a83f8748); grammar patched in-repo (grammars/tree-sitter-groovy) to parse untyped params, safe-nav ?., spread *., elvis ?:, trait, Spock names, [:] maps, newline terminators, command chains \u2014 upstream amaanq v0.1.2 and murtaza v0.0.1 both fail these; 0/400 grammar errors and 0 missing tokens; analyzer rewritten pure-AST (no synthetic getters/setters, no phantom it), differential 130/130 (1.000/1.000), fully regex-free",
+    "measuredAt": "2026-08-14T04:12:26.115Z"
+   }
+  },
+  {
+   "analyzer": "csharp",
+   "corpusTarget": "roslyn",
+   "status": "measured",
+   "candidates": [
+    "roslyn@73241b4b(clean)",
+    "fsharp@22a8a5dc(clean)",
+    "powershell@91ce9844(clean)"
+   ],
+   "measured": {
+    "revision": "73241b4beaccbdb6e8f7eb78f5377a01c88ddc21",
+    "sample": "400 tracked *.cs files (deterministic first-400 sorted)",
+    "fixtures": 5,
+    "fixtureFacts": 166,
+    "precision": 1,
+    "recall": 1,
+    "corpusSymbols": 4451,
+    "corpusRelationships": 17563,
+    "grammarErrorFiles": 0,
+    "note": "grammar upgraded to tree-sitter-c-sharp v0.23.5 (wasm/ + ~/.bb/wasm) \u2014 the wired grammar failed on primary constructors (C# 12); v0.23.5 parses all 30 constructs in the matrix and 0/400 roslyn sample files error (0 missing tokens). Analyzer rewritten pure-AST: no locals/params/accessor scopes/bare-identifier reference noise, no synthetic members; base-list kind resolution via the shared type-kind companion (C# has no extends/implements keyword \u2014 first base may be a class OR an interface); overrides via the shared companion (interface-over-superclass); target-typed new() resolves from the enclosing variable declarator; indexers named this, operators named operator, records -> class, record params -> property. Differential 166/166 (1.000/1.000); analyzer fully regex-free.",
+    "measuredAt": "2026-08-14T05:01:22.568Z"
+   }
+  },
+  {
+   "analyzer": "fsharp",
+   "corpusTarget": "fsharp",
+   "status": "measured",
+   "candidates": [
+    "fsharp@22a8a5dc(clean)"
+   ],
+   "measured": {
+    "revision": "22a8a5dcc724ea58041b8bc0b95e51268d7b656d",
+    "sample": "400 tracked *.fs files (deterministic first-400 sorted; 376 unique basenames in flat sample dir)",
+    "fixtures": 4,
+    "fixtureFacts": 121,
+    "precision": 1,
+    "recall": 1,
+    "corpusSymbols": 36901,
+    "corpusRelationships": 128401,
+    "grammarErrorFiles": 108,
+    "note": "grammar patched: upstream tree-sitter-fsharp mis-dispatches the FIRST 'interface T' inside an implicit class body into a bogus union_type_cases node (losing Implements + inventing phantom enum members). Vendored patched scanner (interface probe with token-type lookahead, no global keyword reservation) + grammar; wasm rebuilt from vendored sources and installed at wasm/tree-sitter-fsharp.wasm (the ~/.bb/wasm mirror is stale). Analyzer rewritten pure-AST to the C#-family contract: no locals/params/lambda-params as symbols, no '_.X'/'this.X' phantom uses, exceptions extracted, active patterns named by full pattern text, abstract+default deduped to one method, additional constructor named 'constructor', computed members without args -> property, calls sourced from the enclosing function/method/constructor with leaf targets, pipes (a |> List.map -> map), qualified overrides (Dog.Speak -> Animal.Speak), builtins filtered (printfn/Console.*/Object leaf methods). Differential 115/115 (1.000/1.000); analyzer fully regex-free. Corpus (fresh parser per file, 0 crashes): sample 108/400 tracked *.fs files with error nodes (27.0%, 1,222 ERROR nodes); full corpus 1,156/6,627 git-tracked *.fs/.fsi/.fsx files (17.4%, 8,437 ERROR nodes). Post-close review (M12.09/10 extreme review): measure types ([<Measure>] type kg) added to fixtures + ground truth (6 new facts, 115 -> 121) \u2014 previously a required-scope item with zero fixture coverage; differential re-verified 121/121 (1.000/1.000).",
+    "measuredAt": "2026-08-15T23:50:00.000Z"
+   }
+  },
+  {
+   "analyzer": "typescript",
+   "corpusTarget": "typescript",
+   "status": "measured",
+   "candidates": [
+    "typescript@b465fdbf(clean)",
+    "vscode@46ed260b(dirty)",
+    "proxicall@383e603e(dirty)",
+    "graphql_js@9c245018(clean)",
+    "vue_core@f8975657(clean)"
+   ],
+   "measured": {
+    "revision": "b465fdbfe175304d9b977da137b2c178ae1091d3",
+    "sample": "400 tracked *.ts files (deterministic first-400 sorted, excluding *.d.ts and tests/cases; 399 measured \u2014 src/compiler/checker.ts at 3.1MB exceeds the 1MB measurement cap)",
+    "fixtures": 5,
+    "fixtureFacts": 171,
+    "precision": 1.0,
+    "recall": 1.0,
+    "corpusSymbols": 26513,
+    "corpusRelationships": 100594,
+    "grammarErrorFiles": 5,
+    "note": "Analyzer rewritten pure-AST to the C#-family contract: no locals/params/lambda-params as symbols, overload dedup (first occurrence per owner+name), accessors -> property, relationship sources are leaf identities (calls: Distance -> Sqrt), phantom super() filtered, TS builtins filtered (console.*, Object leaf methods), imports/exports as module-level leaf relationships, decorators metadata-only (no rels, matching C#/Java/F# family). Differential 171/171 (1.000/1.000, 0 FP / 0 FN); analyzer fully regex-free (census 36 -> 0, baseline was the single largest regex user). Corpus (fresh parser per file, 0 crashes, 0 timeouts): 5/400 sample files with error nodes (1.3%, 7 ERROR nodes) \u2014 all genuine upstream tree-sitter-typescript 0.23.2 gaps: import() type expressions in return/var annotation positions, 'in out' variance annotations (upstream issue #364, open), and tuple element labels. All 5 error files still extract full symbols (recoverable: types.ts 5,269 symbols).",
+    "measuredAt": "2026-08-16T00:00:00.000Z"
+   }
+  },
+  {
+   "analyzer": "javascript",
+   "corpusTarget": "svelte",
+   "status": "measured",
+   "candidates": [
+    "svelte@26786e92(clean)",
+    "graphql_js@9c245018(clean)",
+    "vue_core@f8975657(clean)",
+    "typescript@b465fdbf(clean)"
+   ],
+   "measured": {
+    "revision": "26786e92985842a6d563c67049a43bc5857bf792",
+    "sample": "400 tracked *.js/*.mjs/*.cjs files (deterministic first-400 sorted, excluding tests; svelte repo \u2014 real package sources)",
+    "fixtures": 5,
+    "fixtureFacts": 112,
+    "precision": 1.0,
+    "recall": 1.0,
+    "corpusSymbols": 2935,
+    "corpusRelationships": 17483,
+    "grammarErrorFiles": 0,
+    "note": "Analyzer rewritten pure-AST to the C#-family contract (mirrors M12.09 TypeScript): no locals/params/lambda-params/destructured-params as symbols; CJS require bindings are imports (never symbols); overload/dup dedup; accessors -> property; prototype methods (X.prototype.m = function) -> Method with owner + contains; relationship sources are leaf identities (calls: Distance -> Sqrt); phantom super() filtered; computed/dynamic calls (o[key]()) filtered; console.* and Object leaf builtins filtered; imports/exports as module-level leaf relationships (ESM + CJS); cross-file overrides via harness companion (User.format -> BaseService.format). Differential 112/112 (1.000/1.000, 0 FP / 0 FN); analyzer fully regex-free (census 2 -> 0). Corpus svelte@26786e92 (fresh parser per file): 0/400 error files, 0 crashes, 0 timeouts \u2014 clean corpus validation.",
+    "measuredAt": "2026-08-16T01:40:00.000Z"
+   }
+  },
+  {
+   "analyzer": "dart",
+   "corpusTarget": "flutter",
+   "status": "measured",
+   "candidates": [
+    "flutter@68dc5cf4(dirty)",
+    "proxicall@383e603e(dirty)"
+   ],
+   "measured": {
+    "revision": "68dc5cf4e76472eeb6162c33138550dc821fd5ae",
+    "sample": "400 tracked *.dart files (deterministic first-400 sorted from packages/flutter - real framework source)",
+    "fixtures": 5,
+    "fixtureFacts": 119,
+    "precision": 1.0,
+    "recall": 1.0,
+    "corpusSymbols": 23952,
+    "corpusRelationships": 88098,
+    "grammarErrorFiles": 0,
+    "note": "Analyzer rewritten pure-AST to the C#-family contract (mirrors M12.09 TS / M12.10 JS): classes, mixins, extensions (named + unnamed), enums + enum_member, typedefs, methods, getters/setters -> property, fields, top-level functions/constants, constructors -> 'constructor' (named + factory); no locals/params/closures as symbols; relationship sources are leaf identities; capitalized identifier + argument_part selector = Dart constructor invocation (instantiates); selector chains resolve to leaf method name; cascade calls resolve to the cascade selector; print/assert and Object-leaf methods (toString/hashCode/runtimeType) filtered; contains from ownerName; extends/implements/mixin-uses from heritage clauses; overrides via extends-base only (cross-file via harness companion); imports/exports from import/export/part directives. Differential 119/119 (1.000/1.000, 0 FP / 0 FN); analyzer fully regex-free (census 8 -> 0). GRAMMAR UPGRADE: tree-sitter-dart wasm rebuilt from upstream master (UserNobody14/tree-sitter-dart be07cf7, 2026-07-06) - the previously pinned grammar predated Dart 3 class modifiers (abstract final class, sealed, base) and errored on 302/400 (75.5%) of the flutter sample; the upgraded grammar parses 0/400 error files, 0 crashes, 0 timeouts (clean corpus validation). Fixtures/exercised shapes re-verified against the new grammar before commit.",
+    "measuredAt": "2026-08-16T03:10:00.000Z"
+   }
+  },
+  {
+   "analyzer": "vue",
+   "corpusTarget": "vue_core",
+   "status": "measured",
+   "candidates": [
+    "vue_core@f8975657(clean)",
+    "element-plus@1b45ace0(clean)"
+   ],
+   "measured": {
+    "revision": "1b45ace0a08d77b3fc1807c5688b42f7d7362ab7",
+    "sample": "400 tracked *.vue files (deterministic: all 164 packages/components + 62 ssr-testing + first-174 docs sorted - real component library source)",
+    "fixtures": 5,
+    "fixtureFacts": 55,
+    "precision": 1.0,
+    "recall": 1.0,
+    "corpusSymbols": 2033,
+    "corpusRelationships": 8532,
+    "grammarErrorFiles": 0,
+    "note": "Analyzer rewritten from legacy source-text scanning to pure-AST family contract (mirrors M12.09 TS / M12.10 JS): SFC component -> class; <script setup> top-level const -> constant / let,var -> variable / function -> function; Options API props -> property, emits -> event, data/computed -> property, methods + lifecycle hooks -> method; defineProps/defineEmits are compiler macros (no symbols, no calls); script content parsed by the real JavaScript analyzer (family consistency, whether or not lang=ts) via engine pre-parse passed through AnalyzeContext; template pass emits instantiates only for PascalCase component tags and kebab-case tags matching an import (router-link/router-view); builtin HTML tags and template bindings (v-if/v-for/v-model/@input/{{ }}) are NOT symbols or calls; imports from import directives; calls use leaf identities (ref/computed/fetch/json/slice/$emit/toggle); $emit kept as a legit $-prefixed target (pool-worker $ denylist removed in M12.12 - cross-language bug); no locals/params as symbols (tmp, e not emitted); contains from ownerName for Options API members only. Differential 55/55 (1.000/1.000, 0 FP / 0 FN); analyzer fully regex-free (0 census entries). CORPUS: element-plus@1b45ace0 (1,008 .vue files) - 400-file deterministic sample, 0 error files / 0 crashes / 0 timeouts, 2,033 symbols / 8,532 relationships in 7.9s.",
+    "measuredAt": "2026-08-16T03:40:00.000Z"
+   }
+  },
+  {
+   "analyzer": "svelte",
+   "corpusTarget": "svelte",
+   "status": "measured",
+   "candidates": [
+    "svelte@26786e92(clean)"
+   ],
+   "measured": {
+    "revision": "26786e92985842a6d563c67049a43bc5857bf792",
+    "sample": "396 tracked *.svelte files (deterministic stratified sample across 20 svelte-repo test categories, excluding 4 deliberately-broken loose-invalid/loose-unclosed parser error-recovery fixtures)",
+    "fixtures": 5,
+    "fixtureFacts": 63,
+    "precision": 1.0,
+    "recall": 1.0,
+    "corpusSymbols": 913,
+    "corpusRelationships": 655,
+    "grammarErrorFiles": 12,
+    "note": "Analyzer rewritten from legacy source-text scanning to pure-AST family contract (mirrors M12.09 TS / M12.10 JS): SFC component -> class; script top-level let/const -> variable/constant, function -> function, export let/function = component public API (exports + contains to component); template pass emits instantiates for non-builtin element tags (leaf tag as written) and on: directives -> calls to handler leaf (first identifier followed by ( or bare identifier); bind:/class:/transition: never emit; script content parsed by the real JavaScript analyzer (family consistency, whether or not lang=ts) via engine pre-parse passed through AnalyzeContext (generic SFC context keys, shared with Vue); runes ($state/$derived/$props/$effect etc.) are compiler keywords, not symbols; no locals/params/closures as symbols; imports/exports from import/export directives; contains from ownerName. Differential 63/63 (1.000/1.000, 0 FP / 0 FN); analyzer fully regex-free (census 2 -> 0; raw_text_expr handler leaf uses pure-String scanning, the documented fallback for grammar-opaque expressions). GRAMMAR UPGRADE: tree-sitter-svelte wasm rebuilt from the maintained tree-sitter-grammars fork (2025-06, Svelte 5) - the previously pinned npm grammar (2023) errored on 30/400 (7.5%); upgraded grammar halves it to 12/396 (3.0%), all 12 residual files use Svelte 5.2+ syntax no tree-sitter grammar supports ({@attach} attachments, generic snippets, #each shorthand without as, comments inside tags, self-closing <script/>, {@const} division) - verified identical gaps on the 2026-02 svelte-next fork. 0 crashes / 0 timeouts. Fixture shapes re-verified against the new grammar (attribute expression value moved from expr_attribute_value>raw_text_expr to expression>svelte_raw_text).",
+    "measuredAt": "2026-08-16T05:30:00.000Z"
+   }
+  },
+  {
+   "analyzer": "html",
+   "corpusTarget": "svelte",
+   "status": "measured",
+   "candidates": [
+    "vscode@46ed260b(dirty)",
+    "intellij_community@cfda6881(dirty)",
+    "svelte@26786e92(clean)"
+   ],
+   "measured": {
+    "revision": "26786e92985842a6d563c67049a43bc5857bf792",
+    "sample": "238 tracked *.html files (deterministic all-tracked sorted from svelte@26786e92, excluding 8 deliberately-malformed XSS/escape/invalid-nesting test outputs \u2014 negative fixtures, not corpus source)",
+    "fixtures": 2,
+    "fixtureFacts": 33,
+    "precision": 1.0,
+    "recall": 1.0,
+    "corpusSymbols": 251,
+    "corpusRelationships": 41,
+    "grammarErrorFiles": 0,
+    "note": "Analyzer cleaned to the M11 HTML contract (elements with id/class -> class symbols, named by id then class; anonymous structural tags are noise) with M12 family fixes: the 2 baseline regexes eliminated (srcset candidate split -> pure-String firstToken scan; quote-strip -> attribute_value node text is already unquoted, empty values unquoted via pure-String unquote) \u2014 census 121 -> 119; duplicate contains fixed (DFS topology only, the ownerName post-loop was double-emitting); exports emptied (isClass flag was never set so every symbol was exported \u2014 HTML has no export keyword); error collection added (ERROR/missing nodes surfaced); class-only elements now keep their class name as symbol identity (was generated counter id, mismatching the symbol name); resource relationships guard empty attribute values (src=\"\" emits nothing); file-scoped relationships (head script/link) source from the file stem, not the absolute path. Differential 33/33 (1.000/1.000, 0 FP / 0 FN). CORPUS: svelte@26786e92 .html files \u2014 238-file sample, 0 error files / 0 crashes / 0 timeouts, 251 symbols / 41 relationships in 0.34s.",
+    "measuredAt": "2026-08-16T06:15:00.000Z"
+   }
+  },
+  {
+   "analyzer": "css",
+   "corpusTarget": "svelte",
+   "status": "measured",
+   "candidates": [
+    "vscode@46ed260b(dirty)",
+    "svelte@26786e92(clean)"
+   ],
+   "measured": {
+    "revision": "26786e92985842a6d563c67049a43bc5857bf792",
+    "sample": "181 tracked *.css files (deterministic all-tracked sorted from svelte@26786e92 packages/svelte/tests/css/samples expected.css \u2014 Svelte compiler CSS-output fixtures, real language-representative CSS)",
+    "fixtures": 2,
+    "fixtureFacts": 32,
+    "precision": 1.0,
+    "recall": 1.0,
+    "corpusSymbols": 722,
+    "corpusRelationships": 1854,
+    "grammarErrorFiles": 14,
+    "note": "Analyzer rewritten from 15 regexes to zero (pure-String helpers: stripQuotes/stripAllQuotes/unwrapUrl/replaceAll/isResetSelector + framework heuristics) and cleaned to the M11 CSS contract: rule selectors -> class/type/interface by specificity composition (bare #id -> interface, bare tag -> type, .class -> class, pseudo/attribute/complex -> class); --custom-properties -> variable; @keyframes -> function; @layer/@container/@mixin at-rules -> module/function; @supports -> interface; universal reset rules (*, *::before) and @media queries are structural noise (no symbol). Fixed defects found during audit: selector-chain contains identities now match symbol naming (.card contains .title instead of dangling card contains title); real CSS nesting (& .item inside .nav) resolves to one scoped symbol .nav .item with a contains edge (top-level & is invalid CSS \u2014 the grammar correctly errors). Grammar upgraded to tree-sitter-css 0.25.0 (npm, 2025-09) fixing :has/:is/:where/:not and complex nesting: corpus errors 26 -> 14, 0 regressions, differential unchanged at 1.000/1.000. The 14 residual grammarErrorFiles are genuine modern CSS the newest available grammar cannot parse: range media/container queries (width >= 600px), CSS nesting (& &, &&), @page rules, [attr i]/[attr s] case flags, escaped unicode identifiers (#\\31\\32\\33), float keyframe steps (33.3%), HTML comments (<!-- -->), chrome:// @import URLs \u2014 all valid CSS, recorded honestly. Production pipeline (filterNoiseRelationships, M11 port) narrows CSS relationships to contains-only as a hyphenated-property noise guard; the analyzer emits the full uses/references/import set verified by direct probe.",
+    "measuredAt": "2026-08-16T00:00:00.000Z"
+   }
+  },
+  {
+   "analyzer": "c",
+   "corpusTarget": "swift_nio",
+   "status": "measured",
+   "candidates": [
+    "flutter@68dc5cf4(dirty)",
+    "swift_nio@ec51fff0(clean)",
+    "zig@738d2be9(clean)",
+    "cython@51a460b7(clean)"
+   ]
+  },
+  {
+   "analyzer": "cpp",
+   "corpusTarget": "zig",
+   "status": "measured",
+   "candidates": [
+    "flutter@68dc5cf4(dirty)",
+    "zig@738d2be9(clean)",
+    "dplyr@d5e94e7f(clean)"
+   ]
+  },
+  {
+   "analyzer": "rust",
+   "corpusTarget": "cargo",
+   "status": "measured",
+   "candidates": [
+    "cargo@94faf917(clean)"
+   ]
+  },
+  {
+   "analyzer": "objective-c",
+   "corpusTarget": "clyde",
+   "status": "measured",
+   "candidates": [
+    "flutter@68dc5cf4(dirty)",
+    "clyde@8fec41dd(clean)"
+   ]
+  },
+  {
+   "analyzer": "zig",
+   "corpusTarget": "zig",
+   "status": "measured",
+   "candidates": [
+    "zig@738d2be9(clean)"
+   ]
+  },
+  {
+   "analyzer": "swift",
+   "corpusTarget": "swift_nio",
+   "status": "measured",
+   "candidates": [
+    "swift_nio@ec51fff0(clean)"
+   ]
+  },
+  {
+   "analyzer": "go",
+   "corpusTarget": "go_tools",
+   "status": "measured",
+   "candidates": [
+    "go_tools@bf54bcd2(clean)",
+    "terraform@2e1710bf(clean)"
+   ]
+  },
+  {
+   "analyzer": "elixir",
+   "corpusTarget": "elixir",
+   "status": "measured",
+   "candidates": [
+    "elixir@024beb1b(clean)"
+   ]
+  },
+  {
+   "analyzer": "erlang",
+   "corpusTarget": "elixir",
+   "status": "measured",
+   "candidates": [
+    "elixir@024beb1b(clean)",
+    "rebar3@0c947d3b(clean)"
+   ]
+  },
+  {
+   "analyzer": "haskell",
+   "corpusTarget": "cabal",
+   "status": "measured",
+   "candidates": [
+    "cabal@670955a4(clean)"
+   ]
+  },
+  {
+   "analyzer": "clean",
+   "corpusTarget": "tree_sitter_clean",
+   "status": "dirty_or_unpinned",
+   "candidates": [
+    "tree_sitter_clean@2b0fe499(clean)"
+   ]
+  },
+  {
+   "analyzer": "python",
+   "corpusTarget": "cython",
+   "status": "measured",
+   "candidates": [
+    "proxicall@383e603e(dirty)",
+    "intellij_community@cfda6881(dirty)",
+    "cython@51a460b7(clean)"
+   ]
+  },
+  {
+   "analyzer": "ruby",
+   "corpusTarget": "rake",
+   "status": "measured",
+   "candidates": [
+    "rake@dd5e851d(clean)"
+   ]
+  },
+  {
+   "analyzer": "php",
+   "corpusTarget": "phpunit",
+   "status": "measured",
+   "candidates": [
+    "phpunit@c8d6921f(clean)"
+   ]
+  },
+  {
+   "analyzer": "perl",
+   "corpusTarget": "mojo",
+   "status": "measured",
+   "candidates": [
+    "mojo@93f59174(clean)"
+   ]
+  },
+  {
+   "analyzer": "r",
+   "corpusTarget": "dplyr",
+   "status": "measured",
+   "candidates": [
+    "dplyr@d5e94e7f(clean)"
+   ]
+  },
+  {
+   "analyzer": "lua",
+   "corpusTarget": "luarocks",
+   "status": "measured",
+   "candidates": [
+    "luarocks@665f160b(clean)"
+   ]
+  },
+  {
+   "analyzer": "sql",
+   "corpusTarget": "proxicall",
+   "status": "dirty_or_unpinned",
+   "candidates": [
+    "proxicall@383e603e(dirty)"
+   ]
+  },
+  {
+   "analyzer": "json",
+   "corpusTarget": "roslyn",
+   "status": "measured",
+   "candidates": [
+    "vscode@46ed260b(dirty)",
+    "flutter@68dc5cf4(dirty)",
+    "roslyn@73241b4b(clean)"
+   ]
+  },
+  {
+   "analyzer": "xml",
+   "corpusTarget": "roslyn",
+   "status": "measured",
+   "candidates": [
+    "proxicall@383e603e(dirty)",
+    "roslyn@73241b4b(clean)",
+    "intellij_community@cfda6881(dirty)",
+    "phpunit@c8d6921f(clean)",
+    "powershell@91ce9844(clean)"
+   ]
+  },
+  {
+   "analyzer": "yaml",
+   "corpusTarget": "flutter",
+   "status": "dirty_or_unpinned",
+   "candidates": [
+    "flutter@68dc5cf4(dirty)"
+   ]
+  },
+  {
+   "analyzer": "hcl",
+   "corpusTarget": "terraform",
+   "status": "measured",
+   "candidates": [
+    "terraform@2e1710bf(clean)"
+   ]
+  },
+  {
+   "analyzer": "graphql",
+   "corpusTarget": "graphql_js",
+   "status": "measured",
+   "candidates": [
+    "graphql_js@9c245018(clean)"
+   ]
+  },
+  {
+   "analyzer": "bash",
+   "corpusTarget": "proxicall",
+   "status": "dirty_or_unpinned",
+   "candidates": [
+    "proxicall@383e603e(dirty)"
+   ]
+  },
+  {
+   "analyzer": "powershell",
+   "corpusTarget": "roslyn",
+   "status": "measured",
+   "candidates": [
+    "roslyn@73241b4b(clean)",
+    "powershell@91ce9844(clean)"
+   ]
+  },
+  {
+   "analyzer": "make",
+   "corpusTarget": null,
+   "status": "planned_acquisition",
+   "candidates": []
+  },
+  {
+   "analyzer": "markdown",
+   "corpusTarget": null,
+   "status": "planned_acquisition",
+   "candidates": []
+  }
+ ]
 }
