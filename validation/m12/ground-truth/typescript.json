@@ -319,11 +319,11 @@
       }
     },
     {
-      "id": "sym:Domain.ts:15:class:Customer",
+      "id": "sym:Domain.ts:16:class:Customer",
       "layer": "ast_extraction",
       "kind": "symbol",
       "file": "Domain.ts",
-      "line": 15,
+      "line": 16,
       "attributes": {
         "name": "Customer",
         "symbolKind": "class"
@@ -334,11 +334,11 @@
       }
     },
     {
-      "id": "sym:Domain.ts:16:constructor:constructor",
+      "id": "sym:Domain.ts:17:constructor:constructor",
       "layer": "ast_extraction",
       "kind": "symbol",
       "file": "Domain.ts",
-      "line": 16,
+      "line": 17,
       "attributes": {
         "name": "constructor",
         "symbolKind": "constructor"
@@ -349,11 +349,11 @@
       }
     },
     {
-      "id": "sym:Domain.ts:16:property:id",
+      "id": "sym:Domain.ts:17:property:id",
       "layer": "ast_extraction",
       "kind": "symbol",
       "file": "Domain.ts",
-      "line": 16,
+      "line": 17,
       "attributes": {
         "name": "id",
         "symbolKind": "property"
@@ -364,11 +364,11 @@
       }
     },
     {
-      "id": "sym:Domain.ts:16:property:name",
+      "id": "sym:Domain.ts:17:property:name",
       "layer": "ast_extraction",
       "kind": "symbol",
       "file": "Domain.ts",
-      "line": 16,
+      "line": 17,
       "attributes": {
         "name": "name",
         "symbolKind": "property"
@@ -379,11 +379,11 @@
       }
     },
     {
-      "id": "sym:Domain.ts:18:method:describe",
+      "id": "sym:Domain.ts:20:method:describe",
       "layer": "ast_extraction",
       "kind": "symbol",
       "file": "Domain.ts",
-      "line": 18,
+      "line": 20,
       "attributes": {
         "name": "describe",
         "symbolKind": "method"
@@ -394,11 +394,11 @@
       }
     },
     {
-      "id": "sym:Domain.ts:23:function:findById",
+      "id": "sym:Domain.ts:25:function:findById",
       "layer": "ast_extraction",
       "kind": "symbol",
       "file": "Domain.ts",
-      "line": 23,
+      "line": 25,
       "attributes": {
         "name": "findById",
         "symbolKind": "function"

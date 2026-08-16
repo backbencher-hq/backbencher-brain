@@ -120,8 +120,11 @@ string split. No O(n²) or per-symbol O(n) scans.
   (authority: `manual_audit`)
 - Result: `validation/m12/results/fsharp-differential.json`
 - Precision / recall / FP / FN / unknown rates:
-  **1.000 / 1.000 / 0 / 0 / 0** — 115/115 facts across 4 fixtures (3
-  positive + 1 negative), zero parse errors.
+  **1.000 / 1.000 / 0 / 0 / 0** — 121/121 facts across 4 fixtures (3
+  positive + 1 negative), zero parse errors. (115 at close; the post-close
+  extreme review added measure-type coverage — `[<Measure>] type kg`/`s` and
+  the `speed` binding, 6 facts — closing a required-scope gap that had zero
+  fixture coverage. The analyzer already handled `[<Measure>]` → Type.)
 
 ## Corpus validation
 

@@ -830,7 +830,11 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private collectComments(node: Node): string[] | undefined {
     const comments: string[] = []
-    let sibling = node.previousSibling
+    // For exported declarations (`export class X`, `export const x = ...`), the
+    // comment precedes the `export` keyword, not the declaration node — walk up
+    // to the wrapper parent first (mirrors the TypeScript analyzer fix).
+    const scanNode: Node = node.parent && node.parent.type === "export_statement" ? node.parent : node
+    let sibling = scanNode.previousSibling
     while (sibling) {
       if (sibling.type === "comment") {
         comments.unshift(stripCommentMarkers(sibling.text))

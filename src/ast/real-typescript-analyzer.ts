@@ -3744,8 +3744,13 @@ class TypeScriptAnalysisRunner {
   private extractComments(node: Node): string[] | undefined {
     const comments: string[] = []
 
-    // Look for leading comments
-    let prev = node.previousSibling
+    // Look for leading comments. For exported/declare-wrapped declarations
+    // (`export class X`, `export default class X`, `declare class X`), the
+    // JSDoc comment precedes the export/declare keyword, not the declaration
+    // node itself — so walk up to the wrapper parent first.
+    const scanNode: Node = node.parent && node.parent.type === "export_statement" ? node.parent : node
+
+    let prev = scanNode.previousSibling
     while (prev && (prev.type === "comment" || prev.type === "line_comment" || prev.type === "block_comment")) {
       comments.unshift(stripCommentMarkers(prev.text))
       prev = prev.previousSibling
