@@ -2,22 +2,22 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-08-16T03:24:35.553Z",
+  "generatedAt": "2026-08-16T03:37:04.901Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 121,
+  "totalRegexUsages": 119,
   "analyzersScanned": 41,
   "byClassification": {
     "unavoidable": 14,
-    "normalization": 54,
-    "needs_review": 51,
+    "normalization": 53,
+    "needs_review": 50,
     "replaceable": 2
   },
   "byReceiverCategory": {
     "literal": 14,
-    "node_text": 54,
+    "node_text": 53,
     "identifier": 31,
-    "other": 20,
+    "other": 19,
     "raw_content": 2
   },
   "perFile": [
@@ -1301,34 +1301,6 @@
           "receiver": "rawPath",
           "receiverCategory": "identifier",
           "classification": "needs_review",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-html-analyzer.ts",
-      "count": 2,
-      "usages": [
-        {
-          "file": "real-html-analyzer.ts",
-          "line": 204,
-          "column": 59,
-          "source": "/\\s+/",
-          "operation": "split",
-          "receiver": "candidates[i].trim()",
-          "receiverCategory": "other",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-html-analyzer.ts",
-          "line": 441,
-          "column": 52,
-          "source": "/^[\"']|[\"']$/g",
-          "operation": "replace",
-          "receiver": "attrChild.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
           "justification": ""
         }
       ]

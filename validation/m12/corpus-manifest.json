@@ -278,7 +278,20 @@
         "vscode@46ed260b(dirty)",
         "intellij_community@cfda6881(dirty)",
         "svelte@26786e92(clean)"
-      ]
+      ],
+      "measured": {
+        "revision": "26786e92985842a6d563c67049a43bc5857bf792",
+        "sample": "238 tracked *.html files (deterministic all-tracked sorted from svelte@26786e92, excluding 8 deliberately-malformed XSS/escape/invalid-nesting test outputs — negative fixtures, not corpus source)",
+        "fixtures": 2,
+        "fixtureFacts": 33,
+        "precision": 1.0,
+        "recall": 1.0,
+        "corpusSymbols": 251,
+        "corpusRelationships": 41,
+        "grammarErrorFiles": 0,
+        "note": "Analyzer cleaned to the M11 HTML contract (elements with id/class -> class symbols, named by id then class; anonymous structural tags are noise) with M12 family fixes: the 2 baseline regexes eliminated (srcset candidate split -> pure-String firstToken scan; quote-strip -> attribute_value node text is already unquoted, empty values unquoted via pure-String unquote) — census 121 -> 119; duplicate contains fixed (DFS topology only, the ownerName post-loop was double-emitting); exports emptied (isClass flag was never set so every symbol was exported — HTML has no export keyword); error collection added (ERROR/missing nodes surfaced); class-only elements now keep their class name as symbol identity (was generated counter id, mismatching the symbol name); resource relationships guard empty attribute values (src=\"\" emits nothing); file-scoped relationships (head script/link) source from the file stem, not the absolute path. Differential 33/33 (1.000/1.000, 0 FP / 0 FN). CORPUS: svelte@26786e92 .html files — 238-file sample, 0 error files / 0 crashes / 0 timeouts, 251 symbols / 41 relationships in 0.34s.",
+        "measuredAt": "2026-08-16T06:15:00.000Z"
+      }
     },
     {
       "analyzer": "css",
