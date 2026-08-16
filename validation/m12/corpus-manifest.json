@@ -232,8 +232,22 @@
       "corpusTarget": "vue_core",
       "status": "measured",
       "candidates": [
-        "vue_core@f8975657(clean)"
-      ]
+        "vue_core@f8975657(clean)",
+        "element-plus@1b45ace0(clean)"
+      ],
+      "measured": {
+        "revision": "1b45ace0a08d77b3fc1807c5688b42f7d7362ab7",
+        "sample": "400 tracked *.vue files (deterministic: all 164 packages/components + 62 ssr-testing + first-174 docs sorted - real component library source)",
+        "fixtures": 5,
+        "fixtureFacts": 55,
+        "precision": 1.0,
+        "recall": 1.0,
+        "corpusSymbols": 2033,
+        "corpusRelationships": 8532,
+        "grammarErrorFiles": 0,
+        "note": "Analyzer rewritten from legacy source-text scanning to pure-AST family contract (mirrors M12.09 TS / M12.10 JS): SFC component -> class; <script setup> top-level const -> constant / let,var -> variable / function -> function; Options API props -> property, emits -> event, data/computed -> property, methods + lifecycle hooks -> method; defineProps/defineEmits are compiler macros (no symbols, no calls); script content parsed by the real JavaScript analyzer (family consistency, whether or not lang=ts) via engine pre-parse passed through AnalyzeContext; template pass emits instantiates only for PascalCase component tags and kebab-case tags matching an import (router-link/router-view); builtin HTML tags and template bindings (v-if/v-for/v-model/@input/{{ }}) are NOT symbols or calls; imports from import directives; calls use leaf identities (ref/computed/fetch/json/slice/$emit/toggle); $emit kept as a legit $-prefixed target (pool-worker $ denylist removed in M12.12 - cross-language bug); no locals/params as symbols (tmp, e not emitted); contains from ownerName for Options API members only. Differential 55/55 (1.000/1.000, 0 FP / 0 FN); analyzer fully regex-free (0 census entries). CORPUS: element-plus@1b45ace0 (1,008 .vue files) - 400-file deterministic sample, 0 error files / 0 crashes / 0 timeouts, 2,033 symbols / 8,532 relationships in 7.9s.",
+        "measuredAt": "2026-08-16T03:40:00.000Z"
+      }
     },
     {
       "analyzer": "svelte",

@@ -861,6 +861,72 @@ export namespace ASTEngine {
   }
 
   // Parse file and extract universal symbols and relationships with INTELLIGENCE
+  /**
+   * Find the first `<script>` block of a Vue SFC and return its raw body text
+   * (the grammar exposes it as a `raw_text` node with exact byte offsets) plus
+   * the block's language (`js`/`ts`) and body start position. Pure AST — no
+   * source-text scanning of the file.
+   */
+  function extractVueScriptBlock(
+    rootNode: Node,
+    content: string
+  ): { body: string; lang: string; startLine: number; startColumn: number } | null {
+    const stack: Node[] = [rootNode]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "script_element") {
+        let rawText: Node | null = null
+        let lang = "js"
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (!c) continue
+          if (c.type === "raw_text") rawText = c
+          if (c.type === "start_tag") {
+            for (let j = 0; j < c.namedChildCount; j++) {
+              const a = c.namedChild(j)
+              if (a && a.type === "attribute") {
+                const attrName = a.childForFieldName?.("name")?.text || (a.type === "attribute" ? findAttributeName(a) : "")
+                if (attrName === "lang") {
+                  let v = a.childForFieldName?.("value")?.text || ""
+                  if (v.length >= 2) {
+                    const first = v[0]
+                    if ((first === '"' || first === "'") && v[v.length - 1] === first) {
+                      v = v.slice(1, -1)
+                    }
+                  }
+                  if (v === "ts" || v === "tsx") lang = "ts"
+                }
+              }
+            }
+          }
+        }
+        if (rawText) {
+          const body = content.substring(rawText.startIndex, rawText.endIndex)
+          return {
+            body,
+            lang,
+            startLine: rawText.startPosition.row + 1,
+            startColumn: rawText.startPosition.column,
+          }
+        }
+        return null
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return null
+  }
+
+  function findAttributeName(attr: Node): string {
+    for (let i = 0; i < attr.namedChildCount; i++) {
+      const c = attr.namedChild(i)
+      if (c && c.type === "attribute_name") return c.text
+    }
+    return ""
+  }
+
   export async function parseFile(filePath: string, content: string, context?: AnalyzeContext): Promise<ParseResult> {
     const language = detectLanguage(filePath, content)
     if (!language) {
@@ -1025,6 +1091,32 @@ export namespace ASTEngine {
     const analyzePromise = (async () => {
       const analyzer = await getAnalyzer(language)
       let analysisResult
+
+      // VUE SFC: pre-parse the <script> block body with the JS/TS grammar and
+      // hand the parsed tree to the analyzer via context (the vue grammar
+      // exposes the script body as a raw_text node; the analyzer is sync and
+      // cannot load parsers itself). This replaces the old regex-based
+      // POLYGLOT INJECTION for vue — the new analyzer does NOT set
+      // embeddedScriptContent, so the polyglot path below is skipped.
+      if (language === "vue" && tree?.rootNode) {
+        try {
+          const scriptInfo = extractVueScriptBlock(tree.rootNode, content)
+          if (scriptInfo && scriptInfo.body.trim().length > 0) {
+            const subLang = scriptInfo.lang === "ts" ? "typescript" : "javascript"
+            const subParser = await getParser(subLang)
+            const subTree = subParser.parse(scriptInfo.body)
+            context = {
+              ...context,
+              vueScriptTree: subTree,
+              vueScriptStartLine: scriptInfo.startLine,
+              vueScriptStartColumn: scriptInfo.startColumn,
+              vueScriptLang: scriptInfo.lang,
+            }
+          }
+        } catch (e) {
+          log.debug("vue script sub-parse failed", { error: (e as Error)?.message })
+        }
+      }
 
       // STEP 2: 🧠 ENHANCE WITH ADVANCED TYPE INFERENCE
       const TypeInference = (await import("./type-inference")).TypeInference

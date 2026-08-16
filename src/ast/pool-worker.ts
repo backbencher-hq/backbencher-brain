@@ -360,9 +360,13 @@ function filterNoiseRelationships(rels: any[], language: string): any[] {
     const leaf = extractLeaf(target)
     const lower = leaf.toLowerCase()
 
-    // Block targets that are clearly not valid symbol names
+    // Block targets that are clearly not valid symbol names. `$` is a valid
+    // identifier character (Vue instance methods $emit/$refs/$attrs, jQuery,
+    // JS `$` bindings) — dropping it silently deleted legitimate Vue call
+    // targets; template-literal garbage is still blocked via `{`, `}` and the
+    // backtick, and `${x}` contains braces.
     if (leaf.length > 80 || leaf.length < 1) return false
-    if (/[{}`$<>\n\r\t]/.test(leaf)) return false
+    if (/[{}`<>\n\r\t]/.test(leaf)) return false
     if (leaf.startsWith(" ") || leaf.includes("  ")) return false
 
     // CSS files: only keep "contains" relationships (no "calls" for properties)
