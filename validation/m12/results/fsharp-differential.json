@@ -12,8 +12,8 @@
   ],
   "perFile": {
     "Domain.fs": {
-      "symbols": 14,
-      "relationships": 17
+      "symbols": 17,
+      "relationships": 20
     },
     "Features.fs": {
       "symbols": 21,
@@ -32,9 +32,9 @@
     "schemaVersion": 1,
     "passed": true,
     "metrics": {
-      "expected": 115,
-      "observedResolved": 115,
-      "truePositive": 115,
+      "expected": 121,
+      "observedResolved": 121,
+      "truePositive": 121,
       "falsePositive": 0,
       "falseNegative": 0,
       "unknown": 0,
@@ -60,6 +60,9 @@
       "rel:Domain.fs:contains:CustomerModule:createAsync",
       "rel:Domain.fs:contains:CustomerModule:findById",
       "rel:Domain.fs:contains:CustomerModule:format",
+      "rel:Domain.fs:contains:CustomerModule:kg",
+      "rel:Domain.fs:contains:CustomerModule:s",
+      "rel:Domain.fs:contains:CustomerModule:speed",
       "rel:Domain.fs:contains:Example.Domain:CustomerModule",
       "rel:Domain.fs:contains:Repository:Get",
       "rel:Domain.fs:contains:Repository:Save",
@@ -122,6 +125,9 @@
       "symbol:Domain.fs:17:function:findById",
       "symbol:Domain.fs:19:function:createAsync",
       "symbol:Domain.fs:1:namespace:Example.Domain",
+      "symbol:Domain.fs:21:type:kg",
+      "symbol:Domain.fs:24:type:s",
+      "symbol:Domain.fs:27:variable:speed",
       "symbol:Domain.fs:5:module:CustomerModule",
       "symbol:Domain.fs:6:enum:Status",
       "symbol:Domain.fs:7:enum_member:Active",
@@ -175,11 +181,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:fsharp",
-      "wallTimeMs": 146.987412,
-      "userCpuMs": 344.079,
-      "systemCpuMs": 22.832,
-      "peakRssBytes": 291565568,
-      "rssDeltaBytes": 16715776,
+      "wallTimeMs": 193.209334,
+      "userCpuMs": 409.019,
+      "systemCpuMs": 16.89,
+      "peakRssBytes": 274165760,
+      "rssDeltaBytes": 19841024,
       "databaseBytes": null,
       "files": null,
       "symbols": null,

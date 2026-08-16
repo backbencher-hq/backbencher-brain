@@ -19,7 +19,7 @@
 | range (start/end line + column) | ✅ | `node.startPosition`/`endPosition` via `nodeToRange` |
 | parameters | ✅ | `formal_parameters` → identifier / `assignment_pattern` left / destructured patterns (recorded but never symbols) / `rest_pattern` inner identifier |
 | returnType / type | — | JavaScript has no type annotations; JSDoc `@returns` is not parsed (documented unsupported) |
-| documentation/comments | ✅ | preceding `comment` nodes (JSDoc `/** ... */` and `//`), comment markers stripped via pure-String helpers |
+| documentation/comments | ✅ | preceding `comment` nodes (JSDoc `/** ... */` and `//`), comment markers stripped via pure-String helpers; exported declarations (`export class X`) look past the `export` keyword wrapper to the preceding comment (fixed in post-close review, exercised by `Domain.js` file-header comments) |
 | complexity metrics | ✅ | `complexity` on methods/functions (branching nodes counted iteratively) |
 | syntax errors | ✅ | ERROR/missing nodes surfaced by the engine pipeline; reported as `parseErrors` in the differential |
 | decorators/attributes | — | JavaScript has no decorators in the grammar (TC39 stage 3); not applicable |
