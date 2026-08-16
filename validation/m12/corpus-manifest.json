@@ -208,11 +208,24 @@
     {
       "analyzer": "dart",
       "corpusTarget": "flutter",
-      "status": "dirty_or_unpinned",
+      "status": "measured",
       "candidates": [
         "flutter@68dc5cf4(dirty)",
         "proxicall@383e603e(dirty)"
-      ]
+      ],
+      "measured": {
+        "revision": "68dc5cf4e76472eeb6162c33138550dc821fd5ae",
+        "sample": "400 tracked *.dart files (deterministic first-400 sorted from packages/flutter - real framework source)",
+        "fixtures": 5,
+        "fixtureFacts": 119,
+        "precision": 1.0,
+        "recall": 1.0,
+        "corpusSymbols": 23952,
+        "corpusRelationships": 88098,
+        "grammarErrorFiles": 0,
+        "note": "Analyzer rewritten pure-AST to the C#-family contract (mirrors M12.09 TS / M12.10 JS): classes, mixins, extensions (named + unnamed), enums + enum_member, typedefs, methods, getters/setters -> property, fields, top-level functions/constants, constructors -> 'constructor' (named + factory); no locals/params/closures as symbols; relationship sources are leaf identities; capitalized identifier + argument_part selector = Dart constructor invocation (instantiates); selector chains resolve to leaf method name; cascade calls resolve to the cascade selector; print/assert and Object-leaf methods (toString/hashCode/runtimeType) filtered; contains from ownerName; extends/implements/mixin-uses from heritage clauses; overrides via extends-base only (cross-file via harness companion); imports/exports from import/export/part directives. Differential 119/119 (1.000/1.000, 0 FP / 0 FN); analyzer fully regex-free (census 8 -> 0). GRAMMAR UPGRADE: tree-sitter-dart wasm rebuilt from upstream master (UserNobody14/tree-sitter-dart be07cf7, 2026-07-06) - the previously pinned grammar predated Dart 3 class modifiers (abstract final class, sealed, base) and errored on 302/400 (75.5%) of the flutter sample; the upgraded grammar parses 0/400 error files, 0 crashes, 0 timeouts (clean corpus validation). Fixtures/exercised shapes re-verified against the new grammar before commit.",
+        "measuredAt": "2026-08-16T03:10:00.000Z"
+      }
     },
     {
       "analyzer": "vue",
