@@ -30,16 +30,16 @@
     },
     "UserList.vue": {
       "symbols": 3,
-      "relationships": 7
+      "relationships": 8
     }
   },
   "passing": {
     "schemaVersion": 1,
     "passed": true,
     "metrics": {
-      "expected": 55,
-      "observedResolved": 55,
-      "truePositive": 55,
+      "expected": 56,
+      "observedResolved": 56,
+      "truePositive": 56,
       "falsePositive": 0,
       "falseNegative": 0,
       "unknown": 0,
@@ -75,6 +75,7 @@
       "rel:Card.vue:contains:Card:toggle",
       "rel:Negative.vue:calls:Negative:ref",
       "rel:Negative.vue:imports:Negative:vue:ref",
+      "rel:UserList.vue:calls:UserList:ref",
       "rel:UserList.vue:calls:loadMore:fetch",
       "rel:UserList.vue:calls:loadMore:json",
       "rel:UserList.vue:imports:UserList:./Button.vue:Button",
@@ -120,11 +121,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:vue",
-      "wallTimeMs": 31.447839,
-      "userCpuMs": 62.26,
-      "systemCpuMs": 1.352,
-      "peakRssBytes": 223121408,
-      "rssDeltaBytes": 2621440,
+      "wallTimeMs": 78.722813,
+      "userCpuMs": 69.039,
+      "systemCpuMs": 13.868,
+      "peakRssBytes": 245215232,
+      "rssDeltaBytes": 6033408,
       "databaseBytes": null,
       "files": null,
       "symbols": null,

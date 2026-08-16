@@ -2,21 +2,21 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-08-16T01:02:54.431Z",
+  "generatedAt": "2026-08-16T03:24:35.553Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 123,
+  "totalRegexUsages": 121,
   "analyzersScanned": 41,
   "byClassification": {
     "unavoidable": 14,
-    "normalization": 55,
-    "needs_review": 52,
+    "normalization": 54,
+    "needs_review": 51,
     "replaceable": 2
   },
   "byReceiverCategory": {
     "literal": 14,
-    "node_text": 55,
-    "identifier": 32,
+    "node_text": 54,
+    "identifier": 31,
     "other": 20,
     "raw_content": 2
   },
@@ -1413,34 +1413,6 @@
           "receiver": "name",
           "receiverCategory": "identifier",
           "classification": "needs_review",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-svelte-analyzer.ts",
-      "count": 2,
-      "usages": [
-        {
-          "file": "real-svelte-analyzer.ts",
-          "line": 212,
-          "column": 76,
-          "source": "/^[\"']|[\"']$/g",
-          "operation": "replace",
-          "receiver": "attrValue",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-svelte-analyzer.ts",
-          "line": 340,
-          "column": 47,
-          "source": "/^[\"']|[\"']$/g",
-          "operation": "replace",
-          "receiver": "child.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
           "justification": ""
         }
       ]
