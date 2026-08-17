@@ -8,18 +8,18 @@
       "name": "fixtures",
       "measurement": {
         "name": "fixtures:elixir",
-        "wallTimeMs": 188.126893,
-        "userCpuMs": 205.301,
-        "systemCpuMs": 113.123,
-        "peakRssBytes": 243421184,
-        "rssDeltaBytes": 200355840,
+        "wallTimeMs": 327.784716,
+        "userCpuMs": 341.482,
+        "systemCpuMs": 172.143,
+        "peakRssBytes": 220045312,
+        "rssDeltaBytes": 177250304,
         "databaseBytes": null,
         "files": 2,
         "symbols": 32,
         "relationships": 38,
-        "filesPerSecond": 10.631122260654143,
-        "symbolsPerSecond": 170.0979561704663,
-        "relationshipsPerSecond": 201.99132295242873
+        "filesPerSecond": 6.101565760619541,
+        "symbolsPerSecond": 97.62505216991265,
+        "relationshipsPerSecond": 115.92974945177127
       },
       "symbols": 32,
       "relationships": 38
@@ -28,21 +28,21 @@
       "name": "corpus_subset",
       "measurement": {
         "name": "corpus_subset:elixir",
-        "wallTimeMs": 6124.212977,
-        "userCpuMs": 8767.107,
-        "systemCpuMs": 442.597,
-        "peakRssBytes": 395042816,
-        "rssDeltaBytes": 29315072,
+        "wallTimeMs": 14676.118091,
+        "userCpuMs": 19425.411,
+        "systemCpuMs": 1213.963,
+        "peakRssBytes": 396808192,
+        "rssDeltaBytes": 42905600,
         "databaseBytes": null,
         "files": 243,
-        "symbols": 7597,
-        "relationships": 25125,
-        "filesPerSecond": 39.678567827834705,
-        "symbolsPerSecond": 1240.4859250537459,
-        "relationshipsPerSecond": 4102.5679698532795
+        "symbols": 7704,
+        "relationships": 23777,
+        "filesPerSecond": 16.557511904256042,
+        "symbolsPerSecond": 524.9344514830805,
+        "relationshipsPerSecond": 1620.1150639814648
       },
-      "symbols": 7597,
-      "relationships": 25125
+      "symbols": 7704,
+      "relationships": 23777
     }
   ],
   "note": "Complexity envelope per analyzer: wall time, symbols/s, relationships/s, peak RSS. Budgets are declared per analyzer in docs/analyzers/."
