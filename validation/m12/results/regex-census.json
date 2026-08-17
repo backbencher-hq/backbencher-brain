@@ -2,20 +2,20 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-08-17T22:18:51.114Z",
+  "generatedAt": "2026-08-17T23:03:02.538Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 82,
+  "totalRegexUsages": 78,
   "analyzersScanned": 41,
   "byClassification": {
     "unavoidable": 11,
-    "normalization": 43,
+    "normalization": 39,
     "replaceable": 1,
     "needs_review": 27
   },
   "byReceiverCategory": {
     "literal": 11,
-    "node_text": 43,
+    "node_text": 39,
     "raw_content": 1,
     "other": 12,
     "identifier": 15
@@ -769,56 +769,6 @@
           "receiver": "val",
           "receiverCategory": "identifier",
           "classification": "needs_review",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-erlang-analyzer.ts",
-      "count": 4,
-      "usages": [
-        {
-          "file": "real-erlang-analyzer.ts",
-          "line": 31,
-          "column": 50,
-          "source": "/['\"]/g",
-          "operation": "replace",
-          "receiver": "fNode.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-erlang-analyzer.ts",
-          "line": 87,
-          "column": 73,
-          "source": "/\\D/g",
-          "operation": "replace",
-          "receiver": "arityNode.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-erlang-analyzer.ts",
-          "line": 222,
-          "column": 54,
-          "source": "/\\(\\)$/",
-          "operation": "replace",
-          "receiver": "typeNameNode?.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-erlang-analyzer.ts",
-          "line": 258,
-          "column": 52,
-          "source": "/^#/",
-          "operation": "replace",
-          "receiver": "nameNode?.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
           "justification": ""
         }
       ]

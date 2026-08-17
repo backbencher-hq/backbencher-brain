@@ -3,42 +3,67 @@ import { ASTEngine } from "./engine"
 
 const OTP_BEHAVIOURS = new Set(["gen_server", "gen_statem", "gen_event", "supervisor", "application"])
 
+interface ErlangContext {
+  symbols: ASTEngine.UniversalSymbol[]
+  relationships: ASTEngine.UniversalRelationship[]
+  imports: ASTEngine.ImportInfo[]
+  exports: ASTEngine.ExportInfo[]
+  errors: ASTEngine.ParseError[]
+  patterns: Record<string, boolean>
+  seenRels: Set<string>
+  seenImports: Set<string>
+  // Every function name declared in this file (one module per file), collected
+  // by a pre-pass so local calls to LATER-defined functions resolve.
+  declaredFunctions: Set<string>
+  // Function symbols already emitted (dedup across multi-clause fun_decl).
+  registeredFunctions: Set<string>
+  currentModule: string | undefined
+  currentFunction: string | undefined
+}
+
 export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
   public analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
-    const symbols: ASTEngine.UniversalSymbol[] = []
-    const relationships: ASTEngine.UniversalRelationship[] = []
-    const imports: ASTEngine.ImportInfo[] = []
-    const exports: ASTEngine.ExportInfo[] = []
-    const errors: ASTEngine.ParseError[] = []
+    const ctx: ErlangContext = {
+      symbols: [],
+      relationships: [],
+      imports: [],
+      exports: [],
+      errors: [],
+      patterns: {},
+      seenRels: new Set(),
+      seenImports: new Set(),
+      declaredFunctions: new Set(),
+      registeredFunctions: new Set(),
+      currentModule: undefined,
+      currentFunction: undefined,
+    }
+    let cyclomaticComplexity = 1
 
-    let currentModule: string | undefined
-    let currentLine = 0
+    // Pre-pass: collect every function name in the file so local calls resolve
+    // even when the callee is defined LATER (forward references).
+    this.collectDeclaredFunctions(rootNode, ctx.declaredFunctions)
 
-    const stack: Node[] = [rootNode]
-    const seenFuncalls = new Set<string>()
-    const registeredFunctions = new Set<string>() // Dedup across fun_decl clauses
-    const patterns: Record<string, boolean> = {}
+    const stack: { node: Node; isExit?: boolean }[] = [{ node: rootNode }]
 
     while (stack.length > 0) {
-      const node = stack.pop()!
+      const { node, isExit } = stack.pop()!
+      if (isExit) {
+        if (node.type === "fun_decl") ctx.currentFunction = undefined
+        continue
+      }
       const type = node.type
-      currentLine = node.startPosition.row + 1
+      const currentLine = node.startPosition.row + 1
+      let pushedScope = false
 
       // ---- -include / -include_lib (pp_include / pp_include_lib) ----
       if (type === "include_attribute" || type === "include_lib_attribute" || type === "pp_include" || type === "pp_include_lib") {
         const fNode = this.getChildByType(node, "string") || this.getChildByType(node, "string_literal")
         if (fNode) {
-          const includePath = fNode.text.replace(/['"]/g, "")
-          imports.push({ module: includePath, file: includePath, line: currentLine, isNif: false })
-          if (currentModule || filePath) {
-            relationships.push({
-              source: currentModule || filePath,
-              target: includePath,
-              type: ASTEngine.RelationshipType.References,
-              confidence: 0.9,
-              metadata: { erlangSpecific: true, isInclude: type === "include_attribute" || type === "pp_include", isLibInclude: type === "include_lib_attribute" || type === "pp_include_lib" },
-            })
-          }
+          const includePath = this.stripQuotes(fNode.text)
+          ctx.imports.push({ module: includePath, file: includePath, line: currentLine, isNif: false })
+          this.pushRel(ctx, ctx.currentModule || filePath, includePath, ASTEngine.RelationshipType.References, 0.9, {
+            erlangSpecific: true, isInclude: type === "include_attribute" || type === "pp_include", isLibInclude: type === "include_lib_attribute" || type === "pp_include_lib",
+          })
         }
       }
 
@@ -46,9 +71,9 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
       else if (type === "module_attribute") {
         const nameNode = this.getChildByType(node, "atom")
         if (nameNode?.text) {
-          currentModule = nameNode.text
-          symbols.push({
-            name: currentModule,
+          ctx.currentModule = nameNode.text
+          ctx.symbols.push({
+            name: ctx.currentModule,
             kind: ASTEngine.SymbolKind.Module,
             range: this.nodeToRange(node),
             metadata: { nodeType: "module_attribute" },
@@ -56,23 +81,22 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
 
-      // ---- -behaviour(gen_server). ----
+      // ---- -behaviour(gen_server). / -behaviour(my_behaviour). ----
       else if (type === "behaviour_attribute") {
         const beNode = this.getChildByType(node, "atom")
-        if (beNode?.text && OTP_BEHAVIOURS.has(beNode.text)) {
-          // The behaviour is a cross-module contract, not a declaration in this
-          // file: emit the Implements edge only, never a standalone symbol.
-          relationships.push({
-            source: currentModule || filePath,
-            target: beNode.text,
-            type: ASTEngine.RelationshipType.Implements,
-            confidence: 1.0,
-            metadata: {
-              erlangSpecific: true,
-              behaviour: beNode.text,
-              context: "OTP behaviour callback implementation",
-            },
+        if (beNode?.text) {
+          // Any behaviour is a cross-module contract: the Implements edge only,
+          // never a standalone symbol. OTP behaviours additionally mark the
+          // OTP patterns.
+          this.pushRel(ctx, ctx.currentModule || filePath, beNode.text, ASTEngine.RelationshipType.Implements, 1.0, {
+            erlangSpecific: true,
+            behaviour: beNode.text,
+            context: "OTP behaviour callback implementation",
           })
+          if (OTP_BEHAVIOURS.has(beNode.text)) {
+            ctx.patterns["Actor Model (OTP)"] = true
+            ctx.patterns["OTP Behaviours"] = true
+          }
         }
       }
 
@@ -84,13 +108,8 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
             const nameNode = this.getChildByType(child, "atom")
             const arityNode = this.getChildByType(child, "integer") || this.getChildByType(child, "arity")
             if (nameNode?.text) {
-              const arity = arityNode ? parseInt(arityNode.text.replace(/\D/g, "")) || 0 : 0
-              exports.push({
-                name: nameNode.text,
-                arity,
-                file: filePath,
-                line: currentLine,
-              })
+              const arity = arityNode ? parseInt(this.keepDigits(arityNode.text)) || 0 : 0
+              ctx.exports.push({ name: nameNode.text, arity, file: filePath, line: currentLine })
             }
           }
         }
@@ -108,19 +127,9 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
         }
         if (modNode?.text) {
-          imports.push({
-            module: modNode.text,
-            functions: funcs,
-            file: "",
-            line: currentLine,
-            isNif: false,
-          })
-          relationships.push({
-            source: currentModule || filePath,
-            target: modNode.text,
-            type: ASTEngine.RelationshipType.References,
-            confidence: 1.0,
-            metadata: { erlangSpecific: true, isModuleImport: true, importedFunctions: funcs },
+          ctx.imports.push({ module: modNode.text, functions: funcs, file: "", line: currentLine, isNif: false })
+          this.pushRel(ctx, ctx.currentModule || filePath, modNode.text, ASTEngine.RelationshipType.References, 1.0, {
+            erlangSpecific: true, isModuleImport: true, importedFunctions: funcs,
           })
         }
       }
@@ -134,11 +143,11 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (child?.type === "fa") {
               const nifName = this.getChildByType(child, "atom")
               if (nifName?.text) {
-                symbols.push({
+                ctx.symbols.push({
                   name: nifName.text,
                   kind: ASTEngine.SymbolKind.Function,
                   range: this.nodeToRange(node),
-                  ownerName: currentModule,
+                  ownerName: ctx.currentModule,
                   metadata: { nodeType: attrNameNode.text, isNif: true },
                 })
               }
@@ -161,7 +170,7 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
                 fields.push(fieldNameNode.text)
                 // Record fields → property symbols owned by the record (struct),
                 // matching the universal struct-field contract (C/Rust/Zig).
-                symbols.push({
+                ctx.symbols.push({
                   name: fieldNameNode.text,
                   kind: ASTEngine.SymbolKind.Property,
                   range: this.nodeToRange(child),
@@ -172,29 +181,18 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
               }
             }
           }
-          symbols.push({
+          ctx.symbols.push({
             name: recordName,
             kind: ASTEngine.SymbolKind.Struct,
             range: this.nodeToRange(node),
-            ownerName: currentModule,
+            ownerName: ctx.currentModule,
             metadata: { nodeType: "record_decl", fields },
           })
-          // Contains: record → each field
-          for (const field of fields) {
-            relationships.push({
-              source: `${currentModule ? currentModule + ":" : ""}${recordName}`,
-              target: field,
-              type: ASTEngine.RelationshipType.Contains,
-              confidence: 1.0,
-              metadata: { erlangSpecific: true, recordField: true },
-            })
-          }
         }
       }
 
       // ---- -define(MACRO, value). (pp_define) ----
       else if (type === "define" || type === "pp_define") {
-        // Grammar: pp_define → macro_lhs → var(MAX_AGE)
         let macroName = ""
         const macroLhs = this.getChildByType(node, "macro_lhs")
         if (macroLhs) {
@@ -206,26 +204,26 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (atomNode && atomNode.text !== "define") macroName = atomNode.text
         }
         if (macroName) {
-          symbols.push({
+          ctx.symbols.push({
             name: macroName,
             kind: ASTEngine.SymbolKind.Constant,
             range: this.nodeToRange(node),
-            ownerName: currentModule,
+            ownerName: ctx.currentModule,
             metadata: { nodeType: "macro_definition", isMacro: true },
           })
         }
       }
 
-      // ---- -type name() :: ... ----
+      // ---- -type name() :: ... / -type maybe(T) :: ... ----
       else if (type === "type_alias") {
         const typeNameNode = this.getChildByType(node, "type_name")
-        const typeName = typeNameNode?.text?.replace(/\(\)$/, "") || this.getChildByType(node, "atom")?.text
+        const typeName = typeNameNode?.text ? this.stripFirstParen(typeNameNode.text) : this.getChildByType(node, "atom")?.text
         if (typeName) {
-          symbols.push({
+          ctx.symbols.push({
             name: typeName,
             kind: ASTEngine.SymbolKind.Type,
             range: this.nodeToRange(node),
-            ownerName: currentModule,
+            ownerName: ctx.currentModule,
             metadata: { nodeType: "type_alias" },
           })
         }
@@ -234,55 +232,32 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
       // ---- -spec name(...) :: ... ----
       else if (type === "spec") {
         // Specs are type annotations for the function that follows; the function
-        // declaration itself emits the symbol. Record nothing as a standalone
-        // symbol — avoids phantom interface/function duplicates.
+        // declaration itself emits the symbol. Record nothing standalone.
       }
 
-      // ---- ! (send_expression) ----
-      else if (type === "send_expression") {
-        const destNode = this.getChildByType(node, "atom") || node.namedChild(0)
-        if (destNode && currentModule) {
-          relationships.push({
-            source: currentModule,
-            target: destNode.text,
-            type: ASTEngine.RelationshipType.Calls,
-            confidence: 0.8,
-            metadata: { erlangSpecific: true, isMessagePass: true },
-          })
+      // ---- ! (message send — binary_op_expr in this grammar) ----
+      else if (type === "binary_op_expr") {
+        const op = node.child(1)?.text
+        if (op === "!") {
+          ctx.patterns["Message Passing"] = true
+          ctx.patterns["Actor Model (OTP)"] = true
         }
+        if (op === "andalso" || op === "orelse") cyclomaticComplexity++
       }
 
-      // ---- #person{name = Name, age = Age} (record_expr) ----
+      // ---- #person{name = Name} (record_expr — construction only) ----
       else if (type === "record_expr") {
-        const nameNode = this.getChildByType(node, "record_name") || this.getChildByType(node, "atom")
-        const recordName = nameNode?.text?.replace(/^#/, "") || ""
-        if (recordName && currentModule) {
-          relationships.push({
-            source: currentModule,
-            target: recordName,
-            type: ASTEngine.RelationshipType.Instantiates,
-            confidence: 1.0,
-            metadata: { erlangSpecific: true, isRecordExpr: true },
-          })
-        }
-        // Track variable uses in record fields
-        for (let i = 0; i < node.namedChildCount; i++) {
-          const child = node.namedChild(i)
-          if (child?.type === "record_field") {
-            const fieldName = this.getChildByType(child, "atom")
-            const fieldExpr = this.getChildByType(child, "field_expr")
-            if (fieldExpr) {
-              const varNode = this.getChildByType(fieldExpr, "var")
-              if (varNode?.text && currentModule) {
-                relationships.push({
-                  source: currentModule,
-                  target: varNode.text,
-                  type: ASTEngine.RelationshipType.Uses,
-                  confidence: 0.8,
-                  metadata: { erlangSpecific: true, isFieldBinding: true, recordField: fieldName?.text },
-                })
-              }
-            }
+        // Record updates (State#state{...}) and accesses (State#state.q) are
+        // record_update_expr / record_field_expr node types — NOT construction.
+        // A record_expr in a function head (expr_args, before clause_body) is a
+        // PATTERN, not a construction site.
+        if (!this.isInFunHead(node)) {
+          const nameNode = this.getChildByType(node, "record_name") || this.getChildByType(node, "atom")
+          const recordName = nameNode ? this.stripLeadingHash(nameNode.text) : ""
+          if (recordName) {
+            this.pushRel(ctx, ctx.currentFunction || ctx.currentModule || "Global", recordName, ASTEngine.RelationshipType.Instantiates, 1.0, {
+              erlangSpecific: true, isRecordExpr: true,
+            })
           }
         }
       }
@@ -298,108 +273,178 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (nameNode?.text) {
             funcName = nameNode.text
             const funcLine = funcClause.startPosition.row + 1
-
-            // Dedup across multiple fun_decl nodes (semicolon-separated clauses)
-            if (!symbolRegistered && currentModule) {
-              const fullKey = `${currentModule}:${funcName}`
-              if (!registeredFunctions.has(fullKey)) {
-                registeredFunctions.add(fullKey)
-                symbols.push({
+            if (!symbolRegistered && ctx.currentModule) {
+              const fullKey = `${ctx.currentModule}:${funcName}`
+              if (!ctx.registeredFunctions.has(fullKey)) {
+                ctx.registeredFunctions.add(fullKey)
+                ctx.symbols.push({
                   name: funcName,
                   kind: ASTEngine.SymbolKind.Function,
                   range: this.nodeToRange(node),
-                  ownerName: currentModule,
+                  ownerName: ctx.currentModule,
                   metadata: { nodeType: "function_clause", clauseCount: funcClauses.length },
-                })
-                // Contains: module contains this function
-                relationships.push({
-                  source: currentModule,
-                  target: funcName,
-                  type: ASTEngine.RelationshipType.Contains,
-                  confidence: 1.0,
-                  metadata: { erlangSpecific: true, isModuleMember: true },
                 })
               }
               symbolRegistered = true
             }
-
             // Extract calls from EVERY clause
-            this.extractCallsFromFunction(
-              funcClause,
-              currentModule,
-              funcName,
-              funcLine,
-              relationships,
-              imports,
-              seenFuncalls,
-              registeredFunctions,
-            )
+            this.extractCallsFromFunction(funcClause, ctx, funcName, funcLine)
           }
+        }
+        if (funcName) {
+          ctx.currentFunction = funcName
+          pushedScope = true
         }
       }
 
       // ---- receive ... end ----
-      else if (type === "receive_expression") {
-        patterns["Message Reception (receive)"] = true
+      else if (type === "receive_expr") {
+        ctx.patterns["Message Reception (receive)"] = true
+        ctx.patterns["Actor Model (OTP)"] = true
         for (let i = 0; i < node.namedChildCount; i++) {
           const child = node.namedChild(i)
-          if (child?.type === "after_clause") {
-            const timeoutNode = this.getChildByType(child, "integer")
-            if (timeoutNode) {
-              relationships.push({
-                source: currentModule || filePath,
-                target: `timeout_${timeoutNode.text}ms`,
-                type: ASTEngine.RelationshipType.References,
-                confidence: 0.8,
-                metadata: { erlangSpecific: true, isReceiveTimeout: true },
-              })
-            }
-            patterns["Receive with Timeout"] = true
+          if (child?.type === "receive_after") {
+            cyclomaticComplexity++
+            ctx.patterns["Receive with Timeout"] = true
           }
         }
       }
 
-      // ---- var references (Uses) ----
-      // Variable usage is tracked contextually through record_expr field bindings
-      // and function call extraction. Individual var node tracking is too noisy.
+      // ---- case / if / try decision points ----
+      else if (type === "case_expr" || type === "if_expr" || type === "try_expr") {
+        cyclomaticComplexity++
+      }
 
+      // ---- function clauses (each is a branch) ----
+      else if (type === "function_clause" || type === "fun_clause") {
+        cyclomaticComplexity++
+      }
+
+      if (pushedScope) stack.push({ node, isExit: true })
       for (let i = node.childCount - 1; i >= 0; i--) {
         const child = node.child(i)
-        if (child) stack.push(child)
+        if (child) stack.push({ node: child })
       }
     }
 
-    if (currentModule) patterns["OTP Module"] = true
+    // Post-loop: contains for owned symbols — module → its types/constants/
+    // records/functions/nifs; record → its fields (record-name source).
+    for (const s of ctx.symbols) {
+      const _owner = s.ownerName
+      if (_owner) {
+        this.pushRel(ctx, _owner, s.name, ASTEngine.RelationshipType.Contains, 1.0, { erlangSpecific: true, isModuleMember: true })
+      }
+    }
+
+    if (ctx.currentModule) ctx.patterns["OTP Module"] = true
     const pa: string[] = []
-    for (const k in patterns) pa.push(k)
+    for (const k in ctx.patterns) pa.push(k)
 
     return {
       language: "erlang",
-      symbols,
-      relationships,
-      imports,
-      exports,
-      errors,
+      symbols: ctx.symbols,
+      relationships: ctx.relationships,
+      imports: ctx.imports,
+      exports: ctx.exports,
+      errors: ctx.errors,
       metadata: {
-        complexity: symbols.length,
+        complexity: cyclomaticComplexity,
         linesOfCode: content.split("\n").length,
         patterns: pa,
-        framework: currentModule || "Erlang",
+        framework: ctx.currentModule || "Erlang",
         hasFrameworkIntelligence: true,
         hasTypeInference: false,
       },
     }
   }
 
+  // ==========================================================================
+  // Relationship emission (dedupe by source|type|target identity).
+  // ==========================================================================
+  private pushRel(
+    ctx: ErlangContext,
+    source: string,
+    target: string,
+    type: ASTEngine.RelationshipType,
+    confidence: number,
+    metadata: Record<string, any> = {},
+  ) {
+    const key = `${source}|${type}|${target}`
+    if (ctx.seenRels.has(key)) return
+    ctx.seenRels.add(key)
+    ctx.relationships.push({ source, target, type, confidence, metadata })
+  }
+
+  // ==========================================================================
+  // Pure-string helpers (no regex).
+  // ==========================================================================
+  private stripQuotes(text: string): string {
+    let out = ""
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i]
+      if (ch === '"' || ch === "'") continue
+      out += ch
+    }
+    return out
+  }
+
+  private keepDigits(text: string): string {
+    let out = ""
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i]
+      if (ch >= "0" && ch <= "9") out += ch
+    }
+    return out
+  }
+
+  // `name()` → `name`; `maybe(T)` → `maybe` (strip the parameter list).
+  private stripFirstParen(text: string): string {
+    const paren = text.indexOf("(")
+    return (paren >= 0 ? text.slice(0, paren) : text).trim()
+  }
+
+  private stripLeadingHash(text: string): string {
+    return text.length > 0 && text[0] === "#" ? text.slice(1) : text
+  }
+
+  // ==========================================================================
+  // Pre-pass: declared function names (forward-reference resolution).
+  // ==========================================================================
+  private collectDeclaredFunctions(node: Node, out: Set<string>): void {
+    if (node.type === "fun_decl") {
+      const clauses = this.collectChildrenByType(node, "function_clause")
+      for (const c of clauses) {
+        const nameNode = this.getChildByType(c, "atom") || this.getChildByType(c, "var")
+        if (nameNode?.text) out.add(nameNode.text)
+      }
+      return
+    }
+    for (let i = 0; i < node.childCount; i++) {
+      const child = node.child(i)
+      if (child) this.collectDeclaredFunctions(child, out)
+    }
+  }
+
+  // A record_expr directly in a function head (expr_args before clause_body) is
+  // a pattern match, not a construction site.
+  private isInFunHead(node: Node): boolean {
+    let cur = node.parent
+    while (cur) {
+      if (cur.type === "clause_body") return false
+      if (cur.type === "function_clause" || cur.type === "fun_clause") return true
+      cur = cur.parent
+    }
+    return false
+  }
+
+  // ==========================================================================
+  // Call extraction (per function clause).
+  // ==========================================================================
   private extractCallsFromFunction(
     funcNode: Node,
-    currentModule: string | undefined,
+    ctx: ErlangContext,
     funcName: string,
     lineNumber: number,
-    relationships: ASTEngine.UniversalRelationship[],
-    imports: ASTEngine.ImportInfo[],
-    seenCalls: Set<string>,
-    registeredFunctions: Set<string>,
   ) {
     const stack: Node[] = [funcNode]
 
@@ -410,85 +455,32 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
         const callee = node.namedChild(0)
         const calleeText = callee?.text || ""
 
-        // Process spawn: spawn(fun() -> ... end) / spawn(Module, Function, Args)
+        // OTP process spawning — pattern only (spawn is a BIF, not a local
+        // function; the FP-family builtin-exclusion rule).
         if (calleeText === "spawn" || calleeText === "spawn_link" || calleeText === "spawn_monitor") {
-          if (currentModule) {
-            relationships.push({
-              source: `${currentModule}:${funcName}`,
-              target: calleeText,
-              type: ASTEngine.RelationshipType.Calls,
-              confidence: 0.9,
-              metadata: { erlangSpecific: true, isProcessSpawn: true },
-            })
-          }
+          ctx.patterns["Actor Model (OTP)"] = true
+          ctx.patterns["Process Spawning"] = true
         }
 
-        // Remote call: io:format(...)
+        // Remote call: io:format(...) → calls func -> io:format
         const remoteNode = this.getChildByType(node, "remote")
         if (remoteNode) {
           const atoms: string[] = []
           this.collectAtoms(remoteNode, atoms)
           if (atoms.length >= 2) {
-            const targetModule = atoms[0]
-            const targetFunc = atoms[1]
-            const callKey = `${targetModule}:${targetFunc}`
-            if (!seenCalls.has(callKey)) {
-              seenCalls.add(callKey)
-              relationships.push({
-                source: currentModule ? `${currentModule}:${funcName}` : funcName,
-                target: callKey,
-                type: ASTEngine.RelationshipType.Calls,
-                confidence: 0.9,
-                metadata: { erlangSpecific: true, context: "remote function call" },
-              })
-              if (!imports.some((imp) => imp.module === targetModule)) {
-                imports.push({
-                  module: targetModule,
-                  functions: [targetFunc],
-                  file: "",
-                  line: lineNumber,
-                  isNif: false,
-                })
-                relationships.push({
-                  source: currentModule || "global",
-                  target: targetModule,
-                  type: ASTEngine.RelationshipType.References,
-                  confidence: 0.9,
-                  metadata: { erlangSpecific: true, isModuleDep: true },
-                })
-              }
-            }
-          }
-        }
-
-        // Local call: factorial(N - 1) — callee is an atom matching a known function
-        if (callee?.type === "atom" && calleeText && !remoteNode && currentModule) {
-          const localKey = `${currentModule}:${calleeText}`
-          if (registeredFunctions.has(localKey) && !seenCalls.has(localKey)) {
-            seenCalls.add(localKey)
-            relationships.push({
-              source: `${currentModule}:${funcName}`,
-              target: calleeText,
-              type: ASTEngine.RelationshipType.Calls,
-              confidence: 0.9,
-              metadata: { erlangSpecific: true, context: "local function call" },
+            this.pushRel(ctx, funcName, `${atoms[0]}:${atoms[1]}`, ASTEngine.RelationshipType.Calls, 0.9, {
+              erlangSpecific: true, context: "remote function call",
             })
           }
-        }
-      }
-
-      // Track remote module references (even outside call context)
-      if (node.type === "remote") {
-        const atoms: string[] = []
-        this.collectAtoms(node, atoms)
-        if (atoms.length >= 1 && !imports.some((imp) => imp.module === atoms[0])) {
-          imports.push({
-            module: atoms[0],
-            functions: [],
-            file: "",
-            line: lineNumber,
-            isNif: false,
-          })
+        } else if (callee?.type === "atom" && calleeText && ctx.currentModule) {
+          // Local call: only when the callee is declared in this file
+          // (forward references resolve via the pre-pass). BIFs (length, self,
+          // element, ...) and imported functions are not local symbols.
+          if (ctx.declaredFunctions.has(calleeText)) {
+            this.pushRel(ctx, funcName, calleeText, ASTEngine.RelationshipType.Calls, 0.9, {
+              erlangSpecific: true, context: "local function call",
+            })
+          }
         }
       }
 
