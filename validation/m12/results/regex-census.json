@@ -2,22 +2,22 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-08-17T23:03:02.538Z",
+  "generatedAt": "2026-08-17T23:41:22.954Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 78,
+  "totalRegexUsages": 69,
   "analyzersScanned": 41,
   "byClassification": {
-    "unavoidable": 11,
-    "normalization": 39,
+    "unavoidable": 9,
+    "normalization": 33,
     "replaceable": 1,
-    "needs_review": 27
+    "needs_review": 26
   },
   "byReceiverCategory": {
-    "literal": 11,
-    "node_text": 39,
+    "literal": 9,
+    "node_text": 33,
     "raw_content": 1,
-    "other": 12,
+    "other": 11,
     "identifier": 15
   },
   "perFile": [
@@ -387,111 +387,6 @@
           "receiver": "n.text",
           "receiverCategory": "node_text",
           "classification": "normalization",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-haskell-analyzer.ts",
-      "count": 9,
-      "usages": [
-        {
-          "file": "real-haskell-analyzer.ts",
-          "line": 177,
-          "column": 41,
-          "source": "/^[A-Z][a-zA-Z0-9_]*/",
-          "operation": "match",
-          "receiver": "node.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-haskell-analyzer.ts",
-          "line": 249,
-          "column": 71,
-          "source": "/^[A-Z]/",
-          "operation": "test",
-          "receiver": "/^[A-Z]/",
-          "receiverCategory": "literal",
-          "classification": "unavoidable",
-          "justification": ""
-        },
-        {
-          "file": "real-haskell-analyzer.ts",
-          "line": 409,
-          "column": 30,
-          "source": "/^as\\s+/",
-          "operation": "replace",
-          "receiver": "child.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-haskell-analyzer.ts",
-          "line": 418,
-          "column": 48,
-          "source": "/^[()]/g",
-          "operation": "replace",
-          "receiver": "item.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-haskell-analyzer.ts",
-          "line": 418,
-          "column": 70,
-          "source": "/[()]$/g",
-          "operation": "replace",
-          "receiver": "item.text.replace(/^[()]/g, \"\")",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-haskell-analyzer.ts",
-          "line": 534,
-          "column": 11,
-          "source": "/\\(.*\\b->\\b.*\\)/",
-          "operation": "test",
-          "receiver": "/\\(.*\\b->\\b.*\\)/",
-          "receiverCategory": "literal",
-          "classification": "unavoidable",
-          "justification": ""
-        },
-        {
-          "file": "real-haskell-analyzer.ts",
-          "line": 670,
-          "column": 59,
-          "source": "/[()]/g",
-          "operation": "replace",
-          "receiver": "tpNode.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-haskell-analyzer.ts",
-          "line": 670,
-          "column": 85,
-          "source": "/\\s+/",
-          "operation": "split",
-          "receiver": "tpNode.text.replace(/[()]/g, \"\").trim()",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-haskell-analyzer.ts",
-          "line": 675,
-          "column": 54,
-          "source": "/\\s+/",
-          "operation": "split",
-          "receiver": "(typeNodes[0]?.text || \"\")",
-          "receiverCategory": "other",
-          "classification": "needs_review",
           "justification": ""
         }
       ]
