@@ -9,6 +9,19 @@ function stringIncludes(str: string, val: string): boolean {
   return str.indexOf(val) !== -1
 }
 
+// Strip `<`, `>`, and `"` characters from an include-path node text
+// (`<stddef.h>` → `stddef.h`, `"CoreApi.h"` → `CoreApi.h`). Pure-String
+// scan — replaces the legacy `/[<>"']/g` regex used by getIncludePath and
+// extractInclude.
+function stripIncludeChars(text: string): string {
+  let out = ""
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]
+    if (c !== "<" && c !== ">" && c !== '"' && c !== "'") out += c
+  }
+  return out
+}
+
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 
@@ -78,6 +91,14 @@ class CScopeManager {
     }
     return null
   }
+
+  // Relationship source identity: the enclosing FUNCTION name, not the block
+  // scope (`core_init.block_211` would be a dangling identity that never
+  // resolves to a symbol). Top-level (file-scope) relationships use "global".
+  getRelationshipSource(): string {
+    const fn = this.getCurrentFunctionName()
+    return fn || "global"
+  }
 }
 
 export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
@@ -96,6 +117,35 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     const unions: Record<string, any[]> = {}
     const enums: Record<string, boolean> = {}
     const patterns: Record<string, boolean> = {}
+
+    // Pre-pass: collect every type DECLARATION name in the file (struct/union/
+    // enum names and typedef aliases). Type-identifier resolution is then
+    // order-independent — `typedef struct Point Point;` before `struct Point
+    // { ... }` still resolves, while a never-defined forward declaration
+    // (`struct ForwardOnly;`) emits no dangling use edge.
+    const declaredTypes = new Set<string>()
+    {
+      const preStack: Node[] = [rootNode]
+      while (preStack.length > 0) {
+        const n = preStack.pop()!
+        if (n.type === "struct_specifier" || n.type === "union_specifier") {
+          if (n.childForFieldName("body")) {
+            const nm = n.childForFieldName("name")
+            if (nm && nm.text.trim()) declaredTypes.add(nm.text)
+          }
+        } else if (n.type === "enum_specifier") {
+          const nm = n.childForFieldName("name")
+          if (nm && nm.text.trim()) declaredTypes.add(nm.text)
+        } else if (n.type === "type_definition") {
+          const identNode = this.getIdentifierFromDeclarator(n.childForFieldName("declarator"))
+          if (identNode && identNode.text.trim()) declaredTypes.add(identNode.text)
+        }
+        for (let i = n.namedChildCount - 1; i >= 0; i--) {
+          const c = n.namedChild(i)
+          if (c) preStack.push(c)
+        }
+      }
+    }
 
     // Track current active function for localized metadata updates
     let activeFunctionSymbol: ASTEngine.UniversalSymbol | null = null
@@ -184,8 +234,13 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
       const declNode = this.getIdentifierFromDeclarator(node.parent.childForFieldName("declarator"))
       if (declNode && declNode.text.trim()) structName = declNode.text.trim()
     }
-          scopeManager.pushScope(ScopeKind.Struct, structName, node)
-          willPushScope = true
+          // Only a struct WITH a body is a definition site — forward/reference
+          // declarations (`struct Point;`, `typedef struct Point Point;`) push
+          // no scope so the typedef name cannot self-reference its own scope.
+          if (node.childForFieldName("body")) {
+            scopeManager.pushScope(ScopeKind.Struct, structName, node)
+            willPushScope = true
+          }
           this.extractStruct(
             node,
             symbols,
@@ -207,8 +262,10 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
       const declNode = this.getIdentifierFromDeclarator(node.parent.childForFieldName("declarator"))
       if (declNode && declNode.text.trim()) unionName = declNode.text.trim()
     }
-          scopeManager.pushScope(ScopeKind.Union, unionName, node)
-          willPushScope = true
+          if (node.childForFieldName("body")) {
+        scopeManager.pushScope(ScopeKind.Union, unionName, node)
+        willPushScope = true
+      }
           this.extractUnion(node, symbols, unions, scopeManager.getScopeName(), isConditional)
           break
         }
@@ -259,7 +316,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           const includePath = this.getIncludePath(node)
           if (includePath) {
             relationships.push({
-              source: scopeManager.getScopeName(),
+              source: scopeManager.getRelationshipSource(),
               target: includePath,
               type: ASTEngine.RelationshipType.References,
               confidence: 1.0,
@@ -316,7 +373,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
 
           if (target && target.trim() !== "") {
             relationships.push({
-              source: scopeManager.getScopeName(),
+              source: scopeManager.getRelationshipSource(),
               target: target,
               type: ASTEngine.RelationshipType.Calls,
               confidence: 1.0,
@@ -332,7 +389,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
               }
               // instantiates: malloc/calloc allocate new memory objects — treat as instantiation
               relationships.push({
-                source: scopeManager.getScopeName(),
+                source: scopeManager.getRelationshipSource(),
                 target: target,
                 type: ASTEngine.RelationshipType.Instantiates,
                 confidence: 0.9,
@@ -385,7 +442,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
         const field = node.childForFieldName("field")
         const obj = node.childForFieldName("argument") || node.namedChild(0)
         if (field && field.text.trim()) {
-          const sourceScope = scopeManager.getScopeName()
+          const sourceScope = scopeManager.getRelationshipSource()
           const relKey = `${sourceScope}::uses::${field.text}`
           if (!emittedUseRelationships.has(relKey)) {
             emittedUseRelationships.add(relKey)
@@ -394,14 +451,6 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: field.text,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.9,
-              metadata: { relationshipType: "field_access", accessedFrom: obj?.text },
-            })
-            // references: field access implies a reference to the struct member
-            relationships.push({
-              source: sourceScope,
-              target: field.text,
-              type: ASTEngine.RelationshipType.References,
-              confidence: 0.85,
               metadata: { relationshipType: "field_access", accessedFrom: obj?.text },
             })
           }
@@ -440,7 +489,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           const nameNode = node.childForFieldName("name")
           if (nameNode) text = nameNode.text
         }
-        const sourceScope = scopeManager.getScopeName()
+        const sourceScope = scopeManager.getRelationshipSource()
         const currentFunction = scopeManager.getCurrentFunctionName()
         const locals = currentFunction ? functionLocals.get(currentFunction) : undefined
 
@@ -450,25 +499,30 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           sourceScope !== "" &&
           !this.isDeclarationLikeIdentifier(node) &&
           !(locals && locals.has(text)) &&
-          this.isResolvableUseTarget(text, node.type, symbols, globalVars, structs, unions, enums)
+          // A call-target identifier already emits a `calls` edge from the
+          // call_expression branch — skipping it here avoids the redundant
+          // `uses` pair (family contract: one edge per pair).
+          node.parent?.type !== "call_expression" &&
+          this.isResolvableUseTarget(text, node.type, symbols, globalVars, structs, unions, enums, declaredTypes)
         ) {
-          const relKey = `${sourceScope}::uses::${text}`
+          // Family contract (matches Java M12.01): a type identifier is a
+          // REFERENCES edge (type usage); a value identifier (global var, enum
+          // member) is a USES edge — never both for the same pair.
+          const isTypeNode = inArray(
+            ["type_identifier", "struct_specifier", "union_specifier", "enum_specifier"],
+            node.type,
+          )
+          const relKey = `${sourceScope}::${isTypeNode ? "ref" : "use"}::${text}`
           if (!emittedUseRelationships.has(relKey)) {
             emittedUseRelationships.add(relKey)
             relationships.push({
               source: sourceScope,
               target: text,
-              type: ASTEngine.RelationshipType.Uses,
-              confidence: 1.0,
-              metadata: { relationshipType: node.type },
-            })
-            // references: general identifier usage → also a reference
-            relationships.push({
-              source: sourceScope,
-              target: text,
-              type: ASTEngine.RelationshipType.References,
-              confidence: 0.8,
-              metadata: { relationshipType: "identifier_reference", nodeType: node.type },
+              type: isTypeNode ? ASTEngine.RelationshipType.References : ASTEngine.RelationshipType.Uses,
+              confidence: isTypeNode ? 0.8 : 1.0,
+              metadata: isTypeNode
+                ? { relationshipType: "type_reference", nodeType: node.type }
+                : { relationshipType: "identifier_usage", nodeType: node.type },
             })
           }
         }
@@ -545,18 +599,20 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     const insights: any[] = []
 
-    // Post-loop: add contains for owned symbols (struct→field, union→field, enum→constant)
+    // Post-loop: add contains for REAL container ownership only
+    // (struct→field, union→field, enum→member). Top-level symbols carry the
+    // synthetic scope name "global" — `global contains core_init` would be a
+    // dangling edge (no symbol named `global` exists) and pollutes the graph,
+    // matching the Java family ontology where contains is container→member.
     for (const s of symbols) {
-      const _owner = s.ownerName || s.scope
-      if (_owner) {
-        relationships.push({
-          source: _owner,
-          target: s.name,
-          type: ASTEngine.RelationshipType.Contains,
-          confidence: 1.0,
-          metadata: {},
-        })
-      }
+      if (!s.ownerName) continue
+      relationships.push({
+        source: s.ownerName,
+        target: s.name,
+        type: ASTEngine.RelationshipType.Contains,
+        confidence: 1.0,
+        metadata: {},
+      })
     }
 
     return {
@@ -607,7 +663,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (!pathNode) {
       pathNode = this.findChild(node, (c) => c?.type === "string_literal" || c?.type === "system_lib_string") || null
     }
-    return pathNode ? pathNode.text.replace(/[<>"]/g, "") : null
+    return pathNode ? stripIncludeChars(pathNode.text) : null
   }
 
   private extractInclude(node: Node, imports: ASTEngine.ImportInfo[], onPath: (path: string) => void) {
@@ -620,7 +676,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
       const isSystem = rawPath[0] === "<"
       onPath(rawPath)
       imports.push({
-        module: rawPath.replace(/[<>"]/g, ""),
+        module: stripIncludeChars(rawPath),
         items: ["*"],
         range: this.nodeToRange(node),
         metadata: { isSystemInclude: isSystem },
@@ -1302,11 +1358,17 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     structs: Record<string, any[]>,
     unions: Record<string, any[]>,
     enums: Record<string, boolean>,
+    declaredTypes: Set<string>,
   ): boolean {
     if (!name || !name.trim()) return false
     if (inArray(["NULL", "true", "false", "..."], name)) return false
 
-    if (inArray(["type_identifier", "struct_specifier", "union_specifier", "enum_specifier"], nodeType)) return true
+    // Type identifiers resolve only when the type is actually DECLARED in this
+    // file (pre-pass set — order-independent). A bare forward declaration that
+    // is never defined (`struct ForwardOnly;`) has no symbol to resolve to, so
+    // it must not produce a dangling use edge.
+    if (inArray(["type_identifier", "struct_specifier", "union_specifier", "enum_specifier"], nodeType))
+      return declaredTypes.has(name)
     if (globalVars[name] || structs[name] || unions[name] || enums[name]) return true
 
     for (let i = 0; i < symbols.length; i++) {
@@ -1316,6 +1378,10 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
         s.scope === "global" ||
         s.kind === ASTEngine.SymbolKind.Type ||
         s.kind === ASTEngine.SymbolKind.Enum ||
+        // Enum members are global constants in C — usage (e.g. `return
+        // STATUS_OK;`) must resolve (matches the Java family: `Status uses
+        // ACTIVE`). Their scope is the enum name, not "global".
+        s.kind === ASTEngine.SymbolKind.EnumMember ||
         s.kind === ASTEngine.SymbolKind.Function ||
         s.kind === ASTEngine.SymbolKind.Constant
       ) {

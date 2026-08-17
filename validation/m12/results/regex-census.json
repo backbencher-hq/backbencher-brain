@@ -2,21 +2,21 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-08-16T21:28:13.669Z",
+  "generatedAt": "2026-08-17T02:22:09.872Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 104,
+  "totalRegexUsages": 102,
   "analyzersScanned": 41,
   "byClassification": {
     "unavoidable": 11,
-    "normalization": 49,
-    "needs_review": 42,
+    "normalization": 48,
+    "needs_review": 41,
     "replaceable": 2
   },
   "byReceiverCategory": {
     "literal": 11,
-    "node_text": 49,
-    "identifier": 23,
+    "node_text": 48,
+    "identifier": 22,
     "other": 19,
     "raw_content": 2
   },
@@ -1101,34 +1101,6 @@
           "operation": "replace",
           "receiver": "refs[i]",
           "receiverCategory": "other",
-          "classification": "needs_review",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-c-analyzer.ts",
-      "count": 2,
-      "usages": [
-        {
-          "file": "real-c-analyzer.ts",
-          "line": 610,
-          "column": 45,
-          "source": "/[<>\"]/g",
-          "operation": "replace",
-          "receiver": "pathNode.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-c-analyzer.ts",
-          "line": 623,
-          "column": 33,
-          "source": "/[<>\"]/g",
-          "operation": "replace",
-          "receiver": "rawPath",
-          "receiverCategory": "identifier",
           "classification": "needs_review",
           "justification": ""
         }
