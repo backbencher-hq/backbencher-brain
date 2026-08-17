@@ -210,33 +210,38 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
    * PHASE 1: Extract Go symbols with proper Go semantics understanding
    */
   private extractGoSymbols(node: Node, symbols: ASTEngine.UniversalSymbol[], ctx: GoContext, parentStruct?: string) {
-    const stack: { node: Node; parent?: string }[] = [{ node, parent: parentStruct }]
+    // Package-scope declarations only. Function-local vars/consts/types are
+    // NOT symbols (C# M12.07 LocalsAreNotSymbols / Swift M12.21 negative
+    // contract) — the walk stops at function/method bodies.
+    const stack: { node: Node; parent?: string; inFunction: boolean }[] = [{ node, parent: parentStruct, inFunction: false }]
 
     while (stack.length > 0) {
-      const { node: current, parent } = stack.pop()!
+      const { node: current, parent, inFunction } = stack.pop()!
 
       switch (current.type) {
         case "function_declaration":
           this.extractGoFunction(current, symbols, parent)
-          break
+          // Do NOT descend into the body: locals are not symbols.
+          continue
         case "method_declaration":
           this.extractGoMethod(current, symbols)
-          break
+          continue
         case "type_declaration":
           this.extractGoTypeDeclaration(current, symbols)
           break
         case "var_declaration":
         case "const_declaration":
-          this.extractGoVariables(current, symbols, parent)
+          if (!inFunction) this.extractGoVariables(current, symbols, parent)
           break
         case "import_declaration":
           // Handled in processGoImports
           break
       }
 
+      const nextInFunction = inFunction || current.type === "block"
       for (let i = current.namedChildCount - 1; i >= 0; i--) {
         const child = current.namedChild(i)
-        if (child) stack.push({ node: child, parent })
+        if (child) stack.push({ node: child, parent, inFunction: nextInFunction })
       }
     }
   }
@@ -318,7 +323,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       apiContractPath,
       visibility: this.isGoExported(methodName) ? "public" : "private",
       ownerName: receiver?.typeName,
-      ownerKind: ASTEngine.SymbolKind.Class,
+      ownerKind: ASTEngine.SymbolKind.Struct,
       metadata: {
         nodeType: node.type,
         isGoMethod: true,
@@ -368,7 +373,8 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     switch (typeNode.type) {
       case "struct_type":
-        kind = ASTEngine.SymbolKind.Class
+        // Systems family (Rust M12.18 / Swift M12.21): struct -> struct
+        kind = ASTEngine.SymbolKind.Struct
         break
       case "interface_type":
         kind = ASTEngine.SymbolKind.Interface
@@ -418,16 +424,13 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
             // Extract field name and type
             const fieldNameNode = fieldDecl.childForFieldName("name")
             const fieldTypeNode = fieldDecl.childForFieldName("type")
-            // Extract struct tags like `json:"name"`
+            // Extract struct tags like `json:"name"` — pure string scan over
+            // the raw_string_literal content (backtick-delimited), no regex.
             const tagNode = fieldDecl.childForFieldName("tag")
             let structTags: Record<string, string> = {}
             if (tagNode) {
-              const tagText = tagNode.text.replace(/^[`']|[`']$/g, "")
-              const tagRegex = /([a-z0-9_]+):"((?:[^"\\]|\\.)*)"/g
-              let match
-              while ((match = tagRegex.exec(tagText)) !== null) {
-                structTags[match[1]] = match[2]
-              }
+              const tagText = this.stripRawStringDelimiters(tagNode.text)
+              structTags = this.parseStructTags(tagText)
             }
 
             if (fieldNameNode) {
@@ -438,7 +441,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
                 returnType: fieldTypeNode?.text,
                 visibility: this.isGoExported(fieldNameNode.text) ? "public" : "private",
                 ownerName: structName,
-                ownerKind: ASTEngine.SymbolKind.Class,
+                ownerKind: ASTEngine.SymbolKind.Struct,
                 metadata: {
                   structTags: getObjectKeysLength(structTags) > 0 ? structTags : undefined,
                   nodeType: fieldDecl.type,
@@ -569,11 +572,10 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     for (const comment of comments) {
-      // Swaggo annotation: @Router /path/to/endpoint [method]
-      const match = comment.match(/@Router\s+([^\s]+)\s+\[([^\]]+)\]/i)
-      if (match) {
-        return `${match[2].toUpperCase()} ${match[1]}`
-      }
+      // Swaggo annotation: @Router /path/to/endpoint [method] — pure string
+      // scan (case-insensitive marker, whitespace-tolerant), no regex.
+      const router = this.parseRouterAnnotation(comment)
+      if (router) return router
     }
     return undefined
   }
@@ -849,28 +851,39 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     rootNode: Node,
     relationships: ASTEngine.UniversalRelationship[],
     symbols: ASTEngine.UniversalSymbol[],
-    ctx: GoContext,
+    _ctx: GoContext,
   ) {
-    // 1. Analyze struct embedding relationships
+    // 1. Analyze struct embedding relationships (extends only)
     this.analyzeGoStructEmbedding(rootNode, relationships, symbols)
 
     // 2. Analyze interface implementation relationships
     this.analyzeGoInterfaceImplementation(rootNode, relationships, symbols)
 
-    // 3. Analyze method receiver relationships
-    this.analyzeGoMethodReceivers(rootNode, relationships, symbols)
-
-    // 4. Analyze function call relationships
+    // 3. Analyze function call relationships (leaf targets, incl. stdlib)
     this.analyzeGoFunctionCalls(rootNode, relationships, symbols)
 
-    // 5. Analyze package-level relationships
-    this.analyzeGoPackageRelationships(rootNode, relationships, symbols, ctx)
-
-    // 6. Analyze Go-specific patterns (channels, goroutines, defer)
+    // 4. Analyze Go-specific patterns (channels, goroutines, defer)
     this.analyzeGoSpecificPatterns(rootNode, relationships, symbols)
 
-    // 7. Analyze selector expression Uses (field access, method calls on values)
+    // 5. Analyze selector expression Uses (field access)
     this.analyzeGoSelectorUses(rootNode, relationships, symbols)
+
+    // 6. OwnerName contains pass (Rust M12.18 contract): every symbol with an
+    // owner gets ONE `contains owner -> member` edge — covers struct fields,
+    // interface methods, and methods uniformly. Replaces the old
+    // receiver-only contains and the package-export contains noise.
+    for (const s of symbols) {
+      const owner = s.ownerName
+      if (owner && owner !== s.name) {
+        relationships.push({
+          source: owner,
+          target: s.name,
+          type: ASTEngine.RelationshipType.Contains,
+          confidence: 1.0,
+          metadata: {},
+        })
+      }
+    }
   }
 
   /**
@@ -893,20 +906,14 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
             const nameNode = typeSpec.childForFieldName("name")
             const structName = nameNode?.text
             if (structName) {
+              // Go embedding = anonymous-field composition with method
+              // promotion — family contract (Java/C++/Swift/ObjC): ONE extends
+              // edge, no contains twin. The embedded type is a member via the
+              // ownerName contains pass below, and field-type dependency edges
+              // are NOT emitted (Rust M12.18 contract — fields get contains
+              // only, no dangling type-text targets).
               const embeddedTypes = this.extractGoEmbeddedTypes(structSpec)
               forEachSymbol(embeddedTypes, (embeddedType) => {
-                relationships.push({
-                  source: structName,
-                  target: embeddedType,
-                  type: ASTEngine.RelationshipType.Contains,
-                  confidence: 1.0,
-                  metadata: {
-                    relationshipType: "go_struct_embedding",
-                    isEmbedding: true,
-                    isAnonymous: true,
-                    embedType: "struct_composition",
-                  },
-                })
                 relationships.push({
                   source: structName,
                   target: embeddedType,
@@ -915,26 +922,10 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
                   metadata: {
                     relationshipType: "go_struct_embedding",
                     isEmbedding: true,
+                    isAnonymous: true,
                     embedType: "struct_composition_extends",
                   },
                 })
-              })
-
-              const fieldTypes = this.extractGoStructFieldTypes(structSpec)
-              forEachSymbol(fieldTypes, ({ fieldName, fieldType }) => {
-                if (this.isCustomGoType(fieldType)) {
-                  relationships.push({
-                    source: structName,
-                    target: fieldType,
-                    type: ASTEngine.RelationshipType.Uses,
-                    confidence: 0.9,
-                    metadata: {
-                      relationshipType: "go_struct_field",
-                      fieldName,
-                      fieldType,
-                    },
-                  })
-                }
               })
             }
           }
@@ -997,7 +988,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
 
         if (!valueImpl.implements && pointerImpl.implements) {
           relationships.push({
-            source: `*${structSymbol.name}`,
+            source: structSymbol.name,
             target: interfaceSymbol.name,
             type: ASTEngine.RelationshipType.Implements,
             confidence: pointerImpl.confidence,
@@ -1015,40 +1006,15 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
-   * Go Method Receiver Analysis
-   * Analyzes method receiver relationships (value vs pointer receivers)
-   */
-  private analyzeGoMethodReceivers(
-    rootNode: Node,
-    relationships: ASTEngine.UniversalRelationship[],
-    symbols: ASTEngine.UniversalSymbol[],
-  ) {
-    const methods = filterSymbols(symbols, (s) => s.kind === ASTEngine.SymbolKind.Method)
-
-    forEachSymbol(methods, (method) => {
-      const receiverType = method.metadata?.receiverType || method.metadata?.receiver?.typeName
-      const receiverKind = method.metadata?.receiverKind || (method.metadata?.receiver?.isPointer ? "pointer" : "value")
-
-      if (receiverType) {
-        relationships.push({
-          source: receiverType,
-          target: method.name,
-          type: ASTEngine.RelationshipType.Contains,
-          confidence: 1.0,
-          metadata: {
-            relationshipType: "go_method_receiver",
-            receiverKind,
-            isPointerReceiver: receiverKind === "pointer",
-            methodName: method.name,
-          },
-        })
-      }
-    })
-  }
-
-  /**
    * Go Function Call Analysis
-   * Analyzes Go function calls including package-qualified calls
+   * Analyzes Go function calls including package-qualified calls.
+   * Family contract (Rust M12.18): calls emit LEAF targets — a receiver chain
+   * `s.repo.Save(user)` emits `calls Save -> Save` exactly like Rust's
+   * `self.repository.find(id)` emits `calls find -> find`, and stdlib calls
+   * (`strings.ToUpper`) emit `calls transform -> ToUpper` like Rust's
+   * `calls normalize -> println`. Instantiates fires ONLY for PascalCase
+   * top-level FUNCTION symbols (Go constructor convention `NewXxx`) — never
+   * for methods or unresolved stdlib leaves.
    */
   private analyzeGoFunctionCalls(
     rootNode: Node,
@@ -1063,9 +1029,9 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     forEachSymbol(functions, (func) => {
       const qualifiedCalls = func.qualified_calls || []
       forEachSymbol(qualifiedCalls, (call) => {
-        // Handle package-qualified calls (package.Function)
+        // Handle package-qualified calls (package.Function) — leaf target
         const targetFunction = this.resolveGoFunctionCall(call, symbols)
-        if (targetFunction && targetFunction !== func.name) {
+        if (targetFunction) {
           relationships.push({
             source: func.name,
             target: targetFunction,
@@ -1077,9 +1043,20 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
               isPackageQualified: stringIncludes(call, "."),
             },
           })
-          // Go constructors: NewFoo(), NewBar() — PascalCase functions returning types
-          // Also track as Instantiates when the call suggests type construction
-          if (targetFunction && targetFunction[0] === targetFunction[0].toUpperCase() && targetFunction[0] !== targetFunction[0].toLowerCase()) {
+          // Go constructors: NewFoo() — PascalCase top-level function.
+          // Methods and unresolved stdlib leaves never instantiate.
+          const ctorSymbol = findSymbol(
+            symbols,
+            (s) =>
+              s.name === targetFunction &&
+              s.kind === ASTEngine.SymbolKind.Function &&
+              !s.ownerName,
+          )
+          if (
+            ctorSymbol &&
+            ctorSymbol.name[0] === ctorSymbol.name[0].toUpperCase() &&
+            ctorSymbol.name[0] !== ctorSymbol.name[0].toLowerCase()
+          ) {
             relationships.push({
               source: func.name,
               target: targetFunction,
@@ -1094,39 +1071,6 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
-   * Go Package Relationships Analysis
-   * Analyzes package-level dependencies and exports
-   */
-  private analyzeGoPackageRelationships(
-    rootNode: Node,
-    relationships: ASTEngine.UniversalRelationship[],
-    symbols: ASTEngine.UniversalSymbol[],
-    ctx: GoContext,
-  ) {
-    // Analyze package-level relationships from imports
-    const content = ctx.content
-    const currentPackage = this.extractGoPackageName(rootNode)
-
-    if (currentPackage) {
-      // Find exported symbols (capitalized names)
-      const exportedSymbols = filterSymbols(symbols, (s) => this.isGoExported(s.name))
-      forEachSymbol(exportedSymbols, (symbol) => {
-        relationships.push({
-          source: currentPackage,
-          target: symbol.name,
-          type: ASTEngine.RelationshipType.Contains,
-          confidence: 1.0,
-          metadata: {
-            relationshipType: "go_package_export",
-            isExported: true,
-            packageName: currentPackage,
-          },
-        })
-      })
-    }
-  }
-
-  /**
    * Go-Specific Pattern Analysis
    * Analyzes goroutines, channels, defer statements, and Go idioms
    */
@@ -1135,6 +1079,16 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     relationships: ASTEngine.UniversalRelationship[],
     symbols: ASTEngine.UniversalSymbol[],
   ) {
+    // Dedup against calls edges already emitted by analyzeGoFunctionCalls
+    // (qualified_calls includes call_expressions inside go/defer bodies) —
+    // goroutine/defer spawns are calls, one edge per (source, target) pair.
+    const emittedCalls = new Set<string>()
+    for (const r of relationships) {
+      if ((r.type || r.relationshipType || "") === ASTEngine.RelationshipType.Calls) {
+        emittedCalls.add(`${r.source}->${r.target}`)
+      }
+    }
+
     const stack = [rootNode]
     while (stack.length > 0) {
       const node = stack.pop()!
@@ -1142,7 +1096,8 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         const functionCall = this.extractGoRoutineFunction(node)
         if (functionCall) {
           const containingFunction = this.findContainingGoFunction(node)
-          if (containingFunction) {
+          if (containingFunction && !emittedCalls.has(`${containingFunction}->${functionCall}`)) {
+            emittedCalls.add(`${containingFunction}->${functionCall}`)
             relationships.push({
               source: containingFunction,
               target: functionCall,
@@ -1197,7 +1152,8 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (node.type === "defer_statement") {
         const deferredFunction = this.extractDeferredFunction(node)
         const containingFunction = this.findContainingGoFunction(node)
-        if (deferredFunction && containingFunction) {
+        if (deferredFunction && containingFunction && !emittedCalls.has(`${containingFunction}->${deferredFunction}`)) {
+          emittedCalls.add(`${containingFunction}->${deferredFunction}`)
           relationships.push({
             source: containingFunction,
             target: deferredFunction,
@@ -1221,7 +1177,11 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   /**
    * Go Selector Expression Uses Analysis
-   * Tracks field access and method calls on structs (e.g., p.Name, p.Greet())
+   * Tracks field access on structs (e.g., b.name, s.users).
+   * Family contract (Rust M12.18): source = containing function/method,
+   * target = FIELD LEAF (not the receiver variable). Selectors that are the
+   * callee of a call_expression (`s.repo.Save(...)`, `strings.ToUpper(...)`)
+   * are handled by the calls analysis and skipped here — one edge per pair.
    */
   private analyzeGoSelectorUses(
     rootNode: Node,
@@ -1235,8 +1195,11 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (node.type === "selector_expression") {
         const operand = node.childForFieldName("operand")
         const field = node.childForFieldName("field")
-        if (operand && field) {
-          const src = operand.text
+        // Skip selectors that are the callee of a call — the calls analysis
+        // emits the leaf-target calls edge (Rust: field_expression inside a
+        // call_expression is skipped for uses).
+        if (operand && field && node.parent?.type !== "call_expression") {
+          const src = this.findContainingGoFunction(node) || "global"
           const tgt = field.text
           const key = `${src}.${tgt}`
           if (!seen.has(key)) {
@@ -1308,7 +1271,9 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     const aliasNode = spec.childForFieldName("name")
 
     if (pathNode) {
-      const importPath = pathNode.text.replace(/"/g, "") // Remove quotes
+      // interpreted_string_literal — strip the surrounding double quotes
+      // with a pure first/last-char check (no regex).
+      const importPath = this.stripQuotedString(pathNode.text)
       const alias = aliasNode?.text
       const packageName = this.getGoPackageName(importPath)
       const framework = this.detectFrameworkFromGoImport(importPath)
@@ -1684,6 +1649,158 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   // ======================== GO HELPER METHODS ========================
 
+  // ---- Pure-string helpers (M12.22: no regex in this analyzer) ----
+
+  /** Strip surrounding backticks/quote chars from a raw string literal. */
+  private stripRawStringDelimiters(text: string): string {
+    if (text.length >= 2) {
+      const first = text[0]
+      const last = text[text.length - 1]
+      if ((first === "`" && last === "`") || (first === "'" && last === "'")) {
+        return text.slice(1, -1)
+      }
+    }
+    return text
+  }
+
+  /** Strip surrounding double quotes from an interpreted string literal. */
+  private stripQuotedString(text: string): string {
+    if (text.length >= 2 && text[0] === '"' && text[text.length - 1] === '"') {
+      return text.slice(1, -1)
+    }
+    return text
+  }
+
+  /** Parse struct tags `json:"name" db:"x"` into key -> value (no regex). */
+  private parseStructTags(tagText: string): Record<string, string> {
+    const result: Record<string, string> = {}
+    let i = 0
+    const n = tagText.length
+    while (i < n) {
+      // Skip whitespace
+      while (i < n && (tagText[i] === " " || tagText[i] === "\t")) i++
+      if (i >= n) break
+      // Key: [a-z0-9_]+ up to ':'
+      const keyStart = i
+      while (i < n && tagText[i] !== ":" && tagText[i] !== " " && tagText[i] !== "\t") i++
+      if (i >= n || tagText[i] !== ":") break
+      const key = tagText.slice(keyStart, i)
+      i++ // skip ':'
+      // Value: double-quoted string
+      if (i < n && tagText[i] === '"') {
+        i++
+        let value = ""
+        while (i < n && tagText[i] !== '"') {
+          if (tagText[i] === "\\" && i + 1 < n) {
+            value += tagText[i + 1]
+            i += 2
+          } else {
+            value += tagText[i]
+            i++
+          }
+        }
+        i++ // skip closing quote
+        if (key) result[key] = value
+      }
+    }
+    return result
+  }
+
+  /**
+   * Swaggo @Router annotation: `@Router /path/to/endpoint [method]`.
+   * Case-insensitive marker, whitespace-tolerant pure scan (no regex).
+   */
+  private parseRouterAnnotation(comment: string): string | undefined {
+    const marker = "@Router"
+    const idx = this.indexOfIgnoreCase(comment, marker)
+    if (idx < 0) return undefined
+
+    const after = comment.slice(idx + marker.length)
+    const path = this.readToken(after)
+    if (!path) return undefined
+
+    // Find the [method] bracket after the path.
+    const open = after.indexOf("[", after.indexOf(path) + path.length)
+    if (open < 0) return undefined
+    const close = after.indexOf("]", open)
+    if (close < 0) return undefined
+    const method = after.slice(open + 1, close).trim()
+    if (!method) return undefined
+
+    return `${method.toUpperCase()} ${path}`
+  }
+
+  private indexOfIgnoreCase(text: string, search: string): number {
+    const lower = text.toLowerCase()
+    const target = search.toLowerCase()
+    return lower.indexOf(target)
+  }
+
+  /** Read the next whitespace-delimited token. */
+  private readToken(text: string): string | undefined {
+    const n = text.length
+    let i = 0
+    while (i < n && (text[i] === " " || text[i] === "\t")) i++
+    if (i >= n) return undefined
+    const start = i
+    while (i < n && text[i] !== " " && text[i] !== "\t") i++
+    return text.slice(start, i)
+  }
+
+  /** Normalize a Go signature: collapse whitespace, variadic, interface{} (no regex). */
+  private normalizeGoSignature(sig: string): string {
+    // Collapse runs of whitespace to a single space.
+    let collapsed = ""
+    let prevSpace = false
+    for (let i = 0; i < sig.length; i++) {
+      const ch = sig[i]
+      if (ch === " " || ch === "\t" || ch === "\n" || ch === "\r") {
+        if (!prevSpace && collapsed.length > 0) collapsed += " "
+        prevSpace = true
+      } else {
+        collapsed += ch
+        prevSpace = false
+      }
+    }
+    // `x ...T` -> `...x` is wrong; actual Go normalize: `...T` stays. Here we
+    // mirror the old regex (variadic expansion) by removing space before `...`.
+    let variadic = ""
+    for (let i = 0; i < collapsed.length; i++) {
+      const ch = collapsed[i]
+      if (ch === "." && collapsed[i + 1] === "." && collapsed[i + 2] === ".") {
+        // trim trailing space before the dots
+        if (variadic.length > 0 && variadic[variadic.length - 1] === " ") {
+          variadic = variadic.slice(0, -1)
+        }
+        variadic += "..."
+        i += 2
+      } else {
+        variadic += ch
+      }
+    }
+    // interface{} -> any
+    let result = ""
+    let k = 0
+    while (k < variadic.length) {
+      if (
+        variadic[k] === "i" &&
+        variadic.slice(k, k + 11) === "interface{}"
+      ) {
+        result += "any"
+        k += 11
+      } else {
+        result += variadic[k]
+        k++
+      }
+    }
+    // Trim leading/trailing spaces
+    let start = 0
+    let end = result.length
+    while (start < end && result[start] === " ") start++
+    while (end > start && result[end - 1] === " ") end--
+    return result.slice(start, end)
+  }
+
   private getGoPackageName(importPath: string): string {
     const parts = importPath.split("/")
     return parts[parts.length - 1]
@@ -1933,82 +2050,6 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
-   * Extract struct field types with their names
-   */
-  private extractGoStructFieldTypes(structNode: Node): Array<{ fieldName: string; fieldType: string }> {
-    const fields: Array<{ fieldName: string; fieldType: string }> = []
-    const fieldList = this.findChildByType(structNode, "field_declaration_list")
-
-    if (fieldList) {
-      for (let i = 0; i < fieldList.namedChildCount; i++) {
-        const field = fieldList.namedChild(i)
-        if (field?.type === "field_declaration") {
-          const nameNodes = []
-          for (let j = 0; j < field.namedChildCount; j++) {
-            const c = field.namedChild(j)
-            if (c && (c.type === "field_identifier" || c.type === "identifier")) nameNodes.push(c)
-          }
-          const typeNode = field.childForFieldName("type")
-
-          if (nameNodes.length > 0 && typeNode) {
-            forEachSymbol(nameNodes, (nameNode: Node | null) => {
-              if (nameNode) {
-                fields.push({
-                  fieldName: nameNode.text,
-                  fieldType: typeNode.text,
-                })
-              }
-            })
-          }
-        }
-      }
-    }
-
-    return fields
-  }
-
-  /**
-   * Check if type is a custom Go type (not built-in)
-   */
-  private isCustomGoType(typeName: string): boolean {
-    const builtinTypes = [
-      "bool",
-      "byte",
-      "complex64",
-      "complex128",
-      "error",
-      "float32",
-      "float64",
-      "int",
-      "int8",
-      "int16",
-      "int32",
-      "int64",
-      "rune",
-      "string",
-      "uint",
-      "uint8",
-      "uint16",
-      "uint32",
-      "uint64",
-      "uintptr",
-    ]
-
-    // Remove pointer and slice markers
-    const cleanType = typeName
-      .replace(/^\*+/, "")
-      .replace(/^(\[[\w]*\])+/, "")
-      .trim()
-
-    return (
-      !inArray(builtinTypes, cleanType) &&
-      !cleanType.startsWith("map[") &&
-      !cleanType.startsWith("chan ") &&
-      !cleanType.startsWith("func(")
-    )
-  }
-
-  /**
    * Get interface methods from interface symbol
    */
   private getGoInterfaceMethods(
@@ -2104,12 +2145,9 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
    */
   private compareGoMethodSignatures(sig1: string, sig2: string): boolean {
     // Normalize signatures by removing extra whitespace and variadic expansion
+    // (pure char scan + string ops, no regex).
     const normalize = (sig: string) => {
-      return sig
-        .replace(/\s+/g, " ")
-        .replace(/([\w\.]+)\s*\.\.\./g, "...$1")
-        .replace(/\binterface\{\}/g, "any")
-        .trim()
+      return this.normalizeGoSignature(sig)
     }
     return normalize(sig1) === normalize(sig2)
   }
@@ -2118,31 +2156,23 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
    * Resolve Go function call to find target
    */
   private resolveGoFunctionCall(callExpression: string, symbols: ASTEngine.UniversalSymbol[]): string | undefined {
-    // Handle package-qualified calls (package.Function)
+    // Handle package-qualified calls (package.Function) — always resolve to
+    // the LEAF name (Rust M12.18 contract): `strings.ToUpper` -> `ToUpper`,
+    // `s.repo.Save` -> `Save`. Stdlib/external leaves are kept as call
+    // targets even when no local symbol matches (`calls normalize -> println`).
     if (stringIncludes(callExpression, ".")) {
       const parts = callExpression.split(".")
-      const packageName = parts.slice(0, -1).join(".") // everything before last dot
       const functionName = parts[parts.length - 1]
+      if (!functionName) return undefined
 
-      // Look for function with this name AND matching package context
-      const targetFunction = findSymbol(
+      // Local symbol with a matching name wins (method/function leaf).
+      const fallback = findSymbol(
         symbols,
         (s) =>
           (s.kind === ASTEngine.SymbolKind.Function || s.kind === ASTEngine.SymbolKind.Method) &&
-          s.name === functionName &&
-          // If the call is package-qualified, prefer functions from that package
-          // but since we only have current-file symbols, only match if the symbol
-          // is from the same logical grouping or is the only match
-          (!s.ownerName || s.ownerName === packageName || packageName === ""),
+          s.name === functionName,
       )
-
-      // Fall back to name-only match BUT mark confidence lower for cross-package
-      if (targetFunction) return targetFunction.name
-      const fallback = findSymbol(symbols, (s) =>
-        (s.kind === ASTEngine.SymbolKind.Function || s.kind === ASTEngine.SymbolKind.Method) &&
-        s.name === functionName,
-      )
-      return fallback?.name
+      return fallback?.name ?? functionName
     }
 
     // Handle direct function calls
