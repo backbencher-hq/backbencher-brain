@@ -347,7 +347,20 @@
     "flutter@68dc5cf4(dirty)",
     "zig@738d2be9(clean)",
     "dplyr@d5e94e7f(clean)"
-   ]
+   ],
+   "measured": {
+    "revision": "738d2be9d6b6ef3ff3559130c05159ef53336224",
+    "sample": "195 tracked *.cpp files (deterministic all-tracked slice >= 1KB from zig@738d2be9 \u2014 vendored LLVM runtimes libc++/libtsan/libcxxabi/libunwind + zig tooling C++: real language-representative C++)",
+    "fixtures": 4,
+    "fixtureFacts": 87,
+    "precision": 1.0,
+    "recall": 1.0,
+    "corpusSymbols": 9765,
+    "corpusRelationships": 31909,
+    "grammarErrorFiles": 124,
+    "note": "Analyzer verified to the M11 C++ contract (namespaces -> namespace, classes/structs with bodies -> class, enum class -> enum with members, methods incl. out-of-line + template methods -> method, constructors -> constructor normalized name, members -> property, using aliases -> type, object-like macros -> constant) and brought to the Java-family relationship ontology. Fixed defects found during audit: the 3 baseline regexes eliminated (include-path strip -> pure-String stripIncludeChars; base-class access-specifier strip -> pure-String stripAccessSpecifier) \u2014 census 102 -> 101; calls/uses/references triple redundancy eliminated (field access -> uses only, never paired with references; call-target field expressions skip the uses walk so obj.method() emits one calls edge, matching Java M12.01); template method definitions now resolve their owner (Registry<T>::add -> method owned by Registry, was leaking to the namespace); using-declaration aliases captured as type symbols; forward declarations (class X;) no longer create symbols or push scopes (C negative contract); file-scope static -> private visibility (internal linkage). Grammar upgraded to tree-sitter-cpp 0.23.4 (npm, latest): corpus errors 136 -> 124 (12 libtsan/zig-tooling files fixed, 0 regressions), differential unchanged at 1.000/1.000. The 124 residual grammarErrorFiles are genuine hard-system C++ the newest available grammar cannot parse: compiler attribute macros wrapping return types (SANITIZER_WEAK_ATTRIBUTE/USED/NOEXCEPT/_THROW_BAD_ALLOC), PRIu64/PRIx64/PRIxPTR printf format macros, libtsan internal typedefs (uptr/a8-a128) \u2014 all valid C++, recorded honestly. Cross-file resolution (Shape from Shape.h used in Shape.cpp) is per-file by design (production companion-index wiring tracked separately, same as Java/C).",
+    "measuredAt": "2026-08-17T16:00:00.000Z"
+   }
   },
   {
    "analyzer": "rust",

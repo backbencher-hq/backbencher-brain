@@ -2,6 +2,29 @@ function stringIncludes(str: string, val: string): boolean {
   return str.indexOf(val) !== -1
 }
 
+// Strip `<`, `>`, `"`, and `'` characters from an include-path node text
+// (`<vector>` → `vector`, `"Service.h"` → `Service.h`). Pure-String scan —
+// replaces the legacy `/[<>"']/g` regex used for include-path extraction.
+function stripIncludeChars(text: string): string {
+  let out = ""
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]
+    if (c !== "<" && c !== ">" && c !== '"' && c !== "'") out += c
+  }
+  return out
+}
+
+// Strip a leading access-specifier keyword from a base-class node text
+// (`private Repository` → `Repository`). Pure-String scan — replaces the
+// legacy `/^public\s+|^protected\s+|^private\s+/` regex.
+function stripAccessSpecifier(text: string): string {
+  const lower = text.toLowerCase()
+  if (lower.startsWith("public")) return text.slice("public".length).trim()
+  if (lower.startsWith("protected")) return text.slice("protected".length).trim()
+  if (lower.startsWith("private")) return text.slice("private".length).trim()
+  return text.trim()
+}
+
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 
@@ -94,6 +117,23 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
             isTypeOnly: false,
           })
         }
+      } else if (type === "alias_declaration") {
+        // `using Point = std::pair<double, double>;` — the modern typedef.
+        // The alias name is the `name` field (type_identifier); the value is
+        // a type_descriptor. Captured as a Type symbol (matches C typedefs).
+        const nameNode = node.childForFieldName("name") || this.findChild(node, "type_identifier")
+        const name = nameNode?.text
+        if (name) {
+          symbols.push({
+            name,
+            kind: ASTEngine.SymbolKind.Type,
+            range: this.nodeToRange(node),
+            visibility: parentContext?.visibility || "public",
+            ownerName: parentContext?.name,
+            ownerKind: parentContext?.kind,
+            metadata: { isTypeAlias: true, isUsingDeclaration: true },
+          })
+        }
       } else if (type === "type_definition" || node.text.startsWith("typedef")) {
         const typeId = this.findChild(node, "type_identifier")
         if (typeId) {
@@ -116,7 +156,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           isTypeOnly: false,
         })
         // depends: #include = compile-time dependency
-        const includePath = text.replace(/^#include\s+/, "").replace(/[<>"]/g, "").trim()
+        const includePath = stripIncludeChars(text.slice(text.indexOf("include") + "include".length)).trim()
         if (includePath) {
           relationships.push({
             source: "global",
@@ -180,6 +220,19 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         scopeStack.push(newContext)
         pushedScope = true
       } else if (type === "class_specifier" || type === "struct_specifier" || type === "union_specifier") {
+        // Forward declaration (`class X;`) — no body: NOT a symbol, no scope
+        // push (matches the C negative contract: forward decls produce no
+        // symbol). Only the type identifier lives inside, so walk children
+        // (harmless) and continue.
+        const bodyNode = this.findChild(node, "class_body") || this.findChild(node, "field_declaration_list")
+        if (!bodyNode) {
+          newContext = parentContext
+          for (let i = node.namedChildCount - 1; i >= 0; i--) {
+            const child = node.namedChild(i)
+            if (child) stack.push({ node: child, parentContext: newContext })
+          }
+          continue
+        }
         const name = this.childText(node, "type_identifier") || "anonymous"
         const kind = ASTEngine.SymbolKind.Class
         const defaultVis = type === "class_specifier" ? "private" : "public"
@@ -208,7 +261,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
               typeNode = bc.namedChild(bc.namedChildCount - 1)
             }
             if (typeNode && typeNode.type !== "access_specifier") {
-              const text = typeNode.text.replace(/^public\s+|^protected\s+|^private\s+/, "").trim()
+              const text = stripAccessSpecifier(typeNode.text)
               if (text) {
                 baseClasses.push(text)
                 relationships.push({
@@ -444,6 +497,11 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
                 parentContext.kind === ASTEngine.SymbolKind.Method ||
                 parentContext.kind === ASTEngine.SymbolKind.Constructor)
             if (name && !stringIncludes(name, "(") && !insideFunction) {
+              // File-scope static (internal linkage) → private, matching the
+              // C family contract; class-scope members keep the
+              // access-specifier visibility.
+              const visStatic =
+                isStatic && parentContext?.kind !== ASTEngine.SymbolKind.Class ? "private" : undefined
               symbols.push({
                 name,
                 kind: isConstexpr
@@ -452,7 +510,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
                     ? ASTEngine.SymbolKind.Property
                     : ASTEngine.SymbolKind.Variable,
                 range: this.nodeToRange(d),
-                visibility: parentContext?.visibility || "public",
+                visibility: visStatic || parentContext?.visibility || "public",
                 isStatic,
                 ownerName: parentContext?.name,
                 ownerKind: parentContext?.kind,
@@ -479,10 +537,19 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           })
         }
       } else if (type === "field_expression") {
-        // struct.field or ptr->field → Uses relationship
+        // struct.field or ptr->field → Uses relationship (family contract:
+        // field access is a USES edge, never a references/uses pair). When the
+        // field access is the function of a call (`obj.method()`), the
+        // call_expression branch already emits the `calls` edge — skipping it
+        // here avoids the redundant `uses` pair (one edge per pair).
         const field = node.childForFieldName("field")
         const obj = node.childForFieldName("argument") || node.namedChild(0)
-        if (field && field.text.trim() && !(obj && obj.type === "call_expression")) {
+        if (
+          field &&
+          field.text.trim() &&
+          !(obj && obj.type === "call_expression") &&
+          node.parent?.type !== "call_expression"
+        ) {
           const source = parentContext?.name || "global"
           const relKey = `${source}::uses::${field.text}`
           if (!(this as any)._emittedUses) {
@@ -496,14 +563,6 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: field.text,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.9,
-              metadata: { relationshipType: "field_access", accessedFrom: obj?.text },
-            })
-            // references: field access also implies a reference
-            relationships.push({
-              source,
-              target: field.text,
-              type: ASTEngine.RelationshipType.References,
-              confidence: 0.85,
               metadata: { relationshipType: "field_access", accessedFrom: obj?.text },
             })
           }
@@ -731,6 +790,16 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (c && (c.type === "namespace_identifier" || c.type === "type_identifier" || c.type === "identifier")) {
           scopeNode = c
           break
+        }
+        // `Registry<T>::add` — the scope is a template_type (`Registry<T>`);
+        // use its underlying type name so template method definitions resolve
+        // their owner correctly (instead of leaking to the namespace).
+        if (c && c.type === "template_type") {
+          const tname = c.childForFieldName("name") || this.findChild(c, "type_identifier")
+          if (tname) {
+            scopeNode = tname
+            break
+          }
         }
       }
       // Nested qualification (A::B::fn): the outer scope wraps a nested
