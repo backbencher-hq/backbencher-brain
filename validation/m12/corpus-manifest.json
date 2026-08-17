@@ -368,7 +368,20 @@
    "status": "measured",
    "candidates": [
     "cargo@94faf917(clean)"
-   ]
+   ],
+   "measured": {
+    "revision": "94faf9175f010e171466841c77e38b47d9503ac8",
+    "sample": "400 tracked *.rs files (deterministic first-400 sorted slice of 649 files >= 1KB from cargo@94faf917 \u2014 261 src + 101 crates + 993 tests: real language-representative Rust)",
+    "fixtures": 3,
+    "fixtureFacts": 84,
+    "precision": 1.0,
+    "recall": 1.0,
+    "corpusSymbols": 11634,
+    "corpusRelationships": 80199,
+    "grammarErrorFiles": 79,
+    "note": "Analyzer verified to the M11 Rust contract (modules -> module, traits -> trait with methods, structs -> struct with fields -> property, impl blocks -> impl named after the implemented type, enums -> enum with variants, free functions -> function) and brought to the Java-family relationship ontology. Fixed defects found during audit: the 2 baseline regexes eliminated (axum route attribute /\\[(get|post|put|delete)\\(\"([^\"]+)\"\\)\\]/ -> pure-String extractRoutePath; generic-param strip /<.*$/ -> pure-String first-< slice) \u2014 census 99 -> 97; duplicate calls edges eliminated (handleFunction's per-function trace walk double-emitted every call with a qualified owner.method source alongside the main dispatch \u2014 removed; handleCallExpression is the single path, source = enclosing function/method name); borrow-type uses noise removed (reference_type signature types like &T emitted uses to generic params \u2014 gone); dangling references root -> import edges removed (use declarations stay in the imports array, Java-family contract); trait-impl target now resolves to the leaf trait name (super::Repository<User> -> Repository \u2014 the full generic text was dropped by the production noise filter); non-call field access now emits uses (self.counter, u.id \u2014 field_identifier only; tuple indices tuple.0 are not symbols and emit nothing; call-target field expressions skip the uses walk); struct literals emit instantiates (User { ... } -> User); Rust fields default to private (only pub fields are public). Grammar upgraded to tree-sitter-rust 0.24.0 (npm, latest): corpus errors 84 -> 79 (5 real src/credential files fixed, 0 regressions), differential unchanged at 1.000/1.000. The 79 residual grammarErrorFiles are cargo testsuite files using str![[r#\"...\"]] double-bracket macro delimiters \u2014 modern Rust syntax the newest available grammar cannot parse, all valid Rust, recorded honestly. Cross-file resolution (User from service.rs used in storage.rs) is per-file by design (production companion-index wiring tracked separately, same as Java/C/C++).",
+    "measuredAt": "2026-08-17T16:40:00.000Z"
+   }
   },
   {
    "analyzer": "objective-c",
