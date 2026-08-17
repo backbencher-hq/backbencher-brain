@@ -454,7 +454,20 @@
    "candidates": [
     "go_tools@bf54bcd2(clean)",
     "terraform@2e1710bf(clean)"
-   ]
+   ],
+   "measured": {
+    "revision": "bf54bcd2f14a330f0dcffa4cf631235de771bde2",
+    "sample": "400 tracked *.go files (deterministic first-400 sorted slice of 1327 files >= 1KB from go_tools@bf54bcd2 \u2014 golang/tools: go/analysis passes, go/packages, go/ssa, go/types internals: a real production Go tooling codebase, language-representative)",
+    "fixtures": 2,
+    "fixtureFacts": 64,
+    "precision": 1.0,
+    "recall": 1.0,
+    "corpusSymbols": 7157,
+    "corpusRelationships": 28187,
+    "grammarErrorFiles": 5,
+    "note": "Analyzer verified to the Systems-family contract and brought to the Java-family relationship ontology. Fixed defects found during audit: 9 census regexes eliminated (struct tags, @Router comment, import path quotes, pointer/slice markers, signature normalization \u2014 all replaced with pure char scans / AST token children); function-local var/const declarations no longer become symbols (LocalsAreNotSymbols, C# M12.07/Swift M12.21 contract); struct kind is now struct (was class); embedding emits ONE extends edge (was contains+extends double-edge; field-type uses dropped \u2014 Rust M12.18 contract, no dangling type-text targets); pointer-receiver implements emits the plain struct name (was *UserService \u2014 Java/Rust implements contract); calls emit LEAF targets incl. stdlib (s.repo.Save -> Save like Rust's self.repository.find -> find; strings.ToUpper -> ToUpper like Rust's calls normalize -> println; the old targetFunction !== func.name guard removed); instantiates fires ONLY for PascalCase top-level functions (Go constructor convention NewXxx \u2014 never methods or unresolved stdlib leaves); selector uses emit source = containing function, target = field LEAF (was the receiver variable text \u2014 b.name -> uses Describe -> name, Rust uses create -> repository analog); package contains noise removed (was contains service -> X for every exported symbol \u2014 Rust GT has no module contains); goroutine/defer calls deduped against qualified_calls (one calls edge per (source, target)); ownerName contains pass added so struct fields, interface methods, and methods all get ONE contains edge (Rust M12.18 line-250 contract \u2014 was receiver-only + package exports). Baseline: Go had 9 census regex entries \u2014 eliminated, census 95 -> 86. Grammar: npm tree-sitter-go 0.25.0 verified behaviorally identical to the pinned grammar via the production parseFile path (5 vs 5 error files, 0 fixed, 0 regressed) \u2014 no upgrade warranted; shape-safe (29/29 analyzer node refs present in the pinned grammar's actual emitted types, 0 dead). The 5 grammarErrorFiles are all testdata for go vet analysis passes (generic type aliases, parenthesized builtins, 2025 copyright modernize tests) \u2014 valid Go the pinned grammar cannot parse, recorded honestly.",
+    "measuredAt": "2026-08-17T21:40:00.000Z"
+   }
   },
   {
    "analyzer": "elixir",

@@ -2,22 +2,22 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-08-17T20:09:38.293Z",
+  "generatedAt": "2026-08-17T21:48:11.235Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 95,
+  "totalRegexUsages": 86,
   "analyzersScanned": 41,
   "byClassification": {
     "unavoidable": 11,
-    "normalization": 47,
-    "needs_review": 36,
+    "normalization": 45,
+    "needs_review": 29,
     "replaceable": 1
   },
   "byReceiverCategory": {
     "literal": 11,
-    "node_text": 47,
-    "identifier": 19,
-    "other": 17,
+    "node_text": 45,
+    "identifier": 16,
+    "other": 13,
     "raw_content": 1
   },
   "perFile": [
@@ -387,111 +387,6 @@
           "receiver": "n.text",
           "receiverCategory": "node_text",
           "classification": "normalization",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-go-analyzer.ts",
-      "count": 9,
-      "usages": [
-        {
-          "file": "real-go-analyzer.ts",
-          "line": 425,
-          "column": 52,
-          "source": "/^[`']|[`']$/g",
-          "operation": "replace",
-          "receiver": "tagNode.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-go-analyzer.ts",
-          "line": 426,
-          "column": 32,
-          "source": "/([a-z0-9_]+):\"((?:[^\"\\\\]|\\\\.)*)\"/g",
-          "operation": "other",
-          "receiver": "",
-          "receiverCategory": "other",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-go-analyzer.ts",
-          "line": 573,
-          "column": 35,
-          "source": "/@Router\\s+([^\\s]+)\\s+\\[([^\\]]+)\\]/i",
-          "operation": "match",
-          "receiver": "comment",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-go-analyzer.ts",
-          "line": 1311,
-          "column": 48,
-          "source": "/\"/g",
-          "operation": "replace",
-          "receiver": "pathNode.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-go-analyzer.ts",
-          "line": 1999,
-          "column": 16,
-          "source": "/^\\*+/",
-          "operation": "replace",
-          "receiver": "typeName",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-go-analyzer.ts",
-          "line": 2000,
-          "column": 16,
-          "source": "/^(\\[[\\w]*\\])+/",
-          "operation": "replace",
-          "receiver": "typeName\n      .replace(/^\\*+/, \"\")",
-          "receiverCategory": "other",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-go-analyzer.ts",
-          "line": 2109,
-          "column": 18,
-          "source": "/\\s+/g",
-          "operation": "replace",
-          "receiver": "sig",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-go-analyzer.ts",
-          "line": 2110,
-          "column": 18,
-          "source": "/([\\w\\.]+)\\s*\\.\\.\\./g",
-          "operation": "replace",
-          "receiver": "sig\n        .replace(/\\s+/g, \" \")",
-          "receiverCategory": "other",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-go-analyzer.ts",
-          "line": 2111,
-          "column": 18,
-          "source": "/\\binterface\\{\\}/g",
-          "operation": "replace",
-          "receiver": "sig\n        .replace(/\\s+/g, \" \")\n        .replace(/([\\w\\.]+)\\s*\\.\\.\\./g, \"...$1\")",
-          "receiverCategory": "other",
-          "classification": "needs_review",
           "justification": ""
         }
       ]
