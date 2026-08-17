@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "kind": "per_analyzer_complexity:elixir",
+  "fixtureDir": "validation/m12/fixtures/elixir",
+  "corpusDir": "/tmp/elixir-corpus-copy",
+  "runs": [
+    {
+      "name": "fixtures",
+      "measurement": {
+        "name": "fixtures:elixir",
+        "wallTimeMs": 188.126893,
+        "userCpuMs": 205.301,
+        "systemCpuMs": 113.123,
+        "peakRssBytes": 243421184,
+        "rssDeltaBytes": 200355840,
+        "databaseBytes": null,
+        "files": 2,
+        "symbols": 32,
+        "relationships": 38,
+        "filesPerSecond": 10.631122260654143,
+        "symbolsPerSecond": 170.0979561704663,
+        "relationshipsPerSecond": 201.99132295242873
+      },
+      "symbols": 32,
+      "relationships": 38
+    },
+    {
+      "name": "corpus_subset",
+      "measurement": {
+        "name": "corpus_subset:elixir",
+        "wallTimeMs": 6124.212977,
+        "userCpuMs": 8767.107,
+        "systemCpuMs": 442.597,
+        "peakRssBytes": 395042816,
+        "rssDeltaBytes": 29315072,
+        "databaseBytes": null,
+        "files": 243,
+        "symbols": 7597,
+        "relationships": 25125,
+        "filesPerSecond": 39.678567827834705,
+        "symbolsPerSecond": 1240.4859250537459,
+        "relationshipsPerSecond": 4102.5679698532795
+      },
+      "symbols": 7597,
+      "relationships": 25125
+    }
+  ],
+  "note": "Complexity envelope per analyzer: wall time, symbols/s, relationships/s, peak RSS. Budgets are declared per analyzer in docs/analyzers/."
+}

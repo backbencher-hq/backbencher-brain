@@ -2,23 +2,23 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-08-17T21:48:11.235Z",
+  "generatedAt": "2026-08-17T22:18:51.114Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 86,
+  "totalRegexUsages": 82,
   "analyzersScanned": 41,
   "byClassification": {
     "unavoidable": 11,
-    "normalization": 45,
-    "needs_review": 29,
-    "replaceable": 1
+    "normalization": 43,
+    "replaceable": 1,
+    "needs_review": 27
   },
   "byReceiverCategory": {
     "literal": 11,
-    "node_text": 45,
-    "identifier": 16,
-    "other": 13,
-    "raw_content": 1
+    "node_text": 43,
+    "raw_content": 1,
+    "other": 12,
+    "identifier": 15
   },
   "perFile": [
     {
@@ -768,56 +768,6 @@
           "operation": "replace",
           "receiver": "val",
           "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-elixir-analyzer.ts",
-      "count": 4,
-      "usages": [
-        {
-          "file": "real-elixir-analyzer.ts",
-          "line": 130,
-          "column": 41,
-          "source": "/['\"]/g",
-          "operation": "replace",
-          "receiver": "attrValue",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-elixir-analyzer.ts",
-          "line": 244,
-          "column": 32,
-          "source": "/[()]/g",
-          "operation": "replace",
-          "receiver": "node.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-elixir-analyzer.ts",
-          "line": 331,
-          "column": 49,
-          "source": "/:.*$/",
-          "operation": "replace",
-          "receiver": "kwNode.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-elixir-analyzer.ts",
-          "line": 492,
-          "column": 114,
-          "source": "/\".*\"/",
-          "operation": "replace",
-          "receiver": "(argsNode.text || \"\")",
-          "receiverCategory": "other",
           "classification": "needs_review",
           "justification": ""
         }
