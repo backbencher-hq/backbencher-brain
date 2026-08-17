@@ -432,7 +432,20 @@
    "status": "measured",
    "candidates": [
     "swift_nio@ec51fff0(clean)"
-   ]
+   ],
+   "measured": {
+    "revision": "ec51fff0d6a4d05a1f450e50b3d8b9b18c0c9d2a",
+    "sample": "400 tracked *.swift files (deterministic first-400 sorted slice of 520 files >= 1KB from swift_nio@ec51fff0 \u2014 apple/swift-nio: NIOCore, NIOHTTP1, NIOConcurrencyHelpers, NIOFS, Snippets, IntegrationTests: a real production Swift networking codebase, language-representative)",
+    "fixtures": 2,
+    "fixtureFacts": 80,
+    "precision": 1.0,
+    "recall": 1.0,
+    "corpusSymbols": 13464,
+    "corpusRelationships": 31189,
+    "grammarErrorFiles": 101,
+    "note": "Analyzer verified to the Systems-family contract and brought to the Java-family relationship ontology. Fixed defects found during audit: the blanket type-reference uses handler removed (every simple_type_identifier/user_type/type_identifier emitted a uses edge \u2014 Repository->Repository, find->String x2 etc.; now ONLY self. member reads emit uses with source = enclosing TYPE, Java this.x field-access analog); params, locals, and closures no longer become symbols (function params, let/var bindings inside bodies, and closure_<line>_<col> synthetic symbols removed \u2014 C# M12.07 negative contract ParamsAreNotSymbols/LocalsAreNotSymbols/LambdaParamsAreNotSymbols); extension no longer creates a self-owned Namespace (was: kind Namespace with ownerName = its own name \u2014 now kind Extension named after the EXTENDED type with NO owner, members attach via contains, ObjC M12.19 category precedent); switch case patterns no longer create enum_member symbols (enum_entry is gated to enum bodies); init_declaration now named \"constructor\" (was the literal `init` token \u2014 Java/C# family naming); bare capitalized calls emit instantiates ONLY (User(...) \u2014 Swift construction syntax, Java new Foo() analog; was calls + instantiates); member calls resolve to LEAF targets (users.first -> first, users.append -> append \u2014 was the full navigation text); bare stdlib calls filtered (print/String/Int/... \u2014 C# BuiltinsAreFiltered precedent); overrides now emit QUALIFIED Owner.method -> Parent.method resolved via the class hierarchy BFS + shared companion index (was self-referential describe -> describe; UserService.describe -> BaseService.describe now); enum raw types no longer emit implements edges (Status: String -> was implements Status -> String \u2014 raw type is metadata only); enum raw type captured as metadata. Baseline: Swift had 0 census regex entries (analyzer was already regex-free) \u2014 census unchanged at 95. Grammar: npm tree-sitter-swift 0.7.1 built and verified behaviorally identical to the pinned grammar via the production parseFile path (101 vs 101 error files, 0 fixed, 0 regressed) \u2014 no upgrade warranted; shape-safe (54/88 analyzer node refs present in the pinned grammar's actual emitted types; the 34 dead refs are defensive alternatives the grammar never emits, same category as C/C++/Rust/ObjC). The 101 grammarErrorFiles are genuine modern-Swift grammar gaps: @inlinable package declarations, isolated/borrowing parameters, typed throws(ErrorType), #isolation macro expansion, @_lifetime borrow attributes, and Swift Testing macros (#expect/#require) \u2014 valid Swift the newest available grammar cannot parse, recorded honestly. M11 systems probe unchanged at 1.000/1.000.",
+    "measuredAt": "2026-08-17T22:50:00.000Z"
+   }
   },
   {
    "analyzer": "go",

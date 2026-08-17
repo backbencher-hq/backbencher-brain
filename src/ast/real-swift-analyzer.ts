@@ -1,11 +1,86 @@
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
+import { findDeclaringParent, type OverrideCompanion } from "./override-context"
+
+// ============================================================================
+// M12.21 — SWIFT ANALYZER (Systems family)
+// ============================================================================
+// Pure-AST extraction (zero regex). Family contract (Java M12.02 / C# M12.07 /
+// ObjC M12.19 / Rust M12.18):
+//
+//   Symbols
+//     - protocol_declaration  -> interface (methods -> method)
+//     - class_declaration     -> class / struct / enum / actor / extension
+//       decided by the grammar's anonymous keyword token (class/struct/enum/
+//       actor) or the `extension` keyword token — never source-text scanning
+//     - extension             -> extension (name = the EXTENDED type, NO
+//       self-owner; members attach to it)
+//     - init_declaration      -> constructor named "constructor" (Java/C# name)
+//     - deinit / subscript    -> NOT symbols (ObjC dealloc precedent)
+//     - functions             -> method when owned by a type, function at
+//       file scope (protocol_function_declaration -> method)
+//     - type-scope vars       -> property; file-scope vars -> variable
+//     - enum_entry            -> enum_member (only inside an enum body —
+//       switch cases are never symbols)
+//     - typealias / associatedtype -> type
+//     - params, locals, closures -> NOT symbols (C# M12.07 negative contract:
+//       ParamsAreNotSymbols, LocalsAreNotSymbols, LambdaParamsAreNotSymbols)
+//
+//   Relationships
+//     - contains: REAL ownership only (type -> member). Locals carry no
+//       owner, so they emit nothing.
+//     - extends:  first inheritance base of class/struct/actor (superclass)
+//     - implements: remaining bases (adopted protocols)
+//     - calls:    member calls resolve to the LEAF target (`users.first` ->
+//       `first`, `[1,2].map` -> `map`); source = enclosing method. Bare
+//       builtins (print/String/Int/...) are filtered (C# BuiltinsAreFiltered
+//       precedent).
+//     - instantiates: bare CAPITALIZED call `User(...)` -> instantiates ONLY
+//       (no calls edge — Swift construction syntax, Java `new Foo()` analog)
+//     - uses:     ONLY `self.` member reads (Swift's `this`), source = the
+//       enclosing TYPE, target = field leaf. Type references emit nothing.
+//     - overrides: qualified `Owner.method -> Parent.method`, resolved via
+//       the class hierarchy + shared companion index (Java/C# M12.02-03
+//       semantics)
+//     - references: file-scope imports -> `root -> module` (ObjC M12.19)
+// ============================================================================
+
+const MEMBER_OWNER_KINDS = new Set([
+  ASTEngine.SymbolKind.Class,
+  ASTEngine.SymbolKind.Struct,
+  ASTEngine.SymbolKind.Interface,
+  ASTEngine.SymbolKind.Enum,
+  ASTEngine.SymbolKind.Actor,
+  ASTEngine.SymbolKind.Extension,
+])
+
+// Bare stdlib calls that carry no semantic edge (C# BuiltinsAreFiltered
+// precedent). Member calls like `users.map` are NOT filtered — only bare
+// identifier invocations of these names.
+const BUILTIN_BARE_CALLS = new Set([
+  "print", "debugPrint", "assert", "precondition", "fatalError",
+  "String", "Int", "Double", "Float", "Bool", "Array", "Dictionary",
+  "Set", "Optional", "Any", "Void", "Character", "Data", "Date",
+])
+
+interface OverrideTask {
+  fqn: string
+  methodName: string
+  ownerFqn: string
+}
+
+interface WalkFrame {
+  node: Node
+  parentSymbol: ASTEngine.UniversalSymbol | null
+  typeName: string | null
+}
 
 export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
   public analyze(
     rootNode: Node,
     content: string,
     filePath: string,
+    context?: ASTEngine.AnalyzeContext,
   ): Omit<ASTEngine.ParseResult, "language" | "metadata"> & { metadata: Partial<ASTEngine.FileMetadata> } {
     const symbols: ASTEngine.UniversalSymbol[] = []
     const imports: ASTEngine.ImportInfo[] = []
@@ -53,8 +128,17 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     metadata.linesOfCode = loc
 
-    const stack: { node: Node; parentSymbol: ASTEngine.UniversalSymbol | null }[] = [
-      { node: rootNode, parentSymbol: null },
+    // Override-resolution state (Java/C# M12.02-03 machinery).
+    const overrideTasks: OverrideTask[] = []
+    const classHierarchy = new Map<string, string[]>()
+    const symbolMap = new Map<string, ASTEngine.UniversalSymbol>()
+
+    const emittedCalls = new Set<string>()
+    const emittedUses = new Set<string>()
+    const emittedContains = new Set<string>()
+
+    const stack: WalkFrame[] = [
+      { node: rootNode, parentSymbol: null, typeName: null },
     ]
 
     while (stack.length > 0) {
@@ -63,67 +147,68 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       const { node: curr, parentSymbol } = popped
       let newParentSymbol = parentSymbol
+      let newTypeName = popped.typeName
 
       if (curr.type === "import_declaration") {
         this.handleImport(curr, imports, frameworksObj)
+      } else if (curr.type === "protocol_declaration") {
+        newParentSymbol = this.handleProtocol(curr, symbols, relationships, parentSymbol, patternsObj, classHierarchy)
+        if (newParentSymbol) newTypeName = newParentSymbol.name
       } else if (
         curr.type === "class_declaration" ||
-        curr.type === "struct_declaration" ||
-        curr.type === "protocol_declaration" ||
-        curr.type === "extension_declaration" ||
-        curr.type === "actor_declaration" ||
-        curr.type === "enum_declaration"
+        curr.type === "actor_declaration"
       ) {
-        newParentSymbol = this.handleDeclaration(curr, symbols, relationships, parentSymbol, patternsObj)
+        newParentSymbol = this.handleDeclaration(curr, symbols, relationships, parentSymbol, patternsObj, classHierarchy)
+        if (newParentSymbol) newTypeName = newParentSymbol.name
+      } else if (curr.type === "function_declaration" || curr.type === "protocol_function_declaration") {
+        newParentSymbol = this.handleFunction(curr, symbols, relationships, parentSymbol, overrideTasks, context?.overrideCompanion)
+      } else if (curr.type === "init_declaration") {
+        // init -> constructor named "constructor" (Java/C# family convention)
+        const vis = this.getVisibility(curr)
+        const meta: Record<string, any> = {}
+        const funcAttrs = this.extractAttributes(curr)
+        if (funcAttrs.length > 0) meta.annotations = funcAttrs
+        const sym = this.createSymbol("constructor", ASTEngine.SymbolKind.Constructor, curr, parentSymbol, symbols, meta, vis)
+        this.collectFunctionMeta(curr, meta, sym)
+        newParentSymbol = sym
+      } else if (curr.type === "deinit_declaration" || curr.type === "subscript_declaration") {
+        // Not symbols (ObjC dealloc / C# indexer-not-materialized precedent).
       } else if (
-        curr.type === "function_declaration" ||
-        curr.type === "protocol_function_declaration" ||
-        curr.type === "init_declaration" ||
-        curr.type === "deinit_declaration" ||
-        curr.type === "subscript_declaration"
-      ) {
-        newParentSymbol = this.handleFunction(curr, symbols, relationships, parentSymbol)
-      } else if (
+        curr.type === "property_declaration" ||
         curr.type === "variable_declaration" ||
-        curr.type === "protocol_property_declaration" ||
         curr.type === "constant_declaration" ||
-        curr.type === "property_declaration"
+        curr.type === "protocol_property_declaration"
       ) {
-        this.handleVariable(curr, symbols, parentSymbol, frameworksObj, patternsObj)
-      } else if (
-        curr.type === "simple_type_identifier" ||
-        curr.type === "user_type" ||
-        curr.type === "type_identifier"
-      ) {
-        this.handleTypeReference(curr, relationships, parentSymbol)
-      } else if (curr.type === "call_expression") {
-        this.handleCall(curr, relationships, parentSymbol)
-      } else if (curr.type === "closure_expression") {
-        patternsObj["Closures"] = true
-        const closureName = `closure_${curr.startPosition.row + 1}_${curr.startPosition.column + 1}`
-        this.createSymbol(closureName, ASTEngine.SymbolKind.Function, curr, parentSymbol, symbols, { isClosure: true })
-      } else if (curr.type === "enum_entry" || curr.type === "case_statement") {
-        const caseName = curr.namedChild ? curr.namedChild(0)?.text : curr.text
-        if (caseName && caseName !== "case") {
-          this.createSymbol(caseName, ASTEngine.SymbolKind.EnumMember, curr, parentSymbol, symbols, { enumCase: true })
+        this.handleVariable(curr, symbols, parentSymbol, newTypeName, frameworksObj, patternsObj)
+      } else if (curr.type === "enum_entry") {
+        // enum_member ONLY inside an enum body — the parent symbol is the
+        // enum. Switch `case` patterns are never symbols.
+        if (parentSymbol && parentSymbol.kind === ASTEngine.SymbolKind.Enum) {
+          const caseNode = this.firstNamedChild(curr)
+          const caseName = caseNode ? caseNode.text : curr.text
+          if (caseName && caseName !== "case") {
+            this.createSymbol(caseName, ASTEngine.SymbolKind.EnumMember, curr, parentSymbol, symbols, { enumCase: true })
+          }
         }
       } else if (curr.type === "typealias_declaration" || curr.type === "typealias_statement") {
-        for (let i = 0; i < curr.namedChildCount; i++) {
-          const c = curr.namedChild(i)
-          if (c && (c.type === "simple_identifier" || c.type === "identifier")) {
-            this.createSymbol(c.text, ASTEngine.SymbolKind.Type, curr, parentSymbol, symbols, { isTypeAlias: true })
-            break
-          }
+        const nameNode = this.findChildByType(curr, "type_identifier") || this.firstNamedChild(curr)
+        if (nameNode && (nameNode.type === "type_identifier" || nameNode.type === "simple_identifier" || nameNode.type === "identifier")) {
+          this.createSymbol(nameNode.text, ASTEngine.SymbolKind.Type, curr, parentSymbol, symbols, { isTypeAlias: true })
         }
       } else if (curr.type === "associated_type_clause" || curr.type === "associatedtype_declaration") {
-        for (let i = 0; i < curr.namedChildCount; i++) {
-          const c = curr.namedChild(i)
-          if (c && (c.type === "simple_identifier" || c.type === "identifier")) {
-            this.createSymbol(c.text, ASTEngine.SymbolKind.Type, curr, parentSymbol, symbols, { isAssociatedType: true })
-            break
-          }
+        const nameNode = this.findChildByType(curr, "type_identifier") || this.firstNamedChild(curr)
+        if (nameNode && (nameNode.type === "type_identifier" || nameNode.type === "simple_identifier" || nameNode.type === "identifier")) {
+          this.createSymbol(nameNode.text, ASTEngine.SymbolKind.Type, curr, parentSymbol, symbols, { isAssociatedType: true })
         }
-      } else if (curr.type === "where_clause") {
+      } else if (curr.type === "call_expression") {
+        this.handleCall(curr, relationships, parentSymbol, emittedCalls)
+      } else if (curr.type === "navigation_expression") {
+        // `self.x` member READ -> uses (source = enclosing type, target = leaf).
+        this.handleSelfUse(curr, relationships, newTypeName, parentSymbol, emittedUses)
+      }
+
+      // ---- pattern / metadata flags (unchanged from M11 behavior) ----
+      if (curr.type === "where_clause") {
         patternsObj["Generics with Where Clauses"] = true
       } else if (curr.type === "willSet_specifier" || curr.type === "didSet_specifier" || curr.type === "willSet_didSet_block") {
         patternsObj["Property Observers (willSet/didSet)"] = true
@@ -137,8 +222,9 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
         patternsObj["Platform Availability Checks"] = true
       } else if (curr.type === "macro_expansion" || curr.type === "macro_declaration") {
         patternsObj["Swift Macros"] = true
+      } else if (curr.type === "closure_expression") {
+        patternsObj["Closures"] = true
       }
-
       if (
         curr.type === "try_operator" ||
         curr.type === "try_statement" ||
@@ -181,7 +267,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       for (let i = curr.childCount - 1; i >= 0; i--) {
         const child = curr.child(i)
-        if (child) stack.push({ node: child, parentSymbol: newParentSymbol })
+        if (child) stack.push({ node: child, parentSymbol: newParentSymbol, typeName: newTypeName })
       }
     }
 
@@ -192,18 +278,30 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       metadata.detectedFrameworks!.push(f)
     }
 
-    // Post-loop: add contains (parent→child) and references (import deps)
+    // Build symbol map for override resolution: `Owner.method` -> symbol.
+    for (const s of symbols) {
+      if (s.kind === ASTEngine.SymbolKind.Method || s.kind === ASTEngine.SymbolKind.Constructor || s.kind === ASTEngine.SymbolKind.Function) {
+        const owner = s.ownerName || "root"
+        symbolMap.set(`${owner}.${s.name}`, s)
+      }
+    }
+
+    // Post-loop: contains (real ownership only) + references (imports).
     for (const s of symbols) {
       const _owner = s.ownerName || s.scope
-      if (_owner) {
-        relationships.push({
-          type: ASTEngine.RelationshipType.Contains,
-          source: _owner,
-          target: s.name,
-          isExternal: false,
-          weight: 1,
-          metadata: {},
-        })
+      if (_owner && s.kind !== ASTEngine.SymbolKind.Extension) {
+        const key = `${_owner}\u0000${s.name}`
+        if (!emittedContains.has(key)) {
+          emittedContains.add(key)
+          relationships.push({
+            type: ASTEngine.RelationshipType.Contains,
+            source: _owner,
+            target: s.name,
+            isExternal: false,
+            weight: 1,
+            metadata: {},
+          })
+        }
       }
     }
     for (const imp of imports) {
@@ -219,6 +317,8 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    this.resolveOverrides(overrideTasks, classHierarchy, symbolMap, relationships, context?.overrideCompanion)
+
     return {
       symbols,
       relationships,
@@ -228,6 +328,373 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       errors: (metadata as any).errors || [],
     }
   }
+
+  // ==========================================================================
+  // Declaration handlers
+  // ==========================================================================
+
+  private handleProtocol(
+    node: Node,
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    parent: ASTEngine.UniversalSymbol | null,
+    patternsObj: Record<string, boolean>,
+    classHierarchy: Map<string, string[]>,
+  ): ASTEngine.UniversalSymbol | null {
+    patternsObj["Protocol-Oriented Programming"] = true
+    const nameNode = this.findChildByType(node, "type_identifier") || this.firstNamedChild(node)
+    if (!nameNode) return parent
+
+    const meta: Record<string, any> = { isProtocol: true, hasGenerics: this.hasChildType(node, "type_parameter_clause") || this.hasChildType(node, "type_parameters") }
+    if (meta.hasGenerics) patternsObj["Generics"] = true
+    const vis = this.getVisibility(node)
+    const symbol = this.createSymbol(nameNode.text, ASTEngine.SymbolKind.Interface, nameNode, parent, symbols, meta, vis)
+
+    // Protocol inheritance is NOT materialized as extends/implements (ObjC
+    // M12.19 precedent: `@protocol A <NSObject>` emits no edge).
+    return symbol
+  }
+
+  private handleDeclaration(
+    node: Node,
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    parent: ASTEngine.UniversalSymbol | null,
+    patternsObj: Record<string, boolean>,
+    classHierarchy: Map<string, string[]>,
+  ): ASTEngine.UniversalSymbol | null {
+    let kind = ASTEngine.SymbolKind.Class
+
+    if (node.type === "actor_declaration" || this.hasAnonToken(node, "actor")) {
+      kind = ASTEngine.SymbolKind.Actor
+    } else if (this.hasAnonToken(node, "struct")) {
+      kind = ASTEngine.SymbolKind.Struct
+    } else if (this.hasAnonToken(node, "enum")) {
+      kind = ASTEngine.SymbolKind.Enum
+    } else if (this.hasAnonToken(node, "extension")) {
+      kind = ASTEngine.SymbolKind.Extension
+    }
+
+    // Name: the type identifier. For extensions it is the EXTENDED type
+    // (inside a user_type), and the extension has NO owner (never self-owner).
+    let nameNode: Node | null = null
+    if (kind === ASTEngine.SymbolKind.Extension) {
+      nameNode = this.findDescendantTypeIdentifier(node)
+    } else {
+      nameNode = this.findChildByType(node, "type_identifier") || this.findChildByType(node, "user_type") || this.firstNamedChild(node)
+    }
+    if (!nameNode) return parent
+
+    let rawName = nameNode.type === "user_type" && nameNode.namedChildCount > 0 ? nameNode.namedChild(0)!.text : nameNode.text
+
+    const meta: Record<string, any> = {
+      hasGenerics: this.hasChildType(node, "type_parameter_clause") || this.hasChildType(node, "type_parameters"),
+    }
+    if (meta.hasGenerics) patternsObj["Generics"] = true
+    if (kind === ASTEngine.SymbolKind.Struct) meta.isValueType = true
+    if (kind === ASTEngine.SymbolKind.Enum) meta.isValueType = true
+
+    const vis = this.getVisibility(node)
+
+    // Enum raw type (`enum Status: String`) -> metadata ONLY, no edge.
+    if (kind === ASTEngine.SymbolKind.Enum) {
+      const rawType = this.findEnumRawType(node)
+      if (rawType) meta.rawType = rawType
+    }
+
+    const symbol = this.createSymbol(rawName, kind, nameNode, parent, symbols, meta, vis)
+
+    // extends / implements for class/struct/actor only.
+    if (kind !== ASTEngine.SymbolKind.Enum && kind !== ASTEngine.SymbolKind.Extension) {
+      const bases = this.extractBases(node)
+      const parents: string[] = []
+      for (let i = 0; i < bases.length; i++) {
+        const base = bases[i]
+        parents.push(base)
+        relationships.push({
+          type: i === 0 ? ASTEngine.RelationshipType.Extends : ASTEngine.RelationshipType.Implements,
+          source: symbol.name,
+          target: base,
+          isExternal: true,
+          weight: i === 0 ? 1 : 0.9,
+          metadata: {},
+        })
+      }
+      if (parents.length > 0) classHierarchy.set(symbol.name, parents)
+    }
+
+    return symbol
+  }
+
+  private handleFunction(
+    node: Node,
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    parent: ASTEngine.UniversalSymbol | null,
+    overrideTasks: OverrideTask[],
+    companion?: OverrideCompanion,
+  ): ASTEngine.UniversalSymbol | null {
+    const nameNode = this.findChildByType(node, "simple_identifier") || this.findChildByType(node, "identifier")
+    if (!nameNode) return parent
+
+    const isMethod = !!parent && MEMBER_OWNER_KINDS.has(parent.kind as ASTEngine.SymbolKind)
+    const kind = isMethod ? ASTEngine.SymbolKind.Method : ASTEngine.SymbolKind.Function
+
+    const vis = this.getVisibility(node)
+    const meta: Record<string, any> = {
+      hasGenerics: this.hasChildType(node, "type_parameter_clause") || this.hasChildType(node, "type_parameters"),
+    }
+    const funcAttrs = this.extractAttributes(node)
+    if (funcAttrs.length > 0) meta.annotations = funcAttrs
+
+    const symbol = this.createSymbol(nameNode.text, kind, nameNode, parent, symbols, meta, vis)
+    this.collectFunctionMeta(node, meta, symbol)
+
+    // override keyword -> Overrides task (qualified resolution deferred to
+    // the post-loop with the hierarchy + companion, Java/C# semantics).
+    // The grammar nests the token: modifiers > member_modifier [override].
+    if (this.hasDescendantAnonToken(node, "override") && parent) {
+      overrideTasks.push({
+        fqn: `${parent.name}.${symbol.name}`,
+        methodName: symbol.name,
+        ownerFqn: parent.name,
+      })
+    }
+
+    // Return type (lightweight, metadata only — the `->` token child scan).
+    const returnNode = this.findReturnType(node)
+    if (returnNode) symbol.returnType = returnNode.text
+
+    return symbol
+  }
+
+  // ==========================================================================
+  // Variable / call / uses handlers
+  // ==========================================================================
+
+  private handleVariable(
+    node: Node,
+    symbols: ASTEngine.UniversalSymbol[],
+    parent: ASTEngine.UniversalSymbol | null,
+    typeName: string | null,
+    frameworksObj: Record<string, boolean>,
+    patternsObj: Record<string, boolean>,
+  ) {
+    // Locals are NOT symbols (C# LocalsAreNotSymbols). Only type-scope
+    // members (property) and file-scope bindings (variable) qualify.
+    if (parent && !MEMBER_OWNER_KINDS.has(parent.kind as ASTEngine.SymbolKind)) return
+
+    const vis = this.getVisibility(node)
+    const annotations: string[] = []
+    for (let i = 0; i < node.childCount; i++) {
+      const c = node.child(i)
+      if (c && (c.type === "modifiers" || c.type === "attribute")) {
+        for (let j = 0; j < c.namedChildCount; j++) {
+          const mod = c.namedChild(j)
+          if (!mod) continue
+          if (mod.type === "attribute") {
+            const text = mod.text
+            annotations.push(text)
+            if (text.indexOf("@State") !== -1 || text.indexOf("@Binding") !== -1 || text.indexOf("@Environment") !== -1 || text.indexOf("@ObservedObject") !== -1) {
+              frameworksObj["SwiftUI"] = true
+              patternsObj["Property Wrappers"] = true
+            }
+            if (text.indexOf("@Published") !== -1) {
+              frameworksObj["Combine"] = true
+              patternsObj["Property Wrappers"] = true
+            }
+            if (text.indexOf("@MainActor") !== -1 || text.indexOf("@Sendable") !== -1 || text.indexOf("@globalActor") !== -1) {
+              patternsObj["Swift Concurrency"] = true
+            }
+            if (text.startsWith("@")) patternsObj["Property Wrappers"] = true
+          }
+        }
+      }
+    }
+
+    const meta: Record<string, any> = {}
+    if (annotations.length > 0) meta.annotations = annotations
+
+    const kind = parent ? ASTEngine.SymbolKind.Property : ASTEngine.SymbolKind.Variable
+
+    // Name from the binding pattern: `var x: Int` / `let x = ...` — the
+    // pattern's simple_identifier (first identifier child).
+    const patternNode = this.findChildByType(node, "pattern") || this.findChildByType(node, "pattern_initializer")
+    if (patternNode) {
+      const idNode = this.findChildByType(patternNode, "simple_identifier") || this.findChildByType(patternNode, "identifier") || this.firstNamedChild(patternNode)
+      if (idNode) {
+        this.createSymbol(idNode.text, kind, idNode, parent, symbols, meta, vis)
+      }
+    } else {
+      const idNode = this.findChildByType(node, "simple_identifier") || this.findChildByType(node, "identifier")
+      if (idNode) {
+        this.createSymbol(idNode.text, kind, idNode, parent, symbols, meta, vis)
+      }
+    }
+  }
+
+  private handleCall(
+    node: Node,
+    relationships: ASTEngine.UniversalRelationship[],
+    parent: ASTEngine.UniversalSymbol | null,
+    emittedCalls: Set<string>,
+  ) {
+    const source = parent ? parent.name : "root"
+
+    // The function child: bare identifier or navigation/member expression.
+    const funcNode = this.findChildByType(node, "simple_identifier") || this.findChildByType(node, "identifier") || this.findChildByType(node, "navigation_expression")
+
+    if (!funcNode) return
+
+    if (funcNode.type === "navigation_expression") {
+      // Member call -> leaf target (`users.first` -> `first`, `[1,2].map` -> `map`).
+      const leaf = this.navigationLeaf(funcNode)
+      if (!leaf || leaf === "$0") return
+      this.emitCall(relationships, source, leaf, emittedCalls)
+      return
+    }
+
+    // Bare identifier call.
+    const target = funcNode.text
+    if (!target || BUILTIN_BARE_CALLS.has(target)) return
+
+    const firstChar = target.charCodeAt(0)
+    const isCapitalized = firstChar >= 65 && firstChar <= 90 && target.length > 1
+
+    if (isCapitalized) {
+      // Bare capitalized call = construction syntax -> instantiates ONLY
+      // (Java `new Foo()` analog — never also a calls edge).
+      const key = `${source}\u0000instantiates\u0000${target}`
+      if (!emittedCalls.has(key)) {
+        emittedCalls.add(key)
+        relationships.push({
+          type: ASTEngine.RelationshipType.Instantiates,
+          source,
+          target,
+          isExternal: true,
+          weight: 0.7,
+          metadata: { isInstantiation: true },
+        })
+      }
+    } else {
+      this.emitCall(relationships, source, target, emittedCalls)
+    }
+  }
+
+  private emitCall(
+    relationships: ASTEngine.UniversalRelationship[],
+    source: string,
+    target: string,
+    emittedCalls: Set<string>,
+  ) {
+    const key = `${source}\u0000calls\u0000${target}`
+    if (emittedCalls.has(key)) return
+    emittedCalls.add(key)
+    relationships.push({
+      type: ASTEngine.RelationshipType.Calls,
+      source,
+      target,
+      isExternal: true,
+      weight: 1,
+      metadata: {},
+    })
+  }
+
+  private handleSelfUse(
+    node: Node,
+    relationships: ASTEngine.UniversalRelationship[],
+    typeName: string | null,
+    parent: ASTEngine.UniversalSymbol | null,
+    emittedUses: Set<string>,
+  ) {
+    // `self.x` -> uses (source = enclosing TYPE, target = leaf). Other
+    // receivers (locals, type names) emit nothing — only Swift's `this`.
+    const hasSelf = this.hasAnonToken(node, "self") || this.hasChildType(node, "self_expression")
+    if (!hasSelf) return
+
+    const leaf = this.navigationLeaf(node)
+    if (!leaf) return
+
+    const source = typeName || (parent?.ownerName ? parent.ownerName : null) || parent?.name || "root"
+    const key = `${source}\u0000uses\u0000${leaf}`
+    if (emittedUses.has(key)) return
+    emittedUses.add(key)
+    relationships.push({
+      type: ASTEngine.RelationshipType.Uses,
+      source,
+      target: leaf,
+      isExternal: false,
+      weight: 0.7,
+      metadata: { isFieldAccess: true },
+    })
+  }
+
+  // ==========================================================================
+  // Override resolution (Java/C# shared machinery)
+  // ==========================================================================
+
+  private resolveOverrides(
+    tasks: OverrideTask[],
+    classHierarchy: Map<string, string[]>,
+    symbolMap: Map<string, ASTEngine.UniversalSymbol>,
+    relationships: ASTEngine.UniversalRelationship[],
+    companion?: OverrideCompanion,
+  ) {
+    for (const task of tasks) {
+      let targetFqn: string | null = null
+
+      // Pass 1: BFS over the in-file hierarchy, exact name match.
+      const queue: string[] = []
+      const ownerH = classHierarchy.get(task.ownerFqn)
+      if (ownerH) {
+        for (let i = 0; i < ownerH.length; i++) queue.push(ownerH[i])
+      }
+      const seen: Set<string> = new Set()
+
+      while (queue.length > 0) {
+        const parentName = queue.shift()!
+        if (seen.has(parentName)) continue
+        seen.add(parentName)
+
+        const potentialTargetFqn = `${parentName}.${task.methodName}`
+        if (symbolMap.has(potentialTargetFqn)) {
+          targetFqn = potentialTargetFqn
+          break
+        }
+        const pH = classHierarchy.get(parentName)
+        if (pH) {
+          for (let i = 0; i < pH.length; i++) queue.push(pH[i])
+        }
+      }
+
+      // Pass 2: cross-file declaring-parent resolution via the companion.
+      if (!targetFqn && companion && ownerH && ownerH.length > 0) {
+        const declaring = findDeclaringParent(task.methodName, ownerH, companion, (t) => classHierarchy.get(t) ?? [])
+        if (declaring) targetFqn = `${declaring}.${task.methodName}`
+      }
+
+      // Pass 3: deterministic per-file fallback — first hierarchy parent.
+      if (!targetFqn && ownerH && ownerH.length > 0) {
+        targetFqn = `${ownerH[0]}.${task.methodName}`
+      }
+
+      if (targetFqn) {
+        relationships.push({
+          type: ASTEngine.RelationshipType.Overrides,
+          source: task.fqn,
+          target: targetFqn,
+          isExternal: true,
+          weight: 0.8,
+          confidence: 1.0,
+          metadata: { relationshipType: "method_override", isSwiftOverride: true },
+        })
+      }
+    }
+  }
+
+  // ==========================================================================
+  // Symbol creation / helpers
+  // ==========================================================================
 
   private createSymbol(
     name: string,
@@ -256,13 +723,29 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       metadata: meta,
       visibility,
     }
-    
+
     if (meta.isAsync) symbol.isAsync = true
     if (meta.throws) symbol.throws = "true"
     if (meta.annotations) symbol.annotations = JSON.stringify(meta.annotations)
-    
+
     symbols.push(symbol)
     return symbol
+  }
+
+  private collectFunctionMeta(node: Node, meta: Record<string, any>, symbol: ASTEngine.UniversalSymbol) {
+    let isAsync = false
+    let throws = false
+    const nodeQueue: Node[] = [node]
+    while (nodeQueue.length > 0) {
+      const c = nodeQueue.pop()!
+      if (c.type === "async_keyword" || c.text === "async" || c.type === "async") isAsync = true
+      if (c.type === "throws_keyword" || c.text === "throws" || c.type === "throw_expression" || c.type === "throws") throws = true
+      for (let i = c.childCount - 1; i >= 0; i--) {
+        if (c.child(i)) nodeQueue.push(c.child(i)!)
+      }
+    }
+    if (isAsync) { meta.isAsync = true; symbol.isAsync = true }
+    if (throws) { meta.throws = true; symbol.throws = "true" }
   }
 
   private getVisibility(node: Node): string {
@@ -290,7 +773,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     const queue: Node[] = [node]
     while (queue.length > 0) {
       const c = queue.pop()!
-      if (c.type === "attribute" || c.type === "modifiers") {
+      if (c.type === "attribute") {
         const text = c.text.trim()
         if (text.startsWith("@")) attrs.push(text)
       }
@@ -305,13 +788,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     let moduleName = ""
     for (let i = 0; i < node.childCount; i++) {
       const c = node.child(i)
-      if (
-        c &&
-        (c.type === "simple_identifier" ||
-          c.type === "type_identifier" ||
-          c.type === "module_identifier" ||
-          c.type === "identifier")
-      ) {
+      if (c && (c.type === "simple_identifier" || c.type === "type_identifier" || c.type === "module_identifier" || c.type === "identifier")) {
         moduleName = c.text
         break
       }
@@ -336,431 +813,135 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
-  private handleDeclaration(
-    node: Node,
-    symbols: ASTEngine.UniversalSymbol[],
-    relationships: ASTEngine.UniversalRelationship[],
-    parent: ASTEngine.UniversalSymbol | null,
-    patternsObj: Record<string, boolean>
-  ): ASTEngine.UniversalSymbol | null {
-    let typeIdentifierNode: Node | null = null
-    let kind = ASTEngine.SymbolKind.Class
-    let isValueType = false
-    let isExtension = false
+  // ---- tree helpers (pure AST, no source scanning) ----
 
-    if (node.type === "protocol_declaration") {
-       kind = ASTEngine.SymbolKind.Interface
-       patternsObj["Protocol-Oriented Programming"] = true
-       for (let i = 0; i < node.childCount; i++) {
-          const c = node.child(i)
-          if (c && (c.type === "type_identifier" || c.type === "simple_identifier" || c.type === "identifier")) {
-             typeIdentifierNode = c
-             break
-          }
-       }
-} else if (node.type === "class_declaration" || node.type === "actor_declaration") {
-        if (node.type === "actor_declaration") {
-            kind = ASTEngine.SymbolKind.Actor
-        }
-       for (let i = 0; i < node.childCount; i++) {
-          const c = node.child(i)
-          if (c && c.type === "struct") {
-             kind = ASTEngine.SymbolKind.Struct
-             isValueType = true
-          } else if (c && c.type === "enum") {
-             kind = ASTEngine.SymbolKind.Enum
-             isValueType = true
-          } else if (c && c.type === "extension") {
-             kind = ASTEngine.SymbolKind.Namespace
-             isExtension = true
-          } else if (c && (c.type === "type_identifier" || c.type === "user_type" || c.type === "simple_identifier" || c.type === "identifier")) {
-             if (!typeIdentifierNode) typeIdentifierNode = c
-          }
-       }
+  private findChildByType(node: Node, type: string): Node | null {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (c && c.type === type) return c
     }
-
-    if (!typeIdentifierNode) return parent
-    
-    let hasGenerics = false
-    for (let i = 0; i < node.childCount; i++) {
-       const c = node.child(i)
-       if (c && (c.type === "type_parameter_clause" || c.type === "type_parameters")) {
-          hasGenerics = true
-          patternsObj["Generics"] = true
-       }
-    }
-
-    const meta: Record<string, any> = { hasGenerics }
-    if (isValueType) meta.isValueType = true
-    if (kind === ASTEngine.SymbolKind.Interface) meta.isProtocol = true
-
-    let rawType = ""
-    for (let i = 0; i < node.childCount; i++) {
-       const c = node.child(i)
-       if (c && c.type === "inheritance_specifier") {
-          for (let j = 0; j < c.childCount; j++) {
-             const nested = c.child(j)
-             if (nested && (nested.type === "user_type" || nested.type === "type_identifier" || nested.type === "identifier")) {
-                 rawType = nested.text
-             }
-          }
-       }
-    }
-    if (kind === ASTEngine.SymbolKind.Enum && rawType) {
-        meta.rawType = rawType
-    }
-
-    const vis = this.getVisibility(node)
-    const symbol = this.createSymbol(typeIdentifierNode.text, kind, typeIdentifierNode, parent, symbols, meta, vis)
-
-    if (isExtension) {
-        symbol.ownerName = typeIdentifierNode.text
-    }
-
-    for (let i = 0; i < node.childCount; i++) {
-      const c = node.child(i)
-      if (c && (c.type === "type_inheritance_clause" || c.type === "inheritance_specifier" || c.type === "protocol_inheritance_clause")) {
-        this.extractInheritance(c, relationships, symbol, symbols)
-      }
-    }
-
-    return symbol
+    return null
   }
 
-  private extractInheritance(
-    inheritanceClause: Node,
-    relationships: ASTEngine.UniversalRelationship[],
-    symbol: ASTEngine.UniversalSymbol,
-    symbols: ASTEngine.UniversalSymbol[],
-  ) {
-    symbol.metadata = symbol.metadata || {}
-    symbol.metadata.inheritance = symbol.metadata.inheritance || []
-
-    // Build a set of known protocol names for accurate extends vs implements
-    const protocolNames = new Set<string>()
-    for (const s of symbols) {
-      if (s.kind === ASTEngine.SymbolKind.Interface || s.metadata?.isProtocol) {
-        protocolNames.add(s.name)
-      }
+  private hasChildType(node: Node, type: string): boolean {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (c && c.type === type) return true
     }
-
-    for (let i = 0; i < inheritanceClause.childCount; i++) {
-      const child = inheritanceClause.child(i)
-      if (
-        child &&
-        (child.type === "type_identifier" ||
-          child.type === "simple_type_identifier" ||
-          child.type === "user_type" ||
-          child.type === "identifier" ||
-          child.type === "inherited_type")
-      ) {
-        let name = child.text
-        for (let k = 0; k < child.childCount; k++) {
-          const nested = child.child(k)
-          if (
-            nested &&
-            (nested.type === "type_identifier" ||
-              nested.type === "simple_type_identifier" ||
-              nested.type === "user_type" ||
-              nested.type === "identifier")
-          ) {
-            name = nested.text
-          }
-        }
-
-        symbol.metadata.inheritance.push(name)
-        // Determine extends vs implements by checking if target is a known protocol
-        const isProtocol = protocolNames.has(name)
-        const relType = isProtocol
-          ? ASTEngine.RelationshipType.Implements
-          : (symbol.kind === ASTEngine.SymbolKind.Class || symbol.kind === ASTEngine.SymbolKind.Actor) && i === 0
-            ? ASTEngine.RelationshipType.Extends
-            : ASTEngine.RelationshipType.Implements
-        relationships.push({
-          type: relType,
-          source: symbol.name,
-          target: name,
-          isExternal: true,
-          weight: 1,
-          metadata: {},
-        })
-      }
-    }
+    return false
   }
 
-  private handleFunction(
-    node: Node,
-    symbols: ASTEngine.UniversalSymbol[],
-    relationships: ASTEngine.UniversalRelationship[],
-    parent: ASTEngine.UniversalSymbol | null,
-  ): ASTEngine.UniversalSymbol | null {
-    let nameNode: Node | null = null
+  private firstNamedChild(node: Node): Node | null {
+    return node.namedChildCount > 0 ? node.namedChild(0) : null
+  }
+
+  /** Match an anonymous keyword token (`struct`, `enum`, `extension`, `actor`, `override`, `self`). */
+  private hasAnonToken(node: Node, tokenType: string): boolean {
     for (let i = 0; i < node.childCount; i++) {
       const c = node.child(i)
-      if (c && (c.type === "simple_identifier" || c.type === "identifier" || c.type === "init" || c.type === "deinit" || c.type === "subscript")) {
-        nameNode = c
-        break
-      }
+      if (c && !c.isNamed && c.type === tokenType) return true
     }
-    if (!nameNode && node.type === "protocol_function_declaration") {
-      for (let i = 0; i < node.childCount; i++) {
-         const c = node.child(i)
-         if (c && (c.type === "simple_identifier" || c.type === "identifier")) {
-             nameNode = c
-             break
-         }
-      }
-    }
+    return false
+  }
 
-    if (!nameNode) return parent
-
-    let kind = ASTEngine.SymbolKind.Function
-    if (node.type === "init_declaration") kind = ASTEngine.SymbolKind.Constructor
-    else if (
-      parent &&
-      (parent.kind === ASTEngine.SymbolKind.Class ||
-        parent.kind === ASTEngine.SymbolKind.Interface ||
-        parent.kind === ASTEngine.SymbolKind.Namespace)
-    ) {
-      kind = ASTEngine.SymbolKind.Method
-    }
-
-    const vis = this.getVisibility(node)
-    
-    let hasGenerics = false
-    for (let i = 0; i < node.childCount; i++) {
-       const c = node.child(i)
-       if (c && (c.type === "type_parameter_clause" || c.type === "type_parameters")) {
-          hasGenerics = true
-       }
-    }
-    
-    const meta: Record<string, any> = {}
-    if (hasGenerics) meta.hasGenerics = true
-    
-    const funcAttrs = this.extractAttributes(node)
-    if (funcAttrs.length > 0) meta.annotations = funcAttrs
-
-    let isAsync = false
-    let throws = false
-    const nodeQueue: Node[] = [node]
-    while (nodeQueue.length > 0) {
-      const c = nodeQueue.pop()!
-      if (c.type === "async_keyword" || c.text === "async" || c.type === "async") {
-        isAsync = true
-      }
-      if (c.type === "throws_keyword" || c.text === "throws" || c.type === "throw_expression" || c.type === "throws") {
-        throws = true
-      }
+  /** Match an anonymous keyword token anywhere in the subtree (nested modifier tokens). */
+  private hasDescendantAnonToken(node: Node, tokenType: string): boolean {
+    const stack: Node[] = [node]
+    while (stack.length > 0) {
+      const c = stack.pop()!
+      if (c.type === tokenType && !c.isNamed) return true
       for (let i = c.childCount - 1; i >= 0; i--) {
-        if (c.child(i)) nodeQueue.push(c.child(i)!)
+        const child = c.child(i)
+        if (child) stack.push(child)
       }
     }
-    if (isAsync) meta.isAsync = true
-    if (throws) meta.throws = true
-
-    const symbol = this.createSymbol(nameNode.text, kind, nameNode, parent, symbols, meta, vis)
-
-    // Check for override keyword → Overrides relationship
-    let isOverride = false
-    for (let i = 0; i < node.childCount; i++) {
-      const c = node.child(i)
-      if (c && c.type === "modifiers") {
-        for (let j = 0; j < c.childCount; j++) {
-          const mod = c.child(j)
-          if (mod && (mod.text === "override" || mod.type === "override_keyword")) {
-            isOverride = true
-            break
-          }
-        }
-      }
-      if (isOverride) break
-    }
-    if (isOverride && parent) {
-      relationships.push({
-        type: ASTEngine.RelationshipType.Overrides,
-        source: symbol.name,
-        target: symbol.name, // The overridden method has the same name
-        isExternal: true,
-        weight: 0.8,
-        metadata: { overriddenIn: parent.name },
-      })
-    }
-
-    let foundArrow = false
-    for (let i = 0; i < node.childCount; i++) {
-      const c = node.child(i)
-      if (c && (c.type === "parameter_clause" || c.type === "parameters")) {
-        const queue: Node[] = [c]
-        while (queue.length > 0) {
-          const curr = queue.pop()!
-          if (curr.type === "parameter") {
-            let paramIdentifier: Node | null = null
-            for (let k = 0; k < curr.childCount; k++) {
-              const pc = curr.child(k)
-              if (pc && (pc.type === "simple_identifier" || pc.type === "identifier")) {
-                if (!paramIdentifier) paramIdentifier = pc
-              }
-            }
-            if (paramIdentifier) {
-              this.createSymbol(paramIdentifier.text, ASTEngine.SymbolKind.Variable, paramIdentifier, symbol, symbols, {
-                parameter: true,
-              })
-            }
-          }
-          for (let j = curr.childCount - 1; j >= 0; j--) {
-            const child = curr.child(j)
-            if (child) queue.push(child)
-          }
-        }
-      } else if (c && c.type === "->") {
-         foundArrow = true
-      } else if (foundArrow && c && (c.type === "type_identifier" || c.type === "user_type" || c.type === "simple_type_identifier" || c.type === "identifier")) {
-         symbol.returnType = c.text
-         foundArrow = false
-      }
-    }
-
-    return symbol
+    return false
   }
 
-  private handleVariable(
-    node: Node,
-    symbols: ASTEngine.UniversalSymbol[],
-    parent: ASTEngine.UniversalSymbol | null,
-    frameworksObj: Record<string, boolean>,
-    patternsObj: Record<string, boolean>
-  ) {
-    const vis = this.getVisibility(node)
-    const annotations: string[] = []
-    for (let i = 0; i < node.childCount; i++) {
-       const c = node.child(i)
-       if (c && c.type === "modifiers") {
-          for (let j = 0; j < c.childCount; j++) {
-             const mod = c.child(j)
-             if (mod && mod.type === "attribute") {
-                const text = mod.text
-                annotations.push(text)
-                if (text.indexOf("@State") !== -1 || text.indexOf("@Binding") !== -1 || text.indexOf("@Environment") !== -1 || text.indexOf("@ObservedObject") !== -1) {
-                   frameworksObj["SwiftUI"] = true
-                   patternsObj["Property Wrappers"] = true
-                }
-                if (text.indexOf("@Published") !== -1) {
-                   frameworksObj["Combine"] = true
-                   patternsObj["Property Wrappers"] = true
-                }
-                if (text.indexOf("@MainActor") !== -1 || text.indexOf("@Sendable") !== -1 || text.indexOf("@globalActor") !== -1) {
-                   patternsObj["Swift Concurrency"] = true
-                }
-                if (text.startsWith("@")) patternsObj["Property Wrappers"] = true
-             }
-          }
-       }
-       if (c && c.type === "attribute") {
-           const text = c.text
-           annotations.push(text)
-            if (text.indexOf("@State") !== -1 || text.indexOf("@Binding") !== -1 || text.indexOf("@Environment") !== -1 || text.indexOf("@ObservedObject") !== -1) {
-               frameworksObj["SwiftUI"] = true
-               patternsObj["Property Wrappers"] = true
-            }
-            if (text.indexOf("@Published") !== -1) {
-               frameworksObj["Combine"] = true
-               patternsObj["Property Wrappers"] = true
-            }
-            if (text.indexOf("@MainActor") !== -1 || text.indexOf("@Sendable") !== -1 || text.indexOf("@globalActor") !== -1) {
-               patternsObj["Swift Concurrency"] = true
-            }
-            if (text.startsWith("@")) patternsObj["Property Wrappers"] = true
-       }
+  /** For extensions: the type_identifier inside the user_type (the extended type). */
+  private findDescendantTypeIdentifier(node: Node): Node | null {
+    const stack: Node[] = [node]
+    while (stack.length > 0) {
+      const c = stack.pop()!
+      if (c.type === "type_identifier") return c
+      for (let i = c.namedChildCount - 1; i >= 0; i--) {
+        const child = c.namedChild(i)
+        if (child) stack.push(child)
+      }
     }
-
-    const meta: Record<string, any> = {}
-    if (annotations.length > 0) meta.annotations = annotations
-
-    let patternClause: Node | null = null
-    for (let i = 0; i < node.childCount; i++) {
-       const c = node.child(i)
-       if (c && (c.type === "pattern_initializer" || c.type === "pattern")) {
-          patternClause = c
-          break
-       }
-    }
-
-    if (patternClause) {
-        let identifierNode: Node | null = null
-        for (let i = 0; i < patternClause.childCount; i++) {
-           const c = patternClause.child(i)
-           if (c && (c.type === "simple_identifier" || c.type === "identifier" || c.type === "pattern")) {
-              identifierNode = c
-              break
-           }
-        }
-        if (!identifierNode) identifierNode = patternClause
-        if (identifierNode) {
-            this.createSymbol(identifierNode.text, ASTEngine.SymbolKind.Variable, identifierNode, parent, symbols, meta, vis)
-        }
-    } else {
-        for (let i = 0; i < node.childCount; i++) {
-           const c = node.child(i)
-           if (c && (c.type === "simple_identifier" || c.type === "identifier")) {
-              this.createSymbol(c.text, ASTEngine.SymbolKind.Variable, c, parent, symbols, meta, vis)
-              break
-           }
-        }
-    }
+    return null
   }
 
-  private handleTypeReference(
-    node: Node,
-    relationships: ASTEngine.UniversalRelationship[],
-    parent: ASTEngine.UniversalSymbol | null,
-  ) {
-    if (!parent) return
-    relationships.push({
-      type: ASTEngine.RelationshipType.Uses,
-      source: parent.name,
-      target: node.text,
-      isExternal: true,
-      weight: 1,
-      metadata: { referenceType: "type" },
-    })
+  private findEnumRawType(node: Node): string | null {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (c && c.type === "inheritance_specifier") {
+        const inner = this.findChildByType(c, "user_type") || this.findChildByType(c, "type_identifier")
+        return inner ? inner.text : c.text
+      }
+    }
+    return null
   }
 
-  private handleCall(
-    node: Node,
-    relationships: ASTEngine.UniversalRelationship[],
-    parent: ASTEngine.UniversalSymbol | null,
-  ) {
-    if (!parent) return
-    let functionNameNode: Node | null = null
+  /** Base type names from the inheritance specifier (class/struct/actor). */
+  private extractBases(node: Node): string[] {
+    const bases: string[] = []
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (c && c.type === "inheritance_specifier") {
+        const name = this.extractBaseName(c)
+        if (name) bases.push(name)
+      }
+    }
+    return bases
+  }
+
+  private extractBaseName(spec: Node): string | null {
+    // `user_type > type_identifier` — take the leaf type identifier.
+    for (let i = 0; i < spec.namedChildCount; i++) {
+      const c = spec.namedChild(i)
+      if (!c) continue
+      if (c.type === "type_identifier") return c.text
+      if (c.type === "user_type") {
+        const leaf = this.findChildByType(c, "type_identifier")
+        if (leaf) return leaf.text
+      }
+      if (c.type === "type_identifier" && c.text) return c.text
+    }
+    const txt = spec.text.trim()
+    return txt && !txt.includes(" ") ? txt : null
+  }
+
+  /** Leaf name of a navigation_expression: `users.first` -> `first`. */
+  private navigationLeaf(node: Node): string | null {
+    // The last navigation_suffix child holds the leaf identifier.
+    let leaf: Node | null = null
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (!c) continue
+      if (c.type === "navigation_suffix") {
+        leaf = this.findChildByType(c, "simple_identifier") || this.findChildByType(c, "identifier") || c
+      }
+    }
+    if (leaf) return leaf.text
+    // Fallback: last simple_identifier child.
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (c && c.type === "simple_identifier") leaf = c
+    }
+    return leaf ? leaf.text : null
+  }
+
+  /** Return type node after the `->` anonymous token (lightweight). */
+  private findReturnType(node: Node): Node | null {
     for (let i = 0; i < node.childCount; i++) {
       const c = node.child(i)
-      if (c && (c.type === "simple_identifier" || c.type === "identifier" || c.type === "function" || c.type === "member_expression" || c.type === "navigation_expression")) {
-        functionNameNode = c
-        break
+      if (c && !c.isNamed && c.type === "->") {
+        // Next sibling is the return type.
+        const nxt = node.child(i + 1)
+        if (nxt && nxt.isNamed) return nxt
       }
     }
-    if (functionNameNode) {
-      const targetName = functionNameNode.text
-      relationships.push({
-        type: ASTEngine.RelationshipType.Calls,
-        source: parent.name,
-        target: targetName,
-        isExternal: true,
-        weight: 1,
-        metadata: {},
-      })
-      // Swift class instantiation: ClassName() or ClassName.init()
-      if (targetName && targetName[0] === targetName[0].toUpperCase() && targetName[0] !== targetName[0].toLowerCase()) {
-        relationships.push({
-          type: ASTEngine.RelationshipType.Instantiates,
-          source: parent.name,
-          target: targetName,
-          isExternal: true,
-          weight: 0.7,
-          metadata: { isInstantiation: true },
-        })
-      }
-    }
+    return null
   }
 }
