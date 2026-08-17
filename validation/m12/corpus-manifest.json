@@ -491,12 +491,24 @@
   },
   {
    "analyzer": "erlang",
-   "corpusTarget": "elixir",
+   "corpusTarget": "rebar3",
    "status": "measured",
    "candidates": [
-    "elixir@024beb1b(clean)",
     "rebar3@0c947d3b(clean)"
-   ]
+   ],
+   "measured": {
+    "revision": "0c947d3b86c5b21e4986e136fe14f9171c8cfe77",
+    "sample": "225 tracked *.erl files (all 225 files >= 1KB from rebar3@0c947d3b \u2014 rebar3: the Erlang build tool itself, the language-representative corpus)",
+    "fixtures": 2,
+    "fixtureFacts": 69,
+    "precision": 1.0,
+    "recall": 1.0,
+    "corpusSymbols": 5400,
+    "corpusRelationships": 19207,
+    "grammarErrorFiles": 11,
+    "note": "Analyzer verified to the FP-family contract (Clojure/Elixir precedent). Rewritten for M12.24: 4 census regexes eliminated (record-paren strip, arity strip, function-name strip, parse-type strip \u2014 all replaced with pure char scans); the manifest's erlang corpusTarget was a copy-paste bug (pointed at the elixir corpus) \u2014 fixed to rebar3, the correct Erlang corpus. Defects fixed: call sources now the containing FUNCTION (was module); the module-level dedup bug that dropped stop -> gen_server:cast fixed; record literals in PATTERN position no longer emit instantiates (only body-position #state{} constructions do); variable uses noise removed (identifier references only for module deps: -import/-include/-behaviour); record contains now sources the RECORD symbol (was the #state field text); forward references resolve (submit -> make_payload declared later); receive pattern detection made live (grammar emits receive_expr/receive_after, the old receive_expression/after_clause branches were silently dead \u2014 receive complexity now actually counted, confirmed on real receive code); clause-based cyclomatic complexity via function_clause/fun_clause (live per shape-safety). Differential 1.000/1.000 on 69 facts. Corpus: 11/225 grammar-error files (4.9%), 0 crashes \u2014 all classified: ?WITH_STACKTRACE(C,T,S) macro expansion (arrow inside macro body, unparseable without expansion) and 2 template files with {{placeholder}} syntax (not real Erlang); recorded honestly as grammar limitations, same category as Go's testdata errors. Grammar: npm tree-sitter-erlang behaviorally identical (11 vs 11 errors, 0 fixed, 0 regressed) \u2014 no upgrade warranted. Shape-safe: 9/9 analyzer node refs live in the pinned grammar's actual emitted types, 0 dead. Complexity: all single-pass walks, no O(n^2) \u2014 5,400 symbols / 19,207 relationships in 7.3s on the 225-file corpus.",
+    "measuredAt": "2026-08-18T01:10:00.000Z"
+   }
   },
   {
    "analyzer": "haskell",
