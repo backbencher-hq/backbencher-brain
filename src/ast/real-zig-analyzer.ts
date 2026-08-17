@@ -51,7 +51,7 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
           continue
         }
 
-        const isExported = nodeText.startsWith("pub ") || nodeText.startsWith("export ")
+        const isExported = this.hasToken(node, "pub") || this.hasToken(node, "export")
         const children = this.getAllNamedChildren(node)
         const rhs = children[children.length - 1]
         const rhsType = rhs?.type || ""
@@ -77,13 +77,9 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
                 range: this.nodeRange(node),
                 metadata: { zigImport: true, builtin: builtin.text },
               })
-              relationships.push({
-                source: container?.name || "global",
-                target: importTarget,
-                type: ASTEngine.RelationshipType.Imports,
-                confidence: 0.9,
-                metadata: { zigImport: true },
-              } as any)
+              // No Imports/References relationship for @import — the import
+              // stays in the imports array (Rust M12.18 contract: dangling
+              // `references root -> module` edges never resolve to a symbol).
             }
             this.pushChildren(node, walkStack, container, inFunction)
             continue
@@ -142,10 +138,15 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (type === "function_declaration" || type === "function_signature") {
         const identNode = this.anyChild(node, (n) => n.type === "identifier")
         const fnName = identNode ? identNode.text : ""
-        const isExported = nodeText.startsWith("pub ") || nodeText.startsWith("export ")
-        const isInline = nodeText.includes("inline ")
+        const isExported = this.hasToken(node, "pub") || this.hasToken(node, "export")
+        const isInline = this.hasToken(node, "inline")
 
-        if (fnName && fnName.length < 100) {
+        // Methods of an ANONYMOUS struct returned by a generic function
+        // (`fn GenericStack(...) type { return struct { fn push(...) } }`) have
+        // no named container — they must not become file-scope functions.
+        const isAnonymousContainerMember = !container && inFunction
+
+        if (fnName && fnName.length < 100 && !isAnonymousContainerMember) {
           const params: ASTEngine.Parameter[] = []
           const paramsNode = this.anyChild(node, (n) => n.type === "parameters")
           if (paramsNode) {
@@ -193,7 +194,15 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
 
       // ─── CONTAINER FIELD: struct/union member or enum member ───
+      // Requires a NAMED container: fields of an anonymous struct returned by
+      // a generic function (`fn GenericStack(...) type { return struct {...} }`)
+      // have no stable container identity and must NOT become file-scope
+      // symbols (C negative contract: anonymous containers are not named).
       if (type === "container_field") {
+        if (!container) {
+          this.pushChildren(node, walkStack, container, inFunction)
+          continue
+        }
         const nameNode = this.anyChild(node, (n) => n.type === "identifier")
         const fieldName = nameNode ? nameNode.text : ""
         if (fieldName && fieldName.length < 50) {
@@ -243,16 +252,9 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         continue
       }
 
-      // ─── SWITCH EXPRESSION: complexity tracking only ───
-      if (type === "switch_expression") {
-        relationships.push({
-          source: container?.name || "global",
-          target: "switch",
-          type: ASTEngine.RelationshipType.References,
-          confidence: 0.5,
-          metadata: { zigSwitch: true },
-        })
-      }
+      // (No relationship for switch_expression — `switch` is a keyword, not a
+      // symbol; a `references -> switch` edge would be a phantom that never
+      // resolves. Control flow is an execution artifact, family contract.)
 
       // ─── ERROR REPORTING ───
       if (node.hasError || type === "ERROR") {
@@ -285,30 +287,10 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         })
       }
     }
-    // Import reference relationships
-    for (const imp of imports) {
-      if (imp.module) {
-        relationships.push({
-          source: "root",
-          target: imp.module,
-          type: ASTEngine.RelationshipType.References,
-          isExternal: true,
-          weight: 0.9,
-          metadata: { importModule: imp.module },
-        })
-      }
-    }
-    // Export relationships
-    for (const exp of exports) {
-      relationships.push({
-        source: "module",
-        target: exp.name,
-        type: ASTEngine.RelationshipType.Exports,
-        confidence: 0.9,
-        metadata: { zigExport: true },
-      } as any)
-    }
-
+    // No References edge for imports (imports stay in the imports array) and
+    // no generic `exports module -> X` edge — `module` is not a symbol, so the
+    // edge would never resolve (Java-family contract; the exports array and
+    // the `pub` visibility metadata carry the export fact).
     return {
       language: "zig",
       symbols,
@@ -363,6 +345,18 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (child && predicate(child)) return child
     }
     return null
+  }
+
+  // The `pub`/`export`/`inline` modifiers are anonymous token children
+  // (`variable_declaration [pub:"pub"] [const:"const"]`) — pure AST, never
+  // source-text scanning.
+  private hasToken(node: Node, token: string): boolean {
+    const count = node.childCount
+    for (let i = 0; i < count; i++) {
+      const c = node.child(i)
+      if (c && !c.isNamed && c.type === token) return true
+    }
+    return false
   }
 
   private getAllNamedChildren(node: Node): Node[] {
