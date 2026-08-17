@@ -317,14 +317,27 @@
   },
   {
    "analyzer": "c",
-   "corpusTarget": "swift_nio",
+   "corpusTarget": "zig",
    "status": "measured",
    "candidates": [
     "flutter@68dc5cf4(dirty)",
     "swift_nio@ec51fff0(clean)",
     "zig@738d2be9(clean)",
     "cython@51a460b7(clean)"
-   ]
+   ],
+   "measured": {
+    "revision": "738d2be9d6b6ef3ff3559130c05159ef53336224",
+    "sample": "400 tracked *.c files (deterministic first-400 sorted slice of 621 files >= 1KB from zig@738d2be9 \u2014 wasm2c, musl libc, glibc compat, mingw, freebsd libc: real language-representative C)",
+    "fixtures": 4,
+    "fixtureFacts": 92,
+    "precision": 1.0,
+    "recall": 1.0,
+    "corpusSymbols": 3692,
+    "corpusRelationships": 14593,
+    "grammarErrorFiles": 122,
+    "note": "Analyzer verified to the M11 C contract (functions -> function, globals -> variable, structs/unions/enums -> class/enum, fields/members -> property/enum_member with ownerName) and brought to the Java-family relationship ontology. Fixed defects found during audit: the 2 baseline regexes eliminated (include-path quote strip -> pure-String unquote helpers) \u2014 census 119 -> 104 (15 CSS regexes also eliminated in M12.15); contains:global:X noise removed (post-loop emits contains only for real containers: struct/union/enum -> member); block-scope relationship sources replaced with function-name identity (core_init.block_211 -> core_init); forward-declaration scope leak fixed (typedef struct Point Point; no longer self-references; order-independent resolution via declared-type pre-pass); enum members resolve as use targets (Status uses STATUS_OK per Java M12.01 ontology); redundant uses+references pairs eliminated (type usage -> references, value usage -> uses, never both; call-target identifiers skip the uses walk to avoid calls+uses duplication). malloc/free emit calls+instantiates pairs intentionally (call-graph fact + allocation semantic, documented). Grammar upgraded to tree-sitter-c 0.24.1 (npm, latest): corpus errors 139 -> 122 (17 mingw files fixed, 0 regressions), differential unchanged at 1.000/1.000. The 122 residual grammarErrorFiles are genuine hard-system C the newest available grammar cannot parse: GNU __attribute__/__dead2/__unused on declarations, preprocessor conditionals inside array initializers, compiler intrinsics (glibc/musl/mingw/freebsd libc) \u2014 all valid C, recorded honestly. Cross-file resolution (Buffer from Module.h used in Module.c) is per-file by design (production companion-index wiring tracked separately, same as Java).",
+    "measuredAt": "2026-08-17T00:00:00.000Z"
+   }
   },
   {
    "analyzer": "cpp",
