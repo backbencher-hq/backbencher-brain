@@ -516,7 +516,20 @@
    "status": "measured",
    "candidates": [
     "cabal@670955a4(clean)"
-   ]
+   ],
+   "measured": {
+    "revision": "670955a4fb518bea5edab97e7bc33ecc694e3499",
+    "sample": "637 tracked *.hs files (all 637 files >= 1KB from cabal@670955a4 \u2014 cabal: the Haskell build tool itself, the language-representative corpus)",
+    "fixtures": 2,
+    "fixtureFacts": 75,
+    "precision": 1.0,
+    "recall": 1.0,
+    "corpusSymbols": 17828,
+    "corpusRelationships": 34755,
+    "grammarErrorFiles": 7,
+    "note": "Analyzer rewritten pure-AST for M12.25 to the FP-family contract (Clojure/Elixir/Erlang precedent): 9 census regexes eliminated (78 -> 69) \u2014 data-constructor name via prefix/record constructor nodes (was /^[A-Z][a-zA-Z0-9_]*/ text match), import alias/paren strips via pure char scans, HOF detection via paren/arrow char scan (was regex on the type signature), instance target-type via type_patterns->parens->apply AST descent (was text split). The post-loop identifier call-graph walker was REMOVED entirely (it flooded hundreds of edges: 'calls Global -> a', 'calls classify -> n == 0', operators as calls) \u2014 calls now come from a single-pass apply-head extraction. Defects fixed: module contains edges (the module scope popped when the header subtree ended, so no ownerName on module-level symbols \u2014 now tracked via ctx.currentModule and post-loop contains); imports now source the MODULE (was self-source: references Data.List -> Data.List); deriving (Show, Eq) implements edges fire (names nested in deriving->tuple); class superclass extends edges fire (context->apply first child); instance class/target parsed pure-AST (was regex text split); where/let-local functions are no longer symbols (Namespace scopes restored) and their bodies attribute nothing to the enclosing function; do-notation binds (z <- fetch x) are expression-level (never symbols) but their applies execute in the enclosing function; operator/infix nodes mark patterns only (Monads/Functors) \u2014 never call edges; type variables, Prelude/imported functions, and record-field selectors produce no call edges (FP-family resolution: unqualified calls emit only when the target is a module-level declared function; self-recursion and mutual recursion ARE emitted); pattern-position constructor applications are never instantiates (body-position ctor-app emits instantiates, Erlang record_expr analog); contains self-loops skipped (data User = User {...} would collapse into a self-loop). All symbol lookups O(1) via functionSymbolIndex (the per-signature .find() scan eliminated). Differential 75/75 (1.000/1.000, 0 FP / 0 FN). Corpus: 7/637 grammar-error files (1.1%), 0 crashes \u2014 all classified: 3 template files with {{placeholder}} syntax (not real Haskell), 2 TemplateHaskell quasiquote files ([d| ... |] brackets unparseable without TH), 1 CRLF multi-line string continuation, 1 GADTs pattern file; recorded honestly as grammar limitations. Grammar: npm tree-sitter-haskell 0.23.1 behaviorally identical (7 vs 7 error files, 0 fixed, 0 regressed) \u2014 no upgrade warranted. Shape-safe: 34/35 analyzer node refs live in the pinned grammar's actual emitted types (193 distinct from 2,151 corpus files); the 1 remaining (MISSING) is the defensive tree-sitter error-path check. Complexity: 17,828 symbols / 34,755 relationships in 16.0s on the 637-file corpus; all single-pass, zero O(n^2) (loop-structure scan + no .find/.filter/.some over symbols).",
+    "measuredAt": "2026-08-18T01:50:00.000Z"
+   }
   },
   {
    "analyzer": "clean",
