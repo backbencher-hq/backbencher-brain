@@ -475,7 +475,19 @@
    "status": "measured",
    "candidates": [
     "elixir@024beb1b(clean)"
-   ]
+   ],
+   "measured": {
+    "revision": "024beb1bfcca0a24e859b2586059dd803a086615",
+    "sample": "243 tracked *.ex files (all 243 files >= 1KB from elixir@024beb1b \u2014 elixir-lang/elixir itself: the compiler, stdlib, and tooling written in Elixir; the language-representative corpus)",
+    "fixtures": 2,
+    "fixtureFacts": 70,
+    "precision": 1.0,
+    "recall": 1.0,
+    "corpusSymbols": 7597,
+    "corpusRelationships": 25125,
+    "grammarErrorFiles": 0,
+    "note": "Analyzer verified to the FP-family contract (Clojure precedent). Rewritten for M12.23: 4 census regexes eliminated (attribute quote strip, extractName paren strip, struct-field keyword strip, directive quote strip \u2014 all replaced with pure char scans); module attributes (@moduledoc/@spec/@type/@behaviour/@doc) no longer emit call edges; def/defp/defmacro signature heads no longer emit self-calls; member access (order.side) no longer a call; Kernel builtins and special forms (case/cond/quote/unquote/length/is_*) excluded from the call graph; quote blocks treated as data (no symbols, no calls \u2014 the Clojure quoted-data rule); calls/instantiations source = containing FUNCTION (was module); instantiates only for %Struct{} literals in body position (was any capital module call like Map.put); identifier references flood removed (references now only module deps: use/import/alias/require); @behaviour implements edge fixed (was broken); defimpl rewritten pure AST (no text splitting); function-head lookup made O(1) via symbolByName map (was O(symbols) per def). Differential 1.000/1.000 on 70 facts. Corpus: 0 grammar errors / 0 crashes / 0 timeouts on all 243 .ex >= 1KB. Grammar: npm tree-sitter-elixir 0.3.5 behaviorally identical (0 vs 0) \u2014 no upgrade. Shape-safe: 16/18 refs live, 2 defensive (ERROR/MISSING error-path checks)."
+   }
   },
   {
    "analyzer": "erlang",
