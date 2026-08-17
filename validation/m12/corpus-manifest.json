@@ -411,7 +411,20 @@
    "status": "measured",
    "candidates": [
     "zig@738d2be9(clean)"
-   ]
+   ],
+   "measured": {
+    "revision": "738d2be9d6b6ef3ff3559130c05159ef53336224",
+    "sample": "400 tracked *.zig files (deterministic first-400 sorted slice of 1248 files >= 1KB from zig@738d2be9 \u2014 the Zig compiler itself: lib/std, lib/compiler_rt, lib/compiler, doc/langref: the most language-representative Zig corpus in existence)",
+    "fixtures": 3,
+    "fixtureFacts": 63,
+    "precision": 1.0,
+    "recall": 1.0,
+    "corpusSymbols": 29771,
+    "corpusRelationships": 16559,
+    "grammarErrorFiles": 19,
+    "note": "Analyzer verified to the M11 Zig contract (pub const X = struct/enum/union/error set -> struct/enum/union/enum, value constants -> constant, container fields -> property/enum_member, fn in container -> method, fn at file scope -> function) and brought to the Java-family relationship ontology. Fixed defects found during audit: the 3 source-text scans eliminated (isExported/isInline via nodeText.startsWith/includes(\"pub \"/\"inline \") -> anonymous token children scan [pub:\"pub\"] [fn:\"fn\"]; census unchanged at 0 baseline, analyzer was already regex-free); phantom `references <container> -> switch` edge removed (switch is a keyword, never a symbol); double import emission removed (@import emitted BOTH an Imports rel AND a references root -> module rel \u2014 imports now stay in the imports array only, Rust M12.18 contract); generic `exports module -> X` rels removed (module is not a symbol; exports array + pub visibility carry the fact); anonymous generic-function returned struct members no longer leak as file-scope symbols (fn GenericStack(...) type { return struct {...} } \u2014 the fields/methods have no stable container identity; only the generic function is a symbol, C negative contract). Grammar: npm tree-sitter-zig 0.2.0 and tree-sitter-wasms 0.1.13 verified behaviorally identical to the pinned grammar (19 vs 19 errors, 0 fixes, 0 regressions) \u2014 no upgrade warranted; shape-safe (all 12 analyzer node refs present). The 19 grammarErrorFiles are genuine modern-Zig gaps: inline asm output-constraint structs (asm volatile ... : .{ .rcx = true }) and function-pointer struct fields with doc comments (await: *const fn (...) / .await = await in std/Io) \u2014 valid Zig the newest available grammar cannot parse, recorded honestly. M11 systems probe and corpus gate unchanged at 1.000/1.000 and PASS.",
+    "measuredAt": "2026-08-17T20:00:00.000Z"
+   }
   },
   {
    "analyzer": "swift",
