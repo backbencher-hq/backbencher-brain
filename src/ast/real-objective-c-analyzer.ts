@@ -10,26 +10,9 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
     const exports: ASTEngine.ExportInfo[] = []; const frameworks = new Set<string>()
     const errors: ASTEngine.ParseError[] = []
 
-    // Extract imports — use AST-based approach where possible, regex for #import pragmas
-    const objcMatches = content.matchAll(/#(?:import|include)\s+[<"]([^>"]+)[>"]/g)
-    for (const m of objcMatches) {
-      const modName = m[1].replace(/["<>]/g, "")
-      if (modName.includes("UIKit")) frameworks.add("UIKit")
-      if (modName.includes("Foundation")) frameworks.add("Foundation")
-      if (modName.includes("AppKit")) frameworks.add("AppKit")
-      if (modName.includes("Cocoa")) frameworks.add("Cocoa")
-      imports.push({
-        module: modName, items: [], importType: "include",
-        lineNumber: 0, isExternal: m[0].includes("<") || !modName.startsWith(".")
-      })
-      relationships.push({
-        source: "root",
-        target: modName,
-        type: ASTEngine.RelationshipType.References,
-        confidence: 0.9,
-        metadata: { isObjCImport: true },
-      })
-    }
+    // Imports are extracted from the AST (preproc_include nodes) during the
+    // walk below — no source-text scanning. Framework detection is a pure
+    // String.includes check on the module name.
 
     // Law 3 & 4: Explicit Iterative Stack (O(N) single-pass) and ZERO mutable class props
     const walkStack: Array<{ node: Node; isExit: boolean; activeScope: string }> = [
@@ -46,7 +29,45 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
       let nextActiveScope = activeScope
 
       // Law 1: Flawless Database Extraction (cover all major Obj-C constructs)
-      
+
+      // 0. Imports (#import / #include). Pure AST: the grammar emits
+      // preproc_include with a system_lib_string child (`<Foundation/...>`)
+      // or a string_literal child (`"Local.h"`). No source-text scanning.
+      if (node.type === "preproc_include") {
+        let modName: string | null = null
+        let isSystem = false
+        for (let ci = 0; ci < node.namedChildCount; ci++) {
+          const cn = node.namedChild(ci)
+          if (!cn) continue
+          if (cn.type === "system_lib_string") {
+            isSystem = true
+            const txt = cn.text
+            if (txt.length >= 2) modName = txt.slice(1, txt.length - 1)
+          } else if (cn.type === "string_literal") {
+            const content = this.findChild(cn, (n) => n.type === "string_content")
+            modName = content ? content.text : cn.text
+          }
+          if (modName) break
+        }
+        if (modName) {
+          if (modName.includes("UIKit")) frameworks.add("UIKit")
+          if (modName.includes("Foundation")) frameworks.add("Foundation")
+          if (modName.includes("AppKit")) frameworks.add("AppKit")
+          if (modName.includes("Cocoa")) frameworks.add("Cocoa")
+          imports.push({
+            module: modName, items: [], importType: "include",
+            lineNumber: node.startPosition.row + 1,
+            isExternal: isSystem || !modName.startsWith("."),
+          })
+          relationships.push({
+            source: "root",
+            target: modName,
+            type: ASTEngine.RelationshipType.References,
+            confidence: 0.9,
+            metadata: { isObjCImport: true },
+          })
+        }
+      }
       // 1. Classes & Implementations. tree-sitter-objc parses BOTH plain classes
       // and categories as class_interface/class_implementation. A category is
       // distinguished by a SECOND identifier child (the category name) before
@@ -141,12 +162,15 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
         const nameNode = this.findChild(node, (n) => n.type === "selector" || n.type === "identifier")
         if (nameNode) {
           nextActiveScope = nameNode.text
+          // The `+`/`-` sign is an anonymous token child of the method node
+          // (`method_declaration [-:"-"] [;:";"]`) — pure AST, no text scan.
+          const isClassMethod = this.isClassMethodToken(node)
           symbols.push({
             name: nameNode.text,
             kind: ASTEngine.SymbolKind.Method,
             range: this.getRange(node),
             ownerName: activeScope !== "global" ? activeScope : undefined,
-            metadata: { objcSpecific: true, isClassMethod: node.text.startsWith("+"), isInstanceMethod: node.text.startsWith("-") },
+            metadata: { objcSpecific: true, isClassMethod, isInstanceMethod: !isClassMethod },
           })
         }
       } 
@@ -210,21 +234,49 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
          }
       }
       // 8. Relationships (Obj-C Message Expressions `[receiver selector]` & C-Function Calls)
+      // Structure: `[receiver selector:arg...]`. namedChild(0) is the receiver
+      // (identifier, field_expression, or nested message_expression); the
+      // selector is the FIRST identifier AFTER the receiver — never the
+      // receiver itself (`[NSString stringWithFormat:]` → stringWithFormat,
+      // not NSString; `[super init]` → init, not super).
       else if (node.type === "message_expression") {
-         const selectorNode = this.findChild(node, (n) => n.type === "selector" || n.type === "identifier")
+         let selectorNode: Node | null = null
+         for (let ci = 1; ci < node.namedChildCount; ci++) {
+           const cn = node.namedChild(ci)
+           if (cn && cn.type === "identifier") { selectorNode = cn; break }
+         }
          if (selectorNode && activeScope !== "global") {
-            relationships.push({
-              source: activeScope,
-              target: selectorNode.text,
-              type: ASTEngine.RelationshipType.Calls,
-              metadata: { isMessageExpression: true }
-            })
-            // Detect [[Foo alloc] init] as Instantiates
-            if (selectorNode.text === "alloc" || selectorNode.text === "new") { 
-              const receiverNode = this.findChild(node, (n) => n.type === "identifier" || n.type === "type_identifier");
-              if (receiverNode) {
-                relationships.push({ source: activeScope, target: receiverNode.text, type: ASTEngine.RelationshipType.Instantiates, confidence: 0.9, metadata: { isObjCAlloc: true } });
+            // [[Foo alloc] init] / [Foo new] → Instantiates Foo. The receiver
+            // of an alloc/new message is the class identifier.
+            if (selectorNode.text === "alloc" || selectorNode.text === "new") {
+              let receiverLeaf: string | null = null
+              const receiver = node.namedChild(0)
+              if (receiver) {
+                if (receiver.type === "identifier" || receiver.type === "type_identifier") {
+                  receiverLeaf = receiver.text
+                } else if (receiver.type === "message_expression") {
+                  // Nested: [[Logger alloc] ...] — the inner message's receiver
+                  // is the class. If the inner selector is itself alloc/new,
+                  // its own visit already emitted the Instantiates edge.
+                  const innerSel = this.findChild(receiver, (n) => n.type === "identifier")
+                  if (innerSel && (innerSel.text === "alloc" || innerSel.text === "new")) {
+                    const innerRecv = receiver.namedChild(0)
+                    if (innerRecv && (innerRecv.type === "identifier" || innerRecv.type === "type_identifier")) {
+                      receiverLeaf = innerRecv.text
+                    }
+                  }
+                }
               }
+              if (receiverLeaf) {
+                relationships.push({ source: activeScope, target: receiverLeaf, type: ASTEngine.RelationshipType.Instantiates, confidence: 0.9, metadata: { isObjCAlloc: true } })
+              }
+            } else {
+              relationships.push({
+                source: activeScope,
+                target: selectorNode.text,
+                type: ASTEngine.RelationshipType.Calls,
+                metadata: { isMessageExpression: true }
+              })
             }
          }
       }
@@ -260,23 +312,32 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     const uniqueSymbols = Array.from(uniqueSymbolsMap.values())
 
+    // Dedup key includes the relationship TYPE — two distinct facts with the
+    // same (source, target) pair (e.g. calls vs instantiates for `[Foo alloc]`)
+    // must never collapse into one.
     const uniqueRelMap = new Map<string, ASTEngine.UniversalRelationship>()
     for (let i = 0; i < relationships.length; i++) {
-        uniqueRelMap.set(`${relationships[i].source}->${relationships[i].target}`, relationships[i])
+        uniqueRelMap.set(`${relationships[i].type}|${relationships[i].source}->${relationships[i].target}`, relationships[i])
     }
     const uniqueRelationships = Array.from(uniqueRelMap.values())
+    const relKeySet = new Set(uniqueRelMap.keys())
 
-    // Add Contains relationships for owned symbols
+    // Add Contains relationships for owned symbols (dedup against existing
+    // edges — a contains must never be emitted twice for the same pair)
     for (const s of uniqueSymbols) {
       const _owner = s.ownerName || s.scope
       if (_owner) {
-        uniqueRelationships.push({
-          source: _owner,
-          target: s.name,
-          type: ASTEngine.RelationshipType.Contains,
-          confidence: 1.0,
-          metadata: { isContained: true },
-        })
+        const key = `${ASTEngine.RelationshipType.Contains}|${_owner}->${s.name}`
+        if (!relKeySet.has(key)) {
+          relKeySet.add(key)
+          uniqueRelationships.push({
+            source: _owner,
+            target: s.name,
+            type: ASTEngine.RelationshipType.Contains,
+            confidence: 1.0,
+            metadata: { isContained: true },
+          })
+        }
       }
     }
     for (let i = 0; i < uniqueSymbols.length; i++) { const s = uniqueSymbols[i]; exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: "public" }); }
@@ -318,6 +379,18 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
     return idNode.text
+  }
+
+  // The `+`/`-` sign is an anonymous token child of a method node
+  // (`method_declaration [-:"-"] [;:";"]`) — scan the non-named children for
+  // the `+` token. Pure AST, never source-text scanning.
+  private isClassMethodToken(node: Node): boolean {
+    const count = node.childCount
+    for (let i = 0; i < count; i++) {
+      const c = node.child(i)
+      if (c && !c.isNamed && c.type === "+") return true
+    }
+    return false
   }
 
   // Pure cursor helper protecting V8 from GC Thrashing
