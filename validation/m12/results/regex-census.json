@@ -2,23 +2,23 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-08-17T14:38:39.352Z",
+  "generatedAt": "2026-08-17T19:32:53.659Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 97,
+  "totalRegexUsages": 95,
   "analyzersScanned": 41,
   "byClassification": {
     "unavoidable": 11,
     "normalization": 47,
-    "needs_review": 37,
-    "replaceable": 2
+    "needs_review": 36,
+    "replaceable": 1
   },
   "byReceiverCategory": {
     "literal": 11,
     "node_text": 47,
     "identifier": 19,
-    "other": 18,
-    "raw_content": 2
+    "other": 17,
+    "raw_content": 1
   },
   "perFile": [
     {
@@ -1090,34 +1090,6 @@
           "operation": "replace",
           "receiver": "typeGuess",
           "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-objective-c-analyzer.ts",
-      "count": 2,
-      "usages": [
-        {
-          "file": "real-objective-c-analyzer.ts",
-          "line": 14,
-          "column": 42,
-          "source": "/#(?:import|include)\\s+[<\"]([^>\"]+)[>\"]/g",
-          "operation": "other",
-          "receiver": "content",
-          "receiverCategory": "raw_content",
-          "classification": "replaceable",
-          "justification": ""
-        },
-        {
-          "file": "real-objective-c-analyzer.ts",
-          "line": 16,
-          "column": 36,
-          "source": "/[\"<>]/g",
-          "operation": "replace",
-          "receiver": "m[1]",
-          "receiverCategory": "other",
           "classification": "needs_review",
           "justification": ""
         }
