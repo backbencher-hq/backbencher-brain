@@ -120,11 +120,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:elixir",
-      "wallTimeMs": 19.082391,
-      "userCpuMs": 51.184,
-      "systemCpuMs": 9.778,
-      "peakRssBytes": 246599680,
-      "rssDeltaBytes": 1646592,
+      "wallTimeMs": 19.38467,
+      "userCpuMs": 55.325,
+      "systemCpuMs": 3.37,
+      "peakRssBytes": 215941120,
+      "rssDeltaBytes": 3276800,
       "databaseBytes": null,
       "files": null,
       "symbols": null,

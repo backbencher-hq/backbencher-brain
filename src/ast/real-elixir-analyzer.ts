@@ -26,28 +26,31 @@ interface Scope {
   kind: ASTEngine.SymbolKind
 }
 
+// Call-target keywords that are decision points in this grammar. Each fires
+// only when a `call` node's identifier matches (verified against the pinned
+// grammar's emitted shapes). `try`/`rescue`/`catch`/`after`/`else` are NOT
+// call targets — they parse as *_block node types and are counted separately
+// in the walk (see the rescue_block/catch_block/after_block/else_block and
+// stab_clause branches).
 const complexityNodes: Record<string, boolean> = {
   "if": true,
   "unless": true,
   "case": true,
   "cond": true,
   "receive": true,
+  "with": true,
+  "for": true,
   "def": true,
   "defp": true,
   "defmacro": true,
   "defmacrop": true,
-  "with": true,
-  "rescue": true,
-  "catch": true,
-  "after": true,
-  "for": true,
-  "function_clause": true,
-  "do_block": true
 }
 
 // Function-definition constructs. The signature call nested in their
-// `arguments` is the declaration head — never a runtime call.
-const DEF_CONSTRUCTS = new Set(["def", "defp", "defmacro", "defmacrop"])
+// `arguments` is the declaration head — never a runtime call. defdelegate
+// defines a public function (optionally renamed via `as:`); defguard/
+// defguardp define guard macros.
+const DEF_CONSTRUCTS = new Set(["def", "defp", "defmacro", "defmacrop", "defdelegate", "defguard", "defguardp"])
 // Module directives — handled as dependencies, never as runtime calls.
 const DIRECTIVES = new Set(["use", "import", "alias", "require"])
 // Elixir language special forms / control-flow constructs. A `call` whose
@@ -140,7 +143,7 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
                   let meta: any = {}
                   if (t === "send" || t === "send_after") meta = { isMessagePass: true, isSend: true }
                   else if (t === "spawn" || t === "spawn_link" || t === "spawn_monitor" || t === "Task.async" || t === "Task.start" || t === "Task.start_link" || t === "Agent.start" || t === "Agent.start_link") meta = { isProcessSpawn: true }
-                  this.recordCall(t, ctx, currentScope, meta)
+                  this.recordCall(t, ctx, currentScope, this.enclosingDeclaredScope(scopeStack), meta)
                 }
             }
          }
@@ -188,6 +191,14 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
         // module symbols. M11.11 closure/macro boundaries: mark pattern usage
         // but never emit synthetic lambda symbols into the symbol table.
         ctx.patterns["Closures"] = true
+        // Each case/cond/if/with clause is a decision branch (stab_clause
+        // directly under a do_block; fn-clause stab_clauses are under
+        // anonymous_function and are not counted).
+        if (node.type === "stab_clause" && node.parent?.type === "do_block") cyclomaticComplexity++
+      } else if (node.type === "rescue_block" || node.type === "catch_block" || node.type === "after_block" || node.type === "else_block") {
+        // try/rescue/catch/after/else blocks are decision branches — counted
+        // via their emitted *_block node types (try itself is not a call).
+        cyclomaticComplexity++
       } else if (node.type === "binary_operator") {
           const op = node.child(1)?.text
           if (op === "|>") {
@@ -202,7 +213,7 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
                      targetName = right.text
                  }
                  if (targetName && !this.shouldSkipCall(right, targetName)) {
-                   this.recordCall(targetName, ctx, currentScope, { isPipe: true })
+                   this.recordCall(targetName, ctx, currentScope, this.enclosingDeclaredScope(scopeStack), { isPipe: true })
                  }
              }
           }
@@ -249,6 +260,40 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // Unqualified-call resolution (post-walk, so every declaration is known —
+    // forward references like `run -> run_compiler` where run_compiler is
+    // defined later in the file resolve correctly). Elixir resolution: an
+    // unqualified call is a local function, a Kernel builtin, or an import —
+    // Kernel builtins (length/is_*/function_exported?) and imported functions
+    // are NOT local symbols, so they produce no call edge. The enclosing
+    // declared scope was captured on each edge at emission time.
+    const declaredByScope = new Map<string, Set<string>>()
+    for (const s of ctx.symbols) {
+      if (s.kind === ASTEngine.SymbolKind.Function || s.kind === ASTEngine.SymbolKind.Macro || s.kind === ASTEngine.SymbolKind.Method) {
+        const owner = s.ownerName || s.scope || ""
+        let set = declaredByScope.get(owner)
+        if (!set) {
+          set = new Set()
+          declaredByScope.set(owner, set)
+        }
+        set.add(s.name)
+      }
+    }
+    const filteredRels: ASTEngine.UniversalRelationship[] = []
+    for (const r of ctx.relationships) {
+      if (r.type === ASTEngine.RelationshipType.Calls && typeof r.target === "string" && r.target.indexOf(".") === -1) {
+        const declaredScope = (r.metadata as any)?._declaredScope
+        if (typeof declaredScope === "string" && declaredScope !== "" && !(declaredByScope.get(declaredScope)?.has(r.target))) {
+          continue
+        }
+      }
+      if (r.metadata && typeof r.metadata === "object" && "_declaredScope" in r.metadata) {
+        delete (r.metadata as any)._declaredScope
+      }
+      filteredRels.push(r)
+    }
+    ctx.relationships = filteredRels
+
     return {
       language: "elixir", symbols: ctx.symbols, relationships: ctx.relationships, imports: ctx.imports, exports: ctx.exports, errors: ctx.errors,
       metadata: {
@@ -257,6 +302,40 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
         architecturalScore: Math.min(100, Math.max(0, 100 - ctx.errors.length * 5)), codeQuality: ctx.errors.length === 0 ? "Excellent" : "Fair", hasTypeInference: false, hasFrameworkIntelligence: true, analysisVersion: "10.0.0-elixir-dfs-strict"
       }
     }
+  }
+
+  // `defdelegate foo(...), to: M, as: :bar` — the `as:` atom renames the
+  // generated function (the head name alone would be wrong).
+  private extractAsName(node: Node): string | null {
+    const argsNode = this.findChild(node, (c) => c?.type === "arguments")
+    if (!argsNode) return null
+    const keywordsNode = this.findChild(argsNode, (c) => c?.type === "keywords")
+    if (!keywordsNode) return null
+    for (let i = 0; i < keywordsNode.namedChildCount; i++) {
+      const pair = keywordsNode.namedChild(i)
+      if (!pair || pair.type !== "pair") continue
+      const kw = this.findChild(pair, (c) => c?.type === "keyword")
+      if (kw?.text.startsWith("as") && pair.namedChildCount > 1) {
+        const val = pair.namedChild(1)
+        if (!val?.text) return null
+        // Atom value: `as: :trim_trailing` — strip the leading colon.
+        const txt = val.text
+        return txt.length > 0 && txt[0] === ":" ? txt.slice(1) : txt
+      }
+    }
+    return null
+  }
+
+  // The top non-function scope on the stack — the module/class whose declared
+  // set governs unqualified-call resolution for the current call site.
+  private enclosingDeclaredScope(scopeStack: Scope[]): string | undefined {
+    for (let i = scopeStack.length - 1; i >= 0; i--) {
+      const k = scopeStack[i].kind
+      if (k !== ASTEngine.SymbolKind.Function && k !== ASTEngine.SymbolKind.Macro && k !== ASTEngine.SymbolKind.Method) {
+        return scopeStack[i].name
+      }
+    }
+    return undefined
   }
 
   // ==========================================================================
@@ -269,7 +348,7 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
     ctx.relationships.push({ source, target, type, confidence, metadata })
   }
 
-  private recordCall(targetName: string, ctx: ElixirContext, currentScope: Scope | undefined, meta: any = {}) {
+  private recordCall(targetName: string, ctx: ElixirContext, currentScope: Scope | undefined, declaredScope: string | undefined, meta: any = {}) {
       let finalTarget = targetName
       const parts = targetName.split(".")
       if (parts.length > 1) {
@@ -280,6 +359,19 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
       }
       if (!finalTarget) return
+      if (finalTarget.indexOf(".") !== -1) {
+          // Qualified call: a capitalized root is a module/alias (real call);
+          // a lowercase root is a variable receiver — dynamic dispatch with an
+          // unresolvable target (module.manifests() where `module` is a
+          // parameter), which emits no edge.
+          const root = finalTarget.split(".")[0]
+          if (root && root.length > 0 && root[0] !== root[0].toUpperCase()) return
+      } else if (declaredScope) {
+          // Unqualified call: the declared set is not complete mid-walk
+          // (forward references), so the resolution check runs post-walk.
+          // Capture the enclosing declared scope on the edge for that pass.
+          meta = { ...meta, _declaredScope: declaredScope }
+      }
       this.pushRel(ctx, currentScope?.name || "Global", finalTarget, ASTEngine.RelationshipType.Calls, 0.8, { elixirSpecific: true, ...meta })
   }
 
@@ -583,7 +675,14 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
     }
 
-    const visibility = (defType === "defp" || defType === "defmacrop") ? "private" : "public"
+    // defdelegate/defguard/defguardp may rename or scope the generated
+    // function/macro: `as:` overrides the head name; defguardp is private.
+    if (defType === "defdelegate") {
+      const asName = this.extractAsName(node)
+      if (asName) name = asName
+    }
+
+    const visibility = (defType === "defp" || defType === "defmacrop" || defType === "defguardp") ? "private" : "public"
     let isGenCallback = false, isSupCallback = false
 
     if (name === "init" || name === "handle_call" || name === "handle_cast" || name === "handle_info" || name === "terminate") isGenCallback = true
@@ -599,10 +698,11 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
     const arity = parameters.length
     const fnId = `${currentScope?.name || ""}.${name}/${arity}`
 
-    // Universal-kind mapping: defmacro/defmacrop → Macro; interface (defprotocol)
-    // and class (defimpl) members → Method; module functions stay Function.
+    // Universal-kind mapping: defmacro/defmacrop/defguard/defguardp → Macro;
+    // interface (defprotocol) and class (defimpl) members → Method; module
+    // functions (def/defp/defdelegate) stay Function.
     let symbolKind = ASTEngine.SymbolKind.Function
-    if (defType.indexOf("macro") !== -1) {
+    if (defType === "defmacro" || defType === "defmacrop" || defType === "defguard" || defType === "defguardp") {
       symbolKind = ASTEngine.SymbolKind.Macro
     } else if (currentScope && (currentScope.kind === ASTEngine.SymbolKind.Interface || currentScope.kind === ASTEngine.SymbolKind.Class)) {
       symbolKind = ASTEngine.SymbolKind.Method
