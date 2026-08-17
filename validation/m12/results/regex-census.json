@@ -2,22 +2,22 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-08-17T02:22:09.872Z",
+  "generatedAt": "2026-08-17T14:14:55.221Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 102,
+  "totalRegexUsages": 99,
   "analyzersScanned": 41,
   "byClassification": {
     "unavoidable": 11,
-    "normalization": 48,
-    "needs_review": 41,
+    "normalization": 47,
+    "needs_review": 39,
     "replaceable": 2
   },
   "byReceiverCategory": {
     "literal": 11,
-    "node_text": 48,
-    "identifier": 22,
-    "other": 19,
+    "node_text": 47,
+    "identifier": 21,
+    "other": 18,
     "raw_content": 2
   },
   "perFile": [
@@ -1022,45 +1022,6 @@
           "source": "/\\s*#+\\s*$/",
           "operation": "replace",
           "receiver": "node.text.replace(/^#{1,6}\\s*/, \"\")",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-cpp-analyzer.ts",
-      "count": 3,
-      "usages": [
-        {
-          "file": "real-cpp-analyzer.ts",
-          "line": 119,
-          "column": 42,
-          "source": "/^#include\\s+/",
-          "operation": "replace",
-          "receiver": "text",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-cpp-analyzer.ts",
-          "line": 119,
-          "column": 70,
-          "source": "/[<>\"]/g",
-          "operation": "replace",
-          "receiver": "text.replace(/^#include\\s+/, \"\")",
-          "receiverCategory": "other",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-cpp-analyzer.ts",
-          "line": 211,
-          "column": 50,
-          "source": "/^public\\s+|^protected\\s+|^private\\s+/",
-          "operation": "replace",
-          "receiver": "typeNode.text",
           "receiverCategory": "node_text",
           "classification": "normalization",
           "justification": ""
