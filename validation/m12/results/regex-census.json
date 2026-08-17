@@ -2,21 +2,21 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-08-17T14:14:55.221Z",
+  "generatedAt": "2026-08-17T14:38:39.352Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 99,
+  "totalRegexUsages": 97,
   "analyzersScanned": 41,
   "byClassification": {
     "unavoidable": 11,
     "normalization": 47,
-    "needs_review": 39,
+    "needs_review": 37,
     "replaceable": 2
   },
   "byReceiverCategory": {
     "literal": 11,
     "node_text": 47,
-    "identifier": 21,
+    "identifier": 19,
     "other": 18,
     "raw_content": 2
   },
@@ -1118,34 +1118,6 @@
           "operation": "replace",
           "receiver": "m[1]",
           "receiverCategory": "other",
-          "classification": "needs_review",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-rust-analyzer.ts",
-      "count": 2,
-      "usages": [
-        {
-          "file": "real-rust-analyzer.ts",
-          "line": 233,
-          "column": 36,
-          "source": "/\\[(?:get|post|put|delete)\\(\"([^\"]+)\"\\)\\]/",
-          "operation": "match",
-          "receiver": "text",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-rust-analyzer.ts",
-          "line": 279,
-          "column": 25,
-          "source": "/<.*$/",
-          "operation": "replace",
-          "receiver": "name",
-          "receiverCategory": "identifier",
           "classification": "needs_review",
           "justification": ""
         }

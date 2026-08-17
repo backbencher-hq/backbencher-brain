@@ -1,6 +1,22 @@
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 
+// Extract the route path from an axum-style method attribute
+// (`#[get("/users")]` → `/users`). Pure-String scan — replaces the legacy
+// `\[(?:get|post|put|delete)\("([^"]+)"\)\]` regex.
+function extractRoutePath(text: string): string | null {
+  for (const verb of ["get", "post", "put", "delete"]) {
+    const marker = `[${verb}("`
+    const start = text.indexOf(marker)
+    if (start >= 0) {
+      const rest = text.slice(start + marker.length)
+      const end = rest.indexOf('")]')
+      if (end >= 0) return rest.slice(0, end)
+    }
+  }
+  return null
+}
+
 interface RustContext {
   tree: { rootNode: Node }
   content: string
@@ -10,6 +26,7 @@ interface RustContext {
   relationships: ASTEngine.UniversalRelationship[]
   exports: ASTEngine.ExportInfo[]
   metadata: Partial<ASTEngine.FileMetadata>
+  emittedUses: Set<string>
 }
 
 export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
@@ -31,6 +48,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         detectedFrameworks: [],
         frameworkPatterns: [],
       },
+      emittedUses: new Set<string>(),
     }
 
     if (rootNode.hasError) {
@@ -87,6 +105,48 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         this.handleAttribute(node, ctx)
       } else if (node.type === "call_expression") {
         this.handleCallExpression(node, ctx, parent)
+      } else if (node.type === "field_expression") {
+        // obj.field or self.field → Uses (family contract: field access is a
+        // USES edge, never paired with references; when the field expression
+        // is the function of a call (`self.items.push`), the call_expression
+        // branch already emits the `calls` edge — one edge per pair).
+        const field = node.childForFieldName("field")
+        const value = node.childForFieldName("value")
+        // field_identifier only — tuple indexing (`tuple.0`) parses as a
+        // field_expression with an integer_literal field; numeric indices are
+        // not symbols and must not produce uses edges.
+        if (
+          field &&
+          field.type === "field_identifier" &&
+          field.text.trim() &&
+          node.parent?.type !== "call_expression"
+        ) {
+          const source = parent?.name || "global"
+          const relKey = `${source}::uses::${field.text}`
+          if (!ctx.emittedUses.has(relKey)) {
+            ctx.emittedUses.add(relKey)
+            ctx.relationships.push({
+              source,
+              target: field.text,
+              type: ASTEngine.RelationshipType.Uses,
+              confidence: 0.9,
+              metadata: { relationshipType: "field_access", accessedFrom: value?.text },
+            })
+          }
+        }
+      } else if (node.type === "struct_expression") {
+        // User { id, name } — struct literal construction → instantiates
+        const typeNode = node.childForFieldName("name") || node.namedChild(0)
+        if (typeNode && typeNode.type === "type_identifier") {
+          const source = parent?.name || "global"
+          ctx.relationships.push({
+            source,
+            target: typeNode.text,
+            type: ASTEngine.RelationshipType.Instantiates,
+            confidence: 0.8,
+            metadata: { relationshipType: "struct_literal", isConstructor: true },
+          })
+        }
       } else if (node.type === "macro_invocation") {
         this.handleMacroInvocation(node, ctx, parent)
       } else if (node.type === "enum_variant") {
@@ -184,12 +244,10 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    // Add Contains + References
+    // Add Contains (REAL container ownership only; imports stay in the
+    // imports array — Java-family contract, no dangling `references root`)
     for (const s of ctx.symbols) {
       const _owner = s.ownerName || s.scope; if (_owner) ctx.relationships.push({ source: _owner, target: s.name, type: ASTEngine.RelationshipType.Contains, confidence: 1.0, metadata: {} })
-    }
-    for (const imp of ctx.imports) {
-      ctx.relationships.push({ source: "root", target: imp.module || "", type: ASTEngine.RelationshipType.References, confidence: 0.9, metadata: {} })
     }
 
     return {
@@ -230,11 +288,11 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (targetNode && targetNode.type === "function_item") {
         const nameNode = targetNode.childForFieldName("name")
         if (nameNode) {
-          const match = text.match(/\[(?:get|post|put|delete)\("([^"]+)"\)\]/)
-          if (match && match[1]) {
+          const routePath = extractRoutePath(text)
+          if (routePath) {
             ctx.relationships.push({
               source: nameNode.text,
-              target: match[1],
+              target: routePath,
               type: ASTEngine.RelationshipType.Exports,
               metadata: {},
             })
@@ -276,7 +334,8 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   /** Strip a trailing generic parameter list: `UserService<T>` → `UserService`. */
   private stripGenerics(name: string): string {
-    return name.replace(/<.*$/, "")
+    const lt = name.indexOf("<")
+    return lt >= 0 ? name.slice(0, lt) : name
   }
 
   private isPublic(node: Node): boolean {
@@ -360,7 +419,8 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
             const fieldSymbol = this.createSymbol(fieldName, ASTEngine.SymbolKind.Property, fieldNode, symbol, {
               type: "field",
             })
-            if (this.isPublic(fieldNode)) fieldSymbol.visibility = "public"
+            // Rust fields default to private; only `pub` fields are public
+            fieldSymbol.visibility = this.isPublic(fieldNode) ? "public" : "private"
             ctx.symbols.push(fieldSymbol)
           }
         }
@@ -411,7 +471,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (bound && (bound.type === "type_identifier" || bound.type === "scoped_type_identifier" || bound.type === "trait_bound")) {
           ctx.relationships.push({
             source: name,
-            target: bound.text,
+            target: this.extractTraitName(bound),
             type: ASTEngine.RelationshipType.Extends,
             confidence: 1.0,
             metadata: { rustSpecific: true, traitBound: true },
@@ -480,16 +540,28 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     const symbol = this.createSymbol(implName, ASTEngine.SymbolKind.Impl, node, parent, { type: "impl" })
     ctx.symbols.push(symbol)
 
-    if (traitName) {
+    if (traitNode && traitName) {
       ctx.relationships.push({
         source: typeName,
-        target: traitName,
+        target: this.extractTraitName(traitNode),
         type: ASTEngine.RelationshipType.Implements,
         metadata: {},
       })
     }
 
     return symbol
+  }
+
+  /** Leaf type name of a trait reference: `super::Repository<User>` → `Repository`. */
+  private extractTraitName(node: Node): string {
+    const nameField = node.childForFieldName("name") || node.namedChild(0)
+    if (nameField && nameField.type === "type_identifier") return nameField.text
+    if (nameField && nameField.type === "scoped_type_identifier") {
+      const last = nameField.namedChild(nameField.namedChildCount - 1)
+      if (last && last.type === "type_identifier") return last.text
+    }
+    if (node.type === "type_identifier") return node.text
+    return this.stripGenerics(node.text).split("::").pop() || node.text
   }
 
   private handleMod(
@@ -621,58 +693,6 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         range: symbol.range,
         isType: false,
       })
-    }
-
-    // Trace calls and borrows
-    const traceStack = [node]
-    while (traceStack.length > 0) {
-      const curr = traceStack.pop()
-      if (!curr) continue
-
-      if (curr.type === "call_expression") {
-        const functionNode = curr.childForFieldName("function")
-        if (functionNode) {
-          let target = functionNode.text
-          if (functionNode.type === "field_expression") {
-            const fieldNode = functionNode.childForFieldName("field")
-            const valueNode = functionNode.childForFieldName("value")
-            if (fieldNode) {
-              target = fieldNode.text
-              if (valueNode && valueNode.text === "self" && symbol.ownerName) {
-                target = `${symbol.ownerName}.${target}`
-              }
-            }
-          } else if (functionNode.type === "scoped_identifier") {
-            const nameNode =
-              functionNode.childForFieldName("name") || functionNode.namedChild(functionNode.namedChildCount - 1)
-            if (nameNode) target = nameNode.text
-          }
-
-          ctx.relationships.push({
-            source: symbol.ownerName ? `${symbol.ownerName}.${symbol.name}` : symbol.name,
-            target: target,
-            type: ASTEngine.RelationshipType.Calls,
-            metadata: { callExpression: functionNode.text },
-          })
-        }
-      }
-
-      if (curr.type === "reference_type") {
-        const typeNode = curr.childForFieldName("type")
-        if (typeNode && symbol.ownerName) {
-          ctx.relationships.push({
-            source: `${symbol.ownerName}.${symbol.name}`,
-            target: typeNode.text,
-            type: ASTEngine.RelationshipType.Uses,
-            metadata: { relationshipType: "rust_borrow" },
-          })
-        }
-      }
-
-      for (let i = curr.namedChildCount - 1; i >= 0; i--) {
-        const child = curr.namedChild(i)
-        if (child) traceStack.push(child)
-      }
     }
 
     return symbol
