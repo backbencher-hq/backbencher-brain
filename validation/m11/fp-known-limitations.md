@@ -49,11 +49,15 @@ precision / 1.000 recall against ground truth (`validation/m11/probe-fp.ts`).
 
 ## Coverage gaps
 
-- **Clean has no eligible real corpus**: the only local Clean repository is
-  `tree-sitter-clean` — the parser grammar project itself, which is marked
-  `evidenceEligible: false`. Clean is therefore **fixture-validated only**
-  (1.000/1.000 on `Stats.icl`); corpus-level throughput/robustness evidence for
-  Clean awaits a clean, eligible real-world Clean codebase.
+- **Clean corpus (resolved in M12.26)**: `clean_stdlib` — the official Clean
+  system standard library (cloned from the Clean compiler GitLab,
+  `gitlab.science.ru.nl/clean-compiler-and-rts/stdenv`, pinned at
+  `6971a8af`, 41 files ≥1KB) — is now the language-representative corpus;
+  the manifest's clean entry previously pointed at the grammar repo.
+  Corpus robustness: 4/41 grammar-error files (9.8%) — `_SystemArray`
+  (inline `code { ... }` machine-code blocks) and `_SystemDynamic` (exotic
+  record-pattern/update-comprehension constructs) — all classified honestly,
+  0 crashes. Grammar upgraded to tree-sitter-clean v1.2.4 during M12.26.
 - **Clean grammar capability**: the `tree-sitter-clean` grammar is limited —
   it fails on dotted imports, multi-arg type signatures, and some record
   patterns. The fixture is scoped to the grammar's supported subset (records,

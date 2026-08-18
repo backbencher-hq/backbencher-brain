@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "kind": "per_analyzer_complexity:clean",
+  "fixtureDir": "validation/m12/fixtures/clean",
+  "corpusDir": "/tmp/clean-corpus-copy",
+  "runs": [
+    {
+      "name": "fixtures",
+      "measurement": {
+        "name": "fixtures:clean",
+        "wallTimeMs": 1463.121143,
+        "userCpuMs": 1071.443,
+        "systemCpuMs": 643.652,
+        "peakRssBytes": 200941568,
+        "rssDeltaBytes": 154804224,
+        "databaseBytes": null,
+        "files": 2,
+        "symbols": 29,
+        "relationships": 39,
+        "filesPerSecond": 1.3669408097672469,
+        "symbolsPerSecond": 19.820641741625078,
+        "relationshipsPerSecond": 26.655345790461315
+      },
+      "symbols": 29,
+      "relationships": 39
+    },
+    {
+      "name": "corpus_subset",
+      "measurement": {
+        "name": "corpus_subset:clean",
+        "wallTimeMs": 3003.54593,
+        "userCpuMs": 6532.512,
+        "systemCpuMs": 546.511,
+        "peakRssBytes": 268943360,
+        "rssDeltaBytes": 74248192,
+        "databaseBytes": null,
+        "files": 62,
+        "symbols": 1307,
+        "relationships": 1416,
+        "filesPerSecond": 20.64226798755829,
+        "symbolsPerSecond": 435.15232676997886,
+        "relationshipsPerSecond": 471.44276565133134
+      },
+      "symbols": 1307,
+      "relationships": 1416
+    }
+  ],
+  "note": "Complexity envelope per analyzer: wall time, symbols/s, relationships/s, peak RSS. Budgets are declared per analyzer in docs/analyzers/."
+}

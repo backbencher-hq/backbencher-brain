@@ -533,11 +533,25 @@
   },
   {
    "analyzer": "clean",
-   "corpusTarget": "tree_sitter_clean",
-   "status": "dirty_or_unpinned",
+   "corpusTarget": "clean_stdlib",
+   "status": "measured",
    "candidates": [
-    "tree_sitter_clean@2b0fe499(clean)"
-   ]
+    "clean_stdlib@6971a8af(clean)",
+    "tree_sitter_clean@58729d3(clean)  # v1.2.4 grammar"
+   ],
+   "measured": {
+    "revision": "6971a8af309b2d7efd601cd3fa75dc8fcc4856ff",
+    "sample": "41 tracked *.icl/*.dcl files (all 41 files >= 1KB from clean_stdlib@6971a8a \u2014 the Clean system standard library itself, the language-representative corpus; the manifest previously pointed at the grammar repo)",
+    "fixtures": 2,
+    "fixtureFacts": 68,
+    "precision": 1.0,
+    "recall": 1.0,
+    "corpusSymbols": 1307,
+    "corpusRelationships": 1416,
+    "grammarErrorFiles": 4,
+    "measuredAt": "2026-08-18T00:45:00.000Z",
+    "note": "Analyzer rewritten pure-AST for M12.26 to the FP-family contract (Clojure/Elixir/Erlang/Haskell precedent) on the freshly released tree-sitter-clean v1.2.4 grammar: record fields (x/y/z properties) and class-member methods (interface methods) now emitted via the type_definition_body and class_member shapes (was silent gaps \u2014 the honest M11 re-probe showed 0.986 precision / 0.920 recall); stale cached fp-observed.json fixed by regenerating honestly (M11 probe now genuine 1.000/1.000); call graph from single-pass apply-head extraction with the FP resolution rule (unqualified calls only to declared module-level functions, qualified calls emit full Module.func targets, pattern-position constructors never instantiate, where-locals scoped noise); 4 corpus grammar-error files (9.8%) all classified honestly (_SystemArray inline code{...} machine-code blocks, _SystemDynamic exotic record-pattern/update-comprehension constructs); shape-safe 32/32 dispatch refs live against the v1.2.4 grammar; zero O(n^2); differential 68/68 on first run"
+   }
   },
   {
    "analyzer": "python",
