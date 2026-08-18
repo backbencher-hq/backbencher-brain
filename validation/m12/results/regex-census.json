@@ -2,23 +2,23 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-08-18T00:36:52.161Z",
+  "generatedAt": "2026-08-18T01:23:27.967Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 69,
+  "totalRegexUsages": 64,
   "analyzersScanned": 41,
   "byClassification": {
     "unavoidable": 9,
-    "normalization": 33,
+    "normalization": 29,
     "replaceable": 1,
-    "needs_review": 26
+    "needs_review": 25
   },
   "byReceiverCategory": {
     "literal": 9,
-    "node_text": 33,
+    "node_text": 29,
     "raw_content": 1,
     "other": 11,
-    "identifier": 15
+    "identifier": 14
   },
   "perFile": [
     {
@@ -603,67 +603,6 @@
           "receiver": "prevNode.text",
           "receiverCategory": "node_text",
           "classification": "normalization",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-python-analyzer.ts",
-      "count": 5,
-      "usages": [
-        {
-          "file": "real-python-analyzer.ts",
-          "line": 402,
-          "column": 42,
-          "source": "/^@/",
-          "operation": "replace",
-          "receiver": "c.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-python-analyzer.ts",
-          "line": 487,
-          "column": 42,
-          "source": "/^@/",
-          "operation": "replace",
-          "receiver": "c.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-python-analyzer.ts",
-          "line": 562,
-          "column": 42,
-          "source": "/^@/",
-          "operation": "replace",
-          "receiver": "c.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-python-analyzer.ts",
-          "line": 717,
-          "column": 53,
-          "source": "/^[\"']|[\"']$/g",
-          "operation": "replace",
-          "receiver": "child.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-python-analyzer.ts",
-          "line": 944,
-          "column": 30,
-          "source": "/^[\"']|[\"']$/g",
-          "operation": "replace",
-          "receiver": "val",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
           "justification": ""
         }
       ]
