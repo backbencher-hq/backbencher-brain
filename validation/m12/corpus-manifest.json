@@ -617,6 +617,27 @@
    ]
   },
   {
+   "analyzer": "ruby",
+   "corpusTarget": "rake",
+   "status": "measured",
+   "candidates": [
+    "rake@dd5e851d(clean)"
+   ],
+   "measured": {
+    "revision": "dd5e851d75fd850a730aae4482f6ca59843ac869",
+    "sample": "95 tracked *.rb files (all Ruby files in rake@dd5e851d, a clean language-representative Ruby build-tool corpus)",
+    "fixtures": 3,
+    "fixtureFacts": 37,
+    "precision": 1,
+    "recall": 1,
+    "corpusSymbols": 1309,
+    "corpusRelationships": 6524,
+    "grammarErrorFiles": 0,
+    "note": "Ruby analyzer rewritten pure-AST for M12.28: root program traversal restored; singleton classes and singleton methods extracted; lexical visibility is frame-local; private/protected/public directives are metadata rather than calls; constructor calls emit instantiates only; implicit overrides resolve against local and cross-file companion declarations; 0 regex usages in the analyzer; no O(n^2) symbol/relationship lookup. Differential 37/37 (1.000/1.000, 0 FP / 0 FN); corpus 0 grammar errors / 0 crashes; shape-safe 20/20 node dispatch refs live in the pinned grammar.",
+    "measuredAt": "2026-08-19T16:03:20.000Z"
+   }
+  },
+  {
    "analyzer": "sql",
    "corpusTarget": "proxicall",
    "status": "dirty_or_unpinned",

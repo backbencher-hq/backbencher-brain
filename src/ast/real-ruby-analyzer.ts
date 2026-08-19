@@ -1,20 +1,89 @@
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 
+// ============================================================================
+// RUBY BUILTINS — filtered from call relationships (same contract as JS/Python)
+// ============================================================================
+const RUBY_BUILTINS = new Set([
+  // Kernel / top-level
+  "puts", "print", "p", "pp", "p$", "print_flush", "putc",
+  "raise", "fail", "exit", "exit!", "abort", "warn",
+  "gets", "readline", "readlines", "rand", "srand",
+  "sleep", "loop", "require", "require_relative", "load",
+  "autoload", "eval", "binding", "local_variables",
+  "global_variables", "global_variable_get", "global_variable_set",
+  "caller", "caller_locations", "trace_var", "untrace_var",
+  "method", "public_method", "private_method", "protected_method",
+  "instance_method", "public_instance_method", "private_instance_method",
+  "respond_to", "respond_to?", "class", "superclass",
+  "Object", "Kernel", "BasicObject", "NilClass", "TrueClass", "FalseClass",
+  "Integer", "Float", "String", "Array", "Hash", "Symbol", "Regexp", "Range",
+  "IO", "File", "Dir", "Process", "Signal", "GC", "ObjectSpace",
+  "Marshal", "Thread", "Fiber", "Random", "SecureRandom",
+  "Time", "Date", "DateTime", "Math",
+  "Comparable", "Enumerable", "Errno",
+  // Ruby dunders / special methods
+  "super", "method_missing", "respond_to_missing?", "initialize_copy",
+  "initialize_dup", "initialize_clone", "send", "__send__",
+  "freeze", "frozen?", "dup", "clone", "taint", "untaint", "trust", "untrust",
+  "hash", "eql?", "equal?", "object_id", "instance_of?", "kind_of?", "is_a?",
+  "nil?", "instance_variable_defined?", "instance_variables",
+  "instance_variable_get", "instance_variable_set",
+  "class_variables", "class_variable_defined?", "class_variable_get", "class_variable_set",
+  "const_defined?", "const_get", "const_set", "const_defined?",
+  "method_defined?", "private_method_defined?", "protected_method_defined?",
+  "singleton_method", "define_singleton_method",
+  "to_s", "to_i", "to_f", "to_a", "to_h", "to_proc", "inspect", "display",
+  "extend", "include", "prepend",
+  // Rails macros (emit properties, not call edges)
+  "has_many", "belongs_to", "has_one", "has_and_belongs_to_many",
+  "scope", "default_scope",
+  "validates", "validate", "validates_with", "validates_each",
+  "before_action", "after_action", "before_filter", "after_filter",
+  "before_validation", "after_validation",
+  "before_save", "after_save", "before_create", "after_create",
+  "before_update", "after_update", "before_destroy", "after_destroy",
+  "before_commit", "after_commit", "after_rollback",
+  "attr_reader", "attr_writer", "attr_accessor",
+  "alias_method", "remove_method", "undef_method",
+  "delegate", "delegate_missing_to",
+  "event", "transition", "state_machine",
+  "module_function", "using",
+  "ruby2_keywords", "no_touching",
+])
+
+// Rails-specific call targets (emit as property/use edges, not call edges)
+const RAILS_MACRO_METHODS = new Set([
+  "has_many", "belongs_to", "has_one", "has_and_belongs_to_many",
+  "scope", "default_scope",
+  "validates", "validate", "validates_with", "validates_each",
+  "attr_reader", "attr_writer", "attr_accessor",
+  "alias_method", "remove_method", "undef_method",
+  "delegate", "delegate_missing_to",
+  "event", "transition",
+  "before_action", "after_action",
+  "before_validation", "after_validation",
+  "before_save", "after_save", "before_create", "after_create",
+  "before_update", "after_update", "before_destroy", "after_destroy",
+  "before_commit", "after_commit", "after_rollback",
+  "define_method",
+  "module_function",
+])
+
+// ============================================================================
+// MAIN ANALYZER
+// ============================================================================
 export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
   public analyze(
     rootNode: Node,
     content: string,
     filePath: string,
+    context?: ASTEngine.AnalyzeContext,
   ): Omit<ASTEngine.ParseResult, "language" | "metadata"> & { metadata?: Partial<ASTEngine.FileMetadata> } {
     const symbols: ASTEngine.UniversalSymbol[] = []
     const imports: ASTEngine.ImportInfo[] = []
     const exports: ASTEngine.ExportInfo[] = []
     const relationships: ASTEngine.UniversalRelationship[] = []
-
-    // Use true Objects for O(1) tracking, no Sets or Maps needed for simple flags
-    const frameworksObj: Record<string, boolean> = {}
-    const patternsObj: Record<string, boolean> = {}
 
     const metadata: Partial<ASTEngine.FileMetadata> = {
       detectedFrameworks: [],
@@ -25,6 +94,7 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     if (!rootNode) return { symbols, imports, errors: [] }
 
+    // --- Error collection ---
     if (rootNode.hasError) {
       const errStack: Node[] = [rootNode]
       while (errStack.length > 0) {
@@ -32,8 +102,8 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (n.type === "ERROR" || n.isMissing) {
           if (!metadata.errors) metadata.errors = []
           metadata.errors.push({
-            message: `Syntax ${n.type} detected. The Brain Engine is bypassing this broken node.`,
-            range: this.getRange(n),
+            message: `Syntax ${n.type} detected.`,
+            range: this.nodeToRange(n),
             severity: "warning",
           })
         }
@@ -44,111 +114,328 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    // Manually count lines of code
+    // --- Line count ---
     let loc = 1
     for (let i = 0; i < content.length; i++) {
       if (content[i] === "\n") loc++
     }
     metadata.linesOfCode = loc
 
-    // Iterative stack
-    const stack: { node: Node; parent: ASTEngine.UniversalSymbol | null }[] = [{ node: rootNode, parent: null }]
+    // ========================================================================
+    // EXTRACTIVE WALK — iterative stack, single pass
+    // ========================================================================
+    // Scope tracking: modules/classes → owner chain
+    // Visibility tracking: private/protected state markers
+    // Call source: the nearest enclosing method/function name
+    const visibilityOverrides = new Map<string, string>()
+    const stack: {
+      node: Node
+      owner: string | undefined
+      ownerKind: string | undefined
+      visibility: string
+      isSingleton: boolean
+    }[] = [{
+      node: rootNode,
+      owner: undefined,
+      ownerKind: undefined,
+      visibility: "public",
+      isSingleton: false,
+    }]
 
     while (stack.length > 0) {
-      const popped = stack.pop()
-      if (!popped) continue
-
-      const { node, parent } = popped
-      let currentParent = parent
-
+      const frame = stack.pop()!
+      const { node, owner, ownerKind, visibility, isSingleton } = frame
       const type = node.type
 
+      // --- Class ---
       if (type === "class") {
-        const cls = this.handleClass(node, symbols, relationships, frameworksObj, patternsObj, parent)
-        if (cls) currentParent = cls
-      } else if (type === "module") {
-        const mod = this.handleModule(node, symbols, parent)
-        if (mod) currentParent = mod
-      } else if (type === "method") {
-        this.handleMethod(node, symbols, parent)
-      } else if (type === "singleton_method") {
-        this.handleSingletonMethod(node, symbols, parent)
-      } else if (type === "singleton_class") {
-        patternsObj["Eigenclass (Singleton Class)"] = true
-      } else if (type === "assignment") {
-        this.handleAssignment(node, symbols, parent)
-      } else if (type === "call") {
-        this.handleCall(node, imports, relationships, frameworksObj, patternsObj, parent, symbols)
-      } else if (type === "command") {
-        // Method calls without parentheses: `puts "hello"`, `redirect_to path`
-        this.handleCommand(node, imports, relationships, frameworksObj, patternsObj, parent, symbols)
-      } else if (type === "command_call") {
-        // Chained commands: `foo.bar arg1, arg2`
-        this.handleCommandCall(node, imports, relationships, frameworksObj, patternsObj, parent, symbols)
-      } else if (type === "block" || type === "do_block") {
-        const name = `${type}_${node.startPosition.row + 1}_${node.startPosition.column + 1}`
-        symbols.push({
+        const nameNode = node.childForFieldName("name")
+        if (!nameNode) continue
+        const name = nameNode.text
+
+        const superClass = this.extractSuperclass(node)
+        const isRailsModel = this.isRailsModelName(superClass)
+        const isRailsController = this.isRailsControllerName(superClass)
+
+        if (isRailsModel || isRailsController) {
+          metadata.detectedFrameworks!.push("Ruby on Rails")
+        }
+
+        const sym: ASTEngine.UniversalSymbol = {
           name,
-          kind: ASTEngine.SymbolKind.Function,
-          range: this.getRange(node),
-          ownerName: parent ? parent.name : undefined,
-          metadata: { rubySpecific: true, isAnonymousBlock: true },
-        })
-      } else if (type === "lambda") {
-        const name = `lambda_${node.startPosition.row + 1}_${node.startPosition.column + 1}`
-        symbols.push({
-          name,
-          kind: ASTEngine.SymbolKind.Function,
-          range: this.getRange(node),
-          ownerName: parent ? parent.name : undefined,
-          metadata: { rubySpecific: true, isLambda: true },
-        })
-      } else if (type === "rescue") {
-        patternsObj["Error Handling"] = true
+          kind: ASTEngine.SymbolKind.Class,
+          range: this.nodeToRange(node),
+          ownerName: owner,
+          metadata: { superClass, isRailsModel, isRailsController },
+        }
+        symbols.push(sym)
+        // extends relationship
+        if (superClass) {
+          const leaf = this.leafName(superClass)
+          relationships.push({
+            source: name,
+            target: leaf,
+            type: ASTEngine.RelationshipType.Extends,
+            confidence: 1.0,
+            metadata: {},
+          })
+        }
+
+        // Walk the body in source order. Visibility is lexical in Ruby, so
+        // capture it on each frame rather than using mutable global state.
+        const body = this.findChild(node, "body_statement")
+        if (body) {
+          const bodyFrames: typeof stack = []
+          let bodyVisibility = "public"
+          for (let i = 0; i < body.namedChildCount; i++) {
+            const child = body.namedChild(i)
+            if (!child) continue
+            bodyFrames.push({
+              node: child,
+              owner: name,
+              ownerKind: "class",
+              visibility: bodyVisibility,
+              isSingleton: false,
+            })
+            if (this.isNoArgumentVisibilityMarker(child)) {
+              bodyVisibility = child.text
+            }
+          }
+          for (let i = bodyFrames.length - 1; i >= 0; i--) stack.push(bodyFrames[i])
+        }
+        continue
       }
 
-      if (
-        type === "if" ||
-        type === "unless" ||
-        type === "while" ||
-        type === "until" ||
-        type === "for" ||
-        type === "case"
-      ) {
-        if (metadata.cyclomaticComplexity !== undefined) {
-          metadata.cyclomaticComplexity++
+      // --- Module ---
+      if (type === "module") {
+        const nameNode = node.childForFieldName("name")
+        if (!nameNode) continue
+        const name = nameNode.text
+
+        const sym: ASTEngine.UniversalSymbol = {
+          name,
+          kind: ASTEngine.SymbolKind.Module,
+          range: this.nodeToRange(node),
+          ownerName: owner,
+          metadata: {},
+        }
+        symbols.push(sym)
+        const body = this.findChild(node, "body_statement")
+        if (body) {
+          const bodyFrames: typeof stack = []
+          let bodyVisibility = "public"
+          for (let i = 0; i < body.namedChildCount; i++) {
+            const child = body.namedChild(i)
+            if (!child) continue
+            bodyFrames.push({
+              node: child,
+              owner: name,
+              ownerKind: "module",
+              visibility: bodyVisibility,
+              isSingleton: false,
+            })
+            if (this.isNoArgumentVisibilityMarker(child)) {
+              bodyVisibility = child.text
+            }
+          }
+          for (let i = bodyFrames.length - 1; i >= 0; i--) stack.push(bodyFrames[i])
+        }
+        continue
+      }
+
+      // --- Method ---
+      if (type === "method") {
+        const nameNode = node.childForFieldName("name")
+        if (!nameNode) continue
+        const name = nameNode.text
+
+        const params = this.extractParameters(node)
+        const isTopLevel = !owner
+
+        const sym: ASTEngine.UniversalSymbol = {
+          name,
+          kind: isTopLevel ? ASTEngine.SymbolKind.Function : ASTEngine.SymbolKind.Method,
+          range: this.nodeToRange(node),
+          ownerName: owner,
+          parameters: params,
+          visibility: visibility as any,
+          isStatic: isSingleton || undefined,
+          metadata: isSingleton ? { isSingleton: true } : {},
+        }
+        symbols.push(sym)
+
+        const enclosingMethod = name
+
+        // Walk body
+        const body = this.findChild(node, "body_statement")
+        if (body) {
+          this.walkBody(body, symbols, relationships, imports, metadata,
+            owner, ownerKind, enclosingMethod, visibilityOverrides)
+        }
+
+        continue
+      }
+
+      // --- Singleton class (class << self) ---
+      // Its methods belong to the enclosing class and are static/singleton
+      // methods, even though the grammar represents them as ordinary `method`
+      // nodes inside a `singleton_class` container.
+      if (type === "singleton_class") {
+        const body = this.findChild(node, "body_statement")
+        if (body) {
+          const bodyFrames: typeof stack = []
+          let bodyVisibility = "public"
+          for (let i = 0; i < body.namedChildCount; i++) {
+            const child = body.namedChild(i)
+            if (!child) continue
+            bodyFrames.push({
+              node: child,
+              owner,
+              ownerKind: "class",
+              visibility: bodyVisibility,
+              isSingleton: true,
+            })
+            if (this.isNoArgumentVisibilityMarker(child)) bodyVisibility = child.text
+          }
+          for (let i = bodyFrames.length - 1; i >= 0; i--) stack.push(bodyFrames[i])
+        }
+        continue
+      }
+
+      // --- Singleton method (def self.foo) ---
+      if (type === "singleton_method") {
+        const nameNode = node.childForFieldName("name")
+        if (!nameNode) continue
+        const name = nameNode.text
+
+        const params = this.extractParameters(node)
+        const isTopLevel = !owner
+
+        const sym: ASTEngine.UniversalSymbol = {
+          name,
+          kind: isTopLevel ? ASTEngine.SymbolKind.Function : ASTEngine.SymbolKind.Method,
+          range: this.nodeToRange(node),
+          ownerName: owner,
+          parameters: params,
+          visibility: visibility as any,
+          isStatic: true,
+          metadata: { isSingleton: true },
+        }
+        symbols.push(sym)
+
+        const body = this.findChild(node, "body_statement")
+        if (body) {
+          this.walkBody(body, symbols, relationships, imports, metadata,
+            owner, ownerKind, name, visibilityOverrides)
+        }
+
+        continue
+      }
+
+      // --- Visibility markers (private, protected, public) ---
+      // Ruby's grammar represents these bare keywords as named identifiers.
+      if (type === "identifier") {
+        const text = node.text
+        if (text === "private" || text === "protected" || text === "public") {
+          continue
         }
       }
 
-      for (let i = node.childCount - 1; i >= 0; i--) {
-        const child = node.child(i)
-        if (child) {
-          stack.push({ node: child, parent: currentParent })
+      // --- Calls in top-level/module/class bodies ---
+      // Method bodies are consumed by walkBody above, so this handles only
+      // declaration-time calls such as require/include/attr_reader.
+      if (type === "call") {
+        this.processCall(node, symbols, relationships, imports, metadata,
+          owner, undefined, visibilityOverrides)
+        continue
+      }
+
+      // --- Program/top-level statements ---
+      // The root `program` node has no owner; forward its named children into
+      // the same iterative traversal so top-level modules/classes are visited.
+      if (type === "program") {
+        for (let i = node.namedChildCount - 1; i >= 0; i--) {
+          const child = node.namedChild(i)
+          if (child) stack.push({ node: child, owner, ownerKind, visibility, isSingleton: false })
+        }
+        continue
+      }
+
+      // --- Assignment at module/class level (constants, instance vars) ---
+      if (type === "assignment" && owner) {
+        const left = node.childForFieldName("left")
+        if (left) {
+          const leftType = left.type
+          if (leftType === "constant") {
+            symbols.push({
+              name: left.text,
+              kind: ASTEngine.SymbolKind.Constant,
+              range: this.nodeToRange(node),
+              ownerName: owner,
+              visibility: visibility as any,
+              metadata: { variableType: "constant" },
+            })
+          }
+          // Instance/class/global variables at class level: skip (noise)
         }
       }
     }
 
-    this.detectFrameworks(imports, symbols, frameworksObj, patternsObj)
+    // Apply symbol-list visibility directives in one linear pass. Keeping the
+    // directive map separate avoids an O(symbols) scan for every `private :x`.
+    for (const symbol of symbols) {
+      if (!symbol.ownerName) continue
+      const override = visibilityOverrides.get(`${symbol.ownerName}\u0000${symbol.name}`)
+      if (override) symbol.visibility = override as any
+    }
 
-    // Add Contains: parent class/module → owned methods
+    // --- Override relationships ---
+    // Ruby permits implicit overrides; use local declarations first, then the
+    // project companion index supplied by the production/differential caller.
+    const baseByClass = new Map<string, string>()
     for (const s of symbols) {
-      const _owner = s.ownerName || s.scope
+      if (s.kind === ASTEngine.SymbolKind.Class && s.metadata?.superClass) {
+        baseByClass.set(s.name, this.leafName(String(s.metadata.superClass)))
+      }
+    }
+    const methodsByOwner = new Map<string, Set<string>>()
+    for (const s of symbols) {
+      if (s.kind !== ASTEngine.SymbolKind.Method || !s.ownerName) continue
+      let names = methodsByOwner.get(s.ownerName)
+      if (!names) {
+        names = new Set<string>()
+        methodsByOwner.set(s.ownerName, names)
+      }
+      names.add(s.name)
+    }
+    for (const s of symbols) {
+      if (s.kind !== ASTEngine.SymbolKind.Method || !s.ownerName) continue
+      const base = baseByClass.get(s.ownerName)
+      if (!base) continue
+      const baseMethods = methodsByOwner.get(base) ?? context?.overrideCompanion?.get(base)
+      if (baseMethods?.has(s.name)) {
+        relationships.push({
+          source: `${s.ownerName}.${s.name}`,
+          target: `${base}.${s.name}`,
+          type: ASTEngine.RelationshipType.Overrides,
+          confidence: 0.95,
+          metadata: { isOverride: true },
+        })
+      }
+    }
+
+    // --- Contains relationships (from ownerName on symbols) ---
+    for (const s of symbols) {
+      const _owner = s.ownerName
       if (_owner) {
         relationships.push({
           source: _owner,
           target: s.name,
           type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
-          metadata: { rubySpecific: true },
+          metadata: {},
         })
       }
-    }
-
-    for (const fw in frameworksObj) {
-      metadata.detectedFrameworks!.push(fw)
-    }
-    for (const pat in patternsObj) {
-      metadata.frameworkPatterns!.push({ framework: pat, patterns: ["Route DSL"] })
     }
 
     return {
@@ -161,663 +448,430 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
-  private handleClass(
+  // ========================================================================
+  // BODY WALKER — processes statements inside a method/function body
+  // Handles: calls, require/require_relative, include/extend/prepend,
+  //          attr_*, define_method, alias_method, etc.
+  // ========================================================================
+  private walkBody(
     node: Node,
     symbols: ASTEngine.UniversalSymbol[],
     relationships: ASTEngine.UniversalRelationship[],
-    frameworksObj: Record<string, boolean>,
-    patternsObj: Record<string, boolean>,
-    parent: ASTEngine.UniversalSymbol | null,
-  ): ASTEngine.UniversalSymbol | null {
-    const nameNode = node.childForFieldName("name")
-    if (!nameNode) return null
+    imports: ASTEngine.ImportInfo[],
+    metadata: Partial<ASTEngine.FileMetadata>,
+    owner: string | undefined,
+    ownerKind: string | undefined,
+    enclosingMethod: string | undefined,
+    visibilityOverrides: Map<string, string>,
+  ): void {
+    // Iterative DFS
+    const stack: Node[] = [node]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      const type = n.type
 
-    const name = nameNode.text
-    const superclassNode = node.childForFieldName("superclass")
-    let superClass: string | undefined = undefined
-    let isRailsModel = false
-    let isRailsController = false
-
-    if (superclassNode) {
-      superClass = superclassNode.text.replace(/^<\s*/, "")
-
-      if (superclassNode.type === "scope_resolution") {
-        const scope = superclassNode.childForFieldName("scope")?.text || this.getFirstNamedChildText(superclassNode)
-        const sName = superclassNode.childForFieldName("name")?.text || this.getLastNamedChildText(superclassNode)
-
-        if (scope === "ActiveRecord" && sName === "Base") {
-          isRailsModel = true
-        } else if (scope === "ActionController" && sName === "Base") {
-          isRailsController = true
-        } else if (scope === "Sinatra" && sName === "Base") {
-          frameworksObj["Sinatra"] = true
-          patternsObj["Sinatra"] = true
-        }
-      } else if (superclassNode.type === "constant" || superclassNode.type === "identifier") {
-        const sName = superclassNode.text
-        if (sName === "ApplicationRecord") isRailsModel = true
-        if (sName === "ApplicationController") isRailsController = true
+      // --- Call (all Ruby calls: method(), obj.method(), command-style) ---
+      if (type === "call") {
+        this.processCall(n, symbols, relationships, imports, metadata,
+          owner, enclosingMethod, visibilityOverrides)
       }
 
-      relationships.push({
-        source: name,
-        target: superClass,
-        type: ASTEngine.RelationshipType.Extends,
-        metadata: { railsSpecific: isRailsModel || isRailsController },
-      })
-    }
+      // --- Complexity counting ---
+      if (type === "if" || type === "unless" || type === "while" ||
+          type === "until" || type === "case" || type === "rescue" ||
+          type === "elsif") {
+        if (metadata.cyclomaticComplexity !== undefined) {
+          metadata.cyclomaticComplexity++
+        }
+      }
 
-    const symbol: ASTEngine.UniversalSymbol = {
-      name,
-      kind: ASTEngine.SymbolKind.Class,
-      range: this.getRange(node),
-      ownerName: parent ? parent.name : undefined,
-      parent: parent ? parent.name : undefined,
-      metadata: { rubySpecific: true, isRailsModel, isRailsController, superClass },
+      // Recurse into children
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const child = n.namedChild(i)
+        if (child) stack.push(child)
+      }
     }
-    symbols.push(symbol)
-    return symbol
   }
 
-  private getFirstNamedChildText(node: Node): string | undefined {
-    for (let i = 0; i < node.childCount; i++) {
-      const child = node.child(i)
-      if (child && child.isNamed) return child.text
-    }
-    return undefined
-  }
-
-  private getLastNamedChildText(node: Node): string | undefined {
-    for (let i = node.childCount - 1; i >= 0; i--) {
-      const child = node.child(i)
-      if (child && child.isNamed) return child.text
-    }
-    return undefined
-  }
-
-  private handleModule(
+  // ========================================================================
+  // CALL PROCESSOR — resolves a single `call` node
+  // ========================================================================
+  private processCall(
     node: Node,
     symbols: ASTEngine.UniversalSymbol[],
-    parent: ASTEngine.UniversalSymbol | null,
-  ): ASTEngine.UniversalSymbol | null {
-    const nameNode = node.childForFieldName("name")
-    if (!nameNode) return null
-
-    const symbol: ASTEngine.UniversalSymbol = {
-      name: nameNode.text,
-      kind: ASTEngine.SymbolKind.Module,
-      range: this.getRange(node),
-      ownerName: parent ? parent.name : undefined,
-      parent: parent ? parent.name : undefined,
-      metadata: { rubySpecific: true },
-    }
-    symbols.push(symbol)
-    return symbol
-  }
-
-  private handleMethod(
-    node: Node,
-    symbols: ASTEngine.UniversalSymbol[],
-    parent: ASTEngine.UniversalSymbol | null,
-  ): void {
-    const nameNode = node.childForFieldName("name")
-    if (!nameNode) return
-
-    const isTopLevel = !parent
-
-    symbols.push({
-      name: nameNode.text,
-      kind: isTopLevel ? ASTEngine.SymbolKind.Function : ASTEngine.SymbolKind.Method,
-      range: this.getRange(node),
-      ownerName: parent ? parent.name : undefined,
-      parent: parent ? parent.name : undefined,
-      metadata: { rubySpecific: true, visibility: "public" },
-    })
-  }
-
-  private handleSingletonMethod(
-    node: Node,
-    symbols: ASTEngine.UniversalSymbol[],
-    parent: ASTEngine.UniversalSymbol | null,
-  ): void {
-    const nameNode = node.childForFieldName("name")
-    const objectNode = node.childForFieldName("object")
-    if (!nameNode) return
-
-    const fullName = objectNode ? `${objectNode.text}.${nameNode.text}` : `self.${nameNode.text}`
-
-    symbols.push({
-      name: fullName,
-      kind: ASTEngine.SymbolKind.Method,
-      range: this.getRange(node),
-      ownerName: parent ? parent.name : undefined,
-      parent: parent ? parent.name : undefined,
-      metadata: { rubySpecific: true, isSingleton: true },
-    })
-  }
-
-  private handleAssignment(
-    node: Node,
-    symbols: ASTEngine.UniversalSymbol[],
-    parent: ASTEngine.UniversalSymbol | null,
-  ): void {
-    const left = node.childForFieldName("left")
-    if (!left) return
-
-    const leftType = left.type
-    if (
-      leftType === "constant" ||
-      leftType === "global_variable" ||
-      leftType === "instance_variable" ||
-      leftType === "class_variable"
-    ) {
-      symbols.push({
-        name: left.text,
-        // Ruby constants (UPPER_SNAKE_CASE) are distinct from variables —
-        // they're immutable macro-style bindings. Use Enum for UPPER_CASE
-        // constants at class level, Variable for other mutables.
-        kind: leftType === "constant" ? ASTEngine.SymbolKind.EnumMember : ASTEngine.SymbolKind.Variable,
-        range: this.getRange(node),
-        ownerName: parent ? parent.name : undefined,
-        parent: parent ? parent.name : undefined,
-        metadata: { rubySpecific: true, variableType: leftType },
-      })
-    }
-  }
-
-  private findArgumentList(node: Node): Node | null {
-    const argsField = node.childForFieldName("arguments")
-    if (argsField) return argsField
-    for (let i = 0; i < node.childCount; i++) {
-      const child = node.child(i)
-      if (child && child.type === "argument_list") return child
-    }
-    return null
-  }
-
-  private handleCall(
-    node: Node,
-    imports: ASTEngine.ImportInfo[],
     relationships: ASTEngine.UniversalRelationship[],
-    frameworksObj: Record<string, boolean>,
-    patternsObj: Record<string, boolean>,
-    parent: ASTEngine.UniversalSymbol | null,
-    symbols: ASTEngine.UniversalSymbol[],
+    imports: ASTEngine.ImportInfo[],
+    metadata: Partial<ASTEngine.FileMetadata>,
+    owner: string | undefined,
+    enclosingMethod: string | undefined,
+    visibilityOverrides: Map<string, string>,
   ): void {
     const methodNode = node.childForFieldName("method")
-    let methodName = ""
-    let receiver = ""
-
-    if (!methodNode) {
-      const potentialMethod = this.getFirstNamedChild(node)
-      if (potentialMethod && potentialMethod.type === "identifier") {
-        methodName = potentialMethod.text
-      }
-    } else {
-      methodName = methodNode.text
-      // Extract receiver: look at siblings before the method node
-      for (let i = 0; i < node.namedChildCount; i++) {
-        const child = node.namedChild(i)
-        if (child && child.id === methodNode.id) break
-        if (child && (child.type === "identifier" || child.type === "constant" || child.type === "scope_resolution") && child.text !== methodName) {
-          receiver = child.text
-        }
-      }
-    }
-
+    if (!methodNode) return
+    const methodName = methodNode.text
     if (!methodName) return
 
-    const qualifiedName = receiver ? `${receiver}.${methodName}` : methodName
-
-    // Track normal function calls for Code Gravity
-    if (
-      methodName !== "require" &&
-      methodName !== "require_relative" &&
-      methodName !== "load" &&
-      methodName !== "has_many" &&
-      methodName !== "belongs_to" &&
-      methodName !== "has_one" &&
-      methodName !== "include" &&
-      methodName !== "extend"
-    ) {
-      relationships.push({
-        source: parent ? parent.name : "Global",
-        target: methodName,
-        fromSymbol: parent ? parent.name : "Global",
-        toSymbol: qualifiedName,
-        type: ASTEngine.RelationshipType.Calls,
-        metadata: { rubySpecific: true, qualified: qualifiedName },
-      })
-
-      // Ruby instantiation: ClassName.new → Instantiates
-      if (methodName === "new" && receiver) {
-        relationships.push({
-          source: parent ? parent.name : "Global",
-          target: receiver,
-          fromSymbol: parent ? parent.name : "Global",
-          toSymbol: receiver,
-          type: ASTEngine.RelationshipType.Instantiates,
-          confidence: 0.9,
-          metadata: { rubySpecific: true, qualified: receiver, isNew: true },
-        })
+    // --- Extract receiver (identifier before the method name) ---
+    let receiver: string | undefined
+    let receiverLeaf: string | undefined
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const child = node.namedChild(i)
+      if (child && child.id === methodNode.id) break
+      if (child && (child.type === "identifier" || child.type === "constant" || child.type === "scope_resolution")) {
+        receiver = child.text
+        receiverLeaf = this.leafName(child.text)
       }
     }
 
+    // --- Visibility directives ---
+    // `private`/`protected`/`public` are declarations, not call edges. The
+    // symbol-list form (`private :helper`) changes already-declared methods;
+    // the bare form is captured lexically when class frames are built.
+    if (methodName === "private" || methodName === "protected" || methodName === "public") {
+      const args = this.findChild(node, "argument_list")
+      if (args && owner && args.namedChildCount > 0) {
+        for (let i = 0; i < args.namedChildCount; i++) {
+          const arg = args.namedChild(i)
+          if (!arg || arg.type !== "simple_symbol") continue
+          const targetName = this.stripSymbolColon(arg.text)
+          visibilityOverrides.set(`${owner}\u0000${targetName}`, methodName)
+        }
+      }
+      return
+    }
+
+    // --- require / require_relative / load ---
     if (methodName === "require" || methodName === "require_relative" || methodName === "load") {
-      const args = this.findArgumentList(node)
+      const args = this.findChild(node, "argument_list")
       if (args) {
         for (let i = 0; i < args.childCount; i++) {
           const arg = args.child(i)
           if (arg && arg.type === "string") {
-            let text = arg.text
-            let cleanText = ""
-            for (let j = 0; j < text.length; j++) {
-              if (text[j] !== "'" && text[j] !== '"') {
-                cleanText += text[j]
-              }
-            }
+            const cleanText = this.stripQuotes(arg.text)
             imports.push({
               module: cleanText,
               names: [],
-              range: this.getRange(node),
+              range: this.nodeToRange(node),
               isWildcard: true,
               metadata: { requireMethod: methodName },
             })
-            // DependsOn for require/require_relative
             relationships.push({
               source: "root",
               target: cleanText,
               type: ASTEngine.RelationshipType.References,
               confidence: 0.9,
-              metadata: { rubySpecific: true },
+              metadata: { requireMethod: methodName },
             })
           }
         }
       }
-    } else if (
-      methodName === "has_many" ||
-      methodName === "belongs_to" ||
-      methodName === "has_one" ||
-      methodName === "has_and_belongs_to_many"
-    ) {
-      const args = this.findArgumentList(node)
-      if (args) {
-        let firstNamedArg: Node | null = null
-        for (let i = 0; i < args.childCount; i++) {
-          const arg = args.child(i)
-          if (arg && arg.isNamed) {
-            firstNamedArg = arg
-            break
-          }
-        }
-        if (
-          firstNamedArg &&
-          (firstNamedArg.type === "symbol" ||
-            firstNamedArg.type === "string" ||
-            firstNamedArg.type === "identifier" ||
-            firstNamedArg.type === "simple_symbol")
-        ) {
-          let text = firstNamedArg.text
-          if (text.charCodeAt(0) === 58) {
-            text = text.substring(1)
-          }
-          const range = this.getRange(node)
-          symbols.push({
-            name: text,
-            kind: ASTEngine.SymbolKind.Property,
-            range: {
-              startLine: range.startLine,
-              endLine: range.endLine,
-              startIndex: range.startIndex,
-              startColumn: range.startColumn, endColumn: range.endColumn,
-              endIndex: range.endIndex,
-            },
-            visibility: "public",
-            metadata: { associationType: methodName, sourceModel: parent?.name },
-          })
-          relationships.push({
-            source: parent ? parent.name : "unknown",
-            target: text,
-            type: ASTEngine.RelationshipType.Uses,
-            metadata: { relationshipType: `activerecord_${methodName}` },
-          })
-        }
-      }
-    } else if (methodName === "scope" || methodName === "default_scope") {
-      const args = this.findArgumentList(node)
-      if (args && args.childCount > 0) {
-        const firstArg = args.child(0)
-        let scopeName = ""
-        if (
-          firstArg &&
-          (firstArg.type === "symbol" || firstArg.type === "string" || firstArg.type === "simple_symbol")
-        ) {
-          scopeName = firstArg.text
-          if (scopeName.charCodeAt(0) === 58) {
-            scopeName = scopeName.substring(1)
-          }
-          const range = this.getRange(node)
-          symbols.push({
-            name: scopeName,
-            kind: ASTEngine.SymbolKind.Function,
-            range: {
-              startLine: range.startLine,
-              endLine: range.endLine,
-              startIndex: range.startIndex,
-              startColumn: range.startColumn, endColumn: range.endColumn,
-              endIndex: range.endIndex,
-            },
-            visibility: "public",
-            metadata: { scopeType: methodName, sourceModel: parent?.name },
-          })
-          relationships.push({
-            source: parent ? parent.name : "unknown",
-            target: scopeName,
-            type: ASTEngine.RelationshipType.Uses,
-            metadata: { relationshipType: `activerecord_${methodName}` },
-          })
-        }
-      }
-    } else if (methodName === "validates" || methodName === "validate") {
-      const args = this.findArgumentList(node)
-      if (args) {
-        for (let i = 0; i < args.childCount; i++) {
-          const arg = args.child(i)
-          if (
-            arg &&
-            (arg.type === "symbol" ||
-              arg.type === "string" ||
-              arg.type === "identifier" ||
-              arg.type === "simple_symbol")
-          ) {
-            let fieldName = arg.text
-            if (fieldName.charCodeAt(0) === 58) {
-              fieldName = fieldName.substring(1)
-            }
-            const range = this.getRange(node)
-            symbols.push({
-              name: fieldName,
-              kind: ASTEngine.SymbolKind.Variable,
-              range: {
-                startLine: range.startLine,
-                endLine: range.endLine,
-                startIndex: range.startIndex,
-              startColumn: range.startColumn, endColumn: range.endColumn,
-                endIndex: range.endIndex,
-              },
-              visibility: "public",
-              metadata: { validationType: methodName, sourceModel: parent?.name },
-            })
-            relationships.push({
-              source: parent ? parent.name : "unknown",
-              target: fieldName,
-              type: ASTEngine.RelationshipType.Uses,
-              metadata: { relationshipType: methodName, validation: true },
-            })
-          }
-        }
-      }
-    } else if (methodName === "event" || methodName === "transition") {
-      const args = this.findArgumentList(node)
-      if (args && args.childCount > 0) {
-        const firstArg = args.child(0)
-        if (
-          firstArg &&
-          (firstArg.type === "symbol" || firstArg.type === "identifier" || firstArg.type === "simple_symbol")
-        ) {
-          let eventName = firstArg.text
-          if (eventName.charCodeAt(0) === 58) {
-            eventName = eventName.substring(1)
-          }
-          const range = this.getRange(node)
-          symbols.push({
-            name: eventName,
-            kind: ASTEngine.SymbolKind.Variable,
-            range: {
-              startLine: range.startLine,
-              endLine: range.endLine,
-              startIndex: range.startIndex,
-              startColumn: range.startColumn, endColumn: range.endColumn,
-              endIndex: range.endIndex,
-            },
-            visibility: "public",
-            metadata: { stateMachineType: methodName, sourceModel: parent?.name },
-          })
-          relationships.push({
-            source: parent ? parent.name : "unknown",
-            target: eventName,
-            type: ASTEngine.RelationshipType.Uses,
-            metadata: { relationshipType: `aasm_${methodName}` },
-          })
-        }
-      }
-    } else if (methodName === "include" || methodName === "extend" || methodName === "prepend") {
-      const relType = methodName === "extend" ? ASTEngine.RelationshipType.Uses
+      return
+    }
+
+    // --- include / extend / prepend (mixin relationships) ---
+    if (methodName === "include" || methodName === "extend" || methodName === "prepend") {
+      const relType = methodName === "extend"
+        ? ASTEngine.RelationshipType.Extends
         : ASTEngine.RelationshipType.Implements
-      const args = this.findArgumentList(node)
+      const args = this.findChild(node, "argument_list")
       if (args) {
-        for (let i = 0; i < args.childCount; i++) {
-          const arg = args.child(i)
+        for (let i = 0; i < args.namedChildCount; i++) {
+          const arg = args.namedChild(i)
           if (arg && (arg.type === "constant" || arg.type === "identifier" || arg.type === "scope_resolution")) {
+            const target = this.leafName(arg.text)
             relationships.push({
-              source: parent ? parent.name : "unknown",
-              target: arg.text,
+              source: owner || "unknown",
+              target,
               type: relType,
-              metadata: { rubySpecific: true, mixinType: methodName },
+              confidence: 1.0,
+              metadata: { mixinType: methodName },
             })
           }
         }
       }
-    } else if (methodName === "define_method") {
-      const args = this.findArgumentList(node)
-      if (args && args.childCount > 0) {
-        let argName = ""
-        for (let i = 0; i < args.childCount; i++) {
-          const arg = args.child(i)
-          if (arg && (arg.type === "symbol" || arg.type === "simple_symbol" || arg.type === "string")) {
-            argName = arg.text
-            if (argName.charCodeAt(0) === 58) argName = argName.substring(1)
-            if ((argName.startsWith('"') || argName.startsWith("'")) && argName.length >= 2)
-              argName = argName.substring(1, argName.length - 1)
+      return
+    }
+
+    // --- attr_reader / attr_writer / attr_accessor ---
+    if (methodName === "attr_reader" || methodName === "attr_writer" || methodName === "attr_accessor") {
+      const args = this.findChild(node, "argument_list")
+      if (args) {
+        for (let i = 0; i < args.namedChildCount; i++) {
+          const arg = args.namedChild(i)
+          if (arg && (arg.type === "simple_symbol")) {
+            let propName = this.stripSymbolColon(arg.text)
+            symbols.push({
+              name: propName,
+              kind: ASTEngine.SymbolKind.Property,
+              range: this.nodeToRange(node),
+              ownerName: owner,
+              visibility: "public" as any,
+              metadata: { accessorType: methodName },
+            })
+          }
+        }
+      }
+      return
+    }
+
+    // --- define_method ---
+    if (methodName === "define_method") {
+      const args = this.findChild(node, "argument_list")
+      if (args) {
+        for (let i = 0; i < args.namedChildCount; i++) {
+          const arg = args.namedChild(i)
+          if (arg && (arg.type === "simple_symbol" || arg.type === "string")) {
+            let name = this.stripSymbolColon(arg.text)
+            if (arg.type === "string") name = this.stripQuotes(arg.text)
+            symbols.push({
+              name,
+              kind: ASTEngine.SymbolKind.Method,
+              range: this.nodeToRange(node),
+              ownerName: owner,
+              visibility: "public" as any,
+              metadata: { isDynamicMethod: true },
+            })
             break
           }
         }
-        if (argName) {
-          symbols.push({
-            name: argName,
-            kind: ASTEngine.SymbolKind.Method,
-            range: this.getRange(node),
-            ownerName: parent ? parent.name : undefined,
-            metadata: { rubySpecific: true, isDynamicMethod: true },
-          })
-        }
       }
-    } else if (methodName === "alias_method") {
-      const args = this.findArgumentList(node)
-      if (args && args.childCount >= 2) {
+      return
+    }
+
+    // --- alias_method ---
+    if (methodName === "alias_method") {
+      const args = this.findChild(node, "argument_list")
+      if (args) {
         const names: string[] = []
-        for (let i = 0; i < args.childCount && names.length < 2; i++) {
-          const arg = args.child(i)
-          if (arg && (arg.type === "symbol" || arg.type === "simple_symbol")) {
-            let name = arg.text
-            if (name.charCodeAt(0) === 58) name = name.substring(1)
-            names.push(name)
+        for (let i = 0; i < args.namedChildCount && names.length < 2; i++) {
+          const arg = args.namedChild(i)
+          if (arg && (arg.type === "simple_symbol")) {
+            names.push(this.stripSymbolColon(arg.text))
           }
         }
         if (names.length === 2) {
           relationships.push({
-            source: parent ? parent.name : "unknown",
+            source: owner || "unknown",
             target: names[0],
             type: ASTEngine.RelationshipType.Calls,
-            metadata: { rubySpecific: true, aliasedTo: names[1] },
+            confidence: 0.9,
+            metadata: { aliasedTo: names[1] },
           })
         }
       }
-    } else if (methodName === "module_function") {
-      patternsObj["Module Functions"] = true
-    } else if (methodName === "method_missing" || methodName === "const_missing") {
-      patternsObj["Metaprogramming"] = true
-    } else if (methodName === "respond_to" || methodName === "respond_to_missing") {
-      patternsObj["Dynamic Dispatch"] = true
-    } else if (methodName === "attr_accessor" || methodName === "attr_reader" || methodName === "attr_writer") {
-      const args = this.findArgumentList(node)
-      if (args) {
-        for (let i = 0; i < args.childCount; i++) {
-          const arg = args.child(i)
-          if (arg && (arg.type === "symbol" || arg.type === "simple_symbol" || arg.type === "identifier")) {
-            let propName = arg.text
-            if (propName.charCodeAt(0) === 58) propName = propName.substring(1)
+      return
+    }
+
+    // --- has_many / belongs_to / has_one / has_and_belongs_to_many ---
+    if (RAILS_MACRO_METHODS.has(methodName)) {
+      if (["has_many", "belongs_to", "has_one", "has_and_belongs_to_many"].includes(methodName)) {
+        const args = this.findChild(node, "argument_list")
+        if (args) {
+          for (let i = 0; i < args.namedChildCount; i++) {
+            const arg = args.namedChild(i)
+            if (arg && (arg.type === "simple_symbol" || arg.type === "string" || arg.type === "identifier")) {
+              let name = this.stripSymbolColon(arg.text)
+              if (arg.type === "string") name = this.stripQuotes(arg.text)
+              symbols.push({
+                name,
+                kind: ASTEngine.SymbolKind.Property,
+                range: this.nodeToRange(node),
+                ownerName: owner,
+                visibility: "public" as any,
+                metadata: { associationType: methodName },
+              })
+              relationships.push({
+                source: owner || "unknown",
+                target: name,
+                type: ASTEngine.RelationshipType.Uses,
+                confidence: 0.8,
+                metadata: { activerecordMacro: methodName },
+              })
+            }
+          }
+        }
+      } else if (methodName === "scope" || methodName === "default_scope") {
+        const args = this.findChild(node, "argument_list")
+        if (args && args.namedChildCount > 0) {
+          const firstArg = args.namedChild(0)
+          if (firstArg && (firstArg.type === "simple_symbol")) {
+            const scopeName = this.stripSymbolColon(firstArg.text)
             symbols.push({
-              name: propName,
-              kind: ASTEngine.SymbolKind.Property,
-              range: this.getRange(node),
-              ownerName: parent ? parent.name : undefined,
-              metadata: { rubySpecific: true, accessorType: methodName },
+              name: scopeName,
+              kind: ASTEngine.SymbolKind.Method,
+              range: this.nodeToRange(node),
+              ownerName: owner,
+              visibility: "public" as any,
+              metadata: { scopeType: methodName },
             })
           }
         }
       }
-    } else if (methodName === "delegate") {
-      const args = this.findArgumentList(node)
-      if (args) {
-        for (let i = 0; i < args.childCount; i++) {
-          const arg = args.child(i)
-          if (arg && (arg.type === "symbol" || arg.type === "simple_symbol")) {
-            let propName = arg.text
-            if (propName.charCodeAt(0) === 58) propName = propName.substring(1)
-            symbols.push({
-              name: propName,
-              kind: ASTEngine.SymbolKind.Property,
-              range: this.getRange(node),
-              ownerName: parent ? parent.name : undefined,
-              metadata: { rubySpecific: true, delegated: true },
-            })
+      // All RAILS_MACRO_METHODS: no call relationship emitted
+      return
+    }
+
+    // --- Framework detection ---
+    if (methodName === "redirect_to" || methodName === "render") {
+      metadata.detectedFrameworks!.push("Ruby on Rails")
+    }
+    if (methodName === "before_action" || methodName === "after_action") {
+      metadata.frameworkPatterns!.push({ framework: "Rails", patterns: ["Callbacks"] })
+    }
+
+    // --- Skip builtins ---
+    if (RUBY_BUILTINS.has(methodName)) return
+
+    // --- String interpolation: self.class inside #{...} → skip ---
+    if (methodName === "class" && receiver === "self") return
+
+    const source = enclosingMethod || owner || "Global"
+
+    // `Class.new(...)` is a constructor expression, not an ordinary call.
+    // A bare `new(...)` inside a class method constructs the owning class.
+    if (methodName === "new") {
+      const target = receiverLeaf || (!receiver ? owner : undefined)
+      const firstChar = target?.charCodeAt(0) ?? 0
+      if (target && (!receiverLeaf || (firstChar >= 65 && firstChar <= 90))) {
+        relationships.push({
+          source,
+          target,
+          fromSymbol: source,
+          toSymbol: target,
+          type: ASTEngine.RelationshipType.Instantiates,
+          confidence: 0.9,
+          metadata: {},
+        })
+        return
+      }
+    }
+
+    // --- Regular call relationship ---
+    const qualified = receiver ? `${receiver}.${methodName}` : methodName
+    relationships.push({
+      source,
+      target: methodName,
+      fromSymbol: source,
+      toSymbol: qualified,
+      type: ASTEngine.RelationshipType.Calls,
+      confidence: 0.9,
+      metadata: {},
+    })
+  }
+
+  // ========================================================================
+  // HELPERS
+  // ========================================================================
+
+  /** Extract superclass from class node — pure char scan, no regex */
+  private extractSuperclass(node: Node): string | undefined {
+    const superNode = this.findChild(node, "superclass")
+    if (!superNode) return undefined
+
+    const text = superNode.text
+    // Skip leading '<' and whitespace
+    let start = 0
+    while (start < text.length && (text[start] === "<" || text[start] === " " || text[start] === "\t")) {
+      start++
+    }
+    return start < text.length ? text.substring(start) : undefined
+  }
+
+  /** Extract parameters from method node */
+  private extractParameters(node: Node): ASTEngine.Parameter[] | undefined {
+    const params = this.findChild(node, "method_parameters") ||
+                   this.findChild(node, "parameters")
+    if (!params) return undefined
+
+    const result: ASTEngine.Parameter[] = []
+    for (let i = 0; i < params.namedChildCount; i++) {
+      const child = params.namedChild(i)
+      if (!child) continue
+      const childType = child.type
+      if (childType === "identifier") {
+        result.push({ name: child.text })
+      } else if (childType === "optional_parameter") {
+        const name = child.childForFieldName("name")
+        if (name) result.push({ name: name.text })
+      } else if (childType === "keyword_parameter" || childType === "keyword_rest") {
+        const name = child.childForFieldName("name")
+        if (name) result.push({ name: name.text })
+      } else if (childType === "splat_parameter" || childType === "hash_splat_parameter") {
+        const name = child.childForFieldName("name")
+        if (name) result.push({ name: name.text })
+      } else if (childType === "block_parameter" || childType === "block_var") {
+        // &block — skip
+      } else if (childType === "destructured_parameter") {
+        // |a, b| — extract sub-identifiers
+        for (let j = 0; j < child.namedChildCount; j++) {
+          const sub = child.namedChild(j)
+          if (sub && sub.type === "identifier") {
+            result.push({ name: sub.text })
           }
         }
       }
     }
+    return result.length > 0 ? result : undefined
   }
 
-  // Handle method calls without parentheses: `puts "hello"`, `redirect_to path`
-  private handleCommand(
-    node: Node,
-    _imports: ASTEngine.ImportInfo[],
-    relationships: ASTEngine.UniversalRelationship[],
-    frameworksObj: Record<string, boolean>,
-    patternsObj: Record<string, boolean>,
-    parent: ASTEngine.UniversalSymbol | null,
-    _symbols: ASTEngine.UniversalSymbol[],
-  ): void {
-    // Find the method name — first named identifier child
-    let methodName = ""
+  /** Return true for a bare visibility directive that affects following methods. */
+  private isNoArgumentVisibilityMarker(node: Node): boolean {
+    if (node.type === "identifier") {
+      return node.text === "private" || node.text === "protected" || node.text === "public"
+    }
+    if (node.type !== "call") return false
+    const method = node.childForFieldName("method")
+    if (!method || (method.text !== "private" && method.text !== "protected" && method.text !== "public")) return false
+    const args = this.findChild(node, "argument_list")
+    return !args || args.namedChildCount === 0
+  }
+
+  private findChild(node: Node, type: string): Node | null {
     for (let i = 0; i < node.namedChildCount; i++) {
       const child = node.namedChild(i)
-      if (child && child.type === "identifier") {
-        methodName = child.text
-        break
-      }
-    }
-    if (!methodName) return
-
-    // Skip Ruby builtins
-    if (["puts", "print", "p", "pp", "raise", "fail", "exit", "abort", "warn"].includes(methodName)) return
-
-    // Framework detection
-    if (methodName === "redirect_to" || methodName === "render") frameworksObj["Rails"] = true
-    if (methodName === "before_action" || methodName === "after_action") patternsObj["Callbacks"] = true
-    if (methodName === "validates" || methodName === "validate") patternsObj["Validations"] = true
-
-    relationships.push({
-      source: parent ? parent.name : "Global",
-      target: methodName,
-      fromSymbol: parent ? parent.name : "Global",
-      toSymbol: methodName,
-      type: ASTEngine.RelationshipType.Calls,
-      metadata: { rubySpecific: true, commandStyle: true },
-    })
-  }
-
-  // Handle chained commands: `foo.bar arg1, arg2`
-  private handleCommandCall(
-    node: Node,
-    imports: ASTEngine.ImportInfo[],
-    relationships: ASTEngine.UniversalRelationship[],
-    frameworksObj: Record<string, boolean>,
-    patternsObj: Record<string, boolean>,
-    parent: ASTEngine.UniversalSymbol | null,
-    symbols: ASTEngine.UniversalSymbol[],
-  ): void {
-    // Find method name — last identifier before arguments
-    let methodName = ""
-    let receiver = ""
-    for (let i = 0; i < node.namedChildCount; i++) {
-      const child = node.namedChild(i)
-      if (child && child.type === "identifier") {
-        if (!receiver && !methodName) {
-          receiver = child.text
-        } else if (receiver && !methodName) {
-          methodName = child.text
-        } else if (methodName) {
-          // Already found both, use this as method (chained)
-          receiver = methodName
-          methodName = child.text
-        }
-      }
-    }
-    if (!methodName) return
-
-    const qualifiedName = receiver ? `${receiver}.${methodName}` : methodName
-
-    relationships.push({
-      source: parent ? parent.name : "Global",
-      target: methodName,
-      fromSymbol: parent ? parent.name : "Global",
-      toSymbol: qualifiedName,
-      type: ASTEngine.RelationshipType.Calls,
-      metadata: { rubySpecific: true, commandStyle: true, qualified: qualifiedName },
-    })
-  }
-
-  private getFirstNamedChild(node: Node): Node | null {
-    for (let i = 0; i < node.childCount; i++) {
-      const child = node.child(i)
-      if (child && child.isNamed) return child
+      if (child && child.type === type) return child
     }
     return null
   }
 
-  private detectFrameworks(
-    imports: ASTEngine.ImportInfo[],
-    symbols: ASTEngine.UniversalSymbol[],
-    frameworksObj: Record<string, boolean>,
-    patternsObj: Record<string, boolean>,
-  ) {
-    for (let i = 0; i < imports.length; i++) {
-      const mod = imports[i].module
-      if (mod === "rails" || mod === "rails/all") {
-        frameworksObj["Ruby on Rails"] = true
-      } else if (mod === "sinatra" || mod === "sinatra/base") {
-        frameworksObj["Sinatra"] = true
-        patternsObj["Sinatra"] = true
-      }
-    }
-
-    for (let i = 0; i < symbols.length; i++) {
-      const sym = symbols[i]
-      if (sym.metadata?.isRailsModel || sym.metadata?.isRailsController) {
-        frameworksObj["Ruby on Rails"] = true
-      }
-    }
+  /** Strip leading ': ' from symbol text — pure char scan */
+  private stripSymbolColon(text: string): string {
+    let start = 0
+    while (start < text.length && text[start] === ":") start++
+    return start < text.length ? text.substring(start) : text
   }
 
-  private getRange(node: Node): {
-    startLine: number
-    startColumn: number
-    endLine: number
-    endColumn: number
-    startIndex: number
-    endIndex: number
-  } {
+  /** Strip surrounding quotes — pure char scan */
+  private stripQuotes(text: string): string {
+    if (text.length >= 2) {
+      const first = text.charCodeAt(0)
+      const last = text.charCodeAt(text.length - 1)
+      if ((first === 34 && last === 34) || (first === 39 && last === 39)) {
+        return text.substring(1, text.length - 1)
+      }
+    }
+    return text
+  }
+
+  /** Extract the leaf name from a possibly-qualified name like A::B */
+  private leafName(name: string): string {
+    const idx = name.lastIndexOf("::")
+    return idx >= 0 ? name.substring(idx + 2) : name
+  }
+
+  private isRailsModelName(superClass: string | undefined): boolean {
+    if (!superClass) return false
+    const leaf = this.leafName(superClass)
+    return leaf === "Base" && superClass.includes("ActiveRecord") || leaf === "ApplicationRecord"
+  }
+
+  private isRailsControllerName(superClass: string | undefined): boolean {
+    if (!superClass) return false
+    const leaf = this.leafName(superClass)
+    return leaf === "Base" && superClass.includes("ActionController") || leaf === "ApplicationController"
+  }
+
+  private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {
     return {
       startLine: node.startPosition.row + 1,
       startColumn: node.startPosition.column + 1,

@@ -2,20 +2,20 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-08-18T01:23:27.967Z",
+  "generatedAt": "2026-08-19T20:55:25.795Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 64,
+  "totalRegexUsages": 63,
   "analyzersScanned": 41,
   "byClassification": {
     "unavoidable": 9,
-    "normalization": 29,
+    "normalization": 28,
     "replaceable": 1,
     "needs_review": 25
   },
   "byReceiverCategory": {
     "literal": 9,
-    "node_text": 29,
+    "node_text": 28,
     "raw_content": 1,
     "other": 11,
     "identifier": 14
@@ -763,23 +763,6 @@
           "source": "/\\s+/",
           "operation": "split",
           "receiver": "node.text.trim()",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-ruby-analyzer.ts",
-      "count": 1,
-      "usages": [
-        {
-          "file": "real-ruby-analyzer.ts",
-          "line": 182,
-          "column": 48,
-          "source": "/^<\\s*/",
-          "operation": "replace",
-          "receiver": "superclassNode.text",
           "receiverCategory": "node_text",
           "classification": "normalization",
           "justification": ""
