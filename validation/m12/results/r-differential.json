@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 1,
+  "kind": "per_analyzer_differential:r",
+  "truthSource": "manual_audit",
+  "truthReference": "validation/m12/fixtures/r/{Base,Service,Negative}.R",
+  "fixtureDir": "validation/m12/fixtures/r",
+  "fixtures": [
+    "Base.R",
+    "Negative.R",
+    "Service.R"
+  ],
+  "perFile": {
+    "Base.R": {
+      "symbols": 3,
+      "relationships": 4
+    },
+    "Negative.R": {
+      "symbols": 2,
+      "relationships": 4
+    },
+    "Service.R": {
+      "symbols": 12,
+      "relationships": 21
+    }
+  },
+  "passing": {
+    "schemaVersion": 1,
+    "passed": true,
+    "metrics": {
+      "expected": 46,
+      "observedResolved": 46,
+      "truePositive": 46,
+      "falsePositive": 0,
+      "falseNegative": 0,
+      "unknown": 0,
+      "unsupported": 0,
+      "correctlyClassifiedUnknown": 0,
+      "correctlyClassifiedUnsupported": 0,
+      "precision": 1,
+      "recall": 1,
+      "falsePositiveRate": 0,
+      "falseNegativeRate": 0,
+      "unknownRate": 0
+    },
+    "earliestFailingLayer": null,
+    "truePositiveIds": [
+      "rel:Base.R:calls:run:helper",
+      "rel:Base.R:contains:Base:initialize",
+      "rel:Base.R:contains:Base:run",
+      "rel:Base.R:contains:global:Base",
+      "rel:Negative.R:calls:external:ExternalClass$new",
+      "rel:Negative.R:calls:external:list",
+      "rel:Negative.R:contains:global:anonymous_value",
+      "rel:Negative.R:contains:global:external",
+      "rel:Service.R:calls:add:Local$new",
+      "rel:Service.R:calls:add:data.frame",
+      "rel:Service.R:calls:run:helper",
+      "rel:Service.R:contains:Local:initialize",
+      "rel:Service.R:contains:Local:run",
+      "rel:Service.R:contains:Person:name",
+      "rel:Service.R:contains:Person:speak",
+      "rel:Service.R:contains:global:GLOBAL_LIMIT",
+      "rel:Service.R:contains:global:Local",
+      "rel:Service.R:contains:global:Person",
+      "rel:Service.R:contains:global:add",
+      "rel:Service.R:contains:global:df",
+      "rel:Service.R:contains:global:formula",
+      "rel:Service.R:contains:global:print.Base",
+      "rel:Service.R:contains:global:speak",
+      "rel:Service.R:extends:Local:Base",
+      "rel:Service.R:extends:Person:Entity",
+      "rel:Service.R:implements:print.Base:print",
+      "rel:Service.R:instantiates:add:Local",
+      "rel:Service.R:references:global:R6",
+      "rel:Service.R:references:global:methods",
+      "symbol:Base.R:1:class:Base",
+      "symbol:Base.R:2:method:initialize",
+      "symbol:Base.R:5:method:run",
+      "symbol:Negative.R:1:function:external",
+      "symbol:Negative.R:9:variable:anonymous_value",
+      "symbol:Service.R:11:function:add",
+      "symbol:Service.R:18:method:print.Base",
+      "symbol:Service.R:20:class:Person",
+      "symbol:Service.R:20:property:name",
+      "symbol:Service.R:21:function:speak",
+      "symbol:Service.R:22:method:speak",
+      "symbol:Service.R:25:variable:df",
+      "symbol:Service.R:26:variable:formula",
+      "symbol:Service.R:4:constant:GLOBAL_LIMIT",
+      "symbol:Service.R:6:class:Local",
+      "symbol:Service.R:7:method:initialize",
+      "symbol:Service.R:8:method:run"
+    ],
+    "falsePositiveIds": [],
+    "falseNegativeIds": [],
+    "unknownIds": [],
+    "unsupportedIds": [],
+    "minimizedFailure": null
+  },
+  "intentionalFailure": null,
+  "measurements": [
+    {
+      "name": "verify-analyzer:r",
+      "wallTimeMs": 25.810793,
+      "userCpuMs": 35.871,
+      "systemCpuMs": 3.271,
+      "peakRssBytes": 206712832,
+      "rssDeltaBytes": 2166784,
+      "databaseBytes": null,
+      "files": null,
+      "symbols": null,
+      "relationships": null,
+      "filesPerSecond": null,
+      "symbolsPerSecond": null,
+      "relationshipsPerSecond": null
+    }
+  ],
+  "note": "M12 per-analyzer differential for r. Precision/recall/fp/fn/unknown computed against independent ground truth. Identity contract: symbol facts keyed by file:line:kind:name; relationship facts keyed by file:type:sourceId:targetId with attributes={type} only (no line, no extra fields) so the comparison measures extraction correctness, not naming noise."
+}
