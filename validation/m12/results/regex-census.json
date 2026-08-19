@@ -2,23 +2,23 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-08-19T21:35:54.774Z",
+  "generatedAt": "2026-08-19T22:37:25.919Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 58,
+  "totalRegexUsages": 50,
   "analyzersScanned": 41,
   "byClassification": {
     "unavoidable": 9,
-    "normalization": 25,
+    "normalization": 20,
     "replaceable": 1,
-    "needs_review": 23
+    "needs_review": 20
   },
   "byReceiverCategory": {
     "literal": 9,
-    "node_text": 25,
+    "node_text": 20,
     "raw_content": 1,
     "other": 11,
-    "identifier": 12
+    "identifier": 9
   },
   "perFile": [
     {
@@ -387,100 +387,6 @@
           "receiver": "n.text",
           "receiverCategory": "node_text",
           "classification": "normalization",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-perl-analyzer.ts",
-      "count": 8,
-      "usages": [
-        {
-          "file": "real-perl-analyzer.ts",
-          "line": 163,
-          "column": 57,
-          "source": "/^[\\$@%#]/",
-          "operation": "replace",
-          "receiver": "varnameNode.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-perl-analyzer.ts",
-          "line": 267,
-          "column": 48,
-          "source": "/-norequire\\s*/g",
-          "operation": "replace",
-          "receiver": "arg",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-perl-analyzer.ts",
-          "line": 288,
-          "column": 74,
-          "source": "/::/g",
-          "operation": "replace",
-          "receiver": "name",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-perl-analyzer.ts",
-          "line": 445,
-          "column": 60,
-          "source": "/['\"]/g",
-          "operation": "replace",
-          "receiver": "strNode.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-perl-analyzer.ts",
-          "line": 460,
-          "column": 62,
-          "source": "/['\"]/g",
-          "operation": "replace",
-          "receiver": "n.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-perl-analyzer.ts",
-          "line": 479,
-          "column": 62,
-          "source": "/['\"()]|qw\\s*/g",
-          "operation": "replace",
-          "receiver": "n.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-perl-analyzer.ts",
-          "line": 495,
-          "column": 35,
-          "source": "/['\"()]|qw\\s*/g",
-          "operation": "replace",
-          "receiver": "n.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-perl-analyzer.ts",
-          "line": 497,
-          "column": 41,
-          "source": "/\\s+/",
-          "operation": "split",
-          "receiver": "text",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
           "justification": ""
         }
       ]
