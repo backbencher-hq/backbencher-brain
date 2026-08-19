@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "kind": "per_analyzer_differential:ruby",
+  "truthSource": "manual_audit",
+  "truthReference": "validation/m12/fixtures/ruby/{BaseService,Service,Negative}.rb",
+  "fixtureDir": "validation/m12/fixtures/ruby",
+  "fixtures": [
+    "BaseService.rb",
+    "Negative.rb",
+    "Service.rb"
+  ],
+  "perFile": {
+    "BaseService.rb": {
+      "symbols": 3,
+      "relationships": 3
+    },
+    "Negative.rb": {
+      "symbols": 2,
+      "relationships": 1
+    },
+    "Service.rb": {
+      "symbols": 10,
+      "relationships": 18
+    }
+  },
+  "passing": {
+    "schemaVersion": 1,
+    "passed": true,
+    "metrics": {
+      "expected": 37,
+      "observedResolved": 37,
+      "truePositive": 37,
+      "falsePositive": 0,
+      "falseNegative": 0,
+      "unknown": 0,
+      "unsupported": 0,
+      "correctlyClassifiedUnknown": 0,
+      "correctlyClassifiedUnsupported": 0,
+      "precision": 1,
+      "recall": 1,
+      "falsePositiveRate": 0,
+      "falseNegativeRate": 0,
+      "unknownRate": 0
+    },
+    "earliestFailingLayer": null,
+    "truePositiveIds": [
+      "rel:BaseService.rb:calls:save:persist",
+      "rel:BaseService.rb:contains:BaseService:initialize",
+      "rel:BaseService.rb:contains:BaseService:save",
+      "rel:Negative.rb:contains:Noise:run",
+      "rel:Service.rb:calls:audit:serialize",
+      "rel:Service.rb:calls:validate:valid?",
+      "rel:Service.rb:contains:Audited:audit",
+      "rel:Service.rb:contains:Billing:Audited",
+      "rel:Service.rb:contains:UserService:API_PREFIX",
+      "rel:Service.rb:contains:UserService:build",
+      "rel:Service.rb:contains:UserService:initialize",
+      "rel:Service.rb:contains:UserService:save",
+      "rel:Service.rb:contains:UserService:store",
+      "rel:Service.rb:contains:UserService:validate",
+      "rel:Service.rb:extends:UserService:BaseService",
+      "rel:Service.rb:implements:UserService:Audited",
+      "rel:Service.rb:instantiates:build:UserService",
+      "rel:Service.rb:instantiates:save:User",
+      "rel:Service.rb:overrides:UserService.initialize:BaseService.initialize",
+      "rel:Service.rb:overrides:UserService.save:BaseService.save",
+      "rel:Service.rb:references:root:base",
+      "rel:Service.rb:references:root:json",
+      "symbol:BaseService.rb:1:class:BaseService",
+      "symbol:BaseService.rb:2:method:initialize",
+      "symbol:BaseService.rb:6:method:save",
+      "symbol:Negative.rb:1:class:Noise",
+      "symbol:Negative.rb:2:method:run",
+      "symbol:Service.rb:12:class:UserService",
+      "symbol:Service.rb:14:property:store",
+      "symbol:Service.rb:15:constant:API_PREFIX",
+      "symbol:Service.rb:17:method:initialize",
+      "symbol:Service.rb:21:method:save",
+      "symbol:Service.rb:28:method:validate",
+      "symbol:Service.rb:33:method:build",
+      "symbol:Service.rb:4:module:Billing",
+      "symbol:Service.rb:5:module:Audited",
+      "symbol:Service.rb:6:method:audit"
+    ],
+    "falsePositiveIds": [],
+    "falseNegativeIds": [],
+    "unknownIds": [],
+    "unsupportedIds": [],
+    "minimizedFailure": null
+  },
+  "intentionalFailure": null,
+  "measurements": [
+    {
+      "name": "verify-analyzer:ruby",
+      "wallTimeMs": 19.052719,
+      "userCpuMs": 40.105,
+      "systemCpuMs": 3.827,
+      "peakRssBytes": 221237248,
+      "rssDeltaBytes": 2781184,
+      "databaseBytes": null,
+      "files": null,
+      "symbols": null,
+      "relationships": null,
+      "filesPerSecond": null,
+      "symbolsPerSecond": null,
+      "relationshipsPerSecond": null
+    }
+  ],
+  "note": "M12 per-analyzer differential for ruby. Precision/recall/fp/fn/unknown computed against independent ground truth. Identity contract: symbol facts keyed by file:line:kind:name; relationship facts keyed by file:type:sourceId:targetId with attributes={type} only (no line, no extra fields) so the comparison measures extraction correctness, not naming noise."
+}
