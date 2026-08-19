@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "kind": "per_analyzer_differential:php",
+  "truthSource": "manual_audit",
+  "truthReference": "validation/m12/fixtures/php/{BaseService,Service,Negative}.php",
+  "fixtureDir": "validation/m12/fixtures/php",
+  "fixtures": [
+    "BaseService.php",
+    "Negative.php",
+    "Service.php"
+  ],
+  "perFile": {
+    "BaseService.php": {
+      "symbols": 5,
+      "relationships": 4
+    },
+    "Negative.php": {
+      "symbols": 2,
+      "relationships": 1
+    },
+    "Service.php": {
+      "symbols": 16,
+      "relationships": 21
+    }
+  },
+  "passing": {
+    "schemaVersion": 1,
+    "passed": true,
+    "metrics": {
+      "expected": 49,
+      "observedResolved": 49,
+      "truePositive": 49,
+      "falsePositive": 0,
+      "falseNegative": 0,
+      "unknown": 0,
+      "unsupported": 0,
+      "correctlyClassifiedUnknown": 0,
+      "correctlyClassifiedUnsupported": 0,
+      "precision": 1,
+      "recall": 1,
+      "falsePositiveRate": 0,
+      "falseNegativeRate": 0,
+      "unknownRate": 0
+    },
+    "earliestFailingLayer": null,
+    "truePositiveIds": [
+      "rel:BaseService.php:calls:save:persist",
+      "rel:BaseService.php:contains:BaseService:__construct",
+      "rel:BaseService.php:contains:BaseService:persist",
+      "rel:BaseService.php:contains:BaseService:save",
+      "rel:Negative.php:contains:Noise:run",
+      "rel:Service.php:calls:log:write",
+      "rel:Service.php:calls:save:flush",
+      "rel:Service.php:calls:save:persist",
+      "rel:Service.php:contains:Auditable:audit",
+      "rel:Service.php:contains:Loggable:log",
+      "rel:Service.php:contains:Status:Active",
+      "rel:Service.php:contains:Status:Paused",
+      "rel:Service.php:contains:UserService:API_PREFIX",
+      "rel:Service.php:contains:UserService:__construct",
+      "rel:Service.php:contains:UserService:count",
+      "rel:Service.php:contains:UserService:logger",
+      "rel:Service.php:contains:UserService:save",
+      "rel:Service.php:contains:UserService:store",
+      "rel:Service.php:contains:UserService:validate",
+      "rel:Service.php:extends:UserService:BaseService",
+      "rel:Service.php:implements:UserService:Auditable",
+      "rel:Service.php:instantiates:save:User",
+      "rel:Service.php:overrides:UserService.__construct:BaseService.__construct",
+      "rel:Service.php:overrides:UserService.save:BaseService.save",
+      "rel:Service.php:references:global:helpers.php",
+      "rel:Service.php:uses:UserService:Loggable",
+      "symbol:BaseService.php:11:method:persist",
+      "symbol:BaseService.php:2:namespace:App\\Base",
+      "symbol:BaseService.php:4:class:BaseService",
+      "symbol:BaseService.php:5:method:__construct",
+      "symbol:BaseService.php:7:method:save",
+      "symbol:Negative.php:2:class:Noise",
+      "symbol:Negative.php:3:method:run",
+      "symbol:Service.php:12:trait:Loggable",
+      "symbol:Service.php:13:method:log",
+      "symbol:Service.php:18:enum:Status",
+      "symbol:Service.php:19:enum_member:Active",
+      "symbol:Service.php:20:enum_member:Paused",
+      "symbol:Service.php:23:class:UserService",
+      "symbol:Service.php:26:constant:API_PREFIX",
+      "symbol:Service.php:27:property:store",
+      "symbol:Service.php:28:property:count",
+      "symbol:Service.php:2:namespace:App\\Service",
+      "symbol:Service.php:30:method:__construct",
+      "symbol:Service.php:30:property:logger",
+      "symbol:Service.php:32:method:save",
+      "symbol:Service.php:41:method:validate",
+      "symbol:Service.php:8:interface:Auditable",
+      "symbol:Service.php:9:method:audit"
+    ],
+    "falsePositiveIds": [],
+    "falseNegativeIds": [],
+    "unknownIds": [],
+    "unsupportedIds": [],
+    "minimizedFailure": null
+  },
+  "intentionalFailure": null,
+  "measurements": [
+    {
+      "name": "verify-analyzer:php",
+      "wallTimeMs": 44.270657,
+      "userCpuMs": 50.237,
+      "systemCpuMs": 11.062,
+      "peakRssBytes": 214716416,
+      "rssDeltaBytes": 6361088,
+      "databaseBytes": null,
+      "files": null,
+      "symbols": null,
+      "relationships": null,
+      "filesPerSecond": null,
+      "symbolsPerSecond": null,
+      "relationshipsPerSecond": null
+    }
+  ],
+  "note": "M12 per-analyzer differential for php. Precision/recall/fp/fn/unknown computed against independent ground truth. Identity contract: symbol facts keyed by file:line:kind:name; relationship facts keyed by file:type:sourceId:targetId with attributes={type} only (no line, no extra fields) so the comparison measures extraction correctness, not naming noise."
+}
