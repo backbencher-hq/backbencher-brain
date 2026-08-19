@@ -611,7 +611,21 @@
    "status": "measured",
    "candidates": [
     "mojo@93f59174(clean)"
-   ]
+   ],
+   "measured": {
+    "revision": "93f591742a7dbc0cee36875ab80a38f0666e32ae",
+    "sample": "164 tracked *.pm/*.pl files (full Mojo corpus, deterministic git ls-files)",
+    "fixtures": 3,
+    "fixtureFacts": 32,
+    "precision": 1,
+    "recall": 1,
+    "corpusSymbols": 1681,
+    "corpusRelationships": 5991,
+    "grammarErrorFiles": 3,
+    "grammarErrorNodes": 9,
+    "note": "Perl analyzer rewritten pure-AST for M12.30: package/sub/constructor/property/constant extraction, lexical locals and parameters suppressed, calls sourced from the enclosing sub, dynamic receivers excluded from concrete instantiation edges, Moose-style has/with/extends recognized, use parent/base and @ISA inheritance, imports/exports, contains edges, and companion-backed overrides. Differential 32/32 (1.000/1.000); analyzer contributes 0 regex usages. Grammar upgraded from the pinned WASM to npm tree-sitter-perl 1.2.1 via a direct current-vs-freshly-built comparison: 4 -> 3 grammar-error files, 1 fixed, 0 regressions, 0 crashes. Residuals are two valid bareword true/false calls in Mojo::JSON and two deliberately malformed loader-test fixtures. Production extraction uses a single AST walk with maps/sets and no O(n²) symbol/relationship lookup.",
+    "measuredAt": "2026-08-19T22:45:10.000Z"
+   }
   },
   {
    "analyzer": "r",
