@@ -486,6 +486,7 @@
     "corpusSymbols": 7704,
     "corpusRelationships": 23777,
     "grammarErrorFiles": 0,
+    "measuredAt": "2026-08-19T22:55:55.000Z",
     "note": "Analyzer verified to the FP-family contract (Clojure precedent). Rewritten for M12.23: 4 census regexes eliminated (attribute quote strip, extractName paren strip, struct-field keyword strip, directive quote strip \u2014 all replaced with pure char scans); module attributes (@moduledoc/@spec/@type/@behaviour/@doc) no longer emit call edges; def/defp/defmacro signature heads no longer emit self-calls; member access (order.side) no longer a call; quote blocks treated as data (no symbols, no calls \u2014 the Clojure quoted-data rule); calls/instantiations source = containing FUNCTION (was module); instantiates only for %Struct{} literals in body position (was any capital module call like Map.put); identifier references flood removed (references now only module deps: use/import/alias/require); @behaviour implements edge fixed (was broken); defimpl rewritten pure AST (no text splitting); function-head lookup made O(1) via symbolByName map (was O(symbols) per def); cyclomatic complexity made fully live (try/rescue/catch/after counted via emitted *_block node types, case/cond/if clauses via stab_clause, dead node-type branches removed); unqualified-call resolution post-walk against the declared-symbol set (Kernel builtins like length/is_*/function_exported? and imported functions produce no call edges; dynamic dispatch through lowercase receivers like module.manifests() emits nothing); defdelegate/defguard/defguardp treated as declarations (Function/Macro symbols, as: rename honored, heads never calls). Differential 1.000/1.000 on 70 facts. Corpus: 0 grammar errors / 0 crashes / 0 timeouts on all 243 .ex >= 1KB. Grammar: npm tree-sitter-elixir 0.3.5 behaviorally identical (0 vs 0) \u2014 no upgrade. Shape-safe: 20/22 refs live, 2 defensive (ERROR/MISSING error-path checks)."
    }
   },
@@ -572,17 +573,10 @@
     "corpusSymbols": 15558,
     "corpusRelationships": 30901,
     "grammarErrorFiles": 7,
-    "measuredAt": "2026-08-18T03:40:00.000Z",
+    "grammarErrorNodes": 64,
+    "measuredAt": "2026-08-19T22:56:00.000Z",
     "note": "Analyzer rewritten pure-AST for M12.27 to the scripting-family contract (JS/TS precedent): all 5 census regexes eliminated (69 -> 64) \u2014 module-name extension strip via pure char scan (was /\\.[^.]*$/), decorator @strip and quote strips replaced by AST token reads. Scope-restore leak fixed (exit frames now ALWAYS assign currentClass/currentFunction, may restore to undefined \u2014 the old guard skipped undefined so currentFunction never reset, leaking decorator calls like calls save -> dataclass to the wrong source). Decorator calls are metadata, never calls. Nested functions (wrapper inside logged) and function locals (store, service) are NOT symbols and never change the call source (LocalsAreNotSymbols / ParamsAreNotSymbols, JS M12.09 contract). Enum members emitted once as enum_member (was duplicated as property); instantiates only for in-file declared classes/enums via an O(1) declaredTypes set (imported classes like TypeVar never instantiate); async detection fixed to the grammar's real shape (function_definition with anonymous async token \u2014 the old async_function_definition ref was dead); dictionary_comprehension (not dict_comprehension); first (leftmost) base wins for overrides (Python MRO \u2014 was picking Repository over BaseService). Calls emit LEAF targets with a Python builtin filter + dunder filter; module-level symbols ownerless (Python has no module declaration); extends from the base-class argument list; imports as `imports module -> path:item`; exports from __all__. Grammar UPGRADED to npm tree-sitter-python 0.25.0 (was a stale pre-0.25.0 pin): the corrected wasm comparison (fresh subprocess per scan \u2014 the old in-process swap was silently invalid because _autoLoadWasm caches registry bytes at module init, so both scans read the pinned grammar) shows 9 -> 7 error files (fixes test_tstring.py + test_templatelib.py, Cython fused-type template-string prefixes, 0 regressions), and recovers the correct overrides edge on generic-subscript bases (UserService.__init__ -> BaseService.__init__ with Repository[User] \u2014 the pinned grammar never parsed the subscripted base list, so the override was silently missing; the M12 GT override fact only fired on plain bases). Shape-safe 51/51 refs live (4 anonymous keyword tokens and/async/import/or confirmed via anonymous-child scan). The 7 remaining grammarErrorFiles are all Cython-specific extensions, not real Python: memoryview slice annotations (bm_matrix.py, compute_fused_types.py, compute_prange.py, memoryview_annotation_typing.py, pure_warnings.py `Bar[:, :, :]`), Cython type syntax (e_typing_optional.py `Optional[cython.int]` / `double[:]`), pattern-matching edge cases (test_patma.py) \u2014 recorded honestly. Complexity: 15,558 symbols / 30,901 relationships in 23s on the 243-file corpus; zero O(n^2) (the per-uppercase-call symbols.some() instantiates scan replaced with the O(1) declaredTypes set). Differential 90/90 (1.000/1.000, 0 FP / 0 FN) on first run."
    }
-  },
-  {
-   "analyzer": "ruby",
-   "corpusTarget": "rake",
-   "status": "measured",
-   "candidates": [
-    "rake@dd5e851d(clean)"
-   ]
   },
   {
    "analyzer": "php",
