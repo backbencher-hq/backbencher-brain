@@ -68,9 +68,11 @@
   fused-type syntax; template-string prefixes; pattern-matching edge cases),
   none are defects on real Python.
 - Complexity: 15,558 symbols / 30,901 relationships on the 243-file corpus;
-  zero O(n²) — the instantiates check uses the O(1) `declaredTypes` set
-  (was a per-uppercase-call `symbols.some()` scan), override/extends lookups
-  use maps.
+  **64 parser error nodes across 7 error files**, zero O(n²) — the
+  instantiates check uses the O(1) `declaredTypes` set (was a per-uppercase-call
+  `symbols.some()` scan), and override/extends lookups use maps. The tracked
+  production measurement is versioned at
+  `validation/m12/results/python-corpus-complexity.json`.
 
 ## Census
 
