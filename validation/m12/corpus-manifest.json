@@ -627,7 +627,21 @@
    "status": "measured",
    "candidates": [
     "dplyr@d5e94e7f(clean)"
-   ]
+   ],
+   "measured": {
+    "revision": "d5e94e7f",
+    "sample": "195 tracked *.R/*.r files (full dplyr R corpus, deterministic git ls-files)",
+    "fixtures": 3,
+    "fixtureFacts": 46,
+    "precision": 1,
+    "recall": 1,
+    "corpusSymbols": 3509,
+    "corpusRelationships": 6127,
+    "grammarErrorFiles": 0,
+    "grammarErrorNodes": 0,
+    "note": "R analyzer corrected to a pure iterative AST contract: named function/S3/R6/R5/S4 declarations, R6/R5 methods and S4 slots, module-level variables/constants, AST-sourced imports/calls/contains/extends/implements/instantiates, formulas/data-frame metadata, and local/anonymous/field-mutation suppression. Differential 46/46 (1.000/1.000); shape safety 20/20; analyzer contributes 0 regex usages; constructor edges require an AST-declared class, so external uppercase calls are not guessed. Corpus scan reports 0 grammar errors, 0 crashes, and production extraction uses no O(n²) symbol/relationship lookup.",
+    "measuredAt": "2026-08-19T23:30:47.000Z"
+   }
   },
   {
    "analyzer": "lua",

@@ -11,6 +11,7 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
     const imports: ASTEngine.ImportInfo[] = []
     const exports: ASTEngine.ExportInfo[] = []
     const relationships: ASTEngine.UniversalRelationship[] = []
+    const declaredTypes = new Set<string>()
     const metadata: Partial<ASTEngine.FileMetadata> = {
       detectedFrameworks: [],
       patterns: [],
@@ -59,12 +60,12 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       const type = current.type
 
       if (type === "binary_operator") {
-        this.handleBinaryOperator(current, symbols, exports, relationships, metadata)
+        this.handleBinaryOperator(current, symbols, exports, relationships, metadata, declaredTypes)
       } else if (type === "call") {
-        this.handleCall(current, symbols, imports, relationships, metadata)
+        this.handleCall(current, symbols, imports, relationships, metadata, declaredTypes)
       } else if (type === "comment") {
         this.handleComment(current, metadata)
-      } else if (type === "function_definition" || type === "function") {
+      } else if (type === "function_definition") {
         // Skip a function node nested directly inside another function node
         // (tree-sitter-r wraps the body in a second function node) — the outer
         // definition is handled by this same branch, so the inner wrapper would
@@ -72,7 +73,7 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
         const fnParent = current.parent
         const isNestedWrapper =
           fnParent &&
-          (fnParent.type === "function_definition" || fnParent.type === "function")
+          fnParent.type === "function_definition"
         // Skip a function that is the target of a named assignment — the
         // binary_operator handler already emits the named symbol, so the walk
         // must not ALSO emit an anon_func for the same definition.
@@ -87,37 +88,21 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
             fnParent.child(1)?.text === "<<-" ||
             fnParent.child(1)?.text === "->") &&
           (this.sameNode(fnParent.child(0), current) || this.sameNode(fnParent.child(2), current))
+        // Anonymous function expressions are executable values, not stable
+        // declarations. Named R functions are emitted by the assignment
+        // handler; R6/R5 and S4 method values are emitted by their enclosing
+        // class-system call handlers.
         if (!isNestedWrapper && !isAssignmentTarget) {
-          const name = `anon_func_${current.startPosition.row + 1}_${current.startPosition.column + 1}`
-          symbols.push({
-            name,
-            kind: ASTEngine.SymbolKind.Function,
-            range: this.getRange(current),
-            signature: this.extractSignature(current),
-            parameters: this.extractParameters(current),
-            metadata: { rSpecific: true, isAnonymous: true },
-          })
           this.pushIfUnique(metadata.patterns, "Anonymous Functions")
         }
-      } else if (type === "dollar") {
-        const lhs = current.child(0)
-        const rhs = current.child(2)
-        if (lhs && rhs) {
-          relationships.push({
-            type: ASTEngine.RelationshipType.Calls,
-            source: lhs.text,
-            target: rhs.text,
-            metadata: { rSpecific: true, isMemberAccess: true },
-          })
-        }
-      } else if (type === "subscript") {
+      } else if (type === "subset") {
         this.pushIfUnique(metadata.patterns, "Vectorized Subsetting")
-      } else if (type === "formula") {
+      } else if (type === "unary_operator" && current.child(0)?.text === "~") {
         this.pushIfUnique(metadata.patterns, "Formula Interface")
         if (metadata.statisticalFocus !== undefined) metadata.statisticalFocus += 10
       }
 
-      if (type === "if" || type === "for" || type === "while" || type === "repeat") {
+      if (type === "if_statement" || type === "for_statement" || type === "while_statement" || type === "repeat_statement") {
         if (metadata.cyclomaticComplexity !== undefined) {
           metadata.cyclomaticComplexity++
         }
@@ -133,27 +118,21 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     this.detectFrameworksFromImports(imports, metadata)
 
-    // Drop anon_func symbols that duplicate a named symbol at the exact same
-    // position — e.g. R6/R5 methods: extractR6Methods emits the named method
-    // for the function node, and the walk also visits that same node, which
-    // would otherwise double-emit it as anonymous noise.
-    const namedRanges = new Set<string>()
-    for (const s of symbols) {
-      if (!s.metadata?.isAnonymous && s.range) {
-        namedRanges.add(`${s.range.startLine}:${s.range.startColumn}`)
+    // Post-loop: add contains for owned symbols (R is top-level, default owner is 'global').
+    // The set-based pass keeps relationship generation linear and removes the
+    // duplicate contains edges emitted by R6/R5 method extraction.
+    const containsKeys = new Set<string>()
+    for (const rel of relationships) {
+      if (rel.type === ASTEngine.RelationshipType.Contains && rel.source && rel.target) {
+        containsKeys.add(`${rel.source}\u001f${rel.target}`)
       }
     }
-    for (let i = symbols.length - 1; i >= 0; i--) {
-      const s = symbols[i]
-      if (s.metadata?.isAnonymous && s.range) {
-        if (namedRanges.has(`${s.range.startLine}:${s.range.startColumn}`)) symbols.splice(i, 1)
-      }
-    }
-
-    // Post-loop: add contains for owned symbols (R is top-level, default owner is 'global')
     for (const s of symbols) {
       const _owner = s.ownerName || s.scope || 'global'
       if (_owner) {
+        const key = `${_owner}\u001f${s.name}`
+        if (containsKeys.has(key)) continue
+        containsKeys.add(key)
         relationships.push({
           source: _owner,
           target: s.name,
@@ -164,10 +143,21 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // Relationship identity is source/type/target. Preserve one edge per
+    // semantic fact even when the same call appears in multiple AST wrappers.
+    const uniqueRelationships: ASTEngine.UniversalRelationship[] = []
+    const relationshipKeys = new Set<string>()
+    for (const rel of relationships) {
+      const key = `${rel.type || rel.relationshipType || ""}\u001f${rel.source || rel.from || ""}\u001f${rel.target || rel.to || ""}`
+      if (relationshipKeys.has(key)) continue
+      relationshipKeys.add(key)
+      uniqueRelationships.push(rel)
+    }
+
     return {
       symbols,
       imports,
-      relationships,
+      relationships: uniqueRelationships,
       exports,
       metadata,
       errors: metadata.errors || [],
@@ -223,6 +213,7 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
     exports: ASTEngine.ExportInfo[],
     relationships: ASTEngine.UniversalRelationship[],
     metadata: Partial<ASTEngine.FileMetadata>,
+    declaredTypes: Set<string>,
   ): void {
     const operatorNode = node.child(1)
     if (!operatorNode) return
@@ -245,11 +236,21 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       if (!lhs || !rhs) return
 
+      // Only identifier assignments are declarations. Calls, subsets, and
+      // `$`/`@` extraction nodes are mutations or expression results, not
+      // stable variable identities.
+      if (lhs.type !== "identifier") return
       const name = lhs.text
       if (!name) return
       const doc = this.extractDocstring(node)
 
-      if (rhs.type === "function_definition" || rhs.type === "function") {
+      // Function-local assignments are execution locals, not file-level
+      // declarations. This also prevents indexed/call-shaped local LHS nodes
+      // from becoming phantom symbols in large R packages.
+      const insideFunction = this.hasFunctionAncestor(node)
+      if (insideFunction) return
+
+      if (rhs.type === "function_definition") {
         const isS3Method = name.indexOf(".") !== -1 && name.charCodeAt(0) !== 46
 
         symbols.push({
@@ -295,6 +296,7 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
             docstring: doc,
             metadata: { rSpecific: true, type: "R6", isR6Class: true, baseClasses },
           })
+          declaredTypes.add(name)
           for (const bc of baseClasses) {
             relationships.push({
               source: name,
@@ -317,6 +319,7 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
             docstring: doc,
             metadata: { rSpecific: true, type: "R5", isR5Class: true, baseClasses },
           })
+          declaredTypes.add(name)
           for (const bc of baseClasses) {
             relationships.push({
               source: name,
@@ -376,10 +379,8 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
 
-      // Field mutations (self$orders <- ..., .GlobalEnv$app_name <- ...) are NOT
-      // top-level declarations — skip them to avoid `$`-laden noise symbols.
-      if (name.indexOf("$") !== -1) return
-
+      // This branch is reached only for module-level identifier assignments;
+      // field mutations and all function-local assignments returned above.
       symbols.push({
         name,
         kind: this.isAllCapsName(name) ? ASTEngine.SymbolKind.Constant : ASTEngine.SymbolKind.Variable,
@@ -448,7 +449,7 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
                   if (
                     methodNameNode &&
                     methodVal &&
-                    (methodVal.type === "function_definition" || methodVal.type === "function")
+                    (methodVal.type === "function_definition")
                   ) {
                     const methodName = methodNameNode.text
                     symbols.push({
@@ -507,7 +508,7 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
                   if (
                     methodNameNode &&
                     methodVal &&
-                    (methodVal.type === "function_definition" || methodVal.type === "function")
+                    (methodVal.type === "function_definition")
                   ) {
                     const methodName = methodNameNode.text
                     symbols.push({
@@ -589,6 +590,7 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
     imports: ASTEngine.ImportInfo[],
     relationships: ASTEngine.UniversalRelationship[],
     metadata: Partial<ASTEngine.FileMetadata>,
+    declaredTypes: Set<string>,
   ): void {
     const fnNode = node.childForFieldName("function") || node.child(0)
     if (!fnNode) return
@@ -615,6 +617,9 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     if (fnName.indexOf("apply") !== -1) {
       this.pushIfUnique(metadata.patterns, "Apply Family")
+    }
+    if (fnName === "data.frame" || fnName === "tibble" || fnName === "as.data.frame") {
+      this.pushIfUnique(metadata.patterns, "Data Frames")
     }
 
     if (fnName === "lm" || fnName === "glm" || fnName === "summary") {
@@ -644,7 +649,7 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       this.pushIfUnique(metadata.patterns, "Non-Standard Evaluation (NSE)")
     }
 
-    const parentFn = this.findParentFunction(node)
+    const parentFn = this.findEnclosingCallable(node)
     if (parentFn) {
       relationships.push({
         type: ASTEngine.RelationshipType.Calls,
@@ -652,13 +657,16 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
         target: fnName,
         metadata: {},
       })
-      // R class instantiation: ClassName$new() or ClassName()
-      if (fnName && (fnName.endsWith("$new") || (fnName[0] === fnName[0].toUpperCase() && fnName[0] !== fnName[0].toLowerCase()))) {
+      // R6/R5 construction is only certain when the receiver was declared as
+      // a class in this file. Capitalized external calls are not guessed as
+      // instantiation, avoiding false positives such as `I()` and `DataMask$new()`.
+      const constructorName = this.constructorTarget(fnNode)
+      if (constructorName && declaredTypes.has(constructorName)) {
         relationships.push({
           type: ASTEngine.RelationshipType.Instantiates,
           source: parentFn,
-          target: fnName.replace("$new", ""),
-          confidence: 0.7,
+          target: constructorName,
+          confidence: 0.9,
           metadata: { isRConstructor: true },
         })
       }
@@ -769,6 +777,18 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
             docstring: this.extractDocstring(node),
             metadata: { rSpecific: true, type: "S4", isS4Class: true, baseClasses },
           })
+          declaredTypes.add(className)
+          const slotNames = this.extractNamedArgumentKeys(node, "slots")
+          for (const slotName of slotNames) {
+            symbols.push({
+              name: slotName,
+              kind: ASTEngine.SymbolKind.Property,
+              range: this.getRange(node),
+              ownerName: className,
+              ownerKind: ASTEngine.SymbolKind.Class,
+              metadata: { rSpecific: true, isS4Slot: true },
+            })
+          }
           for (const bc of baseClasses) {
             relationships.push({
               source: className,
@@ -798,10 +818,17 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
         }
         if (methodName) {
+          let ownerName: string | undefined
+          if (fnName === "setMethod") {
+            const classArg = this.stringArgumentAt(args, 1)
+            if (classArg) ownerName = classArg
+          }
           symbols.push({
             name: methodName,
             kind: fnName === "setMethod" ? ASTEngine.SymbolKind.Method : ASTEngine.SymbolKind.Function,
             range: this.getRange(node),
+            ownerName,
+            ownerKind: ownerName ? ASTEngine.SymbolKind.Class : undefined,
             docstring: this.extractDocstring(node),
             metadata: {
               rSpecific: true,
@@ -815,21 +842,129 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
-  private findParentFunction(node: Node): string | null {
+  private hasFunctionAncestor(node: Node): boolean {
     let current: Node | null = node.parent
     while (current) {
-      if (current.type === "binary_operator") {
-        const operator = current.child(1)?.text
-        if (operator === "<-" || operator === "=") {
-          const rhs = current.child(2)
-          if (rhs && (rhs.type === "function_definition" || rhs.type === "function")) {
-            return current.child(0)?.text || null
+      if (current.type === "function_definition") return true
+      current = current.parent
+    }
+    return false
+  }
+
+  private findEnclosingCallable(node: Node): string | null {
+    let current: Node | null = node.parent
+    while (current) {
+      if (current.type === "function_definition") {
+        const parent = current.parent
+        if (parent?.type === "binary_operator") {
+          const op = parent.child(1)?.text
+          if (op === "<-" || op === "=" || op === "<<-") {
+            return parent.child(0)?.text || null
           }
         }
+        // R6/R5 methods are named arguments inside `list(...)` values of
+        // an R6Class/setRefClass call. Do not treat arbitrary named closure
+        // arguments (`callback = function(...)`) as declarations/call scopes.
+        if (parent?.type === "argument") {
+          const methodName = parent.childForFieldName("name") || parent.child(0)
+          let p: Node | null = parent.parent
+          let sawMethodList = false
+          while (p) {
+            if (p.type === "call") {
+              const fn = p.childForFieldName("function") || p.child(0)
+              if (fn?.text === "list") sawMethodList = true
+              else if (sawMethodList && (fn?.text === "R6Class" || fn?.text === "setRefClass")) {
+                if (methodName?.text) return methodName.text
+                break
+              }
+            }
+            if (p.type === "function_definition") break
+            p = p.parent
+          }
+        }
+        // A setMethod call stores the generic name as its first string
+        // argument; its anonymous function body still has a stable method
+        // source for call relationships.
+        let p: Node | null = parent
+        while (p) {
+          if (p.type === "call") {
+            const fn = p.childForFieldName("function") || p.child(0)
+            if (fn?.text === "setMethod") return this.stringArgumentAt(this.getArgumentsNode(p), 0) || null
+            break
+          }
+          if (p.type === "function_definition") break
+          p = p.parent
+        }
+        return null
       }
       current = current.parent
     }
     return null
+  }
+
+  private constructorTarget(fnNode: Node): string | null {
+    if (fnNode.type === "extract_operator") {
+      const operator = fnNode.child(1)?.text
+      if (operator === "$" || operator === "@") return fnNode.child(0)?.text || null
+    }
+    const text = fnNode.text
+    const marker = text.indexOf("$new")
+    if (marker > 0) return text.substring(0, marker)
+    return null
+  }
+
+  private stringArgumentAt(args: Node | null, index: number): string | undefined {
+    if (!args) return undefined
+    let seen = 0
+    // The grammar exposes commas as named children too, so skip punctuation
+    // explicitly while retaining source-order positional arguments.
+    for (let i = 0; i < args.namedChildCount; i++) {
+      const arg = args.namedChild(i)
+      if (!arg || arg.type === "comma") continue
+      const value = arg.type === "argument" ? (arg.childForFieldName("value") || arg.child(0)) : arg
+      if (!value) continue
+      if (seen === index && value.type === "string") {
+        const content = value.childForFieldName("content") || value.child(0)
+        return content?.text || this.unquoteString(value.text)
+      }
+      seen++
+    }
+    return undefined
+  }
+
+  private extractNamedArgumentKeys(node: Node, argName: string): string[] {
+    const results: string[] = []
+    const args = this.getArgumentsNode(node)
+    if (!args) return results
+    for (let i = 0; i < args.namedChildCount; i++) {
+      const arg = args.namedChild(i)
+      if (!arg || arg.type !== "argument") continue
+      const nameNode = arg.childForFieldName("name") || arg.child(0)
+      if (!nameNode || nameNode.text !== argName) continue
+      const value = arg.childForFieldName("value") || arg.child(2)
+      if (!value || value.type !== "call") continue
+      const fn = value.childForFieldName("function") || value.child(0)
+      if (!fn || fn.text !== "c") continue
+      const values = this.getArgumentsNode(value)
+      if (!values) continue
+      for (let j = 0; j < values.namedChildCount; j++) {
+        const entry = values.namedChild(j)
+        if (!entry || entry.type !== "argument") continue
+        const entryName = entry.childForFieldName("name") || entry.child(0)
+        if (entryName?.text) results.push(entryName.text)
+      }
+    }
+    return results
+  }
+
+  private unquoteString(text: string): string {
+    const trimmed = text.trim()
+    if (trimmed.length >= 2) {
+      const first = trimmed[0]
+      const last = trimmed[trimmed.length - 1]
+      if ((first === '"' || first === "'") && first === last) return trimmed.substring(1, trimmed.length - 1)
+    }
+    return trimmed
   }
 
   private extractSignature(node: Node): string | undefined {
@@ -844,7 +979,7 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (prev.type === "comment") {
         docsStack.push(prev.text)
         prev = prev.previousSibling
-      } else if (prev.type === "return" || prev.type === "throw") {
+      } else if (prev.type === "return") {
         prev = prev.previousSibling
       } else {
         break
@@ -877,18 +1012,24 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
               if (cArgs) {
                 for (let j = 0; j < cArgs.childCount; j++) {
                   const ca = cArgs.child(j)
-                  if (ca && (ca.type === "string" || ca.type === "identifier")) {
-                    let text = ca.text
-                    if (text.startsWith('"') || text.startsWith("'"))
-                      text = text.substring(1, text.length - 1)
+                  if (ca && (ca.type === "string" || ca.type === "identifier" || ca.type === "argument")) {
+                    const value = ca.type === "argument" ? (ca.childForFieldName("value") || ca.child(2)) : ca
+                    if (!value) continue
+                    let text = value.text
+                    if (value.type === "string") {
+                      const content = value.childForFieldName("content") || value.child(0)
+                      text = content?.text || this.unquoteString(text)
+                    }
                     if (text) results.push(text)
                   }
                 }
               }
             } else if (valNode.type === "string" || valNode.type === "identifier") {
               let text = valNode.text
-              if (text.startsWith('"') || text.startsWith("'"))
-                text = text.substring(1, text.length - 1)
+              if (valNode.type === "string") {
+                const content = valNode.childForFieldName("content") || valNode.child(0)
+                text = content?.text || this.unquoteString(text)
+              }
               if (text) results.push(text)
             }
           }
