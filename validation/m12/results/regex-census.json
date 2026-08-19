@@ -2,23 +2,23 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-08-19T20:55:25.795Z",
+  "generatedAt": "2026-08-19T21:35:54.774Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 63,
+  "totalRegexUsages": 58,
   "analyzersScanned": 41,
   "byClassification": {
     "unavoidable": 9,
-    "normalization": 28,
+    "normalization": 25,
     "replaceable": 1,
-    "needs_review": 25
+    "needs_review": 23
   },
   "byReceiverCategory": {
     "literal": 9,
-    "node_text": 28,
+    "node_text": 25,
     "raw_content": 1,
     "other": 11,
-    "identifier": 14
+    "identifier": 12
   },
   "perFile": [
     {
@@ -542,67 +542,6 @@
           "receiver": "returnType",
           "receiverCategory": "identifier",
           "classification": "needs_review",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-php-analyzer.ts",
-      "count": 5,
-      "usages": [
-        {
-          "file": "real-php-analyzer.ts",
-          "line": 791,
-          "column": 39,
-          "source": "/\\s+/g",
-          "operation": "replace",
-          "receiver": "child.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-php-analyzer.ts",
-          "line": 843,
-          "column": 54,
-          "source": "/::class|\\'|\"/g",
-          "operation": "replace",
-          "receiver": "relatedClassArg",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-php-analyzer.ts",
-          "line": 971,
-          "column": 41,
-          "source": "/\\$([a-zA-Z_\\x7f-\\xff][a-zA-Z0-9_\\x7f-\\xff]*)/",
-          "operation": "match",
-          "receiver": "varNameText",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-php-analyzer.ts",
-          "line": 993,
-          "column": 42,
-          "source": "/^:\\s*/",
-          "operation": "replace",
-          "receiver": "returnTypeNode.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-php-analyzer.ts",
-          "line": 999,
-          "column": 41,
-          "source": "/@return\\s+([^\\s]+)/",
-          "operation": "match",
-          "receiver": "prevNode.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
           "justification": ""
         }
       ]

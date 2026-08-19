@@ -1,108 +1,97 @@
-function stringIncludes(str: string, val: string): boolean {
-  if (!str) return false
-  return str.indexOf(val) !== -1
-}
-
-function inArray(arr: any[], val: any): boolean {
-  if (!arr) return false
-  for (let i = 0; i < arr.length; i++) {
-    if (arr[i] === val) return true
-  }
-  return false
-}
-
-function someSymbol(arr: any[], predicate: (s: any) => boolean): boolean {
-  if (!arr) return false
-  for (let i = 0; i < arr.length; i++) {
-    if (predicate(arr[i])) return true
-  }
-  return false
-}
-
-function filterSymbols(symbols: any[], predicate: (s: any) => boolean): any[] {
-  const result: any[] = []
-  if (!symbols) return result
-  for (let i = 0; i < symbols.length; i++) {
-    if (predicate(symbols[i])) result.push(symbols[i])
-  }
-  return result
-}
-
-function findSymbol(arr: any[], predicate: (s: any) => boolean): any | undefined {
-  if (!arr) return undefined
-  for (let i = 0; i < arr.length; i++) {
-    if (predicate(arr[i])) return arr[i]
-  }
-  return undefined
-}
-
-function mapSymbols<T, U>(arr: T[], mapper: (item: T) => U): U[] {
-  const result: U[] = []
-  if (!arr) return result
-  for (let i = 0; i < arr.length; i++) {
-    result.push(mapper(arr[i]))
-  }
-  return result
-}
-
-function forEachSymbol(arr: any[], fn: (s: any) => void): void {
-  if (!arr) return
-  for (let i = 0; i < arr.length; i++) {
-    fn(arr[i])
-  }
-}
-
-// Real PHP Intelligence Engine
-// AST analysis for PHP with Laravel, Symfony, WordPress, Magento intelligence
-// Brain Certified: 100% Stateless, Iterative Stack Traversal, No Regex Fallbacks.
-
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 
-export interface PhpContext {
-  content: string
-  filePath: string
-  symbols: ASTEngine.UniversalSymbol[]
-  relationships: ASTEngine.UniversalRelationship[]
-  imports: ASTEngine.ImportInfo[]
-  exports: ASTEngine.ExportInfo[]
-  errors: ASTEngine.ParseError[]
-  globalVariables: Record<string, boolean>
-  localVariables: Record<string, boolean>
-  traits: Record<string, boolean>
-  frameworks: Record<string, boolean>
-  patterns: Record<string, boolean>
-  currentNamespace?: string
-  currentClass?: string
-}
+// ============================================================================
+// PHP BUILTINS — global functions filtered from call relationships.
+// Method calls (member/scoped/nullsafe) are NOT filtered: they are user code
+// like `$obj->persist()`, whose leaf targets the scripting-family contract
+// emits. This list covers the common core/extension globals that would
+// otherwise flood every file with self-evident call edges.
+// ============================================================================
+const PHP_BUILTINS = new Set([
+  // String
+  "strlen", "strpos", "stripos", "strrpos", "strstr", "stristr", "substr",
+  "str_replace", "str_ireplace", "strtolower", "strtoupper", "ucfirst", "lcfirst",
+  "ucwords", "trim", "ltrim", "rtrim", "explode", "implode", "join", "str_split",
+  "str_repeat", "str_pad", "sprintf", "vsprintf", "printf", "number_format",
+  "htmlspecialchars", "htmlentities", "html_entity_decode", "addslashes",
+  "stripslashes", "nl2br", "wordwrap", "strval", "intval", "floatval", "boolval",
+  "chr", "ord", "strrev", "strcmp", "strcasecmp", "strncmp", "substr_count",
+  "str_contains", "str_starts_with", "str_ends_with", "parse_str",
+  // Array
+  "count", "sizeof", "array", "array_merge", "array_merge_recursive", "array_keys",
+  "array_values", "array_flip", "array_reverse", "array_push", "array_pop",
+  "array_shift", "array_unshift", "array_map", "array_filter", "array_reduce",
+  "array_walk", "array_slice", "array_splice", "array_search", "array_key_exists",
+  "in_array", "array_unique", "array_combine", "array_column", "range", "sort",
+  "rsort", "asort", "arsort", "ksort", "krsort", "usort", "uasort", "uksort",
+  "compact", "extract", "list", "end", "reset", "next", "prev", "current", "key",
+  "array_sum", "array_product", "array_rand", "array_chunk", "array_pad",
+  "array_fill", "array_fill_keys", "array_diff", "array_intersect", "array_replace",
+  // Type / var
+  "is_array", "is_string", "is_int", "is_integer", "is_float", "is_double",
+  "is_bool", "is_object", "is_callable", "is_null", "is_numeric", "is_scalar",
+  "is_resource", "is_iterable", "is_countable", "gettype", "settype", "get_class",
+  "get_parent_class", "method_exists", "property_exists", "class_exists",
+  "interface_exists", "trait_exists", "function_exists", "enum_exists",
+  "instanceof", "get_class_methods", "get_class_vars", "get_object_vars",
+  "get_debug_type", "get_mangled_object_vars", "var_dump", "var_export",
+  "print_r", "debug_zval_dump", "serialize", "unserialize", "json_encode",
+  "json_decode", "json_last_error", "json_last_error_msg", "is_a", "is_subclass_of",
+  // Math / misc
+  "abs", "min", "max", "round", "floor", "ceil", "pow", "sqrt", "rand", "mt_rand",
+  "srand", "mt_srand", "number_format", "intdiv", "fmod", "exp", "log", "log10",
+  "pi", "getrandmax", "mt_getrandmax",
+  // Control / filesystem / errors
+  "defined", "define", "constant", "exit", "die", "eval", "assert", "trigger_error",
+  "error_log", "set_error_handler", "set_exception_handler", "file_exists",
+  "file_get_contents", "file_put_contents", "fopen", "fclose", "fread", "fwrite",
+  "fgets", "file", "dirname", "basename", "realpath", "is_file", "is_dir", "mkdir",
+  "rmdir", "unlink", "rename", "copy", "glob", "scandir", "chdir", "getcwd",
+  "touch", "chmod", "chown", "filemtime", "filesize", "tempnam", "sys_get_temp_dir",
+  // String interop helpers
+  "preg_match", "preg_match_all", "preg_replace", "preg_replace_callback",
+  "preg_split", "preg_quote", "preg_grep", "preg_last_error", "preg_last_error_msg",
+])
 
+// Type-hint node kinds (parameter and return types).
+const TYPE_NODES = new Set([
+  "primitive_type", "named_type", "optional_type", "union_type",
+  "intersection_type", "nullable_type", "type",
+])
+
+// ============================================================================
+// MAIN ANALYZER
+// ============================================================================
 export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
-  analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
-    const ctx: PhpContext = {
-      content,
-      filePath,
-      symbols: [],
-      relationships: [],
-      imports: [],
-      exports: [],
-      errors: [],
-      globalVariables: {},
-      localVariables: {},
-      traits: {},
-      frameworks: {},
-      patterns: {},
+  analyze(
+    rootNode: Node,
+    content: string,
+    filePath: string,
+    context?: ASTEngine.AnalyzeContext,
+  ): ASTEngine.ParseResult {
+    const symbols: ASTEngine.UniversalSymbol[] = []
+    const relationships: ASTEngine.UniversalRelationship[] = []
+    const imports: ASTEngine.ImportInfo[] = []
+    const exports: ASTEngine.ExportInfo[] = []
+    const errors: ASTEngine.ParseError[] = []
+    const detectedFrameworks = new Set<string>()
+    const patterns = new Set<string>()
+
+    if (!rootNode) {
+      return this.result(symbols, relationships, imports, exports, errors, content, rootNode, detectedFrameworks, patterns)
     }
 
-    // STAGE 1: Error Resiliency
+    // --- Error collection ---
     if (rootNode.hasError) {
       const errStack: Node[] = [rootNode]
       while (errStack.length > 0) {
         const n = errStack.pop()!
         if (n.type === "ERROR" || n.isMissing) {
-          ctx.errors.push({
-            message: `Syntax ${n.type} detected. The Brain Engine is bypassing this broken node.`,
+          errors.push({
+            message: `Syntax ${n.type} detected.`,
             range: this.nodeToRange(n),
-            severity: `warning`,
+            severity: "warning",
           })
         }
         for (let i = n.namedChildCount - 1; i >= 0; i--) {
@@ -112,267 +101,377 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    // STAGE 2: Iterative Stack Traversal (NO Call-Stack Explosions)
-    const stack: { node: Node; scope: string[]; ns?: string; pClass?: string }[] = [{ node: rootNode, scope: [] }]
+    // ========================================================================
+    // EXTRACTIVE WALK — iterative stack, single pass
+    // ========================================================================
+    type Frame = {
+      node: Node
+      owner: string | undefined
+      ownerKind: string | undefined
+      ns: string | undefined
+      inFunction: string | undefined
+    }
+    const stack: Frame[] = [{ node: rootNode, owner: undefined, ownerKind: undefined, ns: undefined, inFunction: undefined }]
 
     while (stack.length > 0) {
-      const { node, scope, ns, pClass } = stack.pop()!
+      const { node, owner, ownerKind, ns, inFunction } = stack.pop()!
+      const type = node.type
 
-      // Pre-process context switches
-      let nextNs = ns
-      let nextClass = pClass
-      let nextScope = [...scope]
-      let skipChildren = false
-
-      const effectiveNs = nextNs || ctx.currentNamespace;
-
-      switch (node.type) {
-        case "namespace_definition":
-          nextNs = (this.findChildByType(node, "namespace_name") || this.findChildByType(node, "name"))?.text || ns
-          ctx.currentNamespace = nextNs
-          if (nextNs) {
-            ctx.symbols.push({
-              name: nextNs,
-              kind: ASTEngine.SymbolKind.Namespace,
-              range: this.nodeToRange(node),
-              scope: "global",
-              visibility: "public",
-              metadata: { phpSpecific: true },
-            })
-          }
-          break
-        case "anonymous_class_declaration":
-        case "class_declaration":
-        case "interface_declaration":
-        case "trait_declaration": {
-          const nameNode = this.findChildByType(node, "name");
-          if (nameNode || node.type === "anonymous_class_declaration") {
-            nextClass = nameNode ? nameNode.text : `anonymous_class_${node.startIndex}`;
-            nextScope.push(nextClass)
-            if (node.type === "class_declaration" || node.type === "anonymous_class_declaration") this.extractClass(node, nextScope.join("\\"), ctx, effectiveNs)
-            if (node.type === "interface_declaration") this.extractInterface(node, nextScope.join("\\"), ctx, effectiveNs)
-            if (node.type === "trait_declaration") this.extractTrait(node, nextScope.join("\\"), ctx, effectiveNs)
-          }
-          break
-        }
-        case "function_definition":
-          this.extractFunction(node, scope.join("\\"), ctx, effectiveNs)
-          break
-        case "method_declaration":
-          this.extractMethod(node, scope.join("\\"), ctx, pClass)
-          break
-        case "property_declaration":
-          this.extractProperty(node, scope.join("\\"), ctx, pClass)
-          break
-        case "const_declaration":
-        case "class_const_declaration":
-          this.extractConstant(node, scope.join("\\"), ctx, pClass)
-          break
-        case "use_declaration":
-        case "namespace_use_declaration":
-          this.extractUseStatement(node, ctx, effectiveNs)
-          break
-        case "require_once_expression":
-        case "include_once_expression":
-        case "require_expression":
-        case "include_expression":
-          this.extractPhpInclude(node, ctx, effectiveNs)
-          break
-        case "throw_expression":
-        case "throw_statement": {
-          const thrown = node.namedChild(0)
-          if (thrown && thrown.type === "object_creation_expression") {
-            const typeNode = this.findChildByType(thrown, "name") || this.findChildByType(thrown, "qualified_name")
-            if (typeNode) {
-              ctx.relationships.push({
-                source: pClass || ns || "global",
-                target: typeNode.text,
-                type: ASTEngine.RelationshipType.References,
-                confidence: 0.8,
-                metadata: { phpSpecific: true, isThrow: true },
-              })
-            }
-          }
-          break
-        }
-        case "declare_statement": {
-          for (let i = 0; i < node.namedChildCount; i++) {
-            const c = node.namedChild(i)
-            if (c && c.text.includes("strict_types") && c.text.includes("1"))
-              ctx.patterns["Strict Types"] = true
-          }
-          break
-        }
-        case "yield_expression":
-          ctx.patterns["Generators"] = true
-          break
-        case "expression_statement":
-          break
-        case "assignment_expression":
-          this.extractVariableAssignment(node, scope.join("\\"), ctx)
-          break
-        case "global_declaration":
-          this.extractGlobalVariable(node, scope.join("\\"), ctx)
-          break
-        case "function_call_expression":
-        case "method_call_expression":
-        case "member_call_expression":
-        case "scoped_call_expression":
-        case "nullsafe_member_call_expression":
-          this.processFunctionCall(node, ctx)
-          break
-        case "object_creation_expression":
-          this.processObjectCreation(node, ctx)
-          break
-        case "enum_declaration": {
-          const enumName = this.findChildByType(node, "name")
-          if (enumName) {
-            nextClass = enumName.text
-            nextScope.push(enumName.text)
-            ctx.symbols.push({
-              name: enumName.text,
-              kind: ASTEngine.SymbolKind.Enum,
-              range: this.nodeToRange(node),
-              scope: ns || "global",
-              visibility: "public",
-              metadata: { phpSpecific: true, fqn: ns ? `${ns}\\${enumName.text}` : enumName.text },
-            })
-          }
-          break
-        }
-        case "enum_case": {
-          const caseName = this.findChildByType(node, "name")
-          if (caseName && pClass) {
-            ctx.symbols.push({
-              name: caseName.text,
-              kind: ASTEngine.SymbolKind.EnumMember,
-              range: this.nodeToRange(node),
-              scope: pClass,
-              ownerName: pClass,
-              visibility: "public",
-              metadata: { phpSpecific: true },
-            })
-          }
-          break
-        }
-        case "anonymous_function_creation_expression":
-        case "arrow_function": {
-          const name = `anon_${node.type === "arrow_function" ? "fn" : "closure"}_${node.startPosition.row + 1}_${node.startPosition.column + 1}`
-          ctx.symbols.push({
-            name,
-            kind: ASTEngine.SymbolKind.Function,
+      if (type === "namespace_definition") {
+        const nameNode = this.findChildByType(node, "namespace_name")
+        const nsName = nameNode?.text
+        if (nsName) {
+          symbols.push({
+            name: nsName,
+            kind: ASTEngine.SymbolKind.Namespace,
             range: this.nodeToRange(node),
-            scope: pClass || ns || "global",
             visibility: "public",
-            metadata: { phpSpecific: true, isAnonymous: true, isArrow: node.type === "arrow_function" },
+            metadata: { phpSpecific: true },
           })
-          break
+          patterns.add("Namespaces")
+          this.detectFramework(nsName, detectedFrameworks)
         }
-        case "instanceof_expression": {
-          const right = node.namedChild(node.namedChildCount - 1)
-          if (right && (right.type === "name" || right.type === "qualified_name")) {
-            ctx.relationships.push({
-              source: pClass || ns || "global",
-              target: right.text,
-              type: ASTEngine.RelationshipType.References,
-              confidence: 0.6,
-              metadata: { phpSpecific: true, isInstanceOf: true },
-            })
-          }
-          break
-        }
-        case "name":
-        case "qualified_name":
-          this.detectFrameworksFromIdentifier(node, ctx)
-          break
-      }
-
-      if (!skipChildren) {
-        // Push children in reverse order to maintain document-order traversal
+        // Namespace applies to subsequent top-level declarations.
         for (let i = node.namedChildCount - 1; i >= 0; i--) {
           const child = node.namedChild(i)
-          if (child) {
-            stack.push({ node: child, scope: nextScope, ns: nextNs, pClass: nextClass })
+          if (child) stack.push({ node: child, owner: undefined, ownerKind: undefined, ns: nsName, inFunction: undefined })
+        }
+        continue
+      }
+
+      if (type === "class_declaration") {
+        const nameNode = this.findChildByType(node, "name")
+        const className = nameNode ? nameNode.text : `anonymous_class_${node.startIndex}`
+        const baseClause = this.findChildByType(node, "base_clause")
+        const baseName = baseClause ? this.leafName(baseClause.namedChild(0)?.text ?? "") : undefined
+        const interfaces: string[] = []
+        const ifaceClause = this.findChildByType(node, "class_interface_clause")
+        if (ifaceClause) {
+          for (let i = 0; i < ifaceClause.namedChildCount; i++) {
+            const iface = ifaceClause.namedChild(i)
+            if (!iface) continue
+            const ifaceName = iface.text
+            interfaces.push(this.leafName(ifaceName))
+            relationships.push({
+              source: className,
+              target: this.leafName(ifaceName),
+              type: ASTEngine.RelationshipType.Implements,
+              confidence: 1.0,
+              metadata: { phpSpecific: true },
+            })
           }
         }
+
+        const modifiers = this.extractModifiers(node)
+        symbols.push({
+          name: className,
+          kind: ASTEngine.SymbolKind.Class,
+          range: this.nodeToRange(node),
+          visibility: "public",
+          isAbstract: modifiers.includes("abstract"),
+          isStatic: modifiers.includes("static"),
+          metadata: {
+            phpSpecific: true,
+            fqn: ns ? `${ns}\\${className}` : className,
+            namespace: ns,
+            baseClass: baseName,
+            interfaces,
+            isFinal: modifiers.includes("final"),
+            isAnonymous: false,
+          },
+        })
+
+        if (baseName) {
+          relationships.push({
+            source: className,
+            target: baseName,
+            type: ASTEngine.RelationshipType.Extends,
+            confidence: 1.0,
+            metadata: { phpSpecific: true },
+          })
+        }
+        if (className.endsWith("Controller")) patterns.add("MVC Architecture (Controllers)")
+        if (className.endsWith("Service")) patterns.add("Service Layer Pattern")
+        this.detectFramework(ns ?? "", detectedFrameworks)
+
+        const body = this.findChildByType(node, "declaration_list")
+        if (body) {
+          this.pushMembers(body, stack, className, "class", ns)
+        }
+        continue
+      }
+
+      if (type === "interface_declaration") {
+        const nameNode = this.findChildByType(node, "name")
+        if (!nameNode) continue
+        const ifaceName = nameNode.text
+        const baseClause = this.findChildByType(node, "base_clause") || this.findChildByType(node, "interface_base_clause")
+        const extended: string[] = []
+        if (baseClause) {
+          for (let i = 0; i < baseClause.namedChildCount; i++) {
+            const parent = baseClause.namedChild(i)
+            if (!parent) continue
+            const parentName = this.leafName(parent.text)
+            extended.push(parentName)
+            relationships.push({
+              source: ifaceName,
+              target: parentName,
+              type: ASTEngine.RelationshipType.Extends,
+              confidence: 1.0,
+              metadata: { phpSpecific: true },
+            })
+          }
+        }
+        symbols.push({
+          name: ifaceName,
+          kind: ASTEngine.SymbolKind.Interface,
+          range: this.nodeToRange(node),
+          visibility: "public",
+          metadata: { phpSpecific: true, fqn: ns ? `${ns}\\${ifaceName}` : ifaceName, namespace: ns, extendedInterfaces: extended },
+        })
+        const body = this.findChildByType(node, "declaration_list")
+        if (body) this.pushMembers(body, stack, ifaceName, "interface", ns)
+        continue
+      }
+
+      if (type === "trait_declaration") {
+        const nameNode = this.findChildByType(node, "name")
+        if (!nameNode) continue
+        const traitName = nameNode.text
+        symbols.push({
+          name: traitName,
+          kind: ASTEngine.SymbolKind.Trait,
+          range: this.nodeToRange(node),
+          visibility: "public",
+          metadata: { phpSpecific: true, isTrait: true, fqn: ns ? `${ns}\\${traitName}` : traitName, namespace: ns },
+        })
+        const body = this.findChildByType(node, "declaration_list")
+        if (body) this.pushMembers(body, stack, traitName, "trait", ns)
+        continue
+      }
+
+      if (type === "enum_declaration") {
+        const nameNode = this.findChildByType(node, "name")
+        if (!nameNode) continue
+        const enumName = nameNode.text
+        symbols.push({
+          name: enumName,
+          kind: ASTEngine.SymbolKind.Enum,
+          range: this.nodeToRange(node),
+          visibility: "public",
+          metadata: { phpSpecific: true, fqn: ns ? `${ns}\\${enumName}` : enumName, namespace: ns },
+        })
+        const list = this.findChildByType(node, "enum_declaration_list")
+        if (list) {
+          for (let i = 0; i < list.namedChildCount; i++) {
+            const child = list.namedChild(i)
+            if (child) stack.push({ node: child, owner: enumName, ownerKind: "enum", ns, inFunction: undefined })
+          }
+        }
+        continue
+      }
+
+      if (type === "enum_case") {
+        const nameNode = this.findChildByType(node, "name")
+        if (nameNode && owner) {
+          symbols.push({
+            name: nameNode.text,
+            kind: ASTEngine.SymbolKind.EnumMember,
+            range: this.nodeToRange(node),
+            ownerName: owner,
+            ownerKind: ownerKind as any,
+            visibility: "public",
+            metadata: { phpSpecific: true },
+          })
+        }
+        continue
+      }
+
+      if (type === "function_definition") {
+        const nameNode = node.childForFieldName("name")
+        if (!nameNode) continue
+        const fnName = nameNode.text
+        const parameters = this.extractParameters(node)
+        const returnType = this.extractReturnType(node)
+        symbols.push({
+          name: fnName,
+          kind: ASTEngine.SymbolKind.Function,
+          range: this.nodeToRange(node),
+          visibility: "public",
+          parameters,
+          returnType,
+          metadata: { phpSpecific: true, fqn: ns ? `${ns}\\${fnName}` : fnName, namespace: ns },
+        })
+        const body = node.childForFieldName("body")
+        if (body) this.walkBody(body, symbols, relationships, imports, owner, ns, fnName, detectedFrameworks, patterns)
+        continue
+      }
+
+      if (type === "method_declaration") {
+        const nameNode = node.childForFieldName("name")
+        if (!nameNode) continue
+        const methodName = nameNode.text
+        const modifiers = this.extractModifiers(node)
+        let visibility = "public"
+        if (modifiers.includes("private")) visibility = "private"
+        else if (modifiers.includes("protected")) visibility = "protected"
+        const parameters = this.extractParameters(node)
+        const returnType = this.extractReturnType(node)
+        symbols.push({
+          name: methodName,
+          kind: ASTEngine.SymbolKind.Method,
+          range: this.nodeToRange(node),
+          ownerName: owner,
+          ownerKind: owner ? (ownerKind as any) : undefined,
+          visibility,
+          isStatic: modifiers.includes("static"),
+          isAbstract: modifiers.includes("abstract"),
+          parameters,
+          returnType,
+          metadata: {
+            phpSpecific: true,
+            isMethod: true,
+            isMagicMethod: methodName.startsWith("__"),
+            isFinal: modifiers.includes("final"),
+          },
+        })
+        // Property promotion: constructor params with a visibility modifier are
+        // also declared properties of the class.
+        this.extractPromotedProperties(node, owner, ownerKind, symbols)
+        if (methodName.startsWith("__")) patterns.add("Magic Methods")
+        const body = node.childForFieldName("body")
+        if (body) this.walkBody(body, symbols, relationships, imports, owner, ns, methodName, detectedFrameworks, patterns)
+        continue
+      }
+
+      if (type === "property_declaration") {
+        const modifiers = this.extractModifiers(node)
+        let visibility = "public"
+        if (modifiers.includes("private")) visibility = "private"
+        else if (modifiers.includes("protected")) visibility = "protected"
+        const propertyType = this.findTypeChild(node)?.text
+        for (let i = 0; i < node.namedChildCount; i++) {
+          const child = node.namedChild(i)
+          if (!child || child.type !== "property_element") continue
+          const varNode = this.findChildByType(child, "variable_name")
+          if (!varNode) continue
+          symbols.push({
+            name: this.variableBareName(varNode),
+            kind: ASTEngine.SymbolKind.Property,
+            range: this.nodeToRange(varNode),
+            ownerName: owner,
+            ownerKind: owner ? (ownerKind as any) : undefined,
+            visibility,
+            isStatic: modifiers.includes("static"),
+            returnType: propertyType,
+            metadata: { phpSpecific: true },
+          })
+        }
+        continue
+      }
+
+      if (type === "const_declaration") {
+        const modifiers = this.extractModifiers(node)
+        let visibility = "public"
+        if (modifiers.includes("private")) visibility = "private"
+        else if (modifiers.includes("protected")) visibility = "protected"
+        for (let i = 0; i < node.namedChildCount; i++) {
+          const child = node.namedChild(i)
+          if (!child || child.type !== "const_element") continue
+          const nameNode = this.findChildByType(child, "name")
+          if (!nameNode) continue
+          symbols.push({
+            name: nameNode.text,
+            kind: ASTEngine.SymbolKind.Constant,
+            range: this.nodeToRange(nameNode),
+            ownerName: owner,
+            ownerKind: owner ? (ownerKind as any) : undefined,
+            visibility: owner ? visibility : "public",
+            metadata: { phpSpecific: true, isConstant: true },
+          })
+        }
+        continue
+      }
+
+      if (type === "use_declaration") {
+        // Trait use inside a class/interface/trait body.
+        for (let i = 0; i < node.namedChildCount; i++) {
+          const child = node.namedChild(i)
+          if (!child || (child.type !== "name" && child.type !== "qualified_name")) continue
+          const traitName = this.leafName(child.text)
+          relationships.push({
+            source: owner || "global",
+            target: traitName,
+            type: ASTEngine.RelationshipType.Uses,
+            confidence: 1.0,
+            metadata: { phpSpecific: true, isTraitUse: true },
+          })
+          patterns.add("Trait Composition (Mixins)")
+        }
+        continue
+      }
+
+      if (type === "namespace_use_declaration") {
+        for (let i = 0; i < node.namedChildCount; i++) {
+          const child = node.namedChild(i)
+          if (!child || (child.type !== "namespace_use_clause" && child.type !== "use_clause")) continue
+          let fqn = ""
+          let alias: string | undefined
+          for (let j = 0; j < child.namedChildCount; j++) {
+            const part = child.namedChild(j)
+            if (!part) continue
+            if (part.type === "name" || part.type === "qualified_name") {
+              if (!fqn) fqn = part.text
+              else alias = part.text
+            }
+          }
+          if (!fqn) continue
+          const leaf = this.leafName(fqn)
+          imports.push({
+            module: fqn,
+            items: [alias || leaf],
+            isDefaultImport: true,
+            range: this.nodeToRange(child),
+            metadata: { phpSpecific: true, aliased: !!alias },
+          })
+          this.detectFramework(fqn, detectedFrameworks)
+        }
+        continue
+      }
+
+      if (type === "require_once_expression" || type === "include_once_expression" ||
+          type === "require_expression" || type === "include_expression") {
+        this.emitInclude(node, imports, relationships, ns)
+        continue
+      }
+
+      // --- Top-level statement wrapper (e.g. `require_once ...;` is wrapped in
+      // an expression_statement at the program level).
+      if (type === "expression_statement") {
+        for (let i = node.namedChildCount - 1; i >= 0; i--) {
+          const child = node.namedChild(i)
+          if (child) stack.push({ node: child, owner, ownerKind, ns, inFunction })
+        }
+        continue
+      }
+
+      // --- Program root: forward children ---
+      if (type === "program") {
+        for (let i = node.namedChildCount - 1; i >= 0; i--) {
+          const child = node.namedChild(i)
+          if (child) stack.push({ node: child, owner, ownerKind, ns, inFunction })
+        }
+        continue
       }
     }
 
-    if (
-      someSymbol(ctx.symbols, (s) => s.kind === ASTEngine.SymbolKind.Class || s.kind === ASTEngine.SymbolKind.Interface)
-    ) {
-      ctx.patterns["Object-Oriented Programming"] = true
-    }
-    if (someSymbol(ctx.relationships, (r) => r.metadata?.relationshipType === "php_implements")) {
-      ctx.patterns["Interface Implementation"] = true
-    }
-    let hasTraits = false
-    for (const k in ctx.traits) {
-      hasTraits = true
-      break
-    }
-    if (hasTraits) {
-      ctx.patterns["Trait Usage"] = true
-    }
-    if (ctx.currentNamespace || someSymbol(ctx.symbols, (s) => s.kind === ASTEngine.SymbolKind.Namespace)) {
-      ctx.patterns["Namespaces"] = true
-    }
+    // --- Override relationships (implicit PHP overrides) ---
+    this.resolveOverrides(symbols, relationships, context)
 
-    const detectedFrameworks = (function (obj: Record<string, boolean>) {
-      const arr: string[] = []
-      for (const k in obj) arr.push(k)
-      return arr
-    })(ctx.frameworks)
-    const detectedPatterns = (function (obj: Record<string, boolean>) {
-      const arr: string[] = []
-      for (const k in obj) arr.push(k)
-      return arr
-    })(ctx.patterns)
-
-    // Phantom Symbols: Magic Methods or Injected Models
-    if (!!ctx.frameworks["Laravel"]) {
-      forEachSymbol(
-        filterSymbols(ctx.symbols, (s) => s.kind === ASTEngine.SymbolKind.Class && s.name.endsWith("Controller")),
-        (c) => {
-          ctx.patterns["MVC Architecture (Laravel)"] = true
-        },
-      )
-      forEachSymbol(
-        filterSymbols(ctx.symbols, (s) => s.kind === ASTEngine.SymbolKind.Class && s.name.endsWith("Model")),
-        (m) => {
-          ctx.symbols.push({
-            name: `getAttribute`,
-            kind: ASTEngine.SymbolKind.Method,
-            range: m.range,
-            scope: m.name,
-            visibility: "public",
-            metadata: { isPhantom: true, injectedBy: "laravel_eloquent" },
-          })
-          ctx.symbols.push({
-            name: `setAttribute`,
-            kind: ASTEngine.SymbolKind.Method,
-            range: m.range,
-            scope: m.name,
-            visibility: "public",
-            metadata: { isPhantom: true, injectedBy: "laravel_eloquent" },
-          })
-        },
-      )
-    }
-
-    if (!!ctx.frameworks["WordPress"]) {
-      forEachSymbol(
-        filterSymbols(ctx.symbols, (s) => !!s.metadata?.wp_hook),
-        (hook) => {
-          ctx.patterns["Event-Driven Architecture (WP Hooks)"] = true
-        },
-      )
-    }
-
-    // Add Contains relationships for owned symbols
-    for (const s of ctx.symbols) {
+    // --- Contains relationships from ownerName ---
+    for (const s of symbols) {
       if (s.ownerName) {
-        ctx.relationships.push({
+        relationships.push({
           source: s.ownerName,
           target: s.name,
           type: ASTEngine.RelationshipType.Contains,
@@ -382,560 +481,330 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    return {
-      language: "php",
-      symbols: ctx.symbols,
-      relationships: ctx.relationships,
-      imports: ctx.imports,
-      exports: ctx.exports,
-      errors: ctx.errors,
-      metadata: {
-        complexity: ctx.symbols.length + ctx.relationships.length,
-        linesOfCode: content.split("\n").length,
-        cyclomaticComplexity: this.calculateCyclomaticComplexityIterative(rootNode),
-        framework: detectedFrameworks[0], // Primary framework
-        patterns: detectedPatterns,
-        detectedFrameworks,
-        frameworkPatterns: mapSymbols(detectedFrameworks, (f) => ({
-          framework: f,
-          patterns: [{ type: "usage", detected: true, description: `${f} usage detected` }],
-        })),
-        architecturalInsights: this.generateArchitecturalInsights(ctx),
-        architecturalScore: this.calculateArchitecturalScore(ctx),
-        codeQuality: "good",
-        hasTypeInference: true,
-        hasFrameworkIntelligence: true,
-        performanceScore: 85,
-        memoryEfficiency: 85,
-        analysisVersion: "3.0.0-infallible-brain",
-      },
+    if (symbols.some((s) => s.kind === ASTEngine.SymbolKind.Class || s.kind === ASTEngine.SymbolKind.Interface)) {
+      patterns.add("Object-Oriented Programming")
     }
+
+    return this.result(symbols, relationships, imports, exports, errors, content, rootNode, detectedFrameworks, patterns)
   }
 
   // ========================================================================
-  // EXTRACTION METHODS
+  // BODY WALKER — call expressions inside a function/method body
   // ========================================================================
+  private walkBody(
+    node: Node,
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    imports: ASTEngine.ImportInfo[],
+    owner: string | undefined,
+    ns: string | undefined,
+    inFunction: string | undefined,
+    detectedFrameworks: Set<string>,
+    patterns: Set<string>,
+  ): void {
+    const stack: Node[] = [node]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      const type = n.type
 
-  private extractClass(node: Node, scope: string, ctx: PhpContext, ns?: string) {
-    const nameNode = this.findChildByType(node, "name");
-    if (!nameNode && node.type !== "anonymous_class_declaration") return;
-    const className = nameNode ? nameNode.text : `anonymous_class_${node.startIndex}`;
-    const fullyQualifiedName = ns ? `${ns}\\${className}` : className
-    const modifiers = this.extractModifiers(node)
-
-    // Detect base class and relationships
-    const baseClassNode = this.findChildByType(node, "base_clause")
-    let baseClass
-    if (baseClassNode && baseClassNode.namedChildCount > 0) {
-      baseClass = baseClassNode.namedChild(0)?.text
-      if (baseClass) {
-        ctx.relationships.push({
-          source: fullyQualifiedName,
-          target: this.resolveFQN(baseClass, ctx, ns),
-          type: ASTEngine.RelationshipType.Inheritance,
-          confidence: 1.0,
-          metadata: { relationshipType: "php_extends" },
-        })
+      if (type === "function_call_expression") {
+        this.processFunctionCall(n, relationships, owner, ns, inFunction, detectedFrameworks, patterns)
+      } else if (type === "member_call_expression" || type === "nullsafe_member_call_expression") {
+        this.processMethodCall(n, relationships, inFunction)
+      } else if (type === "scoped_call_expression") {
+        this.processScopedCall(n, relationships, inFunction)
+      } else if (type === "object_creation_expression") {
+        this.processObjectCreation(n, relationships, owner, inFunction)
+      } else if (type === "require_once_expression" || type === "include_once_expression" ||
+                 type === "require_expression" || type === "include_expression") {
+        this.emitInclude(n, imports, relationships, ns)
       }
-    }
 
-    const interfacesNode = this.findChildByType(node, "class_interface_clause")
-    const interfaces: string[] = []
-    if (interfacesNode) {
-      for (let i = 0; i < interfacesNode.namedChildCount; i++) {
-        const iface = interfacesNode.namedChild(i)?.text
-        if (iface) {
-          interfaces.push(iface)
-          ctx.relationships.push({
-            source: fullyQualifiedName,
-            target: this.resolveFQN(iface, ctx, ns),
-            type: ASTEngine.RelationshipType.Implements,
-            confidence: 1.0,
-            metadata: { relationshipType: "php_implements" },
-          })
-        }
-      }
-    }
-
-    const usedTraits: string[] = []
-    let methodCount = 0
-    let propertyCount = 0
-    const body = this.findChildByType(node, "declaration_list")
-    if (body) {
-      for (let i = 0; i < body.namedChildCount; i++) {
-        const child = body.namedChild(i)
-        if (child?.type === "method_declaration") methodCount++
-        if (child?.type === "property_declaration") propertyCount++
-        if (child?.type === "use_declaration") {
-          for (let j = 0; j < child.namedChildCount; j++) {
-            const nameNode = child.namedChild(j)
-            if (nameNode && (nameNode.type === "name" || nameNode.type === "qualified_name")) {
-              usedTraits.push(nameNode.text)
-              ctx.relationships.push({
-                source: fullyQualifiedName,
-                target: this.resolveFQN(nameNode.text, ctx, ns),
-                type: ASTEngine.RelationshipType.Uses,
-                confidence: 1.0,
-                metadata: { relationshipType: "php_uses_trait" },
-              })
-            }
-          }
-        }
-      }
-    }
-
-    ctx.symbols.push({
-      name: className,
-      kind: ASTEngine.SymbolKind.Class,
-      range: this.nodeToRange(node),
-      scope: ns || "global",
-      visibility: "public",
-      isAbstract: inArray(modifiers, "abstract"),
-      modifiers,
-      metadata: {
-        phpSpecific: true,
-        fqn: fullyQualifiedName,
-        baseClass,
-        interfaces,
-        isFinal: inArray(modifiers, "final"),
-        usedTraits,
-        methodCount,
-        propertyCount,
-      },
-    })
-
-    if (className.endsWith("Controller")) ctx.patterns["MVC Architecture (Controllers)"] = true
-    if (className.endsWith("Service")) ctx.patterns["Service Layer Pattern"] = true
-  }
-
-  private extractInterface(node: Node, scope: string, ctx: PhpContext, ns?: string) {
-    const nameNode = this.findChildByType(node, "name")
-    if (!nameNode) return
-
-    const ifaceName = nameNode.text
-    const fullyQualifiedName = ns ? `${ns}\\${ifaceName}` : ifaceName
-
-    const baseInterfaceNode =
-      this.findChildByType(node, "interface_base_clause") ||
-      this.findChildByType(node, "base_clause") ||
-      node.childForFieldName("base_clause")
-    const extendedInterfaces: string[] = []
-    if (baseInterfaceNode) {
-      for (let i = 0; i < baseInterfaceNode.namedChildCount; i++) {
-        const parentIface = baseInterfaceNode.namedChild(i)?.text
-        if (parentIface) {
-          extendedInterfaces.push(parentIface)
-          ctx.relationships.push({
-            source: fullyQualifiedName,
-            target: this.resolveFQN(parentIface, ctx, ns),
-            type: ASTEngine.RelationshipType.Inheritance,
-            confidence: 1.0,
-            metadata: { relationshipType: "php_extends_interface" },
-          })
-        }
-      }
-    }
-
-    let methodCount = 0
-    let propertyCount = 0
-    const body = this.findChildByType(node, "declaration_list")
-    if (body) {
-      for (let i = 0; i < body.namedChildCount; i++) {
-        const child = body.namedChild(i)
-        if (child?.type === "method_declaration") methodCount++
-        if (child?.type === "property_declaration") propertyCount++
-      }
-    }
-
-    ctx.symbols.push({
-      name: ifaceName,
-      kind: ASTEngine.SymbolKind.Interface,
-      range: this.nodeToRange(node),
-      scope: ns || "global",
-      visibility: "public",
-      metadata: {
-        phpSpecific: true,
-        fqn: fullyQualifiedName,
-        extendedInterfaces,
-        methodCount,
-        propertyCount,
-      },
-    })
-  }
-
-  private extractTrait(node: Node, scope: string, ctx: PhpContext, ns?: string) {
-    const nameNode = this.findChildByType(node, "name")
-    if (!nameNode) return
-
-    const traitName = nameNode.text
-    ctx.traits[traitName] = true
-
-    ctx.symbols.push({
-      name: traitName,
-      kind: ASTEngine.SymbolKind.Trait,
-      range: this.nodeToRange(node),
-      scope: ns || "global",
-      visibility: "public",
-      metadata: { phpSpecific: true, isTrait: true, fqn: ns ? `${ns}\\${traitName}` : traitName },
-    })
-  }
-
-  private extractFunction(node: Node, scope: string, ctx: PhpContext, ns?: string) {
-    const nameNode = this.findChildByType(node, "name")
-    if (!nameNode) return
-
-    const functionName = nameNode.text
-    const parameters = this.extractPhpParameters(node)
-    const returnType = this.extractReturnTypeHint(node)
-
-    const hasTypeHints = !!returnType || someSymbol(parameters, (p) => p.type && p.type !== "mixed")
-
-    ctx.symbols.push({
-      name: functionName,
-      kind: ASTEngine.SymbolKind.Function,
-      range: this.nodeToRange(node),
-      scope: ns || "global",
-      visibility: "public",
-      parameters,
-      returnType,
-      metadata: { phpSpecific: true, fqn: ns ? `${ns}\\${functionName}` : functionName, hasTypeHints },
-    })
-  }
-
-  private extractMethod(node: Node, scope: string, ctx: PhpContext, pClass?: string) {
-    const nameNode = this.findChildByType(node, "name")
-    if (!nameNode) return
-
-    const methodName = nameNode.text
-    const parameters = this.extractPhpParameters(node)
-    const returnType = this.extractReturnTypeHint(node)
-    const modifiers = this.extractModifiers(node)
-    let visibility = "public"
-    if (inArray(modifiers, "private")) visibility = "private"
-    if (inArray(modifiers, "protected")) visibility = "protected"
-
-    if (methodName.startsWith("__")) ctx.patterns["Magic Methods"] = true
-
-    const hasTypeHints = !!returnType || someSymbol(parameters, (p) => p.type && p.type !== "mixed")
-
-    ctx.symbols.push({
-      name: methodName,
-      kind: ASTEngine.SymbolKind.Method,
-      range: this.nodeToRange(node),
-      scope: pClass || scope,
-      ownerName: pClass,
-      ownerKind: pClass ? ASTEngine.SymbolKind.Class : undefined,
-      visibility,
-      modifiers,
-      parameters,
-      returnType,
-      isStatic: inArray(modifiers, "static"),
-      isAbstract: inArray(modifiers, "abstract"),
-      metadata: { phpSpecific: true, isMethod: true, isMagicMethod: methodName.startsWith("__"), hasTypeHints },
-    })
-  }
-
-  private extractProperty(node: Node, scope: string, ctx: PhpContext, pClass?: string) {
-    const modifiers = this.extractModifiers(node)
-    let visibility = "public"
-    if (inArray(modifiers, "private")) visibility = "private"
-    if (inArray(modifiers, "protected")) visibility = "protected"
-
-    const typeNode = this.findChildByType(node, "type") || this.findChildByType(node, "union_type")
-    const propertyType = typeNode ? typeNode.text : "mixed"
-
-    // Can be multiple variable declarations, e.g., public $a, $b;
-    for (let i = 0; i < node.namedChildCount; i++) {
-      const child = node.namedChild(i)
-      if (child && child.type === "property_element") {
-        const varNode = this.findChildByType(child, "variable_name")
-        if (varNode) {
-          ctx.symbols.push({
-            name: varNode.text.replace("$", ""),
-            kind: ASTEngine.SymbolKind.Property,
-            range: this.nodeToRange(varNode),
-            scope: pClass || scope,
-            ownerName: pClass,
-            ownerKind: pClass ? ASTEngine.SymbolKind.Class : undefined,
-            visibility,
-            modifiers,
-            returnType: propertyType,
-            isStatic: inArray(modifiers, "static"),
-            metadata: { phpSpecific: true },
-          })
-        }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const child = n.namedChild(i)
+        if (child) stack.push(child)
       }
     }
   }
 
-  private extractConstant(node: Node, scope: string, ctx: PhpContext, pClass?: string) {
-    const modifiers = this.extractModifiers(node)
-    let visibility = "public"
-    if (inArray(modifiers, "private")) visibility = "private"
-    if (inArray(modifiers, "protected")) visibility = "protected"
-
-    for (let i = 0; i < node.namedChildCount; i++) {
-      const child = node.namedChild(i)
-      if (child && child.type === "const_element") {
-        const nameNode = this.findChildByType(child, "name")
-        if (nameNode) {
-          ctx.symbols.push({
-            name: nameNode.text,
-            kind: ASTEngine.SymbolKind.Constant,
-            range: this.nodeToRange(nameNode),
-            scope: pClass || scope,
-            ownerName: pClass,
-            ownerKind: pClass ? ASTEngine.SymbolKind.Class : undefined,
-            visibility,
-            modifiers,
-            metadata: { phpSpecific: true, isConstant: true },
-          })
-        }
-      }
-    }
-  }
-
-  private extractGlobalVariable(node: Node, scope: string, ctx: PhpContext) {
-    for (let i = 0; i < node.namedChildCount; i++) {
-      const child = node.namedChild(i)
-      if (child && child.type === "variable_name") {
-        ctx.symbols.push({
-          name: child.text,
-          kind: ASTEngine.SymbolKind.Variable,
-          range: this.nodeToRange(child),
-          scope: "global",
-          visibility: "public",
-          metadata: { phpSpecific: true, isGlobal: true },
-        })
-        ctx.globalVariables[child.text] = true
-      }
-    }
-  }
-
-  private extractVariableAssignment(node: Node, scope: string, ctx: PhpContext) {
-    const left = node.namedChild(0)
-    if (!left) return
-
-    if (left.type === "variable_name") {
-      ctx.symbols.push({
-        name: left.text,
-        kind: ASTEngine.SymbolKind.Variable,
-        range: this.nodeToRange(left),
-        scope,
-        visibility: "private",
-        metadata: { phpSpecific: true, isLocal: true },
-      })
-      ctx.localVariables[left.text] = true
-    }
-  }
-
-  private extractUseStatement(node: Node, ctx: PhpContext, ns?: string) {
-    if (node.parent?.type === "declaration_list") {
-      for (let i = 0; i < node.namedChildCount; i++) {
-        const nameNode = node.namedChild(i)
-        if (nameNode && (nameNode.type === "name" || nameNode.type === "qualified_name")) {
-          ctx.traits[nameNode.text] = true
-          ctx.patterns["Trait Composition (Mixins)"] = true
-        }
-      }
+  private processFunctionCall(
+    node: Node,
+    relationships: ASTEngine.UniversalRelationship[],
+    _owner: string | undefined,
+    _ns: string | undefined,
+    inFunction: string | undefined,
+    detectedFrameworks: Set<string>,
+    patterns: Set<string>,
+  ): void {
+    const nameNode = node.childForFieldName("function")
+    const callName = nameNode?.text
+    if (!callName) return
+    if (callName === "add_action" || callName === "add_filter") {
+      detectedFrameworks.add("WordPress")
+      patterns.add("Event-Driven Architecture (WP Hooks)")
       return
     }
-
-    const clauses: Node[] = []
-    for (let i = 0; i < node.namedChildCount; i++) {
-      const child = node.namedChild(i)
-      if (child && (child.type === "namespace_use_clause" || child.type === "use_clause"))
-        clauses.push(child)
-    }
-
-    for (const clause of clauses) {
-      let fqn = ""
-      let aliasName = ""
-      for (let i = 0; i < clause.namedChildCount; i++) {
-        const child = clause.namedChild(i)
-        if (!child) continue
-        if (child.type === "name" || child.type === "qualified_name") {
-          if (!fqn) fqn = child.text
-          else aliasName = child.text
-        }
-        if (child.type === "use_as_clause") {
-          const innerName = this.findChildByType(child, "name") || this.findChildByType(child, "qualified_name")
-          if (innerName) aliasName = innerName.text
-        }
-      }
-      if (fqn) {
-        ctx.imports.push({
-          module: fqn,
-          items: [aliasName || fqn.split("\\").pop() || fqn],
-          isDefaultImport: true,
-          isNamespaceImport: false,
-          range: this.nodeToRange(clause),
-          metadata: { phpSpecific: true },
-        })
-      }
-    }
+    if (PHP_BUILTINS.has(callName)) return
+    relationships.push({
+      source: inFunction || "global",
+      target: callName,
+      type: ASTEngine.RelationshipType.Calls,
+      confidence: 0.9,
+      metadata: { phpSpecific: true },
+    })
   }
 
-  // Extract require/include as imports: require_once __DIR__ . '/file.php'
-  private extractPhpInclude(node: Node, ctx: PhpContext, ns?: string) {
-    // PHP require/include have the file as a direct expression child (no arguments wrapper)
-    let filePath = ""
+  private processMethodCall(
+    node: Node,
+    relationships: ASTEngine.UniversalRelationship[],
+    inFunction: string | undefined,
+  ): void {
+    const nameNode = node.childForFieldName("name")
+    const methodName = nameNode?.text
+    if (!methodName) return
+    relationships.push({
+      source: inFunction || "global",
+      target: methodName,
+      type: ASTEngine.RelationshipType.Calls,
+      confidence: 0.9,
+      metadata: { phpSpecific: true },
+    })
+  }
 
+  private processScopedCall(
+    node: Node,
+    relationships: ASTEngine.UniversalRelationship[],
+    inFunction: string | undefined,
+  ): void {
+    const nameNode = node.childForFieldName("name")
+    const methodName = nameNode?.text
+    if (!methodName) return
+    relationships.push({
+      source: inFunction || "global",
+      target: methodName,
+      type: ASTEngine.RelationshipType.Calls,
+      confidence: 0.9,
+      metadata: { phpSpecific: true },
+    })
+  }
+
+  private processObjectCreation(
+    node: Node,
+    relationships: ASTEngine.UniversalRelationship[],
+    owner: string | undefined,
+    inFunction: string | undefined,
+  ): void {
+    // object_creation_expression has no named field for the type; the first
+    // named child is the class/interface name (or relative_scope for new self).
+    let target: string | undefined
     for (let i = 0; i < node.namedChildCount; i++) {
       const child = node.namedChild(i)
       if (!child) continue
-
-      if (child.type === "encapsed_string" || child.type === "string") {
-        filePath = this.cleanPhpString(child.text)
-      } else if (child.type === "binary_expression") {
-        filePath = child.text.replace(/\s+/g, "")
-      } else if (child.type === "name" || child.type === "qualified_name") {
-        filePath = child.text
+      if (child.type === "name" || child.type === "qualified_name") {
+        target = this.leafName(child.text)
+        break
+      }
+      if (child.type === "relative_scope") {
+        // new self / new static / new parent
+        target = child.text === "parent" ? owner : owner
+        break
       }
     }
+    if (!target) return
+    relationships.push({
+      source: inFunction || "global",
+      target,
+      type: ASTEngine.RelationshipType.Instantiates,
+      confidence: 0.9,
+      metadata: { phpSpecific: true, isNew: true },
+    })
+  }
 
+  // ========================================================================
+  // HELPERS
+  // ========================================================================
+
+  private pushMembers(
+    body: Node,
+    stack: { node: Node; owner: string | undefined; ownerKind: string | undefined; ns: string | undefined; inFunction: string | undefined }[],
+    owner: string,
+    ownerKind: string,
+    ns: string | undefined,
+  ): void {
+    for (let i = body.namedChildCount - 1; i >= 0; i--) {
+      const child = body.namedChild(i)
+      if (child) stack.push({ node: child, owner, ownerKind, ns, inFunction: undefined })
+    }
+  }
+
+  private resolveOverrides(
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    context?: ASTEngine.AnalyzeContext,
+  ): void {
+    const baseByClass = new Map<string, string>()
+    for (const s of symbols) {
+      if (s.kind === ASTEngine.SymbolKind.Class && s.metadata?.baseClass) {
+        baseByClass.set(s.name, this.leafName(String(s.metadata.baseClass)))
+      }
+    }
+    const methodsByOwner = new Map<string, Set<string>>()
+    for (const s of symbols) {
+      if (s.kind !== ASTEngine.SymbolKind.Method || !s.ownerName) continue
+      let names = methodsByOwner.get(s.ownerName)
+      if (!names) {
+        names = new Set<string>()
+        methodsByOwner.set(s.ownerName, names)
+      }
+      names.add(s.name)
+    }
+    for (const s of symbols) {
+      if (s.kind !== ASTEngine.SymbolKind.Method || !s.ownerName) continue
+      const base = baseByClass.get(s.ownerName)
+      if (!base) continue
+      const baseMethods = methodsByOwner.get(base) ?? context?.overrideCompanion?.get(base)
+      if (baseMethods?.has(s.name)) {
+        relationships.push({
+          source: `${s.ownerName}.${s.name}`,
+          target: `${base}.${s.name}`,
+          type: ASTEngine.RelationshipType.Overrides,
+          confidence: 0.95,
+          metadata: { phpSpecific: true, isOverride: true },
+        })
+      }
+    }
+  }
+
+  private extractParameters(node: Node): ASTEngine.Parameter[] {
+    const paramsList = node.childForFieldName("parameters")
+    if (!paramsList) return []
+    const params: ASTEngine.Parameter[] = []
+    for (let i = 0; i < paramsList.namedChildCount; i++) {
+      const child = paramsList.namedChild(i)
+      if (!child) continue
+      if (child.type !== "simple_parameter" && child.type !== "variadic_parameter" &&
+          child.type !== "property_promotion_parameter") continue
+      const varNode = child.childForFieldName("name") || this.findChildByType(child, "variable_name")
+      if (!varNode) continue
+      const name = this.variableBareName(varNode)
+      if (!name) continue
+      const typeNode = child.childForFieldName("type") || this.findTypeChild(child)
+      const defaultValue = this.findDefaultValue(child, varNode)
+      params.push({
+        name,
+        type: typeNode?.text,
+        defaultValue,
+        isOptional: defaultValue !== undefined || child.type === "property_promotion_parameter",
+      })
+    }
+    return params
+  }
+
+  private extractPromotedProperties(
+    node: Node,
+    owner: string | undefined,
+    ownerKind: string | undefined,
+    symbols: ASTEngine.UniversalSymbol[],
+  ): void {
+    const paramsList = node.childForFieldName("parameters")
+    if (!paramsList || !owner) return
+    for (let i = 0; i < paramsList.namedChildCount; i++) {
+      const child = paramsList.namedChild(i)
+      if (!child || child.type !== "property_promotion_parameter") continue
+      const varNode = child.childForFieldName("name") || this.findChildByType(child, "variable_name")
+      if (!varNode) continue
+      const modifiers = this.extractModifiers(child)
+      let visibility = "public"
+      if (modifiers.includes("private")) visibility = "private"
+      else if (modifiers.includes("protected")) visibility = "protected"
+      symbols.push({
+        name: this.variableBareName(varNode),
+        kind: ASTEngine.SymbolKind.Property,
+        range: this.nodeToRange(varNode),
+        ownerName: owner,
+        ownerKind: ownerKind as any,
+        visibility,
+        returnType: child.childForFieldName("type")?.text || this.findTypeChild(child)?.text,
+        metadata: { phpSpecific: true, isPromoted: true },
+      })
+    }
+  }
+
+  private extractReturnType(node: Node): string | undefined {
+    const returnNode = node.childForFieldName("return_type")
+    return returnNode?.text || undefined
+  }
+
+  private findTypeChild(node: Node): Node | null {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const child = node.namedChild(i)
+      if (child && TYPE_NODES.has(child.type)) return child
+    }
+    return null
+  }
+
+  private findDefaultValue(paramNode: Node, varNode: Node): string | undefined {
+    for (let i = 0; i < paramNode.namedChildCount; i++) {
+      const child = paramNode.namedChild(i)
+      if (!child || child === varNode) continue
+      if (TYPE_NODES.has(child.type) || child.type === "variable_name" || child.type === "name") continue
+      return child.text
+    }
+    return undefined
+  }
+
+  private extractModifiers(node: Node): string[] {
+    const mods: string[] = []
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const child = node.namedChild(i)
+      if (child && child.type.endsWith("_modifier")) {
+        mods.push(child.text.toLowerCase())
+      }
+    }
+    return mods
+  }
+
+  private emitInclude(
+    node: Node,
+    imports: ASTEngine.ImportInfo[],
+    relationships: ASTEngine.UniversalRelationship[],
+    ns: string | undefined,
+  ): void {
+    const filePath = this.extractIncludePath(node)
     if (!filePath) return
-
-    const includeType = node.type.replace("_expression", "")
-    ctx.imports.push({
+    imports.push({
       module: filePath,
       items: ["*"],
       isDefaultImport: true,
-      isNamespaceImport: false,
       range: this.nodeToRange(node),
-      metadata: { phpSpecific: true, includeType },
+      metadata: { phpSpecific: true, includeType: node.type.replace("_expression", "") },
     })
-
-    ctx.relationships.push({
+    relationships.push({
       source: ns || "global",
       target: filePath,
-      fromSymbol: ns || "global",
-      toSymbol: filePath,
-      type: ASTEngine.RelationshipType.Uses,
-      metadata: { phpSpecific: true, includeType },
+      type: ASTEngine.RelationshipType.References,
+      confidence: 0.9,
+      metadata: { phpSpecific: true, includeType: node.type.replace("_expression", "") },
     })
   }
 
-  private processFunctionCall(node: Node, ctx: PhpContext) {
-    const nameNode = node.childForFieldName("name") || this.findChildByType(node, "name")
-    const callName = nameNode ? nameNode.text : undefined
-
-    if (callName === "add_action" || callName === "add_filter") {
-      ctx.frameworks["WordPress"] = true
-      const args = this.findChildByType(node, "arguments") || node.childForFieldName("arguments")
-      if (args && args.namedChildCount > 0) {
-        ctx.symbols.push({
-          name: `wp_${callName}_${this.cleanPhpString(args.namedChild(0)?.text || "")}`,
-          kind: ASTEngine.SymbolKind.Function,
-          range: this.nodeToRange(node),
-          scope: "global",
-          visibility: "public",
-          metadata: { isPhantom: true, wp_hook: true },
-        })
+  private extractIncludePath(node: Node): string | undefined {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const child = node.namedChild(i)
+      if (!child) continue
+      if (child.type === "encapsed_string" || child.type === "string") {
+        return this.cleanString(child.text)
+      }
+      if (child.type === "binary_expression") {
+        // __DIR__ . '/helpers.php' → rebuild without whitespace
+        return this.collapseWhitespace(child.text)
+      }
+      if (child.type === "name" || child.type === "qualified_name") {
+        return child.text
       }
     }
-
-    if (callName && (callName === "hasOne" || callName === "hasMany" || callName === "belongsTo" || callName === "belongsToMany" || callName === "hasManyThrough")) {
-      ctx.frameworks["Laravel"] = true
-      const args = this.findChildByType(node, "arguments") || node.childForFieldName("arguments")
-      if (args && args.namedChildCount > 0) {
-        const relatedClassArg = args.namedChild(0)?.text || ""
-        const relatedClass = relatedClassArg.replace(/::class|\'|"/g, "").trim()
-
-        let parentMethod = node.parent
-        while (parentMethod && parentMethod.type !== "method_declaration") parentMethod = parentMethod.parent
-
-        let sourceClass = "Unknown"
-        if (parentMethod) {
-          let pClass = parentMethod.parent
-          while (pClass && pClass.type !== "class_declaration") pClass = pClass.parent
-          if (pClass) {
-            const cn = this.findChildByType(pClass, "name") || pClass.childForFieldName("name")
-            if (cn) sourceClass = cn.text
-          }
-        }
-
-        ctx.relationships.push({
-          source: sourceClass,
-          target: relatedClass,
-          type: ASTEngine.RelationshipType.DependsOn,
-          confidence: 1.0,
-          metadata: { relationshipType: `eloquent_${callName}` },
-        })
-      }
-    }
-
-    if (node.type === "scoped_call_expression") {
-      const scopeNode = this.findChildByType(node, "scope") || node.namedChild(0)
-      if (scopeNode && callName) {
-        ctx.relationships.push({
-          source: callName,
-          target: scopeNode.text,
-          type: ASTEngine.RelationshipType.DependsOn,
-          confidence: 0.9,
-          metadata: { relationshipType: "php_static_call" },
-        })
-      }
-    }
-
-    if (callName && callName !== "add_action" && callName !== "add_filter" && callName !== "hasOne" && callName !== "hasMany" && callName !== "belongsTo" && callName !== "belongsToMany" && callName !== "hasManyThrough") {
-      ctx.relationships.push({
-        source: ctx.currentNamespace || "global",
-        target: callName,
-        type: ASTEngine.RelationshipType.Calls,
-        confidence: 0.7,
-        metadata: { phpSpecific: true },
-      })
-    }
+    return undefined
   }
-
-  private processObjectCreation(node: Node, ctx: PhpContext) {
-    const typeNode =
-      this.findChildByType(node, "type") ||
-      this.findChildByType(node, "name") ||
-      this.findChildByType(node, "qualified_name")
-    if (typeNode) {
-      ctx.relationships.push({
-        source: "instantiation",
-        target: typeNode.text,
-        type: ASTEngine.RelationshipType.Instantiates,
-        confidence: 0.9,
-        metadata: { relationshipType: "php_new", isNew: true },
-      })
-    }
-  }
-
-  private detectFrameworksFromIdentifier(node: Node, ctx: PhpContext) {
-    const txt = node.text
-    if (
-      stringIncludes(txt, "Illuminate\\") ||
-      txt === "Route" ||
-      txt === "Eloquent" ||
-      txt === "Artisan" ||
-      txt === "artisan"
-    )
-      ctx.frameworks["Laravel"] = true
-    if (
-      stringIncludes(txt, "Symfony\\Component") ||
-      txt.endsWith("Bundle") ||
-      txt === "ContainerBuilder" ||
-      txt === "getContainer"
-    )
-      ctx.frameworks["Symfony"] = true
-    if (txt.startsWith("wp_") || txt === "add_action" || txt === "apply_filters" || txt === "get_option")
-      ctx.frameworks["WordPress"] = true
-    if (stringIncludes(txt, "Magento\\") || txt === "Mage") ctx.frameworks["Magento"] = true
-    if (stringIncludes(txt, "Drupal\\") || txt === "hook_cron") ctx.frameworks["Drupal"] = true
-    if (txt.startsWith("Cake\\")) ctx.frameworks["CakePHP"] = true
-    if (txt === "App\\Controllers\\BaseController") ctx.frameworks["CodeIgniter"] = true
-    if (stringIncludes(txt, "PHPUnit\\Framework") || txt === "TestCase") ctx.frameworks["PHPUnit"] = true
-    if (stringIncludes(txt, "Doctrine\\ORM") || stringIncludes(txt, "ORM\\Column") || txt === "EntityManager")
-      ctx.frameworks["Doctrine"] = true
-  }
-
-  // ========================================================================
-  // CORE UTILITIES
-  // ========================================================================
 
   private findChildByType(node: Node, type: string): Node | null {
     for (let i = 0; i < node.namedChildCount; i++) {
@@ -945,83 +814,40 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     return null
   }
 
-  private extractPhpParameters(node: Node): ASTEngine.Parameter[] {
-    const paramsList = this.findChildByType(node, "formal_parameters")
-    if (!paramsList) return []
+  /** Bare name from a variable_name node (its `name` child, else strip `$`). */
+  private variableBareName(node: Node): string {
+    const nameChild = this.findChildByType(node, "name")
+    if (nameChild) return nameChild.text
+    const t = node.text
+    return t.startsWith("$") ? t.slice(1) : t
+  }
 
-    const params: ASTEngine.Parameter[] = []
-    for (let i = 0; i < paramsList.namedChildCount; i++) {
-      const child = paramsList.namedChild(i)
-      if (
-        child &&
-        (child.type === "simple_parameter" ||
-          child.type === "variadic_parameter" ||
-          child.type === "optional_type" ||
-          child.type === "property_promotion_parameter")
-      ) {
-        const varNode = child.childForFieldName("name") || this.findChildByType(child, "variable_name") || child
-        const typeNode =
-          child.childForFieldName("type") ||
-          this.findChildByType(child, "type") ||
-          this.findChildByType(child, "union_type")
-        const defaultNode = child.childForFieldName("default_value")
+  /** Leaf name from a possibly-qualified FQN like App\Base\BaseService. */
+  private leafName(name: string): string {
+    const idx = name.lastIndexOf("\\")
+    return idx >= 0 ? name.substring(idx + 1) : name
+  }
 
-        let varNameText = varNode.text
-        // Strip out $
-        const match = varNameText.match(/\$([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)/)
-        if (match) varNameText = match[1]
-        else varNameText = varNameText.replace("$", "")
-
-        const defaultValue = defaultNode ? defaultNode.text : undefined
-
-        if (varNameText) {
-          params.push({
-            name: varNameText,
-            type: typeNode ? typeNode.text : "mixed",
-            defaultValue,
-            isOptional: !!defaultValue,
-          })
-        }
+  /** Strip surrounding single/double quotes — pure char scan. */
+  private cleanString(text: string): string {
+    if (text.length >= 2) {
+      const first = text.charCodeAt(0)
+      const last = text.charCodeAt(text.length - 1)
+      if ((first === 34 && last === 34) || (first === 39 && last === 39)) {
+        return text.substring(1, text.length - 1)
       }
     }
-    return params
-  }
-
-  private extractReturnTypeHint(node: Node): string | undefined {
-    const returnTypeNode = this.findChildByType(node, "return_type") || node.childForFieldName("return_type")
-    if (returnTypeNode) {
-      return returnTypeNode.text.replace(/^:\s*/, "").trim()
-    }
-    
-    // DocBlock fallback
-    const prevNode = node.previousSibling;
-    if (prevNode && prevNode.type === "comment" && prevNode.text.includes("@return")) {
-      const match = prevNode.text.match(/@return\s+([^\s]+)/);
-      if (match) return match[1];
-    }
-    
-    return undefined;
-  }
-
-  private extractModifiers(node: Node): string[] {
-    const mods: string[] = []
-    for (let i = 0; i < node.namedChildCount; i++) {
-      const child = node.namedChild(i)
-      if (child && child.type.endsWith("_modifier")) {
-        // e.g. visibility_modifier -> "public" / "protected" / "private"
-        // static_modifier -> "static", final_modifier -> "final"
-        mods.push(child.text.toLowerCase())
-      }
-    }
-    return mods
-  }
-
-  private cleanPhpString(text: string): string {
-    if (!text) return ""
-    text = text.trim()
-    if (text.startsWith('"') && text.endsWith('"')) return text.slice(1, -1)
-    if (text.startsWith("'") && text.endsWith("'")) return text.slice(1, -1)
     return text
+  }
+
+  /** Remove all whitespace — pure char scan (binary include expressions). */
+  private collapseWhitespace(text: string): string {
+    let out = ""
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i]
+      if (c !== " " && c !== "\t" && c !== "\n" && c !== "\r") out += c
+    }
+    return out
   }
 
   private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {
@@ -1030,28 +856,59 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       startColumn: node.startPosition.column + 1,
       endLine: node.endPosition.row + 1,
       endColumn: node.endPosition.column + 1,
+      startIndex: node.startIndex,
+      endIndex: node.endIndex,
     }
   }
 
-  private resolveFQN(name: string, ctx: PhpContext, ns?: string): string {
-    if (!name) return "";
-    if (name.startsWith("\\")) return name.substring(1);
-    for (let i = 0; i < ctx.imports.length; i++) {
-      const imp = ctx.imports[i];
-      if (imp.module && imp.items && imp.items[0] === name) {
-        return imp.module;
-      }
-    }
-    if (ns) {
-      return `${ns}\\${name}`;
-    }
-    return name;
+  private detectFramework(text: string, detectedFrameworks: Set<string>): void {
+    if (text.includes("Illuminate\\") || text === "App\\") detectedFrameworks.add("Laravel")
+    if (text.includes("Symfony\\")) detectedFrameworks.add("Symfony")
+    if (text.startsWith("wp_") || text.includes("WordPress")) detectedFrameworks.add("WordPress")
+    if (text.includes("Magento\\")) detectedFrameworks.add("Magento")
+    if (text.includes("Drupal\\")) detectedFrameworks.add("Drupal")
+    if (text.includes("PHPUnit\\Framework") || text === "TestCase") detectedFrameworks.add("PHPUnit")
+    if (text.includes("Doctrine\\ORM")) detectedFrameworks.add("Doctrine")
   }
 
-  private calculateCyclomaticComplexityIterative(rootNode: Node): number {
+  private result(
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    imports: ASTEngine.ImportInfo[],
+    exports: ASTEngine.ExportInfo[],
+    errors: ASTEngine.ParseError[],
+    content: string,
+    rootNode: Node,
+    detectedFrameworks: Set<string>,
+    patterns: Set<string>,
+  ): ASTEngine.ParseResult {
+    const frameworks = [...detectedFrameworks]
+    const patternList = [...patterns]
+    return {
+      symbols,
+      relationships,
+      imports,
+      exports,
+      errors,
+      metadata: {
+        complexity: symbols.length + relationships.length,
+        linesOfCode: content.split("\n").length,
+        cyclomaticComplexity: this.calculateCyclomaticComplexity(rootNode),
+        framework: frameworks[0],
+        patterns: patternList,
+        detectedFrameworks: frameworks,
+        frameworkPatterns: frameworks.map((f) => ({
+          framework: f,
+          patterns: [{ type: "usage", detected: true, description: `${f} usage detected` }],
+        })),
+      },
+    }
+  }
+
+  private calculateCyclomaticComplexity(rootNode: Node): number {
+    if (!rootNode) return 1
     let complexity = 1
     const stack: Node[] = [rootNode]
-
     while (stack.length > 0) {
       const n = stack.pop()!
       switch (n.type) {
@@ -1066,22 +923,21 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "match_conditional_expression":
         case "try_statement":
         case "catch_clause":
-          complexity++
-          break
-        case "binary_expression":
-          let op = false;
-          for (let k = 0; k < n.childCount; k++) {
-            const cType = n.child(k)?.type;
-            if (cType === "&&" || cType === "||" || cType === "and" || cType === "or") {
-              op = true;
-              break;
-            }
-          }
-          if (op) complexity++
-          break
         case "conditional_expression":
           complexity++
           break
+        case "binary_expression": {
+          let hasLogic = false
+          for (let i = 0; i < n.childCount; i++) {
+            const c = n.child(i)
+            if (c && (c.type === "&&" || c.type === "||" || c.type === "and" || c.type === "or")) {
+              hasLogic = true
+              break
+            }
+          }
+          if (hasLogic) complexity++
+          break
+        }
       }
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const child = n.namedChild(i)
@@ -1089,35 +945,5 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
     return complexity
-  }
-
-  private calculateArchitecturalScore(ctx: PhpContext): number {
-    let score = 70
-    if (ctx.relationships.length > 0) score += 10
-    if (!!ctx.patterns["MVC Architecture (Controllers)"] || !!ctx.patterns["Service Layer Pattern"]) score += 10
-    if (!!ctx.patterns["Trait Composition (Mixins)"]) score += 5
-    if (!!ctx.frameworks["Laravel"] || !!ctx.frameworks["Symfony"]) score += 5
-    return Math.min(100, score)
-  }
-
-  private generateArchitecturalInsights(ctx: PhpContext): any[] {
-    const insights: any[] = []
-    if (!!ctx.patterns["Trait Composition (Mixins)"]) {
-      insights.push({
-        type: "architecture",
-        category: "php_traits",
-        message: "Heavy use of PHP Traits detected for horizontal code reuse.",
-        severity: "info",
-      })
-    }
-    if (!!ctx.frameworks["WordPress"]) {
-      insights.push({
-        type: "architecture",
-        category: "wordpress_hooks",
-        message: "WordPress action/filter hook Event-Driven architecture detected.",
-        severity: "info",
-      })
-    }
-    return insights
   }
 }

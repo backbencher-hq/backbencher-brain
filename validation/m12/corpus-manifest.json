@@ -590,7 +590,20 @@
    "status": "measured",
    "candidates": [
     "phpunit@c8d6921f(clean)"
-   ]
+   ],
+   "measured": {
+    "revision": "c8d6921fb601b6988854cd84a672f06c1e49f80e",
+    "sample": "400 tracked *.php files (deterministic first-400 sorted slice of 3231 from phpunit@c8d6921f — sebastianbergmann/phpunit: the language-representative PHP testing framework)",
+    "fixtures": 3,
+    "fixtureFacts": 49,
+    "precision": 1,
+    "recall": 1,
+    "corpusSymbols": 3073,
+    "corpusRelationships": 4276,
+    "grammarErrorFiles": 2,
+    "note": "PHP analyzer rewritten pure-AST for M12.29: 5 census regexes eliminated (63 -> 58); phantom Laravel Eloquent getAttribute/setAttribute and WordPress wp_add_* hook symbols removed; locals/parameters are never symbols (LocalsAreNotSymbols contract); calls emit leaf targets sourced from the enclosing function/method (was namespace); member/scoped/nullsafe calls and new instantiates handled; property promotion emits Property symbols; implicit cross-file overrides resolve via the AnalyzeContext companion. Differential 49/49 (1.000/1.000, 0 FP / 0 FN). Grammar upgraded from the pinned grammar to npm tree-sitter-php 0.24.2 via the corrected fresh-subprocess comparison (the in-process swap was invalid): 17 -> 2 grammar-error files (15 fixed, 0 regressed) — fixes PHP 8.4 property hooks, the pipe operator, new Class()->method() dereference in real production code, readonly anonymous classes, and a vendor fluent chain; the 2 remaining are an intentional parse-error test fixture and a partial-function-application ? placeholder test fixture. Shape-safe 33/33 analyzer dispatch refs (2 remaining are anonymous and/or operator tokens, confirmed live). Complexity: 3,073 symbols / 4,276 relationships on the 400-file tracked sample, single-pass iterative walk, no O(n^2) symbol/relationship lookup.",
+    "measuredAt": "2026-08-19T16:44:00.000Z"
+   }
   },
   {
    "analyzer": "perl",
