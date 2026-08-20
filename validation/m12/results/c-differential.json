@@ -152,11 +152,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:c",
-      "wallTimeMs": 102.504842,
-      "userCpuMs": 131.013,
-      "systemCpuMs": 12.931,
-      "peakRssBytes": 229855232,
-      "rssDeltaBytes": 10420224,
+      "wallTimeMs": 186.149514,
+      "userCpuMs": 332.917,
+      "systemCpuMs": 40.248,
+      "peakRssBytes": 257814528,
+      "rssDeltaBytes": 39555072,
       "databaseBytes": null,
       "files": null,
       "symbols": null,

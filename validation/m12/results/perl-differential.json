@@ -87,11 +87,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:perl",
-      "wallTimeMs": 45.217247,
-      "userCpuMs": 31.476,
-      "systemCpuMs": 1.023,
-      "peakRssBytes": 220852224,
-      "rssDeltaBytes": 561152,
+      "wallTimeMs": 10.256328,
+      "userCpuMs": 19.262,
+      "systemCpuMs": 1.284,
+      "peakRssBytes": 234811392,
+      "rssDeltaBytes": 1441792,
       "databaseBytes": null,
       "files": null,
       "symbols": null,

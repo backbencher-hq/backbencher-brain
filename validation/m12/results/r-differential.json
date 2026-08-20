@@ -101,11 +101,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:r",
-      "wallTimeMs": 25.810793,
-      "userCpuMs": 35.871,
-      "systemCpuMs": 3.271,
-      "peakRssBytes": 206712832,
-      "rssDeltaBytes": 2166784,
+      "wallTimeMs": 8.206155,
+      "userCpuMs": 22.575,
+      "systemCpuMs": 0,
+      "peakRssBytes": 229130240,
+      "rssDeltaBytes": 2920448,
       "databaseBytes": null,
       "files": null,
       "symbols": null,

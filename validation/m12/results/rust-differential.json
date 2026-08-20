@@ -139,11 +139,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:rust",
-      "wallTimeMs": 32.991183,
-      "userCpuMs": 65.313,
-      "systemCpuMs": 9.239,
-      "peakRssBytes": 230084608,
-      "rssDeltaBytes": 6684672,
+      "wallTimeMs": 25.19148,
+      "userCpuMs": 66.9,
+      "systemCpuMs": 5.088,
+      "peakRssBytes": 222425088,
+      "rssDeltaBytes": 6553600,
       "databaseBytes": null,
       "files": null,
       "symbols": null,

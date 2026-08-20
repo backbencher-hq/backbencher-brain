@@ -92,11 +92,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:ruby",
-      "wallTimeMs": 19.052719,
-      "userCpuMs": 40.105,
-      "systemCpuMs": 3.827,
-      "peakRssBytes": 221237248,
-      "rssDeltaBytes": 2781184,
+      "wallTimeMs": 21.292133,
+      "userCpuMs": 32.869,
+      "systemCpuMs": 1.651,
+      "peakRssBytes": 217112576,
+      "rssDeltaBytes": 2551808,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
