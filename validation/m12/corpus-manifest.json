@@ -587,7 +587,7 @@
    ],
    "measured": {
     "revision": "c8d6921fb601b6988854cd84a672f06c1e49f80e",
-    "sample": "400 tracked *.php files (deterministic first-400 sorted slice of 3231 from phpunit@c8d6921f — sebastianbergmann/phpunit: the language-representative PHP testing framework)",
+    "sample": "400 tracked *.php files (deterministic first-400 sorted slice of 3231 from phpunit@c8d6921f \u2014 sebastianbergmann/phpunit: the language-representative PHP testing framework)",
     "fixtures": 3,
     "fixtureFacts": 49,
     "precision": 1,
@@ -595,7 +595,7 @@
     "corpusSymbols": 3073,
     "corpusRelationships": 4276,
     "grammarErrorFiles": 2,
-    "note": "PHP analyzer rewritten pure-AST for M12.29: 5 census regexes eliminated (63 -> 58); phantom Laravel Eloquent getAttribute/setAttribute and WordPress wp_add_* hook symbols removed; locals/parameters are never symbols (LocalsAreNotSymbols contract); calls emit leaf targets sourced from the enclosing function/method (was namespace); member/scoped/nullsafe calls and new instantiates handled; property promotion emits Property symbols; implicit cross-file overrides resolve via the AnalyzeContext companion. Differential 49/49 (1.000/1.000, 0 FP / 0 FN). Grammar upgraded from the pinned grammar to npm tree-sitter-php 0.24.2 via the corrected fresh-subprocess comparison (the in-process swap was invalid): 17 -> 2 grammar-error files (15 fixed, 0 regressed) — fixes PHP 8.4 property hooks, the pipe operator, new Class()->method() dereference in real production code, readonly anonymous classes, and a vendor fluent chain; the 2 remaining are an intentional parse-error test fixture and a partial-function-application ? placeholder test fixture. Shape-safe 33/33 analyzer dispatch refs (2 remaining are anonymous and/or operator tokens, confirmed live). Complexity: 3,073 symbols / 4,276 relationships on the 400-file tracked sample, single-pass iterative walk, no O(n^2) symbol/relationship lookup.",
+    "note": "PHP analyzer rewritten pure-AST for M12.29: 5 census regexes eliminated (63 -> 58); phantom Laravel Eloquent getAttribute/setAttribute and WordPress wp_add_* hook symbols removed; locals/parameters are never symbols (LocalsAreNotSymbols contract); calls emit leaf targets sourced from the enclosing function/method (was namespace); member/scoped/nullsafe calls and new instantiates handled; property promotion emits Property symbols; implicit cross-file overrides resolve via the AnalyzeContext companion. Differential 49/49 (1.000/1.000, 0 FP / 0 FN). Grammar upgraded from the pinned grammar to npm tree-sitter-php 0.24.2 via the corrected fresh-subprocess comparison (the in-process swap was invalid): 17 -> 2 grammar-error files (15 fixed, 0 regressed) \u2014 fixes PHP 8.4 property hooks, the pipe operator, new Class()->method() dereference in real production code, readonly anonymous classes, and a vendor fluent chain; the 2 remaining are an intentional parse-error test fixture and a partial-function-application ? placeholder test fixture. Shape-safe 33/33 analyzer dispatch refs (2 remaining are anonymous and/or operator tokens, confirmed live). Complexity: 3,073 symbols / 4,276 relationships on the 400-file tracked sample, single-pass iterative walk, no O(n^2) symbol/relationship lookup.",
     "measuredAt": "2026-08-19T16:44:00.000Z"
    }
   },
@@ -617,7 +617,7 @@
     "corpusRelationships": 5991,
     "grammarErrorFiles": 3,
     "grammarErrorNodes": 9,
-    "note": "Perl analyzer rewritten pure-AST for M12.30: package/sub/constructor/property/constant extraction, lexical locals and parameters suppressed, calls sourced from the enclosing sub, dynamic receivers excluded from concrete instantiation edges, Moose-style has/with/extends recognized, use parent/base and @ISA inheritance, imports/exports, contains edges, and companion-backed overrides. Differential 32/32 (1.000/1.000); analyzer contributes 0 regex usages. Grammar upgraded from the pinned WASM to npm tree-sitter-perl 1.2.1 via a direct current-vs-freshly-built comparison: 4 -> 3 grammar-error files, 1 fixed, 0 regressions, 0 crashes. Residuals are two valid bareword true/false calls in Mojo::JSON and two deliberately malformed loader-test fixtures. Production extraction uses a single AST walk with maps/sets and no O(n²) symbol/relationship lookup.",
+    "note": "Perl analyzer rewritten pure-AST for M12.30: package/sub/constructor/property/constant extraction, lexical locals and parameters suppressed, calls sourced from the enclosing sub, dynamic receivers excluded from concrete instantiation edges, Moose-style has/with/extends recognized, use parent/base and @ISA inheritance, imports/exports, contains edges, and companion-backed overrides. Differential 32/32 (1.000/1.000); analyzer contributes 0 regex usages. Grammar upgraded from the pinned WASM to npm tree-sitter-perl 1.2.1 via a direct current-vs-freshly-built comparison: 4 -> 3 grammar-error files, 1 fixed, 0 regressions, 0 crashes. Residuals are two valid bareword true/false calls in Mojo::JSON and two deliberately malformed loader-test fixtures. Production extraction uses a single AST walk with maps/sets and no O(n\u00b2) symbol/relationship lookup.",
     "measuredAt": "2026-08-19T22:45:10.000Z"
    }
   },
@@ -639,7 +639,7 @@
     "corpusRelationships": 6127,
     "grammarErrorFiles": 0,
     "grammarErrorNodes": 0,
-    "note": "R analyzer corrected to a pure iterative AST contract: named function/S3/R6/R5/S4 declarations, R6/R5 methods and S4 slots, module-level variables/constants, AST-sourced imports/calls/contains/extends/implements/instantiates, formulas/data-frame metadata, and local/anonymous/field-mutation suppression. Differential 46/46 (1.000/1.000); shape safety 20/20; analyzer contributes 0 regex usages; constructor edges require an AST-declared class, so external uppercase calls are not guessed. Corpus scan reports 0 grammar errors, 0 crashes, and production extraction uses no O(n²) symbol/relationship lookup.",
+    "note": "R analyzer corrected to a pure iterative AST contract: named function/S3/R6/R5/S4 declarations, R6/R5 methods and S4 slots, module-level variables/constants, AST-sourced imports/calls/contains/extends/implements/instantiates, formulas/data-frame metadata, and local/anonymous/field-mutation suppression. Differential 46/46 (1.000/1.000); shape safety 20/20; analyzer contributes 0 regex usages; constructor edges require an AST-declared class, so external uppercase calls are not guessed. Corpus scan reports 0 grammar errors, 0 crashes, and production extraction uses no O(n\u00b2) symbol/relationship lookup.",
     "measuredAt": "2026-08-19T23:30:47.000Z"
    }
   },
@@ -790,7 +790,9 @@
     "grammarErrorNodes": 1,
     "strictAcceptanceFiles": 273,
     "trackedFiles": 274,
-    "excludedFiles": ["grails-profiles/base/skeleton/grails-app/conf/application.yml"],
+    "excludedFiles": [
+     "grails-profiles/base/skeleton/grails-app/conf/application.yml"
+    ],
     "unexpectedGrammarErrorFiles": 0,
     "crashFiles": 0,
     "wallMs": 4737.996237,
@@ -846,7 +848,7 @@
    ],
    "measured": {
     "revision": "9c245018484668b7c35f3ed219092a98855bd51e",
-    "sample": "2 tracked *.graphql files from graphql_js — the real GitHub public schema (benchmark/github-schema.graphql, 20,367 lines) plus the kitchen-sink executable torture-test (benchmark/kitchen-sink.graphql)",
+    "sample": "2 tracked *.graphql files from graphql_js \u2014 the real GitHub public schema (benchmark/github-schema.graphql, 20,367 lines) plus the kitchen-sink executable torture-test (benchmark/kitchen-sink.graphql)",
     "fixtures": 3,
     "fixtureFacts": 97,
     "precision": 1,
@@ -865,7 +867,7 @@
     "symbolsPerSecond": 2626.8734060586075,
     "relationshipsPerSecond": 4882.057557491882,
     "measuredAt": "2026-08-20T16:44:43.000Z",
-    "note": "GraphQL analyzer uses one iterative DFS with Set-backed relationship dedupe. The GitHub public schema parses with 0 errors and 0 crashes (3,242 symbols, 6,015 relationships). The kitchen-sink torture-test has two named grammar-level errors — a directive on a variable definition and an escaped triple-quote in a block string — that the vendored tree-sitter-graphql grammar does not model; they are recorded as grammar limitations by graphql-corpus-errors.ts, never hidden, and the analyzer still extracts all 9 valid symbols and 19 relationships from that file."
+    "note": "GraphQL analyzer uses one iterative DFS with Set-backed relationship dedupe. The GitHub public schema parses with 0 errors and 0 crashes (3,242 symbols, 6,015 relationships). The kitchen-sink torture-test has two named grammar-level errors \u2014 a directive on a variable definition and an escaped triple-quote in a block string \u2014 that the vendored tree-sitter-graphql grammar does not model; they are recorded as grammar limitations by graphql-corpus-errors.ts, never hidden, and the analyzer still extracts all 9 valid symbols and 19 relationships from that file."
    }
   },
   {
@@ -878,7 +880,7 @@
    ],
    "measured": {
     "revision": "22a8a5dcc724ea58041b8bc0b95e51268d7b656d",
-    "sample": "32 tracked *.sh/*.bash files from fsharp — the dotnet/arcade engineering scripts (eng/common/*, build.sh, cibuild.sh) plus real project tooling; the richest real-world bash subset among the pinned clean corpora",
+    "sample": "32 tracked *.sh/*.bash files from fsharp \u2014 the dotnet/arcade engineering scripts (eng/common/*, build.sh, cibuild.sh) plus real project tooling; the richest real-world bash subset among the pinned clean corpora",
     "fixtures": 3,
     "fixtureFacts": 55,
     "precision": 1,
@@ -899,7 +901,7 @@
     "symbolsPerSecond": 660.5373957807478,
     "relationshipsPerSecond": 1284.813836600238,
     "measuredAt": "2026-08-20T17:15:20.000Z",
-    "note": "Bash analyzer rewritten as a pure iterative Tree-sitter DFS with zero regexes (census 12 → 0), constant-time scope stack, Map-based function params, declaration-dedupe set, and Set-backed relationship dedupe. Two real fsharp files contain valid bash edge constructs — a POSIX-class regex match inside [[ ]] (init-tools-native.sh:120) and a ] pattern in a parameter expansion (pipeline-logging-functions.sh:152) — that the vendored tree-sitter-bash grammar does not model; they are recorded as named grammar limitations by bash-corpus-errors.ts, never hidden, and excluded from strict acceptance. proxicall remains dirty (user working tree) and is not used."
+    "note": "Bash analyzer rewritten as a pure iterative Tree-sitter DFS with zero regexes (census 12 \u2192 0), constant-time scope stack, Map-based function params, declaration-dedupe set, and Set-backed relationship dedupe. Two real fsharp files contain valid bash edge constructs \u2014 a POSIX-class regex match inside [[ ]] (init-tools-native.sh:120) and a ] pattern in a parameter expansion (pipeline-logging-functions.sh:152) \u2014 that the vendored tree-sitter-bash grammar does not model; they are recorded as named grammar limitations by bash-corpus-errors.ts, never hidden, and excluded from strict acceptance. proxicall remains dirty (user working tree) and is not used."
    }
   },
   {
@@ -912,7 +914,7 @@
    ],
    "measured": {
     "revision": "91ce9844e2a70e7184a8fcb26848f019eac151b4",
-    "sample": "553 tracked .ps1/.psm1/.psd1 files from the PowerShell language implementation repo — 503 under test/ (the parser/engine torture suite) plus 50 production files (src/, tools/, .github/actions, build.psm1)",
+    "sample": "553 tracked .ps1/.psm1/.psd1 files from the PowerShell language implementation repo \u2014 503 under test/ (the parser/engine torture suite) plus 50 production files (src/, tools/, .github/actions, build.psm1)",
     "fixtures": 3,
     "fixtureFacts": 79,
     "precision": 1,
@@ -931,14 +933,41 @@
     "symbolsPerSecond": 461.1770770113224,
     "relationshipsPerSecond": 591.5097292101744,
     "measuredAt": "2026-08-20T17:48:18.000Z",
-    "note": "PowerShell analyzer rewritten as a pure iterative Tree-sitter DFS with zero regexes (census 10 → 0), a constant-time owner stack, O(1) Map-backed symbol dedupe, and Set-backed relationship dedupe — O(nodes + emitted facts). The vendored grammar (an older tree-sitter-powershell snapshot) does not model valid modern-PowerShell constructs: ?? null-coalescing, ?. null-conditional, ?: ternary, nested [Type+Type] and generic [[string],[PkgVer[]]] type literals, --flag=\"$var\" native-flag tokens, comma-separated bare-arg lists, $var\\ and $var/ path continuations, and ${env:...} interpolation. 166 test/ files deliberately embed invalid syntax as parser-error test data; 16 production files hit the grammar gaps — all named explicitly by powershell-corpus-errors.ts, never hidden. Strict acceptance (34 clean production files) measured at 460 symbols / 590 relationships with 0 errors and 0 crashes."
+    "note": "PowerShell analyzer rewritten as a pure iterative Tree-sitter DFS with zero regexes (census 10 \u2192 0), a constant-time owner stack, O(1) Map-backed symbol dedupe, and Set-backed relationship dedupe \u2014 O(nodes + emitted facts). The vendored grammar (an older tree-sitter-powershell snapshot) does not model valid modern-PowerShell constructs: ?? null-coalescing, ?. null-conditional, ?: ternary, nested [Type+Type] and generic [[string],[PkgVer[]]] type literals, --flag=\"$var\" native-flag tokens, comma-separated bare-arg lists, $var\\ and $var/ path continuations, and ${env:...} interpolation. 166 test/ files deliberately embed invalid syntax as parser-error test data; 16 production files hit the grammar gaps \u2014 all named explicitly by powershell-corpus-errors.ts, never hidden. Strict acceptance (34 clean production files) measured at 460 symbols / 590 relationships with 0 errors and 0 crashes."
    }
   },
   {
    "analyzer": "make",
-   "corpusTarget": null,
-   "status": "planned_acquisition",
-   "candidates": []
+   "corpusTarget": "elixir@024beb1 + cabal@670955a + luarocks@665f160 + terraform@2e1710b + cython@51a460b + tree-sitter-clean@58729d3",
+   "status": "measured",
+   "candidates": [
+    "elixir@024beb1(clean)",
+    "cabal@670955a(clean)",
+    "luarocks@665f160(clean)",
+    "terraform@2e1710b(clean)",
+    "cython@51a460b(clean)",
+    "tree-sitter-clean@58729d3(clean)"
+   ],
+   "measured": {
+    "revision": "union: elixir@024beb1e34d52e25e30b762b3f8dd28bb25d1a91, cabal@670955a4fb518bea5edab97e7bc33ecc694e3499, luarocks@665f160b4d0b79e85e66c6cc83e442d72eb40868, terraform@2e1710bfc5fa8bb45735b9ebcc9b258e00e9c155, cython@51a460b, tree-sitter-clean@58729d3",
+    "sample": "7 tracked Makefiles (Makefile/GNUmakefile/*.mk) across six pinned clean repos \u2014 the make ecosystem has no single representative repository, so the corpus is the union of every tracked Makefile in the repos already pinned for M12",
+    "fixtures": 3,
+    "fixtureFacts": 84,
+    "precision": 1,
+    "recall": 1,
+    "corpusSymbols": 273,
+    "corpusRelationships": 518,
+    "trackedFiles": 7,
+    "strictAcceptanceFiles": 7,
+    "unexpectedGrammarErrorFiles": 0,
+    "crashFiles": 0,
+    "wallMs": 1074.305353,
+    "filesPerSecond": 6.515838332604864,
+    "symbolsPerSecond": 254.1176949715897,
+    "relationshipsPerSecond": 482.17203661275994,
+    "measuredAt": "2026-08-20T18:19:39.000Z",
+    "note": "Make analyzer rewritten as a pure iterative Tree-sitter DFS with zero regexes (census 1 -> 0): variable_assignment/shell_assignment/define_directive -> constant, rule targets -> function, include_directive -> import. Fixed the grammar's recipe-swallowing quirk (a rule WITH a recipe absorbs a directly-following conditional; the old analyzer's continue dropped every nested rule), variable-reference targets no longer become phantom regex-split symbols, .PHONY meta-directive edges removed, order-only | prereqs collected from all prerequisites nodes, $(call NAME) -> calls edges, $(VAR) -> uses edges, O(1) Map/Set dedupe. Differential 84/84 P/R 1.000; contract 34/34; shape 34 live/0 dead; corpus 7/7 clean, 273 symbols, 518 relationships, 0 errors, 0 crashes."
+   }
   },
   {
    "analyzer": "markdown",

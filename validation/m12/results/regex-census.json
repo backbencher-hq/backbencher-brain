@@ -2,18 +2,18 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-08-20T17:44:29.878Z",
+  "generatedAt": "2026-08-20T18:06:35.413Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 7,
+  "totalRegexUsages": 6,
   "analyzersScanned": 41,
   "byClassification": {
     "needs_review": 2,
-    "normalization": 5
+    "normalization": 4
   },
   "byReceiverCategory": {
     "identifier": 2,
-    "node_text": 5
+    "node_text": 4
   },
   "perFile": [
     {
@@ -90,23 +90,6 @@
           "receiver": "typeGuess",
           "receiverCategory": "identifier",
           "classification": "needs_review",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-makefile-analyzer.ts",
-      "count": 1,
-      "usages": [
-        {
-          "file": "real-makefile-analyzer.ts",
-          "line": 131,
-          "column": 46,
-          "source": "/\\s+/",
-          "operation": "split",
-          "receiver": "node.text.trim()",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
           "justification": ""
         }
       ]
