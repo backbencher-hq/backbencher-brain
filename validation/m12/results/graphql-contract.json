@@ -1,0 +1,156 @@
+{
+  "analyzer": "graphql",
+  "checks": [
+    {
+      "name": "schema is a namespace",
+      "passed": true
+    },
+    {
+      "name": "root query type is a property",
+      "passed": true
+    },
+    {
+      "name": "root query references Query type",
+      "passed": true
+    },
+    {
+      "name": "object type is a class",
+      "passed": true
+    },
+    {
+      "name": "interface is an interface",
+      "passed": true
+    },
+    {
+      "name": "union is a type",
+      "passed": true
+    },
+    {
+      "name": "enum is an enum",
+      "passed": true
+    },
+    {
+      "name": "scalar is a type",
+      "passed": true
+    },
+    {
+      "name": "input type is a class",
+      "passed": true
+    },
+    {
+      "name": "directive definition is a function with @ prefix",
+      "passed": true
+    },
+    {
+      "name": "enum value is an enum_member",
+      "passed": true
+    },
+    {
+      "name": "field is a property owned by its type",
+      "passed": true
+    },
+    {
+      "name": "type description is captured",
+      "passed": true
+    },
+    {
+      "name": "type contains field",
+      "passed": true
+    },
+    {
+      "name": "field return type is a uses edge",
+      "passed": true
+    },
+    {
+      "name": "field argument type is a uses edge",
+      "passed": true
+    },
+    {
+      "name": "list return type resolves to base named type",
+      "passed": true
+    },
+    {
+      "name": "non-null arg type resolves to base named type",
+      "passed": true
+    },
+    {
+      "name": "input field type is a uses edge",
+      "passed": true
+    },
+    {
+      "name": "union member is a uses edge",
+      "passed": true
+    },
+    {
+      "name": "enum contains value",
+      "passed": true
+    },
+    {
+      "name": "object implements interface",
+      "passed": true
+    },
+    {
+      "name": "second object implements interface",
+      "passed": true
+    },
+    {
+      "name": "directive definition captures parameters",
+      "passed": true
+    },
+    {
+      "name": "SDL field has no executable selection edge",
+      "passed": true
+    },
+    {
+      "name": "query operation is a method",
+      "passed": true
+    },
+    {
+      "name": "mutation operation is a method",
+      "passed": true
+    },
+    {
+      "name": "fragment is a method",
+      "passed": true
+    },
+    {
+      "name": "variable is owned by its operation",
+      "passed": true
+    },
+    {
+      "name": "fragment spread is a uses edge",
+      "passed": true
+    },
+    {
+      "name": "inline fragment type condition is a uses edge",
+      "passed": true
+    },
+    {
+      "name": "field selection is a uses edge",
+      "passed": true
+    },
+    {
+      "name": "fragment type condition is a uses edge",
+      "passed": true
+    },
+    {
+      "name": "malformed GraphQL reports a syntax error",
+      "passed": true
+    },
+    {
+      "name": "valid symbols still extracted from negative file",
+      "passed": true
+    },
+    {
+      "name": "missing-type field emits no bogus type reference",
+      "passed": true
+    },
+    {
+      "name": "analyzer uses no regex literals or match/replace/split",
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "count": 37,
+  "passedCount": 37
+}

@@ -354,11 +354,11 @@ function filterNoiseRelationships(rels: any[], language: string): any[] {
     const target = r.target || r.targetId || r.to || r.toSymbol || ""
     if (!target) return true
 
-    // JSON/YAML/HCL relationships are structural data paths, not source-code
-    // identifiers. Keys such as `<<`, `<tag>`, or `type` (HCL `variable` block
-    // type constraint) are valid data and must bypass the universal identifier
-    // sanitizer.
-    if (language === "json" || language === "yaml" || language === "hcl" || language === "terraform") return true
+    // JSON/YAML/HCL/GraphQL relationships are structural data paths, not
+    // source-code identifiers. Keys such as `<<`, `<tag>`, `type` (HCL
+    // `variable` type constraint), or a GraphQL field named `type`/`text` are
+    // valid data and must bypass the universal identifier sanitizer.
+    if (language === "json" || language === "yaml" || language === "hcl" || language === "terraform" || language === "graphql") return true
 
     // Block garbage targets: source code snippets, malformed names
     if (target.length > 200 || target.includes("\n")) return false
