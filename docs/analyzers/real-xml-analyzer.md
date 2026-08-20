@@ -106,7 +106,7 @@ Evidence: `validation/m12/results/xml-corpus-complexity.json`.
 
 | Run | files | symbols | relationships | wall ms | files/s | symbols/s | relationships/s | errors | crashes |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Grails XML/XSD corpus | 154 | 6,195 | 2,388 | 2,430.7 | 63.36 | 2,548.64 | 982.43 | 0 | 0 |
+| Grails XML/XSD corpus | 154 | 6,195 | 2,388 | 2,188.9 | 70.36 | 2,830.24 | 1,090.98 | 0 | 0 |
 
 The hot path is a single explicit stack traversal. Each AST node is visited
 once; direct child lookups scan only the bounded child list of that grammar
