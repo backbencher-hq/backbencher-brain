@@ -1007,37 +1007,6 @@ export namespace ASTEngine {
           .replace(/__stored_key/g, "            ")
       }
 
-      // === UNIVERSAL SQL AST ILLUSION FIX ===
-      // Strip MySQL and MediaWiki specific macros that break standard tree-sitter-sql ANSI parser
-      if (language === "sql") {
-        content = content
-          .replace(/\/\*_\*\//g, "     ") // MediaWiki table prefixes
-          .replace(/\/\*\$wgDBTableOptions\*\//g, "                   ") // MediaWiki table options
-          .replace(/\bAUTO_INCREMENT\b/gi, "              ") // MySQL specific auto_increment
-          .replace(/\bUNSIGNED\b/gi, "        ") // MySQL specific unsigned
-          .replace(/\bBINARY\b/gi, "      ") // MySQL specific binary
-          .replace(/\bIF NOT EXISTS\b/gi, "             ") // Conditional creation
-          .replace(/\bON UPDATE CASCADE\b/gi, "                ") // Hide exotic cascading
-          .replace(/\bON DELETE RESTRICT\b/gi, "                  ") // Hide exotic foreign key options
-          .replace(/\bENGINE=[a-zA-Z0-9_]+/gi, (match) => " ".repeat(match.length))
-          .replace(/\bDEFAULT CHARSET=[a-zA-Z0-9_]+/gi, (match) => " ".repeat(match.length))
-          // Replace length parameters like (255) or (10, 2) after types
-          .replace(/\(\s*\d+(?:\s*,\s*\d+)?\s*\)/g, (match) => " ".repeat(match.length))
-          // Replace ENUM('a', 'b') and SET('a', 'b')
-          .replace(/\b(?:ENUM|SET)\b\s*\([^)]+\)/gi, (match) => " ".repeat(match.length))
-          // Replace weird tinyblob, mediumblob etc with standard BLOB and TEXT
-          .replace(/\bTINYBLOB\b/gi, "BLOB    ")
-          .replace(/\bMEDIUMBLOB\b/gi, "BLOB      ")
-          .replace(/\bLONGBLOB\b/gi, "BLOB    ")
-          .replace(/\bTINYTEXT\b/gi, "TEXT    ")
-          .replace(/\bMEDIUMTEXT\b/gi, "TEXT      ")
-          .replace(/\bLONGTEXT\b/gi, "TEXT    ")
-          .replace(/\bTINYINT\b/gi, "INT    ")
-          .replace(/\bMEDIUMINT\b/gi, "INT      ")
-          .replace(/\bUNIQUE\s+(?:KEY|INDEX)\s+[a-zA-Z0-9_]+/gi, (match) => "UNIQUE" + " ".repeat(match.length - 6))
-          .replace(/\bKEY\s+[a-zA-Z0-9_]+\s*\([^)]+\)/gi, (match) => " ".repeat(match.length))
-      }
-
       // Per-file self-destruct timer — parser.parse() is synchronous C/WASM
       // code that can loop forever on pathological inputs. setTimeout can't
       // interrupt it (event loop is blocked), so we kill the whole process.

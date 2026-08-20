@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "truthSource": "manual_audit",
+  "source": "validation/m12/fixtures/sql/{Schema,Queries,Negative}.sql",
+  "facts": [
+    {"id":"symbol:Schema.sql:1:namespace:app","layer":"ast_extraction","kind":"symbol","file":"Schema.sql","line":1,"attributes":{"name":"app","symbolKind":"namespace"}},
+    {"id":"symbol:Schema.sql:3:class:teams","layer":"ast_extraction","kind":"symbol","file":"Schema.sql","line":3,"attributes":{"name":"teams","symbolKind":"class"}},
+    {"id":"symbol:Schema.sql:4:property:id","layer":"ast_extraction","kind":"symbol","file":"Schema.sql","line":4,"attributes":{"name":"id","symbolKind":"property"}},
+    {"id":"symbol:Schema.sql:5:property:name","layer":"ast_extraction","kind":"symbol","file":"Schema.sql","line":5,"attributes":{"name":"name","symbolKind":"property"}},
+    {"id":"symbol:Schema.sql:8:class:users","layer":"ast_extraction","kind":"symbol","file":"Schema.sql","line":8,"attributes":{"name":"users","symbolKind":"class"}},
+    {"id":"symbol:Schema.sql:9:property:id","layer":"ast_extraction","kind":"symbol","file":"Schema.sql","line":9,"attributes":{"name":"id","symbolKind":"property"}},
+    {"id":"symbol:Schema.sql:10:property:team_id","layer":"ast_extraction","kind":"symbol","file":"Schema.sql","line":10,"attributes":{"name":"team_id","symbolKind":"property"}},
+    {"id":"symbol:Schema.sql:11:property:email","layer":"ast_extraction","kind":"symbol","file":"Schema.sql","line":11,"attributes":{"name":"email","symbolKind":"property"}},
+    {"id":"symbol:Schema.sql:12:property:active","layer":"ast_extraction","kind":"symbol","file":"Schema.sql","line":12,"attributes":{"name":"active","symbolKind":"property"}},
+    {"id":"symbol:Schema.sql:15:constant:users_team_idx","layer":"ast_extraction","kind":"symbol","file":"Schema.sql","line":15,"attributes":{"name":"users_team_idx","symbolKind":"constant"}},
+    {"id":"symbol:Schema.sql:17:class:active_users","layer":"ast_extraction","kind":"symbol","file":"Schema.sql","line":17,"attributes":{"name":"active_users","symbolKind":"class"}},
+    {"id":"symbol:Schema.sql:23:function:lookup_user","layer":"ast_extraction","kind":"symbol","file":"Schema.sql","line":23,"attributes":{"name":"lookup_user","symbolKind":"function"}},
+    {"id":"symbol:Schema.sql:27:function:users_audit","layer":"ast_extraction","kind":"symbol","file":"Schema.sql","line":27,"attributes":{"name":"users_audit","symbolKind":"function"}},
+    {"id":"rel:Schema.sql:contains:teams:id","layer":"relationships","kind":"relationship","file":"Schema.sql","sourceId":"teams","targetId":"id","attributes":{"type":"contains"}},
+    {"id":"rel:Schema.sql:contains:teams:name","layer":"relationships","kind":"relationship","file":"Schema.sql","sourceId":"teams","targetId":"name","attributes":{"type":"contains"}},
+    {"id":"rel:Schema.sql:contains:users:id","layer":"relationships","kind":"relationship","file":"Schema.sql","sourceId":"users","targetId":"id","attributes":{"type":"contains"}},
+    {"id":"rel:Schema.sql:contains:users:team_id","layer":"relationships","kind":"relationship","file":"Schema.sql","sourceId":"users","targetId":"team_id","attributes":{"type":"contains"}},
+    {"id":"rel:Schema.sql:references:users:teams","layer":"relationships","kind":"relationship","file":"Schema.sql","sourceId":"users","targetId":"teams","attributes":{"type":"references"}},
+    {"id":"rel:Schema.sql:contains:users:email","layer":"relationships","kind":"relationship","file":"Schema.sql","sourceId":"users","targetId":"email","attributes":{"type":"contains"}},
+    {"id":"rel:Schema.sql:contains:users:active","layer":"relationships","kind":"relationship","file":"Schema.sql","sourceId":"users","targetId":"active","attributes":{"type":"contains"}},
+    {"id":"rel:Schema.sql:references:users_team_idx:users","layer":"relationships","kind":"relationship","file":"Schema.sql","sourceId":"users_team_idx","targetId":"users","attributes":{"type":"references"}},
+    {"id":"rel:Schema.sql:contains:users:users_team_idx","layer":"relationships","kind":"relationship","file":"Schema.sql","sourceId":"users","targetId":"users_team_idx","attributes":{"type":"contains"}},
+    {"id":"rel:Schema.sql:uses:active_users:users","layer":"relationships","kind":"relationship","file":"Schema.sql","sourceId":"active_users","targetId":"users","attributes":{"type":"uses"}},
+    {"id":"rel:Schema.sql:uses:active_users:teams","layer":"relationships","kind":"relationship","file":"Schema.sql","sourceId":"active_users","targetId":"teams","attributes":{"type":"uses"}},
+    {"id":"rel:Schema.sql:uses:lookup_user:users","layer":"relationships","kind":"relationship","file":"Schema.sql","sourceId":"lookup_user","targetId":"users","attributes":{"type":"uses"}},
+    {"id":"rel:Schema.sql:references:users_audit:users","layer":"relationships","kind":"relationship","file":"Schema.sql","sourceId":"users_audit","targetId":"users","attributes":{"type":"references"}},
+    {"id":"rel:Schema.sql:calls:users_audit:audit_users","layer":"relationships","kind":"relationship","file":"Schema.sql","sourceId":"users_audit","targetId":"audit_users","attributes":{"type":"calls"}},
+    {"id":"rel:Schema.sql:uses:global:users","layer":"relationships","kind":"relationship","file":"Schema.sql","sourceId":"global","targetId":"users","attributes":{"type":"uses"}},
+
+    {"id":"rel:Queries.sql:uses:global:users","layer":"relationships","kind":"relationship","file":"Queries.sql","sourceId":"global","targetId":"users","attributes":{"type":"uses"}},
+    {"id":"rel:Queries.sql:uses:global:audit_log","layer":"relationships","kind":"relationship","file":"Queries.sql","sourceId":"global","targetId":"audit_log","attributes":{"type":"uses"}},
+    {"id":"rel:Queries.sql:uses:global:teams","layer":"relationships","kind":"relationship","file":"Queries.sql","sourceId":"global","targetId":"teams","attributes":{"type":"uses"}},
+    {"id":"rel:Queries.sql:calls:global:lookup_user","layer":"relationships","kind":"relationship","file":"Queries.sql","sourceId":"global","targetId":"lookup_user","attributes":{"type":"calls"}},
+
+    {"id":"rel:Negative.sql:uses:global:users","layer":"relationships","kind":"relationship","file":"Negative.sql","sourceId":"global","targetId":"users","attributes":{"type":"uses"}},
+    {"id":"rel:Negative.sql:uses:global:teams","layer":"relationships","kind":"relationship","file":"Negative.sql","sourceId":"global","targetId":"teams","attributes":{"type":"uses"}}
+  ]
+}

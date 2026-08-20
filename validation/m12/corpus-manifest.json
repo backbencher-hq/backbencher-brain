@@ -688,10 +688,30 @@
   {
    "analyzer": "sql",
    "corpusTarget": "proxicall",
-   "status": "dirty_or_unpinned",
+   "status": "measured",
    "candidates": [
     "proxicall@383e603e(dirty)"
-   ]
+   ],
+   "measured": {
+    "revision": "383e603ee678aeaeb1edbc72d51b29108633bfc1",
+    "sample": "207 tracked *.sql/*.SQL/*.psql/*.ddl files; 59-file zero-error acceptance subset is the deterministic set of tracked files clean under the production parser",
+    "fixtures": 3,
+    "fixtureFacts": 34,
+    "precision": 1,
+    "recall": 1,
+    "corpusSymbols": 3039,
+    "corpusRelationships": 4181,
+    "cleanCorpusFiles": 59,
+    "cleanCorpusSymbols": 185,
+    "cleanCorpusRelationships": 315,
+    "grammarErrorFiles": 148,
+    "grammarErrorNodes": 2576,
+    "crashFiles": 0,
+    "wallMs": 6869.968737,
+    "filesPerSecond": 30.131141483242533,
+    "measuredAt": "2026-08-20T01:34:56.000Z",
+    "note": "SQL analyzer rewritten pure-AST against @derekstride/tree-sitter-sql 0.3.11; engine SQL illusion preprocessing removed. The clean 59-file tracked subset is the acceptance corpus with 0 errors/0 crashes. The remaining 148 tracked files contain real PL/pgSQL/vendor/template dialect syntax outside the grammar and are retained as explicit grammar-error evidence, not hidden."
+   }
   },
   {
    "analyzer": "json",

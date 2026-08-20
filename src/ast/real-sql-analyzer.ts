@@ -1,774 +1,698 @@
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 
+type SqlSymbol = ASTEngine.UniversalSymbol
+type SqlRelationship = ASTEngine.UniversalRelationship
+
+type ParseState = {
+  symbols: SqlSymbol[]
+  relationships: SqlRelationship[]
+  imports: ASTEngine.ImportInfo[]
+  exports: ASTEngine.ExportInfo[]
+  relationshipKeys: Set<string>
+  relationshipsByKey: Map<string, SqlRelationship>
+  symbolKeys: Set<string>
+  patterns: Set<string>
+  metadata: Partial<ASTEngine.FileMetadata>
+}
+
+const SQL_BUILTINS = new Set([
+  "abs", "avg", "coalesce", "count", "date", "datetime", "extract", "first_value", "floor",
+  "greatest", "ifnull", "least", "lower", "max", "min", "nullif", "rank", "round", "row_number",
+  "sum", "trim", "upper", "cast", "convert", "current_date", "current_time", "current_timestamp",
+  "json_agg", "json_build_object", "lag", "lead", "length", "now", "percentile_cont", "substring",
+])
+
+const identifierTypes = new Set(["identifier", "word"])
+const queryTypes = new Set(["select", "set_operation", "create_query", "subquery", "cte"])
+
 export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
   public analyze(
     rootNode: Node,
     content: string,
     filePath: string,
   ): Omit<ASTEngine.ParseResult, "language" | "metadata"> & { metadata: Partial<ASTEngine.FileMetadata> } {
-    const symbols: ASTEngine.UniversalSymbol[] = []
-    const imports: ASTEngine.ImportInfo[] = []
-
-    // SQL imports — non-standard #import/@import directives
-    // Extracted via AST comment nodes, pure string ops (zero regex)
-    const walkForImports = (node: Node) => {
-      if (node.type === "comment" || node.type === "marginalia") {
-        const txt = node.text.trim()
-        if (txt.startsWith("#import ") || txt.startsWith("@import ")) {
-          const spaceIdx = txt.indexOf(" ")
-          if (spaceIdx !== -1) {
-            let path = txt.substring(spaceIdx + 1).trim()
-            // Strip quotes and angle brackets (pure string ops)
-            let cleaned = ""
-            for (let i = 0; i < path.length; i++) {
-              const ch = path[i]
-              if (ch !== '"' && ch !== "'" && ch !== "<" && ch !== ">") cleaned += ch
-            }
-            const isExternal = txt.startsWith("@") || cleaned.includes("/")
-            imports.push({ module: cleaned, items: [], importType: "sql_import", lineNumber: 0, isExternal })
-          }
-        }
-      }
-      for (let i = 0; i < node.childCount; i++) {
-        const child = node.child(i)
-        if (child) walkForImports(child)
-      }
-    }
-    walkForImports(rootNode)
-
-    const relationships: ASTEngine.UniversalRelationship[] = []
-    const exports: ASTEngine.ExportInfo[] = []
-    const patternsObj: Record<string, boolean> = {}
-
-    const metadata: Partial<ASTEngine.FileMetadata> = {
-      linesOfCode: 0,
-      performanceScore: 100,
-      architecturalInsights: [],
-      detectedFrameworks: ["SQL"],
-      patterns: [],
+    const state: ParseState = {
+      symbols: [],
+      relationships: [],
+      imports: [],
+      exports: [],
+      relationshipKeys: new Set(),
+      relationshipsByKey: new Map(),
+      symbolKeys: new Set(),
+      patterns: new Set(),
+      metadata: {
+        linesOfCode: this.countLines(content),
+        performanceScore: 100,
+        architecturalInsights: [],
+        detectedFrameworks: ["SQL"],
+        patterns: [],
+        complexity: 1,
+        cyclomaticComplexity: 1,
+      },
     }
 
-    if (!rootNode) return { symbols, imports, relationships, exports, metadata, errors: [] }
+    this.collectImports(rootNode, state)
+    if (rootNode) this.processRoot(rootNode, state)
 
-    if (rootNode.hasError) {
-      const errStack: Node[] = [rootNode]
-      while (errStack.length > 0) {
-        const n = errStack.pop()!
-        if (n.type === "ERROR" || n.isMissing) {
-          const errorsArr = (metadata as any).errors || []
-          errorsArr.push({
-            message: `Syntax ${n.type} detected. The Brain Engine is bypassing this broken node.`,
-            range: {
-              startLine: n.startPosition.row + 1, startColumn: n.startPosition.column + 1,
-              endLine: n.endPosition.row + 1, endColumn: n.endPosition.column + 1,
-              startIndex: n.startIndex, endIndex: n.endIndex,
-            },
-            severity: "warning",
-          })
-          ;(metadata as any).errors = errorsArr
-        }
-        for (let i = n.namedChildCount - 1; i >= 0; i--) {
-          const child = n.namedChild(i)
-          if (child) errStack.push(child)
-        }
-      }
+    if (state.symbols.filter((s) => s.metadata?.type === "table").length > 2) {
+      state.metadata.architecturalInsights!.push("Complex schema detected")
     }
-
-    let loc = 1
-    for (let i = 0; i < content.length; i++) {
-      if (content[i] === "\n") loc++
+    if (state.patterns.has("Foreign Key Constraints")) {
+      state.metadata.architecturalInsights!.push("Relational integrity enforced via Foreign Keys")
     }
-    metadata.linesOfCode = loc
-
-    const stack: { node: Node; parentSymbol: ASTEngine.UniversalSymbol | null }[] = [
-      { node: rootNode, parentSymbol: null },
-    ]
-
-    let tableCount = 0
-    let lastTableSymbol: ASTEngine.UniversalSymbol | null = null
-
-    while (stack.length > 0) {
-      const popped = stack.pop()
-      if (!popped) continue
-
-      const { node: curr, parentSymbol } = popped
-      let newParentSymbol = parentSymbol
-
-      if (curr.type === "create_table_statement" || curr.type === "create_table") {
-        newParentSymbol = this.handleTable(curr, symbols, relationships, metadata, patternsObj)
-        lastTableSymbol = newParentSymbol
-        tableCount++
-      } else if (curr.type === "create_view_statement" || curr.type === "create_view") {
-        newParentSymbol = this.handleView(curr, symbols, relationships, metadata)
-      } else if (curr.type === "create_index_statement" || curr.type === "create_index") {
-        this.handleIndex(curr, symbols, relationships, metadata, patternsObj)
-      } else if (curr.type === "select_statement" || curr.type === "select") {
-        this.handleSelect(curr, symbols, relationships, metadata, patternsObj, parentSymbol)
-      } else if (curr.type === "create_function_statement" || curr.type === "create_function") {
-        newParentSymbol = this.handleFunction(curr, symbols, relationships, metadata, patternsObj)
-      } else if (curr.type === "create_type_statement" || curr.type === "create_domain_statement") {
-        this.handleTypeDomain(curr, symbols)
-      } else if (curr.type === "create_trigger_statement" || curr.type === "create_trigger") {
-        this.handleTrigger(curr, symbols, patternsObj)
-      } else if (curr.type === "create_procedure_statement" || curr.type === "procedure_body") {
-        this.handleProcedure(curr, symbols, patternsObj)
-      } else if (curr.type === "alter_table_statement" || curr.type === "alter_table") {
-        this.handleAlterTable(curr, symbols, metadata, patternsObj)
-      } else if (curr.type === "drop_table_statement" || curr.type === "drop_view_statement" || curr.type === "drop_table" || curr.type === "drop_view") {
-        patternsObj["Schema Evolution (DROP)"] = true
-      } else if (curr.type === "cte" || curr.type === "with_clause" || curr.type === "common_table_expression") {
-        patternsObj["Common Table Expressions (CTE)"] = true
-        const cteName = this.getIdentifier(curr)
-        if (cteName) {
-          this.createSymbol(cteName.text, ASTEngine.SymbolKind.Function, curr, parentSymbol || null, symbols, { isCTE: true })
-        }
-      } else if (curr.type === "union" || curr.type === "intersect" || curr.type === "except") {
-        patternsObj["Set Operations (UNION/INTERSECT/EXCEPT)"] = true
-      } else if (curr.type === "grant" || curr.type === "grant_statement" || curr.type === "revoke" || curr.type === "revoke_statement") {
-        patternsObj["Permissions (GRANT/REVOKE)"] = true
-      } else if (curr.type === "schema" || curr.type === "create_schema") {
-        const schemaName = this.getIdentifier(curr)
-        if (schemaName) {
-          this.createSymbol(schemaName.text, ASTEngine.SymbolKind.Namespace, curr, null, symbols, { isSchema: true })
-        }
-      } else if (curr.type === "begin" || curr.type === "start_transaction" || curr.type === "commit" || curr.type === "rollback") {
-        patternsObj["Transaction Management"] = true
-      } else if (curr.type === "case_expression" || curr.type === "case_statement" || curr.type === "case_when") {
-        patternsObj["Conditional Logic (CASE/WHEN)"] = true
-      } else if (curr.type === "subquery" || curr.type === "scalar_subquery") {
-        patternsObj["Subqueries"] = true
-      } else if (
-        curr.type === "insert_statement" ||
-        curr.type === "update_statement" ||
-        curr.type === "delete_statement" ||
-        curr.type === "update" ||
-        curr.type === "delete" ||
-        curr.type === "insert"
-      ) {
-        this.handleDML(curr, symbols)
-      } else if (curr.type === "ERROR") {
-        if (curr.text.toUpperCase().indexOf("UNIQUE") !== -1) {
-          patternsObj["Unique Constraint"] = true
-          const pTable = newParentSymbol || lastTableSymbol
-          if (pTable && pTable.kind === ASTEngine.SymbolKind.Class) {
-            let currentLine = ""
-            const rawText = curr.text + "\n"
-            for (let i = 0; i < rawText.length; i++) {
-              const char = rawText[i]
-              if (char === "\n" || char === ",") {
-                if (currentLine.toUpperCase().indexOf("UNIQUE") !== -1) {
-                  const trimmed = currentLine.trim()
-                  let spaceIdx = 0
-                  for (let k = 0; k < trimmed.length; k++) {
-                    if (trimmed[k] === " " || trimmed[k] === "\t") {
-                      spaceIdx = k
-                      break
-                    }
-                  }
-                  if (spaceIdx > 0) {
-                    const colName = trimmed.substring(0, spaceIdx)
-                    if (
-                      colName &&
-                      colName.toUpperCase() !== "UNIQUE" &&
-                      colName.toUpperCase() !== "CONSTRAINT" &&
-                      colName.toUpperCase() !== "CREATE"
-                    ) {
-                      this.createSymbol(colName, ASTEngine.SymbolKind.Property, curr, pTable, symbols, {
-                        type: "column",
-                        isUnique: true,
-                      })
-                    }
-                  }
-                }
-                currentLine = ""
-              } else {
-                currentLine += char
-              }
-            }
-          }
-        }
-      } else if (curr.type === "statement") {
-        const stmtChild = curr.namedChild(0)
-        if (stmtChild) {
-          if (stmtChild.type === "create_table") {
-            newParentSymbol = this.handleTable(stmtChild, symbols, relationships, metadata, patternsObj)
-            lastTableSymbol = newParentSymbol
-            tableCount++
-          } else if (stmtChild.type === "create_view") {
-            newParentSymbol = this.handleView(stmtChild, symbols, relationships, metadata)
-          } else if (stmtChild.type === "create_index") {
-            this.handleIndex(stmtChild, symbols, relationships, metadata, patternsObj)
-          } else if (stmtChild.type === "select") {
-            this.handleSelect(stmtChild, symbols, relationships, metadata, patternsObj, parentSymbol)
-          } else if (stmtChild.type === "create_function") {
-            newParentSymbol = this.handleFunction(stmtChild, symbols, relationships, metadata, patternsObj)
-          } else if (stmtChild.type === "update" || stmtChild.type === "delete" || stmtChild.type === "insert") {
-            this.handleDML(stmtChild, symbols)
-          } else if (stmtChild.type === "create_trigger") {
-            this.handleTrigger(stmtChild, symbols, patternsObj)
-          } else if (stmtChild.type === "procedure_body" || stmtChild.type === "create_procedure") {
-            this.handleProcedure(stmtChild, symbols, patternsObj)
-          } else if (stmtChild.type === "alter_table") {
-            this.handleAlterTable(stmtChild, symbols, metadata, patternsObj)
-          } else if (stmtChild.type === "cte" || stmtChild.type === "with_clause") {
-            patternsObj["Common Table Expressions (CTE)"] = true
-          }
-        }
-      }
-
-      for (let i = curr.childCount - 1; i >= 0; i--) {
-        const child = curr.child(i)
-        if (child) stack.push({ node: child, parentSymbol: newParentSymbol })
-      }
-    }
-
-    if (tableCount > 2) {
-      metadata.architecturalInsights!.push("Complex schema detected")
-    }
-
-    for (const p in patternsObj) {
-      metadata.patterns!.push(p)
-    }
-
-    // Add Contains for table→column relationships
-    for (const s of symbols) {
-      const _owner = s.ownerName || s.scope
-      if (_owner) {
-        relationships.push({ source: _owner, target: s.name, type: ASTEngine.RelationshipType.Contains, confidence: 1.0, metadata: {} })
-      }
-    }
+    state.metadata.patterns = [...state.patterns].sort()
+    state.metadata.complexity = Math.max(1, state.metadata.cyclomaticComplexity ?? 1)
 
     return {
-      symbols,
-      relationships,
-      imports,
-      exports,
-      metadata,
-      errors: (metadata as any).errors || [],
+      symbols: state.symbols,
+      relationships: state.relationships,
+      imports: state.imports,
+      exports: state.exports,
+      metadata: state.metadata,
+      errors: [],
     }
+  }
+
+  private processRoot(node: Node, state: ParseState): void {
+    const stack: Node[] = []
+    for (let i = node.namedChildCount - 1; i >= 0; i--) {
+      const child = node.namedChild(i)
+      if (child) stack.push(child)
+    }
+
+    while (stack.length > 0) {
+      const current = stack.pop()!
+      if (current.type === "transaction" || current.type === "block") {
+        this.addPattern(current.type === "transaction" ? "Transaction Management" : "Procedural Block", state)
+        this.bumpComplexity(current, state)
+        for (let i = current.namedChildCount - 1; i >= 0; i--) {
+          const child = current.namedChild(i)
+          if (child && (child.type === "statement" || child.type === "block" || child.type === "transaction")) stack.push(child)
+        }
+        continue
+      }
+      this.processStatement(current, state, null)
+    }
+  }
+
+  private processStatement(node: Node, state: ParseState, owner: SqlSymbol | null): void {
+    if (node.type === "statement") {
+      const children = this.namedChildren(node)
+      const declaration = children.find((c) => this.isDeclaration(c.type))
+      if (declaration) {
+        if (queryTypes.has(declaration.type) || declaration.type === "from") this.processQuery(node, state, owner)
+        else this.processStatement(declaration, state, owner)
+        return
+      }
+      if (children.some((c) => queryTypes.has(c.type) || c.type === "from" || c.type === "cte")) {
+        this.processQuery(node, state, owner)
+      }
+      return
+    }
+
+    switch (node.type) {
+      case "create_table":
+      case "create_table_statement":
+        this.processTable(node, state)
+        return
+      case "create_view":
+      case "create_materialized_view":
+        this.processView(node, state)
+        return
+      case "create_index":
+      case "create_index_statement":
+        this.processIndex(node, state)
+        return
+      case "create_function":
+      case "create_function_statement":
+        this.processFunction(node, state)
+        return
+      case "create_trigger":
+      case "create_trigger_statement":
+        this.processTrigger(node, state)
+        return
+      case "create_type":
+      case "create_type_statement":
+      case "create_domain_statement":
+        this.processType(node, state)
+        return
+      case "create_schema":
+      case "schema":
+        this.processNamedContainer(node, ASTEngine.SymbolKind.Namespace, "schema", state)
+        return
+      case "create_sequence":
+        this.processNamedContainer(node, ASTEngine.SymbolKind.Constant, "sequence", state)
+        return
+      case "create_role":
+        this.processNamedContainer(node, ASTEngine.SymbolKind.Namespace, "role", state)
+        return
+      case "create_extension":
+        this.processNamedContainer(node, ASTEngine.SymbolKind.Module, "extension", state)
+        return
+      case "alter_table":
+      case "alter_table_statement":
+        this.addPattern("Schema Evolution (ALTER)", state)
+        this.recordTableTarget(node, "uses", "alter", state)
+        return
+      case "drop_table":
+      case "drop_view":
+      case "drop_index":
+      case "drop_type":
+      case "drop_schema":
+      case "drop_table_statement":
+      case "drop_view_statement":
+        this.addPattern("Schema Evolution (DROP)", state)
+        return
+      case "insert":
+      case "insert_statement":
+        this.recordDml(node, "insert", state)
+        return
+      case "update":
+      case "update_statement":
+        this.recordDml(node, "update", state)
+        return
+      case "delete":
+      case "delete_statement":
+        this.recordDml(node, "delete", state)
+        return
+      case "select":
+      case "set_operation":
+      case "cte":
+      case "create_query":
+      case "subquery":
+        this.processQuery(node, state, owner)
+        return
+      case "set_statement":
+      case "reset_statement":
+        this.addPattern("Session Configuration", state)
+        return
+      case "comment_statement":
+        this.addPattern("SQL Documentation", state)
+        return
+      case "transaction":
+      case "block":
+        this.addPattern("Transaction Management", state)
+        this.bumpComplexity(node, state)
+        return
+      default:
+        if (node.type === "grant" || node.type === "revoke" || node.type === "grant_statement" || node.type === "revoke_statement") {
+          this.addPattern("Permissions (GRANT/REVOKE)", state)
+        }
+    }
+  }
+
+  private processTable(node: Node, state: ParseState): void {
+    const object = this.directChild(node, "object_reference") ?? this.directChild(node, "identifier")
+    const nameNode = object ? this.referenceNameNode(object) : null
+    if (!nameNode) return
+    const table = this.createSymbol(nameNode.text, ASTEngine.SymbolKind.Class, nameNode, null, state, {
+      type: "table",
+      isSchemaEntity: true,
+      qualifiedName: object?.type === "object_reference" ? this.referenceText(object) : nameNode.text,
+    })
+
+    const definitions = this.directChild(node, "column_definitions")
+    if (definitions) {
+      for (const column of this.namedChildren(definitions).filter((c) => c.type === "column_definition")) {
+        this.processColumn(column, table, state)
+      }
+      const tableConstraints = this.directChild(definitions, "constraints")
+      if (tableConstraints) {
+        for (const constraint of this.namedChildren(tableConstraints).filter((c) => c.type === "constraint")) {
+          this.processConstraint(constraint, table, state)
+        }
+      }
+    }
+
+    const legacyColumns = this.namedChildren(node).filter((c) =>
+      c.type === "create_table_column_parameter" || c.type === "column_def" || c.type === "column",
+    )
+    for (const column of legacyColumns) this.processColumn(column, table, state)
+
+    this.addPattern("Tables", state)
+  }
+
+  private processColumn(node: Node, table: SqlSymbol, state: ParseState): void {
+    const nameNode = node.childForFieldName?.("name") ?? this.firstIdentifier(node)
+    if (!nameNode || !identifierTypes.has(nameNode.type)) return
+    const typeNode = node.childForFieldName?.("type")
+    let isPrimaryKey = false
+    let isUnique = false
+    let references: string | undefined
+    let referenceNode: Node | null = null
+
+    for (const child of this.namedChildren(node)) {
+      if (child.type === "keyword_primary" || child.type === "primary_key_constraint") isPrimaryKey = true
+      if (child.type === "keyword_unique" || child.type === "unique_constraint") isUnique = true
+      if (child.type === "object_reference" && child !== nameNode) {
+        referenceNode = child
+        references = this.referenceLeaf(child)
+      }
+      if (child.type === "references_constraint" || child.type === "foreign_key_constraint") {
+        const ref = this.firstDescendant(child, "object_reference")
+        if (ref) {
+          referenceNode = ref
+          references = this.referenceLeaf(ref)
+        }
+      }
+    }
+
+    const column = this.createSymbol(nameNode.text, ASTEngine.SymbolKind.Property, nameNode, table, state, {
+      type: "column",
+      sqlType: typeNode?.text,
+      isPrimaryKey,
+      isUnique,
+      references,
+    })
+    this.addRelationship(ASTEngine.RelationshipType.Contains, table.name, column.name, state)
+    if (isPrimaryKey) this.addPattern("Primary Key Constraint", state)
+    if (isUnique) this.addPattern("Unique Constraint", state)
+    if (references && referenceNode) {
+      this.addPattern("Foreign Key Constraints", state)
+      this.addRelationship(ASTEngine.RelationshipType.References, table.name, references, state, { constraint: "foreign_key", column: column.name })
+    }
+  }
+
+  private processConstraint(node: Node, table: SqlSymbol, state: ParseState): void {
+    const nameNode = this.constraintNameNode(node)
+    const ref = this.firstDescendant(node, "object_reference")
+    const reference = ref ? this.referenceLeaf(ref) : undefined
+    const hasPrimary = this.containsType(node, "primary_key_constraint") || this.containsType(node, "keyword_primary")
+    const hasUnique = this.containsType(node, "keyword_unique") || this.containsType(node, "unique_constraint")
+    const hasForeign = !!reference
+
+    if (nameNode) {
+      const constraint = this.createSymbol(nameNode.text, ASTEngine.SymbolKind.Constant, nameNode, table, state, {
+        type: "constraint",
+        constraintKind: hasForeign ? "foreign_key" : hasPrimary ? "primary_key" : hasUnique ? "unique" : "check",
+      })
+      this.addRelationship(ASTEngine.RelationshipType.Contains, table.name, constraint.name, state)
+    }
+    if (hasPrimary) this.addPattern("Primary Key Constraint", state)
+    if (hasUnique) this.addPattern("Unique Constraint", state)
+    if (hasForeign) {
+      this.addPattern("Foreign Key Constraints", state)
+      this.addRelationship(ASTEngine.RelationshipType.References, table.name, reference!, state, { constraint: "foreign_key" })
+    }
+  }
+
+  private processView(node: Node, state: ParseState): void {
+    const object = this.firstDescendant(node, "object_reference")
+    const nameNode = object ? this.referenceNameNode(object) : null
+    if (!nameNode) return
+    const kind = node.type === "create_materialized_view" ? "materialized_view" : "view"
+    const view = this.createSymbol(nameNode.text, ASTEngine.SymbolKind.Class, nameNode, null, state, {
+      type: kind,
+      isSchemaEntity: true,
+      qualifiedName: this.referenceText(object!),
+    })
+    this.addPattern(kind === "view" ? "Views" : "Materialized Views", state)
+    const query = this.firstDescendant(node, "create_query")
+    if (query) this.processQuery(query, state, view)
+  }
+
+  private processIndex(node: Node, state: ParseState): void {
+    const identifiers = this.namedChildren(node).filter((c) => c.type === "identifier")
+    const nameNode = identifiers[0] ?? this.firstDescendant(node, "identifier")
+    const object = this.firstDescendant(node, "object_reference")
+    if (!nameNode) return
+    const tableName = object ? this.referenceLeaf(object) : undefined
+    const index = this.createSymbol(nameNode.text, ASTEngine.SymbolKind.Constant, nameNode, null, state, {
+      type: "index",
+      indexName: nameNode.text,
+      table: tableName,
+      columns: this.identifierTexts(this.firstDescendant(node, "index_fields")),
+    })
+    this.addPattern("Custom Indexes", state)
+    if (tableName) {
+      this.addRelationship(ASTEngine.RelationshipType.References, index.name, tableName, state, { dependency: true, indexOn: tableName })
+      this.addRelationship(ASTEngine.RelationshipType.Contains, tableName, index.name, state)
+      if (state.metadata.performanceScore !== undefined) state.metadata.performanceScore += 10
+    }
+    void index
+  }
+
+  private processFunction(node: Node, state: ParseState): void {
+    const object = this.firstDescendant(node, "object_reference")
+    const nameNode = object ? this.referenceNameNode(object) : null
+    if (!nameNode) return
+    const args = this.directChild(node, "function_arguments")
+    const params: ASTEngine.Parameter[] = []
+    if (args) {
+      for (const argument of this.namedChildren(args).filter((c) => c.type === "function_argument")) {
+        const parameter = argument.childForFieldName?.("name") ?? this.firstIdentifier(argument)
+        const type = this.firstTypeNode(argument)
+        if (parameter) params.push({ name: parameter.text, type: type?.text })
+      }
+    }
+    const returnType = this.returnTypeNode(node)?.text
+    const fn = this.createSymbol(nameNode.text, ASTEngine.SymbolKind.Function, nameNode, null, state, {
+      functionName: nameNode.text,
+      qualifiedName: this.referenceText(object!),
+      sqlFunction: true,
+    }, { parameters: params, returnType })
+    this.addPattern("Stored Functions", state)
+    this.processQueryDependencies(node, fn, state)
+    this.processCalls(node, fn.name, state)
+  }
+
+  private processTrigger(node: Node, state: ParseState): void {
+    const references = this.descendants(node, "object_reference")
+    const triggerRef = references[0]
+    const tableRef = references[1]
+    const actionRef = references[2]
+    const triggerName = triggerRef ? this.referenceNameNode(triggerRef) : null
+    if (!triggerName) return
+    const trigger = this.createSymbol(triggerName.text, ASTEngine.SymbolKind.Function, triggerName, null, state, {
+      type: "trigger",
+      isTrigger: true,
+      targetTable: tableRef ? this.referenceLeaf(tableRef) : undefined,
+      actionFunction: actionRef ? this.referenceLeaf(actionRef) : undefined,
+    })
+    this.addPattern("Triggers", state)
+    const triggerTarget = tableRef ? this.referenceLeaf(tableRef) : undefined
+    const triggerAction = actionRef ? this.referenceLeaf(actionRef) : undefined
+    if (triggerTarget) this.addRelationship(ASTEngine.RelationshipType.References, trigger.name, triggerTarget, state, { triggerTarget: true })
+    if (triggerAction) this.addRelationship(ASTEngine.RelationshipType.Calls, trigger.name, triggerAction, state, { triggerAction: true })
+  }
+
+  private processType(node: Node, state: ParseState): void {
+    const object = this.firstDescendant(node, "object_reference")
+    const nameNode = object ? this.referenceNameNode(object) : null
+    if (!nameNode) return
+    const enumElements = this.firstDescendant(node, "enum_elements")
+    const values = this.literalTexts(enumElements)
+    this.createSymbol(nameNode.text, ASTEngine.SymbolKind.Type, nameNode, null, state, {
+      type: values.length > 0 ? "enum" : "custom_type",
+      enumValues: values,
+      customType: true,
+    })
+    this.addPattern(values.length > 0 ? "Enum Types" : "Custom Types", state)
+  }
+
+  private processNamedContainer(node: Node, kind: ASTEngine.SymbolKind, type: string, state: ParseState): void {
+    const object = this.firstDescendant(node, "object_reference")
+    const nameNode = object ? this.referenceNameNode(object) : this.firstIdentifier(node)
+    if (!nameNode) return
+    this.createSymbol(nameNode.text, kind, nameNode, null, state, { type, isSchemaEntity: true })
+    this.addPattern(type === "schema" ? "Schemas" : type === "sequence" ? "Sequences" : type === "extension" ? "Extensions" : "Roles", state)
+  }
+
+  private recordDml(node: Node, operation: string, state: ParseState): void {
+    const scope = node.parent?.type === "statement" ? node.parent : node
+    const target = this.dmlTarget(node) ?? this.referenceLeaf(this.firstDescendant(scope, "object_reference"))
+    if (target) this.addRelationship(ASTEngine.RelationshipType.Uses, "global", target, state, { operation, tableReference: true })
+    this.addPattern(`${operation.toUpperCase()} Statements`, state)
+    const queryRoot = node.parent?.type === "statement" ? node.parent : node
+    this.processQueryDependencies(queryRoot, null, state)
+  }
+
+  private processQuery(node: Node, state: ParseState, owner: SqlSymbol | null): void {
+    if (this.containsType(node, "join")) this.addPattern("Join Query Mapping", state)
+    if (this.containsType(node, "cte")) this.addPattern("Common Table Expressions (CTE)", state)
+    if (this.containsType(node, "set_operation")) this.addPattern("Set Operations (UNION/INTERSECT/EXCEPT)", state)
+    if (this.containsType(node, "subquery")) this.addPattern("Subqueries", state)
+    if (this.containsType(node, "case")) this.addPattern("Conditional Logic (CASE/WHEN)", state)
+    if (this.containsType(node, "all_fields")) {
+      this.addPattern("SELECT *", state)
+      if (state.metadata.performanceScore !== undefined) state.metadata.performanceScore = Math.max(0, state.metadata.performanceScore - 30)
+      state.metadata.architecturalInsights!.push("SELECT * detected — consider explicit column selection")
+    }
+    this.bumpComplexity(node, state)
+    this.processQueryDependencies(node, owner, state)
+    this.processCalls(node, owner?.name ?? "global", state)
+  }
+
+  private processQueryDependencies(node: Node, owner: SqlSymbol | null, state: ParseState): void {
+    const source = owner?.name ?? "global"
+    const localCtes = new Set(this.descendants(node, "cte").map((cte) => this.firstIdentifier(cte)?.text).filter((name): name is string => !!name))
+    const relations = this.descendants(node, "relation")
+    for (const relation of relations) {
+      const object = this.namedChildren(relation).find((c) => c.type === "object_reference")
+      if (object) {
+        const target = this.referenceLeaf(object)
+        if (target && !localCtes.has(target)) this.addRelationship(ASTEngine.RelationshipType.Uses, source, target, state, { tableReference: true })
+      }
+    }
+    const directFrom = this.descendants(node, "from")
+    for (const from of directFrom) {
+      for (const child of this.namedChildren(from)) {
+        if (child.type === "object_reference") {
+          const target = this.referenceLeaf(child)
+          if (target && !localCtes.has(target)) this.addRelationship(ASTEngine.RelationshipType.Uses, source, target, state, { tableReference: true })
+        }
+      }
+    }
+  }
+
+  private processCalls(node: Node, source: string, state: ParseState): void {
+    for (const invocation of this.descendants(node, "invocation")) {
+      const object = this.directChild(invocation, "object_reference")
+      const target = object ? this.referenceLeaf(object) : ""
+      if (target && !SQL_BUILTINS.has(target.toLowerCase())) {
+        this.addRelationship(ASTEngine.RelationshipType.Calls, source, target, state)
+      }
+    }
+  }
+
+  private recordTableTarget(node: Node, type: "uses" | "references", operation: string, state: ParseState): void {
+    const object = this.firstDescendant(node, "object_reference")
+    const target = object ? this.referenceLeaf(object) : undefined
+    if (target) this.addRelationship(type === "uses" ? ASTEngine.RelationshipType.Uses : ASTEngine.RelationshipType.References, "global", target, state, { operation, tableReference: true })
+  }
+
+  private dmlTarget(node: Node): string | undefined {
+    if (node.type === "insert") {
+      const object = this.directChild(node, "object_reference")
+      return object ? this.referenceLeaf(object) : undefined
+    }
+    if (node.type === "update") {
+      const relation = this.directChild(node, "relation")
+      const object = relation ? this.directChild(relation, "object_reference") : this.firstDescendant(node, "object_reference")
+      return object ? this.referenceLeaf(object) : undefined
+    }
+    if (node.type === "delete") {
+      const scope = node.parent?.type === "statement" ? node.parent : node
+      return this.referenceLeaf(this.firstDescendant(scope, "object_reference"))
+    }
+    return this.referenceLeaf(this.firstDescendant(node, "object_reference"))
+  }
+
+  private parentFrom(node: Node): Node | null {
+    let current = node.parent
+    while (current) {
+      if (current.type === "from") return current
+      current = current.parent
+    }
+    return null
   }
 
   private createSymbol(
     name: string,
     kind: ASTEngine.SymbolKind,
     node: Node,
-    parent: ASTEngine.UniversalSymbol | null,
-    symbols: ASTEngine.UniversalSymbol[],
-    meta: Record<string, any> = {},
-  ): ASTEngine.UniversalSymbol {
-    const symbol: ASTEngine.UniversalSymbol = {
-      id: parent ? `${parent.id}.${name}` : name,
+    parent: SqlSymbol | null,
+    state: ParseState,
+    metadata: Record<string, any> = {},
+    extra: Partial<SqlSymbol> = {},
+  ): SqlSymbol {
+    const identity = `${node.startIndex}:${kind}:${name}:${parent?.name ?? ""}`
+    if (state.symbolKeys.has(identity)) return state.symbols.find((s) => s.name === name && s.kind === kind && s.ownerName === parent?.name)!
+    state.symbolKeys.add(identity)
+    const symbol: SqlSymbol = {
       name,
       kind,
-      range: {
-        startLine: node.startPosition.row + 1,
-        startColumn: node.startPosition.column,
-        endLine: node.endPosition.row + 1,
-        endColumn: node.endPosition.column,
-        startIndex: node.startIndex,
-        endIndex: node.endIndex,
-      },
-      parentId: parent ? parent.id : undefined,
-      ownerName: parent ? parent.name : undefined,
-      parent: parent ? parent.name : undefined,
-      metadata: meta,
+      range: this.range(node),
+      parentId: parent ? `${parent.id}.${name}` : undefined,
+      ownerName: parent?.name,
+      ownerKind: parent?.kind,
+      parent: parent?.name,
+      metadata,
+      ...extra,
     }
-    symbols.push(symbol)
+    symbol.id = symbol.parentId ?? name
+    state.symbols.push(symbol)
+    if (parent) this.addRelationship(ASTEngine.RelationshipType.Contains, parent.name, name, state)
     return symbol
   }
 
-  private getIdentifier(node: Node): Node | null {
-    for (let i = 0; i < node.childCount; i++) {
-      const c = node.child(i)
-      if (c && (c.type === "identifier" || c.type === "word" || c.type === "string")) return c
+  private addRelationship(type: ASTEngine.RelationshipType, source: string, target: string, state: ParseState, metadata: Record<string, any> = {}): void {
+    if (!source || !target || source === target && type === ASTEngine.RelationshipType.Contains) return
+    const key = `${type}\u0000${source}\u0000${target}`
+    const existing = state.relationshipsByKey.get(key)
+    if (existing) {
+      if (metadata.operation) {
+        const operations = Array.isArray(existing.metadata?.operations) ? existing.metadata.operations : existing.metadata?.operation ? [existing.metadata.operation] : []
+        if (!operations.includes(metadata.operation)) existing.metadata = { ...existing.metadata, operations: [...operations, metadata.operation] }
+      }
+      return
+    }
+    state.relationshipKeys.add(key)
+    const relationship = { type, source, target, confidence: 1, weight: 1, metadata }
+    state.relationshipsByKey.set(key, relationship)
+    state.relationships.push(relationship)
+  }
+
+  private collectImports(root: Node, state: ParseState): void {
+    for (const node of this.descendants(root, "comment").concat(this.descendants(root, "marginalia"))) {
+      const text = node.text.trim()
+      const isHashImport = text.startsWith("#import ")
+      const isAtImport = text.startsWith("@import ")
+      if (!isHashImport && !isAtImport) continue
+      const start = text.indexOf(" ")
+      if (start < 0) continue
+      const module = this.stripImportDelimiters(text.slice(start + 1).trim())
+      if (!module) continue
+      state.imports.push({
+        module,
+        items: [],
+        importType: "sql_import",
+        lineNumber: node.startPosition.row + 1,
+        isExternal: isAtImport || module.includes("/"),
+        range: this.range(node),
+      })
+    }
+  }
+
+  private stripImportDelimiters(value: string): string {
+    let start = 0
+    let end = value.length
+    while (start < end && (value[start] === '"' || value[start] === "'" || value[start] === "<")) start++
+    while (end > start && (value[end - 1] === '"' || value[end - 1] === "'" || value[end - 1] === ">")) end--
+    return value.slice(start, end)
+  }
+
+  private addPattern(pattern: string, state: ParseState): void {
+    state.patterns.add(pattern)
+  }
+
+  private bumpComplexity(node: Node, state: ParseState): void {
+    const stack: Node[] = [node]
+    let increment = 0
+    while (stack.length) {
+      const current = stack.pop()!
+      if (current.type === "case" || current.type === "join" || current.type === "when_clause" || current.type === "set_operation") increment++
+      for (let i = 0; i < current.namedChildCount; i++) {
+        const child = current.namedChild(i)
+        if (child) stack.push(child)
+      }
+    }
+    state.metadata.cyclomaticComplexity = (state.metadata.cyclomaticComplexity ?? 1) + increment
+  }
+
+  private isDeclaration(type: string): boolean {
+    return type.startsWith("create_") || type.startsWith("alter_") || type.startsWith("drop_") || type === "insert" || type === "update" || type === "delete" || type === "select" || type === "set_operation" || type === "cte" || type === "transaction" || type === "block"
+  }
+
+  private directChild(node: Node, type: string): Node | null {
+    for (const child of this.namedChildren(node)) if (child.type === type) return child
+    return null
+  }
+
+  private firstIdentifier(node: Node | null): Node | null {
+    return node ? this.descendants(node, "identifier")[0] ?? null : null
+  }
+
+  private firstTypeNode(node: Node): Node | null {
+    for (const child of this.namedChildren(node)) {
+      if (child.type === "type" || child.type.startsWith("keyword_") && child.type !== "keyword_default") return child
     }
     return null
   }
 
-  private handleTable(
-    node: Node,
-    symbols: ASTEngine.UniversalSymbol[],
-    relationships: ASTEngine.UniversalRelationship[],
-    metadata: Partial<ASTEngine.FileMetadata>,
-    patternsObj: Record<string, boolean>,
-  ): ASTEngine.UniversalSymbol | null {
-    let nameNode: Node | null = this.getIdentifier(node)
-
-    // SQLite: table name might be inside an object_reference
-    if (!nameNode) {
-      for (let i = 0; i < node.childCount; i++) {
-        const c = node.child(i)
-        if (c && c.type === "object_reference") {
-          nameNode = this.getIdentifier(c)
-        }
-      }
-    }
-    if (!nameNode) return null
-
-    let hasPrimaryKey = false
-    let hasForeignKey = false
-
-    const tableSymbol = this.createSymbol(nameNode.text, ASTEngine.SymbolKind.Class, nameNode, null, symbols, {
-      type: "table",
-      isSchemaEntity: true,
-    })
-
-    let hasErrorNode = false
-    const queue: Node[] = [node]
-    while (queue.length > 0) {
-      const curr = queue.pop()
-      if (!curr) continue
-
-      if (curr.type === "ERROR") {
-        hasErrorNode = true
-      }
-
-      if (
-        curr.type === "create_table_column_parameter" ||
-        curr.type === "column_definition" ||
-        curr.type === "column_def" ||
-        curr.type === "column"
-      ) {
-        const colNameNode = this.getIdentifier(curr)
-        if (colNameNode) {
-          let isPK = false
-          let isUnique = false
-          let references: string | undefined = undefined
-
-          const colText = curr.text.toUpperCase()
-          if (colText.indexOf("PRIMARY KEY") !== -1) {
-            isPK = true
-            hasPrimaryKey = true
-            patternsObj["Primary Key Constraint"] = true
-          }
-          if (colText.indexOf("UNIQUE") !== -1) {
-            isUnique = true
-            patternsObj["Unique Constraint"] = true
-          }
-          for (let k = 0; k < curr.childCount; k++) {
-            const c = curr.child(k)
-            if (c && c.type === "unique_constraint") {
-              isUnique = true
-              patternsObj["Unique Constraint"] = true
-            }
-          }
-          if (colText.indexOf("REFERENCES") !== -1) {
-            hasForeignKey = true
-            patternsObj["Foreign Key Constraints"] = true
-            for (let j = 0; j < curr.childCount; j++) {
-              const child = curr.child(j)
-              if (child && child.type === "references_constraint") {
-                const refName = this.getIdentifier(child)
-                if (refName) references = refName.text
-              }
-            }
-            if (!references) {
-              // Fallback: extract REFERENCES target via pure string ops (no regex)
-              const refIdx = curr.text.toUpperCase().indexOf("REFERENCES")
-              if (refIdx !== -1) {
-                const afterRef = curr.text.substring(refIdx + 10).trim()
-                let wordEnd = 0
-                while (wordEnd < afterRef.length && 
-                       ((afterRef[wordEnd] >= "a" && afterRef[wordEnd] <= "z") ||
-                        (afterRef[wordEnd] >= "A" && afterRef[wordEnd] <= "Z") ||
-                        (afterRef[wordEnd] >= "0" && afterRef[wordEnd] <= "9") ||
-                        afterRef[wordEnd] === "_")) {
-                  wordEnd++
-                }
-                if (wordEnd > 0) references = afterRef.substring(0, wordEnd)
-              }
-            }
-          }
-
-          this.createSymbol(colNameNode.text, ASTEngine.SymbolKind.Property, colNameNode, tableSymbol, symbols, {
-            type: "column",
-            isPrimaryKey: isPK,
-            isUnique,
-            references,
-          })
-        }
-      } else if (curr.type === "references_constraint" || curr.type === "foreign_key_constraint") {
-        patternsObj["Foreign Key Constraints"] = true
-        let tableRefNode = this.getIdentifier(curr)
-        if (!tableRefNode) {
-          for (let j = 0; j < curr.childCount; j++) {
-            const child = curr.child(j)
-            if (child && child.type === "object_reference") {
-              tableRefNode = this.getIdentifier(child)
-            }
-          }
-        }
-        if (tableRefNode) {
-          hasForeignKey = true
-          relationships.push({
-            type: ASTEngine.RelationshipType.Uses,
-            source: tableSymbol.name,
-            target: tableRefNode.text,
-            isExternal: true,
-            weight: 1,
-            metadata: { constraint: "foreign_key", isForeignKey: true },
-          })
-          relationships.push({
-            type: ASTEngine.RelationshipType.References,
-            source: tableSymbol.name,
-            target: tableRefNode.text,
-            isExternal: true,
-            weight: 1,
-            metadata: { constraint: "foreign_key", isForeignKey: true },
-          })
-        }
-      } else if (curr.type === "primary_key_constraint") {
-        hasPrimaryKey = true
-        patternsObj["Primary Key Constraint"] = true
-      }
-
-      for (let i = curr.childCount - 1; i >= 0; i--) {
-        const child = curr.child(i)
-        if (child) queue.push(child)
-      }
-    }
-
-    // Fallback for badly parsed trees containing ERROR nodes (like VARCHAR(50) UNIQUE)
-    if (hasErrorNode) {
-      const textUpper = node.text.toUpperCase()
-      if (textUpper.indexOf("UNIQUE") !== -1) {
-        patternsObj["Unique Constraint"] = true
-
-        let inParens = 0
-        let currentLine = ""
-        const rawText = node.text
-        for (let i = 0; i < rawText.length; i++) {
-          const char = rawText[i]
-          if (char === "(") inParens++
-          else if (char === ")") inParens--
-
-          if (char === "\n" || char === ",") {
-            if (currentLine.toUpperCase().indexOf("UNIQUE") !== -1) {
-              const trimmed = currentLine.trim()
-              let spaceIdx = 0
-              for (let k = 0; k < trimmed.length; k++) {
-                if (trimmed[k] === " " || trimmed[k] === "\t") {
-                  spaceIdx = k
-                  break
-                }
-              }
-              if (spaceIdx > 0) {
-                const colName = trimmed.substring(0, spaceIdx)
-                if (
-                  colName &&
-                  colName.toUpperCase() !== "UNIQUE" &&
-                  colName.toUpperCase() !== "CONSTRAINT" &&
-                  colName.toUpperCase() !== "CREATE"
-                ) {
-                  // Check if we didn't already extract it
-                  let exists = false
-                  for (let j = 0; j < symbols.length; j++) {
-                    if (
-                      symbols[j].name === colName &&
-                      symbols[j].kind === ASTEngine.SymbolKind.Property &&
-                      symbols[j].parentId === tableSymbol.id
-                    ) {
-                      symbols[j].metadata = symbols[j].metadata || {}
-                      symbols[j].metadata!.isUnique = true
-                      exists = true
-                      break
-                    }
-                  }
-                  if (!exists) {
-                    this.createSymbol(colName, ASTEngine.SymbolKind.Property, node, tableSymbol, symbols, {
-                      type: "column",
-                      isUnique: true,
-                    })
-                  }
-                }
-              }
-            }
-            currentLine = ""
-          } else {
-            currentLine += char
-          }
-        }
-      }
-    }
-
-    if (hasForeignKey) {
-      let found = false
-      if (metadata.architecturalInsights) {
-        for (let i = 0; i < metadata.architecturalInsights.length; i++) {
-          if (metadata.architecturalInsights[i].indexOf("Relational integrity") !== -1) found = true
-        }
-        if (!found) metadata.architecturalInsights.push("Relational integrity enforced via Foreign Keys")
-      }
-    }
-
-    let normalizationScore = 50
-    if (hasPrimaryKey) normalizationScore += 10
-    if (hasForeignKey) normalizationScore += 20
-    ;(metadata as any).normalizationScore = normalizationScore
-
-    return tableSymbol
+  private returnTypeNode(node: Node): Node | null {
+    const children = this.namedChildren(node)
+    const returns = children.findIndex((c) => c.type === "keyword_returns")
+    if (returns >= 0) return children[returns + 1] ?? null
+    return null
   }
 
-  private handleView(
-    node: Node,
-    symbols: ASTEngine.UniversalSymbol[],
-    relationships: ASTEngine.UniversalRelationship[],
-    metadata: Partial<ASTEngine.FileMetadata>,
-  ): ASTEngine.UniversalSymbol | null {
-    const nameNode = this.getIdentifier(node)
-    if (!nameNode) return null
-
-    const viewSymbol = this.createSymbol(nameNode.text, ASTEngine.SymbolKind.Class, nameNode, null, symbols, {
-      type: "view",
-      isSchemaEntity: true,
-    })
-
-    let queryNode: Node | null = null
-    for (let i = 0; i < node.childCount; i++) {
-      const c = node.child(i)
-      if (c && (c.type === "select_statement" || c.type === "select")) queryNode = c
-    }
-    if (queryNode) {
-      this.handleSelect(queryNode, symbols, relationships, metadata, {}, viewSymbol)
-    }
-
-    return viewSymbol
+  private referenceNameNode(node: Node): Node | null {
+    if (node.type === "identifier" || node.type === "word") return node
+    return node.childForFieldName?.("name") ?? this.lastIdentifier(node)
   }
 
-  private handleIndex(
-    node: Node,
-    symbols: ASTEngine.UniversalSymbol[],
-    relationships: ASTEngine.UniversalRelationship[],
-    metadata: Partial<ASTEngine.FileMetadata>,
-    patternsObj: Record<string, boolean>,
-  ) {
-    const nameNode = this.getIdentifier(node)
-    if (nameNode) {
-      const indexSymbol = this.createSymbol(nameNode.text, ASTEngine.SymbolKind.Constant, nameNode, null, symbols, {
-        type: "index",
-        indexName: nameNode.text,
-      })
-      patternsObj["Custom Indexes"] = true
+  private lastIdentifier(node: Node): Node | null {
+    const ids = this.descendants(node, "identifier")
+    return ids.length ? ids[ids.length - 1] : null
+  }
 
-      // Extract table name the index is on: CREATE INDEX idx ON table_name (...)
-      // Tree-sitter-sql: create_index_statement → [identifier idx, identifier table, parameters (...)]
-      // The second identifier (after the index name) is the table name
-      let tableName = ""
-      let foundFirstName = false
-      for (let i = 0; i < node.childCount; i++) {
-        const c = node.child(i)
-        if (c && (c.type === "identifier" || c.type === "word")) {
-          if (!foundFirstName) {
-            foundFirstName = true
-          } else {
-            tableName = c.text
-            break
-          }
-        }
-      }
-      if (tableName) {
-        relationships.push({
-          type: ASTEngine.RelationshipType.References,
-          source: indexSymbol.name,
-          target: tableName,
-          isExternal: false,
-          weight: 1,
-          metadata: { dependency: true, indexOn: tableName },
-        })
-      }
+  private referenceLeaf(node: Node | null): string | undefined {
+    const name = node ? this.referenceNameNode(node) : null
+    return name?.text
+  }
 
-      if (metadata.performanceScore !== undefined) {
-        metadata.performanceScore += 10
+  private referenceText(node: Node): string {
+    const ids = this.descendants(node, "identifier")
+    return ids.map((id) => id.text).join(".")
+  }
+
+  private constraintNameNode(node: Node): Node | null {
+    const children = this.namedChildren(node)
+    const keyword = children.findIndex((c) => c.type === "keyword_constraint")
+    if (keyword >= 0) return children.slice(keyword + 1).find((c) => identifierTypes.has(c.type)) ?? null
+    return null
+  }
+
+  private identifierTexts(node: Node | null): string[] {
+    return node ? this.descendants(node, "identifier").map((n) => n.text) : []
+  }
+
+  private literalTexts(node: Node | null): string[] {
+    return node ? this.descendants(node, "literal").map((n) => n.text) : []
+  }
+
+  private containsType(node: Node, type: string): boolean {
+    return node.type === type || this.descendants(node, type).length > 0
+  }
+
+  private firstDescendant(node: Node, type: string): Node | null {
+    if (node.type === type) return node
+    return this.descendants(node, type)[0] ?? null
+  }
+
+  private descendants(node: Node, type?: string): Node[] {
+    const result: Node[] = []
+    const stack: Node[] = []
+    for (let i = node.namedChildCount - 1; i >= 0; i--) {
+      const child = node.namedChild(i)
+      if (child) stack.push(child)
+    }
+    while (stack.length) {
+      const current = stack.pop()!
+      if (!type || current.type === type) result.push(current)
+      for (let i = current.namedChildCount - 1; i >= 0; i--) {
+        const child = current.namedChild(i)
+        if (child) stack.push(child)
       }
+    }
+    return result
+  }
+
+  private namedChildren(node: Node): Node[] {
+    const result: Node[] = []
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const child = node.namedChild(i)
+      if (child) result.push(child)
+    }
+    return result
+  }
+
+  private range(node: Node): SqlSymbol["range"] {
+    return {
+      startLine: node.startPosition.row + 1,
+      startColumn: node.startPosition.column,
+      endLine: node.endPosition.row + 1,
+      endColumn: node.endPosition.column,
+      startIndex: node.startIndex,
+      endIndex: node.endIndex,
     }
   }
 
-  private handleFunction(
-    node: Node,
-    symbols: ASTEngine.UniversalSymbol[],
-    relationships: ASTEngine.UniversalRelationship[],
-    metadata: Partial<ASTEngine.FileMetadata>,
-    patternsObj: Record<string, boolean>,
-  ): ASTEngine.UniversalSymbol | null {
-    const nameNode = this.getIdentifier(node)
-    if (!nameNode) return null
-
-    const fnName = nameNode.text
-    const fnSymbol = this.createSymbol(fnName, ASTEngine.SymbolKind.Function, nameNode, null, symbols, {
-      functionName: fnName,
-    })
-
-    let paramsNode: Node | null = null
-    for (let i = 0; i < node.childCount; i++) {
-      const c = node.child(i)
-      if (c && c.type === "parameters") paramsNode = c
-    }
-
-    if (paramsNode) {
-      const queue: Node[] = [paramsNode]
-      while (queue.length > 0) {
-        const curr = queue.pop()!
-        if (curr.type === "identifier" || curr.type === "word") {
-          this.createSymbol(curr.text, ASTEngine.SymbolKind.Variable, curr, fnSymbol, symbols, { parameter: true })
-        }
-        for (let i = curr.childCount - 1; i >= 0; i--) {
-          const child = curr.child(i)
-          if (child) queue.push(child)
-        }
-      }
-    }
-
-    let bodyNode: Node | null = null
-    for (let i = 0; i < node.childCount; i++) {
-      const c = node.child(i)
-      if (c && c.type === "body") bodyNode = c
-    }
-
-    if (bodyNode) {
-      const queue: Node[] = [bodyNode]
-      while (queue.length > 0) {
-        const curr = queue.pop()!
-        if (curr.type === "select_statement" || curr.type === "select") {
-          this.handleSelect(curr, symbols, relationships, metadata, patternsObj, fnSymbol)
-        } else if (curr.type === "identifier" || curr.type === "word") {
-          relationships.push({
-            type: ASTEngine.RelationshipType.Uses,
-            source: fnSymbol.name,
-            target: curr.text,
-            isExternal: true,
-            weight: 1,
-            metadata: {},
-          })
-        }
-        for (let i = curr.childCount - 1; i >= 0; i--) {
-          const child = curr.child(i)
-          if (child) queue.push(child)
-        }
-      }
-    }
-
-    return fnSymbol
-  }
-
-  private handleTrigger(node: Node, symbols: ASTEngine.UniversalSymbol[], patternsObj: Record<string, boolean>) {
-    const nameNode = this.getIdentifier(node)
-    if (nameNode) {
-      this.createSymbol(nameNode.text, ASTEngine.SymbolKind.Function, nameNode, null, symbols, { isTrigger: true })
-      patternsObj["Triggers"] = true
-    }
-  }
-
-  private handleProcedure(node: Node, symbols: ASTEngine.UniversalSymbol[], patternsObj: Record<string, boolean>) {
-    const nameNode = this.getIdentifier(node)
-    if (nameNode) {
-      this.createSymbol(nameNode.text, ASTEngine.SymbolKind.Function, nameNode, null, symbols, { isProcedure: true })
-      patternsObj["Stored Procedures"] = true
-    }
-  }
-
-  private handleAlterTable(node: Node, symbols: ASTEngine.UniversalSymbol[], metadata: Partial<ASTEngine.FileMetadata>, patternsObj: Record<string, boolean>) {
-    patternsObj["Schema Evolution (ALTER)"] = true
-    const nameNode = this.getIdentifier(node)
-    if (nameNode) {
-      this.createSymbol(`ALTER_${nameNode.text}`, ASTEngine.SymbolKind.Class, node, null, symbols, { isAlterTable: true, targetTable: nameNode.text })
-    }
-  }
-
-  private handleTypeDomain(node: Node, symbols: ASTEngine.UniversalSymbol[]) {
-    const nameNode = this.getIdentifier(node)
-    if (nameNode) {
-      this.createSymbol(nameNode.text, ASTEngine.SymbolKind.Type, nameNode, null, symbols, { customType: true })
-    }
-  }
-
-  private handleDML(node: Node, symbols: ASTEngine.UniversalSymbol[]) {
-    const nameNode = this.getIdentifier(node)
-    if (nameNode) {
-      this.createSymbol(nameNode.text, ASTEngine.SymbolKind.Variable, nameNode, null, symbols, {
-        isDML: true,
-      })
-    }
-  }
-
-  private handleSelect(
-    node: Node,
-    symbols: ASTEngine.UniversalSymbol[],
-    relationships: ASTEngine.UniversalRelationship[],
-    metadata: Partial<ASTEngine.FileMetadata>,
-    patternsObj: Record<string, boolean>,
-    parentSymbol: ASTEngine.UniversalSymbol | null,
-  ) {
-    // NOTE: An anonymous SELECT is a statement, not a declaration — it is NOT
-    // emitted as a query_<row> symbol (that was noise). It still contributes
-    // FROM-table relationships and query patterns below.
-
-    const queue: Node[] = [node]
-    while (queue.length > 0) {
-      const curr = queue.pop()
-      if (!curr) continue
-
-      const upperText = curr.text.toUpperCase()
-      if (curr.type === "join_clause" || curr.type === "join") {
-        patternsObj["Join Query Mapping"] = true
-      }
-
-      if (curr.type === "select_list" || curr.type === "select_clause" || curr.type === "select") {
-        for (let i = 0; i < curr.namedChildCount; i++) {
-          const child = curr.namedChild(i)
-          if (child && (child.type === "asterisk" || (child.type === "all" && child.text === "*"))) {
-            if (metadata.performanceScore !== undefined && (metadata.performanceScore as number) > 75) {
-              metadata.performanceScore = (metadata.performanceScore as number) - 30
-            }
-            metadata.architecturalInsights = metadata.architecturalInsights || []
-            metadata.architecturalInsights.push("SELECT * detected — consider explicit column selection")
-          }
-        }
-      }
-
-      for (let i = curr.childCount - 1; i >= 0; i--) {
-        const child = curr.child(i)
-        if (child) queue.push(child)
-      }
-    }
-
-    if (parentSymbol) {
-      let fromClause: Node | null = null
-      for (let i = 0; i < node.childCount; i++) {
-        const c = node.child(i)
-        if (c && (c.type === "from_clause" || c.type === "from")) fromClause = c
-      }
-      if (fromClause) {
-        const localQueue: Node[] = [fromClause]
-        while (localQueue.length > 0) {
-          const curr = localQueue.pop()!
-          if (curr.type === "identifier" || curr.type === "word") {
-            relationships.push({
-              type: ASTEngine.RelationshipType.Uses,
-              source: parentSymbol.name,
-              target: curr.text,
-              isExternal: true,
-              weight: 1,
-              metadata: { tableReference: true },
-            })
-            // View/Function depends on the tables it queries
-            if (parentSymbol.metadata?.type === "view" || parentSymbol.metadata?.functionName) {
-              relationships.push({
-                type: ASTEngine.RelationshipType.References,
-                source: parentSymbol.name,
-                target: curr.text,
-                isExternal: true,
-                weight: 1,
-                metadata: { dependency: true, tableReference: true },
-              })
-            }
-          }
-          for (let i = curr.childCount - 1; i >= 0; i--) {
-            const child = curr.child(i)
-            if (child) localQueue.push(child)
-          }
-        }
-      }
-    }
+  private countLines(content: string): number {
+    let lines = 1
+    for (let i = 0; i < content.length; i++) if (content[i] === "\n") lines++
+    return lines
   }
 }
