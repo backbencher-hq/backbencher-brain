@@ -2,23 +2,23 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-08-20T14:08:06.322Z",
+  "generatedAt": "2026-08-20T14:55:22.965Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 39,
+  "totalRegexUsages": 37,
   "analyzersScanned": 41,
   "byClassification": {
     "unavoidable": 6,
     "normalization": 19,
     "replaceable": 1,
-    "needs_review": 13
+    "needs_review": 11
   },
   "byReceiverCategory": {
     "literal": 6,
     "node_text": 19,
     "raw_content": 1,
-    "other": 5,
-    "identifier": 8
+    "other": 4,
+    "identifier": 7
   },
   "perFile": [
     {
@@ -448,34 +448,6 @@
           "operation": "replace",
           "receiver": "typeGuess",
           "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-yaml-analyzer.ts",
-      "count": 2,
-      "usages": [
-        {
-          "file": "real-yaml-analyzer.ts",
-          "line": 160,
-          "column": 34,
-          "source": "/\\.yaml\\.template$/i",
-          "operation": "replace",
-          "receiver": "base",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-yaml-analyzer.ts",
-          "line": 160,
-          "column": 68,
-          "source": "/\\.ya?ml$/i",
-          "operation": "replace",
-          "receiver": "base.replace(/\\.yaml\\.template$/i, \"\")",
-          "receiverCategory": "other",
           "classification": "needs_review",
           "justification": ""
         }

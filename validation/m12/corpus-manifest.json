@@ -772,11 +772,34 @@
   },
   {
    "analyzer": "yaml",
-   "corpusTarget": "flutter",
-   "status": "dirty_or_unpinned",
+   "corpusTarget": "grails_core",
+   "status": "measured",
    "candidates": [
-    "flutter@68dc5cf4(dirty)"
-   ]
+    "grails_core@a83f8748(clean)"
+   ],
+   "measured": {
+    "revision": "a83f87480e0c0138caa5a7191a053b1e59a64066",
+    "sample": "273 strict tracked *.yaml/*.yml files from grails_core (274 tracked; one named unexpanded Grails template excluded explicitly)",
+    "fixtures": 4,
+    "fixtureFacts": 87,
+    "precision": 1,
+    "recall": 1,
+    "corpusSymbols": 12210,
+    "corpusRelationships": 11739,
+    "grammarErrorFiles": 1,
+    "grammarErrorNodes": 1,
+    "strictAcceptanceFiles": 273,
+    "trackedFiles": 274,
+    "excludedFiles": ["grails-profiles/base/skeleton/grails-app/conf/application.yml"],
+    "unexpectedGrammarErrorFiles": 0,
+    "crashFiles": 0,
+    "wallMs": 4737.996237,
+    "filesPerSecond": 57.61929439033449,
+    "symbolsPerSecond": 2577.0387710841906,
+    "relationshipsPerSecond": 2477.629658784383,
+    "measuredAt": "2026-08-20T14:54:54.000Z",
+    "note": "YAML analyzer uses one iterative AST traversal with Set-backed relationship dedupe. All 273 strict acceptance files parse with 0 errors and 0 crashes. The single excluded file is a Grails skeleton template containing unquoted @...@ placeholders, invalid YAML before template expansion; yaml-corpus-errors.json records it explicitly."
+   }
   },
   {
    "analyzer": "hcl",
