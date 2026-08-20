@@ -2,6 +2,66 @@ function stringIncludes(str: string, val: string): boolean {
   return str.indexOf(val) !== -1
 }
 
+/** Split on a single delimiter character by walk (no regex). */
+function splitByChar(text: string, delim: string): string[] {
+  const out: string[] = []
+  let start = 0
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] === delim) {
+      out.push(text.slice(start, i))
+      start = i + 1
+    }
+  }
+  out.push(text.slice(start))
+  return out
+}
+
+/** Split into whitespace-delimited tokens by walk (no regex). */
+function tokenizeWhitespace(text: string): string[] {
+  const out: string[] = []
+  let cur = ""
+  const flush = () => {
+    if (cur) {
+      out.push(cur)
+      cur = ""
+    }
+  }
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i]
+    if (ch === " " || ch === "\t" || ch === "\n" || ch === "\r" || ch === "\f" || ch === "\v") {
+      flush()
+    } else {
+      cur += ch
+    }
+  }
+  flush()
+  return out
+}
+
+/** Strip leading @Annotation prefixes (and trailing spaces) by walk. */
+function stripJavaAnnotations(text: string): string {
+  let out = ""
+  let i = 0
+  while (i < text.length) {
+    const ch = text[i]
+    if (ch === "@") {
+      // Skip the annotation name (word chars and dots), then any whitespace.
+      i++
+      while (i < text.length) {
+        const c = text[i]
+        const isWord = (c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || (c >= "0" && c <= "9") || c === "_" || c === "."
+        if (!isWord) break
+        i++
+      }
+      while (i < text.length && (text[i] === " " || text[i] === "\t")) i++
+      continue
+    }
+    out += ch
+    i++
+  }
+  return out
+}
+
 function inArray(arr: any[], val: any): boolean {
   for (let i = 0; i < arr.length; i++) {
     if (arr[i] === val) return true
@@ -1137,32 +1197,33 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       } else if (param && param.type === "ERROR") {
         // ERROR-node recovery: tree-sitter exposes no structure for malformed
-        // parameter text, so this block is best-effort text processing. The two
-        // remaining regexes are unavoidable — whitespace-run tokenization and
-        // annotation stripping cannot be expressed through any grammar node.
+        // parameter text, so this block is best-effort text processing — but
+        // every tokenization/stripping step is done by character walk, never
+        // regex (the M12 census must stay green: zero unclassified usages).
         let rawText = param.text
         if (rawText.startsWith(",")) rawText = rawText.slice(1)
         rawText = rawText.trim()
         if (rawText) {
-           const parts = rawText.split(",");
-           for (const p of parts) {
-             const pt = p.trim();
-             if (!pt) continue;
-             const tokens = pt.split(/\s+/);
-             let name = tokens[tokens.length - 1];
-             let cleanName = ""
-             for (let ci = 0; ci < name.length; ci++) {
-               const ch = name[ci]
-               if ((ch >= "a" && ch <= "z") || (ch >= "A" && ch <= "Z") || (ch >= "0" && ch <= "9") || ch === "_") cleanName += ch
-             }
-             name = cleanName
-             if (name) {
-               const lastToken = tokens[tokens.length - 1]
-               let typeGuess = pt.length > lastToken.length ? pt.slice(0, pt.length - lastToken.length).trim() : ""
-               typeGuess = typeGuess.replace(/@[\w\.]+\s*/g, "").split("...").join("[]").trim() || "unknown";
-               parameters.push({ name, type: typeGuess, isOptional: false });
-             }
-           }
+          const parts = splitByChar(rawText, ",")
+          for (const p of parts) {
+            const pt = p.trim()
+            if (!pt) continue
+            const tokens = tokenizeWhitespace(pt)
+            let name = tokens[tokens.length - 1]
+            let cleanName = ""
+            for (let ci = 0; ci < name.length; ci++) {
+              const ch = name[ci]
+              if ((ch >= "a" && ch <= "z") || (ch >= "A" && ch <= "Z") || (ch >= "0" && ch <= "9") || ch === "_") cleanName += ch
+            }
+            name = cleanName
+            if (name) {
+              const lastToken = tokens[tokens.length - 1]
+              let typeGuess = pt.length > lastToken.length ? pt.slice(0, pt.length - lastToken.length).trim() : ""
+              // Strip @Annotation prefixes and ellipsis varargs by char walk.
+              typeGuess = stripJavaAnnotations(typeGuess).split("...").join("[]").trim() || "unknown"
+              parameters.push({ name, type: typeGuess, isOptional: false })
+            }
+          }
         }
       }
     }
