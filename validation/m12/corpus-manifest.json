@@ -870,11 +870,37 @@
   },
   {
    "analyzer": "bash",
-   "corpusTarget": "proxicall",
-   "status": "dirty_or_unpinned",
+   "corpusTarget": "fsharp",
+   "status": "measured",
    "candidates": [
-    "proxicall@383e603e(dirty)"
-   ]
+    "proxicall@383e603e(dirty)",
+    "fsharp@22a8a5dc(clean)"
+   ],
+   "measured": {
+    "revision": "22a8a5dcc724ea58041b8bc0b95e51268d7b656d",
+    "sample": "32 tracked *.sh/*.bash files from fsharp — the dotnet/arcade engineering scripts (eng/common/*, build.sh, cibuild.sh) plus real project tooling; the richest real-world bash subset among the pinned clean corpora",
+    "fixtures": 3,
+    "fixtureFacts": 55,
+    "precision": 1,
+    "recall": 1,
+    "corpusSymbols": 674,
+    "corpusRelationships": 1311,
+    "grammarErrorFiles": 2,
+    "strictAcceptanceFiles": 30,
+    "trackedFiles": 32,
+    "excludedFiles": [
+     "eng/common/init-tools-native.sh",
+     "eng/common/pipeline-logging-functions.sh"
+    ],
+    "unexpectedGrammarErrorFiles": 0,
+    "crashFiles": 0,
+    "wallMs": 1020.38129,
+    "filesPerSecond": 29.400774292911624,
+    "symbolsPerSecond": 660.5373957807478,
+    "relationshipsPerSecond": 1284.813836600238,
+    "measuredAt": "2026-08-20T17:15:20.000Z",
+    "note": "Bash analyzer rewritten as a pure iterative Tree-sitter DFS with zero regexes (census 12 → 0), constant-time scope stack, Map-based function params, declaration-dedupe set, and Set-backed relationship dedupe. Two real fsharp files contain valid bash edge constructs — a POSIX-class regex match inside [[ ]] (init-tools-native.sh:120) and a ] pattern in a parameter expansion (pipeline-logging-functions.sh:152) — that the vendored tree-sitter-bash grammar does not model; they are recorded as named grammar limitations by bash-corpus-errors.ts, never hidden, and excluded from strict acceptance. proxicall remains dirty (user working tree) and is not used."
+   }
   },
   {
    "analyzer": "powershell",
