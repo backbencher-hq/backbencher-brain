@@ -195,11 +195,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:groovy",
-      "wallTimeMs": 96.756092,
-      "userCpuMs": 205.254,
-      "systemCpuMs": 19.36,
-      "peakRssBytes": 212897792,
-      "rssDeltaBytes": 14643200,
+      "wallTimeMs": 158.012809,
+      "userCpuMs": 174.463,
+      "systemCpuMs": 26.861,
+      "peakRssBytes": 227889152,
+      "rssDeltaBytes": 8749056,
       "databaseBytes": null,
       "files": null,
       "symbols": null,

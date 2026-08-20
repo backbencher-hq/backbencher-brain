@@ -231,11 +231,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:csharp",
-      "wallTimeMs": 201.196115,
-      "userCpuMs": 479.806,
-      "systemCpuMs": 34.05,
-      "peakRssBytes": 250200064,
-      "rssDeltaBytes": 12046336,
+      "wallTimeMs": 144.555901,
+      "userCpuMs": 455.009,
+      "systemCpuMs": 32.704,
+      "peakRssBytes": 290140160,
+      "rssDeltaBytes": 17829888,
       "databaseBytes": null,
       "files": null,
       "symbols": null,

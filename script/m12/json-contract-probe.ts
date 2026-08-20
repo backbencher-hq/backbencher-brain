@@ -1,7 +1,7 @@
 import { writeFileSync } from "node:fs"
 import { ASTEngine } from "../../src/ast/engine"
 
-const file = "validation/m12/fixtures/json/schema.json"
+const file = "validation/m12/fixtures/json/api-contract.json"
 const source = await Bun.file(file).text()
 const parsed = await ASTEngine.parseFile(file, source)
 const symbols = parsed.symbols ?? []

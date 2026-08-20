@@ -11,7 +11,7 @@ import { fork, type ChildProcess } from "child_process"
 import * as Log from "../tool/brain-log"
 import type { ProjectID } from "../project/schema"
 import { BrainDatabase } from "../brain/database"
-import { isIndexArtifactName } from "./analysis-exclusions"
+import { isIndexArtifactName, isIndexArtifactNameStrict } from "./analysis-exclusions"
 import { Bus } from "../bus"
 import { BrainService } from "../brain/service"
 import { readdir, stat } from "fs/promises"
@@ -1471,17 +1471,32 @@ export async function storeResults(
         const fileLang = (result.language || "").toLowerCase()
         // JS-global names are only noise for JS-family languages; a Scala
         // `object Global` or `def process` is a legitimate declaration and
-        // must survive indexing. Universal entries below are keywords,
-        // literals, and synthetic tree-sitter artifacts — noise everywhere.
+        // must survive indexing. Universal entries below are keywords and
+        // synthetic tree-sitter artifacts — noise everywhere. Language-literal
+        // words (None/True/False/nil/...) are NOT here: they are legitimate
+        // identifiers in verified analyzer output (e.g. TypeScript/C# enum
+        // members named `None`) and only the regex fallback path can pick
+        // them up as noise (const None = ...), so they are gated on fallback.
         const JS_FAMILY = new Set(["javascript", "typescript", "tsx", "vue", "svelte"])
         const SYMBOL_NAME_DENYLIST = new Set([
           "this", "super", "self", "Self", "me", "My",
-          "true", "false", "null", "nil", "None", "True", "False",
-          "undefined", "NaN", "Infinity",
           "root", "program", "source_file", "module_declaration",
           "package_manifest", "GlobalScope", "SCSS_FILE_SCOPE",
           "unknown",
         ])
+        const isFallbackResult = !!result.fallback
+        if (isFallbackResult) {
+          SYMBOL_NAME_DENYLIST.add("true")
+          SYMBOL_NAME_DENYLIST.add("false")
+          SYMBOL_NAME_DENYLIST.add("null")
+          SYMBOL_NAME_DENYLIST.add("nil")
+          SYMBOL_NAME_DENYLIST.add("None")
+          SYMBOL_NAME_DENYLIST.add("True")
+          SYMBOL_NAME_DENYLIST.add("False")
+          SYMBOL_NAME_DENYLIST.add("undefined")
+          SYMBOL_NAME_DENYLIST.add("NaN")
+          SYMBOL_NAME_DENYLIST.add("Infinity")
+        }
         if (JS_FAMILY.has(fileLang)) {
           SYMBOL_NAME_DENYLIST.add("global")
           SYMBOL_NAME_DENYLIST.add("Global")
@@ -1642,7 +1657,15 @@ export async function storeResults(
               }
             }
 
-            if (symbolStartLine < 1 || isIndexArtifactName(symbol.name)) continue
+            // Verified analyzer output gets the narrow (hard-artifact) name
+            // filter only — soft rules (quotes, parentheses, whitespace,
+            // numeric prefixes, punctuation) are legitimate symbol contracts
+            // (CSS selectors, Markdown headings, F# active patterns, YAML
+            // merge keys). The regex fallback path gets the strict filter.
+            const nameIsArtifact = isFallbackResult
+              ? isIndexArtifactNameStrict(symbol.name)
+              : isIndexArtifactName(symbol.name)
+            if (symbolStartLine < 1 || nameIsArtifact) continue
             insertSymbol.run(
               symbolId,
               projectId,

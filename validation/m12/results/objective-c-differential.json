@@ -133,11 +133,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:objective-c",
-      "wallTimeMs": 30.423451,
-      "userCpuMs": 69.78,
-      "systemCpuMs": 9.397,
-      "peakRssBytes": 272969728,
-      "rssDeltaBytes": 5636096,
+      "wallTimeMs": 34.536228,
+      "userCpuMs": 59.494,
+      "systemCpuMs": 17.078,
+      "peakRssBytes": 264904704,
+      "rssDeltaBytes": 3055616,
       "databaseBytes": null,
       "files": null,
       "symbols": null,

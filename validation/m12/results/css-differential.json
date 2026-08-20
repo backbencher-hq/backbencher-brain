@@ -82,11 +82,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:css",
-      "wallTimeMs": 77.818737,
-      "userCpuMs": 47.709,
-      "systemCpuMs": 7.616,
-      "peakRssBytes": 194215936,
-      "rssDeltaBytes": 5398528,
+      "wallTimeMs": 20.269982,
+      "userCpuMs": 46.92,
+      "systemCpuMs": 4.975,
+      "peakRssBytes": 216166400,
+      "rssDeltaBytes": 5042176,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
