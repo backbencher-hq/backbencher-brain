@@ -70,7 +70,7 @@ Independent fixtures cover:
 - nested object and array paths, indexed array objects, scalar types, nulls,
   booleans, and empty objects (`validation/m12/fixtures/json/Negative.json`);
 - JSON Schema `$schema`, `$defs`, `properties`, `required`, `items`, local
-  `$ref`, and validation keywords (`schema.json`);
+  `$ref`, and validation keywords (`api-contract.json`);
 - package name/version, scripts, direct dependencies, dev dependencies, and
   engine constraints (`package.json`).
 

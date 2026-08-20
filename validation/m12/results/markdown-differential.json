@@ -114,11 +114,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:markdown",
-      "wallTimeMs": 81.081565,
-      "userCpuMs": 217.736,
-      "systemCpuMs": 23.398,
-      "peakRssBytes": 243081216,
-      "rssDeltaBytes": 12976128,
+      "wallTimeMs": 33.115894,
+      "userCpuMs": 166.328,
+      "systemCpuMs": 19.252,
+      "peakRssBytes": 240840704,
+      "rssDeltaBytes": 11280384,
       "databaseBytes": null,
       "files": null,
       "symbols": null,

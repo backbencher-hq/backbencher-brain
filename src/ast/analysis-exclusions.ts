@@ -79,10 +79,6 @@ export function isAnalysisExcluded(relativePath: string): boolean {
 export function isNoiseSymbolName(name: string): boolean {
   if (!name) return true
   if (name.length > 500) return true
-  // Quoted identifiers leak from string module/property declarations.
-  if (name.includes('"') || name.includes("'")) return true
-  // Parenthesized placeholder names from closure analysis ((call), (anonymous)).
-  if (name.startsWith("(")) return true
   // Synthesized placeholder symbols.
   if (/^(anonymous|anon|unnamed)[_-]/i.test(name)) return true
   if (/^(block|lambda)[_-]\d+/i.test(name)) return true
@@ -91,27 +87,29 @@ export function isNoiseSymbolName(name: string): boolean {
   if (/^(this|global|window|self|super|arguments|undefined|null)$/.test(name)) return true
   // Absolute file paths indexed as symbol names (indexer artifact).
   if (name.startsWith("/") && name.includes("/")) return true
-  // Numeric garbage parsed from fixtures (-1.0, 0.000…, 1.., .1, 1.2e-20).
-  if (/^[+-]?[.\d]/.test(name)) return true
   // Property-access chains rooted at an instance (host.createProgram).
   if (/^[a-z_$][\w$]*(\.[\w$]+)+$/.test(name)) return true
-  // Embedded whitespace is a parse artifact; C++ operator names are the exception.
-  if (name.includes(" ") && !name.startsWith("operator")) return true
-  // Pure punctuation garbage.
-  return !/[\p{L}]/u.test(name)
+  // NOTE: soft rules (quoted names, parenthesized names, numeric prefixes,
+  // embedded whitespace, pure punctuation) are deliberately absent — they are
+  // VERIFIED symbol contracts (CSS selectors like tr[data-order="1001"],
+  // F# active patterns (|Even|Odd|), Markdown headings like "1.0.0 - 2026-01-01",
+  // YAML merge keys <<) that the store layer now persists intentionally.
+  return false
 }
 
 /**
- * Store-time artifact check: unambiguous analyzer garbage that can never be a
- * legitimate symbol. Narrower than isNoiseSymbolName — dotted chains are NOT
- * dropped here because Dart named constructors (Type.fromJson) are legitimate
- * and must reach the index.
+ * Store-time artifact check for VERIFIED ANALYZER output: unambiguous garbage
+ * that can never be a legitimate symbol. Deliberately narrow — quoted names
+ * (CSS attribute selectors), parenthesized names (F# active patterns),
+ * numeric prefixes and whitespace (Markdown version/heading symbols) and
+ * punctuation-only names (YAML merge keys) are all VERIFIED symbol contracts
+ * (P/R 1.000 against hand-audited ground truth) and must reach the index.
+ * Dotted chains are NOT dropped here either — Dart named constructors
+ * (Type.fromJson) are legitimate and must reach the index.
  */
 export function isIndexArtifactName(name: string): boolean {
   if (!name) return true
   if (name.length > 500) return true
-  if (name.includes('"') || name.includes("'")) return true
-  if (name.startsWith("(")) return true
   if (/^(anonymous|anon|unnamed)[_-]/i.test(name)) return true
   if (/^(block|lambda)[_-]\d+/i.test(name)) return true
   if (/^object_\d+$/.test(name)) return true
@@ -119,9 +117,25 @@ export function isIndexArtifactName(name: string): boolean {
   if (/^(this|global|window|self|super|arguments|undefined|null)$/.test(name)) return true
   // Absolute file paths indexed as symbol names.
   if (name.startsWith("/") && name.includes("/")) return true
-  // Numeric garbage.
+  return false
+}
+
+/**
+ * Full store-time artifact check for FALLBACK results (regex-extracted or
+ * large-file structural extraction): the narrow hard set PLUS the soft rules
+ * that are legitimate in verified analyzer output but pure garbage in regex
+ * extraction — quoted string leaks, parenthesized placeholders, numeric
+ * literals, embedded whitespace, and pure punctuation.
+ */
+export function isIndexArtifactNameStrict(name: string): boolean {
+  if (isIndexArtifactName(name)) return true
+  if (name.includes('"') || name.includes("'")) return true
+  if (name.startsWith("(")) return true
+  // Numeric garbage parsed from fixtures (-1.0, 0.000…, 1.., .1, 1.2e-20).
   if (/^[+-]?[.\d]/.test(name)) return true
+  // Embedded whitespace is a parse artifact; C++ operator names are the exception.
   if (name.includes(" ") && !name.startsWith("operator")) return true
+  // Pure punctuation garbage.
   return !/[\p{L}]/u.test(name)
 }
 
@@ -155,11 +169,12 @@ export function analysisPathScopeSQL(...fileAliases: string[]): string {
   return clauses.join(" AND ")
 }
 
-// Symbol-name noise mirrors isNoiseSymbolName for SQL-side filtering.
-// Dotted chains are intentionally absent: Dart named constructors (Type.fromJson)
-// are legitimate dotted names; property-access noise is caught read-side by
-// isNoiseSymbolName's lowercase-first-chain rule.
-const NOISE_NAME_LIKES = ["anonymous%", "anon_%", "unnamed_%", "block_%", "lambda_%", "/%", "(%"]
+// Symbol-name noise mirrors isIndexArtifactName for SQL-side filtering.
+// Soft patterns (quoted names, parenthesized names like F# active patterns,
+// numeric prefixes) are intentionally absent: they are VERIFIED symbol
+// contracts (CSS attribute selectors, (|Even|Odd|), version headings) that
+// the store layer now persists intentionally.
+const NOISE_NAME_LIKES = ["anonymous%", "anon_%", "unnamed_%", "block_%", "lambda_%", "/%"]
 
 const NOISE_NAME_GLOBS = ["object_[0-9]*"]
 const NOISE_KEYWORD_NAMES = ["this", "global", "window", "self", "super", "arguments", "undefined", "null"]
@@ -169,9 +184,6 @@ export function analysisSymbolNameConditions(): SQL[] {
     ...NOISE_NAME_LIKES.map((pattern) => notLike(BrainSymbolTable.name, pattern)),
     ...NOISE_NAME_GLOBS.map((pattern) => sql`${BrainSymbolTable.name} NOT GLOB ${pattern}`),
     sql`${BrainSymbolTable.name} NOT IN (${sql.join(NOISE_KEYWORD_NAMES.map((k) => sql`${k}`), sql`, `)})`,
-    notLike(BrainSymbolTable.name, '%"%'),
-    notLike(BrainSymbolTable.name, "%'%"),
-    sql`${BrainSymbolTable.name} NOT GLOB '[0-9.+-]*'`,
     sql`LENGTH(${BrainSymbolTable.name}) < 200`,
     // Symbols without a real location can't be jumped to — indexer artifacts.
     sql`COALESCE(${BrainSymbolTable.line_start}, 0) > 0`,
@@ -184,9 +196,6 @@ export function analysisSymbolNameScopeSQL(symbolAlias: string): string {
   const clauses = NOISE_NAME_LIKES.map((pattern) => `${symbolAlias}.name NOT LIKE '${pattern}'`)
   clauses.push(...NOISE_NAME_GLOBS.map((pattern) => `${symbolAlias}.name NOT GLOB '${pattern}'`))
   clauses.push(`${symbolAlias}.name NOT IN (${NOISE_KEYWORD_NAMES.map((k) => `'${k}'`).join(",")})`)
-  clauses.push(`${symbolAlias}.name NOT LIKE '%"%'`)
-  clauses.push(`${symbolAlias}.name NOT LIKE '%''%'`)
-  clauses.push(`${symbolAlias}.name NOT GLOB '[0-9.+-]*'`)
   clauses.push(`LENGTH(${symbolAlias}.name) < 200`)
   clauses.push(`COALESCE(${symbolAlias}.line_start, 0) > 0`)
   clauses.push(`${symbolAlias}.name NOT LIKE '/%/%'`)

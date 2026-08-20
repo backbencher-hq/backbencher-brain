@@ -23,7 +23,7 @@ function strictJson(file: string): boolean {
 const unsupportedFiles = corpusFiles.filter((file) => !strictJson(file))
 const cleanFiles = corpusFiles.filter((file) => strictJson(file))
 const fixtureFiles = [
-  "validation/m12/fixtures/json/schema.json",
+  "validation/m12/fixtures/json/api-contract.json",
   "validation/m12/fixtures/json/package.json",
   "validation/m12/fixtures/json/Negative.json",
 ]

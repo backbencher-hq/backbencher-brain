@@ -181,11 +181,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:fsharp",
-      "wallTimeMs": 193.209334,
-      "userCpuMs": 409.019,
-      "systemCpuMs": 16.89,
-      "peakRssBytes": 274165760,
-      "rssDeltaBytes": 19841024,
+      "wallTimeMs": 89.211776,
+      "userCpuMs": 315.454,
+      "systemCpuMs": 26.887,
+      "peakRssBytes": 306331648,
+      "rssDeltaBytes": 17735680,
       "databaseBytes": null,
       "files": null,
       "symbols": null,

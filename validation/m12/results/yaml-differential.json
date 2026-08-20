@@ -147,11 +147,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:yaml",
-      "wallTimeMs": 53.738726,
-      "userCpuMs": 40.856,
-      "systemCpuMs": 7.87,
-      "peakRssBytes": 211066880,
-      "rssDeltaBytes": 2912256,
+      "wallTimeMs": 47.418151,
+      "userCpuMs": 52.612,
+      "systemCpuMs": 5.737,
+      "peakRssBytes": 218013696,
+      "rssDeltaBytes": 3510272,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
