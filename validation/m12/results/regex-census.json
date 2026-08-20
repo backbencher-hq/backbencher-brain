@@ -2,161 +2,21 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-08-20T16:36:27.789Z",
+  "generatedAt": "2026-08-20T17:16:46.328Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 29,
+  "totalRegexUsages": 17,
   "analyzersScanned": 41,
   "byClassification": {
-    "unavoidable": 6,
-    "normalization": 18,
-    "needs_review": 5
+    "needs_review": 5,
+    "normalization": 12
   },
   "byReceiverCategory": {
-    "literal": 6,
-    "node_text": 18,
     "identifier": 4,
+    "node_text": 12,
     "other": 1
   },
   "perFile": [
-    {
-      "file": "real-bash-analyzer.ts",
-      "count": 12,
-      "usages": [
-        {
-          "file": "real-bash-analyzer.ts",
-          "line": 148,
-          "column": 52,
-          "source": "/^[0-9]+$|^[@*]$/",
-          "operation": "test",
-          "receiver": "/^[0-9]+$|^[@*]$/",
-          "receiverCategory": "literal",
-          "classification": "unavoidable",
-          "justification": ""
-        },
-        {
-          "file": "real-bash-analyzer.ts",
-          "line": 160,
-          "column": 43,
-          "source": "/^[\\$]/",
-          "operation": "replace",
-          "receiver": "node.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-bash-analyzer.ts",
-          "line": 160,
-          "column": 64,
-          "source": "/[{}]/g",
-          "operation": "replace",
-          "receiver": "node.text.replace(/^[\\$]/, \"\")",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-bash-analyzer.ts",
-          "line": 161,
-          "column": 50,
-          "source": "/^\\d+$/",
-          "operation": "test",
-          "receiver": "/^\\d+$/",
-          "receiverCategory": "literal",
-          "classification": "unavoidable",
-          "justification": ""
-        },
-        {
-          "file": "real-bash-analyzer.ts",
-          "line": 170,
-          "column": 59,
-          "source": "/^[0-9]+$|^[@*?#]$/",
-          "operation": "test",
-          "receiver": "/^[0-9]+$|^[@*?#]$/",
-          "receiverCategory": "literal",
-          "classification": "unavoidable",
-          "justification": ""
-        },
-        {
-          "file": "real-bash-analyzer.ts",
-          "line": 170,
-          "column": 102,
-          "source": "/^\\$/",
-          "operation": "replace",
-          "receiver": "node.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-bash-analyzer.ts",
-          "line": 172,
-          "column": 43,
-          "source": "/^\\$/",
-          "operation": "replace",
-          "receiver": "node.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-bash-analyzer.ts",
-          "line": 284,
-          "column": 17,
-          "source": "/curl.*\\|.*bash|wget.*\\|.*sh/i",
-          "operation": "test",
-          "receiver": "/curl.*\\|.*bash|wget.*\\|.*sh/i",
-          "receiverCategory": "literal",
-          "classification": "unavoidable",
-          "justification": ""
-        },
-        {
-          "file": "real-bash-analyzer.ts",
-          "line": 294,
-          "column": 17,
-          "source": "/rm\\s+-rf\\s+\\//",
-          "operation": "test",
-          "receiver": "/rm\\s+-rf\\s+\\//",
-          "receiverCategory": "literal",
-          "classification": "unavoidable",
-          "justification": ""
-        },
-        {
-          "file": "real-bash-analyzer.ts",
-          "line": 306,
-          "column": 48,
-          "source": "/^alias\\s+/",
-          "operation": "replace",
-          "receiver": "node.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-bash-analyzer.ts",
-          "line": 325,
-          "column": 46,
-          "source": "/['\"]/g",
-          "operation": "replace",
-          "receiver": "c.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-bash-analyzer.ts",
-          "line": 345,
-          "column": 21,
-          "source": "/^-[a-zA-Z]*e[a-zA-Z]*$/",
-          "operation": "test",
-          "receiver": "/^-[a-zA-Z]*e[a-zA-Z]*$/",
-          "receiverCategory": "literal",
-          "classification": "unavoidable",
-          "justification": ""
-        }
-      ]
-    },
     {
       "file": "real-powershell-analyzer.ts",
       "count": 10,
