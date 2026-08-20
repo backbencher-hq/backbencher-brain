@@ -206,6 +206,8 @@ export const ParallelIndexerConfig = {
     // === CONFIG, DOCS & ASSETS (engine-supported) ===
     ".toml",
     ".xml",
+    ".xsd",
+    ".dtd",
     ".md",
     ".markdown",
     ".svelte",
@@ -446,7 +448,7 @@ async function discoverAndFilterFiles(
   // =========================================================================
   const FULL_AST_LIMIT = 1 * 1024 * 1024 // 1 MB
   const STRUCTURAL_LIMIT = 5 * 1024 * 1024 // 5 MB
-  const structuralExtensions = new Set([".json", ".yaml", ".yml", ".toml", ".xml", ".md", ".proto"])
+  const structuralExtensions = new Set([".json", ".yaml", ".yml", ".toml", ".xml", ".xsd", ".dtd", ".md", ".proto"])
 
   async function processFile(fullPath: string) {
     try {

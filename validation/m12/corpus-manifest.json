@@ -745,15 +745,30 @@
   },
   {
    "analyzer": "xml",
-   "corpusTarget": "roslyn",
+   "corpusTarget": "grails_core",
    "status": "measured",
    "candidates": [
-    "proxicall@383e603e(dirty)",
-    "roslyn@73241b4b(clean)",
-    "intellij_community@cfda6881(dirty)",
-    "phpunit@c8d6921f(clean)",
-    "powershell@91ce9844(clean)"
-   ]
+    "grails_core@a83f8748(clean)"
+   ],
+   "measured": {
+    "revision": "a83f87480e0c0138caa5a7191a053b1e59a64066",
+    "sample": "154 tracked *.xml/*.xsd files from grails_core (deterministic lexicographic; standalone *.dtd files excluded because the document grammar requires a root element)",
+    "fixtures": 4,
+    "fixtureFacts": 49,
+    "precision": 1,
+    "recall": 1,
+    "corpusSymbols": 6195,
+    "corpusRelationships": 2388,
+    "grammarErrorFiles": 0,
+    "grammarErrorNodes": 0,
+    "crashFiles": 0,
+    "wallMs": 2430.711911,
+    "filesPerSecond": 63.35592437058659,
+    "symbolsPerSecond": 2548.6360485440514,
+    "relationshipsPerSecond": 982.4282298503947,
+    "measuredAt": "2026-08-20T14:13:00.000Z",
+    "note": "XML analyzer rewritten as a single iterative AST traversal against the vendored tree-sitter-xml WASM. All tracked XML/XSD corpus files parse with 0 errors and 0 crashes. External DTD references are covered by Doctype.xml; standalone DTD files are an explicit corpus boundary because the wired XML document grammar requires a document element."
+   }
   },
   {
    "analyzer": "yaml",

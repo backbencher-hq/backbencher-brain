@@ -1,0 +1,64 @@
+{
+  "analyzer": "xml",
+  "checks": [
+    {
+      "name": "document PI is a module symbol",
+      "passed": true
+    },
+    {
+      "name": "default namespace is a namespace symbol",
+      "passed": true
+    },
+    {
+      "name": "prefixed namespace is a namespace symbol",
+      "passed": true
+    },
+    {
+      "name": "empty-element attribute is extracted",
+      "passed": true
+    },
+    {
+      "name": "element ranges carry byte offsets",
+      "passed": true
+    },
+    {
+      "name": "valid catalog has no syntax errors",
+      "passed": true
+    },
+    {
+      "name": "DOCTYPE external ID is an import",
+      "passed": true
+    },
+    {
+      "name": "DOCTYPE import relationship is emitted",
+      "passed": true
+    },
+    {
+      "name": "valid doctype document has no syntax errors",
+      "passed": true
+    },
+    {
+      "name": "XSD extension detects as XML",
+      "passed": true
+    },
+    {
+      "name": "schema constructs retain structural metadata",
+      "passed": true
+    },
+    {
+      "name": "valid XSD has no syntax errors",
+      "passed": true
+    },
+    {
+      "name": "malformed XML reports syntax errors",
+      "passed": true
+    },
+    {
+      "name": "malformed XML creates no recovery symbols",
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "count": 14,
+  "passedCount": 14
+}
