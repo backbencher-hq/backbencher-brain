@@ -26,9 +26,13 @@ const NOISE_FILE_PATTERNS = [
   /\.(min|-min)\.[a-z]+$/,
   /\.(bundle|chunk)\.[a-z]+$/,
   /\.map$/,
-  /\.json$/,
   /\.(generated|gen)\.[a-z]+$/i,
   /\.g\.(cs|ts|js|fs)$/i,
+  // NOTE: .json is deliberately absent — the JSON analyzer is a verified
+  // contract (M12.34, P/R 1.000) whose module/class/property symbols must
+  // reach the read surface. Genuinely noisy JSON (package-lock.json,
+  // openapi.json, schema.json, *.min.json, Az.*.json, ...) is already
+  // excluded at INDEX time by ParallelIndexerConfig.skipPatterns.
 ]
 
 // Suffix patterns for LIKE-based SQL filtering (mirrors NOISE_FILE_PATTERNS).
@@ -42,7 +46,6 @@ const EXCLUDED_FILE_LIKES = [
   "%.chunk.%",
   "%.generated.%",
   "%.map",
-  "%.json",
 ]
 
 function allExcludedSegments(): string[] {
@@ -87,13 +90,14 @@ export function isNoiseSymbolName(name: string): boolean {
   if (/^(this|global|window|self|super|arguments|undefined|null)$/.test(name)) return true
   // Absolute file paths indexed as symbol names (indexer artifact).
   if (name.startsWith("/") && name.includes("/")) return true
-  // Property-access chains rooted at an instance (host.createProgram).
-  if (/^[a-z_$][\w$]*(\.[\w$]+)+$/.test(name)) return true
   // NOTE: soft rules (quoted names, parenthesized names, numeric prefixes,
-  // embedded whitespace, pure punctuation) are deliberately absent — they are
-  // VERIFIED symbol contracts (CSS selectors like tr[data-order="1001"],
-  // F# active patterns (|Even|Odd|), Markdown headings like "1.0.0 - 2026-01-01",
-  // YAML merge keys <<) that the store layer now persists intentionally.
+  // embedded whitespace, pure punctuation) AND dotted-chain names are
+  // deliberately absent — they are VERIFIED symbol contracts (CSS selectors
+  // like tr[data-order="1001"], F# active patterns (|Even|Odd|), Markdown
+  // headings like "1.0.0 - 2026-01-01", YAML merge keys <<, and dotted
+  // identifiers like Clojure namespaces com.example.clojure.service and HCL
+  // resources aws_security_group.web) that the store layer now persists
+  // intentionally. Property-access noise is already excluded at store time.
   return false
 }
 
