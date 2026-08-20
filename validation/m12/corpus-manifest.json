@@ -904,12 +904,35 @@
   },
   {
    "analyzer": "powershell",
-   "corpusTarget": "roslyn",
+   "corpusTarget": "powershell",
    "status": "measured",
    "candidates": [
     "roslyn@73241b4b(clean)",
     "powershell@91ce9844(clean)"
-   ]
+   ],
+   "measured": {
+    "revision": "91ce9844e2a70e7184a8fcb26848f019eac151b4",
+    "sample": "553 tracked .ps1/.psm1/.psd1 files from the PowerShell language implementation repo — 503 under test/ (the parser/engine torture suite) plus 50 production files (src/, tools/, .github/actions, build.psm1)",
+    "fixtures": 3,
+    "fixtureFacts": 79,
+    "precision": 1,
+    "recall": 1,
+    "corpusSymbols": 460,
+    "corpusRelationships": 590,
+    "testSuiteFiles": 503,
+    "testSuiteErrorFiles": 166,
+    "grammarErrorFiles": 16,
+    "strictAcceptanceFiles": 34,
+    "trackedFiles": 553,
+    "unexpectedGrammarErrorFiles": 0,
+    "crashFiles": 0,
+    "wallMs": 997.447668,
+    "filesPerSecond": 34.087001344315134,
+    "symbolsPerSecond": 461.1770770113224,
+    "relationshipsPerSecond": 591.5097292101744,
+    "measuredAt": "2026-08-20T17:48:18.000Z",
+    "note": "PowerShell analyzer rewritten as a pure iterative Tree-sitter DFS with zero regexes (census 10 → 0), a constant-time owner stack, O(1) Map-backed symbol dedupe, and Set-backed relationship dedupe — O(nodes + emitted facts). The vendored grammar (an older tree-sitter-powershell snapshot) does not model valid modern-PowerShell constructs: ?? null-coalescing, ?. null-conditional, ?: ternary, nested [Type+Type] and generic [[string],[PkgVer[]]] type literals, --flag=\"$var\" native-flag tokens, comma-separated bare-arg lists, $var\\ and $var/ path continuations, and ${env:...} interpolation. 166 test/ files deliberately embed invalid syntax as parser-error test data; 16 production files hit the grammar gaps — all named explicitly by powershell-corpus-errors.ts, never hidden. Strict acceptance (34 clean production files) measured at 460 symbols / 590 relationships with 0 errors and 0 crashes."
+   }
   },
   {
    "analyzer": "make",
