@@ -915,6 +915,67 @@ export namespace ASTEngine {
     return out
   }
 
+  /**
+   * Collect every `inline` node (paragraph/heading inline content) in byte
+   * order. The tree-sitter-markdown block grammar leaves inline content as
+   * an opaque text node; links/images/autolinks are only resolved by the
+   * companion inline grammar, which the engine pre-parses per block.
+   */
+  function extractMarkdownInlineBlocks(
+    rootNode: Node,
+  ): { startIndex: number; endIndex: number; startPosition: { row: number; column: number } }[] {
+    const out: { startIndex: number; endIndex: number; startPosition: { row: number; column: number } }[] = []
+    const stack: Node[] = [rootNode]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "inline") {
+        out.push({
+          startIndex: n.startIndex,
+          endIndex: n.endIndex,
+          startPosition: { row: n.startPosition.row, column: n.startPosition.column },
+        })
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    // Restore source order (stack pops in reverse).
+    return out.sort((a, b) => a.startIndex - b.startIndex)
+  }
+
+  // Companion grammar: tree-sitter-markdown-inline, cached like getParser.
+  // Used to resolve links/images/autolinks inside markdown inline nodes.
+  async function getMarkdownInlineParser(): Promise<Parser> {
+    const key = "__markdown_inline__"
+    await ensureWasmRegistry()
+    if (parsers.has(key)) {
+      parserUsage.set(key, Date.now())
+      return parsers.get(key)!
+    }
+    const { Parser, Language } = await treeSitterCore()
+    const wasmPath = resolveWasm("tree-sitter-markdown_inline/tree-sitter-markdown_inline.wasm")
+    let wasmBuffer: Uint8Array | undefined
+    const registryData = hasWasmInRegistry(wasmPath)
+    if (registryData) {
+      wasmBuffer = registryData
+    } else if (isWasmRegistryLoaded()) {
+      throw new Error(`WASM not found in registry for markdown_inline (${wasmPath})`)
+    } else {
+      const fs = require("fs")
+      wasmBuffer = new Uint8Array(fs.readFileSync(wasmPath))
+    }
+    const languageGrammar = await Language.load(wasmBuffer)
+    const parser = new Parser()
+    parser.setLanguage(languageGrammar)
+    languages.set(key, languageGrammar)
+    parsers.set(key, parser)
+    parserUsage.set(key, Date.now())
+    parseCount.set(key, 1)
+    log.debug("language parser loaded", { language: "markdown_inline", wasmPath })
+    return parser
+  }
+
   function findAttributeName(attr: Node): string {
     for (let i = 0; i < attr.namedChildCount; i++) {
       const c = attr.namedChild(i)
@@ -1129,6 +1190,40 @@ export namespace ASTEngine {
           }
         } catch (e) {
           log.debug("sfc script sub-parse failed", { error: (e as Error)?.message })
+        }
+      }
+
+      // MARKDOWN: pre-parse each inline node with the companion
+      // tree-sitter-markdown-inline grammar and hand the trees to the
+      // analyzer via context (the block grammar leaves `inline` opaque; the
+      // analyzer is sync and cannot load parsers itself). The analyzer
+      // matches inline trees back to their source byte offsets, so links,
+      // images, and autolinks resolve as AST nodes instead of regex scans.
+      if (language === "markdown" && tree?.rootNode) {
+        try {
+          const inlineBlocks = extractMarkdownInlineBlocks(tree.rootNode)
+          if (inlineBlocks.length > 0) {
+            const inlineParser = await getMarkdownInlineParser()
+            const mdInlineTrees: Tree[] = []
+            const mdInlineStarts: number[] = []
+            const mdInlineLines: number[] = []
+            for (const block of inlineBlocks) {
+              const inlineText = content.substring(block.startIndex, block.endIndex)
+              if (inlineText.trim().length === 0) continue
+              const subTree = inlineParser.parse(inlineText)
+              mdInlineTrees.push(subTree)
+              mdInlineStarts.push(block.startIndex)
+              mdInlineLines.push(block.startPosition.row + 1)
+            }
+            context = {
+              ...context,
+              mdInlineTrees,
+              mdInlineStarts,
+              mdInlineLines,
+            }
+          }
+        } catch (e) {
+          log.debug("markdown inline sub-parse failed", { error: (e as Error)?.message })
         }
       }
 

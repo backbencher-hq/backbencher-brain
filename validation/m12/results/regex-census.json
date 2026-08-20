@@ -2,70 +2,18 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-08-20T18:06:35.413Z",
+  "generatedAt": "2026-08-20T18:33:51.817Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 6,
+  "totalRegexUsages": 2,
   "analyzersScanned": 41,
   "byClassification": {
-    "needs_review": 2,
-    "normalization": 4
+    "needs_review": 2
   },
   "byReceiverCategory": {
-    "identifier": 2,
-    "node_text": 4
+    "identifier": 2
   },
   "perFile": [
-    {
-      "file": "real-markdown-analyzer.ts",
-      "count": 4,
-      "usages": [
-        {
-          "file": "real-markdown-analyzer.ts",
-          "line": 100,
-          "column": 31,
-          "source": "/^#{1,6}/",
-          "operation": "match",
-          "receiver": "node.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-markdown-analyzer.ts",
-          "line": 107,
-          "column": 40,
-          "source": "/[*_`]/g",
-          "operation": "replace",
-          "receiver": "inline.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-markdown-analyzer.ts",
-          "line": 111,
-          "column": 39,
-          "source": "/^#{1,6}\\s*/",
-          "operation": "replace",
-          "receiver": "node.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-markdown-analyzer.ts",
-          "line": 111,
-          "column": 65,
-          "source": "/\\s*#+\\s*$/",
-          "operation": "replace",
-          "receiver": "node.text.replace(/^#{1,6}\\s*/, \"\")",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        }
-      ]
-    },
     {
       "file": "real-java-analyzer.ts",
       "count": 2,
