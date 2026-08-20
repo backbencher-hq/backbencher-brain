@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "lua_corpus_tracked_complexity",
+  "corpus": "luarocks",
+  "revision": "665f160b4d0b79e85e66c6cc83e442d72eb40868",
+  "trackedLuaFiles": 162,
+  "measurement": {
+    "name": "lua-corpus-tracked",
+    "wallTimeMs": 10471.769458,
+    "userCpuMs": 9851.047,
+    "systemCpuMs": 807.302,
+    "peakRssBytes": 319733760,
+    "rssDeltaBytes": 240369664,
+    "databaseBytes": null,
+    "files": 162,
+    "symbols": 6746,
+    "relationships": 12032,
+    "filesPerSecond": 15.47016487039243,
+    "symbolsPerSecond": 644.2082235535021,
+    "relationshipsPerSecond": 1148.9939735837145,
+    "parseErrors": 0
+  },
+  "note": "Tracked .lua/.luau files only; production pool-worker parseFile path with the isolated Lua parser lifecycle; no generated or untracked files included."
+}

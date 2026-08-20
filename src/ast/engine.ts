@@ -951,7 +951,28 @@ export namespace ASTEngine {
 
     // Add timeout protection for parser operations
     const parsePromise = (async () => {
-      const parser = await getParser(language)
+      let parser: any
+      let transientLuaGrammar: any = null
+
+      // Lua's WASM binding is only reliable when each parse is isolated from
+      // the engine parser cache: a private Parser + Language instance loaded
+      // from fresh bytes keeps one file's external-scanner state out of the
+      // next file. Other languages retain the normal cached-parser path.
+      if (language === "lua") {
+        const fs = require("fs")
+        const WebTreeSitter: any = await loadWebTreeSitter()
+        const ParserCtor: any = WebTreeSitter.Parser ?? WebTreeSitter.default ?? WebTreeSitter
+        const LanguageCtor: any = WebTreeSitter.Language ?? WebTreeSitter.default?.Language
+        const initFn = WebTreeSitter.init ?? ParserCtor.init ?? (ParserCtor as any).init
+        if (initFn) await initFn({ locateFile: () => resolveWasmAsset("tree-sitter.wasm") })
+        transientLuaGrammar = await LanguageCtor.load(
+          new Uint8Array(fs.readFileSync(resolveWasmAsset("tree-sitter-lua.wasm"))),
+        )
+        parser = new ParserCtor()
+        parser.setLanguage(transientLuaGrammar)
+      } else {
+        parser = await getParser(language)
+      }
 
       // Protect against very large files that might hang the parser
       if (content.length > 1024 * 1024) {
@@ -1032,7 +1053,7 @@ export namespace ASTEngine {
         throw new Error(`Failed to parse file: ${filePath}`)
       }
 
-      return { parser, tree, language }
+      return { parser, tree, language, transientLuaGrammar }
     })()
 
     // Reduced timeout for faster recovery
@@ -1053,7 +1074,7 @@ export namespace ASTEngine {
       throw error
     }
 
-    const { parser, tree, language: detectedLanguage } = parseResult
+    const { parser, tree, language: detectedLanguage, transientLuaGrammar } = parseResult
 
     // Detect Syntax Errors
     const treeErrors: ParseError[] = []
@@ -1308,6 +1329,10 @@ export namespace ASTEngine {
       // 🚨 CRITICAL MEMORY FIX: Clean up WASM memory tree to prevent OOM
       if (tree && typeof tree.delete === "function") {
         tree.delete()
+      }
+      if (language === "lua" && transientLuaGrammar) {
+        try { if (parser && typeof parser.delete === "function") parser.delete() } catch {}
+        try { if (typeof transientLuaGrammar.delete === "function") transientLuaGrammar.delete() } catch {}
       }
     }
   }
