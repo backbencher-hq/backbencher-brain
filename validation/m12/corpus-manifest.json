@@ -649,7 +649,20 @@
    "status": "measured",
    "candidates": [
     "luarocks@665f160b(clean)"
-   ]
+   ],
+   "measured": {
+    "revision": "665f160b4d0b79e85e66c6cc83e442d72eb40868",
+    "sample": "162 tracked *.lua/*.luau files (full LuaRocks corpus, deterministic git ls-files)",
+    "fixtures": 2,
+    "fixtureFacts": 41,
+    "precision": 1,
+    "recall": 1,
+    "corpusSymbols": 6746,
+    "corpusRelationships": 12032,
+    "grammarErrorFiles": 0,
+    "note": "grammar upgraded to @tree-sitter-grammars/tree-sitter-lua 0.4.1 (WASM rebuilt from published source): the pinned grammar produced 136/162 error files and 771 error nodes on the clean LuaRocks corpus; 0/162 after upgrade with no crashes. Analyzer rewritten against the upgraded AST vocabulary (variable_declaration/assignment_statement/function_declaration/function_call/table_constructor); local/parameter/field-mutation noise filtered, require/calls/coroutines/metatables/declared-table instantiation covered, and Lua uses an isolated fresh parser+grammar lifecycle per file because the web-tree-sitter Lua scanner retains state across parses. Differential 41/41 (1.000/1.000); analyzer fully regex-free.",
+    "measuredAt": "2026-08-20T00:50:13.000Z"
+   }
   },
   {
    "analyzer": "ruby",

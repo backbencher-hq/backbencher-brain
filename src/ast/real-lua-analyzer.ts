@@ -1,155 +1,74 @@
-// Helper functions
-function stringIncludes(str: string, val: string): boolean {
-  if (!str) return false
-  return str.indexOf(val) !== -1
-}
-
-function someSymbol(arr: any[], predicate: (s: any) => boolean): boolean {
-  if (!arr) return false
-  for (let i = 0; i < arr.length; i++) {
-    if (predicate(arr[i])) return true
-  }
-  return false
-}
-
-function filterSymbols(symbols: any[], predicate: (s: any) => boolean): any[] {
-  const result: any[] = []
-  if (!symbols) return result
-  for (let i = 0; i < symbols.length; i++) {
-    if (predicate(symbols[i])) result.push(symbols[i])
-  }
-  return result
-}
-
-function findSymbol(arr: any[], predicate: (s: any) => boolean): any | undefined {
-  if (!arr) return undefined
-  for (let i = 0; i < arr.length; i++) {
-    if (predicate(arr[i])) return arr[i]
-  }
-  return undefined
-}
-
-function mapSymbols<T, U>(arr: T[], mapper: (item: T) => U): U[] {
-  const result: U[] = []
-  if (!arr) return result
-  for (let i = 0; i < arr.length; i++) {
-    result.push(mapper(arr[i]))
-  }
-  return result
-}
-
-// Real Lua Intelligence Engine
-// AST analysis for Lua with Love2D, OpenResty, World of Warcraft addon intelligence
-// Brain Certified: 100% Stateless, Iterative Stack Traversal, No Regex Fallbacks.
+// Pure-AST Lua analyzer — M12.32 extraction contract.
+// Declarations and relationships come from Tree-sitter nodes/fields. No regex
+// fallback or source-wide scanning is used.
 
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 
-export interface LuaContext {
-  content: string
-  filePath: string
+interface LuaFrame {
+  callable?: string
+  localNames: Set<string>
+}
+
+interface LuaContext {
   symbols: ASTEngine.UniversalSymbol[]
   relationships: ASTEngine.UniversalRelationship[]
   imports: ASTEngine.ImportInfo[]
   exports: ASTEngine.ExportInfo[]
   errors: ASTEngine.ParseError[]
   globalVariables: Set<string>
-  localVariables: Set<string>
-  metatables: Set<string>
+  declaredTables: Set<string>
   frameworks: Set<string>
   patterns: Set<string>
+  seenRelationships: Set<string>
 }
 
 export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
     const ctx: LuaContext = {
-      content,
-      filePath,
       symbols: [],
       relationships: [],
       imports: [],
       exports: [],
       errors: [],
       globalVariables: new Set<string>(),
-      localVariables: new Set<string>(),
-      metatables: new Set<string>(),
+      declaredTables: new Set<string>(),
       frameworks: new Set<string>(),
       patterns: new Set<string>(),
+      seenRelationships: new Set<string>(),
     }
 
-    // STAGE 1: Error Resiliency
-    if (rootNode.hasError) {
-      const errStack: Node[] = [rootNode]
-      while (errStack.length > 0) {
-        const n = errStack.pop()!
-        if (n.type === "ERROR" || n.isMissing) {
-          ctx.errors.push({
-            message: `Syntax ${n.type} detected. The Brain Engine is bypassing this broken node.`,
-            range: this.nodeToRange(n),
-            severity: `warning`,
-          })
-        }
-        for (let i = n.namedChildCount - 1; i >= 0; i--) {
-          const child = n.namedChild(i)
-          if (child) errStack.push(child)
-        }
-      }
-    }
-
-    // STAGE 2: Iterative Stack Traversal (NO Call-Stack Explosions)
-    const stack: { node: Node; scope: string[] }[] = [{ node: rootNode, scope: [] }]
+    this.collectErrors(rootNode, ctx)
+    const rootFrame: LuaFrame = { localNames: new Set<string>() }
+    const stack: { node: Node; frame: LuaFrame }[] = [{ node: rootNode, frame: rootFrame }]
 
     while (stack.length > 0) {
-      const { node, scope } = stack.pop()!
+      const entry = stack.pop()!
+      const node = entry.node
+      const frame = entry.frame
+      if (node.isMissing) continue
 
-      this.processNode(node, scope, ctx)
+      this.processNode(node, frame, ctx)
 
-      // Determine next scope if entering a structured block
-      let nextScope = [...scope]
-      if (node.type === "function_definition" || node.type === "local_function_declaration") {
-        const nameNode = node.childForFieldName("name") || this.findChildByType(node, "identifier")
-        if (nameNode) nextScope.push(nameNode.text)
-        else nextScope.push("anonymous_function")
-      }
-
-      // Push children in reverse order to maintain document-order traversal
-      for (let i = node.namedChildCount - 1; i >= 0; i--) {
-        const child = node.namedChild(i)
-        if (child) {
-          stack.push({ node: child, scope: nextScope })
+      let childFrame = frame
+      if (node.type === "function_declaration") {
+        const functionName = this.functionName(node)
+        if (functionName) {
+          const locals = new Set<string>()
+          for (const parameter of this.extractParameters(node)) locals.add(parameter.name)
+          childFrame = { callable: functionName, localNames: locals }
         }
       }
-    }
 
-    // Process Frameworks based on exact global usages and imports
-      const detectedFrameworks = Array.from(ctx.frameworks)
-      const detectedPatterns = Array.from(ctx.patterns)
-
-    // Phantom Symbols: Automatically generated methods
-    if (ctx.frameworks.has("Love2D")) {
-      ctx.symbols.push({
-        name: `love_load_hook`,
-        kind: ASTEngine.SymbolKind.Function,
-        range: { startLine: 1, startColumn: 1, endLine: 1, endColumn: 1 },
-        metadata: { isPhantom: true, injectedBy: "lua_love2d" },
-      })
-    }
-
-    
-    
-    // Post-loop: add contains for owned symbols
-    for (const s of ctx.symbols) {
-      const _owner = s.ownerName || s.scope || "global"
-      if (_owner) {
-        ctx.relationships.push({
-          source: _owner,
-          target: s.name,
-          type: ASTEngine.RelationshipType.Contains,
-          confidence: 1.0,
-          metadata: {},
-        })
+      for (let i = node.namedChildCount - 1; i >= 0; i--) {
+        const child = node.namedChild(i)
+        if (child) stack.push({ node: child, frame: childFrame })
       }
     }
+
+    this.addContainsRelationships(ctx)
+    const detectedFrameworks = [...ctx.frameworks]
+    const detectedPatterns = [...ctx.patterns]
 
     return {
       language: "lua",
@@ -160,539 +79,382 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
       errors: ctx.errors,
       metadata: {
         complexity: ctx.symbols.length + ctx.relationships.length,
-        linesOfCode: content.split("\n").length,
-        cyclomaticComplexity: this.calculateCyclomaticComplexityIterative(rootNode),
-        framework: detectedFrameworks[0], // Primary framework
+        linesOfCode: this.lineCount(content),
+        cyclomaticComplexity: this.calculateCyclomaticComplexity(rootNode),
+        framework: detectedFrameworks[0],
         patterns: detectedPatterns,
-
-        // Lua intelligence metadata
         detectedFrameworks,
-        frameworkPatterns: mapSymbols(detectedFrameworks, ((f) => ({
-          framework: f,
-          patterns: [{ type: "usage", detected: true, description: `${f} usage detected` }],
-        }))),
+        frameworkPatterns: detectedFrameworks.map((framework) => ({
+          framework,
+          patterns: [{ type: "usage", detected: true, description: `${framework} usage detected` }],
+        })),
         architecturalInsights: this.generateArchitecturalInsights(ctx),
         architecturalScore: this.calculateArchitecturalScore(ctx),
-        codeQuality: this.assessLuaCodeQuality(ctx),
-        hasTypeInference: false, // Lua is dynamically typed
+        codeQuality: this.assessCodeQuality(ctx),
+        hasTypeInference: false,
         hasFrameworkIntelligence: true,
-        performanceScore: 85, // Static heuristic
+        performanceScore: 85,
         memoryEfficiency: 85,
-        coroutineUsage: filterSymbols(ctx.symbols, (s) => s.metadata?.isCoroutine).length,
-        analysisVersion: "3.0.0-infallible-brain",
+        coroutineUsage: this.countCoroutineSymbols(ctx),
+        analysisVersion: "4.0.0-lua-m12.32",
       },
     }
   }
 
-  private processNode(node: Node, scope: string[], ctx: LuaContext) {
-    const currentScopeStr = scope.join(".")
-
+  private processNode(node: Node, frame: LuaFrame, ctx: LuaContext): void {
     switch (node.type) {
-      case "function_definition":
       case "function_declaration":
-      case "function_definition_statement":
-        this.extractFunction(node, currentScopeStr, ctx)
+        this.extractFunction(node, frame, ctx, this.isLocalFunction(node))
         break
-
-      case "local_function_declaration":
-      case "local_function_definition_statement":
-        this.extractLocalFunction(node, currentScopeStr, ctx)
-        break
-
-      case "assignment_statement":
       case "variable_declaration":
-      case "variable_assignment":
-        this.extractAssignment(node, currentScopeStr, ctx)
+        if (this.isLocalVariableDeclaration(node)) this.extractLocalDeclaration(node, frame, ctx)
         break
-
-      case "local_declaration":
-      case "local_variable_declaration":
-        this.extractLocalAssignment(node, currentScopeStr, ctx)
+      case "assignment_statement":
+        this.extractAssignment(node, frame, ctx)
         break
-
-      case "table_constructor":
-        this.extractTable(node, currentScopeStr, ctx)
-        break
-
       case "function_call":
-      case "call_expression":
-      case "call":
-        this.processFunctionCall(node, currentScopeStr, ctx)
+        this.processCall(node, frame, ctx)
         break
-
       case "return_statement":
-        this.extractExport(node, ctx)
+        this.extractExport(node, frame, ctx)
         break
-
       case "identifier":
-        this.detectFrameworksFromIdentifier(node, ctx)
+        this.detectFrameworks(node.text, ctx)
         break
     }
   }
 
-  private extractFunction(node: Node, scope: string, ctx: LuaContext) {
-    const nameNode =
-      node.childForFieldName("name") ||
-      this.findChildByType(node, "identifier") ||
-      this.findChildByType(node, "dot_index_expression")
-    if (!nameNode) return
+  private extractFunction(node: Node, frame: LuaFrame, ctx: LuaContext, isLocal: boolean): void {
+    // The verified grammar exposes declarations through the `name` field;
+    // retain the named-child fallback for grammars that omit that field.
+    const nameNode = node.childForFieldName("name") || node.namedChild(0)
+    const name = nameNode?.text
+    if (!name) return // Anonymous function expressions are expression noise.
 
-    const functionName = nameNode.text
-    const parameters = this.extractLuaParameters(node)
-
-    // We do NOT deeply recurse. We let the master traversal handle inner nodes.
-    // But we quickly scan immediate descendants for upvalues (shallow logic) to keep it safe.
-    const isVariadic = someSymbol(parameters, (p) => p.name === "...")
-
-    const isOOPMethod = stringIncludes(functionName, ":") || stringIncludes(functionName, ".")
-    let finalFunctionName = functionName
-    let parentClass = ""
-
-    if (isOOPMethod) {
-      ctx.patterns.add("Object-Oriented Programming")
-      const sep = stringIncludes(functionName, ":") ? ":" : "."
-      const parts = functionName.split(sep)
-      if (parts.length > 1) {
-        parentClass = parts[0]
-        // Ensure relationships are mapped to the parent class correctly
-        ctx.relationships.push({
-          source: functionName,
-          target: parentClass,
-          type: ASTEngine.RelationshipType.Extends, // Belongs to that class table
-          confidence: 1.0,
-          metadata: { relationshipType: "lua_oop_method" },
-        })
-      }
-    }
-
-    ctx.symbols.push({
-      name: finalFunctionName,
-      kind: isOOPMethod ? ASTEngine.SymbolKind.Method : ASTEngine.SymbolKind.Function,
+    const parameters = this.extractParameters(node)
+    const owner = this.functionOwner(nameNode)
+    const isMethod = !!owner
+    const symbol: ASTEngine.UniversalSymbol = {
+      name,
+      kind: isMethod ? ASTEngine.SymbolKind.Method : ASTEngine.SymbolKind.Function,
       range: this.nodeToRange(node),
-      scope,
-      visibility: "public",
+      scope: isLocal ? (frame.callable || "global") : "global",
+      visibility: isLocal ? "private" : "public",
       parameters,
-      metadata: {
-        isVariadic,
-        luaSpecific: true,
-      },
-    })
+      ownerName: owner,
+      ownerKind: owner ? ASTEngine.SymbolKind.Class : undefined,
+      metadata: { luaSpecific: true, isLocal, isMethod, ownerTable: owner },
+    }
+    ctx.symbols.push(symbol)
+    if (owner) {
+      ctx.declaredTables.add(owner)
+      ctx.patterns.add("Object-Oriented Programming")
+    }
+    if (isLocal) ctx.globalVariables.delete(name)
   }
 
-  private extractLocalFunction(node: Node, scope: string, ctx: LuaContext) {
-    const nameNode = node.childForFieldName("name") || this.findChildByType(node, "identifier")
-    if (!nameNode) return
-
-    const functionName = nameNode.text
-    ctx.symbols.push({
-      name: functionName,
-      kind: ASTEngine.SymbolKind.Function,
-      range: this.nodeToRange(node),
-      scope,
-      visibility: "private",
-      parameters: this.extractLuaParameters(node),
-      metadata: { isLocal: true, luaSpecific: true },
-    })
-    ctx.localVariables.add(functionName)
-  }
-
-  private extractAssignment(node: Node, scope: string, ctx: LuaContext) {
-    const varList = node.childForFieldName("name_list") || this.findChildByType(node, "variable_list") || this.findChildByType(node, "name_list")
-    if (!varList) return
-
-    for (let i = 0; i < varList.namedChildCount; i++) {
-      const vNode = varList.namedChild(i)
-      if (vNode && (vNode.type === "identifier" || vNode.type === "dot_index_expression" || vNode.type === "variable")) {
-        const rawText = vNode.text
-        const name = vNode.type === "variable" ? (this.findChildByType(vNode, "identifier")?.text || rawText) : rawText
-        // Field mutations (Order.__index = Order, order.status = "...") are NOT
-        // declarations — skip them so the mutated table/param is not re-emitted
-        // as a fresh variable symbol (fixes duplicate Order/order symbols).
-        if (rawText.indexOf(".") !== -1 || rawText.indexOf(":") !== -1) continue
-        // Reassigning an already-declared local (sum = sum + item.qty) is not a
-        // declaration either.
-        if (ctx.localVariables.has(name)) continue
-        ctx.symbols.push({
-          name,
-          kind: ASTEngine.SymbolKind.Variable,
-          range: this.nodeToRange(vNode),
-          scope,
-          visibility: "public",
-          metadata: { isGlobal: true, luaSpecific: true },
-        })
-        ctx.globalVariables.add(name)
-      }
-    }
-  }
-
-  private extractLocalAssignment(node: Node, scope: string, ctx: LuaContext) {
-    const varList = node.childForFieldName("name_list") || this.findChildByType(node, "variable_list")
-    if (!varList) return
-
-    for (let i = 0; i < varList.namedChildCount; i++) {
-      const vNode = varList.namedChild(i)
-      if (vNode && (vNode.type === "identifier" || vNode.type === "variable")) {
-        const name = vNode.type === "variable" ? (this.findChildByType(vNode, "identifier")?.text || vNode.text) : vNode.text
-        ctx.symbols.push({
-          name,
-          kind: ASTEngine.SymbolKind.Variable,
-          range: this.nodeToRange(vNode),
-          scope,
-          visibility: "private",
-          metadata: { isLocal: true, luaSpecific: true },
-        })
-        ctx.localVariables.add(name)
-      }
-    }
-  }
-
-  private extractTable(node: Node, scope: string, ctx: LuaContext) {
-    let tableName = "anonymous_table"
-
-    const parent = node.parent
-    if (parent) {
-      if (parent.type === "assignment_statement" || parent.type === "local_declaration" || parent.type === "variable_declaration") {
-        const list = parent.childForFieldName("name_list") || this.findChildByType(parent, "variable_list")
-        if (list && list.namedChildCount > 0) {
-           tableName = list.namedChild(0)?.text || tableName
-        }
-      } else if (parent.type === "field" || parent.type === "table_field") {
-         const nameNode = parent.childForFieldName("name") || this.findChildByType(parent, "identifier") || parent.namedChild(0)
-         if (nameNode && nameNode.type !== "table_constructor") {
-            tableName = nameNode.text
-         }
-      }
-    }
-
-    const fields: string[] = []
-
-    for (let i = 0; i < node.namedChildCount; i++) {
-      const child = node.namedChild(i)!
-      if (child.type === "field") {
-        const ident = child.childForFieldName("name") || this.findChildByType(child, "identifier")
-        if (ident) {
-          fields.push(ident.text)
-        }
-      }
-    }
-
-    ctx.symbols.push({
-      name: tableName,
-      kind: ASTEngine.SymbolKind.Class,
-      range: this.nodeToRange(node),
-      scope,
-      metadata: {
-        isTable: true,
-        fieldCount: fields.length,
-        fields: fields,
-      },
-    })
-
-    // Check for Module pattern
-    if (fields.length > 0) ctx.patterns.add("Module/Table Pattern")
-  }
-
-  private processFunctionCall(node: Node, scope: string, ctx: LuaContext) {
-    const target =
-      node.childForFieldName("function") ||
-      this.findChildByType(node, "variable") ||
-      this.findChildByType(node, "identifier") ||
-      this.findChildByType(node, "dot_index_expression")
-    if (!target) return
-
-    const callName = target.text
-
-    let reqName: string | null = null
-
-    // Handle Require purely through AST arguments, NO regex.
-    if (callName === "require" || callName === "module") {
-      const args = node.childForFieldName("arguments") || this.findChildByType(node, "arguments")
-      if (args) {
-        const strNode = this.findChildByType(args, "string")
-        if (strNode) {
-          reqName = this.cleanLuaString(strNode.text)
-        }
-      }
-    } else if (callName === "pcall" || callName === "xpcall") {
-      const args = node.childForFieldName("arguments") || this.findChildByType(node, "arguments")
-      if (args && args.namedChildCount >= 2) {
-        const firstArg = args.namedChild(0)
-        if (firstArg && firstArg.text === "require") {
-          const strNode = args.namedChild(1)
-          if (strNode && strNode.type === "string") {
-            reqName = this.cleanLuaString(strNode.text)
-          }
-        }
-      }
-    }
-
-    if (reqName) {
+  private extractLocalDeclaration(node: Node, frame: LuaFrame, ctx: LuaContext): void {
+    const assignment = node.type === "variable_declaration" ? node.namedChild(0) : node
+    const variableList = assignment?.childForFieldName("name_list") || assignment?.namedChild(0)
+    if (!variableList) return
+    for (let i = 0; i < variableList.namedChildCount; i++) {
+      const variable = variableList.namedChild(i)
+      const name = this.plainVariableName(variable)
+      if (!variable || !name) continue
+      frame.localNames.add(name)
+      const value = this.assignmentValue(assignment!)
+      const isTable = this.isTableNode(value)
+      if (isTable) ctx.declaredTables.add(name)
       ctx.symbols.push({
-        name: `require_${reqName}`,
+        name,
         kind: ASTEngine.SymbolKind.Variable,
-        range: this.nodeToRange(node),
-        scope,
-        visibility: "private",
-        metadata: { isRequire: true, requiredModule: reqName, luaSpecific: true },
+        range: this.nodeToRange(variable),
+        scope: frame.callable || "global",
+        ownerName: frame.callable,
+        ownerKind: frame.callable ? ASTEngine.SymbolKind.Function : undefined,
+        visibility: frame.callable ? "private" : "public",
+        metadata: { luaSpecific: true, isLocal: true, isTable, tableFields: isTable ? this.tableFieldNames(value!) : [] },
       })
-      ctx.imports.push({
-        module: reqName,
-        items: [],
-        isDefaultImport: true,
-        isNamespaceImport: false,
-        range: this.nodeToRange(node),
-        metadata: { luaSpecific: true },
-      })
-      // Add relationship for the import
-      ctx.relationships.push({
-        source: scope || "global", // Provide a fallback if scope is empty
-        target: reqName,
-        type: ASTEngine.RelationshipType.Imports,
-        confidence: 1.0,
-        metadata: { relationshipType: "lua_require" },
-      })
+    }
+  }
 
-      // Framework Detection from imports
-      if (reqName.startsWith("resty")) ctx.frameworks.add("OpenResty")
-      if (reqName === "socket" || reqName === "lfs" || reqName === "cjson" || reqName === "ssl")
-        ctx.frameworks.add("LuaRocks Core Modules")
-      if (reqName === "lapis") ctx.frameworks.add("Lapis")
-      if (reqName === "middleclass" || reqName === "classic" || reqName === "30log")
-        ctx.patterns.add("Object-Oriented Programming (Libraries)")
-      if (reqName === "hs" || reqName.startsWith("hs.")) ctx.frameworks.add("Hammerspoon")
-      if (reqName.startsWith("lovr")) ctx.frameworks.add("LÖVR (VR/AR)")
+  private extractAssignment(node: Node, frame: LuaFrame, ctx: LuaContext): void {
+    if (node.parent?.type === "variable_declaration" && this.isLocalVariableDeclaration(node.parent)) return
+    const variableList = node.childForFieldName("name_list") || node.namedChild(0)
+    if (!variableList) return
+    const value = this.assignmentValue(node)
+    for (let i = 0; i < variableList.namedChildCount; i++) {
+      const variable = variableList.namedChild(i)
+      const name = this.plainVariableName(variable)
+      if (!variable || !name) continue // field/table mutations are not declarations
+      if (frame.callable && frame.localNames.has(name)) continue // local re-assignment
+      const isTable = this.isTableNode(value)
+      if (isTable) ctx.declaredTables.add(name)
+      ctx.symbols.push({
+        name,
+        kind: ASTEngine.SymbolKind.Variable,
+        range: this.nodeToRange(variable),
+        scope: frame.callable || "global",
+        ownerName: frame.callable,
+        ownerKind: frame.callable ? ASTEngine.SymbolKind.Function : undefined,
+        visibility: frame.callable ? "private" : "public",
+        metadata: { luaSpecific: true, isGlobal: !frame.callable, isTable, tableFields: isTable ? this.tableFieldNames(value!) : [] },
+      })
+      if (!frame.callable) ctx.globalVariables.add(name)
+    }
+  }
+
+  private processCall(node: Node, frame: LuaFrame, ctx: LuaContext): void {
+    const functionNode = node.childForFieldName("function") || node.childForFieldName("name") || node.namedChild(0)
+    if (!functionNode) return
+    const callName = functionNode.text
+    if (!callName) return
+    this.detectFrameworks(callName, ctx)
+
+    const values = this.callArguments(node)
+    const firstString = this.stringValue(values[0])
+    if (callName === "require" || callName === "module") {
+      if (firstString) this.addImport(firstString, frame, node, ctx)
+      return
+    }
+    if (callName === "pcall" || callName === "xpcall") {
+      if (values[0]?.text === "require") {
+        const moduleName = this.stringValue(values[1])
+        if (moduleName) this.addImport(moduleName, frame, node, ctx)
+      }
     }
 
-    // Handle Coroutines
+    const source = frame.callable || "global"
+    if (callName !== "pcall" && callName !== "xpcall") {
+      this.addRelationship(ctx, source, callName, ASTEngine.RelationshipType.Calls, { luaSpecific: true })
+    }
+
     if (callName === "coroutine.create" || callName === "coroutine.wrap") {
-      ctx.symbols.push({
-        name: "anonymous_coroutine",
-        kind: ASTEngine.SymbolKind.Function,
-        range: this.nodeToRange(node),
-        scope,
-        visibility: "public",
-        metadata: { isCoroutine: true, luaSpecific: true },
-      })
       ctx.patterns.add("Coroutines")
     }
-
-    // Handle Metatables (OOP)
     if (callName === "setmetatable") {
-      const args = node.childForFieldName("arguments") || this.findChildByType(node, "arguments")
-      if (args && args.namedChildCount >= 2) {
-        const targetTable = args.namedChild(0)
-        const metatable = args.namedChild(1)
-
-        if (targetTable && metatable) {
-          ctx.patterns.add("Object-Oriented Programming (Metatables)")
-          ctx.metatables.add(targetTable.text)
-
-          ctx.relationships.push({
-            source: targetTable.text,
-            target: metatable.text,
-            type: ASTEngine.RelationshipType.Inheritance,
-            confidence: 1.0,
-            metadata: { relationshipType: "lua_metatable" },
-          })
-        }
+      ctx.patterns.add("Object-Oriented Programming (Metatables)")
+      const target = values[0]
+      const metatable = values[1]
+      if (target && metatable && !this.isTableNode(target)) {
+        this.addRelationship(ctx, target.text, metatable.text, ASTEngine.RelationshipType.Extends, { luaSpecific: true, relationshipType: "lua_metatable" })
+      }
+      if (metatable?.type === "identifier") {
+        const tableName = metatable.text
+        ctx.declaredTables.add(tableName)
       }
     }
 
-    // Handle Class libraries (middleclass, etc)
+    const constructor = this.constructorTarget(functionNode, ctx)
+    if (constructor) {
+      this.addRelationship(ctx, source, constructor, ASTEngine.RelationshipType.Instantiates, { luaSpecific: true, relationshipType: "instantiates" })
+    }
+
     if (callName === "class" || callName === "Object:extend" || callName === "Object.extend") {
-      ctx.patterns.add("Object-Oriented Programming (Libraries)")
-      const args = node.childForFieldName("arguments") || this.findChildByType(node, "arguments")
-      if (args && args.namedChildCount >= 1) {
-        const strNode = this.findChildByType(args, "string")
-        if (strNode) {
-          const className = this.cleanLuaString(strNode.text)
-          ctx.symbols.push({
-            name: className,
-            kind: ASTEngine.SymbolKind.Class,
-            range: this.nodeToRange(node),
-            scope,
-            visibility: "public",
-            metadata: { luaSpecific: true, isLibraryClass: true },
-          })
-        }
-      }
-    }
-
-    // C API Interop pattern
-    if (callName.startsWith("luaL_") || callName.startsWith("lua_")) {
-      ctx.patterns.add("C/C++ Interop (C API)")
-    }
-
-    // Push call relationship for ALL function calls (not just requires)
-    if (callName && callName !== "require" && callName !== "module" && callName !== "pcall" && callName !== "xpcall") {
-      ctx.relationships.push({
-        source: scope || "global",
-        target: callName,
-        type: ASTEngine.RelationshipType.Calls,
-        confidence: 0.8,
-        metadata: { relationshipType: "calls", luaSpecific: true },
-      })
-      // Lua uses ClassName() or ClassName:new() for instantiation
-      if (callName && (callName[0] === callName[0].toUpperCase() && callName[0] !== callName[0].toLowerCase())) {
-        ctx.relationships.push({
-          source: scope || "global",
-          target: callName,
-          type: ASTEngine.RelationshipType.Instantiates,
-          confidence: 0.7,
-          metadata: { relationshipType: "instantiates", luaSpecific: true },
-        })
-      }
-    }
-  }
-
-  private extractExport(node: Node, ctx: LuaContext) {
-    const expList = node.childForFieldName("expression_list") || this.findChildByType(node, "expression_list")
-    if (expList && expList.namedChildCount > 0) {
-      const target = expList.namedChild(0)!
-      if (target.type === "identifier" || target.type === "table_constructor") {
-        ctx.exports.push({
-          name: target.type === "identifier" ? target.text : "anonymous_export",
-          isDefault: true,
+      const className = firstString
+      if (className) {
+        ctx.symbols.push({
+          name: className,
+          kind: ASTEngine.SymbolKind.Class,
           range: this.nodeToRange(node),
-          metadata: { luaSpecific: true },
+          scope: source,
+          ownerName: frame.callable,
+          metadata: { luaSpecific: true, isLibraryClass: true },
         })
+      }
+      ctx.patterns.add("Object-Oriented Programming (Libraries)")
+    }
+  }
+
+  private addImport(moduleName: string, frame: LuaFrame, node: Node, ctx: LuaContext): void {
+    ctx.imports.push({
+      module: moduleName,
+      items: [],
+      isDefaultImport: true,
+      isNamespaceImport: false,
+      range: this.nodeToRange(node),
+      metadata: { luaSpecific: true },
+    })
+    this.addRelationship(ctx, frame.callable || "global", moduleName, ASTEngine.RelationshipType.Imports, { luaSpecific: true, relationshipType: "lua_require" })
+    if (moduleName.startsWith("resty")) ctx.frameworks.add("OpenResty")
+    if (moduleName === "socket" || moduleName === "lfs" || moduleName === "cjson" || moduleName === "ssl") ctx.frameworks.add("LuaRocks Core Modules")
+    if (moduleName === "lapis") ctx.frameworks.add("Lapis")
+    if (moduleName === "middleclass" || moduleName === "classic" || moduleName === "30log") ctx.patterns.add("Object-Oriented Programming (Libraries)")
+    if (moduleName === "hs" || moduleName.startsWith("hs.")) ctx.frameworks.add("Hammerspoon")
+    if (moduleName.startsWith("lovr")) ctx.frameworks.add("LÖVR (VR/AR)")
+  }
+
+  private constructorTarget(functionNode: Node, ctx: LuaContext): string | undefined {
+    if (!["dot_index_expression", "method_index_expression"].includes(functionNode.type)) return undefined
+    const method = functionNode.childForFieldName("method") || functionNode.childForFieldName("field")
+    const table = functionNode.childForFieldName("table")
+    if ((method?.text === "new" || method?.text === "constructor") && table?.text && ctx.declaredTables.has(table.text)) return table.text
+    return undefined
+  }
+
+  private extractExport(node: Node, frame: LuaFrame, ctx: LuaContext): void {
+    if (frame.callable) return
+    const values = node.childForFieldName("expression_list") || node.namedChild(0)
+    const target = values?.namedChild(0)
+    if (!target) return
+    if (target.type === "identifier") {
+      ctx.exports.push({ name: target.text, isDefault: true, range: this.nodeToRange(node), metadata: { luaSpecific: true } })
+    }
+  }
+
+  private addContainsRelationships(ctx: LuaContext): void {
+    for (const symbol of ctx.symbols) {
+      const owner = symbol.ownerName || (symbol.scope && symbol.scope !== "global" ? symbol.scope : "global")
+      if (owner && owner !== symbol.name) {
+        this.addRelationship(ctx, owner, symbol.name, ASTEngine.RelationshipType.Contains, {})
       }
     }
   }
 
-  private detectFrameworksFromIdentifier(node: Node, ctx: LuaContext) {
-    const text = node.text
-    if (text.startsWith("love.")) ctx.frameworks.add("Love2D")
-    if (text.startsWith("ngx.") || text.startsWith("resty.")) ctx.frameworks.add("OpenResty")
-    if (text === "CreateFrame" || text === "UIParent" || text === "C_Timer" || text === "GetTime")
-      ctx.frameworks.add("World of Warcraft Addon")
-    if (text === "Proto" || text === "DissectorTable") ctx.frameworks.add("Wireshark Plugin")
-    if (text.startsWith("redis.call")) ctx.frameworks.add("Redis Scripting")
-    if (
-      text.startsWith("display.") ||
-      text.startsWith("Runtime:") ||
-      text.startsWith("system.") ||
-      text.startsWith("transition.")
-    )
-      ctx.frameworks.add("Corona SDK / Solar2D")
-    if (text.startsWith("defold") || text === "msg.post" || text.startsWith("sys.") || text.startsWith("gui."))
-      ctx.frameworks.add("Defold")
-    if (text.startsWith("vim.") || text === "use" || text === "setup") ctx.frameworks.add("Neovim Configuration")
-    if (
-      text.startsWith("game:GetService") ||
-      text === "script.Parent" ||
-      text === "Instance.new" ||
-      text === "task.wait" ||
-      text === "Workspace"
-    )
-      ctx.frameworks.add("Roblox / Luau")
-    if (
-      text === "Citizen.CreateThread" ||
-      text === "RegisterNetEvent" ||
-      text === "AddEventHandler" ||
-      text === "TriggerServerEvent" ||
-      text === "QBCore" ||
-      text === "ESX"
-    )
-      ctx.frameworks.add("FiveM / Garry's Mod")
-    if (text.startsWith("hs.")) ctx.frameworks.add("Hammerspoon")
-    if (
-      text === "_init" ||
-      text === "_update" ||
-      text === "_draw" ||
-      text === "spr" ||
-      text === "btn" ||
-      text === "sfx"
-    )
-      ctx.frameworks.add("Pico-8 / TIC-80")
-    if (text.startsWith("lovr.")) ctx.frameworks.add("LÖVR (VR/AR)")
+  private addRelationship(ctx: LuaContext, source: string, target: string, type: ASTEngine.RelationshipType, metadata: Record<string, any>): void {
+    if (!source || !target) return
+    const key = `${type}\u001f${source}\u001f${target}`
+    if (ctx.seenRelationships.has(key)) return
+    ctx.seenRelationships.add(key)
+    ctx.relationships.push({ source, target, type, confidence: 1.0, metadata })
   }
 
-  private extractLuaParameters(node: Node): ASTEngine.Parameter[] {
-    const paramsList = node.childForFieldName("parameters") || this.findChildByType(node, "parameters")
-    if (!paramsList) return []
+  private functionName(node: Node): string | undefined {
+    return node.childForFieldName("name")?.text || node.namedChild(0)?.text
+  }
 
-    const params: ASTEngine.Parameter[] = []
-    for (let i = 0; i < paramsList.namedChildCount; i++) {
-      const child = paramsList.namedChild(i)
-      if (child && child.type === "identifier") {
-        params.push({
-          name: child.text,
-          type: "Any",
-        })
-      } else if (child && child.type === "vararg_expression") {
-        params.push({
-          name: "...",
-          type: "Any",
-        })
-      }
+  private hasChildType(node: Node, type: string): boolean {
+    for (let i = 0; i < node.childCount; i++) if (node.child(i)?.type === type) return true
+    return false
+  }
+
+  private isLocalFunction(node: Node): boolean {
+    return this.hasChildType(node, "local")
+  }
+
+  private isLocalVariableDeclaration(node: Node): boolean {
+    return this.hasChildType(node, "local")
+  }
+
+  private functionOwner(nameNode: Node): string | undefined {
+    if (!["dot_index_expression", "method_index_expression"].includes(nameNode.type)) return undefined
+    return nameNode.childForFieldName("table")?.text
+  }
+
+  private extractParameters(node: Node): ASTEngine.Parameter[] {
+    const list = node.childForFieldName("parameters")
+    if (!list) return []
+    const parameters: ASTEngine.Parameter[] = []
+    for (let i = 0; i < list.namedChildCount; i++) {
+      const child = list.namedChild(i)
+      if (!child) continue
+      if (child.type === "identifier") parameters.push({ name: child.text, type: "Any" })
+      else if (child.type === "vararg_expression") parameters.push({ name: "...", type: "Any", isVariadic: true })
     }
-    return params
+    return parameters
   }
 
-  // ========================================================================
-  // CORE UTILITIES
-  // ========================================================================
+  private plainVariableName(node: Node | null | undefined): string | undefined {
+    return node?.type === "identifier" ? node.text : undefined
+  }
 
-  private findChildByType(node: Node, type: string): Node | null {
-    for (let i = 0; i < node.namedChildCount; i++) {
-      const child = node.namedChild(i)
-      if (child && child.type === type) return child
+  private isTableNode(node: Node | undefined): boolean {
+    return node?.type === "table_constructor"
+  }
+
+  private assignmentValue(node: Node): Node | undefined {
+    const expressionList = node.childForFieldName("value") || node.namedChild(1)
+    return expressionList?.namedChild(0) || expressionList || undefined
+  }
+
+  private callArguments(node: Node): Node[] {
+    const argumentList = node.childForFieldName("arguments")
+    if (!argumentList) return []
+    const source = argumentList
+    const values: Node[] = []
+    for (let i = 0; i < source.namedChildCount; i++) {
+      const child = source.namedChild(i)
+      if (child) values.push(child)
     }
-    return null
+    return values
   }
 
-  /**
-   * STRICT AST STRING CLEANER (NO REGEX)
-   */
+  private stringValue(node: Node | undefined): string | undefined {
+    if (!node || node.type !== "string") return undefined
+    return this.cleanLuaString(node.text)
+  }
+
+  private tableFieldNames(node: Node): string[] {
+    const result: string[] = []
+    const fieldList = node
+    for (let i = 0; i < (fieldList?.namedChildCount || 0); i++) {
+      const field = fieldList?.namedChild(i)
+      if (!field || field.type !== "field") continue
+      const key = field.childForFieldName("key") || field.childForFieldName("name") || field.namedChild(0)
+      if (key?.text) result.push(key.text)
+    }
+    return result
+  }
+
   private cleanLuaString(text: string): string {
-    if (typeof text !== "string") return ""
-    let cleaned = text.trim()
-    if ((cleaned.startsWith('"') && cleaned.endsWith('"')) || (cleaned.startsWith("'") && cleaned.endsWith("'"))) {
-      return cleaned.substring(1, cleaned.length - 1)
+    const cleaned = text.trim()
+    if (cleaned.length >= 2) {
+      const first = cleaned[0]
+      const last = cleaned[cleaned.length - 1]
+      if ((first === '"' || first === "'") && first === last) return cleaned.substring(1, cleaned.length - 1)
     }
-    if (cleaned.startsWith("[[") && cleaned.endsWith("]]")) {
-      return cleaned.substring(2, cleaned.length - 2)
-    }
+    if (cleaned.startsWith("[[") && cleaned.endsWith("]]")) return cleaned.substring(2, cleaned.length - 2)
     return cleaned
   }
 
-  private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {
-    return {
-      startLine: node.startPosition.row + 1,
-      startColumn: node.startPosition.column + 1,
-      endLine: node.endPosition.row + 1,
-      endColumn: node.endPosition.column + 1,
-      startIndex: node.startIndex,
-      endIndex: node.endIndex,
+  private detectFrameworks(text: string, ctx: LuaContext): void {
+    if (text.startsWith("love.")) ctx.frameworks.add("Love2D")
+    if (text.startsWith("ngx.") || text.startsWith("resty.")) ctx.frameworks.add("OpenResty")
+    if (text === "CreateFrame" || text === "UIParent" || text === "C_Timer" || text === "GetTime") ctx.frameworks.add("World of Warcraft Addon")
+    if (text === "Proto" || text === "DissectorTable") ctx.frameworks.add("Wireshark Plugin")
+    if (text.startsWith("redis.call")) ctx.frameworks.add("Redis Scripting")
+    if (text.startsWith("display.") || text.startsWith("Runtime:") || text.startsWith("system.") || text.startsWith("transition.")) ctx.frameworks.add("Corona SDK / Solar2D")
+    if (text.startsWith("vim.") || text === "use" || text === "setup") ctx.frameworks.add("Neovim Configuration")
+    if (text.startsWith("lovr.")) ctx.frameworks.add("LÖVR (VR/AR)")
+  }
+
+  private collectErrors(rootNode: Node, ctx: LuaContext): void {
+    if (!rootNode.hasError) return
+    const stack: Node[] = [rootNode]
+    while (stack.length) {
+      const node = stack.pop()!
+      if (node.type === "ERROR" || node.isMissing) {
+        ctx.errors.push({ message: `Syntax ${node.type} detected.`, range: this.nodeToRange(node), severity: "warning" })
+      }
+      for (let i = node.namedChildCount - 1; i >= 0; i--) {
+        const child = node.namedChild(i)
+        if (child) stack.push(child)
+      }
     }
   }
 
-  private calculateCyclomaticComplexityIterative(rootNode: Node): number {
+  private calculateCyclomaticComplexity(rootNode: Node): number {
     let complexity = 1
     const stack: Node[] = [rootNode]
-
-    while (stack.length > 0) {
-      const n = stack.pop()!
-      switch (n.type) {
-        case "if_statement":
-        case "elseif_statement":
-        case "for_statement":
-        case "while_statement":
-        case "repeat_statement":
-          complexity++
-          break
-        case "binary_expression":
-          const op = findSymbol(n.children, (c) => c?.type === "and" || c?.type === "or")
-          if (op) complexity++
-          break
+    while (stack.length) {
+      const node = stack.pop()!
+      if (node.type === "if_statement" || node.type === "for_statement" || node.type === "while_statement" || node.type === "repeat_statement") complexity++
+      if (node.type === "binary_expression") {
+        const operator = node.childForFieldName("operator")
+        if (operator?.text === "and" || operator?.text === "or") complexity++
       }
-      for (let i = n.namedChildCount - 1; i >= 0; i--) {
-        const child = n.namedChild(i)
+      for (let i = node.namedChildCount - 1; i >= 0; i--) {
+        const child = node.namedChild(i)
         if (child) stack.push(child)
       }
     }
     return complexity
+  }
+
+  private countCoroutineSymbols(ctx: LuaContext): number {
+    let count = 0
+    for (const symbol of ctx.symbols) if (symbol.metadata?.isCoroutine) count++
+    return count
   }
 
   private calculateArchitecturalScore(ctx: LuaContext): number {
@@ -704,7 +466,7 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     return Math.min(100, score)
   }
 
-  private assessLuaCodeQuality(ctx: LuaContext): string {
+  private assessCodeQuality(ctx: LuaContext): string {
     const score = this.calculateArchitecturalScore(ctx)
     if (score >= 90) return "excellent"
     if (score >= 80) return "good"
@@ -715,21 +477,25 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
   private generateArchitecturalInsights(ctx: LuaContext): any[] {
     const insights: any[] = []
     if (ctx.patterns.has("Object-Oriented Programming (Metatables)")) {
-      insights.push({
-        type: "architecture",
-        category: "lua_oop",
-        message: "Lua Object-Oriented patterns explicitly detected via Metatables.",
-        severity: "info",
-      })
-    }
-    if (ctx.metatables.size > 0) {
-      insights.push({
-        type: "memory",
-        category: "metatables",
-        message: `Efficient shared state with ${ctx.metatables.size} Metatable definitions.`,
-        severity: "info",
-      })
+      insights.push({ type: "architecture", category: "lua_oop", message: "Lua object-oriented patterns detected through metatables.", severity: "info" })
     }
     return insights
+  }
+
+  private lineCount(content: string): number {
+    let count = 1
+    for (let i = 0; i < content.length; i++) if (content[i] === "\n") count++
+    return count
+  }
+
+  private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {
+    return {
+      startLine: node.startPosition.row + 1,
+      startColumn: node.startPosition.column + 1,
+      endLine: node.endPosition.row + 1,
+      endColumn: node.endPosition.column + 1,
+      startIndex: node.startIndex,
+      endIndex: node.endIndex,
+    }
   }
 }
