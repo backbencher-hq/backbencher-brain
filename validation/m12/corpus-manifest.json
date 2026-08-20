@@ -721,7 +721,27 @@
     "vscode@46ed260b(dirty)",
     "flutter@68dc5cf4(dirty)",
     "roslyn@73241b4b(clean)"
-   ]
+   ],
+   "measured": {
+    "revision": "73241b4beaccbdb6e8f7eb78f5377a01c88ddc21",
+    "sample": "119 strict JSON files from all 133 tracked *.json files (deterministic lexicographic; 14 JSONC/encoding files explicitly excluded)",
+    "fixtures": 3,
+    "fixtureFacts": 119,
+    "metadataContractChecks": 9,
+    "precision": 1,
+    "recall": 1,
+    "corpusSymbols": 69512,
+    "corpusRelationships": 70074,
+    "grammarErrorFiles": 0,
+    "grammarErrorNodes": 0,
+    "crashFiles": 0,
+    "wallMs": 35540.418626,
+    "filesPerSecond": 3.348300459739,
+    "symbolsPerSecond": 1955.857659739,
+    "relationshipsPerSecond": 1971.670641739,
+    "measuredAt": "2026-08-20T02:24:15.000Z",
+    "note": "JSON analyzer rewritten pure-AST. The strict acceptance subset has 0 errors/0 crashes. Fourteen tracked paths are JSONC, contain registration/template syntax, or use a UTF-8 BOM; they are retained as explicit exclusions, and the three parser-error files are reported in json-corpus-errors.json rather than relabeled clean."
+   }
   },
   {
    "analyzer": "xml",

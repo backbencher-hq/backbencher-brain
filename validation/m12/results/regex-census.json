@@ -2,23 +2,23 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-08-19T22:37:25.919Z",
+  "generatedAt": "2026-08-20T02:36:12.181Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 50,
+  "totalRegexUsages": 40,
   "analyzersScanned": 41,
   "byClassification": {
-    "unavoidable": 9,
+    "unavoidable": 6,
     "normalization": 20,
     "replaceable": 1,
-    "needs_review": 20
+    "needs_review": 13
   },
   "byReceiverCategory": {
-    "literal": 9,
+    "literal": 6,
     "node_text": 20,
     "raw_content": 1,
-    "other": 11,
-    "identifier": 9
+    "other": 5,
+    "identifier": 8
   },
   "perFile": [
     {
@@ -155,122 +155,6 @@
           "receiver": "/^-[a-zA-Z]*e[a-zA-Z]*$/",
           "receiverCategory": "literal",
           "classification": "unavoidable",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-json-analyzer.ts",
-      "count": 10,
-      "usages": [
-        {
-          "file": "real-json-analyzer.ts",
-          "line": 492,
-          "column": 34,
-          "source": "/\\.json$/i",
-          "operation": "replace",
-          "receiver": "base",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-json-analyzer.ts",
-          "line": 665,
-          "column": 16,
-          "source": "/^-?d+$/",
-          "operation": "test",
-          "receiver": "/^-?d+$/",
-          "receiverCategory": "literal",
-          "classification": "unavoidable",
-          "justification": ""
-        },
-        {
-          "file": "real-json-analyzer.ts",
-          "line": 675,
-          "column": 13,
-          "source": "/^-?d+$/",
-          "operation": "test",
-          "receiver": "/^-?d+$/",
-          "receiverCategory": "literal",
-          "classification": "unavoidable",
-          "justification": ""
-        },
-        {
-          "file": "real-json-analyzer.ts",
-          "line": 676,
-          "column": 13,
-          "source": "/^-?d*.d+$/",
-          "operation": "test",
-          "receiver": "/^-?d*.d+$/",
-          "receiverCategory": "literal",
-          "classification": "unavoidable",
-          "justification": ""
-        },
-        {
-          "file": "real-json-analyzer.ts",
-          "line": 700,
-          "column": 27,
-          "source": "/^\\/api/",
-          "operation": "other",
-          "receiver": "",
-          "receiverCategory": "other",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-json-analyzer.ts",
-          "line": 700,
-          "column": 37,
-          "source": "/^\\/v\\d/",
-          "operation": "other",
-          "receiver": "",
-          "receiverCategory": "other",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-json-analyzer.ts",
-          "line": 700,
-          "column": 47,
-          "source": "/^\\/\\w+\\/\\{/",
-          "operation": "other",
-          "receiver": "",
-          "receiverCategory": "other",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-json-analyzer.ts",
-          "line": 700,
-          "column": 61,
-          "source": "/\\{.*\\}/",
-          "operation": "other",
-          "receiver": "",
-          "receiverCategory": "other",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-json-analyzer.ts",
-          "line": 700,
-          "column": 71,
-          "source": "/\\/.*\\/.*/",
-          "operation": "other",
-          "receiver": "",
-          "receiverCategory": "other",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-json-analyzer.ts",
-          "line": 1047,
-          "column": 41,
-          "source": "/\\//g",
-          "operation": "replace",
-          "receiver": "split[1]",
-          "receiverCategory": "other",
-          "classification": "needs_review",
           "justification": ""
         }
       ]
