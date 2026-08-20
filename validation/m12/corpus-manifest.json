@@ -807,7 +807,35 @@
    "status": "measured",
    "candidates": [
     "terraform@2e1710bf(clean)"
-   ]
+   ],
+   "measured": {
+    "revision": "2e1710bfc5fa8bb45735b9ebcc9b258e00e9c155",
+    "sample": "2295 strict tracked *.tf/*.tfvars/*.hcl files from terraform (2299 tracked; four named intentional-invalid diagnostics fixtures excluded explicitly)",
+    "fixtures": 2,
+    "fixtureFacts": 107,
+    "precision": 1,
+    "recall": 1,
+    "corpusSymbols": 14226,
+    "corpusRelationships": 10667,
+    "grammarErrorFiles": 4,
+    "grammarErrorNodes": 10,
+    "strictAcceptanceFiles": 2295,
+    "trackedFiles": 2299,
+    "excludedFiles": [
+     "internal/command/testdata/init-syntax-invalid-backend-attribute-invalid/main.tf",
+     "internal/configs/testdata/invalid-files/provider-syntax.tf",
+     "internal/command/testdata/init-with-duplicates/secondary.tf",
+     "internal/command/testdata/init-with-overrides-and-duplicates/secondary_override.tf"
+    ],
+    "unexpectedGrammarErrorFiles": 0,
+    "crashFiles": 0,
+    "wallMs": 6137.387918,
+    "filesPerSecond": 373.9375823498338,
+    "symbolsPerSecond": 2317.9242032717802,
+    "relationshipsPerSecond": 1738.0358130395107,
+    "measuredAt": "2026-08-20T16:11:24.000Z",
+    "note": "HCL analyzer uses one iterative DFS over the tree plus a single recursive expression walk with Set-backed relationship dedupe. All 2295 strict acceptance files parse with 0 errors and 0 crashes. The four excluded files are Terraform's own intentionally-invalid diagnostics fixtures (invalid-fixture testdata or a deliberate brace typo per their source comment); hcl-corpus-errors.json records them explicitly."
+   }
   },
   {
    "analyzer": "graphql",

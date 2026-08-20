@@ -2,23 +2,23 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-08-20T14:55:22.965Z",
+  "generatedAt": "2026-08-20T16:11:02.671Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 37,
+  "totalRegexUsages": 34,
   "analyzersScanned": 41,
   "byClassification": {
     "unavoidable": 6,
     "normalization": 19,
     "replaceable": 1,
-    "needs_review": 11
+    "needs_review": 8
   },
   "byReceiverCategory": {
     "literal": 6,
     "node_text": 19,
     "raw_content": 1,
-    "other": 4,
-    "identifier": 7
+    "other": 3,
+    "identifier": 5
   },
   "perFile": [
     {
@@ -382,45 +382,6 @@
           "receiver": "node.text.replace(/^#{1,6}\\s*/, \"\")",
           "receiverCategory": "node_text",
           "classification": "normalization",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-hcl-analyzer.ts",
-      "count": 3,
-      "usages": [
-        {
-          "file": "real-hcl-analyzer.ts",
-          "line": 43,
-          "column": 45,
-          "source": "/^\"|\"$/g",
-          "operation": "replace",
-          "receiver": "labelText",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-hcl-analyzer.ts",
-          "line": 122,
-          "column": 32,
-          "source": "/\\$\\{([^}]+)\\}/g",
-          "operation": "match",
-          "receiver": "val",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-hcl-analyzer.ts",
-          "line": 125,
-          "column": 45,
-          "source": "/\\$\\{|\\}/g",
-          "operation": "replace",
-          "receiver": "refs[i]",
-          "receiverCategory": "other",
-          "classification": "needs_review",
           "justification": ""
         }
       ]
