@@ -2,45 +2,12 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-08-20T18:33:51.817Z",
+  "generatedAt": "2026-08-20T18:50:49.562Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 2,
+  "totalRegexUsages": 0,
   "analyzersScanned": 41,
-  "byClassification": {
-    "needs_review": 2
-  },
-  "byReceiverCategory": {
-    "identifier": 2
-  },
-  "perFile": [
-    {
-      "file": "real-java-analyzer.ts",
-      "count": 2,
-      "usages": [
-        {
-          "file": "real-java-analyzer.ts",
-          "line": 1151,
-          "column": 38,
-          "source": "/\\s+/",
-          "operation": "split",
-          "receiver": "pt",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-java-analyzer.ts",
-          "line": 1162,
-          "column": 46,
-          "source": "/@[\\w\\.]+\\s*/g",
-          "operation": "replace",
-          "receiver": "typeGuess",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        }
-      ]
-    }
-  ]
+  "byClassification": {},
+  "byReceiverCategory": {},
+  "perFile": []
 }
