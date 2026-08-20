@@ -762,10 +762,10 @@
     "grammarErrorFiles": 0,
     "grammarErrorNodes": 0,
     "crashFiles": 0,
-    "wallMs": 2430.711911,
-    "filesPerSecond": 63.35592437058659,
-    "symbolsPerSecond": 2548.6360485440514,
-    "relationshipsPerSecond": 982.4282298503947,
+    "wallMs": 2188.860221,
+    "filesPerSecond": 70.35625140542037,
+    "symbolsPerSecond": 2830.2401133544104,
+    "relationshipsPerSecond": 1090.9787555593757,
     "measuredAt": "2026-08-20T14:13:00.000Z",
     "note": "XML analyzer rewritten as a single iterative AST traversal against the vendored tree-sitter-xml WASM. All tracked XML/XSD corpus files parse with 0 errors and 0 crashes. External DTD references are covered by Doctype.xml; standalone DTD files are an explicit corpus boundary because the wired XML document grammar requires a document element."
    }
