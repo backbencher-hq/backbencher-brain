@@ -2,137 +2,20 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-08-20T17:16:46.328Z",
+  "generatedAt": "2026-08-20T17:44:29.878Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 17,
+  "totalRegexUsages": 7,
   "analyzersScanned": 41,
   "byClassification": {
-    "needs_review": 5,
-    "normalization": 12
+    "needs_review": 2,
+    "normalization": 5
   },
   "byReceiverCategory": {
-    "identifier": 4,
-    "node_text": 12,
-    "other": 1
+    "identifier": 2,
+    "node_text": 5
   },
   "perFile": [
-    {
-      "file": "real-powershell-analyzer.ts",
-      "count": 10,
-      "usages": [
-        {
-          "file": "real-powershell-analyzer.ts",
-          "line": 50,
-          "column": 28,
-          "source": "/^\\$/",
-          "operation": "replace",
-          "receiver": "name",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-powershell-analyzer.ts",
-          "line": 103,
-          "column": 48,
-          "source": "/^\\$/",
-          "operation": "replace",
-          "receiver": "pName.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-powershell-analyzer.ts",
-          "line": 104,
-          "column": 56,
-          "source": "/[\\[\\]]/g",
-          "operation": "replace",
-          "receiver": "pType.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-powershell-analyzer.ts",
-          "line": 251,
-          "column": 50,
-          "source": "/^\\$/",
-          "operation": "replace",
-          "receiver": "pName.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-powershell-analyzer.ts",
-          "line": 252,
-          "column": 58,
-          "source": "/[\\[\\]]/g",
-          "operation": "replace",
-          "receiver": "pType.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-powershell-analyzer.ts",
-          "line": 389,
-          "column": 47,
-          "source": "/^\\[|\\]$/g",
-          "operation": "replace",
-          "receiver": "cmdName",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-powershell-analyzer.ts",
-          "line": 401,
-          "column": 46,
-          "source": "/-Modules?\\s+([^\\s\"']+|\"[^\"]+\"|'[^']+')/i",
-          "operation": "match",
-          "receiver": "node.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-powershell-analyzer.ts",
-          "line": 404,
-          "column": 45,
-          "source": "/[\"']/g",
-          "operation": "replace",
-          "receiver": "modMatch[1]",
-          "receiverCategory": "other",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-powershell-analyzer.ts",
-          "line": 580,
-          "column": 31,
-          "source": "/['\"]/g",
-          "operation": "replace",
-          "receiver": "c.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-powershell-analyzer.ts",
-          "line": 590,
-          "column": 37,
-          "source": "/['\"]/g",
-          "operation": "replace",
-          "receiver": "n.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        }
-      ]
-    },
     {
       "file": "real-markdown-analyzer.ts",
       "count": 4,
