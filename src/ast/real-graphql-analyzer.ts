@@ -1,434 +1,415 @@
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 
+/**
+ * REAL GRAPHQL ANALYZER — pure Tree-sitter AST extraction against the vendored
+ * `tree-sitter-graphql` grammar (PascalCase node types: `ObjectTypeDefinition`,
+ * `FieldDefinition`, `NamedType`, `OperationDefinition`, …).
+ *
+ * Symbol contract (declaration nodes only — usages are relationships):
+ *   - `SchemaDefinition` → `namespace` `schema`, with root operation types as
+ *     `property` children.
+ *   - `ObjectTypeDefinition` → `class`; `InterfaceTypeDefinition` → `interface`;
+ *     `UnionTypeDefinition` / `ScalarTypeDefinition` → `type`;
+ *     `EnumTypeDefinition` → `enum`; `EnumValueDefinition` → `enum_member`;
+ *     `InputObjectTypeDefinition` → `class`.
+ *   - `FieldDefinition` / input `InputValueDefinition` → `property` (owned by
+ *     the enclosing type).
+ *   - `DirectiveDefinition` → `function` `@name`.
+ *   - `OperationDefinition` / `FragmentDefinition` → `method`.
+ *   - `VariableDefinition` → `variable` `$name` (owned by the operation).
+ *
+ * Relationship ontology:
+ *   - `contains`   type → field, enum → value, input → field, schema → root op.
+ *   - `implements` object/interface → implemented interface.
+ *   - `uses`       type reference (field return/argument type, input field type,
+ *                  union member) and executable reference (field selection,
+ *                  fragment spread, inline-fragment type condition).
+ *
+ * Type names are read from the `NamedType → Name` grammar path (descending
+ * through `NonNullType`/`ListType`); descriptions are unquoted from the
+ * `Description → StringValue` leaf by string slicing — no source-text regex.
+ * Syntax errors are owned by ASTEngine (tree-sitter ERROR/MISSING nodes).
+ */
 export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
   public analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
     const symbols: ASTEngine.UniversalSymbol[] = []
     const relationships: ASTEngine.UniversalRelationship[] = []
     const imports: ASTEngine.ImportInfo[] = []
-
-    // Extract imports — GraphQL uses #import directive (tool-specific convention)
-    // This is a pragma, not part of the GraphQL AST spec, so regex is the practical approach
-    const gqlMatches = content.matchAll(/#import\s+["\x27]([^"\x27]+)["\x27]/g)
-    for (const m of gqlMatches) {
-      const importPath = m[1].replace(/["<>]/g, "")
-      imports.push({ module: importPath, items: [], importType: "gql_import", lineNumber: 0, isExternal: m[0].includes("<") || !importPath.startsWith(".") })
-      relationships.push({
-        source: "schema",
-        target: importPath,
-        type: ASTEngine.RelationshipType.References,
-        confidence: 0.8,
-        metadata: { isGqlImport: true },
-      })
-    }
-
     const exports: ASTEngine.ExportInfo[] = []
     const errors: ASTEngine.ParseError[] = []
 
-    const walkStack: { node: Node; scopePath: string[]; ownerName: string; ownerKind: string }[] = [
-      { node: rootNode, scopePath: [], ownerName: "", ownerKind: "" },
-    ]
+    const relKeys = new Set<string>()
+    const addRelationship = (
+      source: string,
+      target: string,
+      type: ASTEngine.RelationshipType,
+      metadata: Record<string, any> = {},
+    ) => {
+      const key = `${source}\u0000${type}\u0000${target}`
+      if (relKeys.has(key)) return
+      relKeys.add(key)
+      relationships.push({ source, target, type, confidence: 1, metadata })
+    }
 
-    while (walkStack.length > 0) {
-      const { node, scopePath, ownerName, ownerKind } = walkStack.pop()!
-      const type = node.type
-      let currentScope = [...scopePath]
-      let currentOwnerName = ownerName
-      let currentOwnerKind = ownerKind
+    interface Owner {
+      name?: string
+      kind?: ASTEngine.SymbolKind
+    }
 
-      // Pass-through wrapper nodes from newer grammar (tree-sitter-graphql ABI 14+)
-      if (type === "Document" || type === "Definition" || type === "TypeSystemDefinition" || type === "TypeSystemExtension" || type === "ExecutableDefinition" || type === "TypeDefinition") {
-        for (let i = node.namedChildCount - 1; i >= 0; i--) {
-          const child = node.namedChild(i)
-          if (child) walkStack.push({ node: child, scopePath: currentScope, ownerName: currentOwnerName, ownerKind: currentOwnerKind })
+    const TYPE_KIND: Record<string, ASTEngine.SymbolKind> = {
+      ObjectTypeDefinition: ASTEngine.SymbolKind.Class,
+      InterfaceTypeDefinition: ASTEngine.SymbolKind.Interface,
+      UnionTypeDefinition: ASTEngine.SymbolKind.Type,
+      EnumTypeDefinition: ASTEngine.SymbolKind.Enum,
+      ScalarTypeDefinition: ASTEngine.SymbolKind.Type,
+      InputObjectTypeDefinition: ASTEngine.SymbolKind.Class,
+    }
+
+    const stack: { node: Node; owner: Owner }[] = [{ node: rootNode, owner: {} }]
+    const pushChildren = (node: Node, owner: Owner) => {
+      for (let i = node.namedChildCount - 1; i >= 0; i--) {
+        const child = node.namedChild(i)
+        if (child) stack.push({ node: child, owner })
+      }
+    }
+
+    const emitSymbol = (symbol: ASTEngine.UniversalSymbol) => symbols.push(symbol)
+
+    while (stack.length > 0) {
+      const { node, owner } = stack.pop()!
+      const t = node.type
+
+      // ---- Schema definition -------------------------------------------------
+      if (t === "SchemaDefinition") {
+        emitSymbol({
+          name: "schema",
+          kind: ASTEngine.SymbolKind.Namespace,
+          range: this.nodeToRange(node),
+          scope: "",
+          visibility: "public",
+          metadata: { graphqlType: "schema" },
+        })
+        for (let i = 0; i < node.namedChildCount; i++) {
+          const opDef = node.namedChild(i)
+          if (opDef?.type !== "OperationTypeDefinition") continue
+          const opType = this.findChild(opDef, (n) => n.type === "OperationType")?.text ?? "operation"
+          const named = this.findChild(opDef, (n) => n.type === "NamedType")
+          const rootType = named ? this.nameOf(named) : undefined
+          emitSymbol({
+            name: opType,
+            kind: ASTEngine.SymbolKind.Property,
+            range: this.nodeToRange(opDef),
+            scope: "schema",
+            returnType: rootType,
+            ownerName: "schema",
+            ownerKind: ASTEngine.SymbolKind.Namespace,
+            metadata: { graphqlRole: "root_operation_type" },
+          })
+          addRelationship("schema", `schema.${opType}`, ASTEngine.RelationshipType.Contains)
+          if (rootType) addRelationship(`schema.${opType}`, rootType, ASTEngine.RelationshipType.Uses, { relationshipRole: "root_operation_type" })
         }
         continue
       }
 
-      if (type === "schema_definition" || type === "SchemaDefinition" || type === "schema_extension" || type === "SchemaExtension") {
-        const schemaName = type === "schema_extension" ? "SchemaExtension" : "Schema"
-        const schemaSymbol: ASTEngine.UniversalSymbol = {
-          name: schemaName,
-          kind: ASTEngine.SymbolKind.Namespace,
-          range: {
-            startLine: node.startPosition.row + 1,
-            endLine: node.endPosition.row + 1,
-            startColumn: node.startPosition.column,
-            endColumn: node.endPosition.column,
-            startIndex: node.startIndex,
-            endIndex: node.endIndex,
-          },
-          scope: currentScope.join("."),
-          ownerName: currentOwnerName || undefined,
-          ownerKind: (currentOwnerKind as any) || undefined,
-          metadata: {
-            graphqlType: type === "schema_extension" ? "schema_extension" : "schema",
-          },
-        }
-        symbols.push(schemaSymbol)
-        currentScope.push(schemaName)
-        currentOwnerName = schemaName
-        currentOwnerKind = "namespace"
-
-        for (let i = 0; i < node.namedChildCount; i++) {
-          const child = node.namedChild(i)!
-          if (child.type === "operation_type_definition" || child.type === "OperationTypeDefinition") {
-            const opTypeNode = child.namedChild(0)
-            const namedTypeNode = this.findChild(child, (n) => n.type === "named_type" || n.type === "NamedType")
-            if (opTypeNode) {
-              const opType = opTypeNode.text
-              const returnType = namedTypeNode ? namedTypeNode.text : undefined
-              const fieldSymbol: ASTEngine.UniversalSymbol = {
-                name: opType,
-                kind: ASTEngine.SymbolKind.Property,
-                range: {
-                  startLine: child.startPosition.row + 1,
-                  endLine: child.endPosition.row + 1,
-                  startColumn: child.startPosition.column,
-                  endColumn: child.endPosition.column,
-                  startIndex: child.startIndex,
-                  endIndex: child.endIndex,
-                },
-                scope: currentScope.join("."),
-                returnType,
-                ownerName: currentOwnerName,
-                ownerKind: currentOwnerKind as any,
-                metadata: { graphqlRole: "root_operation_type" },
-              }
-              symbols.push(fieldSymbol)
-            }
-          }
-        }
-      }
-
-      if (
-        type === "object_type_definition" || type === "ObjectTypeDefinition" ||
-        type === "interface_type_definition" || type === "InterfaceTypeDefinition" ||
-        type === "enum_type_definition" || type === "EnumTypeDefinition" ||
-        type === "union_type_definition" || type === "UnionTypeDefinition" ||
-        type === "scalar_type_definition" || type === "ScalarTypeDefinition" ||
-        type === "input_object_type_definition" || type === "InputObjectTypeDefinition" ||
-        type === "object_type_extension" || type === "ObjectTypeExtension" ||
-        type === "interface_type_extension" || type === "InterfaceTypeExtension" ||
-        type === "input_object_type_extension" || type === "InputObjectTypeExtension" ||
-        type === "union_type_extension" || type === "UnionTypeExtension" ||
-        type === "enum_type_extension" || type === "EnumTypeExtension" ||
-        type === "scalar_type_extension" || type === "ScalarTypeExtension"
-      ) {
-        const nameNode = this.findChild(node, (n) => n.type === "name" || n.type === "Name")
-        if (nameNode) {
-          const typeName = nameNode.text
-          let kind = ASTEngine.SymbolKind.Class
-          if (type.includes("interface")) kind = ASTEngine.SymbolKind.Interface
-          if (type.includes("enum")) kind = ASTEngine.SymbolKind.Enum
-          if (type.includes("union")) kind = ASTEngine.SymbolKind.Type
-          if (type.includes("scalar")) kind = ASTEngine.SymbolKind.Type
-          if (type.includes("input_object") || type.includes("input_object")) kind = ASTEngine.SymbolKind.Interface
-
-          const isExtension = type.includes("extension") || type.includes("Extension")
-          const graphqlType = type.replace("_type_definition", "").replace("_type_extension", "_extension")
-
-          const descNode = this.findChild(node, (n) => n.type === "string_value" || n.type === "StringValue" || n.type === "description" || n.type === "Description")
-          const docstring = descNode
-            ? descNode.text
-                .replace(/^"""|"""$/g, "")
-                .replace(/^"|"$/g, "")
-                .trim()
-            : undefined
-
-          const typeSymbol: ASTEngine.UniversalSymbol = {
-            name: typeName,
+      // ---- Object / interface / input type definitions ----------------------
+      if (t === "ObjectTypeDefinition" || t === "InterfaceTypeDefinition" || t === "InputObjectTypeDefinition") {
+        const name = this.nameOf(node)
+        if (name) {
+          const kind = TYPE_KIND[t]
+          emitSymbol({
+            name,
             kind,
-            range: {
-              startLine: node.startPosition.row + 1,
-              endLine: node.endPosition.row + 1,
-              startColumn: node.startPosition.column,
-              endColumn: node.endPosition.column,
-              startIndex: node.startIndex,
-              endIndex: node.endIndex,
-            },
-            scope: currentScope.join("."),
-            ownerName: currentOwnerName || undefined,
-            ownerKind: (currentOwnerKind as any) || undefined,
-            docstring,
-            metadata: {
-              graphqlType,
-              isExtension,
-            },
-          }
-          symbols.push(typeSymbol)
-          const symbolId = `${typeName}:${node.startPosition.row + 1}`
-
-          currentScope.push(typeName)
-          currentOwnerName = typeName
-          currentOwnerKind = kind.toString()
-
-          if (isExtension) {
-            relationships.push({
-              source: symbolId,
-              target: typeName,
-              type: ASTEngine.RelationshipType.Extends,
-              metadata: { extensionType: graphqlType },
-            })
-          }
-
-          const implementsInterfaces = this.findChild(node, (n) => n.type === "implements_interfaces" || n.type === "ImplementsInterfaces")
-          if (implementsInterfaces) {
-            for (let i = 0; i < implementsInterfaces.namedChildCount; i++) {
-              const child = implementsInterfaces.namedChild(i)!
-              let interfaceName: string | null = null
-              if (child.type === "named_type" || child.type === "NamedType") {
-                const innerName = this.findChild(child, (n) => n.type === "name" || n.type === "Name")
-                interfaceName = innerName?.text || child.text
-              } else if (child.type === "name" || child.type === "Name") {
-                interfaceName = child.text
-              }
-              if (interfaceName) {
-                relationships.push({
-                  source: symbolId,
-                  target: interfaceName,
-                  type: ASTEngine.RelationshipType.Implements,
-                  metadata: {},
-                })
+            range: this.nodeToRange(node),
+            scope: "",
+            visibility: "public",
+            docstring: this.docstring(node),
+            metadata: { graphqlType: t },
+          })
+          // implements interfaces (object and interface types)
+          if (t === "ObjectTypeDefinition" || t === "InterfaceTypeDefinition") {
+            const implementsNode = this.findChild(node, (n) => n.type === "ImplementsInterfaces")
+            if (implementsNode) {
+              for (let i = 0; i < implementsNode.namedChildCount; i++) {
+                const member = implementsNode.namedChild(i)
+                if (member?.type !== "NamedType") continue
+                const iface = this.nameOf(member)
+                if (iface) addRelationship(name, iface, ASTEngine.RelationshipType.Implements)
               }
             }
           }
+          pushChildren(node, { name, kind })
         }
+        continue
       }
 
-      const parentType = node.parent?.type
-      if (
-        type === "field_definition" || type === "FieldDefinition" ||
-        type === "enum_value_definition" || type === "EnumValueDefinition" ||
-        (type === "input_value_definition" || type === "InputValueDefinition") && parentType !== "arguments_definition" && parentType !== "ArgumentsDefinition"
-      ) {
-        const nameNode = this.findChild(node, (n) => n.type === "name" || n.type === "Name" || n.type === "enum_value" || n.type === "EnumValue")
-        if (nameNode) {
-          const fieldName = nameNode.text
-          const typeNode = this.findChild(node, (n) => n.type === "type" || n.type === "Type")
-          const returnType = typeNode ? typeNode.text : undefined
-          const argumentsNode = this.findChild(node, (n) =>
-            n.type === "arguments" || n.type === "Arguments" ||
-            n.type === "input_fields_definition" || n.type === "InputFieldsDefinition" ||
-            n.type === "ArgumentsDefinition"
-          )
+      // ---- Union type --------------------------------------------------------
+      if (t === "UnionTypeDefinition") {
+        const name = this.nameOf(node)
+        if (name) {
+          emitSymbol({
+            name,
+            kind: ASTEngine.SymbolKind.Type,
+            range: this.nodeToRange(node),
+            scope: "",
+            visibility: "public",
+            docstring: this.docstring(node),
+            metadata: { graphqlType: "union" },
+          })
+          const membersNode = this.findChild(node, (n) => n.type === "UnionMemberTypes")
+          if (membersNode) {
+            for (let i = 0; i < membersNode.namedChildCount; i++) {
+              const member = membersNode.namedChild(i)
+              if (member?.type !== "NamedType") continue
+              const memberName = this.nameOf(member)
+              if (memberName) addRelationship(name, memberName, ASTEngine.RelationshipType.Uses, { relationshipRole: "union_member" })
+            }
+          }
+        }
+        continue
+      }
 
-          const fieldSymbol: ASTEngine.UniversalSymbol = {
+      // ---- Enum type ---------------------------------------------------------
+      if (t === "EnumTypeDefinition") {
+        const name = this.nameOf(node)
+        if (name) {
+          emitSymbol({
+            name,
+            kind: ASTEngine.SymbolKind.Enum,
+            range: this.nodeToRange(node),
+            scope: "",
+            visibility: "public",
+            docstring: this.docstring(node),
+            metadata: { graphqlType: "enum" },
+          })
+          pushChildren(node, { name, kind: ASTEngine.SymbolKind.Enum })
+        }
+        continue
+      }
+
+      // ---- Enum value --------------------------------------------------------
+      if (t === "EnumValueDefinition") {
+        const enumValue = this.findChild(node, (n) => n.type === "EnumValue")
+        const valueName = enumValue ? this.nameOf(enumValue) : undefined
+        if (valueName && owner.name) {
+          emitSymbol({
+            name: valueName,
+            kind: ASTEngine.SymbolKind.EnumMember,
+            range: this.nodeToRange(node),
+            scope: owner.name,
+            ownerName: owner.name,
+            ownerKind: owner.kind,
+            docstring: this.docstring(node),
+            metadata: { graphqlRole: "enum_value" },
+          })
+          addRelationship(owner.name, `${owner.name}.${valueName}`, ASTEngine.RelationshipType.Contains)
+        }
+        continue
+      }
+
+      // ---- Scalar type -------------------------------------------------------
+      if (t === "ScalarTypeDefinition") {
+        const name = this.nameOf(node)
+        if (name) {
+          emitSymbol({
+            name,
+            kind: ASTEngine.SymbolKind.Type,
+            range: this.nodeToRange(node),
+            scope: "",
+            visibility: "public",
+            docstring: this.docstring(node),
+            metadata: { graphqlType: "scalar" },
+          })
+        }
+        continue
+      }
+
+      // ---- Directive definition ----------------------------------------------
+      if (t === "DirectiveDefinition") {
+        const name = this.nameOf(node)
+        if (name) {
+          const directiveName = `@${name}`
+          const argsNode = this.findChild(node, (n) => n.type === "ArgumentsDefinition")
+          emitSymbol({
+            name: directiveName,
+            kind: ASTEngine.SymbolKind.Function,
+            range: this.nodeToRange(node),
+            scope: "",
+            visibility: "public",
+            parameters: argsNode ? this.extractArguments(argsNode) : undefined,
+            docstring: this.docstring(node),
+            metadata: { graphqlRole: "directive_definition" },
+          })
+        }
+        continue
+      }
+
+      // ---- Field definition (SDL) --------------------------------------------
+      if (t === "FieldDefinition") {
+        const fieldName = this.nameOf(node)
+        if (fieldName && owner.name) {
+          const typeNode = this.findChild(node, (n) => n.type === "Type")
+          const returnType = typeNode ? this.namedTypeName(typeNode) : undefined
+          const argsNode = this.findChild(node, (n) => n.type === "ArgumentsDefinition")
+          const params = argsNode ? this.extractArguments(argsNode) : undefined
+          emitSymbol({
             name: fieldName,
             kind: ASTEngine.SymbolKind.Property,
-            range: {
-              startLine: node.startPosition.row + 1,
-              endLine: node.endPosition.row + 1,
-              startColumn: node.startPosition.column,
-              endColumn: node.endPosition.column,
-              startIndex: node.startIndex,
-              endIndex: node.endIndex,
-            },
-            scope: currentScope.join("."),
+            range: this.nodeToRange(node),
+            scope: owner.name,
             returnType,
-            ownerName: currentOwnerName || undefined,
-            ownerKind: (currentOwnerKind as any) || undefined,
-            parameters: argumentsNode ? this.extractArguments(argumentsNode) : undefined,
-            metadata: {
-              graphqlRole:
-                type === "enum_value_definition"
-                  ? "enum_value"
-                  : type === "input_value_definition"
-                    ? "input_field"
-                    : "field",
-            },
-          }
-          symbols.push(fieldSymbol)
-
-          const fieldSymbolId = `${currentOwnerName}.${fieldName}:${node.startPosition.row + 1}`
-
-          if (currentOwnerName) {
-            relationships.push({
-              source: currentOwnerName,
-              target: fieldSymbolId,
-              type: ASTEngine.RelationshipType.Contains,
-              metadata: { role: type === "enum_value_definition" ? "enum_value" : "field" },
-            })
-          }
-
+            ownerName: owner.name,
+            ownerKind: owner.kind,
+            parameters: params,
+            docstring: this.docstring(node),
+            metadata: { graphqlRole: "field", rawType: typeNode?.text },
+          })
+          addRelationship(owner.name, `${owner.name}.${fieldName}`, ASTEngine.RelationshipType.Contains)
           if (returnType) {
-            const cleanType = returnType.replace(/[\[\]!]/g, "")
-            if (cleanType && cleanType !== fieldName) {
-              relationships.push({
-                source: fieldSymbolId,
-                target: cleanType,
-                type: ASTEngine.RelationshipType.Uses,
-                metadata: { relationshipRole: "field_return_type" },
+            addRelationship(`${owner.name}.${fieldName}`, returnType, ASTEngine.RelationshipType.Uses, { relationshipRole: "field_return_type" })
+          }
+          if (argsNode) {
+            for (const arg of this.argumentPairs(argsNode)) {
+              if (arg.type) addRelationship(`${owner.name}.${fieldName}`, arg.type, ASTEngine.RelationshipType.Uses, { relationshipRole: "field_argument_type" })
+            }
+          }
+        }
+        continue
+      }
+
+      // ---- Input field (InputValueDefinition under InputFieldsDefinition) ----
+      if (t === "InputValueDefinition" && node.parent?.type === "InputFieldsDefinition") {
+        const fieldName = this.nameOf(node)
+        if (fieldName && owner.name) {
+          const typeNode = this.findChild(node, (n) => n.type === "Type")
+          const fieldType = typeNode ? this.namedTypeName(typeNode) : undefined
+          emitSymbol({
+            name: fieldName,
+            kind: ASTEngine.SymbolKind.Property,
+            range: this.nodeToRange(node),
+            scope: owner.name,
+            returnType: fieldType,
+            ownerName: owner.name,
+            ownerKind: owner.kind,
+            docstring: this.docstring(node),
+            metadata: { graphqlRole: "input_field", rawType: typeNode?.text },
+          })
+          addRelationship(owner.name, `${owner.name}.${fieldName}`, ASTEngine.RelationshipType.Contains)
+          if (fieldType) {
+            addRelationship(`${owner.name}.${fieldName}`, fieldType, ASTEngine.RelationshipType.Uses, { relationshipRole: "input_field_type" })
+          }
+        }
+        continue
+      }
+
+      // ---- Operation definition ----------------------------------------------
+      if (t === "OperationDefinition") {
+        const opType = this.findChild(node, (n) => n.type === "OperationType")?.text ?? "query"
+        const nameNode = this.findChild(node, (n) => n.type === "Name")
+        const opName = nameNode?.text ?? `Anonymous_${opType}_${node.startPosition.row + 1}`
+        emitSymbol({
+          name: opName,
+          kind: ASTEngine.SymbolKind.Method,
+          range: this.nodeToRange(node),
+          scope: "",
+          visibility: "public",
+          metadata: { graphqlOperationType: opType },
+        })
+        // variables
+        const varsNode = this.findChild(node, (n) => n.type === "VariableDefinitions")
+        if (varsNode) {
+          for (let i = 0; i < varsNode.namedChildCount; i++) {
+            const varDef = varsNode.namedChild(i)
+            if (varDef?.type !== "VariableDefinition") continue
+            const varNode = this.findChild(varDef, (n) => n.type === "Variable")
+            const varName = varNode ? this.nameOf(varNode) : undefined
+            const typeNode = this.findChild(varDef, (n) => n.type === "Type")
+            if (varName) {
+              emitSymbol({
+                name: `$${varName}`,
+                kind: ASTEngine.SymbolKind.Variable,
+                range: this.nodeToRange(varDef),
+                scope: opName,
+                returnType: typeNode ? this.namedTypeName(typeNode) : undefined,
+                ownerName: opName,
+                ownerKind: ASTEngine.SymbolKind.Method,
+                metadata: { graphqlRole: "variable", rawType: typeNode?.text },
               })
             }
           }
         }
+        pushChildren(node, { name: opName, kind: ASTEngine.SymbolKind.Method })
+        continue
       }
 
-      if (type === "directive_definition") {
-        const nameNode = this.findChild(node, (n) => n.type === "name")
-        if (nameNode) {
-          const directiveName = `@${nameNode.text}`
-          const argumentsNode = this.findChild(node, (n) => n.type === "arguments_definition")
-          const dirDefSymbol: ASTEngine.UniversalSymbol = {
-            name: directiveName,
-            kind: ASTEngine.SymbolKind.Function,
-            range: {
-              startLine: node.startPosition.row + 1,
-              endLine: node.endPosition.row + 1,
-              startColumn: node.startPosition.column,
-              endColumn: node.endPosition.column,
-              startIndex: node.startIndex,
-              endIndex: node.endIndex,
-            },
-            scope: currentScope.join("."),
-            ownerName: currentOwnerName || undefined,
-            ownerKind: (currentOwnerKind as any) || undefined,
-            parameters: argumentsNode ? this.extractArguments(argumentsNode) : undefined,
-            metadata: { graphqlRole: "directive_definition" },
-          }
-          symbols.push(dirDefSymbol)
-          currentScope.push(directiveName)
-          currentOwnerName = directiveName
-          currentOwnerKind = "function"
-        }
-      }
-
-      if (type === "operation_definition" || type === "fragment_definition") {
-        const nameNode = this.findChild(node, (n) => n.type === "name")
-        const opTypeNode = this.findChild(node, (n) => n.type === "operation_type")
-        const opType = opTypeNode ? opTypeNode.text : type === "fragment_definition" ? "fragment" : "query"
-        const opName = nameNode ? nameNode.text : `Anonymous_${opType}_${node.startPosition.row}`
-
-        const opSymbol: ASTEngine.UniversalSymbol = {
-          name: opName,
-          kind: ASTEngine.SymbolKind.Method,
-          range: {
-            startLine: node.startPosition.row + 1,
-            endLine: node.endPosition.row + 1,
-            startColumn: node.startPosition.column,
-            endColumn: node.endPosition.column,
-            startIndex: node.startIndex,
-            endIndex: node.endIndex,
-          },
-          scope: currentScope.join("."),
-          metadata: {
-            graphqlOperationType: opType,
-          },
-        }
-        symbols.push(opSymbol)
-        currentScope.push(opName)
-        currentOwnerName = opName
-        currentOwnerKind = "method"
-      }
-
-      if (type === "directive" && node.parent && node.parent.type !== "directive_definition") {
-        const nameNode = this.findChild(node, (n) => n.type === "name")
-        if (nameNode) {
-          const dirSymbol: ASTEngine.UniversalSymbol = {
-            name: `@${nameNode.text}`,
-            kind: ASTEngine.SymbolKind.Constructor,
-            range: {
-              startLine: node.startPosition.row + 1,
-              endLine: node.endPosition.row + 1,
-              startColumn: node.startPosition.column,
-              endColumn: node.endPosition.column,
-              startIndex: node.startIndex,
-              endIndex: node.endIndex,
-            },
-            scope: currentScope.join("."),
-            ownerName: currentOwnerName || undefined,
-            ownerKind: (currentOwnerKind as any) || undefined,
-            metadata: { graphqlRole: "directive_usage" },
-          }
-          symbols.push(dirSymbol)
-        }
-      }
-
-      if (type === "fragment_spread") {
-        const nameNode = this.findChild(node, (n) => n.type === "name")
-        if (nameNode && currentOwnerName) {
-          relationships.push({
-            source: currentOwnerName,
-            target: nameNode.text,
-            type: ASTEngine.RelationshipType.Uses,
-            metadata: { usageType: "fragment_spread" },
+      // ---- Fragment definition ------------------------------------------------
+      if (t === "FragmentDefinition") {
+        const fragNode = this.findChild(node, (n) => n.type === "FragmentName")
+        const fragName = fragNode ? this.nameOf(fragNode) : undefined
+        if (fragName) {
+          emitSymbol({
+            name: fragName,
+            kind: ASTEngine.SymbolKind.Method,
+            range: this.nodeToRange(node),
+            scope: "",
+            visibility: "public",
+            metadata: { graphqlRole: "fragment" },
           })
+          const typeCondition = this.findChild(node, (n) => n.type === "TypeCondition")
+          const onType = typeCondition ? this.namedTypeName(typeCondition) : undefined
+          if (onType) addRelationship(fragName, onType, ASTEngine.RelationshipType.Uses, { relationshipRole: "fragment_type_condition" })
+          pushChildren(node, { name: fragName, kind: ASTEngine.SymbolKind.Method })
         }
+        continue
       }
 
-      if (type === "inline_fragment") {
-        const typeCondition = this.findChild(node, (n) => n.type === "type_condition")
-        if (typeCondition) {
-          const namedType = this.findChild(typeCondition, (n) => n.type === "named_type")
-          if (namedType && currentOwnerName) {
-            relationships.push({
-              source: currentOwnerName,
-              target: namedType.text,
-              type: ASTEngine.RelationshipType.Uses,
-              metadata: { usageType: "inline_fragment_type_condition" },
-            })
-          }
-        }
+      // ---- Variable definition (inside operation; also reached generically) --
+      if (t === "VariableDefinition") {
+        // Already emitted by the OperationDefinition handler; do not duplicate.
+        continue
       }
 
-      if (type === "variable_definition") {
-        const varNode = this.findChild(node, (n) => n.type === "variable")
-        const typeNode = this.findChild(node, (n) => n.type === "type")
-        if (varNode && typeNode) {
-          const varSymbol: ASTEngine.UniversalSymbol = {
-            name: varNode.text,
-            kind: ASTEngine.SymbolKind.Variable,
-            range: {
-              startLine: node.startPosition.row + 1,
-              endLine: node.endPosition.row + 1,
-              startColumn: node.startPosition.column,
-              endColumn: node.endPosition.column,
-              startIndex: node.startIndex,
-              endIndex: node.endIndex,
-            },
-            scope: currentScope.join("."),
-            returnType: typeNode.text,
-            ownerName: currentOwnerName || undefined,
-            ownerKind: (currentOwnerKind as any) || undefined,
-            metadata: { graphqlRole: "variable" },
-          }
-          symbols.push(varSymbol)
+      // ---- Executable field selection -----------------------------------------
+      if (t === "Field" && this.isExecutableField(node)) {
+        const fieldName = this.nameOf(node)
+        if (fieldName && owner.name) {
+          addRelationship(owner.name, fieldName, ASTEngine.RelationshipType.Uses, { relationshipRole: "field_selection" })
         }
+        pushChildren(node, owner)
+        continue
       }
 
-      if (type === "ERROR") {
-        errors.push({
-          message: `GraphQL Syntax Error at ${node.startPosition.row + 1}:${node.startPosition.column}`,
-          range: {
-            startLine: node.startPosition.row + 1,
-            endLine: node.endPosition.row + 1,
-            startColumn: node.startPosition.column,
-            endColumn: node.endPosition.column,
-          },
-          severity: "error",
-        })
+      // ---- Fragment spread ----------------------------------------------------
+      if (t === "FragmentSpread") {
+        const spreadNode = this.findChild(node, (n) => n.type === "FragmentName")
+        const spreadName = spreadNode ? this.nameOf(spreadNode) : undefined
+        if (spreadName && owner.name) {
+          addRelationship(owner.name, spreadName, ASTEngine.RelationshipType.Uses, { relationshipRole: "fragment_spread" })
+        }
+        continue
       }
 
-      for (let i = node.namedChildCount - 1; i >= 0; i--) {
-        const child = node.namedChild(i)
-        if (child) {
-          walkStack.push({
-            node: child,
-            scopePath: currentScope,
-            ownerName: currentOwnerName,
-            ownerKind: currentOwnerKind,
-          })
+      // ---- Inline fragment ----------------------------------------------------
+      if (t === "InlineFragment") {
+        const typeCondition = this.findChild(node, (n) => n.type === "TypeCondition")
+        const onType = typeCondition ? this.namedTypeName(typeCondition) : undefined
+        if (onType && owner.name) {
+          addRelationship(owner.name, onType, ASTEngine.RelationshipType.Uses, { relationshipRole: "inline_fragment_type_condition" })
         }
+        pushChildren(node, owner)
+        continue
       }
+
+      // ---- Default: descend through wrappers ----------------------------------
+      pushChildren(node, owner)
     }
 
-    for (let i = 0; i < symbols.length; i++) {
-      const s = symbols[i]
-      if (!s.ownerName || s.ownerName === "Schema" || s.ownerKind === "namespace") {
+    for (const s of symbols) {
+      if ((s.scope ?? "") === "") {
         exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: "public" })
       }
     }
+
     return {
       language: "graphql",
       symbols,
@@ -447,31 +428,97 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
+  /** A `Field` node is an executable selection; SDL declarations are `FieldDefinition`. */
+  private isExecutableField(node: Node): boolean {
+    return node.parent?.type === "Selection" || node.parent?.type === "SelectionSet"
+  }
+
+  /** The definition name: direct `Name` child, or a nested name wrapper. */
+  private nameOf(node: Node): string | undefined {
+    const direct = this.findChild(node, (n) => n.type === "Name")
+    if (direct) return direct.text
+    return undefined
+  }
+
+  /** Resolve a `Type`/`TypeCondition` node to its base named type name. */
+  private namedTypeName(typeNode: Node): string | undefined {
+    const named = this.findDescendant(typeNode, (n) => n.type === "NamedType")
+    if (!named) return undefined
+    return this.nameOf(named)
+  }
+
+  /** Unquote a `StringValue` (regular or block) without regex. */
+  private docstring(defNode: Node): string | undefined {
+    const desc = this.findChild(defNode, (n) => n.type === "Description")
+    if (!desc) return undefined
+    const sv = this.findChild(desc, (n) => n.type === "StringValue")
+    if (!sv) return undefined
+    const raw = sv.text
+    if (raw.startsWith('"""')) {
+      const inner = raw.slice(3)
+      return inner.endsWith('"""') ? inner.slice(0, -3).trim() : inner.trim()
+    }
+    if (raw.startsWith('"')) {
+      const inner = raw.slice(1)
+      return inner.endsWith('"') ? inner.slice(0, -1) : inner
+    }
+    return raw
+  }
+
   private extractArguments(argsNode: Node): ASTEngine.Parameter[] {
     const params: ASTEngine.Parameter[] = []
     for (let i = 0; i < argsNode.namedChildCount; i++) {
-      const arg = argsNode.namedChild(i)!
-      if (arg.type === "input_value_definition" || arg.type === "argument" || arg.type === "variable_definition") {
-        const nameNode = this.findChild(arg, (n) => n.type === "name" || n.type === "variable")
-        const typeNode = this.findChild(arg, (n) => n.type === "type")
-        if (nameNode) {
-          params.push({
-            name: nameNode.text,
-            type: typeNode ? typeNode.text : undefined,
-            isOptional: !typeNode ? true : !typeNode.text.includes("!"),
-          })
-        }
-      }
+      const arg = argsNode.namedChild(i)
+      if (arg?.type !== "InputValueDefinition") continue
+      const name = this.nameOf(arg)
+      const typeNode = this.findChild(arg, (n) => n.type === "Type")
+      if (!name) continue
+      params.push({
+        name,
+        type: typeNode ? this.namedTypeName(typeNode) : undefined,
+        isOptional: typeNode ? !typeNode.text.includes("!") : true,
+      })
     }
     return params
+  }
+
+  private argumentPairs(argsNode: Node): { name?: string; type?: string }[] {
+    const pairs: { name?: string; type?: string }[] = []
+    for (let i = 0; i < argsNode.namedChildCount; i++) {
+      const arg = argsNode.namedChild(i)
+      if (arg?.type !== "InputValueDefinition") continue
+      const typeNode = this.findChild(arg, (n) => n.type === "Type")
+      pairs.push({ name: this.nameOf(arg), type: typeNode ? this.namedTypeName(typeNode) : undefined })
+    }
+    return pairs
+  }
+
+  private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {
+    return {
+      startLine: node.startPosition.row + 1,
+      startColumn: node.startPosition.column + 1,
+      endLine: node.endPosition.row + 1,
+      endColumn: node.endPosition.column + 1,
+      startIndex: node.startIndex,
+      endIndex: node.endIndex,
+    }
   }
 
   private findChild(node: Node, predicate: (n: Node) => boolean): Node | null {
     for (let i = 0; i < node.namedChildCount; i++) {
       const child = node.namedChild(i)
-      if (child && predicate(child)) {
-        return child
-      }
+      if (child && predicate(child)) return child
+    }
+    return null
+  }
+
+  private findDescendant(node: Node, predicate: (n: Node) => boolean): Node | null {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const child = node.namedChild(i)
+      if (!child) continue
+      if (predicate(child)) return child
+      const found = this.findDescendant(child, predicate)
+      if (found) return found
     }
     return null
   }

@@ -1,0 +1,29 @@
+{
+  "analyzer": "graphql",
+  "corpus": "$HOME/fixtures/repositories/graphql-js",
+  "revision": "9c245018484668b7c35f3ed219092a98855bd51e",
+  "extensions": [
+    "*.graphql",
+    "*.graphqls",
+    "*.gql"
+  ],
+  "trackedFiles": 2,
+  "errorFiles": 1,
+  "errorNodes": 2,
+  "crashFiles": 0,
+  "cleanFiles": 1,
+  "grammarLimitationFiles": [
+    {
+      "file": "benchmark/kitchen-sink.graphql",
+      "count": 2,
+      "constructs": [
+        "directive on a variable definition (`$input: ... @onVariableDefinition`, line 31)",
+        "escaped triple-quote inside a block string (line 53)"
+      ]
+    }
+  ],
+  "unexpectedErrorFiles": 0,
+  "crashes": [],
+  "passed": true,
+  "policy": "Every tracked .graphql file in clean graphql-js@9c245018 is audited through the production parseFile pipeline with 0 crashes and 0 phantom rows. The GitHub public schema parses with 0 errors. The kitchen-sink executable torture-test has two named grammar-level errors (directive-on-variable, escaped block-string) that the vendored grammar does not model; they are recorded explicitly as grammar limitations, never hidden."
+}

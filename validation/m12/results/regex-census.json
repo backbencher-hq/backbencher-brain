@@ -2,23 +2,21 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-08-20T16:11:02.671Z",
+  "generatedAt": "2026-08-20T16:36:27.789Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 34,
+  "totalRegexUsages": 29,
   "analyzersScanned": 41,
   "byClassification": {
     "unavoidable": 6,
-    "normalization": 19,
-    "replaceable": 1,
-    "needs_review": 8
+    "normalization": 18,
+    "needs_review": 5
   },
   "byReceiverCategory": {
     "literal": 6,
-    "node_text": 19,
-    "raw_content": 1,
-    "other": 3,
-    "identifier": 5
+    "node_text": 18,
+    "identifier": 4,
+    "other": 1
   },
   "perFile": [
     {
@@ -271,67 +269,6 @@
           "receiver": "n.text",
           "receiverCategory": "node_text",
           "classification": "normalization",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-graphql-analyzer.ts",
-      "count": 5,
-      "usages": [
-        {
-          "file": "real-graphql-analyzer.ts",
-          "line": 12,
-          "column": 41,
-          "source": "/#import\\s+[\"\\x27]([^\"\\x27]+)[\"\\x27]/g",
-          "operation": "other",
-          "receiver": "content",
-          "receiverCategory": "raw_content",
-          "classification": "replaceable",
-          "justification": ""
-        },
-        {
-          "file": "real-graphql-analyzer.ts",
-          "line": 14,
-          "column": 39,
-          "source": "/[\"<>]/g",
-          "operation": "replace",
-          "receiver": "m[1]",
-          "receiverCategory": "other",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-graphql-analyzer.ts",
-          "line": 134,
-          "column": 26,
-          "source": "/^\"\"\"|\"\"\"$/g",
-          "operation": "replace",
-          "receiver": "descNode.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-graphql-analyzer.ts",
-          "line": 135,
-          "column": 26,
-          "source": "/^\"|\"$/g",
-          "operation": "replace",
-          "receiver": "descNode.text\n                .replace(/^\"\"\"|\"\"\"$/g, \"\")",
-          "receiverCategory": "other",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-graphql-analyzer.ts",
-          "line": 255,
-          "column": 50,
-          "source": "/[\\[\\]!]/g",
-          "operation": "replace",
-          "receiver": "returnType",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
           "justification": ""
         }
       ]

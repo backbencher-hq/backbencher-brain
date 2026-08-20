@@ -843,7 +843,30 @@
    "status": "measured",
    "candidates": [
     "graphql_js@9c245018(clean)"
-   ]
+   ],
+   "measured": {
+    "revision": "9c245018484668b7c35f3ed219092a98855bd51e",
+    "sample": "2 tracked *.graphql files from graphql_js — the real GitHub public schema (benchmark/github-schema.graphql, 20,367 lines) plus the kitchen-sink executable torture-test (benchmark/kitchen-sink.graphql)",
+    "fixtures": 3,
+    "fixtureFacts": 97,
+    "precision": 1,
+    "recall": 1,
+    "corpusSymbols": 3251,
+    "corpusRelationships": 6042,
+    "grammarErrorFiles": 1,
+    "grammarErrorNodes": 2,
+    "strictAcceptanceFiles": 1,
+    "trackedFiles": 2,
+    "excludedFiles": [],
+    "unexpectedGrammarErrorFiles": 0,
+    "crashFiles": 0,
+    "wallMs": 1237.592947,
+    "filesPerSecond": 1.6160402375014504,
+    "symbolsPerSecond": 2626.8734060586075,
+    "relationshipsPerSecond": 4882.057557491882,
+    "measuredAt": "2026-08-20T16:44:43.000Z",
+    "note": "GraphQL analyzer uses one iterative DFS with Set-backed relationship dedupe. The GitHub public schema parses with 0 errors and 0 crashes (3,242 symbols, 6,015 relationships). The kitchen-sink torture-test has two named grammar-level errors — a directive on a variable definition and an escaped triple-quote in a block string — that the vendored tree-sitter-graphql grammar does not model; they are recorded as grammar limitations by graphql-corpus-errors.ts, never hidden, and the analyzer still extracts all 9 valid symbols and 19 relationships from that file."
+   }
   },
   {
    "analyzer": "bash",
