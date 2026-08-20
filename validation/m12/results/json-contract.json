@@ -1,0 +1,53 @@
+{
+  "analyzer": "json",
+  "fixture": "validation/m12/fixtures/json/schema.json",
+  "checks": [
+    {
+      "id": "schema.properties.id.required",
+      "actual": true,
+      "expected": true
+    },
+    {
+      "id": "schema.properties.email.required",
+      "actual": true,
+      "expected": true
+    },
+    {
+      "id": "schema.properties.profile.properties.displayName.required",
+      "actual": true,
+      "expected": true
+    },
+    {
+      "id": "schema.$defs.Address.properties.city.required",
+      "actual": true,
+      "expected": true
+    },
+    {
+      "id": "schema.properties.id.validation",
+      "actual": true,
+      "expected": true
+    },
+    {
+      "id": "schema.properties.email.validation",
+      "actual": true,
+      "expected": true
+    },
+    {
+      "id": "schema.$defs.Address.properties.city.validation",
+      "actual": false,
+      "expected": false
+    },
+    {
+      "id": "no anonymous value symbols",
+      "actual": false,
+      "expected": false
+    },
+    {
+      "id": "indexed array paths are unique",
+      "actual": true,
+      "expected": true
+    }
+  ],
+  "passed": true,
+  "parseErrors": 0
+}

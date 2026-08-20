@@ -381,6 +381,12 @@ function filterNoiseRelationships(rels: any[], language: string): any[] {
     // silently drop legitimate relationships for those analyzers. CSS property
     // leakage is already fully handled by the language-specific branch above.
 
+    // JSON keys are user data, not AST method names. A valid JSON document can
+    // legitimately contain keys such as `type`, `text`, or `parent`; its
+    // relationships are already produced from JSON pair nodes and must not be
+    // filtered by the universal AST-internal denylist.
+    if (language === "json") return true
+
     // Block tree-sitter AST internals
     if (NOISE_TARGETS.has(leaf)) return false
 
