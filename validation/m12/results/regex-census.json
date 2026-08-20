@@ -2,20 +2,20 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-08-20T02:36:12.181Z",
+  "generatedAt": "2026-08-20T14:08:06.322Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 40,
+  "totalRegexUsages": 39,
   "analyzersScanned": 41,
   "byClassification": {
     "unavoidable": 6,
-    "normalization": 20,
+    "normalization": 19,
     "replaceable": 1,
     "needs_review": 13
   },
   "byReceiverCategory": {
     "literal": 6,
-    "node_text": 20,
+    "node_text": 19,
     "raw_content": 1,
     "other": 5,
     "identifier": 8
@@ -492,23 +492,6 @@
           "source": "/\\s+/",
           "operation": "split",
           "receiver": "node.text.trim()",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-xml-analyzer.ts",
-      "count": 1,
-      "usages": [
-        {
-          "file": "real-xml-analyzer.ts",
-          "line": 113,
-          "column": 31,
-          "source": "/<([A-Za-z_][\\w:.-]*)/",
-          "operation": "match",
-          "receiver": "node.text",
           "receiverCategory": "node_text",
           "classification": "normalization",
           "justification": ""

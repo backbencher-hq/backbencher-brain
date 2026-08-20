@@ -22,7 +22,7 @@ const EXTENSION_LANGUAGE: Readonly<Record<string, DetectedLanguage>> = {
   swift: "swift", dart: "dart", cs: "csharp", csx: "csharp", vb: "vb", fs: "fsharp", fsi: "fsharp", fsx: "fsharp",
   r: "r", sql: "sql", sh: "bash", bash: "bash", zsh: "bash", ps1: "powershell", psm1: "powershell", psd1: "powershell",
   tf: "hcl", tfvars: "hcl", tofu: "hcl", hcl: "hcl", m: "objective-c", mm: "objective-c",
-  md: "markdown", markdown: "markdown", toml: "toml", xml: "xml", proto: "protobuf",
+  md: "markdown", markdown: "markdown", toml: "toml", xml: "xml", xsd: "xml", dtd: "xml", proto: "protobuf",
   mk: "make", mak: "make", makefile: "make",
 }
 

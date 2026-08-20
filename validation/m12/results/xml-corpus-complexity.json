@@ -1,0 +1,23 @@
+{
+  "name": "xml-corpus-production",
+  "wallTimeMs": 2188.860221,
+  "userCpuMs": 2262.17,
+  "systemCpuMs": 329.455,
+  "peakRssBytes": 287064064,
+  "rssDeltaBytes": 195608576,
+  "databaseBytes": null,
+  "files": 154,
+  "symbols": 6195,
+  "relationships": 2388,
+  "filesPerSecond": 70.35625140542037,
+  "symbolsPerSecond": 2830.2401133544104,
+  "relationshipsPerSecond": 1090.9787555593757,
+  "errors": 0,
+  "errorFiles": 0,
+  "crashFiles": 0,
+  "errorSamples": [],
+  "crashSamples": [],
+  "acceptanceFiles": 154,
+  "passed": true,
+  "complexityPolicy": "single iterative AST traversal per file; attribute and relationship insertion are O(1) per emitted node, with a Set-based relationship dedupe"
+}

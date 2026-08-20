@@ -1,0 +1,17 @@
+{
+  "analyzer": "xml",
+  "corpus": "$HOME/fixtures/repositories/grails-core",
+  "revision": "a83f87480e0c0138caa5a7191a053b1e59a64066",
+  "extensions": [
+    "*.xml",
+    "*.xsd"
+  ],
+  "files": 154,
+  "errorFiles": 0,
+  "errorNodes": 0,
+  "crashFiles": 0,
+  "errors": [],
+  "crashes": [],
+  "passed": true,
+  "policy": "tracked XML and XSD documents from a pinned clean Grails repository; standalone DTD files are excluded because the wired XML document grammar requires a document element, while external DTD references are tested in Doctype.xml"
+}
