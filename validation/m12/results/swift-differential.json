@@ -130,11 +130,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:swift",
-      "wallTimeMs": 165.102701,
-      "userCpuMs": 128.902,
-      "systemCpuMs": 16.626,
-      "peakRssBytes": 265441280,
-      "rssDeltaBytes": 13815808,
+      "wallTimeMs": 70.798193,
+      "userCpuMs": 192.84,
+      "systemCpuMs": 17.188,
+      "peakRssBytes": 283996160,
+      "rssDeltaBytes": 23261184,
       "databaseBytes": null,
       "files": null,
       "symbols": null,

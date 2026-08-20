@@ -115,7 +115,11 @@ function detectVue(content: string, symbols: UniversalSymbol[]): FrameworkInfo |
     vueConfidence += 0.2
     vuePatterns.push("composition-api")
   }
-  if (content.includes("@Component") || content.includes("Vue.extend")) {
+  // `@Component` alone is ambiguous — Angular uses the exact same decorator.
+  // Only treat it as Vue options-API when a Vue import is present (the
+  // `@Component` decorator comes from vue-class-component / vue-property-decorator,
+  // both of which require importing 'vue'). Angular files must not be flagged.
+  if (content.includes("Vue.extend") || (content.includes("@Component") && (content.includes("from 'vue'") || content.includes('from "vue"')))) {
     vueConfidence += 0.2
     vuePatterns.push("options-api")
   }

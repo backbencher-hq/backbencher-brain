@@ -177,11 +177,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:javascript",
-      "wallTimeMs": 99.680759,
-      "userCpuMs": 107.468,
-      "systemCpuMs": 14.153,
-      "peakRssBytes": 214425600,
-      "rssDeltaBytes": 1982464,
+      "wallTimeMs": 58.132372,
+      "userCpuMs": 97.786,
+      "systemCpuMs": 10.315,
+      "peakRssBytes": 250605568,
+      "rssDeltaBytes": 7684096,
       "databaseBytes": null,
       "files": null,
       "symbols": null,

@@ -351,7 +351,7 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
         complexity: cyclomaticComplexity,
         linesOfCode: content.split("\n").length,
         patterns: pa,
-        framework: ctx.currentModule || "Erlang",
+        framework: "Erlang",
         hasFrameworkIntelligence: true,
         hasTypeInference: false,
       },

@@ -114,11 +114,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:go",
-      "wallTimeMs": 14.880179,
-      "userCpuMs": 40.341,
-      "systemCpuMs": 4.076,
-      "peakRssBytes": 227454976,
-      "rssDeltaBytes": 4517888,
+      "wallTimeMs": 24.514324,
+      "userCpuMs": 57.168,
+      "systemCpuMs": 2.419,
+      "peakRssBytes": 225812480,
+      "rssDeltaBytes": 2826240,
       "databaseBytes": null,
       "files": null,
       "symbols": null,

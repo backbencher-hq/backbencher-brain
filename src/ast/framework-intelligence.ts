@@ -79,7 +79,12 @@ export namespace FrameworkIntelligence {
     private detectFrameworks(imports: ASTEngine.ImportInfo[], content: string, language: string): string[] {
       const frameworks = new Set<string>()
 
-      // Language-specific framework detection
+      // Language-specific framework detection. Only languages that have a
+      // dedicated detector below are routed here; every other language relies
+      // on its own analyzer's detection (which is merged in enhanceWithFrameworkIntelligence)
+      // and must NOT run a foreign language's detector (that would fabricate
+      // detections, e.g. a CSS file containing the word "gradle" would be
+      // flagged as Grails by the Groovy detector).
       switch (language) {
         case "typescript":
         case "javascript":
@@ -92,35 +97,27 @@ export namespace FrameworkIntelligence {
           this.detectJavaFrameworks(imports, content, frameworks)
           break
         case "csharp":
-      case "fsharp":
+        case "fsharp":
           this.detectDotNetFrameworks(imports, content, frameworks)
           break
         case "ruby":
           this.detectRubyFrameworks(imports, content, frameworks)
           break
-        case "php":
-        case "perl":
-        case "r":
-        case "powershell":
-          break
         case "swift":
           this.detectSwiftFrameworks(imports, content, frameworks)
           break
-        case "json":
         case "kotlin":
           this.detectKotlinFrameworks(imports, content, frameworks)
           break
         case "go":
-      case "graphql":
           this.detectGoFrameworks(imports, content, frameworks)
           break
         case "rust":
           this.detectRustFrameworks(imports, content, frameworks)
           break
-          case "lua":
-            this.detectLuaFrameworks(imports, content, frameworks)
-            break
-        case "css":
+        case "lua":
+          this.detectLuaFrameworks(imports, content, frameworks)
+          break
         case "dart":
           this.detectDartFrameworks(imports, content, frameworks)
           break
@@ -128,9 +125,8 @@ export namespace FrameworkIntelligence {
           this.detectElixirFrameworks(imports, content, frameworks)
           break
         case "sql":
-        case "zig":
-        case "yaml":
-        case "svelte":
+          this.detectSqlFrameworks(imports, content, frameworks)
+          break
         case "scala":
           this.detectScalaFrameworks(imports, content, frameworks)
           break
@@ -140,21 +136,38 @@ export namespace FrameworkIntelligence {
         case "erlang":
           this.detectErlangFrameworks(imports, content, frameworks)
           break
-        case "bash":
         case "c":
-        case "clojure":
         case "cpp":
           this.detectCCppFrameworks(imports, content, frameworks)
           break
-        case "html":
         case "groovy":
-        case "objective-c":
-      case "hcl":
           this.detectGroovyFrameworks(imports, content, frameworks)
+          break
+        default:
+          // php/perl/r/powershell/json/yaml/html/css/hcl/objective-c/graphql/
+          // zig/svelte/vue/clojure/markdown/xml/makefile/bash: detection is
+          // analyzer-owned; do not run foreign detectors here.
           break
       }
 
       return Array.from(frameworks)
+    }
+
+    private detectSqlFrameworks(imports: ASTEngine.ImportInfo[], content: string, frameworks: Set<string>) {
+      // dbt (Jinja-templated SQL)
+      if (
+        content.includes("{{ config(") ||
+        content.includes("{{ ref(") ||
+        content.includes("{{ source(") ||
+        content.includes("{% ") ||
+        content.includes("materialized=") ||
+        content.includes("{{ dbt_")
+      ) {
+        frameworks.add("dbt")
+      }
+      // Dialect hints in comments / CREATE statements
+      if (/--\s*(postgres|postgresql)/i.test(content) || /postgresql/i.test(content.slice(0, 500))) frameworks.add("postgresql")
+      if (/--\s*mysql/i.test(content) || /\bmysql\b/i.test(content.slice(0, 500))) frameworks.add("mysql")
     }
     private detectDartFrameworks(imports: ASTEngine.ImportInfo[], content: string, frameworks: Set<string>) {
       if (this.hasImport(imports, "package:flutter") || content.includes("Flutter") || content.includes("Widget build") || content.includes("StatelessWidget") || content.includes("StatefulWidget") || content.includes("MaterialApp")) {
@@ -406,6 +419,16 @@ export namespace FrameworkIntelligence {
       if (this.hasImport(imports, "Combine")) {
         frameworks.add("combine")
       }
+      // Server-side / async
+      if (this.hasImport(imports, "NIO") || this.hasImport(imports, "NIOCore") || this.hasImport(imports, "NIOHTTP1") || content.includes("import NIO")) {
+        frameworks.add("swift-nio")
+      }
+      if (this.hasImport(imports, "Vapor") || content.includes("Vapor")) {
+        frameworks.add("vapor")
+      }
+      if (this.hasImport(imports, "XCTest") || content.includes("XCTest")) {
+        frameworks.add("xctest")
+      }
     }
 
     private detectKotlinFrameworks(imports: ASTEngine.ImportInfo[], content: string, frameworks: Set<string>) {
@@ -439,20 +462,49 @@ export namespace FrameworkIntelligence {
     }
 
     private detectRustFrameworks(imports: ASTEngine.ImportInfo[], content: string, frameworks: Set<string>) {
-      // Web frameworks
-      if (this.hasImport(imports, "actix-web")) {
+      // Web frameworks. Rust crate names use underscores (actix_web, axum),
+      // not the hyphenated package names (actix-web) — check both forms.
+      if (this.hasImport(imports, "actix_web") || this.hasImport(imports, "actix-web") || content.includes("#[actix_web::main]")) {
         frameworks.add("actix-web")
+      }
+      if (this.hasImport(imports, "axum") || content.includes("axum::")) {
+        frameworks.add("axum")
       }
       if (this.hasImport(imports, "warp")) {
         frameworks.add("warp")
       }
-      if (this.hasImport(imports, "rocket")) {
+      if (this.hasImport(imports, "rocket") || content.includes("#[rocket::")) {
         frameworks.add("rocket")
       }
+      if (this.hasImport(imports, "poem")) {
+        frameworks.add("poem")
+      }
 
-      // Async runtime
-      if (this.hasImport(imports, "tokio")) {
+      // Async runtimes
+      if (this.hasImport(imports, "tokio") || content.includes("#[tokio::main]")) {
         frameworks.add("tokio")
+      }
+      if (this.hasImport(imports, "async_std")) {
+        frameworks.add("async-std")
+      }
+
+      // Parallelism
+      if (this.hasImport(imports, "rayon") || content.includes("rayon::")) {
+        frameworks.add("rayon")
+      }
+
+      // Serialization / other common crates
+      if (this.hasImport(imports, "serde") || content.includes("#[derive(Serialize")) {
+        frameworks.add("serde")
+      }
+      if (this.hasImport(imports, "clap")) {
+        frameworks.add("clap")
+      }
+      if (this.hasImport(imports, "diesel")) {
+        frameworks.add("diesel")
+      }
+      if (this.hasImport(imports, "sqlx")) {
+        frameworks.add("sqlx")
       }
     }
 
@@ -812,6 +864,84 @@ export namespace FrameworkIntelligence {
         }
       ])
     }
+  }  // --------------------------------------------------------------------------
+  // Primary-framework promotion
+  // --------------------------------------------------------------------------
+  // Analyzers set `metadata.framework` from their OWN detection list, which is
+  // frequently empty or a pure-language name ("JavaScript", "SQL",
+  // "unknown") while the real framework detection happens here in
+  // FrameworkIntelligence. Without promotion, a Django file keeps
+  // `framework = "unknown"` even though `detectedFrameworks = ["django"]`,
+  // and an Express file keeps `framework = "JavaScript"`.
+  //
+  // Two categories:
+  //   PURE_LANGUAGE_PRIMARIES — names analyzers emit when they found nothing
+  //     specific. These are PROMOTABLE: if the merged list contains a real
+  //     framework, the primary becomes the first real entry.
+  //   TOOLING_DEFAULTS — standard-library / platform / tooling detections
+  //     ("stl", "win32", "POSIX", "test-framework"...) that are not user
+  //     frameworks. They never win promotion when a real framework exists,
+  //     but may serve as a fallback primary when nothing real was found.
+  //
+  // Deliberate analyzer choices that are NOT in PURE_LANGUAGE_PRIMARIES — e.g.
+  // HTML "HTML5", Vue "Vue", Svelte "Svelte", C "Standard C Library",
+  // Bash "Bash Script", HCL "HCL/Terraform", Java "spring", PHP "Laravel",
+  // Haskell "Servant" — are treated as real primaries and never overwritten.
+  const PURE_LANGUAGE_PRIMARIES = new Set<string>([
+    "JavaScript", "TypeScript", "Python", "Ruby", "Java", "C#", "C++", "C",
+    "Go", "Rust", "SQL", "Dart", "Objective-C", "YAML", "JSON", "Lua",
+    "R", "Haskell", "Scala", "Clojure", "Groovy", "Elixir", "PHP",
+    "Swift", "Kotlin", "Erlang", "Bash", "unknown",
+  ])
+  const TOOLING_DEFAULTS = new Set<string>([
+    "stl", "win32", "POSIX", "Standard Library", "Standard C Library",
+    "test-framework", "cmake",
+  ])
+
+  // --------------------------------------------------------------------------
+  // Detection canonicalization
+  // --------------------------------------------------------------------------
+  // Analyzers and FrameworkIntelligence use slightly different spellings for the
+  // same framework (Java analyzer emits "spring_mvc", FI emits "spring-mvc";
+  // analyzer emits "SwiftUI", FI emits "swiftui"). Without normalization the
+  // detected list contains near-duplicates that pollute framework intelligence.
+  // Canonical form: hyphenated slug. Case is deduplicated case-insensitively,
+  // keeping the first (analyzer-preferred) casing.
+  const FRAMEWORK_ALIASES: Record<string, string> = {
+    spring_mvc: "spring-mvc",
+    spring_data: "spring-data",
+    spring_core: "spring-core",
+    aspnet: "aspnet-core",
+    entityframework: "entity-framework",
+    aspnet_core: "aspnet-core",
+    entity_framework: "entity-framework",
+    expressjs: "express",
+    fastifyjs: "fastify",
+    reactjs: "react",
+    vuejs: "vue",
+    next_js: "nextjs",
+    nextjs: "nextjs",
+    "flutter-bloc": "flutter-bloc",
+    kotlin_coroutines: "kotlin-coroutines",
+    spring_kotlin: "spring-kotlin",
+    actix_web: "actix-web",
+    async_std: "async-std",
+    "Play Framework": "play",
+    "play framework": "play",
+    gorilla_mux: "gorilla",
+    gorillamux: "gorilla",
+  }
+
+  function canonicalizeDetections(detections: string[]): string[] {
+    const seen = new Map<string, string>() // lowercased -> canonical display form
+    for (const raw of detections) {
+      const name = (raw || "").trim()
+      if (!name) continue
+      const aliased = FRAMEWORK_ALIASES[name.toLowerCase()] ?? name
+      const lower = aliased.toLowerCase()
+      if (!seen.has(lower)) seen.set(lower, aliased)
+    }
+    return Array.from(seen.values())
   }
 
   // Integration function to enhance analyzer results
@@ -833,11 +963,48 @@ export namespace FrameworkIntelligence {
     const prev = result.metadata || {}
     const found = new Set<string>([...(prev.detectedFrameworks || []), ...analysis.detectedFrameworks])
     const pats = [...(prev.frameworkPatterns || []), ...analysis.patterns]
+    const allDetections = canonicalizeDetections(Array.from(found))
+    // detectedFrameworks lists REAL frameworks/libraries only — pure language
+    // names ("JavaScript", "SQL", "Bash") and tooling defaults ("stl",
+    // "cmake") are filtered out so the list is actionable. The primary
+    // `framework` may still be a language default when nothing real was found.
+    const mergedDetections = allDetections.filter(
+      (f) => !PURE_LANGUAGE_PRIMARIES.has(f) && !TOOLING_DEFAULTS.has(f)
+    )
+
+    // Promote the primary framework from the merged detection list. Promotion
+    // considers ALL detections (including language defaults like "SQL") so a
+    // plain SQL file keeps `framework = "SQL"` — only the emitted
+    // detectedFrameworks list is filtered to real frameworks.
+    let primaryFramework = prev.framework
+    const isReal = (f: string) => !PURE_LANGUAGE_PRIMARIES.has(f) && !TOOLING_DEFAULTS.has(f)
+    if (!primaryFramework || primaryFramework === "unknown") {
+      // Missing primary: take the first real framework, else the first
+      // detection (may be a tooling default like "stl" / "SQL").
+      primaryFramework =
+        allDetections.find(isReal) ??
+        allDetections.find((f) => !TOOLING_DEFAULTS.has(f)) ??
+        allDetections[0] ??
+        "unknown"
+    } else if (PURE_LANGUAGE_PRIMARIES.has(primaryFramework)) {
+      // Analyzer emitted a pure-language name but a real framework exists.
+      const real = allDetections.find(isReal)
+      if (real) primaryFramework = real
+    }
+    // Otherwise keep the analyzer's deliberate value unchanged.
+
+    // Canonicalize the primary through the same alias map used for the
+    // detected list (e.g. Go analyzer emits "gorilla_mux", canonical "gorilla").
+    if (primaryFramework) {
+      primaryFramework = FRAMEWORK_ALIASES[primaryFramework.toLowerCase()] ?? primaryFramework
+    }
+
 
     // Enhance metadata with framework intelligence
     result.metadata = {
       ...prev,
-      detectedFrameworks: Array.from(found),
+      framework: primaryFramework,
+      detectedFrameworks: mergedDetections,
       frameworkPatterns: pats,
       architecturalInsights: analysis.insights,
       architecturalScore: analysis.architecturalScore,

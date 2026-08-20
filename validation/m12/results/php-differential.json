@@ -104,11 +104,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:php",
-      "wallTimeMs": 44.270657,
-      "userCpuMs": 50.237,
-      "systemCpuMs": 11.062,
-      "peakRssBytes": 214716416,
-      "rssDeltaBytes": 6361088,
+      "wallTimeMs": 15.538821,
+      "userCpuMs": 38.757,
+      "systemCpuMs": 5.106,
+      "peakRssBytes": 220184576,
+      "rssDeltaBytes": 6774784,
       "databaseBytes": null,
       "files": null,
       "symbols": null,

@@ -140,11 +140,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:python",
-      "wallTimeMs": 18.527268,
-      "userCpuMs": 61.45,
-      "systemCpuMs": 4.348,
-      "peakRssBytes": 222957568,
-      "rssDeltaBytes": 9830400,
+      "wallTimeMs": 99.031147,
+      "userCpuMs": 89.921,
+      "systemCpuMs": 14.416,
+      "peakRssBytes": 222867456,
+      "rssDeltaBytes": 9277440,
       "databaseBytes": null,
       "files": null,
       "symbols": null,

@@ -125,11 +125,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:haskell",
-      "wallTimeMs": 19.133724,
-      "userCpuMs": 98.057,
-      "systemCpuMs": 6.353,
-      "peakRssBytes": 237027328,
-      "rssDeltaBytes": 13893632,
+      "wallTimeMs": 27.83726,
+      "userCpuMs": 98.965,
+      "systemCpuMs": 7.032,
+      "peakRssBytes": 257527808,
+      "rssDeltaBytes": 12509184,
       "databaseBytes": null,
       "files": null,
       "symbols": null,

@@ -236,11 +236,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:typescript",
-      "wallTimeMs": 118.259618,
-      "userCpuMs": 342.51,
-      "systemCpuMs": 24.169,
-      "peakRssBytes": 257351680,
-      "rssDeltaBytes": 9129984,
+      "wallTimeMs": 126.441087,
+      "userCpuMs": 326.1,
+      "systemCpuMs": 20.095,
+      "peakRssBytes": 253739008,
+      "rssDeltaBytes": 14323712,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
