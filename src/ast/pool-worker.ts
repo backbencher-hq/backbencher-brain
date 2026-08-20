@@ -354,6 +354,11 @@ function filterNoiseRelationships(rels: any[], language: string): any[] {
     const target = r.target || r.targetId || r.to || r.toSymbol || ""
     if (!target) return true
 
+    // JSON/YAML relationships are structural data paths, not source-code
+    // identifiers. Keys such as `<<`, `<tag>`, or `type` are valid data and
+    // must bypass the universal identifier sanitizer.
+    if (language === "json" || language === "yaml") return true
+
     // Block garbage targets: source code snippets, malformed names
     if (target.length > 200 || target.includes("\n")) return false
 
@@ -380,12 +385,6 @@ function filterNoiseRelationships(rels: any[], language: string): any[] {
     // multi-arity, format-value); a global `lower.includes("-")` filter would
     // silently drop legitimate relationships for those analyzers. CSS property
     // leakage is already fully handled by the language-specific branch above.
-
-    // JSON keys are user data, not AST method names. A valid JSON document can
-    // legitimately contain keys such as `type`, `text`, or `parent`; its
-    // relationships are already produced from JSON pair nodes and must not be
-    // filtered by the universal AST-internal denylist.
-    if (language === "json") return true
 
     // Block tree-sitter AST internals
     if (NOISE_TARGETS.has(leaf)) return false
@@ -486,7 +485,7 @@ export async function parseFile(filePath: string, projectPath: string, context?:
           // must not apply there — their dedicated analyzers already exclude
           // real noise (xmlns, CharData, comments, .PHONY, ...).
           const lang = parsed.language || language
-          if (lang === "xml" || lang === "make" || lang === "markdown") return true
+          if (lang === "json" || lang === "yaml" || lang === "xml" || lang === "make" || lang === "markdown") return true
           // JS-global names are only noise for JS-family languages. A method
           // named `process` (Scala/Python/Java), `window` or `module` is a
           // legitimate declaration elsewhere — applying the JS global list
