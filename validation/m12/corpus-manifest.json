@@ -971,9 +971,32 @@
   },
   {
    "analyzer": "markdown",
-   "corpusTarget": null,
-   "status": "planned_acquisition",
-   "candidates": []
+   "corpusTarget": "scala3",
+   "status": "measured",
+   "candidates": [
+    "scala3@18df09c(clean)"
+   ],
+   "measured": {
+    "revision": "18df09c05fa48fbb5bf5cd4b3728e9b7a0b3f6db",
+    "sample": "738 tracked .md files in the scala3 language repo (its docs/, _spec/, and scaladoc/ test docs) \u2014 the same pinned repo used for the scala analyzer",
+    "fixtures": 3,
+    "fixtureFacts": 59,
+    "precision": 1,
+    "recall": 1,
+    "corpusSymbols": 6673,
+    "corpusRelationships": 9112,
+    "trackedFiles": 738,
+    "strictAcceptanceFiles": 734,
+    "grammarErrorFiles": 4,
+    "unexpectedGrammarErrorFiles": 0,
+    "crashFiles": 0,
+    "wallMs": 13312.8,
+    "filesPerSecond": 55.13,
+    "symbolsPerSecond": 501.25,
+    "relationshipsPerSecond": 684.45,
+    "measuredAt": "2026-08-20T18:40:00.000Z",
+    "note": "Markdown analyzer rewritten as a pure block-AST DFS + engine pre-parsed inline grammar: the tree-sitter-markdown block grammar leaves inline content opaque, so the engine pre-parses every inline node with the companion tree-sitter-markdown-inline WASM and hands the trees to the analyzer by byte offset (the vue/svelte SFC pattern). Links/images/autolinks resolve as AST nodes; ATX+setext headings -> type with hierarchy, pipe tables -> class with columns, code fences -> function with language, front matter -> namespace. Zero regexes (census 4 -> 0; autolink brackets stripped by position). Differential 59/59 P/R 1.000; contract 31/31; shape 28 live/0 dead; corpus 734/734 clean, 6673 symbols, 9112 relationships, 4 named grammar limits (|| in table cell, indented <details> in numbered lists, EOF heading without newline), 0 crashes."
+   }
   }
  ]
 }
