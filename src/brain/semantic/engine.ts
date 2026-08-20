@@ -105,7 +105,16 @@ export namespace SemanticEngine {
     // Try bb.json first (project-level config)
     const bbJson = loadConfigWorkerFallback()
     if (bbJson && (bbJson.embedding_model || bbJson.provider)) {
-      return bbJson
+      // Keep the compiled-worker fallback, but preserve the same precedence as
+      // Config.get(): explicit BB_* environment variables must override a
+      // repository bb.json. Without this merge, tests and MCP hosts pointing
+      // at a local OpenAI-compatible endpoint silently fall back to local
+      // vectors from the configured remote provider.
+      const merged = { ...bbJson }
+      if (process.env.BB_EMBEDDING_MODEL) merged.embedding_model = process.env.BB_EMBEDDING_MODEL
+      if (process.env.BB_EMBEDDING_BASE_URL) merged.embedding_base_url = process.env.BB_EMBEDDING_BASE_URL
+      if (process.env.BB_EMBEDDING_API_KEY) merged.embedding_api_key = process.env.BB_EMBEDDING_API_KEY
+      return merged
     }
     // Fall back to global Config
     try {
