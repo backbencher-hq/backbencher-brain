@@ -1,0 +1,30 @@
+{
+  "name": "hcl-corpus-production",
+  "wallTimeMs": 6137.387918,
+  "userCpuMs": 6732.199,
+  "systemCpuMs": 1006.406,
+  "peakRssBytes": 372076544,
+  "rssDeltaBytes": 206987264,
+  "databaseBytes": null,
+  "files": 2295,
+  "symbols": 14226,
+  "relationships": 10667,
+  "filesPerSecond": 373.9375823498338,
+  "symbolsPerSecond": 2317.9242032717802,
+  "relationshipsPerSecond": 1738.0358130395107,
+  "trackedFiles": 2299,
+  "errors": 0,
+  "errorFiles": 0,
+  "crashFiles": 0,
+  "crashSamples": [],
+  "acceptanceFiles": 2295,
+  "excludedFiles": [
+    "internal/command/testdata/init-syntax-invalid-backend-attribute-invalid/main.tf",
+    "internal/configs/testdata/invalid-files/provider-syntax.tf",
+    "internal/command/testdata/init-with-duplicates/secondary.tf",
+    "internal/command/testdata/init-with-overrides-and-duplicates/secondary_override.tf"
+  ],
+  "passed": true,
+  "complexityPolicy": "one production parseFile pass per acceptance file; the HCL analyzer uses one iterative DFS over the tree plus a single recursive expression walk, with Set-backed relationship dedupe — O(nodes + emitted facts), no per-symbol relationship scan",
+  "corpusPolicy": "tracked .tf/.tfvars/.hcl files from clean terraform@2e1710bf; four named diagnostic fixtures (deliberate typo / invalid-fixture testdata) are excluded and measured separately by hcl-corpus-errors.ts"
+}
