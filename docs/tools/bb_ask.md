@@ -8,6 +8,7 @@ Answer a question about the codebase using semantic search over the index. Retur
 - Mutability: `read`
 - Requires index: `true`
 - Modes: `answer`
+- Planned modes (roadmap, not executable): `explain`, `feature`
 - Defaults: `{"limit":5}`
 
 ## Input Schema

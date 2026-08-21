@@ -1,109 +1,22 @@
+// src/contracts/tool-contracts.ts — M13.01 (B1) contract authority.
+//
+// The public TOOL contract is now DERIVED from the executable registry
+// (src/mcp/tool-registry.ts -> deriveToolContracts()). The previous hand-maintained
+// arrays here (CURRENT_MCP_TOOL_CONTRACTS and TARGET_TOOL_CONTRACTS) drifted from
+// the runtime — they advertised aspirational modes (bb_ask explain/feature,
+// bb_patterns quality/architecture, bb_security flow/summary/hotspots, bb_health
+// index mutability) that the runtime cannot execute. Those aspirational modes now
+// live in each descriptor's `plannedModes` field and are never advertised as
+// executable.
+//
+// This file retains only the shared mutability type plus the separate CLI and
+// library-export surfaces, which are not part of the ten-tool contract.
+
 export type ToolMutability = "read" | "index" | "write"
 
-export interface CurrentToolContract {
-  name: string
-  mutability: ToolMutability
-  required: readonly string[]
-  properties: readonly string[]
-  defaults: Readonly<Record<string, string | number | boolean>>
-  output: "text"
-  replacement: string
-  replacementMode?: string
-}
-
-export const CURRENT_MCP_TOOL_CONTRACTS = [
-  {
-    name: "bb_search",
-    mutability: "read",
-    required: [],
-    properties: ["mode", "query", "symbolName", "filePath", "limit", "language", "symbolKind", "includeContent", "exact", "caseSensitive", "regex", "offset"],
-    defaults: { mode: "symbols", limit: 15, includeContent: false, exact: false, caseSensitive: false, regex: false, offset: 0 },
-    output: "text",
-    replacement: "bb_search",
-  },
-  {
-    name: "bb_ask",
-    mutability: "read",
-    required: ["query"],
-    properties: ["query", "limit"],
-    defaults: { limit: 5 },
-    output: "text",
-    replacement: "bb_ask",
-  },
-  {
-    name: "bb_health",
-    mutability: "read",
-    required: [],
-    properties: ["verbose", "history", "limit", "refresh", "force", "wait", "freshness", "sampleSize", "integrity", "includeAnalysisRuns"],
-    defaults: { verbose: false, history: false, limit: 20, refresh: false, force: false, wait: true, freshness: "sampled", sampleSize: 200, integrity: false, includeAnalysisRuns: false },
-    output: "text",
-    replacement: "bb_health",
-  },
-  {
-    name: "bb_patterns",
-    mutability: "read",
-    required: [],
-    properties: ["scope", "limit", "includeOrphaned", "includeFramework", "includeAntiPatterns", "confidenceThreshold", "history", "recordRun"],
-    defaults: { scope: "all", limit: 20, includeOrphaned: true, includeFramework: true, includeAntiPatterns: true, confidenceThreshold: 0.6, history: false, recordRun: false },
-    output: "text",
-    replacement: "bb_patterns",
-  },
-  {
-    name: "bb_security",
-    mutability: "read",
-    required: [],
-    properties: ["history", "recordRun", "limit"],
-    defaults: { history: false, recordRun: false, limit: 20 },
-    output: "text",
-    replacement: "bb_security",
-  },
-  {
-    name: "bb_visualize",
-    mutability: "read",
-    required: [],
-    properties: ["scope", "target", "maxNodes", "maxLinks", "relationshipTypes", "languages", "format"],
-    defaults: { scope: "project", maxNodes: 200, maxLinks: 5000, format: "text" },
-    output: "text",
-    replacement: "bb_visualize",
-  },
-  {
-    name: "bb_migrate",
-    mutability: "read",
-    required: ["targetLanguage"],
-    properties: ["symbolName", "symbolNames", "targetLanguage", "format"],
-    defaults: { format: "text" },
-    output: "text",
-    replacement: "bb_migrate",
-  },
-  {
-    name: "bb_analyze",
-    mutability: "read",
-    required: ["mode"],
-    properties: ["mode", "target", "filePath", "limit"],
-    defaults: { limit: 20 },
-    output: "text",
-    replacement: "bb_analyze",
-  },
-  {
-    name: "bb_doc",
-    mutability: "read",
-    required: ["mode"],
-    properties: ["mode", "target", "format", "audience", "detail", "includeExamples", "includeDiagrams", "includeTests", "limit", "maxTokens"],
-    defaults: { format: "markdown", audience: "developer", detail: "standard", includeExamples: false, includeDiagrams: false, includeTests: false, limit: 20, maxTokens: 4000 },
-    output: "text",
-    replacement: "bb_doc",
-  },
-  {
-    name: "bb_edit",
-    mutability: "write",
-    required: ["mode"],
-    properties: ["mode", "dryRun", "filePath", "symbolName", "lineStart", "content", "newContent", "targetSymbolName", "position", "newName", "force", "format"],
-    defaults: { dryRun: false, format: true, force: false },
-    output: "text",
-    replacement: "bb_edit",
-  },
-] as const satisfies readonly CurrentToolContract[]
-
+// CLI subcommands are a separate surface from the ten MCP tools. Their frozen
+// baseline lives in docs/data/m10-baseline.json (cli.contracts) and is enforced
+// by script/verify-m10-baseline.ts against the live CLI source.
 export const CURRENT_CLI_CONTRACTS = [
   { name: "index", required: ["dir"], options: ["force"] },
   { name: "search", required: ["query"], options: ["dir", "limit", "language"] },
@@ -112,6 +25,9 @@ export const CURRENT_CLI_CONTRACTS = [
   { name: "--version", required: [], options: [] },
 ] as const
 
+// Library exports are a separate surface. Their frozen baseline lives in
+// docs/data/m10-baseline.json (libraryExports) and is enforced by
+// script/verify-m10-baseline.ts against src/index.ts.
 export const CURRENT_LIBRARY_EXPORTS = [
   "BrainDatabase",
   "BrainSchema",
@@ -127,54 +43,3 @@ export const CURRENT_LIBRARY_EXPORTS = [
   "hashFileContent",
   "getProjectId",
 ] as const
-
-export type SearchMode = "symbols" | "content" | "symbol" | "file"
-export type AskMode = "answer" | "explain" | "feature"
-export type AnalyzeMode =
-  | "callers"
-  | "callees"
-  | "trace"
-  | "dependencies"
-  | "stats"
-  | "complexity"
-  | "impact"
-  | "test_mapping"
-  | "test_gaps"
-  | "test_impact"
-  | "test_quality"
-export type PatternScope = "orphaned" | "quality" | "architecture" | "all"
-export type SecurityMode = "findings" | "flow" | "summary" | "hotspots"
-export type DocMode = "symbol" | "file" | "module" | "feature" | "api" | "project" | "coverage"
-export type EditMode = "write" | "update" | "insert" | "delete" | "refactor"
-
-export type TargetToolInput =
-  | { tool: "bb_search"; mode: SearchMode; query?: string; symbolName?: string; filePath?: string }
-  | { tool: "bb_ask"; mode: AskMode; query: string }
-  | { tool: "bb_analyze"; mode: AnalyzeMode; target?: string; filePath?: string }
-  | { tool: "bb_patterns"; scope: PatternScope; target?: string }
-  | { tool: "bb_security"; mode: SecurityMode; target?: string }
-  | { tool: "bb_doc"; mode: DocMode; target?: string; format?: "markdown" | "json" }
-  | { tool: "bb_visualize"; scope?: "project" | "file" | "symbol" | "feature"; target?: string }
-  | { tool: "bb_migrate"; symbolNames: string[]; targetLanguage: string }
-  | { tool: "bb_edit"; mode: EditMode; dryRun?: boolean }
-  | { tool: "bb_health"; refresh?: boolean; force?: boolean; wait?: boolean; freshness?: "sampled" | "complete"; sampleSize?: number; integrity?: boolean; includeAnalysisRuns?: boolean; verbose?: boolean; history?: boolean; limit?: number }
-
-export interface TargetToolContract {
-  name: TargetToolInput["tool"]
-  mutability: ToolMutability
-  modes: readonly string[]
-  purpose: string
-}
-
-export const TARGET_TOOL_CONTRACTS = [
-  { name: "bb_search", mutability: "read", modes: ["symbols", "content", "symbol", "file"], purpose: "Indexed lexical, structural, and exact source retrieval" },
-  { name: "bb_ask", mutability: "read", modes: ["answer", "explain", "feature"], purpose: "Evidence-backed natural-language codebase intelligence" },
-  { name: "bb_analyze", mutability: "read", modes: ["callers", "callees", "trace", "dependencies", "stats", "complexity", "impact", "test_mapping", "test_gaps", "test_impact", "test_quality"], purpose: "Graph, metric, impact, and test analysis" },
-  { name: "bb_patterns", mutability: "read", modes: ["orphaned", "quality", "architecture", "all"], purpose: "Evidence-backed quality and architecture findings" },
-  { name: "bb_security", mutability: "read", modes: ["findings", "flow", "summary", "hotspots"], purpose: "Taint-flow and source-evidence security analysis" },
-  { name: "bb_doc", mutability: "read", modes: ["symbol", "file", "module", "feature", "api", "project", "coverage"], purpose: "Cited documentation generation and coverage" },
-  { name: "bb_visualize", mutability: "read", modes: ["project", "file", "symbol", "feature"], purpose: "Dependency and architecture visualization" },
-  { name: "bb_migrate", mutability: "read", modes: ["plan"], purpose: "Cross-language migration planning" },
-  { name: "bb_edit", mutability: "write", modes: ["write", "update", "insert", "delete", "refactor"], purpose: "Validated source mutations with dry-run support" },
-  { name: "bb_health", mutability: "index", modes: ["status", "refresh"], purpose: "Index, schema, freshness, embedding, and runtime health" },
-] as const satisfies readonly TargetToolContract[]

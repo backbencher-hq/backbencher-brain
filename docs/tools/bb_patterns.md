@@ -8,6 +8,7 @@ Detect orphaned code, framework patterns, anti-patterns, and architecture issues
 - Mutability: `read`
 - Requires index: `true`
 - Modes: `orphaned`, `all`
+- Planned modes (roadmap, not executable): `quality`, `architecture`
 - Defaults: `{"scope":"all","limit":20,"includeOrphaned":true,"includeFramework":true,"includeAntiPatterns":true,"confidenceThreshold":0.6,"history":false,"recordRun":false}`
 
 ## Input Schema

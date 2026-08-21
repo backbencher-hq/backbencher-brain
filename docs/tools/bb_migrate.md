@@ -8,6 +8,7 @@ Read-only single or batch migration planning with dependency order, explicit eff
 - Mutability: `read`
 - Requires index: `true`
 - Modes: `plan`
+- Planned modes (roadmap, not executable): (none)
 - Defaults: `{"format":"text"}`
 
 ## Input Schema

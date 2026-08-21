@@ -2,6 +2,12 @@
 
 This document freezes the public contract at the start of M9. It is a compatibility baseline, not a declaration that every current behavior is correct.
 
+> **Superseded by M13.01 (contract authority):** `CURRENT_MCP_TOOL_CONTRACTS` and the
+> `TargetToolInput`/`TARGET_TOOL_CONTRACTS` planning declarations referenced below no longer
+> exist. The public tool contract is now derived from the executable registry
+> (`deriveToolContracts()` in `src/mcp/tool-registry.ts`); aspirational modes live in each
+> descriptor's `plannedModes` field and are never advertised as executable.
+
 The machine-readable source is `src/contracts/tool-contracts.ts`. The executable baseline is `script/verify-contracts.ts`, using the polyglot fixture in `script/fixtures/contract-fixture.ts`.
 
 ## Current Surfaces

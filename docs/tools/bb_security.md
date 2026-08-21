@@ -8,6 +8,7 @@ Cross-language security scan: SQL injection, XSS, command injection, hardcoded s
 - Mutability: `read`
 - Requires index: `true`
 - Modes: `findings`
+- Planned modes (roadmap, not executable): `flow`, `summary`, `hotspots`
 - Defaults: `{"history":false,"recordRun":false,"limit":20}`
 
 ## Input Schema

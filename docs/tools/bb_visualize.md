@@ -8,6 +8,7 @@ Scoped dependency and architecture visualization over the canonical graph engine
 - Mutability: `read`
 - Requires index: `true`
 - Modes: `project`, `file`, `module`, `symbol`, `feature`, `text`, `json`, `html`
+- Planned modes (roadmap, not executable): (none)
 - Defaults: `{"scope":"project","maxNodes":200,"maxLinks":5000,"format":"text"}`
 
 ## Input Schema

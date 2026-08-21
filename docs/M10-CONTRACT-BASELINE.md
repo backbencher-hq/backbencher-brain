@@ -5,6 +5,11 @@ starting point, not a claim that every retained behavior is correct. The machine
 projection is `docs/data/m10-baseline.json`; `script/verify-m10-baseline.ts` is the
 executable drift gate.
 
+> **Superseded by M13.01 (contract authority):** the hand-maintained
+> `CURRENT_MCP_TOOL_CONTRACTS`/`TARGET_TOOL_CONTRACTS` declarations referenced below were
+> removed; the contract is now derived from the executable registry. The contract-drift
+> items in the next section were resolved by M13.01.
+
 ## Baseline Identity
 
 - Milestone: M10 Intelligence Consolidation and Evidence Governance
