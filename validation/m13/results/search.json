@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "kind": "tool_search_verification",
+  "tool": "bb_search",
+  "checks": [
+    {
+      "label": "exact matches only the exact symbol",
+      "passed": true
+    },
+    {
+      "label": "default mode is tagged symbol",
+      "passed": true
+    },
+    {
+      "label": "prefix finds handleRequest",
+      "passed": true
+    },
+    {
+      "label": "substring finds handleRequest",
+      "passed": true
+    },
+    {
+      "label": "substring finds both duplicate symbols",
+      "passed": true
+    },
+    {
+      "label": "pagination returns distinct pages",
+      "passed": true
+    },
+    {
+      "label": "regex matches by pattern",
+      "passed": true
+    },
+    {
+      "label": "regex mode is tagged",
+      "passed": true
+    },
+    {
+      "label": "regex reports truncation flag",
+      "passed": true
+    },
+    {
+      "label": "regex non-match returns empty",
+      "passed": true
+    },
+    {
+      "label": "invalid regex throws InvalidRegexError",
+      "passed": true
+    },
+    {
+      "label": "regex:true routes through symbol dispatcher",
+      "passed": true
+    },
+    {
+      "label": "content search finds documented symbol",
+      "passed": true
+    },
+    {
+      "label": "content mode is tagged",
+      "passed": true
+    },
+    {
+      "label": "content results carry content matchType",
+      "passed": true
+    },
+    {
+      "label": "mode=content routes through dispatcher",
+      "passed": true
+    },
+    {
+      "label": "language filter narrows results",
+      "passed": true
+    },
+    {
+      "label": "language filter excludes other languages",
+      "passed": true
+    },
+    {
+      "label": "symbolKind filter narrows results",
+      "passed": true
+    },
+    {
+      "label": "public search rejects empty symbol query",
+      "passed": true
+    },
+    {
+      "label": "public file mode requires filePath",
+      "passed": true
+    },
+    {
+      "label": "public file mode returns a file envelope",
+      "passed": true
+    },
+    {
+      "label": "public file mode returns source content",
+      "passed": true
+    },
+    {
+      "label": "public file mode returns freshness metadata",
+      "passed": true
+    },
+    {
+      "label": "public file mode rejects path escape",
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "limitations": [
+    "Search correctness is bounded by indexed analyzer symbols and file hashes.",
+    "This evidence does not establish analyzer completeness or semantic-answer quality."
+  ]
+}

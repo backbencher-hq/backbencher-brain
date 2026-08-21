@@ -17,6 +17,16 @@ try {
   await indexProjectParallel(projectId, root, {})
   const output = execFileSync("node", [path.resolve("bin/bb"), "tool", "bb_search", "--dir", root, "--args", JSON.stringify({ mode: "symbols", query: "cliTarget" })], { cwd: process.cwd(), encoding: "utf8" })
   check("CLI gateway executes public bb_search", output.includes("cliTarget"), output.slice(0, 160))
+  const fileOutput = execFileSync("node", [path.resolve("bin/bb"), "tool", "bb_search", "--dir", root, "--args", JSON.stringify({ mode: "file", filePath: "src/app.ts" })], { cwd: process.cwd(), encoding: "utf8" })
+  const filePayload = JSON.parse(fileOutput)
+  check("CLI file search returns source envelope", filePayload.searchMode === "file" && filePayload.file === "src/app.ts" && filePayload.content.includes("cliTarget"), fileOutput.slice(0, 180))
+  try {
+    execFileSync("node", [path.resolve("bin/bb"), "tool", "bb_search", "--dir", root, "--args", JSON.stringify({ query: "" })], { cwd: process.cwd(), encoding: "utf8", stdio: "pipe" })
+    check("CLI gateway rejects empty search query", false)
+  } catch (error: any) {
+    const text = `${error.stdout ?? ""}${error.stderr ?? ""}${error.message ?? ""}`
+    check("CLI gateway rejects empty search query", text.includes("non-empty query"), text.slice(0, 180))
+  }
   try {
     execFileSync("node", [path.resolve("bin/bb"), "tool", "bb_search", "--dir", root, "--args", JSON.stringify({ mode: "symbols", query: "cliTarget", irrelevant: true })], { cwd: process.cwd(), encoding: "utf8", stdio: "pipe" })
     check("CLI gateway rejects irrelevant options", false)

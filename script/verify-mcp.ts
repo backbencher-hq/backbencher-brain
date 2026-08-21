@@ -70,6 +70,15 @@ try {
   const searchText = (searchRes.content ?? []).map((c: any) => c.text ?? "").join("\n")
   check("bb_search returns the symbol", searchText.includes("handleRequest") && searchText.includes("app.ts"), searchText.slice(0, 120))
 
+  const fileRes: any = await client.callTool({ name: "bb_search", arguments: { mode: "file", filePath: "src/app.ts" } })
+  const fileText = (fileRes.content ?? []).map((c: any) => c.text ?? "").join("\n")
+  const filePayload = JSON.parse(fileText)
+  check("bb_search file mode returns source envelope", filePayload.searchMode === "file" && filePayload.file === "src/app.ts" && filePayload.content.includes("handleRequest"), fileText.slice(0, 160))
+
+  const emptyRes: any = await client.callTool({ name: "bb_search", arguments: { query: "" } })
+  const emptyText = (emptyRes.content ?? []).map((c: any) => c.text ?? "").join("\n")
+  check("bb_search rejects empty query at MCP boundary", emptyRes.isError === true && emptyText.includes("non-empty query"), emptyText.slice(0, 160))
+
   const healthRes: any = await client.callTool({ name: "bb_health", arguments: {} })
   const healthText = (healthRes.content ?? []).map((c: any) => c.text ?? "").join("\n")
   check("bb_health returns counts", /symbols=\d+/.test(healthText), healthText.slice(0, 120))

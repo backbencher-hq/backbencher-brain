@@ -10,7 +10,35 @@ export function validateToolArguments(descriptor: ToolDescriptor, args: unknown)
     if (!(required in object) || object[required] === undefined || object[required] === null) throw new Error(`${descriptor.name}: missing required option: ${required}`)
   }
   for (const [name, value] of Object.entries(object)) validateProperty(descriptor.name, name, value, properties[name]!)
+  validateModeSpecificArguments(descriptor.name, object)
   return object
+}
+
+function validateModeSpecificArguments(tool: string, args: Record<string, unknown>): void {
+  if (tool === "bb_search") {
+    const mode = args.mode ?? "symbols"
+    if (mode === "file") {
+      if (typeof args.filePath !== "string" || args.filePath.trim().length === 0) {
+        throw new Error("bb_search file mode requires filePath")
+      }
+      return
+    }
+    if (mode === "symbol") {
+      if (typeof args.symbolName !== "string" && typeof args.query !== "string") {
+        throw new Error("bb_search symbol mode requires symbolName or query")
+      }
+      if (typeof args.symbolName === "string" && args.symbolName.trim().length === 0 && typeof args.query !== "string") {
+        throw new Error("bb_search symbol mode requires a non-empty symbolName or query")
+      }
+      return
+    }
+    if (typeof args.query !== "string" || args.query.trim().length === 0) {
+      throw new Error(`bb_search ${String(mode)} mode requires a non-empty query`)
+    }
+  }
+  if (tool === "bb_ask" && (typeof args.query !== "string" || args.query.trim().length === 0)) {
+    throw new Error("bb_ask requires a non-empty query")
+  }
 }
 
 function validateProperty(tool: string, name: string, value: unknown, schema: JsonSchemaProperty): void {
