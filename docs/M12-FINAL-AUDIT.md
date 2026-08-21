@@ -2,7 +2,9 @@
 
 Issue: [#182](https://github.com/backbencher-hq/backbencher-brain/issues/182)
 
-Date: 2026-08-20
+Date: 2026-08-21
+
+Milestone status: **complete** — GitHub milestone #12 is closed with 47 closed issues and 0 open issues.
 
 Release decision: **ready** for version `0.3.0`
 
@@ -11,8 +13,9 @@ full per-analyzer audit; no analyzer is unverifiable or hidden.
 
 ## Issue And Dependency Audit
 
-M12 was executed in dependency order. M12.01 through M12.42 are closed; this
-audit is the only issue authorized to close the milestone's core track.
+M12 was executed in dependency order. M12.01 through M12.47 are closed.
+The core analyzer track and all four integration-track issues are complete;
+this document records the final per-analyzer release decision.
 
 | Order | Issue | Commit | Result |
 | --- | --- | --- | --- |
@@ -58,7 +61,11 @@ audit is the only issue authorized to close the milestone's core track.
 | M12.40 | #179 | `bec08c9` | Closed; PowerShell with AST evidence |
 | M12.41 | #180 | `3c52ece` | Closed; Make with AST evidence |
 | M12.42 | #181 | `ca349a3` | Closed; Markdown with AST evidence |
-| M12.43 | #182 | audit commit | Ready to close after final gates |
+| M12.43 | #182 | audit commit | Closed; final per-analyzer audit and release readiness |
+| M12.44 | #183 | `5792259` | Closed; full analyzer pipeline wiring |
+| M12.45 | #184 | `3521b23` | Closed; tools consume all 41 analyzer surfaces |
+| M12.46 | #185 | `c8f711f` | Closed; framework intelligence across all languages |
+| M12.47 | #186 | `30324d8` | Closed; MCP/CLI coverage across all 41 languages |
 
 No dependency was bypassed. Each issue was closed only after its predecessor
 was complete and its issue-specific verifier passed.
@@ -77,6 +84,7 @@ was complete and its issue-specific verifier passed.
 | Corpus manifest | `validation/m12/corpus-manifest.json` | pinned revisions + policies |
 | Regex census | `validation/m12/results/regex-census.json` | 41 analyzers |
 | Analyzer docs | `docs/analyzers/real-<lang>-analyzer.md` | 41 analyzers |
+| MCP/CLI surface | `validation/m12/results/mcp-cli-surface.json` | 41 languages × 9 capabilities |
 
 The machine-readable artifact (`docs/data/m12-final-audit.json`) contains the
 complete per-issue inventory and is validated by
@@ -150,6 +158,7 @@ converted to O(1) lookups during M12. No O(n²) hot path remains.
 | `verify-m11-differential-harness` | PASS |
 | `verify-m12/verify-regex-census` | PASS |
 | `verify-mcp-e2e` | PASS (10 public tools) |
+| `M12.47 surface verifier` | PASS (41 languages × 9 capabilities) |
 | `npm run verify` (proxy-unset env) | PASS |
 
 ## Runtime Evidence
@@ -176,8 +185,8 @@ Accepted residual risks:
   pattern).
 
 All listed risks are accepted for `0.3.0`. None changes the frozen public
-contract or blocks release readiness. The integration track (M12.44+) remains
-a separately scoped set of issues.
+contract or blocks release readiness. The integration track (M12.44+) is
+complete and included in the closed M12 milestone.
 
 ## Claims Policy
 
@@ -205,7 +214,6 @@ census is zero across all analyzers. Full local and corpus gates pass.
 
 ## Worktree And Commit Evidence
 
-This audit is committed with the java regex elimination (the only analyzer
-source change in this issue), the refreshed java differential (facts
-unchanged, timings re-recorded), the regenerated regex census (2 → 0), and the
-audit artifacts themselves. The working tree is clean after the audit commit.
+The M12 audit and integration evidence are committed through M12.47,
+including the refreshed differentials, regex census, pipeline/tool/framework
+verification, and MCP/CLI surface evidence. GitHub milestone #12 is closed.
