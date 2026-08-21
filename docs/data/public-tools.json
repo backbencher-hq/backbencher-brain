@@ -150,6 +150,10 @@
       "modes": [
         "answer"
       ],
+      "plannedModes": [
+        "explain",
+        "feature"
+      ],
       "aliases": [],
       "deprecated": false,
       "documentation": {
@@ -349,6 +353,10 @@
         "orphaned",
         "all"
       ],
+      "plannedModes": [
+        "quality",
+        "architecture"
+      ],
       "aliases": [],
       "deprecated": false,
       "documentation": {
@@ -416,6 +424,11 @@
       "requiresIndex": true,
       "modes": [
         "findings"
+      ],
+      "plannedModes": [
+        "flow",
+        "summary",
+        "hotspots"
       ],
       "aliases": [],
       "deprecated": false,

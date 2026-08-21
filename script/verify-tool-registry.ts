@@ -1,8 +1,8 @@
 import packageJson from "../package.json"
 import { execFileSync } from "node:child_process"
-import { CURRENT_MCP_TOOL_CONTRACTS } from "../src/contracts/tool-contracts"
 import { createToolHandlers } from "../src/mcp/tool-handlers"
 import {
+  deriveToolContracts,
   serializeToolMetadata,
   TOOL_DESCRIPTORS,
   toMcpToolList,
@@ -31,7 +31,7 @@ function expectValidationFailure(label: string, descriptors: readonly ToolDescri
 
 const listed = toMcpToolList()
 const handlers = createToolHandlers()
-check("registry count matches frozen baseline", TOOL_DESCRIPTORS.length === CURRENT_MCP_TOOL_CONTRACTS.length)
+check("registry count matches derived contract", TOOL_DESCRIPTORS.length === deriveToolContracts().length)
 check("MCP list derives from registry", listed.length === TOOL_DESCRIPTORS.length && listed.every((tool, index) => tool.name === TOOL_DESCRIPTORS[index]?.name))
 check("handler coverage is exact", Object.keys(handlers).sort().join(",") === TOOL_DESCRIPTORS.map((descriptor) => descriptor.name).sort().join(","))
 check("package and server version source agree", BACKBENCHER_BRAIN_VERSION === packageJson.version)

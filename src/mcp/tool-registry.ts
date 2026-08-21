@@ -27,6 +27,8 @@ export interface ToolDescriptor {
   mutability: ToolMutability
   requiresIndex: boolean
   modes: readonly string[]
+  /** Modes on the roadmap but NOT executable. Never advertised as available. */
+  plannedModes?: readonly string[]
   aliases: readonly string[]
   deprecated: boolean
   replacement?: {
@@ -72,6 +74,7 @@ const descriptors = [
     mutability: "read",
     requiresIndex: true,
     modes: ["answer"],
+    plannedModes: ["explain", "feature"],
     aliases: [],
     deprecated: false,
     documentation: { category: "search", summary: "Natural-language answers and semantic matches.", defaults: { limit: 5 }, examples: [{ query: "how does request handling work?" }] },
@@ -94,6 +97,7 @@ const descriptors = [
     mutability: "read",
     requiresIndex: true,
     modes: ["orphaned", "all"],
+    plannedModes: ["quality", "architecture"],
     aliases: [],
     deprecated: false,
     documentation: { category: "analysis", summary: "Pattern/orphan analysis with optional persisted run history.", defaults: { scope: "all", limit: 20, includeOrphaned: true, includeFramework: true, includeAntiPatterns: true, confidenceThreshold: 0.6, history: false, recordRun: false }, examples: [{ scope: "orphaned" }, { recordRun: true }] },
@@ -105,6 +109,7 @@ const descriptors = [
     mutability: "read",
     requiresIndex: true,
     modes: ["findings"],
+    plannedModes: ["flow", "summary", "hotspots"],
     aliases: [],
     deprecated: false,
     documentation: { category: "analysis", summary: "Cross-language findings with optional persisted run history.", defaults: { history: false, recordRun: false, limit: 20 }, examples: [{}, { recordRun: true }, { history: true }] },
@@ -183,12 +188,51 @@ export function validateToolDescriptors(items: readonly ToolDescriptor[]): void 
       if (!(required in properties)) throw new Error(`${item.name}: required field ${required} is not declared`)
     }
     if (new Set(item.modes).size !== item.modes.length) throw new Error(`${item.name}: duplicate modes`)
+    if (item.plannedModes) {
+      if (new Set(item.plannedModes).size !== item.plannedModes.length) throw new Error(`${item.name}: duplicate planned modes`)
+      const modeSet = new Set(item.modes)
+      const overlap = item.plannedModes.filter((mode) => modeSet.has(mode))
+      if (overlap.length) throw new Error(`${item.name}: planned modes overlap executable modes: ${overlap.join(", ")}`)
+    }
     if (new Set(item.aliases).size !== item.aliases.length) throw new Error(`${item.name}: duplicate aliases`)
     if (item.deprecated && !item.replacement) throw new Error(`${item.name}: deprecated tools require a replacement`)
   }
 }
 
 validateToolDescriptors(TOOL_DESCRIPTORS)
+
+/**
+ * The public tool contract, DERIVED from the executable registry. This is the
+ * single authority the M13 drift test and every consumer must use; there is no
+ * hand-maintained parallel copy to drift out of sync.
+ */
+export interface DerivedToolContract {
+  name: string
+  mutability: ToolMutability
+  requiresIndex: boolean
+  modes: readonly string[]
+  plannedModes: readonly string[]
+  required: readonly string[]
+  properties: readonly string[]
+  defaults: Readonly<Record<string, string | number | boolean>>
+  output: "text"
+  replacement: string
+}
+
+export function deriveToolContracts(items: readonly ToolDescriptor[] = TOOL_DESCRIPTORS): DerivedToolContract[] {
+  return items.map((descriptor) => ({
+    name: descriptor.name,
+    mutability: descriptor.mutability,
+    requiresIndex: descriptor.requiresIndex,
+    modes: descriptor.modes,
+    plannedModes: descriptor.plannedModes ?? [],
+    required: descriptor.inputSchema.required ?? [],
+    properties: Object.keys(descriptor.inputSchema.properties ?? {}),
+    defaults: descriptor.documentation.defaults,
+    output: "text" as const,
+    replacement: descriptor.name,
+  }))
+}
 
 export function toMcpToolList(items: readonly ToolDescriptor[] = TOOL_DESCRIPTORS): Array<Pick<ToolDescriptor, "name" | "description" | "inputSchema">> {
   return items.map(({ name, description, inputSchema }) => ({ name, description, inputSchema }))

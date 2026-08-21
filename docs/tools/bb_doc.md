@@ -8,6 +8,7 @@ Generate read-only, evidence-backed documentation with resolvable citations. Sup
 - Mutability: `read`
 - Requires index: `true`
 - Modes: `symbol`, `file`, `module`, `feature`, `api`, `project`, `coverage`
+- Planned modes (roadmap, not executable): (none)
 - Defaults: `{"format":"markdown","audience":"developer","detail":"standard","includeExamples":false,"includeDiagrams":false,"includeTests":false,"limit":20,"maxTokens":4000}`
 
 ## Input Schema

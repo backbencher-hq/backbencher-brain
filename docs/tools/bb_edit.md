@@ -8,6 +8,7 @@ Unified, validated source mutation. Discriminated by mode: write, update, insert
 - Mutability: `write`
 - Requires index: `true`
 - Modes: `write`, `update`, `insert`, `delete`, `refactor`
+- Planned modes (roadmap, not executable): (none)
 - Defaults: `{"dryRun":false,"format":true,"force":false}`
 
 ## Input Schema

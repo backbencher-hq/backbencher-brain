@@ -8,6 +8,7 @@ Unified index health: file/symbol/relationship/imports counts, embedding model +
 - Mutability: `read`
 - Requires index: `false`
 - Modes: `status`, `refresh`
+- Planned modes (roadmap, not executable): (none)
 - Defaults: `{"verbose":false,"history":false,"limit":20,"refresh":false,"force":false,"wait":true,"freshness":"sampled","sampleSize":200,"integrity":false,"includeAnalysisRuns":false}`
 
 ## Input Schema

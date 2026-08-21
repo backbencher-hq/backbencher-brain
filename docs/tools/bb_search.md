@@ -8,6 +8,7 @@ Unified indexed retrieval for symbol lists, content, exact symbol source, or fil
 - Mutability: `read`
 - Requires index: `true`
 - Modes: `symbols`, `content`, `symbol`, `file`
+- Planned modes (roadmap, not executable): (none)
 - Defaults: `{"mode":"symbols","limit":15,"includeContent":false,"exact":false,"caseSensitive":false,"regex":false,"offset":0}`
 
 ## Input Schema

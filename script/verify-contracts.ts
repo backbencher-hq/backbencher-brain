@@ -6,7 +6,7 @@ import path from "node:path"
 import { BrainDatabase } from "../src/brain/database"
 import { getProjectId } from "../src/cli/index"
 import { indexProjectParallel } from "../src/ast/parallel-indexer"
-import { CURRENT_MCP_TOOL_CONTRACTS, TARGET_TOOL_CONTRACTS } from "../src/contracts/tool-contracts"
+import { deriveToolContracts } from "../src/mcp/tool-registry"
 import { createContractFixture } from "./fixtures/contract-fixture"
 
 let failures = 0
@@ -43,9 +43,10 @@ try {
 
   const listed = await client.listTools()
   const byName = new Map(listed.tools.map((tool: any) => [tool.name, tool]))
-  check("exact public tool count", listed.tools.length === TARGET_TOOL_CONTRACTS.length, `got ${listed.tools.length}`)
+  const contracts = deriveToolContracts()
+  check("exact public tool count", listed.tools.length === contracts.length, `got ${listed.tools.length}`)
 
-  for (const contract of CURRENT_MCP_TOOL_CONTRACTS.filter((contract) => TARGET_TOOL_CONTRACTS.some((target) => target.name === contract.name))) {
+  for (const contract of contracts) {
     const tool: any = byName.get(contract.name)
     check(`${contract.name} is registered`, !!tool)
     if (!tool) continue
@@ -57,7 +58,7 @@ try {
     check(`${contract.name} required fields frozen`, JSON.stringify(required) === JSON.stringify(expectedRequired), `got ${required.join(",")}`)
   }
 
-  check("target surface has ten unique tools", TARGET_TOOL_CONTRACTS.length === 10 && new Set(TARGET_TOOL_CONTRACTS.map((tool) => tool.name)).size === 10)
+  check("target surface has ten unique tools", contracts.length === 10 && new Set(contracts.map((tool) => tool.name)).size === 10)
 
   let result: any = await client.callTool({ name: "bb_search", arguments: { query: "duplicateName", limit: 1 } })
   const firstPage = textOf(result)

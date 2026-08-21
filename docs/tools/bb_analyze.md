@@ -8,6 +8,7 @@ Unified evidence-backed analysis over graph relationships, dependencies, statist
 - Mutability: `read`
 - Requires index: `true`
 - Modes: `callers`, `callees`, `trace`, `dependencies`, `stats`, `complexity`, `impact`, `test_mapping`, `test_gaps`, `test_impact`, `test_quality`
+- Planned modes (roadmap, not executable): (none)
 - Defaults: `{"limit":20}`
 
 ## Input Schema
