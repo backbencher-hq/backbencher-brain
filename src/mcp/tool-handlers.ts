@@ -1,11 +1,11 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs"
+import { existsSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { BrainDatabase } from "../brain/database"
 import { BrainTools, PatternBrainTools } from "../ast/tools"
 import { quickAnswer } from "../intelligence/search/quick-answer"
 import { detectOrphans } from "../intelligence/patterns/orphans"
 import { ASTEngine } from "../ast/engine"
-import { checkResultsFreshness } from "../brain/freshness"
+import { checkResultsFreshness, fileUnchangedSince } from "../brain/freshness"
 import { CrossLanguageSecurityAnalysis } from "../security/cross-language-security"
 import { DependencyGraphVisualizer } from "../ast/dependency-graph-visualizer"
 import { CrossLanguageIntelligence } from "../ast/cross-language-intelligence"
@@ -63,12 +63,44 @@ function resolveProjectPath(projectPath: string, relativePath: string): string {
 }
 
 function ensureWithinProject(projectPath: string, absolutePath: string): void {
-  if (!absolutePath.startsWith(projectPath)) throw new Error(`path escapes project root: ${absolutePath}`)
+  const relative = path.relative(projectPath, absolutePath)
+  if (relative === ".." || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+    throw new Error(`path escapes project root: ${absolutePath}`)
+  }
+}
+
+function resolveSafeReadPath(projectPath: string, requested: string): { absolute: string; relative: string } {
+  const root = realpathSync(projectPath)
+  const candidate = path.resolve(root, requested)
+  ensureWithinProject(root, candidate)
+  if (!existsSync(candidate) || !statSync(candidate).isFile()) throw new Error(`file not found: ${requested}`)
+  const absolute = realpathSync(candidate)
+  ensureWithinProject(root, absolute)
+  return { absolute, relative: path.relative(root, absolute).split(path.sep).join("/") }
 }
 
 const handlers: Record<string, ToolHandler> = {
-  bb_search: async (args, { projectId }) => {
+  bb_search: async (args, { projectId, projectPath }) => {
     const mode = args.mode === "content" ? "content" : args.mode === "symbol" || args.mode === "file" ? args.mode : "symbols"
+    if (mode === "file") {
+      const target = resolveSafeReadPath(projectPath, String(args.filePath))
+      const raw = await BrainDatabase.getRawInstance(projectId as any)
+      const row = raw.prepare("SELECT id, language, file_hash FROM brain_file WHERE project_id=? AND path=?").get(projectId, target.absolute) as { id: string; language: string; file_hash: string } | undefined
+      if (!row) throw new Error(`file is not indexed: ${target.relative}`)
+      const content = readFileSync(target.absolute, "utf8")
+      const maxChars = 100_000
+      const truncated = content.length > maxChars
+      return textResult(JSON.stringify({
+        searchMode: "file",
+        file: target.relative,
+        fileId: row.id,
+        language: row.language || "unknown",
+        content: truncated ? content.slice(0, maxChars) : content,
+        contentLength: content.length,
+        truncated,
+        stale: !fileUnchangedSince(target.absolute, row.file_hash),
+      }, null, 2))
+    }
     if (mode === "content") {
       const { searchContent } = await import("../intelligence/search/content-search")
       return textResult(JSON.stringify(await searchContent(projectId as any, String(args.query ?? ""), { maxResults: Number(args.limit ?? 15), languages: args.language ? [String(args.language)] : undefined, symbolKind: args.symbolKind ? String(args.symbolKind) : undefined }), null, 2))
@@ -88,10 +120,6 @@ const handlers: Record<string, ToolHandler> = {
       regex: args.regex === true,
       offset: Number(args.offset ?? 0),
     })
-    if (mode === "file") {
-      const filePath = String(args.filePath ?? query)
-      return textResult(JSON.stringify(results.filter((result: any) => result.file === filePath || result.file.includes(filePath)), null, 2))
-    }
     const lines = results.map((result: any) => {
       const stale = result.stale ? " [STALE]" : ""
       const snippet = result.snippet && result.snippet !== result.symbolName
