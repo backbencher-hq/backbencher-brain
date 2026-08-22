@@ -39,6 +39,48 @@ function validateModeSpecificArguments(tool: string, args: Record<string, unknow
   if (tool === "bb_ask" && (typeof args.query !== "string" || args.query.trim().length === 0)) {
     throw new Error("bb_ask requires a non-empty query")
   }
+  if (tool === "bb_edit") {
+    validateEditArguments(args)
+  }
+}
+
+/**
+ * bb_edit is discriminated by `mode`. Each mode has its own required fields and
+ * its own set of relevant fields; a field that is known to the schema but
+ * irrelevant to the current mode is rejected here (not silently ignored).
+ * `mode` and `position` enum membership are already enforced by validateProperty
+ * against the registry schema; this layer enforces the per-mode contract.
+ */
+function validateEditArguments(args: Record<string, unknown>): void {
+  const mode = args.mode
+  const relevantByMode: Record<string, readonly string[]> = {
+    write: ["mode", "dryRun", "filePath", "content", "newContent", "format"],
+    update: ["mode", "dryRun", "filePath", "symbolName", "lineStart", "content", "newContent", "format"],
+    insert: ["mode", "dryRun", "filePath", "targetSymbolName", "position", "lineStart", "content", "newContent", "format"],
+    delete: ["mode", "dryRun", "filePath", "symbolName", "lineStart", "force", "format"],
+    refactor: ["mode", "dryRun", "filePath", "symbolName", "lineStart", "newName", "format"],
+  }
+  const allowed = relevantByMode[String(mode)]
+  if (allowed) {
+    const irrelevant = Object.keys(args).filter((key) => !allowed.includes(key))
+    if (irrelevant.length > 0) throw new Error(`bb_edit ${String(mode)} mode does not accept: ${irrelevant.join(", ")}`)
+  }
+
+  if (mode === "write") {
+    if (typeof args.filePath !== "string" || args.filePath.trim().length === 0) throw new Error("bb_edit write mode requires filePath")
+    if (typeof args.content !== "string" && typeof args.newContent !== "string") throw new Error("bb_edit write mode requires content or newContent")
+  } else if (mode === "update") {
+    if (typeof args.symbolName !== "string" || args.symbolName.trim().length === 0) throw new Error("bb_edit update mode requires symbolName")
+    if (typeof args.newContent !== "string" && typeof args.content !== "string") throw new Error("bb_edit update mode requires newContent or content")
+  } else if (mode === "insert") {
+    if (typeof args.targetSymbolName !== "string" || args.targetSymbolName.trim().length === 0) throw new Error("bb_edit insert mode requires targetSymbolName")
+    if (typeof args.newContent !== "string" && typeof args.content !== "string") throw new Error("bb_edit insert mode requires newContent or content")
+  } else if (mode === "delete") {
+    if (typeof args.symbolName !== "string" || args.symbolName.trim().length === 0) throw new Error("bb_edit delete mode requires symbolName")
+  } else if (mode === "refactor") {
+    if (typeof args.symbolName !== "string" || args.symbolName.trim().length === 0) throw new Error("bb_edit refactor mode requires symbolName")
+    if (typeof args.newName !== "string" || args.newName.trim().length === 0) throw new Error("bb_edit refactor mode requires newName")
+  }
 }
 
 function validateProperty(tool: string, name: string, value: unknown, schema: JsonSchemaProperty): void {
