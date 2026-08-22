@@ -14,6 +14,8 @@ export interface UnifiedHealthOptions {
   sampleSize?: number
   integrity?: boolean
   includeAnalysisRuns?: boolean
+  /** Advertised in the registry: verbose=true adds a per-language breakdown and stale/missing file names. */
+  verbose?: boolean
   logger?: { log: (...args: any[]) => void; write: (s: string) => void }
 }
 export interface UnifiedHealthReport {
@@ -29,6 +31,10 @@ export interface UnifiedHealthReport {
   integrity: IndexHealthReport | null
   analysisRuns: { runs: number; findings: number; byState: Record<string, number> } | null
   refresh: { requested: boolean; force: boolean; wait: boolean; completed: boolean; durationMs: number | null; processedFiles: number | null } 
+  /** Per-language file+symbol counts; always collected, printed only when verbose. */
+  languages: Array<{ language: string; files: number; symbols: number }>
+  /** Mirrors the request; the formatter prints the verbose sections only when true. */
+  verbose: boolean
   warnings: HealthWarning[]
 }
 
@@ -104,6 +110,11 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
     else { stale++; staleFiles.push(row.relative_path) }
   }
 
+  const languageRows = raw.prepare(
+    "SELECT f.language AS language, COUNT(DISTINCT f.id) files, COUNT(DISTINCT s.id) symbols " +
+      "FROM brain_file f LEFT JOIN brain_symbol s ON s.file_id = f.id AND s.project_id = ? " +
+      "WHERE f.project_id = ? GROUP BY f.language ORDER BY files DESC",
+  ).all(projectId, projectId) as Array<{ language: string; files: number; symbols: number }>
   const modelRows = raw.prepare("SELECT embedding_model AS model, COUNT(*) c, GROUP_CONCAT(DISTINCT vector_dimension) dims FROM brain_semantic_embedding WHERE project_id=? GROUP BY embedding_model ORDER BY c DESC").all(projectId) as any[]
   const embeddingTotal = modelRows.reduce((sum, row) => sum + Number(row.c ?? 0), 0)
   const embeddedEntities = (raw.prepare("SELECT COUNT(DISTINCT entity_id) c FROM brain_semantic_embedding WHERE project_id=?").get(projectId) as any)?.c ?? 0
@@ -135,7 +146,10 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
     embeddings: { total: embeddingTotal, embeddedEntities, symbolCoveragePercent: symbols > 0 ? Math.round((embeddedEntities / symbols) * 1000) / 10 : 0, models: modelRows.map((row) => ({ model: row.model, count: Number(row.c), dimensions: String(row.dims ?? "").split(",").filter(Boolean).map(Number) })) },
     schema: { version: schema?.version ?? null, migration: schema?.migration_name ?? null, tables: tableCount },
     runtime: { runtime: typeof Bun !== "undefined" ? "bun" : "node", version: process.version, database: (raw as any).driver ?? "sqlite", parserStatus: "unknown" },
-    integrity, analysisRuns, refresh, warnings,
+    integrity, analysisRuns, refresh,
+    languages: languageRows,
+    verbose: options.verbose === true,
+    warnings,
   }
 }
 
@@ -155,6 +169,13 @@ export function formatUnifiedHealth(report: UnifiedHealthReport): string {
   if (report.refresh.requested) lines.push(`refresh: ${report.refresh.completed ? "completed" : "failed"} force=${report.refresh.force} wait=${report.refresh.wait} durationMs=${report.refresh.durationMs}`)
   if (report.analysisRuns) lines.push(`analysis: ${report.analysisRuns.runs} runs / ${report.analysisRuns.findings} findings`)
   if (report.integrity) lines.push(`integrity: ${report.integrity.overallHealth}% (${report.integrity.summary.warn} warnings, ${report.integrity.summary.error} errors)`)
+  // Verbose sections: per-language breakdown and stale/missing file names — the
+  // advertised verbose contract. Omitted entirely unless verbose=true.
+  if (report.verbose) {
+    if (report.languages.length) lines.push(`languages: ${report.languages.map((l) => `${l.language}:${l.files}f/${l.symbols}s`).join(" ")}`)
+    lines.push(`stale files: ${report.freshness.staleFiles.join(", ") || "none"}`)
+    lines.push(`missing files: ${report.freshness.missingFiles.join(", ") || "none"}`)
+  }
   for (const warning of report.warnings) lines.push(`${warning.severity}: [${warning.code}] ${warning.message}`)
   return lines.join("\n")
 }
