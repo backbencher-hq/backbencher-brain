@@ -83,6 +83,10 @@ function loadRealEvidence(): Array<{ file: string; doc: Evidence }> {
   return names.map((f) => ({ file: f, doc: JSON.parse(readFileSync(resolve(RESULTS_DIR, f), "utf8")) }))
 }
 
+// The B2/B3 main body runs only when this file is executed directly, so other
+// verifiers can import validateEvidence() without triggering process.exit.
+if (import.meta.main) {
+
 // ── B2 harness: schema + validator ──────────────────────────────────────
 const b2 = new Harness({
   issue: "M13.02",
@@ -173,3 +177,4 @@ b3.write()
 const failures = b2.document().summary.failed + b3.document().summary.failed
 console.log(`\nEVIDENCE GOVERNANCE: ${failures === 0 ? "PASS" : `${failures} FAILURES`}`)
 process.exit(failures === 0 ? 0 : 1)
+}
