@@ -1004,89 +1004,98 @@ export namespace ASTEngine {
     return ""
   }
 
-  export async function parseFile(filePath: string, content: string, context?: AnalyzeContext): Promise<ParseResult> {
-    const language = detectLanguage(filePath, content)
-    if (!language) {
-      throw new Error(`Unsupported file type: ${filePath}`)
+  // Parse a file's raw content with a language-specific tree-sitter grammar and
+  // return the parser + tree WITHOUT running analyzers or deleting the tree.
+  // Shared by parseFile (symbols/relationships) and parseTree (safety primitives
+  // that need the raw syntax tree: comment/string masking and reference-occurrence
+  // extraction). Mirrors parseFile's Lua/C++/truncation preprocessing exactly so
+  // byte offsets always agree between the symbol index and the safety primitives.
+  async function parseRaw(
+    filePath: string,
+    content: string,
+    language: SupportedLanguage,
+  ): Promise<{ parser: any; tree: any; transientLuaGrammar: any }> {
+    let parser: any
+    let transientLuaGrammar: any = null
+
+    // Lua's WASM binding is only reliable when each parse is isolated from
+    // the engine parser cache: a private Parser + Language instance loaded
+    // from fresh bytes keeps one file's external-scanner state out of the
+    // next file. Other languages retain the normal cached-parser path.
+    if (language === "lua") {
+      const fs = require("fs")
+      const WebTreeSitter: any = await loadWebTreeSitter()
+      const ParserCtor: any = WebTreeSitter.Parser ?? WebTreeSitter.default ?? WebTreeSitter
+      const LanguageCtor: any = WebTreeSitter.Language ?? WebTreeSitter.default?.Language
+      const initFn = WebTreeSitter.init ?? ParserCtor.init ?? (ParserCtor as any).init
+      if (initFn) await initFn({ locateFile: () => resolveWasmAsset("tree-sitter.wasm") })
+      transientLuaGrammar = await LanguageCtor.load(
+        new Uint8Array(fs.readFileSync(resolveWasmAsset("tree-sitter-lua.wasm"))),
+      )
+      parser = new ParserCtor()
+      parser.setLanguage(transientLuaGrammar)
+    } else {
+      parser = await getParser(language)
     }
 
-    // Add timeout protection for parser operations
-    const parsePromise = (async () => {
-      let parser: any
-      let transientLuaGrammar: any = null
+    // Protect against very large files that might hang the parser
+    if (content.length > 1024 * 1024) {
+      // 1MB limit for parsing
+      log.warn("large file detected, using truncated content", {
+        filePath,
+        originalSize: content.length,
+        truncatedSize: 1024 * 1024,
+      })
+      content = content.substring(0, 1024 * 1024)
+    }
 
-      // Lua's WASM binding is only reliable when each parse is isolated from
-      // the engine parser cache: a private Parser + Language instance loaded
-      // from fresh bytes keeps one file's external-scanner state out of the
-      // next file. Other languages retain the normal cached-parser path.
-      if (language === "lua") {
-        const fs = require("fs")
-        const WebTreeSitter: any = await loadWebTreeSitter()
-        const ParserCtor: any = WebTreeSitter.Parser ?? WebTreeSitter.default ?? WebTreeSitter
-        const LanguageCtor: any = WebTreeSitter.Language ?? WebTreeSitter.default?.Language
-        const initFn = WebTreeSitter.init ?? ParserCtor.init ?? (ParserCtor as any).init
-        if (initFn) await initFn({ locateFile: () => resolveWasmAsset("tree-sitter.wasm") })
-        transientLuaGrammar = await LanguageCtor.load(
-          new Uint8Array(fs.readFileSync(resolveWasmAsset("tree-sitter-lua.wasm"))),
-        )
-        parser = new ParserCtor()
-        parser.setLanguage(transientLuaGrammar)
-      } else {
-        parser = await getParser(language)
-      }
+    // === UNIVERSAL C/C++ AST ILLUSION FIX ===
+    // Strip compiler extensions & common macro keywords by replacing them with exact spaces.
+    // This preserves exact byte bounds and line numbers for Tree-sitter across ANY C/C++ codebase (Linux, Redis, etc.)
+    if (language === "c" || language === "cpp") {
+      content = content
+        // Match __attribute__((...)) across multiple lines
+        .replace(/__attribute__\s*\(\([\s\S]*?\)\)/g, (match) => " ".repeat(match.length))
+        // Match MSVC __declspec(...)
+        .replace(/__declspec\s*\([\s\S]*?\)/g, (match) => " ".repeat(match.length))
+        // Standard universal compiler directives
+        .replace(/__restrict__/g, "            ")
+        .replace(/__restrict/g, "          ")
+        .replace(/__volatile__/g, "            ")
+        .replace(/__inline__/g, "          ")
+        .replace(/__forceinline/g, "             ")
+        .replace(/__cdecl/g, "       ")
+        .replace(/__stdcall/g, "         ")
+        .replace(/__fastcall/g, "          ")
+        // Custom common storage qualifiers (Redis uses __stored_key)
+        .replace(/__stored_key/g, "            ")
+    }
 
-      // Protect against very large files that might hang the parser
-      if (content.length > 1024 * 1024) {
-        // 1MB limit for parsing
-        log.warn("large file detected, using truncated content", {
-          filePath,
-          originalSize: content.length,
-          truncatedSize: 1024 * 1024,
-        })
-        content = content.substring(0, 1024 * 1024)
-      }
+    // Per-file self-destruct timer — parser.parse() is synchronous C/WASM
+    // code that can loop forever on pathological inputs. setTimeout can't
+    // interrupt it (event loop is blocked), so we kill the whole process.
+    // The indexer is incremental — re-running resumes from where it left off.
+    const parseBomb = setTimeout(() => {
+      process.stderr.write(`[BB-HANG] parser stuck 120s on ${filePath} — exiting\n`)
+      process.exit(1)
+    }, 120000)
 
-      // === UNIVERSAL C/C++ AST ILLUSION FIX ===
-      // Strip compiler extensions & common macro keywords by replacing them with exact spaces.
-      // This preserves exact byte bounds and line numbers for Tree-sitter across ANY C/C++ codebase (Linux, Redis, etc.)
-      if (language === "c" || language === "cpp") {
-        content = content
-          // Match __attribute__((...)) across multiple lines
-          .replace(/__attribute__\s*\(\([\s\S]*?\)\)/g, (match) => " ".repeat(match.length))
-          // Match MSVC __declspec(...)
-          .replace(/__declspec\s*\([\s\S]*?\)/g, (match) => " ".repeat(match.length))
-          // Standard universal compiler directives
-          .replace(/__restrict__/g, "            ")
-          .replace(/__restrict/g, "          ")
-          .replace(/__volatile__/g, "            ")
-          .replace(/__inline__/g, "          ")
-          .replace(/__forceinline/g, "             ")
-          .replace(/__cdecl/g, "       ")
-          .replace(/__stdcall/g, "         ")
-          .replace(/__fastcall/g, "          ")
-          // Custom common storage qualifiers (Redis uses __stored_key)
-          .replace(/__stored_key/g, "            ")
-      }
+    const tree = parser.parse(content)
+    clearTimeout(parseBomb)
+    if (!tree) {
+      throw new Error(`Failed to parse file: ${filePath}`)
+    }
 
-      // Per-file self-destruct timer — parser.parse() is synchronous C/WASM
-      // code that can loop forever on pathological inputs. setTimeout can't
-      // interrupt it (event loop is blocked), so we kill the whole process.
-      // The indexer is incremental — re-running resumes from where it left off.
-      const parseBomb = setTimeout(() => {
-        process.stderr.write(`[BB-HANG] parser stuck 120s on ${filePath} — exiting\n`)
-        process.exit(1)
-      }, 120000)
+    return { parser, tree, transientLuaGrammar }
+  }
 
-      const tree = parser.parse(content)
-      clearTimeout(parseBomb)
-      if (!tree) {
-        throw new Error(`Failed to parse file: ${filePath}`)
-      }
-
-      return { parser, tree, language, transientLuaGrammar }
-    })()
-
-    // Reduced timeout for faster recovery
+  // Wrap parseRaw with a timeout so a stuck grammar cannot hang the process.
+  async function parseWithTimeout(
+    filePath: string,
+    content: string,
+    language: SupportedLanguage,
+  ): Promise<{ parser: any; tree: any; transientLuaGrammar: any }> {
+    const parsePromise = parseRaw(filePath, content, language)
     let timeoutId: NodeJS.Timeout
     const timeoutPromise = new Promise<never>((_, reject) => {
       timeoutId = setTimeout(() => {
@@ -1094,17 +1103,42 @@ export namespace ASTEngine {
         reject(new Error(`Parser timeout for ${filePath}`))
       }, 120000) // Reduced to 120 seconds
     })
-
-    let parseResult
     try {
-      parseResult = await Promise.race([parsePromise, timeoutPromise])
+      const result = await Promise.race([parsePromise, timeoutPromise])
       clearTimeout(timeoutId!)
+      return result
     } catch (error) {
       clearTimeout(timeoutId!)
       throw error
     }
+  }
 
-    const { parser, tree, language: detectedLanguage, transientLuaGrammar } = parseResult
+  /**
+   * Parse a file and return the raw tree-sitter tree WITHOUT deleting it. The
+   * caller owns tree.delete() (and, for Lua, parser/grammar cleanup). Used by
+   * the safety primitives (comment/string masking, reference-occurrence
+   * extraction) which need the syntax tree, not just symbols.
+   */
+  export async function parseTree(
+    filePath: string,
+    content: string,
+  ): Promise<{ language: SupportedLanguage; tree: any; parser: any; transientLuaGrammar: any }> {
+    const language = detectLanguage(filePath, content)
+    if (!language) {
+      throw new Error(`Unsupported file type: ${filePath}`)
+    }
+    const { parser, tree, transientLuaGrammar } = await parseWithTimeout(filePath, content, language)
+    return { language, tree, parser, transientLuaGrammar }
+  }
+
+  export async function parseFile(filePath: string, content: string, context?: AnalyzeContext): Promise<ParseResult> {
+    const language = detectLanguage(filePath, content)
+    if (!language) {
+      throw new Error(`Unsupported file type: ${filePath}`)
+    }
+
+    // Add timeout protection for parser operations
+    const { parser, tree, transientLuaGrammar } = await parseWithTimeout(filePath, content, language)
 
     // Detect Syntax Errors
     const treeErrors: ParseError[] = []
