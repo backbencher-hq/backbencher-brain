@@ -103,7 +103,20 @@ const handlers: Record<string, ToolHandler> = {
     }
     if (mode === "content") {
       const { searchContent } = await import("../intelligence/search/content-search")
-      return textResult(JSON.stringify(await searchContent(projectId as any, String(args.query ?? ""), { maxResults: Number(args.limit ?? 15), languages: args.language ? [String(args.language)] : undefined, symbolKind: args.symbolKind ? String(args.symbolKind) : undefined }), null, 2))
+      // searchContent returns a typed array with meta attached (searchMode/staleCount/…).
+      // JSON.stringify of an array drops those properties, so the wire response must
+      // wrap the results in an explicit envelope — otherwise the mode and freshness
+      // metadata silently vanish for every MCP/CLI consumer.
+      const results = await searchContent(projectId as any, String(args.query ?? ""), { maxResults: Number(args.limit ?? 15), languages: args.language ? [String(args.language)] : undefined, symbolKind: args.symbolKind ? String(args.symbolKind) : undefined })
+      return textResult(JSON.stringify({
+        searchMode: "content",
+        query: String(args.query ?? ""),
+        total: results.length,
+        staleCount: results.staleCount ?? 0,
+        freshCount: results.freshCount ?? 0,
+        truncated: results.truncated ?? false,
+        results,
+      }, null, 2))
     }
     if (mode === "symbol") {
       const found = await ASTEngine.findSymbol(projectId, String(args.symbolName ?? args.query ?? ""), args.filePath ? String(args.filePath) : undefined)
