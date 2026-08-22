@@ -58,6 +58,12 @@ export interface MaskedRange {
   nodeType: string
 }
 
+export interface BodyRange {
+  startIndex: number
+  endIndex: number
+  nodeType: string
+}
+
 export interface SafetyParse {
   language: string
   content: string
@@ -69,6 +75,8 @@ export interface SafetyParse {
   maskedRanges: MaskedRange[]
   /** Code ranges re-exposed inside strings (interpolation), kept live. */
   codeRanges: MaskedRange[]
+  /** Byte ranges of body blocks ({ }, indented block, do/end) in source order. */
+  bodyRanges: BodyRange[]
 }
 
 export interface StaleEntry {
@@ -175,6 +183,28 @@ export function isMemberNameNode(node: any): boolean {
 }
 
 /**
+ * True when a node type is a function/type BODY container across grammars:
+ * brace bodies ({ }), indented blocks (Python), and keyword-terminated bodies
+ * (Ruby body_statement, Elixir do_block, Lua block … end). Used by bb_edit
+ * inside-top/inside-bottom to find the insertion region without a { } scan.
+ */
+export function isBodyNodeType(type: string): boolean {
+  const t = type.toLowerCase()
+  return (
+    t.endsWith("body") || // function_body, class_body, interface_body, enum_body, method_body, constructor_body, accessor_body, object_body, impl_body, script_block_body, enum_class_body
+    t === "block" || // Rust, Go, Java, C#, Python, Lua, Dart
+    t === "compound_statement" || // C/C++, Bash
+    t === "statement_block" || // TypeScript/JavaScript
+    t === "body_statement" || // Ruby
+    t === "do_block" || // Elixir
+    t === "script_block" || // PowerShell
+    t === "declaration_list" || // C# class/interface/enum body
+    t === "field_declaration_list" || // Rust struct / Go struct body
+    t === "enum_variant_list" // Rust enum body
+  )
+}
+
+/**
  * Node types that carry live code INSIDE a string literal and must be
  * re-exposed as code when masking (interpolation/substitution/expansion).
  */
@@ -264,6 +294,17 @@ export function buildSyntaxMask(tree: any, contentLength: number): Uint8Array {
   return buildMaskFromRanges(masked, code, contentLength)
 }
 
+/** Collect every body-block byte range (see isBodyNodeType) in source order. */
+export function collectBodyRanges(tree: any): BodyRange[] {
+  const out: BodyRange[] = []
+  for (const node of walkNodes(tree.rootNode)) {
+    if (!node.isNamed) continue
+    if (!isBodyNodeType(node.type)) continue
+    out.push({ startIndex: node.startIndex, endIndex: node.endIndex, nodeType: node.type })
+  }
+  return out
+}
+
 /** True when the byte at `index` is live code (not inside a comment/string). */
 export function isCodeAt(mask: Uint8Array, index: number): boolean {
   return index < 0 || index >= mask.length || mask[index] === 1
@@ -337,6 +378,7 @@ export async function parseForSafety(filePath: string, content: string): Promise
       occurrences: extractIdentifierOccurrences(tree, content),
       maskedRanges: masked,
       codeRanges: code,
+      bodyRanges: collectBodyRanges(tree),
     }
   } finally {
     try {
