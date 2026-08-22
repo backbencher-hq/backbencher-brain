@@ -39,6 +39,10 @@ export interface IdentifierOccurrence {
   nodeType: string
   /** Parent node type: "call_expression", "variable_declarator", … */
   parentType: string
+  /** True when this occurrence is the member name of a dotted access or a
+   *  property key (obj.name / obj.name() / { name }), not a standalone
+   *  reference. Rename engines must never treat these as reference sites. */
+  isMemberName: boolean
   /** 1-indexed line/column (column is 1-indexed to match tree-sitter display). */
   startLine: number
   startColumn: number
@@ -126,6 +130,45 @@ export function isStringNodeType(type: string): boolean {
     t === "single_quote_scalar" || // YAML '...'
     t.startsWith("block_scalar") // YAML | / > multiline scalars
   )
+}
+
+/** Grammar node types that are inherently member/property identifiers (the
+ *  field/property/method name in a dotted access or object literal — never a
+ *  standalone reference to the renamed symbol). */
+export const MEMBER_NODE_TYPES = new Set([
+  "property_identifier",
+  "field_identifier",
+  "shorthand_property_identifier",
+  "statement_identifier",
+  "label_name",
+])
+
+/** Field names that hold the receiver/object of a dotted access. */
+const MEMBER_ACCESS_OBJECT_FIELDS = ["object", "receiver"]
+/** Field names that hold the member/name/field/property of a dotted access. */
+const MEMBER_ACCESS_NAME_FIELDS = ["name", "property", "field", "attribute", "member"]
+
+/**
+ * True when a leaf identifier node is the member name of a dotted access
+ * (`obj.name`, `obj.name()`, `self.name`) or an object-literal property key —
+ * never a standalone reference to a symbol of the same name. Uses grammar node
+ * types plus tree-sitter field names (object/receiver vs name/field), not text.
+ */
+export function isMemberNameNode(node: any): boolean {
+  if (MEMBER_NODE_TYPES.has(node.type)) return true
+  const parent = node.parent
+  if (!parent) return false
+  const objNode = MEMBER_ACCESS_OBJECT_FIELDS
+    .map((f) => (typeof parent.childForFieldName === "function" ? parent.childForFieldName(f) : null))
+    .find((n) => n != null)
+  if (!objNode) return false
+  // The receiver itself is not a member name (renaming `obj` must rename `obj.name`).
+  if (objNode.startIndex === node.startIndex && objNode.endIndex === node.endIndex) return false
+  // This node must be the access's name/field/property (not an argument or subexpr).
+  const isName = MEMBER_ACCESS_NAME_FIELDS
+    .map((f) => (typeof parent.childForFieldName === "function" ? parent.childForFieldName(f) : null))
+    .some((n) => n != null && n.startIndex === node.startIndex && n.endIndex === node.endIndex)
+  return isName
 }
 
 /**
@@ -251,6 +294,7 @@ export function extractIdentifierOccurrences(tree: any, content: string): Identi
       endIndex: node.endIndex,
       nodeType: type,
       parentType: node.parent ? node.parent.type : "",
+      isMemberName: isMemberNameNode(node),
       startLine: node.startPosition.row + 1,
       startColumn: node.startPosition.column + 1,
       endLine: node.endPosition.row + 1,
