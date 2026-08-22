@@ -121,33 +121,17 @@ export namespace PatternBrainTools {
       }
     }
 
-    // 2. Framework-specific patterns (legacy heuristic candidates).
-    // These rules have not been calibrated against canonical evidence yet.
-    // They remain here so existing `bb_patterns scope=all` output stays valid
-    // while callers migrate to canonical detectors.
-    if (opts.includeFramework) {
-      patterns.push({
-        type: "framework_pattern_stub",
-        confidence: 0.0,
-        location: { file: "", line: 0 },
-        description: "Framework-pattern detection has not been migrated to canonical provenance-bearing rules; use canonical taxonomies instead.",
-        severity: "info",
-        suggestion: "Use `bb_patterns scope=orphaned` or `bb_security` for evidence-bearing findings until framework rules migrate.",
-        evidence: [],
-      })
-    }
-
-    if (opts.includeAntiPatterns) {
-      patterns.push({
-        type: "anti_pattern_stub",
-        confidence: 0.0,
-        location: { file: "", line: 0 },
-        description: "Anti-pattern heuristics have not been migrated to canonical evidence form; use canonical rules instead.",
-        severity: "info",
-        suggestion: "Use `bb_security` for evidence-bearing anti-pattern results; legacy regex heuristics are retained only for compatibility.",
-        evidence: [],
-      })
-    }
+    // 2. Framework + anti-pattern rules — real, index-backed, evidence-bearing
+    // (M13.36). A finding is emitted only when indexed data matches the rule;
+    // there are no zero-confidence stubs.
+    const { detectIndexRules } = await import("../intelligence/patterns/rules")
+    const ruleFindings = await detectIndexRules(projectId as any, {
+      confidenceThreshold: opts.confidenceThreshold,
+      maxResults: opts.maxResults,
+      includeFramework: opts.includeFramework,
+      includeAntiPatterns: opts.includeAntiPatterns,
+    })
+    for (const finding of ruleFindings) patterns.push(finding)
 
     // 3. Statistics mapping (canonical-safe aggregation).
     const byType: Record<string, number> = {}
