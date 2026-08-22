@@ -307,8 +307,15 @@ CREATE INDEX IF NOT EXISTS brain_embed_hash_idx ON brain_semantic_embedding(cont
 
       `
 
+/** Current schema version — every freshly ensured brain database records this row. */
+export const SCHEMA_VERSION = 1
+export const SCHEMA_MIGRATION_NAME = "m13-universal-brain"
+
 export function ensureSchema(raw: any): void {
   raw.exec(DDL)
+  try {
+    raw.prepare("INSERT OR IGNORE INTO brain_schema_version (version, applied_at, migration_name) VALUES (?, strftime('%s','now') * 1000, ?)").run(SCHEMA_VERSION, SCHEMA_MIGRATION_NAME)
+  } catch {}
   raw.exec(`
     CREATE TABLE IF NOT EXISTS brain_analysis_run (
       id TEXT PRIMARY KEY NOT NULL, project_id TEXT NOT NULL, kind TEXT NOT NULL,
