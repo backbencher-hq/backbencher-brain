@@ -135,6 +135,8 @@ export interface SemanticResult {
   snippet: string
   similarity: number
   language: string
+  /** True when the source file changed on disk since indexing — must never be presented as current. */
+  stale?: boolean
 }
 
 export interface SemanticSearchResults {
