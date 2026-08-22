@@ -103,16 +103,28 @@ function bodyOffsets(mask: Uint8Array, text: string, start: number, end: number)
 
 /** Parent types that BIND/declare the identifier (const x, function f(), param,
  *  field, object key). Conservative: ambiguous reassignments are treated as
- *  bindings so a rename never over-reaches and corrupts source. */
+ *  bindings so a rename never over-reaches and corrupts source.
+ *
+ *  Cross-language: every shipped grammar names its declaration containers
+ *  differently, so this is a deliberate union of those conventions (verified
+ *  by script/m13/verify-edit-xlang.ts across all languages). */
 export function isBindingParentType(type: string): boolean {
   const t = type.toLowerCase()
   return (
-    t.includes("declarator") || // variable_declarator
-    t.includes("declaration") || // function_declaration, class_declaration, method_declaration, local_variable_declaration, field_declaration
-    t.includes("definition") || // function_definition, method_definition, field_definition
-    t.includes("parameter") || // formal_parameter, required_parameter, typed_parameter, parameters
-    t.includes("field") || // field_declaration / field_definition
+    t.includes("declarator") || // variable_declarator, function_declarator (C/C++)
+    t.includes("declaration") || // function/class/method/variable/field_declaration
+    t.includes("definition") || // function/class/method/field_definition
+    t.includes("parameter") || // formal/required/typed/default parameter
+    t.includes("field") || // field_declaration / field_definition / record_field
     t.includes("property") || // property_signature / property_declaration
+    t.includes("signature") || // function_signature (Dart), method/property_signature (TS)
+    t === "method" || // Ruby def name
+    t === "class" || // Ruby class/module name (bare 'class' node)
+    t === "bind" || // Haskell top-level binding (function/pattern)
+    t.endsWith("_item") || // Rust function/struct/enum/trait/impl/mod/type/const/static_item
+    t.endsWith("specifier") || // C/C++ class/struct/union/enum_specifier
+    t.endsWith("_spec") || // Go type_spec / import_spec
+    t === "type_name" || // F# type name container
     t === "assignment" || // Python `x = …`
     t === "pair" || // JS/TS object key { target: … }
     t.includes("import") || // import_specifier
