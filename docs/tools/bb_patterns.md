@@ -1,6 +1,6 @@
 # `bb_patterns`
 
-Detect orphaned code, framework patterns, anti-patterns, and architecture issues. Use scope=orphaned for dead code; scope=all (default) for the full pattern scan with the optional pattern/confidence filters.
+Detect orphaned code, framework patterns, and anti-patterns. Use scope=orphaned for dead code; scope=all (default) for the full pattern scan with the optional pattern/confidence filters. Architecture and code-quality analysis are planned, not yet executable.
 
 ## Contract
 
