@@ -178,11 +178,12 @@ export async function quickAnswer(projectId: ProjectID, query: string): Promise<
     let combinedAnswer = `Closest matches from the AST index for your query (search results, not a verified answer):\n\n`
     const sources: Array<{ file: string; line: number; context: string }> = []
     for (const res of semantic.results.slice(0, 5)) {
-      combinedAnswer += `--- File: ${res.file} (Line ${res.line}) ---\n`
+      const staleMark = res.stale ? " [STALE — file changed since index]" : ""
+      combinedAnswer += `--- File: ${res.file} (Line ${res.line})${staleMark} ---\n`
       combinedAnswer += `[${res.symbolType}] ${res.symbolName} — similarity ${res.similarity.toFixed(3)}\n`
       const truncated = (res.snippet || "").split("\n").slice(0, 30).join("\n")
       if (truncated) combinedAnswer += `\`\`\`\n${truncated}\n\`\`\`\n\n`
-      sources.push({ file: res.file, line: res.line, context: res.symbolName })
+      sources.push({ file: res.file, line: res.line, context: res.symbolName + (res.stale ? " (STALE)" : "") })
     }
     combinedAnswer += `\n— Use bb_search for precise symbol lookup: "bb_search(query='${query}')".\n`
     combinedAnswer += `— Use bb_search with mode="file" to read any indexed file.`
@@ -201,7 +202,8 @@ export async function quickAnswer(projectId: ProjectID, query: string): Promise<
     if (symbolResults.length > 0) {
       let fallbackAnswer = `I found these symbols matching "${query}" (use bb_search with mode="symbol" to read their code):\n\n`
       for (const r of symbolResults.slice(0, 5)) {
-        fallbackAnswer += `- ${r.symbolName || r.context} [${r.symbolType || "symbol"}] in ${r.file}:${r.line}\n`
+        const staleMark = (r as any).stale ? " [STALE — file changed since index]" : ""
+        fallbackAnswer += `- ${r.symbolName || r.context} [${r.symbolType || "symbol"}] in ${r.file}:${r.line}${staleMark}\n`
       }
       const q = query.toLowerCase()
       const scored = symbolResults.slice(0, 5).map((r) => {

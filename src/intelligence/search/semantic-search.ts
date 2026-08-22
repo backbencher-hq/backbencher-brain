@@ -1,4 +1,5 @@
 import { BrainDatabase } from "../../brain/database"
+import { checkResultsFreshness } from "../../brain/freshness"
 import { SemanticEngine } from "../../brain/semantic/engine"
 import { AnalysisExclusions } from "../../ast/analysis-exclusions"
 import type { ProjectID } from "../../project/schema"
@@ -26,6 +27,7 @@ type SymbolRow = {
   symbolType: string
   line: number
   lineEnd: number
+  fileId: string
   relativePath: string
   filePath: string
   language: string
@@ -147,12 +149,15 @@ async function resolveEntities(
   const symbols = raw.prepare(
     "SELECT s.id, s.name, s.symbol_type AS symbolType, " +
       "COALESCE(s.line_start, 0) AS line, COALESCE(s.line_end, 0) AS lineEnd, " +
-      "f.relative_path AS relativePath, f.path AS filePath, COALESCE(f.language, 'unknown') AS language " +
+      "f.id AS fileId, f.relative_path AS relativePath, f.path AS filePath, COALESCE(f.language, 'unknown') AS language " +
       "FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id " +
       "WHERE s.project_id = ? AND s.id IN (" + placeholders + ")",
   ).all(projectId, ...ids) as SymbolRow[]
 
   const symbolMap = new Map(symbols.map((s) => [s.id, s]))
+  // Freshness truthfulness: a source whose file changed on disk since indexing
+  // must be flagged stale — never presented as current.
+  const freshness = checkResultsFreshness(raw, symbols.map((s) => ({ fileId: s.fileId })))
   const results: SemanticResult[] = []
 
   for (const entry of ranked) {
@@ -174,6 +179,7 @@ async function resolveEntities(
       snippet,
       similarity: entry.similarity,
       language: symbol.language,
+      stale: ["stale", "missing"].includes(freshness.get(symbol.fileId) ?? "") || undefined,
     })
   }
   return results
@@ -200,6 +206,7 @@ async function keywordFallback(
     snippet: row.snippet,
     similarity: 0,
     language: row.language,
+    stale: (row as any).stale === true || undefined,
   }))
   return {
     results,
