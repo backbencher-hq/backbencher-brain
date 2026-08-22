@@ -37,6 +37,8 @@ const harness = new Harness({
     "Cross-file import-specifier renaming (import { target } ...) is NOT performed: imports live in brain_import, not the calls/references relationships this path consumes. Tracked as cross-file rename completeness.",
     "Same-class instance method calls (obj.target() where obj is an instance of target's class) are conservatively NOT renamed — AST identity alone cannot distinguish same-class from other-object receivers; requires type-aware resolution (M14 analyzer completeness).",
     "Ambiguous same-name symbols require explicit filePath + lineStart (existing uniqueSymbol contract, unchanged).",
+    "Some grammars name declaration identifiers with non-identifier node types (Bash 'word', Perl 'bareword', Erlang 'atom', Clojure 'sym_name'/'sym_lit', PowerShell 'function_name', PHP 'name') and Elixir 'def' names parse as call arguments — these names are not reference occurrences, so rename cannot see them. Tracked as M14 reference-identification completeness.",
+    "R function assignment (foo <- function()) parents the name under 'binary_operator' (ambiguous with arithmetic), so R binding names are not recognized. Tracked as M14.",
   ],
 })
 
@@ -102,6 +104,68 @@ function atLine(list: Classified[], line: number): Classified {
   const idx = findDeclarationName(parsed.occurrences, "target", 0, code.length)
   const expected = code.indexOf("target")
   harness.check("findDeclarationName locates the binding identifier", idx === expected, `got ${idx} want ${expected}`)
+}
+
+// ── UNIT: cross-language declaration-name binding classification ───────────
+// The classifier must recognize every grammar's declaration container, not just
+// TS/Python/Java. Each case parses a declaration and asserts the name occurrence
+// is a binding (parent node is a recognized declaration container).
+const xlangDecls: Array<{ lang: string; file: string; code: string; name: string }> = [
+  { lang: "typescript", file: "a.ts", code: `function foo() { return 1 }\n`, name: "foo" },
+  { lang: "javascript", file: "a.js", code: `function foo() { return 1 }\n`, name: "foo" },
+  { lang: "python", file: "a.py", code: `def foo():\n    return 1\n`, name: "foo" },
+  { lang: "ruby", file: "a.rb", code: `def foo\n  1\nend\n`, name: "foo" },
+  { lang: "haskell", file: "a.hs", code: `foo = 1\n`, name: "foo" },
+  { lang: "lua", file: "a.lua", code: `function foo() end\n`, name: "foo" },
+  { lang: "c", file: "a.c", code: `int foo() { return 0; }\n`, name: "foo" },
+  { lang: "cpp", file: "a.cpp", code: `int foo() { return 0; }\n`, name: "foo" },
+  { lang: "rust", file: "a.rs", code: `fn foo() {}\n`, name: "foo" },
+  { lang: "go", file: "a.go", code: `package p\nfunc foo() {}\n`, name: "foo" },
+  { lang: "zig", file: "a.zig", code: `fn foo() void {}\n`, name: "foo" },
+  { lang: "java", file: "A.java", code: `class A { int foo() { return 0; } }\n`, name: "foo" },
+  { lang: "kotlin", file: "a.kt", code: `fun foo() {}\n`, name: "foo" },
+  { lang: "scala", file: "a.scala", code: `object A { def foo = 1 }\n`, name: "foo" },
+  { lang: "groovy", file: "a.groovy", code: `def foo() { 1 }\n`, name: "foo" },
+  { lang: "swift", file: "a.swift", code: `func foo() {}\n`, name: "foo" },
+  { lang: "dart", file: "a.dart", code: `void foo() {}\n`, name: "foo" },
+  { lang: "csharp", file: "a.cs", code: `class A { void Foo() {} }\n`, name: "Foo" },
+  { lang: "fsharp", file: "a.fs", code: `let foo x = x\n`, name: "foo" },
+  { lang: "objective-c", file: "a.m", code: `@interface A\n- (int)foo;\n@end\n`, name: "foo" },
+  // type/class declarations
+  { lang: "typescript", file: "a.ts", code: `class Foo {}\n`, name: "Foo" },
+  { lang: "rust", file: "a.rs", code: `struct Foo {}\n`, name: "Foo" },
+  { lang: "cpp", file: "a.cpp", code: `class Foo {};\n`, name: "Foo" },
+  { lang: "go", file: "a.go", code: `package p\ntype Foo struct{}\n`, name: "Foo" },
+  { lang: "ruby", file: "a.rb", code: `class Foo\nend\n`, name: "Foo" },
+  { lang: "fsharp", file: "a.fs", code: `type Foo = int\n`, name: "Foo" },
+  { lang: "dart", file: "a.dart", code: `class Foo {}\n`, name: "Foo" },
+  { lang: "java", file: "A.java", code: `class Foo {}\n`, name: "Foo" },
+]
+for (const d of xlangDecls) {
+  let parsed
+  try {
+    parsed = await parseForSafety(d.file, d.code)
+  } catch (e) {
+    harness.check(`${d.lang}: parseForSafety succeeds`, false, e instanceof Error ? e.message : String(e))
+    continue
+  }
+  const occ = parsed.occurrences.filter((o) => o.text === d.name)
+  harness.check(`${d.lang}: declaration name is a recognized binding`, occ.length >= 1 && isBindingParentType(occ[0].parentType), occ.length === 0 ? "name not extracted" : `parent=${occ[0].parentType}`)
+}
+
+// Documented reference-identification gaps: the name node type is not an
+// identifier occurrence, so rename cannot see it (verified here, not hidden).
+const xlangNameGaps: Array<{ lang: string; file: string; code: string; name: string }> = [
+  { lang: "bash", file: "a.sh", code: `foo() { :; }\n`, name: "foo" },
+  { lang: "perl", file: "a.pl", code: `sub foo { return 1; }\n`, name: "foo" },
+  { lang: "erlang", file: "a.erl", code: `foo() -> ok.\n`, name: "foo" },
+  { lang: "clojure", file: "a.clj", code: `(defn foo [] 1)\n`, name: "foo" },
+  { lang: "powershell", file: "a.ps1", code: `function Foo { 1 }\n`, name: "Foo" },
+  { lang: "php", file: "a.php", code: `<?php\nfunction foo() { return 1; }\n`, name: "foo" },
+]
+for (const g of xlangNameGaps) {
+  const parsed = await parseForSafety(g.file, g.code)
+  harness.check(`${g.lang}: name is a documented M14 reference-identification gap (not an occurrence)`, parsed.occurrences.filter((o) => o.text === g.name).length === 0, `got ${parsed.occurrences.filter((o) => o.text === g.name).length}`)
 }
 
 // ── INTEGRATION: full refactor on indexed projects ──────────────────────────
