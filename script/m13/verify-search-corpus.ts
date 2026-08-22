@@ -44,16 +44,8 @@ const SAMPLE: Array<[string, string, string, string]> = [
   ["rake", "lib/rake", "Application", "Ruby"],
   ["graphql-js", "src", "graphql", "TypeScript"],
   ["rebar3", "apps", "rebar", "Erlang"],
-  ["go-tools", "go/analysis/passes", "analysis", "Go"],
+  ["go-tools", "go/analysis/passes", "unreachable", "Go"],
 ]
-
-async function firstSymbolFile(projectId: string): Promise<{ name: string; file: string } | null> {
-  const raw = await BrainDatabase.getRawInstance(projectId)
-  const row = raw.prepare("SELECT name, file_id FROM brain_symbol LIMIT 1").get() as { name: string; file_id: string } | undefined
-  if (!row?.name) return null
-  const frow = raw.prepare("SELECT path FROM brain_file WHERE id = ?").get(row.file_id) as { path: string } | undefined
-  return { name: row.name, file: frow?.path ?? "" }
-}
 
 for (const [repo, subPath, hint, family] of SAMPLE) {
   const indexRoot = path.join(REPO_ROOT, repo, subPath)
@@ -64,25 +56,29 @@ for (const [repo, subPath, hint, family] of SAMPLE) {
   const projectId = getProjectId(indexRoot)
   try {
     await indexProjectParallel(projectId, indexRoot, {})
-    let target = await firstSymbolFile(projectId)
-    if (!target) {
-      harness.check(`corpus ${repo}/${subPath} (${family}): no indexed symbols (recorded, not failed)`, true, "skip")
-      continue
-    }
     const tag = `${repo}/${subPath} (${family})`
 
-    // 1. symbols mode: exact symbol search resolves with correct file + language
-    const sym = await BrainTools.searchCode(projectId, target.name, { maxResults: 5, exact: true })
-    const hit = sym.find((r: any) => r.symbolName === target.name)
-    harness.check(`corpus ${tag}: symbols-mode finds ${target.name}`, !!hit, sym.length ? `got ${sym.length}` : "no results")
-    if (hit) {
-      harness.check(`corpus ${tag}: result carries a real file path`, typeof hit.file === "string" && hit.file.length > 0, hit.file)
-      harness.check(`corpus ${tag}: result carries a language`, typeof hit.language === "string" && hit.language.length > 0, hit.language)
+    // Resolve a SEARCH-VISIBLE symbol from the normal search path. A human
+    // hint may be a package/module fragment rather than an exact symbol name
+    // (`rebar`, `analysis`), so exact lookup is used for the selected symbol
+    // below, not as the selector itself.
+    const hintResults = await BrainTools.searchCode(projectId, hint, { maxResults: 5 })
+    const target = hintResults[0] as any
+    if (!target) {
+      harness.check(`corpus ${tag}: hint resolves to a real symbol`, false, `no search result for hint ${hint}`)
+      continue
     }
+    const targetName = target.symbolName as string
+    const sym = await BrainTools.searchCode(projectId, targetName, { maxResults: 5, exact: true })
+
+    // 1. symbols mode: exact symbol search resolves with correct file + language
+    harness.check(`corpus ${tag}: symbols-mode finds ${targetName}`, sym.some((r: any) => r.symbolName === targetName), sym.length ? `got ${sym.length}` : "no results")
+    harness.check(`corpus ${tag}: result carries a real file path`, typeof target.file === "string" && target.file.length > 0, target.file)
+    harness.check(`corpus ${tag}: result carries a language`, typeof target.language === "string" && target.language.length > 0, target.language)
 
     // 2. content mode finds the same symbol (case-insensitive by design)
-    const content = await searchContent(projectId, target.name, { maxResults: 5 })
-    harness.check(`corpus ${tag}: content-mode finds ${target.name}`, content.some((r: any) => JSON.stringify(r).toLowerCase().includes(target.name.toLowerCase())), `got ${content.length}`)
+    const content = await searchContent(projectId, targetName, { maxResults: 5 })
+    harness.check(`corpus ${tag}: content-mode finds ${targetName}`, content.some((r: any) => JSON.stringify(r).toLowerCase().includes(targetName.toLowerCase())), `got ${content.length}`)
 
     // 3. pagination honored on real files (multi-result query; skip recorded if the query has only one hit)
     const page1 = await BrainTools.searchCode(projectId, hint, { maxResults: 1, offset: 0 })
@@ -102,11 +98,11 @@ for (const [repo, subPath, hint, family] of SAMPLE) {
     if (existsSync(filePath)) {
       const before = readFileSync(filePath, "utf8")
       writeFileSync(filePath, before + "\n// bb-search-freshness-probe\n")
-      const afterSearch = await BrainTools.searchCode(projectId, target.name, { maxResults: 20, exact: true })
+      const afterSearch = await BrainTools.searchCode(projectId, targetName, { maxResults: 20, exact: true })
       // The symbol may exist in several files; the hit we care about is the one in
       // the file we just modified (r.file is indexRoot-relative, target.file may be
       // absolute — compare both forms).
-      const staleHit = afterSearch.find((r: any) => r.symbolName === target.name && (r.file === target.file || r.file === path.basename(target.file) || target.file.endsWith(String(r.file))))
+      const staleHit = afterSearch.find((r: any) => r.symbolName === targetName && (r.file === target.file || r.file === path.basename(target.file) || target.file.endsWith(String(r.file))))
       harness.negative(
         `corpus ${tag}: modified file's result is flagged stale (never fresh)`,
         !!staleHit && staleHit.stale === true,
