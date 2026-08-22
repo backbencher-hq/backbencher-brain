@@ -24,9 +24,12 @@ export function isEmbeddingConfigured(config: Record<string, unknown>): boolean 
 
 export async function getEmbeddingConfig(): Promise<EmbeddingConfig | null> {
   const config = await Config.get()
-  const baseURL = (config.embedding_base_url as string) || process.env.BB_EMBEDDING_BASE_URL
-  const apiKey = (config.embedding_api_key as string) || process.env.BB_EMBEDDING_API_KEY
-  const model = (config.embedding_model as string) || process.env.BB_EMBEDDING_MODEL
+  // Explicit BB_* values are runtime overrides and must win over repository
+  // config. This is required for MCP hosts, local test endpoints, and workers
+  // that intentionally point at a different OpenAI-compatible service.
+  const baseURL = process.env.BB_EMBEDDING_BASE_URL || (config.embedding_base_url as string)
+  const apiKey = process.env.BB_EMBEDDING_API_KEY || (config.embedding_api_key as string)
+  const model = process.env.BB_EMBEDDING_MODEL || (config.embedding_model as string)
   if (!baseURL || !model) return null
   return {
     baseURL: baseURL.replace(/\/+$/, ""),
@@ -41,35 +44,56 @@ export async function embedOpenAICompatible(
   cfg: EmbeddingConfig,
 ): Promise<number[][]> {
   const url = `${cfg.baseURL}/embeddings`
+  const payload = JSON.stringify({
+    model: cfg.model,
+    input: texts.length === 1 ? texts[0] : texts,
+    encoding_format: "float",
+  })
+  const parsedUrl = new URL(url)
+  const isLocal = parsedUrl.hostname === "localhost" ||
+    parsedUrl.hostname === "127.0.0.1" || parsedUrl.hostname === "[::1]" ||
+    parsedUrl.hostname === "::1"
+
+  if (isLocal) {
+    // Do not send loopback traffic through HTTP_PROXY/ALL_PROXY. Some hosts
+    // reject proxy connections to local IPs, which makes the built-in mock and
+    // self-hosted embedding endpoints appear unavailable. Keep existing values
+    // and append only the loopback hosts used by local embedding servers.
+    const loopbackHosts = ["127.0.0.1", "localhost", "::1"]
+    for (const key of ["NO_PROXY", "no_proxy"] as const) {
+      const existing = process.env[key] ?? ""
+      const values = new Set(existing.split(",").map((v) => v.trim()).filter(Boolean))
+      for (const host of loopbackHosts) values.add(host)
+      process.env[key] = [...values].join(",")
+    }
+  }
+
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 30000)
+  let res: Response
   try {
-    const res = await fetch(url, {
+    res = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         ...(cfg.apiKey ? { Authorization: `Bearer ${cfg.apiKey}` } : {}),
       },
-      body: JSON.stringify({
-        model: cfg.model,
-        input: texts.length === 1 ? texts[0] : texts,
-        encoding_format: "float",
-      }),
+      body: payload,
       signal: controller.signal,
     })
-    if (!res.ok) {
-      const body = await res.text().catch(() => "")
-      throw new Error(`embedding API ${res.status}: ${body.slice(0, 200)}`)
-    }
-    const data = (await res.json()) as {
-      data: Array<{ embedding: number[] }>
-    }
-    const embeddings = data.data.map((d) => d.embedding)
-    if (embeddings.length !== texts.length) {
-      throw new Error(`embedding API returned ${embeddings.length} vectors for ${texts.length} inputs`)
-    }
-    return embeddings
   } finally {
     clearTimeout(timer)
   }
+  const status = res.status
+  const body = await res.text()
+
+  if (status < 200 || status >= 300) {
+    throw new Error(`embedding API ${status}: ${body.slice(0, 200)}`)
+  }
+  const data = JSON.parse(body) as { data: Array<{ embedding: number[] }> }
+  const embeddings = data.data.map((d) => d.embedding)
+  if (embeddings.length !== texts.length) {
+    throw new Error(`embedding API returned ${embeddings.length} vectors for ${texts.length} inputs`)
+  }
+  return embeddings
 }

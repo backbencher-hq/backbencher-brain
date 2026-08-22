@@ -1354,9 +1354,10 @@ export async function storeResults(
 
   const batchSize = ParallelIndexerConfig.dbBatchSize
 
-  // Pre-prepare target resolution statement — reused for every relationship
+  // Pre-prepare target resolution statement — reused for every relationship.
+  // file_id is needed to compute the honest is_cross_file flag at insert time.
   const resolveTargetStmt = rawDb.prepare(
-    `SELECT id FROM brain_symbol WHERE project_id = ? AND name = ? LIMIT 1`
+    `SELECT id, file_id FROM brain_symbol WHERE project_id = ? AND name = ? LIMIT 1`
   )
 
 
@@ -1942,6 +1943,13 @@ export async function storeResults(
             const resolvedRow = resolveTargetStmt.get(projectId, targetLeaf) as any
             const targetId = resolvedRow?.id || null
 
+            // is_cross_file must be honest: 1 only when the resolved target
+            // lives in a DIFFERENT file than the source (fileId is the current
+            // file's id). Same-file edges must stay 0 — the resolution passes
+            // below recompute this flag only for rows they resolve, so rows
+            // resolved here would otherwise carry the wrong value forever.
+            const relIsCrossFile = sourceId !== null && !!resolvedRow?.file_id && resolvedRow.file_id !== fileId ? 1 : 0
+
             const MAX_SYMBOL_NAME_LENGTH = 255
             const GENERIC_SOURCE_NAMES = new Set([
               "unknown", "SCSS_FILE_SCOPE",
@@ -1991,7 +1999,7 @@ export async function storeResults(
               rel.confidence || 1.0,
               rel.context || null,
               0,
-              1,
+              relIsCrossFile,
               rel.metadata?.isCrossLanguage ? 1 : 0,
               rel.metadata?.bridgeMechanism || null,
               rel.metadata ? JSON.stringify(rel.metadata) : null,

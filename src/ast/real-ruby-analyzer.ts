@@ -4,6 +4,17 @@ import { ASTEngine } from "./engine"
 // ============================================================================
 // RUBY BUILTINS — filtered from call relationships (same contract as JS/Python)
 // ============================================================================
+// Identifiers whose parent nodes mean they are NOT bare method calls:
+// method/receiver names inside call nodes, def names, assignment targets,
+// hash keys, parameter lists, and class/module names.
+const BARE_CALL_SKIP_PARENTS = new Set([
+  "call", "command", "command_call",
+  "method", "singleton_method",
+  "pair",
+  "method_parameters", "parameters", "block_parameters", "lambda_parameters", "block_var",
+  "class", "module", "singleton_class",
+])
+
 const RUBY_BUILTINS = new Set([
   // Kernel / top-level
   "puts", "print", "p", "pp", "p$", "print_flush", "putc",
@@ -270,7 +281,8 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         const body = this.findChild(node, "body_statement")
         if (body) {
           this.walkBody(body, symbols, relationships, imports, metadata,
-            owner, ownerKind, enclosingMethod, visibilityOverrides)
+            owner, ownerKind, enclosingMethod, visibilityOverrides,
+            new Set((params ?? []).map((p) => p.name)))
         }
 
         continue
@@ -326,7 +338,8 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         const body = this.findChild(node, "body_statement")
         if (body) {
           this.walkBody(body, symbols, relationships, imports, metadata,
-            owner, ownerKind, name, visibilityOverrides)
+            owner, ownerKind, name, visibilityOverrides,
+            new Set((params ?? []).map((p) => p.name)))
         }
 
         continue
@@ -463,17 +476,75 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     ownerKind: string | undefined,
     enclosingMethod: string | undefined,
     visibilityOverrides: Map<string, string>,
+    locals: Set<string> = new Set(),
   ): void {
+    // Ruby scope rule: a bare identifier is a LOCAL VARIABLE READ if the name
+    // is a parameter or assigned anywhere in the enclosing scope; otherwise it
+    // is a METHOD CALL (Ruby resolves this at parse-of-scope time, before
+    // execution). Pre-scan the whole body for assignment targets so identifier
+    // reads resolve honestly — nested blocks share the method scope.
+    const localNames = new Set(locals)
+    const scanStack: Node[] = [node]
+    while (scanStack.length > 0) {
+      const sn = scanStack.pop()!
+      if (sn.type === "assignment" || sn.type === "operator_assignment" || sn.type === "multiple_assignment") {
+        const left = sn.childForFieldName("left") ?? sn.namedChild(0)
+        if (left) {
+          if (left.type === "identifier") {
+            localNames.add(left.text)
+          }
+          for (let i = 0; i < left.namedChildCount; i++) {
+            const c = left.namedChild(i)
+            if (c?.type === "identifier") localNames.add(c.text)
+          }
+        }
+      }
+      // Block/lambda parameters (`|item|`, `->(x)`) are locals of the block
+      // body — their names must not be mistaken for method calls.
+      if (sn.type === "block_parameters" || sn.type === "lambda_parameters") {
+        for (let i = 0; i < sn.namedChildCount; i++) {
+          const c = sn.namedChild(i)
+          if (!c) continue
+          if (c.type === "identifier") {
+            localNames.add(c.text)
+          } else if (c.type === "block_var" || c.type === "destructured_left") {
+            for (let j = 0; j < c.namedChildCount; j++) {
+              const d = c.namedChild(j)
+              if (d?.type === "identifier") localNames.add(d.text)
+            }
+          }
+        }
+      }
+      for (let i = sn.namedChildCount - 1; i >= 0; i--) {
+        const child = sn.namedChild(i)
+        if (child) scanStack.push(child)
+      }
+    }
+
     // Iterative DFS
     const stack: Node[] = [node]
     while (stack.length > 0) {
       const n = stack.pop()!
       const type = n.type
 
-      // --- Call (all Ruby calls: method(), obj.method(), command-style) ---
-      if (type === "call") {
+      // --- Call (method(), obj.method(), command-style) ---
+      // `command`/`command_call` guard against grammar-version drift where
+      // paren-less calls may not be folded into `call` nodes.
+      if (type === "call" || type === "command" || type === "command_call") {
         this.processCall(n, symbols, relationships, imports, metadata,
           owner, enclosingMethod, visibilityOverrides)
+      }
+
+      // --- Bare identifier in expression position: method call unless local ---
+      // tree-sitter-ruby parses `foo` (no receiver, no args) as a plain
+      // `identifier`. Identifiers that are parts of call nodes, def names,
+      // hash keys, or assignment targets are excluded — they are either
+      // handled by processCall or are locals by definition.
+      if (type === "identifier") {
+        const parentType = n.parent?.type
+        if (!BARE_CALL_SKIP_PARENTS.has(parentType as string) && !localNames.has(n.text)) {
+          this.pushBareCall(n.text, owner, enclosingMethod, relationships)
+        }
       }
 
       // --- Complexity counting ---
@@ -756,6 +827,38 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       type: ASTEngine.RelationshipType.Calls,
       confidence: 0.9,
       metadata: {},
+    })
+  }
+
+  /**
+   * Emit a calls relationship for a bare identifier used as a method call
+   * (tree-sitter-ruby parses `foo` with no receiver/args as an identifier).
+   * Mirrors processCall's regular-call tail: builtins are skipped and the
+   * same confidence/metadata shape is used so the graph stays consistent.
+   */
+  private pushBareCall(
+    name: string,
+    owner: string | undefined,
+    enclosingMethod: string | undefined,
+    relationships: ASTEngine.UniversalRelationship[],
+  ): void {
+    if (RUBY_BUILTINS.has(name)) return
+    if (name === "self" || name === "nil" || name === "true" || name === "false") return
+    // Constants are a distinct node type, but guard anyway.
+    const firstChar = name.charCodeAt(0)
+    if (firstChar >= 65 && firstChar <= 90) return
+    // Pseudo-constants (__FILE__, __LINE__, __method__, ...)
+    if (name.startsWith("__") && name.endsWith("__")) return
+
+    const source = enclosingMethod || owner || "Global"
+    relationships.push({
+      source,
+      target: name,
+      fromSymbol: source,
+      toSymbol: name,
+      type: ASTEngine.RelationshipType.Calls,
+      confidence: 0.9,
+      metadata: { bareCall: true },
     })
   }
 
