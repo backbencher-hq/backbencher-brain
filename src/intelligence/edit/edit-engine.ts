@@ -76,36 +76,20 @@ function replaceRange(text: string, start: number, end: number, replacement: str
   return text.slice(0, start) + replacement + text.slice(end)
 }
 
-function codeMask(text: string): boolean[] {
-  const code = Array(text.length).fill(true)
-  let state: "code" | "single" | "double" | "template" | "line" | "block" = "code"
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i], n = text[i + 1]
-    if (state === "code") {
-      if (c === "'" || c === '"' || c === "`") { state = c === "'" ? "single" : c === '"' ? "double" : "template"; code[i] = false }
-      else if (c === "/" && n === "/") { state = "line"; code[i] = code[i + 1] = false; i++ }
-      else if (c === "/" && n === "*") { state = "block"; code[i] = code[i + 1] = false; i++ }
-    } else {
-      code[i] = false
-      if ((state === "single" && c === "'") || (state === "double" && c === '"') || (state === "template" && c === "`")) {
-        let slashes = 0
-        for (let j = i - 1; j >= 0 && text[j] === "\\"; j--) slashes++
-        if (slashes % 2 === 0) state = "code"
-      } else if (state === "line" && c === "\n") state = "code"
-      else if (state === "block" && c === "*" && n === "/") { code[i + 1] = false; i++; state = "code" }
-    }
-  }
-  return code
-}
-
-function bodyOffsets(text: string, start: number, end: number): { open: number; close: number } {
-  const mask = codeMask(text)
+/**
+ * Locate the `{ … }` body of an anchor within a byte range, using a
+ * per-language tree-sitter mask (1 = live code) so braces inside comments or
+ * string literals are never mistaken for body delimiters. The `{ }` detection
+ * itself is deliberately conservative (brace bodies only); language-aware
+ * body detection (indentation, do/end, layout) is M13.09 (E4).
+ */
+function bodyOffsets(mask: Uint8Array, text: string, start: number, end: number): { open: number; close: number } {
   let open = -1
-  for (let i = start; i < end; i++) if (mask[i] && text[i] === "{") { open = i; break }
+  for (let i = start; i < end; i++) if (mask[i] === 1 && text[i] === "{") { open = i; break }
   if (open < 0) throw new Error("anchor has no AST-like body block")
   let depth = 0
   for (let i = open; i < end; i++) {
-    if (!mask[i]) continue
+    if (mask[i] !== 1) continue
     if (text[i] === "{") depth++
     else if (text[i] === "}" && --depth === 0) return { open, close: i }
   }
@@ -207,7 +191,8 @@ async function planEdit(projectPath: string, projectId: string, request: EditReq
     const position = request.position ?? "after"
     let offset = position === "before" ? match.byteStart : match.byteEnd
     if (position === "inside-top" || position === "inside-bottom") {
-      const body = bodyOffsets(original, match.byteStart, match.byteEnd)
+      const parsed = await parseForSafety(match.fileId, original)
+      const body = bodyOffsets(parsed.mask, original, match.byteStart, match.byteEnd)
       offset = position === "inside-top" ? body.open + 1 : body.close
     }
     return [{ path: match.fileId, before: original, after: replaceRange(original, offset, offset, `\n${String(request.newContent ?? request.content ?? "")}\n`) }]

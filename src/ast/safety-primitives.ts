@@ -114,7 +114,8 @@ export function isCommentNodeType(type: string): boolean {
     t === "comment" ||
     t.endsWith("comment") || // line_comment, block_comment, doc_comment, container_doc_comment, documentation_comment
     t === "shebang" ||
-    t === "haddock" // Haskell doc comments
+    t === "haddock" || // Haskell doc comments
+    t === "marginalia" // SQL /* ... */ block comments (tree-sitter-sql)
   )
 }
 
@@ -125,6 +126,8 @@ export function isStringNodeType(type: string): boolean {
     t.includes("string") || // string, string_content, string_fragment, string_literal, raw_string, template_string, string_value, string_scalar, interpolated_string, here_string, triple_quoted_string, verbatim_string_literal, multiline_string_literal, string_start/end, line_string_literal, …
     t.includes("heredoc") || // heredoc, heredoc_body, heredoc_beginning, heredoc_end, heredoc_template
     t === "charlist" || // Elixir '...'
+    t === "str_lit" || // Clojure "..."
+    t === "char_lit" || // Clojure \a character literal
     t === "literal" || // SQL string/numeric literal; Haskell literal container (string/integer/char — all non-reference bytes)
     t === "double_quote_scalar" || // YAML "..."
     t === "single_quote_scalar" || // YAML '...'
