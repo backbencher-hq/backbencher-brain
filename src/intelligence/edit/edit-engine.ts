@@ -7,7 +7,7 @@ import { ASTEngine } from "../../ast/engine"
 import { BrainSurgicalPatcher } from "../../ast/brain-surgical-patcher"
 import { ImportPruner } from "../../ast/import-pruner"
 import { reindexFilesParallel } from "../../ast/parallel-indexer"
-import { parseForSafety, assertFreshFiles, type IdentifierOccurrence } from "../../ast/safety-primitives"
+import { parseForSafety, assertFreshFiles, type IdentifierOccurrence, type SafetyParse, type BodyRange } from "../../ast/safety-primitives"
 
 export type EditMode = "write" | "update" | "insert" | "delete" | "refactor"
 export type InsertPosition = "before" | "after" | "inside-top" | "inside-bottom"
@@ -76,24 +76,69 @@ function replaceRange(text: string, start: number, end: number, replacement: str
   return text.slice(0, start) + replacement + text.slice(end)
 }
 
-/**
- * Locate the `{ … }` body of an anchor within a byte range, using a
- * per-language tree-sitter mask (1 = live code) so braces inside comments or
- * string literals are never mistaken for body delimiters. The `{ }` detection
- * itself is deliberately conservative (brace bodies only); language-aware
- * body detection (indentation, do/end, layout) is M13.09 (E4).
- */
-function bodyOffsets(mask: Uint8Array, text: string, start: number, end: number): { open: number; close: number } {
-  let open = -1
-  for (let i = start; i < end; i++) if (mask[i] === 1 && text[i] === "{") { open = i; break }
-  if (open < 0) throw new Error("anchor has no AST-like body block")
-  let depth = 0
-  for (let i = open; i < end; i++) {
-    if (mask[i] !== 1) continue
-    if (text[i] === "{") depth++
-    else if (text[i] === "}" && --depth === 0) return { open, close: i }
+// ── M13.09 (E4): language-aware insert body detection ──────────────────────
+// The body region comes from tree-sitter body nodes (block / compound_statement
+// / statement_block / function_body / body_statement / do_block / …), never a
+// raw `{ }` character scan, so brace, indented (Python), and keyword-terminated
+// (Ruby/Lua) bodies all resolve. Unsupported bodies fail loud.
+
+/** Find the symbol's body block: the outermost body node fully inside [start, end). */
+function findSymbolBody(parsed: SafetyParse, start: number, end: number): BodyRange | null {
+  const candidates = parsed.bodyRanges.filter((b) => b.startIndex >= start && b.endIndex <= end)
+  if (candidates.length === 0) return null
+  candidates.sort((a, b) => a.startIndex - b.startIndex || b.endIndex - a.endIndex)
+  return candidates[0]
+}
+
+/** The whitespace indentation prefix of the line that `pos` sits on. */
+function lineIndent(text: string, pos: number): string {
+  let lineStart = pos
+  while (lineStart > 0 && text[lineStart - 1] !== "\n") lineStart--
+  return text.slice(lineStart, pos)
+}
+
+/** Prefix each line with `indent`; `includeFirst` controls the first line. */
+function indentLines(text: string, indent: string, includeFirst: boolean): string {
+  return text
+    .split("\n")
+    .map((line, i) => (i === 0 && !includeFirst) || line.length === 0 ? line : indent + line)
+    .join("\n")
+}
+
+/** The leading whitespace of the LINE that `pos` sits on (not the full prefix). */
+function lineLeadingWhitespace(text: string, pos: number): string {
+  let lineStart = pos
+  while (lineStart > 0 && text[lineStart - 1] !== "\n") lineStart--
+  let i = lineStart
+  while (i < pos && (text[i] === " " || text[i] === "\t")) i++
+  return text.slice(lineStart, i)
+}
+
+/** The file's indentation unit: tab, 4-space, or 2-space (default). */
+function indentUnit(text: string): string {
+  const lines = text.split("\n").slice(0, 200)
+  let min = ""
+  for (const line of lines) {
+    const m = /^[\t ]+/.exec(line)
+    if (!m) continue
+    if (m[0].includes("\t") && !m[0].includes(" ")) return "\t"
+    if (min === "" || m[0].length < min.length) min = m[0]
   }
-  throw new Error("anchor body block is unbalanced")
+  if (min.length >= 4) return "    "
+  return "  "
+}
+
+/** Indentation of the first statement inside a body block (for brace bodies). */
+function computeInnerIndent(text: string, body: BodyRange): string {
+  const open = body.startIndex
+  const end = body.endIndex
+  let i = open + 1
+  while (i < end && (text[i] === " " || text[i] === "\t" || text[i] === "\r" || text[i] === "\n")) i++
+  if (i >= end) return lineLeadingWhitespace(text, open) + indentUnit(text)
+  // First statement shares the `{` line (no newline between): its indent is
+  // ambiguous, so derive from the brace line's indent + one unit.
+  if (!text.slice(open, i).includes("\n")) return lineLeadingWhitespace(text, open) + indentUnit(text)
+  return lineLeadingWhitespace(text, i)
 }
 
 // ── M13.07 (E2): AST reference-identity rename ──────────────────────────────
@@ -201,13 +246,60 @@ async function planEdit(projectPath: string, projectId: string, request: EditReq
   if (request.mode === "update") return [{ path: match.fileId, before: original, after: replaceRange(original, match.byteStart, match.byteEnd, String(request.newContent ?? request.content ?? "")) }]
   if (request.mode === "insert") {
     const position = request.position ?? "after"
-    let offset = position === "before" ? match.byteStart : match.byteEnd
+    const content = String(request.newContent ?? request.content ?? "")
+    let start = position === "before" ? match.byteStart : match.byteEnd
+    let end = start
+    let replacement = `\n${content}\n`
     if (position === "inside-top" || position === "inside-bottom") {
       const parsed = await parseForSafety(match.fileId, original)
-      const body = bodyOffsets(parsed.mask, original, match.byteStart, match.byteEnd)
-      offset = position === "inside-top" ? body.open + 1 : body.close
+      const body = findSymbolBody(parsed, match.byteStart, match.byteEnd)
+      if (!body) throw new Error(`cannot insert inside ${symbolName}: no recognizable body block (unsupported language or syntax)`)
+      if (original[body.startIndex] === "{") {
+        // ── Brace body ────────────────────────────────────────────────
+        const open = body.startIndex
+        const close = body.endIndex - 1
+        const inner = original.slice(open + 1, close)
+        const isMultiLine = inner.includes("\n")
+        const braceLineIndent = lineLeadingWhitespace(original, open)
+        const innerIndent = isMultiLine ? computeInnerIndent(original, body) : braceLineIndent + indentUnit(original)
+        if (isMultiLine) {
+          if (position === "inside-top") {
+            start = end = open + 1
+            replacement = "\n" + indentLines(content, innerIndent, true)
+          } else {
+            start = end = close
+            replacement = indentLines(content, innerIndent, true) + "\n"
+          }
+        } else if (inner.trim() === "") {
+          // empty single-line body `{}` → expand
+          start = end = open + 1
+          replacement = "\n" + indentLines(content, innerIndent, true) + "\n" + braceLineIndent
+        } else {
+          // single-line body → explode to multi-line, then insert
+          const stmt = inner.trim()
+          const contentLines = indentLines(content, innerIndent, true)
+          start = open + 1
+          end = close
+          replacement = position === "inside-top"
+            ? "\n" + contentLines + "\n" + innerIndent + stmt + "\n" + braceLineIndent
+            : "\n" + innerIndent + stmt + "\n" + contentLines + "\n" + braceLineIndent
+        }
+      } else {
+        // ── Soft body (indentation or keyword-terminated) ──────────────
+        const indent = lineIndent(original, body.startIndex)
+        if (!/^[\t ]*$/.test(indent)) {
+          throw new Error(`cannot insert inside ${symbolName}: body is not line-aligned (unsupported body form such as Elixir do/end)`)
+        }
+        if (position === "inside-top") {
+          start = end = body.startIndex
+          replacement = indentLines(content, indent, false) + "\n" + indent
+        } else {
+          start = end = body.endIndex
+          replacement = "\n" + indentLines(content, indent, true)
+        }
+      }
     }
-    return [{ path: match.fileId, before: original, after: replaceRange(original, offset, offset, `\n${String(request.newContent ?? request.content ?? "")}\n`) }]
+    return [{ path: match.fileId, before: original, after: replaceRange(original, start, end, replacement) }]
   }
   if (request.mode === "delete") {
     const raw = await BrainDatabase.getRawInstance(projectId)
