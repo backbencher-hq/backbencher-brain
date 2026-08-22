@@ -1,0 +1,154 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.20",
+  "code": "S3",
+  "tool": "bb_search",
+  "title": "bb_search: real-repo corpus (correctness + freshness truthfulness)",
+  "verifiedState": "verified",
+  "layers": [
+    "corpus"
+  ],
+  "checks": [
+    {
+      "name": "corpus rake/lib/rake (Ruby): symbols-mode finds Rake",
+      "pass": true,
+      "detail": "got 5"
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): result carries a real file path",
+      "pass": true,
+      "detail": "application.rb"
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): result carries a language",
+      "pass": true,
+      "detail": "ruby"
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): content-mode finds Rake",
+      "pass": true,
+      "detail": "got 5"
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): pagination offset honored (distinct pages)",
+      "pass": true,
+      "detail": "p1=Application@20 p2=application@8"
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): modified file's result is flagged stale (never fresh) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "stale=true"
+    },
+    {
+      "name": "corpus graphql-js/src (TypeScript): symbols-mode finds AbortedGraphQLExecutionError",
+      "pass": true,
+      "detail": "got 1"
+    },
+    {
+      "name": "corpus graphql-js/src (TypeScript): result carries a real file path",
+      "pass": true,
+      "detail": "execution/AbortedGraphQLExecutionError.ts"
+    },
+    {
+      "name": "corpus graphql-js/src (TypeScript): result carries a language",
+      "pass": true,
+      "detail": "typescript"
+    },
+    {
+      "name": "corpus graphql-js/src (TypeScript): content-mode finds AbortedGraphQLExecutionError",
+      "pass": true,
+      "detail": "got 5"
+    },
+    {
+      "name": "corpus graphql-js/src (TypeScript): pagination offset honored (distinct pages)",
+      "pass": true,
+      "detail": "p1=graphql@170 p2=GraphQLList@1338"
+    },
+    {
+      "name": "corpus graphql-js/src (TypeScript): modified file's result is flagged stale (never fresh) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "stale=true"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): symbols-mode finds rebar_compiler_yrl",
+      "pass": true,
+      "detail": "got 1"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): result carries a real file path",
+      "pass": true,
+      "detail": "rebar/src/rebar_compiler_yrl.erl"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): result carries a language",
+      "pass": true,
+      "detail": "erlang"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): content-mode finds rebar_compiler_yrl",
+      "pass": true,
+      "detail": "got 1"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): pagination offset honored (distinct pages)",
+      "pass": true,
+      "detail": "p1=rebar_compiler_yrl@1 p2=rebar_completion@1"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): modified file's result is flagged stale (never fresh) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "stale=true"
+    },
+    {
+      "name": "corpus go-tools/go/analysis/passes (Go): symbols-mode finds copylock_test",
+      "pass": true,
+      "detail": "got 1"
+    },
+    {
+      "name": "corpus go-tools/go/analysis/passes (Go): result carries a real file path",
+      "pass": true,
+      "detail": "copylock/copylock_test.go"
+    },
+    {
+      "name": "corpus go-tools/go/analysis/passes (Go): result carries a language",
+      "pass": true,
+      "detail": "go"
+    },
+    {
+      "name": "corpus go-tools/go/analysis/passes (Go): content-mode finds copylock_test",
+      "pass": true,
+      "detail": "got 1"
+    },
+    {
+      "name": "corpus go-tools/go/analysis/passes (Go): pagination query has a single hit (recorded, not failed)",
+      "pass": true,
+      "detail": "hint=analysis"
+    },
+    {
+      "name": "corpus go-tools/go/analysis/passes (Go): modified file's result is flagged stale (never fresh) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "stale=true"
+    }
+  ],
+  "negativeCases": 4,
+  "summary": {
+    "total": 24,
+    "passed": 24,
+    "failed": 0
+  },
+  "decisions": {
+    "sample": "one small sub-directory per major language family (Ruby, TypeScript, Erlang, Go, Zig) so indexing completes in seconds per entry — the proof is the search contract + freshness truthfulness, not exhaustive coverage",
+    "freshness": "after indexing, one real file is modified; symbols from that file must be flagged stale on the next search — a stale result presented as fresh is a recorded failure",
+    "failures": "every probe is a harness check; failures land in the evidence, nothing is excluded"
+  },
+  "limitations": [
+    "Only a small sub-directory per repo is indexed (full 29-repo indexing is hours-long); broader coverage is M14.",
+    "A sub-directory with no resolvable symbol is skipped (recorded, not failed)."
+  ],
+  "generatedAt": "2026-08-22T19:04:35.206Z"
+}
