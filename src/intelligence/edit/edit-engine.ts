@@ -349,7 +349,13 @@ async function planEdit(projectPath: string, projectId: string, request: EditReq
 
     // 2. Caller references: rename only AST reference sites within each caller span.
     for (const span of ranges.callers) {
-      const spanEnd = Math.min(span.end, before.length)
+      // Defense-in-depth: a caller span must lie inside the current file. The
+      // hash freshness gate above already rejects any shrunk/changed caller, but
+      // a corrupt indexer offset must never be silently clamped or skipped.
+      const spanEnd = span.end === Number.MAX_SAFE_INTEGER ? before.length : span.end
+      if (span.start < 0 || span.start >= before.length || spanEnd < span.start || spanEnd > before.length) {
+        throw new Error(`refactor ${symbolName}: caller span out of bounds in ${file} (start=${span.start}, end=${span.end}, length=${before.length}); reindex before editing`)
+      }
       for (const o of parsed.occurrences) {
         if (o.text !== symbolName) continue
         if (o.startIndex < span.start || o.endIndex > spanEnd) continue
