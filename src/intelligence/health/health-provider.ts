@@ -166,7 +166,7 @@ export function formatUnifiedHealth(report: UnifiedHealthReport): string {
     `index: version=${report.indexStatus.indexingVersion ?? "unknown"} indexedFiles=${report.indexStatus.indexedFiles} errors=${report.indexStatus.errors.length}`,
     `runtime: ${report.runtime.runtime} ${report.runtime.version} / ${report.runtime.database}`,
   ]
-  if (report.refresh.requested) lines.push(`refresh: ${report.refresh.completed ? "completed" : "failed"} force=${report.refresh.force} wait=${report.refresh.wait} durationMs=${report.refresh.durationMs}`)
+  if (report.refresh.requested) lines.push(`refresh: ${report.refresh.completed ? "completed" : report.refresh.wait ? "failed" : "started (pending)"} force=${report.refresh.force} wait=${report.refresh.wait} durationMs=${report.refresh.durationMs}`)
   if (report.analysisRuns) lines.push(`analysis: ${report.analysisRuns.runs} runs / ${report.analysisRuns.findings} findings`)
   if (report.integrity) lines.push(`integrity: ${report.integrity.overallHealth}% (${report.integrity.summary.warn} warnings, ${report.integrity.summary.error} errors)`)
   // Verbose sections: per-language breakdown and stale/missing file names — the
