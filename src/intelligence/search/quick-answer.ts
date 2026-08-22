@@ -62,7 +62,37 @@ function emptyProvenance(projectId: ProjectID): EvidenceProvenance {
   })
 }
 
+async function indexHasFiles(projectId: ProjectID): Promise<boolean> {
+  try {
+    const raw = await BrainDatabase.getRawInstance(projectId)
+    const row = raw.prepare("SELECT COUNT(*) c FROM brain_file WHERE project_id = ?").get(projectId) as { c: number } | undefined
+    return (row?.c ?? 0) > 0
+  } catch {
+    return false
+  }
+}
+
 export async function quickAnswer(projectId: ProjectID, query: string): Promise<QuickAnswerResult> {
+  // Honesty guard: a missing index must never produce a confident stat answer
+  // ("There are 0 symbols") — the project may have thousands of symbols that
+  // were simply never indexed. Without an index there is no evidence, so the
+  // answer is an explicit unknown, not a fabricated count.
+  if (!(await indexHasFiles(projectId))) {
+    return {
+      answer: "I can't answer this: no index exists for this project. Index it first (bb_health refresh or full reindex), then ask again.",
+      confidence: 0.1,
+      sources: [],
+      provenance: makeProvenance({
+        evidenceClass: "unknown",
+        engine: ENGINE,
+        engineVersion: ENGINE_VERSION,
+        projectId,
+        source: "no-index",
+        limitations: ["No index means no evidence exists to answer from."],
+        unknowns: ["No index exists for this project; run indexing first."],
+      }),
+    }
+  }
   const lowerQuery = query.toLowerCase()
 
   if (lowerQuery.includes("how many") && (lowerQuery.includes("symbol") || lowerQuery.includes("total"))) {
