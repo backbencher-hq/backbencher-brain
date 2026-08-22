@@ -375,10 +375,14 @@ export async function executeEdit(projectPath: string, projectId: string, reques
   const changes = await planEdit(projectPath, projectId, request)
   if (request.dryRun === true) return { mode: request.mode, dryRun: true, changes, formatted: false, validated: false, reindexed: false }
   const snapshots = new Map(changes.map((change) => [change.path, { existed: existsSync(change.path), content: change.before }]))
+  // Track every temp file created during the write loop so the catch block can
+  // scrub orphans (a renameSync failure after writeFileSync leaves a temp).
+  const temps: string[] = []
   try {
     for (const change of changes) {
       mkdirSync(path.dirname(change.path), { recursive: true })
       const temporary = `${change.path}.bb-edit-${randomUUID()}`
+      temps.push(temporary)
       writeFileSync(temporary, change.after, "utf8")
       renameSync(temporary, change.path)
     }
@@ -387,10 +391,13 @@ export async function executeEdit(projectPath: string, projectId: string, reques
     await reindexFilesParallel(projectId as any, realpathSync(projectPath), changes.map((change) => ({ path: change.path, type: snapshots.get(change.path)!.existed ? "modified" as const : "added" as const })))
     return { mode: request.mode, dryRun: false, changes: changes.map((change) => ({ ...change, after: readFileSync(change.path, "utf8") })), formatted: request.format !== false, validated: true, reindexed: true }
   } catch (error) {
+    // Roll back every file to its pre-edit snapshot, then scrub any orphaned
+    // .bb-edit-* temp files so a mid-loop failure never leaks temp artifacts.
     for (const [file, snapshot] of snapshots) {
       if (snapshot.existed) writeFileSync(file, snapshot.content, "utf8")
       else rmSync(file, { force: true })
     }
+    for (const t of temps) { try { rmSync(t, { force: true }) } catch {} }
     throw error
   }
 }
