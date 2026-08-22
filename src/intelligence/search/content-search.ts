@@ -1,4 +1,5 @@
 import { BrainDatabase } from "../../brain/database"
+import { checkResultsFreshness } from "../../brain/freshness"
 import { AnalysisExclusions } from "../../ast/analysis-exclusions"
 import type { ProjectID } from "../../project/schema"
 import type { SearchOptions, SearchResults } from "../contracts"
@@ -101,6 +102,18 @@ export async function searchContent(projectId: ProjectID, query: string, options
       _relevance: 1,
     })
   }
+  try {
+    const freshness = checkResultsFreshness(raw, results.map((result) => ({ fileId: result.fileId })))
+    let staleCount = 0
+    for (const result of results) {
+      if (["stale", "missing"].includes(freshness.get(result.fileId) ?? "")) {
+        result.stale = true
+        staleCount++
+      }
+    }
+    results.staleCount = staleCount
+    results.freshCount = results.length - staleCount
+  } catch {}
   return results
 }
 
