@@ -23,6 +23,7 @@ const REPO = process.argv.includes("--repo") ? process.argv[process.argv.indexOf
 const SAMPLE_PER_LANG = process.argv.includes("--sample") ? parseInt(process.argv[process.argv.indexOf("--sample") + 1]) : 60
 
 const LANGS: Record<string, { wasm: string; analyzerFile: string; className: string; ext: string }> = {
+  typescript: { wasm: "tree-sitter-typescript.wasm", analyzerFile: "real-typescript-analyzer", className: "RealTypeScriptAnalyzer", ext: "ts" },
   kotlin: { wasm: "tree-sitter-kotlin.wasm", analyzerFile: "real-kotlin-analyzer", className: "RealKotlinAnalyzer", ext: "kt" },
   scala: { wasm: "tree-sitter-scala.wasm", analyzerFile: "real-scala-analyzer", className: "RealScalaAnalyzer", ext: "scala" },
   java: { wasm: "tree-sitter-java.wasm", analyzerFile: "real-java-analyzer", className: "RealJavaAnalyzer", ext: "java" },
@@ -57,7 +58,9 @@ function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
   const walk = (n: any) => {
     const t = n.type
     if (/^(class|interface|record|trait|object)_declaration$|^enum_declaration$|^class_definition$|^trait_definition$|^object_definition$/.test(t)) {
-      const nameNode = n.childForFieldName?.("name") ?? n.namedChildren.find((c: any) => c.type === "identifier")
+      const nameNode =
+        n.childForFieldName?.("name") ??
+        n.namedChildren.find((c: any) => c.type === "identifier" || c.type === "type_identifier")
       const clsName = nameNode?.text ?? "?"
       // extends side: superclass (classes) or extends_interfaces+type_list (interfaces)
       const sup = n.childForFieldName?.("superclass") ?? n.namedChildren.find((c: any) => c.type === "superclass" || c.type === "extends_interfaces")
@@ -67,6 +70,16 @@ function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
       // implements side
       const impls = n.childForFieldName?.("interfaces") ?? n.namedChildren.find((c: any) => c.type === "super_interfaces")
       if (impls) collect(impls, "implements", clsName)
+      // typescript: class_heritage > extends_clause / implements_clause
+      if (t === "class_declaration" || t === "interface_declaration") {
+        const heritage = n.namedChildren.find((c: any) => c.type === "class_heritage")
+        if (heritage) {
+          const ext2 = heritage.namedChildren.find((c: any) => c.type === "extends_clause")
+          if (ext2) collect(ext2, "extends", clsName)
+          const imp2 = heritage.namedChildren.find((c: any) => c.type === "implements_clause")
+          if (imp2) collect(imp2, "implements", clsName)
+        }
+      }
       // scala extends_clause: first supertype extends, rest implements;
       // on trait_definition all are extends
       if (t === "class_definition" || t === "trait_definition" || t === "object_definition") {
@@ -122,6 +135,20 @@ function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
     if (t === "object_creation_expression") {
       const typeNode = n.namedChildren.find((c: any) => /type_identifier|scoped_type_identifier|generic_type$/.test(c.type))
       if (typeNode) edges.push({ label: "instantiates", from: "(expr)", target: typeNode.text })
+    }
+    // typescript/javascript: `new X()` parses as new_expression
+    if (t === "new_expression") {
+      const tn = n.namedChild(0)
+      if (tn) {
+        let name = tn.text
+        const lt = name.indexOf("<") !== -1 ? name.indexOf("<") : name.indexOf("(")
+        if (lt !== -1) name = name.slice(0, lt)
+        // `new` keyword alone is the construction signal - casing is
+        // irrelevant (lowercase classes are legal TypeScript)
+        if (/^[A-Za-z_$]/.test(name) || name.includes(".")) {
+          edges.push({ label: "instantiates", from: "(expr)", target: name })
+        }
+      }
     }
     // scala: every `new X` / `new X(...)` / `new X[T](...)` parses as
     // instance_expression
@@ -211,6 +238,9 @@ async function main() {
       durations.push(performance.now() - tf0)
 
       const truth = deriveTreeEdges(root, lang)
+      if (lang === "typescript" && process.argv.includes("--debug-truth")) {
+        console.log(`[debug] ${relPath}: truth=${truth.length} declRoot=${root.type}`)
+      }
       const rels = (result.relationships ?? []).map((r: any) => ({
         label: String(r.type ?? r.relationshipType ?? ""),
         target: String(r.target ?? r.to ?? r.toSymbol ?? ""),
