@@ -1,76 +1,76 @@
 {
   "checks": [
     {
-      "description": "vue-core@f8975657d7: tree-truth vs analyzer diff",
-      "detail": "60 files, coverage 100%, unexplained 0.9%",
+      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
+      "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-typescript",
       "status": "pass"
     },
     {
-      "description": "vue-core@f8975657d7: tree-truth vs analyzer diff",
+      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-kotlin",
       "status": "pass"
     },
     {
-      "description": "vue-core@f8975657d7: tree-truth vs analyzer diff",
+      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-scala",
       "status": "pass"
     },
     {
-      "description": "vue-core@f8975657d7: tree-truth vs analyzer diff",
-      "detail": "0 files, coverage null%, unexplained null%",
+      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
+      "detail": "60 files, coverage 100%, unexplained 0%",
       "id": "differential-java",
       "status": "pass"
     },
     {
-      "description": "vue-core@f8975657d7: tree-truth vs analyzer diff",
-      "detail": "0 files, coverage null%, unexplained null%",
+      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
+      "detail": "60 files, coverage 100%, unexplained 0%",
       "id": "differential-groovy",
       "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "8232dac9b4a23572ed5e76362cec08b289975ab6",
-  "committedAt": "2026-08-23T11:48:40-05:00",
+  "commit": "96c113bf7f7a90c6f9c17176380f3e468bd6763a",
+  "committedAt": "2026-08-23T12:20:42-05:00",
   "data": {
     "corpusPins": {
-      "vue-core": "f8975657d7451d8e4291406427e6a8ae5e50c8d5"
+      "grails-core": "a83f87480e0c0138caa5a7191a053b1e59a64066"
     },
     "report": {
       "groovy": {
-        "analyzerEdges": 0,
-        "coveragePct": null,
-        "coveredByAnalyzer": 0,
-        "explainableByTree": 0,
-        "fabricationPct": null,
-        "filesSampled": 0,
+        "analyzerEdges": 223,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 151,
+        "explainableByTree": 223,
+        "fabricationPct": 0,
+        "filesSampled": 60,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": null,
-          "maxMsPerFile": null,
-          "samplesTimed": 0
+          "avgMsPerFile": 7.5,
+          "maxMsPerFile": 60.3,
+          "samplesTimed": 60
         },
         "samples": [],
-        "treeTruthEdges": 0,
+        "treeTruthEdges": 151,
         "unexplainedInAnalyzer": 0
       },
       "java": {
-        "analyzerEdges": 0,
-        "coveragePct": null,
-        "coveredByAnalyzer": 0,
-        "explainableByTree": 0,
-        "fabricationPct": null,
-        "filesSampled": 0,
+        "analyzerEdges": 167,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 132,
+        "explainableByTree": 167,
+        "fabricationPct": 0,
+        "filesSampled": 60,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": null,
-          "maxMsPerFile": null,
-          "samplesTimed": 0
+          "avgMsPerFile": 8.4,
+          "maxMsPerFile": 65.6,
+          "samplesTimed": 60
         },
         "samples": [],
-        "treeTruthEdges": 0,
+        "treeTruthEdges": 132,
         "unexplainedInAnalyzer": 0
       },
       "kotlin": {
@@ -108,29 +108,21 @@
         "unexplainedInAnalyzer": 0
       },
       "typescript": {
-        "analyzerEdges": 116,
-        "coveragePct": 100,
-        "coveredByAnalyzer": 45,
-        "explainableByTree": 115,
-        "fabricationPct": 0.9,
-        "filesSampled": 60,
+        "analyzerEdges": 0,
+        "coveragePct": null,
+        "coveredByAnalyzer": 0,
+        "explainableByTree": 0,
+        "fabricationPct": null,
+        "filesSampled": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 54.9,
-          "maxMsPerFile": 590.1,
-          "samplesTimed": 60
+          "avgMsPerFile": null,
+          "maxMsPerFile": null,
+          "samplesTimed": 0
         },
-        "samples": [
-          {
-            "dir": "UNEXPLAINED",
-            "file": "packages/runtime-dom/__tests__/patchProps.spec.ts",
-            "label": "extends",
-            "line": 0,
-            "target": "HTMLElement"
-          }
-        ],
-        "treeTruthEdges": 45,
-        "unexplainedInAnalyzer": 1
+        "samples": [],
+        "treeTruthEdges": 0,
+        "unexplainedInAnalyzer": 0
       }
     },
     "samplingRule": "seeded 60 files/language"

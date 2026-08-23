@@ -69,6 +69,32 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: [...(r.relationships ?? []), ...(r.symbols ?? []).filter(s => s.kind === "class").map(s => ({ type: "implements", source: s.name, target: "java", confidence: 1, metadata: {} }))] }),
   },
   {
+    id: "typescript/drop-qualified-calls",
+    language: "typescript",
+    defectClass: "symbol-payload-loss",
+    description: "strips qualified_calls from every symbol (the isKotlinBuiltin bug class)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => ({ ...s, qualified_calls: [] })) }),
+  },
+  {
+    id: "typescript/hide-jsdoc",
+    language: "typescript",
+    defectClass: "docstring-loss",
+    description: "clears comments arrays (kotlin KDoc bug class)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => ({ ...s, comments: [] })) }),
+  },
+  {
+    id: "typescript/swap-heritage-labels",
+    language: "typescript",
+    defectClass: "relationship-mislabel",
+    description: "swaps extends <-> implements labels on heritage edges",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map(x => {
+      const t = x.type ?? x.relationshipType;
+      if (t === "extends") return { ...x, type: "implements" };
+      if (t === "implements") return { ...x, type: "extends" };
+      return x;
+    }) }),
+  },
+  {
     id: "groovy/drop-class-symbols",
     language: "groovy",
     defectClass: "symbol-loss",
