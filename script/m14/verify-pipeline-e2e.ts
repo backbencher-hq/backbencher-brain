@@ -58,7 +58,9 @@ async function main() {
 
   // index via the REAL compiled CLI pipeline — not engine internals
   execSync("npm run build", { cwd: ROOT, stdio: "pipe" })
+  const t0 = Date.now()
   execSync(`node bin/bb index ${TMP} --force`, { cwd: ROOT, stdio: "pipe" })
+  const durationMs = Date.now() - t0
 
   const sha = createHash("sha1").update(TMP).digest("hex")
   const dbPath = path.join(process.env.HOME ?? "", ".bb", "projects", sha, "brain.db")
@@ -102,6 +104,25 @@ async function main() {
   const groovyExtendsJava = xlang.find(r => r.t === "extends" && r.p1?.endsWith(".groovy") && r.p2?.endsWith(".java"))
   expect(!!groovyExtendsJava, "cross-language groovy->java extends edge flagged is_cross_language=1")
 
+  // --- idempotency: re-index must not grow rows (deterministic storage) ---
+  const before = {
+    symbols: count(`SELECT COUNT(*) c FROM brain_symbol`),
+    rels: count(`SELECT COUNT(*) c FROM brain_relationship`),
+    imports: count(`SELECT COUNT(*) c FROM brain_import`),
+  }
+  execSync(`node bin/bb index ${TMP}`, { cwd: ROOT, stdio: "pipe" })
+  const after = {
+    symbols: count(`SELECT COUNT(*) c FROM brain_symbol`),
+    rels: count(`SELECT COUNT(*) c FROM brain_relationship`),
+    imports: count(`SELECT COUNT(*) c FROM brain_import`),
+  }
+  expect(after.symbols === before.symbols, `re-index idempotent symbols (${before.symbols} -> ${after.symbols})`)
+  expect(after.rels === before.rels, `re-index idempotent relationships (${before.rels} -> ${after.rels})`)
+  expect(after.imports === before.imports, `re-index idempotent imports (${before.imports} -> ${after.imports})`)
+
+  // --- perf trend recording (F9 will add the ceiling gate) ---
+  expect(durationMs < 120000, `index duration sane (${durationMs}ms)`)
+
   db.close()
   fs.rmSync(TMP, { recursive: true, force: true })
 
@@ -114,11 +135,13 @@ async function main() {
     layers: ["pipeline-e2e"],
     checks: [
       { id: "e2e-polyglot", description: "real CLI index -> brain.db row-level assertions (symbols/relationships/imports/xlang flags)", status: failures.length ? "fail" : "pass" },
+      { id: "idempotency", description: "re-index does not grow rows", status: failures.some(f => f.includes("idempotent")) ? "fail" : "pass" },
     ],
     limitations: [
       { description: "assertions cover the seam classes discovered so far; every future seam bug must be added here as a permanent check" },
+      { description: "duration recorded for F9 trend; hard ceiling intentionally coarse to stay machine-tolerant" },
     ],
-    data: { failures },
+    data: { failures, durationMs, perfBaselineRef: "docs/M14-COMPLETENESS-LEDGER.md#perf-baselines" },
   })
 
   if (failures.length) {
