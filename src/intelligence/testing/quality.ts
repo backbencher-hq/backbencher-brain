@@ -126,6 +126,19 @@ export async function testQuality(projectId: ProjectID, options: QualityOptions 
       const c = content
       const count = (re: RegExp) => (c.match(re) || []).length
 
+      // justification (M15.N2 census): test-quality scoring is a content heuristic,
+      // not an AST analysis. The counters below probe for assertion,
+      // error-handling, and parameterization patterns across ANY framework
+      // (assert/expect/should/toBe/toThrow/it.each/describe), where assertion
+      // shape is intentionally framework-agnostic and statement-level.
+      // Outcomes feed only evidenceStrength/penaltyPotential models with
+      // confidence 0.75-0.85; no claim is made that these are resolved symbols.
+      // AST replacement is deliberately not attempted: the dimension is "does
+      // the test exercise assertions/errors/params", and the regex sets are
+      // enumerate-able, reviewed here, and stable. Census-mandated: the exact
+      // classifier set is mechanically verified by script/m15/verify-analyze-deep.ts
+      // (N: expected equal to quality.ts .count( regex literals).
+
       // Assertions — real API evidence, framework-agnostic superset.
       const asserts =
         count(/\bassert(That|Equal|DeepEqual|Strict)?\s*\(/g) +
