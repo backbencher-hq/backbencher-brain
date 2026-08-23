@@ -42,7 +42,11 @@ function seededPick<T>(items: T[], n: number, seedStr: string): T[] {
   return idx.slice(0, n).map(i => items[i])
 }
 function lastSegment(name: string): string { return name.split(".").pop() ?? name }
-function normTarget(t: string): string { return lastSegment(t.replace(/<.*$/, "").trim()) }
+function normTarget(t: string): string {
+  // scala type args use square brackets; multi-line constructs can leave a
+  // trailing unbalanced "[" in raw-text targets (List[ -> List)
+  return lastSegment(t.replace(/<.*$/, "").replace(/\[.*$/, "").trim())
+}
 
 interface TreeEdge { label: string; from: string; target: string }
 
@@ -162,18 +166,33 @@ function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
       }
     }
     // kotlin/scala: constructions appear as call_expressions whose callee
-    // leaf follows the PascalCase type convention (language naming rule).
-    // Scala additionally has explicit `new X` (object_creation_expression).
+    // leaf follows the PascalCase type convention - RECEIVER-LESS only
+    // (MEASURED twice: kotlin Exposed wave and scala3 300-file sample found
+    // qualified obj.Method() calls are enum-case/module member accesses;
+    // treating them as constructions fabricated hundreds of edges).
+    // Scala additionally has explicit `new X` (object_creation_expression)
+    // and instance_expression, both handled above regardless of casing.
     if ((lang === "kotlin" || lang === "scala") && t === "call_expression") {
       const callee = n.namedChild(0)
+      // Curried application wrapper: `List.fill(2)("a")` parses as an outer
+      // call whose function is the inner call. Analyzers emit the inner
+      // call only (documented curried-application rule) - deriving an edge
+      // from the wrapper would count a phantom instantiates. SKIP DERIVATION
+      // ONLY - recursion into children must continue (nested
+      // instance_expressions inside e.g. let(new Foo) still count).
+      const curried = callee?.type === "call_expression"
+      if (!curried) {
       let leaf = ""
+      let qualified = false
       if (callee?.type === "navigation_expression") {
+        qualified = true
         const sel = callee.namedChild(callee.namedChildCount - 1)
         leaf = sel?.text ?? ""
       } else if (callee?.type === "field_expression") {
         // scala3 qualified call `Util.escapeChar(...)`: only the FINAL
         // selector is the called name - the receiver path must not leak
         // into the target (Util.escapeChar was being emitted whole).
+        qualified = true
         const kids = callee.namedChildren
         const last = kids[kids.length - 1]
         leaf = last && /identifier|_type$/.test(last.type) ? last.text : ""
@@ -181,7 +200,14 @@ function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
         leaf = callee.text.split("<")[0]
       }
       leaf = leaf.replace(/\(.*$/, "").replace(/^['`]/, "").trim()
-      if (leaf && /^[A-Z]/.test(leaf)) edges.push({ label: "instantiates", from: "(expr)", target: leaf })
+      // scala type args use SQUARE brackets (List[(A, B)](...)): strip them
+      // so oracle targets are clean base names, matching analyzer output.
+      // Iterative strip: nested type args List[(A[B], C)] need repeated passes.
+      let prevLeaf
+      do { prevLeaf = leaf; leaf = leaf.replace(/\[[^\[\]]*\]/g, "") } while (leaf !== prevLeaf)
+      leaf = leaf.trim()
+      if (leaf && /^[A-Z]/.test(leaf) && !qualified) edges.push({ label: "instantiates", from: "(expr)", target: leaf })
+      }
     }
     for (let i = 0; i < n.namedChildCount; i++) walk(n.namedChild(i))
   }

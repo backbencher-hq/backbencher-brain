@@ -255,6 +255,41 @@ Verification gaps stated honestly: the pinned differential corpus
 is 0 — fixtures + grammar audit are the only automated layers for this
 language until a scala corpus is pinned.
 
+## Scala final review (2026-08-23) — differential gap CLOSED, oracle aligned with measured reality
+
+The recorded verification gap (scala differential = 0 files) is closed:
+`bun run script/m14/differential.ts --repo scala3` now runs 60 real
+dotty/scala3 files → **173/173 tree-truth edges covered (100%),
+unexplained 0%, fabricated 0%.**
+
+Getting there surfaced three layers, each instructive:
+
+  - **The initial regression was the ORACLE, not the analyzer**: after
+    the qualified-PascalCase restriction, "missing" rose 4→10 because
+    deriveTreeEdges derived instantiates truth from ANY PascalCase-leaf
+    call — baking in exactly the companion-apply assumption the corpus
+    measurement refuted. The oracle's own comments show it has been
+    refined before; it now derives construction candidates from
+    receiver-less leaves only, and skips curried wrappers (mirroring the
+    analyzers' documented curried-application rule). LESSON: when a
+    measured heuristic change makes the differential worse, A/B the
+    oracle against the pre-change analyzer before assuming your fix
+    broke something.
+  - **Bracket-arg hygiene on both sides**: scala type args use SQUARE
+    brackets and multi-line constructs leave unbalanced tails
+    (`List[` as an oracle target). Analyzer instantiation targets now
+    strip []/<...> iteratively; oracle leaf extraction does the same;
+    normTarget tolerates bracket tails like it already tolerated <>.
+  - `let(new Foo) { ... }`: instance_expression nests inside arguments of
+    a curried wrapper — an early-return guard in oracle traversal killed
+    recursion and silently skipped such subtrees. Skip derivation only,
+    never descent.
+
+Fixture-authoring gotchas added this wave: `dest.Jump.check()` is a
+field chain (only the last segment is called) — qualified-CALL fixtures
+need real arguments (`h.Jump(1)`); scala annotations are direct children
+OR in modifiers depending on construct.
+
 Fixture-authoring gotchas: `dest.Jump.check()` is a field chain (only the
 LAST segment is called) — a qualified-CALL fixture needs real arguments
 (`h.Jump(1)`); scala annotations are direct children OR in modifiers.
