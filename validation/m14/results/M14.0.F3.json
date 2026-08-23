@@ -11,11 +11,23 @@
       "detail": "6/10 fixtures pass",
       "id": "fixtures-groovy",
       "status": "fail"
+    },
+    {
+      "description": "kotlin adversarial fixtures",
+      "detail": "0/0 fixtures pass",
+      "id": "fixtures-kotlin",
+      "status": "pass"
+    },
+    {
+      "description": "scala adversarial fixtures",
+      "detail": "0/0 fixtures pass",
+      "id": "fixtures-scala",
+      "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "0de4dfd7f8cf624654a1b165d90d486aab3b1e64",
-  "committedAt": "2026-08-22T19:43:14-05:00",
+  "commit": "9b25a287e96a5e9584b9732ca62d426de3e484a6",
+  "committedAt": "2026-08-23T02:58:58+02:00",
   "data": {
     "details": [
       {
@@ -98,7 +110,11 @@
           "forbidden relationship present: {\"type\":\"implements\",\"target\":\"java\"} (found implements[AuditListener->java]@1)",
           "forbidden relationship present: {\"type\":\"implements\",\"target\":\"io\"} (found implements[AuditListener->io]@1)",
           "forbidden relationship present: {\"type\":\"implements\",\"target\":\"groovy\"} (found implements[AuditListener->groovy]@1)",
-          "forbidden relationship present: {\"type\":\"implements\",\"target\":\"lang\"} (found implements[AuditListener->lang]@1)"
+          "forbidden relationship present: {\"type\":\"implements\",\"target\":\"lang\"} (found implements[AuditListener->lang]@1)",
+          "forbidden relationship present: {\"type\":\"implements\",\"target\":\"java\"} (found implements[AuditListener->java]@1)",
+          "forbidden relationship present: {\"type\":\"implements\",\"target\":\"io\"} (found implements[AuditListener->io]@1)",
+          "forbidden relationship present: {\"type\":\"implements\",\"target\":\"lang\"} (found implements[AuditListener->lang]@1)",
+          "forbidden relationship present: {\"type\":\"implements\",\"target\":\"groovy\"} (found implements[AuditListener->groovy]@1)"
         ]
       },
       {
@@ -136,6 +152,14 @@
         "fixture": "groovy/trait-implements",
         "ok": true,
         "problems": []
+      },
+      {
+        "fixture": "(none)",
+        "ok": true
+      },
+      {
+        "fixture": "(none)",
+        "ok": true
       }
     ],
     "summary": {
@@ -146,6 +170,14 @@
       "java": {
         "fail": 2,
         "pass": 8
+      },
+      "kotlin": {
+        "fail": 0,
+        "pass": 0
+      },
+      "scala": {
+        "fail": 0,
+        "pass": 0
       }
     }
   },
