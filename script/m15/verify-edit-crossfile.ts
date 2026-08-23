@@ -102,9 +102,11 @@ async function emitFile(code: string, issue: string, tool: string, title: string
     }
   }
 
-  // E8: gate wired
+  // E8: gate wired (real: the quality gate must actually invoke this verifier)
   const gateSrc = readFileSync(path.resolve("script/verify-quality-gate.ts"), "utf8")
-  ck("E8: E1 wired into quality gate", gateSrc.includes("verify-edit-classification") || true, "M15 gate wires incrementally")
+  const wired = gateSrc.includes("verify-edit-classification") && gateSrc.includes("verify-edit-crossfile")
+  ck("E8: E1 wired into quality gate", gateSrc.includes("verify-edit-classification"), "gate mentions verify-edit-classification")
+  ck("E8: E8 wired into quality gate", gateSrc.includes("verify-edit-crossfile"), "gate mentions verify-edit-crossfile")
 
   // E8: all E issues closed on GitHub
   nk("E8: bb_edit family is evidence-complete", expectedEvidence.length === 5)

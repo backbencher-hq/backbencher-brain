@@ -81,9 +81,7 @@ const regOnly = [...registrySet].filter(n => !handlerSet.has(n))
 const hndOnly = [...handlerSet].filter(n => !registrySet.has(n))
 nk("no registry-only tools without handlers", regOnly.length === 0, "registry-only: " + (regOnly.length ? regOnly.join(", ") : "none"))
 nk("no handler-only tools without registry", hndOnly.length === 0, "handler-only: " + (hndOnly.length ? hndOnly.join(", ") : "none"))
-if (regOnly.length === 0 && hndOnly.length === 0) {
-  ck("registry ↔ handler 1:1 correspondence", true, "all 10 match")
-}
+ck("registry ↔ handler 1:1 correspondence", regOnly.length === 0 && hndOnly.length === 0, regOnly.length + " registry-only, " + hndOnly.length + " handler-only")
 
 // === 3. Mode consistency: handler mode checks vs registry modes ===
 // Parse modes from registry

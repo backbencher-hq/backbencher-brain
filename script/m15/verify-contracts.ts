@@ -134,7 +134,7 @@ for (const u of unused) {
   ck("contract '" + u + "' used in codebase", false, "not imported or type-annotated")
 }
 nk("4 contracts are known future (TraceOptions, TraceResult, AnalyzeMode, AnalysisFindingOccurrence)", unused.length === 0, "future-unimplemented: " + [...KNOWN_FUTURE].join(", "))
-if (unused.length === 0) ck("all 63 implemented contracts are used", true, "4 future: " + [...KNOWN_FUTURE].join(", "))
+ck("all 63 implemented contracts are used (0 unused beyond the 4 known-future)", unused.length === 0, unused.length ? "unused: " + unused.join(", ") : "4 future: " + [...KNOWN_FUTURE].join(", "))
 
 // === 5. Tool handler coverage: property-key pattern in handlers ===
 const handlerContent = readFileSync(path.join(ROOT, "src/mcp/tool-handlers.ts"), "utf-8")

@@ -88,7 +88,7 @@ async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }
 
       // Empty-ish answer for gibberish query on a tiny project (semantic may or may not match; just never crash and shape is right)
       const empty = await quickAnswer(projectId, "zzzz_qzxv_qqq")
-      ck("A1: nonsense query returns shaped result, no throw", typeof empty.answer === "string" && empty.confidence >= 0, "conf=" + empty.confidence)
+      ck("A1: nonsense query returns shaped result, no throw", typeof empty.answer === "string" && typeof empty.confidence === "number" && Number.isFinite(empty.confidence), "conf=" + empty.confidence)
     } catch (e: any) {
       ck("A1: setup", false, (e && e.message || String(e)).slice(0, 120))
     } finally {

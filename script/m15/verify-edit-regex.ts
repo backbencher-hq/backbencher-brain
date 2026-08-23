@@ -40,7 +40,7 @@ ck("runtime regexes: exactly 4 in edit-engine.ts", runtimeRegexes.length === 4)
 
 for (const r of runtimeRegexes) {
   ck("regex '" + r.name + "' category: " + r.category, r.category !== "code-classification")
-  ck("regex '" + r.name + "' justification: " + r.justification, true)
+  ck("regex '" + r.name + "' has a concrete justification (>= 20 chars)", r.justification.length >= 20, "len=" + r.justification.length)
 }
 
 // ── 3. None of the regexes classify code constructs ──
