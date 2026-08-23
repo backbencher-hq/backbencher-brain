@@ -26,8 +26,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "e19ff0eba810d70b61dbdd066c5cdf13fb990db3",
-  "committedAt": "2026-08-23T11:15:53-05:00",
+  "commit": "3531283894971ee345897dbeed011fb2a88607ef",
+  "committedAt": "2026-08-23T18:19:41+02:00",
   "data": {
     "corpusPins": {
       "scala3": "18df09c05fa48fbb5bf5cd4b3728e9b7a0b3f6db"
@@ -41,6 +41,11 @@
         "fabricationPct": null,
         "filesSampled": 0,
         "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": null,
+          "maxMsPerFile": null,
+          "samplesTimed": 0
+        },
         "samples": [],
         "treeTruthEdges": 0,
         "unexplainedInAnalyzer": 0
@@ -53,6 +58,11 @@
         "fabricationPct": 0,
         "filesSampled": 60,
         "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": 5.2,
+          "maxMsPerFile": 138.6,
+          "samplesTimed": 60
+        },
         "samples": [],
         "treeTruthEdges": 40,
         "unexplainedInAnalyzer": 0
@@ -65,6 +75,11 @@
         "fabricationPct": null,
         "filesSampled": 0,
         "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": null,
+          "maxMsPerFile": null,
+          "samplesTimed": 0
+        },
         "samples": [],
         "treeTruthEdges": 0,
         "unexplainedInAnalyzer": 0
@@ -77,6 +92,11 @@
         "fabricationPct": 0.2,
         "filesSampled": 60,
         "missingInAnalyzer": 4,
+        "perf": {
+          "avgMsPerFile": 10,
+          "maxMsPerFile": 113,
+          "samplesTimed": 60
+        },
         "samples": [
           {
             "dir": "MISSING",
