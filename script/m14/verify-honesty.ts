@@ -16,7 +16,7 @@ import * as fs from "fs"
 import * as path from "path"
 import { execSync } from "child_process"
 
-const ROOT = path.resolve(__dirname, "..", "..")
+const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 const M14 = path.join(ROOT, "validation", "m14")
 
 const REQUIRED_EVIDENCE = ["M14.0.F1", "M14.0.F2", "M14.0.F3", "M14.0.F4", "M14.0.F5"]

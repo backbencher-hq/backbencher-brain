@@ -21,7 +21,7 @@ import * as fs from "fs"
 import * as path from "path"
 import { execSync } from "child_process"
 
-const ROOT = path.resolve(__dirname, "..", "..")
+const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 const RESULTS_DIR = path.join(ROOT, "validation", "m14", "results")
 
 export const CLAIM_LEVELS = ["L0", "L1", "L2", "L3", "L4", "L5"] as const
