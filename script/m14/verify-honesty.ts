@@ -102,6 +102,20 @@ for (const id of REQUIRED_EVIDENCE) {
 }
 pass("evidence freshness within last 5 commits")
 
+// 7. completeness ledger present and alive
+const LEDGER = path.join(ROOT, "docs", "M14-COMPLETENESS-LEDGER.md")
+if (!fs.existsSync(LEDGER)) {
+  fail("completeness ledger missing: docs/M14-COMPLETENESS-LEDGER.md")
+} else {
+  const ledger = fs.readFileSync(LEDGER, "utf8")
+  for (const section of ["Matrix 1", "Matrix 2", "Matrix 3", "Standing rules"]) {
+    if (!ledger.includes(section)) fail(`ledger missing section: ${section}`)
+  }
+  const pendingCount = (ledger.match(/PENDING/g) ?? []).length
+  if (pendingCount === 0) fail("ledger shows zero PENDING cells — either complete (implausible) or dishonestly edited")
+  pass(`completeness ledger present (${pendingCount} PENDING cells tracked)`)
+}
+
 if (failures > 0) {
   console.error(`\nhonesty gate: ${failures} failure(s) — release blocked`)
   process.exit(6)

@@ -4,13 +4,20 @@
       "description": "real CLI index -> brain.db row-level assertions (symbols/relationships/imports/xlang flags)",
       "id": "e2e-polyglot",
       "status": "pass"
+    },
+    {
+      "description": "re-index does not grow rows",
+      "id": "idempotency",
+      "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "507e9c8e8a1a04c8c139d5ee07be30e909d3a2f2",
-  "committedAt": "2026-08-22T21:36:54-05:00",
+  "commit": "d834fef89b0cb2e6eea93b57b22df047e8e2ab46",
+  "committedAt": "2026-08-22T22:04:09-05:00",
   "data": {
-    "failures": []
+    "durationMs": 1815,
+    "failures": [],
+    "perfBaselineRef": "docs/M14-COMPLETENESS-LEDGER.md#perf-baselines"
   },
   "governance": "docs/M14-HONESTY-CONTRACT.md",
   "issueId": "M14.0.F7",
@@ -20,6 +27,9 @@
   "limitations": [
     {
       "description": "assertions cover the seam classes discovered so far; every future seam bug must be added here as a permanent check"
+    },
+    {
+      "description": "duration recorded for F9 trend; hard ceiling intentionally coarse to stay machine-tolerant"
     }
   ],
   "runtime": "node v22.22.1",
