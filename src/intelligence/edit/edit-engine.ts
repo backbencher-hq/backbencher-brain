@@ -153,8 +153,30 @@ function computeInnerIndent(text: string, body: BodyRange): string {
  *  Cross-language: every shipped grammar names its declaration containers
  *  differently, so this is a deliberate union of those conventions (verified
  *  by script/m13/verify-edit-xlang.ts across all languages). */
+
+/** Tree-sitter node types that are member-access expressions (obj.x), NOT
+ *  declaration bindings. Several grammars name these with "field" or "property"
+ *  substrings (field_expression, field_access), which would otherwise falsely
+ *  match the substring rules below and classify the RECEIVER as a binding,
+ *  causing silent under-rename in refactor. Checked FIRST and unconditionally. */
+const ACCESS_EXPRESSION_TYPES = new Set([
+  "field_expression",       // Rust, C/C++, Scala, Groovy, C#, Zig
+  "field_access",            // Java, Dart
+  "member_expression",       // JS/TS, Ruby (call)
+  "attribute",               // Python
+  "selector_expression",     // Go
+  "member_access_expression", // C#
+  "navigation_expression",   // Swift, Kotlin
+  "dot_qualified_expression", // Kotlin
+  "qualified_expression",    // C#
+  "scoped_type_identifier",  // Groovy (qualified type reference, not a binding)
+])
+
 export function isBindingParentType(type: string): boolean {
   const t = type.toLowerCase()
+  // Access expressions are uses, never declaration bindings — checked
+  // before substring rules so "field_expression" doesn't match includes("field").
+  if (ACCESS_EXPRESSION_TYPES.has(t)) return false
   return (
     t.includes("declarator") || // variable_declarator, function_declarator (C/C++)
     t.includes("declaration") || // function/class/method/variable/field_declaration
