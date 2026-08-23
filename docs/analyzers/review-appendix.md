@@ -82,8 +82,34 @@ and `expectErrors` matchers.
   - Still open (needs decisions/corpora, NOT in this wave): apiContractPath
     format unification ("GET /path" vs Java's "/path") — cross-language
     contract decision required; annotation-based framework DETECTION
-    (current detector is import-only); no pinned Kotlin corpus besides
-    Exposed for future measurements.
+    (current detector is import-only); no second pinned Kotlin corpus for
+    future measurements.
+
+## Kotlin follow-up wave (2026-08-23) — contract decision + detection gap closed
+
+  - **apiContractPath CONTRACT DECIDED: bare path only.** Evidence:
+    doc-engine.ts:171 queries `s.api_contract_path = ?` (exact match) and
+    the column is documented "Exact Route URL" — a method-prefixed string
+    broke every cross-language route join. HTTP method moved to
+    symbol.metadata.apiMethod. Java/Groovy already stored bare paths;
+    this change brings Kotlin into the single format.
+  - **Annotation-driven framework detection added**: files using FQ
+    annotations WITHOUT imports were invisible to import-only detection;
+    detector now also consults metadata.annotations short names
+    (Service/RestController/... → Spring, Entity → JPA, Dao → Room,
+    Composable → Jetpack Compose, Test/ExtendWith → JUnit).
+  - **⚠️ PINNED-WASM MISPARSE (upstream-report candidate)**: the pinned
+    kotlin wasm silently shreds declarations when a top-level declaration
+    whose ANNOTATION CARRIES ARGUMENTS (`@GetMapping("/o") fun o() ...`)
+    is followed by another declaration — the construct becomes a
+    `prefix_expression` wrapper with the real declaration nested inside,
+    NO ERROR node surfaced. Whole-file context sensitive: class-contained
+    argumentized methods are safe alone but combinations with comments/
+    package headers have shredded both classes in a file. Minimal repro:
+    `@org.c.GetMapping("/o")\nfun o() = "ok"\n\n@org.a.S\nclass B` →
+    root children `prefix_expression,function_declaration,class_declaration`.
+    Analyzers cannot sanely recover classes from these trees; fixtures
+    must avoid the shape until the wasm is rebuilt from current upstream.
 
 *(existing entries retained below)*
 
