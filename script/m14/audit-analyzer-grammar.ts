@@ -308,16 +308,19 @@ async function main() {
     },
   })
 
-  // --- prove-java: the three known dead branches MUST be flagged ---
+  // --- prove-java: canary for the java analyzer's grammar hygiene ---
+  // History: this proof originally asserted the auditor DETECTS the three
+  // known dead branches (record_parameters, record_declaration_body,
+  // interface_type_list) — that proof passed and is preserved in
+  // validation/m14/results/M14.0.F1.json history. Wave M14.1 fixed them, so
+  // the canary now asserts the fixed state holds: zero unknown references.
   if (proveJava) {
-    const java = results.languages.java.unknownNodeTypes.map((u: any) => u.literal)
-    const required = ["record_parameters", "record_declaration_body", "interface_type_list"]
-    const missing = required.filter(r => !java.includes(r))
-    if (missing.length) {
-      console.error(`PROVE-JAVA FAILED: dead branches not detected: ${missing.join(", ")}`)
+    const java = results.languages.java
+    if (java.status !== "pass" || java.unknownNodeTypes.length > 0) {
+      console.error(`PROVE-JAVA FAILED: java grammar audit not clean: ${JSON.stringify(java.unknownNodeTypes)}`)
       process.exit(2)
     }
-    console.log("prove-java: all 3 known dead branches detected ✓")
+    console.log("prove-java: java grammar-clean ✓ (historical dead branches remain fixed)")
   }
 
   // --- baseline regression gate ---

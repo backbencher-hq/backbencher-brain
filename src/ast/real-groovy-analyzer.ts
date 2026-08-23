@@ -157,7 +157,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (type === "class_declaration") {
             const superClass = this.findChild(node, (n) => n.type === "superclass")
             if (superClass) {
-              const sc = this.findChild(superClass, (n) => n.type === "type_identifier" || n.type === "identifier" || n.type === "generic_type")
+              const sc = this.findChild(superClass, (n) => n.type === "type_identifier" || n.type === "identifier" || n.type === "generic_type" || n.type === "scoped_type_identifier")
               if (sc) {
                 relationships.push({
                   source: name,
@@ -184,7 +184,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           } else if (type === "trait_declaration") {
             const superClass = this.findChild(node, (n) => n.type === "superclass")
             if (superClass) {
-              const sc = this.findChild(superClass, (n) => n.type === "type_identifier" || n.type === "identifier" || n.type === "generic_type")
+              const sc = this.findChild(superClass, (n) => n.type === "type_identifier" || n.type === "identifier" || n.type === "generic_type" || n.type === "scoped_type_identifier")
               if (sc) {
                 relationships.push({
                   source: name,
@@ -351,13 +351,18 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       } else if (type === "method_invocation") {
         const nameNode = node.childForFieldName("name")
-        if (nameNode && parentContext && parentContext.symbolRef) {
+        if (nameNode) {
           const methodName = nameNode.text
           const objectNode = node.childForFieldName("object")
           const callExpr = objectNode ? `${objectNode.text}.${methodName}` : methodName
+          // Script-level invocations (Jenkins-pipeline style: no enclosing
+          // class/method) are attributed to the "(script)" sentinel so the
+          // call graph of script files is not silently empty. Design
+          // decision recorded in wave M14.1.
+          const sourceName = parentContext?.name ?? "(script)"
           if (!this.isGroovyBuiltin(callExpr)) {
             relationships.push({
-              source: parentContext.name,
+              source: sourceName,
               target: methodName,
               type: ASTEngine.RelationshipType.Calls,
               confidence: 0.7,
@@ -365,10 +370,27 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
             })
           }
         }
+      } else if (type === "juxt_function_call") {
+        // Groovy juxtaposition call syntax: `echo "msg"` / `sh "cmd"` IS a
+        // method call under Groovy semantics — Jenkins pipelines are built
+        // on it. Grammar: juxt_function_call [name, args].
+        const nameNode = node.childForFieldName("name")
+        if (nameNode && !this.isGroovyBuiltin(nameNode.text)) {
+          relationships.push({
+            source: parentContext?.name ?? "(script)",
+            target: nameNode.text,
+            type: ASTEngine.RelationshipType.Calls,
+            confidence: 0.7,
+            metadata: { relationshipType: "juxt_call" },
+          })
+        }
       } else if (type === "object_creation_expression") {
         // new Foo(...) → Instantiates. Type is a type_identifier for plain
-        // types or a generic_type for diamond/generic constructions.
-        const typeNode = this.findChild(node, (n) => n.type === "type_identifier" || n.type === "generic_type" || n.type === "identifier")
+        // types, a generic_type for generic constructions, and a
+        // scoped_type_identifier for qualified/inner-class constructions
+        // (new java.util.ArrayList(), new Outer.Builder()) — dropping any of
+        // these silently loses real dependency edges.
+        const typeNode = this.findChild(node, (n) => n.type === "type_identifier" || n.type === "generic_type" || n.type === "scoped_type_identifier" || n.type === "identifier")
         if (typeNode) {
           const source = parentContext?.name || parentContext?.symbolRef?.name || "global"
           relationships.push({
@@ -595,7 +617,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (type === "class_declaration" || type === "trait_declaration") {
       const superClass = this.findChild(node, (n) => n.type === "superclass")
       if (superClass) {
-        const sc = this.findChild(superClass, (n) => n.type === "type_identifier" || n.type === "identifier" || n.type === "generic_type")
+        const sc = this.findChild(superClass, (n) => n.type === "type_identifier" || n.type === "identifier" || n.type === "generic_type" || n.type === "scoped_type_identifier")
         if (sc) parents.push(this.baseTypeName(sc))
       }
     } else if (type === "interface_declaration") {
@@ -615,7 +637,10 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
     return parents
   }
 
-  /** Collect type nodes within a type_list/super_interfaces/etc (DFS). */
+  /** Collect type nodes within a type_list/super_interfaces/etc (DFS).
+   * scoped_type_identifier is accepted AS a complete type and NOT descended
+   * into — its nested type_identifiers are package/class segments, never
+   * independent types (collecting them fabricated garbage edges). */
   private collectTypeNodes(node: Node): Node[] {
     const out: Node[] = []
     const stack: Node[] = [node]
@@ -624,7 +649,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
         if (!c) continue
-        if (c.type === "type_identifier" || c.type === "generic_type") {
+        if (c.type === "type_identifier" || c.type === "generic_type" || c.type === "scoped_type_identifier") {
           out.push(c)
         } else {
           stack.push(c)
@@ -650,6 +675,9 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       const id = this.findChild(node, (n) => n.type === "type_identifier" || n.type === "identifier")
       return id ? id.text : node.text
     }
+    // scoped_type_identifier (dotted/qualified types): the FULL dotted text is
+    // the type name — matching the Java analyzer convention. Never split into
+    // segments; package segments are not types. Convention decided in M14.1.
     return node.text
   }
 
