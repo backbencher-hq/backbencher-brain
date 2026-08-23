@@ -8,6 +8,30 @@
     "groovy": {
       "missing": 0,
       "unexplained": 0
+    },
+    "grails-core:kotlin": {
+      "missing": 0,
+      "unexplained": 0
+    },
+    "grails-core:java": {
+      "missing": 0,
+      "unexplained": 0
+    },
+    "grails-core:groovy": {
+      "missing": 0,
+      "unexplained": 0
+    },
+    "Exposed:kotlin": {
+      "missing": 6,
+      "unexplained": 7
+    },
+    "Exposed:java": {
+      "missing": 0,
+      "unexplained": 0
+    },
+    "Exposed:groovy": {
+      "missing": 0,
+      "unexplained": 0
     }
   }
 }

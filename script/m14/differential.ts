@@ -23,6 +23,7 @@ const REPO = process.argv.includes("--repo") ? process.argv[process.argv.indexOf
 const SAMPLE_PER_LANG = process.argv.includes("--sample") ? parseInt(process.argv[process.argv.indexOf("--sample") + 1]) : 60
 
 const LANGS: Record<string, { wasm: string; analyzerFile: string; className: string; ext: string }> = {
+  kotlin: { wasm: "tree-sitter-kotlin.wasm", analyzerFile: "real-kotlin-analyzer", className: "RealKotlinAnalyzer", ext: "kt" },
   java: { wasm: "tree-sitter-java.wasm", analyzerFile: "real-java-analyzer", className: "RealJavaAnalyzer", ext: "java" },
   groovy: { wasm: "tree-sitter-groovy.wasm", analyzerFile: "real-groovy-analyzer", className: "RealGroovyAnalyzer", ext: "groovy" },
 }
@@ -44,7 +45,7 @@ interface TreeEdge { label: string; from: string; target: string }
 
 // Independent oracle: derive extends/implements/instantiates edges straight
 // from clause node structure — no analyzer code involved.
-function deriveTreeEdges(root: any): TreeEdge[] {
+function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
   const edges: TreeEdge[] = []
   const TYPE = /type_identifier|scoped_type_identifier|generic_type/
   const collect = (x: any, label: string, clsName: string) => {
@@ -54,7 +55,7 @@ function deriveTreeEdges(root: any): TreeEdge[] {
   }
   const walk = (n: any) => {
     const t = n.type
-    if (/^(class|interface|record|trait)_declaration$|^enum_declaration$|^class_definition$/.test(t)) {
+    if (/^(class|interface|record|trait|object)_declaration$|^enum_declaration$|^class_definition$/.test(t)) {
       const nameNode = n.childForFieldName?.("name") ?? n.namedChildren.find((c: any) => c.type === "identifier")
       const clsName = nameNode?.text ?? "?"
       // extends side: superclass (classes) or extends_interfaces+type_list (interfaces)
@@ -65,10 +66,46 @@ function deriveTreeEdges(root: any): TreeEdge[] {
       // implements side
       const impls = n.childForFieldName?.("interfaces") ?? n.namedChildren.find((c: any) => c.type === "super_interfaces")
       if (impls) collect(impls, "implements", clsName)
+      // kotlin delegation_specifiers: first constructor_invocation = extends,
+      // every other user_type = implements; on interface_declaration all extends
+      const isInterfaceDecl = t === "interface_declaration"
+      let extendsUsed = false
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const d = n.namedChild(i)
+        if (!d || d.type !== "delegation_specifier") continue
+        const ctor = d.namedChildren?.find((c: any) => c.type === "constructor_invocation")
+        const userType = ctor
+          ? ctor.namedChild(0)?.type === "user_type" ? ctor.namedChild(0) : d.namedChildren?.find((c: any) => c.type === "user_type")
+          : d.namedChildren?.find((c: any) => c.type === "user_type")
+        // Only the HEAD type_identifier is the supertype; deeper children are
+        // type ARGUMENTS (SuspendExecutable<Int, UpdateStatement>) and must
+        // not become phantom supertypes.
+        const head = userType?.namedChild(0)?.type === "type_identifier" ? userType.namedChild(0) : userType
+        if (ctor && head && !isInterfaceDecl && !extendsUsed) {
+          edges.push({ label: "extends", from: clsName, target: head.text })
+          extendsUsed = true
+        } else if (head) {
+          edges.push({ label: isInterfaceDecl ? "extends" : "implements", from: clsName, target: head.text })
+        }
+      }
     }
     if (t === "object_creation_expression") {
       const typeNode = n.namedChildren.find((c: any) => /type_identifier|scoped_type_identifier|generic_type$/.test(c.type))
       if (typeNode) edges.push({ label: "instantiates", from: "(expr)", target: typeNode.text })
+    }
+    // kotlin has no `new`: constructions are call_expressions whose callee
+    // leaf follows the PascalCase type convention (language naming rule).
+    if (lang === "kotlin" && t === "call_expression") {
+      const callee = n.namedChild(0)
+      let leaf = ""
+      if (callee?.type === "navigation_expression") {
+        const sel = callee.namedChild(callee.namedChildCount - 1)
+        leaf = sel?.text ?? ""
+      } else if (callee) {
+        leaf = callee.text.split("<")[0]
+      }
+      leaf = leaf.replace(/\(.*$/, "")
+      if (/^[A-Z]/.test(leaf)) edges.push({ label: "instantiates", from: "(expr)", target: leaf })
     }
     for (let i = 0; i < n.namedChildCount; i++) walk(n.namedChild(i))
   }
@@ -119,7 +156,7 @@ async function main() {
       try { root = parser.parse(content).rootNode } catch { continue }
       if (!root) continue
 
-      const truth = deriveTreeEdges(root)
+      const truth = deriveTreeEdges(root, lang)
       let result
       try { result = await analyzer.analyze(root, content, relPath) } catch { continue }
       const rels = (result.relationships ?? []).map((r: any) => ({
@@ -185,10 +222,19 @@ async function main() {
   // improvement-forcing gate: missing/unexplained counts may never grow
   const BASELINE = path.join(ROOT, "validation", "m14", "differential-baseline.json")
   const current: Record<string, any> = {}
-  for (const [lang, r] of Object.entries<any>(report)) current[lang] = { missing: r.missingInAnalyzer, unexplained: r.unexplainedInAnalyzer }
+  for (const [lang, r] of Object.entries<any>(report)) current[`${REPO}:${lang}`] = { missing: r.missingInAnalyzer, unexplained: r.unexplainedInAnalyzer }
   const updateBaseline = process.argv.includes("--update-baseline")
   if (updateBaseline) {
-    fs.writeFileSync(BASELINE, JSON.stringify({ samplePerLang: SAMPLE_PER_LANG, counts: current }, null, 2) + "\n")
+    let merged: any = { samplePerLang: SAMPLE_PER_LANG, counts: {} }
+    if (fs.existsSync(BASELINE)) {
+      try {
+        const prev = JSON.parse(fs.readFileSync(BASELINE, "utf8"))
+        merged.samplePerLang = SAMPLE_PER_LANG
+        merged.counts = { ...(prev.counts ?? prev), ...merged.counts }
+      } catch {}
+    }
+    merged = { samplePerLang: SAMPLE_PER_LANG, counts: { ...(fs.existsSync(BASELINE) ? (JSON.parse(fs.readFileSync(BASELINE, "utf8")).counts ?? {}) : {}), ...current } }
+    fs.writeFileSync(BASELINE, JSON.stringify(merged, null, 2) + "\n")
     console.log("differential baseline updated:", current)
   } else if (fs.existsSync(BASELINE)) {
     const parsed = JSON.parse(fs.readFileSync(BASELINE, "utf8"))
