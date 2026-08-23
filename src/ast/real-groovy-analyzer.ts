@@ -321,6 +321,10 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         const visibility = this.extractVisibility(node)
         const isStatic = modifiers.indexOf("static") !== -1
         const isConstant = modifiers.indexOf("final") !== -1 && isStatic
+        // Field annotations (@Column on fields = THE GORM/JPA idiom) were
+        // never extracted — classes and methods carried decorators, fields
+        // did not.
+        const fieldAnnotations = this.extractAnnotations(node)
         const ownerName = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1].name : undefined
         const ownerKind = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1].kind : undefined
 
@@ -336,7 +340,8 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
             visibility,
             ownerName,
             ownerKind,
-            metadata: { nodeType: type, modifiers, isConstant },
+            decorators: fieldAnnotations,
+            metadata: { nodeType: type, modifiers, isConstant, annotations: fieldAnnotations },
           })
         }
       } else if (type === "enum_constant") {

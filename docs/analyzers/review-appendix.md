@@ -54,6 +54,31 @@ Harness gained `expectDecorators`.
     filter is narrower than Java's any-segment by construction;
     field-access Uses noise @0.6 cosmetic.
 
+## Groovy final review (2026-08-23) — self-audit caught its own gap
+
+Re-reviewing the wave adversarially found a hole IN the wave: the class/
+method decorator fixes missed FIELDS — `@Column(name = "x") String name`
+(the canonical GORM/JPA pattern) still yielded no decorators because the
+field_declaration branch never called extractAnnotations. Fixed under
+protocol (`field-decorators` fixture, proven failing pre-fix).
+Lesson: when a fix adds annotation extraction to SOME declaration kinds,
+enumerate ALL declaration kinds and ask why each was excluded.
+
+Verified-by-differential: script/m14/differential.ts on 60 grails-core
+files post-fix → tree-truth coverage 100%, unexplained analyzer edges 0%.
+Run the differential after every analyzer change; it is the only check
+that exercises real-world code rather than fixtures.
+
+Recorded decisions / open questions (not fixed, by design):
+  - Field-initializer calls (`def f = helper()` in a class body)
+    attribute to the enclosing CLASS scope — defensible (initializers
+    run in constructor context), documented here so it reads as a
+    decision not an accident.
+  - Modifier-less Groovy fields (`String name`) are properties with
+    private backing + public accessors, but this analyzer marks them
+    public and exports them. OPEN QUESTION: needs a Groovy visibility-
+    semantics decision before changing (affects exports downstream).
+
 ## Kotlin (reviewed 2026-08-23, upstream fwcd/tree-sitter-kotlin @ 1852ea1, 2026-08-02; pinned `wasm/tree-sitter-kotlin.wasm`, no version metadata)
 
 - **CONFIRMED: the pinned Kotlin WASM exposes ZERO named fields**
