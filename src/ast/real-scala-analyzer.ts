@@ -156,7 +156,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (annText.includes("specialized")) patternsObj["Specialized Generics"] = true
       } else if (node.type === "catch_clause") {
         patternsObj["Error Handling"] = true
-      } else if (node.type === "lambda_expression" || node.type === "anonymous_function") {
+      } else if (node.type === "lambda_expression") {
         patternsObj["Lambdas"] = true
       } else if (node.type === "self_type") {
         patternsObj["Self Types"] = true
@@ -164,7 +164,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         patternsObj["Type Classes (Context Bounds)"] = true
       } else if (node.type === "infix_expression" || node.type === "infix_type") {
         patternsObj["Infix Notation"] = true
-      } else if (node.type === "interpolated_string_expression" || node.type === "interpolated_string" || node.type === "string_interpolation") {
+      } else if (node.type === "interpolated_string_expression" || node.type === "interpolated_string") {
         patternsObj["String Interpolation"] = true
       } else if (node.type === "derives_clause") {
         patternsObj["Derives (Typeclass Derivation)"] = true
@@ -184,7 +184,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         patternsObj["Opaque Types (Scala 3)"] = true
       } else if (node.type === "inline_modifier" || node.type === "transparent_modifier") {
         patternsObj["Inline Methods (Scala 3)"] = true
-      } else if (node.type === "using_clause" || node.type === "using") {
+      } else if (node.type === "using") {
         patternsObj["Using Clauses (Scala 3)"] = true
       } else if (node.type === "implicit") {
         patternsObj["Implicit Parameters & Conversions"] = true
@@ -255,6 +255,11 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         const ownerSym = typeIndex.get(s.ownerName)
         const parents: string[] = ownerSym?.metadata?.superTypes ?? []
         let overrideParent = parents.length > 0 ? parents[0] : ""
+        // Confidence reflects EVIDENCE TIER (patterns.ts filters >= 0.7):
+        // companion-resolved targets carry project-level evidence; the
+        // per-file fallback is a first-supertype GUESS that may not even
+        // declare the method.
+        let confidence = 0.5
         if (context?.overrideCompanion && parents.length > 0) {
           const declaring = findDeclaringParent(
             s.name,
@@ -262,14 +267,17 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
             context.overrideCompanion,
             (t) => typeIndex.get(t)?.metadata?.superTypes ?? [],
           )
-          if (declaring) overrideParent = declaring
+          if (declaring) {
+            overrideParent = declaring
+            confidence = 0.9
+          }
         }
         if (overrideParent) {
           relationships.push({
             source: `${s.ownerName}.${s.name}`,
             target: `${overrideParent}.${s.name}`,
             type: ASTEngine.RelationshipType.Overrides,
-            confidence: 0.9,
+            confidence,
             metadata: { isOverride: true, overrideParent },
           })
         }
@@ -348,7 +356,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (
         c &&
         c.isNamed &&
-        (c.type === "identifier" || c.type === "type_identifier" || c.type === "scoped_identifier")
+        (c.type === "identifier" || c.type === "type_identifier")
       ) {
         return c.text
       }
@@ -372,6 +380,46 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
     return mods
+  }
+
+  /**
+   * Annotation short names from a definition's modifiers (@Deprecated →
+   * "Deprecated", @org.x.Transactional → "Transactional"). Previously
+   * annotations were consumed only as pattern-flag substrings and symbols
+   * carried no decorator data at all, unlike every sibling analyzer.
+   */
+  private collectAnnotations(node: Node): string[] {
+    const out: string[] = []
+    // Annotations appear BOTH as direct children of the definition AND
+    // inside a modifiers wrapper depending on construct — scan both.
+    for (let i = 0; i < node.childCount; i++) {
+      const c = node.child(i)
+      if (!c) continue
+      if (c.type !== "annotation" && c.type !== "modifiers") continue
+      const container = c.type === "annotation" ? null : c
+      const sources: Node[] = container ? [container] : [c]
+      for (const src of sources) {
+        for (let j = 0; j < src.childCount; j++) {
+          const ann = container ? src.child(j) : src
+          if (!ann || ann.type !== "annotation") continue
+          let nameNode: Node | null = null
+          for (let k = 0; k < ann.namedChildCount; k++) {
+            const nc = ann.namedChild(k)
+            if (nc && (nc.type === "identifier" || nc.type === "type_identifier" || nc.type === "stable_type_identifier")) {
+              nameNode = nc
+              break
+            }
+          }
+          if (nameNode) {
+            const text = nameNode.text
+            const dot = text.lastIndexOf(".")
+            out.push(dot === -1 ? text : text.slice(dot + 1))
+          }
+          if (!container) break // direct annotation child: handled itself
+        }
+      }
+    }
+    return out
   }
 
   private getVisibility(node: Node): string {
@@ -415,6 +463,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     parent: ASTEngine.UniversalSymbol | null,
     extraMetadata: any = {},
   ): ASTEngine.UniversalSymbol {
+    const decorators = this.collectAnnotations(node)
     return {
       name,
       kind,
@@ -432,7 +481,8 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       visibility: this.getVisibility(node),
       parameters: extraMetadata.parameters,
       returnType: extraMetadata.returnType,
-      metadata: { ...extraMetadata },
+      decorators,
+      metadata: { ...extraMetadata, annotations: decorators },
     }
   }
 
@@ -448,11 +498,11 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         // dotted parents like js.Object / scala.Any: keep FULL dotted name
         // (cross-language convention decided in M14.1)
         out.push(c.text)
-      } else if (c.type === "generic_type" || c.type === "applied_type") {
+      } else if (c.type === "generic_type") {
         // Prefer a dotted base (stable_type_identifier:
         // collection.mutable.ArrayBuffer[Int] -> full dotted name per
-        // cross-language convention). Previously only bare type_identifier
-        // matched, so qualified generic supertypes were silently dropped.
+        // cross-language convention). Bare type_identifier alone would
+        // drop qualified generic supertypes.
         let pushed = false
         for (let j = 0; j < c.childCount; j++) {
           const ch = c.child(j)
@@ -917,13 +967,12 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // the Kotlin contract where `val store` inside `createService()` is not
     // emitted). Class-level and top-level val/var ARE emitted.
     let ancestor = node.parent
-    while (ancestor && ancestor.type !== "source_file") {
+    while (ancestor) {
       if (
         ancestor.type === "function_definition" ||
         ancestor.type === "function_declaration" ||
         ancestor.type === "lambda_expression" ||
-        ancestor.type === "anonymous_function" ||
-        ancestor.type === "block" && ancestor.parent?.type === "function_definition"
+        (ancestor.type === "block" && ancestor.parent?.type === "function_definition")
       ) {
         return
       }
@@ -977,7 +1026,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     const typeNode = node.namedChild(0)
     if (!typeNode) return
     let typeName = typeNode.text
-    if (typeNode.type === "generic_type" || typeNode.type === "applied_type") {
+    if (typeNode.type === "generic_type") {
       typeName = this.extractSupertypes(typeNode)[0] || typeNode.text
     }
     if (typeName && typeName !== "unknown") {
@@ -999,7 +1048,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     parent: ASTEngine.UniversalSymbol | null,
   ) {
     const fnNode = node.childForFieldName("function")
-      if (fnNode && parent) {
+      if (fnNode) {
         // Scala 3 quote/splice syntax ('{ ... }, 'Sym) and backtick literals:
         // callees beginning with a quote character are not method calls or
         // constructions. Previously they emitted bogus PascalCase
@@ -1012,7 +1061,8 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       // `self.add(1)` AND a duplicate `add` edge.
       if (fnNode.type === "call_expression") return
       let calledName = fnNode.text
-      if (fnNode.type === "field_expression") {
+      const isQualified = fnNode.type === "field_expression"
+      if (isQualified) {
         // obj.method — the leaf identifier is the method name
         const kids: string[] = []
         for (let i = 0; i < fnNode.namedChildCount; i++) {
@@ -1021,19 +1071,25 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         calledName = kids.length > 0 ? kids[kids.length - 1] : calledName
       }
+      // Top-level (script-style) calls have no enclosing symbol. Attributing
+      // them to a "(script)" sentinel mirrors handleInstantiation — dropping
+      // them silently hollowed out top-level call graphs.
+      const sourceName = parent?.name ?? "(script)"
       if (calledName) {
         // Companion-apply construction idiom (Type(...)): in Scala, PascalCase
-        // calls ARE constructions (case-class/class companion apply) - unlike
-        // Java where they are static utility calls. MEASURED, not assumed
-        // (M14.1): on scala3@HEAD 60-file sample the differential found 2
-        // unexplained instantiates edges of 416 (0.5%) vs Java's removed
-        // heuristic which fabricated 4.2% of grails-core edges. Kept with
-        // this recorded rationale; re-measure if corpora change.
+        // receiver-less calls ARE constructions (case-class/class companion
+        // apply). MEASURED twice: M14.1 kept the heuristic (0.5% noise on the
+        // scala3 60-file differential vs Java's removed 4.2% grails-core
+        // fabrication); 2026-08 re-measure on a 300-file scala3 sample found
+        // 1156 QUALIFIED PascalCase calls obj.Method() — enum-case/module
+        // member accesses (LoadDestination.Jump, tpd.This), all fabricated
+        // Instantiates when fed through the heuristic. Restriction: bare
+        // Type(...) stays Instantiates; qualified obj.Method() emits Calls.
         const first = calledName.charCodeAt(0)
         const isCapitalized = first >= 65 && first <= 90
-        if (isCapitalized) {
+        if (isCapitalized && !isQualified) {
           relationships.push({
-            source: parent.name,
+            source: sourceName,
             target: calledName,
             type: ASTEngine.RelationshipType.Instantiates,
             confidence: 0.7,
@@ -1042,7 +1098,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
           })
         } else {
           relationships.push({
-            source: parent.name,
+            source: sourceName,
             target: calledName,
             type: ASTEngine.RelationshipType.Calls,
             line_number: node.startPosition.row + 1,
@@ -1078,10 +1134,16 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (sel.type === "identifier") {
             selectors.push({ local: sel.text, imported: sel.text })
           } else if (sel.type === "arrow_renamed_identifier") {
-            // `D => Renamed` — local alias is the RHS, imported name is the LHS
+            // `D => Renamed` — local alias is the RHS, imported name is the
+            // LHS. The imported segment MUST join the module path
+            // (scala.collection.{immutable => im} imports
+            // scala.collection.immutable) — dropping it truncated the
+            // references edge target, same failure mode the as-form fix
+            // below solved.
             const imported = sel.namedChild(0)
             const local = sel.namedChild(1)
             if (imported && local) {
+              parts.push(imported.text)
               selectors.push({ local: local.text, imported: imported.text })
             }
           }
