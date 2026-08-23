@@ -1,7 +1,7 @@
 // script/m15/verify-edit-e2e-docs.ts — M15.E6 + M15.E7
 // Real-repo adversarial e2e (dry-run refactor) + docs honesty for bb_edit.
 
-import { writeFileSync, readFileSync } from "node:fs"
+import { writeFileSync, readFileSync, existsSync, readdirSync } from "node:fs"
 import path from "node:path"
 import { parseForSafety } from "../../src/ast/safety-primitives"
 
@@ -23,9 +23,20 @@ async function emitFile(code: string, issue: string, tool: string, title: string
 
   const REPOS_DIR = path.resolve("$HOME/fixtures/repositories")
 
-  // Sample one file from each of 5 language families
+  // Sample one file from each of 5 language families.
+  // graphql-js: pick a real existing .ts (repo layout drifted between clones);
+  // fall back to any real .ts file in the checkout rather than failing on a
+  // stale pinned path — the assertions still validate a REAL file, never a
+  // synthetic one.
+  let tsFile = path.join(REPOS_DIR, "graphql-js", "resources", "release-prepare.ts")
+  if (!existsSync(tsFile)) {
+    const entries: string[] = readdirSync(path.join(REPOS_DIR, "graphql-js"), { recursive: true }) as unknown as string[]
+    const alt = entries.find((f) => f.endsWith(".ts") && !f.includes("node_modules") && !f.includes("website"))
+    if (alt) tsFile = path.join(REPOS_DIR, "graphql-js", alt)
+  }
+  console.log("E6: graphql-js sample = " + tsFile)
   const samples = [
-    { lang: "TypeScript", file: path.join(REPOS_DIR, "graphql-js", "src", "jsutils", "isObjectLike.ts") },
+    { lang: "TypeScript", file: tsFile },
     { lang: "Python", file: path.join(REPOS_DIR, "cython", "setup.py") },
     { lang: "Ruby", file: path.join(REPOS_DIR, "rake", "lib", "rake", "task.rb") },
     { lang: "Go", file: path.join(REPOS_DIR, "go-tools", "playground", "playground.go") },

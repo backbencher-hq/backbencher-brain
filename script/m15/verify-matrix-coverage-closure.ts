@@ -24,6 +24,11 @@ function nk(label: string, cond: boolean, detail?: string) {
   console.log("  FAIL: " + label + " (negative)" + (detail ? " — " + detail : ""))
 }
 
+// Evidence floor: after the honesty redo the ledger holds exactly 78 files
+// (C1-C3, E1-E8, S1-S8, A/H/P/X/D/N x8, V/M x4, C4-C6) covering all 79 issue
+// codes; the 8 scaffold-orphan files (v5-v8/m5-m8) were removed.
+const EVIDENCE_FLOOR = 78
+
 function emit(label: string) {
   const total = passed + negativePassed
   console.log("\n" + label + ": " + (failed === 0 ? "VERIFIED" : "KNOWN-GAP") + " (" + total + "/" + checks + " passed, " + negatives + " negatives)")
@@ -186,17 +191,22 @@ nk("claimed languages with no repo in matrix: honest gap", gapLangs.length >= 0,
 // Verify all evidence files
 const resultsDir = path.join(ROOT, "validation/m15/results")
 const evidenceFiles = readdirSync(resultsDir).filter(f => f.endsWith(".json"))
-ck("at least 80 evidence files", evidenceFiles.length >= 80, String(evidenceFiles.length))
+ck("at least " + EVIDENCE_FLOOR + " evidence files", evidenceFiles.length >= EVIDENCE_FLOOR, String(evidenceFiles.length))
 
-// Check every evidence is verified
+// Check every evidence is verified.
+// c4/c5/c6 are THIS script's own ledger (written by emit() at the end of
+// every run), so their verified status is self-referential — including them
+// makes the gate unable to recover from a single failed run (the next run
+// re-reads the false ledger it just wrote). They are excluded here and their
+// internal consistency is asserted separately after emit() in the final pass.
+const SELF_LEDGER = new Set(["c4.json", "c5.json", "c6.json"])
 let allVerified = true
 for (const f of evidenceFiles) {
+  if (SELF_LEDGER.has(f)) continue
   const d = JSON.parse(readFileSync(path.join(resultsDir, f), "utf-8"))
   if (!d.verified) { allVerified = false; console.log("  UNVERIFIED: " + f) }
 }
 ck("all evidence files have verified=true", allVerified, evidenceFiles.length + " files checked")
-
-// Check all 78 issues are closed
 try {
   const ghOutput = execSync("gh issue list --milestone 15 --state closed --limit 100 --json number", { encoding: "utf-8", timeout: 10000 })
   const closedIssues = JSON.parse(ghOutput).length
@@ -230,3 +240,15 @@ try {
 // FINAL
 // ════════════════════════════════════════════════════════════════
 emit("C4 + C5 + C6 — matrix, coverage, closure")
+
+// Post-emit ledger consistency: the closure evidence just written must match
+// this run's outcome (a passing run writes verified=true). This is the single
+// honest handshake between the run and its own ledger.
+for (const f of ["c4.json", "c5.json", "c6.json"]) {
+  const d = JSON.parse(readFileSync(path.join(resultsDir, f), "utf-8"))
+  const expected = failed === 0
+  if (d.verified !== expected || d.failed !== failed) {
+    console.log("  LEDGER MISMATCH: " + f + " verified=" + d.verified + " failed=" + d.failed + " (run failed=" + failed + ")")
+    process.exit(1)
+  }
+}
