@@ -13,7 +13,7 @@ import { writeFileSync, readFileSync, mkdtempSync, mkdirSync, rmSync, existsSync
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { getProjectId } from "../../src/cli/index"
-import { indexProjectParallel } from "../../src/ast/parallel-indexer"
+import { indexProjectParallel, flushBackgroundEmbeddings } from "../../src/ast/parallel-indexer"
 import { BrainDatabase } from "../../src/brain/database"
 import { quickAnswer } from "../../src/intelligence/search/quick-answer"
 
@@ -31,7 +31,10 @@ async function emit(code: string, issue: string, extra?: any) {
   console.log(code + ": " + (failed === 0 ? "VERIFIED" : "KNOWN-GAP") + " (" + total + "/" + checks + " passed, " + negatives + " negatives)")
 }
 async function reset() { checks = passed = failed = negatives = negativePassed = 0 }
-function cleanup(root: string, projectId: string) {
+async function cleanup(root: string, projectId: string) {
+  // Wait for queued vectors before closing/removing the temporary database.
+  await flushBackgroundEmbeddings()
+  BrainDatabase.close(projectId)
   if (root.startsWith(tmpdir())) { try { rmSync(root, { recursive: true, force: true }) } catch (_) {} }
   try { rmSync(path.dirname(BrainDatabase.getDbPath(projectId)), { recursive: true, force: true }) } catch (_) {}
 }
@@ -62,7 +65,7 @@ async function main() {
       const most = await quickAnswer(projectId, "what is the most complex function?")
       ck("A1: most-complex finds a real method", /most complex function is/.test(most.answer), most.answer.slice(0, 60))
       ck("A1: provenance is indexed", ans.provenance?.evidenceClass === "indexed", String(ans.provenance?.evidenceClass))
-    } finally { cleanup(root, projectId) }
+    } finally { await cleanup(root, projectId) }
     await emit("A1", "M16.A1 (function|method union)", { runLog: { fixture: "ruby 2 methods + 1 module" } })
     await reset()
   }
@@ -99,7 +102,7 @@ async function main() {
       const aC = await quickAnswer(pid, "how many classes are in this project?")
       const mC = aC.answer.match(/There are (\d+) classes/)
       ck("A2: 'how many classes' matches DB class count", mC !== null && parseInt(mC[1], 10) === classes, `db=${classes} ans=${mC?.[1]}`)
-    } finally { cleanup(root, pid) }
+    } finally { await cleanup(root, pid) }
     await emit("A2", "M16.A2 (classes/symbols/files/language counts)")
     await reset()
   }
@@ -126,7 +129,7 @@ async function main() {
       const noIdx = await quickAnswer(emptyId, "how many functions?")
       ck("A3: no-index answer is explicit, not a fabricated count", /no index|index it first/i.test(noIdx.answer), noIdx.answer.slice(0, 80))
       nk("A3: no-index never says '0 functions'", !/There are 0 functions/.test(noIdx.answer))
-    } finally { cleanup(root, pid) }
+    } finally { await cleanup(root, pid) }
     await emit("A3", "M16.A3 (fallback honesty)")
     await reset()
   }
@@ -144,7 +147,7 @@ async function main() {
         ck("A4: stat answer '" + q.slice(0, 24) + "' has indexed provenance", ans.provenance?.evidenceClass === "indexed" && typeof ans.provenance?.source === "string", `class=${ans.provenance?.evidenceClass}`)
         ck("A4: stat answer '" + q.slice(0, 24) + "' documents a limitation", Array.isArray(ans.provenance?.limitations) && ans.provenance.limitations.length > 0, "lim=" + JSON.stringify(ans.provenance?.limitations))
       }
-    } finally { cleanup(root, pid) }
+    } finally { await cleanup(root, pid) }
     await emit("A4", "M16.A4 (stat provenance)")
     await reset()
   }

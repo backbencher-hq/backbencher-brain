@@ -20,7 +20,7 @@ import { writeFileSync, readFileSync, mkdtempSync, mkdirSync, rmSync, existsSync
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { getProjectId } from "../../src/cli/index"
-import { indexProjectParallel } from "../../src/ast/parallel-indexer"
+import { indexProjectParallel, flushBackgroundEmbeddings } from "../../src/ast/parallel-indexer"
 import { BrainDatabase } from "../../src/brain/database"
 
 let checks = 0, passed = 0, failed = 0, negatives = 0, negativePassed = 0
@@ -36,7 +36,10 @@ async function emit(code: string, issue: string, extra?: any) {
   console.log(code + ": " + (failed === 0 ? "VERIFIED" : "KNOWN-GAP") + " (" + total + "/" + checks + " passed, " + negatives + " negatives)")
 }
 async function reset() { checks = passed = failed = negatives = negativePassed = 0 }
-function cleanup(root: string, projectId: string) {
+async function cleanup(root: string, projectId: string) {
+  // Drain asynchronous embeddings before closing/removing the temporary DB.
+  await flushBackgroundEmbeddings()
+  BrainDatabase.close(projectId)
   if (root.startsWith(tmpdir())) { try { rmSync(root, { recursive: true, force: true }) } catch (_) {} }
   try { rmSync(path.dirname(BrainDatabase.getDbPath(projectId)), { recursive: true, force: true }) } catch (_) {}
 }
@@ -65,7 +68,7 @@ async function main() {
       const small = await visualizeProject(projectId, { scope: "project", maxNodes: 1, maxLinks: 0 })
       ck("V1: small budget caps node count", (small.nodes?.length ?? 0) <= 1, "nodes=" + small.nodes?.length)
       ck("V1: truncation is reported honestly", small.truncation?.truncated === true && typeof small.truncation?.reason === "string", JSON.stringify(small.truncation))
-    } finally { cleanup(root, projectId) }
+    } finally { await cleanup(root, projectId) }
     await emit("V1", "M16.V1 (visualize validity + honest caps)")
     await reset()
   }
@@ -91,7 +94,7 @@ async function main() {
       const docPath = path.join(ROOT_DIR, "docs/BB_SECURITY.md")
       const doc = existsSync(docPath) ? readFileSync(docPath, "utf8") : ""
       ck("X1: BB_SECURITY.md documents sink-regex limitation", /execute|sink.*token|token.*sink|body style/gi.test(doc) && /limitation|false positive|M14/i.test(doc), doc.slice(0, 120))
-    } finally { cleanup(root, projectId) }
+    } finally { await cleanup(root, projectId) }
     await emit("X1", "M16.X1 (security doc route + tool-layer fidelity)")
     await reset()
   }
@@ -115,7 +118,7 @@ async function main() {
       ck("P1: every finding has honest confidence (0 < conf <= 1, no stubs)", confidences.length === findings.length && confidences.every((c: number) => Number.isFinite(c) && c > 0 && c <= 1), "bad=" + (confidences.length - confidences.filter((c: number) => Number.isFinite(c) && c > 0 && c <= 1).length))
       const initializeDoc = readFileSync(path.join(ROOT_DIR, "docs/BB_PATTERNS.md"), "utf8")
       ck("P1: BB_PATTERNS.md notes constructor-like lifecycle methods are not false orphans", /initialize|constructor|orphan/i.test(initializeDoc), "doc: " + initializeDoc.slice(0, 100))
-    } finally { cleanup(root, projectId) }
+    } finally { await cleanup(root, projectId) }
     await emit("P1", "M16.P1 (patterns orphan truth)")
     await reset()
   }

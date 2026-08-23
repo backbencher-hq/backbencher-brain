@@ -58,7 +58,7 @@ async function main() {
   // ── 3. Wiring: M16 verifiers registered in package.json + quality gate ───
   const pkg = readFileSync(path.join(ROOT_DIR, "package.json"), "utf8")
   const gate = readFileSync(path.join(ROOT_DIR, "script/verify-quality-gate.ts"), "utf8")
-  for (const v of ["verify-edit-real-repo.ts", "verify-ask-stats.ts", "verify-tool-runs.ts", "verify-docs-truth.ts", "verify-closure-gate.ts"]) {
+  for (const v of ["verify-edit-real-repo.ts", "verify-ask-stats.ts", "verify-tool-runs.ts", "verify-docs-truth.ts", "verify-embedding-lifecycle.ts", "verify-closure-gate.ts"]) {
     ck("C1: " + v + " wired into package.json verify", pkg.includes("m16/" + v))
     ck("C1: " + v + " wired into quality gate", gate.includes("m16/" + v))
   }
