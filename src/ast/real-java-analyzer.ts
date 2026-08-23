@@ -273,14 +273,9 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (isEntity) {
             frameworks["jpa"] = true
             patterns["entity_pattern"] = true
-            let tableAnn: string | undefined = undefined
-            for (let i = 0; i < annotations.length; i++) {
-              if (annotations[i].startsWith("@Table(")) {
-                tableAnn = annotations[i]
-                break
-              }
-            }
-            if (tableAnn) {
+            // Table presence is decided by annotation NAME (AST-resolved, works
+            // for fully-qualified annotations), never by raw-text prefix match.
+            if (inArray(annNames, "Table")) {
               const n = this.getAnnotationValue(node, "Table", "name")
               if (n) tableName = n
             }
@@ -295,19 +290,17 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
           if (isSpringBean) {
              frameworks["spring"] = true;
-             for (let i = 0; i < annotations.length; i++) {
-                const a = annotations[i]
-                if (a.startsWith("@Service")) { patterns["service_layer"] = true; break; }
-                if (a.startsWith("@Repository")) { patterns["repository_pattern"] = true; break; }
-                if (a.startsWith("@RestController") || a.startsWith("@Controller")) { patterns["mvc_pattern"] = true; break; }
+             for (let i = 0; i < annNames.length; i++) {
+                const a = annNames[i]
+                if (a === "Service") { patterns["service_layer"] = true; break; }
+                if (a === "Repository") { patterns["repository_pattern"] = true; break; }
+                if (a === "RestController" || a === "Controller") { patterns["mvc_pattern"] = true; break; }
              }
           }
 
-          let feignAnn: string | undefined = undefined
-          for (let i = 0; i < annotations.length; i++) {
-             if (annotations[i].startsWith("@FeignClient")) { feignAnn = annotations[i]; break; }
-          }
-          if (feignAnn) {
+          // FeignClient presence by AST-resolved name; value read via the
+          // same name-matched path.
+          if (inArray(annNames, "FeignClient")) {
             const targetService = this.getAnnotationValue(node, "FeignClient", "name") || this.getAnnotationValue(node, "FeignClient", "value")
             if (targetService) {
               relationships.push({
@@ -448,8 +441,10 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
                 basePath = this.getAnnotationValue(parentContext.node, classMapping, "value") || this.getAnnotationValue(parentContext.node, classMapping, "path") || ""
               }
             }
-            // Collapse repeated slashes in the composed route (pure string normalization)
-            let fullRoute = ""
+            // Collapse repeated slashes in the composed route (pure string normalization).
+            // Assigns to the method-scoped fullRoute declared above — redeclaring
+            // here shadowed it and left apiContractPath permanently "".
+            fullRoute = ""
             for (let i = 0; i < basePath.length + methodRoute.length; i++) {
               const ch = i < basePath.length ? basePath[i] : methodRoute[i - basePath.length]
               if (ch === "/" && fullRoute.length > 0 && fullRoute[fullRoute.length - 1] === "/") continue
@@ -575,11 +570,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
               })
             }
 
-            let valAnn: string | undefined = undefined
-            for (let j = 0; j < annotations.length; j++) {
-               if (annotations[j].startsWith("@Value(")) { valAnn = annotations[j]; break; }
-            }
-            if (valAnn) {
+            if (inArray(this.getJavaAnnotationNames(node), "Value")) {
               const valMatch = this.getAnnotationValue(node, "Value", "value")
               if (valMatch && valMatch.startsWith("${") && valMatch.endsWith("}")) {
                 let configKey = valMatch.substring(2, valMatch.length - 1)
@@ -726,7 +717,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (hasSpring) {
       let hasSpringCore = false
       for (let i = 0; i < symbols.length; i++) {
-         if (this.hasJavaAnnotation(symbols[i], "@Service") || this.hasJavaAnnotation(symbols[i], "@Repository") || this.hasJavaAnnotation(symbols[i], "@Component")) {
+         if (this.hasJavaAnnotation(symbols[i], "Service") || this.hasJavaAnnotation(symbols[i], "Repository") || this.hasJavaAnnotation(symbols[i], "Component")) {
              hasSpringCore = true; break;
          }
       }
@@ -1116,6 +1107,22 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
+   * Short annotation name from an annotation/marker_annotation node's name
+   * child. The grammar serializes the name as $._name = choice(identifier,
+   * _reserved_identifier, scoped_identifier) — fully-qualified annotations
+   * (@org.springframework.stereotype.Service) have a scoped_identifier, NOT a
+   * direct identifier. The short name is the last dotted segment; bare names
+   * pass through unchanged.
+   */
+  private getJavaAnnotationShortName(ann: Node): string | null {
+    const nameNode = this.findChildByType(ann, "identifier") || this.findChildByType(ann, "scoped_identifier")
+    if (!nameNode) return null
+    const text = nameNode.text
+    const lastDot = text.lastIndexOf(".")
+    return lastDot === -1 ? text : text.slice(lastDot + 1)
+  }
+
+  /**
    * Bare annotation names extracted from the AST (@Service → Service), read
    * from the identifier field of each annotation node — never from text.
    */
@@ -1126,8 +1133,8 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (let i = 0; i < target.namedChildCount; i++) {
       const child = target.namedChild(i)
       if (child && (child.type === "annotation" || child.type === "marker_annotation")) {
-        const nameNode = this.findChildByType(child, "identifier")
-        if (nameNode) names.push(nameNode.text)
+        const name = this.getJavaAnnotationShortName(child)
+        if (name) names.push(name)
       }
     }
     return names
@@ -1217,13 +1224,13 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           parameters.push({ name: nameNode.text, type: paramType, isOptional: false })
           
           if (relationships && ownerPrefix) {
-            const annotations = this.getJavaAnnotations(param)
-            let valueAnn = false
-            for (let j = 0; j < annotations.length; j++) {
-               if (annotations[j].startsWith("@Value(")) { valueAnn = true; break; }
-            }
+            const valueAnn = inArray(this.getJavaAnnotationNames(param), "Value")
             if (valueAnn) {
-              const valMatch = this.getAnnotationValue(node, "Value", "value")
+              // Read the key from the PARAMETER's own annotation: constructor
+              // injection (@Value on a ctor param) never has the annotation on
+              // the enclosing method node, so looking up there silently found
+              // nothing and dropped every config_property edge.
+              const valMatch = this.getAnnotationValue(param, "Value", "value")
               if (valMatch && valMatch.startsWith("${") && valMatch.endsWith("}")) {
                 relationships.push({
                   source: ownerPrefix + "." + nameNode.text,
@@ -1405,8 +1412,8 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     
     for (let j = 0; j < annotations.length; j++) { const ann = annotations[j]
-      const nameNode = this.findChildByType(ann, "identifier") || ann.child(1)
-      if (nameNode && nameNode.text === annotationName) {
+      const name = this.getJavaAnnotationShortName(ann)
+      if (name && name === annotationName) {
         const argsNode = this.findChildByType(ann, "annotation_argument_list")
         if (!argsNode) return undefined
         
@@ -1441,10 +1448,22 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
     return params.length > 0 ? params : undefined;
   }
 
+  /**
+   * Exact short-name annotation test on a symbol's decorators. Decorator text
+   * is raw source ("@Service", "@org.x.Service", "@Service(...)") — normalize
+   * to the short name before comparing so fully-qualified and parameterized
+   * annotations match exactly like bare ones.
+   */
   private hasJavaAnnotation(symbol: ASTEngine.UniversalSymbol, annotationName: string): boolean {
     if (!symbol.decorators) return false
     for (let i = 0; i < symbol.decorators.length; i++) {
-       if (symbol.decorators[i].startsWith(annotationName)) return true
+      let t = symbol.decorators[i]
+      if (t.startsWith("@")) t = t.slice(1)
+      const paren = t.indexOf("(")
+      if (paren !== -1) t = t.slice(0, paren)
+      const dot = t.lastIndexOf(".")
+      if (dot !== -1) t = t.slice(dot + 1)
+      if (t === annotationName) return true
     }
     return false
   }
@@ -1455,9 +1474,9 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
          const springPatterns: string[] = []
          let hasService = false, hasRepo = false, hasController = false
          for (let i = 0; i < symbols.length; i++) {
-            if (!hasService && this.hasJavaAnnotation(symbols[i], "@Service")) hasService = true
-            if (!hasRepo && this.hasJavaAnnotation(symbols[i], "@Repository")) hasRepo = true
-            if (!hasController && (this.hasJavaAnnotation(symbols[i], "@Controller") || this.hasJavaAnnotation(symbols[i], "@RestController"))) hasController = true
+            if (!hasService && this.hasJavaAnnotation(symbols[i], "Service")) hasService = true
+            if (!hasRepo && this.hasJavaAnnotation(symbols[i], "Repository")) hasRepo = true
+            if (!hasController && (this.hasJavaAnnotation(symbols[i], "Controller") || this.hasJavaAnnotation(symbols[i], "RestController"))) hasController = true
          }
          if (hasService) springPatterns.push("service_layer")
          if (hasRepo) springPatterns.push("repository_pattern")
