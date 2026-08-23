@@ -9,7 +9,13 @@ distinct: semantic proximity is never presented as a verified fact.
 
 1. **Verified aggregates** — deterministic counts/lookups (e.g. "how many
    functions", "most complex function"). Returned with high confidence and
-   labeled as facts.
+   labeled as facts. Counts are **cross-language honest**: "functions" counts
+   both `function`- and `method`-kind symbols, so a Ruby/Python project never
+   reports 0 functions (verified against the real rake repo, M16 regression).
+   Unsupported stat nouns (e.g. "how many modules") never fabricate a count —
+   they fall through to labeled search results or an explicit unknown.
+   With no index at all, the answer is an explicit "no index exists — index
+   first", never a fabricated 0.
 2. **Semantic retrieval** — vector similarity over `brain_semantic_embedding`.
    Returned as *closest matches*, explicitly labeled "search results, not a
    verified answer".

@@ -53,6 +53,10 @@ Verified against the indexer's actual relationship output:
 
 - Symbol orphans: capped at **0.6** — name matching cannot see dynamic dispatch,
   reflection, or string-based lookups.
+- Lifecycle methods are not false orphans when reviewing results: `initialize`
+  (Ruby), constructors (Java/Kotlin/C#/Python), and similar
+  framework-invoked methods can look unreferenced — treat them as entry
+  points, not dead code.
 - File orphans: **0.5** — entry points and dynamically loaded files can appear
   orphaned.
 

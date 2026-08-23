@@ -37,6 +37,11 @@ export interface EditResult {
   formatted: boolean
   validated: boolean
   reindexed: boolean
+  /** Human-owned audit trail: leftover references on forced delete, shadowed
+   *  sites on refactor, stale-index surprises. Never silent — surfaced to CLI/MCP. */
+  warnings?: string[]
+  /** Refactor audit: how many files/sites were renamed on this run. */
+  summary?: { renamedFiles: number; renamedSites: number }
 }
 
 type SymbolMatch = { id: string; fileId: string; byteStart: number; byteEnd: number; lineStart?: number; name: string }
@@ -202,13 +207,39 @@ export function isBindingParentType(type: string): boolean {
   )
 }
 
+/** Assignment-like parents where the VALUE/right side is a use, not a binding.
+ *  Verified grammars (children carry `left`/`right` or `name`/`value` fields):
+ *  Ruby/Python assignment, TS/JS variable_declarator, JS object pair, Go
+ *  var_spec, C/C++ init_declarator. If the grammar names the value field
+ *  differently, the occurrence keeps the conservative binding verdict — a
+ *  missed reference is safer than a corrupted binding. */
+const VALUE_SIDE_BINDING_PARENTS = new Set([
+  "assignment",
+  "augmented_assignment",
+  "variable_declarator",
+  "pair",
+  "var_spec",
+  "init_declarator",
+  "field_declaration",
+])
+
 /** True when an identifier occurrence is a *reference* (usage) of the renamed
- *  symbol — not a binding, member access, or property key. `relType` is the
- *  index relationship type and is reserved for future precision; the identity
- *  filter is type-agnostic so callback and type references are not dropped. */
+ *  symbol — not a binding, member access, or object literal key. `relType` is
+ *  the index relationship type and is reserved for future precision; the
+ *  identity filter is type-agnostic so callback and type references are not
+ *  dropped.
+ *
+ *  M16.E1: classification is position-aware, not just parent-type substring
+ *  matching. A parent bucket like "assignment" binds only its left/name side;
+ *  the value/right side (`prereqs = prerequisite_tasks` in Ruby/Python,
+ *  `const x = prerequisite_tasks` in TS) is a real reference and must be
+ *  renameable — proven missing on rake without this. */
 export function isReferenceSite(o: IdentifierOccurrence, _relType: string): boolean {
   if (o.isMemberName) return false
-  if (isBindingParentType(o.parentType)) return false
+  if (isBindingParentType(o.parentType)) {
+    if (VALUE_SIDE_BINDING_PARENTS.has(o.parentType) && (o.parentField === "value" || o.parentField === "right" || o.parentField === "initializer")) return true
+    return false
+  }
   return true
 }
 
@@ -252,11 +283,44 @@ async function validateFile(filePath: string, content: string): Promise<void> {
   if (errors.length > 0) throw new Error(`validation failed for ${filePath}: ${errors[0].message}`)
 }
 
-async function planEdit(projectPath: string, projectId: string, request: EditRequest): Promise<EditPlanChange[]> {
+/**
+ * M16.E1: scopes that re-declare `symbolName` inside the file (shadowing).
+ * An occurrence of `symbolName` inside one of these byte ranges belongs to the
+ * inner binding (a nested def/class of the same name, or a local variable), NOT
+ * to the symbol being renamed — renaming it would corrupt a different symbol.
+ *
+ * The renamed declaration itself is excluded (its enclosing scope is the room
+ * the symbol lives in, not a shadow), and body ranges come from tree-sitter
+ * body nodes (block / body_statement / class_body …) via parseForSafety, so
+ * this is AST-derived, never a text scan.
+ */
+function collectShadowScopes(parsed: SafetyParse, symbolName: string, declStart: number): Array<{ start: number; end: number }> {
+  const out: Array<{ start: number; end: number }> = []
+  for (const o of parsed.occurrences) {
+    if (o.text !== symbolName) continue
+    if (!isBindingParentType(o.parentType)) continue
+    if (o.startIndex === declStart) continue
+    // A shadow binding's scope is its smallest enclosing body block.
+    const body = parsed.bodyRanges
+      .filter((b) => b.startIndex <= o.startIndex && o.endIndex <= b.endIndex)
+      .sort((a, b) => (b.endIndex - b.startIndex) - (a.endIndex - a.startIndex))[0]
+    if (!body) continue
+    // The declaration lives inside this same body → it IS the symbol's own
+    // scope, not a shadow of the same name elsewhere.
+    if (body.startIndex <= declStart && declStart <= body.endIndex) continue
+    out.push({ start: body.startIndex, end: body.endIndex })
+  }
+  return out
+}
+
+type EditPlan = { changes: EditPlanChange[]; warnings: string[]; summary?: { renamedFiles: number; renamedSites: number } }
+
+async function planEdit(projectPath: string, projectId: string, request: EditRequest): Promise<EditPlan> {
+  const warnings: string[] = []
   if (request.mode === "write") {
     if (!request.filePath) throw new Error("write requires filePath")
     const target = resolveSafeEditPath(projectPath, request.filePath)
-    return [{ path: target, before: existsSync(target) ? readFileSync(target, "utf8") : "", after: String(request.content ?? request.newContent ?? "") }]
+    return { changes: [{ path: target, before: existsSync(target) ? readFileSync(target, "utf8") : "", after: String(request.content ?? request.newContent ?? "") }], warnings }
   }
 
   const symbolName = request.mode === "insert" ? request.targetSymbolName : request.symbolName
@@ -265,7 +329,7 @@ async function planEdit(projectPath: string, projectId: string, request: EditReq
   resolveSafeEditPath(projectPath, match.fileId)
   const original = readFileSync(match.fileId, "utf8")
 
-  if (request.mode === "update") return [{ path: match.fileId, before: original, after: replaceRange(original, match.byteStart, match.byteEnd, String(request.newContent ?? request.content ?? "")) }]
+  if (request.mode === "update") return { changes: [{ path: match.fileId, before: original, after: replaceRange(original, match.byteStart, match.byteEnd, String(request.newContent ?? request.content ?? "")) }], warnings }
   if (request.mode === "insert") {
     const position = request.position ?? "after"
     const content = String(request.newContent ?? request.content ?? "")
@@ -321,15 +385,30 @@ async function planEdit(projectPath: string, projectId: string, request: EditReq
         }
       }
     }
-    return [{ path: match.fileId, before: original, after: replaceRange(original, start, end, replacement) }]
+    return { changes: [{ path: match.fileId, before: original, after: replaceRange(original, start, end, replacement) }], warnings }
   }
   if (request.mode === "delete") {
     const raw = await BrainDatabase.getRawInstance(projectId)
     const callers = (raw.prepare("SELECT COUNT(*) c FROM brain_relationship WHERE target_symbol_id=? AND relationship_type IN ('calls','instantiates','references','uses')").get(match.id) as any)?.c ?? 0
-    if (callers > 0 && request.force !== true) throw new Error(`cannot delete ${symbolName}: ${callers} active references; pass force=true after reviewing impact`)
     const deleted = replaceRange(original, match.byteStart, match.byteEnd, "")
+    // M16.E3: dangling-reference guard. Relationship edges alone are not
+    // trustworthy (proven on rake: symbol had zero edges while real call sites
+    // existed). Scan the post-delete content for remaining AST reference sites
+    // of the deleted name — a forced delete must never be silent about them.
+    const parsedAfter = await parseForSafety(match.fileId, deleted)
+    const leftovers = parsedAfter.occurrences
+      .filter((o) => o.text === symbolName && isReferenceSite(o, ""))
+      .map((o) => `line ${o.startLine}: ${o.parentType || "reference"}`)
+    const indexedCallers = callers > 0 ? `${callers} indexed caller(s)` : null
+    if ((callers > 0 || leftovers.length > 0) && request.force !== true) {
+      const detail = [indexedCallers, leftovers.length > 0 ? `${leftovers.length} live reference(s) surviving deletion (${leftovers.slice(0, 5).join(", ")}${leftovers.length > 5 ? ", …" : ""})` : null].filter(Boolean).join("; ")
+      throw new Error(`cannot delete ${symbolName}: ${detail}; pass force=true after reviewing impact`)
+    }
+    if (leftovers.length > 0) {
+      warnings.push(`delete ${symbolName} (forced): ${leftovers.length} reference(s) remain in ${match.fileId}: ${leftovers.slice(0, 10).join("; ")}${leftovers.length > 10 ? "; …" : ""}`)
+    }
     const pruned = await ImportPruner.prune(deleted, match.fileId)
-    return [{ path: match.fileId, before: original, after: pruned }]
+    return { changes: [{ path: match.fileId, before: original, after: pruned }], warnings }
   }
 
   const newName = String(request.newName ?? "")
@@ -357,21 +436,43 @@ async function planEdit(projectPath: string, projectId: string, request: EditReq
   }
 
   const changes: EditPlanChange[] = []
+  let renamedFiles = 0
+  let renamedSites = 0
   for (const [file, ranges] of fileRanges) {
     resolveSafeEditPath(projectPath, file)
     const before = readFileSync(file, "utf8")
     const parsed = await parseForSafety(file, before)
     const sites = new Set<number>()
 
+    const declStart = ranges.declaration
+      ? findDeclarationName(parsed.occurrences, symbolName, ranges.declaration.start, ranges.declaration.end)
+      : undefined
+
     // 1. Declaration: rename the symbol's own name identifier exactly once.
-    if (ranges.declaration) {
-      const name = findDeclarationName(parsed.occurrences, symbolName, ranges.declaration.start, ranges.declaration.end)
-      if (name != null) sites.add(name)
+    if (declStart != null) sites.add(declStart)
+
+    // 2. M16.E1: COMPLETE reference rename in the declaration file. The old
+    // implementation renamed only sites inside index caller spans — when the
+    // index had no edge (proven on rake: prerequisite_tasks had zero), real
+    // call sites in the SAME file stayed at the old name while the tool
+    // reported success. Now every AST-classified reference site of the name in
+    // the declaration file is renamed, unless a nested scope shadows the name
+    // (those sites belong to the inner symbol). Cross-file callers are still
+    // applied on top via index caller spans (step 3).
+    if (ranges.declaration && declStart != null) {
+      const shadows = collectShadowScopes(parsed, symbolName, declStart)
+      for (const o of parsed.occurrences) {
+        if (o.text !== symbolName) continue
+        if (!isReferenceSite(o, "")) continue
+        if (shadows.some((s) => o.startIndex >= s.start && o.endIndex <= s.end)) continue
+        sites.add(o.startIndex)
+      }
     }
 
-    // 2. Caller references: rename only AST reference sites within each caller span.
+    // 3. Cross-file caller references: rename only AST reference sites within
+    // each caller span (index-derived; declaration file already fully covered).
     for (const span of ranges.callers) {
-      // Defense-in-depth: a caller span must lie inside the current file. The
+      // Defense-in-depth: a caller span must lie strictly inside the current file. The
       // hash freshness gate above already rejects any shrunk/changed caller, but
       // a corrupt indexer offset must never be silently clamped or skipped.
       const spanEnd = span.end === Number.MAX_SAFE_INTEGER ? before.length : span.end
@@ -389,13 +490,18 @@ async function planEdit(projectPath: string, projectId: string, request: EditReq
     let after = before
     for (const offset of [...sites].sort((a, b) => b - a)) after = replaceRange(after, offset, offset + symbolName.length, newName)
     changes.push({ path: file, before, after })
+    renamedFiles++
+    renamedSites += sites.size
   }
-  return changes
+  if (request.mode === "refactor") {
+    warnings.push(`refactor ${symbolName} → ${newName}: ${renamedSites} site(s) across ${renamedFiles} file(s)`)
+  }
+  return { changes, warnings, summary: request.mode === "refactor" ? { renamedFiles, renamedSites } : undefined }
 }
 
 export async function executeEdit(projectPath: string, projectId: string, request: EditRequest): Promise<EditResult> {
-  const changes = await planEdit(projectPath, projectId, request)
-  if (request.dryRun === true) return { mode: request.mode, dryRun: true, changes, formatted: false, validated: false, reindexed: false }
+  const { changes, warnings, summary } = await planEdit(projectPath, projectId, request)
+  if (request.dryRun === true) return { mode: request.mode, dryRun: true, changes, formatted: false, validated: false, reindexed: false, warnings: warnings.length > 0 ? warnings : undefined, summary }
   const snapshots = new Map(changes.map((change) => [change.path, { existed: existsSync(change.path), content: change.before }]))
   // Track every temp file created during the write loop so the catch block can
   // scrub orphans (a renameSync failure after writeFileSync leaves a temp).
@@ -411,7 +517,16 @@ export async function executeEdit(projectPath: string, projectId: string, reques
     if (request.format !== false) for (const change of changes) await BrainSurgicalPatcher.tryAutoFormat(change.path)
     for (const change of changes) await validateFile(change.path, readFileSync(change.path, "utf8"))
     await reindexFilesParallel(projectId as any, realpathSync(projectPath), changes.map((change) => ({ path: change.path, type: snapshots.get(change.path)!.existed ? "modified" as const : "added" as const })))
-    return { mode: request.mode, dryRun: false, changes: changes.map((change) => ({ ...change, after: readFileSync(change.path, "utf8") })), formatted: request.format !== false, validated: true, reindexed: true }
+    return {
+      mode: request.mode,
+      dryRun: false,
+      changes: changes.map((change) => ({ ...change, after: readFileSync(change.path, "utf8") })),
+      formatted: request.format !== false,
+      validated: true,
+      reindexed: true,
+      warnings: warnings.length > 0 ? warnings : undefined,
+      summary,
+    }
   } catch (error) {
     // Roll back every file to its pre-edit snapshot, then scrub any orphaned
     // .bb-edit-* temp files so a mid-loop failure never leaks temp artifacts.
