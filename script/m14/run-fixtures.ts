@@ -23,7 +23,8 @@ const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : p
 const FIXTURES_DIR = path.join(ROOT, "validation", "m14", "fixtures")
 
 const LANGS: Record<string, { wasm: string; analyzerFile: string; className: string; ext: string }> = {
-  typescript: { wasm: "tree-sitter-typescript.wasm", analyzerFile: "real-typescript-analyzer", className: "RealTypeScriptAnalyzer", ext: "ts" },
+  javascript: { wasm: "tree-sitter-javascript.wasm", analyzerFile: "real-javascript-analyzer", className: "RealJavaScriptAnalyzer", ext: "js" },
+    typescript: { wasm: "tree-sitter-typescript.wasm", analyzerFile: "real-typescript-analyzer", className: "RealTypeScriptAnalyzer", ext: "ts" },
     java: { wasm: "tree-sitter-java.wasm", analyzerFile: "real-java-analyzer", className: "RealJavaAnalyzer", ext: "java" },
   groovy: { wasm: "tree-sitter-groovy.wasm", analyzerFile: "real-groovy-analyzer", className: "RealGroovyAnalyzer", ext: "groovy" },
   kotlin: { wasm: "tree-sitter-kotlin.wasm", analyzerFile: "real-kotlin-analyzer", className: "RealKotlinAnalyzer", ext: "kt" },
@@ -187,14 +188,19 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
       if (!hit) problems.push(`expected import not found: ${JSON.stringify(want)}; got: ${JSON.stringify((result.imports ?? []).map((i: any) => ({ module: i.module, ns: i.isNamespaceImport, items: i.items })))}`)
     }
     for (const want of exp.expectDecorators ?? []) {
-      // Each entry: { symbol, contains } — symbol's decorators must include
-      // an entry whose text contains `contains` (e.g. "Transactional" matches
-      // "@org.x.Transactional" and "Transactional").
+      // Each entry: { symbol, contains } — symbol.decorators must include an
+      // entry whose text contains `contains`. Reads ONLY s.decorators (not
+      // metadata.annotations fallback) so decorator emission itself stays
+      // pinned per symbol kind.
       const sym = symbols.find((s: any) => s.name === want.symbol)
-      const decs: string[] = sym?.decorators ?? sym?.metadata?.annotations ?? []
+      const decs: string[] = sym?.decorators ?? []
       if (!decs.some((d) => d.includes(want.contains))) {
-        problems.push(`expected ${want.symbol} decorators to include "${want.contains}"; got ${JSON.stringify(decs)} (decorators=${JSON.stringify(sym?.decorators)}, meta.annotations=${JSON.stringify(sym?.metadata?.annotations)})`)
+        problems.push(`expected ${want.symbol} decorators to include "${want.contains}"; got ${JSON.stringify(decs)} (meta.annotations=${JSON.stringify(sym?.metadata?.annotations)})`)
       }
+    }
+    for (const want of exp.expectPrimaryFramework ?? []) {
+      const actual = (result.metadata as any)?.framework ?? null
+      if (actual !== want) problems.push(`expected primary framework ${JSON.stringify(want)}; got ${JSON.stringify(actual)} (detected=${JSON.stringify((result.metadata as any)?.detectedFrameworks)})`)
     }
     for (const want of exp.expectFrameworks ?? []) {
       const actual: string[] = (result.metadata as any)?.detectedFrameworks ?? []
