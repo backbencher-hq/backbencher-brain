@@ -98,7 +98,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     // PHASE 1: Extract all symbols with proper Kotlin scoping
-    this.extractSymbolsWithScoping(rootNode, ctx, symbols, content)
+    this.extractSymbolsWithScoping(rootNode, ctx, symbols, content, undefined, relationships)
 
     // PHASE 2: Analyze Kotlin relationships (inheritance, data classes, sealed classes)
     this.analyzeRelationships(rootNode, relationships, symbols)
@@ -375,6 +375,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     symbols: ASTEngine.UniversalSymbol[],
     content: string,
     parentClass?: string,
+    relationships?: ASTEngine.UniversalRelationship[],
   ): void {
     const stack: { n: Node; pClass?: string; isPop?: boolean; name?: string }[] = [{ n: node, pClass: parentClass }]
 
@@ -425,7 +426,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
         }
         case "property_declaration":
-          this.extractProperty(n, symbols, ctx, pClass)
+          this.extractProperty(n, symbols, ctx, pClass, relationships)
           break
         case "primary_constructor":
         case "constructor_declaration":
@@ -705,7 +706,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
   /**
    * Extract Kotlin property with getters/setters and delegation
    */
-  private extractProperty(node: Node, symbols: ASTEngine.UniversalSymbol[], ctx: KotlinContext, parentClass?: string) {
+  private extractProperty(node: Node, symbols: ASTEngine.UniversalSymbol[], ctx: KotlinContext, parentClass?: string, relationships?: ASTEngine.UniversalRelationship[]) {
     let ancestor = node.parent
     while (ancestor && ancestor.type !== "class_declaration" && ancestor.type !== "object_declaration" && ancestor.type !== "source_file") {
       if (ancestor.type === "function_declaration") return
@@ -733,6 +734,27 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     const hasDelegate = this.hasDelegate(node)
 
+    // Extension properties: `val String.lastChar: Char` — a user_type receiver
+    // appears BEFORE the simple_identifier, exactly like extension functions.
+    // Previously invisible: no isExtension marker, no relationship (M14.1 fix;
+    // positional because the pinned kotlin wasm exposes zero named fields).
+    let extensionReceiver: string | undefined
+    {
+      let receiverNode: any = undefined
+      for (let i = 0; i < node.namedChildCount; i++) {
+        const c = node.namedChild(i)
+        if (c?.type === "simple_identifier") break
+        if (c?.type === "user_type" || c?.type === "nullable_type" || c?.type === "type_identifier") {
+          receiverNode = c
+          break
+        }
+      }
+      if (receiverNode) {
+        const t = receiverNode.text
+        extensionReceiver = t.endsWith("?") ? t.slice(0, -1) : t
+      }
+    }
+
     const symbol: ASTEngine.UniversalSymbol = {
       name: propertyName,
       kind: ASTEngine.SymbolKind.Property,
@@ -753,11 +775,25 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
         hasDelegate,
         hasCustomGetter: this.hasCustomGetter(node),
         hasCustomSetter: this.hasCustomSetter(node),
+        ...(extensionReceiver ? { isExtension: true, extensionReceiver } : {}),
         kotlinSpecific: true,
       },
     }
 
     symbols.push(symbol)
+
+    if (extensionReceiver && relationships) {
+      relationships.push({
+        source: propertyName,
+        target: extensionReceiver,
+        type: ASTEngine.RelationshipType.Uses,
+        confidence: 0.9,
+        metadata: {
+          relationshipType: "kotlin_extension_property",
+          isExtension: true,
+        },
+      })
+    }
   }
 
   /**
@@ -1591,84 +1627,38 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
   /**
    * Check if function call is Kotlin builtin
    */
+  /**
+   * Stdlib check for qualified_calls. EXACT matching only - the previous
+   * substring loop classified any user call whose name merely CONTAINED a
+   * builtin word (getUserById -> "get", runMigration -> "run") as stdlib,
+   * silently emptying symbol.qualified_calls (M14.1 fix). Qualified calls are
+   * suppressed only by full-name match or stdlib package prefix; unqualified
+   * calls by exact leaf against the stdlib set + scope-function extras.
+   */
   private isKotlinBuiltin(call: string): boolean {
-    const builtins = [
-      "println",
-      "print",
-      "readLine",
-      "require",
-      "check",
-      "error",
-      "let",
-      "run",
-      "with",
-      "apply",
-      "also",
-      "takeIf",
-      "takeUnless",
-      "toString",
-      "equals",
-      "hashCode",
-      "copy",
-      "componentN",
-      // stdlib collection/factory functions and common scope helpers
-      "mutableMapOf",
-      "mapOf",
-      "mutableListOf",
-      "listOf",
-      "setOf",
-      "mutableSetOf",
-      "arrayOf",
-      "emptyList",
-      "emptyMap",
-      "emptySet",
-      "repeat",
-      "uppercase",
-      "lowercase",
-      "trim",
-      "startsWith",
-      "endsWith",
-      "contains",
-      "substring",
-      "map",
-      "filter",
-      "reduce",
-      "fold",
-      "forEach",
-      "sorted",
-      "sortedBy",
-      "distinct",
-      "first",
-      "last",
-      "add",
-      "remove",
-      "size",
-      "isEmpty",
-      "isNotEmpty",
-      "put",
-      "get",
-      "getOrElse",
-      "getOrDefault",
-      "any",
-      "all",
-      "none",
-      "count",
-      "sum",
-      "max",
-      "min",
-      "take",
-      "drop",
-      "plus",
-      "minus",
-      "times",
-    ]
-
-    for (let i = 0; i < builtins.length; i++) {
-      if (stringIncludes(call, builtins[i])) return true
+    if (!call) return false
+    for (const prefix of RealKotlinAnalyzer.stdlibPackagePrefixes) {
+      if (call.startsWith(prefix)) return true
     }
-
-    return call.startsWith("kotlin.") || call.startsWith("java.") || call.startsWith("android.")
+    if (this.kotlinStdlibExact.has(call)) return true
+    if (!call.includes(".")) {
+      return RealKotlinAnalyzer.kotlinBuiltinExtras.has(call)
+    }
+    return false
   }
+
+  private static readonly stdlibPackagePrefixes = [
+    "kotlin.", "kotlinx.", "java.", "javax.", "android.", "androidx.",
+  ]
+
+  private static readonly kotlinBuiltinExtras: ReadonlySet<string> = new Set([
+    "println", "print", "readLine", "require", "check", "error",
+    "let", "run", "with", "apply", "also", "takeIf", "takeUnless",
+    "toString", "equals", "hashCode", "copy", "componentN",
+    "repeat", "uppercase", "lowercase", "trim",
+    "mutableMapOf", "mapOf", "mutableListOf", "listOf", "setOf", "mutableSetOf",
+    "arrayOf", "emptyList", "emptyMap", "emptySet",
+  ])
 
   /**
    * Exact stdlib names used by the call-graph filter (leaf-level). Operators
