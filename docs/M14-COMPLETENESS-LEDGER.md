@@ -42,7 +42,9 @@ symbol-field rot. Every language wave must pin these symbol payloads:
 | parameters (+defaults) | PENDING -> #383 | PENDING -> #383 | GATED (calls-and-instantiation partial) | |
 | byte ranges (bb_edit depends) | indirect via M13 edit gates | same | same | M13 scope |
 | visibility/modifiers | GATED F3 implicit | implicit | implicit | explicit pins PENDING -> #383 |
-| qualified_calls | GATED (consistency+fixture) | NOT EMITTED -> #383 | GATED (consistency+fixture) | scala also absent -> #383 |
+| qualified_calls | GATED (CC1+payload fixture) | NOT EMITTED -> #383 | GATED (payload-pins) | GATED (extension-method-flag) |
+| docstrings/JSDoc | PENDING -> #383 | PENDING -> #383 | GATED (payload-pins) | PENDING -> #383 |
+| typeParameters/generics | PENDING -> #383 | n/a (no syntax) | GATED (generic-parameters) | PENDING -> #383 |
 | range columns 1-based | GATED (CC1) | GATED (CC1, was 0-based - FIXED) | GATED (CC1) | GATED (CC1) |
 
 **Standing fixture-authoring rule**: every language's fixtures MUST include

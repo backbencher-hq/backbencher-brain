@@ -161,7 +161,14 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
         }
       }
     }
-        for (const want of exp.expectApiContractPaths ?? []) {
+        for (const want of exp.expectComments ?? []) {
+      const sym = symbols.find((s: any) => s.name === want.symbol)
+      const cc: number = Array.isArray(sym?.comments) ? sym.comments.length : 0
+      if (want.minCount && cc < want.minCount) {
+        problems.push(`expected ${want.symbol} comments >= ${want.minCount}; got ${cc}`)
+      }
+    }
+    for (const want of exp.expectApiContractPaths ?? []) {
       const sym = symbols.find((s: any) => s.name === want.symbol)
       const actualPath = sym?.apiContractPath ?? sym?.api_contract_path
       if (want.equals && actualPath !== want.equals) {
