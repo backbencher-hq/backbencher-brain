@@ -225,9 +225,65 @@ and `expectErrors` matchers.
     pinned.
   - Harness gained expectPrimaryFramework.
 
+## Scala review + fix wave (2026-08-23)
+
+Grammar verdict: official tree-sitter/tree-sitter-scala IS correct; pinned
+wasm compatible with current upstream on every probed shape — NO rebuild.
+The grammar-audit baseline of 8 "unknown" literals turned out to be DEAD
+ANALYZER CODE referencing a vocabulary from some other grammar
+(applied_type, anonymous_function, string_interpolation, using_clause,
+scoped_identifier, source_file) — absent from BOTH pinned wasm and
+current upstream. Removed; scala audit now unknown=0.
+
+Fixes (fixtures proven failing 13/18 pre-fix, passing 18/18 post-fix):
+  - Renamed imports `{immutable => im}` preserved the full module path
+    (the `as`-form path fix existed but was never mirrored to the arrow
+    syntax — intra-file propagation gap).
+  - Top-level calls attributed to "(script)" sentinel (handleCall required
+    parent; handleInstantiation already handled null — asymmetry).
+  - Decorators on ALL symbols (annotations were pattern-flag substrings
+    only). GOTCHA: scala annotations are DIRECT children of definitions
+    OR inside modifiers depending on construct — scan both.
+  - Override confidence evidence-tiered (guess 0.5 / companion 0.9).
+  - MEASURED: qualified PascalCase obj.Method() restricted to Calls —
+    1156 occurrences in a 300-file scala3 sample, all enum/module member
+    accesses fabricating Instantiates; bare Type(...) constructions stay
+    Instantiates (4,533 legitimate).
+
+Verification gaps stated honestly: the pinned differential corpus
+(grails-core) contains no .scala files, so scala differential coverage
+is 0 — fixtures + grammar audit are the only automated layers for this
+language until a scala corpus is pinned.
+
+Fixture-authoring gotchas: `dest.Jump.check()` is a field chain (only the
+LAST segment is called) — a qualified-CALL fixture needs real arguments
+(`h.Jump(1)`); scala annotations are direct children OR in modifiers.
+
 ---
 
 ## Legacy gotchas (original appendix entries)
+
+- **Scala** (reviewed 2026-08-23, official tree-sitter/tree-sitter-scala;
+  pinned wasm probed live): root node is **`compilation_unit`**, NOT
+  `source_file`. Lambdas are `lambda_expression`; interpolations are
+  `interpolated_string_expression`/`interpolated_string`. There are NO
+  `applied_type`, `anonymous_function`, `string_interpolation`,
+  `using_clause`, or `scoped_identifier` nodes — in EITHER the pinned
+  wasm or current upstream (verified against node-types.json). Any
+  analyzer branch referencing them is dead code, not a wasm drift issue.
+- Unlike Kotlin, the pinned scala wasm DOES serialize named fields
+  (~34; `childForFieldName("name"/"type"/"return_type"/"pattern")`
+  verified working). `Language.fieldCount` returning undefined in
+  web-tree-sitter is NOT proof of zero fields — use the grammar audit's
+  oracleFieldCount or a live fixture probe instead.
+- Supertypes live in `extends_clause` > generic_type/type_identifier/
+  stable_type_identifier. `instance_expression` confirmed present
+  (constructor modeling).
+- Import renames come in TWO syntaxes with different AST shapes:
+  Scala 3 `x.y.Z as W` → `as_renamed_identifier` child;
+  Scala 2 `{immutable => im}` → `namespace_selectors` >
+  `arrow_renamed_identifier`. A path-preservation fix applied to one
+  syntax does not automatically cover the other.
 
 - **Groovy**: this project uses a patched fork of `amaanq/tree-sitter-groovy`
   (see `grammars/tree-sitter-groovy/`) — diff against the upstream base to see
