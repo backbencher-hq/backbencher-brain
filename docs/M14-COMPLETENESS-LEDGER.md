@@ -56,6 +56,36 @@ fixtures · differential corpus · mutation hardening.
 Done: java, groovy (stations 1-7; L5 pending owner spot-checks).
 PENDING: remaining 39 analyzers.
 
+## Matrix 4 — Grammar / WASM / version provenance per language
+
+Owner directive: several languages have no official grammar; vendored community
+grammars live in `grammars/` (user-improved). Analyzer audits MUST also check
+grammar correctness (deadly-serious bugs only — AI-corrupting parses), wasm
+provenance, and upstream version drift. Known vendored: tree-sitter-groovy
+(amaanq 0.1.2, user-improved), tree-sitter-fsharp (vendored), tree-sitter-clean.
+
+| Language | wasm source | grammar provenance | version pinned | drift checked |
+|---|---|---|---|---|
+| groovy | grammars/ build -> wasm/ | vendored amaanq 0.1.2 (improved) | YES | wave M14.1 done |
+| fsharp | grammars/ build -> wasm/ | vendored | PENDING wave M14.5 | PENDING |
+| clean | grammars/ build -> wasm/ | vendored | PENDING wave M14.5 | PENDING |
+| all others | wasm/*.wasm (upstream builds) | upstream tree-sitter repos | PENDING per-wave | PENDING |
+
+Standing sub-checks for every analyzer audit (added to seven stations):
+8. grammar provenance + version recorded in evidence; upstream drift diffed
+   (node-type deltas between pinned wasm and latest upstream release)
+9. grammar-bug scan: parse corpus samples; ERROR-rate and wrong-tree shapes
+   investigated; only AI-corrupting grammar bugs get fixed in-repo (fork policy)
+
+## Matrix 5 — Tool-layer bug protocol (M15 boundary)
+
+Co-agent owns tools/M15. When analyzer work hits a tool-layer bug:
+(a) report to owner with evidence, or
+(b) comment on the co-agent's M15 issue (or file new if absent), or
+(c) if co-agent is not on that file: fix + verify + commit with explicit
+    cross-agent note in the message.
+Recorded so it is process, not memory.
+
 ## Standing rules
 
 1. Every bug class found anywhere becomes a permanent gate before its fix lands (F7 rule).
