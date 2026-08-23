@@ -13,14 +13,14 @@
       "status": "pass"
     },
     {
-      "description": "regression gate vs grammar-audit-baseline.json (19/41 languages pass)",
+      "description": "regression gate vs grammar-audit-baseline.json (20/41 languages pass)",
       "id": "baseline-gate",
       "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "859c0b07c1374d3dadd0e31051c16be07cd43169",
-  "committedAt": "2026-08-22T20:21:56-05:00",
+  "commit": "5e9b951095140899e7858700a859fabc313e13d4",
+  "committedAt": "2026-08-23T03:47:14+02:00",
   "data": {
     "languages": {
       "bash": {
@@ -604,31 +604,10 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 322,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 38,
-        "status": "fail",
+        "referencedTypeLiterals": 34,
+        "status": "pass",
         "unknownFields": [],
-        "unknownNodeTypes": [
-          {
-            "context": "real-java-analyzer.ts:findChildByType",
-            "line": 324,
-            "literal": "record_parameters"
-          },
-          {
-            "context": "real-java-analyzer.ts:findChildByType",
-            "line": 1153,
-            "literal": "interface_type_list"
-          },
-          {
-            "context": "real-java-analyzer.ts:findChildByType",
-            "line": 1167,
-            "literal": "record_declaration_body"
-          },
-          {
-            "context": "real-java-analyzer.ts:comparison",
-            "line": 1172,
-            "literal": "record_component"
-          }
-        ],
+        "unknownNodeTypes": [],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-java.wasm"
@@ -1494,10 +1473,10 @@
       }
     },
     "summary": {
-      "fail": 22,
+      "fail": 21,
       "languagesAudited": 41,
-      "pass": 19,
-      "totalUnknownReferences": 165
+      "pass": 20,
+      "totalUnknownReferences": 161
     }
   },
   "governance": "docs/M14-HONESTY-CONTRACT.md",

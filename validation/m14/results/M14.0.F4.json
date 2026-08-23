@@ -2,19 +2,19 @@
   "checks": [
     {
       "description": "relabels every extends edge as implements (the exact multi-interface bug class reported by the owner)",
-      "detail": "2 -> 4",
+      "detail": "0 -> 3",
       "id": "mutation-java-mislabel-inheritance",
       "status": "pass"
     },
     {
       "description": "drops every method symbol",
-      "detail": "2 -> 7",
+      "detail": "0 -> 5",
       "id": "mutation-java-drop-method-symbols",
       "status": "pass"
     },
     {
       "description": "drops edges whose target contains a dot (FQN handling regression)",
-      "detail": "2 -> 4",
+      "detail": "0 -> 2",
       "id": "mutation-java-fqn-edge-drop",
       "status": "pass"
     },
@@ -38,8 +38,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "859c0b07c1374d3dadd0e31051c16be07cd43169",
-  "committedAt": "2026-08-22T20:21:56-05:00",
+  "commit": "5e9b951095140899e7858700a859fabc313e13d4",
+  "committedAt": "2026-08-23T03:47:14+02:00",
   "data": {
     "summary": {
       "caught": 6,
@@ -63,39 +63,39 @@
   ],
   "mutationLog": [
     {
-      "caughtBy": "java/class-extends-implements, java/fqn-extends",
-      "detail": "relationship-mislabel: 2 -> 4 fixture failures",
-      "injectedAt": "2026-08-23T01:46:55.142Z",
+      "caughtBy": "java/class-extends-implements, java/fqn-extends, java/multi-interface-extends",
+      "detail": "relationship-mislabel: 0 -> 3 fixture failures",
+      "injectedAt": "2026-08-23T01:55:03.108Z",
       "mutant": "java/mislabel-inheritance"
     },
     {
       "caughtBy": "java/chained-field-access, java/class-extends-implements, java/fqn-instantiation, java/generics-bounds, java/nested-types",
-      "detail": "symbol-loss: 2 -> 7 fixture failures",
-      "injectedAt": "2026-08-23T01:46:55.153Z",
+      "detail": "symbol-loss: 0 -> 5 fixture failures",
+      "injectedAt": "2026-08-23T01:55:03.124Z",
       "mutant": "java/drop-method-symbols"
     },
     {
       "caughtBy": "java/fqn-extends, java/fqn-instantiation",
-      "detail": "edge-drop: 2 -> 4 fixture failures",
-      "injectedAt": "2026-08-23T01:46:55.166Z",
+      "detail": "edge-drop: 0 -> 2 fixture failures",
+      "injectedAt": "2026-08-23T01:55:03.136Z",
       "mutant": "java/fqn-edge-drop"
     },
     {
       "caughtBy": "groovy/chained-field-access, groovy/safe-nav-chain",
       "detail": "confidence-dishonesty: 4 -> 6 fixture failures",
-      "injectedAt": "2026-08-23T01:46:55.220Z",
+      "injectedAt": "2026-08-23T01:55:03.193Z",
       "mutant": "groovy/confidence-tamper"
     },
     {
       "caughtBy": "groovy/chained-field-access, groovy/closure-and-typedef, groovy/gstring-interpolation, groovy/safe-nav-chain, groovy/trait-implements",
       "detail": "relationship-garbage: 4 -> 9 fixture failures",
-      "injectedAt": "2026-08-23T01:46:55.247Z",
+      "injectedAt": "2026-08-23T01:55:03.214Z",
       "mutant": "groovy/segment-garbage"
     },
     {
       "caughtBy": "groovy/chained-field-access, groovy/closure-and-typedef, groovy/gstring-interpolation, groovy/safe-nav-chain, groovy/trait-implements",
       "detail": "symbol-loss: 4 -> 9 fixture failures",
-      "injectedAt": "2026-08-23T01:46:55.265Z",
+      "injectedAt": "2026-08-23T01:55:03.232Z",
       "mutant": "groovy/drop-class-symbols"
     }
   ],

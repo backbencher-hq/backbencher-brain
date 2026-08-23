@@ -212,15 +212,13 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           const inheritance = this.extractJavaInheritance(node)
           const parents: string[] = []
           if (inheritance.extendsClass) parents.push(inheritance.extendsClass)
+          for (let i = 0; i < inheritance.extendsInterfaces.length; i++) {
+            parents.push(inheritance.extendsInterfaces[i])
+          }
           for (let i = 0; i < inheritance.implementsInterfaces.length; i++) {
             parents.push(inheritance.implementsInterfaces[i])
           }
           classHierarchy.set(fqn, parents)
-
-          if (type === "interface_declaration" && inheritance.implementsInterfaces.length > 0) {
-            inheritance.extendsClass = inheritance.implementsInterfaces[0];
-            inheritance.implementsInterfaces = inheritance.implementsInterfaces.slice(1);
-          }
 
           if (inheritance.extendsClass) {
             relationships.push({
@@ -229,6 +227,16 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
               type: ASTEngine.RelationshipType.Inheritance,
               confidence: 1.0,
               metadata: { relationshipType: type === "interface_declaration" ? "extends_interface" : "extends" },
+            })
+          }
+          // JLS 9.1.3: every interface in an interface's extends clause is inheritance
+          for (let k = 0; k < inheritance.extendsInterfaces.length; k++) { const iface = inheritance.extendsInterfaces[k]
+            relationships.push({
+              source: name,
+              target: iface,
+              type: ASTEngine.RelationshipType.Inheritance,
+              confidence: 1.0,
+              metadata: { relationshipType: "extends_interface" },
             })
           }
           for (let k = 0; k < inheritance.implementsInterfaces.length; k++) { const iface = inheritance.implementsInterfaces[k]
@@ -321,8 +329,29 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
 
           if (type === "record_declaration") {
-            const recordParamsNode = this.findChildByType(node, "record_parameters")
-            sym.parameters = this.extractJavaParameters(recordParamsNode || node, relationships, name)
+            sym.parameters = this.extractJavaParameters(node, relationships, name)
+            // Record components are constructor-backed members (JLS 8.10.3): emit
+            // each as a Property symbol so they are first-class like fields.
+            const formalParams = this.findChildByType(node, "formal_parameters")
+            if (formalParams) {
+              for (let i = 0; i < formalParams.namedChildCount; i++) {
+                const comp = formalParams.namedChild(i)
+                if (!comp || comp.type !== "formal_parameter") continue
+                const compName = comp.childForFieldName("name")
+                if (!compName) continue
+                const compSym: ASTEngine.UniversalSymbol = {
+                  name: compName.text,
+                  kind: ASTEngine.SymbolKind.Property,
+                  range: this.nodeToRange(comp),
+                  returnType: this.extractJavaParameterType(comp),
+                  visibility: "public",
+                  ownerName: name,
+                  ownerKind: kind,
+                  metadata: { nodeType: "record_component" },
+                }
+                symbols.push(compSym)
+              }
+            }
           }
 
           symbols.push(sym)
@@ -602,17 +631,13 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
                 confidence: 0.7,
                 metadata: { javaCallExpression: callExpression },
               })
-              // PascalCase calls → likely instantiation
-              const methodName = callExpression.split(".").pop() || callExpression
-              if (methodName && methodName[0] === methodName[0].toUpperCase() && methodName[0] !== methodName[0].toLowerCase()) {
-                relationships.push({
-                  source: parentContext.name || parentContext.symbolRef.name,
-                  target: methodName,
-                  type: ASTEngine.RelationshipType.Instantiates,
-                  confidence: 0.6,
-                  metadata: { isPossibleConstructor: true },
-                })
-              }
+              // JLS 4.12.5/15.9: Java objects are created ONLY by `new`
+              // (object_creation_expression, handled separately). A
+              // method_invocation is never an instantiation — PascalCase method
+              // names are idiomatic (JsonObject(), DateUtils.now()), so a
+              // name-shape heuristic here fabricated edges on real code
+              // (measured: 4.2% of instantiation edges in the grails-core
+              // sample were fabrications). Deliberately removed, M14.1.
             }
          }
       }
@@ -1139,6 +1164,8 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
   private extractJavaInheritance(classNode: Node) {
     const inheritance = {
       extendsClass: null as string | null,
+      // interface_declaration > extends_interfaces > type_list: EVERY parent is an extends (JLS 9.1.3)
+      extendsInterfaces: [] as string[],
       implementsInterfaces: [] as string[]
     }
     const superclass = this.findChildByType(classNode, "superclass")
@@ -1150,12 +1177,13 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     const superInterfaces = this.findChildByType(classNode, "super_interfaces") || this.findChildByType(classNode, "extends_interfaces")
     if (superInterfaces) {
-      const typeList = this.findChildByType(superInterfaces, "interface_type_list") || this.findChildByType(superInterfaces, "type_list")
-      const targetList = typeList ? typeList : superInterfaces
+      const targetList = this.findChildByType(superInterfaces, "type_list") || superInterfaces
+      const isInterfaceExtends = superInterfaces.type === "extends_interfaces"
+      const bucket = isInterfaceExtends ? inheritance.extendsInterfaces : inheritance.implementsInterfaces
       for (let i = 0; i < targetList.namedChildCount; i++) {
         const interfaceType = targetList.namedChild(i)
         if (interfaceType && (interfaceType.type === "type_identifier" || interfaceType.type === "generic_type" || interfaceType.type === "scoped_type_identifier")) {
-          inheritance.implementsInterfaces.push(this.extractJavaTypeBaseName(interfaceType))
+          bucket.push(this.extractJavaTypeBaseName(interfaceType))
         }
       }
     }
@@ -1164,12 +1192,12 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private extractJavaParameters(node: Node, relationships?: ASTEngine.UniversalRelationship[], ownerPrefix?: string): ASTEngine.Parameter[] {
     const parameters: ASTEngine.Parameter[] = []
-    const formalParams = this.findChildByType(node, "formal_parameters") || this.findChildByType(node, "record_declaration_body")
+    const formalParams = this.findChildByType(node, "formal_parameters")
     const targetNode = formalParams ? formalParams : node
 
     for (let i = 0; i < targetNode.namedChildCount; i++) {
       const param = targetNode.namedChild(i)
-      if (param && (param.type === "formal_parameter" || param.type === "record_component")) {
+      if (param && param.type === "formal_parameter") {
         const nameNode = param.childForFieldName("name") || this.findChildByType(param, "identifier")
         if (nameNode) {
           const paramType = this.extractJavaParameterType(param)
