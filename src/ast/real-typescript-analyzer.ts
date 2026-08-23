@@ -2236,7 +2236,17 @@ class TypeScriptAnalysisRunner {
       metadata: {
         isExported: exportStatus.isExported,
         isDefault: exportStatus.isDefault,
-        isMappedType: typeValue?.type === "mapped_type",
+        isMappedType: (() => {
+          if (!typeValue) return false
+          const stack: any[] = [typeValue]
+          while (stack.length > 0) {
+            const n: any = stack.pop()
+            if (!n) continue
+            if (n.type === "mapped_type_clause") return true
+            for (let i = 0; i < n.namedChildCount; i++) stack.push(n.namedChild(i))
+          }
+          return false
+        })(),
         isConditionalType: typeValue?.type === "conditional_type",
         isUnionType: typeValue?.type === "union_type",
         isIntersectionType: typeValue?.type === "intersection_type",
@@ -2570,7 +2580,13 @@ class TypeScriptAnalysisRunner {
       metadata: {
         isOverride: modifiers.isOverride,
         isPrivateField: name.startsWith("#"),
-        isGenerator: node.type === "generator_method_definition",
+        isGenerator: (() => {
+          for (let i = 0; i < node.childCount; i++) {
+            const c = node.child(i)
+            if (c && !c.isNamed && c.text === "*") return true
+          }
+          return false
+        })(),
         isAccessor,
         complexity: this.calculateComplexity(node),
       },
@@ -2707,14 +2723,18 @@ class TypeScriptAnalysisRunner {
     let indexParam = ""
     let valueType = ""
 
+    // Real grammar shape (tree-sitter-typescript): index_signature >
+    //   identifier (key name) + type_annotation (value type).
+    // The old branches referenced nonexistent node types
+    // (index_signature_parameter/formal_parameter), so indexParam stayed
+    // empty and valueType captured the KEY name instead of the value type.
     for (let i = 0; i < node.namedChildCount; i++) {
       const child = node.namedChild(i)
       if (!child) continue
-
-      if (child.type === "index_signature_parameter" || child.type === "formal_parameter") {
+      if (child.type === "identifier") {
         indexParam = child.text
-      } else if (child.type !== "index_signature_parameter") {
-        valueType = child.text
+      } else if (child.type === "type_annotation") {
+        valueType = child.text.replace(/^:\s*/, "")
       }
     }
 
@@ -3516,7 +3536,7 @@ class TypeScriptAnalysisRunner {
       )
     }
 
-    if (node.type === "method_definition" || node.type === "generator_method_definition") {
+    if (node.type === "method_definition") {
       const raw = node.childForFieldName("name")?.text
       if (!raw) return current
       const name = stripPrivatePrefix(raw)
