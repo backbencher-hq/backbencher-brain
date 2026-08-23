@@ -19,8 +19,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "42c9608bb24f6b69ca9ceb65f74329274e919783",
-  "committedAt": "2026-08-23T09:44:08-05:00",
+  "commit": "c0603504d4890dbb147838d20fe8c90ca629582c",
+  "committedAt": "2026-08-23T10:50:32-05:00",
   "data": {
     "languages": {
       "bash": {
@@ -1065,7 +1065,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 435,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 74,
+        "referencedTypeLiterals": 75,
         "status": "fail",
         "unknownFields": [],
         "unknownNodeTypes": [
@@ -1076,7 +1076,7 @@
           },
           {
             "context": "real-scala-analyzer.ts:comparison",
-            "line": 854,
+            "line": 908,
             "literal": "anonymous_function"
           },
           {
@@ -1096,17 +1096,17 @@
           },
           {
             "context": "real-scala-analyzer.ts:comparison",
-            "line": 442,
+            "line": 446,
             "literal": "applied_type"
           },
           {
             "context": "real-scala-analyzer.ts:comparison",
-            "line": 906,
+            "line": 963,
             "literal": "applied_type"
           },
           {
             "context": "real-scala-analyzer.ts:comparison",
-            "line": 849,
+            "line": 903,
             "literal": "source_file"
           }
         ],

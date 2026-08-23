@@ -151,7 +151,16 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
         }
       }
     }
-    for (const want of exp.expectApiContractPaths ?? []) {
+    for (const want of exp.expectTypeParameters ?? []) {
+      const sym = symbols.find((s: any) => s.name === want.symbol)
+      const tps: string[] = sym?.genericParameters ?? sym?.metadata?.typeParameters ?? []
+      for (const inc of want.includes ?? []) {
+        if (!tps.includes(inc)) {
+          problems.push(`expected ${want.symbol} typeParameters to include "${inc}"; got: ${JSON.stringify(tps)}`)
+        }
+      }
+    }
+        for (const want of exp.expectApiContractPaths ?? []) {
       const sym = symbols.find((s: any) => s.name === want.symbol)
       const actualPath = sym?.apiContractPath ?? sym?.api_contract_path
       if (want.equals && actualPath !== want.equals) {

@@ -1,17 +1,220 @@
 {
   "checks": [
     {
+      "description": "java adversarial fixtures",
+      "detail": "12/12 fixtures pass",
+      "id": "fixtures-java",
+      "status": "pass"
+    },
+    {
+      "description": "groovy adversarial fixtures",
+      "detail": "11/11 fixtures pass",
+      "id": "fixtures-groovy",
+      "status": "pass"
+    },
+    {
+      "description": "kotlin adversarial fixtures",
+      "detail": "14/14 fixtures pass",
+      "id": "fixtures-kotlin",
+      "status": "pass"
+    },
+    {
       "description": "scala adversarial fixtures",
-      "detail": "10/10 fixtures pass",
+      "detail": "12/12 fixtures pass",
       "id": "fixtures-scala",
       "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "c954a12198aa11d9d63c7a9dd05687ab5e60a5e2",
-  "committedAt": "2026-08-23T16:47:04+02:00",
+  "commit": "c0603504d4890dbb147838d20fe8c90ca629582c",
+  "committedAt": "2026-08-23T10:50:32-05:00",
   "data": {
     "details": [
+      {
+        "fixture": "java/chained-field-access",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/class-extends-implements",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/fqn-extends",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/fqn-instantiation",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/generics-bounds",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/inner-class-instantiation",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/interface-method-call",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/multi-interface-extends",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/nested-types",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/pure-field-chain",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/records-and-sealed",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/static-utility-call",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/chained-field-access",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/closure-and-typedef",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/fqn-extends",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/fqn-implements",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/fqn-instantiation",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/gstring-interpolation",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/interface-multi-extends",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/pure-field-chain",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/safe-nav-chain",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/script-methods",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/trait-implements",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/api-contract-routes",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/calls-and-instantiation",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/class-inheritance",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/companion-object",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/data-class",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/enum-and-sealed",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/extension-property",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/generic-parameters",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/interface-multi-extends",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/kdoc-extraction",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/object-declaration",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/primary-constructor-properties",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/qualified-calls-builtin-names",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/safe-nav-chain",
+        "ok": true,
+        "problems": []
+      },
       {
         "fixture": "scala/case-class-fields",
         "ok": true,
@@ -24,6 +227,16 @@
       },
       {
         "fixture": "scala/companion-object",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/dotted-generic-supertype",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/extension-method-flag",
         "ok": true,
         "problems": []
       },
@@ -64,9 +277,21 @@
       }
     ],
     "summary": {
+      "groovy": {
+        "fail": 0,
+        "pass": 11
+      },
+      "java": {
+        "fail": 0,
+        "pass": 12
+      },
+      "kotlin": {
+        "fail": 0,
+        "pass": 14
+      },
       "scala": {
         "fail": 0,
-        "pass": 10
+        "pass": 12
       }
     }
   },

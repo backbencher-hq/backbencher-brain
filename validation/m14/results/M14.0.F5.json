@@ -8,7 +8,7 @@
     },
     {
       "description": "scala3@18df09c05f: tree-truth vs analyzer diff",
-      "detail": "60 files, coverage 95.1%, unexplained 0.5%",
+      "detail": "60 files, coverage 97.8%, unexplained 0.2%",
       "id": "differential-scala",
       "status": "pass"
     },
@@ -26,8 +26,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "c954a12198aa11d9d63c7a9dd05687ab5e60a5e2",
-  "committedAt": "2026-08-23T16:47:04+02:00",
+  "commit": "c0603504d4890dbb147838d20fe8c90ca629582c",
+  "committedAt": "2026-08-23T10:50:32-05:00",
   "data": {
     "corpusPins": {
       "scala3": "18df09c05fa48fbb5bf5cd4b3728e9b7a0b3f6db"
@@ -70,13 +70,13 @@
         "unexplainedInAnalyzer": 0
       },
       "scala": {
-        "analyzerEdges": 416,
-        "coveragePct": 95.1,
-        "coveredByAnalyzer": 175,
-        "explainableByTree": 414,
-        "fabricationPct": 0.5,
+        "analyzerEdges": 420,
+        "coveragePct": 97.8,
+        "coveredByAnalyzer": 180,
+        "explainableByTree": 419,
+        "fabricationPct": 0.2,
         "filesSampled": 60,
-        "missingInAnalyzer": 9,
+        "missingInAnalyzer": 4,
         "samples": [
           {
             "dir": "MISSING",
@@ -113,53 +113,10 @@
             "from": "(expr)",
             "label": "instantiates",
             "target": "RemovalPolicy.shouldRemove"
-          },
-          {
-            "dir": "MISSING",
-            "file": "library/src/scala/collection/concurrent/TrieMap.scala",
-            "from": "TrieMap",
-            "label": "extends",
-            "target": "scala.collection.mutable.AbstractMap"
-          },
-          {
-            "dir": "MISSING",
-            "file": "library/src/scala/collection/concurrent/TrieMap.scala",
-            "from": "TrieMap",
-            "label": "implements",
-            "target": "scala.collection.concurrent.Map"
-          },
-          {
-            "dir": "MISSING",
-            "file": "library/src/scala/collection/concurrent/TrieMap.scala",
-            "from": "TrieMap",
-            "label": "implements",
-            "target": "scala.collection.mutable.MapOps"
-          },
-          {
-            "dir": "MISSING",
-            "file": "library/src/scala/collection/concurrent/TrieMap.scala",
-            "from": "TrieMap",
-            "label": "implements",
-            "target": "scala.collection.MapFactoryDefaults"
-          },
-          {
-            "dir": "MISSING",
-            "file": "library/src/scala/collection/concurrent/TrieMap.scala",
-            "from": "TrieMap",
-            "label": "implements",
-            "target": "DefaultSerializable"
-          },
-          {
-            "dir": "UNEXPLAINED",
-            "file": "library/src/scala/collection/concurrent/TrieMap.scala",
-            "label": "extends",
-            "line": 725,
-            "sourceLine": "extends scala.collection.mutable.AbstractMap[K, V]",
-            "target": "DefaultSerializable"
           }
         ],
         "treeTruthEdges": 184,
-        "unexplainedInAnalyzer": 2
+        "unexplainedInAnalyzer": 1
       }
     },
     "samplingRule": "seeded 60 files/language"
