@@ -32,6 +32,22 @@
     "Exposed:groovy": {
       "missing": 0,
       "unexplained": 0
+    },
+    "scala3:kotlin": {
+      "missing": 0,
+      "unexplained": 0
+    },
+    "scala3:scala": {
+      "missing": 15,
+      "unexplained": 33
+    },
+    "scala3:java": {
+      "missing": 0,
+      "unexplained": 0
+    },
+    "scala3:groovy": {
+      "missing": 0,
+      "unexplained": 0
     }
   }
 }

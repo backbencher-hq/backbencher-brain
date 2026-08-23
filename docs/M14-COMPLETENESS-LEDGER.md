@@ -69,6 +69,8 @@ grammar nodes, never emitted concepts.
 | references/imports | pipeline-e2e GATED | pipeline-e2e GATED | PENDING -> F7 + #383 | F7 |
 | exports | emitted, unpinned | n/a (no export concept) | n/a | PENDING -> #381 |
 
+Scala (Matrix 2 JVM cluster): fixtures 10/10 GATED; differential 90.2% cov / 8.1% unexplained on scala3@HEAD; residuals -> #385. kotlin wasm fieldCount=0 -> #382.
+
 ## AST purity audit (2026-08-23)
 
 Relationship and symbol extraction in java/groovy/kotlin: tree-walk based,

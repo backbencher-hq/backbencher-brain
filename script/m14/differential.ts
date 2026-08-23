@@ -24,6 +24,7 @@ const SAMPLE_PER_LANG = process.argv.includes("--sample") ? parseInt(process.arg
 
 const LANGS: Record<string, { wasm: string; analyzerFile: string; className: string; ext: string }> = {
   kotlin: { wasm: "tree-sitter-kotlin.wasm", analyzerFile: "real-kotlin-analyzer", className: "RealKotlinAnalyzer", ext: "kt" },
+  scala: { wasm: "tree-sitter-scala.wasm", analyzerFile: "real-scala-analyzer", className: "RealScalaAnalyzer", ext: "scala" },
   java: { wasm: "tree-sitter-java.wasm", analyzerFile: "real-java-analyzer", className: "RealJavaAnalyzer", ext: "java" },
   groovy: { wasm: "tree-sitter-groovy.wasm", analyzerFile: "real-groovy-analyzer", className: "RealGroovyAnalyzer", ext: "groovy" },
 }
@@ -55,7 +56,7 @@ function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
   }
   const walk = (n: any) => {
     const t = n.type
-    if (/^(class|interface|record|trait|object)_declaration$|^enum_declaration$|^class_definition$/.test(t)) {
+    if (/^(class|interface|record|trait|object)_declaration$|^enum_declaration$|^class_definition$|^trait_definition$|^object_definition$/.test(t)) {
       const nameNode = n.childForFieldName?.("name") ?? n.namedChildren.find((c: any) => c.type === "identifier")
       const clsName = nameNode?.text ?? "?"
       // extends side: superclass (classes) or extends_interfaces+type_list (interfaces)
@@ -66,6 +67,22 @@ function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
       // implements side
       const impls = n.childForFieldName?.("interfaces") ?? n.namedChildren.find((c: any) => c.type === "super_interfaces")
       if (impls) collect(impls, "implements", clsName)
+      // scala extends_clause: first supertype extends, rest implements;
+      // on trait_definition all are extends
+      if (t === "class_definition" || t === "trait_definition" || t === "object_definition") {
+        const extClause = n.namedChildren.find((c: any) => c.type === "extends_clause")
+        if (extClause) {
+          const isTraitDecl = t === "trait_definition"
+          let first = true
+          for (let i = 0; i < extClause.namedChildCount; i++) {
+            const st = extClause.namedChild(i)
+            if (!st || !/type_identifier|user_type/.test(st.type)) continue
+            if (isTraitDecl || first) edges.push({ label: "extends", from: clsName, target: st.text })
+            else edges.push({ label: "implements", from: clsName, target: st.text })
+            first = false
+          }
+        }
+      }
       // kotlin delegation_specifiers: first constructor_invocation = extends,
       // every other user_type = implements; on interface_declaration all extends
       const isInterfaceDecl = t === "interface_declaration"
@@ -93,24 +110,43 @@ function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
       const typeNode = n.namedChildren.find((c: any) => /type_identifier|scoped_type_identifier|generic_type$/.test(c.type))
       if (typeNode) edges.push({ label: "instantiates", from: "(expr)", target: typeNode.text })
     }
-    // kotlin has no `new`: constructions are call_expressions whose callee
+    // scala: every `new X` / `new X(...)` / `new X[T](...)` parses as
+    // instance_expression
+    if (t === "instance_expression") {
+      const tn = n.namedChild(0)
+      if (tn) {
+        let name = tn.text
+        if (tn.type === "generic_type" && tn.namedChildCount > 0) name = tn.namedChild(0).text
+        edges.push({ label: "instantiates", from: "(expr)", target: name })
+      }
+    }
+    // kotlin/scala: constructions appear as call_expressions whose callee
     // leaf follows the PascalCase type convention (language naming rule).
-    if (lang === "kotlin" && t === "call_expression") {
+    // Scala additionally has explicit `new X` (object_creation_expression).
+    if ((lang === "kotlin" || lang === "scala") && t === "call_expression") {
       const callee = n.namedChild(0)
       let leaf = ""
       if (callee?.type === "navigation_expression") {
         const sel = callee.namedChild(callee.namedChildCount - 1)
         leaf = sel?.text ?? ""
+      } else if (callee?.type === "field_expression") {
+        // scala3 qualified call `Util.escapeChar(...)`: only the FINAL
+        // selector is the called name - the receiver path must not leak
+        // into the target (Util.escapeChar was being emitted whole).
+        const kids = callee.namedChildren
+        const last = kids[kids.length - 1]
+        leaf = last && /identifier|_type$/.test(last.type) ? last.text : ""
       } else if (callee) {
         leaf = callee.text.split("<")[0]
       }
-      leaf = leaf.replace(/\(.*$/, "")
-      if (/^[A-Z]/.test(leaf)) edges.push({ label: "instantiates", from: "(expr)", target: leaf })
+      leaf = leaf.replace(/\(.*$/, "").replace(/^['`]/, "").trim()
+      if (leaf && /^[A-Z]/.test(leaf)) edges.push({ label: "instantiates", from: "(expr)", target: leaf })
     }
     for (let i = 0; i < n.namedChildCount; i++) walk(n.namedChild(i))
   }
   walk(root)
-  return edges
+  // dedupe identical edges (oracle double-push guard)
+  return edges.filter((e, i) => edges.findIndex(x => x.label === e.label && x.from === e.from && x.target === e.target) === i)
 }
 
 async function main() {
@@ -162,6 +198,7 @@ async function main() {
       const rels = (result.relationships ?? []).map((r: any) => ({
         label: String(r.type ?? r.relationshipType ?? ""),
         target: String(r.target ?? r.to ?? r.toSymbol ?? ""),
+        line: r.line_number ?? 0,
       })).filter((r: any) => ["extends", "implements", "instantiates"].includes(r.label))
 
       treeEdgesTotal += truth.length
@@ -175,7 +212,13 @@ async function main() {
       for (const r of rels) {
         const hit = truth.some(te => te.label === r.label && (normTarget(te.target) === normTarget(r.target) || te.target.includes(normTarget(r.target))))
         if (hit) explainableByTree++
-        else { unexplainedInAnalyzer++; if (samples.length < 300) samples.push({ dir: "UNEXPLAINED", file: relPath, ...r }) }
+        else {
+          unexplainedInAnalyzer++
+          if (samples.length < 300) {
+            const lineText = r.line ? content.split("\n")[r.line - 1]?.trim().slice(0, 100) : undefined
+            samples.push({ dir: "UNEXPLAINED", file: relPath, ...r, sourceLine: lineText })
+          }
+        }
       }
     }
 

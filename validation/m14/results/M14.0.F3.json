@@ -20,14 +20,14 @@
     },
     {
       "description": "scala adversarial fixtures",
-      "detail": "0/0 fixtures pass",
+      "detail": "10/10 fixtures pass",
       "id": "fixtures-scala",
       "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "4fb198debe09b27d78fa00d32ac7954d71bde04f",
-  "committedAt": "2026-08-22T23:29:54-05:00",
+  "commit": "72735f10d99837ee7a9db79d427cdbaff85211d2",
+  "committedAt": "2026-08-23T00:09:24-05:00",
   "data": {
     "details": [
       {
@@ -206,8 +206,54 @@
         "problems": []
       },
       {
-        "fixture": "(none)",
-        "ok": true
+        "fixture": "scala/case-class-fields",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/class-extends-class-and-trait",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/companion-object",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/generics-bounds",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/instantiation-new",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/lambda-calls",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/object-singleton",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/sealed-hierarchy",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/self-type",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/trait-and-impl",
+        "ok": true,
+        "problems": []
       }
     ],
     "summary": {
@@ -225,7 +271,7 @@
       },
       "scala": {
         "fail": 0,
-        "pass": 0
+        "pass": 10
       }
     }
   },
