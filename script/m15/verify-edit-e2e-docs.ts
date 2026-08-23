@@ -48,7 +48,7 @@ async function emitFile(code: string, issue: string, tool: string, title: string
       const content = readFileSync(s.file, "utf8")
       const p = await parseForSafety(path.basename(s.file), content)
       ck("E6: " + s.lang + " — parseForSafety succeeds on real file",
-         p.occurrences.length >= 0 && p.mask.length === content.length,
+         p.mask.length === content.length,
          "occurrences=" + p.occurrences.length + " mask=" + p.mask.length + "/" + content.length)
       
       // Verify no comment/string text is classified as live code occurrence
