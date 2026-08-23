@@ -1357,7 +1357,9 @@ export async function storeResults(
   // Pre-prepare target resolution statement — reused for every relationship.
   // file_id is needed to compute the honest is_cross_file flag at insert time.
   const resolveTargetStmt = rawDb.prepare(
-    `SELECT id, file_id FROM brain_symbol WHERE project_id = ? AND name = ? LIMIT 1`
+    `SELECT s.id, s.file_id, f.language FROM brain_symbol s
+     LEFT JOIN brain_file f ON f.id = s.file_id
+     WHERE s.project_id = ? AND s.name = ? LIMIT 1`
   )
 
 
@@ -1860,16 +1862,25 @@ export async function storeResults(
 
         if (result.imports) {
           for (const imp of result.imports) {
-            const importId = `${fileId}:import:${imp.name}:${imp.line || 0}`
+            // ImportInfo canonical fields are module/importType — analyzers
+            // never set name/path/type, so those reads silently produced
+            // undefined bindings and imports were never persisted for ANY
+            // language. Map the real shape (M14.1 fix).
+            const moduleName = imp.module ?? imp.path ?? imp.localName ?? ""
+            if (!moduleName) continue
+            const importType =
+              imp.importType ??
+              (imp.isDefault || imp.isDefaultImport ? "default" : imp.isNamespace || imp.isNamespaceImport ? "namespace" : "named")
+            const importId = `${fileId}:import:${moduleName}:${imp.range?.startLine ?? 0}`
             insertImport.run(
               importId,
               projectId,
               fileId,
-              imp.name,
-              imp.path || "",
-              imp.type || "named",
-              imp.isExternal ? 1 : 0,
-              imp.line || 0,
+              moduleName,
+              imp.path || moduleName,
+              importType,
+              0,
+              imp.range?.startLine ?? 0,
               now,
               now,
             )
@@ -1949,6 +1960,13 @@ export async function storeResults(
             // below recompute this flag only for rows they resolve, so rows
             // resolved here would otherwise carry the wrong value forever.
             const relIsCrossFile = sourceId !== null && !!resolvedRow?.file_id && resolvedRow.file_id !== fileId ? 1 : 0
+            // Cross-language: target resolved to a symbol whose file language
+            // differs from the source file's. Previously this flag was only set
+            // when analyzers self-declared it in metadata (only r did), so real
+            // cross-language edges (groovy extends java etc.) stored 0.
+            const targetLang = String(resolvedRow?.language ?? "").toLowerCase()
+            const relIsCrossLanguage =
+              relIsCrossFile && !!targetLang && !!fileLang && targetLang !== fileLang ? 1 : 0
 
             const MAX_SYMBOL_NAME_LENGTH = 255
             const GENERIC_SOURCE_NAMES = new Set([
@@ -2000,8 +2018,8 @@ export async function storeResults(
               rel.context || null,
               0,
               relIsCrossFile,
-              rel.metadata?.isCrossLanguage ? 1 : 0,
-              rel.metadata?.bridgeMechanism || null,
+              rel.metadata?.isCrossLanguage || relIsCrossLanguage ? 1 : 0,
+              rel.metadata?.bridgeMechanism || (relIsCrossLanguage ? "name-resolution" : null),
               rel.metadata ? JSON.stringify(rel.metadata) : null,
               now,
               now,

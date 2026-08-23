@@ -14,8 +14,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "5a547d7b5fb4b73d8cf77738d0c5e4cf439662f4",
-  "committedAt": "2026-08-23T03:55:18+02:00",
+  "commit": "c66c126c9a39d83e419510c305facace35cc14d9",
+  "committedAt": "2026-08-22T21:30:42-05:00",
   "data": {
     "corpusPins": {
       "grails-core": "a83f87480e0c0138caa5a7191a053b1e59a64066"
