@@ -53,6 +53,17 @@ function stripJavaAnnotations(text: string): string {
         if (!isWord) break
         i++
       }
+      // Also consume a balanced (...) argument list — @NotNull(message = "x")
+      // must not leave its arguments behind as phantom type text.
+      while (i < text.length && text[i] === " ") i++
+      if (text[i] === "(") {
+        let depth = 0
+        while (i < text.length) {
+          if (text[i] === "(") depth++
+          else if (text[i] === ")") { depth--; if (depth === 0) { i++; break } }
+          i++
+        }
+      }
       while (i < text.length && (text[i] === " " || text[i] === "\t")) i++
       continue
     }
@@ -643,14 +654,16 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
 
       else if (type === "object_creation_expression") {
-        // new Foo() → Instantiates relationship. The type is a type_identifier
-        // for plain types but a generic_type for diamond constructions
-        // (new HashMap<>()) — both must be handled or diamond instantiations
+        // new Foo() → Instantiates relationship. The type node is a
+        // type_identifier for plain types, a generic_type for diamond
+        // constructions (new HashMap<>()), and a scoped_type_identifier for
+        // qualified or inner-class constructions (new java.util.ArrayList(),
+        // new Outer.Builder()) — all must be handled or those instantiations
         // are silently dropped.
-        const typeNode = this.findChildByType(node, "type_identifier") || this.findChildByType(node, "generic_type") || this.findChildByType(node, "identifier")
+        const typeNode = this.findChildByType(node, "type_identifier") || this.findChildByType(node, "generic_type") || this.findChildByType(node, "scoped_type_identifier") || this.findChildByType(node, "identifier")
         if (typeNode) {
           const source = parentContext?.name || parentContext?.symbolRef?.name || "global"
-          const typeName = typeNode.type === "generic_type" ? this.extractJavaTypeBaseName(typeNode) : typeNode.text
+          const typeName = typeNode.type === "identifier" ? typeNode.text : this.extractJavaTypeBaseName(typeNode)
           relationships.push({
             source,
             target: typeName,
