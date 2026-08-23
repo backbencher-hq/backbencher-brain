@@ -73,3 +73,34 @@ Fixes committed for the three verified bugs; fixtures added under
   - Fixture workflow used: author expectations encoding CORRECT semantics →
     confirm they FAIL pre-fix → fix → confirm 16/16 + sibling languages
     unchanged + grammar audit baseline stable. Reuse this shape.
+
+## Java gap wave (2026-08-23) — coverage gaps closed + measurements recorded
+
+Second wave: mechanical coverage gaps (no corpus stats needed to justify)
+plus one consumer-driven fix and two recorded MEASUREMENTS.
+
+  - **Varargs (`spread_parameter`)**: no named fields in the pinned grammar;
+    name lives inside trailing `variable_declarator`, type is the remaining
+    child. Modeled as `T[]` (matches ERROR-recovery convention + JVM
+    erasure). Handled for method params AND record components.
+  - **Compact record constructors** (`compact_constructor_declaration`,
+    fields name+body): now emit Constructor symbols whose implicit
+    parameter list = the parent record's components (read from
+    parentContext.node).
+  - **`permits` clauses**: emitted as directional sealed-class→subtype
+    References edges (`meta.relationshipType="permits"`); deliberately NOT
+    in classHierarchy.parents — permitted subtypes are children.
+  - **Override Pass-3 confidence demoted 1.0 → 0.5** (pass 2 → 0.85): this
+    is NOT a judgment call — `src/ast/patterns.ts:137` filters
+    relationships at `confidence >= 0.7`, so file-local guesses were
+    contaminating thresholded analysis identically to verified overrides.
+    Rule for all analyzers: check whether relationship.confidence has
+    consumers before assigning it reflexively.
+  - **MEASURED — isJavaBuiltin any-segment filter**: on grails-core (1942
+    java files) only 6 files (0.31%) declare a type colliding with
+    STDLIB_ROOTS (`Class`, `Collection`, `Test`, `Properties`, `com`).
+    Below the repo's own 0.5% bar (Scala precedent). Filter KEPT with
+    evidence; do not "fix" without a fresh measurement.
+  - Still open (cosmetic, skip unless something consumes them): field-access
+    Uses edges on stdlib receivers (`System→out`); `*Factory`/`*Builder`
+    identifier pattern flags.
