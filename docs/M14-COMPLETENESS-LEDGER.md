@@ -178,3 +178,5 @@ recorded per language per repo into differential-baseline.json; gate fails on
 java 12.3 ms/file, groovy 8.8, scala 10.6, kotlin 54.2 on Exposed (OUTLIER -
 flagged for investigation under #385-family; budget passes at current margin).
 100k+-file scaling: UNTESTED (declared).
+
+JavaScript (M14.2): 10/10 fixtures GATED; field-access uses collector ADDED (parity gap - analyzer had none); vue-core corpus shared with TS.
