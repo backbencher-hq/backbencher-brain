@@ -23,6 +23,25 @@ const rawInstances = new Map<string, CoreDatabase>()
 const drizzleInstances = new Map<string, any>()
 const pathOverrides = new Map<string, string>()
 
+/**
+ * If a cached raw handle's database file no longer exists on disk, the handle
+ * points at an unlinked inode: writing through it raises
+ * SQLITE_READONLY_DBMOVED (e.g. after a project's DB was reset or recreated
+ * under a long-running process, like re-indexing a project whose old index
+ * was deleted). Drop the cache entry so the next access opens the current
+ * file fresh instead of reusing a dead handle.
+ *
+ * Deliberately NOT closed here: the handle may still be referenced by long-
+ * lived callers (the indexer worker pool, the background embedding queue,
+ * or any code that captured it earlier), and closing it under them would
+ * raise "Cannot use a closed database". Unregistering only lets those
+ * existing uses finish (their writes go to the unlinked inode and are
+ * safely ignored) while future lookups get a fresh handle.
+ */
+function evictStaleRawHandle(cacheKey: string): void {
+  if (rawInstances.has(cacheKey)) rawInstances.delete(cacheKey)
+}
+
 function resolveDbPath(projectId: string): string {
   return pathOverrides.get(projectId) ?? BrainDatabase.getDbPath(projectId)
 }
@@ -80,7 +99,9 @@ export namespace BrainDatabase {
   export function openByPath(dbPath: string, options: { readonly?: boolean } = {}): CoreDatabase {
     const key = `${options.readonly ? "ro:" : "rw:"}${dbPath}`
     const cached = rawInstances.get(key)
-    if (cached) return cached
+    if (cached && !existsSync(dbPath)) evictStaleRawHandle(key)
+    const fresh = rawInstances.get(key)
+    if (fresh) return fresh
     const db = openDatabase(dbPath, options)
     if (!options.readonly) ensureSchemaIfNew(db)
     rawInstances.set(key, db)
@@ -89,9 +110,15 @@ export namespace BrainDatabase {
 
   /** Open the standalone ~/.bb/projects/<projectId>/brain.db and return a drizzle handle. */
   export async function getInstance(projectId: string): Promise<any> {
-    if (drizzleInstances.has(projectId)) return drizzleInstances.get(projectId)
     const dbPath = resolveDbPath(projectId)
     if (!existsSync(path.dirname(dbPath))) mkdirSync(path.dirname(dbPath), { recursive: true })
+    if (!existsSync(dbPath)) {
+      // DB file was deleted/recreated: drop both cache layers so a fresh
+      // drizzle wrapper is built on the new file.
+      drizzleInstances.delete(projectId)
+      evictStaleRawHandle(dbPath)
+    }
+    if (drizzleInstances.has(projectId)) return drizzleInstances.get(projectId)
     const raw = rawInstances.get(dbPath) ?? openDatabase(dbPath)
     ensureSchemaIfNew(raw)
     rawInstances.set(dbPath, raw)
@@ -106,6 +133,7 @@ export namespace BrainDatabase {
   export async function getRawInstance(projectId: string): Promise<CoreDatabase> {
     const dbPath = resolveDbPath(projectId)
     if (!existsSync(path.dirname(dbPath))) mkdirSync(path.dirname(dbPath), { recursive: true })
+    if (!existsSync(dbPath)) evictStaleRawHandle(dbPath)
     const raw = rawInstances.get(dbPath) ?? openDatabase(dbPath)
     ensureSchemaIfNew(raw)
     rawInstances.set(dbPath, raw)
