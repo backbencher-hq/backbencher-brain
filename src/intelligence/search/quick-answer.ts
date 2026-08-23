@@ -128,8 +128,12 @@ export async function quickAnswer(projectId: ProjectID, query: string): Promise<
 
   if (lowerQuery.includes("how many") && lowerQuery.includes("function")) {
     const raw = await BrainDatabase.getRawInstance(projectId)
-    const row = raw.prepare("SELECT count(*) AS c FROM brain_symbol WHERE project_id = ? AND symbol_type = 'function'").get(projectId) as { c: number }
-    return { answer: `There are ${row?.c ?? 0} functions in this project`, confidence: 0.95, sources: [], provenance: statProvenance(projectId, "count(brain_symbol where function)") }
+    // Functions are stored as 'function' (JS/TS/Go…) or 'method' (Ruby,
+    // Python, Java, C#, Kotlin, …). Counting only 'function' reports 0 for
+    // method-first languages — a cross-language correctness bug caught by
+    // running bb_ask against a real Ruby repo. Count both buckets.
+    const row = raw.prepare("SELECT count(*) AS c FROM brain_symbol WHERE project_id = ? AND symbol_type IN ('function','method')").get(projectId) as { c: number }
+    return { answer: `There are ${row?.c ?? 0} functions in this project`, confidence: 0.95, sources: [], provenance: statProvenance(projectId, "count(brain_symbol where function|method)") }
   }
 
   if (lowerQuery.includes("how many") && lowerQuery.includes("class")) {
@@ -143,7 +147,7 @@ export async function quickAnswer(projectId: ProjectID, query: string): Promise<
     const row = raw.prepare(
       "SELECT s.name AS name, s.complexity AS complexity, s.line_start AS line, f.relative_path AS file " +
         "FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id " +
-        "WHERE s.project_id = ? AND s.symbol_type = 'function' " +
+        "WHERE s.project_id = ? AND s.symbol_type IN ('function','method') " +
         "ORDER BY s.gravity_score DESC, s.complexity DESC LIMIT 1",
     ).get(projectId) as { name: string; complexity: number; line: number; file: string } | undefined
     if (row) {
