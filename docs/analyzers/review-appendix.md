@@ -6,14 +6,91 @@ smarter instead of rediscovering the same thing.
 
 ---
 
-- **Kotlin**: confirm whether the pinned WASM actually serializes named grammar
-  fields (`childForFieldName`) before relying on them without a fallback — this
-  project's pinned build has been found to expose fields inconsistently with
-  current upstream `grammar.js`.
+## Kotlin (reviewed 2026-08-23, upstream fwcd/tree-sitter-kotlin @ 1852ea1, 2026-08-02; pinned `wasm/tree-sitter-kotlin.wasm`, no version metadata)
+
+- **CONFIRMED: the pinned Kotlin WASM exposes ZERO named fields**
+  (`Language.fieldCount === undefined`). Every `childForFieldName` call
+  returns undefined. Any new analyzer code for Kotlin must use positional
+  child access with fallbacks — never trust a field lookup alone.
+- Annotation name shape (verified live): bare `@Foo` → annotation has direct
+  name child resolvable by first `simple_identifier`/`type_identifier`.
+  Fully-qualified `@org.x.Service` → annotation > user_type whose children
+  are MULTIPLE type_identifiers (`org`, `x`, `Service`) — "first identifier"
+  extraction yields `@org`, the WRONG short name. Last dotted segment is the
+  rule (same as Java's scoped_identifier lesson).
+- Wildcard imports: `import_header`'s `identifier` child text is
+  `"kotlinx.coroutines"` WITHOUT the `.*` — the asterisk is a separate
+  sibling `wildcard_import` node. `path.endsWith(".*")` can never match;
+  detect via child node.
+- Qualified calls (`obj.method()`) parse as call_expression >
+  navigation_expression + call_suffix with NO direct simple_identifier
+  child. Any `findChildByType(call, ["simple_identifier"])` only works for
+  receiver-less calls; the text fallback (`n.text.split("(")[0]`) returns
+  garbage for qualified calls (can span the whole lambda body).
+- property_declaration is FLAT: [binding_pattern_kind, variable_declaration,
+  initializer...]; the name is simple_identifier INSIDE variable_declaration.
+  Extension receivers appear as user_type BEFORE variable_declaration.
+- class supertype extends-vs-implements: constructor_invocation inside
+  delegation_specifier = class (extends); bare user_type = interface
+  (implements). BUT explicit delegation (`X by Y()`) wraps a call_expression,
+  NOT constructor_invocation — kind detection sees bare user_type → labels
+  implements (correct outcome, accidental mechanism; don't "fix" blindly).
+- package_header / import_header carry the full dotted path as ONE
+  `identifier` node (aliasing via separate import_alias node).
+- primary_constructor params are `class_parameter` children (binding_pattern_kind
+  + simple_identifier + user_type); secondary_constructor uses
+  function_value_parameters like functions.
+
+## Kotlin fix wave (2026-08-23) — what the K1–K5 fixes taught
+
+Fixes for wildcard imports, FQ annotation names, qualified coroutine
+dispatch, data-class phantoms, error-range base, override confidence
+tiers, and a MEASURED PascalCase restriction. Fixtures under
+`validation/m14/fixtures/kotlin/` (`wildcard-imports`,
+`fq-annotations`, `coroutine-dispatch`, `data-class-phantoms`,
+`override-fallback-confidence`). Harness extended with `expectImports`
+and `expectErrors` matchers.
+
+  - **Dead code can hide dead DATA paths**: `getKotlinFrameworkPatterns`
+    read `s.metadata.annotations`, which NO extractor ever wrote — the
+    whole Spring/Room/Compose pattern layer silently emitted `[]`
+    forever. When reviewing consumers, verify the field they read is
+    actually populated somewhere.
+  - **Never wire a stored-but-never-written field blindly**: fixing means
+    (a) populate it with normalized short names AND (b) keep raw text in
+    decorators. Two representations, two purposes.
+  - **Prefix matching on raw annotation text is the JVM-family plague**:
+    Kotlin's route matcher (`text.startsWith("@GetMapping")`) had the
+    same FQ blindness Java did. Rule: annotation-name comparison ALWAYS
+    goes through a short-name normalizer (strip @, cut at "(", last
+    dotted segment).
+  - **Fixture authoring discipline bites**: first draft of the coroutine
+    fixture passed pre-fix because the bare-launch form satisfied it —
+    a fixture that passes before the fix proves nothing about the bug.
+    Every fixture MUST fail pre-fix; re-check after any edit to the
+    fixture source.
+  - **MEASURED — PascalCase qualified calls**: Exposed corpus (791 kt
+    files): 158 obj.Method() occurrences, sampled ones all enum/member
+    accesses (MySQL.ForShare(, case().When() =) = ~6.5% fabricated
+    Instantiates edges vs 2268 legitimate bare constructions. Heuristic
+    restricted to receiver-less calls. Do not revert without a fresh
+    measurement.
+  - **Shared working tree hazard**: typecheck transiently failed in a
+    file another agent was editing concurrently. Before diagnosing "my"
+    typecheck errors, check `git diff HEAD -- <file>` — the file may not
+    be yours.
+  - Still open (needs decisions/corpora, NOT in this wave): apiContractPath
+    format unification ("GET /path" vs Java's "/path") — cross-language
+    contract decision required; annotation-based framework DETECTION
+    (current detector is import-only); no pinned Kotlin corpus besides
+    Exposed for future measurements.
+
+*(existing entries retained below)*
+
 - **Groovy**: this project uses a patched fork of `amaanq/tree-sitter-groovy`
   (see `grammars/tree-sitter-groovy/`) — diff against the upstream base to see
-  what's inherited vs. custom before assuming grammar.js on GitHub reflects the
-  pinned parser.
+  what's inherited vs. custom before assuming grammar.js on GitHub reflects
+  the pinned parser.
 - **Scala**: `new Foo(...)` is modeled as `instance_expression`, not a
   `call_expression` wrapper, in the pinned grammar version — don't assume
   constructor calls show up in `call_expression` handling.

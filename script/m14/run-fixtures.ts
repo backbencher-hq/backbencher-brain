@@ -168,12 +168,29 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
         problems.push(`expected ${want.symbol} comments >= ${want.minCount}; got ${cc}`)
       }
     }
-    for (const want of exp.expectApiContractPaths ?? []) {
+        for (const want of exp.expectApiContractPaths ?? []) {
       const sym = symbols.find((s: any) => s.name === want.symbol)
       const actualPath = sym?.apiContractPath ?? sym?.api_contract_path
       if (want.equals && actualPath !== want.equals) {
         problems.push(`expected ${want.symbol} apiContractPath ${JSON.stringify(want.equals)}; got ${JSON.stringify(actualPath)}`)
       }
+    }
+    for (const want of exp.expectImports ?? []) {
+      // Each constraint field must match >=1 import (unspecified fields are wildcards).
+      const hit = (result.imports ?? []).find((imp: any) =>
+        Object.entries(want).every(([k, v]) => {
+          if (k.startsWith("meta.")) return ((imp.metadata ?? {})[k.slice(5)] ?? imp[k.slice(5)]) === v
+          if (Array.isArray(v)) return JSON.stringify([...(imp[k] ?? [])].sort()) === JSON.stringify([...v].sort())
+          return imp[k] === v
+        }),
+      )
+      if (!hit) problems.push(`expected import not found: ${JSON.stringify(want)}; got: ${JSON.stringify((result.imports ?? []).map((i: any) => ({ module: i.module, ns: i.isNamespaceImport, items: i.items })))}`)
+    }
+    for (const want of exp.expectErrors ?? []) {
+      const hit = (result.errors ?? []).find((e: any) =>
+        Object.entries(want).every(([k, v]) => (e.range?.[k] ?? e[k]) === v),
+      )
+      if (!hit) problems.push(`expected error not found: ${JSON.stringify(want)}; got: ${JSON.stringify((result.errors ?? []).slice(0, 5).map((e: any) => e.range))}`)
     }
     for (const want of exp.forbidSymbols ?? []) {
       const hit = symbols.find(s => matchConstraints(s, want))
