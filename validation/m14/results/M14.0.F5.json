@@ -1,36 +1,42 @@
 {
   "checks": [
     {
-      "description": "scala3@18df09c05f: tree-truth vs analyzer diff",
+      "description": "vue-core@f8975657d7: tree-truth vs analyzer diff",
+      "detail": "60 files, coverage 100%, unexplained 0.9%",
+      "id": "differential-typescript",
+      "status": "pass"
+    },
+    {
+      "description": "vue-core@f8975657d7: tree-truth vs analyzer diff",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-kotlin",
       "status": "pass"
     },
     {
-      "description": "scala3@18df09c05f: tree-truth vs analyzer diff",
-      "detail": "60 files, coverage 97.8%, unexplained 0.2%",
+      "description": "vue-core@f8975657d7: tree-truth vs analyzer diff",
+      "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-scala",
       "status": "pass"
     },
     {
-      "description": "scala3@18df09c05f: tree-truth vs analyzer diff",
-      "detail": "60 files, coverage 100%, unexplained 0%",
+      "description": "vue-core@f8975657d7: tree-truth vs analyzer diff",
+      "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-java",
       "status": "pass"
     },
     {
-      "description": "scala3@18df09c05f: tree-truth vs analyzer diff",
+      "description": "vue-core@f8975657d7: tree-truth vs analyzer diff",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-groovy",
       "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "3531283894971ee345897dbeed011fb2a88607ef",
-  "committedAt": "2026-08-23T18:19:41+02:00",
+  "commit": "8232dac9b4a23572ed5e76362cec08b289975ab6",
+  "committedAt": "2026-08-23T11:48:40-05:00",
   "data": {
     "corpusPins": {
-      "scala3": "18df09c05fa48fbb5bf5cd4b3728e9b7a0b3f6db"
+      "vue-core": "f8975657d7451d8e4291406427e6a8ae5e50c8d5"
     },
     "report": {
       "groovy": {
@@ -51,20 +57,20 @@
         "unexplainedInAnalyzer": 0
       },
       "java": {
-        "analyzerEdges": 71,
-        "coveragePct": 100,
-        "coveredByAnalyzer": 40,
-        "explainableByTree": 71,
-        "fabricationPct": 0,
-        "filesSampled": 60,
+        "analyzerEdges": 0,
+        "coveragePct": null,
+        "coveredByAnalyzer": 0,
+        "explainableByTree": 0,
+        "fabricationPct": null,
+        "filesSampled": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 5.2,
-          "maxMsPerFile": 138.6,
-          "samplesTimed": 60
+          "avgMsPerFile": null,
+          "maxMsPerFile": null,
+          "samplesTimed": 0
         },
         "samples": [],
-        "treeTruthEdges": 40,
+        "treeTruthEdges": 0,
         "unexplainedInAnalyzer": 0
       },
       "kotlin": {
@@ -85,57 +91,45 @@
         "unexplainedInAnalyzer": 0
       },
       "scala": {
-        "analyzerEdges": 420,
-        "coveragePct": 97.8,
-        "coveredByAnalyzer": 180,
-        "explainableByTree": 419,
-        "fabricationPct": 0.2,
-        "filesSampled": 60,
-        "missingInAnalyzer": 4,
+        "analyzerEdges": 0,
+        "coveragePct": null,
+        "coveredByAnalyzer": 0,
+        "explainableByTree": 0,
+        "fabricationPct": null,
+        "filesSampled": 0,
+        "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 10,
-          "maxMsPerFile": 113,
+          "avgMsPerFile": null,
+          "maxMsPerFile": null,
+          "samplesTimed": 0
+        },
+        "samples": [],
+        "treeTruthEdges": 0,
+        "unexplainedInAnalyzer": 0
+      },
+      "typescript": {
+        "analyzerEdges": 116,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 45,
+        "explainableByTree": 115,
+        "fabricationPct": 0.9,
+        "filesSampled": 60,
+        "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": 54.9,
+          "maxMsPerFile": 590.1,
           "samplesTimed": 60
         },
         "samples": [
           {
-            "dir": "MISSING",
-            "file": "library/test/scala/jdk/StepperTest.scala",
-            "from": "(expr)",
-            "label": "instantiates",
-            "target": "List["
-          },
-          {
-            "dir": "MISSING",
-            "file": "library/test/scala/jdk/StepperTest.scala",
-            "from": "(expr)",
-            "label": "instantiates",
-            "target": "List.fill"
-          },
-          {
             "dir": "UNEXPLAINED",
-            "file": "library/test/scala/jdk/StepperTest.scala",
-            "label": "instantiates",
-            "line": 59,
-            "sourceLine": "val mapFactories = List[(MapFactory[scala.collection.Map], Boolean)](",
-            "target": "List[(MapFactory[scala.collection.Map], Boolean)]"
-          },
-          {
-            "dir": "MISSING",
-            "file": "library/test/scala/collection/immutable/StreamTest.scala",
-            "from": "(expr)",
-            "label": "instantiates",
-            "target": "Stream.iterate"
-          },
-          {
-            "dir": "MISSING",
-            "file": "library/src/scala/collection/concurrent/TrieMap.scala",
-            "from": "(expr)",
-            "label": "instantiates",
-            "target": "RemovalPolicy.shouldRemove"
+            "file": "packages/runtime-dom/__tests__/patchProps.spec.ts",
+            "label": "extends",
+            "line": 0,
+            "target": "HTMLElement"
           }
         ],
-        "treeTruthEdges": 184,
+        "treeTruthEdges": 45,
         "unexplainedInAnalyzer": 1
       }
     },
