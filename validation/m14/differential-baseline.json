@@ -134,6 +134,48 @@
       "perf": {
         "avgMsPerFile": null
       }
+    },
+    "graphql-js:javascript": {
+      "missing": 0,
+      "unexplained": 0,
+      "perf": {
+        "avgMsPerFile": 14.6
+      }
+    },
+    "graphql-js:typescript": {
+      "missing": 0,
+      "unexplained": 0,
+      "perf": {
+        "avgMsPerFile": 20.6
+      }
+    },
+    "graphql-js:kotlin": {
+      "missing": 0,
+      "unexplained": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
+    },
+    "graphql-js:scala": {
+      "missing": 0,
+      "unexplained": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
+    },
+    "graphql-js:java": {
+      "missing": 0,
+      "unexplained": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
+    },
+    "graphql-js:groovy": {
+      "missing": 0,
+      "unexplained": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
     }
   }
 }
