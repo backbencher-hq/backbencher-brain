@@ -168,6 +168,49 @@ for (const g of xlangNameGaps) {
   harness.check(`${g.lang}: name is a documented M14 reference-identification gap (not an occurrence)`, parsed.occurrences.filter((o) => o.text === g.name).length === 0, `got ${parsed.occurrences.filter((o) => o.text === g.name).length}`)
 }
 
+// ── UNIT: member-access receiver classification (the bug that inspired M14) ──
+// In `obj.field`, the receiver `obj` MUST be classified as a reference (not a
+// binding), while the member name `field` MUST be a member (not a reference).
+// Prior to the access-expression fix, `isBindingParentType` substring-matched
+// "field_expression"/"field_access" and silently classified the receiver as a
+// binding, causing under-rename (real reference left untouched).
+const memberAccessCases: Array<{ lang: string; file: string; code: string; receiverName: string; memberName: string; memberNameKnown: boolean }> = [
+  { lang: "rust", file: "a.rs", code: `fn f() { let _ = obj.field; }`, receiverName: "obj", memberName: "field", memberNameKnown: true },
+  { lang: "java", file: "A.java", code: `class A { void f() { int _ = obj.field; } }`, receiverName: "obj", memberName: "field", memberNameKnown: true },
+  { lang: "cpp", file: "a.cpp", code: `void f() { int _ = obj.field; }`, receiverName: "obj", memberName: "field", memberNameKnown: true },
+  { lang: "python", file: "a.py", code: `_ = obj.field`, receiverName: "obj", memberName: "field", memberNameKnown: true },
+  { lang: "go", file: "a.go", code: `package p\nfunc f() { _ = obj.field }`, receiverName: "obj", memberName: "field", memberNameKnown: true },
+  { lang: "typescript", file: "a.ts", code: `const _ = obj.field;`, receiverName: "obj", memberName: "field", memberNameKnown: true },
+  // Grammars where isMemberNameNode support is incomplete (pre-existing, not a
+  // regression — the receiver classification fix is the scope of this issue):
+  { lang: "scala", file: "a.scala", code: `object A { def f = { val _ = obj.field } }`, receiverName: "obj", memberName: "field", memberNameKnown: false },
+  { lang: "dart", file: "a.dart", code: `void f() { print(obj.field); }`, receiverName: "obj", memberName: "field", memberNameKnown: false },
+  { lang: "swift", file: "a.swift", code: `func f() { let _ = obj.field }`, receiverName: "obj", memberName: "field", memberNameKnown: false },
+  { lang: "kotlin", file: "a.kt", code: `fun f() { val _ = obj.field }`, receiverName: "obj", memberName: "field", memberNameKnown: false },
+  { lang: "csharp", file: "a.cs", code: `class A { void F() { var _ = obj.Field; } }`, receiverName: "obj", memberName: "Field", memberNameKnown: false },
+]
+for (const c of memberAccessCases) {
+  const parsed = await parseForSafety(c.file, c.code)
+  const receivers = parsed.occurrences.filter((o) => o.text === c.receiverName)
+  const members = parsed.occurrences.filter((o) => o.text === c.memberName)
+  for (const r of receivers) {
+    harness.check(
+      `${c.lang}: receiver \`${c.receiverName}\` in \`${c.receiverName}.${c.memberName}\` is a REFERENCE (not a binding)`,
+      isReferenceSite(r, "") === true && r.isMemberName === false,
+      `parent=${r.parentType} isBinding=${isBindingParentType(r.parentType)} isRef=${isReferenceSite(r, "")} isMember=${r.isMemberName}`,
+    )
+  }
+  if (c.memberNameKnown) {
+    for (const m of members) {
+      harness.negative(
+        `${c.lang}: member name \`${c.memberName}\` in \`${c.receiverName}.${c.memberName}\` is NOT a reference`,
+        m.isMemberName === true && isReferenceSite(m, "") === false,
+        `parent=${m.parentType} isMember=${m.isMemberName}`,
+      )
+    }
+  }
+}
+
 // ── INTEGRATION: full refactor on indexed projects ──────────────────────────
 async function runIntegration(label: string, file: string, code: string, symbol: string, assert: (after: string) => void): Promise<void> {
   const root = mkdtempSync(path.join(tmpdir(), `bb-e2-${label}-`))
