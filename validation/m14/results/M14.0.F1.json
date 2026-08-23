@@ -19,12 +19,13 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "5173c07799fd165eb071049464280cee892ea6a8",
-  "committedAt": "2026-08-23T00:53:10-05:00",
+  "commit": "42c9608bb24f6b69ca9ceb65f74329274e919783",
+  "committedAt": "2026-08-23T09:44:08-05:00",
   "data": {
     "languages": {
       "bash": {
         "analyzer": "src/ast/real-bash-analyzer.ts",
+        "fieldless": false,
         "oracleFieldCount": 18,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 238,
@@ -42,10 +43,14 @@
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-bash.wasm"
+        ],
+        "wasmFieldCounts": [
+          19
         ]
       },
       "c": {
         "analyzer": "src/ast/real-c-analyzer.ts",
+        "fieldless": false,
         "oracleFieldCount": 38,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 329,
@@ -63,10 +68,14 @@
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-c.wasm"
+        ],
+        "wasmFieldCounts": [
+          39
         ]
       },
       "clean": {
         "analyzer": "src/ast/real-clean-analyzer.ts",
+        "fieldless": false,
         "oracleFieldCount": 27,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 271,
@@ -78,10 +87,14 @@
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-clean.wasm"
+        ],
+        "wasmFieldCounts": [
+          28
         ]
       },
       "clojure": {
         "analyzer": "src/ast/real-clojure-analyzer.ts",
+        "fieldless": false,
         "oracleFieldCount": 10,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 75,
@@ -93,10 +106,14 @@
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-clojure.wasm"
+        ],
+        "wasmFieldCounts": [
+          11
         ]
       },
       "cpp": {
         "analyzer": "src/ast/real-cpp-analyzer.ts",
+        "fieldless": false,
         "oracleFieldCount": 49,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 491,
@@ -119,10 +136,14 @@
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-cpp.wasm"
+        ],
+        "wasmFieldCounts": [
+          50
         ]
       },
       "csharp": {
         "analyzer": "src/ast/real-csharp-analyzer.ts",
+        "fieldless": false,
         "oracleFieldCount": 25,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 508,
@@ -150,10 +171,14 @@
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-c_sharp.wasm"
+        ],
+        "wasmFieldCounts": [
+          26
         ]
       },
       "css": {
         "analyzer": "src/ast/real-css-analyzer.ts",
+        "fieldless": true,
         "oracleFieldCount": 0,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 131,
@@ -186,10 +211,14 @@
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-css.wasm"
+        ],
+        "wasmFieldCounts": [
+          0
         ]
       },
       "dart": {
         "analyzer": "src/ast/real-dart-analyzer.ts",
+        "fieldless": false,
         "oracleFieldCount": 21,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 517,
@@ -342,10 +371,14 @@
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-dart.wasm"
+        ],
+        "wasmFieldCounts": [
+          22
         ]
       },
       "elixir": {
         "analyzer": "src/ast/real-elixir-analyzer.ts",
+        "fieldless": false,
         "oracleFieldCount": 8,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 205,
@@ -357,10 +390,14 @@
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-elixir.wasm"
+        ],
+        "wasmFieldCounts": [
+          9
         ]
       },
       "erlang": {
         "analyzer": "src/ast/real-erlang-analyzer.ts",
+        "fieldless": false,
         "oracleFieldCount": 50,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 302,
@@ -383,10 +420,14 @@
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-erlang.wasm"
+        ],
+        "wasmFieldCounts": [
+          51
         ]
       },
       "fsharp": {
         "analyzer": "src/ast/real-fsharp-analyzer.ts",
+        "fieldless": false,
         "oracleFieldCount": 27,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 512,
@@ -398,10 +439,14 @@
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-fsharp.wasm"
+        ],
+        "wasmFieldCounts": [
+          28
         ]
       },
       "go": {
         "analyzer": "src/ast/real-go-analyzer.ts",
+        "fieldless": false,
         "oracleFieldCount": 34,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 213,
@@ -419,10 +464,14 @@
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-go.wasm"
+        ],
+        "wasmFieldCounts": [
+          35
         ]
       },
       "graphql": {
         "analyzer": "src/ast/real-graphql-analyzer.ts",
+        "fieldless": true,
         "oracleFieldCount": 0,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 145,
@@ -434,10 +483,14 @@
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-graphql.wasm"
+        ],
+        "wasmFieldCounts": [
+          0
         ]
       },
       "groovy": {
         "analyzer": "src/ast/real-groovy-analyzer.ts",
+        "fieldless": false,
         "oracleFieldCount": 42,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 352,
@@ -449,10 +502,14 @@
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-groovy.wasm"
+        ],
+        "wasmFieldCounts": [
+          43
         ]
       },
       "haskell": {
         "analyzer": "src/ast/real-haskell-analyzer.ts",
+        "fieldless": false,
         "oracleFieldCount": 83,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 452,
@@ -565,10 +622,14 @@
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-haskell.wasm"
+        ],
+        "wasmFieldCounts": [
+          84
         ]
       },
       "hcl": {
         "analyzer": "src/ast/real-hcl-analyzer.ts",
+        "fieldless": false,
         "oracleFieldCount": 1,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 123,
@@ -580,10 +641,14 @@
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-hcl.wasm"
+        ],
+        "wasmFieldCounts": [
+          2
         ]
       },
       "html": {
         "analyzer": "src/ast/real-html-analyzer.ts",
+        "fieldless": false,
         "oracleFieldCount": 37,
         "oracleGrammars": 2,
         "oracleNodeTypeCount": 285,
@@ -596,10 +661,15 @@
         "wasm": [
           "tree-sitter-html.wasm",
           "tree-sitter-javascript.wasm"
+        ],
+        "wasmFieldCounts": [
+          0,
+          38
         ]
       },
       "java": {
         "analyzer": "src/ast/real-java-analyzer.ts",
+        "fieldless": false,
         "oracleFieldCount": 39,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 322,
@@ -611,10 +681,14 @@
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-java.wasm"
+        ],
+        "wasmFieldCounts": [
+          40
         ]
       },
       "javascript": {
         "analyzer": "src/ast/real-javascript-analyzer.ts",
+        "fieldless": false,
         "oracleFieldCount": 37,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 261,
@@ -626,10 +700,14 @@
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-javascript.wasm"
+        ],
+        "wasmFieldCounts": [
+          38
         ]
       },
       "json": {
         "analyzer": "src/ast/real-json-analyzer.ts",
+        "fieldless": false,
         "oracleFieldCount": 1,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 28,
@@ -641,10 +719,14 @@
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-json.wasm"
+        ],
+        "wasmFieldCounts": [
+          2
         ]
       },
       "kotlin": {
         "analyzer": "src/ast/real-kotlin-analyzer.ts",
+        "fieldless": true,
         "oracleFieldCount": 0,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 360,
@@ -656,10 +738,14 @@
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-kotlin.wasm"
+        ],
+        "wasmFieldCounts": [
+          0
         ]
       },
       "lua": {
         "analyzer": "src/ast/real-lua-analyzer.ts",
+        "fieldless": false,
         "oracleFieldCount": 21,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 128,
@@ -671,10 +757,14 @@
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-lua.wasm"
+        ],
+        "wasmFieldCounts": [
+          22
         ]
       },
       "makefile": {
         "analyzer": "src/ast/real-makefile-analyzer.ts",
+        "fieldless": false,
         "oracleFieldCount": 23,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 175,
@@ -692,10 +782,14 @@
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-make.wasm"
+        ],
+        "wasmFieldCounts": [
+          24
         ]
       },
       "markdown": {
         "analyzer": "src/ast/real-markdown-analyzer.ts",
+        "fieldless": false,
         "oracleFieldCount": 0,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 196,
@@ -718,10 +812,14 @@
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-markdown.wasm"
+        ],
+        "wasmFieldCounts": [
+          1
         ]
       },
       "objective-c": {
         "analyzer": "src/ast/real-objective-c-analyzer.ts",
+        "fieldless": false,
         "oracleFieldCount": 45,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 535,
@@ -774,10 +872,14 @@
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-objc.wasm"
+        ],
+        "wasmFieldCounts": [
+          46
         ]
       },
       "perl": {
         "analyzer": "src/ast/real-perl-analyzer.ts",
+        "fieldless": false,
         "oracleFieldCount": 43,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 539,
@@ -789,10 +891,14 @@
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-perl.wasm"
+        ],
+        "wasmFieldCounts": [
+          44
         ]
       },
       "php": {
         "analyzer": "src/ast/real-php-analyzer.ts",
+        "fieldless": false,
         "oracleFieldCount": 30,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 407,
@@ -815,10 +921,14 @@
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-php.wasm"
+        ],
+        "wasmFieldCounts": [
+          31
         ]
       },
       "powershell": {
         "analyzer": "src/ast/real-powershell-analyzer.ts",
+        "fieldless": false,
         "oracleFieldCount": 13,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 412,
@@ -830,10 +940,14 @@
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-powershell.wasm"
+        ],
+        "wasmFieldCounts": [
+          14
         ]
       },
       "python": {
         "analyzer": "src/ast/real-python-analyzer.ts",
+        "fieldless": false,
         "oracleFieldCount": 31,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 266,
@@ -845,10 +959,14 @@
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-python.wasm"
+        ],
+        "wasmFieldCounts": [
+          32
         ]
       },
       "r": {
         "analyzer": "src/ast/real-r-analyzer.ts",
+        "fieldless": false,
         "oracleFieldCount": 19,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 137,
@@ -860,10 +978,14 @@
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-r.wasm"
+        ],
+        "wasmFieldCounts": [
+          20
         ]
       },
       "ruby": {
         "analyzer": "src/ast/real-ruby-analyzer.ts",
+        "fieldless": false,
         "oracleFieldCount": 31,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 286,
@@ -891,10 +1013,14 @@
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-ruby.wasm"
+        ],
+        "wasmFieldCounts": [
+          32
         ]
       },
       "rust": {
         "analyzer": "src/ast/real-rust-analyzer.ts",
+        "fieldless": false,
         "oracleFieldCount": 30,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 329,
@@ -927,10 +1053,14 @@
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-rust.wasm"
+        ],
+        "wasmFieldCounts": [
+          31
         ]
       },
       "scala": {
         "analyzer": "src/ast/real-scala-analyzer.ts",
+        "fieldless": false,
         "oracleFieldCount": 34,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 435,
@@ -983,10 +1113,14 @@
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-scala.wasm"
+        ],
+        "wasmFieldCounts": [
+          35
         ]
       },
       "sql": {
         "analyzer": "src/ast/real-sql-analyzer.ts",
+        "fieldless": false,
         "oracleFieldCount": 52,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 727,
@@ -1064,10 +1198,14 @@
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-sql.wasm"
+        ],
+        "wasmFieldCounts": [
+          53
         ]
       },
       "svelte": {
         "analyzer": "src/ast/real-svelte-analyzer.ts",
+        "fieldless": false,
         "oracleFieldCount": 46,
         "oracleGrammars": 3,
         "oracleNodeTypeCount": 457,
@@ -1092,10 +1230,16 @@
           "tree-sitter-svelte.wasm",
           "tree-sitter-typescript.wasm",
           "tree-sitter-javascript.wasm"
+        ],
+        "wasmFieldCounts": [
+          4,
+          43,
+          38
         ]
       },
       "swift": {
         "analyzer": "src/ast/real-swift-analyzer.ts",
+        "fieldless": false,
         "oracleFieldCount": 44,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 526,
@@ -1288,10 +1432,14 @@
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-swift.wasm"
+        ],
+        "wasmFieldCounts": [
+          45
         ]
       },
       "typescript": {
         "analyzer": "src/ast/real-typescript-analyzer.ts",
+        "fieldless": false,
         "oracleFieldCount": 45,
         "oracleGrammars": 3,
         "oracleNodeTypeCount": 386,
@@ -1361,10 +1509,16 @@
           "tree-sitter-typescript.wasm",
           "tree-sitter-tsx.wasm",
           "tree-sitter-javascript.wasm"
+        ],
+        "wasmFieldCounts": [
+          43,
+          44,
+          38
         ]
       },
       "vue": {
         "analyzer": "src/ast/real-vue-analyzer.ts",
+        "fieldless": false,
         "oracleFieldCount": 45,
         "oracleGrammars": 3,
         "oracleNodeTypeCount": 420,
@@ -1378,10 +1532,16 @@
           "tree-sitter-vue.wasm",
           "tree-sitter-typescript.wasm",
           "tree-sitter-javascript.wasm"
+        ],
+        "wasmFieldCounts": [
+          0,
+          43,
+          38
         ]
       },
       "xml": {
         "analyzer": "src/ast/real-xml-analyzer.ts",
+        "fieldless": false,
         "oracleFieldCount": 1,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 142,
@@ -1393,10 +1553,14 @@
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-xml.wasm"
+        ],
+        "wasmFieldCounts": [
+          2
         ]
       },
       "yaml": {
         "analyzer": "src/ast/real-yaml-analyzer.ts",
+        "fieldless": false,
         "oracleFieldCount": 1,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 142,
@@ -1408,10 +1572,14 @@
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-yaml.wasm"
+        ],
+        "wasmFieldCounts": [
+          2
         ]
       },
       "zig": {
         "analyzer": "src/ast/real-zig-analyzer.ts",
+        "fieldless": false,
         "oracleFieldCount": 15,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 275,
@@ -1423,6 +1591,9 @@
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-zig.wasm"
+        ],
+        "wasmFieldCounts": [
+          16
         ]
       }
     },
