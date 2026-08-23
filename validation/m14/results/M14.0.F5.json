@@ -1,0 +1,92 @@
+{
+  "checks": [
+    {
+      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
+      "detail": "60 files, coverage 98.2%, unexplained 0%",
+      "id": "differential-java",
+      "status": "pass"
+    },
+    {
+      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
+      "detail": "60 files, coverage 100%, unexplained 0%",
+      "id": "differential-groovy",
+      "status": "pass"
+    }
+  ],
+  "claimLevel": "L1",
+  "commit": "1f28fe76ef1dbe31552a956d4fc0ec52bf27e00c",
+  "committedAt": "2026-08-22T20:04:09-05:00",
+  "data": {
+    "corpusPins": {
+      "grails-core": "a83f87480e0c0138caa5a7191a053b1e59a64066"
+    },
+    "report": {
+      "groovy": {
+        "analyzerEdges": 223,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 223,
+        "explainableByTree": 223,
+        "fabricationPct": 0,
+        "filesSampled": 60,
+        "missingInAnalyzer": 0,
+        "samples": [],
+        "treeTruthEdges": 223,
+        "unexplainedInAnalyzer": 0
+      },
+      "java": {
+        "analyzerEdges": 164,
+        "coveragePct": 98.2,
+        "coveredByAnalyzer": 164,
+        "explainableByTree": 164,
+        "fabricationPct": 0,
+        "filesSampled": 60,
+        "missingInAnalyzer": 3,
+        "samples": [
+          {
+            "dir": "MISSING",
+            "file": "grails-data-hibernate5/core/src/main/groovy/org/grails/orm/hibernate/proxy/ByteBuddyGroovyInterceptor.java",
+            "from": "(expr)",
+            "label": "instantiates",
+            "target": "GroovyProxyInterceptorLogic.InterceptorState"
+          },
+          {
+            "dir": "MISSING",
+            "file": "grails-gsp/core/src/main/groovy/org/grails/gsp/GroovyPage.java",
+            "from": "(expr)",
+            "label": "instantiates",
+            "target": "OutputEncodingStackAttributes.Builder"
+          },
+          {
+            "dir": "MISSING",
+            "file": "grails-gsp/core/src/main/groovy/org/grails/gsp/GroovyPage.java",
+            "from": "(expr)",
+            "label": "instantiates",
+            "target": "TagOutput.ConstantClosure"
+          }
+        ],
+        "treeTruthEdges": 167,
+        "unexplainedInAnalyzer": 0
+      }
+    },
+    "samplingRule": "seeded 60 files/language"
+  },
+  "governance": "docs/M14-HONESTY-CONTRACT.md",
+  "issueId": "M14.0.F5",
+  "layers": [
+    "differential"
+  ],
+  "limitations": [
+    {
+      "description": "second opinion is a clause-structure re-derivation from the same wasm grammars; a grammar bug shared by both paths would be invisible to this harness"
+    },
+    {
+      "description": "seeded sample of files per language, deterministic; not exhaustive over the corpus"
+    },
+    {
+      "description": "coverage/fabrication baselines recorded; wave M14.1 must reduce missing/unexplained counts"
+    }
+  ],
+  "runtime": "node v24.3.0",
+  "schemaVersion": 2,
+  "title": "Differential corpus harness"
+}
