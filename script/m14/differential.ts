@@ -198,16 +198,19 @@ async function main() {
     let analyzerEdgesTotal = 0, explainableByTree = 0, unexplainedInAnalyzer = 0
     const samples: any[] = []
 
+    const durations: number[] = []
     for (const f of sample) {
       const content = fs.readFileSync(f, "utf8")
       const relPath = path.relative(repoDir, f)
       let root
+      let result
+      const tf0 = performance.now()
       try { root = parser.parse(content).rootNode } catch { continue }
       if (!root) continue
+      try { result = await analyzer.analyze(root, content, relPath) } catch { continue }
+      durations.push(performance.now() - tf0)
 
       const truth = deriveTreeEdges(root, lang)
-      let result
-      try { result = await analyzer.analyze(root, content, relPath) } catch { continue }
       const rels = (result.relationships ?? []).map((r: any) => ({
         label: String(r.type ?? r.relationshipType ?? ""),
         target: String(r.target ?? r.to ?? r.toSymbol ?? ""),
@@ -245,6 +248,11 @@ async function main() {
       unexplainedInAnalyzer,
       coveragePct: treeEdgesTotal ? +(100 * coveredByAnalyzer / treeEdgesTotal).toFixed(1) : null,
       fabricationPct: analyzerEdgesTotal ? +(100 * unexplainedInAnalyzer / analyzerEdgesTotal).toFixed(1) : null,
+      perf: {
+        avgMsPerFile: durations.length ? +(durations.reduce((a, b) => a + b, 0) / durations.length).toFixed(1) : null,
+        maxMsPerFile: durations.length ? +Math.max(...durations).toFixed(1) : null,
+        samplesTimed: durations.length,
+      },
       samples,
     }
     console.log(`${lang}: files=${sample.length} tree-truth=${treeEdgesTotal} covered=${coveredByAnalyzer} (${report[lang].coveragePct}%) MISSING=${missingInAnalyzer} | analyzer-edges=${analyzerEdgesTotal} unexplained=${unexplainedInAnalyzer} (${report[lang].fabricationPct}%)`)
@@ -278,7 +286,10 @@ async function main() {
   // improvement-forcing gate: missing/unexplained counts may never grow
   const BASELINE = path.join(ROOT, "validation", "m14", "differential-baseline.json")
   const current: Record<string, any> = {}
-  for (const [lang, r] of Object.entries<any>(report)) current[`${REPO}:${lang}`] = { missing: r.missingInAnalyzer, unexplained: r.unexplainedInAnalyzer }
+  for (const [lang, r] of Object.entries<any>(report)) current[`${REPO}:${lang}`] = {
+    missing: r.missingInAnalyzer, unexplained: r.unexplainedInAnalyzer,
+    perf: { avgMsPerFile: r.perf.avgMsPerFile },
+  }
   const updateBaseline = process.argv.includes("--update-baseline")
   if (updateBaseline) {
     let merged: any = { samplePerLang: SAMPLE_PER_LANG, counts: {} }
@@ -298,11 +309,33 @@ async function main() {
     if (parsed.samplePerLang && parsed.samplePerLang !== SAMPLE_PER_LANG) {
       console.log(`differential baseline gate: SKIPPED (baseline sampled ${parsed.samplePerLang}/lang, this run ${SAMPLE_PER_LANG}/lang — probe mode, not comparable)`)
     } else {
+      // F9 per-analyzer perf budgets: avg ms/file must not exceed 3x the
+      // recorded baseline (same machine class) - no mercy for slow analyzers.
+      const perfRegressions: string[] = []
+      for (const l of Object.keys(current)) {
+        const bAvg = base[l]?.perf?.avgMsPerFile
+        const cAvg = current[l]?.perf?.avgMsPerFile
+        if (bAvg && cAvg && cAvg > Math.max(3 * bAvg, bAvg + 50)) {
+          perfRegressions.push(`${l}: avg ${bAvg}ms -> ${cAvg}ms per file`)
+        }
+      }
+      // cross-language outlier check within this run: >3x median flagged as failure too
+      const avgs = Object.values(current).map((c: any) => c.perf?.avgMsPerFile).filter((x: any) => typeof x === "number" && x > 0).sort((a: number, b: number) => a - b)
+      if (avgs.length >= 3) {
+        const median = avgs[Math.floor(avgs.length / 2)]
+        for (const l of Object.keys(current)) {
+          const cAvg = current[l]?.perf?.avgMsPerFile
+          if (cAvg && median && cAvg > Math.max(3 * median, median + 200)) {
+            perfRegressions.push(`${l}: outlier vs median (${cAvg}ms vs ${median}ms median)`)
+          }
+        }
+      }
       const regressions = Object.keys(current).filter(l =>
         base[l] && (current[l].missing > base[l].missing || current[l].unexplained > base[l].unexplained))
       for (const r of regressions) console.error(`DIFFERENTIAL REGRESSION ${r}: ${JSON.stringify(base[r])} -> ${JSON.stringify(current[r])}`)
-      if (regressions.length) process.exit(5)
-      console.log("differential baseline gate: no regressions")
+      for (const r of perfRegressions) console.error(`PERF BUDGET EXCEEDED ${r}`)
+      if (regressions.length || perfRegressions.length) process.exit(5)
+      console.log("differential baseline gate: no regressions; perf budgets respected")
     }
   }
 }
