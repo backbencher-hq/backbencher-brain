@@ -2,9 +2,9 @@
   "checks": [
     {
       "description": "java adversarial fixtures",
-      "detail": "8/10 fixtures pass",
+      "detail": "10/10 fixtures pass",
       "id": "fixtures-java",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "groovy adversarial fixtures",
@@ -26,8 +26,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "859c0b07c1374d3dadd0e31051c16be07cd43169",
-  "committedAt": "2026-08-22T20:21:56-05:00",
+  "commit": "5e9b951095140899e7858700a859fabc313e13d4",
+  "committedAt": "2026-08-23T03:47:14+02:00",
   "data": {
     "details": [
       {
@@ -62,11 +62,8 @@
       },
       {
         "fixture": "java/multi-interface-extends",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"extends\",\"from\":\"Repository\",\"target\":\"Cloneable\"}; got: references[Repository->java.io.Serializable]@0.9; references[Repository->java.lang.Cloneable]@0.9; extends[Repository->Serializable]@1; implements[Repository->Cloneable]@1; contains[Repository->fetch]@1",
-          "forbidden relationship present: {\"type\":\"implements\",\"from\":\"Repository\"} (found implements[Repository->Cloneable]@1)"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "java/nested-types",
@@ -75,11 +72,8 @@
       },
       {
         "fixture": "java/records-and-sealed",
-        "ok": false,
-        "problems": [
-          "expected symbol not found: {\"name\":\"radius\"}; got: Shape:interface, Circle:class, Square:class",
-          "expected symbol not found: {\"name\":\"side\"}; got: Shape:interface, Circle:class, Square:class"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "java/static-utility-call",
@@ -168,8 +162,8 @@
         "pass": 6
       },
       "java": {
-        "fail": 2,
-        "pass": 8
+        "fail": 0,
+        "pass": 10
       },
       "kotlin": {
         "fail": 0,

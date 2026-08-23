@@ -1,10 +1,13 @@
 {
-  "java": {
-    "missing": 3,
-    "unexplained": 0
-  },
-  "groovy": {
-    "missing": 0,
-    "unexplained": 0
+  "samplePerLang": 60,
+  "counts": {
+    "java": {
+      "missing": 3,
+      "unexplained": 0
+    },
+    "groovy": {
+      "missing": 0,
+      "unexplained": 0
+    }
   }
 }
