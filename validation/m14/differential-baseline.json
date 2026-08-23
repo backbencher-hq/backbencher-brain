@@ -38,8 +38,8 @@
       "unexplained": 0
     },
     "scala3:scala": {
-      "missing": 9,
-      "unexplained": 2
+      "missing": 4,
+      "unexplained": 1
     },
     "scala3:java": {
       "missing": 0,

@@ -415,9 +415,9 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       kind,
       range: {
         startLine: node.startPosition.row + 1,
-        startColumn: node.startPosition.column,
+        startColumn: node.startPosition.column + 1,
         endLine: node.endPosition.row + 1,
-        endColumn: node.endPosition.column,
+        endColumn: node.endPosition.column + 1,
         startIndex: node.startIndex,
         endIndex: node.endIndex,
       },
@@ -444,11 +444,26 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         // (cross-language convention decided in M14.1)
         out.push(c.text)
       } else if (c.type === "generic_type" || c.type === "applied_type") {
+        // Prefer a dotted base (stable_type_identifier:
+        // collection.mutable.ArrayBuffer[Int] -> full dotted name per
+        // cross-language convention). Previously only bare type_identifier
+        // matched, so qualified generic supertypes were silently dropped.
+        let pushed = false
         for (let j = 0; j < c.childCount; j++) {
           const ch = c.child(j)
-          if (ch && ch.type === "type_identifier") {
+          if (ch && ch.type === "stable_type_identifier") {
             out.push(ch.text)
+            pushed = true
             break
+          }
+        }
+        if (!pushed) {
+          for (let j = 0; j < c.childCount; j++) {
+            const ch = c.child(j)
+            if (ch && ch.type === "type_identifier") {
+              out.push(ch.text)
+              break
+            }
           }
         }
       } else if (c.type === "compound_type") {
@@ -472,6 +487,10 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     parent: ASTEngine.UniversalSymbol | null,
   ): ASTEngine.UniversalSymbol | null {
     const name = this.extractIdentifier(node, "name")
+
+    // Scala 3 extension method: walk up to an extension_definition and read
+    // its parameter's type as the receiver (previously isExtension could
+    // never be true - it compared against a nonexistent UniversalSymbol.type)
     if (!name) return null
 
     const mods = this.collectModifiers(node)
@@ -753,6 +772,24 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     parent: ASTEngine.UniversalSymbol | null,
   ): ASTEngine.UniversalSymbol | null {
     const name = this.extractIdentifier(node, "name")
+
+    let extensionReceiverType: string | undefined
+    {
+      let anc: Node | null = node.parent
+      while (anc) {
+        if (anc.type === "extension_definition") {
+          const params = anc.namedChildren.find((c: any) => c.type === "parameters")
+          if (params) {
+            const p0 = params.namedChild(0)
+            const t = p0?.namedChildren.find((c: any) => /_type$|type_identifier/.test(c.type))
+            if (t) extensionReceiverType = t.text.replace(/\?$/, "")
+          }
+          break
+        }
+        if (/^(class|trait|object)_definition$/.test(anc.type)) break
+        anc = anc.parent
+      }
+    }
     if (!name) return null
 
     const isMethod =
@@ -819,11 +856,24 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         isOverride,
         isImplicit,
         isInline,
-        isExtension: parent?.type === "extension_definition",
+        // Scala 3 extension methods: the receiver lives on the enclosing
+        // extension_definition's parameters, NOT on the function node, and
+        // the wrapper never becomes a parent symbol. Detect via ancestors.
+        isExtension: !!extensionReceiverType,
       },
     )
 
     symbols.push(symbol)
+
+    if (extensionReceiverType && !isMethod) {
+      relationships.push({
+        source: name,
+        target: extensionReceiverType,
+        type: ASTEngine.RelationshipType.Uses,
+        confidence: 0.9,
+        metadata: { relationshipType: "scala_extension_method", isExtension: true },
+      })
+    }
 
     if (this.isPublic(node) && !isMethod) {
       exports.push({
@@ -955,9 +1005,13 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         calledName = kids.length > 0 ? kids[kids.length - 1] : calledName
       }
       if (calledName) {
-        // Companion-apply constructor idiom (Type(...)) — capitalized target
-        // emits ONLY Instantiates (matches the Kotlin contract: a capitalized
-        // call like `User(...)` is an instantiation, not a plain call).
+        // Companion-apply construction idiom (Type(...)): in Scala, PascalCase
+        // calls ARE constructions (case-class/class companion apply) - unlike
+        // Java where they are static utility calls. MEASURED, not assumed
+        // (M14.1): on scala3@HEAD 60-file sample the differential found 2
+        // unexplained instantiates edges of 416 (0.5%) vs Java's removed
+        // heuristic which fabricated 4.2% of grails-core edges. Kept with
+        // this recorded rationale; re-measure if corpora change.
         const first = calledName.charCodeAt(0)
         const isCapitalized = first >= 65 && first <= 90
         if (isCapitalized) {
@@ -1045,9 +1099,9 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       specifiers: selectors,
       range: {
         startLine: node.startPosition.row + 1,
-        startColumn: node.startPosition.column,
+        startColumn: node.startPosition.column + 1,
         endLine: node.endPosition.row + 1,
-        endColumn: node.endPosition.column,
+        endColumn: node.endPosition.column + 1,
         startIndex: node.startIndex,
         endIndex: node.endIndex,
       },
