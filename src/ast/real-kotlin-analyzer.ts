@@ -504,6 +504,9 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Extract API Contract Path if this is a web handler (Spring/Ktor)
     const apiContractPath = this.extractKotlinApiContractPath(node, ctx)
 
+    // function-level generics: fun <U> identity(x: U) — previously dropped
+    const fnTypeParameters = this.extractTypeParameters(node, ctx)
+
     const symbol: ASTEngine.UniversalSymbol = {
       name: functionName,
       kind: parentClass ? ASTEngine.SymbolKind.Method : ASTEngine.SymbolKind.Function,
@@ -517,6 +520,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       comments: kdoc ? [kdoc] : [],
       qualified_calls: qualifiedCalls,
       apiContractPath,
+      genericParameters: fnTypeParameters.length > 0 ? fnTypeParameters : undefined,
       ownerName: parentClass,
       ownerKind: parentClass ? ASTEngine.SymbolKind.Class : undefined,
       metadata: {
@@ -530,6 +534,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
         complexity: this.calculateFunctionComplexity(node, ctx),
         parameterCount: parameters.length,
         hasKDoc: !!kdoc,
+        ...(fnTypeParameters.length > 0 ? { typeParameters: fnTypeParameters } : {}),
         kotlinSpecific: true,
       },
     }
@@ -538,59 +543,74 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private extractKotlinApiContractPath(node: Node, ctx: KotlinContext): string | undefined {
+    // Two annotation shapes occur under the pinned kotlin wasm:
+    //   a) modifiers > annotation > constructor_invocation > value_arguments
+    //      (AST args available)
+    //   b) the ENTIRE annotation collapsed into a leaf `modifiers` node whose
+    //      text is '@GetMapping("/users")' - no annotation child exists.
+    // Both must be handled or Spring/Ktor route paths silently vanish.
+    const MAPPINGS = ["@GetMapping", "@PostMapping", "@PutMapping", "@DeleteMapping", "@PatchMapping", "@RequestMapping"]
+
+    const candidates: { text: string; args?: Node }[] = []
     const modifiersNode = this.findChildByType(node, ["modifiers"])
-    if (node) {
-      for (let i = 0; i < node.namedChildCount; i++) {
-        const mod = node.namedChild(i)
-        if (mod?.type === "annotation") {
-          const text = mod.text
-          if (
-            text.startsWith("@GetMapping") ||
-            text.startsWith("@PostMapping") ||
-            text.startsWith("@PutMapping") ||
-            text.startsWith("@DeleteMapping") ||
-            text.startsWith("@PatchMapping")
-          ) {
-            const method = text.split("Mapping")[0].replace("@", "").toUpperCase()
-            const args = mod.childForFieldName("arguments")
-            let pathMatch = "/"
-            if (args && args.namedChildCount > 0) {
-              pathMatch = args.namedChild(0)?.text?.split('"').join("") || "/"
-            }
-            return `${method} ${pathMatch}`
-          }
-          if (text.startsWith("@RequestMapping")) {
-            const args = mod.childForFieldName("arguments")
-            let path = "/"
-            let methodStr = "ANY"
-            if (args) {
-              for (let j = 0; j < args.namedChildCount; j++) {
-                const arg = args.namedChild(j)
-                if (!arg) continue
-                if (stringIncludes(arg.text, "method") && stringIncludes(arg.text, "RequestMethod.")) {
-                  const parts = arg.text.split(".")
-                  methodStr = parts[parts.length - 1]
-                } else if (!stringIncludes(arg.text, "=")) {
-                  path = arg.text.split('"').join("")
-                } else if (arg.text.startsWith("value")) {
-                  path = arg.text.split("=")[1].split('"').join("")
-                }
-              }
-            }
-            return `${methodStr.toUpperCase()} ${path}`
-          }
+    if (modifiersNode) {
+      const stack: Node[] = [modifiersNode]
+      while (stack.length > 0) {
+        const n = stack.pop()!
+        if (n.type === "annotation") candidates.push({ text: n.text, args: this.getValueArguments(n) })
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c) stack.push(c)
         }
       }
+      if (candidates.length === 0 && modifiersNode.text.includes("Mapping")) {
+        candidates.push({ text: modifiersNode.text })
+      }
+    }
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const mod = node.namedChild(i)
+      if (mod?.type === "annotation") candidates.push({ text: mod.text, args: this.getValueArguments(mod) })
     }
 
-    if (node.parent?.type === "call_expression") {
-      const callName = node.parent.childForFieldName("function")?.text
-      const methods = ["get", "post", "put", "patch", "delete", "options", "head"]
-      if (callName && someSymbol(methods, (m) => m === callName)) {
-        const args = node.parent.childForFieldName("arguments")
-        const path = args?.namedChild(0)?.text?.split('"').join("")
-        if (path) return `${callName.toUpperCase()} ${path}`
+    for (const { text, args } of candidates) {
+      const mapping = MAPPINGS.find((m) => text.startsWith(m))
+      if (!mapping) continue
+
+      const method = mapping.slice(1).replace("Mapping", "").toUpperCase()
+      let path = "/"
+
+      if (args && args.namedChildCount > 0) {
+        if (mapping === "@RequestMapping") {
+          let methodStr = "ANY"
+          for (let j = 0; j < args.namedChildCount; j++) {
+            const arg = args.namedChild(j)
+            if (!arg) continue
+            if (stringIncludes(arg.text, "method") && stringIncludes(arg.text, "RequestMethod.")) {
+              const parts = arg.text.split(".")
+              methodStr = parts[parts.length - 1]
+            } else if (!stringIncludes(arg.text, "=")) {
+              path = arg.text.split('"').join("")
+            } else if (arg.text.startsWith("value")) {
+              path = arg.text.split("=")[1].split('"').join("").trim()
+            }
+          }
+          return `${methodStr.toUpperCase()} ${path}`
+        }
+        pathMatch_loop: {
+          const first = args.namedChild(0)?.text?.split('"').join("") || "/"
+          path = first || "/"
+          break pathMatch_loop
+        }
+        return `${method} ${path}`
       }
+
+      // leaf-modifier fallback: parse from raw text
+      const afterName = text.slice(mapping.length)
+      const quoted = afterName.match(/"([^"]*)"/)
+      if (quoted) path = quoted[1]
+      if (mapping !== "@RequestMapping") return `${method} ${path}`
+      const reqMethod = afterName.match(/RequestMethod\.([A-Za-z]+)/)
+      return `${reqMethod ? reqMethod[1].toUpperCase() : "ANY"} ${path}`
     }
     return undefined
   }
@@ -1427,6 +1447,35 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
   /**
    * Kotlin Type Parameters Extraction
    */
+  /**
+   * Positional `value_arguments` lookup. The pinned kotlin wasm exposes
+   * ZERO named fields (fieldCount=0), so every childForFieldName call in
+   * this file returns undefined - this helper is the required fallback
+   * for annotation/route argument extraction (M14.1).
+   */
+  private getValueArguments(node: Node): Node | undefined {
+    // annotation > constructor_invocation > value_arguments: grandchild, so a
+    // shallow lookup misses it. Recursive descent required.
+    const stack: Node[] = [node]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (!c) continue
+        if (c.type === "value_arguments") return c
+        stack.push(c)
+      }
+    }
+    return undefined
+  }
+
+  private getCallFunctionName(node: Node): string | undefined {
+    const fn = node.childForFieldName?.("function")
+    if (fn) return fn.text
+    const first = node.namedChild(0)
+    return first && /identifier|navigation_expression|field_expression/.test(first.type) ? first.text : undefined
+  }
+
   private extractTypeParameters(node: Node, ctx: KotlinContext): string[] {
     const typeParameters: string[] = []
 
@@ -1435,7 +1484,10 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       for (let i = 0; i < typeParamList.namedChildCount; i++) {
         const typeParam = typeParamList.namedChild(i)
         if (typeParam?.type === "type_parameter") {
-          const paramName = typeParam.childForFieldName("name")?.text
+          // pinned wasm has no named fields: positional name extraction
+          const paramName =
+            typeParam.childForFieldName("name")?.text ||
+            typeParam.namedChildren.find((c: any) => c.type === "simple_identifier" || c.type === "type_identifier")?.text
           if (paramName) {
             typeParameters.push(paramName)
           }
@@ -1701,7 +1753,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
    */
   private extractKotlinAnnotationArguments(node: Node): string[] {
     const args: string[] = []
-    const argsNode = node.childForFieldName("arguments")
+    const argsNode = this.getValueArguments(node)
 
     if (argsNode) {
       for (let i = 0; i < argsNode.namedChildCount; i++) {

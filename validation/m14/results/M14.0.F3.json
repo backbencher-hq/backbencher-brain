@@ -14,7 +14,7 @@
     },
     {
       "description": "kotlin adversarial fixtures",
-      "detail": "12/12 fixtures pass",
+      "detail": "13/13 fixtures pass",
       "id": "fixtures-kotlin",
       "status": "pass"
     },
@@ -26,8 +26,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "72735f10d99837ee7a9db79d427cdbaff85211d2",
-  "committedAt": "2026-08-23T00:09:24-05:00",
+  "commit": "5173c07799fd165eb071049464280cee892ea6a8",
+  "committedAt": "2026-08-23T00:53:10-05:00",
   "data": {
     "details": [
       {
@@ -142,6 +142,11 @@
       },
       {
         "fixture": "groovy/trait-implements",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/api-contract-routes",
         "ok": true,
         "problems": []
       },
@@ -267,7 +272,7 @@
       },
       "kotlin": {
         "fail": 0,
-        "pass": 12
+        "pass": 13
       },
       "scala": {
         "fail": 0,
