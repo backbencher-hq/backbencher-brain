@@ -31,10 +31,10 @@
       }
     },
     "Exposed:kotlin": {
-      "missing": 5,
-      "unexplained": 7,
+      "missing": 1,
+      "unexplained": 1,
       "perf": {
-        "avgMsPerFile": 54.2
+        "avgMsPerFile": 36.8
       }
     },
     "Exposed:java": {
@@ -95,9 +95,9 @@
     },
     "vue-core:typescript": {
       "missing": 0,
-      "unexplained": 1,
+      "unexplained": 0,
       "perf": {
-        "avgMsPerFile": 54.9
+        "avgMsPerFile": 53
       }
     },
     "vue-core:kotlin": {
@@ -122,6 +122,13 @@
       }
     },
     "vue-core:groovy": {
+      "missing": 0,
+      "unexplained": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
+    },
+    "Exposed:typescript": {
       "missing": 0,
       "unexplained": 0,
       "perf": {
