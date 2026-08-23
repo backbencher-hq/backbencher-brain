@@ -526,7 +526,9 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     const isExtension = !!receiverType
 
     // Extract API Contract Path if this is a web handler (Spring/Ktor)
-    const apiContractPath = this.extractKotlinApiContractPath(node, ctx)
+    const apiContract = this.extractKotlinApiContract(node, ctx)
+    const apiContractPath = apiContract.path
+    const apiMethod = apiContract.method
 
     // function-level generics: fun <U> identity(x: U) — previously dropped
     const fnTypeParameters = this.extractTypeParameters(node, ctx)
@@ -551,6 +553,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
         modifiers,
         annotations: annotations.map((a) => this.kotlinShortAnnotationName(a)),
         receiverType,
+        apiMethod,
         isInline,
         isInfix,
         isOperator,
@@ -567,7 +570,14 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     symbols.push(symbol)
   }
 
-  private extractKotlinApiContractPath(node: Node, ctx: KotlinContext): string | undefined {
+  /**
+   * Spring mapping annotation extraction. Returns the route PATH ONLY and
+   * the HTTP method separately: brain_symbol.api_contract_path is an exact
+   * match key shared across languages (doc-engine queries
+   * s.api_contract_path=?), so embedding "GET " into it breaks every
+   * cross-language route join against analyzers that store bare paths.
+   */
+  private extractKotlinApiContract(node: Node, ctx: KotlinContext): { path?: string; method?: string } {
     // Two annotation shapes occur under the pinned kotlin wasm:
     //   a) modifiers > annotation > constructor_invocation > value_arguments
     //      (AST args available)
@@ -623,25 +633,25 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
               path = arg.text.split("=")[1].split('"').join("").trim()
             }
           }
-          return `${methodStr.toUpperCase()} ${path}`
+          return { path, method: methodStr.toUpperCase() }
         }
         pathMatch_loop: {
           const first = args.namedChild(0)?.text?.split('"').join("") || "/"
           path = first || "/"
           break pathMatch_loop
         }
-        return `${method} ${path}`
+        return { path, method }
       }
 
       // leaf-modifier fallback: parse from raw text
       const afterName = text.slice(mapping.length)
       const quoted = afterName.match(/"([^"]*)"/)
       if (quoted) path = quoted[1]
-      if (mapping !== "@RequestMapping") return `${method} ${path}`
+      if (mapping !== "@RequestMapping") return { path, method }
       const reqMethod = afterName.match(/RequestMethod\.([A-Za-z]+)/)
-      return `${reqMethod ? reqMethod[1].toUpperCase() : "ANY"} ${path}`
+      return { path, method: reqMethod ? reqMethod[1].toUpperCase() : "ANY" }
     }
-    return undefined
+    return {}
   }
 
   /**
@@ -881,6 +891,25 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (hasImport("io.mockk") || hasImport("org.mockito")) frameworks["Mocking Framework"] = true
     if (hasImport("androidx.compose")) frameworks["Jetpack Compose"] = true
     if (hasImport("android.app") || hasImport("androidx")) frameworks["Android SDK"] = true
+
+    // Annotation-driven detection: real-world files frequently use
+    // fully-qualified annotations WITHOUT the corresponding import (conflict
+    // avoidance, generated code). Imports alone missed every such file.
+    // Names compared through metadata.annotations short names.
+    const annotationNames = new Set<string>()
+    for (let i = 0; i < symbols.length; i++) {
+      const anns: string[] = symbols[i].metadata?.annotations ?? []
+      for (let j = 0; j < anns.length; j++) annotationNames.add(anns[j])
+    }
+    const hasAnnotation = (...names: string[]) => names.some((n) => annotationNames.has(n))
+    if (hasAnnotation("Service", "RestController", "Controller", "Repository", "Component", "SpringBootApplication")) {
+      frameworks["Spring Boot"] = true
+      frameworks["Spring Framework"] = true
+    }
+    if (hasAnnotation("Entity", "Table")) frameworks["Hibernate / JPA"] = true
+    if (hasAnnotation("Dao", "Database")) frameworks["Room"] = true
+    if (hasAnnotation("Composable")) frameworks["Jetpack Compose"] = true
+    if (hasAnnotation("Test", "RunWith", "ExtendWith")) frameworks["JUnit"] = true
 
     const result: string[] = []
     for (const key in frameworks) {

@@ -186,6 +186,10 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
       )
       if (!hit) problems.push(`expected import not found: ${JSON.stringify(want)}; got: ${JSON.stringify((result.imports ?? []).map((i: any) => ({ module: i.module, ns: i.isNamespaceImport, items: i.items })))}`)
     }
+    for (const want of exp.expectFrameworks ?? []) {
+      const actual: string[] = (result.metadata as any)?.detectedFrameworks ?? []
+      if (!actual.includes(want)) problems.push(`expected framework "${want}" not detected; got: ${JSON.stringify(actual)}`)
+    }
     for (const want of exp.expectErrors ?? []) {
       const hit = (result.errors ?? []).find((e: any) =>
         Object.entries(want).every(([k, v]) => (e.range?.[k] ?? e[k]) === v),
