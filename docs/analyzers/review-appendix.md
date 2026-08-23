@@ -202,7 +202,32 @@ and `expectErrors` matchers.
     4. typecheck + e2e through the real analyzer on a previously-broken
        input
 
-*(existing entries retained below)*
+## Groovy decisions wave (2026-08-23) — D1/D2 resolved, decorator consistency closed
+
+  - **D1 RESOLVED — framework detection added (unify won)**: research
+    found a live consumer: result.framework → brain_file.framework_type
+    (parallel-indexer.ts) → patterns/rules.ts ranks project frameworks
+    on it. Groovy files got NULL, hiding Grails projects from pattern
+    analysis. Mapping MEASURED from corpus top-imports (grails family,
+    spock.lang, org.springframework dominate). Primary selection by
+    fixed priority: grails > spring > hibernate > jpa > spock > junit.
+    Annotation-driven detection deliberately LIMITED to the unambiguous
+    spring family — bare "@Entity" would mislabel GORM entities as JPA
+    (caught in e2e before commit; entity detection stays import-based).
+  - **D2 RESOLVED — bare-field visibility ratified**: no consumer today
+    filters property visibility; changing it risks exports regressions
+    for zero measured benefit. Current public behavior stands, recorded
+    here so it reads as a decision.
+  - **Decorator consistency (CC1 observation) closed**: groovy methods
+    now emit decorators[] like classes/fields do and like every Java/
+    Kotlin symbol kind does. expectDecorators matcher tightened to read
+    ONLY s.decorators (no metadata fallback) so per-kind emission stays
+    pinned.
+  - Harness gained expectPrimaryFramework.
+
+---
+
+## Legacy gotchas (original appendix entries)
 
 - **Groovy**: this project uses a patched fork of `amaanq/tree-sitter-groovy`
   (see `grammars/tree-sitter-groovy/`) — diff against the upstream base to see
