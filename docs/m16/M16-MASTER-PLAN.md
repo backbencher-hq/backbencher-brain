@@ -4,7 +4,7 @@
 
 - **GitHub:** https://github.com/backbencher-hq/backbencher-brain/milestone/16
 - **ID:** #16
-- **Issues:** 15 (1 governance + 3 doc + 4 ask + 4 edit + 3 tool re-verification) — #387-#401
+- **Issues:** 16 tracked issues — #386-#401 (15 scoped work issues plus the milestone-resolution test issue #386)
 
 ## Origin (v1: real tool run, not assertion)
 
@@ -39,7 +39,7 @@ same scripts). Analyzer-domain findings are recorded, not papered over.
 | C1 | Governance + gate/ledger | 1 | Master plan, closure gate, evidence ledger, quality-gate wiring |
 | D1-D3 | Per-tool docs (website truth) | 3 | Every `docs/BB_*.md` claim re-verified against code + real run |
 | A1-A4 | bb_ask stat correctness | 4 | function/method union (fixed), class/index coverage, file stats, ghost-answer honesty |
-| E1-E4 | bb_edit correctness | 4 | refactor completeness (product fix), refactor uniqueness-proof full-scan, delete dangling-ref guard, real-repo suite |
+| E1-E5 | bb_edit correctness | 5 verifier sections across 4 scoped issues | refactor completeness, uniqueness/freshness hardening, delete dangling-ref guard, real-repo regression suite, and cross-language field-aware classification |
 | X1, P1, V1 | bb_security / bb_patterns / bb_visualize | 3 | real-repo re-verification + documented analyzer-domain routing |
 
 ## Per-Issue Protocol (M15 heritage, kept verbatim)
@@ -99,13 +99,7 @@ same scripts). Analyzer-domain findings are recorded, not papered over.
    fixed or silently ignored in tools.
 4. Each closing comment includes the real CLI output line, not a summary.
 5. Nothing is closed on assertion: evidence files are re-read at HEAD by the
-   closure gate (`C2`).
-
-## Completed First Step (committed `2a2f7e1`)
-
-- `fix(ask)`: `quick-answer.ts` now counts `function|method` for
-  "how many functions" and "most complex function" (cross-language);
-  Ruby regression added to `script/m15/verify-ask-deep.ts`.
+   closure gate (`C1`).
 
 ## Completed First Step (committed `2a2f7e1`)
 
@@ -115,7 +109,7 @@ same scripts). Analyzer-domain findings are recorded, not papered over.
 
 ## Completion Record (2026-08)
 
-All 15 issues closed with evidence. Real product fixes shipped in this milestone:
+All 15 scoped work issues closed with evidence (16 tracked issues including #386). Real product fixes shipped in this milestone:
 
 1. **E1 — refactor completeness (the flagship fix).** The refactor previously
    renamed only the declaration plus sites inside `brain_relationship` caller
@@ -141,8 +135,33 @@ All 15 issues closed with evidence. Real product fixes shipped in this milestone
 4. **Docs refresh to website truth** (D1-D3): `BB_EDIT.md`, `BB_ASK.md`,
    `BB_SECURITY.md` (phantom-sink limitation + M14 route), `BB_PATTERNS.md`
    (lifecycle-method nuance) — every claim dual-anchored to code.
-5. **Evidence:** 16 evidence files (E1,E1b,E2-E5, A1-A4, V1, X1, P1, D1-D3,
-   C1) all `verified=true, failed=0`, re-read by the closure gate at HEAD.
+5. **Evidence:** 17 original M16 evidence files (E1,E1b,E2-E5, A1-A4, V1,
+   X1, P1, D1-D3, C1) all `verified=true, failed=0`, re-read by the
+   closure gate at HEAD.
+
+## Post-Closure Embedding Addendum
+
+After M16 closure, an independent lifecycle pass found that temporary-project
+verifiers removed SQLite databases while the non-blocking embedding queue still
+held live database handles. That produced `readonly database` warnings and
+zero embedding coverage in short-lived runs. This was shared indexer/semantic
+infrastructure, not an analyzer defect.
+
+The hardening in `src/ast/parallel-indexer.ts` now queues project identity
+instead of a live SQLite handle, reopens only an existing project database,
+and drops jobs for removed projects. M16 verifiers flush the queue before
+closing/removing temporary databases. The new
+`script/m16/verify-embedding-lifecycle.ts` proves durable local vectors and
+safe pre-flush project removal; `script/verify-embed.ts` continues to prove
+API embeddings, dimensions, semantic retrieval, and local fallback.
+
+- Post-closure evidence: `validation/m16/results/EMB.json`
+- Lifecycle gate: `8/8` checks passed
+- Existing API/fallback embedding gate: `EMBED VERIFY: ALL PASS`
+- Typecheck and M16 regression gates: passed
+- The health line may still report zero coverage during indexing because the
+  queue is intentionally non-blocking; coverage is evaluated after an
+  explicit flush, not before the background pass completes.
 
 ## File Map
 

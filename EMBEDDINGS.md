@@ -71,7 +71,9 @@ Embedding generation is **non-blocking**: `bb index` completes and returns
 usable code intelligence immediately, while vectors populate lazily on a
 shared background queue (one serialized drainer per process). To wait for the
 queue before reading vectors back programmatically, call
-`flushBackgroundEmbeddings()` from `src/ast/parallel-indexer`.
+`flushBackgroundEmbeddings()` from `src/ast/parallel-indexer`. Call it before
+closing or deleting a project database; queued jobs must never outlive their
+SQLite handle.
 
 Two knobs bound the work so huge repositories never stall indexing or exhaust
 memory:
@@ -100,5 +102,6 @@ forced reindex because vectors from different spaces are never compared.
 ## Verification
 
 ```bash
-bun run script/verify-embed.ts    # mock API + fallback, both runtimes
+bun run script/verify-embed.ts                 # mock API + fallback
+bun run script/m16/verify-embedding-lifecycle.ts # durable vectors + cleanup ordering
 ```
