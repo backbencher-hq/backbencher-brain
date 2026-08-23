@@ -1029,6 +1029,15 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (typeNode.type === "generic_type") {
       typeName = this.extractSupertypes(typeNode)[0] || typeNode.text
     }
+    // Scala renders type arguments with SQUARE brackets: List[(A, B)](args)
+    // — targets must be clean base names, so strip bracketed type args in
+    // both syntaxes iteratively (nested args List[(A[B], C)] need repeated
+    // passes; the <> form arrives via generic_type nodes).
+    let prevTypeName: string | undefined
+    do {
+      prevTypeName = typeName
+      typeName = typeName.replace(/\[[^\[\]]*\]/g, "").replace(/<[^<>]*>/g, "").trim()
+    } while (typeName !== prevTypeName)
     if (typeName && typeName !== "unknown") {
       relationships.push({
         source: sourceName,
@@ -1087,6 +1096,13 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         // Type(...) stays Instantiates; qualified obj.Method() emits Calls.
         const first = calledName.charCodeAt(0)
         const isCapitalized = first >= 65 && first <= 90
+        // Same bracket-arg hygiene for companion-apply targets, iterative
+        // for nested args: List[(A[B], C)](...) must target List.
+        let prevCalled: string | undefined
+        do {
+          prevCalled = calledName
+          calledName = calledName.replace(/\[[^\[\]]*\]/g, "").trim()
+        } while (calledName !== prevCalled)
         if (isCapitalized && !isQualified) {
           relationships.push({
             source: sourceName,
