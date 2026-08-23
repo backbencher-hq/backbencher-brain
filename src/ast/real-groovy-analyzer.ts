@@ -152,6 +152,9 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
 
           const parents = this.extractInheritance(node, type)
           classHierarchy.set(fqn, parents)
+          // Class/trait/enum annotations: previously only methods carried
+          // them, so Spring/Grails service classes had no annotation data.
+          const classAnnotations = this.extractAnnotations(node)
 
           // extends (superclass / interface-extends)
           if (type === "class_declaration") {
@@ -216,9 +219,10 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
             kind,
             range: this.nodeToRange(node),
             visibility,
+            decorators: classAnnotations,
             ownerName: scopeStack.length > 0 ? scopeStack[scopeStack.length - 1].name : undefined,
             ownerKind: scopeStack.length > 0 ? scopeStack[scopeStack.length - 1].kind : undefined,
-            metadata: { nodeType: type },
+            metadata: { nodeType: type, annotations: classAnnotations },
           }
           symbols.push(sym)
           symbolMap.set(fqn, sym)
@@ -481,6 +485,11 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
   ) {
     for (let ti = 0; ti < tasks.length; ti++) { const task = tasks[ti]
       let targetFqn: string | null = null
+      // Confidence reflects EVIDENCE TIER (patterns.ts filters >= 0.7):
+      // pass 1 exact in-file match, pass 2 project companion evidence,
+      // pass 3 first-parent guess — guesses at 1.0 contaminated thresholded
+      // analysis identically to verified overrides.
+      let confidence = 1.0
 
       // Pass 1: exact-signature BFS over the in-file hierarchy.
       const queue: string[] = []
@@ -512,12 +521,18 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           companion,
           (t) => classHierarchy.get(t) ?? [],
         )
-        if (declaring) targetFqn = `${declaring}.${task.methodName}${task.signature}`
+        if (declaring) {
+          targetFqn = `${declaring}.${task.methodName}${task.signature}`
+          confidence = 0.85
+        }
       }
 
       // Pass 3: deterministic per-file fallback — first hierarchy parent.
       if (!targetFqn && ownerH && ownerH.length > 0) {
         targetFqn = `${ownerH[0]}.${task.methodName}${task.signature}`
+        // Below the patterns.ts default threshold (0.7): visible in raw
+        // output, never contaminating thresholded analysis.
+        confidence = 0.5
       }
 
       if (targetFqn) {
@@ -527,7 +542,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           source: localSource,
           target: localTarget,
           type: ASTEngine.RelationshipType.Overrides,
-          confidence: 1.0,
+          confidence,
           metadata: { relationshipType: "method_override", isGroovyOverride: true },
         })
       }
@@ -707,8 +722,16 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       for (let i = 0; i < modifiers.namedChildCount; i++) {
         const c = modifiers.namedChild(i)
         if (c && (c.type === "annotation" || c.type === "marker_annotation")) {
-          const id = this.findChild(c, (n) => n.type === "identifier")
-          if (id) anns.push(id.text)
+          // Name child is identifier OR scoped_identifier (fully-qualified
+          // forms). The short name is the last dotted segment — first-
+          // identifier extraction returned null for FQ annotations and
+          // silently dropped them (same JVM-family defect as Java F2/K2).
+          const nameNode = this.findChild(c, (n) => n.type === "identifier" || n.type === "scoped_identifier")
+          if (nameNode) {
+            const text = nameNode.text
+            const dot = text.lastIndexOf(".")
+            anns.push(dot === -1 ? text : text.slice(dot + 1))
+          }
         }
       }
     }
@@ -748,6 +771,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     return out
   }
+
 
   private nodeToRange(node: Node) {
     return {

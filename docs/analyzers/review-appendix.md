@@ -6,6 +6,54 @@ smarter instead of rediscovering the same thing.
 
 ---
 
+## Groovy (reviewed 2026-08-23, vendored patched fork in `grammars/tree-sitter-groovy/` = upstream amaanq 0.1.2 + M12.06 patches; pinned `wasm/tree-sitter-groovy.wasm` matches the fork — verified via trait_declaration parsing)
+
+- **GRAMMAR VERDICT (measured, not assumed): the patched fork IS the best
+  available option.** Head-to-head on 300 grails-core .groovy files:
+  fork = 34.0% clean vs community murtaza64 grammar (the nvim-treesitter
+  standard) = 29.0% clean; AND murtaza64 has NO trait support (traits —
+  core Groovy — shred into identifiers+closure) and models class bodies
+  as closures. Vanilla amaanq is a strict subset of the fork. The ~66%
+  dirty rate is a Groovy-grammar-maturity ceiling shared by ALL options;
+  switching grammars would be a regression. No rebuild needed.
+- Unlike Kotlin, the pinned groovy wasm DOES serialize named fields
+  (`method_invocation.childForFieldName('name'/'object')` works) — but
+  never assume: probe per language.
+- Annotation shape: annotation/marker_annotation name can be identifier
+  OR scoped_identifier (FQ). First-identifier extraction drops FQ names
+  — same JVM-family defect as Java F2/K2.
+- Spock test methods use string_literal names (`def "addition works"()`)
+  — name extraction must accept string literals.
+- Script files (Jenkins pipelines): no enclosing class/method; calls
+  attributed to a "(script)" sentinel by design (M14.1).
+- juxt_function_call exists in the wasm with working 'name' field
+  (`echo "msg"` = Calls edge) despite confusing grammar diffs around
+  `_juxt_function_name`.
+
+## Groovy fix wave (2026-08-23)
+
+Fixes: FQ annotation short names (JVM-family defect #3), class/trait/
+enum decorators (previously methods only), evidence-tiered override
+confidence (pass1 1.0 / pass2 0.85 / pass3 0.5 — consumer rule from
+c04d4ff propagated to the last JVM sibling). Fixtures:
+`fq-annotations`, `class-decorators`, `override-fallback-confidence`.
+Harness gained `expectDecorators`.
+
+  - **Groovy declares interface supertypes with `extends`**
+    (`class X extends Base` where Base is an interface) — analyzer
+    emits Extends, correctly. Fixture authoring gotcha: don't expect
+    "implements" for interface supertypes.
+  - **Pass-3 confidence fixtures need a non-declaring parent**: an
+    in-file interface+impl resolves via Pass 1 at 1.0 legitimately.
+    To exercise the guess tier, extend a parent that does NOT declare
+    the method anywhere in the file.
+  - Deliberately untouched (documented scope boundary): no framework
+    detection/patterns metadata (the "pure AST contract" header claims
+    it is deliberate, but Java/Kotlin emit them — cross-language
+    consistency DECISION still owed); isGroovyBuiltin root-segment
+    filter is narrower than Java's any-segment by construction;
+    field-access Uses noise @0.6 cosmetic.
+
 ## Kotlin (reviewed 2026-08-23, upstream fwcd/tree-sitter-kotlin @ 1852ea1, 2026-08-02; pinned `wasm/tree-sitter-kotlin.wasm`, no version metadata)
 
 - **CONFIRMED: the pinned Kotlin WASM exposes ZERO named fields**
@@ -98,7 +146,8 @@ and `expectErrors` matchers.
     detector now also consults metadata.annotations short names
     (Service/RestController/... → Spring, Entity → JPA, Dao → Room,
     Composable → Jetpack Compose, Test/ExtendWith → JUnit).
-## Kotlin follow-up wave (2026-08-23) — contract decision + detection gap closed
+
+## Kotlin wasm wave (2026-08-23) — pinned grammar rebuilt from upstream
 
   - **PINNED WASM REBUILT from upstream (1852ea1, tree-sitter CLI
     0.26.9) and swapped in** — the Kotlin pinned version is now KNOWN,
