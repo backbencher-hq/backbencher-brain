@@ -17,6 +17,8 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     const patternsObj: Record<string, boolean> = {}
     const frameworksObj: Record<string, boolean> = {}
     let hasTypes = false
+    // real cyclomatic complexity, java-convention (0-based branch count)
+    let cyclomaticComplexity = 0
 
     const metadata: Partial<ASTEngine.FileMetadata> = {
       linesOfCode: 0,
@@ -203,8 +205,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
 
       if (node.type === "if_expression" || node.type === "while_expression" || node.type === "do_while_expression" || node.type === "match_expression" || node.type === "for_expression" || node.type === "try_expression") {
-        if (!metadata.cyclomaticComplexity) metadata.cyclomaticComplexity = 1
-        metadata.cyclomaticComplexity++
+        cyclomaticComplexity++
       }
 
       for (let i = node.namedChildCount - 1; i >= 0; i--) {
@@ -219,7 +220,11 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.detectCompanionObjects(symbols, patternsObj)
 
     metadata.hasTypeInference = hasTypes
-    metadata.complexity = symbols.length * 1.5
+    // cross-language metric consistency (M14): complexity IS the cyclomatic
+    // count (java convention), not a synthetic heuristic like the previous
+    // symbols.length * 1.5.
+    metadata.complexity = cyclomaticComplexity
+    metadata.cyclomaticComplexity = cyclomaticComplexity
 
     for (const fw in frameworksObj) metadata.detectedFrameworks!.push(fw)
     for (const pat in patternsObj) metadata.patterns!.push(pat)
@@ -487,10 +492,6 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     parent: ASTEngine.UniversalSymbol | null,
   ): ASTEngine.UniversalSymbol | null {
     const name = this.extractIdentifier(node, "name")
-
-    // Scala 3 extension method: walk up to an extension_definition and read
-    // its parameter's type as the receiver (previously isExtension could
-    // never be true - it compared against a nonexistent UniversalSymbol.type)
     if (!name) return null
 
     const mods = this.collectModifiers(node)
@@ -571,6 +572,9 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         relationships.push({
           source: symbol.name,
           target: supertypes[i],
+          // Scala: extends covers classes AND traits; first supertype =
+          // extends is the documented convention (parenless class extends is
+          // legal, so kotlin's ctor-invocation signal does not transfer).
           type: i === 0 ? ASTEngine.RelationshipType.Extends : ASTEngine.RelationshipType.Implements,
           line_number: extendsClause.startPosition.row + 1,
           metadata: { isTrait: i > 0 },
@@ -625,6 +629,9 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         relationships.push({
           source: symbol.name,
           target: supertypes[i],
+          // Scala: extends covers classes AND traits; first supertype =
+          // extends is the documented convention (parenless class extends is
+          // legal, so kotlin's ctor-invocation signal does not transfer).
           type: i === 0 ? ASTEngine.RelationshipType.Extends : ASTEngine.RelationshipType.Implements,
           line_number: extendsClause.startPosition.row + 1,
           metadata: { isTrait: i > 0 },
@@ -775,14 +782,24 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     let extensionReceiverType: string | undefined
     {
+      // index-loop idiom, consistent with every other traversal in this file
       let anc: Node | null = node.parent
       while (anc) {
         if (anc.type === "extension_definition") {
-          const params = anc.namedChildren.find((c: any) => c.type === "parameters")
-          if (params) {
-            const p0 = params.namedChild(0)
-            const t = p0?.namedChildren.find((c: any) => /_type$|type_identifier/.test(c.type))
-            if (t) extensionReceiverType = t.text.replace(/\?$/, "")
+          for (let i = 0; i < anc.namedChildCount; i++) {
+            const pc = anc.namedChild(i)
+            if (!pc || pc.type !== "parameters") continue
+            if (pc.namedChildCount > 0 && pc.namedChild(0)) {
+              const p0 = pc.namedChild(0)!
+              for (let j = 0; j < p0.namedChildCount; j++) {
+                const tc = p0.namedChild(j)
+                if (tc && /_type$|type_identifier/.test(tc.type)) {
+                  extensionReceiverType = tc.text.replace(/\?$/, "")
+                  break
+                }
+              }
+            }
+            break
           }
           break
         }
