@@ -98,6 +98,7 @@ qualified_calls support map (groovy does not emit them - #383).
 |---|---|---|---|
 | JVM interop | java + groovy (+kotlin, scala when audited) | F7 project | GATED (java+groovy); kotlin/scala PENDING -> #384 |
 | Web embedded | ts/tsx + js + html + css + vue/svelte + json | — | PENDING -> #384 |
+| Web embedded (TS core) | typescript | vue-core@f8975657 (60 seeded files) | GATED: 100% coverage, 0.9% unexplained (1 duplicate-emission residual, tracked) |
 | Mixed server | js/ts + python + json/yaml (ProxiCall shape) | ProxiCall as living corpus | PENDING -> #299 + #384 |
 | .NET | csharp + fsharp | — | PENDING -> #384 |
 | BEAM | elixir + erlang | — | PENDING -> #384 |

@@ -92,6 +92,41 @@
       "perf": {
         "avgMsPerFile": null
       }
+    },
+    "vue-core:typescript": {
+      "missing": 0,
+      "unexplained": 1,
+      "perf": {
+        "avgMsPerFile": 54.9
+      }
+    },
+    "vue-core:kotlin": {
+      "missing": 0,
+      "unexplained": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
+    },
+    "vue-core:scala": {
+      "missing": 0,
+      "unexplained": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
+    },
+    "vue-core:java": {
+      "missing": 0,
+      "unexplained": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
+    },
+    "vue-core:groovy": {
+      "missing": 0,
+      "unexplained": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
     }
   }
 }
