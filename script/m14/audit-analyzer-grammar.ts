@@ -125,6 +125,8 @@ async function main() {
   let totalUnknown = 0
 
   for (const entry of LANGUAGES) {
+    const wasmFieldCounts: number[] = []
+    let totalFieldCount = 0
     const wasmFiles = [entry.wasm, ...(EXTRA_GRAMMARS[entry.language] ?? [])]
     const wasmPaths = wasmFiles.map(w => path.join(WASM_DIR, w))
     for (const wp of wasmPaths) {
@@ -138,6 +140,8 @@ async function main() {
     for (const wp of wasmPaths) {
       const grammar = await Language.load(fs.readFileSync(wp))
       grammarCount++
+      wasmFieldCounts.push(grammar.fieldCount)
+      totalFieldCount += grammar.fieldCount
       for (let i = 0; i < grammar.nodeTypeCount; i++) {
         const name = grammar.nodeTypeForId(i)
         if (name == null) continue
@@ -150,6 +154,9 @@ async function main() {
       }
       grammar.delete?.()
     }
+    // fieldless-wasm flag: a grammar with zero named fields makes EVERY
+    // childForFieldName call in the analyzer silently dead (the kotlin bug).
+    const fieldless = totalFieldCount === 0
     for (const u of UNIVERSAL_NODE_TYPES) nodeTypes.add(u)
 
     // --- extract literals from analyzer source at type/field positions ---
@@ -268,6 +275,8 @@ async function main() {
     totalUnknown += unknown.length + unknownFields.length
     results.languages[entry.language] = {
       wasm: wasmFiles,
+      wasmFieldCounts,
+      fieldless,
       oracleGrammars: grammarCount,
       analyzer: `src/ast/${entry.analyzer}`,
       oracleNodeTypeCount: nodeTypes.size,
