@@ -49,7 +49,7 @@ interface TreeEdge { label: string; from: string; target: string }
 // from clause node structure — no analyzer code involved.
 function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
   const edges: TreeEdge[] = []
-  const TYPE = /type_identifier|scoped_type_identifier|generic_type/
+  const TYPE = /type_identifier|scoped_type_identifier|generic_type|^identifier$/
   const collect = (x: any, label: string, clsName: string) => {
     if (!x) return
     if (TYPE.test(x.type)) edges.push({ label, from: clsName, target: x.text })

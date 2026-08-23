@@ -1,17 +1,111 @@
 {
   "checks": [
     {
+      "description": "typescript adversarial fixtures",
+      "detail": "14/14 fixtures pass",
+      "id": "fixtures-typescript",
+      "status": "pass"
+    },
+    {
       "description": "java adversarial fixtures",
       "detail": "18/18 fixtures pass",
       "id": "fixtures-java",
       "status": "pass"
+    },
+    {
+      "description": "groovy adversarial fixtures",
+      "detail": "15/15 fixtures pass",
+      "id": "fixtures-groovy",
+      "status": "pass"
+    },
+    {
+      "description": "kotlin adversarial fixtures",
+      "detail": "21/21 fixtures pass",
+      "id": "fixtures-kotlin",
+      "status": "pass"
+    },
+    {
+      "description": "scala adversarial fixtures",
+      "detail": "13/13 fixtures pass",
+      "id": "fixtures-scala",
+      "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "96c113bf7f7a90c6f9c17176380f3e468bd6763a",
-  "committedAt": "2026-08-23T12:20:42-05:00",
+  "commit": "f51879d91e23a4e35dd2db45313bcdbb1d62220a",
+  "committedAt": "2026-08-23T22:41:10+02:00",
   "data": {
     "details": [
+      {
+        "fixture": "typescript/abstract-class",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/accessor-pair",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/decorators",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/enum-types",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/generator-flag",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/generic-constraints",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/index-signature",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/interface-members",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/mapped-type-flag",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/optional-default-params",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/overload-implementation",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/payload-pins",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/stdlib-colliding-names",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/unions-intersections",
+        "ok": true,
+        "problems": []
+      },
       {
         "fixture": "java/chained-field-access",
         "ok": true,
@@ -101,12 +195,273 @@
         "fixture": "java/static-utility-call",
         "ok": true,
         "problems": []
+      },
+      {
+        "fixture": "groovy/chained-field-access",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/class-decorators",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/closure-and-typedef",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/fq-annotations",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/fqn-extends",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/fqn-implements",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/fqn-instantiation",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/gstring-interpolation",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/interface-multi-extends",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/override-fallback-confidence",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/overrides",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/pure-field-chain",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/safe-nav-chain",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/script-methods",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/trait-implements",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/annotation-only-frameworks",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/api-contract-routes",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/calls-and-instantiation",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/class-inheritance",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/companion-object",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/contains-explicit",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/coroutine-dispatch",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/data-class-phantoms",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/data-class",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/enum-and-sealed",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/extension-property",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/fq-annotations",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/generic-parameters",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/interface-multi-extends",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/kdoc-extraction",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/object-declaration",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/override-fallback-confidence",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/primary-constructor-properties",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/qualified-calls-builtin-names",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/safe-nav-chain",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/wildcard-imports",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/case-class-fields",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/class-extends-class-and-trait",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/companion-object",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/contains-explicit",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/dotted-generic-supertype",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/extension-method-flag",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/generics-bounds",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/instantiation-new",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/lambda-calls",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/object-singleton",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/sealed-hierarchy",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/self-type",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/trait-and-impl",
+        "ok": true,
+        "problems": []
       }
     ],
     "summary": {
+      "groovy": {
+        "fail": 0,
+        "pass": 15
+      },
       "java": {
         "fail": 0,
         "pass": 18
+      },
+      "kotlin": {
+        "fail": 0,
+        "pass": 21
+      },
+      "scala": {
+        "fail": 0,
+        "pass": 13
+      },
+      "typescript": {
+        "fail": 0,
+        "pass": 14
       }
     }
   },

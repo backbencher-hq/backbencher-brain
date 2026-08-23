@@ -186,6 +186,16 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
       )
       if (!hit) problems.push(`expected import not found: ${JSON.stringify(want)}; got: ${JSON.stringify((result.imports ?? []).map((i: any) => ({ module: i.module, ns: i.isNamespaceImport, items: i.items })))}`)
     }
+    for (const want of exp.expectDecorators ?? []) {
+      // Each entry: { symbol, contains } — symbol's decorators must include
+      // an entry whose text contains `contains` (e.g. "Transactional" matches
+      // "@org.x.Transactional" and "Transactional").
+      const sym = symbols.find((s: any) => s.name === want.symbol)
+      const decs: string[] = sym?.decorators ?? sym?.metadata?.annotations ?? []
+      if (!decs.some((d) => d.includes(want.contains))) {
+        problems.push(`expected ${want.symbol} decorators to include "${want.contains}"; got ${JSON.stringify(decs)} (decorators=${JSON.stringify(sym?.decorators)}, meta.annotations=${JSON.stringify(sym?.metadata?.annotations)})`)
+      }
+    }
     for (const want of exp.expectFrameworks ?? []) {
       const actual: string[] = (result.metadata as any)?.detectedFrameworks ?? []
       if (!actual.includes(want)) problems.push(`expected framework "${want}" not detected; got: ${JSON.stringify(actual)}`)
