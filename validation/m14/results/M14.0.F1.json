@@ -13,14 +13,14 @@
       "status": "pass"
     },
     {
-      "description": "regression gate vs grammar-audit-baseline.json (21/41 languages pass)",
+      "description": "regression gate vs grammar-audit-baseline.json (22/41 languages pass)",
       "id": "baseline-gate",
       "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "afdcdc4335e35aa1ac006c5c0c6648410027418b",
-  "committedAt": "2026-08-23T23:16:12+02:00",
+  "commit": "55ea9c86e5b1563b7311d317cb7f122b98abe741",
+  "committedAt": "2026-08-24T00:04:11+02:00",
   "data": {
     "languages": {
       "bash": {
@@ -1065,51 +1065,10 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 435,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 75,
-        "status": "fail",
+        "referencedTypeLiterals": 69,
+        "status": "pass",
         "unknownFields": [],
-        "unknownNodeTypes": [
-          {
-            "context": "real-scala-analyzer.ts:comparison",
-            "line": 159,
-            "literal": "anonymous_function"
-          },
-          {
-            "context": "real-scala-analyzer.ts:comparison",
-            "line": 925,
-            "literal": "anonymous_function"
-          },
-          {
-            "context": "real-scala-analyzer.ts:comparison",
-            "line": 167,
-            "literal": "string_interpolation"
-          },
-          {
-            "context": "real-scala-analyzer.ts:comparison",
-            "line": 187,
-            "literal": "using_clause"
-          },
-          {
-            "context": "real-scala-analyzer.ts:comparison",
-            "line": 351,
-            "literal": "scoped_identifier"
-          },
-          {
-            "context": "real-scala-analyzer.ts:comparison",
-            "line": 451,
-            "literal": "applied_type"
-          },
-          {
-            "context": "real-scala-analyzer.ts:comparison",
-            "line": 980,
-            "literal": "applied_type"
-          },
-          {
-            "context": "real-scala-analyzer.ts:comparison",
-            "line": 920,
-            "literal": "source_file"
-          }
-        ],
+        "unknownNodeTypes": [],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-scala.wasm"
@@ -1568,10 +1527,10 @@
       }
     },
     "summary": {
-      "fail": 20,
+      "fail": 19,
       "languagesAudited": 41,
-      "pass": 21,
-      "totalUnknownReferences": 146
+      "pass": 22,
+      "totalUnknownReferences": 138
     }
   },
   "governance": "docs/M14-HONESTY-CONTRACT.md",
