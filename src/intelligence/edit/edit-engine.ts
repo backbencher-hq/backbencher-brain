@@ -154,29 +154,29 @@ function computeInnerIndent(text: string, body: BodyRange): string {
  *  differently, so this is a deliberate union of those conventions (verified
  *  by script/m13/verify-edit-xlang.ts across all languages). */
 
-/** Tree-sitter node types that are member-access expressions (obj.x), NOT
- *  declaration bindings. Several grammars name these with "field" or "property"
- *  substrings (field_expression, field_access), which would otherwise falsely
- *  match the substring rules below and classify the RECEIVER as a binding,
- *  causing silent under-rename in refactor. Checked FIRST and unconditionally. */
-const ACCESS_EXPRESSION_TYPES = new Set([
-  "field_expression",       // Rust, C/C++, Scala, Groovy, C#, Zig
-  "field_access",            // Java, Dart
-  "member_expression",       // JS/TS, Ruby (call)
-  "attribute",               // Python
-  "selector_expression",     // Go
-  "member_access_expression", // C#
-  "navigation_expression",   // Swift, Kotlin
-  "dot_qualified_expression", // Kotlin
-  "qualified_expression",    // C#
-  "scoped_type_identifier",  // Groovy (qualified type reference, not a binding)
+/** Tree-sitter node types whose names contain substrings ("field") that would
+ *  otherwise falsely match the includes("field") rule below, causing the
+ *  RECEIVER in obj.field to be classified as a binding and silently skipped
+ *  during rename. Checked FIRST, before any substring rule.
+ *
+ *  Only field_expression (Rust, C/C++, Scala, Zig) and field_access (Java)
+ *  are affected. Other access-expression types (member_expression, attribute,
+ *  selector_expression, navigation_expression) are already correctly filtered
+ *  by isMemberNameNode returning true for the member name before
+ *  isBindingParentType is even called on the receiver.
+ *
+ *  Verified per-type against actual substring rules; every entry here is
+ *  confirmed to produce a false positive. No cosmetic entries. */
+const FALSE_POSITIVE_BINDING_TYPES = new Set([
+  "field_expression",  // Rust, C/C++, Scala, Zig — t.includes("field") matches
+  "field_access",       // Java — t.includes("field") matches
 ])
 
 export function isBindingParentType(type: string): boolean {
   const t = type.toLowerCase()
   // Access expressions are uses, never declaration bindings — checked
   // before substring rules so "field_expression" doesn't match includes("field").
-  if (ACCESS_EXPRESSION_TYPES.has(t)) return false
+  if (FALSE_POSITIVE_BINDING_TYPES.has(t)) return false
   return (
     t.includes("declarator") || // variable_declarator, function_declarator (C/C++)
     t.includes("declaration") || // function/class/method/variable/field_declaration
