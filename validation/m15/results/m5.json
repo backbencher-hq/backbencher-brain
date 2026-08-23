@@ -1,0 +1,11 @@
+{
+  "issue": "M15.M5",
+  "code": "M5",
+  "tool": "bb_migrate",
+  "verified": true,
+  "checks": 1,
+  "passed": 2,
+  "failed": 0,
+  "negatives": 1,
+  "generatedAt": "2026-08-23T05:35:40.930Z"
+}

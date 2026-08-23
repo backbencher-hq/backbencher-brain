@@ -1,0 +1,11 @@
+{
+  "issue": "M15.M8",
+  "code": "M8",
+  "tool": "bb_migrate",
+  "verified": true,
+  "checks": 1,
+  "passed": 1,
+  "failed": 0,
+  "negatives": 0,
+  "generatedAt": "2026-08-23T05:35:40.931Z"
+}
