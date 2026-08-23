@@ -1,150 +1,17 @@
 {
   "checks": [
     {
-      "description": "java adversarial fixtures",
-      "detail": "12/12 fixtures pass",
-      "id": "fixtures-java",
-      "status": "pass"
-    },
-    {
-      "description": "groovy adversarial fixtures",
-      "detail": "11/11 fixtures pass",
-      "id": "fixtures-groovy",
-      "status": "pass"
-    },
-    {
       "description": "kotlin adversarial fixtures",
-      "detail": "13/13 fixtures pass",
+      "detail": "14/14 fixtures pass",
       "id": "fixtures-kotlin",
-      "status": "pass"
-    },
-    {
-      "description": "scala adversarial fixtures",
-      "detail": "10/10 fixtures pass",
-      "id": "fixtures-scala",
       "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "5173c07799fd165eb071049464280cee892ea6a8",
-  "committedAt": "2026-08-23T00:53:10-05:00",
+  "commit": "a477283683545c76754fdcbf48661a42c4d90c0a",
+  "committedAt": "2026-08-23T09:41:33-05:00",
   "data": {
     "details": [
-      {
-        "fixture": "java/chained-field-access",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "java/class-extends-implements",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "java/fqn-extends",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "java/fqn-instantiation",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "java/generics-bounds",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "java/inner-class-instantiation",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "java/interface-method-call",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "java/multi-interface-extends",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "java/nested-types",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "java/pure-field-chain",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "java/records-and-sealed",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "java/static-utility-call",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "groovy/chained-field-access",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "groovy/closure-and-typedef",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "groovy/fqn-extends",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "groovy/fqn-implements",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "groovy/fqn-instantiation",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "groovy/gstring-interpolation",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "groovy/interface-multi-extends",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "groovy/pure-field-chain",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "groovy/safe-nav-chain",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "groovy/script-methods",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "groovy/trait-implements",
-        "ok": true,
-        "problems": []
-      },
       {
         "fixture": "kotlin/api-contract-routes",
         "ok": true,
@@ -181,6 +48,11 @@
         "problems": []
       },
       {
+        "fixture": "kotlin/generic-parameters",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "kotlin/interface-multi-extends",
         "ok": true,
         "problems": []
@@ -209,74 +81,12 @@
         "fixture": "kotlin/safe-nav-chain",
         "ok": true,
         "problems": []
-      },
-      {
-        "fixture": "scala/case-class-fields",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "scala/class-extends-class-and-trait",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "scala/companion-object",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "scala/generics-bounds",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "scala/instantiation-new",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "scala/lambda-calls",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "scala/object-singleton",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "scala/sealed-hierarchy",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "scala/self-type",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "scala/trait-and-impl",
-        "ok": true,
-        "problems": []
       }
     ],
     "summary": {
-      "groovy": {
-        "fail": 0,
-        "pass": 11
-      },
-      "java": {
-        "fail": 0,
-        "pass": 12
-      },
       "kotlin": {
         "fail": 0,
-        "pass": 13
-      },
-      "scala": {
-        "fail": 0,
-        "pass": 10
+        "pass": 14
       }
     }
   },
