@@ -151,6 +151,13 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
         }
       }
     }
+    for (const want of exp.expectApiContractPaths ?? []) {
+      const sym = symbols.find((s: any) => s.name === want.symbol)
+      const actualPath = sym?.apiContractPath ?? sym?.api_contract_path
+      if (want.equals && actualPath !== want.equals) {
+        problems.push(`expected ${want.symbol} apiContractPath ${JSON.stringify(want.equals)}; got ${JSON.stringify(actualPath)}`)
+      }
+    }
     for (const want of exp.forbidSymbols ?? []) {
       const hit = symbols.find(s => matchConstraints(s, want))
       if (hit) problems.push(`forbidden symbol present: ${JSON.stringify(want)} (found ${hit.name}:${hit.kind})`)
