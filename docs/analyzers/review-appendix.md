@@ -98,18 +98,35 @@ and `expectErrors` matchers.
     detector now also consults metadata.annotations short names
     (Service/RestController/... → Spring, Entity → JPA, Dao → Room,
     Composable → Jetpack Compose, Test/ExtendWith → JUnit).
-  - **⚠️ PINNED-WASM MISPARSE (upstream-report candidate)**: the pinned
-    kotlin wasm silently shreds declarations when a top-level declaration
-    whose ANNOTATION CARRIES ARGUMENTS (`@GetMapping("/o") fun o() ...`)
-    is followed by another declaration — the construct becomes a
-    `prefix_expression` wrapper with the real declaration nested inside,
-    NO ERROR node surfaced. Whole-file context sensitive: class-contained
-    argumentized methods are safe alone but combinations with comments/
-    package headers have shredded both classes in a file. Minimal repro:
-    `@org.c.GetMapping("/o")\nfun o() = "ok"\n\n@org.a.S\nclass B` →
-    root children `prefix_expression,function_declaration,class_declaration`.
-    Analyzers cannot sanely recover classes from these trees; fixtures
-    must avoid the shape until the wasm is rebuilt from current upstream.
+## Kotlin follow-up wave (2026-08-23) — contract decision + detection gap closed
+
+  - **PINNED WASM REBUILT from upstream (1852ea1, tree-sitter CLI
+    0.26.9) and swapped in** — the Kotlin pinned version is now KNOWN,
+    resolving the "no version metadata" caveat for this language.
+    Rebuild recipe that worked:
+    `cd <clone> && tree-sitter generate && tree-sitter build --wasm`
+    (CLI auto-downloads wasi-sdk on first build; ~40s).
+    Old binary preserved at the wave's commit parent if ever needed.
+  - **The prefix_expression shred misparse is FIXED by the rebuild**:
+    `@org.c.GetMapping("/o") fun o() ...` followed by another annotated
+    declaration now parses as function_declaration,class_declaration.
+    The e2e file that previously lost both classes now indexes
+    completely (both classes + method + all frameworks).
+  - **Upstream grammar change to absorb**: extension receivers moved
+    into a dedicated `receiver_type` wrapper node (properties AND
+    functions); `getter` became a named node. Analyzer receiver scans
+    accept both shapes (receiver_type OR bare user_type) so they work
+    against either wasm generation. When reviewing OTHER grammars after
+    a wasm refresh, expect exactly this class of change: named wrappers
+    around previously-flat children.
+  - Verification protocol for a wasm swap (reuse it):
+    1. parse the known-defect repro + analyzer-critical shapes with the
+       candidate BEFORE swapping
+    2. swap, run full fixture suite (all languages)
+    3. grammar audit validates every node-type/field literal against the
+       new binary (kotlin: refs=53 unknown=0)
+    4. typecheck + e2e through the real analyzer on a previously-broken
+       input
 
 *(existing entries retained below)*
 
