@@ -2,32 +2,20 @@
   "checks": [
     {
       "description": "java adversarial fixtures",
-      "detail": "6/10 fixtures pass",
+      "detail": "8/10 fixtures pass",
       "id": "fixtures-java",
       "status": "fail"
     },
     {
       "description": "groovy adversarial fixtures",
-      "detail": "4/10 fixtures pass",
+      "detail": "6/10 fixtures pass",
       "id": "fixtures-groovy",
       "status": "fail"
-    },
-    {
-      "description": "kotlin adversarial fixtures",
-      "detail": "0/0 fixtures pass",
-      "id": "fixtures-kotlin",
-      "status": "pass"
-    },
-    {
-      "description": "scala adversarial fixtures",
-      "detail": "0/0 fixtures pass",
-      "id": "fixtures-scala",
-      "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "c60b545476d22b3b2af9c91ac384d88bd4621160",
-  "committedAt": "2026-08-22T19:24:01-05:00",
+  "commit": "0de4dfd7f8cf624654a1b165d90d486aab3b1e64",
+  "committedAt": "2026-08-22T19:43:14-05:00",
   "data": {
     "details": [
       {
@@ -42,17 +30,13 @@
       },
       {
         "fixture": "java/fqn-extends",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"extends\",\"from\":\"Scheduler\",\"target\":\"BaseScheduler\"}; got: extends[Scheduler->com.acme.base.BaseScheduler]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "java/fqn-instantiation",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"instantiates\",\"from\":\"make\",\"target\":\"ArrayList\"}; got: instantiates[make->java.util.ArrayList]@0.95; contains[Factory->make]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "java/generics-bounds",
@@ -92,12 +76,8 @@
       },
       {
         "fixture": "groovy/chained-field-access",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"uses\",\"target\":\"output\"}; got: calls[render->name]@0.7; calls[render->format]@0.7; calls[render->output]@0.7; contains[Reporter->render]@1",
-          "expected relationship not found: {\"type\":\"uses\",\"target\":\"format\"}; got: calls[render->name]@0.7; calls[render->format]@0.7; calls[render->output]@0.7; contains[Reporter->render]@1",
-          "expected relationship not found: {\"type\":\"uses\",\"target\":\"name\"}; got: calls[render->name]@0.7; calls[render->format]@0.7; calls[render->output]@0.7; contains[Reporter->render]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "groovy/closure-and-typedef",
@@ -140,13 +120,8 @@
       },
       {
         "fixture": "groovy/safe-nav-chain",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"uses\",\"from\":\"account\",\"target\":\"owner\"}; got: contains[Guard->probe]@1; uses[user->label]@0.6; uses[user->owner]@0.6; uses[user->account]@0.6",
-          "expected relationship not found: {\"type\":\"uses\",\"from\":\"owner\",\"target\":\"label\"}; got: contains[Guard->probe]@1; uses[user->label]@0.6; uses[user->owner]@0.6; uses[user->account]@0.6",
-          "forbidden relationship present: {\"type\":\"uses\",\"from\":\"user\",\"target\":\"label\"} (found uses[user->label]@0.6)",
-          "forbidden relationship present: {\"type\":\"uses\",\"from\":\"user\",\"target\":\"owner\"} (found uses[user->owner]@0.6)"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "groovy/script-methods",
@@ -161,32 +136,16 @@
         "fixture": "groovy/trait-implements",
         "ok": true,
         "problems": []
-      },
-      {
-        "fixture": "(none)",
-        "ok": true
-      },
-      {
-        "fixture": "(none)",
-        "ok": true
       }
     ],
     "summary": {
       "groovy": {
-        "fail": 6,
-        "pass": 4
-      },
-      "java": {
         "fail": 4,
         "pass": 6
       },
-      "kotlin": {
-        "fail": 0,
-        "pass": 0
-      },
-      "scala": {
-        "fail": 0,
-        "pass": 0
+      "java": {
+        "fail": 2,
+        "pass": 8
       }
     }
   },

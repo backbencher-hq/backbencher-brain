@@ -37,6 +37,11 @@ function matchConstraints(actual: Entry, want: Entry): boolean {
       if (!(typeof actual.confidence === "number" && actual.confidence >= v)) return false
     } else if (k === "confidenceMax") {
       if (!(typeof actual.confidence === "number" && actual.confidence <= v)) return false
+    } else if (k.endsWith("EndsWith")) {
+      const field = k.slice(0, -"EndsWith".length)
+      const aliases: Record<string, string[]> = { target: ["target", "to", "toSymbol"], from: ["from", "source", "fromSymbol"] }
+      const vals = (aliases[field] ?? [field]).map(a => actual[a]).filter(x => typeof x === "string")
+      if (!vals.some(x => x.endsWith(v))) return false
     } else if (k.startsWith("meta.")) {
       const mk = k.slice(5)
       if ((actual.metadata ?? {})[mk] !== v) return false
