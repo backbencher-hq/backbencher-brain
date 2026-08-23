@@ -76,9 +76,22 @@ function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
           let first = true
           for (let i = 0; i < extClause.namedChildCount; i++) {
             const st = extClause.namedChild(i)
-            if (!st || !/type_identifier|user_type/.test(st.type)) continue
-            if (isTraitDecl || first) edges.push({ label: "extends", from: clsName, target: st.text })
-            else edges.push({ label: "implements", from: clsName, target: st.text })
+            if (!st) continue
+            // head segment only for generic supertypes (Something[Test.A] -> Something)
+            let target = ""
+            if (/type_identifier|user_type|stable_type_identifier|generic_type$/.test(st.type)) {
+              target = st.text
+              const lt = target.indexOf("[")
+              if (lt !== -1) target = target.slice(0, lt)
+            } else if (st.type === "generic_type" && st.namedChildCount > 0) {
+              const head = st.namedChild(0)
+              target = head?.text ?? ""
+              const lt = target.indexOf("[")
+              if (lt !== -1) target = target.slice(0, lt)
+            }
+            if (!target) continue
+            if (isTraitDecl || first) edges.push({ label: "extends", from: clsName, target })
+            else edges.push({ label: "implements", from: clsName, target })
             first = false
           }
         }
