@@ -549,6 +549,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
           source: symbol.name,
           target: supertypes[i],
           type: i === 0 ? ASTEngine.RelationshipType.Extends : ASTEngine.RelationshipType.Implements,
+          line_number: extendsClause.startPosition.row + 1,
           metadata: { isTrait: i > 0 },
         })
       }
@@ -602,6 +603,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
           source: symbol.name,
           target: supertypes[i],
           type: i === 0 ? ASTEngine.RelationshipType.Extends : ASTEngine.RelationshipType.Implements,
+          line_number: extendsClause.startPosition.row + 1,
           metadata: { isTrait: i > 0 },
         })
       }
@@ -650,6 +652,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
           source: symbol.name,
           target: supertypes[i],
           type: i === 0 ? ASTEngine.RelationshipType.Extends : ASTEngine.RelationshipType.Implements,
+          line_number: extendsClause.startPosition.row + 1,
           metadata: { isTrait: i > 0 },
         })
       }
@@ -909,6 +912,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         target: typeName,
         type: ASTEngine.RelationshipType.Instantiates,
         confidence: 0.9,
+        line_number: typeNode.startPosition.row + 1,
         metadata: { isInstantiation: true },
       })
     }
@@ -921,8 +925,13 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     parent: ASTEngine.UniversalSymbol | null,
   ) {
     const fnNode = node.childForFieldName("function")
-    if (fnNode && parent) {
-      // Curried application wrapper: `self.add(1)(2)` parses as an outer
+      if (fnNode && parent) {
+        // Scala 3 quote/splice syntax ('{ ... }, 'Sym) and backtick literals:
+        // callees beginning with a quote character are not method calls or
+        // constructions. Previously they emitted bogus PascalCase
+        // Instantiates edges on macro-heavy code (dotty compiler corpus).
+        if (fnNode.text.startsWith("'") || fnNode.text.startsWith("`")) return
+        // Curried application wrapper: `self.add(1)(2)` parses as an outer
       // call_expression whose function is the inner call `self.add(1)`. The
       // inner call is visited separately by the walker and emits the correct
       // `calls → add` edge — emitting here too would produce the noise target
@@ -950,6 +959,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: calledName,
             type: ASTEngine.RelationshipType.Instantiates,
             confidence: 0.7,
+            line_number: node.startPosition.row + 1,
             metadata: { isInstantiation: true },
           })
         } else {
@@ -957,6 +967,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
             source: parent.name,
             target: calledName,
             type: ASTEngine.RelationshipType.Calls,
+            line_number: node.startPosition.row + 1,
             metadata: {},
           })
         }

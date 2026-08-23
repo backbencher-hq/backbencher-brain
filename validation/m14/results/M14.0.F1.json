@@ -19,8 +19,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "4fb198debe09b27d78fa00d32ac7954d71bde04f",
-  "committedAt": "2026-08-22T23:29:54-05:00",
+  "commit": "72735f10d99837ee7a9db79d427cdbaff85211d2",
+  "committedAt": "2026-08-23T00:09:24-05:00",
   "data": {
     "languages": {
       "bash": {
@@ -946,7 +946,7 @@
           },
           {
             "context": "real-scala-analyzer.ts:comparison",
-            "line": 851,
+            "line": 854,
             "literal": "anonymous_function"
           },
           {
@@ -971,12 +971,12 @@
           },
           {
             "context": "real-scala-analyzer.ts:comparison",
-            "line": 903,
+            "line": 906,
             "literal": "applied_type"
           },
           {
             "context": "real-scala-analyzer.ts:comparison",
-            "line": 846,
+            "line": 849,
             "literal": "source_file"
           }
         ],
