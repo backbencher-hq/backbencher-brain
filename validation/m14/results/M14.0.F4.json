@@ -1,0 +1,105 @@
+{
+  "checks": [
+    {
+      "description": "relabels every extends edge as implements (the exact multi-interface bug class reported by the owner)",
+      "detail": "2 -> 4",
+      "id": "mutation-java-mislabel-inheritance",
+      "status": "pass"
+    },
+    {
+      "description": "drops every method symbol",
+      "detail": "2 -> 7",
+      "id": "mutation-java-drop-method-symbols",
+      "status": "pass"
+    },
+    {
+      "description": "drops edges whose target contains a dot (FQN handling regression)",
+      "detail": "2 -> 4",
+      "id": "mutation-java-fqn-edge-drop",
+      "status": "pass"
+    },
+    {
+      "description": "sets confidence 1.0 on every relationship (silent heuristic inflation, contract §4 violation)",
+      "detail": "4 -> 6",
+      "id": "mutation-groovy-confidence-tamper",
+      "status": "pass"
+    },
+    {
+      "description": "adds a bogus implements edge to package segment 'java' for every class",
+      "detail": "4 -> 9",
+      "id": "mutation-groovy-segment-garbage",
+      "status": "pass"
+    },
+    {
+      "description": "drops every class symbol",
+      "detail": "4 -> 9",
+      "id": "mutation-groovy-drop-class-symbols",
+      "status": "pass"
+    }
+  ],
+  "claimLevel": "L1",
+  "commit": "f76b1f63da5fbb2d8caac07d3641797470808931",
+  "committedAt": "2026-08-22T19:47:32-05:00",
+  "data": {
+    "summary": {
+      "caught": 6,
+      "mutantsRun": 6,
+      "survived": 0
+    }
+  },
+  "governance": "docs/M14-HONESTY-CONTRACT.md",
+  "issueId": "M14.0.F4",
+  "layers": [
+    "fixtures",
+    "mutation"
+  ],
+  "limitations": [
+    {
+      "description": "mutants wrap analyzer output rather than rewriting analyzer source; equivalent at the suite level but not a compiler-level injection"
+    },
+    {
+      "description": "mutation coverage currently spans java + groovy (the wave languages); other languages add mutants when their waves start"
+    }
+  ],
+  "mutationLog": [
+    {
+      "caughtBy": "java/class-extends-implements, java/fqn-extends",
+      "detail": "relationship-mislabel: 2 -> 4 fixture failures",
+      "injectedAt": "2026-08-23T00:58:57.865Z",
+      "mutant": "java/mislabel-inheritance"
+    },
+    {
+      "caughtBy": "java/chained-field-access, java/class-extends-implements, java/fqn-instantiation, java/generics-bounds, java/nested-types",
+      "detail": "symbol-loss: 2 -> 7 fixture failures",
+      "injectedAt": "2026-08-23T00:58:57.885Z",
+      "mutant": "java/drop-method-symbols"
+    },
+    {
+      "caughtBy": "java/fqn-extends, java/fqn-instantiation",
+      "detail": "edge-drop: 2 -> 4 fixture failures",
+      "injectedAt": "2026-08-23T00:58:57.903Z",
+      "mutant": "java/fqn-edge-drop"
+    },
+    {
+      "caughtBy": "groovy/chained-field-access, groovy/safe-nav-chain",
+      "detail": "confidence-dishonesty: 4 -> 6 fixture failures",
+      "injectedAt": "2026-08-23T00:58:57.991Z",
+      "mutant": "groovy/confidence-tamper"
+    },
+    {
+      "caughtBy": "groovy/chained-field-access, groovy/closure-and-typedef, groovy/gstring-interpolation, groovy/safe-nav-chain, groovy/trait-implements",
+      "detail": "relationship-garbage: 4 -> 9 fixture failures",
+      "injectedAt": "2026-08-23T00:58:58.006Z",
+      "mutant": "groovy/segment-garbage"
+    },
+    {
+      "caughtBy": "groovy/chained-field-access, groovy/closure-and-typedef, groovy/gstring-interpolation, groovy/safe-nav-chain, groovy/trait-implements",
+      "detail": "symbol-loss: 4 -> 9 fixture failures",
+      "injectedAt": "2026-08-23T00:58:58.030Z",
+      "mutant": "groovy/drop-class-symbols"
+    }
+  ],
+  "runtime": "node v24.3.0",
+  "schemaVersion": 2,
+  "title": "Mutation-testing harness"
+}

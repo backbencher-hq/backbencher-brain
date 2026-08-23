@@ -69,20 +69,56 @@ function normRel(r: Entry): Entry {
   }
 }
 
-async function runLang(lang: string): Promise<{ pass: number; fail: number; details: any[] }> {
+let _wtsState: { P: any; L: any } | null = null
+const _parserCache = new Map<string, any>()
+
+async function getParser(lang: string): Promise<any> {
+  if (_parserCache.has(lang)) return _parserCache.get(lang)
+  const cfg = LANGS[lang]
+  const wts: any = await import("web-tree-sitter")
+  const ParserClass = wts.Parser ?? wts.default ?? wts
+  const Language = wts.Language ?? wts.default?.Language
+  if (!_wtsState) await ParserClass.init({ locateFile: () => path.join(ROOT, "node_modules", "web-tree-sitter", "tree-sitter.wasm") })
+  ;(_wtsState as any) = { P: ParserClass, L: Language }
+  const grammar = await Language.load(fs.readFileSync(path.join(ROOT, "wasm", cfg.wasm)))
+  const parser = new ParserClass()
+  parser.setLanguage(grammar)
+  _parserCache.set(lang, parser)
+  return parser
+}
+
+// Universal invariants applied to EVERY fixture of a language, independent of
+// fixture-specific expectations. Package-segment words are never valid
+// inheritance/implements targets — an edge to them is grammar-illiterate output.
+const UNIVERSAL_FORBIDDEN_RELATIONSHIPS: Record<string, any[]> = {
+  java: [],
+  groovy: [
+    { type: "implements", target: "java" },
+    { type: "implements", target: "io" },
+    { type: "implements", target: "lang" },
+    { type: "implements", target: "groovy" },
+    { type: "extends", target: "java" },
+    { type: "extends", target: "io" },
+    { type: "extends", target: "lang" },
+    { type: "extends", target: "groovy" },
+  ],
+  kotlin: [],
+  scala: [],
+}
+
+async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: number; fail: number; details: any[] }> {
   const cfg = LANGS[lang]
   const dir = path.join(FIXTURES_DIR, lang)
   if (!fs.existsSync(dir)) return { pass: 0, fail: 0, details: [{ fixture: "(none)", ok: true }] }
 
-  const wts: any = await import("web-tree-sitter")
-  const ParserClass = wts.Parser ?? wts.default ?? wts
-  const Language = wts.Language ?? wts.default?.Language
-  await ParserClass.init({ locateFile: () => path.join(ROOT, "node_modules", "web-tree-sitter", "tree-sitter.wasm") })
-  const grammar = await Language.load(fs.readFileSync(path.join(ROOT, "wasm", cfg.wasm)))
-  const parser = new ParserClass()
-  parser.setLanguage(grammar)
-  const mod: any = await import(`../../src/ast/${cfg.analyzerFile}`)
-  const analyzer = new mod[cfg.className]()
+  const parser = await getParser(lang)
+  let analyzer: any
+  if (overrideAnalyzer) {
+    analyzer = overrideAnalyzer
+  } else {
+    const mod: any = await import(`../../src/ast/${cfg.analyzerFile}`)
+    analyzer = new mod[cfg.className]()
+  }
 
   const sources = fs.readdirSync(dir).filter(f => f.endsWith("." + cfg.ext))
   let pass = 0, fail = 0
@@ -115,7 +151,7 @@ async function runLang(lang: string): Promise<{ pass: number; fail: number; deta
         problems.push(`expected relationship not found: ${JSON.stringify(want)}; got: ${rels.map((r: any) => r.type + "[" + r.from + "->" + r.target + "]" + (r.confidence != null ? "@" + r.confidence : "")).slice(0, 30).join("; ")}`)
       }
     }
-    for (const want of exp.forbidRelationships ?? []) {
+    for (const want of [...(exp.forbidRelationships ?? []), ...(UNIVERSAL_FORBIDDEN_RELATIONSHIPS[lang] ?? [])]) {
       const hit = rels.find(r => matchConstraints(r, want))
       if (hit) problems.push(`forbidden relationship present: ${JSON.stringify(want)} (found ${hit.type}[${hit.from}->${hit.target}]${hit.confidence != null ? "@" + hit.confidence : ""})`)
     }
@@ -126,6 +162,8 @@ async function runLang(lang: string): Promise<{ pass: number; fail: number; deta
   }
   return { pass, fail, details }
 }
+
+export { runLang, LANGS, matchConstraints }
 
 async function main() {
   const argLangs = process.argv.includes("--lang")
@@ -188,4 +226,6 @@ async function main() {
   process.exit(0) // F3 gate: fixtures RUN successfully; failures are wave work items, tracked via baseline
 }
 
-main().catch(e => { console.error(e); process.exit(1) })
+if (process.argv[1]?.endsWith("run-fixtures.ts")) {
+  main().catch(e => { console.error(e); process.exit(1) })
+}
