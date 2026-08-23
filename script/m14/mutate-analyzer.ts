@@ -69,6 +69,20 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: [...(r.relationships ?? []), ...(r.symbols ?? []).filter(s => s.kind === "class").map(s => ({ type: "implements", source: s.name, target: "java", confidence: 1, metadata: {} }))] }),
   },
   {
+    id: "javascript/drop-field-access",
+    language: "javascript",
+    defectClass: "relationship-loss",
+    description: "strips isFieldAccess uses edges (the collector-added feature)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(x.metadata ?? {}).isFieldAccess) }),
+  },
+  {
+    id: "javascript/hide-jsdoc",
+    language: "javascript",
+    defectClass: "docstring-loss",
+    description: "clears comments arrays (docstring-loss family)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => ({ ...s, comments: [] })) }),
+  },
+  {
     id: "typescript/drop-qualified-calls",
     language: "typescript",
     defectClass: "symbol-payload-loss",
