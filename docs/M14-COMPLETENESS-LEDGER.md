@@ -169,5 +169,9 @@ Recorded so it is process, not memory.
 | 400 files | 22.1s | 31 ms/file |
 | single 3,152-line file | parse 154ms + analyze 87ms | deterministic |
 
-F9 will convert these into a standing ceiling gate; until then they are
-recorded here as reference points. 100k+-file scaling: UNTESTED (declared).
+F9 IMPLEMENTED (per-analyzer budgets, differential harness): avg ms/file
+recorded per language per repo into differential-baseline.json; gate fails on
+>3x own baseline or >3x cross-language median. First recorded budgets:
+java 12.3 ms/file, groovy 8.8, scala 10.6, kotlin 54.2 on Exposed (OUTLIER -
+flagged for investigation under #385-family; budget passes at current margin).
+100k+-file scaling: UNTESTED (declared).

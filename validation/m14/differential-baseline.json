@@ -11,47 +11,87 @@
     },
     "grails-core:kotlin": {
       "missing": 0,
-      "unexplained": 0
+      "unexplained": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
     },
     "grails-core:java": {
       "missing": 0,
-      "unexplained": 0
+      "unexplained": 0,
+      "perf": {
+        "avgMsPerFile": 12.3
+      }
     },
     "grails-core:groovy": {
       "missing": 0,
-      "unexplained": 0
+      "unexplained": 0,
+      "perf": {
+        "avgMsPerFile": 8.8
+      }
     },
     "Exposed:kotlin": {
       "missing": 5,
-      "unexplained": 7
+      "unexplained": 7,
+      "perf": {
+        "avgMsPerFile": 54.2
+      }
     },
     "Exposed:java": {
       "missing": 0,
-      "unexplained": 0
+      "unexplained": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
     },
     "Exposed:groovy": {
       "missing": 0,
-      "unexplained": 0
+      "unexplained": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
     },
     "scala3:kotlin": {
       "missing": 0,
-      "unexplained": 0
+      "unexplained": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
     },
     "scala3:scala": {
       "missing": 4,
-      "unexplained": 1
+      "unexplained": 1,
+      "perf": {
+        "avgMsPerFile": 10.6
+      }
     },
     "scala3:java": {
       "missing": 0,
-      "unexplained": 0
+      "unexplained": 0,
+      "perf": {
+        "avgMsPerFile": 2.7
+      }
     },
     "scala3:groovy": {
       "missing": 0,
-      "unexplained": 0
+      "unexplained": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
     },
     "Exposed:scala": {
       "missing": 0,
-      "unexplained": 0
+      "unexplained": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
+    },
+    "grails-core:scala": {
+      "missing": 0,
+      "unexplained": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
     }
   }
 }
