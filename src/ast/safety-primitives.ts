@@ -43,6 +43,11 @@ export interface IdentifierOccurrence {
    *  property key (obj.name / obj.name() / { name }), not a standalone
    *  reference. Rename engines must never treat these as reference sites. */
   isMemberName: boolean
+  /** The tree-sitter field this occurrence fills in its parent node
+   *  ("name", "value", "left", "right", "object", "key", …) or null when it
+   *  fills no named field. Lets classification distinguish `x = <ref>` (right
+   *  side is a use) from `x = <binding>` (left side binds) without text scans. */
+  parentField: string | null
   /** 1-indexed line/column (column is 1-indexed to match tree-sitter display). */
   startLine: number
   startColumn: number
@@ -154,10 +159,30 @@ export const MEMBER_NODE_TYPES = new Set([
   "label_name",
 ])
 
-/** Field names that hold the receiver/object of a dotted access. */
+/** Field names that hold the receiver/access of a dotted access. */
 const MEMBER_ACCESS_OBJECT_FIELDS = ["object", "receiver"]
 /** Field names that hold the member/name/field/property of a dotted access. */
 const MEMBER_ACCESS_NAME_FIELDS = ["name", "property", "field", "attribute", "member"]
+
+/** Field names scanned to tag each occurrence with its parent-field role.
+ *  Positional identity (same byte range as the field's child) is checked, so
+ *  this is AST structure, never text. */
+const PARENT_FIELD_CANDIDATES = [
+  "name", "value", "left", "right", "key", "target", "pattern", "object",
+  "receiver", "property", "field", "attribute", "member", "alias", "operator",
+  "type", "body", "expression", "arguments", "initializer", "declarator",
+]
+
+/** Which field of the parent this occurrence fills (byte-identity match). */
+export function parentFieldOf(node: any): string | null {
+  const parent = node?.parent
+  if (!parent || typeof parent.childForFieldName !== "function") return null
+  for (const f of PARENT_FIELD_CANDIDATES) {
+    const child = parent.childForFieldName(f)
+    if (child && child.startIndex === node.startIndex && child.endIndex === node.endIndex) return f
+  }
+  return null
+}
 
 /**
  * True when a leaf identifier node is the member name of a dotted access
@@ -339,6 +364,7 @@ export function extractIdentifierOccurrences(tree: any, content: string): Identi
       nodeType: type,
       parentType: node.parent ? node.parent.type : "",
       isMemberName: isMemberNameNode(node),
+      parentField: parentFieldOf(node),
       startLine: node.startPosition.row + 1,
       startColumn: node.startPosition.column + 1,
       endLine: node.endPosition.row + 1,

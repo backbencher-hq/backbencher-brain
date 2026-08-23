@@ -14,10 +14,20 @@ adapters over the same engine.
   indexed file hash. Stale bounds fail before any write.
 - `insert` body positions use code-aware brace matching, preserving nested braces
   and ignoring strings/comments.
-- `delete` checks active `calls`, `instantiates`, `references`, and `uses` edges;
-  callers must pass `force=true` after reviewing impact.
-- `refactor` validates the new identifier and replaces identifier tokens only in
-  the declaration/caller AST spans. Strings and comments are not changed.
+- `delete` checks active `calls`, `instantiates`, `references`, and `uses` edges
+  AND performs an AST-level dangling-reference scan of the post-delete file.
+  If any reference to the deleted symbol survives, the delete is refused unless
+  `force=true` is passed; a forced delete lists every surviving reference in
+  `warnings` so it is never silent.
+- `refactor` validates the new identifier and renames **every AST-classified
+  reference site** of the symbol — the declaration plus all occurrence sites in
+  the declaration file where the classifier says the name is used (never
+  member names, comments, or string literals). Rename classification is
+  position-aware: in `x = target`, `const x = target`, or `{k: target}` the
+  value/right side is a reference, only the left/name side binds. Occurrences
+  inside a nested scope that re-declares the same name are left alone (shadow
+  guard). The response carries `summary` (files/sites renamed) and `warnings`
+  — a rename never silently under-reports itself.
 
 ## Modes
 
@@ -39,12 +49,20 @@ Required: `targetSymbolName`, `position`, and `newContent`. Positions are
 ### `delete`
 
 Required: `symbolName`. Import cleanup runs after deletion. Caller protection
-is enabled by default; `force` bypasses the block explicitly.
+is enabled by default; `force` bypasses the block explicitly. Regardless of
+`force`, any reference sites that survive the deletion (e.g. a `private :name`
+or `alias` line) are reported in `warnings` — never silently left behind.
 
 ### `refactor`
 
-Required: `symbolName`, `newName`. The declaration and resolved caller spans are
-updated using identifier-aware token matching.
+Required: `symbolName`, `newName`. The declaration name is renamed, and then
+**every reference occurrence of the name in the declaration file** that the AST
+classifier marks as a reference (not a binding, not a member/property key, not
+inside a same-name shadow scope) is renamed with it. This is independent of
+whether the index recorded an edge for the symbol — completeness does not
+silently degrade when the analyzer missed a relationship. Cross-file caller
+files are handled from index caller edges on top of the file-local scan. The
+tool reports `summary.renamedSites` so callers can audit the exact reach.
 
 ## Dry Run and Recovery
 

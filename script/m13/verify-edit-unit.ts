@@ -126,7 +126,7 @@ function teardown(f: Fixture): void {
     await harness.rejectsAsync(
       "delete: refuses a symbol with active callers (no force)",
       () => executeEdit(f.root, f.projectId, { mode: "delete", symbolName: "target", filePath: "src/mod.ts", format: false }),
-      "active references",
+      "surviving deletion",
     )
     // 'other' has no callers; delete succeeds.
     const res = await executeEdit(f.root, f.projectId, { mode: "delete", symbolName: "other", filePath: "src/mod.ts", format: false })
