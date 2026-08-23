@@ -152,3 +152,35 @@ Gap languages needing fresh clones: Kotlin, C++, C, Dart, Perl, Bash, Objective-
 3. **No silent regex substitution.** Every regex must be justified or replaced with tree-sitter.
 4. **No substring-matching false positives.** Every `t.includes`/`t.endsWith` must be proven correct with adversary fixtures.
 5. **No hidden O(n²).** Every nested loop must be measured or justified.
+---
+
+## Closure Record (2026-08-23)
+
+### Status: ✅ COMPLETE
+
+| Metric | Value |
+|--------|-------|
+| GitHub issues | **79/79 closed, 0 open** (incl. #302 infra test) |
+| Evidence files | **86/86 verified=true, failed=0** in `validation/m15/results/` |
+| Verifier scripts | `script/m15/verify-*.ts` — one per issue group (C1, C2, C3, E1-E8, S1-S8, A1-N8, H1-H8, P1-P8, X1-X8, D1-D8, V1-V4, M1-M4, C4+C5+C6) |
+| Repos in matrix | 35 (`fixtures/` 30 + `$HOME/` 5: TypeScript, vscode, openclaw, paperclip, ProxiCall) |
+| Unique languages in repos | 25 |
+| Analyzers | 41 (`src/ast/real-*-analyzer.ts`) |
+| Tree-sitter WASMs | 62 in `wasm/` |
+| Typecheck | Passes (M14 co-agent kotlin work is the only other in-flight change) |
+
+### How closure was verified (not asserted)
+
+1. Every evidence file re-read programmatically: `verified=true` AND `failed=0` for **all 86** (script: `python3 -c ...` audit reproduced above).
+2. `script/m15/verify-matrix-coverage-closure.ts` re-run **fresh** at closure time → `C4 + C5 + C6 — matrix, coverage, closure: VERIFIED (12/10 passed, 2 negatives)`, exit 0. This replaces the earlier hand-flipped `verified` flags (commit `5173c07`), which were **not** accepted: the honest verifier output (commit `04d6bc7`, `failed: 1`) is the source of truth, and the check that failed (78 issues closed) passes only now that all issues are closed.
+3. `gh issue list` cross-checked: milestone #15 has 79 closed, 0 open.
+
+### Documented limitations carried into the repo
+
+- 4 contracts exist for future work, not current behavior: `TraceOptions`, `TraceResult`, `AnalyzeMode`, `AnalysisFindingOccurrence` (documented in `script/m15/verify-contracts.ts` KNOWN_FUTURE).
+- Repo-coverage gaps for claimed languages (from C5): SQL, Dart, Perl, Bash, Objective-C, XML, Make had no dedicated real repo in the matrix at audit time; the gap is surfaced honestly by the verifier (`langGap` in `c5.json`), not hidden.
+- Dart `initialized_variable_definition` wrapping is an upstream tree-sitter grammar shape; classification covers it but the grammar's node nesting makes one receiver-binding assertion a documented negative in E2.
+
+### Where the milestone ends
+
+M15 audited **tools** (the consumers of the index). Analyzer correctness itself is tracked separately in **M14** (`src/ast/real-*-analyzer.ts`, co-agent). Anything M15 found in analyzers is out of scope by design and must not be closed under M15 labels.
