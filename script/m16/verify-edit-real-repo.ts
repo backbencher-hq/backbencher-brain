@@ -1,4 +1,4 @@
-// script/m16/verify-edit-real-repo.ts — M16.E1-E4 (bb_edit) real-repo suite.
+// script/m16/verify-edit-real-repo.ts — M16.E1-E5 (bb_edit) real-repo suite.
 //
 // Proves the M16 edit-engine fixes on a REAL repository copy (rake/lib —
 // 44 files / 490 symbols), through the exact production path (executeEdit):
@@ -19,7 +19,7 @@ import { writeFileSync, readFileSync, mkdtempSync, mkdirSync, rmSync, existsSync
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { getProjectId } from "../../src/cli/index"
-import { indexProjectParallel } from "../../src/ast/parallel-indexer"
+import { indexProjectParallel, flushBackgroundEmbeddings } from "../../src/ast/parallel-indexer"
 import { BrainDatabase } from "../../src/brain/database"
 import { executeEdit, type EditRequest, type EditResult } from "../../src/intelligence/edit/edit-engine"
 
@@ -40,7 +40,11 @@ async function emit(code: string, issue: string, extra?: any) {
 }
 async function reset() { checks = passed = failed = negatives = negativePassed = 0; lastResult = null }
 
-function cleanup(root: string, projectId: string) {
+async function cleanup(root: string, projectId: string) {
+  // Indexing queues embeddings asynchronously. Drain the shared queue and close
+  // the SQLite handle before deleting this temporary project.
+  await flushBackgroundEmbeddings()
+  BrainDatabase.close(projectId)
   if (root.startsWith(tmpdir())) { try { rmSync(root, { recursive: true, force: true }) } catch (_) {} }
   try { rmSync(path.dirname(BrainDatabase.getDbPath(projectId)), { recursive: true, force: true }) } catch (_) {}
 }
@@ -96,7 +100,7 @@ async function edit(root: string, projectId: string, req: EditRequest): Promise<
 
 async function main() {
   if (!existsSync(RAKE_SRC)) {
-    console.log("E1-E4: SKIPPED — rake/lib not on disk (" + RAKE_SRC + ")")
+    console.log("E1-E5: SKIPPED — rake/lib not on disk (" + RAKE_SRC + ")")
     return
   }
 
@@ -125,7 +129,7 @@ async function main() {
       const changed = changedFiles(root, orig)
       nk("E1: only rake/task.rb changed", changed.length === 1 && changed[0] === "rake/task.rb", "changed=" + JSON.stringify(changed))
       ck("E1: validated + reindexed true", res.validated === true && res.reindexed === true)
-    } finally { cleanup(root, projectId) }
+    } finally { await cleanup(root, projectId) }
     await emit("E1", "M16.E1: refactor renames every AST reference site, edge-independent")
     await reset()
   }
@@ -141,7 +145,7 @@ async function main() {
       ck("E1b: same-file reference Task.format_deps renamed with the class", after.includes("TaskRenamed.format_deps(deps)") && !after.includes("Task.format_deps"))
       nk("E1b: distinct same-stem names untouched", after.includes("TaskArguments.new(arg_names, args)") && after.includes("Task.format_deps") === false)
       ck("E1b: validated", res.validated === true)
-    } finally { cleanup(root, projectId) }
+    } finally { await cleanup(root, projectId) }
     await emit("E1b", "M16.E1 (class rename)")
     await reset()
   }
@@ -154,7 +158,7 @@ async function main() {
       let threw = ""
       try { await edit(root, projectId, { mode: "refactor", symbolName: "prerequisite_tasks", newName: "X", filePath: "rake/does_not_exist.rb", format: false }) } catch (e: any) { threw = String(e?.message || e) }
       ck("E2: refactor with nonexistent file fails loud", /not found|cannot|unknown|no such/i.test(threw), threw.slice(0, 90))
-    } finally { cleanup(root, projectId) }
+    } finally { await cleanup(root, projectId) }
     await emit("E2", "M16.E2 (fail-loud guards)")
     await reset()
   }
@@ -174,7 +178,7 @@ async function main() {
       const after = read(path.join(root, "rake/task.rb"))
       ck("E3: forced delete removes the method body", !after.includes("def lookup_prerequisite"))
       ck("E3: forced delete leaves the reference (declared) + reports it in warnings", after.includes("private :lookup_prerequisite") && !!res.warnings?.some(w => w.includes("lookup_prerequisite")))
-    } finally { cleanup(root, projectId) }
+    } finally { await cleanup(root, projectId) }
     await emit("E3", "M16.E3 (delete dangling-reference guard)")
     await reset()
   }
@@ -199,7 +203,7 @@ async function main() {
       // delete-with-references guard + forced-delete warning reporting are
       // covered by E3 (and the reference-free delete path by the M13 unit
       // suite) — no redundant re-index dependency here.
-    } finally { cleanup(root, projectId) }
+    } finally { await cleanup(root, projectId) }
     await emit("E4", "M16.E4 (write/update/insert/delete regression)")
     await reset()
   }
@@ -223,7 +227,7 @@ async function main() {
       await edit(root, projectId, { mode: "refactor", symbolName: "target", newName: "targetP", filePath: "mod.py", format: false })
       const py = read(path.join(root, "mod.py"))
       ck("E5: Python value-side assignment reference renamed", py.includes("targetP(1)") && !py.includes("target(1)"))
-    } finally { cleanup(root, projectId) }
+    } finally { await cleanup(root, projectId) }
     await emit("E5", "M16.E1 (cross-language field-aware classification)")
     await reset()
   }

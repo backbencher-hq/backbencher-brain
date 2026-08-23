@@ -67,7 +67,7 @@ async function main() {
   }
 
   // ─────────────────────────────────────────────────────────────────────
-  // D2: BB_EDIT.md semantics exactly match E1-E4 (the verified behaviors)
+  // D2: BB_EDIT.md semantics exactly match E1-E5 (the verified behaviors)
   // ─────────────────────────────────────────────────────────────────────
   {
     const editDoc = read("docs/BB_EDIT.md")

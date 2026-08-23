@@ -1130,7 +1130,6 @@ const fileRelCounters = new Map<string, number>()
 // are dropped with a warning (they can be re-embedded later via `bb index --force`).
 // ============================================================================
 interface BackgroundEmbedJob {
-  rawDb: any
   projectId: ProjectID
   projectPath: string
   items: any[]
@@ -1154,7 +1153,7 @@ export async function flushBackgroundEmbeddings(): Promise<void> {
   }
 }
 
-function queueBackgroundEmbeddings(rawDb: any, projectId: ProjectID, projectPath: string, items: any[]) {
+function queueBackgroundEmbeddings(projectId: ProjectID, projectPath: string, items: any[]) {
   if (items.length === 0) return
   const embedBatchLimit = Number(process.env.BB_EMBEDDING_BATCH_LIMIT || 50000)
   if (items.length >= embedBatchLimit) {
@@ -1173,7 +1172,9 @@ function queueBackgroundEmbeddings(rawDb: any, projectId: ProjectID, projectPath
     return
   }
   backgroundEmbedQueuedItems += items.length
-  backgroundEmbedJobs.push({ rawDb, projectId, projectPath, items })
+  // Keep project identity, not a live SQLite handle. A caller may close or
+  // remove a project while this non-blocking queue is draining.
+  backgroundEmbedJobs.push({ projectId, projectPath, items })
   if (!backgroundEmbedActive) {
     backgroundEmbedActive = true
     setImmediate(() => {
@@ -1190,10 +1191,21 @@ async function drainBackgroundEmbeddings() {
       const job = backgroundEmbedJobs.shift()!
       backgroundEmbedQueuedItems -= job.items.length
       try {
+        const { existsSync } = await import("node:fs")
+        const dbPath = BrainDatabase.getDbPath(job.projectId)
+        // A removed project must not be recreated by the background worker.
+        // This is the lifecycle boundary that prevents stale writes after
+        // temporary-project cleanup or an explicit project deletion.
+        if (!existsSync(job.projectPath) || !existsSync(dbPath)) {
+          log.debug("dropping embeddings for removed project", { projectId: job.projectId })
+          continue
+        }
+
         const { SemanticEngine } = await import("../brain/semantic/engine")
         const { Instance } = await import("../project/instance")
         const { createHash } = await import("crypto")
-        const insertEmbed = job.rawDb.prepare(`
+        let rawDb = await BrainDatabase.getRawInstance(job.projectId)
+        let insertEmbed = rawDb.prepare(`
           INSERT OR REPLACE INTO brain_semantic_embedding
           (id, project_id, entity_id, entity_type, embedding_model, embedding_vector, vector_dimension, content_hash, semantic_context, similarity_threshold, last_updated, time_created, time_updated)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -1211,7 +1223,19 @@ async function drainBackgroundEmbeddings() {
           if (!embeddings) continue
 
           const modelLabel = SemanticEngine.getLastEmbeddingModel()
-          const txEmbed = job.rawDb.transaction((rows: any) => {
+          // Reopen after provider latency if a caller closed the project DB.
+          // Never use a handle captured by storeResults.
+          if (!existsSync(job.projectPath) || !existsSync(dbPath)) {
+            log.debug("dropping embeddings after project removal", { projectId: job.projectId })
+            break
+          }
+          rawDb = await BrainDatabase.getRawInstance(job.projectId)
+          insertEmbed = rawDb.prepare(`
+            INSERT OR REPLACE INTO brain_semantic_embedding
+            (id, project_id, entity_id, entity_type, embedding_model, embedding_vector, vector_dimension, content_hash, semantic_context, similarity_threshold, last_updated, time_created, time_updated)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `)
+          const txEmbed = rawDb.transaction((rows: any) => {
             for (let k = 0; k < rows.length; k++) {
               const item = chunk[k]
               const vec = embeddings[k]
@@ -1242,7 +1266,13 @@ async function drainBackgroundEmbeddings() {
         // Fall back to TF-IDF for the failed batch
         try {
           const { createHash } = await import("crypto")
-          const tfidfInsert = job.rawDb.prepare(`
+          const { existsSync } = await import("node:fs")
+          if (!existsSync(job.projectPath) || !existsSync(BrainDatabase.getDbPath(job.projectId))) {
+            log.debug("dropping fallback embeddings for removed project", { projectId: job.projectId })
+            continue
+          }
+          const fallbackDb = await BrainDatabase.getRawInstance(job.projectId)
+          const tfidfInsert = fallbackDb.prepare(`
             INSERT OR REPLACE INTO brain_semantic_embedding
             (id, project_id, entity_id, entity_type, embedding_model, embedding_vector, vector_dimension, content_hash, semantic_context, similarity_threshold, last_updated, time_created, time_updated)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -2064,7 +2094,7 @@ export async function storeResults(
     // take the queued items down with it.
     const items = [...semanticBatch]
     semanticBatch.length = 0 // Clear to prevent double-processing
-    queueBackgroundEmbeddings(rawDb, projectId, projectPath, items)
+    queueBackgroundEmbeddings(projectId, projectPath, items)
   }
 
   // ========================================================================

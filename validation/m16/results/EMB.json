@@ -1,0 +1,12 @@
+{
+  "issue": "M16.EMB1-EMB3",
+  "code": "EMB",
+  "tool": "shared-indexer/semantic-embedding-lifecycle",
+  "title": "background embedding persistence and cleanup ordering",
+  "verified": true,
+  "checks": 8,
+  "passed": 8,
+  "failed": 0,
+  "negatives": 0,
+  "generatedAt": "2026-08-23T21:41:54.466Z"
+}
