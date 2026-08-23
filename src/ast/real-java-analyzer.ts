@@ -231,6 +231,19 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
           classHierarchy.set(fqn, parents)
 
+          // Sealed hierarchy: sealed class → permitted subtype. Direction is
+          // parent→child (opposite of inheritance edges) and the subtypes are
+          // deliberately NOT added to classHierarchy.parents.
+          for (let k = 0; k < inheritance.permitsSubtypes.length; k++) {
+            relationships.push({
+              source: name,
+              target: inheritance.permitsSubtypes[k],
+              type: ASTEngine.RelationshipType.References,
+              confidence: 1.0,
+              metadata: { relationshipType: "permits" },
+            })
+          }
+
           if (inheritance.extendsClass) {
             relationships.push({
               source: name,
@@ -340,14 +353,36 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (formalParams) {
               for (let i = 0; i < formalParams.namedChildCount; i++) {
                 const comp = formalParams.namedChild(i)
-                if (!comp || comp.type !== "formal_parameter") continue
-                const compName = comp.childForFieldName("name")
+                if (!comp) continue
+                // Varargs record components (record Foo(int... xs)) are
+                // spread_parameter nodes; their name lives in the trailing
+                // variable_declarator, not a "name" field.
+                if (comp.type !== "formal_parameter" && comp.type !== "spread_parameter") continue
+                const compName =
+                  comp.type === "spread_parameter"
+                    ? (() => {
+                        const decl = this.findChildByType(comp, "variable_declarator")
+                        return decl ? this.findChildByType(decl, "identifier") : null
+                      })()
+                    : comp.childForFieldName("name")
                 if (!compName) continue
+                let compReturnType: string | undefined = undefined
+                if (comp.type === "spread_parameter") {
+                  for (let cIdx = 0; cIdx < comp.namedChildCount; cIdx++) {
+                    const c = comp.namedChild(cIdx)
+                    if (c && c.type !== "modifiers" && !stringIncludes(c.type, "annotation") && c.type !== "variable_declarator") {
+                      compReturnType = c.text + "[]"
+                      break
+                    }
+                  }
+                } else {
+                  compReturnType = this.extractJavaParameterType(comp)
+                }
                 const compSym: ASTEngine.UniversalSymbol = {
                   name: compName.text,
                   kind: ASTEngine.SymbolKind.Property,
                   range: this.nodeToRange(comp),
-                  returnType: this.extractJavaParameterType(comp),
+                  returnType: compReturnType,
                   visibility: "public",
                   ownerName: name,
                   ownerKind: kind,
@@ -381,17 +416,22 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
 
-      else if (type === "method_declaration" || type === "constructor_declaration") {
-        const nameNode = type === "method_declaration" ? this.findChildByType(node, "identifier") : this.findChildByType(node, "identifier")
+      else if (type === "method_declaration" || type === "constructor_declaration" || type === "compact_constructor_declaration") {
+        const nameNode = this.findChildByType(node, "identifier")
         const name = nameNode ? nameNode.text : null
-        
+
         if (name) {
-          const isConstructor = type === "constructor_declaration"
+          const isConstructor = type !== "method_declaration"
+          // Compact record constructors (E { ... }) declare no parameter list;
+          // their parameters are implicitly the record components.
+          const isCompactCtor = type === "compact_constructor_declaration"
           const modifiers = this.getJavaModifiers(node)
           const annotations = this.getJavaAnnotations(node)
           const visibility = this.getJavaVisibility(modifiers)
 
-          const parameters = this.extractJavaParameters(node, relationships, parentContext ? parentContext.name : undefined)
+          const parameters = isCompactCtor && parentContext
+            ? this.extractJavaParameters(parentContext.node, relationships, parentContext.name)
+            : this.extractJavaParameters(node, relationships, parentContext ? parentContext.name : undefined)
                     let sigParams = ""
           for (let i = 0; i < parameters.length; i++) {
              if (i > 0) sigParams += ","
@@ -797,6 +837,13 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
   ) {
     for (let taskIdx = 0; taskIdx < tasks.length; taskIdx++) { const task = tasks[taskIdx]
       let targetFqn: string | null = null
+      // Confidence reflects EVIDENCE TIER, and it is consumed downstream
+      // (patterns.ts filters relationships at >= 0.7): pass 1 is an exact
+      // in-file signature match, pass 2 uses project-level companion
+      // evidence, pass 3 is a guess — the first hierarchy parent, which may
+      // not even declare the method. Guesses at confidence 1.0 were
+      // indistinguishable from verified overrides in pattern analysis.
+      let confidence = 1.0
 
       // Pass 1: exact-signature BFS over the hierarchy (in-file declarations;
       // works without any project context).
@@ -836,7 +883,10 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           companion,
           (t) => classHierarchy.get(t) ?? [],
         )
-        if (declaring) targetFqn = `${declaring}.${task.methodName}${task.signature}`
+        if (declaring) {
+          targetFqn = `${declaring}.${task.methodName}${task.signature}`
+          confidence = 0.85
+        }
       }
 
       // Pass 3: deterministic per-file fallback — first hierarchy parent. Only
@@ -844,6 +894,9 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
       // method (the true declaring parent is unknowable from this file alone).
       if (!targetFqn && ownerH && ownerH.length > 0) {
         targetFqn = `${ownerH[0]}.${task.methodName}${task.signature}`
+        // Below the patterns.ts default confidenceThreshold (0.7): visible in
+        // raw output, but never contaminating thresholded analysis.
+        confidence = 0.5
       }
 
       if (targetFqn) {
@@ -854,7 +907,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           source: localSource,
           target: localTarget,
           type: ASTEngine.RelationshipType.Overrides,
-          confidence: 1.0,
+          confidence,
           metadata: { relationshipType: "method_override", isJavaOverride: true },
         })
       }
@@ -1186,7 +1239,11 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
       extendsClass: null as string | null,
       // interface_declaration > extends_interfaces > type_list: EVERY parent is an extends (JLS 9.1.3)
       extendsInterfaces: [] as string[],
-      implementsInterfaces: [] as string[]
+      implementsInterfaces: [] as string[],
+      // sealed class permits clause (JLS 8.1.1.2): permitted subtypes are
+      // CHILDREN of the sealed class, not ancestors — kept out of parents[]
+      // and surfaced separately so callers can emit directional edges.
+      permitsSubtypes: [] as string[]
     }
     const superclass = this.findChildByType(classNode, "superclass")
     if (superclass) {
@@ -1204,6 +1261,16 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
         const interfaceType = targetList.namedChild(i)
         if (interfaceType && (interfaceType.type === "type_identifier" || interfaceType.type === "generic_type" || interfaceType.type === "scoped_type_identifier")) {
           bucket.push(this.extractJavaTypeBaseName(interfaceType))
+        }
+      }
+    }
+    const permitsNode = this.findChildByType(classNode, "permits")
+    if (permitsNode) {
+      const permitsList = this.findChildByType(permitsNode, "type_list") || permitsNode
+      for (let i = 0; i < permitsList.namedChildCount; i++) {
+        const subtype = permitsList.namedChild(i)
+        if (subtype && (subtype.type === "type_identifier" || subtype.type === "generic_type" || subtype.type === "scoped_type_identifier")) {
+          inheritance.permitsSubtypes.push(this.extractJavaTypeBaseName(subtype))
         }
       }
     }
@@ -1242,6 +1309,24 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
               }
             }
           }
+        }
+      } else if (param && param.type === "spread_parameter") {
+        // Varargs (JLS 8.4.1): grammar has no named fields; the name lives
+        // inside the trailing variable_declarator, the type is the remaining
+        // child. Modeled as an array type ("T[]"), matching the ERROR-node
+        // recovery convention and JVM erasure shape.
+        const decl = this.findChildByType(param, "variable_declarator")
+        const nameNode = decl ? this.findChildByType(decl, "identifier") : null
+        if (nameNode) {
+          let spreadType: string | undefined = undefined
+          for (let cIdx = 0; cIdx < param.namedChildCount; cIdx++) {
+            const c = param.namedChild(cIdx)
+            if (c && c.type !== "modifiers" && !stringIncludes(c.type, "annotation") && c.type !== "variable_declarator") {
+              spreadType = c.text
+              break
+            }
+          }
+          parameters.push({ name: nameNode.text, type: (spreadType || "unknown") + "[]", isOptional: false })
         }
       } else if (param && param.type === "ERROR") {
         // ERROR-node recovery: tree-sitter exposes no structure for malformed
