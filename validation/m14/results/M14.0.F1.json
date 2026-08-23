@@ -1,1486 +1,1522 @@
 {
-  "schemaVersion": 1,
-  "issueId": "M14.0.F1",
-  "claimLevel": "harness-capability",
-  "governance": "docs/M14-HONESTY-CONTRACT.md",
-  "commit": "c8abc4a70bf0b01cb0ada17240d44babbbea3a22",
-  "timestamp": "2026-08-23T00:01:14.374Z",
-  "runtime": "bun v24.3.0",
-  "summary": {
-    "languagesAudited": 41,
-    "pass": 19,
-    "fail": 22,
-    "totalUnknownReferences": 165
-  },
-  "languages": {
-    "bash": {
-      "wasm": [
-        "tree-sitter-bash.wasm"
-      ],
-      "oracleGrammars": 1,
-      "analyzer": "src/ast/real-bash-analyzer.ts",
-      "oracleNodeTypeCount": 238,
-      "oracleFieldCount": 18,
-      "referencedTypeLiterals": 26,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [
-        {
-          "literal": "identifier",
-          "line": 299,
-          "context": "real-bash-analyzer.ts:comparison"
-        }
-      ],
-      "unknownFields": [],
-      "waivedFindings": [],
-      "status": "fail"
-    },
-    "c": {
-      "wasm": [
-        "tree-sitter-c.wasm"
-      ],
-      "oracleGrammars": 1,
-      "analyzer": "src/ast/real-c-analyzer.ts",
-      "oracleNodeTypeCount": 329,
-      "oracleFieldCount": 38,
-      "referencedTypeLiterals": 37,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [
-        {
-          "literal": "asm_expression",
-          "line": 354,
-          "context": "real-c-analyzer.ts:comparison"
-        }
-      ],
-      "unknownFields": [],
-      "waivedFindings": [],
-      "status": "fail"
-    },
-    "clean": {
-      "wasm": [
-        "tree-sitter-clean.wasm"
-      ],
-      "oracleGrammars": 1,
-      "analyzer": "src/ast/real-clean-analyzer.ts",
-      "oracleNodeTypeCount": 271,
-      "oracleFieldCount": 27,
-      "referencedTypeLiterals": 34,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [],
-      "unknownFields": [],
-      "waivedFindings": [],
+  "checks": [
+    {
+      "description": "3 known Java dead branches detected",
+      "detail": "record_parameters, record_declaration_body, interface_type_list",
+      "id": "prove-java",
       "status": "pass"
     },
-    "clojure": {
-      "wasm": [
-        "tree-sitter-clojure.wasm"
-      ],
-      "oracleGrammars": 1,
-      "analyzer": "src/ast/real-clojure-analyzer.ts",
-      "oracleNodeTypeCount": 75,
-      "oracleFieldCount": 10,
-      "referencedTypeLiterals": 5,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [],
-      "unknownFields": [],
-      "waivedFindings": [],
+    {
+      "description": "oracle enumeration validated against a real runtime parse tree",
+      "detail": "dart probe: all parse-tree types present in oracle enum",
+      "id": "oracle-vs-reality",
       "status": "pass"
     },
-    "cpp": {
-      "wasm": [
-        "tree-sitter-cpp.wasm"
-      ],
-      "oracleGrammars": 1,
-      "analyzer": "src/ast/real-cpp-analyzer.ts",
-      "oracleNodeTypeCount": 491,
-      "oracleFieldCount": 49,
-      "referencedTypeLiterals": 19,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [
-        {
-          "literal": "base_class",
-          "line": 258,
-          "context": "real-cpp-analyzer.ts:comparison"
-        },
-        {
-          "literal": "base_class",
-          "line": 260,
-          "context": "real-cpp-analyzer.ts:comparison"
-        }
-      ],
-      "unknownFields": [],
-      "waivedFindings": [],
-      "status": "fail"
-    },
-    "csharp": {
-      "wasm": [
-        "tree-sitter-c_sharp.wasm"
-      ],
-      "oracleGrammars": 1,
-      "analyzer": "src/ast/real-csharp-analyzer.ts",
-      "oracleNodeTypeCount": 508,
-      "oracleFieldCount": 25,
-      "referencedTypeLiterals": 18,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [
-        {
-          "literal": "name",
-          "line": 134,
-          "context": "real-csharp-analyzer.ts:comparison"
-        },
-        {
-          "literal": "name",
-          "line": 901,
-          "context": "real-csharp-analyzer.ts:comparison"
-        },
-        {
-          "literal": "name",
-          "line": 943,
-          "context": "real-csharp-analyzer.ts:comparison"
-        }
-      ],
-      "unknownFields": [],
-      "waivedFindings": [],
-      "status": "fail"
-    },
-    "css": {
-      "wasm": [
-        "tree-sitter-css.wasm"
-      ],
-      "oracleGrammars": 1,
-      "analyzer": "src/ast/real-css-analyzer.ts",
-      "oracleNodeTypeCount": 131,
-      "oracleFieldCount": 0,
-      "referencedTypeLiterals": 32,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [
-        {
-          "literal": "media_query_list",
-          "line": 590,
-          "context": "real-css-analyzer.ts:comparison"
-        },
-        {
-          "literal": "mixin_statement",
-          "line": 646,
-          "context": "real-css-analyzer.ts:comparison"
-        },
-        {
-          "literal": "include_statement",
-          "line": 647,
-          "context": "real-css-analyzer.ts:comparison"
-        },
-        {
-          "literal": "variable_name",
-          "line": 752,
-          "context": "real-css-analyzer.ts:comparison"
-        }
-      ],
-      "unknownFields": [],
-      "waivedFindings": [],
-      "status": "fail"
-    },
-    "dart": {
-      "wasm": [
-        "tree-sitter-dart.wasm"
-      ],
-      "oracleGrammars": 1,
-      "analyzer": "src/ast/real-dart-analyzer.ts",
-      "oracleNodeTypeCount": 517,
-      "oracleFieldCount": 21,
-      "referencedTypeLiterals": 67,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [
-        {
-          "literal": "compilation_unit",
-          "line": 345,
-          "context": "real-dart-analyzer.ts:comparison"
-        },
-        {
-          "literal": "library_definition",
-          "line": 345,
-          "context": "real-dart-analyzer.ts:comparison"
-        },
-        {
-          "literal": "initialized_variable_declaration",
-          "line": 574,
-          "context": "real-dart-analyzer.ts:findChildByType"
-        },
-        {
-          "literal": "initialized_variable_declaration",
-          "line": 576,
-          "context": "real-dart-analyzer.ts:comparison"
-        },
-        {
-          "literal": "function_declaration",
-          "line": 773,
-          "context": "real-dart-analyzer.ts:comparison"
-        },
-        {
-          "literal": "simple_identifier",
-          "line": 968,
-          "context": "real-dart-analyzer.ts:comparison"
-        },
-        {
-          "literal": "simple_identifier",
-          "line": 983,
-          "context": "real-dart-analyzer.ts:comparison"
-        },
-        {
-          "literal": "assignable_selector",
-          "line": 975,
-          "context": "real-dart-analyzer.ts:comparison"
-        },
-        {
-          "literal": "optional_formal_parameter",
-          "line": 1115,
-          "context": "real-dart-analyzer.ts:comparison"
-        },
-        {
-          "literal": "optional_formal_parameter",
-          "line": 1126,
-          "context": "real-dart-analyzer.ts:comparison"
-        },
-        {
-          "literal": "named_formal_parameter",
-          "line": 1116,
-          "context": "real-dart-analyzer.ts:comparison"
-        },
-        {
-          "literal": "named_formal_parameter",
-          "line": 1124,
-          "context": "real-dart-analyzer.ts:comparison"
-        },
-        {
-          "literal": "default_formal_parameter",
-          "line": 1116,
-          "context": "real-dart-analyzer.ts:comparison"
-        },
-        {
-          "literal": "default_formal_parameter",
-          "line": 1124,
-          "context": "real-dart-analyzer.ts:comparison"
-        },
-        {
-          "literal": "default_formal_parameter",
-          "line": 1126,
-          "context": "real-dart-analyzer.ts:comparison"
-        },
-        {
-          "literal": "named_formal_parameters",
-          "line": 1125,
-          "context": "real-dart-analyzer.ts:comparison"
-        },
-        {
-          "literal": "builtin_type",
-          "line": 1150,
-          "context": "real-dart-analyzer.ts:comparison"
-        },
-        {
-          "literal": "builtin_type",
-          "line": 1161,
-          "context": "real-dart-analyzer.ts:comparison"
-        },
-        {
-          "literal": "builtin_type",
-          "line": 1171,
-          "context": "real-dart-analyzer.ts:comparison"
-        },
-        {
-          "literal": "builtin_type",
-          "line": 1195,
-          "context": "real-dart-analyzer.ts:comparison"
-        },
-        {
-          "literal": "builtin_type",
-          "line": 1274,
-          "context": "real-dart-analyzer.ts:comparison"
-        },
-        {
-          "literal": "generic_type",
-          "line": 1150,
-          "context": "real-dart-analyzer.ts:comparison"
-        },
-        {
-          "literal": "generic_type",
-          "line": 1161,
-          "context": "real-dart-analyzer.ts:comparison"
-        },
-        {
-          "literal": "generic_type",
-          "line": 1171,
-          "context": "real-dart-analyzer.ts:comparison"
-        },
-        {
-          "literal": "generic_type",
-          "line": 1195,
-          "context": "real-dart-analyzer.ts:comparison"
-        },
-        {
-          "literal": "generic_type",
-          "line": 1274,
-          "context": "real-dart-analyzer.ts:comparison"
-        },
-        {
-          "literal": "marker_annotation",
-          "line": 1210,
-          "context": "real-dart-analyzer.ts:comparison"
-        },
-        {
-          "literal": "marker_annotation",
-          "line": 1230,
-          "context": "real-dart-analyzer.ts:comparison"
-        }
-      ],
-      "unknownFields": [],
-      "waivedFindings": [],
-      "status": "fail"
-    },
-    "elixir": {
-      "wasm": [
-        "tree-sitter-elixir.wasm"
-      ],
-      "oracleGrammars": 1,
-      "analyzer": "src/ast/real-elixir-analyzer.ts",
-      "oracleNodeTypeCount": 205,
-      "oracleFieldCount": 8,
-      "referencedTypeLiterals": 22,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [],
-      "unknownFields": [],
-      "waivedFindings": [],
-      "status": "pass"
-    },
-    "erlang": {
-      "wasm": [
-        "tree-sitter-erlang.wasm"
-      ],
-      "oracleGrammars": 1,
-      "analyzer": "src/ast/real-erlang-analyzer.ts",
-      "oracleNodeTypeCount": 302,
-      "oracleFieldCount": 50,
-      "referencedTypeLiterals": 20,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [
-        {
-          "literal": "string_literal",
-          "line": 60,
-          "context": "real-erlang-analyzer.ts:getChildByType"
-        },
-        {
-          "literal": "macro_name",
-          "line": 203,
-          "context": "real-erlang-analyzer.ts:getChildByType"
-        }
-      ],
-      "unknownFields": [],
-      "waivedFindings": [],
-      "status": "fail"
-    },
-    "fsharp": {
-      "wasm": [
-        "tree-sitter-fsharp.wasm"
-      ],
-      "oracleGrammars": 1,
-      "analyzer": "src/ast/real-fsharp-analyzer.ts",
-      "oracleNodeTypeCount": 512,
-      "oracleFieldCount": 27,
-      "referencedTypeLiterals": 36,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [],
-      "unknownFields": [],
-      "waivedFindings": [],
-      "status": "pass"
-    },
-    "go": {
-      "wasm": [
-        "tree-sitter-go.wasm"
-      ],
-      "oracleGrammars": 1,
-      "analyzer": "src/ast/real-go-analyzer.ts",
-      "oracleNodeTypeCount": 213,
-      "oracleFieldCount": 34,
-      "referencedTypeLiterals": 37,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [
-        {
-          "literal": "method_elem",
-          "line": 468,
-          "context": "real-go-analyzer.ts:comparison"
-        }
-      ],
-      "unknownFields": [],
-      "waivedFindings": [],
-      "status": "fail"
-    },
-    "graphql": {
-      "wasm": [
-        "tree-sitter-graphql.wasm"
-      ],
-      "oracleGrammars": 1,
-      "analyzer": "src/ast/real-graphql-analyzer.ts",
-      "oracleNodeTypeCount": 145,
-      "oracleFieldCount": 0,
-      "referencedTypeLiterals": 20,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [],
-      "unknownFields": [],
-      "waivedFindings": [],
-      "status": "pass"
-    },
-    "groovy": {
-      "wasm": [
-        "tree-sitter-groovy.wasm"
-      ],
-      "oracleGrammars": 1,
-      "analyzer": "src/ast/real-groovy-analyzer.ts",
-      "oracleNodeTypeCount": 352,
-      "oracleFieldCount": 42,
-      "referencedTypeLiterals": 30,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [],
-      "unknownFields": [],
-      "waivedFindings": [],
-      "status": "pass"
-    },
-    "haskell": {
-      "wasm": [
-        "tree-sitter-haskell.wasm"
-      ],
-      "oracleGrammars": 1,
-      "analyzer": "src/ast/real-haskell-analyzer.ts",
-      "oracleNodeTypeCount": 452,
-      "oracleFieldCount": 83,
-      "referencedTypeLiterals": 57,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [
-        {
-          "literal": "identifier",
-          "line": 243,
-          "context": "real-haskell-analyzer.ts:findNamedChildByType"
-        },
-        {
-          "literal": "identifier",
-          "line": 380,
-          "context": "real-haskell-analyzer.ts:findNamedChildByType"
-        },
-        {
-          "literal": "identifier",
-          "line": 750,
-          "context": "real-haskell-analyzer.ts:findNamedChildByType"
-        },
-        {
-          "literal": "varid",
-          "line": 243,
-          "context": "real-haskell-analyzer.ts:findNamedChildByType"
-        },
-        {
-          "literal": "varid",
-          "line": 380,
-          "context": "real-haskell-analyzer.ts:findNamedChildByType"
-        },
-        {
-          "literal": "varid",
-          "line": 750,
-          "context": "real-haskell-analyzer.ts:findNamedChildByType"
-        },
-        {
-          "literal": "qconid",
-          "line": 255,
-          "context": "real-haskell-analyzer.ts:findNamedChildByType"
-        },
-        {
-          "literal": "qconid",
-          "line": 748,
-          "context": "real-haskell-analyzer.ts:findNamedChildByType"
-        },
-        {
-          "literal": "export_list",
-          "line": 269,
-          "context": "real-haskell-analyzer.ts:findNamedChildByType"
-        },
-        {
-          "literal": "signature_type",
-          "line": 381,
-          "context": "real-haskell-analyzer.ts:findNamedChildByType"
-        },
-        {
-          "literal": "type_constructor",
-          "line": 498,
-          "context": "real-haskell-analyzer.ts:findNamedChildByType"
-        },
-        {
-          "literal": "type_constructor",
-          "line": 609,
-          "context": "real-haskell-analyzer.ts:findNamedChildByType"
-        },
-        {
-          "literal": "tycon",
-          "line": 498,
-          "context": "real-haskell-analyzer.ts:findNamedChildByType"
-        },
-        {
-          "literal": "tycon",
-          "line": 574,
-          "context": "real-haskell-analyzer.ts:collectNamedChildrenByType"
-        },
-        {
-          "literal": "tycon",
-          "line": 577,
-          "context": "real-haskell-analyzer.ts:collectNamedChildrenByType"
-        },
-        {
-          "literal": "tycon",
-          "line": 609,
-          "context": "real-haskell-analyzer.ts:findNamedChildByType"
-        },
-        {
-          "literal": "tycon",
-          "line": 672,
-          "context": "real-haskell-analyzer.ts:findNamedChildByType"
-        },
-        {
-          "literal": "type_name",
-          "line": 498,
-          "context": "real-haskell-analyzer.ts:findNamedChildByType"
-        },
-        {
-          "literal": "type_name",
-          "line": 609,
-          "context": "real-haskell-analyzer.ts:findNamedChildByType"
-        },
-        {
-          "literal": "class_name",
-          "line": 609,
-          "context": "real-haskell-analyzer.ts:findNamedChildByType"
-        }
-      ],
-      "unknownFields": [],
-      "waivedFindings": [],
-      "status": "fail"
-    },
-    "hcl": {
-      "wasm": [
-        "tree-sitter-hcl.wasm"
-      ],
-      "oracleGrammars": 1,
-      "analyzer": "src/ast/real-hcl-analyzer.ts",
-      "oracleNodeTypeCount": 123,
-      "oracleFieldCount": 1,
-      "referencedTypeLiterals": 9,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [],
-      "unknownFields": [],
-      "waivedFindings": [],
-      "status": "pass"
-    },
-    "html": {
-      "wasm": [
-        "tree-sitter-html.wasm",
-        "tree-sitter-javascript.wasm"
-      ],
-      "oracleGrammars": 2,
-      "analyzer": "src/ast/real-html-analyzer.ts",
-      "oracleNodeTypeCount": 285,
-      "oracleFieldCount": 37,
-      "referencedTypeLiterals": 11,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [],
-      "unknownFields": [],
-      "waivedFindings": [],
-      "status": "pass"
-    },
-    "java": {
-      "wasm": [
-        "tree-sitter-java.wasm"
-      ],
-      "oracleGrammars": 1,
-      "analyzer": "src/ast/real-java-analyzer.ts",
-      "oracleNodeTypeCount": 322,
-      "oracleFieldCount": 39,
-      "referencedTypeLiterals": 38,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [
-        {
-          "literal": "record_parameters",
-          "line": 324,
-          "context": "real-java-analyzer.ts:findChildByType"
-        },
-        {
-          "literal": "interface_type_list",
-          "line": 1153,
-          "context": "real-java-analyzer.ts:findChildByType"
-        },
-        {
-          "literal": "record_declaration_body",
-          "line": 1167,
-          "context": "real-java-analyzer.ts:findChildByType"
-        },
-        {
-          "literal": "record_component",
-          "line": 1172,
-          "context": "real-java-analyzer.ts:comparison"
-        }
-      ],
-      "unknownFields": [],
-      "waivedFindings": [],
-      "status": "fail"
-    },
-    "javascript": {
-      "wasm": [
-        "tree-sitter-javascript.wasm"
-      ],
-      "oracleGrammars": 1,
-      "analyzer": "src/ast/real-javascript-analyzer.ts",
-      "oracleNodeTypeCount": 261,
-      "oracleFieldCount": 37,
-      "referencedTypeLiterals": 47,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [],
-      "unknownFields": [],
-      "waivedFindings": [],
-      "status": "pass"
-    },
-    "json": {
-      "wasm": [
-        "tree-sitter-json.wasm"
-      ],
-      "oracleGrammars": 1,
-      "analyzer": "src/ast/real-json-analyzer.ts",
-      "oracleNodeTypeCount": 28,
-      "oracleFieldCount": 1,
-      "referencedTypeLiterals": 6,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [],
-      "unknownFields": [],
-      "waivedFindings": [],
-      "status": "pass"
-    },
-    "kotlin": {
-      "wasm": [
-        "tree-sitter-kotlin.wasm"
-      ],
-      "oracleGrammars": 1,
-      "analyzer": "src/ast/real-kotlin-analyzer.ts",
-      "oracleNodeTypeCount": 360,
-      "oracleFieldCount": 0,
-      "referencedTypeLiterals": 56,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [
-        {
-          "literal": "marker_annotation",
-          "line": 540,
-          "context": "real-kotlin-analyzer.ts:comparison"
-        },
-        {
-          "literal": "marker_annotation",
-          "line": 1249,
-          "context": "real-kotlin-analyzer.ts:comparison"
-        },
-        {
-          "literal": "value_parameters",
-          "line": 842,
-          "context": "real-kotlin-analyzer.ts:findChildByType"
-        },
-        {
-          "literal": "expression",
-          "line": 849,
-          "context": "real-kotlin-analyzer.ts:findChildByType"
-        },
-        {
-          "literal": "comment",
-          "line": 1274,
-          "context": "real-kotlin-analyzer.ts:comparison"
-        },
-        {
-          "literal": "safe_nav_expression",
-          "line": 1315,
-          "context": "real-kotlin-analyzer.ts:comparison"
-        },
-        {
-          "literal": "method_declaration",
-          "line": 1398,
-          "context": "real-kotlin-analyzer.ts:comparison"
-        },
-        {
-          "literal": "field_declaration",
-          "line": 1419,
-          "context": "real-kotlin-analyzer.ts:comparison"
-        },
-        {
-          "literal": "float_literal",
-          "line": 1479,
-          "context": "real-kotlin-analyzer.ts:const:LITERAL_TYPES"
-        }
-      ],
-      "unknownFields": [],
-      "waivedFindings": [],
-      "status": "fail"
-    },
-    "lua": {
-      "wasm": [
-        "tree-sitter-lua.wasm"
-      ],
-      "oracleGrammars": 1,
-      "analyzer": "src/ast/real-lua-analyzer.ts",
-      "oracleNodeTypeCount": 128,
-      "oracleFieldCount": 21,
-      "referencedTypeLiterals": 13,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [],
-      "unknownFields": [],
-      "waivedFindings": [],
-      "status": "pass"
-    },
-    "makefile": {
-      "wasm": [
-        "tree-sitter-make.wasm"
-      ],
-      "oracleGrammars": 1,
-      "analyzer": "src/ast/real-makefile-analyzer.ts",
-      "oracleNodeTypeCount": 175,
-      "oracleFieldCount": 23,
-      "referencedTypeLiterals": 12,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [
-        {
-          "literal": "endif_directive",
-          "line": 276,
-          "context": "real-makefile-analyzer.ts:const:BOUNDARY_TYPES"
-        }
-      ],
-      "unknownFields": [],
-      "waivedFindings": [],
-      "status": "fail"
-    },
-    "markdown": {
-      "wasm": [
-        "tree-sitter-markdown.wasm"
-      ],
-      "oracleGrammars": 1,
-      "analyzer": "src/ast/real-markdown-analyzer.ts",
-      "oracleNodeTypeCount": 196,
-      "oracleFieldCount": 0,
-      "referencedTypeLiterals": 4,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [
-        {
-          "literal": "uri_autolink",
-          "line": 253,
-          "context": "real-markdown-analyzer.ts:comparison"
-        },
-        {
-          "literal": "email_autolink",
-          "line": 253,
-          "context": "real-markdown-analyzer.ts:comparison"
-        }
-      ],
-      "unknownFields": [],
-      "waivedFindings": [],
-      "status": "fail"
-    },
-    "objective-c": {
-      "wasm": [
-        "tree-sitter-objc.wasm"
-      ],
-      "oracleGrammars": 1,
-      "analyzer": "src/ast/real-objective-c-analyzer.ts",
-      "oracleNodeTypeCount": 535,
-      "oracleFieldCount": 45,
-      "referencedTypeLiterals": 34,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [
-        {
-          "literal": "superclass_reference",
-          "line": 112,
-          "context": "real-objective-c-analyzer.ts:comparison"
-        },
-        {
-          "literal": "protocol_qualifiers",
-          "line": 113,
-          "context": "real-objective-c-analyzer.ts:comparison"
-        },
-        {
-          "literal": "protocol_list",
-          "line": 113,
-          "context": "real-objective-c-analyzer.ts:comparison"
-        },
-        {
-          "literal": "category_interface",
-          "line": 133,
-          "context": "real-objective-c-analyzer.ts:comparison"
-        },
-        {
-          "literal": "category_implementation",
-          "line": 133,
-          "context": "real-objective-c-analyzer.ts:comparison"
-        },
-        {
-          "literal": "selector",
-          "line": 162,
-          "context": "real-objective-c-analyzer.ts:comparison"
-        },
-        {
-          "literal": "block_expression",
-          "line": 222,
-          "context": "real-objective-c-analyzer.ts:comparison"
-        },
-        {
-          "literal": "property_identifier",
-          "line": 360,
-          "context": "real-objective-c-analyzer.ts:comparison"
-        }
-      ],
-      "unknownFields": [],
-      "waivedFindings": [],
-      "status": "fail"
-    },
-    "perl": {
-      "wasm": [
-        "tree-sitter-perl.wasm"
-      ],
-      "oracleGrammars": 1,
-      "analyzer": "src/ast/real-perl-analyzer.ts",
-      "oracleNodeTypeCount": 539,
-      "oracleFieldCount": 43,
-      "referencedTypeLiterals": 18,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [],
-      "unknownFields": [],
-      "waivedFindings": [],
-      "status": "pass"
-    },
-    "php": {
-      "wasm": [
-        "tree-sitter-php.wasm"
-      ],
-      "oracleGrammars": 1,
-      "analyzer": "src/ast/real-php-analyzer.ts",
-      "oracleNodeTypeCount": 407,
-      "oracleFieldCount": 30,
-      "referencedTypeLiterals": 25,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [
-        {
-          "literal": "interface_base_clause",
-          "line": 208,
-          "context": "real-php-analyzer.ts:findChildByType"
-        },
-        {
-          "literal": "use_clause",
-          "line": 417,
-          "context": "real-php-analyzer.ts:comparison"
-        }
-      ],
-      "unknownFields": [],
-      "waivedFindings": [],
-      "status": "fail"
-    },
-    "powershell": {
-      "wasm": [
-        "tree-sitter-powershell.wasm"
-      ],
-      "oracleGrammars": 1,
-      "analyzer": "src/ast/real-powershell-analyzer.ts",
-      "oracleNodeTypeCount": 412,
-      "oracleFieldCount": 13,
-      "referencedTypeLiterals": 18,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [],
-      "unknownFields": [],
-      "waivedFindings": [],
-      "status": "pass"
-    },
-    "python": {
-      "wasm": [
-        "tree-sitter-python.wasm"
-      ],
-      "oracleGrammars": 1,
-      "analyzer": "src/ast/real-python-analyzer.ts",
-      "oracleNodeTypeCount": 266,
-      "oracleFieldCount": 31,
-      "referencedTypeLiterals": 58,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [],
-      "unknownFields": [],
-      "waivedFindings": [],
-      "status": "pass"
-    },
-    "r": {
-      "wasm": [
-        "tree-sitter-r.wasm"
-      ],
-      "oracleGrammars": 1,
-      "analyzer": "src/ast/real-r-analyzer.ts",
-      "oracleNodeTypeCount": 137,
-      "oracleFieldCount": 19,
-      "referencedTypeLiterals": 15,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [],
-      "unknownFields": [],
-      "waivedFindings": [],
-      "status": "pass"
-    },
-    "ruby": {
-      "wasm": [
-        "tree-sitter-ruby.wasm"
-      ],
-      "oracleGrammars": 1,
-      "analyzer": "src/ast/real-ruby-analyzer.ts",
-      "oracleNodeTypeCount": 286,
-      "oracleFieldCount": 31,
-      "referencedTypeLiterals": 14,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [
-        {
-          "literal": "multiple_assignment",
-          "line": 490,
-          "context": "real-ruby-analyzer.ts:comparison"
-        },
-        {
-          "literal": "block_var",
-          "line": 510,
-          "context": "real-ruby-analyzer.ts:comparison"
-        },
-        {
-          "literal": "destructured_left",
-          "line": 510,
-          "context": "real-ruby-analyzer.ts:comparison"
-        }
-      ],
-      "unknownFields": [],
-      "waivedFindings": [],
-      "status": "fail"
-    },
-    "rust": {
-      "wasm": [
-        "tree-sitter-rust.wasm"
-      ],
-      "oracleGrammars": 1,
-      "analyzer": "src/ast/real-rust-analyzer.ts",
-      "oracleNodeTypeCount": 329,
-      "oracleFieldCount": 30,
-      "referencedTypeLiterals": 64,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [
-        {
-          "literal": "type_alias_declaration",
-          "line": 158,
-          "context": "real-rust-analyzer.ts:comparison"
-        },
-        {
-          "literal": "if_let_expression",
-          "line": 198,
-          "context": "real-rust-analyzer.ts:comparison"
-        },
-        {
-          "literal": "while_let_expression",
-          "line": 198,
-          "context": "real-rust-analyzer.ts:comparison"
-        },
-        {
-          "literal": "trait_bound",
-          "line": 471,
-          "context": "real-rust-analyzer.ts:comparison"
-        }
-      ],
-      "unknownFields": [],
-      "waivedFindings": [],
-      "status": "fail"
-    },
-    "scala": {
-      "wasm": [
-        "tree-sitter-scala.wasm"
-      ],
-      "oracleGrammars": 1,
-      "analyzer": "src/ast/real-scala-analyzer.ts",
-      "oracleNodeTypeCount": 435,
-      "oracleFieldCount": 34,
-      "referencedTypeLiterals": 74,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [
-        {
-          "literal": "anonymous_function",
-          "line": 157,
-          "context": "real-scala-analyzer.ts:comparison"
-        },
-        {
-          "literal": "anonymous_function",
-          "line": 851,
-          "context": "real-scala-analyzer.ts:comparison"
-        },
-        {
-          "literal": "string_interpolation",
-          "line": 165,
-          "context": "real-scala-analyzer.ts:comparison"
-        },
-        {
-          "literal": "using_clause",
-          "line": 185,
-          "context": "real-scala-analyzer.ts:comparison"
-        },
-        {
-          "literal": "scoped_identifier",
-          "line": 346,
-          "context": "real-scala-analyzer.ts:comparison"
-        },
-        {
-          "literal": "applied_type",
-          "line": 442,
-          "context": "real-scala-analyzer.ts:comparison"
-        },
-        {
-          "literal": "applied_type",
-          "line": 903,
-          "context": "real-scala-analyzer.ts:comparison"
-        },
-        {
-          "literal": "source_file",
-          "line": 846,
-          "context": "real-scala-analyzer.ts:comparison"
-        }
-      ],
-      "unknownFields": [],
-      "waivedFindings": [],
-      "status": "fail"
-    },
-    "sql": {
-      "wasm": [
-        "tree-sitter-sql.wasm"
-      ],
-      "oracleGrammars": 1,
-      "analyzer": "src/ast/real-sql-analyzer.ts",
-      "oracleNodeTypeCount": 727,
-      "oracleFieldCount": 52,
-      "referencedTypeLiterals": 37,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [
-        {
-          "literal": "table",
-          "line": 58,
-          "context": "real-sql-analyzer.ts:comparison"
-        },
-        {
-          "literal": "grant",
-          "line": 199,
-          "context": "real-sql-analyzer.ts:comparison"
-        },
-        {
-          "literal": "revoke",
-          "line": 199,
-          "context": "real-sql-analyzer.ts:comparison"
-        },
-        {
-          "literal": "grant_statement",
-          "line": 199,
-          "context": "real-sql-analyzer.ts:comparison"
-        },
-        {
-          "literal": "revoke_statement",
-          "line": 199,
-          "context": "real-sql-analyzer.ts:comparison"
-        },
-        {
-          "literal": "create_table_column_parameter",
-          "line": 229,
-          "context": "real-sql-analyzer.ts:comparison"
-        },
-        {
-          "literal": "column_def",
-          "line": 229,
-          "context": "real-sql-analyzer.ts:comparison"
-        },
-        {
-          "literal": "primary_key_constraint",
-          "line": 246,
-          "context": "real-sql-analyzer.ts:comparison"
-        },
-        {
-          "literal": "unique_constraint",
-          "line": 247,
-          "context": "real-sql-analyzer.ts:comparison"
-        },
-        {
-          "literal": "references_constraint",
-          "line": 252,
-          "context": "real-sql-analyzer.ts:comparison"
-        },
-        {
-          "literal": "foreign_key_constraint",
-          "line": 252,
-          "context": "real-sql-analyzer.ts:comparison"
-        },
-        {
-          "literal": "type",
-          "line": 599,
-          "context": "real-sql-analyzer.ts:comparison"
-        },
-        {
-          "literal": "word",
-          "line": 612,
-          "context": "real-sql-analyzer.ts:comparison"
-        }
-      ],
-      "unknownFields": [],
-      "waivedFindings": [],
-      "status": "fail"
-    },
-    "svelte": {
-      "wasm": [
-        "tree-sitter-svelte.wasm",
-        "tree-sitter-typescript.wasm",
-        "tree-sitter-javascript.wasm"
-      ],
-      "oracleGrammars": 3,
-      "analyzer": "src/ast/real-svelte-analyzer.ts",
-      "oracleNodeTypeCount": 457,
-      "oracleFieldCount": 46,
-      "referencedTypeLiterals": 19,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [
-        {
-          "literal": "expr_attribute_value",
-          "line": 387,
-          "context": "real-svelte-analyzer.ts:findChildByType"
-        },
-        {
-          "literal": "raw_text_expr",
-          "line": 398,
-          "context": "real-svelte-analyzer.ts:comparison"
-        }
-      ],
-      "unknownFields": [],
-      "waivedFindings": [],
-      "status": "fail"
-    },
-    "swift": {
-      "wasm": [
-        "tree-sitter-swift.wasm"
-      ],
-      "oracleGrammars": 1,
-      "analyzer": "src/ast/real-swift-analyzer.ts",
-      "oracleNodeTypeCount": 526,
-      "oracleFieldCount": 44,
-      "referencedTypeLiterals": 77,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [
-        {
-          "literal": "actor_declaration",
-          "line": 159,
-          "context": "real-swift-analyzer.ts:comparison"
-        },
-        {
-          "literal": "actor_declaration",
-          "line": 368,
-          "context": "real-swift-analyzer.ts:comparison"
-        },
-        {
-          "literal": "variable_declaration",
-          "line": 178,
-          "context": "real-swift-analyzer.ts:comparison"
-        },
-        {
-          "literal": "constant_declaration",
-          "line": 179,
-          "context": "real-swift-analyzer.ts:comparison"
-        },
-        {
-          "literal": "typealias_statement",
-          "line": 193,
-          "context": "real-swift-analyzer.ts:comparison"
-        },
-        {
-          "literal": "associated_type_clause",
-          "line": 198,
-          "context": "real-swift-analyzer.ts:comparison"
-        },
-        {
-          "literal": "willSet_specifier",
-          "line": 213,
-          "context": "real-swift-analyzer.ts:comparison"
-        },
-        {
-          "literal": "didSet_specifier",
-          "line": 213,
-          "context": "real-swift-analyzer.ts:comparison"
-        },
-        {
-          "literal": "willSet_didSet_block",
-          "line": 213,
-          "context": "real-swift-analyzer.ts:comparison"
-        },
-        {
-          "literal": "defer_statement",
-          "line": 215,
-          "context": "real-swift-analyzer.ts:comparison"
-        },
-        {
-          "literal": "platform_condition",
-          "line": 221,
-          "context": "real-swift-analyzer.ts:comparison"
-        },
-        {
-          "literal": "macro_expansion",
-          "line": 223,
-          "context": "real-swift-analyzer.ts:comparison"
-        },
-        {
-          "literal": "closure_expression",
-          "line": 225,
-          "context": "real-swift-analyzer.ts:comparison"
-        },
-        {
-          "literal": "try_statement",
-          "line": 230,
-          "context": "real-swift-analyzer.ts:comparison"
-        },
-        {
-          "literal": "catch_clause",
-          "line": 231,
-          "context": "real-swift-analyzer.ts:comparison"
-        },
-        {
-          "literal": "throw_statement",
-          "line": 232,
-          "context": "real-swift-analyzer.ts:comparison"
-        },
-        {
-          "literal": "await_operator",
-          "line": 236,
-          "context": "real-swift-analyzer.ts:comparison"
-        },
-        {
-          "literal": "async_keyword",
-          "line": 236,
-          "context": "real-swift-analyzer.ts:comparison"
-        },
-        {
-          "literal": "async_keyword",
-          "line": 741,
-          "context": "real-swift-analyzer.ts:comparison"
-        },
-        {
-          "literal": "optional_chaining_expression",
-          "line": 241,
-          "context": "real-swift-analyzer.ts:comparison"
-        },
-        {
-          "literal": "implicitly_unwrapped_optional_type",
-          "line": 242,
-          "context": "real-swift-analyzer.ts:comparison"
-        },
-        {
-          "literal": "if_let_statement",
-          "line": 243,
-          "context": "real-swift-analyzer.ts:comparison"
-        },
-        {
-          "literal": "type_parameter_clause",
-          "line": 248,
-          "context": "real-swift-analyzer.ts:comparison"
-        },
-        {
-          "literal": "weak_keyword",
-          "line": 259,
-          "context": "real-swift-analyzer.ts:comparison"
-        },
-        {
-          "literal": "unowned_keyword",
-          "line": 259,
-          "context": "real-swift-analyzer.ts:comparison"
-        },
-        {
-          "literal": "lazy_keyword",
-          "line": 261,
-          "context": "real-swift-analyzer.ts:comparison"
-        },
-        {
-          "literal": "final_keyword",
-          "line": 263,
-          "context": "real-swift-analyzer.ts:comparison"
-        },
-        {
-          "literal": "pattern_initializer",
-          "line": 522,
-          "context": "real-swift-analyzer.ts:findChildByType"
-        },
-        {
-          "literal": "throws_keyword",
-          "line": 742,
-          "context": "real-swift-analyzer.ts:comparison"
-        },
-        {
-          "literal": "throw_expression",
-          "line": 742,
-          "context": "real-swift-analyzer.ts:comparison"
-        },
-        {
-          "literal": "public_keyword",
-          "line": 758,
-          "context": "real-swift-analyzer.ts:comparison"
-        },
-        {
-          "literal": "private_keyword",
-          "line": 759,
-          "context": "real-swift-analyzer.ts:comparison"
-        },
-        {
-          "literal": "fileprivate_keyword",
-          "line": 760,
-          "context": "real-swift-analyzer.ts:comparison"
-        },
-        {
-          "literal": "internal_keyword",
-          "line": 761,
-          "context": "real-swift-analyzer.ts:comparison"
-        },
-        {
-          "literal": "open_keyword",
-          "line": 762,
-          "context": "real-swift-analyzer.ts:comparison"
-        },
-        {
-          "literal": "module_identifier",
-          "line": 791,
-          "context": "real-swift-analyzer.ts:comparison"
-        }
-      ],
-      "unknownFields": [],
-      "waivedFindings": [],
-      "status": "fail"
-    },
-    "typescript": {
-      "wasm": [
-        "tree-sitter-typescript.wasm",
-        "tree-sitter-tsx.wasm",
-        "tree-sitter-javascript.wasm"
-      ],
-      "oracleGrammars": 3,
-      "analyzer": "src/ast/real-typescript-analyzer.ts",
-      "oracleNodeTypeCount": 386,
-      "oracleFieldCount": 45,
-      "referencedTypeLiterals": 80,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [
-        {
-          "literal": "constructor_definition",
-          "line": 1750,
-          "context": "real-typescript-analyzer.ts:comparison"
-        },
-        {
-          "literal": "mapped_type",
-          "line": 2239,
-          "context": "real-typescript-analyzer.ts:comparison"
-        },
-        {
-          "literal": "generator_method_definition",
-          "line": 2573,
-          "context": "real-typescript-analyzer.ts:comparison"
-        },
-        {
-          "literal": "generator_method_definition",
-          "line": 3519,
-          "context": "real-typescript-analyzer.ts:comparison"
-        },
-        {
-          "literal": "index_signature_parameter",
-          "line": 2714,
-          "context": "real-typescript-analyzer.ts:comparison"
-        },
-        {
-          "literal": "index_signature_parameter",
-          "line": 2716,
-          "context": "real-typescript-analyzer.ts:comparison"
-        },
-        {
-          "literal": "formal_parameter",
-          "line": 2714,
-          "context": "real-typescript-analyzer.ts:comparison"
-        },
-        {
-          "literal": "getter",
-          "line": 2769,
-          "context": "real-typescript-analyzer.ts:comparison"
-        },
-        {
-          "literal": "rest_parameter",
-          "line": 3579,
-          "context": "real-typescript-analyzer.ts:comparison"
-        },
-        {
-          "literal": "line_comment",
-          "line": 3754,
-          "context": "real-typescript-analyzer.ts:comparison"
-        },
-        {
-          "literal": "block_comment",
-          "line": 3754,
-          "context": "real-typescript-analyzer.ts:comparison"
-        }
-      ],
-      "unknownFields": [],
-      "waivedFindings": [],
-      "status": "fail"
-    },
-    "vue": {
-      "wasm": [
-        "tree-sitter-vue.wasm",
-        "tree-sitter-typescript.wasm",
-        "tree-sitter-javascript.wasm"
-      ],
-      "oracleGrammars": 3,
-      "analyzer": "src/ast/real-vue-analyzer.ts",
-      "oracleNodeTypeCount": 420,
-      "oracleFieldCount": 45,
-      "referencedTypeLiterals": 11,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [],
-      "unknownFields": [],
-      "waivedFindings": [],
-      "status": "pass"
-    },
-    "xml": {
-      "wasm": [
-        "tree-sitter-xml.wasm"
-      ],
-      "oracleGrammars": 1,
-      "analyzer": "src/ast/real-xml-analyzer.ts",
-      "oracleNodeTypeCount": 142,
-      "oracleFieldCount": 1,
-      "referencedTypeLiterals": 7,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [],
-      "unknownFields": [],
-      "waivedFindings": [],
-      "status": "pass"
-    },
-    "yaml": {
-      "wasm": [
-        "tree-sitter-yaml.wasm"
-      ],
-      "oracleGrammars": 1,
-      "analyzer": "src/ast/real-yaml-analyzer.ts",
-      "oracleNodeTypeCount": 142,
-      "oracleFieldCount": 1,
-      "referencedTypeLiterals": 23,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [],
-      "unknownFields": [],
-      "waivedFindings": [],
-      "status": "pass"
-    },
-    "zig": {
-      "wasm": [
-        "tree-sitter-zig.wasm"
-      ],
-      "oracleGrammars": 1,
-      "analyzer": "src/ast/real-zig-analyzer.ts",
-      "oracleNodeTypeCount": 275,
-      "oracleFieldCount": 15,
-      "referencedTypeLiterals": 13,
-      "referencedFieldLiterals": 0,
-      "unknownNodeTypes": [],
-      "unknownFields": [],
-      "waivedFindings": [],
+    {
+      "description": "regression gate vs grammar-audit-baseline.json (19/41 languages pass)",
+      "id": "baseline-gate",
       "status": "pass"
     }
-  }
+  ],
+  "claimLevel": "L2",
+  "commit": "5d30e4719dff62eb272c1eaef6230e1e91655a3a",
+  "committedAt": "2026-08-23T02:01:53+02:00",
+  "data": {
+    "languages": {
+      "bash": {
+        "analyzer": "src/ast/real-bash-analyzer.ts",
+        "oracleFieldCount": 18,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 238,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 26,
+        "status": "fail",
+        "unknownFields": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-bash-analyzer.ts:comparison",
+            "line": 299,
+            "literal": "identifier"
+          }
+        ],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-bash.wasm"
+        ]
+      },
+      "c": {
+        "analyzer": "src/ast/real-c-analyzer.ts",
+        "oracleFieldCount": 38,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 329,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 37,
+        "status": "fail",
+        "unknownFields": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-c-analyzer.ts:comparison",
+            "line": 354,
+            "literal": "asm_expression"
+          }
+        ],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-c.wasm"
+        ]
+      },
+      "clean": {
+        "analyzer": "src/ast/real-clean-analyzer.ts",
+        "oracleFieldCount": 27,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 271,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 34,
+        "status": "pass",
+        "unknownFields": [],
+        "unknownNodeTypes": [],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-clean.wasm"
+        ]
+      },
+      "clojure": {
+        "analyzer": "src/ast/real-clojure-analyzer.ts",
+        "oracleFieldCount": 10,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 75,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 5,
+        "status": "pass",
+        "unknownFields": [],
+        "unknownNodeTypes": [],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-clojure.wasm"
+        ]
+      },
+      "cpp": {
+        "analyzer": "src/ast/real-cpp-analyzer.ts",
+        "oracleFieldCount": 49,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 491,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 19,
+        "status": "fail",
+        "unknownFields": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-cpp-analyzer.ts:comparison",
+            "line": 258,
+            "literal": "base_class"
+          },
+          {
+            "context": "real-cpp-analyzer.ts:comparison",
+            "line": 260,
+            "literal": "base_class"
+          }
+        ],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-cpp.wasm"
+        ]
+      },
+      "csharp": {
+        "analyzer": "src/ast/real-csharp-analyzer.ts",
+        "oracleFieldCount": 25,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 508,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 18,
+        "status": "fail",
+        "unknownFields": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-csharp-analyzer.ts:comparison",
+            "line": 134,
+            "literal": "name"
+          },
+          {
+            "context": "real-csharp-analyzer.ts:comparison",
+            "line": 901,
+            "literal": "name"
+          },
+          {
+            "context": "real-csharp-analyzer.ts:comparison",
+            "line": 943,
+            "literal": "name"
+          }
+        ],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-c_sharp.wasm"
+        ]
+      },
+      "css": {
+        "analyzer": "src/ast/real-css-analyzer.ts",
+        "oracleFieldCount": 0,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 131,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 32,
+        "status": "fail",
+        "unknownFields": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-css-analyzer.ts:comparison",
+            "line": 590,
+            "literal": "media_query_list"
+          },
+          {
+            "context": "real-css-analyzer.ts:comparison",
+            "line": 646,
+            "literal": "mixin_statement"
+          },
+          {
+            "context": "real-css-analyzer.ts:comparison",
+            "line": 647,
+            "literal": "include_statement"
+          },
+          {
+            "context": "real-css-analyzer.ts:comparison",
+            "line": 752,
+            "literal": "variable_name"
+          }
+        ],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-css.wasm"
+        ]
+      },
+      "dart": {
+        "analyzer": "src/ast/real-dart-analyzer.ts",
+        "oracleFieldCount": 21,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 517,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 67,
+        "status": "fail",
+        "unknownFields": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "line": 345,
+            "literal": "compilation_unit"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "line": 345,
+            "literal": "library_definition"
+          },
+          {
+            "context": "real-dart-analyzer.ts:findChildByType",
+            "line": 574,
+            "literal": "initialized_variable_declaration"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "line": 576,
+            "literal": "initialized_variable_declaration"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "line": 773,
+            "literal": "function_declaration"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "line": 968,
+            "literal": "simple_identifier"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "line": 983,
+            "literal": "simple_identifier"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "line": 975,
+            "literal": "assignable_selector"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "line": 1115,
+            "literal": "optional_formal_parameter"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "line": 1126,
+            "literal": "optional_formal_parameter"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "line": 1116,
+            "literal": "named_formal_parameter"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "line": 1124,
+            "literal": "named_formal_parameter"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "line": 1116,
+            "literal": "default_formal_parameter"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "line": 1124,
+            "literal": "default_formal_parameter"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "line": 1126,
+            "literal": "default_formal_parameter"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "line": 1125,
+            "literal": "named_formal_parameters"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "line": 1150,
+            "literal": "builtin_type"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "line": 1161,
+            "literal": "builtin_type"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "line": 1171,
+            "literal": "builtin_type"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "line": 1195,
+            "literal": "builtin_type"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "line": 1274,
+            "literal": "builtin_type"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "line": 1150,
+            "literal": "generic_type"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "line": 1161,
+            "literal": "generic_type"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "line": 1171,
+            "literal": "generic_type"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "line": 1195,
+            "literal": "generic_type"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "line": 1274,
+            "literal": "generic_type"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "line": 1210,
+            "literal": "marker_annotation"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "line": 1230,
+            "literal": "marker_annotation"
+          }
+        ],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-dart.wasm"
+        ]
+      },
+      "elixir": {
+        "analyzer": "src/ast/real-elixir-analyzer.ts",
+        "oracleFieldCount": 8,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 205,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 22,
+        "status": "pass",
+        "unknownFields": [],
+        "unknownNodeTypes": [],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-elixir.wasm"
+        ]
+      },
+      "erlang": {
+        "analyzer": "src/ast/real-erlang-analyzer.ts",
+        "oracleFieldCount": 50,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 302,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 20,
+        "status": "fail",
+        "unknownFields": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-erlang-analyzer.ts:getChildByType",
+            "line": 60,
+            "literal": "string_literal"
+          },
+          {
+            "context": "real-erlang-analyzer.ts:getChildByType",
+            "line": 203,
+            "literal": "macro_name"
+          }
+        ],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-erlang.wasm"
+        ]
+      },
+      "fsharp": {
+        "analyzer": "src/ast/real-fsharp-analyzer.ts",
+        "oracleFieldCount": 27,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 512,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 36,
+        "status": "pass",
+        "unknownFields": [],
+        "unknownNodeTypes": [],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-fsharp.wasm"
+        ]
+      },
+      "go": {
+        "analyzer": "src/ast/real-go-analyzer.ts",
+        "oracleFieldCount": 34,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 213,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 37,
+        "status": "fail",
+        "unknownFields": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-go-analyzer.ts:comparison",
+            "line": 468,
+            "literal": "method_elem"
+          }
+        ],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-go.wasm"
+        ]
+      },
+      "graphql": {
+        "analyzer": "src/ast/real-graphql-analyzer.ts",
+        "oracleFieldCount": 0,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 145,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 20,
+        "status": "pass",
+        "unknownFields": [],
+        "unknownNodeTypes": [],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-graphql.wasm"
+        ]
+      },
+      "groovy": {
+        "analyzer": "src/ast/real-groovy-analyzer.ts",
+        "oracleFieldCount": 42,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 352,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 30,
+        "status": "pass",
+        "unknownFields": [],
+        "unknownNodeTypes": [],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-groovy.wasm"
+        ]
+      },
+      "haskell": {
+        "analyzer": "src/ast/real-haskell-analyzer.ts",
+        "oracleFieldCount": 83,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 452,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 57,
+        "status": "fail",
+        "unknownFields": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-haskell-analyzer.ts:findNamedChildByType",
+            "line": 243,
+            "literal": "identifier"
+          },
+          {
+            "context": "real-haskell-analyzer.ts:findNamedChildByType",
+            "line": 380,
+            "literal": "identifier"
+          },
+          {
+            "context": "real-haskell-analyzer.ts:findNamedChildByType",
+            "line": 750,
+            "literal": "identifier"
+          },
+          {
+            "context": "real-haskell-analyzer.ts:findNamedChildByType",
+            "line": 243,
+            "literal": "varid"
+          },
+          {
+            "context": "real-haskell-analyzer.ts:findNamedChildByType",
+            "line": 380,
+            "literal": "varid"
+          },
+          {
+            "context": "real-haskell-analyzer.ts:findNamedChildByType",
+            "line": 750,
+            "literal": "varid"
+          },
+          {
+            "context": "real-haskell-analyzer.ts:findNamedChildByType",
+            "line": 255,
+            "literal": "qconid"
+          },
+          {
+            "context": "real-haskell-analyzer.ts:findNamedChildByType",
+            "line": 748,
+            "literal": "qconid"
+          },
+          {
+            "context": "real-haskell-analyzer.ts:findNamedChildByType",
+            "line": 269,
+            "literal": "export_list"
+          },
+          {
+            "context": "real-haskell-analyzer.ts:findNamedChildByType",
+            "line": 381,
+            "literal": "signature_type"
+          },
+          {
+            "context": "real-haskell-analyzer.ts:findNamedChildByType",
+            "line": 498,
+            "literal": "type_constructor"
+          },
+          {
+            "context": "real-haskell-analyzer.ts:findNamedChildByType",
+            "line": 609,
+            "literal": "type_constructor"
+          },
+          {
+            "context": "real-haskell-analyzer.ts:findNamedChildByType",
+            "line": 498,
+            "literal": "tycon"
+          },
+          {
+            "context": "real-haskell-analyzer.ts:collectNamedChildrenByType",
+            "line": 574,
+            "literal": "tycon"
+          },
+          {
+            "context": "real-haskell-analyzer.ts:collectNamedChildrenByType",
+            "line": 577,
+            "literal": "tycon"
+          },
+          {
+            "context": "real-haskell-analyzer.ts:findNamedChildByType",
+            "line": 609,
+            "literal": "tycon"
+          },
+          {
+            "context": "real-haskell-analyzer.ts:findNamedChildByType",
+            "line": 672,
+            "literal": "tycon"
+          },
+          {
+            "context": "real-haskell-analyzer.ts:findNamedChildByType",
+            "line": 498,
+            "literal": "type_name"
+          },
+          {
+            "context": "real-haskell-analyzer.ts:findNamedChildByType",
+            "line": 609,
+            "literal": "type_name"
+          },
+          {
+            "context": "real-haskell-analyzer.ts:findNamedChildByType",
+            "line": 609,
+            "literal": "class_name"
+          }
+        ],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-haskell.wasm"
+        ]
+      },
+      "hcl": {
+        "analyzer": "src/ast/real-hcl-analyzer.ts",
+        "oracleFieldCount": 1,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 123,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 9,
+        "status": "pass",
+        "unknownFields": [],
+        "unknownNodeTypes": [],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-hcl.wasm"
+        ]
+      },
+      "html": {
+        "analyzer": "src/ast/real-html-analyzer.ts",
+        "oracleFieldCount": 37,
+        "oracleGrammars": 2,
+        "oracleNodeTypeCount": 285,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 11,
+        "status": "pass",
+        "unknownFields": [],
+        "unknownNodeTypes": [],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-html.wasm",
+          "tree-sitter-javascript.wasm"
+        ]
+      },
+      "java": {
+        "analyzer": "src/ast/real-java-analyzer.ts",
+        "oracleFieldCount": 39,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 322,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 38,
+        "status": "fail",
+        "unknownFields": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-java-analyzer.ts:findChildByType",
+            "line": 324,
+            "literal": "record_parameters"
+          },
+          {
+            "context": "real-java-analyzer.ts:findChildByType",
+            "line": 1153,
+            "literal": "interface_type_list"
+          },
+          {
+            "context": "real-java-analyzer.ts:findChildByType",
+            "line": 1167,
+            "literal": "record_declaration_body"
+          },
+          {
+            "context": "real-java-analyzer.ts:comparison",
+            "line": 1172,
+            "literal": "record_component"
+          }
+        ],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-java.wasm"
+        ]
+      },
+      "javascript": {
+        "analyzer": "src/ast/real-javascript-analyzer.ts",
+        "oracleFieldCount": 37,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 261,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 47,
+        "status": "pass",
+        "unknownFields": [],
+        "unknownNodeTypes": [],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-javascript.wasm"
+        ]
+      },
+      "json": {
+        "analyzer": "src/ast/real-json-analyzer.ts",
+        "oracleFieldCount": 1,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 28,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 6,
+        "status": "pass",
+        "unknownFields": [],
+        "unknownNodeTypes": [],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-json.wasm"
+        ]
+      },
+      "kotlin": {
+        "analyzer": "src/ast/real-kotlin-analyzer.ts",
+        "oracleFieldCount": 0,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 360,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 56,
+        "status": "fail",
+        "unknownFields": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-kotlin-analyzer.ts:comparison",
+            "line": 540,
+            "literal": "marker_annotation"
+          },
+          {
+            "context": "real-kotlin-analyzer.ts:comparison",
+            "line": 1249,
+            "literal": "marker_annotation"
+          },
+          {
+            "context": "real-kotlin-analyzer.ts:findChildByType",
+            "line": 842,
+            "literal": "value_parameters"
+          },
+          {
+            "context": "real-kotlin-analyzer.ts:findChildByType",
+            "line": 849,
+            "literal": "expression"
+          },
+          {
+            "context": "real-kotlin-analyzer.ts:comparison",
+            "line": 1274,
+            "literal": "comment"
+          },
+          {
+            "context": "real-kotlin-analyzer.ts:comparison",
+            "line": 1315,
+            "literal": "safe_nav_expression"
+          },
+          {
+            "context": "real-kotlin-analyzer.ts:comparison",
+            "line": 1398,
+            "literal": "method_declaration"
+          },
+          {
+            "context": "real-kotlin-analyzer.ts:comparison",
+            "line": 1419,
+            "literal": "field_declaration"
+          },
+          {
+            "context": "real-kotlin-analyzer.ts:const:LITERAL_TYPES",
+            "line": 1479,
+            "literal": "float_literal"
+          }
+        ],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-kotlin.wasm"
+        ]
+      },
+      "lua": {
+        "analyzer": "src/ast/real-lua-analyzer.ts",
+        "oracleFieldCount": 21,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 128,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 13,
+        "status": "pass",
+        "unknownFields": [],
+        "unknownNodeTypes": [],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-lua.wasm"
+        ]
+      },
+      "makefile": {
+        "analyzer": "src/ast/real-makefile-analyzer.ts",
+        "oracleFieldCount": 23,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 175,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 12,
+        "status": "fail",
+        "unknownFields": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-makefile-analyzer.ts:const:BOUNDARY_TYPES",
+            "line": 276,
+            "literal": "endif_directive"
+          }
+        ],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-make.wasm"
+        ]
+      },
+      "markdown": {
+        "analyzer": "src/ast/real-markdown-analyzer.ts",
+        "oracleFieldCount": 0,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 196,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 4,
+        "status": "fail",
+        "unknownFields": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-markdown-analyzer.ts:comparison",
+            "line": 253,
+            "literal": "uri_autolink"
+          },
+          {
+            "context": "real-markdown-analyzer.ts:comparison",
+            "line": 253,
+            "literal": "email_autolink"
+          }
+        ],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-markdown.wasm"
+        ]
+      },
+      "objective-c": {
+        "analyzer": "src/ast/real-objective-c-analyzer.ts",
+        "oracleFieldCount": 45,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 535,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 34,
+        "status": "fail",
+        "unknownFields": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-objective-c-analyzer.ts:comparison",
+            "line": 112,
+            "literal": "superclass_reference"
+          },
+          {
+            "context": "real-objective-c-analyzer.ts:comparison",
+            "line": 113,
+            "literal": "protocol_qualifiers"
+          },
+          {
+            "context": "real-objective-c-analyzer.ts:comparison",
+            "line": 113,
+            "literal": "protocol_list"
+          },
+          {
+            "context": "real-objective-c-analyzer.ts:comparison",
+            "line": 133,
+            "literal": "category_interface"
+          },
+          {
+            "context": "real-objective-c-analyzer.ts:comparison",
+            "line": 133,
+            "literal": "category_implementation"
+          },
+          {
+            "context": "real-objective-c-analyzer.ts:comparison",
+            "line": 162,
+            "literal": "selector"
+          },
+          {
+            "context": "real-objective-c-analyzer.ts:comparison",
+            "line": 222,
+            "literal": "block_expression"
+          },
+          {
+            "context": "real-objective-c-analyzer.ts:comparison",
+            "line": 360,
+            "literal": "property_identifier"
+          }
+        ],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-objc.wasm"
+        ]
+      },
+      "perl": {
+        "analyzer": "src/ast/real-perl-analyzer.ts",
+        "oracleFieldCount": 43,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 539,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 18,
+        "status": "pass",
+        "unknownFields": [],
+        "unknownNodeTypes": [],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-perl.wasm"
+        ]
+      },
+      "php": {
+        "analyzer": "src/ast/real-php-analyzer.ts",
+        "oracleFieldCount": 30,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 407,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 25,
+        "status": "fail",
+        "unknownFields": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-php-analyzer.ts:findChildByType",
+            "line": 208,
+            "literal": "interface_base_clause"
+          },
+          {
+            "context": "real-php-analyzer.ts:comparison",
+            "line": 417,
+            "literal": "use_clause"
+          }
+        ],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-php.wasm"
+        ]
+      },
+      "powershell": {
+        "analyzer": "src/ast/real-powershell-analyzer.ts",
+        "oracleFieldCount": 13,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 412,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 18,
+        "status": "pass",
+        "unknownFields": [],
+        "unknownNodeTypes": [],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-powershell.wasm"
+        ]
+      },
+      "python": {
+        "analyzer": "src/ast/real-python-analyzer.ts",
+        "oracleFieldCount": 31,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 266,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 58,
+        "status": "pass",
+        "unknownFields": [],
+        "unknownNodeTypes": [],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-python.wasm"
+        ]
+      },
+      "r": {
+        "analyzer": "src/ast/real-r-analyzer.ts",
+        "oracleFieldCount": 19,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 137,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 15,
+        "status": "pass",
+        "unknownFields": [],
+        "unknownNodeTypes": [],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-r.wasm"
+        ]
+      },
+      "ruby": {
+        "analyzer": "src/ast/real-ruby-analyzer.ts",
+        "oracleFieldCount": 31,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 286,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 14,
+        "status": "fail",
+        "unknownFields": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-ruby-analyzer.ts:comparison",
+            "line": 490,
+            "literal": "multiple_assignment"
+          },
+          {
+            "context": "real-ruby-analyzer.ts:comparison",
+            "line": 510,
+            "literal": "block_var"
+          },
+          {
+            "context": "real-ruby-analyzer.ts:comparison",
+            "line": 510,
+            "literal": "destructured_left"
+          }
+        ],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-ruby.wasm"
+        ]
+      },
+      "rust": {
+        "analyzer": "src/ast/real-rust-analyzer.ts",
+        "oracleFieldCount": 30,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 329,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 64,
+        "status": "fail",
+        "unknownFields": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-rust-analyzer.ts:comparison",
+            "line": 158,
+            "literal": "type_alias_declaration"
+          },
+          {
+            "context": "real-rust-analyzer.ts:comparison",
+            "line": 198,
+            "literal": "if_let_expression"
+          },
+          {
+            "context": "real-rust-analyzer.ts:comparison",
+            "line": 198,
+            "literal": "while_let_expression"
+          },
+          {
+            "context": "real-rust-analyzer.ts:comparison",
+            "line": 471,
+            "literal": "trait_bound"
+          }
+        ],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-rust.wasm"
+        ]
+      },
+      "scala": {
+        "analyzer": "src/ast/real-scala-analyzer.ts",
+        "oracleFieldCount": 34,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 435,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 74,
+        "status": "fail",
+        "unknownFields": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-scala-analyzer.ts:comparison",
+            "line": 157,
+            "literal": "anonymous_function"
+          },
+          {
+            "context": "real-scala-analyzer.ts:comparison",
+            "line": 851,
+            "literal": "anonymous_function"
+          },
+          {
+            "context": "real-scala-analyzer.ts:comparison",
+            "line": 165,
+            "literal": "string_interpolation"
+          },
+          {
+            "context": "real-scala-analyzer.ts:comparison",
+            "line": 185,
+            "literal": "using_clause"
+          },
+          {
+            "context": "real-scala-analyzer.ts:comparison",
+            "line": 346,
+            "literal": "scoped_identifier"
+          },
+          {
+            "context": "real-scala-analyzer.ts:comparison",
+            "line": 442,
+            "literal": "applied_type"
+          },
+          {
+            "context": "real-scala-analyzer.ts:comparison",
+            "line": 903,
+            "literal": "applied_type"
+          },
+          {
+            "context": "real-scala-analyzer.ts:comparison",
+            "line": 846,
+            "literal": "source_file"
+          }
+        ],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-scala.wasm"
+        ]
+      },
+      "sql": {
+        "analyzer": "src/ast/real-sql-analyzer.ts",
+        "oracleFieldCount": 52,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 727,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 37,
+        "status": "fail",
+        "unknownFields": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-sql-analyzer.ts:comparison",
+            "line": 58,
+            "literal": "table"
+          },
+          {
+            "context": "real-sql-analyzer.ts:comparison",
+            "line": 199,
+            "literal": "grant"
+          },
+          {
+            "context": "real-sql-analyzer.ts:comparison",
+            "line": 199,
+            "literal": "revoke"
+          },
+          {
+            "context": "real-sql-analyzer.ts:comparison",
+            "line": 199,
+            "literal": "grant_statement"
+          },
+          {
+            "context": "real-sql-analyzer.ts:comparison",
+            "line": 199,
+            "literal": "revoke_statement"
+          },
+          {
+            "context": "real-sql-analyzer.ts:comparison",
+            "line": 229,
+            "literal": "create_table_column_parameter"
+          },
+          {
+            "context": "real-sql-analyzer.ts:comparison",
+            "line": 229,
+            "literal": "column_def"
+          },
+          {
+            "context": "real-sql-analyzer.ts:comparison",
+            "line": 246,
+            "literal": "primary_key_constraint"
+          },
+          {
+            "context": "real-sql-analyzer.ts:comparison",
+            "line": 247,
+            "literal": "unique_constraint"
+          },
+          {
+            "context": "real-sql-analyzer.ts:comparison",
+            "line": 252,
+            "literal": "references_constraint"
+          },
+          {
+            "context": "real-sql-analyzer.ts:comparison",
+            "line": 252,
+            "literal": "foreign_key_constraint"
+          },
+          {
+            "context": "real-sql-analyzer.ts:comparison",
+            "line": 599,
+            "literal": "type"
+          },
+          {
+            "context": "real-sql-analyzer.ts:comparison",
+            "line": 612,
+            "literal": "word"
+          }
+        ],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-sql.wasm"
+        ]
+      },
+      "svelte": {
+        "analyzer": "src/ast/real-svelte-analyzer.ts",
+        "oracleFieldCount": 46,
+        "oracleGrammars": 3,
+        "oracleNodeTypeCount": 457,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 19,
+        "status": "fail",
+        "unknownFields": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-svelte-analyzer.ts:findChildByType",
+            "line": 387,
+            "literal": "expr_attribute_value"
+          },
+          {
+            "context": "real-svelte-analyzer.ts:comparison",
+            "line": 398,
+            "literal": "raw_text_expr"
+          }
+        ],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-svelte.wasm",
+          "tree-sitter-typescript.wasm",
+          "tree-sitter-javascript.wasm"
+        ]
+      },
+      "swift": {
+        "analyzer": "src/ast/real-swift-analyzer.ts",
+        "oracleFieldCount": 44,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 526,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 77,
+        "status": "fail",
+        "unknownFields": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-swift-analyzer.ts:comparison",
+            "line": 159,
+            "literal": "actor_declaration"
+          },
+          {
+            "context": "real-swift-analyzer.ts:comparison",
+            "line": 368,
+            "literal": "actor_declaration"
+          },
+          {
+            "context": "real-swift-analyzer.ts:comparison",
+            "line": 178,
+            "literal": "variable_declaration"
+          },
+          {
+            "context": "real-swift-analyzer.ts:comparison",
+            "line": 179,
+            "literal": "constant_declaration"
+          },
+          {
+            "context": "real-swift-analyzer.ts:comparison",
+            "line": 193,
+            "literal": "typealias_statement"
+          },
+          {
+            "context": "real-swift-analyzer.ts:comparison",
+            "line": 198,
+            "literal": "associated_type_clause"
+          },
+          {
+            "context": "real-swift-analyzer.ts:comparison",
+            "line": 213,
+            "literal": "willSet_specifier"
+          },
+          {
+            "context": "real-swift-analyzer.ts:comparison",
+            "line": 213,
+            "literal": "didSet_specifier"
+          },
+          {
+            "context": "real-swift-analyzer.ts:comparison",
+            "line": 213,
+            "literal": "willSet_didSet_block"
+          },
+          {
+            "context": "real-swift-analyzer.ts:comparison",
+            "line": 215,
+            "literal": "defer_statement"
+          },
+          {
+            "context": "real-swift-analyzer.ts:comparison",
+            "line": 221,
+            "literal": "platform_condition"
+          },
+          {
+            "context": "real-swift-analyzer.ts:comparison",
+            "line": 223,
+            "literal": "macro_expansion"
+          },
+          {
+            "context": "real-swift-analyzer.ts:comparison",
+            "line": 225,
+            "literal": "closure_expression"
+          },
+          {
+            "context": "real-swift-analyzer.ts:comparison",
+            "line": 230,
+            "literal": "try_statement"
+          },
+          {
+            "context": "real-swift-analyzer.ts:comparison",
+            "line": 231,
+            "literal": "catch_clause"
+          },
+          {
+            "context": "real-swift-analyzer.ts:comparison",
+            "line": 232,
+            "literal": "throw_statement"
+          },
+          {
+            "context": "real-swift-analyzer.ts:comparison",
+            "line": 236,
+            "literal": "await_operator"
+          },
+          {
+            "context": "real-swift-analyzer.ts:comparison",
+            "line": 236,
+            "literal": "async_keyword"
+          },
+          {
+            "context": "real-swift-analyzer.ts:comparison",
+            "line": 741,
+            "literal": "async_keyword"
+          },
+          {
+            "context": "real-swift-analyzer.ts:comparison",
+            "line": 241,
+            "literal": "optional_chaining_expression"
+          },
+          {
+            "context": "real-swift-analyzer.ts:comparison",
+            "line": 242,
+            "literal": "implicitly_unwrapped_optional_type"
+          },
+          {
+            "context": "real-swift-analyzer.ts:comparison",
+            "line": 243,
+            "literal": "if_let_statement"
+          },
+          {
+            "context": "real-swift-analyzer.ts:comparison",
+            "line": 248,
+            "literal": "type_parameter_clause"
+          },
+          {
+            "context": "real-swift-analyzer.ts:comparison",
+            "line": 259,
+            "literal": "weak_keyword"
+          },
+          {
+            "context": "real-swift-analyzer.ts:comparison",
+            "line": 259,
+            "literal": "unowned_keyword"
+          },
+          {
+            "context": "real-swift-analyzer.ts:comparison",
+            "line": 261,
+            "literal": "lazy_keyword"
+          },
+          {
+            "context": "real-swift-analyzer.ts:comparison",
+            "line": 263,
+            "literal": "final_keyword"
+          },
+          {
+            "context": "real-swift-analyzer.ts:findChildByType",
+            "line": 522,
+            "literal": "pattern_initializer"
+          },
+          {
+            "context": "real-swift-analyzer.ts:comparison",
+            "line": 742,
+            "literal": "throws_keyword"
+          },
+          {
+            "context": "real-swift-analyzer.ts:comparison",
+            "line": 742,
+            "literal": "throw_expression"
+          },
+          {
+            "context": "real-swift-analyzer.ts:comparison",
+            "line": 758,
+            "literal": "public_keyword"
+          },
+          {
+            "context": "real-swift-analyzer.ts:comparison",
+            "line": 759,
+            "literal": "private_keyword"
+          },
+          {
+            "context": "real-swift-analyzer.ts:comparison",
+            "line": 760,
+            "literal": "fileprivate_keyword"
+          },
+          {
+            "context": "real-swift-analyzer.ts:comparison",
+            "line": 761,
+            "literal": "internal_keyword"
+          },
+          {
+            "context": "real-swift-analyzer.ts:comparison",
+            "line": 762,
+            "literal": "open_keyword"
+          },
+          {
+            "context": "real-swift-analyzer.ts:comparison",
+            "line": 791,
+            "literal": "module_identifier"
+          }
+        ],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-swift.wasm"
+        ]
+      },
+      "typescript": {
+        "analyzer": "src/ast/real-typescript-analyzer.ts",
+        "oracleFieldCount": 45,
+        "oracleGrammars": 3,
+        "oracleNodeTypeCount": 386,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 80,
+        "status": "fail",
+        "unknownFields": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-typescript-analyzer.ts:comparison",
+            "line": 1750,
+            "literal": "constructor_definition"
+          },
+          {
+            "context": "real-typescript-analyzer.ts:comparison",
+            "line": 2239,
+            "literal": "mapped_type"
+          },
+          {
+            "context": "real-typescript-analyzer.ts:comparison",
+            "line": 2573,
+            "literal": "generator_method_definition"
+          },
+          {
+            "context": "real-typescript-analyzer.ts:comparison",
+            "line": 3519,
+            "literal": "generator_method_definition"
+          },
+          {
+            "context": "real-typescript-analyzer.ts:comparison",
+            "line": 2714,
+            "literal": "index_signature_parameter"
+          },
+          {
+            "context": "real-typescript-analyzer.ts:comparison",
+            "line": 2716,
+            "literal": "index_signature_parameter"
+          },
+          {
+            "context": "real-typescript-analyzer.ts:comparison",
+            "line": 2714,
+            "literal": "formal_parameter"
+          },
+          {
+            "context": "real-typescript-analyzer.ts:comparison",
+            "line": 2769,
+            "literal": "getter"
+          },
+          {
+            "context": "real-typescript-analyzer.ts:comparison",
+            "line": 3579,
+            "literal": "rest_parameter"
+          },
+          {
+            "context": "real-typescript-analyzer.ts:comparison",
+            "line": 3754,
+            "literal": "line_comment"
+          },
+          {
+            "context": "real-typescript-analyzer.ts:comparison",
+            "line": 3754,
+            "literal": "block_comment"
+          }
+        ],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-typescript.wasm",
+          "tree-sitter-tsx.wasm",
+          "tree-sitter-javascript.wasm"
+        ]
+      },
+      "vue": {
+        "analyzer": "src/ast/real-vue-analyzer.ts",
+        "oracleFieldCount": 45,
+        "oracleGrammars": 3,
+        "oracleNodeTypeCount": 420,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 11,
+        "status": "pass",
+        "unknownFields": [],
+        "unknownNodeTypes": [],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-vue.wasm",
+          "tree-sitter-typescript.wasm",
+          "tree-sitter-javascript.wasm"
+        ]
+      },
+      "xml": {
+        "analyzer": "src/ast/real-xml-analyzer.ts",
+        "oracleFieldCount": 1,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 142,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 7,
+        "status": "pass",
+        "unknownFields": [],
+        "unknownNodeTypes": [],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-xml.wasm"
+        ]
+      },
+      "yaml": {
+        "analyzer": "src/ast/real-yaml-analyzer.ts",
+        "oracleFieldCount": 1,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 142,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 23,
+        "status": "pass",
+        "unknownFields": [],
+        "unknownNodeTypes": [],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-yaml.wasm"
+        ]
+      },
+      "zig": {
+        "analyzer": "src/ast/real-zig-analyzer.ts",
+        "oracleFieldCount": 15,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 275,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 13,
+        "status": "pass",
+        "unknownFields": [],
+        "unknownNodeTypes": [],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-zig.wasm"
+        ]
+      }
+    },
+    "summary": {
+      "fail": 22,
+      "languagesAudited": 41,
+      "pass": 19,
+      "totalUnknownReferences": 165
+    }
+  },
+  "governance": "docs/M14-HONESTY-CONTRACT.md",
+  "issueId": "M14.0.F1",
+  "layers": [
+    "grammar-conformance"
+  ],
+  "limitations": [
+    {
+      "description": "auditor detects dead references only; missing node-type coverage requires fixtures (F3) and wave work"
+    },
+    {
+      "description": "extraction covers comparison/switch/helper-call/const-array positions; dynamic type-string construction would be missed (none observed)"
+    },
+    {
+      "description": "baseline gate prevents regressions but does not force improvement; improvement enforced by wave closure criteria"
+    }
+  ],
+  "runtime": "node v24.3.0",
+  "schemaVersion": 2,
+  "title": "Grammar-conformance auditor"
 }
