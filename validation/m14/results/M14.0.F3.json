@@ -14,14 +14,20 @@
     },
     {
       "description": "kotlin adversarial fixtures",
-      "detail": "10/10 fixtures pass",
+      "detail": "12/12 fixtures pass",
       "id": "fixtures-kotlin",
+      "status": "pass"
+    },
+    {
+      "description": "scala adversarial fixtures",
+      "detail": "0/0 fixtures pass",
+      "id": "fixtures-scala",
       "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "bdccd2608deeb120c10a504478b39f45deebecbe",
-  "committedAt": "2026-08-23T05:55:47+02:00",
+  "commit": "4fb198debe09b27d78fa00d32ac7954d71bde04f",
+  "committedAt": "2026-08-22T23:29:54-05:00",
   "data": {
     "details": [
       {
@@ -165,6 +171,11 @@
         "problems": []
       },
       {
+        "fixture": "kotlin/extension-property",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "kotlin/interface-multi-extends",
         "ok": true,
         "problems": []
@@ -185,9 +196,18 @@
         "problems": []
       },
       {
+        "fixture": "kotlin/qualified-calls-builtin-names",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "kotlin/safe-nav-chain",
         "ok": true,
         "problems": []
+      },
+      {
+        "fixture": "(none)",
+        "ok": true
       }
     ],
     "summary": {
@@ -201,7 +221,11 @@
       },
       "kotlin": {
         "fail": 0,
-        "pass": 10
+        "pass": 12
+      },
+      "scala": {
+        "fail": 0,
+        "pass": 0
       }
     }
   },

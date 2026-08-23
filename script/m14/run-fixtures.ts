@@ -142,6 +142,15 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
         problems.push(`expected symbol not found: ${JSON.stringify(want)}; got: ${symbols.map((s: any) => s.name + ":" + s.kind).slice(0, 20).join(", ")}`)
       }
     }
+    for (const want of exp.expectQualifiedCalls ?? []) {
+      const sym = symbols.find((s: any) => s.name === want.symbol)
+      const qc: string[] = sym?.qualified_calls ?? []
+      for (const inc of want.includes ?? []) {
+        if (!qc.some((c: string) => c === inc || c.endsWith("." + inc))) {
+          problems.push(`expected ${want.symbol}.qualified_calls to include "${inc}"; got: ${JSON.stringify(qc)}`)
+        }
+      }
+    }
     for (const want of exp.forbidSymbols ?? []) {
       const hit = symbols.find(s => matchConstraints(s, want))
       if (hit) problems.push(`forbidden symbol present: ${JSON.stringify(want)} (found ${hit.name}:${hit.kind})`)
