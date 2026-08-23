@@ -1,0 +1,11 @@
+{
+  "issue": "M15.V7",
+  "code": "V7",
+  "tool": "bb_visualize",
+  "verified": true,
+  "checks": 6,
+  "passed": 7,
+  "failed": 0,
+  "negatives": 1,
+  "generatedAt": "2026-08-23T05:35:40.930Z"
+}
