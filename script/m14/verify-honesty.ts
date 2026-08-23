@@ -108,7 +108,7 @@ if (!fs.existsSync(LEDGER)) {
   fail("completeness ledger missing: docs/M14-COMPLETENESS-LEDGER.md")
 } else {
   const ledger = fs.readFileSync(LEDGER, "utf8")
-  for (const section of ["Matrix 1", "Matrix 2", "Matrix 3", "Standing rules"]) {
+  for (const section of ["Matrix 1", "Matrix 2", "Matrix 3", "Matrix 4", "Matrix 5", "Standing rules"]) {
     if (!ledger.includes(section)) fail(`ledger missing section: ${section}`)
   }
   const pendingCount = (ledger.match(/PENDING/g) ?? []).length
