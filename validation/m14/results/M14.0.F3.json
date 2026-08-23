@@ -2,14 +2,14 @@
   "checks": [
     {
       "description": "java adversarial fixtures",
-      "detail": "16/16 fixtures pass",
+      "detail": "18/18 fixtures pass",
       "id": "fixtures-java",
       "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "8232dac9b4a23572ed5e76362cec08b289975ab6",
-  "committedAt": "2026-08-23T11:48:40-05:00",
+  "commit": "96c113bf7f7a90c6f9c17176380f3e468bd6763a",
+  "committedAt": "2026-08-23T12:20:42-05:00",
   "data": {
     "details": [
       {
@@ -83,7 +83,17 @@
         "problems": []
       },
       {
+        "fixture": "java/record-varargs-compact-ctor",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "java/records-and-sealed",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/sealed-varargs",
         "ok": true,
         "problems": []
       },
@@ -96,7 +106,7 @@
     "summary": {
       "java": {
         "fail": 0,
-        "pass": 16
+        "pass": 18
       }
     }
   },

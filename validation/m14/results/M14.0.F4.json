@@ -2,13 +2,13 @@
   "checks": [
     {
       "description": "relabels every extends edge as implements (the exact multi-interface bug class reported by the owner)",
-      "detail": "0 -> 3",
+      "detail": "0 -> 4",
       "id": "mutation-java-mislabel-inheritance",
       "status": "pass"
     },
     {
       "description": "drops every method symbol",
-      "detail": "0 -> 8",
+      "detail": "0 -> 9",
       "id": "mutation-java-drop-method-symbols",
       "status": "pass"
     },
@@ -31,6 +31,24 @@
       "status": "pass"
     },
     {
+      "description": "strips qualified_calls from every symbol (the isKotlinBuiltin bug class)",
+      "detail": "0 -> 1",
+      "id": "mutation-typescript-drop-qualified-calls",
+      "status": "pass"
+    },
+    {
+      "description": "clears comments arrays (kotlin KDoc bug class)",
+      "detail": "0 -> 1",
+      "id": "mutation-typescript-hide-jsdoc",
+      "status": "pass"
+    },
+    {
+      "description": "swaps extends <-> implements labels on heritage edges",
+      "detail": "0 -> 1",
+      "id": "mutation-typescript-swap-heritage-labels",
+      "status": "pass"
+    },
+    {
       "description": "drops every class symbol",
       "detail": "0 -> 10",
       "id": "mutation-groovy-drop-class-symbols",
@@ -38,12 +56,12 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "8232dac9b4a23572ed5e76362cec08b289975ab6",
-  "committedAt": "2026-08-23T11:48:40-05:00",
+  "commit": "96c113bf7f7a90c6f9c17176380f3e468bd6763a",
+  "committedAt": "2026-08-23T12:20:42-05:00",
   "data": {
     "summary": {
-      "caught": 6,
-      "mutantsRun": 6,
+      "caught": 9,
+      "mutantsRun": 9,
       "survived": 0
     }
   },
@@ -63,39 +81,57 @@
   ],
   "mutationLog": [
     {
-      "caughtBy": "java/class-extends-implements, java/fqn-extends, java/multi-interface-extends",
-      "detail": "relationship-mislabel: 0 -> 3 fixture failures",
-      "injectedAt": "2026-08-23T16:58:49.917Z",
+      "caughtBy": "java/class-extends-implements, java/fqn-extends, java/multi-interface-extends, java/sealed-varargs",
+      "detail": "relationship-mislabel: 0 -> 4 fixture failures",
+      "injectedAt": "2026-08-23T17:29:01.642Z",
       "mutant": "java/mislabel-inheritance"
     },
     {
-      "caughtBy": "java/chained-field-access, java/class-extends-implements, java/fq-api-endpoint, java/fqn-instantiation, java/generics-bounds, java/inner-class-instantiation, java/nested-types, java/pure-field-chain",
-      "detail": "symbol-loss: 0 -> 8 fixture failures",
-      "injectedAt": "2026-08-23T16:58:49.964Z",
+      "caughtBy": "java/chained-field-access, java/class-extends-implements, java/fq-api-endpoint, java/fqn-instantiation, java/generics-bounds, java/inner-class-instantiation, java/nested-types, java/pure-field-chain, java/sealed-varargs",
+      "detail": "symbol-loss: 0 -> 9 fixture failures",
+      "injectedAt": "2026-08-23T17:29:01.675Z",
       "mutant": "java/drop-method-symbols"
     },
     {
       "caughtBy": "java/ctor-value-injection, java/fqn-extends, java/fqn-instantiation, java/inner-class-instantiation, java/overrides",
       "detail": "edge-drop: 0 -> 5 fixture failures",
-      "injectedAt": "2026-08-23T16:58:50.011Z",
+      "injectedAt": "2026-08-23T17:29:01.732Z",
       "mutant": "java/fqn-edge-drop"
     },
     {
       "caughtBy": "groovy/chained-field-access, groovy/safe-nav-chain",
       "detail": "confidence-dishonesty: 0 -> 2 fixture failures",
-      "injectedAt": "2026-08-23T16:58:50.125Z",
+      "injectedAt": "2026-08-23T17:29:01.861Z",
       "mutant": "groovy/confidence-tamper"
     },
     {
       "caughtBy": "groovy/chained-field-access, groovy/closure-and-typedef, groovy/fqn-extends, groovy/fqn-implements, groovy/fqn-instantiation, groovy/gstring-interpolation, groovy/overrides, groovy/pure-field-chain, groovy/safe-nav-chain, groovy/trait-implements",
       "detail": "relationship-garbage: 0 -> 10 fixture failures",
-      "injectedAt": "2026-08-23T16:58:50.145Z",
+      "injectedAt": "2026-08-23T17:29:01.873Z",
       "mutant": "groovy/segment-garbage"
+    },
+    {
+      "caughtBy": "typescript/payload-pins",
+      "detail": "symbol-payload-loss: 0 -> 1 fixture failures",
+      "injectedAt": "2026-08-23T17:29:02.084Z",
+      "mutant": "typescript/drop-qualified-calls"
+    },
+    {
+      "caughtBy": "typescript/payload-pins",
+      "detail": "docstring-loss: 0 -> 1 fixture failures",
+      "injectedAt": "2026-08-23T17:29:02.128Z",
+      "mutant": "typescript/hide-jsdoc"
+    },
+    {
+      "caughtBy": "typescript/abstract-class",
+      "detail": "relationship-mislabel: 0 -> 1 fixture failures",
+      "injectedAt": "2026-08-23T17:29:02.166Z",
+      "mutant": "typescript/swap-heritage-labels"
     },
     {
       "caughtBy": "groovy/chained-field-access, groovy/closure-and-typedef, groovy/fqn-extends, groovy/fqn-implements, groovy/fqn-instantiation, groovy/gstring-interpolation, groovy/overrides, groovy/pure-field-chain, groovy/safe-nav-chain, groovy/trait-implements",
       "detail": "symbol-loss: 0 -> 10 fixture failures",
-      "injectedAt": "2026-08-23T16:58:50.167Z",
+      "injectedAt": "2026-08-23T17:29:02.176Z",
       "mutant": "groovy/drop-class-symbols"
     }
   ],
