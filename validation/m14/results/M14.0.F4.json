@@ -38,8 +38,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "c66c126c9a39d83e419510c305facace35cc14d9",
-  "committedAt": "2026-08-22T21:30:42-05:00",
+  "commit": "507e9c8e8a1a04c8c139d5ee07be30e909d3a2f2",
+  "committedAt": "2026-08-22T21:36:54-05:00",
   "data": {
     "summary": {
       "caught": 6,
@@ -65,37 +65,37 @@
     {
       "caughtBy": "java/class-extends-implements, java/fqn-extends, java/multi-interface-extends",
       "detail": "relationship-mislabel: 0 -> 3 fixture failures",
-      "injectedAt": "2026-08-23T02:33:20.017Z",
+      "injectedAt": "2026-08-23T02:46:26.452Z",
       "mutant": "java/mislabel-inheritance"
     },
     {
       "caughtBy": "java/chained-field-access, java/class-extends-implements, java/fqn-instantiation, java/generics-bounds, java/inner-class-instantiation, java/nested-types, java/pure-field-chain",
       "detail": "symbol-loss: 0 -> 7 fixture failures",
-      "injectedAt": "2026-08-23T02:33:20.038Z",
+      "injectedAt": "2026-08-23T02:46:26.528Z",
       "mutant": "java/drop-method-symbols"
     },
     {
       "caughtBy": "java/fqn-extends, java/fqn-instantiation, java/inner-class-instantiation",
       "detail": "edge-drop: 0 -> 3 fixture failures",
-      "injectedAt": "2026-08-23T02:33:20.062Z",
+      "injectedAt": "2026-08-23T02:46:26.574Z",
       "mutant": "java/fqn-edge-drop"
     },
     {
       "caughtBy": "groovy/chained-field-access, groovy/safe-nav-chain",
       "detail": "confidence-dishonesty: 0 -> 2 fixture failures",
-      "injectedAt": "2026-08-23T02:33:20.122Z",
+      "injectedAt": "2026-08-23T02:46:26.719Z",
       "mutant": "groovy/confidence-tamper"
     },
     {
       "caughtBy": "groovy/chained-field-access, groovy/closure-and-typedef, groovy/fqn-extends, groovy/fqn-implements, groovy/fqn-instantiation, groovy/gstring-interpolation, groovy/pure-field-chain, groovy/safe-nav-chain, groovy/trait-implements",
       "detail": "relationship-garbage: 0 -> 9 fixture failures",
-      "injectedAt": "2026-08-23T02:33:20.169Z",
+      "injectedAt": "2026-08-23T02:46:26.768Z",
       "mutant": "groovy/segment-garbage"
     },
     {
       "caughtBy": "groovy/chained-field-access, groovy/closure-and-typedef, groovy/fqn-extends, groovy/fqn-implements, groovy/fqn-instantiation, groovy/gstring-interpolation, groovy/pure-field-chain, groovy/safe-nav-chain, groovy/trait-implements",
       "detail": "symbol-loss: 0 -> 9 fixture failures",
-      "injectedAt": "2026-08-23T02:33:20.204Z",
+      "injectedAt": "2026-08-23T02:46:26.829Z",
       "mutant": "groovy/drop-class-symbols"
     }
   ],

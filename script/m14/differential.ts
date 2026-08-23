@@ -17,7 +17,7 @@ import * as fs from "fs"
 import * as path from "path"
 import { execSync } from "child_process"
 
-const ROOT = path.resolve(__dirname, "..", "..")
+const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 const CORPUS_ROOT = "$HOME/fixtures/repositories"
 const REPO = process.argv.includes("--repo") ? process.argv[process.argv.indexOf("--repo") + 1] : "grails-core"
 const SAMPLE_PER_LANG = process.argv.includes("--sample") ? parseInt(process.argv[process.argv.indexOf("--sample") + 1]) : 60
@@ -188,15 +188,20 @@ async function main() {
   for (const [lang, r] of Object.entries<any>(report)) current[lang] = { missing: r.missingInAnalyzer, unexplained: r.unexplainedInAnalyzer }
   const updateBaseline = process.argv.includes("--update-baseline")
   if (updateBaseline) {
-    fs.writeFileSync(BASELINE, JSON.stringify(current, null, 2) + "\n")
+    fs.writeFileSync(BASELINE, JSON.stringify({ samplePerLang: SAMPLE_PER_LANG, counts: current }, null, 2) + "\n")
     console.log("differential baseline updated:", current)
   } else if (fs.existsSync(BASELINE)) {
-    const base = JSON.parse(fs.readFileSync(BASELINE, "utf8"))
-    const regressions = Object.keys(current).filter(l =>
-      base[l] && (current[l].missing > base[l].missing || current[l].unexplained > base[l].unexplained))
-    for (const r of regressions) console.error(`DIFFERENTIAL REGRESSION ${r}: ${JSON.stringify(base[r])} -> ${JSON.stringify(current[r])}`)
-    if (regressions.length) process.exit(5)
-    console.log("differential baseline gate: no regressions")
+    const parsed = JSON.parse(fs.readFileSync(BASELINE, "utf8"))
+    const base = parsed.counts ?? parsed // legacy flat format
+    if (parsed.samplePerLang && parsed.samplePerLang !== SAMPLE_PER_LANG) {
+      console.log(`differential baseline gate: SKIPPED (baseline sampled ${parsed.samplePerLang}/lang, this run ${SAMPLE_PER_LANG}/lang — probe mode, not comparable)`)
+    } else {
+      const regressions = Object.keys(current).filter(l =>
+        base[l] && (current[l].missing > base[l].missing || current[l].unexplained > base[l].unexplained))
+      for (const r of regressions) console.error(`DIFFERENTIAL REGRESSION ${r}: ${JSON.stringify(base[r])} -> ${JSON.stringify(current[r])}`)
+      if (regressions.length) process.exit(5)
+      console.log("differential baseline gate: no regressions")
+    }
   }
 }
 

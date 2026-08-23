@@ -31,7 +31,7 @@ import * as fs from "fs"
 import * as path from "path"
 import { execSync } from "child_process"
 
-const ROOT = path.resolve(__dirname, "..", "..")
+const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 const WASM_DIR = path.join(ROOT, "wasm")
 const RESULTS_DIR = path.join(ROOT, "validation", "m14", "results")
 const ALLOWLIST_PATH = path.join(ROOT, "validation", "m14", "grammar-audit-allowlist.json")
