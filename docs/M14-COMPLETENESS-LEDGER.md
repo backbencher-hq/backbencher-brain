@@ -42,6 +42,8 @@ symbol-field rot. Every language wave must pin these symbol payloads:
 | parameters (+defaults) | PENDING -> #383 | PENDING -> #383 | GATED (calls-and-instantiation partial) | |
 | byte ranges (bb_edit depends) | indirect via M13 edit gates | same | same | M13 scope |
 | visibility/modifiers | GATED F3 implicit | implicit | implicit | explicit pins PENDING -> #383 |
+| qualified_calls | GATED (consistency+fixture) | NOT EMITTED -> #383 | GATED (consistency+fixture) | scala also absent -> #383 |
+| range columns 1-based | GATED (CC1) | GATED (CC1, was 0-based - FIXED) | GATED (CC1) | GATED (CC1) |
 
 **Standing fixture-authoring rule**: every language's fixtures MUST include
 identifiers that collide with stdlib/builtin words (get/map/run/add...),
@@ -81,6 +83,14 @@ positional fallbacks documented). Remaining raw-text semantics, all DECLARED:
   (kotlin stringIncludes(content,"let") etc) - cosmetic metadata, low stakes;
   destination decided under F10
 No regex used in relationship extraction in the three audited analyzers.
+
+## Gate CC1 — Cross-language consistency (script/m14/verify-cross-language-consistency.ts)
+
+Equivalent class/method shape in java/groovy/kotlin/scala asserted structurally
+identical: 1-based ranges everywhere, consistent symbol kinds, payload presence
+per declared support. Born from the scala column-base finding; IMMEDIATELY
+caught groovy emitting 0-based columns (fixed) and corrected the
+qualified_calls support map (groovy does not emit them - #383).
 
 ## Matrix 2 — Language-cluster pipeline coverage (realistic combos, not all-to-all)
 

@@ -2,32 +2,32 @@
   "checks": [
     {
       "description": "java adversarial fixtures",
-      "detail": "12/12 fixtures pass",
+      "detail": "13/13 fixtures pass",
       "id": "fixtures-java",
       "status": "pass"
     },
     {
       "description": "groovy adversarial fixtures",
-      "detail": "11/11 fixtures pass",
+      "detail": "12/12 fixtures pass",
       "id": "fixtures-groovy",
       "status": "pass"
     },
     {
       "description": "kotlin adversarial fixtures",
-      "detail": "14/14 fixtures pass",
+      "detail": "15/15 fixtures pass",
       "id": "fixtures-kotlin",
       "status": "pass"
     },
     {
       "description": "scala adversarial fixtures",
-      "detail": "12/12 fixtures pass",
+      "detail": "13/13 fixtures pass",
       "id": "fixtures-scala",
       "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "c0603504d4890dbb147838d20fe8c90ca629582c",
-  "committedAt": "2026-08-23T10:50:32-05:00",
+  "commit": "1e0c845498dbdb47b2f4d025f6553c690096a00a",
+  "committedAt": "2026-08-23T11:06:55-05:00",
   "data": {
     "details": [
       {
@@ -72,6 +72,11 @@
       },
       {
         "fixture": "java/nested-types",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/overrides",
         "ok": true,
         "problems": []
       },
@@ -126,6 +131,11 @@
         "problems": []
       },
       {
+        "fixture": "groovy/overrides",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "groovy/pure-field-chain",
         "ok": true,
         "problems": []
@@ -162,6 +172,11 @@
       },
       {
         "fixture": "kotlin/companion-object",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/contains-explicit",
         "ok": true,
         "problems": []
       },
@@ -231,6 +246,11 @@
         "problems": []
       },
       {
+        "fixture": "scala/contains-explicit",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "scala/dotted-generic-supertype",
         "ok": true,
         "problems": []
@@ -279,19 +299,19 @@
     "summary": {
       "groovy": {
         "fail": 0,
-        "pass": 11
+        "pass": 12
       },
       "java": {
         "fail": 0,
-        "pass": 12
+        "pass": 13
       },
       "kotlin": {
         "fail": 0,
-        "pass": 14
+        "pass": 15
       },
       "scala": {
         "fail": 0,
-        "pass": 12
+        "pass": 13
       }
     }
   },
