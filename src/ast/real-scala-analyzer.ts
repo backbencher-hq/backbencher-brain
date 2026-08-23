@@ -439,6 +439,10 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (!c || !c.isNamed) continue
       if (c.type === "type_identifier" || c.type === "identifier") {
         out.push(c.text)
+      } else if (c.type === "stable_type_identifier") {
+        // dotted parents like js.Object / scala.Any: keep FULL dotted name
+        // (cross-language convention decided in M14.1)
+        out.push(c.text)
       } else if (c.type === "generic_type" || c.type === "applied_type") {
         for (let j = 0; j < c.childCount; j++) {
           const ch = c.child(j)
@@ -651,7 +655,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         relationships.push({
           source: symbol.name,
           target: supertypes[i],
-          type: i === 0 ? ASTEngine.RelationshipType.Extends : ASTEngine.RelationshipType.Implements,
+          type: ASTEngine.RelationshipType.Extends, // trait supertypes: ALL are extends
           line_number: extendsClause.startPosition.row + 1,
           metadata: { isTrait: i > 0 },
         })
@@ -899,7 +903,10 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     parent: ASTEngine.UniversalSymbol | null,
   ) {
     // instance_expression :: type_identifier | arguments  (v0.26.2)
-    if (!parent) return
+    // Top-level constructions (no enclosing symbol) are attributed to the
+    // "(script)" sentinel rather than silently dropped - matches the
+    // kotlin/groovy script-attribution convention (M14.1).
+    const sourceName = parent?.name ?? "(script)"
     const typeNode = node.namedChild(0)
     if (!typeNode) return
     let typeName = typeNode.text
@@ -908,7 +915,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     if (typeName && typeName !== "unknown") {
       relationships.push({
-        source: parent.name,
+        source: sourceName,
         target: typeName,
         type: ASTEngine.RelationshipType.Instantiates,
         confidence: 0.9,

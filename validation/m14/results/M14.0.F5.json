@@ -8,7 +8,7 @@
     },
     {
       "description": "scala3@18df09c05f: tree-truth vs analyzer diff",
-      "detail": "60 files, coverage 90.2%, unexplained 8.1%",
+      "detail": "60 files, coverage 95.1%, unexplained 0.5%",
       "id": "differential-scala",
       "status": "pass"
     },
@@ -26,8 +26,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "5173c07799fd165eb071049464280cee892ea6a8",
-  "committedAt": "2026-08-23T00:53:10-05:00",
+  "commit": "c954a12198aa11d9d63c7a9dd05687ab5e60a5e2",
+  "committedAt": "2026-08-23T16:47:04+02:00",
   "data": {
     "corpusPins": {
       "scala3": "18df09c05fa48fbb5bf5cd4b3728e9b7a0b3f6db"
@@ -70,236 +70,14 @@
         "unexplainedInAnalyzer": 0
       },
       "scala": {
-        "analyzerEdges": 409,
-        "coveragePct": 90.2,
-        "coveredByAnalyzer": 138,
-        "explainableByTree": 376,
-        "fabricationPct": 8.1,
+        "analyzerEdges": 416,
+        "coveragePct": 95.1,
+        "coveredByAnalyzer": 175,
+        "explainableByTree": 414,
+        "fabricationPct": 0.5,
         "filesSampled": 60,
-        "missingInAnalyzer": 15,
+        "missingInAnalyzer": 9,
         "samples": [
-          {
-            "dir": "UNEXPLAINED",
-            "file": "tests/pos/t5082.scala",
-            "label": "extends",
-            "line": 3,
-            "sourceLine": "case class Test() extends Something[Test.A]",
-            "target": "Something"
-          },
-          {
-            "dir": "UNEXPLAINED",
-            "file": "tests/pos/t5082.scala",
-            "label": "extends",
-            "line": 12,
-            "sourceLine": "case class Test(a: Int, b: Int)(c: String) extends Something[Test.A]",
-            "target": "Something"
-          },
-          {
-            "dir": "MISSING",
-            "file": "tests/neg-scalajs/js-type-override-equals-hashcode.scala",
-            "from": "A",
-            "label": "extends",
-            "target": "js.Object"
-          },
-          {
-            "dir": "MISSING",
-            "file": "tests/neg-scalajs/js-type-override-equals-hashcode.scala",
-            "from": "B",
-            "label": "extends",
-            "target": "js.Object"
-          },
-          {
-            "dir": "MISSING",
-            "file": "tests/neg-scalajs/js-type-override-equals-hashcode.scala",
-            "from": "C",
-            "label": "extends",
-            "target": "js.Any"
-          },
-          {
-            "dir": "MISSING",
-            "file": "tests/neg-scalajs/js-type-override-equals-hashcode.scala",
-            "from": "D",
-            "label": "extends",
-            "target": "js.Any"
-          },
-          {
-            "dir": "MISSING",
-            "file": "library/src/scala/collection/mutable/LinkedHashSet.scala",
-            "from": "LinkedHashSet",
-            "label": "extends",
-            "target": "DefaultSerializable"
-          },
-          {
-            "dir": "UNEXPLAINED",
-            "file": "library/src/scala/collection/mutable/LinkedHashSet.scala",
-            "label": "extends",
-            "line": 37,
-            "sourceLine": "extends AbstractSet[A]",
-            "target": "AbstractSet"
-          },
-          {
-            "dir": "UNEXPLAINED",
-            "file": "library/src/scala/collection/mutable/LinkedHashSet.scala",
-            "label": "implements",
-            "line": 37,
-            "sourceLine": "extends AbstractSet[A]",
-            "target": "SetOps"
-          },
-          {
-            "dir": "UNEXPLAINED",
-            "file": "library/src/scala/collection/mutable/LinkedHashSet.scala",
-            "label": "implements",
-            "line": 37,
-            "sourceLine": "extends AbstractSet[A]",
-            "target": "StrictOptimizedIterableOps"
-          },
-          {
-            "dir": "UNEXPLAINED",
-            "file": "library/src/scala/collection/mutable/LinkedHashSet.scala",
-            "label": "implements",
-            "line": 37,
-            "sourceLine": "extends AbstractSet[A]",
-            "target": "IterableFactoryDefaults"
-          },
-          {
-            "dir": "UNEXPLAINED",
-            "file": "library/src/scala/collection/mutable/LinkedHashSet.scala",
-            "label": "implements",
-            "line": 37,
-            "sourceLine": "extends AbstractSet[A]",
-            "target": "DefaultSerializable"
-          },
-          {
-            "dir": "UNEXPLAINED",
-            "file": "library/src/scala/collection/mutable/LinkedHashSet.scala",
-            "label": "extends",
-            "line": 112,
-            "sourceLine": "private abstract class LinkedHashSetIterator[T] extends AbstractIterator[T] {",
-            "target": "AbstractIterator"
-          },
-          {
-            "dir": "UNEXPLAINED",
-            "file": "library/src/scala/collection/mutable/LinkedHashSet.scala",
-            "label": "extends",
-            "line": 326,
-            "sourceLine": "object LinkedHashSet extends IterableFactory[LinkedHashSet] {",
-            "target": "IterableFactory"
-          },
-          {
-            "dir": "UNEXPLAINED",
-            "file": "presentation-compiler/src/main/dotty/tools/pc/PcDocumentHighlightProvider.scala",
-            "label": "extends",
-            "line": 17,
-            "sourceLine": ") extends WithSymbolSearchCollector[DocumentHighlight](driver, params):",
-            "target": "WithSymbolSearchCollector"
-          },
-          {
-            "dir": "MISSING",
-            "file": "sbt-test/tasty-compat/i20010/Repro.scala",
-            "from": "MyTest",
-            "label": "extends",
-            "target": "child.ValidatingTest"
-          },
-          {
-            "dir": "UNEXPLAINED",
-            "file": "tests/pos/i18163.orig.scala",
-            "label": "extends",
-            "line": 14,
-            "sourceLine": "class WriterTLogger[F[_]] extends Logger[[G] =>> WriterT[F, List[String], G]]",
-            "target": "Logger"
-          },
-          {
-            "dir": "UNEXPLAINED",
-            "file": "tests/pos/i18163.orig.scala",
-            "label": "extends",
-            "line": 16,
-            "sourceLine": "trait ContravariantMonoidal[F[_]] extends Invariant[F] with Contravariant[F]",
-            "target": "Invariant"
-          },
-          {
-            "dir": "UNEXPLAINED",
-            "file": "tests/pos/i18163.orig.scala",
-            "label": "implements",
-            "line": 16,
-            "sourceLine": "trait ContravariantMonoidal[F[_]] extends Invariant[F] with Contravariant[F]",
-            "target": "Contravariant"
-          },
-          {
-            "dir": "UNEXPLAINED",
-            "file": "tests/pos/i18163.orig.scala",
-            "label": "extends",
-            "line": 22,
-            "sourceLine": "trait Contravariant[F[_]] extends Invariant[F]",
-            "target": "Invariant"
-          },
-          {
-            "dir": "MISSING",
-            "file": "tests/pos/annot-18064.scala",
-            "from": "myAnnot",
-            "label": "extends",
-            "target": "annotation.Annotation"
-          },
-          {
-            "dir": "UNEXPLAINED",
-            "file": "tests/pos/annot-18064.scala",
-            "label": "extends",
-            "line": 8,
-            "sourceLine": "class TensorImpl[A]() extends Tensor[A]:",
-            "target": "Tensor"
-          },
-          {
-            "dir": "MISSING",
-            "file": "compiler/src/dotty/tools/dotc/core/Scopes.scala",
-            "from": "Scope",
-            "label": "extends",
-            "target": "printing.Showable"
-          },
-          {
-            "dir": "MISSING",
-            "file": "compiler/src/dotty/tools/dotc/core/Scopes.scala",
-            "from": "(expr)",
-            "label": "instantiates",
-            "target": "mutable.ArrayBuffer"
-          },
-          {
-            "dir": "MISSING",
-            "file": "compiler/src/dotty/tools/dotc/core/Scopes.scala",
-            "from": "(expr)",
-            "label": "instantiates",
-            "target": "mutable.ListBuffer"
-          },
-          {
-            "dir": "UNEXPLAINED",
-            "file": "compiler/src/dotty/tools/dotc/core/Scopes.scala",
-            "label": "instantiates",
-            "line": 248,
-            "sourceLine": "val entries = new mutable.ArrayBuffer[ScopeEntry]",
-            "target": "mutable.ArrayBuffer[ScopeEntry]"
-          },
-          {
-            "dir": "UNEXPLAINED",
-            "file": "compiler/src/dotty/tools/dotc/core/Scopes.scala",
-            "label": "instantiates",
-            "line": 429,
-            "sourceLine": "val irefs = new mutable.ListBuffer[TermRef]",
-            "target": "mutable.ListBuffer[TermRef]"
-          },
-          {
-            "dir": "UNEXPLAINED",
-            "file": "tests/pos/i10769.scala",
-            "label": "extends",
-            "line": 13,
-            "sourceLine": "case class Abort(error: Throwable) extends Txn[Nothing]",
-            "target": "Txn"
-          },
-          {
-            "dir": "UNEXPLAINED",
-            "file": "tests/pos/i10769.scala",
-            "label": "extends",
-            "line": 14,
-            "sourceLine": "case object Noop extends Txn[Nothing]",
-            "target": "Txn"
-          },
           {
             "dir": "MISSING",
             "file": "library/test/scala/jdk/StepperTest.scala",
@@ -323,27 +101,11 @@
             "target": "List[(MapFactory[scala.collection.Map], Boolean)]"
           },
           {
-            "dir": "UNEXPLAINED",
-            "file": "library/test/scala/jdk/StepperTest.scala",
-            "label": "extends",
-            "line": 293,
-            "sourceLine": "class MyIterableOnce extends IterableOnce[Int] {",
-            "target": "IterableOnce"
-          },
-          {
             "dir": "MISSING",
             "file": "library/test/scala/collection/immutable/StreamTest.scala",
             "from": "(expr)",
             "label": "instantiates",
             "target": "Stream.iterate"
-          },
-          {
-            "dir": "UNEXPLAINED",
-            "file": "library/test/scala/collection/immutable/StreamTest.scala",
-            "label": "extends",
-            "line": 228,
-            "sourceLine": "class CountingIt extends Iterator[Int] {",
-            "target": "Iterator"
           },
           {
             "dir": "MISSING",
@@ -355,101 +117,49 @@
           {
             "dir": "MISSING",
             "file": "library/src/scala/collection/concurrent/TrieMap.scala",
-            "from": "(expr)",
-            "label": "instantiates",
-            "target": "TrieMap.MangledHashing"
-          },
-          {
-            "dir": "UNEXPLAINED",
-            "file": "library/src/scala/collection/concurrent/TrieMap.scala",
+            "from": "TrieMap",
             "label": "extends",
-            "line": 30,
-            "sourceLine": "private[collection] final class INode[K, V](bn: MainNode[K, V] | Null, g: Gen, equiv: Equiv[K]) exte",
-            "target": "INodeBase"
+            "target": "scala.collection.mutable.AbstractMap"
           },
           {
-            "dir": "UNEXPLAINED",
+            "dir": "MISSING",
             "file": "library/src/scala/collection/concurrent/TrieMap.scala",
-            "label": "extends",
-            "line": 468,
-            "sourceLine": "private[concurrent] final class FailedNode[K, V](p: MainNode[K, V]) extends MainNode[K, V] {",
-            "target": "MainNode"
-          },
-          {
-            "dir": "UNEXPLAINED",
-            "file": "library/src/scala/collection/concurrent/TrieMap.scala",
+            "from": "TrieMap",
             "label": "implements",
-            "line": 487,
-            "sourceLine": "extends BasicNode with KVNode[K, V] {",
-            "target": "KVNode"
+            "target": "scala.collection.concurrent.Map"
           },
           {
-            "dir": "UNEXPLAINED",
+            "dir": "MISSING",
             "file": "library/src/scala/collection/concurrent/TrieMap.scala",
-            "label": "extends",
-            "line": 497,
-            "sourceLine": "extends MainNode[K, V] with KVNode[K, V] {",
-            "target": "MainNode"
-          },
-          {
-            "dir": "UNEXPLAINED",
-            "file": "library/src/scala/collection/concurrent/TrieMap.scala",
+            "from": "TrieMap",
             "label": "implements",
-            "line": 497,
-            "sourceLine": "extends MainNode[K, V] with KVNode[K, V] {",
-            "target": "KVNode"
+            "target": "scala.collection.mutable.MapOps"
+          },
+          {
+            "dir": "MISSING",
+            "file": "library/src/scala/collection/concurrent/TrieMap.scala",
+            "from": "TrieMap",
+            "label": "implements",
+            "target": "scala.collection.MapFactoryDefaults"
+          },
+          {
+            "dir": "MISSING",
+            "file": "library/src/scala/collection/concurrent/TrieMap.scala",
+            "from": "TrieMap",
+            "label": "implements",
+            "target": "DefaultSerializable"
           },
           {
             "dir": "UNEXPLAINED",
             "file": "library/src/scala/collection/concurrent/TrieMap.scala",
             "label": "extends",
-            "line": 509,
-            "sourceLine": "extends MainNode[K, V] {",
-            "target": "MainNode"
-          },
-          {
-            "dir": "UNEXPLAINED",
-            "file": "library/src/scala/collection/concurrent/TrieMap.scala",
-            "label": "extends",
-            "line": 550,
-            "sourceLine": "private[collection] final class CNode[K, V](val bitmap: Int, val array: Array[BasicNode], val gen: G",
-            "target": "CNodeBase"
-          },
-          {
-            "dir": "UNEXPLAINED",
-            "file": "library/src/scala/collection/concurrent/TrieMap.scala",
-            "label": "instantiates",
-            "line": 731,
-            "sourceLine": "private var hashingobj = if (hashf.isInstanceOf[Hashing.Default[?]]) new TrieMap.MangledHashing[K] e",
-            "target": "TrieMap.MangledHashing[K]"
-          },
-          {
-            "dir": "UNEXPLAINED",
-            "file": "library/src/scala/collection/concurrent/TrieMap.scala",
-            "label": "extends",
-            "line": 1080,
-            "sourceLine": "object TrieMap extends MapFactory[TrieMap] {",
-            "target": "MapFactory"
-          },
-          {
-            "dir": "UNEXPLAINED",
-            "file": "library/src/scala/collection/concurrent/TrieMap.scala",
-            "label": "extends",
-            "line": 1091,
-            "sourceLine": "class MangledHashing[K] extends Hashing[K] {",
-            "target": "Hashing"
-          },
-          {
-            "dir": "UNEXPLAINED",
-            "file": "library/src/scala/collection/concurrent/TrieMap.scala",
-            "label": "extends",
-            "line": 1110,
-            "sourceLine": "private[collection] class TrieMapIterator[K, V](var level: Int, private var ct: TrieMap[K, V], mustI",
-            "target": "AbstractIterator"
+            "line": 725,
+            "sourceLine": "extends scala.collection.mutable.AbstractMap[K, V]",
+            "target": "DefaultSerializable"
           }
         ],
-        "treeTruthEdges": 153,
-        "unexplainedInAnalyzer": 33
+        "treeTruthEdges": 184,
+        "unexplainedInAnalyzer": 2
       }
     },
     "samplingRule": "seeded 60 files/language"

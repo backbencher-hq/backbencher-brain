@@ -1,92 +1,72 @@
 {
   "checks": [
     {
-      "description": "kotlin adversarial fixtures",
-      "detail": "14/14 fixtures pass",
-      "id": "fixtures-kotlin",
+      "description": "scala adversarial fixtures",
+      "detail": "10/10 fixtures pass",
+      "id": "fixtures-scala",
       "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "a477283683545c76754fdcbf48661a42c4d90c0a",
-  "committedAt": "2026-08-23T09:41:33-05:00",
+  "commit": "c954a12198aa11d9d63c7a9dd05687ab5e60a5e2",
+  "committedAt": "2026-08-23T16:47:04+02:00",
   "data": {
     "details": [
       {
-        "fixture": "kotlin/api-contract-routes",
+        "fixture": "scala/case-class-fields",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "kotlin/calls-and-instantiation",
+        "fixture": "scala/class-extends-class-and-trait",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "kotlin/class-inheritance",
+        "fixture": "scala/companion-object",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "kotlin/companion-object",
+        "fixture": "scala/generics-bounds",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "kotlin/data-class",
+        "fixture": "scala/instantiation-new",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "kotlin/enum-and-sealed",
+        "fixture": "scala/lambda-calls",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "kotlin/extension-property",
+        "fixture": "scala/object-singleton",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "kotlin/generic-parameters",
+        "fixture": "scala/sealed-hierarchy",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "kotlin/interface-multi-extends",
+        "fixture": "scala/self-type",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "kotlin/kdoc-extraction",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "kotlin/object-declaration",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "kotlin/primary-constructor-properties",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "kotlin/qualified-calls-builtin-names",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "kotlin/safe-nav-chain",
+        "fixture": "scala/trait-and-impl",
         "ok": true,
         "problems": []
       }
     ],
     "summary": {
-      "kotlin": {
+      "scala": {
         "fail": 0,
-        "pass": 14
+        "pass": 10
       }
     }
   },

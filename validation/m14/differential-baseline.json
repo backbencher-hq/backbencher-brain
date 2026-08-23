@@ -22,7 +22,7 @@
       "unexplained": 0
     },
     "Exposed:kotlin": {
-      "missing": 6,
+      "missing": 5,
       "unexplained": 7
     },
     "Exposed:java": {
@@ -38,14 +38,18 @@
       "unexplained": 0
     },
     "scala3:scala": {
-      "missing": 15,
-      "unexplained": 33
+      "missing": 9,
+      "unexplained": 2
     },
     "scala3:java": {
       "missing": 0,
       "unexplained": 0
     },
     "scala3:groovy": {
+      "missing": 0,
+      "unexplained": 0
+    },
+    "Exposed:scala": {
       "missing": 0,
       "unexplained": 0
     }
