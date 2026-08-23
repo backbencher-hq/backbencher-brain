@@ -2,7 +2,7 @@
   "checks": [
     {
       "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
-      "detail": "60 files, coverage 98.2%, unexplained 0%",
+      "detail": "60 files, coverage 100%, unexplained 0%",
       "id": "differential-java",
       "status": "pass"
     },
@@ -14,8 +14,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "5e9b951095140899e7858700a859fabc313e13d4",
-  "committedAt": "2026-08-23T03:47:14+02:00",
+  "commit": "5a547d7b5fb4b73d8cf77738d0c5e4cf439662f4",
+  "committedAt": "2026-08-23T03:55:18+02:00",
   "data": {
     "corpusPins": {
       "grails-core": "a83f87480e0c0138caa5a7191a053b1e59a64066"
@@ -34,36 +34,14 @@
         "unexplainedInAnalyzer": 0
       },
       "java": {
-        "analyzerEdges": 164,
-        "coveragePct": 98.2,
-        "coveredByAnalyzer": 164,
-        "explainableByTree": 164,
+        "analyzerEdges": 167,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 167,
+        "explainableByTree": 167,
         "fabricationPct": 0,
         "filesSampled": 60,
-        "missingInAnalyzer": 3,
-        "samples": [
-          {
-            "dir": "MISSING",
-            "file": "grails-data-hibernate5/core/src/main/groovy/org/grails/orm/hibernate/proxy/ByteBuddyGroovyInterceptor.java",
-            "from": "(expr)",
-            "label": "instantiates",
-            "target": "GroovyProxyInterceptorLogic.InterceptorState"
-          },
-          {
-            "dir": "MISSING",
-            "file": "grails-gsp/core/src/main/groovy/org/grails/gsp/GroovyPage.java",
-            "from": "(expr)",
-            "label": "instantiates",
-            "target": "OutputEncodingStackAttributes.Builder"
-          },
-          {
-            "dir": "MISSING",
-            "file": "grails-gsp/core/src/main/groovy/org/grails/gsp/GroovyPage.java",
-            "from": "(expr)",
-            "label": "instantiates",
-            "target": "TagOutput.ConstantClosure"
-          }
-        ],
+        "missingInAnalyzer": 0,
+        "samples": [],
         "treeTruthEdges": 167,
         "unexplainedInAnalyzer": 0
       }

@@ -2,7 +2,7 @@
   "samplePerLang": 60,
   "counts": {
     "java": {
-      "missing": 3,
+      "missing": 0,
       "unexplained": 0
     },
     "groovy": {

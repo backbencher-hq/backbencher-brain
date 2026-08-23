@@ -2,15 +2,15 @@
   "checks": [
     {
       "description": "java adversarial fixtures",
-      "detail": "10/10 fixtures pass",
+      "detail": "11/11 fixtures pass",
       "id": "fixtures-java",
       "status": "pass"
     },
     {
       "description": "groovy adversarial fixtures",
-      "detail": "6/10 fixtures pass",
+      "detail": "10/10 fixtures pass",
       "id": "fixtures-groovy",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "kotlin adversarial fixtures",
@@ -26,8 +26,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "5e9b951095140899e7858700a859fabc313e13d4",
-  "committedAt": "2026-08-23T03:47:14+02:00",
+  "commit": "5a547d7b5fb4b73d8cf77738d0c5e4cf439662f4",
+  "committedAt": "2026-08-23T03:55:18+02:00",
   "data": {
     "details": [
       {
@@ -52,6 +52,11 @@
       },
       {
         "fixture": "java/generics-bounds",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/inner-class-instantiation",
         "ok": true,
         "problems": []
       },
@@ -92,31 +97,18 @@
       },
       {
         "fixture": "groovy/fqn-extends",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"extends\",\"from\":\"DeployStage\",\"target\":\"BaseStage\"}; got: contains[DeployStage->name]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "groovy/fqn-implements",
-        "ok": false,
-        "problems": [
-          "forbidden relationship present: {\"type\":\"implements\",\"target\":\"java\"} (found implements[AuditListener->java]@1)",
-          "forbidden relationship present: {\"type\":\"implements\",\"target\":\"io\"} (found implements[AuditListener->io]@1)",
-          "forbidden relationship present: {\"type\":\"implements\",\"target\":\"groovy\"} (found implements[AuditListener->groovy]@1)",
-          "forbidden relationship present: {\"type\":\"implements\",\"target\":\"lang\"} (found implements[AuditListener->lang]@1)",
-          "forbidden relationship present: {\"type\":\"implements\",\"target\":\"java\"} (found implements[AuditListener->java]@1)",
-          "forbidden relationship present: {\"type\":\"implements\",\"target\":\"io\"} (found implements[AuditListener->io]@1)",
-          "forbidden relationship present: {\"type\":\"implements\",\"target\":\"lang\"} (found implements[AuditListener->lang]@1)",
-          "forbidden relationship present: {\"type\":\"implements\",\"target\":\"groovy\"} (found implements[AuditListener->groovy]@1)"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "groovy/fqn-instantiation",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"instantiates\",\"target\":\"ArrayList\"}; got: contains[Builder->make]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "groovy/gstring-interpolation",
@@ -135,12 +127,8 @@
       },
       {
         "fixture": "groovy/script-methods",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"calls\",\"target\":\"echo\"}; got: ",
-          "expected relationship not found: {\"type\":\"calls\",\"target\":\"sh\"}; got: ",
-          "expected relationship not found: {\"type\":\"calls\",\"target\":\"deploy\"}; got: "
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "groovy/trait-implements",
@@ -158,12 +146,12 @@
     ],
     "summary": {
       "groovy": {
-        "fail": 4,
-        "pass": 6
+        "fail": 0,
+        "pass": 10
       },
       "java": {
         "fail": 0,
-        "pass": 10
+        "pass": 11
       },
       "kotlin": {
         "fail": 0,
