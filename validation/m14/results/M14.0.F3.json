@@ -2,13 +2,13 @@
   "checks": [
     {
       "description": "java adversarial fixtures",
-      "detail": "11/11 fixtures pass",
+      "detail": "12/12 fixtures pass",
       "id": "fixtures-java",
       "status": "pass"
     },
     {
       "description": "groovy adversarial fixtures",
-      "detail": "10/10 fixtures pass",
+      "detail": "11/11 fixtures pass",
       "id": "fixtures-groovy",
       "status": "pass"
     },
@@ -26,8 +26,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "5a547d7b5fb4b73d8cf77738d0c5e4cf439662f4",
-  "committedAt": "2026-08-23T03:55:18+02:00",
+  "commit": "c66c126c9a39d83e419510c305facace35cc14d9",
+  "committedAt": "2026-08-22T21:30:42-05:00",
   "data": {
     "details": [
       {
@@ -72,6 +72,11 @@
       },
       {
         "fixture": "java/nested-types",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/pure-field-chain",
         "ok": true,
         "problems": []
       },
@@ -121,6 +126,11 @@
         "problems": []
       },
       {
+        "fixture": "groovy/pure-field-chain",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "groovy/safe-nav-chain",
         "ok": true,
         "problems": []
@@ -147,11 +157,11 @@
     "summary": {
       "groovy": {
         "fail": 0,
-        "pass": 10
+        "pass": 11
       },
       "java": {
         "fail": 0,
-        "pass": 11
+        "pass": 12
       },
       "kotlin": {
         "fail": 0,
