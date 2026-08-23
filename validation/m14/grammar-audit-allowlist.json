@@ -1,0 +1,3 @@
+{
+  "_comment": "M14 grammar-audit allowlist. Format: { \"<language>\": { \"<literal>\": \"justification (required)\" }, \"<language>#fields\": { ... } }. Waived findings remain visible in evidence. Empty by design: every current finding must be fixed or justified during its M14 wave."
+}
