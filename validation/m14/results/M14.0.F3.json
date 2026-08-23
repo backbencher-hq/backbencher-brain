@@ -1,6 +1,12 @@
 {
   "checks": [
     {
+      "description": "typescript adversarial fixtures",
+      "detail": "3/3 fixtures pass",
+      "id": "fixtures-typescript",
+      "status": "pass"
+    },
+    {
       "description": "java adversarial fixtures",
       "detail": "13/13 fixtures pass",
       "id": "fixtures-java",
@@ -26,10 +32,25 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "e19ff0eba810d70b61dbdd066c5cdf13fb990db3",
-  "committedAt": "2026-08-23T11:15:53-05:00",
+  "commit": "e9895d3a39bbf391f33561c76371cbf6b65b2474",
+  "committedAt": "2026-08-23T11:28:59-05:00",
   "data": {
     "details": [
+      {
+        "fixture": "typescript/generator-flag",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/index-signature",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/mapped-type-flag",
+        "ok": true,
+        "problems": []
+      },
       {
         "fixture": "java/chained-field-access",
         "ok": true,
@@ -312,6 +333,10 @@
       "scala": {
         "fail": 0,
         "pass": 13
+      },
+      "typescript": {
+        "fail": 0,
+        "pass": 3
       }
     }
   },
