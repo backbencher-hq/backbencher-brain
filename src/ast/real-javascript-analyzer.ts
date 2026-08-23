@@ -535,6 +535,9 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
       patterns: [{ type: "usage", detected: true, description: p }],
     }))
 
+    // Field-access uses (parity with java/groovy/kotlin collectors).
+    this.collectFieldAccessUses(rootNode, relationships)
+
     return {
       language: "javascript",
       symbols,
@@ -932,6 +935,73 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
     return false
+  }
+
+  /**
+   * Field-access uses: member_expression nodes emit root-anchored Uses edges
+   * @0.6 with isFieldAccess marker - parity with java/groovy/kotlin
+   * collectors. Nested member_expressions mean each chain segment appears as
+   * a target (anti-skip guarantee); optional chains (?.) are
+   * member_expression nodes with optional_chain tokens in this grammar.
+   */
+  private collectFieldAccessUses(
+    rootNode: Node,
+    relationships: ASTEngine.UniversalRelationship[],
+  ) {
+    const stack: { node: Node; owner: string | null }[] = [{ node: rootNode, owner: null }]
+    const seen = new Set<string>()
+    while (stack.length > 0) {
+      const item = stack.pop()!
+      const node: Node = item.node
+      const owner = item.owner
+
+      if (
+        node.type === "class_declaration" ||
+        node.type === "class" ||
+        node.type === "function_declaration"
+      ) {
+        const nameNode =
+          node.childForFieldName?.("name") ?? node.namedChildren.find((c: any) => c.type === "identifier")
+        const nextOwner = nameNode ? nameNode.text : owner
+        for (let i = node.namedChildCount - 1; i >= 0; i--) {
+          const child = node.namedChild(i)
+          if (child) stack.push({ node: child, owner: nextOwner })
+        }
+        continue
+      }
+
+      if (node.type === "member_expression") {
+        const parts: string[] = []
+        let cur: Node | null | undefined = node
+        // flatten nested member_expression chain into segments
+        while (cur && cur.type === "member_expression") {
+          const prop = cur.childForFieldName("property")
+          if (prop) parts.unshift(prop.text)
+          cur = cur.childForFieldName("object")
+        }
+        const head = cur ? cur.text : ""
+        if (head && parts.length >= 1) {
+          for (const seg of parts) {
+            const source = head === "this" || head === "super" ? owner ?? head : head
+            const key = `${source}.${seg}`
+            if (!seen.has(key)) {
+              seen.add(key)
+              relationships.push({
+                source,
+                target: seg,
+                type: ASTEngine.RelationshipType.Uses,
+                confidence: 0.6,
+                metadata: { isFieldAccess: true },
+              })
+            }
+          }
+        }
+      }
+      for (let i = node.namedChildCount - 1; i >= 0; i--) {
+        const child = node.namedChild(i)
+        if (child) stack.push({ node: child, owner })
+      }
+    }
   }
 
   private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {
