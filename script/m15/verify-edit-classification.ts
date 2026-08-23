@@ -3,7 +3,7 @@
 // findDeclarationName in src/intelligence/edit/edit-engine.ts.
 // Every substring rule gets a positive fixture and an adversary fixture.
 
-import { writeFileSync } from "node:fs"
+import { writeFileSync, readFileSync } from "node:fs"
 import path from "node:path"
 import { parseForSafety } from "../../src/ast/safety-primitives"
 import { isReferenceSite, isBindingParentType, findDeclarationName } from "../../src/intelligence/edit/edit-engine"
@@ -225,8 +225,13 @@ async function classify(file: string, code: string, name: string) {
   {
     const p = await parseForSafety("a.ts", "const { foo } = obj")
     const foo = p.occurrences.find(o => o.text === "foo")
-    ck("TypeScript: destructured shorthand — documented identifier gap (shorthand_property_identifier_pattern)",
-       true, foo ? "unexpectedly FOUND" : "not found (gap confirmed)")
+    // Documented identifier gap: shorthand destructuring names are not
+    // emitted as renameable occurrences. The check is that this gap stays on
+    // the record (master plan), not that it passes.
+    const plan = readFileSync(path.resolve("docs/m15/M15-MASTER-PLAN.md"), "utf8")
+    ck("TypeScript: destructured shorthand — documented identifier gap is on the record (shorthand_property_identifier_pattern)",
+       plan.includes("shorthand_property_identifier_pattern") && /identifier gap/i.test(plan),
+       foo ? "unexpectedly FOUND (gap may be closed — keep documentation in sync)" : "not found (gap confirmed, documented)")
   }
 
   // ═══════════════════════════════════════════════════════════════════════

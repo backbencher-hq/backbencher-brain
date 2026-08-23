@@ -199,7 +199,10 @@ Re-reading **every** M15 verifier script line-by-line exposed the auto-pass patt
 ### Documented limitations carried into the repo
 
 - 4 contracts exist for future work, not current behavior: `TraceOptions`, `TraceResult`, `AnalyzeMode`, `AnalysisFindingOccurrence` (documented in `script/m15/verify-contracts.ts` KNOWN_FUTURE).
-- Repo-coverage gaps for claimed languages (from C5): SQL, Dart, Perl, Bash, Objective-C, XML, Make had no dedicated real repo in the matrix at audit time; the gap is surfaced honestly by the verifier (`langGap` in `c5.json`), not hidden.
+- Repo-coverage gaps for claimed languages (computed by C5, `claimGap` in `c5.json`, 18 langs): `bash, c, cpp, csharp, css, dart, graphql, html, java, json, makefile, markdown, objective-c, perl, python, sql, xml, yaml` had no dedicated real repo in the matrix at audit time; the gap is surfaced honestly by the verifier, and this limitation list is mechanically checked to cover every gap language.
+- **Identifier reference-identification gaps** (C3 knownIdGaps — declaration names not extractable as standard occurrences): `php, powershell, clojure, erlang, perl`. Verified by the safety-primitives verifier to remain documented; the gaps themselves are tracked under M14 (analyzer work).
+- **Dotted-access member-name gaps** (C3 isMemberNameNode): `swift, kotlin, csharp, scala, dart` — `obj.field` member-name classification is incomplete for these grammars. Documented (this limitation list) and verified on-record; proper member-name classification is M14-scoped.
+- **TypeScript destructured shorthand identifier gap** (`shorthand_property_identifier_pattern`): `const { foo } = obj` — `foo` is not emitted as a renameable occurrence. Verified by the edit-classification verifier to stay on the record; a real fix is M14-scoped.
 - Dart `initialized_variable_definition` wrapping is an upstream tree-sitter grammar shape; classification covers it but the grammar's node nesting makes one receiver-binding assertion a documented negative in E2.
 
 ### Re-verification completion record (2026-08-23, third pass — all 56 reopened codes genuinely redone)

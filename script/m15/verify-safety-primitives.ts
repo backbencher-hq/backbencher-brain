@@ -2,7 +2,7 @@
 // Deep audit of src/ast/safety-primitives.ts — shared foundation for all tools.
 // Every is*NodeType function proven across 30+ languages with adversary fixtures.
 
-import { writeFileSync } from "node:fs"
+import { writeFileSync, readFileSync } from "node:fs"
 import path from "node:path"
 import { ASTEngine } from "../../src/ast/engine"
 import {
@@ -234,9 +234,13 @@ function collectTypes(tree: any, pred: (t: string) => boolean): string[] {
       const p = await parseForSafety(lang + "." + ext, code)
       const occ = p.occurrences.find(o => o.text === name)
       if (knownIdGaps.has(lang)) {
-        // Known gap: identifier not extractable as standard occurrence
-        ck(lang + ": '" + name + "' — documented M14 reference-identification gap",
-           true, occ ? "unexpectedly FOUND (gap closed?)" : "not found (gap confirmed)")
+        // Known gap: identifier not extractable as standard occurrence.
+        // The check is that this gap is DOCUMENTED on the record — the master
+        // plan must list the language under reference-identification gaps.
+        const plan = readFileSync(path.resolve("docs/m15/M15-MASTER-PLAN.md"), "utf8")
+        ck(lang + ": '" + name + "' — reference-identification gap is documented on the record",
+           plan.includes(lang) && /identifier gap|reference-identification/.test(plan),
+           occ ? "gap NOT closed (occ found, but must stay documented)" : "missing from plan? " + lang)
       } else {
         ck(lang + ": '" + name + "' extracted as occurrence (nodeType=" + nodeType + ")",
            occ !== undefined && occ.nodeType === nodeType,
@@ -343,9 +347,12 @@ function collectTypes(tree: any, pred: (t: string) => boolean): string[] {
     try {
       const p = await parseForSafety(lang + "." + ext, code)
       const field = p.occurrences.find(o => o.text === "field" || o.text === "Field")
-      // Documented gap — always passes (gap is known)
-      ck(lang + ": isMemberNameNode for dotted access — documented gap check",
-         true,
+      // Documented gap: member-name classification for dotted access is
+      // incomplete for this grammar. The check is that the gap is on the
+      // record (master plan must list the language under dotted-access gaps).
+      const doc = readFileSync(path.resolve("docs/m15/M15-MASTER-PLAN.md"), "utf-8")
+      ck(lang + ": isMemberNameNode dotted-access gap is documented on the record",
+         doc.includes(lang) && /dotted-access gap|member-name gap/.test(doc),
          field ? "isMemberName=" + field.isMemberName : "field not found")
     } catch (e: any) {
       ck(lang + ": parse succeeds", false, e.message?.slice(0, 80))

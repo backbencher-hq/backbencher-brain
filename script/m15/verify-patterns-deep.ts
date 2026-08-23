@@ -96,7 +96,7 @@ async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }
     // orphans.ts uses split(':'), split('/'), replace(/\\.[^.]+$/, "") — all
     // text-tail extraction on DB path strings, never on code AST.
     // rules.ts may legitimately use pattern match heuristics; enumerate honestly.
-    ck("P2: regex-literal calls enumerated", clean.length >= 0, clean.join(" | "))
+    ck("P2: regex-literal calls enumerated and classified as text ops", clean.every((r: string) => /(?:\.(?:match|replace|split|test|exec|search))\(/i.test(r) || /new RegExp/.test(r)), clean.join(" | ") || "none")
     const q = clean.filter((r: string) => r.includes("split") || r.includes("replace") || r.includes("match"))
     nk("P2: every regex literal is text-path normalization, not AST classification",
        clean.every((r: string) => /split|replace|match/.test(r)), clean.join(" | "))
@@ -173,7 +173,7 @@ async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }
         const report = await detectOrphans(projectId, { minConfidence: 0, maxResults: 200 })
         ck("P5: real repo (rake/lib) orphan scan runs", report.summary.scannedSymbols > 0, "scanned=" + report.summary.scannedSymbols)
         const findings = report.findings.filter((f) => f.confidence > 0 || f.rule)
-        ck("P5: findings hold confidence+rule", findings.every((f) => f.rule && f.confidence >= 0), "n=" + findings.length)
+        ck("P5: findings hold rule + numeric confidence", findings.every((f) => f.rule && typeof f.confidence === "number" && Number.isFinite(f.confidence)), "n=" + findings.length)
       } catch (e: any) {
         ck("P5: real repo scan", false, (e?.message || String(e)).slice(0, 120))
       } finally {

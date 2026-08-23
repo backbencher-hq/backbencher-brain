@@ -67,7 +67,7 @@ const FIXTURE: Record<string, string> = {
       const nodeIds = new Set(graph.nodes.map((n) => n.id))
       const dangling = graph.links.filter((l) => !nodeIds.has(l.source) || !nodeIds.has(l.target)).length
       ck("V1: no dangling links inside result", dangling === 0, "dangling=" + dangling)
-      nk("V1: omitted dangling links are reported (0 here since all nodes retained)", graph.provenance.omittedDanglingLinks >= 0, "omitted=" + graph.provenance.omittedDanglingLinks)
+      nk("V1: omitted dangling links are reported as a number (0 here since all nodes retained)", typeof graph.provenance.omittedDanglingLinks === "number", "omitted=" + graph.provenance.omittedDanglingLinks)
       // format text (only when a text-format request is made — json format returns JSON)
       const textGraph = await visualizeProject(projectId, { scope: "project", format: "text" })
       const text = formatVisualization(textGraph)
@@ -209,7 +209,7 @@ const FIXTURE: Record<string, string> = {
       const plan = await generateMigrationPlans(projectId, { symbolNames: ["compute", "config"], targetLanguage: "rust" })
       ck("M1: migration plans produced", plan.plans.length >= 1, "plans=" + plan.plans.length)
       ck("M1: plan carries target language", plan.targetLanguage === "rust", "target=" + plan.targetLanguage)
-      ck("M1: dependency order derived from plans", Array.isArray(plan.dependencyOrder) && plan.dependencyOrder.length >= 0, "order=" + plan.dependencyOrder.join("->"))
+      ck("M1: dependency order derived from plans (non-empty string entries)", Array.isArray(plan.dependencyOrder) && plan.dependencyOrder.every((s: any) => typeof s === "string" && s.length > 0), "order=" + plan.dependencyOrder.join("->"))
       nk("M1: unsupported symbols surfaced with reason", Array.isArray(plan.unsupported), "unsupported=" + plan.unsupported.length)
       ck("M1: format renders plan lines", formatMigrationPlans(plan).includes("migration target: rust"), formatMigrationPlans(plan).slice(0, 40))
     } catch (e: any) {
@@ -236,7 +236,7 @@ const FIXTURE: Record<string, string> = {
     const relits = impl.match(/[A-Za-z_.]+\(\s*\/[^\n]*?\//g) || []
     const clean = relits.filter((r: string) => !r.startsWith("import"))
     // migration-engine uses match(/\d+/) for effort extraction from step text
-    ck("M2: regex-literal calls enumerated", clean.length >= 0, clean.join(" | "))
+    ck("M2: regex-literal calls enumerated and classified as text ops", clean.every((r: string) => /(?:\.(?:match|replace|split|test|exec|search))\(/.test(r)), clean.join(" | ") || "none")
     const suspicious = clean.filter((r: string) => !/match|split|replace|test|exec/.test(r))
     nk("M2: migrate regex literals are text normalization only", suspicious.length === 0, suspicious.join(" | "))
     // complexity: names capped at 100 (bounded work), measured on small vs 2 names

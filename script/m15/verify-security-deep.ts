@@ -108,7 +108,7 @@ async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }
     const clean = relits.filter((r: string) => !r.startsWith("import"))
     // Known text-normalizers only: parseFlowPath uses split('|||'), and vuln
     // alias/labels are dictionary maps. Enumerate whatever regex literals exist.
-    ck("X2: regex-literal calls enumerated in security path", clean.length >= 0, clean.join(" | ") || "none")
+    ck("X2: regex-literal calls enumerated and classified as text ops", clean.every((r: string) => /(?:\.(?:match|replace|split|test|exec|search))\(/.test(r)), clean.join(" | ") || "none")
     nk("X2: security path has no code-classification regex literals", clean.length === 0, clean.join(" | "))
   }
   await emit("X2", "M15.X2", "bb_security", "regex census", "x2.json")
@@ -208,7 +208,7 @@ async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }
       const projectId = await indexProject(tsc)
       try {
         const report = await analyzeTaintFlows(projectId, { maxResults: 200 })
-        ck("X5: real repo (TypeScript compiler) security scan runs", report.summary.scannedFlows >= 0, "scanned=" + report.summary.scannedFlows)
+        ck("X5: real repo (TypeScript compiler) security scan finds flows", report.summary.scannedFlows > 0, "scanned=" + report.summary.scannedFlows)
         ck("X5: report shape complete (findings/hotspots/summary)", Array.isArray(report.findings) && Array.isArray(report.hotspots) && !!report.summary, "f=" + report.findings.length + " h=" + report.hotspots.length)
         ck("X5: hotspots capped at 20", report.hotspots.length <= 20, "n=" + report.hotspots.length)
       } catch (e: any) {
