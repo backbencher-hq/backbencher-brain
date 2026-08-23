@@ -38,8 +38,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "9b25a287e96a5e9584b9732ca62d426de3e484a6",
-  "committedAt": "2026-08-23T02:58:58+02:00",
+  "commit": "859c0b07c1374d3dadd0e31051c16be07cd43169",
+  "committedAt": "2026-08-22T20:21:56-05:00",
   "data": {
     "summary": {
       "caught": 6,
@@ -65,37 +65,37 @@
     {
       "caughtBy": "java/class-extends-implements, java/fqn-extends",
       "detail": "relationship-mislabel: 2 -> 4 fixture failures",
-      "injectedAt": "2026-08-23T01:01:41.540Z",
+      "injectedAt": "2026-08-23T01:46:55.142Z",
       "mutant": "java/mislabel-inheritance"
     },
     {
       "caughtBy": "java/chained-field-access, java/class-extends-implements, java/fqn-instantiation, java/generics-bounds, java/nested-types",
       "detail": "symbol-loss: 2 -> 7 fixture failures",
-      "injectedAt": "2026-08-23T01:01:41.558Z",
+      "injectedAt": "2026-08-23T01:46:55.153Z",
       "mutant": "java/drop-method-symbols"
     },
     {
       "caughtBy": "java/fqn-extends, java/fqn-instantiation",
       "detail": "edge-drop: 2 -> 4 fixture failures",
-      "injectedAt": "2026-08-23T01:01:41.574Z",
+      "injectedAt": "2026-08-23T01:46:55.166Z",
       "mutant": "java/fqn-edge-drop"
     },
     {
       "caughtBy": "groovy/chained-field-access, groovy/safe-nav-chain",
       "detail": "confidence-dishonesty: 4 -> 6 fixture failures",
-      "injectedAt": "2026-08-23T01:01:41.679Z",
+      "injectedAt": "2026-08-23T01:46:55.220Z",
       "mutant": "groovy/confidence-tamper"
     },
     {
       "caughtBy": "groovy/chained-field-access, groovy/closure-and-typedef, groovy/gstring-interpolation, groovy/safe-nav-chain, groovy/trait-implements",
       "detail": "relationship-garbage: 4 -> 9 fixture failures",
-      "injectedAt": "2026-08-23T01:01:41.722Z",
+      "injectedAt": "2026-08-23T01:46:55.247Z",
       "mutant": "groovy/segment-garbage"
     },
     {
       "caughtBy": "groovy/chained-field-access, groovy/closure-and-typedef, groovy/gstring-interpolation, groovy/safe-nav-chain, groovy/trait-implements",
       "detail": "symbol-loss: 4 -> 9 fixture failures",
-      "injectedAt": "2026-08-23T01:01:41.779Z",
+      "injectedAt": "2026-08-23T01:46:55.265Z",
       "mutant": "groovy/drop-class-symbols"
     }
   ],
