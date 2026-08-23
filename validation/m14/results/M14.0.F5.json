@@ -1,79 +1,45 @@
 {
   "checks": [
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
+      "description": "Exposed@1be664715f: tree-truth vs analyzer diff",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-typescript",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
-      "detail": "0 files, coverage null%, unexplained null%",
+      "description": "Exposed@1be664715f: tree-truth vs analyzer diff",
+      "detail": "60 files, coverage 99.5%, unexplained 0.3%",
       "id": "differential-kotlin",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
+      "description": "Exposed@1be664715f: tree-truth vs analyzer diff",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-scala",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
-      "detail": "60 files, coverage 100%, unexplained 0%",
+      "description": "Exposed@1be664715f: tree-truth vs analyzer diff",
+      "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-java",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
-      "detail": "60 files, coverage 100%, unexplained 0%",
+      "description": "Exposed@1be664715f: tree-truth vs analyzer diff",
+      "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-groovy",
       "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "96c113bf7f7a90c6f9c17176380f3e468bd6763a",
-  "committedAt": "2026-08-23T12:20:42-05:00",
+  "commit": "f51879d91e23a4e35dd2db45313bcdbb1d62220a",
+  "committedAt": "2026-08-23T22:41:10+02:00",
   "data": {
     "corpusPins": {
-      "grails-core": "a83f87480e0c0138caa5a7191a053b1e59a64066"
+      "Exposed": "1be664715fc581cda0ec6141b2914908dabe184e"
     },
     "report": {
       "groovy": {
-        "analyzerEdges": 223,
-        "coveragePct": 100,
-        "coveredByAnalyzer": 151,
-        "explainableByTree": 223,
-        "fabricationPct": 0,
-        "filesSampled": 60,
-        "missingInAnalyzer": 0,
-        "perf": {
-          "avgMsPerFile": 7.5,
-          "maxMsPerFile": 60.3,
-          "samplesTimed": 60
-        },
-        "samples": [],
-        "treeTruthEdges": 151,
-        "unexplainedInAnalyzer": 0
-      },
-      "java": {
-        "analyzerEdges": 167,
-        "coveragePct": 100,
-        "coveredByAnalyzer": 132,
-        "explainableByTree": 167,
-        "fabricationPct": 0,
-        "filesSampled": 60,
-        "missingInAnalyzer": 0,
-        "perf": {
-          "avgMsPerFile": 8.4,
-          "maxMsPerFile": 65.6,
-          "samplesTimed": 60
-        },
-        "samples": [],
-        "treeTruthEdges": 132,
-        "unexplainedInAnalyzer": 0
-      },
-      "kotlin": {
         "analyzerEdges": 0,
         "coveragePct": null,
         "coveredByAnalyzer": 0,
@@ -89,6 +55,55 @@
         "samples": [],
         "treeTruthEdges": 0,
         "unexplainedInAnalyzer": 0
+      },
+      "java": {
+        "analyzerEdges": 0,
+        "coveragePct": null,
+        "coveredByAnalyzer": 0,
+        "explainableByTree": 0,
+        "fabricationPct": null,
+        "filesSampled": 0,
+        "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": null,
+          "maxMsPerFile": null,
+          "samplesTimed": 0
+        },
+        "samples": [],
+        "treeTruthEdges": 0,
+        "unexplainedInAnalyzer": 0
+      },
+      "kotlin": {
+        "analyzerEdges": 370,
+        "coveragePct": 99.5,
+        "coveredByAnalyzer": 217,
+        "explainableByTree": 369,
+        "fabricationPct": 0.3,
+        "filesSampled": 60,
+        "missingInAnalyzer": 1,
+        "perf": {
+          "avgMsPerFile": 54.2,
+          "maxMsPerFile": 301.8,
+          "samplesTimed": 60
+        },
+        "samples": [
+          {
+            "dir": "MISSING",
+            "file": "exposed-r2dbc/src/main/kotlin/org/jetbrains/exposed/v1/r2dbc/R2dbcDatabaseConfig.kt",
+            "from": "R2dbcDatabaseConfig",
+            "label": "implements",
+            "target": "DatabaseConfig"
+          },
+          {
+            "dir": "UNEXPLAINED",
+            "file": "exposed-r2dbc/src/main/kotlin/org/jetbrains/exposed/v1/r2dbc/R2dbcDatabaseConfig.kt",
+            "label": "extends",
+            "line": 0,
+            "target": "DatabaseConfig.Builder"
+          }
+        ],
+        "treeTruthEdges": 218,
+        "unexplainedInAnalyzer": 1
       },
       "scala": {
         "analyzerEdges": 0,

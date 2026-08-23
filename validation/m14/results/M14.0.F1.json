@@ -19,8 +19,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "96c113bf7f7a90c6f9c17176380f3e468bd6763a",
-  "committedAt": "2026-08-23T12:20:42-05:00",
+  "commit": "f51879d91e23a4e35dd2db45313bcdbb1d62220a",
+  "committedAt": "2026-08-23T22:41:10+02:00",
   "data": {
     "languages": {
       "bash": {
@@ -726,12 +726,12 @@
       },
       "kotlin": {
         "analyzer": "src/ast/real-kotlin-analyzer.ts",
-        "fieldless": true,
-        "oracleFieldCount": 0,
+        "fieldless": false,
+        "oracleFieldCount": 3,
         "oracleGrammars": 1,
-        "oracleNodeTypeCount": 360,
+        "oracleNodeTypeCount": 368,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 51,
+        "referencedTypeLiterals": 53,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -740,7 +740,7 @@
           "tree-sitter-kotlin.wasm"
         ],
         "wasmFieldCounts": [
-          0
+          4
         ]
       },
       "lua": {
