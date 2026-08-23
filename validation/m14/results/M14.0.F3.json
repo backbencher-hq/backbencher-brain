@@ -1,0 +1,209 @@
+{
+  "checks": [
+    {
+      "description": "java adversarial fixtures",
+      "detail": "6/10 fixtures pass",
+      "id": "fixtures-java",
+      "status": "fail"
+    },
+    {
+      "description": "groovy adversarial fixtures",
+      "detail": "4/10 fixtures pass",
+      "id": "fixtures-groovy",
+      "status": "fail"
+    },
+    {
+      "description": "kotlin adversarial fixtures",
+      "detail": "0/0 fixtures pass",
+      "id": "fixtures-kotlin",
+      "status": "pass"
+    },
+    {
+      "description": "scala adversarial fixtures",
+      "detail": "0/0 fixtures pass",
+      "id": "fixtures-scala",
+      "status": "pass"
+    }
+  ],
+  "claimLevel": "L1",
+  "commit": "c60b545476d22b3b2af9c91ac384d88bd4621160",
+  "committedAt": "2026-08-22T19:24:01-05:00",
+  "data": {
+    "details": [
+      {
+        "fixture": "java/chained-field-access",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/class-extends-implements",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/fqn-extends",
+        "ok": false,
+        "problems": [
+          "expected relationship not found: {\"type\":\"extends\",\"from\":\"Scheduler\",\"target\":\"BaseScheduler\"}; got: extends[Scheduler->com.acme.base.BaseScheduler]@1"
+        ]
+      },
+      {
+        "fixture": "java/fqn-instantiation",
+        "ok": false,
+        "problems": [
+          "expected relationship not found: {\"type\":\"instantiates\",\"from\":\"make\",\"target\":\"ArrayList\"}; got: instantiates[make->java.util.ArrayList]@0.95; contains[Factory->make]@1"
+        ]
+      },
+      {
+        "fixture": "java/generics-bounds",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/interface-method-call",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/multi-interface-extends",
+        "ok": false,
+        "problems": [
+          "expected relationship not found: {\"type\":\"extends\",\"from\":\"Repository\",\"target\":\"Cloneable\"}; got: references[Repository->java.io.Serializable]@0.9; references[Repository->java.lang.Cloneable]@0.9; extends[Repository->Serializable]@1; implements[Repository->Cloneable]@1; contains[Repository->fetch]@1",
+          "forbidden relationship present: {\"type\":\"implements\",\"from\":\"Repository\"} (found implements[Repository->Cloneable]@1)"
+        ]
+      },
+      {
+        "fixture": "java/nested-types",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/records-and-sealed",
+        "ok": false,
+        "problems": [
+          "expected symbol not found: {\"name\":\"radius\"}; got: Shape:interface, Circle:class, Square:class",
+          "expected symbol not found: {\"name\":\"side\"}; got: Shape:interface, Circle:class, Square:class"
+        ]
+      },
+      {
+        "fixture": "java/static-utility-call",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/chained-field-access",
+        "ok": false,
+        "problems": [
+          "expected relationship not found: {\"type\":\"uses\",\"target\":\"output\"}; got: calls[render->name]@0.7; calls[render->format]@0.7; calls[render->output]@0.7; contains[Reporter->render]@1",
+          "expected relationship not found: {\"type\":\"uses\",\"target\":\"format\"}; got: calls[render->name]@0.7; calls[render->format]@0.7; calls[render->output]@0.7; contains[Reporter->render]@1",
+          "expected relationship not found: {\"type\":\"uses\",\"target\":\"name\"}; got: calls[render->name]@0.7; calls[render->format]@0.7; calls[render->output]@0.7; contains[Reporter->render]@1"
+        ]
+      },
+      {
+        "fixture": "groovy/closure-and-typedef",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/fqn-extends",
+        "ok": false,
+        "problems": [
+          "expected relationship not found: {\"type\":\"extends\",\"from\":\"DeployStage\",\"target\":\"BaseStage\"}; got: contains[DeployStage->name]@1"
+        ]
+      },
+      {
+        "fixture": "groovy/fqn-implements",
+        "ok": false,
+        "problems": [
+          "forbidden relationship present: {\"type\":\"implements\",\"target\":\"java\"} (found implements[AuditListener->java]@1)",
+          "forbidden relationship present: {\"type\":\"implements\",\"target\":\"io\"} (found implements[AuditListener->io]@1)",
+          "forbidden relationship present: {\"type\":\"implements\",\"target\":\"groovy\"} (found implements[AuditListener->groovy]@1)",
+          "forbidden relationship present: {\"type\":\"implements\",\"target\":\"lang\"} (found implements[AuditListener->lang]@1)"
+        ]
+      },
+      {
+        "fixture": "groovy/fqn-instantiation",
+        "ok": false,
+        "problems": [
+          "expected relationship not found: {\"type\":\"instantiates\",\"target\":\"ArrayList\"}; got: contains[Builder->make]@1"
+        ]
+      },
+      {
+        "fixture": "groovy/gstring-interpolation",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/interface-multi-extends",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/safe-nav-chain",
+        "ok": false,
+        "problems": [
+          "expected relationship not found: {\"type\":\"uses\",\"from\":\"account\",\"target\":\"owner\"}; got: contains[Guard->probe]@1; uses[user->label]@0.6; uses[user->owner]@0.6; uses[user->account]@0.6",
+          "expected relationship not found: {\"type\":\"uses\",\"from\":\"owner\",\"target\":\"label\"}; got: contains[Guard->probe]@1; uses[user->label]@0.6; uses[user->owner]@0.6; uses[user->account]@0.6",
+          "forbidden relationship present: {\"type\":\"uses\",\"from\":\"user\",\"target\":\"label\"} (found uses[user->label]@0.6)",
+          "forbidden relationship present: {\"type\":\"uses\",\"from\":\"user\",\"target\":\"owner\"} (found uses[user->owner]@0.6)"
+        ]
+      },
+      {
+        "fixture": "groovy/script-methods",
+        "ok": false,
+        "problems": [
+          "expected relationship not found: {\"type\":\"calls\",\"target\":\"echo\"}; got: ",
+          "expected relationship not found: {\"type\":\"calls\",\"target\":\"sh\"}; got: ",
+          "expected relationship not found: {\"type\":\"calls\",\"target\":\"deploy\"}; got: "
+        ]
+      },
+      {
+        "fixture": "groovy/trait-implements",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "(none)",
+        "ok": true
+      },
+      {
+        "fixture": "(none)",
+        "ok": true
+      }
+    ],
+    "summary": {
+      "groovy": {
+        "fail": 6,
+        "pass": 4
+      },
+      "java": {
+        "fail": 4,
+        "pass": 6
+      },
+      "kotlin": {
+        "fail": 0,
+        "pass": 0
+      },
+      "scala": {
+        "fail": 0,
+        "pass": 0
+      }
+    }
+  },
+  "governance": "docs/M14-HONESTY-CONTRACT.md",
+  "issueId": "M14.0.F3",
+  "layers": [
+    "fixtures"
+  ],
+  "limitations": [
+    {
+      "description": "JVM languages covered in this emission; other languages gain fixtures during their waves (>=5 each per F3 acceptance)"
+    },
+    {
+      "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
+    }
+  ],
+  "runtime": "node v24.3.0",
+  "schemaVersion": 2,
+  "title": "Adversarial fixture corpus"
+}
