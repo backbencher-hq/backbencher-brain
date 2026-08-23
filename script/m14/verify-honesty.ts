@@ -113,6 +113,12 @@ if (!fs.existsSync(LEDGER)) {
   }
   const pendingCount = (ledger.match(/PENDING/g) ?? []).length
   if (pendingCount === 0) fail("ledger shows zero PENDING cells — either complete (implausible) or dishonestly edited")
+  // Every PENDING cell must cite its tracking issue (#NNN) nearby on the same line
+  const lines = ledger.split("\n")
+  const uncited = lines.filter(l => l.includes("PENDING") && !l.includes("#") && !l.includes("M15") && !l.includes("cells tracked") && l.trim().startsWith("|"))
+  if (uncited.length > 0) {
+    for (const u of uncited.slice(0, 5)) fail(`PENDING cell without issue citation: ${u.trim().slice(0, 90)}`)
+  }
   pass(`completeness ledger present (${pendingCount} PENDING cells tracked)`)
 }
 
