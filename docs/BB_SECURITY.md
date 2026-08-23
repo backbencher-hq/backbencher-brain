@@ -70,6 +70,16 @@ Options: `minConfidence`, `includeMitigated`, `includeUnresolved`, `maxResults`.
   silently trusting or dropping it).
 - `source_only`/`unresolved` findings are observations, not confirmed
   exploitable paths — treat as leads, not verdicts.
+- **Sink classification is token-based over symbol bodies.** A symbol whose
+  body text contains a token like `execute` can match the universal SQL-sink
+  regex even when no database/SQL is involved — reproducing Ruby `def execute`
+  as a phantom `sql_injection` on a build tool with no DB (reproduced against
+  rake/lib during the M16 real-repo run; the tool layer faithfully mirrors the
+  taint table, the limitation lives in the indexer's sink matcher). Sink-only
+  rows (no resolved source) are still surfaced as criticals. Improving the
+  sink matcher is an **analyzer/indexer-domain** fix tracked in the M14/M17
+  analyzer truth milestones — until then, validate critical findings against
+  actual data-flow before acting on them.
 - This tool reports **project-code** findings. Hardening of the MCP server
   itself is a separate concern and is not mixed into these results.
 
