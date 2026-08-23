@@ -80,11 +80,13 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (node.type === "ERROR" || node.type === "MISSING") {
           errors.push({
             message: `Syntax ${node.type} detected. The Brain Engine is bypassing this broken node.`,
+            // 1-based rows/columns, consistent with nodeToRange and every
+            // other analyzer (was 0-based: error locations off-by-one).
             range: {
-              startLine: node.startPosition.row,
-              startColumn: node.startPosition.column,
-              endLine: node.endPosition.row,
-              endColumn: node.endPosition.column,
+              startLine: node.startPosition.row + 1,
+              startColumn: node.startPosition.column + 1,
+              endLine: node.endPosition.row + 1,
+              endColumn: node.endPosition.column + 1,
             },
             severity: `warning`,
           })
@@ -101,7 +103,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.extractSymbolsWithScoping(rootNode, ctx, symbols, content, undefined, relationships)
 
     // PHASE 2: Analyze Kotlin relationships (inheritance, data classes, sealed classes)
-    this.analyzeRelationships(rootNode, relationships, symbols)
+    this.analyzeRelationships(rootNode, relationships, symbols, ctx)
 
     // PHASE 3: Process import statements
     this.processImportsExports(rootNode, imports, exports)
@@ -113,7 +115,12 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     // ========================================================================
     // STAGE 3: PHANTOM SYMBOL INJECTION (Framework Heuristics)
+    // Data-class generated members (componentN/copy/equals/hashCode/
+    // toString) so calls resolving against them produce real call-graph
+    // edges. Phantoms carry metadata.isPhantom and are excluded from
+    // exports/override resolution downstream.
     // ========================================================================
+    this.injectPhantomSymbols(rootNode, symbols, frameworks, ctx)
 
     // PHASE 5: Kotlin-specific analysis (nullability, coroutines, etc.)
     const typeInference = this.performKotlinTypeInference(symbols, relationships)
@@ -148,7 +155,14 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
               p = p.parent
             }
             const isPascal = leaf.length > 0 && leaf[0] >= "A" && leaf[0] <= "Z"
-            if (isPascal) {
+            // MEASURED (M14.2, Exposed corpus, 791 kotlin files): qualified
+            // PascalCase calls are enum/member accesses, not constructions —
+            // 158 occurrences (MySQL.ForShare(, case().When() ...) all
+            // fabricated Instantiates edges (~6.5% of instantiation edges),
+            // vs 2268 legitimate bare constructions. Restrict the
+            // construction heuristic to receiver-less calls; qualified
+            // PascalCase is a Calls edge.
+            if (isPascal && !isQualified) {
               relationships.push({
                 source: sourceName,
                 target: leaf,
@@ -217,6 +231,11 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
         const ownerSym = typeIndex.get(s.ownerName)
         const parents: string[] = ownerSym?.metadata?.superTypes ?? []
         let overrideParent = parents.length > 0 ? parents[0] : ""
+        // Confidence reflects EVIDENCE TIER (patterns.ts filters >= 0.7):
+        // companion-resolved targets carry project-level evidence; the
+        // per-file fallback is a first-supertype GUESS that may not even
+        // declare the method, so it must stay below the consumer threshold.
+        let confidence = 0.5
         if (context?.overrideCompanion && parents.length > 0) {
           const declaring = findDeclaringParent(
             s.name,
@@ -224,14 +243,17 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
             context.overrideCompanion,
             (t) => typeIndex.get(t)?.metadata?.superTypes ?? [],
           )
-          if (declaring) overrideParent = declaring
+          if (declaring) {
+            overrideParent = declaring
+            confidence = 0.9
+          }
         }
         if (overrideParent) {
           relationships.push({
             source: `${s.ownerName}.${s.name}`,
             target: `${overrideParent}.${s.name}`,
             type: ASTEngine.RelationshipType.Overrides,
-            confidence: 0.9,
+            confidence,
             metadata: { isOverride: true, overrideParent },
           })
         }
@@ -304,16 +326,17 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (let i = 0; i < symbols.length; i++) {
       const symbol = symbols[i];
       let hasData = false;
-      if (symbol.modifiers) {
-        for (let j = 0; j < symbol.modifiers.length; j++) {
-          if (symbol.modifiers[j] === "data") { hasData = true; break; }
-        }
+      // Data flag lives in metadata.modifiers (extractors store modifiers
+      // there, not at the top level).
+      const symModifiers: string[] = symbol.metadata?.modifiers ?? []
+      for (let j = 0; j < symModifiers.length; j++) {
+        if (symModifiers[j] === "data") { hasData = true; break }
       }
       if (symbol.kind === ASTEngine.SymbolKind.Class && hasData) {
         const properties: ASTEngine.UniversalSymbol[] = []
         for (let j = 0; j < symbols.length; j++) {
            const s = symbols[j]
-           if (s.scope === symbol.name && s.kind === ASTEngine.SymbolKind.Property) properties.push(s)
+           if (s.ownerName === symbol.name && s.kind === ASTEngine.SymbolKind.Property) properties.push(s)
         }
 
         for (let index = 0; index < properties.length; index++) {
@@ -322,17 +345,18 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
             name: `component${index + 1}`,
             kind: ASTEngine.SymbolKind.Method,
             scope: symbol.name,
+            ownerName: symbol.name,
             modifiers: ["phantom", "data_class_generated", "operator"],
             range: symbol.range,
             parameters: [],
-            returnType: prop.type || "Any",
+            returnType: prop.returnType || prop.type || "Any",
             metadata: { isPhantom: true },
           })
         }
 
         const copyParams: any[] = []
         for (let j = 0; j < properties.length; j++) {
-           copyParams.push({ name: properties[j].name, type: properties[j].type || "Any" })
+           copyParams.push({ name: properties[j].name, type: properties[j].returnType || properties[j].type || "Any" })
         }
 
         symbols.push({
@@ -525,6 +549,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       ownerKind: parentClass ? ASTEngine.SymbolKind.Class : undefined,
       metadata: {
         modifiers,
+        annotations: annotations.map((a) => this.kotlinShortAnnotationName(a)),
         receiverType,
         isInline,
         isInfix,
@@ -573,7 +598,11 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     for (const { text, args } of candidates) {
-      const mapping = MAPPINGS.find((m) => text.startsWith(m))
+      // Compare by AST-resolved SHORT name: fully-qualified annotations
+      // (@org.springframework.web.bind.annotation.GetMapping) do not carry a
+      // "@GetMapping" prefix in their raw text.
+      const shortName = this.kotlinShortAnnotationName(text)
+      const mapping = MAPPINGS.find((m) => shortName === m.slice(1))
       if (!mapping) continue
 
       const method = mapping.slice(1).replace("Mapping", "").toUpperCase()
@@ -667,6 +696,9 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       comments: kdoc ? [kdoc] : [],
       metadata: {
         modifiers,
+        // Short annotation names (last dotted segment) so framework pattern
+        // detection matches fully-qualified annotations exactly like bare ones.
+        annotations: annotations.map((a) => this.kotlinShortAnnotationName(a)),
         superTypes,
         superTypesAreConstructorCalls: superTypeKinds.map((s) => s.isConstructorCall),
         inheritance: superTypes,
@@ -712,6 +744,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       decorators: annotations,
       metadata: {
         modifiers,
+        annotations: annotations.map((a) => this.kotlinShortAnnotationName(a)),
         superTypes,
         superTypesAreConstructorCalls: superTypeKinds.map((s) => s.isConstructorCall),
         isObject: true,
@@ -787,6 +820,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       ownerKind: parentClass ? ASTEngine.SymbolKind.Class : undefined,
       metadata: {
         modifiers,
+        annotations: annotations.map((a) => this.kotlinShortAnnotationName(a)),
         propertyType,
         isVal,
         isVar,
@@ -987,6 +1021,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       decorators: annotations,
       metadata: {
         modifiers,
+        annotations: annotations.map((a) => this.kotlinShortAnnotationName(a)),
         superTypes,
         superTypesAreConstructorCalls: superTypeKinds.map((s) => s.isConstructorCall),
         inheritance: superTypes,
@@ -1023,6 +1058,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       decorators: annotations,
       metadata: {
         modifiers,
+        annotations: annotations.map((a) => this.kotlinShortAnnotationName(a)),
         enumValues,
         valueCount: enumValues.length,
         hasEnumMethods: this.countMethods(node, ctx) > 0,
@@ -1123,6 +1159,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       ownerKind: parentClass ? ASTEngine.SymbolKind.Class : undefined,
       metadata: {
         modifiers,
+        annotations: annotations.map((a) => this.kotlinShortAnnotationName(a)),
         isPrimaryConstructor,
         parameterCount: parameters.length,
         hasDefaultParameters: hasDefaults,
@@ -1181,7 +1218,6 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     const importPath = importPathNode.text
     const aliasNode = this.findChildByType(node, ["import_alias"])
-
     if (aliasNode) {
       // Handle import aliasing: import com.example.Foo as Bar
       ctx.importAliases.set(aliasNode.text, importPath)
@@ -1737,15 +1773,34 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Direct name child (marker annotations, plain @Foo).
     const direct = this.findChildByType(node, ["simple_identifier", "type_identifier"])
     if (direct) return `@${direct.text}`
-    // Use-site annotations (@field:JvmField) wrap the name in a user_type:
-    // annotation → user_type → type_identifier. Reading the type_identifier
-    // avoids matching the use-site target as the name.
+    // Use-site annotations (@field:JvmField) wrap the name in a user_type.
+    // Fully-qualified names (@org.x.Service) parse as user_type with MULTIPLE
+    // identifier children IN ORDER (org, x, Service) - the short name is the
+    // LAST segment; taking the first yielded '@org' and silently broke every
+    // FQ-annotated declaration's name resolution.
     const userType = this.findChildByType(node, ["user_type"])
     if (userType) {
-      const inner = this.findChildByType(userType, ["type_identifier"])
-      if (inner) return `@${inner.text}`
+      let last: Node | null = null
+      for (let i = 0; i < userType.namedChildCount; i++) {
+        const c = userType.namedChild(i)
+        if (c && (c.type === "type_identifier" || c.type === "simple_identifier")) last = c
+      }
+      if (last) return `@${last.text}`
     }
     return undefined
+  }
+
+  /**
+   * Reduce raw annotation text to its short name: "@org.x.GetMapping(\"/u\")"
+   * → "GetMapping". Decorators keep the raw source text; anything comparing
+   * annotation NAMES must compare through this normalization.
+   */
+  private kotlinShortAnnotationName(raw: string): string {
+    let t = raw.startsWith("@") ? raw.slice(1) : raw
+    const paren = t.indexOf("(")
+    if (paren !== -1) t = t.slice(0, paren)
+    const dot = t.lastIndexOf(".")
+    return dot === -1 ? t : t.slice(dot + 1)
   }
 
   /**
@@ -1905,8 +1960,10 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     while (stack.length > 0) {
       const n = stack.pop()!
       if (n.type === "call_expression") {
-        const callName = this.findChildByType(n, ["simple_identifier", "identifier"])?.text || n.text.split("(")[0]
-        calls.push(callName)
+        // Navigation-aware leaf extraction — qualified compose calls
+        // (theme.MyScreen()) have no direct identifier child.
+        const full = this.buildKotlinCallExpression(n)
+        calls.push(full.split(".").pop() || full)
       }
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const child = n.namedChild(i)
@@ -1921,6 +1978,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     node: Node,
     relationships: ASTEngine.UniversalRelationship[],
     symbols: ASTEngine.UniversalSymbol[],
+    ctx: KotlinContext,
   ): void {
     const stack: Node[] = [node]
 
@@ -1948,7 +2006,10 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
           })
         }
 
-        const isComposable = stringIncludes(n.text, "@Composable")
+        // Composable detection via AST-resolved short annotation names, not
+        // raw-text substring: fully-qualified @androidx.compose.runtime.
+        // Composable does not contain the literal "@Composable".
+        const isComposable = this.extractAnnotations(n, ctx).some((a) => this.kotlinShortAnnotationName(a) === "Composable")
         if (isComposable && nameNode) {
           const bodyNode = this.findChildByType(n, ["function_body", "class_body"])
           if (bodyNode) {
@@ -1973,7 +2034,12 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
 
       if (n.type === "call_expression") {
-        const callName = this.findChildByType(n, ["simple_identifier", "identifier"])?.text || n.text.split("(")[0]
+        // Callee leaf via the navigation-aware builder: qualified calls
+        // (scope.launch {}) wrap the callee in a navigation_expression and
+        // have NO direct simple_identifier child — first-identifier lookup
+        // silently missed every idiomatic dispatch.
+        const full = this.buildKotlinCallExpression(n)
+        const callName = full.split(".").pop() || ""
         if (callName === "launch" || callName === "async" || callName === "withContext") {
           let parentFunc = n.parent
           while (parentFunc && parentFunc?.type !== "function_declaration") {
@@ -2038,7 +2104,10 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (pathNode) {
           const importPath = pathNode.text
           const aliasNode = this.findChildByType(n, ["import_alias"])
-          const isWildcard = importPath.endsWith(".*")
+          // The pinned wasm serializes 'import x.y.*' as identifier="x.y"
+          // PLUS a sibling wildcard_import node — the identifier text never
+          // contains '.*', so a suffix test can never fire.
+          const isWildcard = !!this.findChildByType(n, ["wildcard_import"])
 
           imports.push({
             module: importPath,
