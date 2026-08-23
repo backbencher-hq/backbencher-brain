@@ -292,6 +292,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
             range: this.nodeToRange(node),
             visibility,
             parameters,
+            decorators: annotations,
             ownerName,
             ownerKind,
             metadata: { nodeType: type, modifiers, annotations, isAbstract },
@@ -460,6 +461,8 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Uses relationships for field accesses (this.x, obj.x — incl. ?. and *.)
     this.collectFieldAccessUses(rootNode, relationships, symbols)
 
+    const fw = this.detectGroovyFrameworks(content, symbols, imports)
+
     for (let i = 0; i < symbols.length; i++) {
       const s = symbols[i]
       if (s.visibility === "public" && (!s.ownerName || s.ownerKind === ASTEngine.SymbolKind.Class)) {
@@ -476,9 +479,55 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         complexity: symbols.length + relationships.length,
         linesOfCode: content.split("\n").length,
         currentPackage,
+        framework: fw.framework,
+        detectedFrameworks: fw.detected,
         analysisVersion: "5.0.0-groovy-pure-ast",
       },
     }
+  }
+
+  /**
+   * Framework detection from imports + annotation short names. The mapping is
+   * MEASURED against the grails-core corpus (top imported packages):
+   * the "grails" / "org.grails" / "org.apache.grails", "spock.lang" and
+   * "org.springframework" import families dominate real Groovy code.
+   * result.framework flows to
+   * brain_file.framework_type which patterns/rules.ts ranks on — Groovy
+   * files previously got NULL there, hiding Grails projects from pattern
+   * analysis. Primary selection follows a fixed priority so the same file
+   * always yields the same primary.
+   */
+  private detectGroovyFrameworks(
+    content: string,
+    symbols: ASTEngine.UniversalSymbol[],
+    imports: ASTEngine.ImportInfo[],
+  ): { framework: string | undefined; detected: string[] } {
+    const frameworks = new Set<string>()
+    for (let i = 0; i < imports.length; i++) {
+      const mod = imports[i].module || ""
+      if (mod.startsWith("grails.") || mod.startsWith("org.grails.") || mod.startsWith("org.apache.grails.")) frameworks.add("grails")
+      else if (mod.startsWith("org.springframework.")) frameworks.add("spring")
+      else if (mod.startsWith("spock.lang.")) frameworks.add("spock")
+      else if (mod.startsWith("javax.persistence.") || mod.startsWith("jakarta.persistence.")) frameworks.add("jpa")
+      else if (mod.startsWith("org.hibernate.")) frameworks.add("hibernate")
+      else if (mod.startsWith("org.junit.") || mod.startsWith("org.spockframework.")) frameworks.add("junit")
+    }
+    // Annotation-driven detection (short names): FQ annotations without
+    // imports are common in generated/conflict-heavy code. Deliberately
+    // limited to the UNAMBIGUOUS spring family: bare "@Entity" would
+    // mislabel GORM entities (grails.gorm.annotation.Entity dominates
+    // real Groovy code) as JPA - entity detection stays import-based.
+    for (let i = 0; i < symbols.length; i++) {
+      const anns: string[] = symbols[i].metadata?.annotations ?? []
+      for (let j = 0; j < anns.length; j++) {
+        const a = anns[j]
+        if (a === "Service" || a === "RestController" || a === "Controller" || a === "Repository" || a === "Component") frameworks.add("spring")
+      }
+    }
+    for (const priority of ["grails", "spring", "hibernate", "jpa", "spock", "junit"]) {
+      if (frameworks.has(priority)) return { framework: priority, detected: [...frameworks] }
+    }
+    return { framework: undefined, detected: [...frameworks] }
   }
 
   private resolveOverrides(
