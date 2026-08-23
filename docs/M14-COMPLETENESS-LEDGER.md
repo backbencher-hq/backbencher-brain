@@ -19,9 +19,9 @@ Artifacts: symbols, relationships by kind, imports, taints, patterns, flags, emb
 
 | Stage ↓ / Artifact → | symbols | extends/implements | calls | instantiates | uses | imports | overrides | taints | patterns | xlang flags | embeddings | health |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| ANALYZE (fixtures) | GATED F3 | GATED F3 | GATED F3 | GATED F3 | GATED F3 | GATED F3* | GATED F3* | PENDING (wave) | PENDING F10 | GATED F3 | n/a | n/a |
-| STORE (pipeline e2e) | GATED F7 | GATED F7 | GATED F7 | GATED F7 | PENDING (add to F7) | GATED F7 | PENDING (add to F7) | PENDING (seam-sweep) | **DEAD SEAM → F10** | GATED F7 | PENDING (needs key; conditional gate) | GATED F7 |
-| QUERY (tools truthfully read stored data) | M13 scope | M13 scope | M13 scope | M13 scope | M13 scope | PENDING (verify tools surface brain_import) | M13 scope | M13 scope | **BROKEN → F10** | PENDING | M13 scope | M13 scope |
+| ANALYZE (fixtures) | GATED F3 | GATED F3 | GATED F3 | GATED F3 | GATED F3 | GATED F3* | GATED F3* | PENDING -> #381 (taints) | PENDING F10 | GATED F3 | n/a | n/a |
+| STORE (pipeline e2e) | GATED F7 | GATED F7 | GATED F7 | GATED F7 | PENDING -> #384 (uses/overrides rows) | GATED F7 | PENDING (add to F7) | PENDING (seam-sweep) | **DEAD SEAM → F10** | GATED F7 | PENDING (needs key; conditional gate) | GATED F7 |
+| QUERY (tools truthfully read stored data) | M13 scope | M13 scope | M13 scope | M13 scope | M13 scope | PENDING -> M15 (co-agent; verify brain_import surfaced) | M13 scope | M13 scope | **BROKEN → F10** | PENDING | M13 scope | M13 scope |
 
 \* fixture coverage per language grows with its wave; JVM done, others pending their waves.
 
@@ -37,11 +37,11 @@ symbol-field rot. Every language wave must pin these symbol payloads:
 
 | Payload | java | groovy | kotlin | rule |
 |---|---|---|---|---|
-| qualified_calls | PENDING | PENDING | GATED (qualified-calls-builtin-names) | adversarial names REQUIRED |
-| docstrings/kdoc | PENDING | PENDING | GATED (kdoc-extraction) | |
-| parameters (+defaults) | PENDING | PENDING | GATED (calls-and-instantiation partial) | |
+| qualified_calls | PENDING -> #383 | PENDING -> #383 | GATED (qualified-calls-builtin-names) | adversarial names REQUIRED |
+| docstrings/kdoc | PENDING -> #383 | PENDING -> #383 | GATED (kdoc-extraction) | |
+| parameters (+defaults) | PENDING -> #383 | PENDING -> #383 | GATED (calls-and-instantiation partial) | |
 | byte ranges (bb_edit depends) | indirect via M13 edit gates | same | same | M13 scope |
-| visibility/modifiers | GATED F3 implicit | implicit | implicit | explicit pins PENDING |
+| visibility/modifiers | GATED F3 implicit | implicit | implicit | explicit pins PENDING -> #383 |
 
 **Standing fixture-authoring rule**: every language's fixtures MUST include
 identifiers that collide with stdlib/builtin words (get/map/run/add...),
@@ -64,10 +64,10 @@ grammar nodes, never emitted concepts.
 | implements | GATED F3 | GATED F3 | GATED F3 | fixtures + differential |
 | instantiates | GATED F3 | GATED F3 | GATED F3 | fixtures + differential |
 | uses / field_access | GATED F3 (anti-skip) | GATED F3 | GATED F3 | pure-field-chain fixtures |
-| contains | differential-implicit | implicit | implicit | explicit pins PENDING |
-| overrides | **NO FIXTURE ANY LANGUAGE** | same | same | PENDING - gap found by owner Q&A |
-| references/imports | pipeline-e2e GATED | pipeline-e2e GATED | PENDING | F7 |
-| exports | emitted, unpinned | n/a (no export concept) | n/a | PENDING |
+| contains | differential-implicit | implicit | implicit | explicit pins PENDING -> #381 |
+| overrides | **NO FIXTURE ANY LANGUAGE** | same | same | PENDING -> #381 |
+| references/imports | pipeline-e2e GATED | pipeline-e2e GATED | PENDING -> F7 + #383 | F7 |
+| exports | emitted, unpinned | n/a (no export concept) | n/a | PENDING -> #381 |
 
 ## AST purity audit (2026-08-23)
 
@@ -84,13 +84,18 @@ No regex used in relationship extraction in the three audited analyzers.
 
 | Cluster | Languages | Polyglot e2e fixture | Status |
 |---|---|---|---|
-| JVM interop | java + groovy (+kotlin, scala when audited) | F7 project | GATED (java+groovy); kotlin/scala PENDING |
-| Web embedded | ts/tsx + js + html + css + vue/svelte + json | — | PENDING |
-| Mixed server | js/ts + python + json/yaml (ProxiCall shape) | ProxiCall as living corpus | PENDING F8 acceptance run |
-| .NET | csharp + fsharp | — | PENDING |
-| BEAM | elixir + erlang | — | PENDING |
-| Mobile | dart + swift + kotlin + objc | — | PENDING |
-| Systems | c + cpp + zig + rust | — | PENDING |
+| JVM interop | java + groovy (+kotlin, scala when audited) | F7 project | GATED (java+groovy); kotlin/scala PENDING -> #384 |
+| Web embedded | ts/tsx + js + html + css + vue/svelte + json | — | PENDING -> #384 |
+| Mixed server | js/ts + python + json/yaml (ProxiCall shape) | ProxiCall as living corpus | PENDING -> #299 + #384 |
+| .NET | csharp + fsharp | — | PENDING -> #384 |
+| BEAM | elixir + erlang | — | PENDING -> #384 |
+| Mobile | dart + swift + kotlin + objc | — | PENDING -> #384 |
+| Systems | c + cpp + zig + rust | — | PENDING -> #384 |
+
+Issue back-references: Matrix 1b payloads -> #383; kotlin wasm fields -> #382;
+cluster fixtures -> #384; overrides/contains/exports pins -> #381.
+RULE: every ledger PENDING cell must cite a GitHub issue. An uncited PENDING
+cell is itself a gate failure.
 
 Owner directive recorded: real projects combine languages in unanticipated ways
 (ProxiCall: flutter/dart + node + next.js + python). Cross-language resolution
@@ -117,9 +122,9 @@ provenance, and upstream version drift. Known vendored: tree-sitter-groovy
 | Language | wasm source | grammar provenance | version pinned | drift checked |
 |---|---|---|---|---|
 | groovy | grammars/ build -> wasm/ | vendored amaanq 0.1.2 (improved) | YES | wave M14.1 done |
-| fsharp | grammars/ build -> wasm/ | vendored | PENDING wave M14.5 | PENDING |
-| clean | grammars/ build -> wasm/ | vendored | PENDING wave M14.5 | PENDING |
-| all others | wasm/*.wasm (upstream builds) | upstream tree-sitter repos | PENDING per-wave | PENDING |
+| fsharp | grammars/ build -> wasm/ | vendored | PENDING wave M14.5 | PENDING -> #382 |
+| clean | grammars/ build -> wasm/ | vendored | PENDING wave M14.5 | PENDING -> #382 |
+| all others | wasm/*.wasm (upstream builds) | upstream tree-sitter repos | PENDING per-wave -> #382 | PENDING -> #382 |
 
 Standing sub-checks for every analyzer audit (added to seven stations):
 8. grammar provenance + version recorded in evidence; upstream drift diffed
