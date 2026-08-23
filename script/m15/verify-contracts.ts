@@ -24,7 +24,7 @@ function nk(label: string, cond: boolean, detail?: string) {
 function emit(code: string, label: string) {
   const total = passed + negativePassed
   console.log("\n" + code + ": " + (failed === 0 ? "VERIFIED" : "KNOWN-GAP") + " (" + total + "/" + checks + " passed, " + negatives + " negatives)")
-  const resultsDir = path.join(import.meta.dirname ?? ".", "..", "validation/m15/results")
+  const resultsDir = path.join(ROOT, "validation/m15/results")
   if (!existsSync(resultsDir)) mkdirSync(resultsDir, { recursive: true })
   const evidence: any = {
     issue: "M15.C1", code, tool: "contracts",
