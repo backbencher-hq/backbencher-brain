@@ -59,17 +59,17 @@
       }
     },
     "scala3:scala": {
-      "missing": 4,
-      "unexplained": 1,
+      "missing": 0,
+      "unexplained": 0,
       "perf": {
-        "avgMsPerFile": 10.6
+        "avgMsPerFile": 10.2
       }
     },
     "scala3:java": {
       "missing": 0,
       "unexplained": 0,
       "perf": {
-        "avgMsPerFile": 2.7
+        "avgMsPerFile": 2.8
       }
     },
     "scala3:groovy": {
@@ -171,6 +171,62 @@
       }
     },
     "graphql-js:groovy": {
+      "missing": 0,
+      "unexplained": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
+    },
+    "cats-effect:javascript": {
+      "missing": 0,
+      "unexplained": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
+    },
+    "cats-effect:typescript": {
+      "missing": 0,
+      "unexplained": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
+    },
+    "cats-effect:kotlin": {
+      "missing": 0,
+      "unexplained": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
+    },
+    "cats-effect:scala": {
+      "missing": 0,
+      "unexplained": 0,
+      "perf": {
+        "avgMsPerFile": 14.6
+      }
+    },
+    "cats-effect:java": {
+      "missing": 0,
+      "unexplained": 0,
+      "perf": {
+        "avgMsPerFile": 4.7
+      }
+    },
+    "cats-effect:groovy": {
+      "missing": 0,
+      "unexplained": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
+    },
+    "scala3:javascript": {
+      "missing": 1,
+      "unexplained": 5,
+      "perf": {
+        "avgMsPerFile": 69.7
+      }
+    },
+    "scala3:typescript": {
       "missing": 0,
       "unexplained": 0,
       "perf": {

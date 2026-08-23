@@ -294,6 +294,19 @@ Fixture-authoring gotchas: `dest.Jump.check()` is a field chain (only the
 LAST segment is called) — a qualified-CALL fixture needs real arguments
 (`h.Jump(1)`); scala annotations are direct children OR in modifiers.
 
+## Scala dual-corpus closure (2026-08-23)
+
+The single-corpus caveat is RESOLVED. Second corpus pinned:
+**cats-effect** (typelevel, idiomatic FP — deliberately opposite idiom
+from the dotty compiler). Results: 60 files, **408/408 tree-truth edges
+covered (100%), 0 unexplained, 0 fabricated** — the analyzer generalizes
+across radically different Scala styles. Both baselines refreshed to the
+true floor (scala3:scala was still allowing missing=4 from its M14.1-era
+entry; now 0/0, so any future regression from perfect is caught).
+Corpus location: $HOME/fixtures/repositories/cats-effect.
+Scala verification is now dual-corpus differential + 18 fixtures +
+grammar audit (unknowns 0) + typecheck. Nothing known remains.
+
 ---
 
 ## Legacy gotchas (original appendix entries)
