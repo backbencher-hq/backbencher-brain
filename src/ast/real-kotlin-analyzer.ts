@@ -807,7 +807,15 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       for (let i = 0; i < node.namedChildCount; i++) {
         const c = node.namedChild(i)
         if (c?.type === "simple_identifier") break
-        if (c?.type === "user_type" || c?.type === "nullable_type" || c?.type === "type_identifier") {
+        // Upstream grammar (>= wasm 2026-08) wraps the extension receiver in
+        // a dedicated receiver_type node; older pinned builds exposed a bare
+        // user_type. Both handled.
+        if (
+          c?.type === "receiver_type" ||
+          c?.type === "user_type" ||
+          c?.type === "nullable_type" ||
+          c?.type === "type_identifier"
+        ) {
           receiverNode = c
           break
         }
@@ -1324,12 +1332,19 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
    * Kotlin Receiver Type Extraction (for extension functions)
    */
   private extractReceiverType(node: Node, ctx: KotlinContext): string | undefined {
-    // The receiver of an extension function is the leading user_type child
-    // before the function name (fun String.shout → user_type "String").
+    // The receiver of an extension function is the leading type child before
+    // the function name (fun String.shout → receiver_type/user_type "String").
+    // Upstream grammar wraps it in receiver_type; older builds expose a bare
+    // user_type — both accepted.
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
       if (c?.type === "simple_identifier") break
-      if (c?.type === "user_type" || c?.type === "nullable_type" || c?.type === "type_identifier") {
+      if (
+        c?.type === "receiver_type" ||
+        c?.type === "user_type" ||
+        c?.type === "nullable_type" ||
+        c?.type === "type_identifier"
+      ) {
         return this.cleanKotlinType(c.text)
       }
     }
@@ -2015,7 +2030,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       const n = stack.pop()!
 
       if (n.type === "function_declaration") {
-        let receiverNode: any = undefined; for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c?.type === "simple_identifier") break; if (c?.type === "user_type" || c?.type === "nullable_type" || c?.type === "type_identifier") { receiverNode = c; break; } }
+        let receiverNode: any = undefined; for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c?.type === "simple_identifier") break; if (c?.type === "receiver_type" || c?.type === "user_type" || c?.type === "nullable_type" || c?.type === "type_identifier") { receiverNode = c; break; } }
         const nameNode = this.findChildByType(n, ["simple_identifier", "type_identifier"])
         if (receiverNode && nameNode) {
           const receiverType = receiverNode.text.endsWith("?") ? receiverNode.text.slice(0, -1) : receiverNode.text
