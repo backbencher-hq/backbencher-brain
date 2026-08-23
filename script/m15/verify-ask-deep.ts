@@ -89,6 +89,25 @@ async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }
       // Empty-ish answer for gibberish query on a tiny project (semantic may or may not match; just never crash and shape is right)
       const empty = await quickAnswer(projectId, "zzzz_qzxv_qqq")
       ck("A1: nonsense query returns shaped result, no throw", typeof empty.answer === "string" && typeof empty.confidence === "number" && Number.isFinite(empty.confidence), "conf=" + empty.confidence)
+
+      // CROSS-LANGUAGE REGRESSION (found by running bb_ask on real rake):
+      // "how many functions" must count functions stored under *any* type
+      // name — TS stores 'function', Ruby stores 'method'. A method-only
+      // project must report > 0, not 0.
+      const rubyRoot = mkdtempSync(path.join(tmpdir(), "bb-a1rb-"))
+      writeFileSync(path.join(rubyRoot, "mod.rb"), "module Foo\n  def helper(a)\n    a + 1\n  end\n  def target(b)\n    helper(b)\n  end\nend\n")
+      const rubyId = await indexProject(rubyRoot)
+      try {
+        const howMany = await quickAnswer(rubyId, "how many functions are in this project?")
+        const m = howMany.answer.match(/There are (\d+) functions/)
+        ck("A1: Ruby 'how many functions' counts methods (>0, not 0)", m !== null && parseInt(m[1], 10) > 0, howMany.answer.slice(0, 60))
+        const most = await quickAnswer(rubyId, "what is the most complex function?")
+        ck("A1: Ruby 'most complex function' finds a method", /most complex function is/.test(most.answer), most.answer.slice(0, 60))
+      } catch (e: any) {
+        ck("A1: ruby func-count regression", false, (e && e.message || String(e)).slice(0, 120))
+      } finally {
+        cleanup(rubyRoot, rubyId)
+      }
     } catch (e: any) {
       ck("A1: setup", false, (e && e.message || String(e)).slice(0, 120))
     } finally {
