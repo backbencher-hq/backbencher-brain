@@ -120,7 +120,7 @@ const descriptors = [
     inputSchema: { type: "object", properties: { scope: { type: "string", enum: ["project", "file", "module", "symbol", "feature"], description: "graph scope (default project)" }, target: { type: "string", description: "file, module, symbol, or feature target" }, maxNodes: { type: "number", description: "max nodes (default 200)" }, maxLinks: { type: "number", description: "max links (default 5000)" }, relationshipTypes: { type: "array", items: { type: "string" }, description: "relationship type filter" }, languages: { type: "array", items: { type: "string" }, description: "language filter" }, format: { type: "string", enum: ["text", "json", "html"], description: "output format (default text)" } } },
     mutability: "read",
     requiresIndex: true,
-    modes: ["project", "file", "module", "symbol", "feature", "text", "json", "html"],
+    modes: ["project", "file", "module", "symbol", "feature"],
     aliases: [],
     deprecated: false,
     documentation: { category: "analysis", summary: "Scoped canonical dependency graphs with explicit truncation and provenance.", defaults: { scope: "project", maxNodes: 200, maxLinks: 5000, format: "text" }, examples: [{ scope: "symbol", target: "handleRequest", format: "json" }, { scope: "module", target: "src/api", format: "html" }] },

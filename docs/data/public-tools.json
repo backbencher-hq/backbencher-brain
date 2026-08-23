@@ -530,10 +530,7 @@
         "file",
         "module",
         "symbol",
-        "feature",
-        "text",
-        "json",
-        "html"
+        "feature"
       ],
       "aliases": [],
       "deprecated": false,
