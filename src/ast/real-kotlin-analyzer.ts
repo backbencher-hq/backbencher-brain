@@ -129,9 +129,13 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
           const callExpr = this.buildKotlinCallExpression(n)
           const targetName = callExpr
           const leaf = targetName.split(".").pop() || targetName
-          // Exact-leaf stdlib filter: substring matching would wrongly drop
-          // in-file calls (e.g. a local `plus` operator or `mapFirst`).
-          const isStdlib = this.kotlinStdlibExact.has(targetName) || this.kotlinStdlibExact.has(leaf)
+          // Exact-leaf stdlib filter applies ONLY to receiver-less global
+          // calls (listOf(), println()). Qualified calls (list.add(...))
+          // have a receiver: suppressing them by bare leaf name deleted real
+          // in-project call edges whenever a user method shared a stdlib
+          // name (add/map/first/last...) — M14.1 fix.
+          const isQualified = targetName.includes(".")
+          const isStdlib = this.kotlinStdlibExact.has(targetName) || (!isQualified && this.kotlinStdlibExact.has(leaf))
           if (targetName && targetName !== "print" && targetName !== "println" && !isStdlib) {
             let p: Node | null = n.parent
             let sourceName = "Global"
@@ -537,7 +541,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (node) {
       for (let i = 0; i < node.namedChildCount; i++) {
         const mod = node.namedChild(i)
-        if (mod?.type === "annotation" || mod?.type === "marker_annotation") {
+        if (mod?.type === "annotation") {
           const text = mod.text
           if (
             text.startsWith("@GetMapping") ||
@@ -605,6 +609,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     // Extract inheritance and interfaces
     const superTypes = this.extractSuperTypes(node, ctx)
+    const superTypeKinds = this.extractSuperTypesWithKinds(node)
 
     // Extract type parameters (generics)
     const typeParameters = this.extractTypeParameters(node, ctx)
@@ -642,6 +647,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       metadata: {
         modifiers,
         superTypes,
+        superTypesAreConstructorCalls: superTypeKinds.map((s) => s.isConstructorCall),
         inheritance: superTypes,
         typeParameters,
         isData,
@@ -671,6 +677,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     const objectName = nameNode.text
     const modifiers = this.extractModifiers(node, ctx)
     const superTypes = this.extractSuperTypes(node, ctx)
+    const superTypeKinds = this.extractSuperTypesWithKinds(node)
     const annotations = this.extractAnnotations(node, ctx)
 
     const symbol: ASTEngine.UniversalSymbol = {
@@ -685,6 +692,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       metadata: {
         modifiers,
         superTypes,
+        superTypesAreConstructorCalls: superTypeKinds.map((s) => s.isConstructorCall),
         isObject: true,
         isCompanionObject: (() => { for (let i = 0; i < modifiers.length; i++) if (modifiers[i] === "companion") return true; return false; })(),
         kotlinSpecific: true,
@@ -839,7 +847,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
   private extractKotlinParameters(node: Node, ctx: KotlinContext): ASTEngine.Parameter[] {
     const parameters: ASTEngine.Parameter[] = []
 
-    let paramsNode = this.findChildByType(node, ["function_value_parameters", "value_parameters"])
+    let paramsNode = this.findChildByType(node, ["function_value_parameters"])
     if (!paramsNode) return parameters
     for (let i = 0; i < paramsNode.namedChildCount; i++) {
       const paramNode = paramsNode.namedChild(i)
@@ -847,9 +855,9 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
         const nameNode = this.findChildByType(paramNode, ["simple_identifier"])
         const typeNode = this.findChildByType(paramNode, ["user_type", "nullable_type", "type_identifier"])
         const defaultNode = this.findChildByType(paramNode, [
-          "expression",
           "string_literal",
           "integer_literal",
+          "real_literal",
           "boolean_literal",
         ])
 
@@ -907,6 +915,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     const interfaceName = nameNode.text
     const modifiers = this.extractModifiers(node, ctx)
     const superTypes = this.extractSuperTypes(node, ctx)
+    const superTypeKinds = this.extractSuperTypesWithKinds(node)
     const typeParameters = this.extractTypeParameters(node, ctx)
     const annotations = this.extractAnnotations(node, ctx)
 
@@ -923,6 +932,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       metadata: {
         modifiers,
         superTypes,
+        superTypesAreConstructorCalls: superTypeKinds.map((s) => s.isConstructorCall),
         inheritance: superTypes,
         typeParameters,
         methodCount: this.countMethods(node, ctx),
@@ -1246,7 +1256,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     const collect = (n: Node) => {
       for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
-        if (c && (c.type === "annotation" || c.type === "marker_annotation")) {
+        if (c && (c.type === "annotation")) {
           annotations.push(c.text.startsWith("@") ? c.text.slice(1) : c.text)
         }
       }
@@ -1271,7 +1281,13 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       const sibling = parent.namedChild(i)
       if (sibling === node) break
 
-      if (sibling?.type === "comment" && sibling.text.startsWith("/**")) {
+      // KDoc is a multiline_comment in tree-sitter-kotlin (not "comment" —
+      // that node type does not exist in this grammar; docstrings were
+      // silently never extracted before M14.1).
+      if (
+        (sibling?.type === "multiline_comment" || sibling?.type === "line_comment") &&
+        sibling.text.startsWith("/**")
+      ) {
         return sibling.text
       }
     }
@@ -1311,8 +1327,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
         n.type === "for_statement" ||
         n.type === "while_statement" ||
         n.type === "catch_block" ||
-        n.type === "elvis_expression" ||
-        n.type === "safe_nav_expression"
+        n.type === "elvis_expression"
       ) {
         complexity++
       }
@@ -1335,21 +1350,29 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
    * symbol leaves (pool-worker's noise filter rejects targets containing <>).
    */
   private extractSuperTypes(node: Node, ctx: KotlinContext): string[] {
-    const superTypes: string[] = []
+    return this.extractSuperTypesWithKinds(node).map((s) => s.name)
+  }
+
+  /**
+   * Kotlin semantics (Kotlin docs, Inheritance): a supertype written with a
+   * constructor invocation `Base()` is an extended CLASS; a bare type `Repo`
+   * is an IMPLEMENTED interface. Position alone is wrong - a class whose
+   * first (or only) supertype is an interface was labelled extends.
+   */
+  private extractSuperTypesWithKinds(node: Node): { name: string; isConstructorCall: boolean }[] {
+    const out: { name: string; isConstructorCall: boolean }[] = []
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
       if (c?.type === "delegation_specifier") {
+        const invocation = this.findChildByType(c, ["constructor_invocation"])
         let userType = this.findChildByType(c, ["user_type"])
-        if (!userType) {
-          const invocation = this.findChildByType(c, ["constructor_invocation"])
-          if (invocation) userType = this.findChildByType(invocation, ["user_type"])
-        }
+        if (!userType && invocation) userType = this.findChildByType(invocation, ["user_type"])
         if (userType) {
-          superTypes.push(this.cleanKotlinBaseType(userType.text))
+          out.push({ name: this.cleanKotlinBaseType(userType.text), isConstructorCall: !!invocation })
         }
       }
     }
-    return superTypes
+    return out
   }
 
   /**
@@ -1395,7 +1418,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     const stack: Node[] = [node]
     while (stack.length > 0) {
       const n = stack.pop()!
-      if (n.type === "function_declaration" || n.type === "method_declaration") {
+      if (n.type === "function_declaration") {
         count++
       }
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
@@ -1416,7 +1439,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     while (stack.length > 0) {
       const n = stack.pop()!
-      if (n.type === "property_declaration" || n.type === "field_declaration") {
+      if (n.type === "property_declaration") {
         count++
       }
 
@@ -1476,7 +1499,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (initializer) {
       return this.inferKotlinTypeFromInitializer(initializer)
     }
-    const LITERAL_TYPES = ["integer_literal", "real_literal", "float_literal", "string_literal", "character_literal", "boolean_literal", "call_expression"]
+    const LITERAL_TYPES = ["integer_literal", "real_literal", "string_literal", "character_literal", "boolean_literal", "call_expression"]
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
       if (c && LITERAL_TYPES.indexOf(c.type) !== -1) {
@@ -1867,11 +1890,15 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
         const nameNode = this.findChildByType(n, ["simple_identifier", "type_identifier"])
         if (receiverNode && nameNode) {
           const receiverType = receiverNode.text.endsWith("?") ? receiverNode.text.slice(0, -1) : receiverNode.text
+          // Extension functions ADD members to a type but are NOT inheritance
+          // (Kotlin docs: "extension functions do not modify the class").
+          // Labelling them Extends fabricated false hierarchy edges on real
+          // code (Exposed corpus). Uses with isExtension marker is honest.
           relationships.push({
             source: nameNode.text,
             target: receiverType,
-            type: ASTEngine.RelationshipType.Extends,
-            confidence: 1.0,
+            type: ASTEngine.RelationshipType.Uses,
+            confidence: 0.9,
             metadata: {
               relationshipType: "kotlin_extension_function",
               isExtension: true,
@@ -1938,10 +1965,14 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       const cls = symbols[i]
       if (cls.kind === ASTEngine.SymbolKind.Class || cls.kind === ASTEngine.SymbolKind.Interface) {
         if (cls.metadata?.superTypes) {
+          const ctorCalls: boolean[] | undefined = cls.metadata?.superTypesAreConstructorCalls
           for (let j = 0; j < cls.metadata.superTypes.length; j++) {
-            // First supertype of a class = extends, rest = implements.
-            // For interfaces, all supertypes are extends.
-            const isExtends = cls.kind === ASTEngine.SymbolKind.Interface || j === 0
+            // Kotlin semantics: supertype with constructor invocation `Base()`
+            // = extends (class); bare type `Repo` = implements (interface).
+            // For interfaces, all supertypes are extends. Previously position
+            // alone decided (j === 0), mislabelling interface-first classes.
+            const isExtends =
+              cls.kind === ASTEngine.SymbolKind.Interface || ctorCalls?.[j] === true
             relationships.push({
               source: cls.name,
               target: cls.metadata.superTypes[j],

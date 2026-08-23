@@ -13,14 +13,14 @@
       "status": "pass"
     },
     {
-      "description": "regression gate vs grammar-audit-baseline.json (20/41 languages pass)",
+      "description": "regression gate vs grammar-audit-baseline.json (21/41 languages pass)",
       "id": "baseline-gate",
       "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "d834fef89b0cb2e6eea93b57b22df047e8e2ab46",
-  "committedAt": "2026-08-22T22:04:09-05:00",
+  "commit": "bdccd2608deeb120c10a504478b39f45deebecbe",
+  "committedAt": "2026-08-23T05:55:47+02:00",
   "data": {
     "languages": {
       "bash": {
@@ -649,56 +649,10 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 360,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 56,
-        "status": "fail",
+        "referencedTypeLiterals": 50,
+        "status": "pass",
         "unknownFields": [],
-        "unknownNodeTypes": [
-          {
-            "context": "real-kotlin-analyzer.ts:comparison",
-            "line": 540,
-            "literal": "marker_annotation"
-          },
-          {
-            "context": "real-kotlin-analyzer.ts:comparison",
-            "line": 1249,
-            "literal": "marker_annotation"
-          },
-          {
-            "context": "real-kotlin-analyzer.ts:findChildByType",
-            "line": 842,
-            "literal": "value_parameters"
-          },
-          {
-            "context": "real-kotlin-analyzer.ts:findChildByType",
-            "line": 849,
-            "literal": "expression"
-          },
-          {
-            "context": "real-kotlin-analyzer.ts:comparison",
-            "line": 1274,
-            "literal": "comment"
-          },
-          {
-            "context": "real-kotlin-analyzer.ts:comparison",
-            "line": 1315,
-            "literal": "safe_nav_expression"
-          },
-          {
-            "context": "real-kotlin-analyzer.ts:comparison",
-            "line": 1398,
-            "literal": "method_declaration"
-          },
-          {
-            "context": "real-kotlin-analyzer.ts:comparison",
-            "line": 1419,
-            "literal": "field_declaration"
-          },
-          {
-            "context": "real-kotlin-analyzer.ts:const:LITERAL_TYPES",
-            "line": 1479,
-            "literal": "float_literal"
-          }
-        ],
+        "unknownNodeTypes": [],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-kotlin.wasm"
@@ -1473,10 +1427,10 @@
       }
     },
     "summary": {
-      "fail": 21,
+      "fail": 20,
       "languagesAudited": 41,
-      "pass": 20,
-      "totalUnknownReferences": 161
+      "pass": 21,
+      "totalUnknownReferences": 152
     }
   },
   "governance": "docs/M14-HONESTY-CONTRACT.md",
