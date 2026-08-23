@@ -30,6 +30,56 @@ Findings already produced by this matrix:
 - brain_pattern is read-but-never-written (F10)
 - is_cross_language was never set (FIXED, gated in F7)
 
+## Matrix 1b — Symbol-level payload coverage (added after qualified_calls bug)
+
+The isKotlinBuiltin bug proved relationship-only verification misses
+symbol-field rot. Every language wave must pin these symbol payloads:
+
+| Payload | java | groovy | kotlin | rule |
+|---|---|---|---|---|
+| qualified_calls | PENDING | PENDING | GATED (qualified-calls-builtin-names) | adversarial names REQUIRED |
+| docstrings/kdoc | PENDING | PENDING | GATED (kdoc-extraction) | |
+| parameters (+defaults) | PENDING | PENDING | GATED (calls-and-instantiation partial) | |
+| byte ranges (bb_edit depends) | indirect via M13 edit gates | same | same | M13 scope |
+| visibility/modifiers | GATED F3 implicit | implicit | implicit | explicit pins PENDING |
+
+**Standing fixture-authoring rule**: every language's fixtures MUST include
+identifiers that collide with stdlib/builtin words (get/map/run/add...),
+because suppression filters are invisible to output-diff tests otherwise.
+
+## Matrix 1c — Relationship-type verification taxonomy
+
+Schema truth (src/ast/types.ts RelationshipType): calls, extends, implements,
+instantiates, uses, references(+DependsOn alias), contains, overrides,
+exports, imports (persisted to brain_import + reference edges).
+NOT relationship types despite appearing in output: field_access /
+kotlin_extension_function / config_property (= metadata.relationshipType
+qualifiers on Uses/Calls edges); ownerName (symbol field); "regex"/"var" are
+grammar nodes, never emitted concepts.
+
+| Type | java | groovy | kotlin | pinned by |
+|---|---|---|---|---|
+| calls | GATED F3 | GATED F3 | GATED F3 | fixtures + differential |
+| extends | GATED F3 | GATED F3 | GATED F3 | fixtures + differential |
+| implements | GATED F3 | GATED F3 | GATED F3 | fixtures + differential |
+| instantiates | GATED F3 | GATED F3 | GATED F3 | fixtures + differential |
+| uses / field_access | GATED F3 (anti-skip) | GATED F3 | GATED F3 | pure-field-chain fixtures |
+| contains | differential-implicit | implicit | implicit | explicit pins PENDING |
+| overrides | **NO FIXTURE ANY LANGUAGE** | same | same | PENDING - gap found by owner Q&A |
+| references/imports | pipeline-e2e GATED | pipeline-e2e GATED | PENDING | F7 |
+| exports | emitted, unpinned | n/a (no export concept) | n/a | PENDING |
+
+## AST purity audit (2026-08-23)
+
+Relationship and symbol extraction in java/groovy/kotlin: tree-walk based,
+grammar fields used where the wasm provides them (kotlin wasm: fieldCount=0 -
+positional fallbacks documented). Remaining raw-text semantics, all DECLARED:
+- java/groovy collectFieldAccessUses split(".") (anti-skip holds; grammar-fields rewrite open)
+- framework/pattern DETECTION labels use content substring matching
+  (kotlin stringIncludes(content,"let") etc) - cosmetic metadata, low stakes;
+  destination decided under F10
+No regex used in relationship extraction in the three audited analyzers.
+
 ## Matrix 2 — Language-cluster pipeline coverage (realistic combos, not all-to-all)
 
 | Cluster | Languages | Polyglot e2e fixture | Status |
