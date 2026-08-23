@@ -19,8 +19,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "e19ff0eba810d70b61dbdd066c5cdf13fb990db3",
-  "committedAt": "2026-08-23T11:15:53-05:00",
+  "commit": "e9895d3a39bbf391f33561c76371cbf6b65b2474",
+  "committedAt": "2026-08-23T11:28:59-05:00",
   "data": {
     "languages": {
       "bash": {
@@ -1444,7 +1444,7 @@
         "oracleGrammars": 3,
         "oracleNodeTypeCount": 386,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 80,
+        "referencedTypeLiterals": 77,
         "status": "fail",
         "unknownFields": [],
         "unknownNodeTypes": [
@@ -1455,52 +1455,22 @@
           },
           {
             "context": "real-typescript-analyzer.ts:comparison",
-            "line": 2239,
-            "literal": "mapped_type"
-          },
-          {
-            "context": "real-typescript-analyzer.ts:comparison",
-            "line": 2573,
-            "literal": "generator_method_definition"
-          },
-          {
-            "context": "real-typescript-analyzer.ts:comparison",
-            "line": 3519,
-            "literal": "generator_method_definition"
-          },
-          {
-            "context": "real-typescript-analyzer.ts:comparison",
-            "line": 2714,
-            "literal": "index_signature_parameter"
-          },
-          {
-            "context": "real-typescript-analyzer.ts:comparison",
-            "line": 2716,
-            "literal": "index_signature_parameter"
-          },
-          {
-            "context": "real-typescript-analyzer.ts:comparison",
-            "line": 2714,
-            "literal": "formal_parameter"
-          },
-          {
-            "context": "real-typescript-analyzer.ts:comparison",
-            "line": 2769,
+            "line": 2789,
             "literal": "getter"
           },
           {
             "context": "real-typescript-analyzer.ts:comparison",
-            "line": 3579,
+            "line": 3599,
             "literal": "rest_parameter"
           },
           {
             "context": "real-typescript-analyzer.ts:comparison",
-            "line": 3754,
+            "line": 3774,
             "literal": "line_comment"
           },
           {
             "context": "real-typescript-analyzer.ts:comparison",
-            "line": 3754,
+            "line": 3774,
             "literal": "block_comment"
           }
         ],
@@ -1601,7 +1571,7 @@
       "fail": 20,
       "languagesAudited": 41,
       "pass": 21,
-      "totalUnknownReferences": 152
+      "totalUnknownReferences": 146
     }
   },
   "governance": "docs/M14-HONESTY-CONTRACT.md",
