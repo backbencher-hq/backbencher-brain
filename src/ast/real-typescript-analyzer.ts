@@ -1954,7 +1954,9 @@ class TypeScriptAnalysisRunner {
         if (!m) continue
         if (m.type === "method_definition" || m.type === "method_signature" || m.type === "abstract_method_signature") {
           const n = m.childForFieldName("name")?.text
-          if (n && n !== "constructor") lastDeclarationOfMethod.set(n, i)
+          // constructors included: ctor overload groups previously pushed a
+          // DUPLICATE constructor symbol per declaration
+          if (n) lastDeclarationOfMethod.set(n, i)
         }
       }
       const seenMethodNames = new Set<string>()
@@ -1972,6 +1974,9 @@ class TypeScriptAnalysisRunner {
           case "abstract_method_signature": {
             const memberName = member.childForFieldName("name")?.text
             if (memberName === "constructor") {
+              // Last-wins: ctor overload groups previously pushed a duplicate
+              // constructor symbol per declaration.
+              if (lastDeclarationOfMethod.get("constructor") !== i) break
               this.extractConstructor(member, symbols, stack, memberDecorators)
               break
             }
@@ -2883,8 +2888,7 @@ class TypeScriptAnalysisRunner {
           // Named exports: export { a, b as c }
           for (let j = 0; j < child.namedChildCount; j++) {
             const specifier = child.namedChild(j)
-            if (specifier && specifier.type === "export_specifier") {
-              const name = specifier.childForFieldName("name")
+            if (specifier && specifier.type === "export_specifier") {              const name = specifier.childForFieldName("name")
               const alias = specifier.childForFieldName("alias")
 
               if (name) {
@@ -2898,6 +2902,20 @@ class TypeScriptAnalysisRunner {
                 })
               }
             }
+          }
+        } else if (child.type === "namespace_export") {
+          // `export * as ns from "./m"` — the re-exported name is the
+          // namespace alias. (The '*' token is INSIDE namespace_export, so
+          // a bare hasToken('*') check on the statement misses this shape.)
+          const nameNode = child.namedChild(child.namedChildCount - 1)
+          if (nameNode) {
+            foundNamed = true
+            namesFromThisStatement.push(nameNode.text)
+            exports.push({
+              name: nameNode.text,
+              isDefault: false,
+              range: this.nodeRange(child),
+            })
           }
         } else if (
           child.type === "function_declaration" ||
@@ -2964,8 +2982,10 @@ class TypeScriptAnalysisRunner {
       if (sourceNode) {
         const modulePath = stringContent(sourceNode)
         const reExportedNames = namesFromThisStatement.slice()
-        if (reExportedNames.length === 0 && !foundNamed) {
-          // `export * from "mod"` — no specifiers, but the dependency is real.
+        // Star ONLY when the statement actually has one. An EMPTY clause
+        // (`export {} from "./m"` — exports nothing) previously misfired
+        // as a star re-export because !foundNamed was the only signal.
+        if (reExportedNames.length === 0 && this.hasToken(node, "*")) {
           reExportedNames.push("*")
         }
         if (reExportedNames.length > 0) {

@@ -251,6 +251,23 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
       const hit = symbols.find(s => matchConstraints(s, want))
       if (hit) problems.push(`forbidden symbol present: ${JSON.stringify(want)} (found ${hit.name}:${hit.kind})`)
     }
+    for (const want of exp.expectSymbolCount ?? []) {
+      // { name, equals } — pins DEDUPE: overload groups must yield exactly
+      // one symbol per name (duplicate constructor symbols violated this).
+      const n = symbols.filter((s: any) => s.name === want.name).length
+      if (n !== want.equals) {
+        problems.push(`expected ${want.equals} symbol(s) named "${want.name}"; got ${n}`)
+      }
+    }
+    for (const want of exp.forbidImports ?? []) {
+      const hit = (result.imports ?? []).find((imp: any) =>
+        Object.entries(want).every(([k, v]) => {
+          if (k.startsWith("meta.")) return ((imp.metadata ?? {})[k.slice(5)] ?? imp[k.slice(5)]) === v
+          return imp[k] === v
+        }),
+      )
+      if (hit) problems.push(`forbidden import present: ${JSON.stringify(want)} (found ${hit.module})`)
+    }
     for (const want of exp.expectRelationships ?? []) {
       if (!rels.some(r => matchConstraints(r, want))) {
         problems.push(`expected relationship not found: ${JSON.stringify(want)}; got: ${rels.map((r: any) => r.type + "[" + r.from + "->" + r.target + "]" + (r.confidence != null ? "@" + r.confidence : "")).slice(0, 30).join("; ")}`)
