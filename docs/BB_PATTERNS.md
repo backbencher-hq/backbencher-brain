@@ -81,6 +81,14 @@ Verified against the indexer's actual relationship output:
 confidence then file; `summary.truncated` is set when `maxResults` is exceeded
 (no fixed per-category quotas).
 
+## recordRun persistence contract
+
+`bb_patterns { recordRun: true }` persists the **full analyzed set** — every
+detected pattern, not just the first `limit` shown in the preview. The response
+reports `(N found, M recorded)` where `M` equals `N`; run history therefore
+matches the run, and the auto-resolve pass never marks real findings past the
+display limit as gone. `limit` affects only the displayed preview lines.
+
 ## Verification
 
 `script/verify-patterns.ts` uses positive **and** negative fixtures across
