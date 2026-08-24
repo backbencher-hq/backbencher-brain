@@ -217,6 +217,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           const sym: ASTEngine.UniversalSymbol = {
             name,
             kind,
+            comments: (() => { const d = this.extractGroovyDoc(node); return d ? [d] : [] })(),
             range: this.nodeToRange(node),
             visibility,
             decorators: classAnnotations,
@@ -289,6 +290,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           const sym: ASTEngine.UniversalSymbol = {
             name,
             kind: isConstructor ? ASTEngine.SymbolKind.Constructor : ASTEngine.SymbolKind.Method,
+            comments: (() => { const d = this.extractGroovyDoc(node); return d ? [d] : [] })(),
             range: this.nodeToRange(node),
             visibility,
             parameters,
@@ -679,6 +681,24 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
     ])
     if (STDLIB_ROOTS.has(root)) return true
     return false
+  }
+
+  /**
+   * Groovydoc extraction: block_comment starting with '/**' immediately
+   * preceding the declaration. Previously groovy symbols carried NO
+   * comments (M14 #383).
+   */
+  private extractGroovyDoc(node: Node): string | undefined {
+    const parent = node.parent
+    if (!parent) return undefined
+    for (let i = 0; i < parent.namedChildCount; i++) {
+      const sibling = parent.namedChild(i)
+      if (sibling === node) break
+      if (sibling?.type === "block_comment" && sibling.text.startsWith("/**")) {
+        return sibling.text
+      }
+    }
+    return undefined
   }
 
   private extractInheritance(node: Node, type: string): string[] {

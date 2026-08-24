@@ -1,102 +1,102 @@
 {
   "checks": [
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
-      "detail": "52 files, coverage 100%, unexplained 0%",
+      "description": "vue-core@f8975657d7: tree-truth vs analyzer diff",
+      "detail": "31 files, coverage 100%, unexplained 0%",
       "id": "differential-javascript",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
-      "detail": "0 files, coverage null%, unexplained null%",
+      "description": "vue-core@f8975657d7: tree-truth vs analyzer diff",
+      "detail": "60 files, coverage 91.4%, unexplained 0%",
       "id": "differential-typescript",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
+      "description": "vue-core@f8975657d7: tree-truth vs analyzer diff",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-kotlin",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
+      "description": "vue-core@f8975657d7: tree-truth vs analyzer diff",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-scala",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
-      "detail": "60 files, coverage 100%, unexplained 0%",
+      "description": "vue-core@f8975657d7: tree-truth vs analyzer diff",
+      "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-java",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
-      "detail": "60 files, coverage 100%, unexplained 0%",
+      "description": "vue-core@f8975657d7: tree-truth vs analyzer diff",
+      "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-groovy",
       "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "e219f596de1c95a2508ae36f7c5ae43928a05fd3",
-  "committedAt": "2026-08-24T02:12:39+02:00",
+  "commit": "b84cea5331dcaf621c49eccceaa8733e86124037",
+  "committedAt": "2026-08-24T02:39:40+02:00",
   "data": {
     "corpusPins": {
-      "grails-core": "a83f87480e0c0138caa5a7191a053b1e59a64066"
+      "vue-core": "f8975657d7451d8e4291406427e6a8ae5e50c8d5"
     },
     "report": {
       "groovy": {
-        "analyzerEdges": 257,
-        "coveragePct": 100,
-        "coveredByAnalyzer": 151,
-        "explainableByTree": 223,
-        "fabricationPct": 0,
-        "filesSampled": 60,
-        "heuristicUnexplained": 34,
-        "missingInAnalyzer": 0,
-        "perf": {
-          "avgMsPerFile": 9.2,
-          "maxMsPerFile": 57.7,
-          "samplesTimed": 60
-        },
-        "samples": [],
-        "treeTruthEdges": 151,
-        "unexplainedInAnalyzer": 0
-      },
-      "java": {
-        "analyzerEdges": 247,
-        "coveragePct": 100,
-        "coveredByAnalyzer": 132,
-        "explainableByTree": 167,
-        "fabricationPct": 0,
-        "filesSampled": 60,
-        "heuristicUnexplained": 80,
-        "missingInAnalyzer": 0,
-        "perf": {
-          "avgMsPerFile": 9.1,
-          "maxMsPerFile": 101.3,
-          "samplesTimed": 60
-        },
-        "samples": [],
-        "treeTruthEdges": 132,
-        "unexplainedInAnalyzer": 0
-      },
-      "javascript": {
-        "analyzerEdges": 2,
-        "coveragePct": 100,
-        "coveredByAnalyzer": 2,
-        "explainableByTree": 2,
-        "fabricationPct": 0,
-        "filesSampled": 52,
+        "analyzerEdges": 0,
+        "coveragePct": null,
+        "coveredByAnalyzer": 0,
+        "explainableByTree": 0,
+        "fabricationPct": null,
+        "filesSampled": 0,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 7.1,
-          "maxMsPerFile": 57.8,
-          "samplesTimed": 52
+          "avgMsPerFile": null,
+          "maxMsPerFile": null,
+          "samplesTimed": 0
         },
         "samples": [],
-        "treeTruthEdges": 2,
+        "treeTruthEdges": 0,
+        "unexplainedInAnalyzer": 0
+      },
+      "java": {
+        "analyzerEdges": 0,
+        "coveragePct": null,
+        "coveredByAnalyzer": 0,
+        "explainableByTree": 0,
+        "fabricationPct": null,
+        "filesSampled": 0,
+        "heuristicUnexplained": 0,
+        "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": null,
+          "maxMsPerFile": null,
+          "samplesTimed": 0
+        },
+        "samples": [],
+        "treeTruthEdges": 0,
+        "unexplainedInAnalyzer": 0
+      },
+      "javascript": {
+        "analyzerEdges": 27,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 16,
+        "explainableByTree": 27,
+        "fabricationPct": 0,
+        "filesSampled": 31,
+        "heuristicUnexplained": 0,
+        "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": 10.2,
+          "maxMsPerFile": 38.8,
+          "samplesTimed": 31
+        },
+        "samples": [],
+        "treeTruthEdges": 16,
         "unexplainedInAnalyzer": 0
       },
       "kotlin": {
@@ -136,21 +136,57 @@
         "unexplainedInAnalyzer": 0
       },
       "typescript": {
-        "analyzerEdges": 0,
-        "coveragePct": null,
-        "coveredByAnalyzer": 0,
-        "explainableByTree": 0,
-        "fabricationPct": null,
-        "filesSampled": 0,
+        "analyzerEdges": 123,
+        "coveragePct": 91.4,
+        "coveredByAnalyzer": 53,
+        "explainableByTree": 123,
+        "fabricationPct": 0,
+        "filesSampled": 60,
         "heuristicUnexplained": 0,
-        "missingInAnalyzer": 0,
+        "missingInAnalyzer": 5,
         "perf": {
-          "avgMsPerFile": null,
-          "maxMsPerFile": null,
-          "samplesTimed": 0
+          "avgMsPerFile": 51.5,
+          "maxMsPerFile": 330.7,
+          "samplesTimed": 60
         },
-        "samples": [],
-        "treeTruthEdges": 0,
+        "samples": [
+          {
+            "dir": "MISSING",
+            "file": "packages/vue/jsx.d.ts",
+            "from": "Element",
+            "label": "extends",
+            "target": "VNode"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/vue/jsx.d.ts",
+            "from": "IntrinsicElements",
+            "label": "extends",
+            "target": "NativeElements"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/vue/jsx.d.ts",
+            "from": "IntrinsicAttributes",
+            "label": "extends",
+            "target": "ReservedProps"
+          },
+          {
+            "dir": "MISSING",
+            "file": "scripts/setup-vitest.ts",
+            "from": "Assertion",
+            "label": "extends",
+            "target": "CustomMatchers<T>"
+          },
+          {
+            "dir": "MISSING",
+            "file": "scripts/setup-vitest.ts",
+            "from": "AsymmetricMatchersContaining",
+            "label": "extends",
+            "target": "CustomMatchers"
+          }
+        ],
+        "treeTruthEdges": 58,
         "unexplainedInAnalyzer": 0
       }
     },
