@@ -1,0 +1,28 @@
+{
+  "issue": "M18.Q1",
+  "code": "Q1",
+  "tool": "benchmark",
+  "title": "real-corpus retrieval benchmark (rake, lodash, element-plus)",
+  "verified": true,
+  "checks": 42,
+  "passed": 42,
+  "failed": 0,
+  "negatives": 3,
+  "generatedAt": "2026-08-24T22:27:51.845Z",
+  "perCorpus": {
+    "rake": {
+      "total": 5,
+      "ok": 5
+    },
+    "lodash": {
+      "total": 7,
+      "ok": 7
+    },
+    "element-plus": {
+      "total": 2,
+      "ok": 2
+    }
+  },
+  "totalQueries": 17,
+  "negativeLine": "Gold answers are human-reviewed; a resolving symbol is NOT a guarantee of semantic relevance — that is Q2's job."
+}
