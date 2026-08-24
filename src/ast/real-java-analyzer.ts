@@ -326,11 +326,13 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
             }
           }
 
+          const javadoc = this.extractJavadocComment(node)
           const sym: ASTEngine.UniversalSymbol = {
             name,
             kind,
             range: this.nodeToRange(node),
             visibility,
+            comments: javadoc ? [javadoc] : [],
             decorators: annotations,
             genericParameters: this.getJavaGenericParameters(node),
             ownerName: parentContext?.name,
@@ -534,10 +536,12 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
              })
           }
 
+          const methodDoc = this.extractJavadocComment(node)
           const sym: ASTEngine.UniversalSymbol = {
             name: isConstructor ? "constructor" : name,
             kind: isConstructor ? ASTEngine.SymbolKind.Constructor : ASTEngine.SymbolKind.Method,
             range: this.nodeToRange(node),
+            comments: methodDoc ? [methodDoc] : [],
             visibility,
             parameters,
             returnType,
@@ -625,10 +629,12 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
               }
             }
 
+            const fieldDoc = this.extractJavadocComment(node)
             const sym: ASTEngine.UniversalSymbol = {
               name: fieldName,
               kind: isConstant ? ASTEngine.SymbolKind.Constant : ASTEngine.SymbolKind.Property,
               range: this.nodeToRange(declarator),
+              comments: fieldDoc ? [fieldDoc] : [],
               returnType: fieldType,
               visibility,
               isStatic,
@@ -1039,6 +1045,24 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     parts.push(name)
     return parts.join(".")
+  }
+
+  /**
+   * Javadoc extraction: block_comment starting with '/**' immediately
+   * preceding the declaration (previous sibling). Previously java symbols
+   * carried NO comments - docstrings were silently lost (M14 #383).
+   */
+  private extractJavadocComment(node: Node): string | undefined {
+    const parent = node.parent
+    if (!parent) return undefined
+    for (let i = 0; i < parent.namedChildCount; i++) {
+      const sibling = parent.namedChild(i)
+      if (sibling === node) break
+      if ((sibling?.type === "block_comment" || sibling?.type === "line_comment") && sibling.text.startsWith("/**")) {
+        return sibling.text
+      }
+    }
+    return undefined
   }
 
   private nodeToRange(node: Node) {

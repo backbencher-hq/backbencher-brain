@@ -8,19 +8,19 @@
     },
     {
       "description": "typescript adversarial fixtures",
-      "detail": "20/20 fixtures pass",
+      "detail": "22/22 fixtures pass",
       "id": "fixtures-typescript",
       "status": "pass"
     },
     {
       "description": "java adversarial fixtures",
-      "detail": "18/18 fixtures pass",
+      "detail": "19/19 fixtures pass",
       "id": "fixtures-java",
       "status": "pass"
     },
     {
       "description": "groovy adversarial fixtures",
-      "detail": "18/18 fixtures pass",
+      "detail": "19/19 fixtures pass",
       "id": "fixtures-groovy",
       "status": "pass"
     },
@@ -38,8 +38,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "e219f596de1c95a2508ae36f7c5ae43928a05fd3",
-  "committedAt": "2026-08-24T02:12:39+02:00",
+  "commit": "e1b4cbcb766467cfb3f7681e548e9d6dd1b52b08",
+  "committedAt": "2026-08-24T03:27:56+02:00",
   "data": {
     "details": [
       {
@@ -113,6 +113,11 @@
         "problems": []
       },
       {
+        "fixture": "typescript/comment-boundary",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "typescript/decorators",
         "ok": true,
         "problems": []
@@ -144,6 +149,11 @@
       },
       {
         "fixture": "typescript/index-signature",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/interface-extends",
         "ok": true,
         "problems": []
       },
@@ -248,6 +258,11 @@
         "problems": []
       },
       {
+        "fixture": "java/javadoc-payload",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "java/multi-interface-extends",
         "ok": true,
         "problems": []
@@ -334,6 +349,11 @@
       },
       {
         "fixture": "groovy/framework-imports",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/groovydoc-payload",
         "ok": true,
         "problems": []
       },
@@ -581,11 +601,11 @@
     "summary": {
       "groovy": {
         "fail": 0,
-        "pass": 18
+        "pass": 19
       },
       "java": {
         "fail": 0,
-        "pass": 18
+        "pass": 19
       },
       "javascript": {
         "fail": 0,
@@ -601,7 +621,7 @@
       },
       "typescript": {
         "fail": 0,
-        "pass": 20
+        "pass": 22
       }
     }
   },

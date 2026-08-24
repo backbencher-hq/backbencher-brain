@@ -43,7 +43,7 @@ symbol-field rot. Every language wave must pin these symbol payloads:
 | byte ranges (bb_edit depends) | indirect via M13 edit gates | same | same | M13 scope |
 | visibility/modifiers | GATED F3 implicit | implicit | implicit | explicit pins PENDING -> #383 |
 | qualified_calls | GATED (CC1+payload fixture) | NOT EMITTED -> #383 (also javascript: NOT EMITTED, declared) | GATED (payload-pins) | GATED (extension-method-flag) |
-| docstrings/JSDoc | PENDING -> #383 (javadoc fixture missing) | PENDING -> #383 (groovydoc fixture missing) | GATED (payload-pins) | GATED (scaladoc-payload) |
+| docstrings/JSDoc | GATED (javadoc-payload) | GATED (groovydoc-payload) | GATED (payload-pins) | GATED (scaladoc-payload) |
 | typeParameters/generics | PENDING -> #383 | n/a (no syntax) | GATED (generic-parameters) | PENDING -> #383 |
 | range columns 1-based | GATED (CC1) | GATED (CC1, was 0-based - FIXED) | GATED (CC1) | GATED (CC1) |
 
