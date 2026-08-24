@@ -23,6 +23,26 @@ const JS_CONSOLE_BUILTINS = new Set([
   "console.count", "console.countReset", "console.dir", "console.dirxml",
   "console.clear", "console.profile", "console.profileEnd",
 ])
+// Global constructor intrinsics/DOM APIs: `new Promise()` is construction
+// of the RUNTIME, not of a project type — instantiates edges to these are
+// noise (same rationale as the JVM stdlib filters).
+const JS_GLOBAL_CONSTRUCTORS = new Set([
+  "Promise", "Date", "Map", "Set", "WeakMap", "WeakSet", "Symbol", "Proxy",
+  "Error", "TypeError", "RangeError", "SyntaxError", "URIError", "EvalError",
+  "AggregateError", "RegExp", "Array", "Object", "Function", "Boolean",
+  "Number", "String", "BigInt", "ArrayBuffer", "SharedArrayBuffer",
+  "DataView", "Int8Array", "Uint8Array", "Uint8ClampedArray", "Int16Array",
+  "Uint16Array", "Int32Array", "Uint32Array", "Float32Array", "Float64Array",
+  "BigInt64Array", "BigUint64Array", "WeakRef", "FinalizationRegistry",
+  "AbortController", "FormData", "Blob", "File", "URL", "URLSearchParams",
+  "Headers", "Request", "Response", "Intl", "Image", "Worker", "SharedWorker",
+  "CustomEvent", "Event", "MouseEvent", "KeyboardEvent", "ResizeObserver",
+  "MutationObserver", "IntersectionObserver", "PerformanceObserver",
+  "FileReader", "XMLHttpRequest", "WebSocket", "TextEncoder", "TextDecoder",
+  "DOMParser", "Notification", "BroadcastChannel", "MessageChannel",
+  "FocusEvent", "InputEvent", "PointerEvent", "TouchEvent", "DragEvent", "ErrorEvent", "UIEvent", "StorageEvent", "PromiseRejectionEvent", "HashChangeEvent", "PageTransitionEvent", "PopStateEvent", "ProgressEvent", "SpeechSynthesisEvent", "AnimationEvent", "TransitionEvent", "ClipboardEvent", "WheelEvent", "CompositionEvent", "BeforeUnloadEvent",
+])
+
 const JS_OBJECT_LEAF_METHODS = new Set([
   "toString", "valueOf", "hasOwnProperty", "isPrototypeOf",
   "propertyIsEnumerable", "toLocaleString", "__defineGetter__", "__defineSetter__",
@@ -871,7 +891,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             const prop = ctor.childForFieldName("property")
             ctorName = prop ? prop.text : ctor.text
           }
-          if (ctorName) {
+          if (ctorName && !JS_GLOBAL_CONSTRUCTORS.has(ctorName)) {
             relationships.push({
               source: callSource,
               target: ctorName,

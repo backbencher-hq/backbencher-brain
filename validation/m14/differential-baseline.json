@@ -22,7 +22,7 @@
       "unexplained": 0,
       "heuristic": 80,
       "perf": {
-        "avgMsPerFile": 6.8
+        "avgMsPerFile": 6.6
       }
     },
     "grails-core:groovy": {
@@ -30,7 +30,7 @@
       "unexplained": 0,
       "heuristic": 34,
       "perf": {
-        "avgMsPerFile": 6.7
+        "avgMsPerFile": 8.7
       }
     },
     "Exposed:kotlin": {
@@ -110,7 +110,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 47.4
+        "avgMsPerFile": 95
       }
     },
     "vue-core:kotlin": {
@@ -264,7 +264,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 6.4
+        "avgMsPerFile": 4.4
       }
     },
     "grails-core:typescript": {
@@ -288,7 +288,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 7.2
+        "avgMsPerFile": 9.3
       }
     },
     "lodash:javascript": {
@@ -332,6 +332,78 @@
       }
     },
     "lodash:groovy": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
+    },
+    "element-plus:javascript": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 268.9
+      }
+    },
+    "element-plus:typescript": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 43.9
+      }
+    },
+    "element-plus:kotlin": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
+    },
+    "element-plus:scala": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
+    },
+    "element-plus:java": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
+    },
+    "element-plus:groovy": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
+    },
+    "element-plus:vue": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 42.2
+      }
+    },
+    "vue-core:vue": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 142.1
+      }
+    },
+    "grails-core:vue": {
       "missing": 0,
       "unexplained": 0,
       "heuristic": 0,
