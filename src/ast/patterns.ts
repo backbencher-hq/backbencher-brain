@@ -1352,110 +1352,72 @@ export namespace PatternRecognition {
     db: any,
     projectId: ProjectID,
   ): Promise<PatternDetectionResult[]> {
-    // Query the brain_pattern table populated during indexing —
-    // this is the authoritative source for god_class, long_function,
-    // circular_dependency, tight_coupling, feature_envy, orphaned_code.
-    // Per-field detection with complexity > 50 was unreliable because
-    // most symbols have complexity = 1 (only functions get CC computed).
-    try {
-      const patterns = await db
-        .select({
-          name: BrainPatternTable.pattern_name,
-          type: BrainPatternTable.pattern_type,
-          desc: BrainPatternTable.description,
-          severity: BrainPatternTable.severity,
-          suggestion: BrainPatternTable.suggestion,
-          symbolId: BrainPatternTable.symbol_ids,
-          fileId: BrainPatternTable.file_ids,
-        })
-        .from(BrainPatternTable)
-        .where(
-          and(
-            eq(BrainPatternTable.project_id, projectId),
-            inArray(BrainPatternTable.pattern_type, [
-              "god_class", "long_function", "circular_dependency",
-              "tight_coupling", "feature_envy", "orphaned_code",
-            ]),
-          ),
-        )
-        .limit(100)
+    // LIVE COMPUTATION (M14 #301): the previous implementation read the
+    // brain_pattern table, which nothing ever wrote - god_class/long_function
+    // detection silently returned empty on every project. Thresholds are
+    // MEASURED on grails-core (3000-file sample, M14):
+    //   aggregated class complexity: P90=31 P95=52 P99=137 max=356
+    //   method line-span:            P90=17 P95=26 P99=58  max=416
+    // god_class: SUM(method complexity) >= 80 AND >= 20 methods (~P97/P95)
+    // long_function: line span >= 50 (~P99)
+    const out: PatternDetectionResult[] = []
 
-      // Resolve file paths from file_ids
-      const fileIds = [...new Set(patterns.map((p: any) => p.fileId).filter(Boolean))]
-      const fileMap = new Map<string, string>()
-      if (fileIds.length > 0) {
-        const query = (db
-          .select({ id: BrainFileTable.id, path: BrainFileTable.relative_path })
-          .from(BrainFileTable)
-          .where(and(eq(BrainFileTable.project_id, projectId), inArray(BrainFileTable.id, fileIds as any)))) as any
-        const files = await query
-        for (const f of files) fileMap.set(f.id, f.path)
-      }
-
-      return patterns.map((p: any) => ({
-        pattern: p.type,
-        confidence: 0.8,
-        location: {
-          file: fileMap.get(p.fileId) || p.fileId || "",
-          startLine: 0,
-          symbol: p.name,
-        },
-        description: p.desc || `${p.type}: ${p.name}`,
-        severity: (p.severity === "high" ? "error" : p.severity === "medium" ? "warning" : "info") as any,
-        suggestion: p.suggestion || undefined,
-        evidence: [{ type: "brain_index", description: "Detected during indexing", confidence: 0.8 }],
-        metadata: {},
-      }))
-    } catch (e: any) {
-      log.debug("brain_pattern query failed, falling back to complexity check", { error: e?.message })
-    }
-
-    // Fallback: complexity-based detection
-    const violations = await db
+    // Aggregate METHODS under their OWNING CLASS via owner_symbol_id.
+    // (An earlier draft grouped by bare method NAME - every method was its
+    // own group, so the threshold could never fire.)
+    const godClasses = await db
       .select({
-        symbol: BrainSymbolTable,
-        file: BrainFileTable,
+        name: BrainSymbolTable.name,
+        fileId: BrainSymbolTable.file_id,
+        total: sql`SUM(${BrainSymbolTable.complexity})`.as("total"),
+        cnt: sql`COUNT(*)`.as("cnt"),
       })
       .from(BrainSymbolTable)
       .innerJoin(
-        BrainFileTable,
-        and(
-          eq(BrainSymbolTable.project_id, BrainFileTable.project_id),
-          eq(BrainSymbolTable.file_id, BrainFileTable.id),
-        ),
+        sql`${BrainSymbolTable} owner ON ${BrainSymbolTable}.owner_symbol_id = owner.id`,
       )
+      .where(and(eq(BrainSymbolTable.project_id, projectId), eq(BrainSymbolTable.symbol_type, "method")))
+      .groupBy(sql`owner.name`, sql`owner.id`)
+      .having(sql`SUM(${BrainSymbolTable.complexity}) >= 80 AND COUNT(*) >= 20`)
+      .limit(50)
+
+    for (const g of godClasses) {
+      out.push({
+        pattern: PatternType.GodClass,
+        confidence: 0.9,
+        location: { file: String(g.fileId ?? ""), startLine: 0, symbol: String(g.name) },
+        description: `god_class: ${g.name} aggregates complexity ${g.total} across ${g.cnt} methods`,
+        severity: "warning",
+        evidence: [{ type: "complexity_metrics", description: "measured threshold: sum>=80 AND methods>=20", confidence: 0.9 }],
+        metadata: {},
+      })
+    }
+
+    const longFns = await db
+      .select({ name: BrainSymbolTable.name, fileId: BrainSymbolTable.file_id })
+      .from(BrainSymbolTable)
       .where(
         and(
           eq(BrainSymbolTable.project_id, projectId),
-          eq(BrainSymbolTable.symbol_type, "class"),
-          sql`${BrainSymbolTable.complexity} > 50`,
+          inArray(BrainSymbolTable.symbol_type, ["method", "function"]),
+          sql`(${BrainSymbolTable.line_end} - ${BrainSymbolTable.line_start} + 1) >= 50`,
         ),
       )
-      .limit(20)
+      .limit(50)
 
-    return violations.map(
-      (result: any): PatternDetectionResult => ({
-        pattern: PatternType.GodClass,
-        confidence: 0.8,
-        location: {
-          file: result.file.relative_path,
-          startLine: result.symbol.line_start || 0,
-          endLine: result.symbol.line_end,
-          symbol: result.symbol.name,
-        },
-        description: `Class '${result.symbol.name}' has very high complexity (${result.symbol.complexity}), indicating it may violate the Single Responsibility Principle`,
-        severity: "warning" as const,
-        suggestion: "Consider breaking this class down into smaller, more focused classes",
-        evidence: [
-          {
-            type: "complexity_metrics",
-            description: `Cyclomatic complexity is ${result.symbol.complexity} (threshold: 50)`,
-            confidence: 0.9,
-          },
-        ],
+    for (const f of longFns) {
+      out.push({
+        pattern: PatternType.LongMethod,
+        confidence: 0.9,
+        location: { file: String(f.fileId ?? ""), startLine: 0, symbol: String(f.name) },
+        description: `long_function: ${f.name} spans >= 50 lines`,
+        severity: "info",
+        evidence: [{ type: "complexity_metrics", description: "measured threshold: span>=50 lines", confidence: 0.9 }],
         metadata: {},
-      }),
-    )
+      })
+    }
+
+    return out
   }
 
   async function detectOpenClosedViolations(db: any, projectId: ProjectID): Promise<PatternDetectionResult[]> {
