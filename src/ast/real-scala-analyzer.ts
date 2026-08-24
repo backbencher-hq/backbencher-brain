@@ -494,6 +494,33 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     return out
   }
 
+  /**
+   * Per-function cyclomatic complexity (1 + decision points) - java/kotlin
+   * parity (M14 #301 prerequisite).
+   */
+  private calculateScalaFunctionComplexity(node: Node): number {
+    let complexity = 1
+    const stack: Node[] = [node]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (
+        n.type === "if_expression" ||
+        n.type === "while_expression" ||
+        n.type === "do_while_expression" ||
+        n.type === "match_expression" ||
+        n.type === "for_expression" ||
+        n.type === "try_expression"
+      ) {
+        complexity++
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const child = n.namedChild(i)
+        if (child) stack.push(child)
+      }
+    }
+    return complexity
+  }
+
   private createSymbol(
     name: string,
     kind: ASTEngine.SymbolKind,
@@ -986,6 +1013,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         // the wrapper never becomes a parent symbol. Detect via ancestors.
         isExtension: !!extensionReceiverType,
         ...(extensionReceiverType ? {} : {}),
+        complexity: this.calculateScalaFunctionComplexity(node),
       },
     )
 

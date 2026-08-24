@@ -542,6 +542,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
             kind: isConstructor ? ASTEngine.SymbolKind.Constructor : ASTEngine.SymbolKind.Method,
             range: this.nodeToRange(node),
             comments: methodDoc ? [methodDoc] : [],
+            complexity: this.calculateJavaMethodComplexity(node),
             visibility,
             parameters,
             returnType,
@@ -1052,6 +1053,39 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
    * preceding the declaration (previous sibling). Previously java symbols
    * carried NO comments - docstrings were silently lost (M14 #383).
    */
+  /**
+   * Per-method cyclomatic complexity (1 + decision points). Previously java
+   * method symbols stored complexity=1 always - only the file-level counter
+   * was real. Kotlin parity (M14 #301 prerequisite).
+   */
+  private calculateJavaMethodComplexity(node: Node): number {
+    let complexity = 1
+    const stack: Node[] = [node]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (
+        n.type === "if_statement" ||
+        n.type === "for_statement" ||
+        n.type === "enhanced_for_statement" ||
+        n.type === "while_statement" ||
+        n.type === "do_statement" ||
+        n.type === "switch_rule" ||
+        n.type === "switch_block_statement_group" ||
+        n.type === "catch_clause" ||
+        n.type === "ternary_expression" ||
+        n.type === "&&" ||
+        n.type === "||"
+      ) {
+        complexity++
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const child = n.namedChild(i)
+        if (child) stack.push(child)
+      }
+    }
+    return complexity
+  }
+
   private extractJavadocComment(node: Node): string | undefined {
     const parent = node.parent
     if (!parent) return undefined
