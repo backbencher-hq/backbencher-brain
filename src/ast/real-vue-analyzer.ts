@@ -258,6 +258,50 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       for (const e of sub.exports ?? []) exports.push(e)
       for (const er of sub.errors ?? []) errors.push(er)
+
+      // Script-setup compiler macros carry the component's PUBLIC CONTRACT
+      // just like Options-API props/emits - but only the binding Constant
+      // survived (`const props = defineProps(...)`), so script-setup
+      // components lost their prop/event declarations entirely. Extract
+      // them from the macro call arguments (parity with Options API).
+      {
+        const macroStack: Node[] = [scriptTree.rootNode]
+        const seenMacroNames = new Set<string>()
+        while (macroStack.length > 0) {
+          const n = macroStack.pop()!
+          if (n.type === "call_expression") {
+            const fn = n.childForFieldName("function")
+            if (fn && (fn.text === "defineProps" || fn.text === "defineEmits")) {
+              const args = n.childForFieldName("arguments")
+              const firstArg = args?.namedChild(0)
+              const names = this.propNames(firstArg ?? undefined)
+              const kind = fn.text === "defineProps"
+                ? ASTEngine.SymbolKind.Property
+                : ASTEngine.SymbolKind.Event
+              const meta = fn.text === "defineProps" ? "isProp" : "isEmit"
+              for (const pn of names) {
+                const dedupe = `${meta}:${pn}`
+                if (seenMacroNames.has(dedupe)) continue
+                seenMacroNames.add(dedupe)
+                symbols.push({
+                  name: pn,
+                  kind,
+                  range: this.offsetRange(this.nodeToRange(n), lineOffset, colOffset),
+                  scope: moduleName,
+                  ownerName: moduleName,
+                  ownerKind: ASTEngine.SymbolKind.Class,
+                  visibility: "public",
+                  metadata: { [meta]: true, isScriptSetup: true },
+                })
+              }
+            }
+          }
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (c) macroStack.push(c)
+          }
+        }
+      }
       }
     }
 
@@ -389,6 +433,14 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
             metadata: { isEmit: true },
           })
         }
+      } else if (key === "watch") {
+        // watch is NOT a lifecycle hook (was mislabeled isLifecycleHook);
+        // its VALUE holds the watcher handlers - each key is a reactive
+        // source being watched -> Method symbol owned by the component.
+        if (value) {
+          patterns["Options API"] = true
+          this.emitObjectMembers(value, componentName, symbols, ASTEngine.SymbolKind.Method, "isWatcher", lineOffset, colOffset)
+        }
       } else if (this.isLifecycleHook(key)) {
         symbols.push({
           name: key,
@@ -469,8 +521,7 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
       key === "mounted" || key === "beforeUpdate" || key === "updated" ||
       key === "beforeUnmount" || key === "unmounted" || key === "activated" ||
       key === "deactivated" || key === "errorCaptured" || key === "renderTracked" ||
-      key === "renderTriggered" || key === "watch" || key === "beforeDestroy" ||
-      key === "destroyed"
+      key === "renderTriggered" || key === "beforeDestroy" || key === "destroyed"
     )
   }
 

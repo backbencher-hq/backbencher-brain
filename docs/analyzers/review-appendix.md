@@ -788,3 +788,28 @@ RECORDED (verified pre-existing, not fixed here):
     tag-name-only).
   - `<script setup>` bindings used in template are not linked to their
     template usages (needs template-expression scope analysis).
+
+## Vue second-pass audit (2026-08-24, later)
+
+Adversarial re-check of the Vue wave. TWO intra-Vue parity defects,
+both fixture-proven failing pre-fix:
+
+  - **Script-setup props/emits lost**: defineProps/defineEmits carry the
+    component's public contract, but only the binding Constant survived
+    (`const props = ...`) — script-setup components had NO Property/
+    Event declarations while Options-API components did. Macro call
+    arguments now extracted (array-of-strings AND object forms) into
+    Prop/Event symbols owned by the component (metadata.isScriptSetup).
+  - **watch misclassified as lifecycle hook** (isLifecycleHook metadata)
+    and its handler members unextracted. watch is an option whose keys
+    are watched reactive sources — now Method symbols (isWatcher),
+    matching methods/computed handling. Note: v-else correctly NOT
+    counted as a decision in metrics (else never adds — family
+    contract); v-show counted as conditional render.
+
+GOTCHA: engine pre-parses lang=tsx/jsx blocks with the JS grammar
+(only "ts" maps to typescript) — SFCs using tsx script lang silently
+lose TS-only shapes; same class as the lang-dispatch fix, rarer.
+
+Still recorded open (verified): setup() option extraction;
+components:{} registration edges; script-setup↔template binding links.
