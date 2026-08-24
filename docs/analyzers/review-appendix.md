@@ -623,3 +623,62 @@ plus one consumer-driven fix and two recorded MEASUREMENTS.
   - Still open (cosmetic, skip unless something consumes them): field-access
     Uses edges on stdlib receivers (`System→out`); `*Factory`/`*Builder`
     identifier pattern flags.
+
+## JavaScript review wave (2026-08-24)
+
+Method: the universal analyzer-review prompt. Ground truth = official
+tree-sitter/tree-sitter-javascript node-types.json + LIVE probes of the
+pinned wasm (they agreed; no dead type-literals, all 13 field refs
+exist). Sibling diff vs real-typescript-analyzer drove most findings —
+every recent TS fix was missing from JS.
+
+FIXED (9 fixtures proven failing pre-fix):
+  - **Barrel re-exports invisible**: `export * from "./barrel"` recorded
+    NO import and NO relationship — barrel files (index.js everywhere in
+    JS) contributed zero module edges. Now synthetic import with
+    metadata.reExport + Imports relationship.
+  - **Qualified heritage dropped**: `class Sub extends Lib.Base` emitted
+    NO extends edge (extraction matched only bare identifiers).
+  - **Anonymous default exports lost**: `export default function () {}`
+    / `export default class {}` produced no export record at all.
+  - **Deep CJS exports dropped**: only direct `module.exports` /
+    `exports.x` recognized; `module.exports.sub = ...` vanished.
+  - **Import alias misattribution**: `import { alpha as beta }` recorded
+    item "alpha"; the local binding is beta (alias||name convention).
+  - **Decorators ignored entirely** (pinned wasm DOES produce decorator
+    nodes — verified live): classes/methods now carry decorators.
+    NOTE grammar difference vs TS: in JS, method decorators are OWN
+    children of method_definition (TS: class_body siblings).
+  - **qualified_calls absent**: JS was the ONLY family member without
+    the #383 symbol payload. Ported dotted-path collector (no argument
+    text), attached by enclosing function/method name.
+  - **T1 complexity contract propagated**: counters missed do_statement,
+    for_in_statement, and ALL short-circuit operators (&& || ??).
+    File-level `complexity` was ALSO the synthetic fake
+    symbols.length+relationships.length (groovy/scala disease) → now
+    real cyclomatic value.
+  - **Comment boundary theft** (X1 port): unbounded previousSibling walk
+    stole trailing comments across blank lines.
+
+HARNESS: added expectExports matcher (was silently absent — two early
+fixtures were VACUOUS until caught: unknown expectation keys are
+ignored, they don't fail) and forbidImports. LESSON: a new matcher must
+land BEFORE or WITH the fixtures that use it; verify fixtures fail
+pre-fix for the RIGHT reason.
+
+RECORDED, NOT FIXED HERE:
+  - Differential corpora for JS are thin (52 grails-core .js files → 2
+    tree-truth edges; vue-core 31 files → 16). A real npm-library corpus
+    (lodash/express-class codebase) is needed before JS differential
+    coverage means what it means for JVM languages.
+  - resolveCurrent misses calls inside object-literal methods and
+    class static blocks — attributed to outer scope instead (minor,
+    unmeasured impact).
+  - require() relationship target format `${path}:*` differs from ESM
+    `${path}:${item}` — pre-existing convention, unchanged.
+
+GOTCHAS (per-language appendix):
+  - **JavaScript**: decorators are OWN children of
+    class_declaration/method_definition in this grammar (contrast TS:
+    method decorators are class_body siblings). Pinned wasm produces
+    them; older builds may not — probe before relying.

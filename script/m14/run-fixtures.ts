@@ -187,6 +187,13 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
         problems.push(`expected ${want.symbol} apiContractPath ${JSON.stringify(want.equals)}; got ${JSON.stringify(actualPath)}`)
       }
     }
+    for (const want of exp.expectExports ?? []) {
+      // Each constraint field must match >=1 export (unspecified fields wildcards).
+      const hit = (result.exports ?? []).find((e: any) =>
+        Object.entries(want).every(([k, v]) => e[k] === v),
+      )
+      if (!hit) problems.push(`expected export not found: ${JSON.stringify(want)}; got: ${JSON.stringify((result.exports ?? []).map((e: any) => e.name))}`)
+    }
     for (const want of exp.expectImports ?? []) {
       // Each constraint field must match >=1 import (unspecified fields are wildcards).
       const hit = (result.imports ?? []).find((imp: any) =>
