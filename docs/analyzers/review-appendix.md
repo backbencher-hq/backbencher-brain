@@ -470,6 +470,41 @@ each got probes, fixtures, a fix, or ratification-with-evidence.
   8. complexity thresholds in quality scoring (>30/>50) see real values
      for the first time on JVM/TS alike.
 
+## Second-pass audit of T1–T7 (2026-08-24, later)
+
+Adversarial re-check of the T1–T7 fixes themselves. Two more defects
+caught and fixed (fixtures proven failing pre-fix); two verified-clean;
+one verified pre-existing gap recorded, one out-of-scope observation:
+
+- **B (fixed): constructor overload duplicates** — the last-wins dedupe
+  had excluded constructors by name, so ctor overload groups pushed a
+  DUPLICATE constructor symbol per declaration (probed: params=0 AND
+  params=1 both emitted). Constructors now included in the group map.
+  Harness gained `expectSymbolCount` {name, equals} to pin dedupe.
+- **E (fixed): empty re-export clause misfired as star** —
+  `export {} from "./m"` exports NOTHING but was recorded as a "*" star
+  re-export (the !foundNamed fallback). Star is now gated on an actual
+  '*' token; additionally `export * as ns` now records alias "ns" via
+  namespace_export handling (and registers it as an export) — the '*'
+  token lives INSIDE namespace_export so a bare hasToken check misses
+  it. That regression was caught during THIS audit before commit.
+  Harness gained `forbidImports`.
+- **A verified**: extended parity on while/do/switch-cases/catch/??:
+  TS=Java=Groovy=7 on equivalent logic (kotlin 4 matches its own
+  construct set). Contract holds beyond the original fixture shape.
+- **C verified clean**: get/set accessor pairs still collapse to ONE
+  property under last-wins overload rule.
+- **D RECORDED (verified pre-existing gap, not fixed here)**: members of
+  ambient modules (`declare module "x" { function old(): void; }`) are
+  NOT extracted — module-level function_signature nodes have no
+  extraction path. Declaration-file API surfaces are therefore
+  under-reported (vue's jsx.d.ts interfaces ARE extracted via the
+  declare-global fix; plain function signatures are not). Recommend a
+  dedicated fixture + extraction path in a future wave.
+- **F OBSERVED (out of scope)**: real-javascript-analyzer emits NO
+  qualified_calls at all (field absent on symbols) — separate analyzer,
+  outside this five-language review; recorded for whoever reviews JS.
+
 *(existing entries retained below)*
 
 - **Scala** (reviewed 2026-08-23, official tree-sitter/tree-sitter-scala;
