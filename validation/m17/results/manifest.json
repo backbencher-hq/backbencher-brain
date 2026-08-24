@@ -3,7 +3,7 @@
   "updatedAt": null,
   "issues": [
     { "code": "C1", "evidence": "C1.json", "closed": true, "note": "gate emits its own evidence" },
-    { "code": "S1", "evidence": "S1.json", "closed": false, "note": "fix committed f145352; evidence pending" },
+    { "code": "S1", "evidence": "S1.json", "closed": true, "note": "fix f145352 + regression gate + rake e2e: 26 persisted == 26 live, 34 source-only excluded, 0 bad" },
     { "code": "S2", "evidence": "S2.json", "closed": false, "note": "real-repo e2e pending" },
     { "code": "P1", "evidence": "P1.json", "closed": false, "note": "fix committed f145352; docs+evidence pending" },
     { "code": "H1", "evidence": "H1.json", "closed": false, "note": "cross-tool audit pending" },
