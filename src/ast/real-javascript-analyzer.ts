@@ -169,15 +169,23 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
       let nextInClassBody = inClassBody
       let nextFunctionDepth = functionDepth
 
+      // FAMILY CONTRACT (M14 cross-language parity): 1 + decision points;
+      // decision points include branch constructs AND short-circuit
+      // operators; an else never adds.
       if (
         node.type === "if_statement" ||
         node.type === "for_statement" ||
+        node.type === "for_in_statement" ||
         node.type === "while_statement" ||
+        node.type === "do_statement" ||
         node.type === "catch_clause" ||
         node.type === "switch_case" ||
         node.type === "ternary_expression"
       ) {
         cyclomaticComplexity++
+      } else if (node.type === "binary_expression") {
+        const op = node.childForFieldName("operator")?.text
+        if (op === "&&" || op === "||" || op === "??") cyclomaticComplexity++
       }
 
       switch (node.type) {
@@ -185,22 +193,26 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           const name = node.childForFieldName("name")?.text
           if (name) {
             const comments = this.collectComments(node)
+            const decorators = this.collectOwnDecorators(node)
             symbols.push({
               name,
               kind: ASTEngine.SymbolKind.Class,
               range: this.nodeToRange(node),
               scope: scopeString(scopeStack),
               visibility: "public",
+              decorators: decorators.length > 0 ? decorators : undefined,
               comments,
               metadata: { isClass: true },
             })
             scopeStack.push({ name, kind: JSScopeKind.Class })
             nextInClassBody = true
 
-            // extends heritage
+            // extends heritage. The base may be a bare identifier OR a
+            // member_expression (`extends Lib.Base`) — matching only
+            // identifier silently dropped every qualified heritage edge.
             const heritage = this.findChildByType(node, "class_heritage")
             if (heritage) {
-              const base = this.findChildByType(heritage, "identifier")
+              const base = this.findChildByType(heritage, "identifier") ?? this.findChildByType(heritage, "member_expression")
               if (base) {
                 relationships.push({
                   source: name,
@@ -234,6 +246,10 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               seenMethods.add(dedupKey)
               const params = this.extractParameters(node.childForFieldName("parameters"))
               const comments = this.collectComments(node)
+              // Decorators are OWN children of method_definition in the JS
+              // grammar (unlike TS where method decorators are class_body
+              // siblings).
+              const decorators = this.collectOwnDecorators(node)
               symbols.push({
                 name,
                 kind,
@@ -244,6 +260,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                 visibility: isStatic ? "public" : "public",
                 isStatic,
                 parameters: params,
+                decorators: decorators.length > 0 ? decorators : undefined,
                 comments,
                 complexity: this.methodComplexity(node),
                 metadata: { isAccessor, isAsync, isGenerator },
@@ -381,6 +398,12 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               if (objText === "module" && propText === "exports") {
                 patterns["CommonJS Exports"] = true
                 this.collectModuleExports(right, exports, node, true)
+              } else if (obj && obj.type === "member_expression" && objText === "module.exports" && propText) {
+                // Deep property assignment: `module.exports.sub = {...}` —
+                // sub IS part of the module's public surface. Previously
+                // silently dropped.
+                patterns["CommonJS Exports"] = true
+                exports.push({ name: propText, isDefault: false, range: this.nodeToRange(prop!) })
               } else if (objText === "exports") {
                 patterns["CommonJS Exports"] = true
                 if (propText && prop) exports.push({ name: propText, isDefault: false, range: this.nodeToRange(prop) })
@@ -469,9 +492,12 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                 for (let j = 0; j < c.namedChildCount; j++) {
                   const spec = c.namedChild(j)
                   if (spec && spec.type === "import_specifier") {
+                    // The LOCAL BINDING is the alias when present (`{ a as b }` binds b).
                     const n = this.findChildByType(spec, "identifier")
-                    if (n) items.push(n.text)
-                  }
+                    const alias = spec.childForFieldName("alias")
+                    const item = alias ?? n
+                    if (item) items.push(item.text)
+                    }
                 }
               } else if (c.type === "namespace_import") {
                 items.push("*")
@@ -502,6 +528,28 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "export_statement": {
           patterns["ES6 Exports"] = true
           this.collectExportStatement(node, exports)
+          // Re-export dependency: `export * from "./barrel"` /
+          // `export { x } from "./mod"`. Barrel files are ubiquitous in JS
+          // ecosystems; without this their module edges were invisible.
+          const exportSource = node.childForFieldName("source")
+          if (exportSource) {
+            const modPath = stringContent(exportSource)
+            imports.push({
+              module: modPath,
+              items: this.hasToken(node, "*") && !this.findChildByType(node, "export_clause") ? ["*"] : [],
+              isDefault: false,
+              range: this.nodeToRange(node),
+              metadata: { reExport: true },
+            })
+            relationships.push({
+              source: moduleName,
+              target: `${modPath}:*`,
+              type: ASTEngine.RelationshipType.Imports,
+              confidence: 1.0,
+              metadata: { isReExport: true },
+            })
+            patterns["ES6 ReExports"] = true
+          }
           break
         }
       }
@@ -514,6 +562,67 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
 
+    }
+
+    // --- Symbol payload: qualified_calls (family contract #383) --------------
+    // Dotted call paths WITHOUT argument text, attached to the enclosing
+    // function/method symbol — parity with TS/Java/Groovy/Kotlin/Scala.
+    {
+      const bySource = new Map<string, string[]>()
+      const qcResolve = (n: Node, current: string | null): string | null => {
+        const fnName = n.childForFieldName?.("name")?.text
+        if (
+          (n.type === "function_declaration" || n.type === "generator_function_declaration" ||
+            n.type === "method_definition") &&
+          fnName
+        ) return fnName
+        if (n.type === "variable_declarator") {
+          const nameNode = n.childForFieldName("name")
+          const valueNode = n.childForFieldName("value")
+          if (nameNode && valueNode && (valueNode.type === "arrow_function" || valueNode.type === "function_expression")) {
+            return nameNode.text
+          }
+        }
+        return current
+      }
+      const qcWalk = (n: Node, current: string | null): void => {
+        current = qcResolve(n, current)
+        if (n.type === "call_expression") {
+          const fn = n.childForFieldName("function")
+          if (fn && !(fn.type === "identifier" && fn.text === "require")) {
+            // dotted path without argument text
+            const parts: string[] = []
+            let cur: Node | null = fn
+            while (cur) {
+              if (cur.type === "member_expression") {
+                const prop2 = cur.childForFieldName("property")
+                parts.unshift(prop2 ? prop2.text : cur.namedChild(cur.namedChildCount - 1)?.text ?? "")
+                cur = cur.childForFieldName("object")
+              } else if (cur.type === "call_expression") {
+                cur = cur.namedChild(0)
+              } else {
+                parts.unshift(cur.text)
+                break
+              }
+            }
+            const path = parts.filter(Boolean).join(".")
+            if (current && path) {
+              const list = bySource.get(current) ?? []
+              list.push(path)
+              bySource.set(current, list)
+            }
+          }
+        }
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c) qcWalk(c, current)
+        }
+      }
+      qcWalk(rootNode, null)
+      for (const sym of symbols) {
+        const list = bySource.get(sym.name)
+        if (list && list.length > 0) sym.qualified_calls = [...new Set(list)]
+      }
     }
 
     // --- Relationship passes -------------------------------------------------
@@ -546,7 +655,10 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
       exports,
       errors,
       metadata: {
-        complexity: symbols.length + relationships.length,
+        // Real cyclomatic complexity — was the synthetic heuristic
+        // symbols.length + relationships.length, which is not a complexity
+        // metric at all (same defect previously fixed on groovy/scala).
+        complexity: cyclomaticComplexity,
         linesOfCode: content.split("\n").length,
         cyclomaticComplexity,
         framework: detectedFrameworks.length > 1 ? detectedFrameworks[1] : detectedFrameworks[0],
@@ -769,6 +881,25 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     return false
   }
 
+  /** Decorator names from a node's OWN children (JS grammar placement). */
+  private collectOwnDecorators(node: Node): string[] {
+    const out: string[] = []
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (!c || c.type !== "decorator") continue
+      // decorator text without arguments: @observable -> observable;
+      // @computed({x}) -> computed. First named child of a decorated call
+      // is the callee expression.
+      let nameText = c.text
+      const inner = c.namedChild(0)
+      if (inner && (inner.type === "call_expression" || inner.type === "member_expression" || inner.type === "identifier")) {
+        nameText = inner.text.split("(")[0]
+      }
+      out.push(nameText.replace(/^@/, ""))
+    }
+    return out
+  }
+
   private hasToken(node: Node, token: string): boolean {
     for (let i = 0; i < node.childCount; i++) {
       const child = node.child(i)
@@ -818,10 +949,15 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
       const n = stack.pop()!
       if (
         n.type === "if_statement" || n.type === "for_statement" ||
+        n.type === "for_in_statement" || n.type === "do_statement" ||
         n.type === "while_statement" || n.type === "catch_clause" ||
         n.type === "switch_case" || n.type === "ternary_expression"
       ) {
         c++
+      } else if (n.type === "binary_expression") {
+        // Short-circuit operators are decision points (family contract).
+        const op = n.childForFieldName("operator")?.text
+        if (op === "&&" || op === "||" || op === "??") c++
       }
       for (let i = 0; i < n.namedChildCount; i++) {
         const child = n.namedChild(i)
@@ -838,9 +974,15 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     // to the wrapper parent first (mirrors the TypeScript analyzer fix).
     const scanNode: Node = node.parent && node.parent.type === "export_statement" ? node.parent : node
     let sibling = scanNode.previousSibling
+    // Contiguity boundary: a blank line between the comment run and the
+    // anchor ends the walk. Without this, trailing remarks about the
+    // PREVIOUS declaration were stolen across the gap (X1, fixed on TS).
+    let anchorRow = scanNode.startPosition.row
     while (sibling) {
       if (sibling.type === "comment") {
+        if (sibling.endPosition.row + 1 < anchorRow) break
         comments.unshift(stripCommentMarkers(sibling.text))
+        anchorRow = sibling.startPosition.row
         sibling = sibling.previousSibling
       } else {
         break
@@ -897,10 +1039,14 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       } else if (
         child.type === "function_declaration" || child.type === "generator_function_declaration" ||
-        child.type === "class_declaration"
+        child.type === "class_declaration" || child.type === "function_expression" ||
+        child.type === "arrow_function" || child.type === "class"
       ) {
+        // ANONYMOUS default declarations (`export default function () {}`)
+        // have no name node — previously dropped entirely, losing the
+        // module's main export. Record under the family sentinel "default".
         const n = child.childForFieldName("name")
-        if (n) exports.push({ name: n.text, isDefault, range: this.nodeToRange(n) })
+        exports.push({ name: n?.text ?? "default", isDefault, range: this.nodeToRange(child) })
       } else if (child.type === "lexical_declaration" || child.type === "variable_declaration") {
         for (let j = 0; j < child.namedChildCount; j++) {
           const decl = child.namedChild(j)
