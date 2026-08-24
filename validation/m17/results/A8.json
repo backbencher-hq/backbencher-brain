@@ -1,0 +1,18 @@
+{
+  "issue": "M17.A8",
+  "code": "A8",
+  "tool": "bb_ask",
+  "title": "ask counts match DB (permanent regression) + no-index honesty",
+  "verified": true,
+  "checks": 3,
+  "passed": 3,
+  "failed": 0,
+  "negatives": 2,
+  "negativePassed": 2,
+  "generatedAt": "2026-08-24T21:03:14.067Z",
+  "measured": {
+    "askFunctions": 319,
+    "dbFunctions": 319
+  },
+  "negativeLine": "Parity proven on rake (Ruby); cross-language union already covered by M16 A1-A4."
+}
