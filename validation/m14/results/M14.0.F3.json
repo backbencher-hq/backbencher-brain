@@ -2,7 +2,7 @@
   "checks": [
     {
       "description": "javascript adversarial fixtures",
-      "detail": "18/18 fixtures pass",
+      "detail": "24/24 fixtures pass",
       "id": "fixtures-javascript",
       "status": "pass"
     },
@@ -38,10 +38,15 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "e870e24907d2822d37375d62f136fb845402345a",
-  "committedAt": "2026-08-24T20:59:36+02:00",
+  "commit": "a00969ec7d46c56445b5743c28ce69d08b183a16",
+  "committedAt": "2026-08-24T22:07:57+02:00",
   "data": {
     "details": [
+      {
+        "fixture": "javascript/accessor-name-collision",
+        "ok": true,
+        "problems": []
+      },
       {
         "fixture": "javascript/anon-default-export",
         "ok": true,
@@ -49,6 +54,11 @@
       },
       {
         "fixture": "javascript/async-await",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/barrel-named-clause",
         "ok": true,
         "problems": []
       },
@@ -79,6 +89,11 @@
       },
       {
         "fixture": "javascript/decorator-capture",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/deep-cjs-chains",
         "ok": true,
         "problems": []
       },
@@ -123,7 +138,22 @@
         "problems": []
       },
       {
+        "fixture": "javascript/private-methods",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "javascript/prototype-pattern",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/qc-prototype-attribution",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/qualified-call-path",
         "ok": true,
         "problems": []
       },
@@ -744,7 +774,7 @@
       },
       "javascript": {
         "fail": 0,
-        "pass": 18
+        "pass": 24
       },
       "kotlin": {
         "fail": 0,
