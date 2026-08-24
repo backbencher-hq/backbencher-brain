@@ -2,7 +2,7 @@
   "checks": [
     {
       "description": "javascript adversarial fixtures",
-      "detail": "11/11 fixtures pass",
+      "detail": "18/18 fixtures pass",
       "id": "fixtures-javascript",
       "status": "pass"
     },
@@ -38,12 +38,22 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "33dea131634baadd8b63912068cff8f483471693",
-  "committedAt": "2026-08-24T06:30:09+02:00",
+  "commit": "e870e24907d2822d37375d62f136fb845402345a",
+  "committedAt": "2026-08-24T20:59:36+02:00",
   "data": {
     "details": [
       {
+        "fixture": "javascript/anon-default-export",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "javascript/async-await",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/barrel-reexport",
         "ok": true,
         "problems": []
       },
@@ -63,6 +73,21 @@
         "problems": []
       },
       {
+        "fixture": "javascript/complexity-parity",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/decorator-capture",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/deep-cjs-exports",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "javascript/destructuring",
         "ok": true,
         "problems": []
@@ -74,6 +99,16 @@
       },
       {
         "fixture": "javascript/esm-exports",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/import-alias-binding",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/js-member-heritage",
         "ok": true,
         "problems": []
       },
@@ -709,7 +744,7 @@
       },
       "javascript": {
         "fail": 0,
-        "pass": 11
+        "pass": 18
       },
       "kotlin": {
         "fail": 0,

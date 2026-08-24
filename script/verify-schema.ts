@@ -33,14 +33,15 @@ const indexes = (raw.prepare("SELECT name FROM sqlite_master WHERE type='index' 
 // drizzle-declared tables
 const EXPECTED_TABLES = [
   "brain_file", "brain_symbol", "brain_relationship", "brain_import",
-  "brain_pattern", "brain_taint_flow", "brain_query_cache",
+  "brain_taint_flow", "brain_query_cache",
   "brain_project_health", "brain_index_status", "brain_semantic_embedding",
   "brain_analysis_run", "brain_analysis_finding", "brain_analysis_occurrence",
 ]
 for (const t of EXPECTED_TABLES) check(`table ${t}`, tables.includes(t))
 
-// no dead git table
+// no dead git/pattern tables
 check("no brain_git_cooccurrence table", !tables.includes("brain_git_cooccurrence"))
+check("no brain_pattern table (dead: nothing wrote it; SR detection is live)", !tables.includes("brain_pattern"))
 
 // drizzle-declared indexes (from brain.sql.ts)
 const EXPECTED_INDEXES = [
@@ -57,8 +58,6 @@ const EXPECTED_INDEXES = [
   "brain_rel_proj_source_idx", "brain_rel_proj_type_idx", "brain_rel_target_type_idx",
   "brain_import_project_idx", "brain_import_file_idx", "brain_import_path_idx",
   "brain_import_name_idx", "brain_import_external_idx",
-  "brain_pattern_project_idx", "brain_pattern_type_idx", "brain_pattern_framework_idx",
-  "brain_pattern_confidence_idx",
   "brain_taint_project_idx", "brain_taint_source_idx", "brain_taint_sink_idx",
   "brain_taint_vuln_idx", "brain_taint_severity_idx",
   "brain_cache_project_idx", "brain_cache_query_type_idx", "brain_cache_hash_idx",

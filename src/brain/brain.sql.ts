@@ -193,37 +193,6 @@ export const BrainImportTable = sqliteTable(
 // PATTERNS - Framework & architectural intelligence
 // ================================================================
 
-export const BrainPatternTable = sqliteTable(
-  "brain_pattern",
-  {
-    id: text().primaryKey(),
-    project_id: text()
-      .$type<ProjectID>()
-      .notNull()
-      .references(() => ProjectTable.id, { onDelete: "cascade" }),
-    pattern_type: text().notNull(), // "react_hook", "bloc_pattern", "singleton", "factory", etc.
-    pattern_name: text().notNull(),
-    description: text(),
-    framework: text(), // "react", "flutter", "spring", "django", etc.
-    confidence: real().notNull(),
-    symbol_ids: text({ mode: "json" }), // Array of symbol IDs that form this pattern
-    file_ids: text({ mode: "json" }), // Files involved in pattern
-    is_anti_pattern: integer({ mode: "boolean" }),
-    severity: text(), // "info", "warning", "error" for anti-patterns
-    suggestion: text(), // Improvement suggestion
-    metadata: text({ mode: "json" }),
-    ...Timestamps,
-  },
-  (table) => [
-    index("brain_pattern_project_idx").on(table.project_id),
-    index("brain_pattern_type_idx").on(table.pattern_type),
-    index("brain_pattern_framework_idx").on(table.framework),
-    index("brain_pattern_confidence_idx").on(table.confidence),
-  ],
-)
-
-
-
 // ================================================================
 // SECURITY & DATA-FLOW INTELLIGENCE (taint flow)
 // ================================================================
