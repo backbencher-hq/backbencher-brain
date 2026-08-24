@@ -373,6 +373,12 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           // decision recorded in wave M14.1.
           const sourceName = parentContext?.name ?? "(script)"
           if (!this.isGroovyBuiltin(callExpr)) {
+            // Matrix 1b payload: symbol-level qualified call list (#383) —
+            // attached to the enclosing method symbol when one exists.
+            if (parentContext?.symbolRef) {
+              if (!parentContext.symbolRef.qualified_calls) parentContext.symbolRef.qualified_calls = []
+              parentContext.symbolRef.qualified_calls.push(callExpr)
+            }
             relationships.push({
               source: sourceName,
               target: methodName,

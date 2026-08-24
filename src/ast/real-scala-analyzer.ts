@@ -1085,6 +1085,11 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         // constructions. Previously they emitted bogus PascalCase
         // Instantiates edges on macro-heavy code (dotty compiler corpus).
         if (fnNode.text.startsWith("'") || fnNode.text.startsWith("`")) return
+        // Matrix 1b payload: symbol-level qualified call list (#383).
+        if (parent) {
+          if (!parent.qualified_calls) parent.qualified_calls = []
+          parent.qualified_calls.push(fnNode.text)
+        }
         // Curried application wrapper: `self.add(1)(2)` parses as an outer
       // call_expression whose function is the inner call `self.add(1)`. The
       // inner call is visited separately by the walker and emits the correct
