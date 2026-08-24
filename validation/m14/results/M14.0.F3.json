@@ -14,7 +14,7 @@
     },
     {
       "description": "java adversarial fixtures",
-      "detail": "22/22 fixtures pass",
+      "detail": "23/23 fixtures pass",
       "id": "fixtures-java",
       "status": "pass"
     },
@@ -38,8 +38,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "67bec9584094423142c096830bd8e0040a99dad3",
-  "committedAt": "2026-08-24T22:24:13+02:00",
+  "commit": "f145352728958d61f1f28cf5d9fb4c1ef4cd16a4",
+  "committedAt": "2026-08-24T22:31:03+02:00",
   "data": {
     "details": [
       {
@@ -354,6 +354,11 @@
       },
       {
         "fixture": "java/fqn-instantiation",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/generic-visibility-payload",
         "ok": true,
         "problems": []
       },
@@ -775,7 +780,7 @@
       },
       "java": {
         "fail": 0,
-        "pass": 22
+        "pass": 23
       },
       "javascript": {
         "fail": 0,

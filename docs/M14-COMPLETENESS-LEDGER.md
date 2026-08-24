@@ -41,10 +41,10 @@ symbol-field rot. Every language wave must pin these symbol payloads:
 | docstrings/kdoc | PENDING -> #383 | PENDING -> #383 | GATED (kdoc-extraction) | |
 | parameters (+defaults) | PENDING -> #383 | PENDING -> #383 | GATED (calls-and-instantiation partial) | |
 | byte ranges (bb_edit depends) | indirect via M13 edit gates | same | same | M13 scope |
-| visibility/modifiers | GATED F3 implicit | implicit | implicit | explicit pins PENDING -> #383 |
+| visibility/modifiers | GATED (generic-visibility-payload) | GATED F3 implicit | GATED F3 implicit (scala visibility flows) | explicit scala pins via generic fixture |
 | qualified_calls | GATED (CC1+payload fixture) | NOT EMITTED -> #383 (also javascript: NOT EMITTED, declared) | GATED (payload-pins) | GATED (extension-method-flag) |
 | docstrings/JSDoc | GATED (javadoc-payload) | GATED (groovydoc-payload) | GATED (payload-pins) | GATED (scaladoc-payload) |
-| typeParameters/generics | GATED (generic-parameters-payload java-side pending) | n/a (no syntax) | GATED (generic-parameters-payload) | GATED (generic-parameters-payload) |
+| typeParameters/generics | GATED (generic-visibility-payload: T extends Comparable<T>, method <R>) | n/a (no generics syntax) | GATED (generic-parameters-payload) | GATED (generic-parameters-payload) |
 | range columns 1-based | GATED (CC1) | GATED (CC1, was 0-based - FIXED) | GATED (CC1) | GATED (CC1) |
 
 **Standing fixture-authoring rule**: every language's fixtures MUST include
