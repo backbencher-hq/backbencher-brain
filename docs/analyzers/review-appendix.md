@@ -737,3 +737,54 @@ new_expression construction candidates must be NAMEABLE leaves
 oracle targets; mirrors the ratified Scala identifier-leaf rule.
 
 JS now carries the same real-code regression protection as TS/JVM.
+
+## Vue review wave (2026-08-24)
+
+Method: universal prompt. Grammar = tree-sitter-grammars/tree-sitter-vue
+(45 node types — template skeleton only; script bodies are raw_text
+pre-parsed by the engine per lang). Siblings: TS/JS.
+
+FIXED (3 fixtures proven failing pre-fix):
+  - **DUAL SCRIPT BLOCKS**: only sfcScriptTrees[0] was processed —
+    `<script>` + `<script setup>` (THE standard Vue 3 layout) lost the
+    entire setup block: imports, state, functions all vanished. All
+    blocks now processed.
+  - **LANG DISPATCH**: lang="ts" blocks were routed through the JS
+    analyzer even though the engine pre-parses them with the TS grammar;
+    interfaces/types silently dropped. Blocks now dispatch to the
+    matching language analyzer.
+  - **DUPLICATE COMPONENT SYMBOLS**: SFC skeleton Class + Options-API
+    Class pushed TWICE when no `name:` option existed.
+  - **findExportDefault fragile**: text.startsWith("export default")
+    missed every script whose body began on a new line after <script>
+    (raw_text starts with "\n") — structural trimStart check now.
+  - **METRICS FAKES** (groovy/JS disease, third occurrence): file
+    complexity was symbols+relationships synthetic; cyclomaticComplexity
+    hardcoded 1. Now real: 1 + script-block decisions + template
+    decision directives (v-if/v-else-if/v-for/v-show counted as
+    rendering branches).
+
+DIFFERENTIAL PARITY ACHIEVED:
+  - vue added to the differential harness; element-plus pinned as the
+    standing Vue corpus: **156/156 tree-truth (100%), 0 unexplained**
+    across 60 real SFCs; vue-core full population also 10/10.
+  - Oracle built INDEPENDENT of the analyzer: own HTML-core tag set +
+    vue-builtin skip; template component usages derived from start_tag
+    descent (tag_name is NOT a direct child of element — first oracle
+    draft got this wrong and under-derived).
+  - REAL NOISE FOUND BY THE CORPUS: `new Promise()` / `new Date()` /
+    DOM event constructors emitted Instantiates edges to RUNTIME GLOBALS
+    in BOTH the JS and TS analyzers (builtin filters covered calls,
+    never constructions). Filtered on all three sides (analyzer x2 +
+    oracle) with the same intrinsic/DOM list; grails-core regression
+    this initially caused proved the asymmetry — fixed symmetrically.
+    lodash JS differential re-measured: 178/178 (100%) post-filter.
+
+RECORDED (verified pre-existing, not fixed here):
+  - setup() key in Options API not extracted as a method; its returned
+    bindings unlinked.
+  - `components: { ... }` local registrations produce no relationship to
+    the imported component symbol (template instantiates remain
+    tag-name-only).
+  - `<script setup>` bindings used in template are not linked to their
+    template usages (needs template-expression scope analysis).
