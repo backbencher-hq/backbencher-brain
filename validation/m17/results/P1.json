@@ -1,0 +1,19 @@
+{
+  "issue": "M17.P1",
+  "code": "P1",
+  "tool": "bb_patterns",
+  "title": "recordRun persists the full analyzed set",
+  "verified": true,
+  "checks": 4,
+  "passed": 4,
+  "failed": 0,
+  "negatives": 1,
+  "negativePassed": 1,
+  "generatedAt": "2026-08-24T20:56:54.185Z",
+  "measured": {
+    "found": 70,
+    "recorded": 70,
+    "persistedDb": 70
+  },
+  "negativeLine": "Proves persistence equivalence (no truncation), not pattern-detection heuristic quality."
+}
