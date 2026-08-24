@@ -30,10 +30,17 @@ never overrides flow evidence.
 
 ## States
 
+State is derived from **endpoint resolution**, never from the raw row alone:
+
 - **confirmed** — both source and sink resolve to indexed symbols; unmitigated.
 - **mitigated** — `is_mitigated = 1`; kept but low actionable confidence.
-- **unresolved** — one endpoint does not resolve to an indexed symbol.
-- **source_only** — no source symbol (sink observation only).
+- **source_only** — the source symbol resolves but **no sink endpoint is
+  reachable** (isolated-source observation). Never promoted to a finding.
+- **unresolved** — a sink endpoint exists but the source endpoint does not
+  resolve to an indexed symbol (sink-only row), i.e. one endpoint unresolved.
+
+`source_only`/`unresolved` findings are observations, not confirmed
+  exploitable paths — treat as leads, not verdicts.
 
 ## Severity & confidence
 
@@ -70,6 +77,10 @@ Options: `minConfidence`, `includeMitigated`, `includeUnresolved`, `maxResults`.
   silently trusting or dropping it).
 - `source_only`/`unresolved` findings are observations, not confirmed
   exploitable paths — treat as leads, not verdicts.
+- **`recordRun` persists only real findings** (confirmed/mitigated).
+  `source_only`/`unresolved` observations are reported live as "unvalidated
+  sources" and are **excluded from persisted history** — history must never
+  contain `rule="unresolved"` or `severity="unknown"` rows.
 - **Sink classification is token-based over symbol bodies.** A symbol whose
   body text contains a token like `execute` can match the universal SQL-sink
   regex even when no database/SQL is involved — reproducing Ruby `def execute`

@@ -128,13 +128,18 @@ export async function analyzeTaintFlows(projectId: string, options: SecurityOpti
     const path = parseFlowPath(row.flow_path).map(resolveNode)
 
     const mitigated = !!row.is_mitigated
-    const sourceOnly = !row.source_symbol_id
-    const unresolved = (!!row.source_symbol_id && !source.file) || (!!row.sink_symbol_id && !sink.file)
+    // A flow is only "confirmed" when BOTH endpoints resolve to indexed
+    // symbols. The indexer emits partial rows ("isolated sources"/"isolated
+    // sinks") that must never be promoted to findings:
+    //   - no sink endpoint reachable  -> source_only (source-only observation)
+    //   - sink reachable, source not  -> unresolved  (one endpoint unresolved)
+    const sourceResolved = !!row.source_symbol_id && !!source.file
+    const sinkResolved = !!row.sink_symbol_id && !!sink.file
     const state: SecurityFindingV2["state"] = mitigated
       ? "mitigated"
-      : sourceOnly
+      : !sinkResolved
         ? "source_only"
-        : unresolved
+        : !sourceResolved
           ? "unresolved"
           : "confirmed"
 

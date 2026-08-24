@@ -57,6 +57,12 @@ states.
 - `recordRun: true` to persist the scan and return run ID plus new/repeated/resolved counts.
 - `history: true` to return persisted security runs and findings.
 
+`recordRun` persists the **full analyzed result set**, never a display/truncated
+slice (`bb_security` excludes `source_only`/`unresolved` observations entirely;
+`bb_patterns` records every detected pattern, not just the first `limit` shown).
+A persisted run must equal the analysis that produced it, so history stays an
+honest record and the auto-resolve pass never marks real findings as gone.
+
 `bb_patterns` supports the same two options for pattern scans. `bb_health`
 with `history: true` returns all finding kinds and run history. These are
 optional modes on existing public tools, not a new dispatcher.
