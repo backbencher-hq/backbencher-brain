@@ -94,6 +94,24 @@ per declared support. Born from the scala column-base finding; IMMEDIATELY
 caught groovy emitting 0-based columns (fixed) and corrected the
 qualified_calls support map (groovy does not emit them - #383).
 
+## Matrix 1d — Evidence-tier coverage (#299)
+
+Every relationship across gated languages carries metadata.evidenceClass:
+structural | usage_contextual | import_based | reference_qualified | inferred.
+
+| Language | Classifier live | Tier fixture pins |
+|---|---|---|
+| java | GATED | GATED (class-extends-implements: structural/usage) |
+| groovy | GATED | GATED (runtime-verified extends/calls/contains) |
+| kotlin | GATED | runtime-verified; dedicated pins during payload pass |
+| scala | GATED | runtime-verified; dedicated pins during payload pass |
+| typescript | GATED | GATED (consistency-tiers) |
+
+Rules: contains/exports=structural; extends/implements/overrides by confidence
+(1.0 structural / 0.85 usage / <0.85 inferred); instantiates structural when
+new-derived or >=0.9; calls/uses=usage_contextual; import references=
+import_based. Applied centrally per analyzer so emission sites cannot skip it.
+
 ## Matrix 2 — Language-cluster pipeline coverage (realistic combos, not all-to-all)
 
 | Cluster | Languages | Polyglot e2e fixture | Status |
