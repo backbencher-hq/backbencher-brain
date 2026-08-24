@@ -67,10 +67,20 @@ function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
         n.childForFieldName?.("name") ??
         n.namedChildren.find((c: any) => c.type === "identifier" || c.type === "type_identifier")
       const clsName = nameNode?.text ?? "?"
-      // extends side: superclass (classes) or extends_interfaces+type_list (interfaces)
-      const sup = n.childForFieldName?.("superclass") ?? n.namedChildren.find((c: any) => c.type === "superclass" || c.type === "extends_interfaces")
+      // extends side: superclass (classes), extends_interfaces+type_list
+      // (java-style interfaces), extends_type_clause (typescript interfaces)
+      const sup = n.childForFieldName?.("superclass") ?? n.namedChildren.find((c: any) => c.type === "superclass" || c.type === "extends_interfaces" || c.type === "extends_type_clause")
       if (sup) {
         if (sup.type === "superclass" || sup.type === "extends_interfaces") collect(sup, "extends", clsName)
+        else if (sup.type === "extends_type_clause") {
+          // typescript interface heritage: type_arguments are ARGUMENTS,
+          // not inherited bases - descend only into real type nodes
+          // (mirrors the analyzer's fix for phantom "<string>" targets)
+          for (const c of sup.namedChildren) {
+            if (!c || c.type === "type_arguments") continue
+            collect(c, "extends", clsName)
+          }
+        }
       }
       // implements side
       const impls = n.childForFieldName?.("interfaces") ?? n.namedChildren.find((c: any) => c.type === "super_interfaces")
@@ -211,6 +221,8 @@ function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
     }
     for (let i = 0; i < n.namedChildCount; i++) walk(n.namedChild(i))
   }
+  walk(root)
+  // dedupe identical edges (oracle double-push guard)
   // overrides truth: same-name methods across in-file inheritance chains.
   // Only declarations related by extends/implements within THIS file count -
   // cross-file override resolution is the analyzer's job, not the oracle's.
@@ -227,7 +239,7 @@ function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
         if (body) {
           for (let i = 0; i < body.namedChildCount; i++) {
             const m = body.namedChild(i)
-            if (/function_definition|function_declaration|method_definition|method_signature/.test(m?.type ?? "")) {
+            if (/function_definition|function_declaration|method_declaration|method_definition|method_signature/.test(m?.type ?? "")) {
               const mn = m.namedChildren.find((c: any) => /identifier/.test(c.type))
               if (mn) decls[nm].methods.add(mn.text)
             }
@@ -257,8 +269,6 @@ function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
     }
   }
 
-  walk(root)
-  // dedupe identical edges (oracle double-push guard)
   return edges.filter((e, i) => edges.findIndex(x => x.label === e.label && x.from === e.from && x.target === e.target) === i)
 }
 
