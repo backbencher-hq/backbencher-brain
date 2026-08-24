@@ -4,9 +4,9 @@
   "tool": "governance",
   "title": "master plan, ledger, closure gate, wiring",
   "verified": true,
-  "checks": 9,
-  "passed": 9,
+  "checks": 10,
+  "passed": 10,
   "failed": 0,
   "negatives": 0,
-  "generatedAt": "2026-08-24T20:49:44.921Z"
+  "generatedAt": "2026-08-24T21:11:24.056Z"
 }

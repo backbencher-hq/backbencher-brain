@@ -9,6 +9,6 @@
   "failed": 0,
   "negatives": 2,
   "negativePassed": 2,
-  "generatedAt": "2026-08-24T21:05:31.684Z",
+  "generatedAt": "2026-08-24T21:11:11.398Z",
   "negativeLine": "Checks doc-vs-implementation agreement; does not prove docs describe every analyzer detail."
 }
