@@ -1,48 +1,48 @@
 {
   "checks": [
     {
-      "description": "scala3@18df09c05f: tree-truth vs analyzer diff",
-      "detail": "16 files, coverage 100%, unexplained 15.4%",
+      "description": "graphql-js@9c24501848: tree-truth vs analyzer diff",
+      "detail": "60 files, coverage 100%, unexplained 0%",
       "id": "differential-javascript",
       "status": "pass"
     },
     {
-      "description": "scala3@18df09c05f: tree-truth vs analyzer diff",
-      "detail": "0 files, coverage null%, unexplained null%",
+      "description": "graphql-js@9c24501848: tree-truth vs analyzer diff",
+      "detail": "46 files, coverage 100%, unexplained 0%",
       "id": "differential-typescript",
       "status": "pass"
     },
     {
-      "description": "scala3@18df09c05f: tree-truth vs analyzer diff",
+      "description": "graphql-js@9c24501848: tree-truth vs analyzer diff",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-kotlin",
       "status": "pass"
     },
     {
-      "description": "scala3@18df09c05f: tree-truth vs analyzer diff",
-      "detail": "60 files, coverage 98.4%, unexplained 0%",
+      "description": "graphql-js@9c24501848: tree-truth vs analyzer diff",
+      "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-scala",
       "status": "pass"
     },
     {
-      "description": "scala3@18df09c05f: tree-truth vs analyzer diff",
-      "detail": "60 files, coverage 100%, unexplained 0%",
+      "description": "graphql-js@9c24501848: tree-truth vs analyzer diff",
+      "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-java",
       "status": "pass"
     },
     {
-      "description": "scala3@18df09c05f: tree-truth vs analyzer diff",
+      "description": "graphql-js@9c24501848: tree-truth vs analyzer diff",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-groovy",
       "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "07e5c4473ebe106515a9aefd08b5a4a0f4aa5a5a",
-  "committedAt": "2026-08-24T22:57:51+02:00",
+  "commit": "2310680d8438eff4d9409f57031552d05bcf4ec3",
+  "committedAt": "2026-08-24T22:58:59+02:00",
   "data": {
     "corpusPins": {
-      "scala3": "18df09c05fa48fbb5bf5cd4b3728e9b7a0b3f6db"
+      "graphql-js": "9c245018484668b7c35f3ed219092a98855bd51e"
     },
     "report": {
       "groovy": {
@@ -64,89 +64,40 @@
         "unexplainedInAnalyzer": 0
       },
       "java": {
-        "analyzerEdges": 71,
+        "analyzerEdges": 0,
+        "coveragePct": null,
+        "coveredByAnalyzer": 0,
+        "explainableByTree": 0,
+        "fabricationPct": null,
+        "filesSampled": 0,
+        "heuristicUnexplained": 0,
+        "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": null,
+          "maxMsPerFile": null,
+          "samplesTimed": 0
+        },
+        "samples": [],
+        "treeTruthEdges": 0,
+        "unexplainedInAnalyzer": 0
+      },
+      "javascript": {
+        "analyzerEdges": 84,
         "coveragePct": 100,
-        "coveredByAnalyzer": 40,
-        "explainableByTree": 71,
+        "coveredByAnalyzer": 44,
+        "explainableByTree": 84,
         "fabricationPct": 0,
         "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 3.2,
-          "maxMsPerFile": 100.3,
+          "avgMsPerFile": 20.2,
+          "maxMsPerFile": 745.7,
           "samplesTimed": 60
         },
         "samples": [],
-        "treeTruthEdges": 40,
+        "treeTruthEdges": 44,
         "unexplainedInAnalyzer": 0
-      },
-      "javascript": {
-        "analyzerEdges": 39,
-        "coveragePct": 100,
-        "coveredByAnalyzer": 21,
-        "explainableByTree": 33,
-        "fabricationPct": 15.4,
-        "filesSampled": 16,
-        "heuristicUnexplained": 0,
-        "missingInAnalyzer": 0,
-        "perf": {
-          "avgMsPerFile": 78,
-          "maxMsPerFile": 687.8,
-          "samplesTimed": 16
-        },
-        "samples": [
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "scaladoc/resources/dotty_res/scripts/components/Input.js",
-            "label": "extends",
-            "line": 0,
-            "target": "Component"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "scaladoc/resources/dotty_res/hljs/highlight.pack.js",
-            "label": "extends",
-            "line": 0,
-            "target": "l"
-          },
-          {
-            "confidence": 0.95,
-            "dir": "UNEXPLAINED",
-            "file": "scaladoc/resources/dotty_res/hljs/highlight.pack.js",
-            "label": "overrides",
-            "line": 0,
-            "target": "l.constructor"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "scaladoc/resources/dotty_res/scripts/components/FilterGroup.js",
-            "label": "extends",
-            "line": 0,
-            "target": "Component"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "scaladoc/resources/dotty_res/scripts/components/DocumentableList.js",
-            "label": "extends",
-            "line": 0,
-            "target": "Component"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "scaladoc/resources/dotty_res/scripts/components/FilterBar.js",
-            "label": "extends",
-            "line": 0,
-            "target": "Component"
-          }
-        ],
-        "treeTruthEdges": 21,
-        "unexplainedInAnalyzer": 6
       },
       "kotlin": {
         "analyzerEdges": 0,
@@ -167,46 +118,6 @@
         "unexplainedInAnalyzer": 0
       },
       "scala": {
-        "analyzerEdges": 455,
-        "coveragePct": 98.4,
-        "coveredByAnalyzer": 188,
-        "explainableByTree": 397,
-        "fabricationPct": 0,
-        "filesSampled": 60,
-        "heuristicUnexplained": 58,
-        "missingInAnalyzer": 3,
-        "perf": {
-          "avgMsPerFile": 16,
-          "maxMsPerFile": 148,
-          "samplesTimed": 60
-        },
-        "samples": [
-          {
-            "dir": "MISSING",
-            "file": "tests/pos/annot-18064.scala",
-            "from": "TensorImpl.add",
-            "label": "overrides",
-            "target": "Tensor.add"
-          },
-          {
-            "dir": "MISSING",
-            "file": "library/src/scala/collection/concurrent/TrieMap.scala",
-            "from": "SNode.kvPair",
-            "label": "overrides",
-            "target": "KVNode.kvPair"
-          },
-          {
-            "dir": "MISSING",
-            "file": "library/src/scala/collection/concurrent/TrieMap.scala",
-            "from": "TNode.kvPair",
-            "label": "overrides",
-            "target": "KVNode.kvPair"
-          }
-        ],
-        "treeTruthEdges": 191,
-        "unexplainedInAnalyzer": 0
-      },
-      "typescript": {
         "analyzerEdges": 0,
         "coveragePct": null,
         "coveredByAnalyzer": 0,
@@ -222,6 +133,24 @@
         },
         "samples": [],
         "treeTruthEdges": 0,
+        "unexplainedInAnalyzer": 0
+      },
+      "typescript": {
+        "analyzerEdges": 43,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 22,
+        "explainableByTree": 43,
+        "fabricationPct": 0,
+        "filesSampled": 46,
+        "heuristicUnexplained": 0,
+        "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": 20.2,
+          "maxMsPerFile": 98.4,
+          "samplesTimed": 46
+        },
+        "samples": [],
+        "treeTruthEdges": 22,
         "unexplainedInAnalyzer": 0
       }
     },
