@@ -367,7 +367,10 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (nameNode) {
           const methodName = nameNode.text
           const objectNode = node.childForFieldName("object")
-          const callExpr = objectNode ? `${objectNode.text}.${methodName}` : methodName
+          // Dotted path WITHOUT argument text (family contract with java).
+          // Raw object text embedded inner-call arguments on chains:
+          // `db.list(user).collect` was stored as "db.list(user).collect".
+          const callExpr = this.buildGroovyQualifiedCall(objectNode, methodName)
           // Script-level invocations (Jenkins-pipeline style: no enclosing
           // class/method) are attributed to the "(script)" sentinel so the
           // call graph of script files is not silently empty. Design
@@ -485,7 +488,11 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       exports,
       errors,
       metadata: {
-        complexity: symbols.length + relationships.length,
+        // Real cyclomatic complexity — was the synthetic heuristic
+        // symbols.length + relationships.length, which is not a complexity
+        // metric at all (same defect class previously fixed on scala).
+        complexity: this.calculateGroovyMethodComplexity(rootNode),
+        cyclomaticComplexity: this.calculateGroovyMethodComplexity(rootNode),
         linesOfCode: content.split("\n").length,
         currentPackage,
         framework: fw.framework,
@@ -699,6 +706,17 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
    * Per-method cyclomatic complexity (1 + decision points) - java/kotlin
    * parity (M14 #301 prerequisite). Previously always absent.
    */
+  private buildGroovyQualifiedCall(objectNode: Node | null, methodName: string): string {
+    if (!objectNode) return methodName
+    if (objectNode.type === "method_invocation") {
+      const innerName = objectNode.childForFieldName("name")
+      const innerObject = objectNode.childForFieldName("object")
+      const base = this.buildGroovyQualifiedCall(innerObject, innerName?.text ?? "")
+      return `${base}.${methodName}`
+    }
+    return `${objectNode.text}.${methodName}`
+  }
+
   private calculateGroovyMethodComplexity(node: Node): number {
     let complexity = 1
     const stack: Node[] = [node]
@@ -707,15 +725,21 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (
         n.type === "if_statement" ||
         n.type === "for_statement" ||
+        n.type === "enhanced_for_statement" || // for-in loops parsed as this, not for_statement
         n.type === "while_statement" ||
-        n.type === "do_while" ||
-        n.type === "switch_statement" ||
-        n.type === "catch_block" ||
-        n.type === "elvis_expression" ||
-        n.type === "&&" ||
-        n.type === "||"
+        n.type === "do_statement" || // do-while (NOT "do_while")
+        n.type === "switch_block_statement_group" || // per-case granularity (family contract)
+        n.type === "catch_clause" || // NOT "catch_block"
+        n.type === "ternary_expression"
       ) {
         complexity++
+      } else if (n.type === "binary_expression") {
+        const op = n.childForFieldName("operator")?.text
+        // Short-circuit operators and elvis are decision points. The previous
+        // `n.type === "&&"/"||"` cases matched NODE TYPES that don't exist in
+        // this grammar (operators live inside binary_expression as an
+        // operator field) — dead cases, so &&/||/??: never counted.
+        if (op === "&&" || op === "||" || op === "?:") complexity++
       }
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const child = n.namedChild(i)

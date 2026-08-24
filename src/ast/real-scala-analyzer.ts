@@ -206,6 +206,9 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       if (node.type === "if_expression" || node.type === "while_expression" || node.type === "do_while_expression" || node.type === "match_expression" || node.type === "for_expression" || node.type === "try_expression") {
         cyclomaticComplexity++
+      } else if (node.type === "infix_expression") {
+        const op = node.childForFieldName("operator")?.text
+        if (op === "&&" || op === "||") cyclomaticComplexity++
       }
 
       for (let i = node.namedChildCount - 1; i >= 0; i--) {
@@ -223,8 +226,10 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // cross-language metric consistency (M14): complexity IS the cyclomatic
     // count (java convention), not a synthetic heuristic like the previous
     // symbols.length * 1.5.
-    metadata.complexity = cyclomaticComplexity
-    metadata.cyclomaticComplexity = cyclomaticComplexity
+    // +1 base: the walk counts raw decision points; stored metric is
+    // textbook cyclomatic complexity (family contract).
+    metadata.complexity = cyclomaticComplexity + 1
+    metadata.cyclomaticComplexity = cyclomaticComplexity + 1
 
     for (const fw in frameworksObj) metadata.detectedFrameworks!.push(fw)
     for (const pat in patternsObj) metadata.patterns!.push(pat)
@@ -494,6 +499,23 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     return out
   }
 
+  private buildScalaCallPath(fnNode: Node): string {
+    const parts: string[] = []
+    let cur: Node | null = fnNode
+    while (cur) {
+      if (cur.type === "field_expression") {
+        parts.unshift(cur.namedChild(cur.namedChildCount - 1)?.text ?? "")
+        cur = cur.namedChild(0)
+      } else if (cur.type === "call_expression") {
+        cur = cur.namedChild(0) // descend into the called function: drop argument text
+      } else {
+        parts.unshift(cur.text)
+        break
+      }
+    }
+    return parts.filter(Boolean).join(".")
+  }
+
   /**
    * Per-function cyclomatic complexity (1 + decision points) - java/kotlin
    * parity (M14 #301 prerequisite).
@@ -512,6 +534,11 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         n.type === "try_expression"
       ) {
         complexity++
+      } else if (n.type === "infix_expression") {
+        // Short-circuit operators are decision points (family contract).
+        // Previously never counted on scala.
+        const op = n.childForFieldName("operator")?.text
+        if (op === "&&" || op === "||") complexity++
       }
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const child = n.namedChild(i)
@@ -549,6 +576,10 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       returnType: extraMetadata.returnType,
       decorators,
       comments: kdoc ? [kdoc] : [],
+      // Hoisted top-level per family contract: the DB ingester reads
+      // symbol.complexity (|| 1) for gravity scoring — leaving it only in
+      // metadata left every scala symbol at complexity 1 in the index.
+      complexity: extraMetadata.complexity,
       metadata: { ...extraMetadata, annotations: decorators },
     }
   }
@@ -1158,9 +1189,12 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         // Instantiates edges on macro-heavy code (dotty compiler corpus).
         if (fnNode.text.startsWith("'") || fnNode.text.startsWith("`")) return
         // Matrix 1b payload: symbol-level qualified call list (#383).
+        // Dotted path WITHOUT argument text (family contract with java):
+        // raw fnNode.text embedded inner-call arguments on chains
+        // (`db.list(user).map` was stored as "db.list(user).map").
         if (parent) {
           if (!parent.qualified_calls) parent.qualified_calls = []
-          parent.qualified_calls.push(fnNode.text)
+          parent.qualified_calls.push(this.buildScalaCallPath(fnNode))
         }
         // Curried application wrapper: `self.add(1)(2)` parses as an outer
       // call_expression whose function is the inner call `self.add(1)`. The
