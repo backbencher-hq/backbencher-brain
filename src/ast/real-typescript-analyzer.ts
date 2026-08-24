@@ -561,8 +561,57 @@ function extractModifiersFromNode(node: Node): ModifierInfo {
   return result
 }
 
-function extractDecoratorName(decoratorNode: Node): string | null {
-  // Decorator structure: @DecoratorName or @DecoratorName() or @module.Decorator()
+/**
+ * Decorators for a class-level definition. Placement is ASYMMETRIC in this
+ * grammar family: field decorators attach INSIDE public_field_definition,
+ * but class decorators are children of export_statement/class_declaration
+ * and METHOD decorators are SIBLINGS in class_body preceding the
+ * method_definition. Reading only the definition node's own children sees
+ * field decorators and misses everything else.
+ */
+function collectDecoratorsForMember(member: Node, body: Node | null): Node[] {
+  const out: Node[] = []
+  const own = extractModifiersFromNode(member).decorators
+  if (own.length > 0) return [] // own-children scan already handled it
+
+  // Method/class decorators: immediately-preceding consecutive decorator
+  // siblings within the same body.
+  if (body) {
+    // web-tree-sitter returns FRESH wrapper objects per access — node
+    // identity must be compared by startIndex, not object equality.
+    let idx = -1
+    for (let i = 0; i < body.namedChildCount; i++) {
+      const c = body.namedChild(i)
+      if (c && c.startIndex === member.startIndex && c.type === member.type) { idx = i; break }
+    }
+    if (idx > 0) {
+      for (let i = idx - 1; i >= 0; i--) {
+        const sib = body.namedChild(i)
+        if (sib && sib.type === "decorator") out.unshift(sib)
+        else break
+      }
+    }
+  }
+  return out
+}
+
+/** Class decorators: own children, or the wrapping export_statement's. */
+function collectDecoratorsForClass(node: Node): Node[] {
+  const out: Node[] = []
+  for (let i = 0; i < node.childCount; i++) {
+    const c = node.child(i)
+    if (c && c.type === "decorator") out.push(c)
+  }
+  if (out.length === 0 && node.parent?.type === "export_statement") {
+    for (let i = 0; i < node.parent.childCount; i++) {
+      const c = node.parent.child(i)
+      if (c && c.type === "decorator") out.push(c)
+    }
+  }
+  return out
+}
+
+function extractDecoratorName(decoratorNode: Node): string | null {  // Decorator structure: @DecoratorName or @DecoratorName() or @module.Decorator()
   for (let i = 0; i < decoratorNode.namedChildCount; i++) {
     const child = decoratorNode.namedChild(i)
     if (!child) continue
@@ -1592,10 +1641,10 @@ class TypeScriptAnalysisRunner {
           errors.push({
             message: `Syntax ${node.type} detected. The Brain Engine is bypassing this broken node.`,
             range: {
-              startLine: node.startPosition.row,
-              startColumn: node.startPosition.column,
-              endLine: node.endPosition.row,
-              endColumn: node.endPosition.column,
+              startLine: node.startPosition.row + 1,
+              startColumn: node.startPosition.column + 1,
+              endLine: node.endPosition.row + 1,
+              endColumn: node.endPosition.column + 1,
               startIndex: node.startIndex,
               endIndex: node.endIndex,
             },
@@ -1682,135 +1731,6 @@ class TypeScriptAnalysisRunner {
         hasFrameworkIntelligence: true,
         analysisVersion: "3.0.0-infallible-brain",
       },
-    }
-  }
-
-  // ========================================================================
-  // PHANTOM SYMBOL INJECTION - Smart symbol pre-processing
-  // ========================================================================
-
-  private injectPhantomSymbols(rootNode: Node, symbols: ASTEngine.UniversalSymbol[]): void {
-    // Pre-inject commonly referenced but not explicitly declared symbols
-    // This helps with better cross-reference resolution in large codebases
-
-    // Inject implicit 'this' symbol for class methods
-    this.injectImplicitThisSymbols(rootNode, symbols)
-
-    // Inject constructor symbols for classes without explicit constructors
-    this.injectImplicitConstructors(rootNode, symbols)
-
-    // Inject global/window symbols for web environments
-    this.injectGlobalEnvironmentSymbols(symbols)
-  }
-
-  private injectImplicitThisSymbols(node: Node, symbols: ASTEngine.UniversalSymbol[]): void {
-    const traverse = (n: Node) => {
-      if (n.type === "class_declaration") {
-        const nameNode = n.childForFieldName("name")
-        if (nameNode) {
-          const className = nameNode.text
-          // Add implicit 'this' reference for this class
-          symbols.push({
-            name: "this",
-            kind: ASTEngine.SymbolKind.Variable,
-            range: this.nodeRange(n),
-            scope: className,
-            visibility: "private",
-            returnType: className,
-            ownerName: className,
-            ownerKind: ASTEngine.SymbolKind.Class,
-            metadata: {
-              isImplicit: true,
-              isThisReference: true,
-            },
-          })
-        }
-      }
-
-      for (let i = 0; i < n.namedChildCount; i++) {
-        const child = n.namedChild(i)
-        if (child) traverse(child)
-      }
-    }
-
-    traverse(node)
-  }
-
-  private injectImplicitConstructors(node: Node, symbols: ASTEngine.UniversalSymbol[]): void {
-    const classesWithConstructors: Record<string, boolean> = {}
-    const allClasses: Record<string, boolean> = {}
-
-    // First pass: find explicit constructors and all classes
-    const traverse = (n: Node) => {
-      if (n.type === "class_declaration") {
-        const nameNode = n.childForFieldName("name")
-        if (nameNode) {
-          allClasses[nameNode.text] = true
-        }
-      } else if (n.type === "method_definition" || n.type === "constructor_definition") {
-        const nameNode = n.childForFieldName("name")
-        if (nameNode && nameNode.text === "constructor") {
-          const className = this.findEnclosingClassName(n)
-          if (className) {
-            classesWithConstructors[className] = true
-          }
-        }
-      }
-
-      for (let i = 0; i < n.namedChildCount; i++) {
-        const child = n.namedChild(i)
-        if (child) traverse(child)
-      }
-    }
-
-    traverse(node)
-
-    // Second pass: inject implicit constructors for classes that don't have them
-    for (const className of getObjectKeys(allClasses)) {
-      if (!!!classesWithConstructors[className]) {
-        symbols.push({
-          name: "constructor",
-          kind: ASTEngine.SymbolKind.Constructor,
-          range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0, startIndex: 0, endIndex: 0 },
-          scope: className,
-          visibility: "public",
-          parameters: [],
-          ownerName: className,
-          ownerKind: ASTEngine.SymbolKind.Class,
-          metadata: {
-            isImplicit: true,
-            isDefaultConstructor: true,
-          },
-        })
-      }
-    }
-  }
-
-  private injectGlobalEnvironmentSymbols(symbols: ASTEngine.UniversalSymbol[]): void {
-    // Common global symbols that are often referenced but not explicitly imported
-    const globalSymbols = [
-      { name: "window", type: "Window" },
-      { name: "document", type: "Document" },
-      { name: "console", type: "Console" },
-      { name: "process", type: "NodeJS.Process" },
-      { name: "global", type: "NodeJS.Global" },
-      { name: "__dirname", type: "string" },
-      { name: "__filename", type: "string" },
-    ]
-
-    for (const global of globalSymbols) {
-      symbols.push({
-        name: global.name,
-        kind: ASTEngine.SymbolKind.Variable,
-        range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0, startIndex: 0, endIndex: 0 },
-        scope: "__global__",
-        visibility: "public",
-        returnType: global.type,
-        metadata: {
-          isImplicit: true,
-          isGlobal: true,
-        },
-      })
     }
   }
 
@@ -1923,6 +1843,7 @@ class TypeScriptAnalysisRunner {
     const params = this.extractParameters(node)
     const returnType = this.extractReturnType(node)
     const typeParams = this.extractTypeParameters(node)
+    const apiContract = this.extractApiContract(node)
 
     const symbol: ASTEngine.UniversalSymbol = {
       name,
@@ -1938,11 +1859,12 @@ class TypeScriptAnalysisRunner {
       decorators: modifiers.decorators.length > 0 ? modifiers.decorators : undefined,
       comments: this.extractComments(node),
       qualified_calls: this.extractQualifiedCalls(node),
-      apiContractPath: this.extractApiContractPath(node, modifiers?.decorators),
+      apiContractPath: apiContract.path,
       taintSources: this.extractTaintSources(node),
       taintSinks: this.extractTaintSinks(node),
       ...this.scopeManager.getOwnerInfo(),
       metadata: {
+        apiMethod: apiContract.method,
         isGenerator: node.type === "generator_function_declaration",
         isExported: exportStatus.isExported,
         isDefault: exportStatus.isDefault,
@@ -1970,8 +1892,15 @@ class TypeScriptAnalysisRunner {
     const nameNode = node.childForFieldName("name")
     if (!nameNode) return false
     const name = nameNode.text
-    const modifiers = extractModifiersFromNode(node)
+    let modifiers = extractModifiersFromNode(node)
     const exportStatus = isNodeExported(node)
+    // Class decorators live on the wrapping export_statement or as own children.
+    const classDecoratorNames = collectDecoratorsForClass(node)
+      .map((d) => extractDecoratorName(d))
+      .filter((n): n is string => !!n)
+    for (const d of classDecoratorNames) {
+      if (!modifiers.decorators.includes(d)) modifiers.decorators.push(d)
+    }
 
     // Extract heritage (extends/implements)
     const heritage = this.extractClassHeritage(node)
@@ -2013,6 +1942,9 @@ class TypeScriptAnalysisRunner {
       for (let i = 0; i < body.namedChildCount; i++) {
         const member = body.namedChild(i)
         if (!member) continue
+        // Method/constructor decorators are class_body SIBLINGS immediately
+        // preceding the definition — collect them here and pass down.
+        const memberDecorators = collectDecoratorsForMember(member, body)
 
         switch (member.type) {
           case "method_definition":
@@ -2020,7 +1952,7 @@ class TypeScriptAnalysisRunner {
           case "abstract_method_signature": {
             const memberName = member.childForFieldName("name")?.text
             if (memberName === "constructor") {
-              this.extractConstructor(member, symbols, stack)
+              this.extractConstructor(member, symbols, stack, memberDecorators)
               break
             }
             if (memberName && seenMethodNames.has(memberName)) {
@@ -2028,7 +1960,7 @@ class TypeScriptAnalysisRunner {
               break
             }
             if (memberName) seenMethodNames.add(memberName)
-            this.extractMethod(member, symbols, stack)
+            this.extractMethod(member, symbols, stack, memberDecorators)
             break
           }
 
@@ -2042,10 +1974,6 @@ class TypeScriptAnalysisRunner {
             break
           }
 
-          case "constructor_definition":
-            this.extractConstructor(member, symbols, stack)
-            break
-
           case "index_signature":
             this.extractIndexSignature(member, symbols)
             break
@@ -2054,16 +1982,6 @@ class TypeScriptAnalysisRunner {
             this.extractStaticBlock(member, symbols, stack)
             break
 
-          case "getter":
-          case "setter": {
-            // get/set pair over the same name is ONE property (family contract:
-            // computed/accessor members are properties). Keep the first.
-            const accName = member.childForFieldName("name")?.text
-            if (accName && seenPropertyNames.has(accName)) break
-            if (accName) seenPropertyNames.add(accName)
-            this.extractAccessor(member, symbols)
-            break
-          }
         }
       }
     }
@@ -2518,11 +2436,24 @@ class TypeScriptAnalysisRunner {
     }
   }
 
-  private extractMethod(node: Node, symbols: ASTEngine.UniversalSymbol[], stack: StackEntry[]): boolean {
+  private extractMethod(
+    node: Node,
+    symbols: ASTEngine.UniversalSymbol[],
+    stack: StackEntry[],
+    decoratorNodes?: Node[],
+  ): boolean {
     const nameNode = node.childForFieldName("name")
     if (!nameNode) return false
     const name = nameNode.text
     const modifiers = extractModifiersFromNode(node)
+    // Member decorators are class_body SIBLINGS, not children of the
+    // method_definition — merge the sibling-collected names in.
+    const siblingDecoratorNames = (decoratorNodes ?? [])
+      .map((d) => extractDecoratorName(d))
+      .filter((n): n is string => !!n)
+    for (const d of siblingDecoratorNames) {
+      if (!modifiers.decorators.includes(d)) modifiers.decorators.push(d)
+    }
     const params = this.extractParameters(node)
     const returnType = this.extractReturnType(node)
     const typeParams = this.extractTypeParameters(node)
@@ -2557,6 +2488,10 @@ class TypeScriptAnalysisRunner {
     }
 
     const ownerInfo = this.scopeManager.getOwnerInfo()
+    const apiContract = this.extractApiContract(
+      node,
+      decoratorNodes && decoratorNodes.length > 0 ? decoratorNodes : undefined,
+    )
 
     const symbol: ASTEngine.UniversalSymbol = {
       name: stripPrivatePrefix(name), // Normalize private field name
@@ -2573,11 +2508,12 @@ class TypeScriptAnalysisRunner {
       decorators: modifiers.decorators.length > 0 ? modifiers.decorators : undefined,
       comments: this.extractComments(node),
       qualified_calls: this.extractQualifiedCalls(node),
-      apiContractPath: this.extractApiContractPath(node, modifiers?.decorators),
+      apiContractPath: apiContract.path,
       taintSources: this.extractTaintSources(node),
       taintSinks: this.extractTaintSinks(node),
       ...ownerInfo,
       metadata: {
+        apiMethod: apiContract.method,
         isOverride: modifiers.isOverride,
         isPrivateField: name.startsWith("#"),
         isGenerator: (() => {
@@ -2606,10 +2542,19 @@ class TypeScriptAnalysisRunner {
     return true
   }
 
-  private extractConstructor(node: Node, symbols: ASTEngine.UniversalSymbol[], stack: StackEntry[]): boolean {
+  private extractConstructor(
+    node: Node,
+    symbols: ASTEngine.UniversalSymbol[],
+    stack: StackEntry[],
+    decoratorNodes?: Node[],
+  ): boolean {
     const params = this.extractParameters(node)
     const ownerInfo = this.scopeManager.getOwnerInfo()
     const modifiers = extractModifiersFromNode(node)
+    const apiContract = this.extractApiContract(
+      node,
+      decoratorNodes && decoratorNodes.length > 0 ? decoratorNodes : undefined,
+    )
 
     const symbol: ASTEngine.UniversalSymbol = {
       name: "constructor",
@@ -2620,16 +2565,19 @@ class TypeScriptAnalysisRunner {
       parameters: params,
       comments: this.extractComments(node),
       qualified_calls: this.extractQualifiedCalls(node),
-      apiContractPath: this.extractApiContractPath(node, modifiers?.decorators),
+      apiContractPath: apiContract.path,
       ...ownerInfo,
-      metadata: {},
+      metadata: { apiMethod: apiContract.method },
     }
 
     symbols.push(symbol)
 
-    // Extract parameter properties (public/private/protected/readonly constructor params)
+    // Extract parameter properties (public/private/protected/readonly constructor params).
+    // Modifier words must come from the parameter's actual keywords — substring
+    // matching on default-value text fabricated phantom properties from string
+    // defaults like t: string = "private".
     for (const param of params) {
-      const mods = param.defaultValue || ""
+      const mods: string[] = (param as any).modifiers ?? []
       const hasVis = mods.includes("public") || mods.includes("private") || mods.includes("protected")
       const hasRead = mods.includes("readonly")
       if (!hasVis && !hasRead) continue
@@ -2779,39 +2727,6 @@ class TypeScriptAnalysisRunner {
       if (child) stack.push({ node: child })
     }
     return true
-  }
-
-  private extractAccessor(node: Node, symbols: ASTEngine.UniversalSymbol[]): void {
-    const nameNode = node.childForFieldName("name")
-    if (!nameNode) return
-
-    const name = nameNode.text
-    const isGetter = node.type === "getter"
-    const modifiers = extractModifiersFromNode(node)
-    const ownerInfo = this.scopeManager.getOwnerInfo()
-
-    const returnType = isGetter ? this.extractReturnType(node) : undefined
-    const params = !isGetter ? this.extractParameters(node) : []
-
-    const symbol: ASTEngine.UniversalSymbol = {
-      name,
-      // Family contract: accessor (get/set) members are properties, not methods
-      // (mirrors C# computed/expression-bodied properties).
-      kind: ASTEngine.SymbolKind.Property,
-      range: this.nodeRange(node),
-      scope: ownerInfo?.ownerName,
-      visibility: modifiers.isPrivate ? "private" : modifiers.isProtected ? "protected" : "public",
-      isStatic: modifiers.isStatic,
-      parameters: params,
-      returnType,
-      ...ownerInfo,
-      metadata: {
-        isGetter,
-        isSetter: !isGetter,
-      },
-    }
-
-    symbols.push(symbol)
   }
 
   private extractNamespace(node: Node, symbols: ASTEngine.UniversalSymbol[], stack: StackEntry[]): boolean {
@@ -3122,7 +3037,7 @@ class TypeScriptAnalysisRunner {
 
       // Extract call expressions and JSX component usages
       // Fallback: when at top level (no enclosing function), attribute calls to the file module
-      const callSource = currentSymbol || { name: "module", scope: undefined, kind: "module" as any, range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 }, metadata: {} as any }
+      const callSource = currentSymbol || { name: "(script)", scope: undefined, kind: "module" as any, range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 }, metadata: {} as any }
       if (
         (n.type === "call_expression" || n.type === "jsx_self_closing_element" || n.type === "jsx_element")
       ) {
@@ -3211,7 +3126,11 @@ class TypeScriptAnalysisRunner {
     relationships: ASTEngine.UniversalRelationship[],
     symbols: ASTEngine.UniversalSymbol[],
   ): void {
+    // The usage pass only links usages to KNOWN project symbols. This map
+    // was previously declared but never populated, making every References/
+    // type-Uses/JSX-Instantiates edge structurally impossible.
     const symbolNames: Record<string, boolean> = {}
+    for (const s of symbols) symbolNames[s.name] = true
     const processed: Record<string, boolean> = {}
 
     const processNode = (n: Node, currentSymbol: ASTEngine.UniversalSymbol | null): void => {
@@ -3335,7 +3254,7 @@ class TypeScriptAnalysisRunner {
       currentSymbol = this.resolveRelationshipSymbol(n, symbols, currentSymbol)
 
       // Extract new expressions — fallback to module when at top level
-      const instSource = currentSymbol || { name: "module", scope: undefined, kind: "module" as any, range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 }, metadata: {} as any }
+      const instSource = currentSymbol || { name: "(script)", scope: undefined, kind: "module" as any, range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 }, metadata: {} as any }
       if (n.type === "new_expression") {
         const constructor = n.namedChild(0)
         if (constructor) {
@@ -3596,7 +3515,7 @@ class TypeScriptAnalysisRunner {
       if (paramNode.type === "decorator") continue
 
       // Handle rest parameters
-      if (paramNode.type === "rest_pattern" || paramNode.type === "rest_parameter") {
+      if (paramNode.type === "rest_pattern") {
         const inner = paramNode.namedChild(0)
         if (inner) {
           params.push({
@@ -3644,13 +3563,14 @@ class TypeScriptAnalysisRunner {
         isOptional = true
       }
 
-      // Extract default value
+      // Extract default value. Modifier keywords are carried on
+      // param.modifiers — stuffing them into defaultValue made substring
+      // checks fabricate parameter properties from string defaults like
+      // x: string = "private".
       const valueNode = paramNode.childForFieldName("value")
       if (valueNode) {
-        defaultValue = modifierTexts.length > 0 ? `${modifierTexts.join(" ")} ${valueNode.text}` : valueNode.text
+        defaultValue = valueNode.text
         isOptional = true // Parameters with defaults are optional
-      } else if (modifierTexts.length > 0) {
-        defaultValue = modifierTexts.join(" ")
       }
 
       // Handle assignment pattern (destructuring with defaults)
@@ -3671,7 +3591,8 @@ class TypeScriptAnalysisRunner {
         type,
         defaultValue,
         isOptional,
-      })
+        modifiers: modifierTexts.length > 0 ? modifierTexts : undefined,
+      } as any)
     }
 
     return params
@@ -3710,17 +3631,20 @@ class TypeScriptAnalysisRunner {
             result.extends = []
             for (let k = 0; k < heritageClause.namedChildCount; k++) {
               const type = heritageClause.namedChild(k)
-              if (type) {
-                result.extends.push(type.text)
-              }
+              if (!type) continue
+              // Generic heritage `extends Base<string>` parses with the
+              // type_arguments as a SEPARATE sibling node — pushing it
+              // wholesale fabricated an Extends edge to "<string>". Skip
+              // argument nodes; take the base type text only.
+              if (type.type === "type_arguments") continue
+              result.extends.push(type.text)
             }
           } else if (heritageClause.type === "implements_clause") {
             result.implements = []
             for (let k = 0; k < heritageClause.namedChildCount; k++) {
               const type = heritageClause.namedChild(k)
-              if (type) {
-                result.implements.push(type.text)
-              }
+              if (!type || type.type === "type_arguments") continue
+              result.implements.push(type.text)
             }
           }
         }
@@ -3771,7 +3695,7 @@ class TypeScriptAnalysisRunner {
     const scanNode: Node = node.parent && node.parent.type === "export_statement" ? node.parent : node
 
     let prev = scanNode.previousSibling
-    while (prev && (prev.type === "comment" || prev.type === "line_comment" || prev.type === "block_comment")) {
+    while (prev && prev.type === "comment") {
       comments.unshift(stripCommentMarkers(prev.text))
       prev = prev.previousSibling
     }
@@ -3787,56 +3711,77 @@ class TypeScriptAnalysisRunner {
     return comments.length > 0 ? comments : undefined
   }
 
-  private extractApiContractPath(node: any, decorators?: string[]): string | undefined {
+  private extractApiContract(
+    node: any,
+    decoratorNodes?: Node[],
+  ): { path?: string; method?: string } {
     let contractPath: string | undefined = undefined
+    let contractMethod: string | undefined = undefined
 
-    // A to Z Audit FIX: Extract raw decorators straight from the AST node!
-    // The incoming decorators[] array is stripped of arguments by extractDecoratorName, which broke route detection.
-    for (let i = 0; i < node.namedChildCount; i++) {
-      const child = node.namedChild(i)
-      if (child && child.type === "decorator") {
-        // Pure-AST route extraction: @Get('/path'), @PostMapping("/api"), ...
-        // The decorator body is a call_expression whose callee identifier
-        // carries the HTTP method (possibly suffixed, e.g. PostMapping) and
-        // whose first string argument is the route.
-        const methods = new Set(["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"])
-        let decName = ""
-        let route = "/"
-        let sawCall = false
-        const scan = (n: any) => {
-          if (sawCall) return
-          if (n.type === "call_expression") {
-            sawCall = true
-            const callee = n.namedChild(0)
-            if (callee) {
-              // callee may be an identifier or a member_expression chain
-              let base = callee
-              if (callee.type === "member_expression") {
-                base = callee.childForFieldName("property") || callee.namedChild(callee.namedChildCount - 1) || callee
-              }
-              decName = base.text || ""
+    // Decorator-based routes (@Get("/users"), @PostMapping("/api")). The
+    // decorator NODES are passed in by the caller because placement is
+    // asymmetric: method decorators are class_body siblings, not children
+    // of the method_definition.
+    const methods = new Set(["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"])
+    const scanDecorator = (child: any): { path: string; method: string } | null => {
+      let decName = ""
+      let route = "/"
+      let sawCall = false
+      const scan = (n: any) => {
+        if (sawCall) return
+        if (n.type === "call_expression") {
+          sawCall = true
+          const callee = n.namedChild(0)
+          if (callee) {
+            let base = callee
+            if (callee.type === "member_expression") {
+              base = callee.childForFieldName("property") || callee.namedChild(callee.namedChildCount - 1) || callee
             }
-            const args = n.childForFieldName("arguments")
-            if (args && args.namedChildCount > 0) {
-              const firstArg = args.namedChild(0)
-              if (firstArg && (firstArg.type === "string" || firstArg.type === "template_string")) {
-                route = stringContent(firstArg)
-              }
+            decName = base.text || ""
+          }
+          const args = n.childForFieldName("arguments")
+          if (args && args.namedChildCount > 0) {
+            const firstArg = args.namedChild(0)
+            if (firstArg && (firstArg.type === "string" || firstArg.type === "template_string")) {
+              route = stringContent(firstArg)
             }
-            return
           }
-          for (let j = 0; j < n.namedChildCount; j++) {
-            const c = n.namedChild(j)
-            if (c) scan(c)
-          }
+          return
         }
-        scan(child)
-        const upper = decName.toUpperCase()
-        for (const method of methods) {
-          // Match exact method name or method-prefixed names (PostMapping,
-          // GetJson, ...) — pure string startsWith, no regex.
-          if (upper === method || (upper.length > method.length && upper.startsWith(method))) {
-            return `${method} ${route}`.trim()
+        for (let j = 0; j < n.namedChildCount; j++) {
+          const c = n.namedChild(j)
+          if (c) scan(c)
+        }
+      }
+      scan(child)
+      const upper = decName.toUpperCase()
+      for (const method of methods) {
+        if (upper === method || (upper.length > method.length && upper.startsWith(method))) {
+          return { path: route, method }
+        }
+      }
+      return null
+    }
+
+    if (decoratorNodes) {
+      for (const child of decoratorNodes) {
+        const hit = scanDecorator(child)
+        if (hit) {
+          contractPath = hit.path
+          contractMethod = hit.method
+          break
+        }
+      }
+    } else {
+      // Function declarations carry their own decorators as direct children.
+      for (let i = 0; i < node.namedChildCount; i++) {
+        const child = node.namedChild(i)
+        if (child && child.type === "decorator") {
+          const hit = scanDecorator(child)
+          if (hit) {
+            contractPath = hit.path
+            contractMethod = hit.method
+            break
           }
         }
       }
@@ -3880,7 +3825,8 @@ class TypeScriptAnalysisRunner {
               }
 
               if (url) {
-                contractPath = `${method} ${url}`
+                contractPath = url
+                contractMethod = method
                 return
               }
             }
@@ -3901,7 +3847,7 @@ class TypeScriptAnalysisRunner {
       }
     }
 
-    return contractPath
+    return contractPath ? { path: contractPath, method: contractMethod } : {}
   }
 
   private extractQualifiedCalls(node: Node): string[] | undefined {
@@ -4087,11 +4033,6 @@ class TypeScriptAnalysisRunner {
   // qualified for top-level containers, class leaf for members); overrides:
   // UserService.format -> BaseService.format (qualified on both sides).
   // Containers qualify by owner (namespace/class); members use their leaf name.
-  private relContainer(symbol: ASTEngine.UniversalSymbol | null | undefined): string {
-    if (!symbol) return "module"
-    return symbol.name
-  }
-
   private hasToken(node: Node, token: string): boolean {
     for (let i = 0; i < node.childCount; i++) {
       const child = node.child(i)

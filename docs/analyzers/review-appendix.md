@@ -311,6 +311,61 @@ grammar audit (unknowns 0) + typecheck. Nothing known remains.
 
 ## Legacy gotchas (original appendix entries)
 
+- **TypeScript** (reviewed 2026-08-23, official tree-sitter/typescript
+  monorepo @ 75b3874; pinned ts + tsx + js wasms probed live):
+  - Constructors, getters and setters are ALL `method_definition` nodes
+    (ctor name = "constructor"; accessors lead with anonymous get/set
+    tokens). There are NO `constructor_definition` or `getter`/`setter`
+    node types. Comments are ONE generic `comment` node — no
+    line_comment/block_comment. Rest params are `rest_pattern`
+    (`rest_parameter` does not exist).
+  - **DECORATOR PLACEMENT IS ASYMMETRIC** (verified against pinned wasm
+    AND upstream node-types.json): field decorators attach INSIDE
+    `public_field_definition` (field `decorator`), but CLASS decorators
+    attach to the `export_statement`/`class_declaration` and METHOD
+    decorators are SIBLINGS in `class_body` preceding the
+    `method_definition`. Any analyzer reading decorators from the
+    definition node's own children only sees FIELD decorators. No wasm
+    rebuild fixes this — it is the current upstream shape.
+  - Heritage: `class_heritage > extends_clause/implements_clause`; the
+    extends_clause named children include BOTH the base type AND its
+    type_arguments node for generic heritage (Base + "<string>") —
+    pushing all children wholesale fabricates phantom extends targets.
+  - Root is `program`; error ranges need the usual +1.
+  - JSX requires the tsx wasm (.ts files parse JSX as errors).
+
+## TypeScript fix wave (2026-08-23)
+
+Fixes (6 fixtures proven failing 14/20 pre-fix, passing 20/20 post-fix):
+  - **T1 generic heritage**: extends_clause children include the
+    type_arguments sibling — wholesale push fabricated Extends edges to
+    "<string>". Argument nodes now skipped.
+  - **T2 apiContractPath contract**: bare path stored, method moved to
+    metadata.apiMethod (Kotlin-wave decision applied to TS).
+  - **T3/T5 decorator capture**: class decorators read from the wrapping
+    export_statement; METHOD decorators collected as class_body SIBLINGS
+    preceding the definition and passed down to extractMethod/
+    extractConstructor/extractApiContract. NestJS/TypeORM/http-route
+    patterns and decorator References edges live again.
+  - **T4 usage pass revived**: extractUsageRelationships read a
+    symbolNames map that was NEVER populated — zero References/type-Uses
+    edges on every file since inception. Map now fed from extracted
+    symbols.
+  - Error ranges +1 (collectErrors + React-hook linter); "(script)"
+    sentinel for top-level calls/instantiations; param-property
+    modifiers carried on param.modifiers instead of substring-matching
+    defaultValue text (a string default "private" fabricated a phantom
+    private property); dead code removed (phantom-injection family ~125
+    lines, relContainer, extractAccessor, 5 dead literals → audit
+    unknowns 5→0).
+- **web-tree-sitter IDENTITY TRAP** (cost a debug cycle): node wrapper
+  objects are recreated per access — `namedChild(i) === member` NEVER
+  matches. Compare startIndex (+type) instead. Applies everywhere.
+- Differential: vue-core pinned as the standing TS corpus (60 files,
+  46/46 tree-truth, 100%, 0 unexplained) — baseline recorded.
+
+*(existing entries retained below)*
+
 - **Scala** (reviewed 2026-08-23, official tree-sitter/tree-sitter-scala;
   pinned wasm probed live): root node is **`compilation_unit`**, NOT
   `source_file`. Lambdas are `lambda_expression`; interpolations are
