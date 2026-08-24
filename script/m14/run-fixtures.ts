@@ -24,6 +24,8 @@ const FIXTURES_DIR = path.join(ROOT, "validation", "m14", "fixtures")
 
 const LANGS: Record<string, { wasm: string; analyzerFile: string; className: string; ext: string }> = {
   javascript: { wasm: "tree-sitter-javascript.wasm", analyzerFile: "real-javascript-analyzer", className: "RealJavaScriptAnalyzer", ext: "js" },
+  vue: { wasm: "tree-sitter-vue.wasm", analyzerFile: "real-vue-analyzer", className: "RealVueAnalyzer", ext: "vue" },
+  svelte: { wasm: "tree-sitter-svelte.wasm", analyzerFile: "real-svelte-analyzer", className: "RealSvelteAnalyzer", ext: "svelte" },
     typescript: { wasm: "tree-sitter-typescript.wasm", analyzerFile: "real-typescript-analyzer", className: "RealTypeScriptAnalyzer", ext: "ts" },
     java: { wasm: "tree-sitter-java.wasm", analyzerFile: "real-java-analyzer", className: "RealJavaAnalyzer", ext: "java" },
   groovy: { wasm: "tree-sitter-groovy.wasm", analyzerFile: "real-groovy-analyzer", className: "RealGroovyAnalyzer", ext: "groovy" },
@@ -133,7 +135,17 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
 
     const content = fs.readFileSync(path.join(dir, src), "utf8")
     const tree = parser.parse(content)
-    const result = await analyzer.analyze(tree.rootNode, content, `fixtures/${lang}/${src}`)
+
+    // vue/svelte: production parity — engine parseFile performs the SFC
+    // script-block pre-parse exactly as real indexing does.
+    let result: any
+    if (lang === "vue" || lang === "svelte") {
+      const engine = await import("../../src/ast/engine")
+      result = await (engine as any).ASTEngine.parseFile(path.join(dir, src), content)
+    } else {
+      result = await analyzer.analyze(tree.rootNode, content, `fixtures/${lang}/${src}`)
+    }
+    console.log(`[dbg] ${lang}/${src}: result=${typeof result} sym=${result?.symbols?.length ?? "?"}`)
     const symbols: Entry[] = result.symbols ?? []
     const rels: Entry[] = (result.relationships ?? []).map(normRel)
 
