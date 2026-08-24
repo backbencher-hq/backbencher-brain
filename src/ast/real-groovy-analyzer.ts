@@ -438,6 +438,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+
     this.resolveOverrides(overrideTasks, classHierarchy, symbolMap, relationships, context?.overrideCompanion)
 
     // Rewrite import-reference sources from the package name to the file's
@@ -481,6 +482,8 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility })
       }
     }
+    this.classifyEvidenceTier(relationships)
+
     return {
       symbols,
       relationships,
@@ -513,6 +516,41 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
    * analysis. Primary selection follows a fixed priority so the same file
    * always yields the same primary.
    */
+  /**
+   * M14 #299 - evidence-tier classification for EVERY emitted relationship.
+   * Tiers: structural (grammar clauses, conf 1.0) | usage_contextual (calls,
+   * field access, companion-apply idioms) | import_based | reference_qualified
+   * | inferred (sub-1.0 resolutions). Applied centrally at end of analyze()
+   * so no emission site can forget it.
+   */
+  protected classifyEvidenceTier(relationships: ASTEngine.UniversalRelationship[]): void {
+    for (const r of relationships) {
+      const md = r.metadata ?? (r.metadata = {})
+      if (md.evidenceClass) continue
+      const t = String(r.type ?? r.relationshipType ?? "")
+      const conf = typeof r.confidence === "number" ? r.confidence : 1
+      if (t === "contains" || t === "exports") { md.evidenceClass = "structural"; continue }
+      if (t === "references") {
+        md.evidenceClass = (md.isGroovyImport || md.isImport) ? "import_based" : "reference_qualified"
+        continue
+      }
+      if (t === "extends" || t === "implements") {
+        md.evidenceClass = conf >= 1 ? "structural" : "inferred"
+        continue
+      }
+      if (t === "overrides") {
+        md.evidenceClass = conf >= 1 ? "structural" : conf >= 0.85 ? "usage_contextual" : "inferred"
+        continue
+      }
+      if (t === "instantiates") {
+        md.evidenceClass = md.isNew || conf >= 0.9 ? "structural" : "usage_contextual"
+        continue
+      }
+      md.evidenceClass = "usage_contextual"
+    }
+  }
+
+
   private detectGroovyFrameworks(
     content: string,
     symbols: ASTEngine.UniversalSymbol[],

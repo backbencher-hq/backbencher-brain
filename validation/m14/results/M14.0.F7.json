@@ -12,10 +12,10 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "d834fef89b0cb2e6eea93b57b22df047e8e2ab46",
-  "committedAt": "2026-08-22T22:04:09-05:00",
+  "commit": "853f022128b3ea8a848d970565a156ae05e10893",
+  "committedAt": "2026-08-24T21:59:45+02:00",
   "data": {
-    "durationMs": 1815,
+    "durationMs": 1999,
     "failures": [],
     "perfBaselineRef": "docs/M14-COMPLETENESS-LEDGER.md#perf-baselines"
   },
