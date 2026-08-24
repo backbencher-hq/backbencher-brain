@@ -364,6 +364,46 @@ Fixes (6 fixtures proven failing 14/20 pre-fix, passing 20/20 post-fix):
 - Differential: vue-core pinned as the standing TS corpus (60 files,
   46/46 tree-truth, 100%, 0 unexplained) — baseline recorded.
 
+## TypeScript final self-audit wave (2026-08-24)
+
+Post-commit adversarial re-review of b84cea5 found three more defects
+(3 fixtures proven failing pre-fix, 23/23 post-fix):
+
+- **X3 (biggest): `declare global { ... }` dropped its ENTIRE subtree.**
+  ambient_declaration has no name FIELD at all, so `extractNamespace`'s
+  `if (!nameNode) return false` bail fired; combined with the container
+  no-descent list, nothing inside was ever visited — vue's jsx.d.ts
+  extracted **0 symbols** (every global-augmentation interface vanished:
+  JSX namespace, Window, module augmentations). Fix: nameless wrappers
+  descend into body without pushing a scope. Named `declare module "x"`
+  unchanged.
+  - LESSON: my first X3 fix handled empty-name text AFTER the
+    `!nameNode` bail — unreachable code that "looked" fixed. The live
+    probe (0 symbols still) caught it. Always verify fixes against the
+    original failing probe, not by reading the patch.
+- **X2 interface heritage dead**: interfaces parse heritage as
+  `extends_type_clause` (extends_clause is the CLASS node) and
+  interface_declaration has no "extends" field — old lookup missed both;
+  every interface-inheritance edge silently vanished. Generic bases skip
+  type_arguments (same rule as T1).
+- **X1 comment misattribution**: leading-comment walk had NO boundary —
+  a trailing remark about declaration A (after a blank line) was stolen
+  into B's comments. Walk now stops when a blank-line gap separates the
+  comment run from its anchor.
+- Harness gained `expectComments` matcher ({symbol, contains?,
+  notContains?}) — pins comment capture AND misattribution guards.
+- Edge-shape probes verified post-fix: type aliases, decorated
+  arrow-function properties, export-default decorated classes, enums +
+  members, named ambient modules, get/set pair → single property.
+- Differential after wave: oracle extended for extends_type_clause (and
+  taught to skip type_arguments there too — mirroring T1); vue-core now
+  derives 58 tree-truth edges, analyzer covers 58/58 (100%), 0
+  unexplained. Baseline refreshed.
+
+Design note (recorded, NOT a defect): JSX elements emit BOTH Uses and
+Instantiates edges (layered confidence claims). Consistent with family
+behavior; revisit only if a downstream consumer double-counts.
+
 *(existing entries retained below)*
 
 - **Scala** (reviewed 2026-08-23, official tree-sitter/tree-sitter-scala;

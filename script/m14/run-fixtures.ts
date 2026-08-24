@@ -202,6 +202,19 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
       const actual = (result.metadata as any)?.framework ?? null
       if (actual !== want) problems.push(`expected primary framework ${JSON.stringify(want)}; got ${JSON.stringify(actual)} (detected=${JSON.stringify((result.metadata as any)?.detectedFrameworks)})`)
     }
+    for (const want of exp.expectComments ?? []) {
+      // { symbol, contains?, notContains? } — pins leading-comment capture
+      // AND misattribution guards (a comment stolen from a previous
+      // declaration violates notContains).
+      const sym = symbols.find((s: any) => s.name === want.symbol)
+      const comments: string[] = sym?.comments ?? []
+      if (want.contains && !comments.some((c) => c.includes(want.contains))) {
+        problems.push(`expected ${want.symbol} comments to include "${want.contains}"; got ${JSON.stringify(comments)}`)
+      }
+      if (want.notContains && comments.some((c) => c.includes(want.notContains))) {
+        problems.push(`expected ${want.symbol} comments NOT to include "${want.notContains}"; got ${JSON.stringify(comments)}`)
+      }
+    }
     for (const want of exp.expectFrameworks ?? []) {
       const actual: string[] = (result.metadata as any)?.detectedFrameworks ?? []
       if (!actual.includes(want)) problems.push(`expected framework "${want}" not detected; got: ${JSON.stringify(actual)}`)
