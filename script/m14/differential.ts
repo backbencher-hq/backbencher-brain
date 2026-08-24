@@ -155,12 +155,18 @@ function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
     if (t === "new_expression") {
       const tn = n.namedChild(0)
       if (tn) {
-        let name = tn.text
+        // Construction candidates are NAMEABLE leaves only: identifier or
+        // dotted member path. Anonymous constructor expressions —
+        // `new (Backbone.Collection.extend({...}))()`, `new (fn())()` —
+        // have no honest target name; deriving their raw expression text
+        // fabricated unmatchable oracle edges (lodash corpus).
+        const isNameable = tn.type === "identifier" || tn.type === "member_expression"
+        let name = isNameable ? tn.text : ""
         const lt = name.indexOf("<") !== -1 ? name.indexOf("<") : name.indexOf("(")
         if (lt !== -1) name = name.slice(0, lt)
         // `new` keyword alone is the construction signal - casing is
         // irrelevant (lowercase classes are legal TypeScript)
-        if (/^[A-Za-z_$]/.test(name) || name.includes(".")) {
+        if (isNameable && (/^[A-Za-z_$]/.test(name) || name.includes("."))) {
           edges.push({ label: "instantiates", from: "(expr)", target: name })
         }
       }
