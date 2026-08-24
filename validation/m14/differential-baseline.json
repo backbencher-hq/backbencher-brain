@@ -66,11 +66,11 @@
       }
     },
     "scala3:scala": {
-      "missing": 0,
+      "missing": 3,
       "unexplained": 0,
-      "heuristic": 72,
+      "heuristic": 58,
       "perf": {
-        "avgMsPerFile": 8.4
+        "avgMsPerFile": 9.2
       }
     },
     "scala3:java": {
@@ -78,7 +78,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 3.2
+        "avgMsPerFile": 3.6
       }
     },
     "scala3:groovy": {
@@ -244,11 +244,11 @@
       }
     },
     "scala3:javascript": {
-      "missing": 1,
+      "missing": 0,
       "unexplained": 6,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 41.7
+        "avgMsPerFile": 62
       }
     },
     "scala3:typescript": {
