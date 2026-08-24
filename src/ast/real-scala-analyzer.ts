@@ -456,6 +456,26 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     return false
   }
 
+  /**
+   * ScalaDoc extraction: a multiline_comment starting with '/**' immediately
+   * preceding the declaration (previous sibling). Mirrors the kotlin KDoc
+   * approach; previously scala symbols carried NO comments at all.
+   */
+  private extractScalaDoc(node: Node): string | undefined {
+    const parent = node.parent
+    if (!parent) return undefined
+    for (let i = 0; i < parent.namedChildCount; i++) {
+      const sibling = parent.namedChild(i)
+      if (sibling === node) break
+      // scala grammar types doc comments as block_comment (kotlin uses
+      // multiline_comment - each grammar names them differently)
+      if (sibling?.type === "block_comment" && sibling.text.startsWith("/**")) {
+        return sibling.text
+      }
+    }
+    return undefined
+  }
+
   private createSymbol(
     name: string,
     kind: ASTEngine.SymbolKind,
@@ -464,6 +484,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     extraMetadata: any = {},
   ): ASTEngine.UniversalSymbol {
     const decorators = this.collectAnnotations(node)
+    const kdoc = this.extractScalaDoc(node)
     return {
       name,
       kind,
@@ -482,6 +503,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       parameters: extraMetadata.parameters,
       returnType: extraMetadata.returnType,
       decorators,
+      comments: kdoc ? [kdoc] : [],
       metadata: { ...extraMetadata, annotations: decorators },
     }
   }

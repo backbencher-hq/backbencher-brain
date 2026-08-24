@@ -1,48 +1,48 @@
 {
   "checks": [
     {
-      "description": "graphql-js@9c24501848: tree-truth vs analyzer diff",
-      "detail": "60 files, coverage 100%, unexplained 0%",
+      "description": "scala3@18df09c05f: tree-truth vs analyzer diff",
+      "detail": "16 files, coverage 95.5%, unexplained 13.2%",
       "id": "differential-javascript",
       "status": "pass"
     },
     {
-      "description": "graphql-js@9c24501848: tree-truth vs analyzer diff",
-      "detail": "46 files, coverage 100%, unexplained 0%",
+      "description": "scala3@18df09c05f: tree-truth vs analyzer diff",
+      "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-typescript",
       "status": "pass"
     },
     {
-      "description": "graphql-js@9c24501848: tree-truth vs analyzer diff",
+      "description": "scala3@18df09c05f: tree-truth vs analyzer diff",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-kotlin",
       "status": "pass"
     },
     {
-      "description": "graphql-js@9c24501848: tree-truth vs analyzer diff",
-      "detail": "0 files, coverage null%, unexplained null%",
+      "description": "scala3@18df09c05f: tree-truth vs analyzer diff",
+      "detail": "60 files, coverage 100%, unexplained 0%",
       "id": "differential-scala",
       "status": "pass"
     },
     {
-      "description": "graphql-js@9c24501848: tree-truth vs analyzer diff",
-      "detail": "0 files, coverage null%, unexplained null%",
+      "description": "scala3@18df09c05f: tree-truth vs analyzer diff",
+      "detail": "60 files, coverage 100%, unexplained 0%",
       "id": "differential-java",
       "status": "pass"
     },
     {
-      "description": "graphql-js@9c24501848: tree-truth vs analyzer diff",
+      "description": "scala3@18df09c05f: tree-truth vs analyzer diff",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-groovy",
       "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "55ea9c86e5b1563b7311d317cb7f122b98abe741",
-  "committedAt": "2026-08-24T00:04:11+02:00",
+  "commit": "1087a8620044d03c5e0087239496aa6cbaa61909",
+  "committedAt": "2026-08-24T00:50:25+02:00",
   "data": {
     "corpusPins": {
-      "graphql-js": "9c245018484668b7c35f3ed219092a98855bd51e"
+      "scala3": "18df09c05fa48fbb5bf5cd4b3728e9b7a0b3f6db"
     },
     "report": {
       "groovy": {
@@ -63,38 +63,81 @@
         "unexplainedInAnalyzer": 0
       },
       "java": {
-        "analyzerEdges": 0,
-        "coveragePct": null,
-        "coveredByAnalyzer": 0,
-        "explainableByTree": 0,
-        "fabricationPct": null,
-        "filesSampled": 0,
-        "missingInAnalyzer": 0,
-        "perf": {
-          "avgMsPerFile": null,
-          "maxMsPerFile": null,
-          "samplesTimed": 0
-        },
-        "samples": [],
-        "treeTruthEdges": 0,
-        "unexplainedInAnalyzer": 0
-      },
-      "javascript": {
-        "analyzerEdges": 84,
+        "analyzerEdges": 71,
         "coveragePct": 100,
-        "coveredByAnalyzer": 44,
-        "explainableByTree": 84,
+        "coveredByAnalyzer": 40,
+        "explainableByTree": 71,
         "fabricationPct": 0,
         "filesSampled": 60,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 14.6,
-          "maxMsPerFile": 404.7,
+          "avgMsPerFile": 3.1,
+          "maxMsPerFile": 87.3,
           "samplesTimed": 60
         },
         "samples": [],
-        "treeTruthEdges": 44,
+        "treeTruthEdges": 40,
         "unexplainedInAnalyzer": 0
+      },
+      "javascript": {
+        "analyzerEdges": 38,
+        "coveragePct": 95.5,
+        "coveredByAnalyzer": 21,
+        "explainableByTree": 33,
+        "fabricationPct": 13.2,
+        "filesSampled": 16,
+        "missingInAnalyzer": 1,
+        "perf": {
+          "avgMsPerFile": 47.2,
+          "maxMsPerFile": 364.2,
+          "samplesTimed": 16
+        },
+        "samples": [
+          {
+            "dir": "UNEXPLAINED",
+            "file": "scaladoc/resources/dotty_res/scripts/components/Input.js",
+            "label": "extends",
+            "line": 0,
+            "target": "Component"
+          },
+          {
+            "dir": "UNEXPLAINED",
+            "file": "scaladoc/resources/dotty_res/hljs/highlight.pack.js",
+            "label": "extends",
+            "line": 0,
+            "target": "l"
+          },
+          {
+            "dir": "UNEXPLAINED",
+            "file": "scaladoc/resources/dotty_res/scripts/components/FilterGroup.js",
+            "label": "extends",
+            "line": 0,
+            "target": "Component"
+          },
+          {
+            "dir": "MISSING",
+            "file": "docs/_spec/public/scripts/highlight.pack.js",
+            "from": "(expr)",
+            "label": "instantiates",
+            "target": "function(){function j(v){return v.replace(/&/gm,\"&amp;\").replace(/"
+          },
+          {
+            "dir": "UNEXPLAINED",
+            "file": "scaladoc/resources/dotty_res/scripts/components/DocumentableList.js",
+            "label": "extends",
+            "line": 0,
+            "target": "Component"
+          },
+          {
+            "dir": "UNEXPLAINED",
+            "file": "scaladoc/resources/dotty_res/scripts/components/FilterBar.js",
+            "label": "extends",
+            "line": 0,
+            "target": "Component"
+          }
+        ],
+        "treeTruthEdges": 22,
+        "unexplainedInAnalyzer": 5
       },
       "kotlin": {
         "analyzerEdges": 0,
@@ -114,6 +157,23 @@
         "unexplainedInAnalyzer": 0
       },
       "scala": {
+        "analyzerEdges": 383,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 173,
+        "explainableByTree": 383,
+        "fabricationPct": 0,
+        "filesSampled": 60,
+        "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": 8.4,
+          "maxMsPerFile": 136.7,
+          "samplesTimed": 60
+        },
+        "samples": [],
+        "treeTruthEdges": 173,
+        "unexplainedInAnalyzer": 0
+      },
+      "typescript": {
         "analyzerEdges": 0,
         "coveragePct": null,
         "coveredByAnalyzer": 0,
@@ -128,23 +188,6 @@
         },
         "samples": [],
         "treeTruthEdges": 0,
-        "unexplainedInAnalyzer": 0
-      },
-      "typescript": {
-        "analyzerEdges": 41,
-        "coveragePct": 100,
-        "coveredByAnalyzer": 20,
-        "explainableByTree": 41,
-        "fabricationPct": 0,
-        "filesSampled": 46,
-        "missingInAnalyzer": 0,
-        "perf": {
-          "avgMsPerFile": 20.6,
-          "maxMsPerFile": 89.8,
-          "samplesTimed": 46
-        },
-        "samples": [],
-        "treeTruthEdges": 20,
         "unexplainedInAnalyzer": 0
       }
     },
