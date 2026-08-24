@@ -59,14 +59,14 @@ Both were found by **running the tools live**, not by reading code:
 
 | Issue | Status | Evidence | Notes |
 |-------|--------|----------|-------|
-| C1 | OPEN | validation/m17/results/C1.json | gate + ledger being built now |
-| S1 | FIXED (f145352) | script/verify-tool-history.ts A | needs evidence + close comment |
-| S2 | OPEN | — | real-repo e2e |
-| P1 | FIXED (f145352) | script/verify-tool-history.ts B | needs docs + evidence |
-| H1 | OPEN | — | per-tool audit matrix |
-| A8 | OPEN | — | ask-count regression |
-| D6 | OPEN | — | docs truth |
-| X9 | OPEN | — | closure gate hardening + mutation test |
+| C1 | CLOSED (#403) | validation/m17/results/C1.json | gate + ledger + wiring (a39fb9f) |
+| S1 | CLOSED (#404) | validation/m17/results/S1.json | rake: 26 persisted == 26 live, 34 source-only excluded, 0 bad (dde5df6) |
+| S2 | CLOSED (#405) | validation/m17/results/S2.json | rake 26/26 + lodash 9/9; source-only project 0 (da38ac4) |
+| P1 | CLOSED (#406) | validation/m17/results/P1.json | rake 70 found == 70 recorded == 70 db; docs (07e5c44) |
+| H1 | CLOSED (#407) | validation/m17/results/H1.json | census: 2 persisting tools; no slice in persist; fingerprints stable (cac5283) |
+| A8 | CLOSED (#408) | validation/m17/results/A8.json | rake ask 319 == DB 319; no-index honest (168810c) |
+| D6 | CLOSED (#409) | validation/m17/results/D6.json | generated docs fresh; BB_* contract + absence checks (de1fa28) |
+| X9 | CLOSED (#410) | validation/m17/results/X9.json | planted poison + hollow both fail the gate; restore green (this commit) |
 
 ## 6. Definite scope / NEGATIVE list (what M17 does NOT claim)
 

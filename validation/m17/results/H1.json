@@ -9,7 +9,7 @@
   "failed": 0,
   "negatives": 3,
   "negativePassed": 3,
-  "generatedAt": "2026-08-24T21:00:27.455Z",
+  "generatedAt": "2026-08-24T21:10:38.370Z",
   "matrix": {
     "bb_security": "persist results.map over findings (confirmed/mitigated) — S1/S2 verified",
     "bb_patterns": "persist allPatterns.map over full set — P1 verified",

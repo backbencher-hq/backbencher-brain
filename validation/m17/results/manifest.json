@@ -9,6 +9,6 @@
     { "code": "H1", "evidence": "H1.json", "closed": true, "note": "census: only security+patterns persist; no slice in persist; fingerprints stable (26/70)" },
     { "code": "A8", "evidence": "A8.json", "closed": true, "note": "rake: ask 319 == DB 319; no-index honesty verified" },
     { "code": "D6", "evidence": "D6.json", "closed": true, "note": "generated docs byte-fresh; BB_* contract matches implementation; absence checks pass" },
-    { "code": "X9", "evidence": "X9.json", "closed": false, "note": "closure-gate hardening pending" }
+    { "code": "X9", "evidence": "X9.json", "closed": true, "note": "planted poison + hollow verifier both fail the gate; restored green" }
   ]
 }
