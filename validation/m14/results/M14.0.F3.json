@@ -8,7 +8,7 @@
     },
     {
       "description": "typescript adversarial fixtures",
-      "detail": "30/30 fixtures pass",
+      "detail": "31/31 fixtures pass",
       "id": "fixtures-typescript",
       "status": "pass"
     },
@@ -38,8 +38,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "a00969ec7d46c56445b5743c28ce69d08b183a16",
-  "committedAt": "2026-08-24T22:07:57+02:00",
+  "commit": "67bec9584094423142c096830bd8e0040a99dad3",
+  "committedAt": "2026-08-24T22:24:13+02:00",
   "data": {
     "details": [
       {
@@ -189,6 +189,11 @@
       },
       {
         "fixture": "typescript/complexity-parity",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/consistency-tiers",
         "ok": true,
         "problems": []
       },
@@ -786,7 +791,7 @@
       },
       "typescript": {
         "fail": 0,
-        "pass": 30
+        "pass": 31
       }
     }
   },
