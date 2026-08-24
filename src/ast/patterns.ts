@@ -7,7 +7,6 @@ import {
   BrainRelationshipTable,
   BrainFileTable,
   BrainImportTable,
-  BrainPatternTable,
 } from "../brain/brain.sql"
 import { GraphIntelligence } from "./graph"
 
