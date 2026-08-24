@@ -145,7 +145,6 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
     } else {
       result = await analyzer.analyze(tree.rootNode, content, `fixtures/${lang}/${src}`)
     }
-    console.log(`[dbg] ${lang}/${src}: result=${typeof result} sym=${result?.symbols?.length ?? "?"}`)
     const symbols: Entry[] = result.symbols ?? []
     const rels: Entry[] = (result.relationships ?? []).map(normRel)
 
