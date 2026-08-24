@@ -682,3 +682,46 @@ GOTCHAS (per-language appendix):
     class_declaration/method_definition in this grammar (contrast TS:
     method decorators are class_body siblings). Pinned wasm produces
     them; older builds may not — probe before relying.
+
+## JavaScript second-pass audit (2026-08-24, later)
+
+Adversarial re-check of the JS wave itself. FIVE more defects, all
+fixture-proven failing pre-fix — two of them Tier-1 misclassification:
+
+- **TIER-1 accessor-name collision**: hasToken matched child.TEXT
+  against any direct child INCLUDING the method's own name identifier.
+  Plain `get() {}` / `set(v) {}` methods were classified as accessor
+  Properties with isAccessor:true; `async() {}` carried isAsync:true.
+  These method names are common in real APIs. Fix: match anonymous
+  tokens only (keyword/operator token types equal their text; named
+  identifiers excluded).
+- **TIER-1 private methods**: `#secret()` kept the '#' in its symbol
+  name AND was marked visibility public (field_definition already
+  stripped #, methods did not). Now clean name + private.
+- Barrel named clauses recorded EMPTY items (`export { a, b } from` lost
+  the names); now alias||name per specifier.
+- CJS export chains deeper than one level (`exports.group.item`,
+  `module.exports.nested.deep`) entirely dropped; dotted subpath names
+  now emitted.
+- qualified_calls collector missed the X.prototype.m assignment rule
+  that extractCallRelationships already had — prototype method bodies
+  left the payload empty. Rule unified.
+
+VERIFIED CLEAN: real accessors still Property under the token fix;
+existing fixtures unaffected.
+
+RECORDED (verified pre-existing, not fixed here):
+- Class EXPRESSIONS (`const A = class extends B {}`) emit no Class
+  symbol and no heritage — coverage gap.
+- extractOverrideRelationships uses flat confidence 0.95 for both
+  in-file-exact and companion-resolved overrides — JVM family uses
+  evidence tiers (1.0 exact / 0.85 companion / 0.5 guess). Convention
+  drift, low blast radius today (0.95 > 0.7 filter) but should align
+  if thresholds tighten.
+
+GOTCHA (appendix): hasToken-style helpers must NEVER match child.text —
+anonymous-token TYPE matching only; identifier text collisions are the
+trap (this bit get/set/async/static here; same helper shape exists in
+the TS analyzer where class/method contexts differ — audited, TS's
+uses are decorator/generator checks on nodes whose children cannot be
+user identifiers of those names... recheck if reused elsewhere).
