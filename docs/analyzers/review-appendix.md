@@ -725,3 +725,15 @@ trap (this bit get/set/async/static here; same helper shape exists in
 the TS analyzer where class/method contexts differ — audited, TS's
 uses are decorator/generator checks on nodes whose children cannot be
 user identifiers of those names... recheck if reused elsewhere).
+
+## JavaScript differential parity (2026-08-24, final)
+
+The JS verification floor matched its siblings: **lodash pinned as the
+standing JS differential corpus** (55 files, 264/264 tree-truth edges =
+100%, 0 unexplained, 1,318 analyzer edges verified). Oracle refined:
+new_expression construction candidates must be NAMEABLE leaves
+(identifier / dotted member path) — anonymous constructor expressions
+(`new (Backbone.Collection.extend({...}))()`) fabricated unmatchable
+oracle targets; mirrors the ratified Scala identifier-leaf rule.
+
+JS now carries the same real-code regression protection as TS/JVM.
