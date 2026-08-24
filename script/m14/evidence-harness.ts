@@ -166,9 +166,19 @@ export function validateArtifact(a: any): Validation {
     }
   }
 
-  // banned-vocabulary lint across every string in the artifact
+  // Banned-vocabulary lint over AGENT-AUTHORED claim fields only. Arbitrary
+  // data payloads (corpus source lines, quoted file content, targets) are
+  // EVIDENCE, not claims - a corpus comment saying 'complete the loop' must
+  // not fail the gate. Claim fields are exactly where an agent could inject
+  // a verdict.
+  const claimFields = [
+    a?.title ?? "",
+    ...(a?.checks ?? []).map((c: any) => `${c?.description ?? ""} ${c?.detail ?? ""}`),
+    ...(a?.limitations ?? []).flatMap((l: any) => [l?.description ?? "", l?.justification ?? ""]),
+    ...(a?.mutationLog ?? []).map((m: any) => `${m?.description ?? ""} ${m?.detail ?? ""}`),
+  ]
   const banned = new Set<string>()
-  for (const s of collectStrings(a)) for (const hit of lintBanned(s)) banned.add(hit)
+  for (const s of claimFields) for (const hit of lintBanned(s)) banned.add(hit)
   if (banned.size) errors.push(`banned vocabulary present (contract §1): ${[...banned].join(", ")}`)
 
   return { ok: errors.length === 0, errors, warnings }

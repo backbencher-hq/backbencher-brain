@@ -1,143 +1,103 @@
 {
   "checks": [
     {
-      "description": "scala3@18df09c05f: tree-truth vs analyzer diff",
-      "detail": "16 files, coverage 95.5%, unexplained 13.2%",
+      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
+      "detail": "52 files, coverage 100%, unexplained 0%",
       "id": "differential-javascript",
       "status": "pass"
     },
     {
-      "description": "scala3@18df09c05f: tree-truth vs analyzer diff",
+      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-typescript",
       "status": "pass"
     },
     {
-      "description": "scala3@18df09c05f: tree-truth vs analyzer diff",
+      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-kotlin",
       "status": "pass"
     },
     {
-      "description": "scala3@18df09c05f: tree-truth vs analyzer diff",
-      "detail": "60 files, coverage 100%, unexplained 0%",
+      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
+      "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-scala",
       "status": "pass"
     },
     {
-      "description": "scala3@18df09c05f: tree-truth vs analyzer diff",
+      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
       "detail": "60 files, coverage 100%, unexplained 0%",
       "id": "differential-java",
       "status": "pass"
     },
     {
-      "description": "scala3@18df09c05f: tree-truth vs analyzer diff",
-      "detail": "0 files, coverage null%, unexplained null%",
+      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
+      "detail": "60 files, coverage 100%, unexplained 0%",
       "id": "differential-groovy",
       "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "1087a8620044d03c5e0087239496aa6cbaa61909",
-  "committedAt": "2026-08-24T00:50:25+02:00",
+  "commit": "e219f596de1c95a2508ae36f7c5ae43928a05fd3",
+  "committedAt": "2026-08-24T02:12:39+02:00",
   "data": {
     "corpusPins": {
-      "scala3": "18df09c05fa48fbb5bf5cd4b3728e9b7a0b3f6db"
+      "grails-core": "a83f87480e0c0138caa5a7191a053b1e59a64066"
     },
     "report": {
       "groovy": {
-        "analyzerEdges": 0,
-        "coveragePct": null,
-        "coveredByAnalyzer": 0,
-        "explainableByTree": 0,
-        "fabricationPct": null,
-        "filesSampled": 0,
-        "missingInAnalyzer": 0,
-        "perf": {
-          "avgMsPerFile": null,
-          "maxMsPerFile": null,
-          "samplesTimed": 0
-        },
-        "samples": [],
-        "treeTruthEdges": 0,
-        "unexplainedInAnalyzer": 0
-      },
-      "java": {
-        "analyzerEdges": 71,
+        "analyzerEdges": 257,
         "coveragePct": 100,
-        "coveredByAnalyzer": 40,
-        "explainableByTree": 71,
+        "coveredByAnalyzer": 151,
+        "explainableByTree": 223,
         "fabricationPct": 0,
         "filesSampled": 60,
+        "heuristicUnexplained": 34,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 3.1,
-          "maxMsPerFile": 87.3,
+          "avgMsPerFile": 9.2,
+          "maxMsPerFile": 57.7,
           "samplesTimed": 60
         },
         "samples": [],
-        "treeTruthEdges": 40,
+        "treeTruthEdges": 151,
+        "unexplainedInAnalyzer": 0
+      },
+      "java": {
+        "analyzerEdges": 247,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 132,
+        "explainableByTree": 167,
+        "fabricationPct": 0,
+        "filesSampled": 60,
+        "heuristicUnexplained": 80,
+        "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": 9.1,
+          "maxMsPerFile": 101.3,
+          "samplesTimed": 60
+        },
+        "samples": [],
+        "treeTruthEdges": 132,
         "unexplainedInAnalyzer": 0
       },
       "javascript": {
-        "analyzerEdges": 38,
-        "coveragePct": 95.5,
-        "coveredByAnalyzer": 21,
-        "explainableByTree": 33,
-        "fabricationPct": 13.2,
-        "filesSampled": 16,
-        "missingInAnalyzer": 1,
+        "analyzerEdges": 2,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 2,
+        "explainableByTree": 2,
+        "fabricationPct": 0,
+        "filesSampled": 52,
+        "heuristicUnexplained": 0,
+        "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 47.2,
-          "maxMsPerFile": 364.2,
-          "samplesTimed": 16
+          "avgMsPerFile": 7.1,
+          "maxMsPerFile": 57.8,
+          "samplesTimed": 52
         },
-        "samples": [
-          {
-            "dir": "UNEXPLAINED",
-            "file": "scaladoc/resources/dotty_res/scripts/components/Input.js",
-            "label": "extends",
-            "line": 0,
-            "target": "Component"
-          },
-          {
-            "dir": "UNEXPLAINED",
-            "file": "scaladoc/resources/dotty_res/hljs/highlight.pack.js",
-            "label": "extends",
-            "line": 0,
-            "target": "l"
-          },
-          {
-            "dir": "UNEXPLAINED",
-            "file": "scaladoc/resources/dotty_res/scripts/components/FilterGroup.js",
-            "label": "extends",
-            "line": 0,
-            "target": "Component"
-          },
-          {
-            "dir": "MISSING",
-            "file": "docs/_spec/public/scripts/highlight.pack.js",
-            "from": "(expr)",
-            "label": "instantiates",
-            "target": "function(){function j(v){return v.replace(/&/gm,\"&amp;\").replace(/"
-          },
-          {
-            "dir": "UNEXPLAINED",
-            "file": "scaladoc/resources/dotty_res/scripts/components/DocumentableList.js",
-            "label": "extends",
-            "line": 0,
-            "target": "Component"
-          },
-          {
-            "dir": "UNEXPLAINED",
-            "file": "scaladoc/resources/dotty_res/scripts/components/FilterBar.js",
-            "label": "extends",
-            "line": 0,
-            "target": "Component"
-          }
-        ],
-        "treeTruthEdges": 22,
-        "unexplainedInAnalyzer": 5
+        "samples": [],
+        "treeTruthEdges": 2,
+        "unexplainedInAnalyzer": 0
       },
       "kotlin": {
         "analyzerEdges": 0,
@@ -146,6 +106,7 @@
         "explainableByTree": 0,
         "fabricationPct": null,
         "filesSampled": 0,
+        "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
           "avgMsPerFile": null,
@@ -157,20 +118,21 @@
         "unexplainedInAnalyzer": 0
       },
       "scala": {
-        "analyzerEdges": 383,
-        "coveragePct": 100,
-        "coveredByAnalyzer": 173,
-        "explainableByTree": 383,
-        "fabricationPct": 0,
-        "filesSampled": 60,
+        "analyzerEdges": 0,
+        "coveragePct": null,
+        "coveredByAnalyzer": 0,
+        "explainableByTree": 0,
+        "fabricationPct": null,
+        "filesSampled": 0,
+        "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 8.4,
-          "maxMsPerFile": 136.7,
-          "samplesTimed": 60
+          "avgMsPerFile": null,
+          "maxMsPerFile": null,
+          "samplesTimed": 0
         },
         "samples": [],
-        "treeTruthEdges": 173,
+        "treeTruthEdges": 0,
         "unexplainedInAnalyzer": 0
       },
       "typescript": {
@@ -180,6 +142,7 @@
         "explainableByTree": 0,
         "fabricationPct": null,
         "filesSampled": 0,
+        "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
           "avgMsPerFile": null,

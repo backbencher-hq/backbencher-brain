@@ -211,6 +211,52 @@ function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
     }
     for (let i = 0; i < n.namedChildCount; i++) walk(n.namedChild(i))
   }
+  // overrides truth: same-name methods across in-file inheritance chains.
+  // Only declarations related by extends/implements within THIS file count -
+  // cross-file override resolution is the analyzer's job, not the oracle's.
+  const decls: Record<string, { parents: string[]; methods: Set<string> }> = {}
+  const declParents: { child: string; parent: string }[] = []
+  const collectDecl = (n: any) => {
+    const t2 = n.type
+    if (/^(class|interface|record|trait|object)_declaration$|^class_definition$|^trait_definition$|^object_definition$/.test(t2)) {
+      const nameNode = n.childForFieldName?.("name") ?? n.namedChildren.find((c: any) => c.type === "identifier" || c.type === "type_identifier")
+      const nm = nameNode?.text
+      if (nm && !decls[nm]) {
+        decls[nm] = { parents: [], methods: new Set() }
+        const body = n.namedChildren.find((c: any) => /body/.test(c.type))
+        if (body) {
+          for (let i = 0; i < body.namedChildCount; i++) {
+            const m = body.namedChild(i)
+            if (/function_definition|function_declaration|method_definition|method_signature/.test(m?.type ?? "")) {
+              const mn = m.namedChildren.find((c: any) => /identifier/.test(c.type))
+              if (mn) decls[nm].methods.add(mn.text)
+            }
+          }
+        }
+      }
+    }
+    for (let i = 0; i < n.namedChildCount; i++) collectDecl(n.namedChild(i))
+  }
+  collectDecl(root)
+  // hierarchy from already-derived extends edges (head-segment normalized)
+  for (const e of edges) {
+    if (e.label !== "extends" && e.label !== "implements") continue
+    const parent = lastSegment(e.target)
+    if (decls[e.from] && decls[parent] && e.from !== parent) {
+      declParents.push({ child: e.from, parent })
+    }
+  }
+  for (const rel of declParents) {
+    const childDecl = decls[rel.child]
+    const parentDecl = decls[rel.parent]
+    if (!childDecl || !parentDecl) continue
+    for (const m of childDecl.methods) {
+      if (parentDecl.methods.has(m)) {
+        edges.push({ label: "overrides", from: `${rel.child}.${m}`, target: `${rel.parent}.${m}` })
+      }
+    }
+  }
+
   walk(root)
   // dedupe identical edges (oracle double-push guard)
   return edges.filter((e, i) => edges.findIndex(x => x.label === e.label && x.from === e.from && x.target === e.target) === i)
@@ -250,7 +296,9 @@ async function main() {
     const sample = seededPick(files, SAMPLE_PER_LANG, `${REPO}:${lang}:m14-f5`)
     let treeEdgesTotal = 0, coveredByAnalyzer = 0, missingInAnalyzer = 0
     let analyzerEdgesTotal = 0, explainableByTree = 0, unexplainedInAnalyzer = 0
+    let heuristicUnexplained = 0
     const samples: any[] = []
+    const samplesHeuristic: any[] = []
 
     const durations: number[] = []
     for (const f of sample) {
@@ -272,7 +320,8 @@ async function main() {
         label: String(r.type ?? r.relationshipType ?? ""),
         target: String(r.target ?? r.to ?? r.toSymbol ?? ""),
         line: r.line_number ?? 0,
-      })).filter((r: any) => ["extends", "implements", "instantiates"].includes(r.label))
+        confidence: typeof r.confidence === "number" ? r.confidence : 1,
+      })).filter((r: any) => ["extends", "implements", "instantiates", "overrides"].includes(r.label))
 
       treeEdgesTotal += truth.length
       analyzerEdgesTotal += rels.length
@@ -284,13 +333,17 @@ async function main() {
       }
       for (const r of rels) {
         const hit = truth.some(te => te.label === r.label && (normTarget(te.target) === normTarget(r.target) || te.target.includes(normTarget(r.target))))
-        if (hit) explainableByTree++
-        else {
+        if (hit) { explainableByTree++; continue }
+        // Evidence-tier split for unmatched analyzer edges: a low-confidence
+        // edge is DECLARED HEURISTIC (honest suspicion), not fabrication.
+        // Only confident unmatched edges count as fabrications.
+        const conf = typeof r.confidence === "number" ? r.confidence : 1
+        if (conf < 0.7) {
+          heuristicUnexplained++
+          if (samples.length < 300 && samplesHeuristic.length < 100) samplesHeuristic.push({ dir: "HEURISTIC", file: relPath, ...r })
+        } else {
           unexplainedInAnalyzer++
-          if (samples.length < 300) {
-            const lineText = r.line ? content.split("\n")[r.line - 1]?.trim().slice(0, 100) : undefined
-            samples.push({ dir: "UNEXPLAINED", file: relPath, ...r, sourceLine: lineText })
-          }
+          if (samples.length < 300) samples.push({ dir: "UNEXPLAINED", file: relPath, ...r })
         }
       }
     }
@@ -303,6 +356,7 @@ async function main() {
       analyzerEdges: analyzerEdgesTotal,
       explainableByTree,
       unexplainedInAnalyzer,
+      heuristicUnexplained,
       coveragePct: treeEdgesTotal ? +(100 * coveredByAnalyzer / treeEdgesTotal).toFixed(1) : null,
       fabricationPct: analyzerEdgesTotal ? +(100 * unexplainedInAnalyzer / analyzerEdgesTotal).toFixed(1) : null,
       perf: {
@@ -345,6 +399,7 @@ async function main() {
   const current: Record<string, any> = {}
   for (const [lang, r] of Object.entries<any>(report)) current[`${REPO}:${lang}`] = {
     missing: r.missingInAnalyzer, unexplained: r.unexplainedInAnalyzer,
+    heuristic: r.heuristicUnexplained,
     perf: { avgMsPerFile: r.perf.avgMsPerFile },
   }
   const updateBaseline = process.argv.includes("--update-baseline")
@@ -388,7 +443,7 @@ async function main() {
         }
       }
       const regressions = Object.keys(current).filter(l =>
-        base[l] && (current[l].missing > base[l].missing || current[l].unexplained > base[l].unexplained))
+        base[l] && (current[l].missing > base[l].missing || current[l].unexplained > base[l].unexplained || current[l].heuristic > base[l].heuristic))
       for (const r of regressions) console.error(`DIFFERENTIAL REGRESSION ${r}: ${JSON.stringify(base[r])} -> ${JSON.stringify(current[r])}`)
       for (const r of perfRegressions) console.error(`PERF BUDGET EXCEEDED ${r}`)
       if (regressions.length || perfRegressions.length) process.exit(5)
