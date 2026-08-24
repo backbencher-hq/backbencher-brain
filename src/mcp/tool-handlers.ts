@@ -207,14 +207,19 @@ const handlers: Record<string, ToolHandler> = {
       confidenceThreshold: Number(args.confidenceThreshold ?? 0.6),
       maxResults: Math.max(limit, 100),
     })
-    const items = (result?.patterns ?? []).slice(0, limit)
+    const allPatterns = result?.patterns ?? []
+    const items = allPatterns.slice(0, limit)
     const lines = items.map((item: any) => `  [${item.severity}] ${item.type} @ ${item.location?.file}:${item.location?.line} (${Math.round(item.confidence * 100)}%)`)
     if (args.recordRun === true) {
       const recorded = await executeAnalysis({
         projectId,
         kind: "patterns",
         input: { options: args },
-        persist: () => items.map((item: any): AnalysisFindingInput => ({
+        // Persist the FULL analyzed set, never the display slice: recorded
+        // history must reflect the run, not the truncated preview. Otherwise
+        // findings past `limit` would be silently auto-resolved on the next
+        // run even though they still exist.
+        persist: () => allPatterns.map((item: any): AnalysisFindingInput => ({
           fingerprint: item.fingerprint ?? `${item.type}:${item.location?.file ?? "?"}:${item.location?.line ?? "?"}`,
           rule: item.type ?? "pattern",
           title: item.description ?? item.type ?? "pattern finding",
@@ -224,7 +229,8 @@ const handlers: Record<string, ToolHandler> = {
           location: item.location?.file ? `${item.location.file}:${item.location.line ?? "?"}` : null,
         })),
       })
-      return textResult(`patterns (${result?.statistics?.totalFound ?? items.length}) recorded run ${recorded.report.run.id}: new=${recorded.report.newFindings} repeated=${recorded.report.repeatedFindings} resolved=${recorded.report.resolvedFindings}\n${lines.join("\n") || "  none"}`)
+      const found = result?.statistics?.totalFound ?? allPatterns.length
+      return textResult(`patterns (${found} found, ${recorded.report.run.findingCount} recorded) recorded run ${recorded.report.run.id}: new=${recorded.report.newFindings} repeated=${recorded.report.repeatedFindings} resolved=${recorded.report.resolvedFindings}\n${lines.join("\n") || "  none"}`)
     }
     return textResult(`patterns (${result?.statistics?.totalFound ?? items.length}):\n${lines.join("\n") || "  none"}`)
   },
