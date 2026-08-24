@@ -2745,7 +2745,6 @@ export function wipeProjectData(rawDb: any): void {
     "brain_relationship",
     "brain_import",
     "brain_symbol",
-    "brain_pattern",
     "brain_query_cache",
     "brain_project_health",
     "brain_index_status",

@@ -111,23 +111,6 @@ CREATE TABLE IF NOT EXISTS brain_schema_version (version INTEGER PRIMARY KEY, ap
       );
       
       -- Pattern Intelligence Table
-      CREATE TABLE IF NOT EXISTS brain_pattern (
-        id TEXT PRIMARY KEY NOT NULL,
-        project_id TEXT NOT NULL,
-        pattern_type TEXT NOT NULL,
-        pattern_name TEXT NOT NULL,
-        description TEXT,
-        framework TEXT,
-        confidence REAL NOT NULL,
-        symbol_ids TEXT,
-        file_ids TEXT,
-        is_anti_pattern INTEGER,
-        severity TEXT,
-        suggestion TEXT,
-        metadata TEXT,
-        time_created INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
-        time_updated INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000)
-      );
       
       -- Query Cache Table
       CREATE TABLE IF NOT EXISTS brain_query_cache (
@@ -194,9 +177,6 @@ CREATE TABLE IF NOT EXISTS brain_schema_version (version INTEGER PRIMARY KEY, ap
       
       CREATE INDEX IF NOT EXISTS brain_symbol_owner_idx ON brain_symbol(owner_symbol_id);
 
-      CREATE INDEX IF NOT EXISTS brain_pattern_project_idx ON brain_pattern(project_id);
-      CREATE INDEX IF NOT EXISTS brain_pattern_type_idx ON brain_pattern(pattern_type);
-      CREATE INDEX IF NOT EXISTS brain_pattern_confidence_idx ON brain_pattern(confidence);
       
       -- Initialize project brain status
       INSERT OR IGNORE INTO brain_index_status (
@@ -278,7 +258,6 @@ CREATE INDEX IF NOT EXISTS brain_rel_cross_lang_idx ON brain_relationship(is_cro
 CREATE INDEX IF NOT EXISTS brain_import_name_idx ON brain_import(imported_name);
 CREATE INDEX IF NOT EXISTS brain_import_external_idx ON brain_import(is_external);
 
-CREATE INDEX IF NOT EXISTS brain_pattern_framework_idx ON brain_pattern(framework);
 
 CREATE INDEX IF NOT EXISTS brain_cache_project_idx ON brain_query_cache(project_id);
 CREATE INDEX IF NOT EXISTS brain_cache_query_type_idx ON brain_query_cache(query_type);
