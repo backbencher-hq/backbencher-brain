@@ -3,7 +3,7 @@
   "updatedAt": null,
   "issues": [
     { "code": "C1", "evidence": "C1.json", "closed": true, "note": "gate emits its own evidence" },
-    { "code": "Q1", "evidence": "Q1.json", "closed": false, "note": "benchmark pending" },
+    { "code": "Q1", "evidence": "Q1.json", "closed": true, "note": "real-corpus benchmark with provenance-verified golds" },
     { "code": "Q2", "evidence": "Q2.json", "closed": false, "note": "recall@k pending" },
     { "code": "Q3", "evidence": "Q3.json", "closed": false, "note": "ask precision pending" },
     { "code": "Q4", "evidence": "Q4.json", "closed": false, "note": "coverage gate pending" },
