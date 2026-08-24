@@ -21,6 +21,7 @@ import type { Node, Tree } from "web-tree-sitter"
 import * as path from "path"
 import { ASTEngine } from "./engine"
 import { RealJavaScriptAnalyzer } from "./real-javascript-analyzer"
+import { RealTypeScriptAnalyzer } from "./real-typescript-analyzer"
 
 // ============================================================================
 // BUILTIN TAG FILTERS — template component-usage detection
@@ -123,10 +124,17 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
     // element tag is a component usage (leaf tag name as written).
     const templateStack: Node[] = [rootNode]
     const seenUsages = new Set<string>()
+    let templateDecisions = 0
     while (templateStack.length > 0) {
       const n = templateStack.pop()!
       const t = n.type
       if (t === "script_element" || t === "style_element") continue
+      if (t === "directive_attribute") {
+        // v-if / v-else-if / v-for / v-show are TEMPLATE DECISION POINTS —
+        // they branch rendering exactly like if/loops in code.
+        const dname = this.findChildByType(n, "directive_name")?.text
+        if (dname === "v-if" || dname === "v-else-if" || dname === "v-for" || dname === "v-show") templateDecisions++
+      }
       if (t === "element") {
         const tag = this.elementTagName(n)
         if (tag && !HTML_BUILTIN_TAGS.has(tag) && !VUE_BUILTIN_TAGS.has(tag) && !seenUsages.has(tag)) {
@@ -146,14 +154,23 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    // --- 3. Script pass: nested JS/TS parse (engine-provided tree) -------------
-    const scriptTree: Tree | undefined = context?.sfcScriptTrees?.[0]
-    const scriptStartLine: number | undefined = context?.sfcScriptLines?.[0]
-    const scriptStartColumn: number | undefined = context?.sfcScriptCols?.[0]
-    if (scriptTree && scriptStartLine !== undefined) {
+    // --- 3. Script pass: nested JS/TS parse (engine-provided trees) ------------
+    // EVERY <script> block is processed (a plain block plus <script setup>
+    // is THE standard Vue 3 layout — only [0] was read, silently dropping
+    // the entire setup block), dispatched to the language analyzer matching
+    // the block's lang attribute.
+    const scriptTreeCount = context?.sfcScriptTrees?.length ?? 0
+    const pushedComponentNames = new Set<string>([moduleName])
+    let scriptCyclomaticSum = 0
+    for (let bi = 0; bi < scriptTreeCount; bi++) {
+      const scriptTree: Tree = context!.sfcScriptTrees![bi]
+      const scriptStartLine: number = context!.sfcScriptLines![bi]
+      const scriptStartColumn: number = context!.sfcScriptCols![bi] ?? 0
+      const isTs = context?.sfcScriptLangs?.[bi] === "ts"
+      {
       const scriptContent = scriptTree.rootNode?.text ?? ""
       const lineOffset = scriptStartLine - 1
-      const colOffset = scriptStartColumn ?? 0
+      const colOffset = scriptStartColumn
       const defaultExport = this.findExportDefault(scriptTree.rootNode)
       // defineComponent({...}) wraps the options object in a call_expression;
       // descend to the first object node anywhere under the export statement
@@ -170,7 +187,9 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
       // TS-only declarations (interface/type) are not extracted as symbols.
       let sub: ASTEngine.ParseResult
       try {
-        sub = new RealJavaScriptAnalyzer().analyze(scriptTree.rootNode, scriptContent, filePath, context)
+        sub = isTs
+          ? new RealTypeScriptAnalyzer().analyze(scriptTree.rootNode, scriptContent, filePath)
+          : new RealJavaScriptAnalyzer().analyze(scriptTree.rootNode, scriptContent, filePath, context)
       } catch (e: any) {
         sub = { symbols: [], relationships: [], imports: [], exports: [], errors: [], metadata: {} } as any
         errors.push({
@@ -179,6 +198,8 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
           severity: "warning",
         })
       }
+
+      scriptCyclomaticSum += Math.max(0, ((sub.metadata as any)?.cyclomaticComplexity ?? 1) - 1)
 
       // 3a. Options API declarations (component-owned). The component
       // identity comes from the `name:` option when present, else the
@@ -194,13 +215,19 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
           const v = namePair.childForFieldName("value")
           if (v) componentName = v.text.replace(/['"]/g, "")
         }
-        symbols.push({
-          name: componentName,
-          kind: ASTEngine.SymbolKind.Class,
-          range: this.offsetRange(this.nodeToRange(defaultObject), lineOffset, colOffset),
-          visibility: "public",
-          metadata: { nodeType: "vue_options_component", isOptionsComponent: true },
-        })
+        // DEDUPE: the SFC skeleton already pushed a Class symbol for
+        // moduleName — pushing again without a `name:` option produced TWO
+        // identical component Class symbols.
+        if (!pushedComponentNames.has(componentName)) {
+          pushedComponentNames.add(componentName)
+          symbols.push({
+            name: componentName,
+            kind: ASTEngine.SymbolKind.Class,
+            range: this.offsetRange(this.nodeToRange(defaultObject), lineOffset, colOffset),
+            visibility: "public",
+            metadata: { nodeType: "vue_options_component", isOptionsComponent: true },
+          })
+        }
         this.extractOptionsApi(defaultObject, componentName, symbols, patterns, lineOffset, colOffset)
       }
 
@@ -231,6 +258,7 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       for (const e of sub.exports ?? []) exports.push(e)
       for (const er of sub.errors ?? []) errors.push(er)
+      }
     }
 
     // --- 4. contains from ownerName -------------------------------------------
@@ -264,9 +292,12 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
       exports,
       errors,
       metadata: {
-        complexity: symbols.length + relationships.length,
+        // Real cyclomatic complexity: script-block decisions (per JS/TS
+        // contract) plus template decision directives (v-if/v-for/v-show).
+        // Was hardcoded 1 / the synthetic symbols+relationships heuristic.
+        complexity: 1 + scriptCyclomaticSum + templateDecisions,
         linesOfCode: content.split("\n").length,
-        cyclomaticComplexity: 1,
+        cyclomaticComplexity: 1 + scriptCyclomaticSum + templateDecisions,
         framework: "Vue",
         patterns: detectedPatterns,
         detectedFrameworks: ["Vue"],
@@ -494,7 +525,10 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
     const stack: Node[] = [root]
     while (stack.length > 0) {
       const n = stack.pop()!
-      if (n.type === "export_statement" && n.text.startsWith("export default")) return n
+      // Leading whitespace/newline inside <script> made the old
+      // text.startsWith("export default") check MISS every SFC whose
+      // script body began on the next line. Check structurally instead.
+      if (n.type === "export_statement" && n.text.trimStart().startsWith("export default")) return n
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const c = n.namedChild(i)
         if (c) stack.push(c)

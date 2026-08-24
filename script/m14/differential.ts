@@ -29,6 +29,7 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   scala: { wasm: "tree-sitter-scala.wasm", analyzerFile: "real-scala-analyzer", className: "RealScalaAnalyzer", ext: "scala" },
   java: { wasm: "tree-sitter-java.wasm", analyzerFile: "real-java-analyzer", className: "RealJavaAnalyzer", ext: "java" },
   groovy: { wasm: "tree-sitter-groovy.wasm", analyzerFile: "real-groovy-analyzer", className: "RealGroovyAnalyzer", ext: "groovy" },
+  vue: { wasm: "tree-sitter-vue.wasm", analyzerFile: "real-vue-analyzer", className: "RealVueAnalyzer", ext: "vue" },
 }
 
 function seededPick<T>(items: T[], n: number, seedStr: string): T[] {
@@ -49,6 +50,37 @@ function normTarget(t: string): string {
 }
 
 interface TreeEdge { label: string; from: string; target: string }
+
+// Vue template component-usage oracle: every element start_tag NOT in an
+// independently-written core-HTML/SVG set is a component usage. The set
+// below is written from the HTML spec, deliberately NOT copied from the
+// analyzer's list, so disagreements surface as missing/unexplained.
+const ORACLE_HTML_TAGS = new Set(["a","abbr","address","area","article","aside","audio","b","base","bdi","bdo","blockquote","body","br","button","canvas","caption","cite","code","col","colgroup","data","datalist","dd","del","details","dfn","dialog","div","dl","dt","em","embed","fieldset","figcaption","figure","footer","form","h1","h2","h3","h4","h5","h6","head","header","hgroup","hr","html","i","iframe","img","input","ins","kbd","label","legend","li","link","main","map","mark","menu","meta","meter","nav","noscript","object","ol","optgroup","option","output","p","picture","pre","progress","q","rp","rt","ruby","s","samp","script","section","select","slot","small","source","span","strong","style","sub","summary","sup","table","tbody","td","template","textarea","tfoot","th","thead","time","title","tr","track","u","ul","var","video","wbr","svg","path","g","rect","circle","ellipse","line","polyline","polygon","text","tspan","use","defs","stop","view"])
+function deriveVueComponentUsages(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const stack: any[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()!
+    if (n.type === "script_element" || n.type === "style_element") continue
+    if (n.type === "element" || n.type === "self_closing_tag") {
+      // tag_name lives INSIDE start_tag/self_closing_tag, not on the
+      // element node itself.
+      const container = n.namedChildren.find((c: any) => c.type === "start_tag" || c.type === "self_closing_tag")
+      const tag = container?.namedChildren.find((c: any) => c.type === "tag_name")
+      const name = tag?.text
+      // vue framework builtins are rendering primitives, not components
+      const VUE_BUILTINS = new Set(["component", "transition", "transition-group", "keep-alive", "teleport", "suspense", "fragment"])
+      if (name && !ORACLE_HTML_TAGS.has(name) && !VUE_BUILTINS.has(name) && !seen.has(name)) {
+        seen.add(name)
+        edges.push({ label: "instantiates", from: "(expr)", target: name })
+      }
+      if (n.type === "self_closing_tag") continue
+    }
+    for (let k = 0; k < n.namedChildCount; k++) stack.push(n.namedChild(k))
+  }
+  return edges
+}
 
 // Independent oracle: derive extends/implements/instantiates edges straight
 // from clause node structure — no analyzer code involved.
@@ -152,6 +184,7 @@ function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
       if (typeNode) edges.push({ label: "instantiates", from: "(expr)", target: typeNode.text })
     }
     // typescript/javascript: `new X()` parses as new_expression
+    const GLOBAL_CTORS = new Set(["Promise","Date","Map","Set","WeakMap","WeakSet","Symbol","Proxy","Error","TypeError","RangeError","SyntaxError","URIError","EvalError","AggregateError","RegExp","Array","Object","Function","Boolean","Number","String","BigInt","ArrayBuffer","SharedArrayBuffer","DataView","Int8Array","Uint8Array","Uint8ClampedArray","Int16Array","Uint16Array","Int32Array","Uint32Array","Float32Array","Float64Array","BigInt64Array","BigUint64Array","WeakRef","FinalizationRegistry","AbortController","FormData","Blob","File","URL","URLSearchParams","Headers","Request","Response","Intl","Image","Worker","SharedWorker","CustomEvent","Event","MouseEvent","KeyboardEvent","FocusEvent","InputEvent","PointerEvent","TouchEvent","DragEvent","ErrorEvent","UIEvent","StorageEvent","PromiseRejectionEvent","HashChangeEvent","PageTransitionEvent","PopStateEvent","ProgressEvent","AnimationEvent","TransitionEvent","ClipboardEvent","WheelEvent","CompositionEvent","ResizeObserver","MutationObserver","IntersectionObserver","PerformanceObserver","FileReader","XMLHttpRequest","WebSocket","TextEncoder","TextDecoder","DOMParser","Notification","BroadcastChannel","MessageChannel"])
     if (t === "new_expression") {
       const tn = n.namedChild(0)
       if (tn) {
@@ -166,7 +199,7 @@ function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
         if (lt !== -1) name = name.slice(0, lt)
         // `new` keyword alone is the construction signal - casing is
         // irrelevant (lowercase classes are legal TypeScript)
-        if (isNameable && (/^[A-Za-z_$]/.test(name) || name.includes("."))) {
+        if (isNameable && !GLOBAL_CTORS.has(name.split(".").pop() ?? name) && (/^[A-Za-z_$]/.test(name) || name.includes("."))) {
           edges.push({ label: "instantiates", from: "(expr)", target: name })
         }
       }
@@ -325,10 +358,25 @@ async function main() {
       const tf0 = performance.now()
       try { root = parser.parse(content).rootNode } catch { continue }
       if (!root) continue
-      try { result = await analyzer.analyze(root, content, relPath) } catch { continue }
+      try {
+        if (lang === "vue") {
+          // SFC parity: script blocks must be pre-parsed by the engine or
+          // the script-side edges never appear.
+          const eng = await import("../../src/ast/engine")
+          result = await (eng as any).ASTEngine.parseFile(f, content)
+        } else {
+          result = await analyzer.analyze(root, content, relPath)
+        }
+      } catch { continue }
       durations.push(performance.now() - tf0)
 
       const truth = deriveTreeEdges(root, lang)
+      if (lang === "vue") {
+        // template component-usage oracle: independent HTML-core filter
+        for (const e of deriveVueComponentUsages(root)) {
+          ;(truth as any[]).push(e)
+        }
+      }
       if (lang === "typescript" && process.argv.includes("--debug-truth")) {
         console.log(`[debug] ${relPath}: truth=${truth.length} declRoot=${root.type}`)
       }
