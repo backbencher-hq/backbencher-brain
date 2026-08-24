@@ -235,6 +235,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (const pat in patternsObj) metadata.patterns!.push(pat)
 
     // ─────────────────────────────────────────────────────────────────────
+
     // Relationship post-pass (matches the Kotlin/Java contract):
     //   contains    owner → member
     //   overrides   real methods with 'override' modifier → declaring parent
@@ -297,6 +298,8 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         metadata: { isImportDep: true },
       })
     }
+
+    this.classifyEvidenceTier(relationships)
 
     return {
       symbols,
@@ -547,6 +550,41 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     return complexity
   }
+
+  /**
+   * M14 #299 - evidence-tier classification for EVERY emitted relationship.
+   * Tiers: structural (grammar clauses, conf 1.0) | usage_contextual (calls,
+   * field access, companion-apply idioms) | import_based | reference_qualified
+   * | inferred (sub-1.0 resolutions). Applied centrally at end of analyze()
+   * so no emission site can forget it.
+   */
+  private classifyEvidenceTier(relationships: ASTEngine.UniversalRelationship[]): void {
+    for (const r of relationships) {
+      const md = r.metadata ?? (r.metadata = {})
+      if (md.evidenceClass) continue
+      const t = String(r.type ?? r.relationshipType ?? "")
+      const conf = typeof r.confidence === "number" ? r.confidence : 1
+      if (t === "contains" || t === "exports") { md.evidenceClass = "structural"; continue }
+      if (t === "references") {
+        md.evidenceClass = "reference_qualified"
+        continue
+      }
+      if (t === "extends" || t === "implements") {
+        md.evidenceClass = conf >= 1 ? "structural" : "inferred"
+        continue
+      }
+      if (t === "overrides") {
+        md.evidenceClass = conf >= 1 ? "structural" : conf >= 0.85 ? "usage_contextual" : "inferred"
+        continue
+      }
+      if (t === "instantiates") {
+        md.evidenceClass = conf >= 0.9 ? "structural" : "usage_contextual"
+        continue
+      }
+      md.evidenceClass = "usage_contextual"
+    }
+  }
+
 
   private createSymbol(
     name: string,

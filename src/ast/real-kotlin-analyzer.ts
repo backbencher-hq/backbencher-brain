@@ -192,6 +192,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     // --- END KOTLIN CALL GRAPH EXTRACTION ---
 
+
     // Add Contains + Overrides + DependsOn. `ownerName` is the enclosing type
     // name — NOT scope — so top-level declarations (no owner) never produce a
     // self-contain edge.
@@ -287,6 +288,8 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     for (let i = 0; i < symbols.length; i++) { const s = symbols[i]; if (!s.metadata?.isPhantom && s.visibility !== "private" && (!s.ownerName || s.ownerKind === ASTEngine.SymbolKind.Class)) { exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility || "public" }); } }
+    this.classifyEvidenceTier(relationships)
+
     return {
       symbols,
       relationships,
@@ -1023,6 +1026,41 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     const enclosing = ctx.classStack.slice(0, ctx.classStack.length - 1)
     return [...ctx.packageStack, ...enclosing].join(".")
   }
+
+  /**
+   * M14 #299 - evidence-tier classification for EVERY emitted relationship.
+   * Tiers: structural (grammar clauses, conf 1.0) | usage_contextual (calls,
+   * field access, companion-apply idioms) | import_based | reference_qualified
+   * | inferred (sub-1.0 resolutions). Applied centrally at end of analyze()
+   * so no emission site can forget it.
+   */
+  private classifyEvidenceTier(relationships: ASTEngine.UniversalRelationship[]): void {
+    for (const r of relationships) {
+      const md = r.metadata ?? (r.metadata = {})
+      if (md.evidenceClass) continue
+      const t = String(r.type ?? r.relationshipType ?? "")
+      const conf = typeof r.confidence === "number" ? r.confidence : 1
+      if (t === "contains" || t === "exports") { md.evidenceClass = "structural"; continue }
+      if (t === "references") {
+        md.evidenceClass = md.isImport ? "import_based" : "reference_qualified"
+        continue
+      }
+      if (t === "extends" || t === "implements") {
+        md.evidenceClass = conf >= 1 ? "structural" : "inferred"
+        continue
+      }
+      if (t === "overrides") {
+        md.evidenceClass = conf >= 1 ? "structural" : conf >= 0.85 ? "usage_contextual" : "inferred"
+        continue
+      }
+      if (t === "instantiates") {
+        md.evidenceClass = md.isNew || conf >= 0.9 ? "structural" : "usage_contextual"
+        continue
+      }
+      md.evidenceClass = "usage_contextual"
+    }
+  }
+
 
   private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {
     return {

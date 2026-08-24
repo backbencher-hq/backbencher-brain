@@ -38,7 +38,7 @@
       "unexplained": 1,
       "heuristic": 58,
       "perf": {
-        "avgMsPerFile": 36.1
+        "avgMsPerFile": 25.5
       }
     },
     "Exposed:java": {
@@ -280,7 +280,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 507.7
+        "avgMsPerFile": 410.5
       }
     },
     "vue-core:javascript": {
