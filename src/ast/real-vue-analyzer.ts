@@ -155,7 +155,11 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
       const lineOffset = scriptStartLine - 1
       const colOffset = scriptStartColumn ?? 0
       const defaultExport = this.findExportDefault(scriptTree.rootNode)
-      const defaultObject = defaultExport ? this.findChildByType(defaultExport, "object") : undefined
+      // defineComponent({...}) wraps the options object in a call_expression;
+      // descend to the first object node anywhere under the export statement
+      // so both `export default {...}` and `export default defineComponent(
+      // {...})` forms resolve (previously only the bare form worked).
+      const defaultObject = defaultExport ? this.findDescendantObject(defaultExport) : undefined
       if (defaultObject) patterns["Options API"] = true
       else patterns["Composition API"] = true
       // The script body is extracted via the JS-family contract (M12.10)
@@ -176,9 +180,28 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
         })
       }
 
-      // 3a. Options API declarations (component-owned)
+      // 3a. Options API declarations (component-owned). The component
+      // identity comes from the `name:` option when present, else the
+      // file-derived module name — parity with class-based frameworks where
+      // the component type itself is a first-class symbol (#383 payload
+      // family / cross-language consistency).
       if (defaultObject) {
-        this.extractOptionsApi(defaultObject, moduleName, symbols, patterns, lineOffset, colOffset)
+        let componentName = moduleName
+        const namePair = defaultObject.namedChildren.find(
+          (c: any) => c.type === "pair" && c.childForFieldName("key")?.text === "name",
+        )
+        if (namePair) {
+          const v = namePair.childForFieldName("value")
+          if (v) componentName = v.text.replace(/['"]/g, "")
+        }
+        symbols.push({
+          name: componentName,
+          kind: ASTEngine.SymbolKind.Class,
+          range: this.offsetRange(this.nodeToRange(defaultObject), lineOffset, colOffset),
+          visibility: "public",
+          metadata: { nodeType: "vue_options_component", isOptionsComponent: true },
+        })
+        this.extractOptionsApi(defaultObject, componentName, symbols, patterns, lineOffset, colOffset)
       }
 
       // 3b. Merge JS analyzer output, offset to SFC lines, filter:
@@ -230,6 +253,8 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
       framework: "Vue",
       patterns: [{ type: "usage", detected: true, description: p }],
     }))
+
+    this.classifyEvidenceTier(relationships)
 
     return {
       language: "vue",
@@ -421,6 +446,49 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
   // ============================================================================
   // HELPERS
   // ============================================================================
+
+  /**
+   * M14 #299 - evidence-tier classification for EVERY emitted relationship.
+   * Same rules as the JVM family. Vue template instantiates are
+   * usage_contextual (component usage by tag name, not construction).
+   */
+  private classifyEvidenceTier(relationships: ASTEngine.UniversalRelationship[]): void {
+    for (const r of relationships) {
+      const md = r.metadata ?? (r.metadata = {})
+      if (md.evidenceClass) continue
+      const t = String(r.type ?? r.relationshipType ?? "")
+      const conf = typeof r.confidence === "number" ? r.confidence : 1
+      if (t === "contains" || t === "exports") { md.evidenceClass = "structural"; continue }
+      if (t === "references") {
+        md.evidenceClass = md.isImport ? "import_based" : "reference_qualified"
+        continue
+      }
+      if (t === "extends" || t === "implements" || t === "overrides") {
+        md.evidenceClass = conf >= 1 ? "structural" : conf >= 0.85 ? "usage_contextual" : "inferred"
+        continue
+      }
+      if (t === "instantiates") {
+        // vue: template tag usages are component REFERENCES, not constructions
+        md.evidenceClass = md.isComponentUsage ? "usage_contextual" : "structural"
+        continue
+      }
+      md.evidenceClass = "usage_contextual"
+    }
+  }
+
+
+  private findDescendantObject(root: Node): Node | undefined {
+    const stack: Node[] = [root]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "object") return n
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return undefined
+  }
 
   private findExportDefault(root: Node): Node | null {
     const stack: Node[] = [root]
