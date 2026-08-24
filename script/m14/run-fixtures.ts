@@ -153,6 +153,13 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
         }
       }
     }
+    for (const want of exp.expectVisibility ?? []) {
+      const sym = symbols.find((s: any) => s.name === want.symbol)
+      if (!sym) { problems.push(`expectVisibility: symbol ${want.symbol} not found`); continue }
+      if (want.visibility && sym.visibility !== want.visibility) {
+        problems.push(`expected ${want.symbol} visibility ${want.visibility}; got ${sym.visibility}`)
+      }
+    }
     for (const want of exp.expectTypeParameters ?? []) {
       const sym = symbols.find((s: any) => s.name === want.symbol)
       const tps: string[] = sym?.genericParameters ?? sym?.metadata?.typeParameters ?? []
