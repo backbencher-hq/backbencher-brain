@@ -12,6 +12,7 @@
     "grails-core:kotlin": {
       "missing": 0,
       "unexplained": 0,
+      "heuristic": 0,
       "perf": {
         "avgMsPerFile": null
       }
@@ -19,27 +20,31 @@
     "grails-core:java": {
       "missing": 0,
       "unexplained": 0,
+      "heuristic": 80,
       "perf": {
-        "avgMsPerFile": 12.3
+        "avgMsPerFile": 6.8
       }
     },
     "grails-core:groovy": {
       "missing": 0,
       "unexplained": 0,
+      "heuristic": 34,
       "perf": {
-        "avgMsPerFile": 8.8
+        "avgMsPerFile": 6.7
       }
     },
     "Exposed:kotlin": {
       "missing": 1,
       "unexplained": 1,
+      "heuristic": 58,
       "perf": {
-        "avgMsPerFile": 36.8
+        "avgMsPerFile": 36.1
       }
     },
     "Exposed:java": {
       "missing": 0,
       "unexplained": 0,
+      "heuristic": 0,
       "perf": {
         "avgMsPerFile": null
       }
@@ -47,6 +52,7 @@
     "Exposed:groovy": {
       "missing": 0,
       "unexplained": 0,
+      "heuristic": 0,
       "perf": {
         "avgMsPerFile": null
       }
@@ -54,6 +60,7 @@
     "scala3:kotlin": {
       "missing": 0,
       "unexplained": 0,
+      "heuristic": 0,
       "perf": {
         "avgMsPerFile": null
       }
@@ -61,20 +68,23 @@
     "scala3:scala": {
       "missing": 0,
       "unexplained": 0,
+      "heuristic": 72,
       "perf": {
-        "avgMsPerFile": 10.2
+        "avgMsPerFile": 8.4
       }
     },
     "scala3:java": {
       "missing": 0,
       "unexplained": 0,
+      "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 2.8
+        "avgMsPerFile": 3.2
       }
     },
     "scala3:groovy": {
       "missing": 0,
       "unexplained": 0,
+      "heuristic": 0,
       "perf": {
         "avgMsPerFile": null
       }
@@ -82,6 +92,7 @@
     "Exposed:scala": {
       "missing": 0,
       "unexplained": 0,
+      "heuristic": 0,
       "perf": {
         "avgMsPerFile": null
       }
@@ -89,6 +100,7 @@
     "grails-core:scala": {
       "missing": 0,
       "unexplained": 0,
+      "heuristic": 0,
       "perf": {
         "avgMsPerFile": null
       }
@@ -96,13 +108,15 @@
     "vue-core:typescript": {
       "missing": 0,
       "unexplained": 0,
+      "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 53
+        "avgMsPerFile": 55.1
       }
     },
     "vue-core:kotlin": {
       "missing": 0,
       "unexplained": 0,
+      "heuristic": 0,
       "perf": {
         "avgMsPerFile": null
       }
@@ -110,6 +124,7 @@
     "vue-core:scala": {
       "missing": 0,
       "unexplained": 0,
+      "heuristic": 0,
       "perf": {
         "avgMsPerFile": null
       }
@@ -117,6 +132,7 @@
     "vue-core:java": {
       "missing": 0,
       "unexplained": 0,
+      "heuristic": 0,
       "perf": {
         "avgMsPerFile": null
       }
@@ -124,6 +140,7 @@
     "vue-core:groovy": {
       "missing": 0,
       "unexplained": 0,
+      "heuristic": 0,
       "perf": {
         "avgMsPerFile": null
       }
@@ -131,6 +148,7 @@
     "Exposed:typescript": {
       "missing": 0,
       "unexplained": 0,
+      "heuristic": 0,
       "perf": {
         "avgMsPerFile": null
       }
@@ -138,20 +156,23 @@
     "graphql-js:javascript": {
       "missing": 0,
       "unexplained": 0,
+      "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 14.6
+        "avgMsPerFile": 16
       }
     },
     "graphql-js:typescript": {
       "missing": 0,
       "unexplained": 0,
+      "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 20.6
+        "avgMsPerFile": 21.9
       }
     },
     "graphql-js:kotlin": {
       "missing": 0,
       "unexplained": 0,
+      "heuristic": 0,
       "perf": {
         "avgMsPerFile": null
       }
@@ -159,6 +180,7 @@
     "graphql-js:scala": {
       "missing": 0,
       "unexplained": 0,
+      "heuristic": 0,
       "perf": {
         "avgMsPerFile": null
       }
@@ -166,6 +188,7 @@
     "graphql-js:java": {
       "missing": 0,
       "unexplained": 0,
+      "heuristic": 0,
       "perf": {
         "avgMsPerFile": null
       }
@@ -173,6 +196,7 @@
     "graphql-js:groovy": {
       "missing": 0,
       "unexplained": 0,
+      "heuristic": 0,
       "perf": {
         "avgMsPerFile": null
       }
@@ -221,16 +245,50 @@
     },
     "scala3:javascript": {
       "missing": 1,
-      "unexplained": 5,
+      "unexplained": 6,
+      "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 69.7
+        "avgMsPerFile": 41.7
       }
     },
     "scala3:typescript": {
       "missing": 0,
       "unexplained": 0,
+      "heuristic": 0,
       "perf": {
         "avgMsPerFile": null
+      }
+    },
+    "grails-core:javascript": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 6.4
+      }
+    },
+    "grails-core:typescript": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
+    },
+    "Exposed:javascript": {
+      "missing": 2,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 507.7
+      }
+    },
+    "vue-core:javascript": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 8.7
       }
     }
   }
