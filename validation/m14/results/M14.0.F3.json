@@ -8,7 +8,7 @@
     },
     {
       "description": "typescript adversarial fixtures",
-      "detail": "22/22 fixtures pass",
+      "detail": "23/23 fixtures pass",
       "id": "fixtures-typescript",
       "status": "pass"
     },
@@ -32,14 +32,14 @@
     },
     {
       "description": "scala adversarial fixtures",
-      "detail": "20/20 fixtures pass",
+      "detail": "21/21 fixtures pass",
       "id": "fixtures-scala",
       "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "b333ddbbc63f465cc1fef4dc0a5567fd1e9d0179",
-  "committedAt": "2026-08-24T03:45:35+02:00",
+  "commit": "bbbca0d14fd08104adb030068d6a1847c9725831",
+  "committedAt": "2026-08-24T03:51:07+02:00",
   "data": {
     "details": [
       {
@@ -104,6 +104,11 @@
       },
       {
         "fixture": "typescript/accessor-pair",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/ambient-global",
         "ok": true,
         "problems": []
       },
@@ -543,6 +548,11 @@
         "problems": []
       },
       {
+        "fixture": "scala/generic-parameters-payload",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "scala/generics-bounds",
         "ok": true,
         "problems": []
@@ -627,11 +637,11 @@
       },
       "scala": {
         "fail": 0,
-        "pass": 20
+        "pass": 21
       },
       "typescript": {
         "fail": 0,
-        "pass": 22
+        "pass": 23
       }
     }
   },
