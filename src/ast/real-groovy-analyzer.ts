@@ -291,6 +291,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
             name,
             kind: isConstructor ? ASTEngine.SymbolKind.Constructor : ASTEngine.SymbolKind.Method,
             comments: (() => { const d = this.extractGroovyDoc(node); return d ? [d] : [] })(),
+            complexity: this.calculateGroovyMethodComplexity(node),
             range: this.nodeToRange(node),
             visibility,
             parameters,
@@ -694,6 +695,36 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
    * preceding the declaration. Previously groovy symbols carried NO
    * comments (M14 #383).
    */
+  /**
+   * Per-method cyclomatic complexity (1 + decision points) - java/kotlin
+   * parity (M14 #301 prerequisite). Previously always absent.
+   */
+  private calculateGroovyMethodComplexity(node: Node): number {
+    let complexity = 1
+    const stack: Node[] = [node]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (
+        n.type === "if_statement" ||
+        n.type === "for_statement" ||
+        n.type === "while_statement" ||
+        n.type === "do_while" ||
+        n.type === "switch_statement" ||
+        n.type === "catch_block" ||
+        n.type === "elvis_expression" ||
+        n.type === "&&" ||
+        n.type === "||"
+      ) {
+        complexity++
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const child = n.namedChild(i)
+        if (child) stack.push(child)
+      }
+    }
+    return complexity
+  }
+
   private extractGroovyDoc(node: Node): string | undefined {
     const parent = node.parent
     if (!parent) return undefined
