@@ -1,0 +1,14 @@
+{
+  "milestone": "M17",
+  "updatedAt": null,
+  "issues": [
+    { "code": "C1", "evidence": "C1.json", "closed": true, "note": "gate emits its own evidence" },
+    { "code": "S1", "evidence": "S1.json", "closed": false, "note": "fix committed f145352; evidence pending" },
+    { "code": "S2", "evidence": "S2.json", "closed": false, "note": "real-repo e2e pending" },
+    { "code": "P1", "evidence": "P1.json", "closed": false, "note": "fix committed f145352; docs+evidence pending" },
+    { "code": "H1", "evidence": "H1.json", "closed": false, "note": "cross-tool audit pending" },
+    { "code": "A8", "evidence": "A8.json", "closed": false, "note": "ask-count regression pending" },
+    { "code": "D6", "evidence": "D6.json", "closed": false, "note": "docs truth pending" },
+    { "code": "X9", "evidence": "X9.json", "closed": false, "note": "closure-gate hardening pending" }
+  ]
+}
