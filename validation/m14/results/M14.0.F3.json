@@ -8,7 +8,7 @@
     },
     {
       "description": "typescript adversarial fixtures",
-      "detail": "14/14 fixtures pass",
+      "detail": "20/20 fixtures pass",
       "id": "fixtures-typescript",
       "status": "pass"
     },
@@ -38,8 +38,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "d5405c593fdda503780d0e04ab39d1c78cd9df5e",
-  "committedAt": "2026-08-24T01:55:35+02:00",
+  "commit": "e219f596de1c95a2508ae36f7c5ae43928a05fd3",
+  "committedAt": "2026-08-24T02:12:39+02:00",
   "data": {
     "details": [
       {
@@ -108,6 +108,11 @@
         "problems": []
       },
       {
+        "fixture": "typescript/api-contract-bare-path",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "typescript/decorators",
         "ok": true,
         "problems": []
@@ -118,12 +123,22 @@
         "problems": []
       },
       {
+        "fixture": "typescript/error-ranges",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "typescript/generator-flag",
         "ok": true,
         "problems": []
       },
       {
         "fixture": "typescript/generic-constraints",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/generic-heritage",
         "ok": true,
         "problems": []
       },
@@ -143,12 +158,22 @@
         "problems": []
       },
       {
+        "fixture": "typescript/member-decorators",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "typescript/optional-default-params",
         "ok": true,
         "problems": []
       },
       {
         "fixture": "typescript/overload-implementation",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/param-prop-default",
         "ok": true,
         "problems": []
       },
@@ -164,6 +189,11 @@
       },
       {
         "fixture": "typescript/unions-intersections",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/usage-references",
         "ok": true,
         "problems": []
       },
@@ -571,7 +601,7 @@
       },
       "typescript": {
         "fail": 0,
-        "pass": 14
+        "pass": 20
       }
     }
   },

@@ -17,7 +17,7 @@ permanent gate before its fix counts as landed** (see F7 rule).
 Stages: PARSE → ANALYZE → STORE (brain.db) → QUERY (tools) 
 Artifacts: symbols, relationships by kind, imports, taints, patterns, flags, embeddings, health
 
-| Stage ↓ / Artifact → | symbols | extends/implements | calls | instantiates | uses | imports | overrides | taints | patterns | xlang flags | embeddings | health |
+| Stage ↓ / Artifact → | symbols | extends/implements | calls | instantiates | uses | imports | overrides | GATED F3 java/groovy + owner kotlin/scala | GATED F3 | GATED F3 (override-fallback-confidence) | differential NOW COUNTS overrides; #381 acceptance met -> close |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | ANALYZE (fixtures) | GATED F3 | GATED F3 | GATED F3 | GATED F3 | GATED F3 | GATED F3* | GATED F3* | PENDING -> #381 (taints) | PENDING F10 | GATED F3 | n/a | n/a |
 | STORE (pipeline e2e) | GATED F7 | GATED F7 | GATED F7 | GATED F7 | PENDING -> #384 (uses/overrides rows) | GATED F7 | PENDING (add to F7) | PENDING (seam-sweep) | **DEAD SEAM → F10** | GATED F7 | PENDING (needs key; conditional gate) | GATED F7 |
