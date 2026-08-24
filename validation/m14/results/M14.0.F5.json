@@ -1,102 +1,102 @@
 {
   "checks": [
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
-      "detail": "52 files, coverage 100%, unexplained 0%",
+      "description": "cats-effect@91c8115dbb: tree-truth vs analyzer diff",
+      "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-javascript",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
+      "description": "cats-effect@91c8115dbb: tree-truth vs analyzer diff",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-typescript",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
+      "description": "cats-effect@91c8115dbb: tree-truth vs analyzer diff",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-kotlin",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
-      "detail": "0 files, coverage null%, unexplained null%",
+      "description": "cats-effect@91c8115dbb: tree-truth vs analyzer diff",
+      "detail": "60 files, coverage 90.6%, unexplained 0%",
       "id": "differential-scala",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
-      "detail": "60 files, coverage 100%, unexplained 0%",
+      "description": "cats-effect@91c8115dbb: tree-truth vs analyzer diff",
+      "detail": "7 files, coverage 100%, unexplained 0%",
       "id": "differential-java",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
-      "detail": "60 files, coverage 100%, unexplained 0%",
+      "description": "cats-effect@91c8115dbb: tree-truth vs analyzer diff",
+      "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-groovy",
       "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "314bd925191f91ea9ef7e61e3440bd93734a9d21",
-  "committedAt": "2026-08-24T03:41:17+02:00",
+  "commit": "bbbca0d14fd08104adb030068d6a1847c9725831",
+  "committedAt": "2026-08-24T03:51:07+02:00",
   "data": {
     "corpusPins": {
-      "grails-core": "a83f87480e0c0138caa5a7191a053b1e59a64066"
+      "cats-effect": "91c8115dbb4975a31a442979c74223b92c50edaa"
     },
     "report": {
       "groovy": {
-        "analyzerEdges": 257,
-        "coveragePct": 100,
-        "coveredByAnalyzer": 151,
-        "explainableByTree": 223,
-        "fabricationPct": 0,
-        "filesSampled": 60,
-        "heuristicUnexplained": 34,
-        "missingInAnalyzer": 0,
-        "perf": {
-          "avgMsPerFile": 7.8,
-          "maxMsPerFile": 71.7,
-          "samplesTimed": 60
-        },
-        "samples": [],
-        "treeTruthEdges": 151,
-        "unexplainedInAnalyzer": 0
-      },
-      "java": {
-        "analyzerEdges": 247,
-        "coveragePct": 100,
-        "coveredByAnalyzer": 132,
-        "explainableByTree": 167,
-        "fabricationPct": 0,
-        "filesSampled": 60,
-        "heuristicUnexplained": 80,
-        "missingInAnalyzer": 0,
-        "perf": {
-          "avgMsPerFile": 6.6,
-          "maxMsPerFile": 55.1,
-          "samplesTimed": 60
-        },
-        "samples": [],
-        "treeTruthEdges": 132,
-        "unexplainedInAnalyzer": 0
-      },
-      "javascript": {
-        "analyzerEdges": 2,
-        "coveragePct": 100,
-        "coveredByAnalyzer": 2,
-        "explainableByTree": 2,
-        "fabricationPct": 0,
-        "filesSampled": 52,
+        "analyzerEdges": 0,
+        "coveragePct": null,
+        "coveredByAnalyzer": 0,
+        "explainableByTree": 0,
+        "fabricationPct": null,
+        "filesSampled": 0,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 5.1,
-          "maxMsPerFile": 46.3,
-          "samplesTimed": 52
+          "avgMsPerFile": null,
+          "maxMsPerFile": null,
+          "samplesTimed": 0
         },
         "samples": [],
-        "treeTruthEdges": 2,
+        "treeTruthEdges": 0,
+        "unexplainedInAnalyzer": 0
+      },
+      "java": {
+        "analyzerEdges": 7,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 6,
+        "explainableByTree": 7,
+        "fabricationPct": 0,
+        "filesSampled": 7,
+        "heuristicUnexplained": 0,
+        "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": 5.4,
+          "maxMsPerFile": 13.9,
+          "samplesTimed": 7
+        },
+        "samples": [],
+        "treeTruthEdges": 6,
+        "unexplainedInAnalyzer": 0
+      },
+      "javascript": {
+        "analyzerEdges": 0,
+        "coveragePct": null,
+        "coveredByAnalyzer": 0,
+        "explainableByTree": 0,
+        "fabricationPct": null,
+        "filesSampled": 0,
+        "heuristicUnexplained": 0,
+        "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": null,
+          "maxMsPerFile": null,
+          "samplesTimed": 0
+        },
+        "samples": [],
+        "treeTruthEdges": 0,
         "unexplainedInAnalyzer": 0
       },
       "kotlin": {
@@ -118,21 +118,337 @@
         "unexplainedInAnalyzer": 0
       },
       "scala": {
-        "analyzerEdges": 0,
-        "coveragePct": null,
-        "coveredByAnalyzer": 0,
-        "explainableByTree": 0,
-        "fabricationPct": null,
-        "filesSampled": 0,
-        "heuristicUnexplained": 0,
-        "missingInAnalyzer": 0,
+        "analyzerEdges": 716,
+        "coveragePct": 90.6,
+        "coveredByAnalyzer": 436,
+        "explainableByTree": 649,
+        "fabricationPct": 0,
+        "filesSampled": 60,
+        "heuristicUnexplained": 67,
+        "missingInAnalyzer": 45,
         "perf": {
-          "avgMsPerFile": null,
-          "maxMsPerFile": null,
-          "samplesTimed": 0
+          "avgMsPerFile": 15,
+          "maxMsPerFile": 245.6,
+          "samplesTimed": 60
         },
-        "samples": [],
-        "treeTruthEdges": 0,
+        "samples": [
+          {
+            "dir": "MISSING",
+            "file": "core/shared/src/main/scala/cats/effect/IO.scala",
+            "from": "Pure.tag",
+            "label": "overrides",
+            "target": "IO.tag"
+          },
+          {
+            "dir": "MISSING",
+            "file": "core/shared/src/main/scala/cats/effect/IO.scala",
+            "from": "Error.tag",
+            "label": "overrides",
+            "target": "IO.tag"
+          },
+          {
+            "dir": "MISSING",
+            "file": "core/shared/src/main/scala/cats/effect/IO.scala",
+            "from": "Delay.tag",
+            "label": "overrides",
+            "target": "IO.tag"
+          },
+          {
+            "dir": "MISSING",
+            "file": "core/shared/src/main/scala/cats/effect/IO.scala",
+            "from": "RealTime.tag",
+            "label": "overrides",
+            "target": "IO.tag"
+          },
+          {
+            "dir": "MISSING",
+            "file": "core/shared/src/main/scala/cats/effect/IO.scala",
+            "from": "Monotonic.tag",
+            "label": "overrides",
+            "target": "IO.tag"
+          },
+          {
+            "dir": "MISSING",
+            "file": "core/shared/src/main/scala/cats/effect/IO.scala",
+            "from": "ReadEC.tag",
+            "label": "overrides",
+            "target": "IO.tag"
+          },
+          {
+            "dir": "MISSING",
+            "file": "core/shared/src/main/scala/cats/effect/IO.scala",
+            "from": "Map.tag",
+            "label": "overrides",
+            "target": "IO.tag"
+          },
+          {
+            "dir": "MISSING",
+            "file": "core/shared/src/main/scala/cats/effect/IO.scala",
+            "from": "FlatMap.tag",
+            "label": "overrides",
+            "target": "IO.tag"
+          },
+          {
+            "dir": "MISSING",
+            "file": "core/shared/src/main/scala/cats/effect/IO.scala",
+            "from": "Attempt.tag",
+            "label": "overrides",
+            "target": "IO.tag"
+          },
+          {
+            "dir": "MISSING",
+            "file": "core/shared/src/main/scala/cats/effect/IO.scala",
+            "from": "HandleErrorWith.tag",
+            "label": "overrides",
+            "target": "IO.tag"
+          },
+          {
+            "dir": "MISSING",
+            "file": "core/shared/src/main/scala/cats/effect/IO.scala",
+            "from": "Canceled.tag",
+            "label": "overrides",
+            "target": "IO.tag"
+          },
+          {
+            "dir": "MISSING",
+            "file": "core/shared/src/main/scala/cats/effect/IO.scala",
+            "from": "OnCancel.tag",
+            "label": "overrides",
+            "target": "IO.tag"
+          },
+          {
+            "dir": "MISSING",
+            "file": "core/shared/src/main/scala/cats/effect/IO.scala",
+            "from": "Uncancelable.tag",
+            "label": "overrides",
+            "target": "IO.tag"
+          },
+          {
+            "dir": "MISSING",
+            "file": "core/shared/src/main/scala/cats/effect/IO.scala",
+            "from": "UnmaskRunLoop.tag",
+            "label": "overrides",
+            "target": "IO.tag"
+          },
+          {
+            "dir": "MISSING",
+            "file": "core/shared/src/main/scala/cats/effect/IO.scala",
+            "from": "IOCont.tag",
+            "label": "overrides",
+            "target": "IO.tag"
+          },
+          {
+            "dir": "MISSING",
+            "file": "core/shared/src/main/scala/cats/effect/IO.scala",
+            "from": "Get.tag",
+            "label": "overrides",
+            "target": "IO.tag"
+          },
+          {
+            "dir": "MISSING",
+            "file": "core/shared/src/main/scala/cats/effect/IO.scala",
+            "from": "Cede.tag",
+            "label": "overrides",
+            "target": "IO.tag"
+          },
+          {
+            "dir": "MISSING",
+            "file": "core/shared/src/main/scala/cats/effect/IO.scala",
+            "from": "Start.tag",
+            "label": "overrides",
+            "target": "IO.tag"
+          },
+          {
+            "dir": "MISSING",
+            "file": "core/shared/src/main/scala/cats/effect/IO.scala",
+            "from": "RacePair.tag",
+            "label": "overrides",
+            "target": "IO.tag"
+          },
+          {
+            "dir": "MISSING",
+            "file": "core/shared/src/main/scala/cats/effect/IO.scala",
+            "from": "Sleep.tag",
+            "label": "overrides",
+            "target": "IO.tag"
+          },
+          {
+            "dir": "MISSING",
+            "file": "core/shared/src/main/scala/cats/effect/IO.scala",
+            "from": "EvalOn.tag",
+            "label": "overrides",
+            "target": "IO.tag"
+          },
+          {
+            "dir": "MISSING",
+            "file": "core/shared/src/main/scala/cats/effect/IO.scala",
+            "from": "Blocking.tag",
+            "label": "overrides",
+            "target": "IO.tag"
+          },
+          {
+            "dir": "MISSING",
+            "file": "core/shared/src/main/scala/cats/effect/IO.scala",
+            "from": "Local.tag",
+            "label": "overrides",
+            "target": "IO.tag"
+          },
+          {
+            "dir": "MISSING",
+            "file": "core/shared/src/main/scala/cats/effect/IO.scala",
+            "from": "IOTrace.tag",
+            "label": "overrides",
+            "target": "IO.tag"
+          },
+          {
+            "dir": "MISSING",
+            "file": "core/shared/src/main/scala/cats/effect/IO.scala",
+            "from": "ReadRT.tag",
+            "label": "overrides",
+            "target": "IO.tag"
+          },
+          {
+            "dir": "MISSING",
+            "file": "core/shared/src/main/scala/cats/effect/IO.scala",
+            "from": "EndFiber.tag",
+            "label": "overrides",
+            "target": "IO.tag"
+          },
+          {
+            "dir": "MISSING",
+            "file": "ioapp-tests/src/test/scala/IOAppSuite.scala",
+            "from": "JVM.builder",
+            "label": "overrides",
+            "target": "Platform.builder"
+          },
+          {
+            "dir": "MISSING",
+            "file": "ioapp-tests/src/test/scala/IOAppSuite.scala",
+            "from": "JVM.pid",
+            "label": "overrides",
+            "target": "Platform.pid"
+          },
+          {
+            "dir": "MISSING",
+            "file": "ioapp-tests/src/test/scala/IOAppSuite.scala",
+            "from": "Node.builder",
+            "label": "overrides",
+            "target": "Platform.builder"
+          },
+          {
+            "dir": "MISSING",
+            "file": "ioapp-tests/src/test/scala/IOAppSuite.scala",
+            "from": "Node.pid",
+            "label": "overrides",
+            "target": "Platform.pid"
+          },
+          {
+            "dir": "MISSING",
+            "file": "ioapp-tests/src/test/scala/IOAppSuite.scala",
+            "from": "Native.builder",
+            "label": "overrides",
+            "target": "Platform.builder"
+          },
+          {
+            "dir": "MISSING",
+            "file": "ioapp-tests/src/test/scala/IOAppSuite.scala",
+            "from": "Native.pid",
+            "label": "overrides",
+            "target": "Platform.pid"
+          },
+          {
+            "dir": "MISSING",
+            "file": "kernel/shared/src/main/scala/cats/effect/kernel/Sync.scala",
+            "from": "OptionTSync.suspend",
+            "label": "overrides",
+            "target": "Sync.suspend"
+          },
+          {
+            "dir": "MISSING",
+            "file": "kernel/shared/src/main/scala/cats/effect/kernel/Sync.scala",
+            "from": "EitherTSync.suspend",
+            "label": "overrides",
+            "target": "Sync.suspend"
+          },
+          {
+            "dir": "MISSING",
+            "file": "kernel/shared/src/main/scala/cats/effect/kernel/Sync.scala",
+            "from": "StateTSync.suspend",
+            "label": "overrides",
+            "target": "Sync.suspend"
+          },
+          {
+            "dir": "MISSING",
+            "file": "kernel/shared/src/main/scala/cats/effect/kernel/Sync.scala",
+            "from": "WriterTSync.suspend",
+            "label": "overrides",
+            "target": "Sync.suspend"
+          },
+          {
+            "dir": "MISSING",
+            "file": "kernel/shared/src/main/scala/cats/effect/kernel/Sync.scala",
+            "from": "IorTSync.suspend",
+            "label": "overrides",
+            "target": "Sync.suspend"
+          },
+          {
+            "dir": "MISSING",
+            "file": "kernel/shared/src/main/scala/cats/effect/kernel/Sync.scala",
+            "from": "KleisliSync.suspend",
+            "label": "overrides",
+            "target": "Sync.suspend"
+          },
+          {
+            "dir": "MISSING",
+            "file": "kernel/shared/src/main/scala/cats/effect/kernel/Sync.scala",
+            "from": "ReaderWriterStateTSync.suspend",
+            "label": "overrides",
+            "target": "Sync.suspend"
+          },
+          {
+            "dir": "MISSING",
+            "file": "std/shared/src/main/scala/cats/effect/std/Queue.scala",
+            "from": "BoundedQueue.onOfferNoCapacity",
+            "label": "overrides",
+            "target": "AbstractQueue.onOfferNoCapacity"
+          },
+          {
+            "dir": "MISSING",
+            "file": "std/shared/src/main/scala/cats/effect/std/Queue.scala",
+            "from": "BoundedQueue.onTryOfferNoCapacity",
+            "label": "overrides",
+            "target": "AbstractQueue.onTryOfferNoCapacity"
+          },
+          {
+            "dir": "MISSING",
+            "file": "std/shared/src/main/scala/cats/effect/std/Queue.scala",
+            "from": "DroppingQueue.onOfferNoCapacity",
+            "label": "overrides",
+            "target": "AbstractQueue.onOfferNoCapacity"
+          },
+          {
+            "dir": "MISSING",
+            "file": "std/shared/src/main/scala/cats/effect/std/Queue.scala",
+            "from": "DroppingQueue.onTryOfferNoCapacity",
+            "label": "overrides",
+            "target": "AbstractQueue.onTryOfferNoCapacity"
+          },
+          {
+            "dir": "MISSING",
+            "file": "std/shared/src/main/scala/cats/effect/std/Queue.scala",
+            "from": "CircularBufferQueue.onOfferNoCapacity",
+            "label": "overrides",
+            "target": "AbstractQueue.onOfferNoCapacity"
+          },
+          {
+            "dir": "MISSING",
+            "file": "std/shared/src/main/scala/cats/effect/std/Queue.scala",
+            "from": "CircularBufferQueue.onTryOfferNoCapacity",
+            "label": "overrides",
+            "target": "AbstractQueue.onTryOfferNoCapacity"
+          }
+        ],
+        "treeTruthEdges": 481,
         "unexplainedInAnalyzer": 0
       },
       "typescript": {
