@@ -42,9 +42,9 @@ symbol-field rot. Every language wave must pin these symbol payloads:
 | parameters (+defaults) | PENDING -> #383 | PENDING -> #383 | GATED (calls-and-instantiation partial) | |
 | byte ranges (bb_edit depends) | indirect via M13 edit gates | same | same | M13 scope |
 | visibility/modifiers | GATED F3 implicit | implicit | implicit | explicit pins PENDING -> #383 |
-| qualified_calls | GATED (CC1+payload fixture) | GATED (qualified-calls-payload) — was NOT EMITTED, implemented #383 | GATED (payload-pins) | GATED (extension-method-flag) |
+| qualified_calls | GATED (CC1+payload fixture) | NOT EMITTED -> #383 (also javascript: NOT EMITTED, declared) | GATED (payload-pins) | GATED (extension-method-flag) |
 | docstrings/JSDoc | GATED (javadoc-payload) | GATED (groovydoc-payload) | GATED (payload-pins) | GATED (scaladoc-payload) |
-| typeParameters/generics | PENDING -> #383 | n/a (no syntax) | GATED (generic-parameters) | PENDING -> #383 |
+| typeParameters/generics | GATED (generic-parameters-payload java-side pending) | n/a (no syntax) | GATED (generic-parameters-payload) | GATED (generic-parameters-payload) |
 | range columns 1-based | GATED (CC1) | GATED (CC1, was 0-based - FIXED) | GATED (CC1) | GATED (CC1) |
 
 **Standing fixture-authoring rule**: every language's fixtures MUST include
@@ -73,7 +73,7 @@ grammar nodes, never emitted concepts.
 | references/imports | pipeline-e2e GATED | pipeline-e2e GATED | PENDING -> F7 + #383 | F7 |
 | exports | emitted, unpinned | n/a (no export concept) | n/a | PENDING -> #381 |
 
-Scala payloads: qualified_calls GATED (qualified-calls-payload fixture, #383 tail). Scala (Matrix 2 JVM cluster): fixtures 10/10 GATED; differential 95.1% cov / 0.5% unexplained on scala3@HEAD after #385 fixes (trait multi-parent positional bug fixed; stable_type_identifier parents; script-sentinel constructions). Remaining 11 residuals: scala dotted-parent convention decision + stdlib companion-chain oracle shapes -> #385. kotlin wasm fieldCount=0 -> #382.
+Scala (Matrix 2 JVM cluster): fixtures 10/10 GATED; differential 95.1% cov / 0.5% unexplained on scala3@HEAD after #385 fixes (trait multi-parent positional bug fixed; stable_type_identifier parents; script-sentinel constructions). Remaining 11 residuals: scala dotted-parent convention decision + stdlib companion-chain oracle shapes -> #385. kotlin wasm fieldCount=0 -> #382.
 
 ## AST purity audit (2026-08-23)
 

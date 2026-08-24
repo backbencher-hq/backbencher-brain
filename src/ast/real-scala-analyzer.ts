@@ -476,6 +476,24 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     return undefined
   }
 
+  /**
+   * Generic type-parameter extraction from type_parameters nodes
+   * (`class Store[T]`, `def map[R](...)`). Previously scala symbols carried
+   * NO generic information at all - silent absence (M14 #383 fix).
+   */
+  private extractScalaTypeParameters(node: Node): string[] {
+    const tpNode = node.namedChildren.find((c: any) => c.type === "type_parameters")
+    if (!tpNode) return []
+    const out: string[] = []
+    for (let i = 0; i < tpNode.namedChildCount; i++) {
+      const c = tpNode.namedChild(i)
+      if (c && /identifier|type_identifier|_parameter$/.test(c.type)) {
+        out.push(c.text.trim())
+      }
+    }
+    return out
+  }
+
   private createSymbol(
     name: string,
     kind: ASTEngine.SymbolKind,
@@ -636,6 +654,12 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       })
     }
 
+    const typeParams = this.extractScalaTypeParameters(node)
+    if (typeParams.length > 0) {
+      symbol.genericParameters = typeParams
+      symbol.metadata!.typeParameters = typeParams
+    }
+
     const extendsClause = this.findChild(node, "extends_clause")
     if (extendsClause) {
       const supertypes = this.extractSupertypes(extendsClause)
@@ -693,6 +717,12 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       })
     }
 
+    const typeParams = this.extractScalaTypeParameters(node)
+    if (typeParams.length > 0) {
+      symbol.genericParameters = typeParams
+      symbol.metadata!.typeParameters = typeParams
+    }
+
     const extendsClause = this.findChild(node, "extends_clause")
     if (extendsClause) {
       const supertypes = this.extractSupertypes(extendsClause)
@@ -743,6 +773,12 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         kind: ASTEngine.SymbolKind.Interface,
         range: symbol.range,
       })
+    }
+
+    const typeParams = this.extractScalaTypeParameters(node)
+    if (typeParams.length > 0) {
+      symbol.genericParameters = typeParams
+      symbol.metadata!.typeParameters = typeParams
     }
 
     const extendsClause = this.findChild(node, "extends_clause")
@@ -949,10 +985,18 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         // extension_definition's parameters, NOT on the function node, and
         // the wrapper never becomes a parent symbol. Detect via ancestors.
         isExtension: !!extensionReceiverType,
+        ...(extensionReceiverType ? {} : {}),
       },
     )
 
     symbols.push(symbol)
+
+    // function-level generics: def map[R](...) — attach post-push (#383)
+    const fnTypeParams = this.extractScalaTypeParameters(node)
+    if (fnTypeParams.length > 0) {
+      symbol.genericParameters = fnTypeParams
+      symbol.metadata!.typeParameters = fnTypeParams
+    }
 
     if (extensionReceiverType && !isMethod) {
       relationships.push({
