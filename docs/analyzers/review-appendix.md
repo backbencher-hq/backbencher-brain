@@ -404,6 +404,72 @@ Design note (recorded, NOT a defect): JSX elements emit BOTH Uses and
 Instantiates edges (layered confidence claims). Consistent with family
 behavior; revisit only if a downstream consumer double-counts.
 
+## Cross-language verification wave T1–T7 (2026-08-24)
+
+Seven open threads from the TS review dispositioned — nothing skipped;
+each got probes, fixtures, a fix, or ratification-with-evidence.
+
+- **T1 cyclomatic complexity family contract** (measured defect, all 5
+  languages): identical logic (if/else + for + ternary + &&) measured
+  TS 5/5 (accidental: else double-count canceled missing base), java
+  4/3, kotlin 4/5, scala 4/3, groovy **2** + file metric MISSING.
+  Contract now: `complexity = 1 + decisions`; decisions = branch
+  constructs + short-circuit ops (`&&`, `||`, `??`, `?:`); an else NEVER
+  adds. Groovy's calculator had DEAD node-type cases (`"&&"`, `"||"`,
+  `"do_while"`, `"switch_statement"`, `"catch_block"`,
+  `"elvis_expression"` — none produced by the pinned wasm; real shapes:
+  binary_expression operator field, do_statement,
+  switch_block_statement_group, catch_clause). Java missed operators
+  entirely; scala counted neither operators nor base. Post-fix parity:
+  **5/5/5/5/5** both metrics (probe: /tmp/opencode/cc-parity.ts).
+  ALSO: per-symbol complexity must live at TOP-LEVEL `symbol.complexity`
+  — parallel-indexer.ts reads `symbol.complexity || 1` for gravity
+  scoring; metadata-only values left every TS/kotlin/scala symbol at
+  complexity 1 in the index (search-ranking degradation).
+- **T2 overload implementation bodies**: class-method overload groups
+  kept the FIRST declaration = body-less signature (complexity 1, no
+  qualified_calls) while the walker still emitted body-derived call
+  edges sourced from it. Now LAST-declaration-wins (implementation
+  carries full params + body data). Top-level function overloads
+  already resolved to the implementation ✓ verified.
+- **T3 JSX dual edges RATIFIED**: consumers audited — edit-engine
+  callers count is a `>0` threshold (display may inflate by 1 for
+  JSX-used components; cosmetic), graph-engine default excludes `uses`,
+  orphan detection is existence-based. No behavioral double-count.
+- **T4 namespace-member export boundary**: isNodeExported crossed
+  container boundaries — `class Hidden {}` inside `export namespace NS`
+  was marked exported/public. Named-container members now need their OWN
+  export keyword (TS semantics); container itself unaffected.
+- **T5 re-export attribution**: names were collected by rescanning the
+  global exports array via LINE-RANGE overlap — two export statements on
+  one line made ./m2 claim ./m1's items; `export * from` recorded
+  nothing at all. Names now come from THIS statement's children; star
+  re-exports record item "*".
+- **T6 qualified_calls format parity** (measured): identical code
+  measured TS/Groovy/Kotlin/Scala embedding ARGUMENT text in chained
+  calls ("db.list(user).map") and kotlin emitting "service..save"
+  (navigation_suffix raw text leaked its dot). Contract: dotted path,
+  no arguments. Post-fix parity: ["service.save","db.list.map",
+  "db.list"] in all five (java additionally captures lambda-body calls —
+  coverage difference, recorded). 5 parity fixtures pin it.
+- **T7 REINDEX IMPACT ENUMERATION** (for whoever runs the next reindex):
+  1. brain_symbol.complexity becomes REAL for TS/Kotlin/Scala symbols
+     (was silently 1) → gravity_score ranking will shift noticeably;
+  2. qualified_calls entries lose embedded argument text → any exact-
+     match consumer keyed on old arg-laden strings must re-match;
+  3. kotlin "receiver..member" malformed paths disappear;
+  4. TS api_contract_path values change format ('GET /x' -> '/x') —
+     doc-engine exact-match now consistent with JVM languages;
+  5. NEW edge types appear for TS (References/type-Uses) — graph
+     queries filtered to specific types are unaffected; unfiltered
+     edge counts grow;
+  6. TS namespace members previously falsely exported become private →
+     public-API counts shrink toward truth; gravity boost lost for them;
+  7. declare-global / .d.ts augmentation symbols appear where files
+     previously indexed ZERO symbols;
+  8. complexity thresholds in quality scoring (>30/>50) see real values
+     for the first time on JVM/TS alike.
+
 *(existing entries retained below)*
 
 - **Scala** (reviewed 2026-08-23, official tree-sitter/tree-sitter-scala;

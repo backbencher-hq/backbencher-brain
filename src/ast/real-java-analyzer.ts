@@ -166,12 +166,17 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (
         type === "if_statement" ||
         type === "for_statement" ||
+        type === "enhanced_for_statement" ||
         type === "while_statement" ||
+        type === "do_statement" ||
         type === "catch_clause" ||
         type === "switch_block_statement_group" ||
         type === "ternary_expression"
       ) {
         cyclomaticComplexity++
+      } else if (type === "binary_expression") {
+        const op = node.childForFieldName("operator")?.text
+        if (op === "&&" || op === "||") cyclomaticComplexity++
       }
 
       if (type === "package_declaration") {
@@ -801,9 +806,11 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
       exports,
       errors,
       metadata: {
-        complexity: cyclomaticComplexity,
+        // +1 base: the walk above counts raw decision points; the stored
+        // metric is textbook cyclomatic complexity (family contract).
+        complexity: cyclomaticComplexity + 1,
         linesOfCode: content.split("\n").length,
-        cyclomaticComplexity,
+        cyclomaticComplexity: cyclomaticComplexity + 1,
         framework: finalFrameworks[0],
         patterns: finalPatterns,
         currentPackage,
@@ -1072,11 +1079,16 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
         n.type === "switch_rule" ||
         n.type === "switch_block_statement_group" ||
         n.type === "catch_clause" ||
-        n.type === "ternary_expression" ||
-        n.type === "&&" ||
-        n.type === "||"
+        n.type === "ternary_expression"
       ) {
         complexity++
+      } else if (n.type === "binary_expression") {
+        // Short-circuit operators are decision points. The previous
+        // `case "&&": case "||":` matched NODE TYPES that don't exist in
+        // this grammar (&&/|| live inside binary_expression as an operator
+        // field) — dead cases, so && never counted.
+        const op = n.childForFieldName("operator")?.text
+        if (op === "&&" || op === "||") complexity++
       }
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const child = n.namedChild(i)

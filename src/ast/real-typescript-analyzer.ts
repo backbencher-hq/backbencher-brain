@@ -667,6 +667,15 @@ function isNodeExported(node: Node): { isExported: boolean; isDefault: boolean }
       return { isExported: true, isDefault: false }
     }
 
+    // NAMED-CONTAINER BOUNDARY (TS export semantics): a member of a
+    // namespace/module needs its OWN export keyword — the container being
+    // exported does not export its members. The unconditional climb marked
+    // `class Hidden {}` inside `export namespace NS` as exported/public.
+    if (p.type === "statement_block" && p.parent?.type === "internal_module") {
+      const ownMods = extractModifiersFromNode(current)
+      return { isExported: ownMods.isExport, isDefault: ownMods.isDefault }
+    }
+
     // Check for inline export keyword
     if (
       p.type === "lexical_declaration" ||
@@ -1855,6 +1864,9 @@ class TypeScriptAnalysisRunner {
       isAsync: modifiers.isAsync,
       parameters: params,
       returnType,
+      // Top-level per family contract: DB ingester reads symbol.complexity
+      // (|| 1) for gravity scoring.
+      complexity: this.calculateComplexity(node),
       genericParameters: typeParams.length > 0 ? typeParams : undefined,
       decorators: modifiers.decorators.length > 0 ? modifiers.decorators : undefined,
       comments: this.extractComments(node),
@@ -1934,9 +1946,17 @@ class TypeScriptAnalysisRunner {
 
     const body = node.childForFieldName("body")
     if (body) {
-      // Overload dedup: an overload signature + its implementation are ONE
-      // logical method (C#-family contract). Keep the first occurrence per
-      // name; skip later duplicates (implementation or further signatures).
+      // Overload dedup (TS allows N declarations + 1 implementation per
+      // name): keep the LAST declaration of each name — it carries the body.
+      const lastDeclarationOfMethod = new Map<string, number>()
+      for (let i = 0; i < body.namedChildCount; i++) {
+        const m = body.namedChild(i)
+        if (!m) continue
+        if (m.type === "method_definition" || m.type === "method_signature" || m.type === "abstract_method_signature") {
+          const n = m.childForFieldName("name")?.text
+          if (n && n !== "constructor") lastDeclarationOfMethod.set(n, i)
+        }
+      }
       const seenMethodNames = new Set<string>()
       const seenPropertyNames = new Set<string>()
       for (let i = 0; i < body.namedChildCount; i++) {
@@ -1955,8 +1975,12 @@ class TypeScriptAnalysisRunner {
               this.extractConstructor(member, symbols, stack, memberDecorators)
               break
             }
-            if (memberName && seenMethodNames.has(memberName)) {
-              // Skip overload duplicate (signature or implementation)
+            // Overload groups (TS allows N declarations + 1 implementation
+            // per name): keep ONLY the LAST declaration. First-wins kept the
+            // body-less SIGNATURE — complexity 1, no qualified_calls, no
+            // taint data — while the relationship walker still emitted
+            // body-derived edges sourced from that symbol.
+            if (memberName && lastDeclarationOfMethod.get(memberName) !== i) {
               break
             }
             if (memberName) seenMethodNames.add(memberName)
@@ -2506,6 +2530,7 @@ class TypeScriptAnalysisRunner {
       returnType,
       genericParameters: typeParams.length > 0 ? typeParams : undefined,
       decorators: modifiers.decorators.length > 0 ? modifiers.decorators : undefined,
+      complexity: this.calculateComplexity(node),
       comments: this.extractComments(node),
       qualified_calls: this.extractQualifiedCalls(node),
       apiContractPath: apiContract.path,
@@ -2842,6 +2867,9 @@ class TypeScriptAnalysisRunner {
       // Check for default export
       const isDefault = this.hasToken(node, "default")
       let foundNamed: boolean = false
+      // Names exported by THIS statement (used for re-export dependency
+      // records — see the sourceNode block below).
+      const namesFromThisStatement: string[] = []
 
       // Check for re-exports (export { x } from "y")
       const sourceNode = node.childForFieldName("source")
@@ -2861,8 +2889,10 @@ class TypeScriptAnalysisRunner {
 
               if (name) {
                 foundNamed = true
+                const exportName = alias?.text || name.text
+                namesFromThisStatement.push(exportName)
                 exports.push({
-                  name: alias?.text || name.text,
+                  name: exportName,
                   isDefault: false,
                   range: this.nodeRange(specifier),
                 })
@@ -2923,19 +2953,20 @@ class TypeScriptAnalysisRunner {
         })
       }
 
-      // Re-export records a module dependency: `export { X } from "./mod"`
+      // Re-exports record a module dependency: `export { X } from "./mod"`
       // The analyzer surface includes this in `imports` via a synthetic
-      // ImportInfo with `reExport: true`. This ensures downstream consumers
-      // see the dependency edge without a separate pass.
+      // ImportInfo with `reExport: true`. Names are collected from THIS
+      // statement's children during the pass above — an earlier version
+      // re-scanned the global exports array by line-range overlap, which
+      // fabricated cross-module items when two export statements shared a
+      // line (minified/bundled code): `export { alpha } from "./m1";
+      // export { beta } from "./m2"` claimed alpha came from m2.
       if (sourceNode) {
         const modulePath = stringContent(sourceNode)
-        const reExportedNames: string[] = []
-        // Walk the already-pushed exports for this statement to collect names
-        for (let i = exports.length - 1; i >= 0; i--) {
-          const e = exports[i]
-          if (e.range && e.range.endLine !== undefined && e.range.endLine <= this.nodeRange(node).endLine && e.range.startLine >= this.nodeRange(node).startLine) {
-            reExportedNames.unshift(e.name)
-          }
+        const reExportedNames = namesFromThisStatement.slice()
+        if (reExportedNames.length === 0 && !foundNamed) {
+          // `export * from "mod"` — no specifiers, but the dependency is real.
+          reExportedNames.push("*")
         }
         if (reExportedNames.length > 0) {
           this._pendingReExportImports.push({
@@ -3869,7 +3900,24 @@ class TypeScriptAnalysisRunner {
       if (n.type === "call_expression") {
         const callee = n.namedChild(0)
         if (callee) {
-          calls.push(callee.text)
+          // Dotted path WITHOUT argument text (family contract with java).
+          // Raw callee.text embedded inner-call arguments on chains:
+          // `db.list(user).map` was stored as "db.list(user).map".
+          const parts: string[] = []
+          let cur: Node | null = callee
+          while (cur) {
+            if (cur.type === "member_expression") {
+              const prop = cur.childForFieldName("property")
+              parts.unshift(prop ? prop.text : cur.namedChild(cur.namedChildCount - 1)?.text ?? "")
+              cur = cur.childForFieldName("object")
+            } else if (cur.type === "call_expression") {
+              cur = cur.namedChild(0)
+            } else {
+              parts.unshift(cur.text)
+              break
+            }
+          }
+          calls.push(parts.filter(Boolean).join("."))
         }
       }
 
@@ -4077,13 +4125,19 @@ class TypeScriptAnalysisRunner {
   // ========================================================================
 
   private calculateComplexity(node: Node): number {
-    let complexity = 0
+    // FAMILY CONTRACT (M14 cross-language parity): cyclomatic complexity =
+    // 1 + decision points. Decision points are branch constructs and
+    // short-circuit operators; an `else` clause NEVER adds (it is not an
+    // independent decision). Previously this counter had no base AND
+    // double-counted else_clause — two errors that happened to cancel on
+    // common shapes, hiding the inconsistency from casual checks.
+    let decisions = 0
 
     const countNode = (n: Node) => {
-      // Count control flow structures
+      // Count control flow structures (else_clause deliberately absent —
+      // see contract note above)
       switch (n.type) {
         case "if_statement":
-        case "else_clause":
         case "for_statement":
         case "for_in_statement":
         case "while_statement":
@@ -4092,12 +4146,12 @@ class TypeScriptAnalysisRunner {
         case "catch_clause":
         case "ternary_expression":
         case "conditional_expression":
-          complexity++
+          decisions++
           break
         case "binary_expression":
           const op = n.childForFieldName("operator")?.text
           if (op === "&&" || op === "||" || op === "??") {
-            complexity++
+            decisions++
           }
           break
       }
@@ -4109,7 +4163,7 @@ class TypeScriptAnalysisRunner {
     }
 
     countNode(node)
-    return complexity
+    return decisions + 1
   }
 
   private calculateCyclomaticComplexity(node: Node): number {
@@ -4132,7 +4186,7 @@ class TypeScriptAnalysisRunner {
           break
         case "binary_expression":
           const op = n.childForFieldName("operator")?.text
-          if (op === "&&" || op === "||") {
+          if (op === "&&" || op === "||" || op === "??") {
             decisions++
           }
           break
