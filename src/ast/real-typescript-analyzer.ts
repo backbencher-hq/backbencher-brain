@@ -2731,12 +2731,27 @@ class TypeScriptAnalysisRunner {
 
   private extractNamespace(node: Node, symbols: ASTEngine.UniversalSymbol[], stack: StackEntry[]): boolean {
     const nameNode = node.childForFieldName("name")
-    if (!nameNode) return false
+    if (!nameNode) {
+      // NAMELESS ambient wrappers (`declare global { ... }`) have no name
+      // FIELD at all — bailing here combined with the container no-descent
+      // list silently dropped the ENTIRE subtree (jsx.d.ts extracted 0
+      // symbols: every global-augmentation interface vanished). Descend
+      // into the body so nested declarations are extracted.
+      const body = node.childForFieldName("body")
+      if (body) {
+        stack.push({ node: body })
+      } else {
+        for (let i = node.namedChildCount - 1; i >= 0; i--) {
+          const c = node.namedChild(i)
+          if (c) stack.push({ node: c })
+        }
+      }
+      return true
+    }
     // String-named modules (`declare module "foo"`) keep their quotes in the
     // AST; strip them so qualified names stay clean.
     const rawName = nameNode.text
     const name = rawName.startsWith('"') || rawName.startsWith("'") ? rawName.slice(1, -1) : rawName
-    if (!name) return false
     const exportStatus = isNodeExported(node)
     const modifiers = extractModifiersFromNode(node)
 
@@ -3655,31 +3670,22 @@ class TypeScriptAnalysisRunner {
   }
 
   private extractInterfaceExtends(node: Node): string[] | undefined {
-    const extendsClause = node.childForFieldName("extends")
-    if (!extendsClause) {
-      // Try to find extends_clause in children
-      for (let i = 0; i < node.namedChildCount; i++) {
-        const child = node.namedChild(i)
-        if (child && child.type === "extends_clause") {
-          const types: string[] = []
-          for (let j = 0; j < child.namedChildCount; j++) {
-            const type = child.namedChild(j)
-            if (type) {
-              types.push(type.text)
-            }
-          }
-          return types.length > 0 ? types : undefined
-        }
-      }
-      return undefined
+    // Interface heritage parses as extends_type_clause — NOT extends_clause
+    // (that is the CLASS heritage node) and interface_declaration has no
+    // "extends" FIELD. The old lookup missed both and returned undefined,
+    // silently dropping every interface-inheritance edge.
+    let clause: Node | null = null
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (c && c.type === "extends_type_clause") { clause = c; break }
     }
+    if (!clause) return undefined
 
     const types: string[] = []
-    for (let i = 0; i < extendsClause.namedChildCount; i++) {
-      const type = extendsClause.namedChild(i)
-      if (type) {
-        types.push(type.text)
-      }
+    for (let i = 0; i < clause.namedChildCount; i++) {
+      const type = clause.namedChild(i)
+      if (!type || type.type === "type_arguments") continue
+      types.push(type.text)
     }
 
     return types.length > 0 ? types : undefined
@@ -3695,8 +3701,14 @@ class TypeScriptAnalysisRunner {
     const scanNode: Node = node.parent && node.parent.type === "export_statement" ? node.parent : node
 
     let prev = scanNode.previousSibling
+    // Contiguity boundary: a blank line between the comment and the anchor
+    // ends the leading-comment run. Without this, trailing remarks about the
+    // PREVIOUS declaration were stolen across the gap.
+    let anchorRow = scanNode.startPosition.row
     while (prev && prev.type === "comment") {
+      if (prev.endPosition.row + 1 < anchorRow) break
       comments.unshift(stripCommentMarkers(prev.text))
+      anchorRow = prev.startPosition.row
       prev = prev.previousSibling
     }
 
