@@ -14,7 +14,7 @@
     },
     {
       "description": "java adversarial fixtures",
-      "detail": "19/19 fixtures pass",
+      "detail": "20/20 fixtures pass",
       "id": "fixtures-java",
       "status": "pass"
     },
@@ -38,8 +38,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "bbbca0d14fd08104adb030068d6a1847c9725831",
-  "committedAt": "2026-08-24T03:51:07+02:00",
+  "commit": "745859739e1bbf3787923410a8dca3f2694c3bdc",
+  "committedAt": "2026-08-24T05:11:12+02:00",
   "data": {
     "details": [
       {
@@ -264,6 +264,11 @@
       },
       {
         "fixture": "java/javadoc-payload",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/method-complexity-payload",
         "ok": true,
         "problems": []
       },
@@ -625,7 +630,7 @@
       },
       "java": {
         "fail": 0,
-        "pass": 19
+        "pass": 20
       },
       "javascript": {
         "fail": 0,

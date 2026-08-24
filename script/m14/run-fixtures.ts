@@ -162,7 +162,18 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
         }
       }
     }
-        for (const want of exp.expectComments ?? []) {
+        for (const want of exp.expectComplexity ?? []) {
+      const sym = symbols.find((s: any) => s.name === want.symbol)
+      const cx: number | undefined = sym?.complexity
+      if (want.equals !== undefined && cx !== want.equals) {
+        problems.push(`expected ${want.symbol} complexity ${want.equals}; got ${cx}`)
+      } else if (want.min !== undefined && !(typeof cx === "number" && cx >= want.min)) {
+        problems.push(`expected ${want.symbol} complexity >= ${want.min}; got ${cx}`)
+      } else if (want.max !== undefined && !(typeof cx === "number" && cx <= want.max)) {
+        problems.push(`expected ${want.symbol} complexity <= ${want.max}; got ${cx}`)
+      }
+    }
+    for (const want of exp.expectComments ?? []) {
       const sym = symbols.find((s: any) => s.name === want.symbol)
       const cc: number = Array.isArray(sym?.comments) ? sym.comments.length : 0
       if (want.minCount && cc < want.minCount) {
@@ -201,6 +212,17 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
     for (const want of exp.expectPrimaryFramework ?? []) {
       const actual = (result.metadata as any)?.framework ?? null
       if (actual !== want) problems.push(`expected primary framework ${JSON.stringify(want)}; got ${JSON.stringify(actual)} (detected=${JSON.stringify((result.metadata as any)?.detectedFrameworks)})`)
+    }
+    for (const want of exp.expectComplexity ?? []) {
+      const sym = symbols.find((s: any) => s.name === want.symbol)
+      const cx: number | undefined = sym?.complexity
+      if (want.equals !== undefined && cx !== want.equals) {
+        problems.push(`expected ${want.symbol} complexity ${want.equals}; got ${cx}`)
+      } else if (want.min !== undefined && !(typeof cx === "number" && cx >= want.min)) {
+        problems.push(`expected ${want.symbol} complexity >= ${want.min}; got ${cx}`)
+      } else if (want.max !== undefined && !(typeof cx === "number" && cx <= want.max)) {
+        problems.push(`expected ${want.symbol} complexity <= ${want.max}; got ${cx}`)
+      }
     }
     for (const want of exp.expectComments ?? []) {
       // { symbol, contains?, notContains? } — pins leading-comment capture
