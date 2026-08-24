@@ -8,38 +8,38 @@
     },
     {
       "description": "typescript adversarial fixtures",
-      "detail": "23/23 fixtures pass",
+      "detail": "30/30 fixtures pass",
       "id": "fixtures-typescript",
       "status": "pass"
     },
     {
       "description": "java adversarial fixtures",
-      "detail": "20/20 fixtures pass",
+      "detail": "22/22 fixtures pass",
       "id": "fixtures-java",
       "status": "pass"
     },
     {
       "description": "groovy adversarial fixtures",
-      "detail": "20/20 fixtures pass",
+      "detail": "22/22 fixtures pass",
       "id": "fixtures-groovy",
       "status": "pass"
     },
     {
       "description": "kotlin adversarial fixtures",
-      "detail": "21/21 fixtures pass",
+      "detail": "23/23 fixtures pass",
       "id": "fixtures-kotlin",
       "status": "pass"
     },
     {
       "description": "scala adversarial fixtures",
-      "detail": "21/21 fixtures pass",
+      "detail": "23/23 fixtures pass",
       "id": "fixtures-scala",
       "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "745859739e1bbf3787923410a8dca3f2694c3bdc",
-  "committedAt": "2026-08-24T05:11:12+02:00",
+  "commit": "33dea131634baadd8b63912068cff8f483471693",
+  "committedAt": "2026-08-24T06:30:09+02:00",
   "data": {
     "details": [
       {
@@ -123,6 +123,16 @@
         "problems": []
       },
       {
+        "fixture": "typescript/complexity-parity",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/ctor-overload-single",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "typescript/decorators",
         "ok": true,
         "problems": []
@@ -178,7 +188,17 @@
         "problems": []
       },
       {
+        "fixture": "typescript/namespace-member-export-boundary",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "typescript/optional-default-params",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/overload-implementation-body",
         "ok": true,
         "problems": []
       },
@@ -194,6 +214,21 @@
       },
       {
         "fixture": "typescript/payload-pins",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/qualified-call-path",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/re-export-attribution",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/re-export-empty-clause",
         "ok": true,
         "problems": []
       },
@@ -219,6 +254,11 @@
       },
       {
         "fixture": "java/class-extends-implements",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/complexity-parity",
         "ok": true,
         "problems": []
       },
@@ -293,6 +333,11 @@
         "problems": []
       },
       {
+        "fixture": "java/qualified-call-path",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "java/record-varargs-compact-ctor",
         "ok": true,
         "problems": []
@@ -324,6 +369,11 @@
       },
       {
         "fixture": "groovy/closure-and-typedef",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/complexity-parity",
         "ok": true,
         "problems": []
       },
@@ -393,6 +443,11 @@
         "problems": []
       },
       {
+        "fixture": "groovy/qualified-call-path",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "groovy/qualified-calls-payload",
         "ok": true,
         "problems": []
@@ -434,6 +489,11 @@
       },
       {
         "fixture": "kotlin/companion-object",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/complexity-parity",
         "ok": true,
         "problems": []
       },
@@ -503,6 +563,11 @@
         "problems": []
       },
       {
+        "fixture": "kotlin/qualified-call-path",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "kotlin/qualified-calls-builtin-names",
         "ok": true,
         "problems": []
@@ -529,6 +594,11 @@
       },
       {
         "fixture": "scala/companion-object",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/complexity-parity",
         "ok": true,
         "problems": []
       },
@@ -583,6 +653,11 @@
         "problems": []
       },
       {
+        "fixture": "scala/qualified-call-path",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "scala/qualified-calls-payload",
         "ok": true,
         "problems": []
@@ -626,11 +701,11 @@
     "summary": {
       "groovy": {
         "fail": 0,
-        "pass": 20
+        "pass": 22
       },
       "java": {
         "fail": 0,
-        "pass": 20
+        "pass": 22
       },
       "javascript": {
         "fail": 0,
@@ -638,15 +713,15 @@
       },
       "kotlin": {
         "fail": 0,
-        "pass": 21
+        "pass": 23
       },
       "scala": {
         "fail": 0,
-        "pass": 21
+        "pass": 23
       },
       "typescript": {
         "fail": 0,
-        "pass": 23
+        "pass": 30
       }
     }
   },
