@@ -110,7 +110,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 55.1
+        "avgMsPerFile": 54.4
       }
     },
     "vue-core:kotlin": {
@@ -288,7 +288,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 8.7
+        "avgMsPerFile": 9.9
       }
     }
   }
