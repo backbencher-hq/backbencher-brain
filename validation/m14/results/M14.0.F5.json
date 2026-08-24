@@ -1,48 +1,48 @@
 {
   "checks": [
     {
-      "description": "graphql-js@9c24501848: tree-truth vs analyzer diff",
-      "detail": "60 files, coverage 100%, unexplained 0%",
+      "description": "vue-core@f8975657d7: tree-truth vs analyzer diff",
+      "detail": "31 files, coverage 100%, unexplained 0%",
       "id": "differential-javascript",
       "status": "pass"
     },
     {
-      "description": "graphql-js@9c24501848: tree-truth vs analyzer diff",
-      "detail": "46 files, coverage 100%, unexplained 0%",
+      "description": "vue-core@f8975657d7: tree-truth vs analyzer diff",
+      "detail": "60 files, coverage 100%, unexplained 0%",
       "id": "differential-typescript",
       "status": "pass"
     },
     {
-      "description": "graphql-js@9c24501848: tree-truth vs analyzer diff",
+      "description": "vue-core@f8975657d7: tree-truth vs analyzer diff",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-kotlin",
       "status": "pass"
     },
     {
-      "description": "graphql-js@9c24501848: tree-truth vs analyzer diff",
+      "description": "vue-core@f8975657d7: tree-truth vs analyzer diff",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-scala",
       "status": "pass"
     },
     {
-      "description": "graphql-js@9c24501848: tree-truth vs analyzer diff",
+      "description": "vue-core@f8975657d7: tree-truth vs analyzer diff",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-java",
       "status": "pass"
     },
     {
-      "description": "graphql-js@9c24501848: tree-truth vs analyzer diff",
+      "description": "vue-core@f8975657d7: tree-truth vs analyzer diff",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-groovy",
       "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "de1fa28869c27eb9eef0fff28d149bed2ffb7612",
-  "committedAt": "2026-08-24T23:05:47+02:00",
+  "commit": "51c053345cc81169250b6074a28a43f332de10ed",
+  "committedAt": "2026-08-25T00:28:05+02:00",
   "data": {
     "corpusPins": {
-      "graphql-js": "9c245018484668b7c35f3ed219092a98855bd51e"
+      "vue-core": "f8975657d7451d8e4291406427e6a8ae5e50c8d5"
     },
     "report": {
       "groovy": {
@@ -82,21 +82,21 @@
         "unexplainedInAnalyzer": 0
       },
       "javascript": {
-        "analyzerEdges": 84,
+        "analyzerEdges": 27,
         "coveragePct": 100,
-        "coveredByAnalyzer": 44,
-        "explainableByTree": 84,
+        "coveredByAnalyzer": 16,
+        "explainableByTree": 27,
         "fabricationPct": 0,
-        "filesSampled": 60,
+        "filesSampled": 31,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 20.5,
-          "maxMsPerFile": 393.2,
-          "samplesTimed": 60
+          "avgMsPerFile": 7.2,
+          "maxMsPerFile": 34.1,
+          "samplesTimed": 31
         },
         "samples": [],
-        "treeTruthEdges": 44,
+        "treeTruthEdges": 16,
         "unexplainedInAnalyzer": 0
       },
       "kotlin": {
@@ -136,21 +136,21 @@
         "unexplainedInAnalyzer": 0
       },
       "typescript": {
-        "analyzerEdges": 43,
+        "analyzerEdges": 128,
         "coveragePct": 100,
-        "coveredByAnalyzer": 22,
-        "explainableByTree": 43,
+        "coveredByAnalyzer": 58,
+        "explainableByTree": 128,
         "fabricationPct": 0,
-        "filesSampled": 46,
+        "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 19.3,
-          "maxMsPerFile": 95.3,
-          "samplesTimed": 46
+          "avgMsPerFile": 47.4,
+          "maxMsPerFile": 286.1,
+          "samplesTimed": 60
         },
         "samples": [],
-        "treeTruthEdges": 22,
+        "treeTruthEdges": 58,
         "unexplainedInAnalyzer": 0
       }
     },

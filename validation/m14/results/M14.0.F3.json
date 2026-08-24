@@ -7,6 +7,18 @@
       "status": "pass"
     },
     {
+      "description": "vue adversarial fixtures",
+      "detail": "3/3 fixtures pass",
+      "id": "fixtures-vue",
+      "status": "pass"
+    },
+    {
+      "description": "svelte adversarial fixtures",
+      "detail": "0/0 fixtures pass",
+      "id": "fixtures-svelte",
+      "status": "pass"
+    },
+    {
       "description": "typescript adversarial fixtures",
       "detail": "31/31 fixtures pass",
       "id": "fixtures-typescript",
@@ -38,8 +50,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "de1fa28869c27eb9eef0fff28d149bed2ffb7612",
-  "committedAt": "2026-08-24T23:05:47+02:00",
+  "commit": "51c053345cc81169250b6074a28a43f332de10ed",
+  "committedAt": "2026-08-25T00:28:05+02:00",
   "data": {
     "details": [
       {
@@ -161,6 +173,25 @@
         "fixture": "javascript/stdlib-colliding-names",
         "ok": true,
         "problems": []
+      },
+      {
+        "fixture": "vue/composition-api-sfc",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "vue/emits-and-name",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "vue/options-api-sfc",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "(none)",
+        "ok": true
       },
       {
         "fixture": "typescript/abstract-class",
@@ -794,9 +825,17 @@
         "fail": 0,
         "pass": 23
       },
+      "svelte": {
+        "fail": 0,
+        "pass": 0
+      },
       "typescript": {
         "fail": 0,
         "pass": 31
+      },
+      "vue": {
+        "fail": 0,
+        "pass": 3
       }
     }
   },

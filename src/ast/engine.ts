@@ -867,7 +867,7 @@ export namespace ASTEngine {
    * offsets) plus each block's language (`js`/`ts`) and body start position.
    * Pure AST — no source-text scanning of the file.
    */
-  function extractSfcScriptBlocks(
+  export function extractSfcScriptBlocks(
     rootNode: Node,
     content: string
   ): { body: string; lang: string; startLine: number; startColumn: number }[] {
