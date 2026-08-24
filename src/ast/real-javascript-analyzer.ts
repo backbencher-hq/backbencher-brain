@@ -231,8 +231,8 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           const name = node.childForFieldName("name")?.text
           if (name) {
             const owner = scopeOwnerName(scopeStack)
-            const dedupKey = `${owner ?? "module"}:${name}`
             const isConstructor = name === "constructor"
+            const dedupKey = `${owner ?? "module"}:${name.startsWith("#") ? name.slice(1) : name}`
             const isAccessor = this.hasToken(node, "get") || this.hasToken(node, "set")
             const kind = isConstructor
               ? ASTEngine.SymbolKind.Constructor
@@ -242,6 +242,8 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             const isStatic = this.hasToken(node, "static")
             const isAsync = this.hasToken(node, "async")
             const isGenerator = this.hasToken(node, "*")
+            const isPrivateMethod = name.startsWith("#")
+            const cleanName = isPrivateMethod ? name.slice(1) : name
             if (!seenMethods.has(dedupKey)) {
               seenMethods.add(dedupKey)
               const params = this.extractParameters(node.childForFieldName("parameters"))
@@ -251,13 +253,14 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               // siblings).
               const decorators = this.collectOwnDecorators(node)
               symbols.push({
-                name,
+                name: cleanName,
                 kind,
                 range: this.nodeToRange(node),
                 scope: scopeString(scopeStack),
                 ownerName: owner,
                 ownerKind: owner ? ASTEngine.SymbolKind.Class : undefined,
-                visibility: isStatic ? "public" : "public",
+                // '#' members are class-private regardless of other tokens.
+                visibility: isPrivateMethod ? "private" : "public",
                 isStatic,
                 parameters: params,
                 decorators: decorators.length > 0 ? decorators : undefined,
@@ -398,12 +401,19 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               if (objText === "module" && propText === "exports") {
                 patterns["CommonJS Exports"] = true
                 this.collectModuleExports(right, exports, node, true)
-              } else if (obj && obj.type === "member_expression" && objText === "module.exports" && propText) {
-                // Deep property assignment: `module.exports.sub = {...}` —
-                // sub IS part of the module's public surface. Previously
+              } else if (obj && obj.type === "member_expression" && propText && (objText === "module.exports" || objText.startsWith("module.exports.") || objText === "exports" || objText.startsWith("exports."))) {
+                // DEEP property assignment: `module.exports.sub = ...` /
+                // `exports.group.item = 1` — every segment below the base
+                // belongs to the module's public surface. Only ONE level
+                // below the base was recognized before; deeper chains were
                 // silently dropped.
                 patterns["CommonJS Exports"] = true
-                exports.push({ name: propText, isDefault: false, range: this.nodeToRange(prop!) })
+                const afterBase =
+                  objText === "module.exports" ? [] :
+                  objText === "exports" ? [] :
+                  objText.replace(/^module\.exports\./, "").replace(/^exports\./, "").split(".")
+                const exportName = [...afterBase, propText].join(".")
+                exports.push({ name: exportName, isDefault: false, range: this.nodeToRange(prop!) })
               } else if (objText === "exports") {
                 patterns["CommonJS Exports"] = true
                 if (propText && prop) exports.push({ name: propText, isDefault: false, range: this.nodeToRange(prop) })
@@ -534,9 +544,24 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           const exportSource = node.childForFieldName("source")
           if (exportSource) {
             const modPath = stringContent(exportSource)
+            // Named clauses carry their names (`export { a, b } from "./m"`);
+            // a bare star records "*".
+            const clauseNames: string[] = []
+            const clause2 = this.findChildByType(node, "export_clause")
+            if (clause2) {
+              for (let i = 0; i < clause2.namedChildCount; i++) {
+                const spec = clause2.namedChild(i)
+                if (spec && spec.type === "export_specifier") {
+                  const alias = spec.childForFieldName("alias")
+                  const nm = alias ?? spec.childForFieldName("name")
+                  if (nm) clauseNames.push(nm.text)
+                }
+              }
+            }
+            const starOnly = !clause2 && this.hasToken(node, "*")
             imports.push({
               module: modPath,
-              items: this.hasToken(node, "*") && !this.findChildByType(node, "export_clause") ? ["*"] : [],
+              items: starOnly ? ["*"] : clauseNames,
               isDefault: false,
               range: this.nodeToRange(node),
               metadata: { reExport: true },
@@ -581,6 +606,21 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           const valueNode = n.childForFieldName("value")
           if (nameNode && valueNode && (valueNode.type === "arrow_function" || valueNode.type === "function_expression")) {
             return nameNode.text
+          }
+        }
+        // X.prototype.m = function () {} — calls inside the body belong to m
+        // (same rule as extractCallRelationships; missing here left prototype
+        // methods with empty qualified_calls).
+        if (n.type === "assignment_expression") {
+          const left = n.childForFieldName("left")
+          const right = n.childForFieldName("right")
+          if (left && right && (right.type === "function_expression" || right.type === "arrow_function") && left.type === "member_expression") {
+            const obj = left.childForFieldName("object")
+            const prop = left.childForFieldName("property")
+            if (obj && obj.type === "member_expression" && prop) {
+              const protoProp = obj.childForFieldName("property")
+              if (protoProp && protoProp.text === "prototype") return prop.text
+            }
           }
         }
         return current
@@ -901,10 +941,15 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private hasToken(node: Node, token: string): boolean {
+    // Anonymous-token check ONLY. Matching child.text also matched the
+    // method's own NAME identifier — a plain `get() {}` / `set(v) {}`
+    // method was classified as an accessor Property, and `async()` carried
+    // isAsync=true. Keywords/operators here are anonymous tokens whose
+    // type equals their text ('get', 'set', 'static', 'async', '*').
     for (let i = 0; i < node.childCount; i++) {
       const child = node.child(i)
-      if (!child) continue
-      if (child.type === token || child.text === token) return true
+      if (!child || child.isNamed) continue
+      if (child.type === token) return true
     }
     return false
   }
