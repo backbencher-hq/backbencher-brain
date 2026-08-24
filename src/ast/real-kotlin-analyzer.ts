@@ -543,6 +543,10 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       parameters,
       returnType,
       decorators: annotations,
+      // Top-level per family contract: the DB ingester reads
+      // symbol.complexity (|| 1) for gravity scoring — metadata-only values
+      // left every kotlin symbol at complexity 1 in the index.
+      complexity: this.calculateFunctionComplexity(node, ctx),
       comments: kdoc ? [kdoc] : [],
       qualified_calls: qualifiedCalls,
       apiContractPath,
@@ -1459,12 +1463,15 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       const n = stack.pop()!
       if (
         n.type === "if_expression" ||
-        n.type === "when_expression" ||
+        n.type === "when_entry" || // per-case, matching java/TS switch_case granularity
         n.type === "for_statement" ||
         n.type === "while_statement" ||
+        n.type === "do_while_statement" ||
         n.type === "catch_block" ||
         n.type === "elvis_expression"
       ) {
+        complexity++
+      } else if (n.type === "conjunction_expression" || n.type === "disjunction_expression") {
         complexity++
       }
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
@@ -1746,12 +1753,24 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
    */
   private buildKotlinNavigationExpression(node: Node): string {
     const receiver = node.namedChild(0)
-    const selector = node.namedChild(node.namedChildCount - 1)
+    let selector = node.namedChild(node.namedChildCount - 1)
 
     if (!receiver || !selector) return node.text
 
+    // navigation_suffix WRAPS the member name; using the suffix node's raw
+    // text leaked its leading '.' producing "service..save".
+    if (selector.type === "navigation_suffix") {
+      const inner = selector.namedChild(selector.namedChildCount - 1)
+      if (!inner) return node.text
+      selector = inner
+    }
+
     const receiverText =
-      receiver.type === "navigation_expression" ? this.buildKotlinNavigationExpression(receiver) : receiver.text
+      receiver.type === "navigation_expression"
+        ? this.buildKotlinNavigationExpression(receiver)
+        : receiver.type === "call_expression"
+          ? this.buildKotlinCallExpression(receiver) // chained calls keep the PATH only (no argument text)
+          : receiver.text
 
     return `${receiverText}.${selector.text}`
   }
@@ -1965,7 +1984,9 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       const n = stack.pop()!
       switch (n.type) {
         case "if_expression":
-        case "else_clause":
+        // else_clause deliberately NOT counted: an `else` is not an
+        // independent decision (family contract). Counting both if and
+        // else double-counted every if/else.
         case "for_statement":
         case "while_statement":
         case "do_while_statement":
