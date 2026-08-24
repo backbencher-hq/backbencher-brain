@@ -1719,6 +1719,8 @@ class TypeScriptAnalysisRunner {
 
     this.scopeManager.popScope()
 
+    this.classifyEvidenceTier(relationships)
+
     return {
       language: "typescript",
       symbols,
@@ -2692,6 +2694,39 @@ class TypeScriptAnalysisRunner {
 
     symbols.push(symbol)
   }
+
+  /**
+   * M14 #299 - evidence-tier classification for EVERY emitted relationship.
+   * Same rules as the JVM family (structural / usage_contextual /
+   * import_based / reference_qualified / inferred).
+   */
+  private classifyEvidenceTier(relationships: ASTEngine.UniversalRelationship[]): void {
+    for (const r of relationships) {
+      const md = r.metadata ?? (r.metadata = {})
+      if (md.evidenceClass) continue
+      const t = String(r.type ?? r.relationshipType ?? "")
+      const conf = typeof r.confidence === "number" ? r.confidence : 1
+      if (t === "contains" || t === "exports") { md.evidenceClass = "structural"; continue }
+      if (t === "references") {
+        md.evidenceClass = md.isImport ? "import_based" : "reference_qualified"
+        continue
+      }
+      if (t === "extends" || t === "implements") {
+        md.evidenceClass = conf >= 1 ? "structural" : "inferred"
+        continue
+      }
+      if (t === "overrides") {
+        md.evidenceClass = conf >= 1 ? "structural" : conf >= 0.85 ? "usage_contextual" : "inferred"
+        continue
+      }
+      if (t === "instantiates") {
+        md.evidenceClass = conf >= 0.9 ? "structural" : "usage_contextual"
+        continue
+      }
+      md.evidenceClass = "usage_contextual"
+    }
+  }
+
 
   private extractIndexSignature(node: Node, symbols: ASTEngine.UniversalSymbol[]): void {
     // [key: string]: T

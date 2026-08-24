@@ -1,102 +1,102 @@
 {
   "checks": [
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
-      "detail": "52 files, coverage 100%, unexplained 0%",
+      "description": "vue-core@f8975657d7: tree-truth vs analyzer diff",
+      "detail": "31 files, coverage 100%, unexplained 0%",
       "id": "differential-javascript",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
-      "detail": "0 files, coverage null%, unexplained null%",
+      "description": "vue-core@f8975657d7: tree-truth vs analyzer diff",
+      "detail": "60 files, coverage 100%, unexplained 0%",
       "id": "differential-typescript",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
+      "description": "vue-core@f8975657d7: tree-truth vs analyzer diff",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-kotlin",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
+      "description": "vue-core@f8975657d7: tree-truth vs analyzer diff",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-scala",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
-      "detail": "60 files, coverage 100%, unexplained 0%",
+      "description": "vue-core@f8975657d7: tree-truth vs analyzer diff",
+      "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-java",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
-      "detail": "60 files, coverage 100%, unexplained 0%",
+      "description": "vue-core@f8975657d7: tree-truth vs analyzer diff",
+      "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-groovy",
       "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "a00969ec7d46c56445b5743c28ce69d08b183a16",
-  "committedAt": "2026-08-24T22:07:57+02:00",
+  "commit": "67bec9584094423142c096830bd8e0040a99dad3",
+  "committedAt": "2026-08-24T22:24:13+02:00",
   "data": {
     "corpusPins": {
-      "grails-core": "a83f87480e0c0138caa5a7191a053b1e59a64066"
+      "vue-core": "f8975657d7451d8e4291406427e6a8ae5e50c8d5"
     },
     "report": {
       "groovy": {
-        "analyzerEdges": 257,
-        "coveragePct": 100,
-        "coveredByAnalyzer": 151,
-        "explainableByTree": 223,
-        "fabricationPct": 0,
-        "filesSampled": 60,
-        "heuristicUnexplained": 34,
-        "missingInAnalyzer": 0,
-        "perf": {
-          "avgMsPerFile": 4.2,
-          "maxMsPerFile": 27.9,
-          "samplesTimed": 60
-        },
-        "samples": [],
-        "treeTruthEdges": 151,
-        "unexplainedInAnalyzer": 0
-      },
-      "java": {
-        "analyzerEdges": 247,
-        "coveragePct": 100,
-        "coveredByAnalyzer": 132,
-        "explainableByTree": 167,
-        "fabricationPct": 0,
-        "filesSampled": 60,
-        "heuristicUnexplained": 80,
-        "missingInAnalyzer": 0,
-        "perf": {
-          "avgMsPerFile": 4.6,
-          "maxMsPerFile": 42.3,
-          "samplesTimed": 60
-        },
-        "samples": [],
-        "treeTruthEdges": 132,
-        "unexplainedInAnalyzer": 0
-      },
-      "javascript": {
-        "analyzerEdges": 2,
-        "coveragePct": 100,
-        "coveredByAnalyzer": 2,
-        "explainableByTree": 2,
-        "fabricationPct": 0,
-        "filesSampled": 52,
+        "analyzerEdges": 0,
+        "coveragePct": null,
+        "coveredByAnalyzer": 0,
+        "explainableByTree": 0,
+        "fabricationPct": null,
+        "filesSampled": 0,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 2.8,
-          "maxMsPerFile": 23.6,
-          "samplesTimed": 52
+          "avgMsPerFile": null,
+          "maxMsPerFile": null,
+          "samplesTimed": 0
         },
         "samples": [],
-        "treeTruthEdges": 2,
+        "treeTruthEdges": 0,
+        "unexplainedInAnalyzer": 0
+      },
+      "java": {
+        "analyzerEdges": 0,
+        "coveragePct": null,
+        "coveredByAnalyzer": 0,
+        "explainableByTree": 0,
+        "fabricationPct": null,
+        "filesSampled": 0,
+        "heuristicUnexplained": 0,
+        "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": null,
+          "maxMsPerFile": null,
+          "samplesTimed": 0
+        },
+        "samples": [],
+        "treeTruthEdges": 0,
+        "unexplainedInAnalyzer": 0
+      },
+      "javascript": {
+        "analyzerEdges": 27,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 16,
+        "explainableByTree": 27,
+        "fabricationPct": 0,
+        "filesSampled": 31,
+        "heuristicUnexplained": 0,
+        "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": 9.3,
+          "maxMsPerFile": 41.5,
+          "samplesTimed": 31
+        },
+        "samples": [],
+        "treeTruthEdges": 16,
         "unexplainedInAnalyzer": 0
       },
       "kotlin": {
@@ -136,21 +136,21 @@
         "unexplainedInAnalyzer": 0
       },
       "typescript": {
-        "analyzerEdges": 0,
-        "coveragePct": null,
-        "coveredByAnalyzer": 0,
-        "explainableByTree": 0,
-        "fabricationPct": null,
-        "filesSampled": 0,
+        "analyzerEdges": 128,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 58,
+        "explainableByTree": 128,
+        "fabricationPct": 0,
+        "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": null,
-          "maxMsPerFile": null,
-          "samplesTimed": 0
+          "avgMsPerFile": 56.6,
+          "maxMsPerFile": 358,
+          "samplesTimed": 60
         },
         "samples": [],
-        "treeTruthEdges": 0,
+        "treeTruthEdges": 58,
         "unexplainedInAnalyzer": 0
       }
     },
