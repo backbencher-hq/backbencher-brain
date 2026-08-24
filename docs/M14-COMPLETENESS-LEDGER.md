@@ -174,6 +174,25 @@ Co-agent owns tools/M15. When analyzer work hits a tool-layer bug:
     cross-agent note in the message.
 Recorded so it is process, not memory.
 
+## Matrix 3b — Owner review status (per language)
+
+Rule: a language may reach L5 ONLY with at least one owner review round ON
+THE POST-FIX STATE recorded here, plus the formal sign-off ritual. Agent
+self-declaration of "done" is never sufficient (M13 lesson, re-learned).
+
+| Language | Owner review rounds | Findings | Disposition |
+|---|---|---|---|
+| java | 2 (0765d36 + c044dff owner fix waves) | 6+ (FQ annotations, apiContractPath shadowing, varargs, compact ctors, permits, confidence tiering) | fixed + gated |
+| groovy | 3 waves (73abae5, afdcdc4, 261c8a8 owner commits) | FQ annotations, class/field decorators, tiered overrides, framework detection D1/D2 | fixed + gated |
+| kotlin | 3 waves (8c8e8b9, 2c62f1a, f51879d owner commits incl. wasm rebuild) | 5 defects + contract unification + silent misparse root-fix | fixed + gated |
+| scala | 2 (owner dual-corpus wave 55ea9c8/1087a86/d5405c5 + owner review of agent work: 5 findings round 1, 4 round 2) | isExtension dead flag, positional labels, dotted supertypes, column bases, unmeasured heuristic, synthetic complexity, orphaned comment | fixed + gated |
+| typescript | 1 (b84cea5: 5 verified defects) + ongoing | decorators/heritage/usage-pass/contract/ranges | fixed + gated |
+| javascript | 2 (853f022: 8 defects; a00969e: 5 incl. 2 Tier-1) | barrel re-exports invisible, accessor-name collision, private methods, CJS chains | fixed + gated |
+
+Sign-off ritual (pending, per contract §5.6): owner samples claims per
+language against evidence files; formal per-language sign-off closes the
+wave issues #251–#254.
+
 ## Standing rules
 
 1. Every bug class found anywhere becomes a permanent gate before its fix lands (F7 rule).
