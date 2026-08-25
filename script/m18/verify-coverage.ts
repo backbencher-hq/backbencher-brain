@@ -72,7 +72,7 @@ async function main() {
     ck("Q4: post-flush coverage reported with model label", post.models.length > 0, JSON.stringify(post.models))
     // 0-coverage is never hidden: the health check reports 0 with an explicit
     // description rather than omitting the metric.
-    ck("Q4: 0-coverage is representable (health reports 0, never omits)", pre.embedCount >= 0 && typeof pre.pct === "number", "pre-embedCount=" + pre.embedCount)
+    ck("Q4: zero-coverage is representable (health reports 0 as a number)", typeof pre.embedCount === "number" && Number.isFinite(pre.pct) && pre.total > 0, "pre-embedCount=" + pre.embedCount + " pre-pct=" + pre.pct)
 
     // ── Phase 3: cross-model refusal + degradation surfaced at zero coverage ──
     // On a COLD index the query's model (API) has zero stored embeddings, so:

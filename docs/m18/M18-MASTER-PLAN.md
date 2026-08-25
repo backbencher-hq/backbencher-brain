@@ -58,7 +58,7 @@ GitHub milestone #18 · Issues #411–#417 · Started 2026-08-24
 | Q2 | recall@k | OPEN | validation/m18/results/Q2.json |
 | Q3 | ask precision | OPEN | validation/m18/results/Q3.json |
 | Q4 | Coverage gate | OPEN | validation/m18/results/Q4.json |
-| Q5 | Edge cases | OPEN | validation/m18/results/Q5.json |
+| Q5 | Edge cases | CLOSED (issue #418) | validation/m18/results/Q5.json |
 | D6 | Docs | OPEN | validation/m18/results/D6.json |
 | X9 | Gate | OPEN | validation/m18/results/X9.json |
 
