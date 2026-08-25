@@ -5,6 +5,11 @@ indexed file to return bounded current source with an explicit freshness flag.
 Symbol/content/regex modes query the indexed `brain_symbol` / `brain_file` tables;
 file mode is the deliberate source-retrieval exception.
 
+> **Semantic mode: NONE.** `bb_search` has **no** semantic/vector mode.
+> Its modes are `symbols` / `content` / `symbol` / `file` — all lexical or
+> exact. Semantic (vector) retrieval is **`bb_ask`-only**. No UI, doc, or
+> CLI output may imply `bb_search` ranks results semantically.
+
 ## Modes
 
 The public tool supports four retrieval modes. The engine (`src/intelligence/search/`)
