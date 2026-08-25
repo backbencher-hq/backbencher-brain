@@ -62,10 +62,21 @@ async function main() {
   // ── 3. Wiring ────────────────────────────────────────────────────────────
   const pkg = readFileSync(path.join(ROOT_DIR, "package.json"), "utf8")
   const gate = readFileSync(path.join(ROOT_DIR, "script/verify-quality-gate.ts"), "utf8")
-  for (const v of ["verify-closure-gate.ts"]) {
-    ck("C1: m18/" + v + " wired into package.json verify", pkg.includes("m18/" + v))
+  for (const v of ["verify-closure-gate.ts", "verify-mutation.ts"]) {
+    ck("C1: m18/" + v + " wired into package.json", pkg.includes("m18/" + v))
     ck("C1: m18/" + v + " wired into quality gate", gate.includes("m18/" + v))
   }
+
+  // ── 3b. Coverage-presence: the health/report path must always surface
+  // embedding coverage (never omit it) — the gate's anti-regression tooth.
+  // The check is on the CALL SITE (`checks.push(await checkEmbeddingCoverage`)
+  // so removing the report (not just the doc string) fails the gate.
+  const healthSrc = readFileSync(path.join(ROOT_DIR, "src/brain/brain-index-health.ts"), "utf8")
+  // The call must EXIST and must NOT be commented out — a naive substring
+  // check would pass a commented call (`// checks.push(await ...)`).
+  const callPattern = /^\s*checks\.push\(await checkEmbeddingCoverage\(/m
+  const healthCoverage = callPattern.test(healthSrc)
+  ck("C1: health path calls checkEmbeddingCoverage (machine-checkable, not commented)", healthCoverage, "brain-index-health.ts")
 
   ck("C1: the gate itself performed a real number of checks", checks >= 7, "checks=" + checks)
 
