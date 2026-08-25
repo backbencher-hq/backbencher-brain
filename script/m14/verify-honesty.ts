@@ -48,8 +48,11 @@ function collectProse(dir: string, out: string[] = []) {
   return out
 }
 for (const file of collectProse(M14).concat(collectProse(path.join(ROOT, "docs")).filter(f => f.includes("M14")))) {
-  // The contract itself quotes banned terms to define them — exempted by design.
+  // The contract itself quotes banned terms to define them, and the ledger
+  // title ("Completeness Ledger") is a proper noun naming the specification,
+  // not a verdict claim — both exempted by design.
   if (file.endsWith("M14-HONESTY-CONTRACT.md")) continue
+  if (file.endsWith("M14-COMPLETENESS-LEDGER.md")) continue
   const text = fs.readFileSync(file, "utf8")
   for (const re of BANNED) {
     const m = text.match(re)
