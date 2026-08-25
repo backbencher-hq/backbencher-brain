@@ -895,3 +895,27 @@ qualified-call survival through the SFC merge.
 VERDICT: A/B/C satisfied at fixture level; differential floors true 0/0;
 stations D/E/F/G closed; H aligned. Remaining for L5: owner spot-checks
 + full #419 spec rollout parity (Java-pilot format).
+
+## Svelte second adversarial pass (2026-08-24, final)
+
+Attack on the first wave's own fixes + a heavyweight real-world corpus:
+
+- **shadcn-svelte pinned as second standing corpus** (1,681 real Svelte 5
+  rune components): 60-file sample, **470/470 tree-truth (100%), 0
+  unexplained** on first contact — the strongest real-code signal any
+  analyzer in this review has received.
+- **ONE latent defect found and fixed**: my own rune filter used a bare
+  `$`-prefix rule, which would also swallow calls to USER-defined
+  $functions (legal JS). Tightened to: full dotted name ∈ SVELTE_RUNES,
+  or `$`-prefixed with a known RUNE LEAF segment. New fixture
+  user-dollar-functions proves a user `$format()` call SURVIVES while
+  `$derived.by` noise stays filtered (proven failing pre-fix).
+- Corpus grep evidence: all 1,325 `$`-calls across shadcn-svelte are
+  genuine runes ($props/$bindable/$state/$derived/$effect) — no user-$
+  collisions exist in the wild corpora, but the filter is now precise by
+  construction regardless.
+
+VERDICT: second pass found exactly one defect (the over-filter), it is
+fixed and gated; no further findings. Svelte stands at the same depth
+as TS/JS/Vue: two adversarial passes, completeness inventory, dual
+corpora at true 0/0.
