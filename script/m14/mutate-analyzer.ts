@@ -83,6 +83,31 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => ({ ...s, comments: [] })) }),
   },
   {
+    id: "scala/drop-typeParameters",
+    language: "scala",
+    defectClass: "symbol-payload-loss",
+    description: "strips genericParameters from every symbol (the #383c bug class)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => {
+        const clean = { ...s, genericParameters: undefined }
+        if (clean.metadata) { delete clean.metadata.typeParameters }
+        return clean
+      }) }),
+  },
+  {
+    id: "scala/drop-decorators",
+    language: "scala",
+    defectClass: "annotation-loss",
+    description: "clears decorators from every symbol (annotation-driven detection regression)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => ({ ...s, decorators: [] })) }),
+  },
+  {
+    id: "scala/drop-docstrings",
+    language: "scala",
+    defectClass: "docstring-loss",
+    description: "clears comments arrays (KDoc/ScalaDoc loss family)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => ({ ...s, comments: [] })) }),
+  },
+  {
     id: "typescript/drop-qualified-calls",
     language: "typescript",
     defectClass: "symbol-payload-loss",
