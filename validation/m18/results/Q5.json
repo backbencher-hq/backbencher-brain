@@ -1,0 +1,15 @@
+{
+  "issue": "M18.Q5",
+  "code": "Q5",
+  "tool": "semantic-search (edge cases)",
+  "title": "semantic edge cases - corruption, stale, empty, cold-start, model-mismatch",
+  "verified": true,
+  "checks": 12,
+  "passed": 12,
+  "failed": 0,
+  "negatives": [
+    "content_hash is stored but NOT consulted at query time (insert-time dedupe only); staleness is proven via file-level hash (checkResultsFreshness).",
+    "The verifier patches SemanticEngine.embed + getLastEmbeddingModel with a fixed synthetic vector/model so it is fully deterministic; real-model behavior is covered by Q2/Q3/Q4."
+  ],
+  "generatedAt": "2026-08-25T18:49:40.945Z"
+}
