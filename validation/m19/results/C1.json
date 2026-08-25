@@ -1,0 +1,12 @@
+{
+  "issue": "M19.C1",
+  "code": "C1",
+  "tool": "governance",
+  "title": "master plan, ledger, closure gate, scale-benchmark governance",
+  "verified": true,
+  "checks": 7,
+  "passed": 7,
+  "failed": 0,
+  "negatives": 0,
+  "generatedAt": "2026-08-25T19:21:39.501Z"
+}
