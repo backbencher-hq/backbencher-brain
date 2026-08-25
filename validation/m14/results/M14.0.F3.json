@@ -32,7 +32,7 @@
     },
     {
       "description": "groovy adversarial fixtures",
-      "detail": "22/22 fixtures pass",
+      "detail": "23/23 fixtures pass",
       "id": "fixtures-groovy",
       "status": "pass"
     },
@@ -50,8 +50,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "3f91151ae5e8e181241ea8f171903624c47a2f5b",
-  "committedAt": "2026-08-25T23:36:33+02:00",
+  "commit": "676511ba1e0ee07d317c87d619f1617eb42a21e8",
+  "committedAt": "2026-08-25T23:56:16+02:00",
   "data": {
     "details": [
       {
@@ -580,6 +580,11 @@
         "problems": []
       },
       {
+        "fixture": "groovy/generic-visibility-payload",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "groovy/groovydoc-payload",
         "ok": true,
         "problems": []
@@ -868,7 +873,7 @@
     "summary": {
       "groovy": {
         "fail": 0,
-        "pass": 22
+        "pass": 23
       },
       "java": {
         "fail": 0,

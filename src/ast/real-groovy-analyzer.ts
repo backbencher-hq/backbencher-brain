@@ -218,6 +218,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
             name,
             kind,
             comments: (() => { const d = this.extractGroovyDoc(node); return d ? [d] : [] })(),
+            genericParameters: (() => { const tp = this.extractGroovyTypeParameters(node); return tp.length > 0 ? tp : undefined })(),
             range: this.nodeToRange(node),
             visibility,
             decorators: classAnnotations,
@@ -294,6 +295,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
             complexity: this.calculateGroovyMethodComplexity(node),
             range: this.nodeToRange(node),
             visibility,
+            genericParameters: (() => { const tp = this.extractGroovyTypeParameters(node); return tp.length > 0 ? tp : undefined })(),
             parameters,
             decorators: annotations,
             ownerName,
@@ -598,6 +600,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       // pass 3 first-parent guess — guesses at 1.0 contaminated thresholded
       // analysis identically to verified overrides.
       let confidence = 1.0
+      let reasonCode = "exact-in-file"
 
       // Pass 1: exact-signature BFS over the in-file hierarchy.
       const queue: string[] = []
@@ -632,6 +635,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (declaring) {
           targetFqn = `${declaring}.${task.methodName}${task.signature}`
           confidence = 0.85
+          reasonCode = "companion-index"
         }
       }
 
@@ -641,6 +645,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         // Below the patterns.ts default threshold (0.7): visible in raw
         // output, never contaminating thresholded analysis.
         confidence = 0.5
+        reasonCode = "first-parent-guess"
       }
 
       if (targetFqn) {
@@ -651,7 +656,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: localTarget,
           type: ASTEngine.RelationshipType.Overrides,
           confidence,
-          metadata: { relationshipType: "method_override", isGroovyOverride: true },
+          metadata: { relationshipType: "method_override", isGroovyOverride: true, reasonCode },
         })
       }
     }
@@ -881,10 +886,46 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
     return mods
   }
 
+  /**
+   * Generic type-parameter extraction from type_parameters nodes.
+   * Previously groovy symbols carried NO generic information (#383 fix).
+   */
+  private extractGroovyTypeParameters(node: Node): string[] {
+    const tpNode = node.namedChildren.find((c: any) => c.type === "type_parameters")
+    if (!tpNode) return []
+    const out: string[] = []
+    for (let i = 0; i < tpNode.namedChildCount; i++) {
+      const c = tpNode.namedChild(i)
+      if (!c) continue
+      if (/identifier|type_identifier/.test(c.type)) {
+        out.push(c.text.trim())
+      } else if (c.type === "type_parameter") {
+        // descend into type_parameter to find its name child
+        for (let j = 0; j < c.namedChildCount; j++) {
+          const gc = c.namedChild(j)
+          if (gc && /identifier|type_identifier/.test(gc.type)) {
+            out.push(gc.text.trim())
+            break
+          }
+        }
+      }
+    }
+    return out
+  }
+
   private extractVisibility(node: Node): "public" | "private" | "protected" | undefined {
+    // Check the declaration's own text for visibility keywords — groovy
+    // grammar sometimes puts them as anonymous tokens not captured by
+    // extractModifiers' named-children iteration.
+    const text = node.text
+    if (/^(\s*)(private|static private|protected)\b/.test(text) || /\bprivate\b/.test(text.split("\n")[0] ?? "")) {
+      // fall through to modifiers check below, but also check raw text
+    }
     const mods = this.extractModifiers(node)
     if (mods.indexOf("private") !== -1) return "private"
     if (mods.indexOf("protected") !== -1) return "protected"
+    if (/\bprivate\b/.test(node.text.split("\n")[0] ?? "")) return "private"
+    if (/\bprotected\b/.test(node.text.split("\n")[0] ?? "")) return "protected"
     return "public"
   }
 
