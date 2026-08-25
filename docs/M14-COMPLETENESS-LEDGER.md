@@ -211,7 +211,7 @@ now the DEFINITION of done — retroactively binding on all wave issues.
 
 ### #419 section definition — the eight mandatory judgments per language
 
-A language closes #419 only when ALL sections pass:
+A language closes #419 only when ALL sections are satisfied:
 A. Structural completeness (grammar inventory vs emissions)
 B. Every relationship kind verified (11 kinds incl. permits)
 C. Payload matrix complete (Matrix 1b rows)

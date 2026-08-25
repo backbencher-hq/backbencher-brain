@@ -8,7 +8,7 @@
     },
     {
       "description": "vue adversarial fixtures",
-      "detail": "3/3 fixtures pass",
+      "detail": "8/8 fixtures pass",
       "id": "fixtures-vue",
       "status": "pass"
     },
@@ -50,8 +50,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "639921a1fcd62df115826c29770d2b7ba5f3d258",
-  "committedAt": "2026-08-25T00:42:46+02:00",
+  "commit": "5fdd4145889458f14f214c8006c71b9c31d873a6",
+  "committedAt": "2026-08-25T20:57:16+02:00",
   "data": {
     "details": [
       {
@@ -180,12 +180,37 @@
         "problems": []
       },
       {
+        "fixture": "vue/dual-script-blocks",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "vue/emits-and-name",
         "ok": true,
         "problems": []
       },
       {
         "fixture": "vue/options-api-sfc",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "vue/options-component-dedupe",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "vue/script-setup-props-emits",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "vue/ts-script-interface",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "vue/watch-option-handlers",
         "ok": true,
         "problems": []
       },
@@ -835,7 +860,7 @@
       },
       "vue": {
         "fail": 0,
-        "pass": 3
+        "pass": 8
       }
     }
   },
