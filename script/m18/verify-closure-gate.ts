@@ -48,7 +48,10 @@ async function main() {
   let hollow = 0, hardcoded = 0
   const hardTrue = new RegExp("ck\\(\\s*\"[^\"]*\",\\s*true\\s*\\)" + "|" + "nk\\(\\s*\"[^\"]*\",\\s*true\\s*\\)", "g")
   const orTrue = new RegExp("\\|\\|\\s*true\\s*\\)", "g")
-  const gte0 = new RegExp(">" + "=" + "0|>" + "=" + "\\s+0", "g")
+  // A real floor like `rec10 >= 0.5` must NOT be flagged: the `0` of `0.5`
+  // is a leading digit, not the trivial non-negative-tautology. Only a bare
+  // non-negative-tautology with no decimal point is hollow (a count check).
+  const gte0 = new RegExp(">" + "=" + "\\s*0" + "(?![.\\d])", "g")
   for (const v of verifiers) {
     const src = readFileSync(path.join(verifierDir, v), "utf8")
     hollow += (src.match(hardTrue) || []).length + (src.match(orTrue) || []).length + (src.match(gte0) || []).length

@@ -219,7 +219,7 @@ function assertFloors(vecMedRanks: number[], fbMedRanks: number[], perQueryMeta:
   const allMs: number[] = []
   for (const c of Object.values(perCorpus) as any[]) for (const r of c.rows || []) for (const run of r.runs) allMs.push(run.ms)
   const medMs = medianOf(allMs.slice().sort((a, b) => a - b))
-  ck("Q2: median query latency < 3000ms", medMs >= 0 && medMs < 3000, "median=" + medMs + "ms")
+  ck("Q2: median query latency is a finite number and < 3000ms", Number.isFinite(medMs) && medMs < 3000, "median=" + medMs + "ms")
 }
 
 if (CORPUS_ONLY) {
