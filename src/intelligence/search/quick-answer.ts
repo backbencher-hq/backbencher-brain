@@ -179,7 +179,18 @@ export async function quickAnswer(projectId: ProjectID, query: string): Promise<
 
   const semantic = await semanticVectorSearch(projectId, query, { maxResults: 5 })
   if (semantic.results.length > 0) {
+    // Honesty: when the semantic route could not produce a vector-ranked
+    // answer (keyword fallback — no embeddings, low coverage, or an embedding
+    // error), the response must say so explicitly instead of presenting
+    // lexical matches as semantic ones. This is the "does not know" surface
+    // the milestone requires: low-coverage answers show an explicit unknown.
+    const isFallback = semantic.metadata.method === "keyword-fallback"
+    const fallbackNote =
+      "Note: semantic embeddings are unavailable or insufficient for this query " +
+      "(coverage too low), so the matches below are lexical, not semantic — I cannot " +
+      "confidently answer this from embeddings.\n\n"
     let combinedAnswer = `Closest matches from the AST index for your query (search results, not a verified answer):\n\n`
+    if (isFallback) combinedAnswer = fallbackNote + combinedAnswer
     const sources: Array<{ file: string; line: number; context: string }> = []
     for (const res of semantic.results.slice(0, 5)) {
       const staleMark = res.stale ? " [STALE — file changed since index]" : ""
