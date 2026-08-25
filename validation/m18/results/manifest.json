@@ -6,7 +6,7 @@
     { "code": "Q1", "evidence": "Q1.json", "closed": true, "note": "real-corpus benchmark with provenance-verified golds" },
     { "code": "Q2", "evidence": "Q2.json", "closed": true, "note": "recall@k measured: vector rec@10=71.4%, rec@5=57.1% (nemotron); ep golds out-of-space/coverage-gap" },
     { "code": "Q3", "evidence": "Q3.json", "closed": true, "note": "ask precision warm 71.4% / cold 42.9%; no-fabrication + explicit-unknown verified; quick-answer fallback honesty note added" },
-    { "code": "Q4", "evidence": "Q4.json", "closed": false, "note": "coverage gate pending" },
+    { "code": "Q4", "evidence": "Q4.json", "closed": true, "note": "coverage reported per-run post-flush (57.1% rake), pre/post phase labeled, cross-model refused, zero-coverage degradation surfaced" },
     { "code": "Q5", "evidence": "Q5.json", "closed": false, "note": "edge cases pending" },
     { "code": "D6", "evidence": "D6.json", "closed": false, "note": "docs pending" },
     { "code": "X9", "evidence": "X9.json", "closed": false, "note": "gate hardening pending" }
