@@ -852,3 +852,12 @@ GOTCHAS:
     template expressions, revisit.
   - engine maps only lang="ts" to the TS grammar; lang="tsx"/"jsx" blocks
     run as JS (rare; recorded).
+
+FOLLOW-UP (same day): the svelte repo's own .ts corpus (.d.ts files)
+exposed one more ORACLE over-derivation: class-heritage collection
+descended into type_arguments, pushing TYPE PARAMETERS (Props, Events,
+T...) as fake extends targets — 13 phantom missing edges. Same guard the
+extends_type_clause path already had applied to class/implements
+heritage. All svelte floors re-pinned at true 0/0 (javascript,
+typescript, svelte languages). LESSON REINFORCED: pinning a non-zero
+floor hides real signal — investigate before recording.
