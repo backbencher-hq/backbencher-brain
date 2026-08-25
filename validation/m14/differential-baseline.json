@@ -22,7 +22,7 @@
       "unexplained": 0,
       "heuristic": 80,
       "perf": {
-        "avgMsPerFile": 6.1
+        "avgMsPerFile": 7.9
       }
     },
     "grails-core:groovy": {
@@ -30,7 +30,7 @@
       "unexplained": 0,
       "heuristic": 34,
       "perf": {
-        "avgMsPerFile": 6.4
+        "avgMsPerFile": 7.5
       }
     },
     "Exposed:kotlin": {
@@ -264,7 +264,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 5.5
+        "avgMsPerFile": 7.6
       }
     },
     "grails-core:typescript": {
@@ -413,18 +413,18 @@
     },
     "svelte:javascript": {
       "missing": 0,
-      "unexplained": 2,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 6.7
-      }
-    },
-    "svelte:typescript": {
-      "missing": 13,
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 46.7
+        "avgMsPerFile": 8.9
+      }
+    },
+    "svelte:typescript": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 54.8
       }
     },
     "svelte:kotlin": {
@@ -472,7 +472,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 10.8
+        "avgMsPerFile": 33.8
       }
     },
     "grails-core:svelte": {

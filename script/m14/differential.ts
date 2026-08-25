@@ -180,9 +180,22 @@ function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
         const heritage = n.namedChildren.find((c: any) => c.type === "class_heritage")
         if (heritage) {
           const ext2 = heritage.namedChildren.find((c: any) => c.type === "extends_clause")
-          if (ext2) collect(ext2, "extends", clsName)
+          // type_arguments are ARGUMENTS, not inherited bases - descending
+          // into them pushed type PARAMETERS (K, Props, Events...) as fake
+          // extends targets (svelte repo .d.ts corpus).
+          if (ext2) {
+            for (const c of ext2.namedChildren) {
+              if (!c || c.type === "type_arguments" || c.type === "type_parameters") continue
+              collect(c, "extends", clsName)
+            }
+          }
           const imp2 = heritage.namedChildren.find((c: any) => c.type === "implements_clause")
-          if (imp2) collect(imp2, "implements", clsName)
+          if (imp2) {
+            for (const c of imp2.namedChildren) {
+              if (!c || c.type === "type_arguments") continue
+              collect(c, "implements", clsName)
+            }
+          }
         }
       }
       // scala extends_clause: first supertype extends, rest implements;
