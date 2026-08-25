@@ -209,6 +209,20 @@ Status: issue #419 filed, java pilot first. All open L5 issues (#251–#291)
 require spec conformance before L5 (banner pending). Spec conformance is
 now the DEFINITION of done — retroactively binding on all wave issues.
 
+### #419 section definition — the eight mandatory judgments per language
+
+A language closes #419 only when ALL sections pass:
+A. Structural completeness (grammar inventory vs emissions)
+B. Every relationship kind verified (11 kinds incl. permits)
+C. Payload matrix complete (Matrix 1b rows)
+D. Evidence tiers on every edge
+E. Corpus differential baselined at floor
+F. Perf budget recorded + respected
+G. Docs truthful
+H. Cross-language consistency
+
+No partial closure. "Future work" absorption is banned by Matrix 3b/4b rules.
+
 ## Standing rules
 
 1. Every bug class found anywhere becomes a permanent gate before its fix lands (F7 rule).
