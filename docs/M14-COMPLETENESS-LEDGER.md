@@ -73,7 +73,7 @@ grammar nodes, never emitted concepts.
 | references/imports | pipeline-e2e GATED | pipeline-e2e GATED | PENDING -> F7 + #383 | F7 |
 | exports | emitted, unpinned | n/a (no export concept) | n/a | PENDING -> #381 |
 
-Scala (Matrix 2 JVM cluster): fixtures 10/10 GATED; differential 95.1% cov / 0.5% unexplained on scala3@HEAD after #385 fixes (trait multi-parent positional bug fixed; stable_type_identifier parents; script-sentinel constructions). Remaining 11 residuals: scala dotted-parent convention decision + stdlib companion-chain oracle shapes -> #385. kotlin wasm fieldCount=0 -> #382.
+Scala (Matrix 2 JVM cluster): fixtures 10/10 GATED; differential 95.1% cov / 0.5% unexplained on scala3@HEAD after #385 fixes (trait multi-parent positional bug fixed; stable_type_identifier parents; script-sentinel constructions).  kotlin wasm fieldCount=0 -> #382.
 
 ## AST purity audit (2026-08-23)
 
@@ -185,13 +185,29 @@ self-declaration of "done" is never sufficient (M13 lesson, re-learned).
 | java | 2 (0765d36 + c044dff owner fix waves) | 6+ (FQ annotations, apiContractPath shadowing, varargs, compact ctors, permits, confidence tiering) | fixed + gated |
 | groovy | 3 waves (73abae5, afdcdc4, 261c8a8 owner commits) | FQ annotations, class/field decorators, tiered overrides, framework detection D1/D2 | fixed + gated |
 | kotlin | 3 waves (8c8e8b9, 2c62f1a, f51879d owner commits incl. wasm rebuild) | 5 defects + contract unification + silent misparse root-fix | fixed + gated |
-| scala | 2 (owner dual-corpus wave 55ea9c8/1087a86/d5405c5 + owner review of agent work: 5 findings round 1, 4 round 2) | isExtension dead flag, positional labels, dotted supertypes, column bases, unmeasured heuristic, synthetic complexity, orphaned comment | fixed + gated |
+| scala | 3 (dual-corpus wave + 2 review rounds) | isExtension dead flag, positional labels, dotted supertypes, column bases, unmeasured heuristic, synthetic complexity, orphaned comment | fixed + gated |
 | typescript | 1 (b84cea5: 5 verified defects) + ongoing | decorators/heritage/usage-pass/contract/ranges | fixed + gated |
 | javascript | 2 (853f022: 8 defects; a00969e: 5 incl. 2 Tier-1) | barrel re-exports invisible, accessor-name collision, private methods, CJS chains | fixed + gated |
+| vue | pending (station work done: SFC pre-parse parity, defineComponent descent, tiers, fixtures) | — | awaiting owner review |
 
 Sign-off ritual (pending, per contract §5.6): owner samples claims per
 language against evidence files; formal per-language sign-off closes the
 wave issues #251–#254.
+
+## Matrix 4b — Completeness specification (#419)
+
+Root cause of every missed item this milestone: coverage was bounded by
+agent imagination — nothing defined what each analyzer MUST emit. Gates
+verify what exists; absence was invisible by construction.
+
+Fix: grammar-derived completeness inventory per language. The tree-sitter
+grammar enumerates every declaration/expression/statement form; the spec
+table maps each to required emissions; adversarial fixtures exercise every
+item; the diff produces the numbered gap list.
+
+Status: issue #419 filed, java pilot first. All open L5 issues (#251–#291)
+require spec conformance before L5 (banner pending). Spec conformance is
+now the DEFINITION of done — retroactively binding on all wave issues.
 
 ## Standing rules
 
