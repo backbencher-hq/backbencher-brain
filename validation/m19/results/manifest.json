@@ -1,0 +1,14 @@
+{
+  "milestone": "M19",
+  "updatedAt": null,
+  "issues": [
+    { "code": "C1", "evidence": "C1.json", "closed": true, "note": "gate emits its own evidence" },
+    { "code": "S1", "evidence": "S1.json", "closed": false, "note": "scale benchmark pending" },
+    { "code": "S2", "evidence": "S2.json", "closed": false, "note": "aspnetcore giant indexing pending" },
+    { "code": "S3", "evidence": "S3.json", "closed": false, "note": "intellij-community stress pending" },
+    { "code": "Q1", "evidence": "Q1.json", "closed": false, "note": "retrieval at scale pending" },
+    { "code": "Q2", "evidence": "Q2.json", "closed": false, "note": "fallback at scale pending" },
+    { "code": "B1", "evidence": "B1.json", "closed": false, "note": "benchmarks docs pending" },
+    { "code": "X9", "evidence": "X9.json", "closed": false, "note": "gate hardening pending" }
+  ]
+}
