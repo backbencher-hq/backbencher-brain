@@ -215,7 +215,8 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
         type === "class_declaration" ||
         type === "record_declaration" ||
         type === "interface_declaration" ||
-        type === "enum_declaration"
+        type === "enum_declaration" ||
+        type === "annotation_type_declaration"
       ) {
         const name = this.childText(node, "identifier")
         if (name) {
@@ -423,12 +424,12 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
 
-      else if (type === "method_declaration" || type === "constructor_declaration" || type === "compact_constructor_declaration") {
+      else if (type === "method_declaration" || type === "constructor_declaration" || type === "compact_constructor_declaration" || type === "annotation_type_element_declaration") {
         const nameNode = this.findChildByType(node, "identifier")
         const name = nameNode ? nameNode.text : null
 
         if (name) {
-          const isConstructor = type !== "method_declaration"
+          const isConstructor = type === "constructor_declaration" || type === "compact_constructor_declaration"
           // Compact record constructors (E { ... }) declare no parameter list;
           // their parameters are implicitly the record components.
           const isCompactCtor = type === "compact_constructor_declaration"
@@ -585,6 +586,26 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
 
+      else if (type === "constant_declaration") {
+        // Interface constants: public static final by definition (JLS 9.3)
+        const fieldType = this.extractJavaFieldType(node)
+        for (let decIdx = 0; decIdx < node.namedChildCount; decIdx++) {
+          const declarator = node.namedChild(decIdx)
+          if (!declarator || declarator.type !== "variable_declarator") continue
+          const nameNode = this.findChildByType(declarator, "identifier")
+          if (!nameNode || !parentContext) continue
+          symbols.push({
+            name: nameNode.text,
+            kind: ASTEngine.SymbolKind.Constant,
+            range: this.nodeToRange(declarator),
+            returnType: fieldType,
+            visibility: "public",
+            ownerName: parentContext.name,
+            ownerKind: parentContext.kind,
+            metadata: { nodeType: type },
+          })
+        }
+      }
       else if (type === "field_declaration") {
         const modifiers = this.getJavaModifiers(node)
         const annotations = this.getJavaAnnotations(node)

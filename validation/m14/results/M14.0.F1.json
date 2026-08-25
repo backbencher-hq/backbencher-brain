@@ -13,14 +13,14 @@
       "status": "pass"
     },
     {
-      "description": "regression gate vs grammar-audit-baseline.json (23/41 languages pass)",
+      "description": "regression gate vs grammar-audit-baseline.json (24/41 languages pass)",
       "id": "baseline-gate",
       "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "5fdd4145889458f14f214c8006c71b9c31d873a6",
-  "committedAt": "2026-08-25T20:57:16+02:00",
+  "commit": "cc166f4d47676d207b7638cde56071f0799ab80b",
+  "committedAt": "2026-08-25T21:54:12+02:00",
   "data": {
     "languages": {
       "bash": {
@@ -1170,20 +1170,9 @@
         "oracleNodeTypeCount": 457,
         "referencedFieldLiterals": 0,
         "referencedTypeLiterals": 19,
-        "status": "fail",
+        "status": "pass",
         "unknownFields": [],
-        "unknownNodeTypes": [
-          {
-            "context": "real-svelte-analyzer.ts:findChildByType",
-            "line": 387,
-            "literal": "expr_attribute_value"
-          },
-          {
-            "context": "real-svelte-analyzer.ts:comparison",
-            "line": 398,
-            "literal": "raw_text_expr"
-          }
-        ],
+        "unknownNodeTypes": [],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-svelte.wasm",
@@ -1501,10 +1490,10 @@
       }
     },
     "summary": {
-      "fail": 18,
+      "fail": 17,
       "languagesAudited": 41,
-      "pass": 23,
-      "totalUnknownReferences": 133
+      "pass": 24,
+      "totalUnknownReferences": 131
     }
   },
   "governance": "docs/M14-HONESTY-CONTRACT.md",

@@ -14,7 +14,7 @@
     },
     {
       "description": "svelte adversarial fixtures",
-      "detail": "0/0 fixtures pass",
+      "detail": "8/8 fixtures pass",
       "id": "fixtures-svelte",
       "status": "pass"
     },
@@ -50,8 +50,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "5fdd4145889458f14f214c8006c71b9c31d873a6",
-  "committedAt": "2026-08-25T20:57:16+02:00",
+  "commit": "a3842bf52f890cc15821c440db0e8a98cb546d01",
+  "committedAt": "2026-08-25T22:29:11+02:00",
   "data": {
     "details": [
       {
@@ -215,8 +215,44 @@
         "problems": []
       },
       {
-        "fixture": "(none)",
-        "ok": true
+        "fixture": "svelte/evidence-tiers-and-columns",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "svelte/module-block-exports",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "svelte/payload-pins",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "svelte/relationship-kind-catalog",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "svelte/rune-call-filter",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "svelte/snippet-definitions",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "svelte/ts-script-interface",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "svelte/user-dollar-functions",
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "typescript/abstract-class",
@@ -852,7 +888,7 @@
       },
       "svelte": {
         "fail": 0,
-        "pass": 0
+        "pass": 8
       },
       "typescript": {
         "fail": 0,
