@@ -30,6 +30,7 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   java: { wasm: "tree-sitter-java.wasm", analyzerFile: "real-java-analyzer", className: "RealJavaAnalyzer", ext: "java" },
   groovy: { wasm: "tree-sitter-groovy.wasm", analyzerFile: "real-groovy-analyzer", className: "RealGroovyAnalyzer", ext: "groovy" },
   vue: { wasm: "tree-sitter-vue.wasm", analyzerFile: "real-vue-analyzer", className: "RealVueAnalyzer", ext: "vue" },
+  svelte: { wasm: "tree-sitter-svelte.wasm", analyzerFile: "real-svelte-analyzer", className: "RealSvelteAnalyzer", ext: "svelte" },
 }
 
 function seededPick<T>(items: T[], n: number, seedStr: string): T[] {
@@ -80,6 +81,63 @@ function deriveVueComponentUsages(root: any): { label: string; from: string; tar
     for (let k = 0; k < n.namedChildCount; k++) stack.push(n.namedChild(k))
   }
   return edges
+}
+
+// Svelte template component-usage oracle (independent HTML-core set;
+// svelte:* and slot are framework primitives).
+function deriveSvelteComponentUsages(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const VUE_STYLE_BUILTINS = new Set(["slot","svelte:component","svelte:self","svelte:element","svelte:window","svelte:document","svelte:body","svelte:head","svelte:options","svelte:fragment","svelte:boundary"])
+  const stack: any[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()!
+    if (n.type === "script_element" || n.type === "style_element") continue
+    if (n.type === "element" || n.type === "self_closing_tag") {
+      const container = n.namedChildren.find((c: any) => c.type === "start_tag" || c.type === "self_closing_tag")
+      const tag = container?.namedChildren.find((c: any) => c.type === "tag_name")
+      const name = tag?.text
+      if (name && !ORACLE_HTML_TAGS.has(name) && !VUE_STYLE_BUILTINS.has(name) && !seen.has(name)) {
+        seen.add(name)
+        edges.push({ label: "instantiates", from: "(expr)", target: name })
+      }
+    }
+    for (let k = 0; k < n.namedChildCount; k++) stack.push(n.namedChild(k))
+  }
+  return edges
+}
+
+// Embedded-script truth for SFC languages: extract <script> raw_text
+// blocks and parse them with the JS grammar (lang="ts" blocks included -
+// the JS-family structural rules apply identically).
+async function deriveEmbeddedScriptTrees(root: any, content: string, lang: string): Promise<any[]> {
+  const wts: any = await import("web-tree-sitter")
+  const P = wts.Parser ?? wts.default ?? wts
+  const Lang = wts.Language ?? wts.default?.Language
+  await P.init({ locateFile: () => path.join(ROOT, "node_modules", "web-tree-sitter", "tree-sitter.wasm") })
+  const language = await Lang.load(fs.readFileSync(path.join(ROOT, "wasm", "tree-sitter-javascript.wasm")))
+  const parser = new P()
+  parser.setLanguage(language)
+  const tsLanguage = await Lang.load(fs.readFileSync(path.join(ROOT, "wasm", "tree-sitter-typescript.wasm")))
+  const tsParser = new P()
+  tsParser.setLanguage(tsLanguage)
+  const out: any[] = []
+  const walk = (n: any): void => {
+    if (n.type === "script_element") {
+      const raw = n.namedChildren.find((c: any) => c.type === "raw_text")
+      const startTag = n.namedChildren.find((c: any) => c.type === "start_tag")
+      const isTs = !!startTag && /lang=["']ts["']/.test(startTag.text)
+      if (raw && raw.text.trim().length > 0) {
+        try {
+          // ts blocks need the TS grammar or heritage clauses error-recover away
+          out.push((isTs ? tsParser : parser).parse(raw.text).rootNode)
+        } catch { /* skip */ }
+      }
+    }
+    for (let k = 0; k < n.namedChildCount; k++) walk(n.namedChild(k))
+  }
+  walk(root)
+  return out
 }
 
 // Independent oracle: derive extends/implements/instantiates edges straight
@@ -280,7 +338,9 @@ function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
             const m = body.namedChild(i)
             if (/function_definition|function_declaration|method_declaration|method_definition|method_signature/.test(m?.type ?? "")) {
               const mn = m.namedChildren.find((c: any) => /identifier/.test(c.type))
-              if (mn) decls[nm].methods.add(mn.text)
+              // constructors are NOT virtually dispatched - no family
+              // analyzer emits ctor-overrides, so truth must not either.
+              if (mn && mn.text !== "constructor") decls[nm].methods.add(mn.text)
             }
           }
         }
@@ -359,7 +419,7 @@ async function main() {
       try { root = parser.parse(content).rootNode } catch { continue }
       if (!root) continue
       try {
-        if (lang === "vue") {
+        if (lang === "vue" || lang === "svelte") {
           // SFC parity: script blocks must be pre-parsed by the engine or
           // the script-side edges never appear.
           const eng = await import("../../src/ast/engine")
@@ -375,6 +435,24 @@ async function main() {
         // template component-usage oracle: independent HTML-core filter
         for (const e of deriveVueComponentUsages(root)) {
           ;(truth as any[]).push(e)
+        }
+      }
+      if (lang === "svelte") {
+        for (const e of deriveSvelteComponentUsages(root)) {
+          ;(truth as any[]).push(e)
+        }
+        // Script-side truth: the svelte grammar stores script bodies as
+        // opaque raw_text - re-parse them and derive the SAME structural
+        // edges (extends/implements/instantiates) the non-SFC languages get.
+        const subTrees = await deriveEmbeddedScriptTrees(root, content, "svelte")
+        for (const st of subTrees) {
+          for (const e of deriveTreeEdges(st, "javascript")) (truth as any[]).push(e)
+        }
+      }
+      if (lang === "vue") {
+        const subTrees = await deriveEmbeddedScriptTrees(root, content, "vue")
+        for (const st of subTrees) {
+          for (const e of deriveTreeEdges(st, "typescript")) (truth as any[]).push(e)
         }
       }
       if (lang === "typescript" && process.argv.includes("--debug-truth")) {

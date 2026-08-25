@@ -813,3 +813,42 @@ lose TS-only shapes; same class as the lang-dispatch fix, rarer.
 
 Still recorded open (verified): setup() option extraction;
 components:{} registration edges; script-setup↔template binding links.
+
+## Svelte review wave (2026-08-24)
+
+Universal method. Grammar = sveltejs/tree-sitter-svelte (85 node types;
+script bodies raw_text pre-parsed by the engine). Sibling diff vs Vue/JS.
+
+FIXED (2 fixtures proven failing pre-fix + live-probe evidence):
+  - **Evidence tiers absent** (#419-D violation): calls/instantiates/
+    exports/contains all emitted with NO evidenceClass. Classifier
+    ported from the Vue/JVM family.
+  - **Metrics fakes — FOURTH occurrence**: complexity =
+    symbols+relationships synthetic; cyclomaticComplexity hardcoded 1.
+    Now: 1 + script decisions + template decision constructs ({#if},
+    {:else if}, {#each}, {#await}).
+  - **0-based columns**: nodeToRange lacked the family-wide +1.
+  - **lang="ts" dispatch**: TS-only declarations (interfaces) dropped;
+    blocks now dispatched per lang attribute (same fix as Vue).
+  - **2 dead grammar literals**: expr_attribute_value / raw_text_expr
+    don't exist in the pinned wasm (real shape: attribute > expression >
+    svelte_raw_text). Audit unknowns 2→0.
+
+DIFFERENTIAL PARITY:
+  - svelte added to the harness; `svelte` repo pinned as standing corpus
+    (4,462 .svelte files): 300-file probe **76/76 tree-truth (100%), 0
+    unexplained**; default-sample floor baselined.
+  - Oracle extended for SFC languages: embedded <script> bodies are
+    re-derived as structural truth (per-lang js/ts parsing), so
+    extends/implements/instantiates from scripts are gated too —
+    previously invisible to the oracle inside raw_text.
+  - Oracle overrides-truth now EXCLUDES constructors (not virtually
+    dispatched; no family analyzer emits ctor-overrides).
+
+GOTCHAS:
+  - on:/event handler extraction relies on opaque-raw-text String
+    scanning (grammar exposes template expressions as leaves); call-target
+    heuristic documented in-code. If a future wasm upgrade structures
+    template expressions, revisit.
+  - engine maps only lang="ts" to the TS grammar; lang="tsx"/"jsx" blocks
+    run as JS (rare; recorded).
