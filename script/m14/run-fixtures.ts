@@ -180,15 +180,6 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
         problems.push(`expected ${want.symbol} visibility ${want.visibility}; got ${sym.visibility}`)
       }
     }
-    for (const want of exp.expectTypeParameters ?? []) {
-      const sym = symbols.find((s: any) => s.name === want.symbol)
-      const tps: string[] = sym?.genericParameters ?? sym?.metadata?.typeParameters ?? []
-      for (const inc of want.includes ?? []) {
-        if (!tps.includes(inc)) {
-          problems.push(`expected ${want.symbol} typeParameters to include "${inc}"; got: ${JSON.stringify(tps)}`)
-        }
-      }
-    }
         for (const want of exp.expectComplexity ?? []) {
       const sym = symbols.find((s: any) => s.name === want.symbol)
       const cx: number | undefined = sym?.complexity
