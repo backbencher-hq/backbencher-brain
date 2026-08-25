@@ -26,6 +26,7 @@ import type { Node, Tree } from "web-tree-sitter"
 import * as path from "path"
 import { ASTEngine } from "./engine"
 import { RealJavaScriptAnalyzer } from "./real-javascript-analyzer"
+import { RealTypeScriptAnalyzer } from "./real-typescript-analyzer"
 
 // ============================================================================
 // BUILTIN TAG FILTERS — template component-usage detection
@@ -135,10 +136,19 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     // expression value.
     const templateStack: Node[] = [rootNode]
     const seenUsages = new Set<string>()
+    let templateDecisions = 0
     while (templateStack.length > 0) {
       const n = templateStack.pop()!
       const t = n.type
       if (t === "script_element" || t === "style_element") continue
+      // Template DECISION constructs: {#if}/{:else if} branches, {#each}
+      // loops, {#await} branches — they branch rendering like code.
+      if (
+        t === "if_statement" || t === "else_if_block" ||
+        t === "each_statement" || t === "await_statement"
+      ) {
+        templateDecisions++
+      }
       if (t === "element" || t === "self_closing_tag") {
         const tag = this.elementTagName(n)
         if (tag && !HTML_BUILTIN_TAGS.has(tag) && !SVELTE_BUILTIN_TAGS.has(tag) && !seenUsages.has(tag)) {
@@ -191,6 +201,7 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     const scriptTrees: Tree[] = context?.sfcScriptTrees ?? []
     const scriptLines: number[] = context?.sfcScriptLines ?? []
     const scriptCols: number[] = context?.sfcScriptCols ?? []
+    let scriptDecisions = 0
     for (let bi = 0; bi < scriptTrees.length; bi++) {
       const scriptTree = scriptTrees[bi]
       const scriptStartLine = scriptLines[bi]
@@ -199,10 +210,16 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       const scriptContent = scriptTree.rootNode?.text ?? ""
       const lineOffset = scriptStartLine - 1
       const colOffset = scriptStartColumn ?? 0
+      // Dispatch by the block's lang attribute — lang="ts" blocks were run
+      // through the JS analyzer even though the engine pre-parses them with
+      // the TS grammar, silently dropping TS-only declarations.
+      const isTs = context?.sfcScriptLangs?.[bi] === "ts"
 
       let sub: ASTEngine.ParseResult
       try {
-        sub = new RealJavaScriptAnalyzer().analyze(scriptTree.rootNode, scriptContent, filePath, context)
+        sub = isTs
+          ? new RealTypeScriptAnalyzer().analyze(scriptTree.rootNode, scriptContent, filePath)
+          : new RealJavaScriptAnalyzer().analyze(scriptTree.rootNode, scriptContent, filePath, context)
       } catch (e: any) {
         sub = { symbols: [], relationships: [], imports: [], exports: [], errors: [], metadata: {} } as any
         errors.push({
@@ -249,6 +266,7 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       for (const e of sub.exports ?? []) exports.push(e)
       for (const er of sub.errors ?? []) errors.push(er)
+      scriptDecisions += Math.max(0, ((sub.metadata as any)?.cyclomaticComplexity ?? 1) - 1)
     }
 
     // --- 4. contains from ownerName -------------------------------------------
@@ -272,6 +290,10 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       patterns: [{ type: "usage", detected: true, description: p }],
     }))
 
+    // Evidence tiers on EVERY edge (#419-D) — same rules as the Vue/JVM family.
+    this.classifyEvidenceTier(relationships)
+    const cyclomaticComplexity = 1 + templateDecisions + scriptDecisions
+
     return {
       language: "svelte",
       symbols,
@@ -280,9 +302,12 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       exports,
       errors,
       metadata: {
-        complexity: symbols.length + relationships.length,
+        // Real cyclomatic complexity: script decisions + template decision
+        // blocks. Was the synthetic symbols+relationships heuristic with a
+        // hardcoded cyclomatic of 1 (fourth analyzer with this disease).
+        complexity: cyclomaticComplexity,
         linesOfCode: content.split("\n").length,
-        cyclomaticComplexity: 1,
+        cyclomaticComplexity,
         framework: "Svelte",
         patterns: detectedPatterns,
         detectedFrameworks: ["Svelte"],
@@ -383,9 +408,9 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     // The maintained grammar (v0.6.0, Svelte 5) wraps attribute expression
     // values as `attribute > expression > svelte_raw_text`; older grammars
     // used `expr_attribute_value > raw_text_expr`. Handle both shapes.
-    const value =
-      this.findChildByType(attr, "expr_attribute_value") ||
-      this.findChildByType(attr, "expression")
+    // Pinned wasm shape: attribute > expression (older grammars used
+    // expr_attribute_value — dead here per grammar audit).
+    const value = this.findChildByType(attr, "expression")
     if (!value) return undefined
     // The svelte grammar exposes template expressions as an opaque
     // raw_text_expr/svelte_raw_text leaf — the handler text must be scanned
@@ -395,7 +420,7 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     const stack: Node[] = [value]
     while (stack.length > 0) {
       const m = stack.pop()!
-      if (m.type === "raw_text_expr" || m.type === "svelte_raw_text") { text = m.text; break }
+      if (m.type === "svelte_raw_text") { text = m.text; break }
       for (let i = m.namedChildCount - 1; i >= 0; i--) {
         const c = m.namedChild(i)
         if (c) stack.push(c)
@@ -425,6 +450,34 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Bare-identifier check
     if (isIdentifier(text)) return text
     return undefined
+  }
+
+  /**
+   * #419-D - evidence-tier classification for EVERY emitted relationship.
+   * Same rules as the Vue/JVM family. Template instantiates are
+   * usage_contextual (component usage by tag name).
+   */
+  private classifyEvidenceTier(relationships: ASTEngine.UniversalRelationship[]): void {
+    for (const r of relationships) {
+      const md = r.metadata ?? (r.metadata = {})
+      if (md.evidenceClass) continue
+      const t = String(r.type ?? r.relationshipType ?? "")
+      const conf = typeof r.confidence === "number" ? r.confidence : 1
+      if (t === "contains" || t === "exports") { md.evidenceClass = "structural"; continue }
+      if (t === "references") {
+        md.evidenceClass = md.isImport ? "import_based" : "reference_qualified"
+        continue
+      }
+      if (t === "extends" || t === "implements" || t === "overrides") {
+        md.evidenceClass = conf >= 1 ? "structural" : conf >= 0.85 ? "usage_contextual" : "inferred"
+        continue
+      }
+      if (t === "instantiates") {
+        md.evidenceClass = md.isComponentUsage ? "usage_contextual" : "structural"
+        continue
+      }
+      md.evidenceClass = "usage_contextual"
+    }
   }
 
   private findAncestor(node: Node, predicate: (n: Node) => boolean): Node | null {
@@ -493,8 +546,10 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     return {
       startLine: node.startPosition.row + 1,
       endLine: node.endPosition.row + 1,
-      startColumn: node.startPosition.column,
-      endColumn: node.endPosition.column,
+      // Columns are 1-based everywhere else in the codebase (+1); this
+      // analyzer silently emitted 0-based columns.
+      startColumn: node.startPosition.column + 1,
+      endColumn: node.endPosition.column + 1,
       startIndex: node.startIndex,
       endIndex: node.endIndex,
     }

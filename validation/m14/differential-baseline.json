@@ -22,7 +22,7 @@
       "unexplained": 0,
       "heuristic": 80,
       "perf": {
-        "avgMsPerFile": 6.6
+        "avgMsPerFile": 6.1
       }
     },
     "grails-core:groovy": {
@@ -30,7 +30,7 @@
       "unexplained": 0,
       "heuristic": 34,
       "perf": {
-        "avgMsPerFile": 8.7
+        "avgMsPerFile": 6.4
       }
     },
     "Exposed:kotlin": {
@@ -264,7 +264,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 4.4
+        "avgMsPerFile": 5.5
       }
     },
     "grails-core:typescript": {
@@ -404,6 +404,78 @@
       }
     },
     "grails-core:vue": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
+    },
+    "svelte:javascript": {
+      "missing": 0,
+      "unexplained": 2,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 6.7
+      }
+    },
+    "svelte:typescript": {
+      "missing": 13,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 46.7
+      }
+    },
+    "svelte:kotlin": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
+    },
+    "svelte:scala": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
+    },
+    "svelte:java": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
+    },
+    "svelte:groovy": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
+    },
+    "svelte:vue": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
+    },
+    "svelte:svelte": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 10.8
+      }
+    },
+    "grails-core:svelte": {
       "missing": 0,
       "unexplained": 0,
       "heuristic": 0,
