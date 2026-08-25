@@ -42,12 +42,21 @@ export async function searchSymbols(projectId: ProjectID, query: string, options
           { clause: "instr(s.name, ?) > 0", relevance: 1, value: query },
         ]
       : [
-          { clause: "LOWER(s.name) = LOWER(?)", relevance: 3, value: query },
-          { clause: "LOWER(s.name) LIKE LOWER(?)", relevance: 2, value: `${query}%` },
-          { clause: "LOWER(s.name) LIKE LOWER(?)", relevance: 1, value: `%${query}%` },
+          // COLLATE NOCASE is ASCII-fold-equivalent to LOWER() (same semantics)
+          // but can use brain_sym_proj_name_nocase_idx — M19.Q1 measured LOWER()-wrapped
+          // phases doing a full project scan at ~1.3s on 1M symbols.
+          { clause: "s.name = ? COLLATE NOCASE", relevance: 3, value: query },
+          { clause: "s.name LIKE ? COLLATE NOCASE", relevance: 2, value: `${query}%` },
+          { clause: "s.name LIKE ? COLLATE NOCASE", relevance: 1, value: `%${query}%` },
         ]
 
   const fetchCap = Math.min(5000, Math.max(offset + maxResults * 2, maxResults * 4))
+  // Substring phases (name LIKE '%q%') scan the whole name column and cannot
+  // use the (project_id, name) index. On a 1M-symbol index, joining inside
+  // that scan was ~1.3s per query (M19.Q1 measured). Fetching the candidate
+  // IDs first, then joining only those ids, measured ~14x faster. The cap
+  // keeps the unindexable scan bounded; results stay ranked by relevance.
+  const SUBSTR_ID_CAP = 2000
   for (const phase of phases) {
     const params: unknown[] = [projectId, phase.value]
     let filters = ""
@@ -59,15 +68,18 @@ export async function searchSymbols(projectId: ProjectID, query: string, options
       filters += " AND s.symbol_type = ?"
       params.push(options.symbolKind)
     }
-    const rows = raw.prepare(`
-      SELECT s.id, s.file_id AS fileId, s.name, s.symbol_type AS symbolType,
-             COALESCE(s.line_start, 0) AS line, COALESCE(s.line_end, 0) AS lineEnd, COALESCE(s.complexity, 0) AS complexity,
-             f.relative_path AS relativePath, f.path AS filePath, COALESCE(f.language, 'unknown') AS language
-      FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id
-      WHERE s.project_id = ? AND ${phase.clause}
-        AND COALESCE(s.line_start, 0) > 0 AND s.name NOT LIKE '/%/%'${filters}
-      LIMIT ?
-    `).all(...params, fetchCap) as Candidate[]
+    const isSubstring = phase.value.startsWith("%")
+    const rows = isSubstring
+      ? await substringPhase(raw, projectId, phase.value, filters, SUBSTR_ID_CAP, fetchCap, options)
+      : raw.prepare(`
+          SELECT s.id, s.file_id AS fileId, s.name, s.symbol_type AS symbolType,
+                 COALESCE(s.line_start, 0) AS line, COALESCE(s.line_end, 0) AS lineEnd, COALESCE(s.complexity, 0) AS complexity,
+                 f.relative_path AS relativePath, f.path AS filePath, COALESCE(f.language, 'unknown') AS language
+          FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id
+          WHERE s.project_id = ? AND ${phase.clause}
+            AND COALESCE(s.line_start, 0) > 0 AND s.name NOT LIKE '/%/%'${filters}
+          LIMIT ?
+        `).all(...params, fetchCap) as Candidate[]
     for (const row of rows) {
       if (seen.has(row.id)) continue
       if (AnalysisExclusions.isHardNoisePath(row.relativePath) || AnalysisExclusions.isNoiseSymbolName(row.name)) continue
@@ -114,4 +126,41 @@ export async function searchSymbols(projectId: ProjectID, query: string, options
     results.freshCount = results.length - staleCount
   } catch {}
   return results
+}
+
+// Substring phase (name LIKE '%q%'): fetch candidate IDs first (bounded by
+// idCap), then join only those ids. See searchSymbols for why.
+async function substringPhase(
+  raw: any,
+  projectId: ProjectID,
+  value: string,
+  filters: string,
+  idCap: number,
+  fetchCap: number,
+  options: SearchOptions,
+): Promise<Candidate[]> {
+  const idRows = raw.prepare(
+    "SELECT id FROM brain_symbol WHERE project_id = ? AND LOWER(name) LIKE LOWER(?) " +
+      "AND COALESCE(line_start, 0) > 0 AND name NOT LIKE '/%/%' LIMIT ?",
+  ).all(projectId, value, idCap) as Array<{ id: string }>
+  const idList = [...new Set(idRows.map((r) => r.id))].slice(0, fetchCap)
+  if (idList.length === 0) return []
+  const placeholders = idList.map(() => "?").join(",")
+  const params: unknown[] = [...idList]
+  let filterSql = ""
+  if (options.languages?.length) {
+    filterSql += ` AND f.language IN (${options.languages.map(() => "?").join(",")})`
+    params.push(...options.languages)
+  }
+  if (options.symbolKind) {
+    filterSql += " AND s.symbol_type = ?"
+    params.push(options.symbolKind)
+  }
+  return raw.prepare(`
+    SELECT s.id, s.file_id AS fileId, s.name, s.symbol_type AS symbolType,
+           COALESCE(s.line_start, 0) AS line, COALESCE(s.line_end, 0) AS lineEnd, COALESCE(s.complexity, 0) AS complexity,
+           f.relative_path AS relativePath, f.path AS filePath, COALESCE(f.language, 'unknown') AS language
+    FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id
+    WHERE s.id IN (${placeholders})${filterSql}
+  `).all(...params) as Candidate[]
 }

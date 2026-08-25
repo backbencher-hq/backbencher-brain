@@ -244,9 +244,14 @@ CREATE INDEX IF NOT EXISTS brain_file_proj_path_idx ON brain_file(project_id, pa
 CREATE INDEX IF NOT EXISTS brain_file_proj_hash_idx ON brain_file(project_id, file_hash);
 CREATE INDEX IF NOT EXISTS brain_file_syntax_errors_idx ON brain_file(has_syntax_errors);
 
-CREATE INDEX IF NOT EXISTS brain_sym_proj_file_idx ON brain_symbol(project_id, file_id);
-CREATE INDEX IF NOT EXISTS brain_sym_proj_name_idx ON brain_symbol(project_id, name);
-CREATE INDEX IF NOT EXISTS brain_sym_proj_type_idx ON brain_symbol(project_id, symbol_type);
+CREATE INDEX IF NOT EXISTS brain_sym_proj_file_idx ON brain_symbol(project_id, file_id);      CREATE INDEX IF NOT EXISTS brain_sym_proj_name_idx ON brain_symbol(project_id, name);
+      -- Case-insensitive name index: LOWER(name) = LOWER(?) wraps the column and
+      -- defeats the BINARY index (full scan on 1M symbols, M19.Q1 measured ~1.3s
+      -- with the join). SQLite's NOCASE collation folds ASCII exactly like its
+      -- LOWER(), so name = ? COLLATE NOCASE / name LIKE ? COLLATE NOCASE are
+      -- semantically identical to the old LOWER() forms but index-accelerated.
+      CREATE INDEX IF NOT EXISTS brain_sym_proj_name_nocase_idx ON brain_symbol(project_id, name COLLATE NOCASE);
+      CREATE INDEX IF NOT EXISTS brain_sym_proj_type_idx ON brain_symbol(project_id, symbol_type);
 CREATE INDEX IF NOT EXISTS brain_sym_proj_name_type_idx ON brain_symbol(project_id, name, symbol_type);
 
 CREATE INDEX IF NOT EXISTS brain_rel_proj_target_idx ON brain_relationship(project_id, target_symbol_id);
