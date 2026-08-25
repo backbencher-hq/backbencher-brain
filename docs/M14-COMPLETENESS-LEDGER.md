@@ -189,7 +189,7 @@ self-declaration of "done" is never sufficient (M13 lesson, re-learned).
 | typescript | 1 (b84cea5: 5 verified defects) + ongoing | decorators/heritage/usage-pass/contract/ranges | fixed + gated |
 | javascript | 2 (853f022: 8 defects; a00969e: 5 incl. 2 Tier-1) | barrel re-exports invisible, accessor-name collision, private methods, CJS chains | fixed + gated |
 | vue | 2 waves (732e1dc dual-blocks/lang-dispatch/dedupe/metrics; 25fa235 script-setup contract/watch) + element-plus corpus 156/156 100% | 7 defects incl. entire setup-block loss, lang dispatch, duplicate components, script-setup contract loss | fixed + gated |
-| svelte | 1 wave (this wave: evidence tiers #419-D, real metrics, column base fix, lang dispatch, 2 dead literals) + `svelte` repo corpus 300-file probe 76/76 100% | 6 defects (4th synthetic-complexity instance, no tiers, 0-based columns, ts-lang dispatch) | fixed + gated; deeper stations pending |
+| svelte | 2 waves (d7784bf tiers/metrics/columns/dispatch; 7dcd251+this wave #419 A/B/C: snippets, rune noise, module-block ownership, kind catalog, payload pins) + `svelte` repo corpus floors true 0/0 | 11 defects total (incl. oracle type_arguments over-derivation, LIFO block-index inversion, render_tag opaque text) | fixed + gated; #419 A/B/C closed at fixture level; L5 pending owner spot-check |
 
 Sign-off ritual (pending, per contract §5.6): owner samples claims per
 language against evidence files; formal per-language sign-off closes the
