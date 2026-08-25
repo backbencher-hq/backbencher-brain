@@ -141,6 +141,42 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       const n = templateStack.pop()!
       const t = n.type
       if (t === "script_element" || t === "style_element") continue
+      // {#snippet name(params)} — reusable template functions; the name is
+      // a component-owned Method, and {@render name(...)} calls it.
+      if (t === "snippet_statement") {
+        const nm = this.findDescendant(n, (c) => c.type === "snippet_name")
+        if (nm && !seenUsages.has("snippet:" + nm.text)) {
+          seenUsages.add("snippet:" + nm.text)
+          symbols.push({
+            name: nm.text,
+            kind: ASTEngine.SymbolKind.Method,
+            range: this.nodeToRange(n),
+            scope: moduleName,
+            ownerName: moduleName,
+            ownerKind: ASTEngine.SymbolKind.Class,
+            visibility: "public",
+            metadata: { isSnippet: true },
+          })
+        }
+      }
+      if (t === "render_tag") {
+        // render_tag content is OPAQUE TEXT in this grammar (no child
+        // nodes) - the snippet name is scanned from the raw tag text.
+        const text = n.text.replace("{@render", "").trim()
+        let end = 0
+        while (end < text.length && (isIdentifier(text.slice(0, end + 1)))) end++
+        const targetName = text.slice(0, end)
+        const target = targetName ? { text: targetName } : undefined
+        if (target && isIdentifier(target.text)) {
+          relationships.push({
+            source: moduleName,
+            target: target.text,
+            type: ASTEngine.RelationshipType.Calls,
+            confidence: 0.9,
+            metadata: { context: "Svelte {@render} tag" },
+          })
+        }
+      }
       // Template DECISION constructs: {#if}/{:else if} branches, {#each}
       // loops, {#await} branches — they branch rendering like code.
       if (
@@ -233,6 +269,11 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       //     → Property; $: reactive declaration targets → Variable.
       this.extractSvelteDeclarations(scriptTree.rootNode, moduleName, symbols, lineOffset, colOffset)
 
+      // Block-kind: context="module" exports are MODULE API, never
+      // component props. Only instance-block export-let/const bindings are
+      // the component's public prop surface.
+      const isModuleBlock = this.isModuleContextBlock(rootNode, bi)
+
       // 3b. Merge JS analyzer output, offset to SFC lines, filter rune calls.
       for (const s of sub.symbols ?? []) {
         s.range.startLine += lineOffset
@@ -242,19 +283,35 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
         // reclassify as Property (the component's public prop API). Exported
         // bindings (export let/const/function/class) are component-owned
         // (contains + owner) like Vue props.
-        if (this.isExported(sub.exports ?? [], s.name)) {
+        if (!isModuleBlock && this.isExported(sub.exports ?? [], s.name)) {
           const wasVariable = s.kind === ASTEngine.SymbolKind.Variable
-          if (wasVariable) s.kind = ASTEngine.SymbolKind.Property
-          s.metadata = { ...(s.metadata ?? {}), isSvelteProp: wasVariable }
+          if (wasVariable) {
+            s.kind = ASTEngine.SymbolKind.Property
+            // annotate ONLY actual props - a false isSvelteProp key on
+            // every exported binding polluted the payload
+            s.metadata = { ...(s.metadata ?? {}), isSvelteProp: true }
+          }
           s.ownerName = moduleName
           s.ownerKind = ASTEngine.SymbolKind.Class
           s.scope = moduleName
         }
         symbols.push(s)
       }
+      const moduleExportNames = new Set(
+        isModuleBlock ? (sub.exports ?? []).map((e) => e.name) : [],
+      )
       for (const r of sub.relationships ?? []) {
         const tgt = (r.target ?? "") as string
         if (SVELTE_RUNES.has(tgt)) continue
+        // module-block exports are module API, not component members
+        if (r.type === ASTEngine.RelationshipType.Contains && isModuleBlock && moduleExportNames.has(tgt)) continue
+        // Dotted runes ($derived.by, $effect.root, $props.id): the JS
+        // call-target extractor keeps the LAST segment ('by', 'root',
+        // 'id'), so the exact-name filter above never fired for them.
+        // The full callee expression is preserved in metadata - any call
+        // whose callee starts with '$' IS a rune.
+        const callee = (r.metadata?.calleeExpression ?? "") as string
+        if ((callee && callee.startsWith("$")) || (r.source === "(script)" && SVELTE_RUNES.has(tgt))) continue
         relationships.push(r)
       }
       for (const i of sub.imports ?? []) {
@@ -289,6 +346,19 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       framework: "Svelte",
       patterns: [{ type: "usage", detected: true, description: p }],
     }))
+
+    // DEDUPE: sub-analyzers emit their own contains edges; combined with
+    // the ownerName-based pass above, identical triples appeared twice.
+    const relSeen = new Set<string>()
+    const uniqueRelationships: ASTEngine.UniversalRelationship[] = []
+    for (const r of relationships) {
+      const key = `${String(r.type)}|${String(r.source)}|${String(r.target)}`
+      if (relSeen.has(key)) continue
+      relSeen.add(key)
+      uniqueRelationships.push(r)
+    }
+    relationships.length = 0
+    relationships.push(...uniqueRelationships)
 
     // Evidence tiers on EVERY edge (#419-D) — same rules as the Vue/JVM family.
     this.classifyEvidenceTier(relationships)
@@ -397,6 +467,31 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
+  /**
+   * Is the bi-th <script> block marked context="module"? Module-block
+   * exports are module-level API - they must NOT become component props.
+   */
+  private isModuleContextBlock(rootNode: Node, index: number): boolean {
+    // Document-order scan - a LIFO stack walk visits later siblings first,
+    // which INVERTED the block indices (module block treated as instance).
+    const blocks: Node[] = []
+    const walk = (n: Node): void => {
+      if (n.type === "script_element") {
+        blocks.push(n)
+        return
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) walk(c)
+      }
+    }
+    walk(rootNode)
+    const block = blocks[index]
+    if (!block) return false
+    const startTag = this.findChildByType(block, "start_tag")
+    return !!startTag && /context=["']module["']/.test(startTag.text)
+  }
+
   private isExported(exportInfos: ASTEngine.ExportInfo[], name: string): boolean {
     for (const e of exportInfos) {
       if (e.name === name && !e.isDefault) return true
@@ -449,6 +544,12 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     // Bare-identifier check
     if (isIdentifier(text)) return text
+    // Dotted member leaf: `on:click={box.open}` binds the method reference -
+    // the CALLABLE LEAF is the last segment. (Previously emitted nothing.)
+    const parts = text.split(".")
+    if (parts.length > 1 && parts.every((p) => isIdentifier(p))) {
+      return parts[parts.length - 1]
+    }
     return undefined
   }
 

@@ -861,3 +861,37 @@ extends_type_clause path already had applied to class/implements
 heritage. All svelte floors re-pinned at true 0/0 (javascript,
 typescript, svelte languages). LESSON REINFORCED: pinning a non-zero
 floor hides real signal — investigate before recording.
+
+## Svelte #419 completeness wave (2026-08-24)
+
+Judgment A INVENTORY (54 named grammar types mapped to behavior):
+
+| Construct | Emission | Status |
+|---|---|---|
+| <script> instance / context=module / lang=ts | sub-parse dispatch; module exports are MODULE API (never props); ts -> TS analyzer | FIXED this wave (module-block ownership inverted by LIFO walk) |
+| export let/const/function (instance) | Property/Constant/Function owned by component | GATED |
+| $props() destructure (+defaults) | Prop symbols | GATED |
+| $props() ...rest | opaque - plain variable only | SPEC: spread-rest props have no static names |
+| $: reactive statements | Variable (isReactiveDeclaration) | GATED |
+| Runes ($state/$derived.by/$effect.root/$props.id...) | bindings = symbols; rune CALLS filtered incl. DOTTED forms via callee-prefix rule | FIXED this wave ('by'/'root'/'id' leaked) |
+| {#if}/{:else if}/{#each}/{#await} | template decision constructs -> cyclomatic | GATED |
+| {#key} | control-flow block, no symbol | SPEC: no declarations |
+| {#snippet name} / {@render name()} | Method (isSnippet) + Calls edge | FIXED this wave (render_tag content is OPAQUE TEXT - string scan; nested-in-each now reached) |
+| {@const} | skipped | SPEC: template-scoped expression, not component surface |
+| {@html}/{@debug} | skipped | SPEC: expressions/directives |
+| on: handlers (incl |modifiers, member leaves like box.open) | Calls to callable leaf | EXTENDED this wave (member leaf previously dropped) |
+| bind:/class:/style:/transition:/in:/out:/animate: | no relationships | SPEC: rendering concerns |
+| <svelte:*> specials | filtered builtins | GATED |
+| non-builtin tags | Instantiates (usage_contextual) | GATED |
+| duplicate contains triples | deduped globally (sub-analyzer + owner pass double-emitted) | FIXED this wave |
+
+Judgment B: relationship-kind-catalog fixture gates instantiates/calls/
+imports/exports/contains/extends with evidence tiers. implements/
+references flow via the TS/JS sub-analyzers (unpinned here); permits N/A.
+
+Judgment C: payload-pins fixture gates JSDoc comments + complexity +
+qualified-call survival through the SFC merge.
+
+VERDICT: A/B/C satisfied at fixture level; differential floors true 0/0;
+stations D/E/F/G closed; H aligned. Remaining for L5: owner spot-checks
++ full #419 spec rollout parity (Java-pilot format).
