@@ -1,0 +1,40 @@
+{
+  "issue": "M19.S3",
+  "code": "S3",
+  "tool": "indexing pipeline (mega corpus)",
+  "title": "stress-test intellij-community (273k files) - worker pool + memory + parallelism",
+  "verified": true,
+  "checks": 10,
+  "passed": 10,
+  "failed": 0,
+  "measured": {
+    "repo": "intellij-community",
+    "path": "$HOME/intellij-community",
+    "files": 69504,
+    "symbols": 1071809,
+    "rels": 4017382,
+    "languages": [
+      {
+        "l": "java",
+        "c": 38831
+      },
+      {
+        "l": "kotlin",
+        "c": 30673
+      }
+    ],
+    "machine": {
+      "platform": "linux",
+      "arch": "x64",
+      "cpu": "Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz | Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz",
+      "ramGb": 15.5
+    },
+    "note": "indexed as 10 bounded slices via giant-slice.ts (no corpus copy); slices 0-9 each < 400s; final taint/gravity enrich ran per-slice; DB read at verify time"
+  },
+  "negatives": [
+    "Symbols indexed is a completion claim; analyzer-kind precision is M14's lane (bare-name misses like ApplicationManager are that lane's signal).",
+    "Wall-time is this machine's number (i7-8650U, 15.5GB); not portable.",
+    "Embeddings were bounded off during indexing (BB_EMBEDDING_BATCH_LIMIT=1); semantic coverage on the giant index is Q2's scope."
+  ],
+  "generatedAt": "2026-08-25T21:11:49.204Z"
+}
