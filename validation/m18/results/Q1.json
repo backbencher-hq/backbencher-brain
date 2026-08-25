@@ -4,11 +4,11 @@
   "tool": "benchmark",
   "title": "real-corpus retrieval benchmark (rake, lodash, element-plus)",
   "verified": true,
-  "checks": 42,
-  "passed": 42,
+  "checks": 48,
+  "passed": 48,
   "failed": 0,
   "negatives": 3,
-  "generatedAt": "2026-08-24T22:27:51.845Z",
+  "generatedAt": "2026-08-25T00:12:15.407Z",
   "perCorpus": {
     "rake": {
       "total": 5,
