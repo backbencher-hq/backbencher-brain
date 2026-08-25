@@ -42,7 +42,7 @@ console.log(`## Fixture inventory (${files.length})`)
 for (const f of files.sort()) {
   const base = f.replace(/\.[^.]+$/, "")
   const firstCommit = sh(
-    `git log --diff-filter=A --format=%h | %s -1 -- validation/m14/fixtures/${lang}/${f}`,
+    `git log --diff-filter=A --format="%h | %s" -1 -- validation/m14/fixtures/${lang}/${f}`,
   )
   console.log(`  ${base}\n    provenance: ${firstCommit || "(uncommitted)"}`)
 }
