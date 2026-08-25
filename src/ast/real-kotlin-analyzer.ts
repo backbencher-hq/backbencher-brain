@@ -237,6 +237,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
         // per-file fallback is a first-supertype GUESS that may not even
         // declare the method, so it must stay below the consumer threshold.
         let confidence = 0.5
+        let reasonCode = "first-supertype-guess"
         if (context?.overrideCompanion && parents.length > 0) {
           const declaring = findDeclaringParent(
             s.name,
@@ -247,6 +248,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (declaring) {
             overrideParent = declaring
             confidence = 0.9
+            reasonCode = "companion-index"
           }
         }
         if (overrideParent) {
@@ -255,7 +257,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: `${overrideParent}.${s.name}`,
             type: ASTEngine.RelationshipType.Overrides,
             confidence,
-            metadata: { isOverride: true, overrideParent },
+            metadata: { isOverride: true, overrideParent, reasonCode },
           })
         }
       }
