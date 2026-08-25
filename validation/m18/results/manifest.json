@@ -1,6 +1,6 @@
 {
   "milestone": "M18",
-  "updatedAt": "2026-08-25T18:50:00.000Z",
+  "updatedAt": "2026-08-25T19:00:00.000Z",
   "issues": [
     { "code": "C1", "evidence": "C1.json", "closed": true, "note": "gate emits its own evidence" },
     { "code": "Q1", "evidence": "Q1.json", "closed": true, "note": "real-corpus benchmark with provenance-verified golds" },
@@ -8,7 +8,7 @@
     { "code": "Q3", "evidence": "Q3.json", "closed": true, "note": "ask precision warm 71.4% / cold 42.9%; no-fabrication + explicit-unknown verified; quick-answer fallback honesty note added" },
     { "code": "Q4", "evidence": "Q4.json", "closed": true, "note": "coverage reported per-run post-flush (57.1% rake), pre/post phase labeled, cross-model refused, zero-coverage degradation surfaced" },
     { "code": "Q5", "evidence": "Q5.json", "closed": true, "note": "12/12 edge cases deterministic: corrupt rows skipped, all-corrupt fallback, dim/model mismatch refused, tfidf/non-dense refused, empty-query/throw/empty-table fallbacks, zero-vector clean, stale flagged, scan-cap truncation via child process" },
-    { "code": "D6", "evidence": "D6.json", "closed": false, "note": "docs pending" },
+    { "code": "D6", "evidence": "D6.json", "closed": true, "note": "docs truth: EMBEDDINGS/BB_ASK/BB_SEARCH — every claim tied to verified behavior or M18 evidence; bb_search no-semantic-mode explicit; coverage volatility honest" },
     { "code": "X9", "evidence": "X9.json", "closed": false, "note": "gate hardening pending" }
   ]
 }

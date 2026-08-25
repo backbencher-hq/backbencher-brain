@@ -104,3 +104,27 @@ Choose per project sensitivity.
 `script/verify-semantic.ts` covers: metadata presence, model consistency,
 corrupt-vector tolerance, tfidf exclusion from the dense path, NaN-free
 similarities, and the empty-embeddings keyword fallback with a reason.
+
+### Measured precision (M18 evidence, not aspirational)
+
+On the M18 benchmark (rake + lodash + element-plus golds with provenance):
+
+| Path | Precision | Evidence |
+| --- | --- | --- |
+| Warm (embeddings flushed) | **71.4%** (10/14) | `Q3.json` |
+| Cold start (no embeddings) | **42.9%** (6/14) | `Q3.json` |
+| Negative queries (no gold) | all confidence < 0.5, zero fabrication | `Q3.json` |
+
+**Coverage honesty:** when embedding coverage is low or zero, `bb_ask`
+prepends an explicit note ("semantic embeddings are unavailable or
+insufficient… lexical matches, not semantic ones") instead of presenting
+lexical matches as semantic. This was a production fix shipped in M18.Q3
+(`src/intelligence/search/quick-answer.ts`). Coverage is a per-run,
+post-flush, volatile statistic — see Q4/Q5 evidence
+(`validation/m18/results/Q4.json`, `Q5.json`) for how 0-coverage is
+reported and never hidden.
+
+**Limitation:** narrative answers are *candidate discovery* — the correct
+symbol is retrieved and cited, but the prose is not proven behaviorally
+complete. Counts ("how many functions") are exact aggregates and are never
+mixed into narrative confidence; see M16/M17 A8 for count verification.
