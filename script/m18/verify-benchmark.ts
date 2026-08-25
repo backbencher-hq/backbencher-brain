@@ -57,10 +57,14 @@ async function main() {
   for (const q of queries) {
     const ok = q.id && q.corpus && q.mode && q.query
     ck("Q1: entry " + q.id + " has id/corpus/mode/query", !!ok, JSON.stringify(q).slice(0, 80))
-    if (q.expected === null || q.negative) {
+    const isNegSchema = q.expected === null || q.negative === true
+    if (isNegSchema) {
       negatives++
-      const hasWhy = !!q.why
-      ck("Q1: negative " + q.id + " documents why (no gold)", hasWhy || !!q.negative, "")
+      // Strict schema (caught by Q3): a negative MUST be marked negative:true
+      // AND carry expected:null AND a why — no implicit negatives.
+      ck("Q1: negative " + q.id + " is explicitly negative:true", q.negative === true, "")
+      ck("Q1: negative " + q.id + " has expected:null", q.expected === null, "")
+      ck("Q1: negative " + q.id + " documents why (no gold)", !!q.why, "")
       continue
     }
     const gold = q.expected
