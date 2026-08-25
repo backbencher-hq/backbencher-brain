@@ -83,6 +83,21 @@ function isIdentifier(text: string): boolean {
 // ANALYZER
 // ============================================================================
 
+// Last segments of dotted runes - a '$'-prefixed callee whose leaf is one of
+// these is a rune call; '$'-prefixed USER functions with other names pass.
+const RUNE_LEAF_SEGMENTS = new Set([
+  "state", "raw", "snapshot", "derived", "by", "effect", "pre", "tracking",
+  "root", "untracked", "props", "id", "is_safe", "bindable", "host",
+  "inspect", "trace", "render",
+])
+
+function isRuneCallee(calleeExpression: string): boolean {
+  if (!calleeExpression.startsWith("$")) return false
+  if (SVELTE_RUNES.has(calleeExpression)) return true
+  const leaf = calleeExpression.split(".").pop() ?? ""
+  return RUNE_LEAF_SEGMENTS.has(leaf)
+}
+
 export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(
     rootNode: Node,
@@ -308,10 +323,11 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
         // Dotted runes ($derived.by, $effect.root, $props.id): the JS
         // call-target extractor keeps the LAST segment ('by', 'root',
         // 'id'), so the exact-name filter above never fired for them.
-        // The full callee expression is preserved in metadata - any call
-        // whose callee starts with '$' IS a rune.
+        // PRECISE RULE: full dotted name is a known rune, OR the callee is
+        // '$'-prefixed with a RUNE LEAF segment. A bare '$'-prefix alone
+        // would also swallow USER-defined $functions - silent data loss.
         const callee = (r.metadata?.calleeExpression ?? "") as string
-        if ((callee && callee.startsWith("$")) || (r.source === "(script)" && SVELTE_RUNES.has(tgt))) continue
+        if (isRuneCallee(callee) || (r.source === "(script)" && SVELTE_RUNES.has(tgt))) continue
         relationships.push(r)
       }
       for (const i of sub.imports ?? []) {
