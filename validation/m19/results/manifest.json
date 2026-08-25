@@ -7,7 +7,7 @@
     { "code": "S2", "evidence": "S2.json", "closed": true, "note": "aspnetcore indexed end-to-end: 132,744 symbols / 10,431 files / 471,421 rels; known symbols resolve; 4-slice bounded run" },
     { "code": "S3", "evidence": "S3.json", "closed": true, "note": "intellij-community MEGA index: 1,071,809 symbols / 69,504 files / 4,017,382 rels; 10 bounded slices; known names resolve" },
     { "code": "Q1", "evidence": "Q1.json", "closed": true, "note": "retrieval at scale verified 7/7; NOCASE index + bounded content search shipped" },
-    { "code": "Q2", "evidence": "Q2.json", "closed": false, "note": "fallback at scale pending" },
+    { "code": "Q2", "evidence": "Q2.json", "closed": true, "note": "fallback at scale verified 13/13; labeled degradation + tfidf exclusion proven" },
     { "code": "B1", "evidence": "B1.json", "closed": false, "note": "benchmarks docs pending" },
     { "code": "X9", "evidence": "X9.json", "closed": false, "note": "gate hardening pending" }
   ]
