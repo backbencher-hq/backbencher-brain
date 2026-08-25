@@ -112,6 +112,23 @@ Rules: contains/exports=structural; extends/implements/overrides by confidence
 new-derived or >=0.9; calls/uses=usage_contextual; import references=
 import_based. Applied centrally per analyzer so emission sites cannot skip it.
 
+### Evidence-tier taxonomy (#299 — implemented, JVM+TS live)
+
+Every relationship emitted by gated analyzers carries `metadata.evidenceClass`:
+
+| Tier | Meaning | Typical sources | Confidence range |
+|---|---|---|---|
+| structural | grammar-clause or declaration-derived | extends/implements from type clauses, contains from body membership, overrides pass-1 exact match | 0.9–1.0 |
+| usage_contextual | observed calls, field access, companion-apply idioms, extension markers | method_invocation calls, field_access uses, companion-apply instantiations | 0.6–0.95 |
+| import_based | import/reference-derived edges | brain_import rows feeding reference edges | 0.9 |
+| reference_qualified | qualified references (FQN paths, dotted names) | scoped identifier references | 0.9 |
+| inferred | sub-1.0 resolutions (pass-3 guesses, heuristic instantiations) | first-parent-guess overrides @0.5, PascalCase instantiation @0.7 | 0.3–0.7 |
+
+Rule: inferred-tier edges never contaminate thresholded analysis (patterns.ts
+filters at >= 0.7). Suppression policy: name-collision edges are not emitted
+(they were the #299 danger class). Every edge's tier is set centrally per
+analyzer via classifyEvidenceTier() so emission sites cannot forget it.
+
 ## Matrix 2 — Language-cluster pipeline coverage (realistic combos, not all-to-all)
 
 | Cluster | Languages | Polyglot e2e fixture | Status |
