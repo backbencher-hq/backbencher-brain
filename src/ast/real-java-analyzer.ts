@@ -916,6 +916,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
       // not even declare the method. Guesses at confidence 1.0 were
       // indistinguishable from verified overrides in pattern analysis.
       let confidence = 1.0
+      let reasonCode = "exact-in-file"
 
       // Pass 1: exact-signature BFS over the hierarchy (in-file declarations;
       // works without any project context).
@@ -958,6 +959,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (declaring) {
           targetFqn = `${declaring}.${task.methodName}${task.signature}`
           confidence = 0.85
+          reasonCode = "companion-index"
         }
       }
 
@@ -969,6 +971,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
         // Below the patterns.ts default confidenceThreshold (0.7): visible in
         // raw output, but never contaminating thresholded analysis.
         confidence = 0.5
+        reasonCode = "first-parent-guess"
       }
 
       if (targetFqn) {
@@ -980,7 +983,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: localTarget,
           type: ASTEngine.RelationshipType.Overrides,
           confidence,
-          metadata: { relationshipType: "method_override", isJavaOverride: true },
+          metadata: { relationshipType: "method_override", isJavaOverride: true, reasonCode },
         })
       }
     }
