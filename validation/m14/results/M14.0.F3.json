@@ -26,7 +26,7 @@
     },
     {
       "description": "java adversarial fixtures",
-      "detail": "29/29 fixtures pass",
+      "detail": "30/30 fixtures pass",
       "id": "fixtures-java",
       "status": "pass"
     },
@@ -80,8 +80,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "639eeab60c78e2afd790479405619583efca18b2",
-  "committedAt": "2026-08-26T22:29:46+02:00",
+  "commit": "65af8584025bf8800da974ce9cf298df9a2ea24d",
+  "committedAt": "2026-08-26T22:58:23+02:00",
   "data": {
     "details": [
       {
@@ -541,6 +541,11 @@
       },
       {
         "fixture": "java/generics-bounds",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/import-edges",
         "ok": true,
         "problems": []
       },
@@ -1064,7 +1069,7 @@
       },
       "java": {
         "fail": 0,
-        "pass": 29
+        "pass": 30
       },
       "javascript": {
         "fail": 0,
