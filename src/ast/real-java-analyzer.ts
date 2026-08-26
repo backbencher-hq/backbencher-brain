@@ -1393,10 +1393,11 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         return
       }
+      // Wildcards are never themselves names, but BOUNDED wildcards
+      // (`? extends CharSequence`) carry the bound type inside — descend.
       for (let i = 0; i < n.namedChildCount; i++) {
         const child = n.namedChild(i)
-        // Wildcards and anonymous bodies carry no name; skip silently.
-        if (child && child.type !== "wildcard") visit(child)
+        if (child) visit(child)
       }
     }
     visit(node)
