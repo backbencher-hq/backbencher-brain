@@ -102,5 +102,9 @@ mitigated state, cross-language flags, `includeMitigated` filtering, hotspots,
 and alias normalization. `script/m20/verify-security-flow-boundary.ts` additionally
 proves that endpoint resolution takes precedence over a mitigation flag: partial
 flows remain `source_only`/`unresolved` observations and are excluded when
-`includeUnresolved=false`. This is fixture-level evidence; it does not prove
-complete real-repository taint recall.
+`includeUnresolved=false`. `script/m20/verify-security-adversarial.ts` runs a
+deterministic policy matrix (exact state/severity/confidence per injected row),
+real concatenation-vs-clean behavior, a mutation proof, and a tautology audit
+that rejects any security verifier containing unconditional assertions
+(`check(..., true)`, `>= 0`, `|| true`). These are fixture-level evidence; they
+do not prove complete real-repository taint recall (owned by M20.X2).
