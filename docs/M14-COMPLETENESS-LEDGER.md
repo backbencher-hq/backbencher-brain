@@ -291,6 +291,24 @@ types kept full), passes on first run (correct-but-unpinned), mutant
 java/drop-parameters CAUGHT. Section C now verifies 7 Matrix 1b rows for
 java; groovy's parameters cell remains PENDING -> #383 for its own wave.
 
+### #419 acceptance status (java pilot, 2026-08-26)
+
+1. Generator produces complete inventory from grammar — DONE (143/143
+   types, `script/m14/completeness-inventory.ts`)
+2. Gap list printed and reviewed by owner BEFORE fixes — DONE (G1-G4 list
+   reviewed; fixes followed)
+3. Gaps closed with fixture-gated fixes OR declared limitations — DONE
+   (G1-G4 closed fixture-first + mutants; G5/G6/S1 ruled)
+4. Spec re-runs permanently in `npm run verify` — DONE (`audit:completeness`
+   + A–H sections; future analyzers inherit via per-language status table)
+5. Replicate for remaining languages — PENDING (their waves, one at a time)
+6. All L5 issues (#251–#291) gain "L5 requires spec conformance" banner —
+   DONE (37 open issues #255–#291 updated 2026-08-26; closed #251–#254
+   untouched per closed-stays-closed)
+
+Java pilot complete except replication (item 5, which is the other
+languages' work by design).
+
 ### #419 section definition — the eight mandatory judgments per language
 
 A language closes #419 only when ALL sections are satisfied:
