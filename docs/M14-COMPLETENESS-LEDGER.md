@@ -39,9 +39,9 @@ symbol-field rot. Every language wave must pin these symbol payloads:
 |---|---|---|---|---|
 | qualified_calls | GATED (java/qualified-call-path) | GATED (groovy/qualified-call-path + qualified-calls-payload) | GATED (qualified-calls-builtin-names) | GATED (CC1+payload fixture) |
 | docstrings | GATED (javadoc-payload) | GATED (groovydoc-payload) | GATED (kdoc-extraction) | GATED (scaladoc-payload) |
-| parameters (+defaults) | GATED (parameters-payload + mutant java/drop-parameters) | GATED (groovy/parameters-payload incl. varargs String[]; mutants drop-parameters + drop-varargs-type CAUGHT) | GATED (calls-and-instantiation partial) | PENDING -> #383 (wave) |
+| parameters (+defaults) | GATED (parameters-payload + mutant java/drop-parameters) | GATED (groovy/parameters-payload incl. varargs String[]; mutants drop-parameters + drop-varargs-type CAUGHT) | GATED (parameters-payload + mutant kotlin/strip-parameters CAUGHT) | PENDING -> #383 (wave) |
 | byte ranges (bb_edit depends) | indirect via M13 edit gates | same | same | M13 scope |
-| visibility/modifiers | GATED (generic-visibility-payload) | GATED (generic-visibility-payload) | GATED F3 implicit | GATED (generic-visibility-payload) |
+| visibility/modifiers | GATED (generic-visibility-payload) | GATED (generic-visibility-payload) | GATED (visibility-payload + mutant kotlin/strip-visibility CAUGHT) | GATED (generic-visibility-payload) |
 | typeParameters/generics | GATED (generic-visibility-payload) | GATED (groovy/generic-visibility-payload) | GATED (generic-parameters-payload) | GATED (generic-parameters-payload) |
 | apiContract | GATED (java/fq-api-endpoint) | NOT EMITTED -> declared (S4 ruling) | n/a | n/a |
 | range columns 1-based | GATED (CC1) | GATED (CC1, was 0-based - FIXED) | GATED (CC1) | GATED (CC1) |
@@ -73,9 +73,9 @@ grammar nodes, never emitted concepts.
 | implements | GATED F3 | GATED F3 | GATED F3 | fixtures + differential |
 | instantiates | GATED F3 | GATED F3 | GATED F3 | fixtures + differential |
 | uses / field_access | GATED F3 (anti-skip) | GATED F3 | GATED F3 | pure-field-chain fixtures |
-| contains | GATED (java #419 section B, 11/11) | GATED (groovy/contains-edges + mutant) | implicit | PENDING -> #254 |
-| overrides | GATED (java/overrides fixture) | GATED (groovy/overrides + fq-annotations) | implicit | PENDING -> #254 |
-| references/imports | GATED (java/import-edges + mutant) | GATED (groovy/import-edges + mutants) | PENDING -> #253 (+ confirmed import-tier finding) | PENDING -> #254 (+ confirmed import-tier finding) |
+| contains | GATED (java #419 section B, 11/11) | GATED (groovy/contains-edges + mutant) | GATED (object-literal + init-attribution) | PENDING -> #254 |
+| overrides | GATED (java/overrides fixture) | GATED (groovy/overrides + fq-annotations) | GATED (object-literal attribution + override-fallback-confidence) | PENDING -> #254 |
+| references/imports | GATED (java/import-edges + mutant) | GATED (groovy/import-edges + mutants) | GATED (kotlin/import-edges + mutant kotlin/reclassify-import-tier CAUGHT — K8 closed) | PENDING -> #254 (+ confirmed import-tier finding) |
 | exports | GATED (java/fq-api-endpoint) | NOT EMITTED -> declared (S3 ruling) | n/a | n/a |
 
 RECONCILED 2026-08-27 to the #419 gated state (the earlier
@@ -114,7 +114,7 @@ structural | usage_contextual | import_based | reference_qualified | inferred.
 |---|---|---|
 | java | GATED | GATED (class-extends-implements: structural/usage) |
 | groovy | GATED | GATED (runtime-verified extends/calls/contains) |
-| kotlin | GATED | runtime-verified; dedicated pins during payload pass |
+| kotlin | GATED | GATED (contains-edges: structural; indexing-uses/template-uses/instantiates-edges: usage_contextual; import-edges: import_based) |
 | scala | GATED | runtime-verified; dedicated pins during payload pass |
 | typescript | GATED | GATED (consistency-tiers) |
 
@@ -258,7 +258,18 @@ Gap closure (owner-approved, fixture-first ritual):
 Rulings (owner-approved 2026-08-26): G5 module-info DECLARED OUT OF
 SCOPE; G6 generic type bounds DECLARED LIMITATION; S1 java-spec-table
 corrected (throw/assert/try-with-resources removed from complexity).
-Java fixtures now 31; mutation suite 41/41 caught (java 11 + groovy 13 + others).
+Java fixtures now 31; mutation suite 54/54 caught (java 11 + groovy 13 + kotlin 14 + others).
+
+Kotlin #419 wave (2026-08-27, owner-approved gap list K1-K8 / rulings S1-S6):
+- K1 indexing Uses (indexing-uses fixture; kotlin/drop-expression-uses CAUGHT)
+- K2 ctor delegation Calls (ctor-delegation; kotlin/drop-ctor-delegation CAUGHT)
+- K3 callable-reference refs (callable-refs; kotlin/drop-callable-refs CAUGHT)
+- K4 string-template Uses (template-uses; kotlin/drop-expression-uses CAUGHT)
+- K5 typealias symbols + RHS refs (type-alias; kotlin/drop-type-alias-symbols + drop-type-alias-refs CAUGHT)
+- K6 anonymous objects: symbol (anonymous_<Supertype>, noise-filtered), member attribution fix (no more P->go misattribution), object_literal type reference — hierarchy edges intentionally NOT emitted for expression-types (the object_literal References edge is the type channel; the differential oracle agrees)
+- K7 init-block/property-initializer call attribution (init-attribution; kotlin/global-attribution CAUGHT)
+- K8 import tier mislabel (import-edges; kotlin/reclassify-import-tier CAUGHT)
+Rulings S1-S6 recorded in kotlin-completeness.json (S1 companion limitation, S2 accessors, S3 destructuring, S4 lambdas, S5 exports NOT EMITTED, S6 modifiers). Kotlin fixtures now 38; kotlin added to GATED_LANGS.
 
 ### Per-language #419 status (state lives in the ledger, never in conversation)
 
@@ -272,7 +283,7 @@ INVENTORY-DONE / GAPS-CLOSED / CONFORMANT.
 |---|---|---|---|---|---|---|---|---|---|
 | java | CONFORMANT (2026-08-26) | 143/143 types | 11/11 (imports pinned via java/import-edges + mutant) | 7/7 Matrix 1b rows (parameters pinned via java/parameters-payload + mutant) | 2 tiers | grails-core 100%/0% | 7.9 ms/file | java.md + real-java-analyzer.md | 3/3 checks |
 | groovy | CONFORMANT (2026-08-27, owner-approved plan; second reference implementation) | 151/151 types | 9/9 (contains-edges + import-edges pins) | 7/7 (parameters-payload incl. varargs) | 3 tiers (structural, import_based, usage_contextual) | grails-core 100%/0% | 7.5 ms/file | groovy.md + real-groovy-analyzer.md | 3/3 checks |
-| kotlin | INVENTORY-DONE (2026-08-27, K1-K8 gap list awaiting owner review) | 142/142 types | 7/9 pinned (instantiates + imports unpinned) | 4/7 pinned (docstrings/visibility/parameters missing) | 0 tiers pinned | Exposed:kotlin 1 missing + 1 unexplained residual (floor NOT met — work item) | 25.5 ms/file | kotlin.md + real-kotlin-analyzer.md | 3/3 checks |
+| kotlin | CONFORMANT (2026-08-27, owner-approved plan; third reference implementation) | 152/152 types | 9/9 (instantiates-edges + import-edges pins) | 7/7 (kdoc comment pin, visibility-payload, parameters-payload) | 3 tiers (structural, usage_contextual, import_based) | Exposed:kotlin 100%/0% (floor residuals were ORACLE defects — fixed in differential.ts) | 25.5 ms/file | kotlin.md + real-kotlin-analyzer.md | 3/3 checks |
 | scala | NOT-STARTED | — | — | — | — | — | — | — | — |
 | typescript | NOT-STARTED | — | — | — | — | — | — | — | — |
 | javascript | NOT-STARTED | — | — | — | — | — | — | — | — |
@@ -305,14 +316,33 @@ java; groovy's parameters cell remains PENDING -> #383 for its own wave.
 Evidence-tier finding (2026-08-26, F7 rule): the shared tier taxonomy
 labels import-derived edges import_based (groovy does this correctly),
 but the classifier conditions only recognized isGroovyImport/isImport —
-java (isJavaImport), kotlin (isKotlinImport) and scala (isImportDep)
-import edges were all mislabeled reference_qualified. Java FIXED +
-GATED: java/import-edges expectation corrected to import_based (authored
-from the taxonomy), proved failing, one-line classifier fix, mutant
-java/reclassify-import-tier CAUGHT (29/29). kotlin + scala remain
-CONFIRMED findings for their waves (fix + fixture pin land together,
-per the standing rule that a bug class becomes a permanent gate before
-its fix counts as landed).
+java (isJavaImport), kotlin (isImportDep) import edges were all mislabeled
+reference_qualified. Java FIXED + GATED: java/import-edges expectation
+corrected to import_based (authored from the taxonomy), proved failing,
+one-line classifier fix, mutant java/reclassify-import-tier CAUGHT
+(29/29). Kotlin CLOSED during its wave (2026-08-27): kotlin/import-edges
+fixture + one-line classifier fix (isImportDep recognized) + mutant
+kotlin/reclassify-import-tier CAUGHT — and the completeness gate's own
+section-B imports detection had the SAME blind spot (only
+isJavaImport/isGroovyImport/isImport), fixed to recognize isImportDep.
+Scala remains a CONFIRMED finding for its wave (fix + fixture pin land
+together, per the standing rule that a bug class becomes a permanent gate
+before its fix counts as landed).
+
+Differential-oracle defects found during the kotlin wave (2026-08-27, F7
+rule — the second opinion is itself audited): (1) tree-sitter-kotlin
+parses `interface X : Y` as class_declaration with an UNNAMED `interface`
+keyword child, so the oracle's isInterfaceDecl check never fired and every
+kotlin interface was mislabelled implements (the analyzer emitted
+extends) — a permanent MISSING+UNEXPLAINED pair per interface;
+(2) dotted supertypes (class Builder : DatabaseConfig.Builder()) were
+truncated to the first identifier (DatabaseConfig), fabricating an
+unmatched oracle edge. Both fixed in script/m14/differential.ts;
+Exposed:kotlin floor improved 1 missing + 1 unexplained -> 0 + 0
+(100%/0%). Section E now reads the pinned differential-baseline.json
+floor row (perfKey) instead of the last-run snapshot, so a language whose
+floor repo isn't the sweep's grails-core run (kotlin -> Exposed) is
+verified honestly.
 
 Single-source-of-truth cleanup (2026-08-26): script/m14/spec/ previously
 held TWO classification artifacts — the live java-completeness.json (the
