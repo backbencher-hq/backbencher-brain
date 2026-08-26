@@ -1,114 +1,138 @@
 {
   "checks": [
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
-      "detail": "52 files, coverage null%, unexplained null%",
+      "description": "svelte@26786e9298: tree-truth vs analyzer diff",
+      "detail": "60 files, coverage 100%, unexplained 0%",
       "id": "differential-javascript",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
-      "detail": "0 files, coverage null%, unexplained null%",
+      "description": "svelte@26786e9298: tree-truth vs analyzer diff",
+      "detail": "60 files, coverage 100%, unexplained 0%",
       "id": "differential-typescript",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
+      "description": "svelte@26786e9298: tree-truth vs analyzer diff",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-kotlin",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
+      "description": "svelte@26786e9298: tree-truth vs analyzer diff",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-scala",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
-      "detail": "60 files, coverage 100%, unexplained 0%",
+      "description": "svelte@26786e9298: tree-truth vs analyzer diff",
+      "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-java",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
-      "detail": "60 files, coverage 100%, unexplained 0%",
+      "description": "svelte@26786e9298: tree-truth vs analyzer diff",
+      "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-groovy",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
+      "description": "svelte@26786e9298: tree-truth vs analyzer diff",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-vue",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
-      "detail": "0 files, coverage null%, unexplained null%",
+      "description": "svelte@26786e9298: tree-truth vs analyzer diff",
+      "detail": "60 files, coverage 100%, unexplained 0%",
       "id": "differential-svelte",
+      "status": "pass"
+    },
+    {
+      "description": "svelte@26786e9298: tree-truth vs analyzer diff",
+      "detail": "0 files, coverage null%, unexplained null%",
+      "id": "differential-cpp",
       "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "45033cb72dbaa23a49d9b97afcc79b1aa57eb576",
-  "committedAt": "2026-08-26T02:17:12+02:00",
+  "commit": "ce9189d28d535e418bcb47f2456cbf6b3567913d",
+  "committedAt": "2026-08-26T02:37:50+02:00",
   "data": {
     "corpusPins": {
-      "grails-core": "a83f87480e0c0138caa5a7191a053b1e59a64066"
+      "svelte": "26786e92985842a6d563c67049a43bc5857bf792"
     },
     "report": {
-      "groovy": {
-        "analyzerEdges": 257,
-        "coveragePct": 100,
-        "coveredByAnalyzer": 151,
-        "explainableByTree": 223,
-        "fabricationPct": 0,
-        "filesSampled": 60,
-        "heuristicUnexplained": 34,
-        "missingInAnalyzer": 0,
-        "perf": {
-          "avgMsPerFile": 23.8,
-          "maxMsPerFile": 346.6,
-          "samplesTimed": 60
-        },
-        "samples": [],
-        "treeTruthEdges": 151,
-        "unexplainedInAnalyzer": 0
-      },
-      "java": {
-        "analyzerEdges": 247,
-        "coveragePct": 100,
-        "coveredByAnalyzer": 132,
-        "explainableByTree": 167,
-        "fabricationPct": 0,
-        "filesSampled": 60,
-        "heuristicUnexplained": 80,
-        "missingInAnalyzer": 0,
-        "perf": {
-          "avgMsPerFile": 32.4,
-          "maxMsPerFile": 1017.1,
-          "samplesTimed": 60
-        },
-        "samples": [],
-        "treeTruthEdges": 132,
-        "unexplainedInAnalyzer": 0
-      },
-      "javascript": {
+      "cpp": {
         "analyzerEdges": 0,
         "coveragePct": null,
         "coveredByAnalyzer": 0,
         "explainableByTree": 0,
         "fabricationPct": null,
-        "filesSampled": 52,
+        "filesSampled": 0,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 18.1,
-          "maxMsPerFile": 383.8,
-          "samplesTimed": 52
+          "avgMsPerFile": null,
+          "maxMsPerFile": null,
+          "samplesTimed": 0
         },
         "samples": [],
         "treeTruthEdges": 0,
+        "unexplainedInAnalyzer": 0
+      },
+      "groovy": {
+        "analyzerEdges": 0,
+        "coveragePct": null,
+        "coveredByAnalyzer": 0,
+        "explainableByTree": 0,
+        "fabricationPct": null,
+        "filesSampled": 0,
+        "heuristicUnexplained": 0,
+        "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": null,
+          "maxMsPerFile": null,
+          "samplesTimed": 0
+        },
+        "samples": [],
+        "treeTruthEdges": 0,
+        "unexplainedInAnalyzer": 0
+      },
+      "java": {
+        "analyzerEdges": 0,
+        "coveragePct": null,
+        "coveredByAnalyzer": 0,
+        "explainableByTree": 0,
+        "fabricationPct": null,
+        "filesSampled": 0,
+        "heuristicUnexplained": 0,
+        "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": null,
+          "maxMsPerFile": null,
+          "samplesTimed": 0
+        },
+        "samples": [],
+        "treeTruthEdges": 0,
+        "unexplainedInAnalyzer": 0
+      },
+      "javascript": {
+        "analyzerEdges": 1,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 1,
+        "explainableByTree": 1,
+        "fabricationPct": 0,
+        "filesSampled": 60,
+        "heuristicUnexplained": 0,
+        "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": 7.8,
+          "maxMsPerFile": 110.2,
+          "samplesTimed": 60
+        },
+        "samples": [],
+        "treeTruthEdges": 1,
         "unexplainedInAnalyzer": 0
       },
       "kotlin": {
@@ -148,39 +172,39 @@
         "unexplainedInAnalyzer": 0
       },
       "svelte": {
-        "analyzerEdges": 0,
-        "coveragePct": null,
-        "coveredByAnalyzer": 0,
-        "explainableByTree": 0,
-        "fabricationPct": null,
-        "filesSampled": 0,
+        "analyzerEdges": 8,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 8,
+        "explainableByTree": 8,
+        "fabricationPct": 0,
+        "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": null,
-          "maxMsPerFile": null,
-          "samplesTimed": 0
+          "avgMsPerFile": 9.8,
+          "maxMsPerFile": 370.8,
+          "samplesTimed": 60
         },
         "samples": [],
-        "treeTruthEdges": 0,
+        "treeTruthEdges": 8,
         "unexplainedInAnalyzer": 0
       },
       "typescript": {
-        "analyzerEdges": 0,
-        "coveragePct": null,
-        "coveredByAnalyzer": 0,
-        "explainableByTree": 0,
-        "fabricationPct": null,
-        "filesSampled": 0,
+        "analyzerEdges": 249,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 222,
+        "explainableByTree": 249,
+        "fabricationPct": 0,
+        "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": null,
-          "maxMsPerFile": null,
-          "samplesTimed": 0
+          "avgMsPerFile": 57.3,
+          "maxMsPerFile": 782.7,
+          "samplesTimed": 60
         },
         "samples": [],
-        "treeTruthEdges": 0,
+        "treeTruthEdges": 222,
         "unexplainedInAnalyzer": 0
       },
       "vue": {
