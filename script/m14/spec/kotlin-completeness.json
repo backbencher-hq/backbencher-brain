@@ -1,0 +1,215 @@
+{
+ "language": "kotlin",
+ "grammar": "tree-sitter-kotlin.wasm",
+ "handled_verified": {
+  "types": [
+   "annotation",
+   "as_expression",
+   "binding_pattern_kind",
+   "boolean_literal",
+   "call_expression",
+   "catch_block",
+   "character_literal",
+   "check_expression",
+   "class_body",
+   "class_declaration",
+   "class_parameter",
+   "collection_literal",
+   "companion_object",
+   "conjunction_expression",
+   "constructor_invocation",
+   "delegation_specifier",
+   "disjunction_expression",
+   "do_while_statement",
+   "elvis_expression",
+   "enum_class_body",
+   "enum_entry",
+   "for_statement",
+   "function_body",
+   "function_declaration",
+   "function_type",
+   "function_value_parameters",
+   "guard_condition",
+   "identifier",
+   "if_expression",
+   "import_alias",
+   "import_header",
+   "infix_expression",
+   "integer_literal",
+   "lambda_literal",
+   "line_comment",
+   "modifiers",
+   "multiline_comment",
+   "navigation_expression",
+   "navigation_suffix",
+   "nullable_type",
+   "object_declaration",
+   "package_header",
+   "parameter",
+   "primary_constructor",
+   "property_declaration",
+   "range_expression",
+   "range_test",
+   "real_literal",
+   "receiver_type",
+   "secondary_constructor",
+   "simple_identifier",
+   "source_file",
+   "spread_expression",
+   "string_literal",
+   "type_identifier",
+   "type_parameter",
+   "type_parameters",
+   "use_site_target",
+   "user_type",
+   "value_arguments",
+   "variable_declaration",
+   "when_condition",
+   "when_entry",
+   "when_expression",
+   "when_subject",
+   "while_statement",
+   "wildcard_import"
+  ]
+ },
+ "internal_silent": {
+  "types": [
+   "additive_expression",
+   "assignment",
+   "bin_literal",
+   "call_suffix",
+   "character_escape_seq",
+   "comparison_expression",
+   "control_structure_body",
+   "directly_assignable_expression",
+   "equality_expression",
+   "file_annotation",
+   "finally_block",
+   "function_type_parameters",
+   "hex_literal",
+   "import_list",
+   "interpolation_expression_end",
+   "interpolation_expression_start",
+   "interpolation_identifier_start",
+   "jump_expression",
+   "label",
+   "long_literal",
+   "multiplicative_expression",
+   "not_nullable_type",
+   "null_literal",
+   "parameter_with_optional_type",
+   "parenthesized_expression",
+   "parenthesized_type",
+   "parenthesized_user_type",
+   "postfix_expression",
+   "prefix_expression",
+   "quest",
+   "shebang_line",
+   "statements",
+   "string_content",
+   "super_expression",
+   "this_expression",
+   "try_expression",
+   "type_arguments",
+   "type_constraint",
+   "type_constraints",
+   "type_projection",
+   "type_projection_modifiers",
+   "type_test",
+   "unsigned_literal",
+   "value_argument"
+  ]
+ },
+ "gap": {
+  "gaps": [
+   {
+    "id": "K1",
+    "node_type": "indexing_expression,indexing_suffix",
+    "severity": "high",
+    "missing": "Uses relationship on the indexed expression (xs[i] reads/writes emit no Uses on xs)"
+   },
+   {
+    "id": "K2",
+    "node_type": "constructor_delegation_call,explicit_delegation",
+    "severity": "high",
+    "missing": "Calls relationship for constructor delegation (constructor(x) : super(x) / this(1) emit no Calls)"
+   },
+   {
+    "id": "K3",
+    "node_type": "callable_reference",
+    "severity": "medium",
+    "missing": "Type reference for Foo::bar callable references (no reference to Foo emitted)"
+   },
+   {
+    "id": "K4",
+    "node_type": "interpolated_identifier,interpolated_expression",
+    "severity": "medium",
+    "missing": "Uses relationship for string-template identifiers (\"hi $name\" emits no Uses on name)"
+   },
+   {
+    "id": "K5",
+    "node_type": "type_alias",
+    "severity": "medium",
+    "missing": "typealias Fn = (Int) -> String emits no symbol"
+   },
+   {
+    "id": "K6",
+    "node_type": "object_literal",
+    "severity": "medium",
+    "missing": "object : Runnable2 { ... } emits no reference to the implemented type and misattributes inner methods to the enclosing class"
+   },
+   {
+    "id": "K7",
+    "node_type": "anonymous_initializer,property_delegate",
+    "severity": "medium",
+    "missing": "init { } / by lazy { } / field-initializer calls emit with source \"Global\" instead of the enclosing type (call exists, attribution wrong)"
+   },
+   {
+    "id": "K8",
+    "node_type": "",
+    "severity": "high",
+    "missing": "import edges mislabeled: isImportDep flag not recognized by the tier classifier -> import_based never applied (reference_qualified instead); kotlin/scala confirmed finding from the java pass"
+   }
+  ]
+ },
+ "design_decision": {
+  "decisions": [
+   {
+    "id": "S1",
+    "node_type": "companion_object",
+    "status": "PENDING",
+    "question": "companion object {} is anonymous (no name); contents emit with owner = enclosing class (probe-verified). Recommend: declared limitation \u2014 no symbol for the anonymous companion itself."
+   },
+   {
+    "id": "S2",
+    "node_type": "getter,setter",
+    "status": "PENDING",
+    "question": "Property accessors (get()/set()) are not separate symbols. Recommend: internal_silent (accessors are property parts)."
+   },
+   {
+    "id": "S3",
+    "node_type": "destructuring_declaration,multi_variable_declaration",
+    "status": "PENDING",
+    "question": "val (a, b) = pair locals are not symbols. Recommend: internal_silent (no local symbols by design)."
+   },
+   {
+    "id": "S4",
+    "node_type": "anonymous_function,annotated_lambda,lambda_parameters",
+    "status": "PENDING",
+    "question": "Anonymous functions / lambdas are expressions, not declarations. Recommend: internal_silent (calls inside ARE captured \u2014 probe-verified)."
+   },
+   {
+    "id": "S5",
+    "node_type": "",
+    "status": "PENDING",
+    "question": "exports relationship kind: NOT EMITTED for kotlin (exports array is symbol-level ExportInfo). Recommend: declared limitation (like groovy S3)."
+   },
+   {
+    "id": "S6",
+    "node_type": "visibility_modifier,function_modifier,class_modifier,member_modifier,parameter_modifier,parameter_modifiers,property_modifier,type_modifiers,type_parameter_modifiers,variance_modifier,reification_modifier,platform_modifier,inheritance_modifier",
+    "status": "PENDING",
+    "question": "Modifier node types are consumed by extractModifiers/extractVisibility. Recommend: internal_silent (modifiers are payloads, not emissions) \u2014 visibility flows probe-verified."
+   }
+  ]
+ }
+}
