@@ -291,6 +291,18 @@ types kept full), passes on first run (correct-but-unpinned), mutant
 java/drop-parameters CAUGHT. Section C now verifies 7 Matrix 1b rows for
 java; groovy's parameters cell remains PENDING -> #383 for its own wave.
 
+Evidence-tier finding (2026-08-26, F7 rule): the shared tier taxonomy
+labels import-derived edges import_based (groovy does this correctly),
+but the classifier conditions only recognized isGroovyImport/isImport —
+java (isJavaImport), kotlin (isKotlinImport) and scala (isImportDep)
+import edges were all mislabeled reference_qualified. Java FIXED +
+GATED: java/import-edges expectation corrected to import_based (authored
+from the taxonomy), proved failing, one-line classifier fix, mutant
+java/reclassify-import-tier CAUGHT (29/29). kotlin + scala remain
+CONFIRMED findings for their waves (fix + fixture pin land together,
+per the standing rule that a bug class becomes a permanent gate before
+its fix counts as landed).
+
 ### #419 acceptance status (java pilot, 2026-08-26)
 
 1. Generator produces complete inventory from grammar — DONE (143/143
