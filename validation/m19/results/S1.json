@@ -8,6 +8,10 @@
   "passed": 16,
   "failed": 0,
   "measured": {
+    "repo": "rake",
+    "files": 57,
+    "symbols": 779,
+    "ms": 1928,
     "machine": {
       "platform": "linux",
       "arch": "x64",
@@ -57,22 +61,22 @@
         "repo": "rake",
         "files": 57,
         "symbols": 779,
-        "ms": 3765,
-        "seconds": 3.765
+        "ms": 1928,
+        "seconds": 1.928
       },
       {
         "repo": "lodash",
         "files": 36,
         "symbols": 1048,
-        "ms": 3929,
-        "seconds": 3.929
+        "ms": 3414,
+        "seconds": 3.414
       },
       {
         "repo": "element-plus",
         "files": 2580,
         "symbols": 27751,
-        "ms": 89580,
-        "seconds": 89.58
+        "ms": 51579,
+        "seconds": 51.579
       }
     ],
     "curve": [
@@ -80,19 +84,19 @@
         "repo": "rake",
         "files": 57,
         "symbols": 779,
-        "ms": 3765
+        "ms": 1928
       },
       {
         "repo": "lodash",
         "files": 36,
         "symbols": 1048,
-        "ms": 3929
+        "ms": 3414
       },
       {
         "repo": "element-plus",
         "files": 2580,
         "symbols": 27751,
-        "ms": 89580
+        "ms": 51579
       }
     ]
   },
@@ -101,5 +105,5 @@
     "Giant file counts are DISCOVERY here - indexing them is S2/S3.",
     "Element-plus is the largest INDEXED anchor; intellij is not indexed in this verifier."
   ],
-  "generatedAt": "2026-08-25T23:37:12.527Z"
+  "generatedAt": "2026-08-26T03:43:23.058Z"
 }

@@ -4,8 +4,8 @@
   "tool": "scale benchmark documentation",
   "title": "benchmark docs truth — SCALE.md and BENCHMARKS.md",
   "verified": true,
-  "checks": 22,
-  "passed": 22,
+  "checks": 24,
+  "passed": 24,
   "failed": 0,
   "measured": {
     "anchorCurve": [
@@ -13,36 +13,41 @@
         "repo": "rake",
         "files": 57,
         "symbols": 779,
-        "ms": 3765
+        "ms": 1928
       },
       {
         "repo": "lodash",
         "files": 36,
         "symbols": 1048,
-        "ms": 3929
+        "ms": 3414
       },
       {
         "repo": "element-plus",
         "files": 2580,
         "symbols": 27751,
-        "ms": 89580
+        "ms": 51579
       }
     ],
     "aspnetcore": {
       "files": 10431,
       "symbols": 132744,
-      "timing": null
+      "timingSlices": 4
+    },
+    "paperclip": {
+      "files": 676,
+      "symbols": 8054,
+      "fullFinalization": true
     },
     "intellij": {
-      "files": 69504,
-      "symbols": 1071809,
-      "timing": null
+      "files": 69509,
+      "symbols": 1071964,
+      "fullColdTimingComplete": false
     }
   },
   "negatives": [
-    "S2 and S3 timing ledgers are intentionally open because the old logs were incomplete and a controlled rerun exceeded the 600-second execution bound.",
-    "Peak RSS was not captured by the existing giant runs.",
+    "ASP.NET slice timings defer heavy post-processing; the Paperclip control proves full finalization separately.",
+    "The intellij full cold ten-slice timing ledger is not claimed because the first fresh batch took 1,216.877 seconds.",
     "Scale completion does not prove analyzer AST precision."
   ],
-  "generatedAt": "2026-08-26T00:36:14.897Z"
+  "generatedAt": "2026-08-26T04:50:00.160Z"
 }

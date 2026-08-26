@@ -40,12 +40,26 @@ async function main() {
       if (d.failed !== 0) { bad++; console.log("  FAIL: " + issue.evidence + " failed=" + d.failed) }
       if (typeof d.checks !== "number" || d.checks <= 0) { bad++; console.log("  FAIL: " + issue.evidence + " checks=" + d.checks) }
       totalChecks += d.checks || 0
-      // Scale-specific: closed scale issues must carry measured numbers.
-      if (["S1", "S2", "S3"].includes(issue.code)) {
+      // Scale-specific: each scale issue must carry numbers matching its
+      // evidence contract. S3 is intentionally partial, so it must expose
+      // its live totals and limitation rather than a fabricated full ledger.
+      if (issue.code === "S1") {
+        const rows = Array.isArray(d.measured?.curve) ? d.measured.curve : []
+        const hasNumbers = rows.length > 0 && rows.every((r: any) => r && typeof r.repo === "string" && typeof r.files === "number" && typeof r.symbols === "number" && typeof r.ms === "number")
+        if (!hasNumbers) { bad++; console.log("  FAIL: " + issue.evidence + " S1 lacks measured curve rows {repo,files,symbols,ms}") }
+      } else if (issue.code === "S2") {
         const m = d.measured
-        const rows = Array.isArray(m?.curve) ? m.curve : [m]
-        const hasNumbers = rows.length > 0 && rows.every((r: any) => r && typeof r.repo === "string" && typeof r.files === "number" && (typeof r.symbols === "number" || typeof r.symbols === "string") && (typeof r.ms === "number" || typeof r.seconds === "number"))
-        if (!hasNumbers) { bad++; console.log("  FAIL: " + issue.evidence + " scale issue lacks measured rows {repo,files,symbols,ms/seconds}") }
+        const rows = Array.isArray(m?.timing?.slices) ? m.timing.slices : []
+        const hasNumbers = typeof m?.repo === "string" && typeof m?.files === "number" && m.files > 0 && typeof m?.symbols === "number" && m.symbols > 0 &&
+          rows.length === 4 && rows.every((r: any) => typeof r.wallMs === "number" && r.wallMs > 0 && typeof r.peakRssKb === "number" && r.peakRssKb > 0) &&
+          m.fullFinalizationMeasured === true
+        if (!hasNumbers) { bad++; console.log("  FAIL: " + issue.evidence + " S2 lacks four timed RSS rows or full-finalization evidence") }
+      } else if (issue.code === "S3") {
+        const m = d.measured
+        const hasNumbers = typeof m?.repo === "string" && typeof m?.indexedFiles === "number" && m.indexedFiles > 0 &&
+          typeof m?.symbols === "number" && m.symbols > 0 && m.fullColdTimingComplete === false &&
+          m.controls && Array.isArray(m.controls.runs) && m.controls.runs.length >= 4 && typeof m.note === "string" && m.note.includes("not completed")
+        if (!hasNumbers) { bad++; console.log("  FAIL: " + issue.evidence + " S3 lacks measured partial totals, controls, or limitation") }
       }
     } catch (e: any) { bad++; console.log("  FAIL: " + issue.evidence + " unreadable: " + (e?.message || e)) }
   }
@@ -80,11 +94,17 @@ async function main() {
   ck("C1: the gate itself performed a real number of checks", checks >= 6, "checks=" + checks)
 
   // ── 5. Emit + self-handshake ────────────────────────────────────────────
+  const evidencePath = path.join(RESULTS_DIR, "C1.json")
   const e = { issue: "M19.C1", code: "C1", tool: "governance", title: "master plan, ledger, closure gate, scale-benchmark governance", verified: failed === 0, checks, passed, failed, negatives: 0, generatedAt: new Date().toISOString() }
-  writeFileSync(path.join(RESULTS_DIR, "C1.json"), JSON.stringify(e, null, 2) + "\n")
-  const reread = JSON.parse(readFileSync(path.join(RESULTS_DIR, "C1.json"), "utf8"))
+  writeFileSync(evidencePath, JSON.stringify(e, null, 2) + "\n")
+  const reread = JSON.parse(readFileSync(evidencePath, "utf8"))
   const handshakeOk = reread.verified === (failed === 0) && reread.failed === failed
   ck("C1: post-emit ledger handshake matches the run outcome", handshakeOk, JSON.stringify({ ledger: reread.verified, run: failed === 0 }))
+
+  // Persist the final counters after the handshake check. The previous order
+  // emitted a truthful console result but left C1.json one check behind.
+  const finalEvidence = { ...e, verified: failed === 0, checks, passed, failed }
+  writeFileSync(evidencePath, JSON.stringify(finalEvidence, null, 2) + "\n")
   console.log("C1: " + (handshakeOk && failed === 0 ? "VERIFIED" : "KNOWN-GAP") + " (" + passed + "/" + checks + " passed)")
   process.exit(handshakeOk && failed === 0 ? 0 : 1)
 }

@@ -67,12 +67,12 @@ async function main() {
   const contentMatchLat: number[] = []
   for (let i = 0; i < 5; i++) {
     const t0 = Date.now()
-    await searchContent(pid, "VirtualFile", { limit: 5 })
+    await searchContent(pid, "VirtualFile", { maxResults: 5 })
     contentMatchLat.push(Date.now() - t0)
   }
   ck("Q1: content search (matched) median latency < 2000ms", median(contentMatchLat) < 2000, "median=" + median(contentMatchLat) + "ms")
   const missT0 = Date.now()
-  await searchContent(pid, "openApi project model zzznope", { limit: 5 })
+  await searchContent(pid, "openApi project model zzznope", { maxResults: 5 })
   const contentMissMs = Date.now() - missT0
   ck("Q1: content search (no-match scan) bounded < 15000ms and measured", contentMissMs < 15000, "missMs=" + contentMissMs)
 
