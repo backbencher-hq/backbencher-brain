@@ -74,7 +74,7 @@
     {
       "name": "runtime: content-mode results all resolve to indexed brain_file rows",
       "pass": true,
-      "detail": "results=0"
+      "detail": "results=2"
     },
     {
       "name": "runtime: symbol with no brain_file row is never returned (no unindexed claims) [negative]",
@@ -111,5 +111,5 @@
   "limitations": [
     "The audit proves the index-backed claim statically (query shape) and dynamically (row-deletion probe); it does not re-verify analyzer symbol extraction (that is the M12 analyzer work)."
   ],
-  "generatedAt": "2026-08-22T19:07:15.305Z"
+  "generatedAt": "2026-08-25T21:50:29.427Z"
 }
