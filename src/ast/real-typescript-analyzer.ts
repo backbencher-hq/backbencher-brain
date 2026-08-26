@@ -1719,6 +1719,12 @@ class TypeScriptAnalysisRunner {
 
     this.scopeManager.popScope()
 
+    // PHASE 6.5: Declared-type reference graph (M14). Every type_annotation
+    // in the file (fields, params, returns, locals, interface members,
+    // as-casts, instanceof checks) references its named types. Absent until
+    // M14 — the corpus oracle never checked it.
+    this.extractDeclaredTypeRefs(rootNode, relationships)
+
     this.classifyEvidenceTier(relationships)
 
     return {
@@ -2693,6 +2699,141 @@ class TypeScriptAnalysisRunner {
     }
 
     symbols.push(symbol)
+  }
+
+  /**
+   * M14 — declared-type reference graph. TypeScript's grammar wraps every
+   * declared type position in a `type_annotation` node, so hooking that one
+   * node type covers interface members, class fields, ctor/method params,
+   * return types, and typed locals uniformly. as-casts (`x as T`) parse as
+   * as_expression; instanceof checks as binary_expression with the
+   * instanceof operator — both handled here with their own labels.
+   */
+  private extractDeclaredTypeRefs(rootNode: Node, relationships: ASTEngine.UniversalRelationship[]): void {
+    const emitted = new Set<string>()
+    const PRIMITIVES = new Set(["string", "number", "boolean", "any", "unknown", "never", "void", "object", "symbol", "bigint", "undefined", "null"])
+
+    const collectTypeNames = (n: Node, out: string[]): void => {
+      if (n.type === "type_identifier" || n.type === "nested_type_identifier") {
+        if (!PRIMITIVES.has(n.text) && !out.includes(n.text)) out.push(n.text)
+        return
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) collectTypeNames(c, out)
+      }
+    }
+
+    const resolveSource = (start: Node): string => {
+      let p: Node | null = start.parent
+      while (p) {
+        if (
+          p.type === "class_declaration" ||
+          p.type === "class" ||
+          p.type === "function_declaration" ||
+          p.type === "generator_function_declaration" ||
+          p.type === "method_definition" ||
+          p.type === "interface_declaration"
+        ) {
+          const name = this.findNamedChild(p)
+          if (name) return name.text
+        }
+        p = p.parent
+      }
+      return "global"
+    }
+
+    const emit = (source: string, roots: Node[], relType: string): void => {
+      for (const r of roots) {
+        if (!r) continue
+        // Expression-position targets (instanceof) lex as plain identifiers;
+        // type positions use type_identifier — accept both here.
+        const names: string[] = []
+        if (r.type === "identifier") {
+          if (!PRIMITIVES.has(r.text)) names.push(r.text)
+        } else {
+          collectTypeNames(r, names)
+        }
+        for (const t of names) {
+          const key = `${source}|${t}|${relType}`
+          if (emitted.has(key)) continue
+          emitted.add(key)
+          relationships.push({
+            source,
+            target: t,
+            type: ASTEngine.RelationshipType.References,
+            confidence: 0.95,
+            metadata: { relationshipType: relType },
+          })
+        }
+      }
+    }
+
+    const walk = (n: Node): void => {
+      switch (n.type) {
+        case "type_annotation": {
+          // A type_annotation directly on a function/method AFTER its
+          // parameter list is the return type — label it distinctly.
+          const p = n.parent
+          const isReturn =
+            (p?.type === "method_definition" || p?.type === "function_declaration") &&
+            (() => {
+            if (!p) return false
+            let sawParams = false
+            for (let i = 0; i < p.namedChildCount; i++) {
+              const c = p.namedChild(i)
+              if (!c) continue
+              if (c.type === "formal_parameters") { sawParams = true; continue }
+              // Tree-sitter node objects are recreated per access — compare
+              // by id, never by reference.
+              if (n.id !== undefined && c.id === n.id) return sawParams
+              if (c.startIndex === n.startIndex && c.type === n.type) return sawParams
+            }
+            return false
+            })()
+          emit(resolveSource(n), [n], isReturn ? "return_type" : "declared_type")
+          break
+        }
+        case "as_expression": {
+          if (n.namedChildCount >= 2) {
+            const right = n.namedChild(n.namedChildCount - 1)
+            if (!right) break
+            emit(resolveSource(n), [right], "cast_target")
+          }
+          break
+        }
+        case "binary_expression": {
+          // The operator is an ANONYMOUS child token (no named field in this
+          // grammar), so detect it by walking children.
+          let isInstanceof = false
+          for (let i = 0; i < n.childCount; i++) {
+            const c = n.child(i)
+            if (c && !c.isNamed && c.text === "instanceof") { isInstanceof = true; break }
+          }
+          if (isInstanceof) {
+            const right = n.namedChild(n.namedChildCount - 1)
+            // Expression position: the target lexes as identifier, not
+            // type_identifier — emit() handles both shapes.
+            if (right) emit(resolveSource(n), [right], "instanceof_check")
+          }
+          break
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) walk(c)
+      }
+    }
+    walk(rootNode)
+  }
+
+  private findNamedChild(node: Node): Node | null {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (!c) continue
+      if (c.type === "type_identifier" || c.type === "identifier" || c.type === "property_identifier") return c
+    }
+    return null
   }
 
   /**
