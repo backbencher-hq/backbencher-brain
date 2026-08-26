@@ -919,3 +919,57 @@ VERDICT: second pass found exactly one defect (the over-filter), it is
 fixed and gated; no further findings. Svelte stands at the same depth
 as TS/JS/Vue: two adversarial passes, completeness inventory, dual
 corpora at true 0/0.
+
+## C++ review wave (2026-08-24)
+
+Universal method. Grammar = tree-sitter/tree-sitter-cpp; ground truth
+verified against the pinned wasm (base_class_clause children are FLAT:
+access_specifier / type_identifier / template_type — NO base_class
+wrappers). Siblings: C, Java.
+
+FIXED (3 fixtures proven failing pre-fix):
+  - **STATEFULNESS (Tier-1)**: uses-dedup set AND virtual registries
+    stored on the analyzer INSTANCE. Under parallel indexing an identical
+    later file LOST its Uses edges entirely (proven: file A emits
+    setup->timeout, identical file B emitted nothing). All state is now
+    per-analyze locals.
+  - **VIRTUAL OVERRIDES WERE DEAD**: registration was gated on a prior
+    base_class_clause - top-down walking meant base virtuals were never
+    registered before Derived was processed. Zero override edges could
+    emit for canonical shapes. Now: every class-scope Method registers;
+    post-loop transitive resolution (A->B->C, depth-capped) emits
+    Overrides @0.9. Keyword-less redefinitions included (C++ virtual
+    dispatch needs no keywords); constructors never register.
+  - **Payloads absent**: qualified_calls (#383 - dotted/qualified path,
+    :: separators kept, no args, attributed to enclosing function) and
+    per-symbol cyclomatic complexity + file-level metrics (T1 contract)
+    did not exist. Ported.
+  - **Dead literals**: 'base_class' fallback branches removed (audit
+    unknowns 2 -> 0).
+  - **Implements/Overrides twin emission** dropped: a virtual override is
+    ONE Overrides edge (JVM-family convention), not Implements+Overrides.
+
+DIFFERENTIAL PARITY:
+  - cpp added to harness + oracle (class_specifier/struct_specifier/
+    union_specifier heritage via flat base_class_clause; field_declaration
+    member methods for overrides-truth; new_expression leaf-normalization
+    incl. ::-qualified and template forms).
+  - fmt pinned as standing cpp corpus (47 files): 147 truth edges,
+    covered 134, missing=4 unexplained=5 RESIDUAL documented below.
+    Baselines recorded at this investigated floor.
+
+RESIDUAL (investigated, enumerated - not silently absorbed):
+  - 4 MISSING = FIELD-shadowing pairs (skip_count/message/matcher): truth
+    derives them from member variables; analyzers rightly do not treat
+    field name-hiding as virtual overrides.
+  - ~3-5 UNEXPLAINED in gtest unity-build files: macro-generated members
+    (GTEST_DISALLOW_COPY_AND_ASSIGN_ expansions) where truth/analyzer
+    disagree on synthetic member identity.
+
+GOTCHAS:
+  - hasDirectModifier-style text checks are safe here ONLY because C++
+    keywords (`virtual`, `override`) are anonymous token children of
+    declarations - the JS accessor-name trap does not apply to this shape.
+  - out-of-line definitions (void X::f(){}) resolve their owner via the
+    qualified_identifier scope walk; template bases strip to leaf names
+    or the override registry keys mismatch.
