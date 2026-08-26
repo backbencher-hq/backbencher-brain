@@ -707,6 +707,11 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Field-access uses (parity with java/groovy/kotlin collectors).
     this.collectFieldAccessUses(rootNode, relationships)
 
+    // Declared/checked type references (M14): JavaScript has no type
+    // annotations, but instanceof checks reference a type by name — the one
+    // unambiguous type-usage signal the grammar carries.
+    this.extractInstanceofRefs(rootNode, relationships)
+
     this.classifyEvidenceTier(relationships)
 
     return {
@@ -1157,6 +1162,66 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
    * a target (anti-skip guarantee); optional chains (?.) are
    * member_expression nodes with optional_chain tokens in this grammar.
    */
+  /**
+   * M14 — instanceof type references. `x instanceof T` is JavaScript's only
+   * unambiguous named-type usage; emitted as References from the enclosing
+   * function/class. The right operand lexes as identifier (expression
+   * position), so no type_identifier filtering applies.
+   */
+  private extractInstanceofRefs(rootNode: Node, relationships: ASTEngine.UniversalRelationship[]): void {
+    const emitted = new Set<string>()
+    const resolveSource = (start: Node): string => {
+      let p: Node | null = start.parent
+      while (p) {
+        if (
+          p.type === "class_declaration" ||
+          p.type === "function_declaration" ||
+          p.type === "generator_function_declaration" ||
+          p.type === "method_definition"
+        ) {
+          for (let i = 0; i < p.namedChildCount; i++) {
+            const c = p.namedChild(i)
+            if (!c) continue
+            if (c.type === "identifier" || c.type === "property_identifier") return c.text
+          }
+        }
+        p = p.parent
+      }
+      return "global"
+    }
+    const walk = (n: Node): void => {
+      if (n.type === "binary_expression") {
+        let isInstanceof = false
+        for (let i = 0; i < n.childCount; i++) {
+          const c = n.child(i)
+          if (c && !c.isNamed && c.text === "instanceof") { isInstanceof = true; break }
+        }
+        if (isInstanceof && n.namedChildCount >= 2) {
+          const right = n.namedChild(n.namedChildCount - 1)
+          if (right) {
+            const source = resolveSource(n)
+            const key = `${source}|${right.text}`
+            if (!emitted.has(key)) {
+              emitted.add(key)
+              relationships.push({
+                source,
+                target: right.text,
+                type: ASTEngine.RelationshipType.References,
+                confidence: 0.95,
+                metadata: { relationshipType: "instanceof_check" },
+              })
+            }
+          }
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) walk(c)
+      }
+    }
+    walk(rootNode)
+  }
+
   private collectFieldAccessUses(
     rootNode: Node,
     relationships: ASTEngine.UniversalRelationship[],

@@ -5,12 +5,17 @@
   constructors, properties (incl. accessor pairs), prototype-assigned methods
 - **Relationships**: extends (heritage), instantiates, calls, uses (field access via
   dedicated collector), contains, exports (named + default + CommonJS), overrides,
-  references (imports)
+  references (imports + instanceof checks)
 - **Payloads**: qualified_calls, JSDoc comments, evidenceClass on every edge
 
 ## Evidence tiers
 Central classifier at end of analyze(): every relationship carries
 `metadata.evidenceClass`. Same rules as JVM family.
+
+## Type-reference semantics
+- JS has no type annotations; `x instanceof T` is the only unambiguous
+  named-type usage and emits `instanceof_check` references from the enclosing
+  function/method (operator is an anonymous grammar token — detected by walk)
 
 ## Known limitations
 - qualified_calls extraction implemented but coverage breadth not measured against corpus
