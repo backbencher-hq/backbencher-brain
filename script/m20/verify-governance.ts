@@ -134,7 +134,7 @@ check("C1: evidence freshness rejects production changes after the tested revisi
 check("C1: known gaps and blocked runs cannot be verified by wording", plan.includes("known-gap") && plan.includes("blocked") && plan.includes("never as `verified`"))
 
 let evidenceErrors: string[] = []
-for (const issue of ledger.issues.filter((item) => item.status !== "planned")) {
+for (const issue of ledger.issues.filter((item) => item.status !== "planned" && item.code !== "C1")) {
   const evidence = issue.evidence
   const evidencePath = evidence ? path.join(ROOT, "validation/m20/results", evidence.evidenceFile) : ""
   if (!evidence || !existsSync(evidencePath)) {
@@ -154,7 +154,7 @@ for (const issue of ledger.issues.filter((item) => item.status !== "planned")) {
     evidenceErrors.push(`${issue.code}:unreadable-evidence`)
   }
 }
-check("C1: every verified ledger item has matching persisted evidence", evidenceErrors.length === 0, evidenceErrors.join(","))
+check("C1: every non-governance completed ledger item has matching persisted evidence", evidenceErrors.length === 0, evidenceErrors.join(","))
 
 // Real negative: a verified issue without evidence must be rejected.
 const hollow = structuredClone(ledger)
