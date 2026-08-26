@@ -136,6 +136,20 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !["declared_type", "return_type", "throws_type", "cast_target", "instanceof_check"].includes(String(x.metadata?.relationshipType))) }),
   },
   {
+    id: "typescript/drop-declared-types",
+    language: "typescript",
+    defectClass: "relationship-loss",
+    description: "drops declared_type/return_type/cast/check references (silent type-usage-graph bug class)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !["declared_type", "return_type", "cast_target", "instanceof_check"].includes(String(x.metadata?.relationshipType))) }),
+  },
+  {
+    id: "javascript/drop-instanceof-refs",
+    language: "javascript",
+    defectClass: "relationship-loss",
+    description: "drops instanceof_check references (JS's only unambiguous named-type usage)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => x.metadata?.relationshipType !== "instanceof_check") }),
+  },
+  {
     id: "typescript/drop-qualified-calls",
     language: "typescript",
     defectClass: "symbol-payload-loss",
