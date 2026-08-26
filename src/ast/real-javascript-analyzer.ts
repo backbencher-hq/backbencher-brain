@@ -707,6 +707,8 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Field-access uses (parity with java/groovy/kotlin collectors).
     this.collectFieldAccessUses(rootNode, relationships)
 
+    this.classifyEvidenceTier(relationships)
+
     return {
       language: "javascript",
       symbols,
@@ -1214,6 +1216,35 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
   }
+
+  /**
+   * M14 #299 - evidence-tier classification for EVERY emitted relationship.
+   * Same rules as the JVM/TS family. JS calls are usage_contextual,
+   * field_access uses are usage_contextual, imports are import_based.
+   */
+  private classifyEvidenceTier(relationships: ASTEngine.UniversalRelationship[]): void {
+    for (const r of relationships) {
+      const md = r.metadata ?? (r.metadata = {})
+      if (md.evidenceClass) continue
+      const t = String(r.type ?? r.relationshipType ?? "")
+      const conf = typeof r.confidence === "number" ? r.confidence : 1
+      if (t === "contains" || t === "exports") { md.evidenceClass = "structural"; continue }
+      if (t === "references") {
+        md.evidenceClass = md.isImport ? "import_based" : "reference_qualified"
+        continue
+      }
+      if (t === "extends" || t === "implements" || t === "overrides") {
+        md.evidenceClass = conf >= 1 ? "structural" : conf >= 0.85 ? "usage_contextual" : "inferred"
+        continue
+      }
+      if (t === "instantiates") {
+        md.evidenceClass = conf >= 0.9 ? "structural" : "usage_contextual"
+        continue
+      }
+      md.evidenceClass = "usage_contextual"
+    }
+  }
+
 
   private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {
     return {
