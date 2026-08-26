@@ -90,6 +90,12 @@ export namespace PatternBrainTools {
       description: string
       affectedPatterns: string[]
     }>
+    scan: {
+      candidatesEvaluated: number
+      findingsBeforeDisplayLimit: number
+      displayed: number
+      truncated: boolean
+    }
   }> {
     const opts = {
       includeOrphaned: true,
@@ -106,7 +112,7 @@ export namespace PatternBrainTools {
     if (opts.includeOrphaned) {
       const orphanReport = await detectOrphans(projectId, {
         minConfidence: opts.confidenceThreshold,
-        maxResults: Math.floor(opts.maxResults * 0.6),
+        maxResults: Number.MAX_SAFE_INTEGER,
       })
       for (const finding of orphanReport.findings) {
         patterns.push({
@@ -143,15 +149,22 @@ export namespace PatternBrainTools {
       confidenceSum += pattern.confidence
     }
 
+    const displayedPatterns = patterns.slice(0, opts.maxResults)
     return {
-      patterns: patterns.slice(0, opts.maxResults),
+      patterns: displayedPatterns,
       statistics: {
-        totalFound: patterns.length,
+        totalFound: displayedPatterns.length,
         byType,
         bySeverity,
         averageConfidence: patterns.length ? confidenceSum / patterns.length : 0,
       },
       recommendations: [],
+      scan: {
+        candidatesEvaluated: patterns.length,
+        findingsBeforeDisplayLimit: patterns.length,
+        displayed: displayedPatterns.length,
+        truncated: patterns.length > displayedPatterns.length,
+      },
     }
   }
 }
