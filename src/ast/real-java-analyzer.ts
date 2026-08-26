@@ -738,6 +738,121 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
 
+      else if (
+        type === "cast_expression" ||
+        type === "instanceof_expression" ||
+        type === "class_literal"
+      ) {
+        // JLS 15.16 / 15.20.2 / 15.8.2: casts, instanceof checks, and class
+        // literals all reference a type by name. Without these handlers the
+        // type usage was silently dropped (measured: zero edges for
+        // `(String) s`, `o instanceof String`, `T.class` in the M14 gap
+        // probe). Grammar field access ("type"/"right") is preferred over
+        // child search so identifiers inside the operand expression are not
+        // mistaken for the referenced type.
+        const typeNode =
+          node.childForFieldName("type") ||
+          node.childForFieldName("right") ||
+          this.findChildByType(node, "type_identifier") ||
+          this.findChildByType(node, "generic_type") ||
+          this.findChildByType(node, "scoped_type_identifier")
+        if (typeNode) {
+          const typeName = typeNode.type === "type_identifier" ? typeNode.text : this.extractJavaTypeBaseName(typeNode)
+          if (typeName && typeName !== "var") {
+            relationships.push({
+              source: parentContext?.name || parentContext?.symbolRef?.name || "global",
+              target: typeName,
+              type: ASTEngine.RelationshipType.References,
+              confidence: 0.95,
+              metadata: {
+                relationshipType:
+                  type === "cast_expression" ? "cast_target" : type === "instanceof_expression" ? "instanceof_check" : "class_literal",
+              },
+            })
+          }
+        }
+      }
+
+      else if (type === "array_creation_expression") {
+        // JLS 15.10.1: new T[n] references the element type T. Primitive
+        // element types (int[], double[]) are integral_type/floating_point_type
+        // nodes, never type_identifier, so they are correctly skipped.
+        const elemNode = node.childForFieldName("type")
+        if (elemNode) {
+          const typeName = elemNode.type === "type_identifier" ? elemNode.text : this.extractJavaTypeBaseName(elemNode)
+          if (typeName) {
+            relationships.push({
+              source: parentContext?.name || parentContext?.symbolRef?.name || "global",
+              target: typeName,
+              type: ASTEngine.RelationshipType.References,
+              confidence: 0.95,
+              metadata: { relationshipType: "array_creation" },
+            })
+          }
+        }
+      }
+
+      else if (type === "method_reference") {
+        // JLS 15.13: `T::m` — the receiver is a type reference and the method
+        // name is an unresolved call target. Constructor refs (`int[]::new`)
+        // have only the receiver as a named child ("new" is an unnamed token),
+        // so no Calls edge is emitted for them.
+        const kids: Node[] = []
+        for (let i = 0; i < node.namedChildCount; i++) {
+          const k = node.namedChild(i)
+          if (k) kids.push(k)
+        }
+        const refSource = parentContext?.name || parentContext?.symbolRef?.name || "global"
+        if (kids.length > 0) {
+          const recv = kids[0]
+          const recvName = recv.type === "type_identifier" || recv.type === "identifier" ? recv.text : this.extractJavaTypeBaseName(recv)
+          if (recvName) {
+            relationships.push({
+              source: refSource,
+              target: recvName,
+              type: ASTEngine.RelationshipType.References,
+              confidence: 0.9,
+              metadata: { relationshipType: "method_reference_receiver", javaCallExpression: node.text },
+            })
+          }
+        }
+        if (kids.length >= 2) {
+          relationships.push({
+            source: refSource,
+            target: kids[kids.length - 1].text,
+            type: ASTEngine.RelationshipType.Calls,
+            confidence: 0.8,
+            metadata: { javaCallExpression: node.text },
+          })
+        }
+      }
+
+      else if (type === "switch_label") {
+        // JLS 14.30.2: type patterns (`case String t -> ...`) reference the
+        // pattern's type. Constant/default labels carry no type and are
+        // correctly skipped.
+        const pat = this.findChildByType(node, "pattern")
+        if (pat) {
+          const tp = this.findChildByType(pat, "type_pattern") || pat
+          const tnode =
+            this.findChildByType(tp, "type_identifier") ||
+            this.findChildByType(tp, "generic_type") ||
+            this.findChildByType(tp, "scoped_type_identifier")
+          if (tnode) {
+            const typeName = tnode.type === "type_identifier" ? tnode.text : this.extractJavaTypeBaseName(tnode)
+            if (typeName) {
+              relationships.push({
+                source: parentContext?.name || parentContext?.symbolRef?.name || "global",
+                target: typeName,
+                type: ASTEngine.RelationshipType.References,
+                confidence: 0.95,
+                metadata: { relationshipType: "switch_pattern" },
+              })
+            }
+          }
+        }
+      }
+
       if (type === "identifier") {
          if (node.text === "Singleton" || node.text.endsWith("Factory") || node.text.endsWith("Builder")) {
             const pat = node.text.endsWith("Factory") ? "factory" : node.text === "Singleton" ? "singleton" : "builder"
