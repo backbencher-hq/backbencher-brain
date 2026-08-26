@@ -11,8 +11,8 @@ GitHub milestone #19 · Started 2026-08-25
 
 | # | Finding | Evidence |
 |---|---------|----------|
-| 1 | **No giant repo has ever been indexed end-to-end.** The largest corpus ever measured in any milestone is element-plus: 27,670 symbols (M18 Q2). Everything else is fixture or sub-30k. | M18 evidence |
-| 2 | **Giant corpora ARE available locally** — intellij-community (2.0G source, ~273k files), openclaw (2.6G, ~112k), ProxiCall (21G source, ~201k), aspnetcore (691M, ~59k), paperclip (744M, ~43k). None have been indexed. | `du`/`find`, 2026-08-25 |
+| 1 | **At M19 start, no giant repo had been indexed end-to-end.** The largest corpus measured before M19 was element-plus: 27,670 symbols (M18 Q2); everything else was fixture-scale or below 30k symbols. M19 later produced the explicitly scoped S2/S3 results recorded below. | M18 evidence, snapshot at 2026-08-25; S2/S3 completion evidence |
+| 2 | **At milestone start, giant corpora were available locally but unindexed** — intellij-community (2.0G source, ~273k total files), openclaw (2.6G, ~112k), ProxiCall (21G source, ~201k), aspnetcore (691M, ~59k), paperclip (744M, ~43k). M19 subsequently indexed the in-scope aspnetcore, paperclip, and intellij source subsets; the other repositories remain outside M19 evidence. | `du`/`find`, 2026-08-25; S2/S3 evidence, 2026-08-26 |
 | 3 | **Naive semantic coverage collapses at scale.** At 27k symbols, embedding coverage was 20.7% (element-plus, M18 Q2) — API rate limits + batch cost mean full dense coverage on 100k+ symbols is infeasible. The product must degrade honestly, not silently. | M18 Q2 evidence |
 | 4 | **Retrieval quality at 100k+ symbols is unproven.** Vector scan is capped at 20,000 rows (`BB_VECTOR_SCAN_CAP`) with deterministic ordering — fine for correctness, but 200k+ symbols means ~90% of candidates never enter the scan. Does retrieval still surface the right symbol? Unknown. | `src/intelligence/search/semantic-search.ts` (read at 2026-08-25) |
 | 5 | **Indexer per-file timing from M11/M12 evidence was per-language fixture-level.** Worker pool parallelism, memory peak, and end-to-end wall time on multi-100k-file repos are unmeasured. | M11 corpus evidence |
@@ -23,8 +23,8 @@ GitHub milestone #19 · Started 2026-08-25
 |------|-------|-------------|
 | C1 | Governance | master plan, ledger, closure gate, wiring, scale-benchmark governance |
 | S1 | Scale benchmark | measured baselines: index time, peak RSS, symbols/files per repo — rake/lodash/ep as small/med, then the giants |
-| S2 | Giant indexing | index `aspnetcore` (59k files) + `paperclip` (42k) end-to-end; prove the pipeline completes, report honest time/memory |
-| S3 | Giant indexing II | `intellij-community` (273k files) — the stress test: worker pool, memory cap, parallelism |
+| S2 | Giant indexing | index `aspnetcore` and `paperclip` source subsets; prove the pipeline completes with explicit deferred/full-finalization scopes and report honest time/memory |
+| S3 | Giant indexing II | `intellij-community` (273k total files at discovery; 83,051 supported source candidates) — the stress test: worker pool, memory cap, parallelism |
 | Q1 | Retrieval at scale | semantic + symbol + content search on a giant index: latency budgets, `BB_VECTOR_SCAN_CAP` truncation honesty, recall against a known subset |
 | Q2 | Fallback at scale | when API embeddings cannot cover 100k+ symbols: local-vector/lexical degradation is verified, labeled, never silent |
 | D1 | Docs | SCALE.md / BENCHMARKS.md for the website: measured numbers, negative lines ("did NOT index X because...") |
@@ -55,8 +55,8 @@ GitHub milestone #19 · Started 2026-08-25
 |---|-------|--------|----------|
 | C1 | Governance | CLOSED — gate 10/10 | validation/m19/results/C1.json |
 | S1 | Scale benchmark at anchors | CLOSED — 16/16 | validation/m19/results/S1.json |
-| S2 | Index aspnetcore (59k files) | CLOSED — 17/17; four clean deferred slices + full-finalization Paperclip control | validation/m19/results/S2.json |
-| S3 | Index intellij-community (273k files) | CLOSED — VERIFIED-PARTIAL 23/23; full cold ten-slice timing explicitly not claimed | validation/m19/results/S3.json |
+| S2 | Index aspnetcore and paperclip source subsets | CLOSED — 17/17; four clean deferred ASP.NET slices + full-finalization Paperclip control | validation/m19/results/S2.json |
+| S3 | Index intellij-community (273k total files discovered; 83,051 supported source candidates) | CLOSED — VERIFIED-PARTIAL 23/23; full cold ten-slice timing explicitly not claimed | validation/m19/results/S3.json |
 | Q1 | Retrieval at scale | CLOSED — 7/7 | validation/m19/results/Q1.json |
 | Q2 | Fallback at scale | CLOSED — 13/13 | validation/m19/results/Q2.json |
 | B1 | Benchmarks docs | CLOSED — 24/24 | validation/m19/results/B1.json |

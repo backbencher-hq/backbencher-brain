@@ -2,7 +2,7 @@
   "issue": "M19.S2",
   "code": "S2",
   "tool": "indexing pipeline (giant corpus)",
-  "title": "index aspnetcore and paperclip end-to-end - honest completion + time/memory",
+  "title": "index aspnetcore and paperclip source subsets - explicit finalization scope + time/memory",
   "verified": true,
   "checks": 17,
   "passed": 17,
@@ -339,5 +339,5 @@
     "Peak RSS is required for ASP.NET slices; the separate Paperclip full-finalization control records both runner and /usr/bin/time RSS, but it does not substitute for missing ASP.NET slice RSS.",
     "The DB lives in the local brain store for each project; counts are read at verify time, not hardcoded."
   ],
-  "generatedAt": "2026-08-26T15:23:41.638Z"
+  "generatedAt": "2026-08-26T17:15:18.613Z"
 }

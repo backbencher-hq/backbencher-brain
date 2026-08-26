@@ -23,7 +23,7 @@
     },
     "healthCoverageLine": "0 of 1071964 symbols have semantic embeddings (none). Semantic search quality depends on this coverage.",
     "semanticVector": {
-      "ms": 1393,
+      "ms": 1391,
       "method": "keyword-fallback",
       "reason": "no-matching-model-embeddings",
       "resultCount": 5,
@@ -39,5 +39,5 @@
     "The giant index has 0 vector embeddings (S3 bounded them off by design); 0% coverage is reported, never hidden.",
     "tfidf/vector-path exclusion is verified on a deterministic temp index (fixed engine vectors) — the mechanism, not a 1M-row cosine."
   ],
-  "generatedAt": "2026-08-26T15:23:35.157Z"
+  "generatedAt": "2026-08-26T17:11:55.992Z"
 }

@@ -173,7 +173,7 @@ async function main() {
 
   const e = {
     issue: "M19.S2", code: "S2", tool: "indexing pipeline (giant corpus)",
-    title: "index aspnetcore and paperclip end-to-end - honest completion + time/memory",
+    title: "index aspnetcore and paperclip source subsets - explicit finalization scope + time/memory",
     verified: failed === 0, checks, passed, failed,
     measured,
     negatives: [
