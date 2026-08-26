@@ -19,13 +19,13 @@
 //
 // No auto-pass: every check can fail.
 
-import { writeFileSync, existsSync, mkdirSync, mkdtempSync, cpSync, rmSync } from "node:fs"
+import { writeFileSync, existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs"
 import { tmpdir, cpus, totalmem } from "node:os"
 import path from "node:path"
 import { BrainDatabase } from "../../src/brain/database"
 import { getProjectId } from "../../src/cli/index"
 import { indexProjectParallel } from "../../src/ast/parallel-indexer"
-import { runIndexHealthCheck } from "../../src/brain/brain-index-health"
+import { checkEmbeddingCoverage } from "../../src/brain/brain-index-health"
 import { semanticVectorSearch } from "../../src/intelligence/search/semantic-search"
 import { quickAnswer } from "../../src/intelligence/search/quick-answer"
 import { SemanticEngine } from "../../src/brain/semantic/engine"
@@ -54,8 +54,11 @@ async function main() {
   ck("Q2: giant index present", symbols >= 1000000, "symbols=" + symbols)
 
   // 1. Coverage measured + machine-checkable health line
-  const health = await runIndexHealthCheck(pid)
-  const covCheck = health.checks.find((c: any) => (c.description || "").includes("semantic embeddings"))
+  // Q2 owns the embedding-coverage contract. The full 12-check integrity
+  // report is intentionally not invoked here: it samples and hashes files and
+  // can take minutes on a 1M-symbol corpus, which would make this fallback
+  // verifier depend on unrelated filesystem latency.
+  const covCheck = await checkEmbeddingCoverage(raw, pid)
   ck("Q2: health has an embedding-coverage check line", !!covCheck, "found=" + !!covCheck)
   if (covCheck) {
     const desc: string = covCheck.description || ""
@@ -89,14 +92,30 @@ async function main() {
   // 5. tfidf/local labels excluded from dense cosine (deterministic temp index)
   const tmp = mkdtempSync(path.join(tmpdir(), "m19q2-"))
   try {
-    cpSync("$HOME/fixtures/repositories/clojure", tmp, { recursive: true })
+    // This is deliberately a tiny real production-pipeline fixture. The
+    // mechanism proof needs one resolvable symbol, not a copied repository;
+    // copying Clojure made Q2 depend on unrelated corpus size and could stall
+    // for minutes before reaching the deterministic semantic assertions.
+    writeFileSync(path.join(tmp, "fixture.ts"), [
+      "export class VirtualFile {",
+      "  constructor(public readonly path: string) {}",
+      "  open(): string { return this.path }",
+      "}",
+      "export function makeVirtualFile(path: string): VirtualFile {",
+      "  return new VirtualFile(path)",
+      "}",
+      "",
+    ].join("\\n"))
     const tPid = getProjectId(tmp)
     process.env.BB_EMBEDDING_BATCH_LIMIT = "1"
-    await indexProjectParallel(tPid, tmp, {})
-    delete process.env.BB_EMBEDDING_BATCH_LIMIT
+    try {
+      await indexProjectParallel(tPid, tmp, {})
+    } finally {
+      delete process.env.BB_EMBEDDING_BATCH_LIMIT
+    }
     const tRaw = await BrainDatabase.getRawInstance(tPid)
-    const fakeSym = (tRaw.prepare("SELECT id FROM brain_symbol WHERE project_id=? LIMIT 1").get(tPid) as any).id
-    ck("Q2: temp index seeded for mechanism proof", !!fakeSym, "sym=" + fakeSym)
+    const fakeSym = (tRaw.prepare("SELECT id FROM brain_symbol WHERE project_id=? AND name=? LIMIT 1").get(tPid, "VirtualFile") as any)?.id
+    ck("Q2: temp production fixture seeded for mechanism proof", !!fakeSym, "sym=" + fakeSym)
 
     // Patch the engine deterministically so the dense path is fully offline.
     const realEmbed = SemanticEngine.embed.bind(SemanticEngine)
