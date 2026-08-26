@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto"
+import { execFileSync } from "node:child_process"
 import { readFileSync } from "node:fs"
 import path from "node:path"
 
@@ -23,4 +24,22 @@ export function securitySourceFingerprint(root: string): string {
     hash.update("\0")
   }
   return hash.digest("hex")
+}
+
+export function securityRelevantWorkingTreeChanges(root: string): string[] {
+  try {
+    const output = execFileSync("git", ["status", "--porcelain", "--untracked-files=all"], {
+      cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"],
+    })
+    const lines = output.split("\n")
+    const paths = new Set<string>(SECURITY_EVIDENCE_PATHS)
+    const dirty: string[] = []
+    for (const line of lines) {
+      const file = line.slice(3).trim()
+      if (paths.has(file) || file.startsWith("script/m20/verify-security-")) dirty.push(file)
+    }
+    return dirty
+  } catch {
+    return ["git-status-unavailable"]
+  }
 }

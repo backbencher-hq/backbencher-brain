@@ -6,7 +6,7 @@ import { getProjectId } from "../../src/cli/index"
 import { indexProjectParallel } from "../../src/ast/parallel-indexer"
 import { BrainDatabase } from "../../src/brain/database"
 import { analyzeTaintFlows } from "../../src/intelligence/security/taint"
-import { securitySourceFingerprint } from "../../src/intelligence/security/evidence"
+import { securityRelevantWorkingTreeChanges, securitySourceFingerprint } from "../../src/intelligence/security/evidence"
 
 let checks = 0
 let passed = 0
@@ -58,11 +58,11 @@ try {
 const failed = checks - passed
 const result = {
   issue: "M20.S1", code: "S1", milestone: "M20",
-  status: failed === 0 ? "verified" : "known-gap",
+  status: failed === 0 && securityRelevantWorkingTreeChanges(path.resolve(".")).length === 0 ? "verified" : "known-gap",
   checks, passed, failed, negativeCases,
   currentCommit: (() => { try { return Bun.spawnSync(["git", "rev-parse", "HEAD"]).stdout.toString().trim() } catch { return "unknown" } })(),
   sourceFingerprint: securitySourceFingerprint(path.resolve(".")),
-  workingTreeRelevantChanges: [],
+  workingTreeRelevantChanges: securityRelevantWorkingTreeChanges(path.resolve(".")),
   verifierCommand: "bun run script/m20/verify-security-flow-boundary.ts",
   evidenceFile: "S1.json",
   generatedAt: new Date().toISOString(),
