@@ -17,20 +17,20 @@
       "ramGb": 15.5
     },
     "symbolSearchMs": {
-      "median": 442,
-      "p95": 546,
+      "median": 987,
+      "p95": 2924,
       "runs": 25
     },
     "contentSearchMatchedMs": {
-      "median": 56,
-      "p95": 87,
+      "median": 104,
+      "p95": 2414,
       "runs": 5
     },
-    "contentSearchMissMs": 43,
+    "contentSearchMissMs": 161,
     "semanticFallback": {
       "method": "keyword-fallback",
       "reason": "no-matching-model-embeddings",
-      "ms": 1259
+      "ms": 1543
     }
   },
   "negatives": [
@@ -39,5 +39,5 @@
     "Top-hit presence is asserted for verified names, not full-repo behavioral recall.",
     "Content search on a giant corpus bounds substring phases at PHASE_CAP=2000 candidates; a no-match text query is a single bounded full scan (~6-7s on 1M symbols, measured) and is recorded honestly rather than hidden."
   ],
-  "generatedAt": "2026-08-26T04:41:43.205Z"
+  "generatedAt": "2026-08-26T15:23:28.937Z"
 }
