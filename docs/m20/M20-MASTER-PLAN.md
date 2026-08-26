@@ -92,7 +92,7 @@ The preceding M13 probes are baseline observations only. The current review
 found these concrete gaps:
 
 - migration ordering is dependency-count sorting, not topological ordering;
-- migration effort parses digits from strategy prose;
+- migration methodology must be derived from structured relationship/dependency evidence rather than strategy prose; M20.M2 owns this boundary;
 - pattern parameter analysis limits rows before eligibility evaluation;
 - orphan detection cannot observe dynamic/reflection/configuration wiring;
 - security adversarial checks contain unconditional/tautological assertions;
