@@ -18,6 +18,7 @@ export interface RuleFinding {
   evidence: Array<{ type: string; description: string }>
 }
 
+
 interface RuleOptions {
   confidenceThreshold: number
   maxResults: number
@@ -32,7 +33,6 @@ const GOD_CLASS_MEMBER_THRESHOLD = 10
 export async function detectIndexRules(projectId: ProjectID, options: RuleOptions): Promise<RuleFinding[]> {
   const findings: RuleFinding[] = []
   const raw = await BrainDatabase.getRawInstance(projectId)
-  const budget = Math.max(1, Math.floor(options.maxResults / 2))
 
   if (options.includeAntiPatterns) {
     // 1. High-complexity functions (cyclomatic from the analyzer).
@@ -40,8 +40,8 @@ export async function detectIndexRules(projectId: ProjectID, options: RuleOption
       "SELECT s.name, s.complexity, f.relative_path AS file, COALESCE(s.line_start, 0) AS line " +
         "FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id " +
         "WHERE s.project_id = ? AND s.complexity IS NOT NULL AND s.complexity >= ? " +
-        "ORDER BY s.complexity DESC LIMIT ?",
-    ).all(projectId, COMPLEXITY_THRESHOLD, budget) as Array<{ name: string; complexity: number; file: string; line: number }>
+        "ORDER BY s.complexity DESC",
+    ).all(projectId, COMPLEXITY_THRESHOLD) as Array<{ name: string; complexity: number; file: string; line: number }>
     for (const row of complex) {
       if (row.complexity / COMPLEXITY_THRESHOLD < options.confidenceThreshold) continue
       findings.push({
@@ -60,8 +60,8 @@ export async function detectIndexRules(projectId: ProjectID, options: RuleOption
       "SELECT s.name, s.parameters, f.relative_path AS file, COALESCE(s.line_start, 0) AS line " +
         "FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id " +
         "WHERE s.project_id = ? AND s.parameters IS NOT NULL AND s.parameters != '[]' " +
-        "LIMIT ?",
-    ).all(projectId, Math.max(budget * 4, 100)) as Array<{ name: string; parameters: string; file: string; line: number }>
+        "ORDER BY s.id",
+    ).all(projectId) as Array<{ name: string; parameters: string; file: string; line: number }>
     for (const row of paramRows) {
       let params: string[] = []
       try { params = JSON.parse(row.parameters) } catch { continue }
@@ -83,8 +83,8 @@ export async function detectIndexRules(projectId: ProjectID, options: RuleOption
         "FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id " +
         "LEFT JOIN brain_symbol m ON m.owner_symbol_id = s.id AND m.project_id = s.project_id " +
         "WHERE s.project_id = ? AND s.symbol_type IN ('class','interface','struct','trait','enum') " +
-        "GROUP BY s.id HAVING COUNT(m.id) > ? ORDER BY members DESC LIMIT ?",
-    ).all(projectId, GOD_CLASS_MEMBER_THRESHOLD, budget) as Array<{ name: string; file: string; line: number; members: number }>
+        "GROUP BY s.id HAVING COUNT(m.id) > ? ORDER BY members DESC",
+    ).all(projectId, GOD_CLASS_MEMBER_THRESHOLD) as Array<{ name: string; file: string; line: number; members: number }>
     for (const row of godClasses) {
       if (row.members / 20 < options.confidenceThreshold) continue
       findings.push({
@@ -104,8 +104,8 @@ export async function detectIndexRules(projectId: ProjectID, options: RuleOption
     const frameworks = raw.prepare(
       "SELECT framework_type, COUNT(*) c FROM brain_file " +
         "WHERE project_id = ? AND framework_type IS NOT NULL AND framework_type NOT IN ('', 'unknown') " +
-        "GROUP BY framework_type ORDER BY c DESC LIMIT ?",
-    ).all(projectId, budget) as Array<{ framework_type: string; c: number }>
+        "GROUP BY framework_type ORDER BY c DESC",
+    ).all(projectId) as Array<{ framework_type: string; c: number }>
     for (const fw of frameworks) {
       const files = raw.prepare(
         "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
