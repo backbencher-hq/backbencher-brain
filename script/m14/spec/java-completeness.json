@@ -1,0 +1,129 @@
+{
+  "_comment": "#419 java pilot — complete classification of ALL 143 public named node types in the pinned tree-sitter-java wasm. Every type is bucketed; a type in no bucket is itself a gate failure (silence is guilt). Buckets: handled_verified (analyzer emits correctly, probe/fixture-confirmed), internal_silent (container/literal/keyword correctly emitting nothing itself), gap (confirmed missing emission, numbered G1..), design_decision (owner ruling required before closure). Generated mechanically + probe-verified 2026-08-26 (see script/m14/completeness-inventory.ts).",
+
+  "handled_verified": {
+    "_description": "Node types whose required emissions are produced and verified by probes and/or existing F3 fixtures",
+    "types": [
+      "class_declaration", "interface_declaration", "enum_declaration", "record_declaration",
+      "annotation_type_declaration", "method_declaration", "constructor_declaration",
+      "compact_constructor_declaration", "field_declaration", "constant_declaration",
+      "enum_constant", "annotation_type_element_declaration",
+      "package_declaration", "import_declaration",
+      "modifiers", "marker_annotation", "annotation", "annotation_argument_list", "element_value_pair",
+      "formal_parameters", "formal_parameter", "receiver_parameter", "spread_parameter",
+      "variable_declarator", "local_variable_declaration",
+      "superclass", "super_interfaces", "extends_interfaces", "type_list", "permits",
+      "type_parameters", "type_parameter",
+      "method_invocation", "object_creation_expression", "field_access",
+      "method_reference", "cast_expression", "instanceof_expression", "class_literal",
+      "array_creation_expression", "lambda_expression",
+      "ternary_expression", "binary_expression", "assignment_expression",
+      "switch_expression", "switch_rule", "switch_block_statement_group",
+      "if_statement", "while_statement", "do_statement", "for_statement", "enhanced_for_statement",
+      "pattern", "type_pattern",
+      "type_identifier", "scoped_type_identifier", "generic_type", "array_type", "annotated_type",
+      "integral_type", "floating_point_type", "boolean_type", "void_type",
+      "throws", "catch_clause", "catch_type", "catch_formal_parameter",
+      "identifier", "scoped_identifier", "enum_body"
+    ],
+    "_verified_by": "live analyzer probes on synthetic fixtures (record patterns aside) + existing F3 fixtures + differential corpus (grails-core@a83f87480e)"
+  },
+
+  "internal_silent": {
+    "_description": "Containers, wrappers, grouping nodes, literals, and keywords whose named children are walked independently — emitting nothing at this node is correct",
+    "types": [
+      "program", "block", "expression_statement", "labeled_statement",
+      "argument_list", "type_arguments", "wildcard", "dimensions", "dimensions_expr",
+      "parenthesized_expression", "condition", "inferred_parameters",
+      "switch_block", "switch_label", "guard",
+      "record_pattern_body", "record_pattern_component",
+      "enum_body_declarations", "class_body", "constructor_body", "interface_body",
+      "annotation_type_body", "module_body",
+      "type_bound",
+      "resource_specification", "resource", "finally_clause",
+      "try_statement", "synchronized_statement",
+      "return_statement", "break_statement", "continue_statement", "yield_statement",
+      "unary_expression", "update_expression",
+      "array_initializer", "element_value_array_initializer",
+      "string_fragment", "multiline_string_fragment", "escape_sequence",
+      "underscore_pattern", "asterisk",
+      "decimal_integer_literal", "hex_integer_literal", "octal_integer_literal", "binary_integer_literal",
+      "decimal_floating_point_literal", "hex_floating_point_literal",
+      "true", "false", "null_literal", "character_literal",
+      "string_literal", "string_interpolation", "template_expression",
+      "this", "super", "static_initializer",
+      "line_comment", "block_comment"
+    ],
+    "_notes": {
+      "type_bound": "generic bound container (T extends Number) — the bound TYPE reference is not emitted; tracked as design_decision G6, the container itself is correctly silent",
+      "template_expression": "Java 21 string templates / text blocks — embedded expressions are walked and their calls/uses emitted; the template wrapper itself is silent",
+      "synchronized_statement": "not a decision point per McCabe; block body walked",
+      "static_initializer": "symbol: null per spec table; body IS walked but calls inside it are lost — tracked as gap G4"
+    }
+  },
+
+  "gap": {
+    "_description": "Confirmed missing emissions (probe-verified: the analyzer emits nothing where the spec table requires an emission)",
+    "gaps": [
+      {
+        "id": "G1",
+        "node_type": "array_access",
+        "missing": "Uses relationship on the array expression",
+        "evidence": "probe: class A { int[] xs; void f(int i) { xs[i] = 5; int v = xs[i]; } } emits contains only — no uses on xs for reads or writes",
+        "spec_row": "expressions_requiring_uses_or_calls: array_access",
+        "severity": "medium"
+      },
+      {
+        "id": "G2",
+        "node_type": "explicit_constructor_invocation",
+        "missing": "Calls relationship for super(...) / this(...)",
+        "evidence": "probe: class A { A() { super(); } } emits no calls",
+        "spec_row": "declarations.constructor_declaration — constructor delegation is a call edge",
+        "severity": "medium"
+      },
+      {
+        "id": "G3",
+        "node_type": "record_pattern",
+        "missing": "Type reference for the record type in instanceof Point(int x, int y)",
+        "evidence": "probe: if (o instanceof Point p) emits instanceof_check, but if (o instanceof Point(int a, int b)) emits nothing",
+        "spec_row": "expressions_requiring_uses_or_calls: instanceof_expression (record-pattern form)",
+        "severity": "medium"
+      },
+      {
+        "id": "G4",
+        "node_type": "method_invocation (non-method scope)",
+        "missing": "Calls relationships for invocations outside method bodies: static initializers, instance initializers, field initializers, enum constant bodies",
+        "evidence": "probes: static { x = compute(); }, { x = compute(); }, static int x = compute(), enum { int x = compute(); } all emit no calls. Root cause: src/ast/real-java-analyzer.ts method_invocation handler guards on parentContext.kind === SymbolKind.Method, so calls attributed to no method scope are dropped; qualified_calls likewise never recorded",
+        "spec_row": "expressions_requiring_uses_or_calls: method_invocation (all statement/expression positions)",
+        "severity": "high"
+      }
+    ]
+  },
+
+  "design_decision": {
+    "_description": "Items where the correct emission is a ruling, not a defect. Closure requires an explicit owner decision recorded here",
+    "decisions": [
+      {
+        "id": "G5",
+        "node_type": "module_declaration, requires_module_directive, requires_modifier, exports_module_directive, opens_module_directive, uses_module_directive, provides_module_directive",
+        "question": "module-info.java currently emits zero symbols and zero relationships. Options: (a) declare module-info out of scope (documented limitation), (b) emit requires/exports/uses targets as References/imports (dependency edges)",
+        "recommendation": "(a) declare out of scope — module-info is rare, low-value for AI code understanding, and the analyzer already extracts imports elsewhere",
+        "status": "PENDING OWNER"
+      },
+      {
+        "id": "G6",
+        "node_type": "type_bound",
+        "question": "generic bound types (class Box<T extends Number & Comparable<T>>) emit no type references for Number/Comparable. Options: (a) emit declared_type references for bounds, (b) declare limitation (bounds captured only as type_parameter names)",
+        "recommendation": "(b) declare limitation — bounds are rarely load-bearing for AI consumers; type_parameters payload already records parameter names",
+        "status": "PENDING OWNER"
+      },
+      {
+        "id": "S1",
+        "node_type": "throw_statement, assert_statement, try_with_resources_statement",
+        "question": "java-spec-table.json lists these in statements_affecting_complexity, but calculateJavaMethodComplexity does not count them (standard McCabe counts only if/while/for/do/case/catch/&&/||/ternary). Either the spec table over-claims or the analyzer under-counts",
+        "recommendation": "correct the spec table (remove from complexity list) — matches the analyzer, matches textbook McCabe, and keeps complexity comparable across JVM languages (CC1 contract)",
+        "status": "PENDING OWNER"
+      }
+    ]
+  }
+}
