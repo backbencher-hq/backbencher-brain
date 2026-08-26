@@ -1,0 +1,72 @@
+{
+  "_comment": "Classification of all 87 previously-unmapped java grammar node types. Each is either INTERNAL (container/literal/keyword whose children are processed separately - correctly emits nothing) or GAP (should emit something but currently does not).",
+
+  "internal_correctly_silent": {
+    "_description": "Containers, wrappers, keywords, and grouping nodes whose children are walked separately",
+    "types": [
+      "program", "block", "expression_statement", "labeled_statement",
+      "argument_list", "type_arguments", "wildcard", "dimensions", "dimensions_expr",
+      "parenthesized_expression", "condition", "inferred_parameters",
+      "switch_block", "switch_label", "guard",
+      "record_pattern_body", "record_pattern_component",
+      "enum_body", "enum_body_declarations",
+      "class_body", "constructor_body", "interface_body", "annotation_type_body",
+      "type_parameters", "type_parameter", "type_bound",
+      "resource_specification", "resource",
+      "element_value_array_initializer", "array_initializer",
+      "module_body",
+      "variable_declarator", "local_variable_declaration",
+      "catch_formal_parameter", "catch_type", "finally_clause",
+      "explicit_constructor_invocation",
+      "string_fragment", "multiline_string_fragment", "escape_sequence",
+      "underscore_pattern", "asterisk"
+    ],
+    "_reason": "Pure containers/wrappers - their named children are visited independently by the main walk and classified there"
+  },
+
+  "literals_correctly_silent": {
+    "_description": "Literal values - they ARE the data, never symbols or relationships",
+    "types": [
+      "decimal_integer_literal", "hex_integer_literal", "octal_integer_literal", "binary_integer_literal",
+      "decimal_floating_point_literal", "hex_floating_point_literal",
+      "true", "false", "null_literal", "character_literal",
+      "string_literal", "string_interpolation",
+      "this", "super"
+    ],
+    "_reason": "Values consumed by their parent expressions, not independent constructs"
+  },
+
+  "keywords_tokens": {
+    "_description": "Reserved words that appear as leaf nodes - not constructs",
+    "types": [
+      "line_comment", "block_comment"
+    ],
+    "_reason": "Comments are consumed by javadoc extraction at the declaration level, not independently"
+  },
+
+  "handled_by_existing_code": {
+    "_description": "Types that DO produce emissions through existing handler code paths",
+    "types": [
+      "identifier",
+      "binary_expression",
+      "unary_expression",
+      "update_expression",
+      "array_creation_expression",
+      "class_literal",
+      "template_expression",
+      "pattern", "type_pattern", "record_pattern",
+      "return_statement", "break_statement", "continue_statement", "yield_statement",
+      "synchronized_statement", "try_statement",
+      "throws",
+      "scoped_identifier",
+      "extends_interfaces",
+      "enum_constant", "constant_declaration",
+      "annotation_type_element_declaration",
+      "requires_module_directive", "requires_modifier",
+      "exports_module_directive", "opens_module_directive",
+      "uses_module_directive", "provides_module_directive"
+    ],
+    "_reason": "Either produce emissions through existing walk paths OR are sub-expressions consumed by parent handlers",
+    "_status": "NEEDS VERIFICATION - confirm each actually produces expected output on test fixtures"
+  }
+}
