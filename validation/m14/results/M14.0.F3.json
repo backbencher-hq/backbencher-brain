@@ -2,7 +2,7 @@
   "checks": [
     {
       "description": "javascript adversarial fixtures",
-      "detail": "24/24 fixtures pass",
+      "detail": "25/25 fixtures pass",
       "id": "fixtures-javascript",
       "status": "pass"
     },
@@ -62,8 +62,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "a8473fe6ad7226d4a7321008104aeb70f7c05460",
-  "committedAt": "2026-08-26T02:35:38+02:00",
+  "commit": "f8acca3f438eff908898d19de8b54580c00dd075",
+  "committedAt": "2026-08-26T02:42:01+02:00",
   "data": {
     "details": [
       {
@@ -158,6 +158,11 @@
       },
       {
         "fixture": "javascript/payload-docs",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/payload-pins",
         "ok": true,
         "problems": []
       },
@@ -950,7 +955,7 @@
       },
       "javascript": {
         "fail": 0,
-        "pass": 24
+        "pass": 25
       },
       "kotlin": {
         "fail": 0,
