@@ -32,19 +32,19 @@
     },
     {
       "description": "groovy adversarial fixtures",
-      "detail": "23/23 fixtures pass",
+      "detail": "24/24 fixtures pass",
       "id": "fixtures-groovy",
       "status": "pass"
     },
     {
       "description": "kotlin adversarial fixtures",
-      "detail": "23/23 fixtures pass",
+      "detail": "24/24 fixtures pass",
       "id": "fixtures-kotlin",
       "status": "pass"
     },
     {
       "description": "scala adversarial fixtures",
-      "detail": "23/23 fixtures pass",
+      "detail": "24/24 fixtures pass",
       "id": "fixtures-scala",
       "status": "pass"
     },
@@ -62,8 +62,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "a453038a83d0ec1256f6988f20ee691fa8b1a101",
-  "committedAt": "2026-08-26T05:07:57+02:00",
+  "commit": "6d6610794a6976b7106ec386c1cc0a48c30e1f60",
+  "committedAt": "2026-08-26T05:12:11+02:00",
   "data": {
     "details": [
       {
@@ -692,6 +692,11 @@
         "problems": []
       },
       {
+        "fixture": "groovy/type-usage-graph",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "kotlin/annotation-only-frameworks",
         "ok": true,
         "problems": []
@@ -798,6 +803,11 @@
       },
       {
         "fixture": "kotlin/safe-nav-chain",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/type-usage-graph",
         "ok": true,
         "problems": []
       },
@@ -922,6 +932,11 @@
         "problems": []
       },
       {
+        "fixture": "scala/type-usage-graph",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "c/complexity-and-payloads",
         "ok": true,
         "problems": []
@@ -968,7 +983,7 @@
       },
       "groovy": {
         "fail": 0,
-        "pass": 23
+        "pass": 24
       },
       "java": {
         "fail": 0,
@@ -980,11 +995,11 @@
       },
       "kotlin": {
         "fail": 0,
-        "pass": 23
+        "pass": 24
       },
       "scala": {
         "fail": 0,
-        "pass": 23
+        "pass": 24
       },
       "svelte": {
         "fail": 0,

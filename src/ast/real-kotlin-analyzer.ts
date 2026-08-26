@@ -192,6 +192,19 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     // --- END KOTLIN CALL GRAPH EXTRACTION ---
 
+    // --- DECLARED-TYPE REFERENCE GRAPH ---
+    // Every declaration position (constructor params, function params,
+    // properties, extension receivers, return types, as-casts, is-checks)
+    // references its named types. This graph was silently absent until M14 —
+    // the corpus oracle never checked it. Generics expand to base + all
+    // arguments; nullable wrappers descend; type_identifiers are the only
+    // name-bearing leaves so primitives are correctly silent.
+    try {
+      this.extractDeclaredTypeRefs(rootNode, relationships)
+    } catch (e) {
+      // Graceful degradation
+    }
+
 
     // Add Contains + Overrides + DependsOn. `ownerName` is the enclosing type
     // name — NOT scope — so top-level declarations (no owner) never produce a
@@ -1762,10 +1775,124 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
   // ======================== ADDITIONAL KOTLIN HELPER METHODS ========================
 
   /**
+   * Declared-type reference graph (M14). Emits References edges from the
+   * enclosing function/class to every named type used in a declaration
+   * position. Exact-triple dedupe guards against nested-declaration overlap
+   * (e.g. lambda params inside a property initializer).
+   */
+  private extractDeclaredTypeRefs(rootNode: Node, relationships: ASTEngine.UniversalRelationship[]): void {
+    const emitted = new Set<string>()
+    const collectTypeNames = (n: Node, out: string[]): void => {
+      if (n.type === "type_identifier") {
+        if (!out.includes(n.text)) out.push(n.text)
+        return
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) collectTypeNames(c, out)
+      }
+    }
+    const resolveSource = (start: Node): string => {
+      let p: Node | null = start.parent
+      while (p) {
+        if (p.type === "function_declaration" || p.type === "class_declaration" || p.type === "object_declaration") {
+          const name = this.findChildByType(p, ["simple_identifier", "type_identifier"])
+          if (name) return name.text
+        }
+        p = p.parent
+      }
+      return "Global"
+    }
+    const emit = (decl: Node, typeRoots: (Node | null)[], kind: string, relType = "declared_type"): void => {
+      const source = resolveSource(decl)
+      for (const tr of typeRoots) {
+        if (!tr) continue
+        const names: string[] = []
+        collectTypeNames(tr, names)
+        for (const t of names) {
+          const key = `${source}|${t}|${kind}`
+          if (emitted.has(key)) continue
+          emitted.add(key)
+          relationships.push({
+            source,
+            target: t,
+            type: ASTEngine.RelationshipType.References,
+            confidence: 0.95,
+            metadata: { relationshipType: relType, declaredOn: decl.type },
+          })
+        }
+      }
+    }
+
+    const walk = (n: Node): void => {
+      switch (n.type) {
+        case "class_parameter":
+        case "parameter": {
+          // Type clause = everything except the name identifier and binding
+          // keywords; collecting all type_identifiers in the subtree is exact
+          // because only types are type_identifiers.
+          emit(n, [n], n.type)
+          break
+        }
+        case "variable_declaration": {
+          emit(n, [n], "variable_declaration")
+          break
+        }
+        case "as_expression":
+        case "check_expression": {
+          // Rightmost operand is the target type (`x as T`, `o is T`).
+          if (n.namedChildCount >= 2) {
+            const right = n.namedChild(n.namedChildCount - 1)
+            emit(n, [right], n.type, n.type)
+          }
+          break
+        }
+        case "function_declaration": {
+          // Return type: first user/nullable/function-type direct child AFTER
+          // the parameter list; receiver type: such a child BEFORE the name.
+          let sawParams = false
+          let sawName = false
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (!c) continue
+            if (c.type === "function_value_parameters") { sawParams = true; continue }
+            if (c.type === "simple_identifier" || c.type === "type_identifier") {
+              if (!sawName && !sawParams && !c.text.startsWith("`")) {
+                // First identifier is the name unless a user_type already
+                // preceded it (extension receivers precede the name).
+                if (i > 0 && n.namedChild(i - 1)?.type === "user_type") {
+                  emit(n, [c], "receiver_type")
+                }
+                sawName = true
+                continue
+              }
+              continue
+            }
+            if ((c.type === "user_type" || c.type === "nullable_type" || c.type === "function_type")) {
+              if (!sawName && !sawParams) {
+                emit(n, [c], "receiver_type")
+                sawName = true
+              } else if (sawParams) {
+                emit(n, [c], "return_type", "return_type")
+                break
+              }
+            }
+          }
+          break
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) walk(c)
+      }
+    }
+    walk(rootNode)
+  }
+
+  /**
    * Kotlin Call Expression Builder
    */
-  private buildKotlinCallExpression(node: Node): string {
-    switch (node.type) {
+  private buildKotlinCallExpression(node: Node): string {    switch (node.type) {
       case "simple_identifier":
       case "identifier":
         return node.text

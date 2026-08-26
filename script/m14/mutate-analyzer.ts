@@ -115,6 +115,27 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => x.metadata?.relationshipType !== "declared_type") }),
   },
   {
+    id: "kotlin/drop-declared-types",
+    language: "kotlin",
+    defectClass: "relationship-loss",
+    description: "drops declared_type/return_type/as/check references (silent type-usage-graph bug class)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !["declared_type", "return_type", "as_expression", "check_expression"].includes(String(x.metadata?.relationshipType))) }),
+  },
+  {
+    id: "groovy/drop-declared-types",
+    language: "groovy",
+    defectClass: "relationship-loss",
+    description: "drops declared_type/throws_type references (silent type-usage-graph bug class)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !["declared_type", "throws_type", "instanceof_expression"].includes(String(x.metadata?.relationshipType))) }),
+  },
+  {
+    id: "scala/drop-declared-types",
+    language: "scala",
+    defectClass: "relationship-loss",
+    description: "drops declared_type/throws/cast/check references (silent type-usage-graph bug class)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !["declared_type", "return_type", "throws_type", "cast_target", "instanceof_check"].includes(String(x.metadata?.relationshipType))) }),
+  },
+  {
     id: "typescript/drop-qualified-calls",
     language: "typescript",
     defectClass: "symbol-payload-loss",
