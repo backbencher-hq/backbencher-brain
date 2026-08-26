@@ -12,7 +12,6 @@ export const SECURITY_EVIDENCE_PATHS = [
   "src/mcp/tool-registry.ts",
   "docs/BB_SECURITY.md",
   "docs/tools/bb_security.md",
-  "script/verify-security.ts",
 ] as const
 
 export function securitySourceFingerprint(root: string): string {
