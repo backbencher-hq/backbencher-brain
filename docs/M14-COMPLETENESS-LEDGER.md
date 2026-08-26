@@ -284,7 +284,7 @@ INVENTORY-DONE / GAPS-CLOSED / CONFORMANT.
 | java | CONFORMANT (2026-08-26) | 143/143 types | 11/11 (imports pinned via java/import-edges + mutant) | 7/7 Matrix 1b rows (parameters pinned via java/parameters-payload + mutant) | 2 tiers | grails-core 100%/0% | 7.9 ms/file | java.md + real-java-analyzer.md | 3/3 checks |
 | groovy | CONFORMANT (2026-08-27, owner-approved plan; second reference implementation) | 151/151 types | 9/9 (contains-edges + import-edges pins) | 7/7 (parameters-payload incl. varargs) | 3 tiers (structural, import_based, usage_contextual) | grails-core 100%/0% | 7.5 ms/file | groovy.md + real-groovy-analyzer.md | 3/3 checks |
 | kotlin | CONFORMANT (2026-08-27, owner-approved plan; third reference implementation) | 152/152 types | 9/9 (instantiates-edges + import-edges pins) | 7/7 (kdoc comment pin, visibility-payload, parameters-payload) | 3 tiers (structural, usage_contextual, import_based) | Exposed:kotlin 100%/0% (floor residuals were ORACLE defects — fixed in differential.ts) | 25.5 ms/file | kotlin.md + real-kotlin-analyzer.md | 3/3 checks |
-| scala | NOT-STARTED | — | — | — | — | — | — | — | — |
+| scala | INVENTORY-DONE (2026-08-27, G1-G9 gap list awaiting owner review) | 171/171 types | 7/9 pinned (implements + imports unpinned) | 5/7 pinned (visibility/parameters missing) | 0 tiers pinned | scala3:scala 100%/0% (baseline refreshed — stale 3-missing row predated later fixes) | 9.2 ms/file | scala.md + real-scala-analyzer.md | 3/3 checks |
 | typescript | NOT-STARTED | — | — | — | — | — | — | — | — |
 | javascript | NOT-STARTED | — | — | — | — | — | — | — | — |
 | vue | NOT-STARTED | — | — | — | — | — | — | — | — |
