@@ -31,6 +31,7 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   groovy: { wasm: "tree-sitter-groovy.wasm", analyzerFile: "real-groovy-analyzer", className: "RealGroovyAnalyzer", ext: "groovy" },
   vue: { wasm: "tree-sitter-vue.wasm", analyzerFile: "real-vue-analyzer", className: "RealVueAnalyzer", ext: "vue" },
   svelte: { wasm: "tree-sitter-svelte.wasm", analyzerFile: "real-svelte-analyzer", className: "RealSvelteAnalyzer", ext: "svelte" },
+  cpp: { wasm: "tree-sitter-cpp.wasm", analyzerFile: "real-cpp-analyzer", className: "RealCppAnalyzer", ext: "cc" },
 }
 
 function seededPick<T>(items: T[], n: number, seedStr: string): T[] {
@@ -43,7 +44,10 @@ function seededPick<T>(items: T[], n: number, seedStr: string): T[] {
   }
   return idx.slice(0, n).map(i => items[i])
 }
-function lastSegment(name: string): string { return name.split(".").pop() ?? name }
+function lastSegment(name: string): string {
+  const parts = name.split(/::|\./).filter(Boolean)
+  return parts[parts.length - 1] ?? name
+}
 function normTarget(t: string): string {
   // scala type args use square brackets; multi-line constructs can leave a
   // trailing unbalanced "[" in raw-text targets (List[ -> List)
@@ -152,14 +156,36 @@ function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
   }
   const walk = (n: any) => {
     const t = n.type
-    if (/^(class|interface|record|trait|object)_declaration$|^enum_declaration$|^class_definition$|^trait_definition$|^object_definition$/.test(t)) {
+    if (/^(class|interface|record|trait|object)_declaration$|^enum_declaration$|^class_definition$|^trait_definition$|^object_definition$|^(class|struct|union)_specifier$/.test(t)) {
       const nameNode =
         n.childForFieldName?.("name") ??
         n.namedChildren.find((c: any) => c.type === "identifier" || c.type === "type_identifier")
       const clsName = nameNode?.text ?? "?"
       // extends side: superclass (classes), extends_interfaces+type_list
-      // (java-style interfaces), extends_type_clause (typescript interfaces)
+      // (java-style interfaces), extends_type_clause (typescript interfaces),
+      // base_class_clause (cpp - flat children, access specifiers skipped)
       const sup = n.childForFieldName?.("superclass") ?? n.namedChildren.find((c: any) => c.type === "superclass" || c.type === "extends_interfaces" || c.type === "extends_type_clause")
+      const cppClause = t === "class_specifier" || t === "struct_specifier"
+        ? n.namedChildren.find((c: any) => c.type === "base_class_clause")
+        : undefined
+      if (cppClause) {
+        for (const c of cppClause.namedChildren) {
+          if (!c || c.type === "access_specifier") continue
+          // base NAME only: the first type node inside the child. Blanket
+          // collection descended into template argument lists and pushed
+          // TYPE PARAMETERS (Char, T...) as fake bases.
+          const typeNode =
+            c.childForFieldName?.("name") ??
+            c.namedChildren.find((x: any) => /type_identifier|qualified_identifier|template_type/.test(x.type)) ?? c
+          let baseName = typeNode.text
+          const lt2 = baseName.indexOf("<")
+          if (lt2 !== -1) baseName = baseName.slice(0, lt2)
+          baseName = lastSegment(baseName)
+          if (baseName && /^[A-Za-z_]/.test(baseName)) {
+            edges.push({ label: "extends", from: clsName, target: baseName })
+          }
+        }
+      }
       if (sup) {
         if (sup.type === "superclass" || sup.type === "extends_interfaces") collect(sup, "extends", clsName)
         else if (sup.type === "extends_type_clause") {
@@ -264,14 +290,19 @@ function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
         // `new (Backbone.Collection.extend({...}))()`, `new (fn())()` —
         // have no honest target name; deriving their raw expression text
         // fabricated unmatchable oracle edges (lodash corpus).
-        const isNameable = tn.type === "identifier" || tn.type === "member_expression"
+        const isNameable =
+          tn.type === "identifier" || tn.type === "member_expression" ||
+          tn.type === "qualified_identifier" || tn.type === "template_type" ||
+          tn.type === "generic_type" || tn.type === "type_identifier" ||
+          tn.type === "type_descriptor" || tn.type === "primitive_type"
         let name = isNameable ? tn.text : ""
         const lt = name.indexOf("<") !== -1 ? name.indexOf("<") : name.indexOf("(")
         if (lt !== -1) name = name.slice(0, lt)
         // `new` keyword alone is the construction signal - casing is
         // irrelevant (lowercase classes are legal TypeScript)
-        if (isNameable && !GLOBAL_CTORS.has(name.split(".").pop() ?? name) && (/^[A-Za-z_$]/.test(name) || name.includes("."))) {
-          edges.push({ label: "instantiates", from: "(expr)", target: name })
+        if (isNameable && !GLOBAL_CTORS.has(name.split(".").pop() ?? name) && (/^[A-Za-z_$]/.test(name) || name.includes(".") || name.includes("::"))) {
+          // normalize to LEAF segment - analyzers emit leaf names
+          edges.push({ label: "instantiates", from: "(expr)", target: lastSegment(name.split("<")[0].split("(")[0]) })
         }
       }
     }
@@ -340,17 +371,33 @@ function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
   const declParents: { child: string; parent: string }[] = []
   const collectDecl = (n: any) => {
     const t2 = n.type
-    if (/^(class|interface|record|trait|object)_declaration$|^class_definition$|^trait_definition$|^object_definition$/.test(t2)) {
+    if (/^(class|interface|record|trait|object)_declaration$|^class_definition$|^trait_definition$|^object_definition$|^(class|struct|union)_specifier$/.test(t2)) {
       const nameNode = n.childForFieldName?.("name") ?? n.namedChildren.find((c: any) => c.type === "identifier" || c.type === "type_identifier")
       const nm = nameNode?.text
       if (nm && !decls[nm]) {
         decls[nm] = { parents: [], methods: new Set() }
-        const body = n.namedChildren.find((c: any) => /body/.test(c.type))
+        // cpp classes use field_declaration_list (no 'body' substring)
+        const body = n.namedChildren.find((c: any) => /body|field_declaration_list/.test(c.type))
         if (body) {
           for (let i = 0; i < body.namedChildCount; i++) {
             const m = body.namedChild(i)
-            if (/function_definition|function_declaration|method_declaration|method_definition|method_signature/.test(m?.type ?? "")) {
-              const mn = m.namedChildren.find((c: any) => /identifier/.test(c.type))
+            if (/function_definition|function_declaration|method_declaration|method_definition|method_signature|field_declaration|declaration/.test(m?.type ?? "")) {
+              // cpp class members are field_declaration > function_declarator;
+              // other families keep the name as a direct identifier child.
+              const fd = m.namedChildren.find((c: any) => c.type === "function_declarator")
+              let mn: any = null
+              if (!fd && /field_declaration|declaration/.test(m.type)) continue // member VARIABLE, not a method
+              if (fd) {
+                // cpp nests the name: function_declarator > declarator > field_identifier
+                const st2: any[] = [fd]
+                while (st2.length && !mn) {
+                  const x = st2.pop()!
+                  if (/identifier|field_identifier/.test(x.type)) { mn = x; break }
+                  for (let k = 0; k < x.namedChildCount; k++) st2.push(x.namedChild(k))
+                }
+              } else {
+                mn = m.namedChildren.find((c: any) => /identifier/.test(c.type))
+              }
               // constructors are NOT virtually dispatched - no family
               // analyzer emits ctor-overrides, so truth must not either.
               if (mn && mn.text !== "constructor") decls[nm].methods.add(mn.text)
