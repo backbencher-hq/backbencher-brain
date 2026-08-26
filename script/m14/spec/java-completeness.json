@@ -108,21 +108,24 @@
         "node_type": "module_declaration, requires_module_directive, requires_modifier, exports_module_directive, opens_module_directive, uses_module_directive, provides_module_directive",
         "question": "module-info.java currently emits zero symbols and zero relationships. Options: (a) declare module-info out of scope (documented limitation), (b) emit requires/exports/uses targets as References/imports (dependency edges)",
         "recommendation": "(a) declare out of scope — module-info is rare, low-value for AI code understanding, and the analyzer already extracts imports elsewhere",
-        "status": "PENDING OWNER"
+        "ruling": "(a) DECLARED OUT OF SCOPE — owner approval 2026-08-26. module-info.java is a documented limitation; requires/exports/opens/uses/provides emit no edges by design",
+        "status": "RULED"
       },
       {
         "id": "G6",
         "node_type": "type_bound",
         "question": "generic bound types (class Box<T extends Number & Comparable<T>>) emit no type references for Number/Comparable. Options: (a) emit declared_type references for bounds, (b) declare limitation (bounds captured only as type_parameter names)",
         "recommendation": "(b) declare limitation — bounds are rarely load-bearing for AI consumers; type_parameters payload already records parameter names",
-        "status": "PENDING OWNER"
+        "ruling": "(b) DECLARED LIMITATION — owner approval 2026-08-26. type_bound emits no type references; typeParameters payload carries the parameter names",
+        "status": "RULED"
       },
       {
         "id": "S1",
         "node_type": "throw_statement, assert_statement, try_with_resources_statement",
         "question": "java-spec-table.json lists these in statements_affecting_complexity, but calculateJavaMethodComplexity does not count them (standard McCabe counts only if/while/for/do/case/catch/&&/||/ternary). Either the spec table over-claims or the analyzer under-counts",
         "recommendation": "correct the spec table (remove from complexity list) — matches the analyzer, matches textbook McCabe, and keeps complexity comparable across JVM languages (CC1 contract)",
-        "status": "PENDING OWNER"
+        "ruling": "SPEC TABLE CORRECTED — owner approval 2026-08-26: throw_statement, assert_statement, try_with_resources_statement removed from statements_affecting_complexity in java-spec-table.json",
+        "status": "RULED"
       }
     ]
   }
