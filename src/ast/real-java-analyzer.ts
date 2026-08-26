@@ -206,7 +206,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: moduleName,
             type: ASTEngine.RelationshipType.References,
             confidence: 0.9,
-            metadata: { isJavaImport: true, isWildcard: isAsterisk },
+            metadata: { isJavaImport: true, isWildcard: isAsterisk, isStatic },
           })
         }
       }

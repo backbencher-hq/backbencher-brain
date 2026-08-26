@@ -247,7 +247,40 @@ Gap closure (owner-approved, fixture-first ritual):
 Rulings (owner-approved 2026-08-26): G5 module-info DECLARED OUT OF
 SCOPE; G6 generic type bounds DECLARED LIMITATION; S1 java-spec-table
 corrected (throw/assert/try-with-resources removed from complexity).
-Java fixtures now 29; mutation suite 26/26 caught.
+Java fixtures now 30; mutation suite 27/27 caught.
+
+### Per-language #419 status (state lives in the ledger, never in conversation)
+
+A language is CONFORMANT only when the completeness gate runs in `npm run
+verify` AND all eight A–H sections pass mechanically (evidence M14.0.SPEC,
+sections object). Re-auditing a language whose row is CONFORMANT with a
+green gate is waste — the row says so. Statuses: NOT-STARTED /
+INVENTORY-DONE / GAPS-CLOSED / CONFORMANT.
+
+| Language | #419 status | A | B (11 kinds) | C (payloads) | D (tiers) | E (differential) | F (perf) | G (docs) | H (CC1) |
+|---|---|---|---|---|---|---|---|---|---|
+| java | CONFORMANT (2026-08-26) | 143/143 types | 11/11 (imports pinned via java/import-edges + mutant) | 6/6 Matrix 1b rows | 2 tiers | grails-core 100%/0% | 7.9 ms/file | java.md + real-java-analyzer.md | 3/3 checks |
+| groovy | NOT-STARTED | — | — | — | — | — | — | — | — |
+| kotlin | NOT-STARTED | — | — | — | — | — | — | — | — |
+| scala | NOT-STARTED | — | — | — | — | — | — | — | — |
+| typescript | NOT-STARTED | — | — | — | — | — | — | — | — |
+| javascript | NOT-STARTED | — | — | — | — | — | — | — | — |
+| vue | NOT-STARTED | — | — | — | — | — | — | — | — |
+| svelte | NOT-STARTED | — | — | — | — | — | — | — | — |
+
+Java is the reference implementation: the first analyzer to be L5-closed
+(#251) AND completeness-gated under #419. Its per-section evidence lives in
+`validation/m14/results/M14.0.SPEC.json` (sections object) and is
+regenerated + re-verified on every `npm run verify` run.
+
+B-section closure note (2026-08-26): the imports relationship kind was the
+last unpinned kind — the edge existed but no fixture guarded it, and a
+static-import (import static ...) lost its isStatic flag on the edge
+metadata (only the symbol-level imports entry carried it). Fixed
+fixture-first: java/import-edges authored from JLS 7.5 semantics (single /
+wildcard / static forms, full dotted targets), proved failing on the
+missing isStatic, one-line analyzer fix, mutant java/drop-import-edges
+CAUGHT.
 
 ### #419 section definition — the eight mandatory judgments per language
 

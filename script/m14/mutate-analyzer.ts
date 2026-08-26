@@ -143,6 +143,13 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => (x.metadata ?? {}).relationshipType !== "record_pattern") }),
   },
   {
+    id: "java/drop-import-edges",
+    language: "java",
+    defectClass: "relationship-loss",
+    description: "drops the imports dependency edges (isJavaImport references) — #419 section B imports pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(x.metadata ?? {}).isJavaImport) }),
+  },
+  {
     id: "kotlin/drop-declared-types",
     language: "kotlin",
     defectClass: "relationship-loss",
