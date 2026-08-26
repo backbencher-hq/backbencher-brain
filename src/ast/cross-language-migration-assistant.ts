@@ -5,11 +5,15 @@ import * as Log from "../tool/brain-log"
 const log = Log.create({ service: "cross-language-migration" })
 
 export namespace CrossLanguageMigrationAssistant {
+  export type MigrationUnsupportedReason = "unknown-library" | "ambiguous-mapping" | "unsupported-target" | "same-language" | "missing-symbol"
+
   export interface LibraryEquivalence {
     source: string
-    target: string
-    confidence: number // 0-1
+    target: string | null
+    confidence: number // 0-1; confidence below 0.5 is never a supported mapping
     notes?: string
+    status: "supported" | "uncertain"
+    unsupportedReason?: MigrationUnsupportedReason
   }
 
   export interface MigrationRisk {
@@ -683,6 +687,22 @@ export namespace CrossLanguageMigrationAssistant {
     },
   }
 
+  const MIGRATION_LANGUAGE_ALIASES: Readonly<Record<string, string>> = {
+    ts: "typescript", typescript: "typescript", js: "javascript", javascript: "javascript",
+    py: "python", python: "python", rb: "ruby", ruby: "ruby", cs: "csharp", csharp: "csharp",
+    c_sharp: "csharp", objc: "objectivec", "objective-c": "objectivec", objectivec: "objectivec",
+    fs: "fsharp", fsharp: "fsharp", ps: "powershell", powershell: "powershell",
+  }
+  const SUPPORTED_MIGRATION_LANGUAGES = new Set([
+    ...Object.keys(BASE_POLYGLOT_LIBRARY_DICTIONARY),
+    ...Object.keys(DIRECT_POLYGLOT_LIBRARY_DICTIONARY),
+  ].map((language) => language.toLowerCase()))
+  function normalizeMigrationLanguage(language: string): string | null {
+    const normalized = String(language ?? "").trim().toLowerCase().replace(/[\s-]+/g, "_")
+    const canonical = MIGRATION_LANGUAGE_ALIASES[normalized] ?? normalized.replace(/_/g, "")
+    return SUPPORTED_MIGRATION_LANGUAGES.has(canonical) ? canonical : null
+  }
+
   const POLYGLOT_LIBRARY_DICTIONARY = Object.fromEntries(
     [...new Set([...Object.keys(BASE_POLYGLOT_LIBRARY_DICTIONARY), ...Object.keys(DIRECT_POLYGLOT_LIBRARY_DICTIONARY)])].map(
       (sourceLanguage) => {
@@ -717,8 +737,13 @@ export namespace CrossLanguageMigrationAssistant {
       return null
     }
 
-    const sourceLanguage = symbol.languages[0] || "unknown"
-    if (sourceLanguage.toLowerCase() === targetLanguage.toLowerCase()) {
+    const sourceLanguage = normalizeMigrationLanguage(symbol.languages[0] || "") || String(symbol.languages[0] || "unknown").trim().toLowerCase()
+    const normalizedTargetLanguage = normalizeMigrationLanguage(targetLanguage)
+    if (!normalizedTargetLanguage) {
+      log.warn(`⚠️ Unsupported target language '${targetLanguage}'.`)
+      return null
+    }
+    if (sourceLanguage === normalizedTargetLanguage) {
       log.warn(`⚠️ Source and target languages are the same (${sourceLanguage}). No migration needed.`)
       return null
     }
@@ -762,11 +787,11 @@ export namespace CrossLanguageMigrationAssistant {
 
     // 3. Find Equivalent Libraries
     const dependencies: LibraryEquivalence[] = inferredSourceLibs.map((lib) => {
-      const mapping = lookupEquivalence(sourceLanguage, targetLanguage, lib)
+      const mapping = lookupEquivalence(sourceLanguage, normalizedTargetLanguage, lib)
       if (mapping) {
-        return { source: lib, target: mapping.target, confidence: 0.9, notes: mapping.notes }
+        return { source: lib, target: mapping.target, confidence: 0.9, status: "supported", notes: mapping.notes }
       }
-      return { source: lib, target: "Unknown - Requires Custom Research", confidence: 0.1 }
+      return { source: lib, target: null, confidence: 0, status: "uncertain", unsupportedReason: "unknown-library", notes: "No evidence-backed equivalence is registered; custom research is required." }
     })
 
     // 4. Estimate Effort and Risk
@@ -824,7 +849,7 @@ export namespace CrossLanguageMigrationAssistant {
     return {
       componentName: symbol.name,
       sourceLanguage,
-      targetLanguage,
+      targetLanguage: normalizedTargetLanguage,
       dependencies,
       relationshipEvidence,
       effortEstimateHours,
