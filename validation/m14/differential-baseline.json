@@ -34,8 +34,8 @@
       }
     },
     "Exposed:kotlin": {
-      "missing": 1,
-      "unexplained": 1,
+      "missing": 0,
+      "unexplained": 0,
       "heuristic": 58,
       "perf": {
         "avgMsPerFile": 25.5

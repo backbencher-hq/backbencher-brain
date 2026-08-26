@@ -126,49 +126,65 @@
     "id": "K1",
     "node_type": "indexing_expression,indexing_suffix",
     "severity": "high",
-    "missing": "Uses relationship on the indexed expression (xs[i] reads/writes emit no Uses on xs)"
+    "missing": "Uses relationship on the indexed expression (xs[i] reads/writes emit no Uses on xs)",
+    "status": "CLOSED",
+    "closure": "CLOSED \u2014 fixture-gated fix (kotlin/indexing-uses) + mutant kotlin/drop-expression-uses CAUGHT (2026-08-27). xs[i] reads/writes now emit Uses on the indexed expression."
    },
    {
     "id": "K2",
     "node_type": "constructor_delegation_call,explicit_delegation",
     "severity": "high",
-    "missing": "Calls relationship for constructor delegation (constructor(x) : super(x) / this(1) emit no Calls)"
+    "missing": "Calls relationship for constructor delegation (constructor(x) : super(x) / this(1) emit no Calls)",
+    "status": "CLOSED",
+    "closure": "CLOSED \u2014 fixture-gated fix (kotlin/ctor-delegation) + mutant kotlin/drop-ctor-delegation CAUGHT (2026-08-27). super(...)/this(...) emit Calls (literal keyword target, never guessed \u2014 java G2 ruling)."
    },
    {
     "id": "K3",
     "node_type": "callable_reference",
     "severity": "medium",
-    "missing": "Type reference for Foo::bar callable references (no reference to Foo emitted)"
+    "missing": "Type reference for Foo::bar callable references (no reference to Foo emitted)",
+    "status": "CLOSED",
+    "closure": "CLOSED \u2014 fixture-gated fix (kotlin/callable-refs) + mutant kotlin/drop-callable-refs CAUGHT (2026-08-27). Foo::bar references Foo."
    },
    {
     "id": "K4",
     "node_type": "interpolated_identifier,interpolated_expression",
     "severity": "medium",
-    "missing": "Uses relationship for string-template identifiers (\"hi $name\" emits no Uses on name)"
+    "missing": "Uses relationship for string-template identifiers (\"hi $name\" emits no Uses on name)",
+    "status": "CLOSED",
+    "closure": "CLOSED \u2014 fixture-gated fix (kotlin/template-uses) + mutant kotlin/drop-expression-uses CAUGHT (2026-08-27). \"hi $name\" emits Uses on name (Kotlin has real template nodes \u2014 groovy S1 ruling does not apply)."
    },
    {
     "id": "K5",
     "node_type": "type_alias",
     "severity": "medium",
-    "missing": "typealias Fn = (Int) -> String emits no symbol"
+    "missing": "typealias Fn = (Int) -> String emits no symbol",
+    "status": "CLOSED",
+    "closure": "CLOSED \u2014 fixture-gated fix (kotlin/type-alias) + mutants kotlin/drop-type-alias-symbols + kotlin/drop-type-alias-refs CAUGHT (2026-08-27). typealias emits a 'type' symbol and references its RHS types."
    },
    {
     "id": "K6",
     "node_type": "object_literal",
     "severity": "medium",
-    "missing": "object : Runnable2 { ... } emits no reference to the implemented type and misattributes inner methods to the enclosing class"
+    "missing": "object : Runnable2 { ... } emits no reference to the implemented type and misattributes inner methods to the enclosing class",
+    "status": "CLOSED",
+    "closure": "CLOSED \u2014 fixture-gated fix (kotlin/object-literal) + mutants kotlin/drop-anonymous-objects + kotlin/drop-object-literal-refs CAUGHT (2026-08-27). Anonymous objects get an anonymous_<Supertype> symbol, own their members (no more misattribution to the enclosing class), and reference their implemented type."
    },
    {
     "id": "K7",
     "node_type": "anonymous_initializer,property_delegate",
     "severity": "medium",
-    "missing": "init { } / by lazy { } / field-initializer calls emit with source \"Global\" instead of the enclosing type (call exists, attribution wrong)"
+    "missing": "init { } / by lazy { } / field-initializer calls emit with source \"Global\" instead of the enclosing type (call exists, attribution wrong)",
+    "status": "CLOSED",
+    "closure": "CLOSED \u2014 fixture-gated fix (kotlin/init-attribution) + mutant kotlin/global-attribution CAUGHT (2026-08-27). init blocks and property initializers attribute calls to the enclosing type, not Global."
    },
    {
     "id": "K8",
     "node_type": "",
     "severity": "high",
-    "missing": "import edges mislabeled: isImportDep flag not recognized by the tier classifier -> import_based never applied (reference_qualified instead); kotlin/scala confirmed finding from the java pass"
+    "missing": "import edges mislabeled: isImportDep flag not recognized by the tier classifier -> import_based never applied (reference_qualified instead); kotlin/scala confirmed finding from the java pass",
+    "status": "CLOSED",
+    "closure": "CLOSED \u2014 fixture-gated fix (kotlin/import-edges) + mutant kotlin/reclassify-import-tier CAUGHT (2026-08-27). isImportDep now recognized by the tier classifier -> import_based."
    }
   ]
  },
@@ -177,38 +193,44 @@
    {
     "id": "S1",
     "node_type": "companion_object",
-    "status": "PENDING",
-    "question": "companion object {} is anonymous (no name); contents emit with owner = enclosing class (probe-verified). Recommend: declared limitation \u2014 no symbol for the anonymous companion itself."
+    "status": "RULED",
+    "question": "companion object {} is anonymous (no name); contents emit with owner = enclosing class (probe-verified). Recommend: declared limitation \u2014 no symbol for the anonymous companion itself.",
+    "resolution": "DECLARED LIMITATION: companion object {} is anonymous (no name); contents emit with owner = the enclosing class (probe-verified, 2026-08-27). Companion members are the class's static surface, so the attribution is semantically correct; no symbol for the anonymous companion itself."
    },
    {
     "id": "S2",
     "node_type": "getter,setter",
-    "status": "PENDING",
-    "question": "Property accessors (get()/set()) are not separate symbols. Recommend: internal_silent (accessors are property parts)."
+    "status": "RULED",
+    "question": "Property accessors (get()/set()) are not separate symbols. Recommend: internal_silent (accessors are property parts).",
+    "resolution": "INTERNAL_SILENT: property accessors (get()/set()) are parts of the property symbol, not separate declarations."
    },
    {
     "id": "S3",
     "node_type": "destructuring_declaration,multi_variable_declaration",
-    "status": "PENDING",
-    "question": "val (a, b) = pair locals are not symbols. Recommend: internal_silent (no local symbols by design)."
+    "status": "RULED",
+    "question": "val (a, b) = pair locals are not symbols. Recommend: internal_silent (no local symbols by design).",
+    "resolution": "INTERNAL_SILENT: destructuring locals are not symbols by design (no local-variable symbols in the kotlin analyzer)."
    },
    {
     "id": "S4",
     "node_type": "anonymous_function,annotated_lambda,lambda_parameters",
-    "status": "PENDING",
-    "question": "Anonymous functions / lambdas are expressions, not declarations. Recommend: internal_silent (calls inside ARE captured \u2014 probe-verified)."
+    "status": "RULED",
+    "question": "Anonymous functions / lambdas are expressions, not declarations. Recommend: internal_silent (calls inside ARE captured \u2014 probe-verified).",
+    "resolution": "INTERNAL_SILENT: anonymous functions/lambdas are expressions; calls inside ARE captured (probe-verified, 2026-08-27) \u2014 the object_literal case (K6) now attributes their members correctly when the lambda is an anonymous-object body."
    },
    {
     "id": "S5",
     "node_type": "",
-    "status": "PENDING",
-    "question": "exports relationship kind: NOT EMITTED for kotlin (exports array is symbol-level ExportInfo). Recommend: declared limitation (like groovy S3)."
+    "status": "RULED",
+    "question": "exports relationship kind: NOT EMITTED for kotlin (exports array is symbol-level ExportInfo). Recommend: declared limitation (like groovy S3).",
+    "resolution": "DECLARED LIMITATION: the exports relationship kind is NOT EMITTED for kotlin; exports is a symbol-level ExportInfo array (matching groovy S3)."
    },
    {
     "id": "S6",
     "node_type": "visibility_modifier,function_modifier,class_modifier,member_modifier,parameter_modifier,parameter_modifiers,property_modifier,type_modifiers,type_parameter_modifiers,variance_modifier,reification_modifier,platform_modifier,inheritance_modifier",
-    "status": "PENDING",
-    "question": "Modifier node types are consumed by extractModifiers/extractVisibility. Recommend: internal_silent (modifiers are payloads, not emissions) \u2014 visibility flows probe-verified."
+    "status": "RULED",
+    "question": "Modifier node types are consumed by extractModifiers/extractVisibility. Recommend: internal_silent (modifiers are payloads, not emissions) \u2014 visibility flows probe-verified.",
+    "resolution": "INTERNAL_SILENT: modifier node types are consumed by extractModifiers/extractVisibility as payloads, not emissions; visibility payload is now fixture-pinned (kotlin/visibility-payload)."
    }
   ]
  }

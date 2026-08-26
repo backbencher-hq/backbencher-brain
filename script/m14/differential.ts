@@ -381,7 +381,20 @@ function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
       }
       // kotlin delegation_specifiers: first constructor_invocation = extends,
       // every other user_type = implements; on interface_declaration all extends
-      const isInterfaceDecl = t === "interface_declaration"
+      // M14 #419 kotlin wave: tree-sitter-kotlin parses `interface X : Y` as
+      // class_declaration with an `interface` keyword child (there is NO
+      // interface_declaration node type), so interface detection must check
+      // the keyword too — otherwise every kotlin interface was mislabelled
+      // implements (the analyzer emits extends; the oracle emitted implements,
+      // fabricating a permanent MISSING+UNEXPLAINED pair per interface).
+      // NOTE: the `interface` keyword is an UNNAMED child of class_declaration
+      // in tree-sitter-kotlin, so namedChildren cannot see it — scan child()
+      // like the analyzer's walk does (someSymbol(n.children)).
+      let hasInterfaceKeyword = false
+      for (let ci = 0; ci < n.childCount; ci++) {
+        if (n.child(ci)?.type === "interface") { hasInterfaceKeyword = true; break }
+      }
+      const isInterfaceDecl = t === "interface_declaration" || (t === "class_declaration" && hasInterfaceKeyword)
       let extendsUsed = false
       for (let i = 0; i < n.namedChildCount; i++) {
         const d = n.namedChild(i)
@@ -390,10 +403,15 @@ function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
         const userType = ctor
           ? ctor.namedChild(0)?.type === "user_type" ? ctor.namedChild(0) : d.namedChildren?.find((c: any) => c.type === "user_type")
           : d.namedChildren?.find((c: any) => c.type === "user_type")
-        // Only the HEAD type_identifier is the supertype; deeper children are
-        // type ARGUMENTS (SuspendExecutable<Int, UpdateStatement>) and must
-        // not become phantom supertypes.
-        const head = userType?.namedChild(0)?.type === "type_identifier" ? userType.namedChild(0) : userType
+        // M14 #419 kotlin wave: dotted supertypes (class Builder :
+        // DatabaseConfig.Builder()) keep the FULL path — the analyzer emits
+        // DatabaseConfig.Builder, so truncating to the first identifier
+        // (DatabaseConfig) fabricated an unmatched oracle edge. Only DIRECT
+        // type_identifier children are joined; type ARGUMENTS
+        // (SuspendExecutable<Int, ...>) stay nested under type_arguments and
+        // never leak in as phantom supertypes.
+        const tids = userType ? (userType.namedChildren ?? []).filter((c: any) => c.type === "type_identifier") : []
+        const head = tids.length > 0 ? { text: tids.map((c: any) => c.text).join(".") } : userType
         if (ctor && head && !isInterfaceDecl && !extendsUsed) {
           edges.push({ label: "extends", from: clsName, target: head.text })
           extendsUsed = true

@@ -132,6 +132,24 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     // constructor calls → Instantiates (not Calls).
     try {
       const extractKotlinCalls = (n: Node) => {
+        // Source attribution walks up to the nearest DECLARATION — not just
+        // function_declaration. Calls from class-level contexts (property
+        // initializers, init blocks) belong to the enclosing class; calls
+        // from secondary constructors belong to the constructor (M14 #419
+        // K7 fix — previously these all fell through to the bogus "Global"
+        // placeholder).
+        const resolveCallSource = (start: Node | null): string => {
+          let p: Node | null = start
+          while (p) {
+            if (p.type === "secondary_constructor" || p.type === "primary_constructor") return "constructor"
+            if (p.type === "function_declaration" || p.type === "class_declaration" || p.type === "object_declaration") {
+              const nameNode = this.findChildByType(p, ["simple_identifier", "type_identifier"])
+              if (nameNode) return nameNode.text
+            }
+            p = p.parent
+          }
+          return "Global"
+        }
         if (n.type === 'call_expression') {
           const callExpr = this.buildKotlinCallExpression(n)
           const targetName = callExpr
@@ -144,16 +162,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
           const isQualified = targetName.includes(".")
           const isStdlib = this.kotlinStdlibExact.has(targetName) || (!isQualified && this.kotlinStdlibExact.has(leaf))
           if (targetName && targetName !== "print" && targetName !== "println" && !isStdlib) {
-            let p: Node | null = n.parent
-            let sourceName = "Global"
-            while (p) {
-              if (p.type === 'function_declaration') {
-                const nameNode = this.findChildByType(p, ["simple_identifier", "type_identifier"])
-                if (nameNode) sourceName = nameNode.text
-                break
-              }
-              p = p.parent
-            }
+            const sourceName = resolveCallSource(n.parent)
             const isPascal = leaf.length > 0 && leaf[0] >= "A" && leaf[0] <= "Z"
             // MEASURED (M14.2, Exposed corpus, 791 kotlin files): qualified
             // PascalCase calls are enum/member accesses, not constructions —
@@ -180,6 +189,29 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
               })
             }
           }
+        } else if (n.type === 'constructor_delegation_call') {
+          // M14 #419 K2: secondary-constructor delegation — super(...) /
+          // this(...) — is a call edge from the constructor. super/this are
+          // UNNAMED keyword children (only value_arguments are named), so the
+          // receiver is read from node text. The target is the literal
+          // keyword, NEVER resolved to a parent type: any guess could
+          // fabricate a wrong edge (the class's own extends edge carries the
+          // real parent). Confidence 1.0: delegation is structural syntax.
+          const text = n.text.trim()
+          const sourceName = resolveCallSource(n.parent)
+          let target = "super"
+          if (text.startsWith("this")) target = "this"
+          relationships.push({
+            source: sourceName,
+            target,
+            type: ASTEngine.RelationshipType.Calls,
+            confidence: 1.0,
+            metadata: {
+              relationshipType: "constructor_invocation",
+              constructorReceiver: target,
+              callExpression: text,
+            },
+          })
         }
         for (let i = 0; i < n.namedChildCount; i++) {
           const child = n.namedChild(i)
@@ -201,6 +233,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     // name-bearing leaves so primitives are correctly silent.
     try {
       this.extractDeclaredTypeRefs(rootNode, relationships)
+      this.collectExpressionUses(rootNode, relationships)
     } catch (e) {
       // Graceful degradation
     }
@@ -302,7 +335,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    for (let i = 0; i < symbols.length; i++) { const s = symbols[i]; if (!s.metadata?.isPhantom && s.visibility !== "private" && (!s.ownerName || s.ownerKind === ASTEngine.SymbolKind.Class)) { exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility || "public" }); } }
+    for (let i = 0; i < symbols.length; i++) { const s = symbols[i]; if (!s.metadata?.isPhantom && !s.metadata?.isAnonymousObject && s.visibility !== "private" && (!s.ownerName || s.ownerKind === ASTEngine.SymbolKind.Class)) { exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility || "public" }); } }
     this.classifyEvidenceTier(relationships)
 
     return {
@@ -484,6 +517,83 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "annotation":
           this.extractAnnotation(n, symbols, ctx)
           break
+        case "type_alias": {
+          // M14 #419 K5: typealias Fn = (Int) -> String declares a type
+          // symbol (kind 'type', matching the JVM-family record/typealias
+          // convention). The aliased RHS types are referenced separately by
+          // extractDeclaredTypeRefs.
+          const tName = this.findChildByType(n, ["type_identifier", "simple_identifier"])
+          if (tName) {
+            const tModifiers = this.extractModifiers(n, ctx)
+            symbols.push({
+              name: tName.text,
+              kind: ASTEngine.SymbolKind.Type,
+              range: this.nodeToRange(n),
+              scope: this.currentScope(ctx),
+              visibility: this.determineVisibility(tModifiers, ctx),
+              ownerName: pClass,
+              ownerKind: pClass ? ASTEngine.SymbolKind.Class : undefined,
+              decorators: this.extractAnnotations(n, ctx),
+              metadata: {
+                modifiers: tModifiers,
+                annotations: this.extractAnnotations(n, ctx).map((a) => this.kotlinShortAnnotationName(a)),
+                isTypeAlias: true,
+                kotlinSpecific: true,
+              },
+            })
+          }
+          break
+        }
+        case "object_literal": {
+          // M14 #419 K6: an anonymous object (object : Runner { ... }) is a
+          // real runtime type. It gets a symbol named after its implemented
+          // supertype (anonymous_* — the established noise convention, so it
+          // never leaks into the index) and its contained members attribute
+          // to it instead of the enclosing class (the previous P->go
+          // contains edge was a misattribution). The supertype reference
+          // edge is emitted by extractDeclaredTypeRefs.
+          const deleg = this.findChildByType(n, ["delegation_specifier"])
+          let superName: string | undefined
+          if (deleg) {
+            // The type identifier is nested (delegation_specifier -> user_type
+            // -> type_identifier), so findChildByType's direct-children scan
+            // is insufficient — recurse for the first type_identifier.
+            const findType = (node: Node): Node | null => {
+              if (node.type === "type_identifier") return node
+              for (let i = 0; i < node.namedChildCount; i++) {
+                const c = node.namedChild(i)
+                if (c) { const r = findType(c); if (r) return r }
+              }
+              return null
+            }
+            const tId = findType(deleg)
+            if (tId) superName = tId.text
+          }
+          const anonName = superName ? `anonymous_${superName}` : "anonymous_object"
+          ctx.classStack.push(anonName)
+          pushedName = anonName
+          nextParentClass = anonName
+          symbols.push({
+            name: anonName,
+            kind: ASTEngine.SymbolKind.Class,
+            range: this.nodeToRange(n),
+            scope: this.currentScope(ctx),
+            visibility: this.determineVisibility(this.extractModifiers(n, ctx), ctx),
+            ownerName: pClass,
+            ownerKind: pClass ? ASTEngine.SymbolKind.Class : undefined,
+            decorators: this.extractAnnotations(n, ctx),
+            metadata: {
+              modifiers: [],
+              annotations: this.extractAnnotations(n, ctx).map((a) => this.kotlinShortAnnotationName(a)),
+              isObject: true,
+              isAnonymousObject: true,
+              superTypes: superName ? [superName] : [],
+              superTypesAreConstructorCalls: superName ? [false] : [],
+              kotlinSpecific: true,
+            },
+          })
+          break
+        }
       }
 
       // Schedule the pop if we pushed to ctx.classStack
@@ -1057,7 +1167,11 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       const conf = typeof r.confidence === "number" ? r.confidence : 1
       if (t === "contains" || t === "exports") { md.evidenceClass = "structural"; continue }
       if (t === "references") {
-        md.evidenceClass = md.isImport ? "import_based" : "reference_qualified"
+        // isImportDep: kotlin/scala import edges carry this flag (M14 #419
+        // K8 — the JVM-family tier bug: the classifier only recognized
+        // isImport/isGroovyImport/isJavaImport, so kotlin import edges were
+        // mislabeled reference_qualified).
+        md.evidenceClass = (md.isImport || md.isImportDep) ? "import_based" : "reference_qualified"
         continue
       }
       if (t === "extends" || t === "implements") {
@@ -1803,8 +1917,8 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       return "Global"
     }
-    const emit = (decl: Node, typeRoots: (Node | null)[], kind: string, relType = "declared_type"): void => {
-      const source = resolveSource(decl)
+    const emit = (decl: Node, typeRoots: (Node | null)[], kind: string, relType = "declared_type", sourceOverride?: string): void => {
+      const source = sourceOverride ?? resolveSource(decl)
       for (const tr of typeRoots) {
         if (!tr) continue
         const names: string[] = []
@@ -1847,6 +1961,40 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
           break
         }
+        case "callable_reference": {
+          // M14 #419 K3: Foo::bar — a callable reference is a first-class
+          // handle to a member of Foo, so the enclosing declaration
+          // references the type. The referenced type is the first
+          // type_identifier child (Foo); package-qualified forms
+          // (pkg.Foo::bar) keep their receiver via collectTypeNames.
+          const tId = this.findChildByType(n, ["type_identifier"])
+          if (tId) emit(n, [tId], "callable_reference", "callable_reference")
+          break
+        }
+        case "type_alias": {
+          // M14 #419 K5: the alias references its RHS types. Source is the
+          // alias NAME itself (Fn), not the enclosing declaration — the
+          // aliased types belong to the alias's own definition. Type
+          // parameters of the alias are bindings, not references.
+          const tName = this.findChildByType(n, ["type_identifier", "simple_identifier"])
+          if (tName) {
+            const rhs: Node[] = []
+            for (let i = 0; i < n.namedChildCount; i++) {
+              const c = n.namedChild(i)
+              if (c && c.type !== "type_identifier" && c.type !== "type_parameters") rhs.push(c)
+            }
+            emit(n, rhs, "type_alias", "type_alias", tName.text)
+          }
+          break
+        }
+        case "object_literal": {
+          // M14 #419 K6: the anonymous object implements its supertype — the
+          // delegation_specifier is a real type usage at the object-literal
+          // site, attributed to the enclosing declaration (run).
+          const deleg = this.findChildByType(n, ["delegation_specifier"])
+          if (deleg) emit(n, [deleg], "object_literal", "object_literal")
+          break
+        }
         case "function_declaration": {
           // Return type: first user/nullable/function-type direct child AFTER
           // the parameter list; receiver type: such a child BEFORE the name.
@@ -1880,6 +2028,70 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
           break
         }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) walk(c)
+      }
+    }
+    walk(rootNode)
+  }
+
+  /**
+   * M14 #419 K1/K4: expression-level Uses edges.
+   * - indexing_expression / directly_assignable_expression (with an
+   *   indexing_suffix child): `xs[i]` reads and writes USE the indexed
+   *   expression — previously only contains edges were emitted, so the array
+   *   reference was invisible to the use graph.
+   * - interpolated_identifier: "hi $name" string templates USE the
+   *   referenced identifier. Kotlin's grammar produces a real template node
+   *   (unlike groovy's opaque GStrings — the groovy S1 ruling), so the read
+   *   is visible and must be captured.
+   * Deduped per (source, target) so repeated indexing in one function emits
+   * one honest edge, not a fan of identical edges.
+   */
+  private collectExpressionUses(rootNode: Node, relationships: ASTEngine.UniversalRelationship[]): void {
+    const emitted = new Set<string>()
+    const resolveSource = (start: Node | null): string => {
+      let p: Node | null = start
+      while (p) {
+        if (p.type === "secondary_constructor" || p.type === "primary_constructor") return "constructor"
+        if (p.type === "function_declaration" || p.type === "class_declaration" || p.type === "object_declaration") {
+          const name = this.findChildByType(p, ["simple_identifier", "type_identifier"])
+          if (name) return name.text
+        }
+        p = p.parent
+      }
+      return "Global"
+    }
+    const emitUse = (n: Node, target: string): void => {
+      if (!target) return
+      const source = resolveSource(n.parent)
+      const key = `${source}|${target}|uses`
+      if (emitted.has(key)) return
+      emitted.add(key)
+      relationships.push({
+        source,
+        target,
+        type: ASTEngine.RelationshipType.Uses,
+        confidence: 0.9,
+        metadata: { relationshipType: "expression_use" },
+      })
+    }
+    const walk = (n: Node): void => {
+      if (n.type === "indexing_expression" || n.type === "directly_assignable_expression") {
+        // Receiver is the first named child when the node carries an
+        // indexing_suffix (xs[i] read, xs[i] = write). directly_assignable_expression
+        // without indexing (obj.field = ...) is deliberately excluded — only
+        // the probe-verified indexing form emits here.
+        const recv = n.namedChild(0)
+        let hasIndexing = false
+        for (let i = 0; i < n.namedChildCount; i++) {
+          if (n.namedChild(i)?.type === "indexing_suffix") { hasIndexing = true; break }
+        }
+        if (recv && hasIndexing) emitUse(n, recv.text)
+      } else if (n.type === "interpolated_identifier") {
+        emitUse(n, n.text)
       }
       for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
@@ -2304,6 +2516,14 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (let i = 0; i < symbols.length; i++) {
       const cls = symbols[i]
       if (cls.kind === ASTEngine.SymbolKind.Class || cls.kind === ASTEngine.SymbolKind.Interface) {
+        // M14 #419 K6: anonymous objects (object_literal) carry superTypes in
+        // METADATA but emit NO hierarchy edge. They are expression-types, not
+        // class declarations — the inheritance graph must not be polluted with
+        // pseudo-classes (anonymous_Table implements Table). Their type
+        // dependency is carried by the object_literal References edge, and the
+        // differential oracle (which derives heritage only for *_declaration
+        // nodes) agrees. Named object_declaration still emits heritage.
+        if (cls.metadata?.isAnonymousObject) continue
         if (cls.metadata?.superTypes) {
           const ctorCalls: boolean[] | undefined = cls.metadata?.superTypesAreConstructorCalls
           for (let j = 0; j < cls.metadata.superTypes.length; j++) {
