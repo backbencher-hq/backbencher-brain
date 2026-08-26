@@ -258,8 +258,8 @@
     },
     {
       "language": "groovy",
-      "file": "groovy/BaseService.groovy",
-      "symbol": "Audited",
+      "file": "groovy/Repository.groovy",
+      "symbol": "Repository",
       "line": 6,
       "capabilities": {
         "indexed": true,
@@ -636,8 +636,8 @@
     },
     {
       "language": "svelte",
-      "file": "svelte/Button.svelte",
-      "symbol": "Button",
+      "file": "svelte/Card.svelte",
+      "symbol": "Card",
       "line": 1,
       "capabilities": {
         "indexed": true,
