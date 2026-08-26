@@ -9,7 +9,7 @@
   "failed": 0,
   "measured": {
     "repo": "intellij-community",
-    "symbols": 1071809,
+    "symbols": 1071964,
     "machine": {
       "platform": "linux",
       "arch": "x64",
@@ -21,9 +21,9 @@
       "totalEmbeds": 0,
       "pct": 0
     },
-    "healthCoverageLine": "0 of 1071809 symbols have semantic embeddings (none). Semantic search quality depends on this coverage.",
+    "healthCoverageLine": "0 of 1071964 symbols have semantic embeddings (none). Semantic search quality depends on this coverage.",
     "semanticVector": {
-      "ms": 1352,
+      "ms": 2041,
       "method": "keyword-fallback",
       "reason": "no-matching-model-embeddings",
       "resultCount": 5,
@@ -39,5 +39,5 @@
     "The giant index has 0 vector embeddings (S3 bounded them off by design); 0% coverage is reported, never hidden.",
     "tfidf/vector-path exclusion is verified on a deterministic temp index (fixed engine vectors) — the mechanism, not a 1M-row cosine."
   ],
-  "generatedAt": "2026-08-25T21:55:53.813Z"
+  "generatedAt": "2026-08-26T04:44:56.196Z"
 }

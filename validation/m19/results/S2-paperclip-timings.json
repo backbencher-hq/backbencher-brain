@@ -1,0 +1,45 @@
+{
+  "repo": "$HOME/paperclip",
+  "totalSlices": 1,
+  "machine": {
+    "platform": "linux",
+    "arch": "x64"
+  },
+  "slices": [
+    {
+      "ok": true,
+      "slice": 0,
+      "totalSlices": 1,
+      "candidateFiles": 1325,
+      "eligibleFiles": 676,
+      "eligibleFilesBeforeOffset": 676,
+      "offset": 0,
+      "filesInSlice": 676,
+      "batchSize": 1000,
+      "batchCount": 1,
+      "batches": [
+        {
+          "batch": 0,
+          "files": 676,
+          "wallMs": 100906,
+          "successFiles": 676,
+          "skippedFiles": 0,
+          "timeoutFiles": 0,
+          "errorFiles": 0,
+          "peakRssKb": 150716,
+          "errors": []
+        }
+      ],
+      "wallMs": 100907,
+      "wallSec": 101,
+      "deferredFinalization": false,
+      "totalSymbols": 8054,
+      "totalRels": 22491,
+      "peakRssKb": 150716,
+      "externalPeakRssKb": 399164,
+      "externalPeakRssSource": "/usr/bin/time -v",
+      "errors": []
+    }
+  ],
+  "partialBatches": []
+}

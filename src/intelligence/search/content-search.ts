@@ -20,6 +20,9 @@ type CorpusRow = {
 }
 
 let fts5Available: boolean | null = null
+const contentFtsBuilds = new Map<string, Promise<boolean>>()
+const CONTENT_FTS_TABLE = "brain_symbol_content_fts"
+const CONTENT_FTS_META = "brain_symbol_content_fts_meta"
 
 // Probe FTS5 support once per process. Both better-sqlite3 and bun:sqlite ship
 // FTS5, but detect defensively so a missing extension degrades to LIKE.
@@ -33,6 +36,91 @@ function detectFts5(raw: { exec: (sql: string) => void }): boolean {
     fts5Available = false
   }
   return fts5Available
+}
+
+// The giant path cannot rebuild an ephemeral FTS table for every query. Keep a
+// persistent trigram index in the project DB and rebuild it only when the
+// symbol snapshot changes. The table is deliberately project-scoped even
+// though a normal brain DB contains one project, so the invariant remains true
+// for shared/test databases too.
+function contentFtsSchema(raw: any): void {
+  raw.exec(
+    `CREATE VIRTUAL TABLE IF NOT EXISTS ${CONTENT_FTS_TABLE} USING fts5(
+      symbol_id UNINDEXED, project_id UNINDEXED, name, qualified_name, docstring,
+      tokenize='trigram'
+    );
+    CREATE TABLE IF NOT EXISTS ${CONTENT_FTS_META} (
+      project_id TEXT PRIMARY KEY NOT NULL,
+      symbol_count INTEGER NOT NULL,
+      max_updated INTEGER NOT NULL
+    );
+    CREATE TRIGGER IF NOT EXISTS bb_content_fts_symbol_insert
+      AFTER INSERT ON brain_symbol
+      BEGIN DELETE FROM ${CONTENT_FTS_META} WHERE project_id = NEW.project_id; END;
+    CREATE TRIGGER IF NOT EXISTS bb_content_fts_symbol_update
+      AFTER UPDATE ON brain_symbol
+      BEGIN
+        DELETE FROM ${CONTENT_FTS_META} WHERE project_id = OLD.project_id;
+        DELETE FROM ${CONTENT_FTS_META} WHERE project_id = NEW.project_id;
+      END;
+    CREATE TRIGGER IF NOT EXISTS bb_content_fts_symbol_delete
+      AFTER DELETE ON brain_symbol
+      BEGIN DELETE FROM ${CONTENT_FTS_META} WHERE project_id = OLD.project_id; END;`,
+  )
+}
+
+async function ensureContentFts(raw: any, projectId: ProjectID): Promise<boolean> {
+  if (!detectFts5(raw)) return false
+  try {
+    contentFtsSchema(raw)
+    const marker = raw.prepare(
+      `SELECT symbol_count AS symbolCount, max_updated AS maxUpdated FROM ${CONTENT_FTS_META} WHERE project_id = ?`,
+    ).get(projectId) as { symbolCount: number; maxUpdated: number } | undefined
+    // The rebuild writes the marker only after every row is inserted. Symbol
+    // mutations delete the marker through the triggers above, so readiness is
+    // O(1) and never performs a million-row COUNT on the query path. A missing
+    // marker deliberately falls back to the bounded SQL path until maintenance
+    // rebuilds the index; stale content is never presented as fresh.
+    return marker !== undefined
+  } catch {
+    return false
+  }
+}
+
+/** Build the persistent giant-corpus search index outside the query path. */
+export async function rebuildContentSearchIndex(projectId: ProjectID): Promise<{ indexed: number; symbolCount: number; maxUpdated: number }> {
+  const key = String(projectId)
+  const active = contentFtsBuilds.get(key)
+  if (active) {
+    await active
+    const raw = await BrainDatabase.getRawInstance(projectId)
+    const row = raw.prepare(`SELECT symbol_count AS symbolCount, max_updated AS maxUpdated FROM ${CONTENT_FTS_META} WHERE project_id=?`).get(projectId) as any
+    return { indexed: Number(row?.symbolCount || 0), symbolCount: Number(row?.symbolCount || 0), maxUpdated: Number(row?.maxUpdated || 0) }
+  }
+  const build = Promise.resolve().then(async () => {
+    const raw = await BrainDatabase.getRawInstance(projectId)
+    if (!detectFts5(raw)) throw new Error("SQLite FTS5 is unavailable")
+    contentFtsSchema(raw)
+    const snapshot = raw.prepare(
+      "SELECT COUNT(*) AS symbolCount, COALESCE(MAX(time_updated), 0) AS maxUpdated FROM brain_symbol WHERE project_id = ? AND COALESCE(line_start, 0) > 0 AND name NOT LIKE '/%/%'",
+    ).get(projectId) as { symbolCount: number; maxUpdated: number }
+    const rebuild = raw.transaction(() => {
+      raw.prepare(`DELETE FROM ${CONTENT_FTS_TABLE} WHERE project_id = ?`).run(projectId)
+      const insert = raw.prepare(`INSERT INTO ${CONTENT_FTS_TABLE} (symbol_id, project_id, name, qualified_name, docstring) VALUES (?, ?, ?, ?, ?)`)
+      const rows = raw.prepare("SELECT id, name, qualified_name AS qualifiedName, docstring FROM brain_symbol WHERE project_id = ? AND COALESCE(line_start, 0) > 0 AND name NOT LIKE '/%/%'").all(projectId) as Array<{ id: string; name: string; qualifiedName: string | null; docstring: string | null }>
+      for (const row of rows) insert.run(row.id, projectId, row.name, row.qualifiedName ?? "", row.docstring ?? "")
+      raw.prepare(`INSERT INTO ${CONTENT_FTS_META} (project_id, symbol_count, max_updated) VALUES (?, ?, ?) ON CONFLICT(project_id) DO UPDATE SET symbol_count=excluded.symbol_count, max_updated=excluded.max_updated`).run(projectId, snapshot.symbolCount, snapshot.maxUpdated)
+      return rows.length
+    })
+    const indexed = rebuild()
+    return { indexed, symbolCount: snapshot.symbolCount, maxUpdated: snapshot.maxUpdated }
+  })
+  contentFtsBuilds.set(key, build.then(() => true))
+  try {
+    return await build
+  } finally {
+    contentFtsBuilds.delete(key)
+  }
 }
 
 function ftsQuote(term: string): string {
@@ -151,6 +239,7 @@ async function searchContentBounded(
   }
 
   const { sql: idFilterSql, params: idFilterParams } = languageClause(options)
+  const contentFtsReady = await ensureContentFts(raw, projectId)
 
   // 1. exact name (indexed via NOCASE index)
   const exact = selectJoined(raw, projectId, "s.name = ? COLLATE NOCASE" + idFilterSql, [trimmed, ...idFilterParams])
@@ -162,34 +251,53 @@ async function searchContentBounded(
 
   const pageBudget = offset + maxResults
 
-  // 3. name substring (id-first, capped) — only when the indexed name phases
-  // did not already fill the requested page (docstring-only matches would rank
-  // below any name match anyway, so this cannot change the returned page).
+  // 3-5. Use the persistent trigram index for substring candidates. The final
+  // JavaScript check preserves the old exact-substring semantics while FTS5
+  // avoids repeatedly scanning qualified_name and docstring across a giant DB.
   if (byId.size < pageBudget) {
-    const nameIds = raw.prepare(
-      "SELECT id FROM brain_symbol WHERE project_id = ? AND name LIKE ? COLLATE NOCASE AND COALESCE(line_start, 0) > 0 AND name NOT LIKE '/%/%' LIMIT ?",
-    ).all(projectId, "%" + trimmed + "%", PHASE_CAP) as Array<{ id: string }>
-    if (nameIds.length) bump(fetchByIds(raw, projectId, nameIds, idFilterSql, idFilterParams), 1)
-  }
+    const lowerNeedle = trimmed.toLowerCase()
+    let broadIds: Array<{ id: string }> = []
+    if (contentFtsReady && trimmed.length >= 3) {
+      const ftsQuery = '"' + trimmed.replace(/"/g, '""') + '"'
+      broadIds = raw.prepare(
+        `SELECT symbol_id AS id FROM ${CONTENT_FTS_TABLE} WHERE ${CONTENT_FTS_TABLE} MATCH ? AND project_id = ? LIMIT ?`,
+      ).all(ftsQuery, projectId, PHASE_CAP) as Array<{ id: string }>
+    }
+    const rows = broadIds.length
+      ? fetchByIds(raw, projectId, broadIds, idFilterSql, idFilterParams)
+      : []
+    for (const row of rows) {
+      let score = 0
+      const lowerName = row.name.toLowerCase()
+      if (lowerName === lowerNeedle) score += 3
+      if (lowerName.startsWith(lowerNeedle)) score += 3
+      if (lowerName.includes(lowerNeedle)) score += 1
+      if ((row.qualifiedName ?? "").toLowerCase().includes(lowerNeedle)) score += 2
+      if ((row.docstring ?? "").toLowerCase().includes(lowerNeedle)) score += 1
+      if (score > 0) bump([row], score)
+    }
 
-  // 4. qualified_name substring (id-first, capped) — same skip rule: only
-  // when name phases did not already fill the page.
-  if (byId.size < pageBudget) {
-    const qualIds = raw.prepare(
-      "SELECT id FROM brain_symbol WHERE project_id = ? AND qualified_name LIKE ? COLLATE NOCASE AND COALESCE(line_start, 0) > 0 AND name NOT LIKE '/%/%' LIMIT ?",
-    ).all(projectId, "%" + trimmed + "%", PHASE_CAP) as Array<{ id: string }>
-    if (qualIds.length) bump(fetchByIds(raw, projectId, qualIds, idFilterSql, idFilterParams), 2)
-  }
-
-  // 5. docstring substring (id-first, capped) — the last resort phase: only
-  // runs when name + qualified_name could not fill the requested page. On a
-  // giant corpus with no matches at all this is one bounded full scan (worst
-  // case a few seconds) — recorded honestly in Q1 as the miss-query cost.
-  if (byId.size < pageBudget) {
-    const docIds = raw.prepare(
-      "SELECT id FROM brain_symbol WHERE project_id = ? AND docstring LIKE ? COLLATE NOCASE AND COALESCE(line_start, 0) > 0 AND name NOT LIKE '/%/%' LIMIT ?",
-    ).all(projectId, "%" + trimmed + "%", PHASE_CAP) as Array<{ id: string }>
-    if (docIds.length) bump(fetchByIds(raw, projectId, docIds, idFilterSql, idFilterParams), 1)
+    // Short queries and SQLite builds without trigram FTS retain the previous
+    // bounded SQL behavior; this is a compatibility fallback, not the giant
+    // fast path.
+    if (!contentFtsReady || (trimmed.length < 3 && byId.size < pageBudget)) {
+      const needle = "%" + trimmed + "%"
+      const fallbackIds = raw.prepare(
+        "SELECT id FROM brain_symbol WHERE project_id = ? AND COALESCE(line_start, 0) > 0 AND name NOT LIKE '/%/%' " +
+          "AND (name LIKE ? COLLATE NOCASE OR qualified_name LIKE ? COLLATE NOCASE OR docstring LIKE ? COLLATE NOCASE) LIMIT ?",
+      ).all(projectId, needle, needle, needle, PHASE_CAP) as Array<{ id: string }>
+      const fallbackRows = fetchByIds(raw, projectId, fallbackIds, idFilterSql, idFilterParams)
+      for (const row of fallbackRows) {
+        let score = 0
+        const lowerName = row.name.toLowerCase()
+        if (lowerName === lowerNeedle) score += 3
+        if (lowerName.startsWith(lowerNeedle)) score += 3
+        if (lowerName.includes(lowerNeedle)) score += 1
+        if ((row.qualifiedName ?? "").toLowerCase().includes(lowerNeedle)) score += 2
+        if ((row.docstring ?? "").toLowerCase().includes(lowerNeedle)) score += 1
+        if (score > 0) bump([row], score)
+      }
+    }
   }
 
   const ranked = [...byId.values()]

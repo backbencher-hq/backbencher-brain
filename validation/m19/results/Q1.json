@@ -9,7 +9,7 @@
   "failed": 0,
   "measured": {
     "repo": "intellij-community",
-    "symbols": 1071809,
+    "symbols": 1071964,
     "machine": {
       "platform": "linux",
       "arch": "x64",
@@ -17,20 +17,20 @@
       "ramGb": 15.5
     },
     "symbolSearchMs": {
-      "median": 392,
-      "p95": 418,
+      "median": 442,
+      "p95": 546,
       "runs": 25
     },
     "contentSearchMatchedMs": {
-      "median": 75,
-      "p95": 81,
+      "median": 56,
+      "p95": 87,
       "runs": 5
     },
-    "contentSearchMissMs": 6686,
+    "contentSearchMissMs": 43,
     "semanticFallback": {
       "method": "keyword-fallback",
       "reason": "no-matching-model-embeddings",
-      "ms": 7991
+      "ms": 1259
     }
   },
   "negatives": [
@@ -39,5 +39,5 @@
     "Top-hit presence is asserted for verified names, not full-repo behavioral recall.",
     "Content search on a giant corpus bounds substring phases at PHASE_CAP=2000 candidates; a no-match text query is a single bounded full scan (~6-7s on 1M symbols, measured) and is recorded honestly rather than hidden."
   ],
-  "generatedAt": "2026-08-25T21:49:22.023Z"
+  "generatedAt": "2026-08-26T04:41:43.205Z"
 }
