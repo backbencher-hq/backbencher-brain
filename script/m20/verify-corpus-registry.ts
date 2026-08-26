@@ -29,6 +29,8 @@ type SyntaxMeasurement = {
   revision: string
   syntaxErrorFiles: number
   sourceField: string
+  language: string | null
+  corpus: string
 }
 
 type ObservedRepository = {
@@ -117,6 +119,10 @@ function syntaxMeasurements(repo: DeclaredRepository): SyntaxMeasurement[] {
     try {
       const value = JSON.parse(readFileSync(full, "utf8")) as Record<string, unknown>
       if (value.corpus !== repo.path || value.revision !== repo.revision) continue
+      const language = typeof value.language === "string" ? value.language : typeof value.fixtureLanguage === "string" ? value.fixtureLanguage : null
+      const declaredLanguages = new Set((repo.languages ?? []).map((item) => item.toLowerCase()))
+      if (language && !declaredLanguages.has(language.toLowerCase())) continue
+      if (!language && declaredLanguages.size > 0) continue
       const candidates: Array<[string, unknown]> = [
         ["errorFiles", value.errorFiles],
         ["parseErrors", value.parseErrors],
@@ -126,7 +132,7 @@ function syntaxMeasurements(repo: DeclaredRepository): SyntaxMeasurement[] {
       if (!candidate) continue
       const [, raw] = candidate
       const count = typeof raw === "number" ? raw : raw.length
-      measurements.push({ artifact: path.relative(ROOT, full), revision: repo.revision, syntaxErrorFiles: count, sourceField: candidate[0] })
+      measurements.push({ artifact: path.relative(ROOT, full), revision: repo.revision, syntaxErrorFiles: count, sourceField: candidate[0], language, corpus: repo.path })
     } catch {
       // Unrelated or malformed historical evidence is not silently treated as a
       // zero; it is simply not a measurement for this repository.
@@ -192,7 +198,8 @@ check("C2: every declared path is absolute", declared.every((repo) => path.isAbs
 check("C2: every observed row preserves repository identity", observed.every((repo, index) => repo.id === declared[index]!.id && repo.path === declared[index]!.path && repo.expectedRevision === declared[index]!.revision))
 check("C2: every missing, dirty, or mismatched checkout has an explicit state", observed.every((repo) => repo.state === "verified" || repo.state === "dirty" || repo.state === "revision-mismatch" || repo.state === "missing" || repo.state === "invalid"))
 check("C2: no unavailable repository is treated as evidence-eligible", observed.filter((repo) => !repo.exists).every((repo) => repo.expectedEvidenceEligible !== true))
-check("C2: syntax-error counts are measured or explicitly unmeasured", observed.every((repo) => repo.syntaxErrorStatus === "measured" ? typeof repo.syntaxErrorFiles === "number" : repo.syntaxErrorFiles === null))
+check("C2: syntax-error counts are measured or explicitly unmeasured", observed.every((repo) => repo.syntaxErrorStatus === "measured" ? typeof repo.syntaxErrorFiles === "number" && repo.syntaxMeasurements.every((measurement) => measurement.corpus === repo.path) : repo.syntaxErrorFiles === null))
+check("C2: syntax measurements carry language provenance", observed.every((repo) => repo.syntaxMeasurements.every((measurement) => typeof measurement.language === "string")), JSON.stringify(observed.filter((repo) => repo.syntaxMeasurements.some((measurement) => !measurement.language)).map((repo) => repo.id)))
 check("C2: undeclared local repositories are recorded", Array.isArray(localRepositories))
 
 const missingFixture: DeclaredRepository = {
