@@ -322,7 +322,7 @@ async function checkMissingFiles(rawDb: any, projectId: ProjectID): Promise<Heal
   }
 }
 
-async function checkEmbeddingCoverage(rawDb: any, projectId: ProjectID): Promise<HealthCheck> {
+export async function checkEmbeddingCoverage(rawDb: any, projectId: ProjectID): Promise<HealthCheck> {
   // Check if embedding table exists
   const hasTable = rawDb.prepare(`
     SELECT COUNT(*) as count FROM sqlite_master WHERE type='table' AND name='brain_semantic_embedding'
