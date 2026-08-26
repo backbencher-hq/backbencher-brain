@@ -35,17 +35,22 @@ Findings already produced by this matrix:
 The isKotlinBuiltin bug proved relationship-only verification misses
 symbol-field rot. Every language wave must pin these symbol payloads:
 
-| Payload | java | groovy | kotlin | rule |
+| Payload | java | groovy | kotlin | scala |
 |---|---|---|---|---|
-| qualified_calls | PENDING -> #383 | PENDING -> #383 | GATED (qualified-calls-builtin-names) | adversarial names REQUIRED |
-| docstrings/kdoc | PENDING -> #383 | PENDING -> #383 | GATED (kdoc-extraction) | |
-| parameters (+defaults) | GATED (parameters-payload + mutant java/drop-parameters) | GATED (groovy/parameters-payload incl. varargs String[]; mutants drop-parameters + drop-varargs-type CAUGHT) | GATED (calls-and-instantiation partial) | |
+| qualified_calls | GATED (java/qualified-call-path) | GATED (groovy/qualified-call-path + qualified-calls-payload) | GATED (qualified-calls-builtin-names) | GATED (CC1+payload fixture) |
+| docstrings | GATED (javadoc-payload) | GATED (groovydoc-payload) | GATED (kdoc-extraction) | GATED (scaladoc-payload) |
+| parameters (+defaults) | GATED (parameters-payload + mutant java/drop-parameters) | GATED (groovy/parameters-payload incl. varargs String[]; mutants drop-parameters + drop-varargs-type CAUGHT) | GATED (calls-and-instantiation partial) | PENDING -> #383 (wave) |
 | byte ranges (bb_edit depends) | indirect via M13 edit gates | same | same | M13 scope |
-| visibility/modifiers | GATED (generic-visibility-payload) | GATED F3 implicit | GATED F3 implicit (scala visibility flows) | explicit scala pins via generic fixture |
-| qualified_calls | GATED (CC1+payload fixture) | NOT EMITTED -> #383 (also javascript: NOT EMITTED, declared) | GATED (payload-pins) | GATED (extension-method-flag) |
-| docstrings/JSDoc | GATED (javadoc-payload) | GATED (groovydoc-payload) | GATED (payload-pins) | GATED (scaladoc-payload) |
-| typeParameters/generics | GATED (generic-visibility-payload: T extends Comparable<T>, method <R>) | n/a (no generics syntax) | GATED (generic-parameters-payload) | GATED (generic-parameters-payload) |
+| visibility/modifiers | GATED (generic-visibility-payload) | GATED (generic-visibility-payload) | GATED F3 implicit | GATED (generic-visibility-payload) |
+| typeParameters/generics | GATED (generic-visibility-payload) | GATED (groovy/generic-visibility-payload) | GATED (generic-parameters-payload) | GATED (generic-parameters-payload) |
+| apiContract | GATED (java/fq-api-endpoint) | NOT EMITTED -> declared (S4 ruling) | n/a | n/a |
 | range columns 1-based | GATED (CC1) | GATED (CC1, was 0-based - FIXED) | GATED (CC1) | GATED (CC1) |
+
+RECONCILED 2026-08-27 to the #419 gated state (earlier rows claiming
+java/groovy PENDING for qualified_calls/docstrings were stale rot; the
+#419 section-C gate in `completeness-inventory.ts` is now the
+AUTHORITATIVE per-language payload record — Matrix 4b row + section C
+checks, machine-verified on every `npm run verify`).
 
 **Standing fixture-authoring rule**: every language's fixtures MUST include
 identifiers that collide with stdlib/builtin words (get/map/run/add...),
@@ -68,10 +73,16 @@ grammar nodes, never emitted concepts.
 | implements | GATED F3 | GATED F3 | GATED F3 | fixtures + differential |
 | instantiates | GATED F3 | GATED F3 | GATED F3 | fixtures + differential |
 | uses / field_access | GATED F3 (anti-skip) | GATED F3 | GATED F3 | pure-field-chain fixtures |
-| contains | differential-implicit | implicit | implicit | explicit pins PENDING -> #381 |
-| overrides | **NO FIXTURE ANY LANGUAGE** | same | same | PENDING -> #381 |
-| references/imports | pipeline-e2e GATED | pipeline-e2e GATED | PENDING -> F7 + #383 | F7 |
-| exports | emitted, unpinned | n/a (no export concept) | n/a | PENDING -> #381 |
+| contains | GATED (java #419 section B, 11/11) | GATED (groovy/contains-edges + mutant) | implicit | PENDING -> #254 |
+| overrides | GATED (java/overrides fixture) | GATED (groovy/overrides + fq-annotations) | implicit | PENDING -> #254 |
+| references/imports | GATED (java/import-edges + mutant) | GATED (groovy/import-edges + mutants) | PENDING -> #253 (+ confirmed import-tier finding) | PENDING -> #254 (+ confirmed import-tier finding) |
+| exports | GATED (java/fq-api-endpoint) | NOT EMITTED -> declared (S3 ruling) | n/a | n/a |
+
+RECONCILED 2026-08-27 to the #419 gated state (the earlier
+"NO FIXTURE ANY LANGUAGE" overrides row and "implicit contains" rows
+were stale — java/groovy now carry explicit fixture + mutant pins; the
+#419 section-B gate in `completeness-inventory.ts` is the AUTHORITATIVE
+per-language relationship-kind record).
 
 Scala (Matrix 2 JVM cluster): fixtures 10/10 GATED; differential 95.1% cov / 0.5% unexplained on scala3@HEAD after #385 fixes (trait multi-parent positional bug fixed; stable_type_identifier parents; script-sentinel constructions).  kotlin wasm fieldCount=0 -> #382.
 
@@ -247,7 +258,7 @@ Gap closure (owner-approved, fixture-first ritual):
 Rulings (owner-approved 2026-08-26): G5 module-info DECLARED OUT OF
 SCOPE; G6 generic type bounds DECLARED LIMITATION; S1 java-spec-table
 corrected (throw/assert/try-with-resources removed from complexity).
-Java fixtures now 30; mutation suite 27/27 caught.
+Java fixtures now 31; mutation suite 41/41 caught (java 11 + groovy 13 + others).
 
 ### Per-language #419 status (state lives in the ledger, never in conversation)
 
