@@ -497,6 +497,16 @@ async function main() {
     const samplesHeuristic: any[] = []
 
     const durations: number[] = []
+    // Warm-up: the first parse of a language in this process pays one-time
+    // wasm compilation (measured: ~15s for tree-sitter core + grammar init,
+    // which poisoned a 52-file average as +280ms/file and tripped the F9
+    // budget spuriously). The perf budget measures steady-state per-file
+    // analysis cost, so one untimed warm-up parse precedes the timed loop.
+    try {
+      parser.parse("class WarmUp { void m() {} }")
+    } catch {
+      /* warm-up is best-effort; timing proceeds regardless */
+    }
     for (const f of sample) {
       const content = fs.readFileSync(f, "utf8")
       const relPath = path.relative(repoDir, f)
