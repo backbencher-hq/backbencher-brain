@@ -18,11 +18,16 @@ export function hashFileContent(content: string | Buffer): string {
 }
 
 /** mtime+size fast path: if both match, the file is fresh without hashing. */
-export function fileUnchangedSince(path: string, indexedHash: string): boolean {
+export function fileUnchangedSince(path: string, indexedHash: string, indexedSize?: number | null, indexedMtime?: number | null): boolean {
   try {
-    if (!existsSync(path)) return false
-    // The indexer records size_bytes and last_modified; the hash is the
-    // authoritative check, so hash directly (content is usually small).
+    const stat = statSync(path)
+    // The indexer records both values from the same stat operation used for
+    // discovery. This is the normal read-path fast path: unchanged metadata
+    // means the file is fresh without reopening and hashing source content.
+    // Hash remains the authoritative fallback when metadata is unavailable or
+    // differs, preserving correctness for edited files.
+    if (indexedSize !== null && indexedSize !== undefined && indexedMtime !== null && indexedMtime !== undefined &&
+      stat.size === indexedSize && Math.floor(stat.mtimeMs) === Math.floor(indexedMtime)) return true
     const content = readFileSync(path)
     return hashFileContent(content) === indexedHash
   } catch {
@@ -36,11 +41,11 @@ export function fileUnchangedSince(path: string, indexedHash: string): boolean {
 export function checkFileFreshness(raw: CoreDatabase, fileId: string): FileFreshness | null {
   try {
     const row = raw
-      .prepare("SELECT path, file_hash FROM brain_file WHERE id = ?")
-      .get(fileId) as { path: string; file_hash: string } | undefined
+      .prepare("SELECT path, file_hash, size_bytes, last_modified FROM brain_file WHERE id = ?")
+      .get(fileId) as { path: string; file_hash: string; size_bytes?: number | null; last_modified?: number | null } | undefined
     if (!row) return null
     if (!existsSync(row.path)) return { fileId, path: row.path, indexedHash: row.file_hash, status: "missing" }
-    const fresh = fileUnchangedSince(row.path, row.file_hash)
+    const fresh = fileUnchangedSince(row.path, row.file_hash, row.size_bytes, row.last_modified)
     return { fileId, path: row.path, indexedHash: row.file_hash, status: fresh ? "fresh" : "stale" }
   } catch {
     return null

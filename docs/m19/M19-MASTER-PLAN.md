@@ -55,14 +55,25 @@ GitHub milestone #19 · Started 2026-08-25
 |---|-------|--------|----------|
 | C1 | Governance | CLOSED — gate 10/10 | validation/m19/results/C1.json |
 | S1 | Scale benchmark at anchors | CLOSED — 16/16 | validation/m19/results/S1.json |
-| S2 | Index aspnetcore (59k files) | OPEN — timing ledger missing | validation/m19/results/S2.json |
-| S3 | Index intellij-community (273k files) | OPEN — timing ledger missing | validation/m19/results/S3.json |
+| S2 | Index aspnetcore (59k files) | CLOSED — 17/17; four clean deferred slices + full-finalization Paperclip control | validation/m19/results/S2.json |
+| S3 | Index intellij-community (273k files) | CLOSED — VERIFIED-PARTIAL 23/23; full cold ten-slice timing explicitly not claimed | validation/m19/results/S3.json |
 | Q1 | Retrieval at scale | CLOSED — 7/7 | validation/m19/results/Q1.json |
 | Q2 | Fallback at scale | CLOSED — 13/13 | validation/m19/results/Q2.json |
-| B1 | Benchmarks docs | CLOSED — 22/22 | validation/m19/results/B1.json |
+| B1 | Benchmarks docs | CLOSED — 24/24 | validation/m19/results/B1.json |
 | X9 | Gate | CLOSED — mutation 6/6 | validation/m19/results/X9.json |
 
-## 6. Negative list (what M19 does NOT claim)
+## 6. Closure interpretation
+
+M19 is closed in the local evidence ledger for its stated contracts. S2 is a
+full measured result for the four deferred ASP.NET ingestion slices plus a
+separate full-finalization Paperclip control; it does not claim full ASP.NET
+post-processing wall time. S3 is closed through the issue's explicit honest
+partial path: the live MEGA index, one fresh bounded batch, disjoint worker
+controls, and sequential RSS controls are verified, while the full cold
+ten-slice timing is not claimed because the first fresh batch took 1,216.877
+seconds on this machine.
+
+## 7. Negative list (what M19 does NOT claim)
 
 - M19 does not prove analyzer AST correctness on giant repos (the indexer may complete while AST quality is M14's lane).
 - M19 does not promise a fixed embedding-coverage % on giant repos — it proves the fallback ladder is honest at scale.
