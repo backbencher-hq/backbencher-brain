@@ -99,4 +99,8 @@ Options: `minConfidence`, `includeMitigated`, `includeUnresolved`, `maxResults`.
 `script/verify-security.ts` covers same-language SQLi, deduplication, resolved
 path nodes, confidence calibration, and — via deterministic row insertion —
 mitigated state, cross-language flags, `includeMitigated` filtering, hotspots,
-and alias normalization.
+and alias normalization. `script/m20/verify-security-flow-boundary.ts` additionally
+proves that endpoint resolution takes precedence over a mitigation flag: partial
+flows remain `source_only`/`unresolved` observations and are excluded when
+`includeUnresolved=false`. This is fixture-level evidence; it does not prove
+complete real-repository taint recall.

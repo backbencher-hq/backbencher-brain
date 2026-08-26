@@ -135,12 +135,12 @@ export async function analyzeTaintFlows(projectId: string, options: SecurityOpti
     //   - sink reachable, source not  -> unresolved  (one endpoint unresolved)
     const sourceResolved = !!row.source_symbol_id && !!source.file
     const sinkResolved = !!row.sink_symbol_id && !!sink.file
-    const state: SecurityFindingV2["state"] = mitigated
-      ? "mitigated"
-      : !sinkResolved
-        ? "source_only"
-        : !sourceResolved
-          ? "unresolved"
+    const state: SecurityFindingV2["state"] = !sinkResolved
+      ? "source_only"
+      : !sourceResolved
+        ? "unresolved"
+        : mitigated
+          ? "mitigated"
           : "confirmed"
 
     if (!includeMitigated && state === "mitigated") continue
@@ -190,6 +190,7 @@ export async function analyzeTaintFlows(projectId: string, options: SecurityOpti
         "Flows are indexer heuristics; parameterized/escaped sinks may still be reported.",
         state === "source_only" ? "Source-only observation: no confirmed sink flow." : "",
         state === "unresolved" ? "One endpoint could not be resolved to an indexed symbol." : "",
+        state === "mitigated" && (!sourceResolved || !sinkResolved) ? "Mitigation flag is not trusted until both endpoints resolve." : "",
       ].filter(Boolean),
     })
   }
