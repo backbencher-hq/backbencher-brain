@@ -111,6 +111,8 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     const scopeManager = new CScopeManager()
     const emittedUseRelationships = new Set<string>()
     const functionLocals = new Map<string, Set<string>>()
+    // #383 payload: call targets per enclosing function
+    const qcByFunction = new Map<string, string[]>()
 
     const structs: Record<string, any[]> = {}
     const globalVars: Record<string, boolean> = {}
@@ -343,15 +345,20 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
       ) {
         cyclomaticComplexity++
       } else if (node.type === "goto_statement") {
-        cyclomaticComplexity++
+        // goto is not a DECISION POINT (family T1 contract: branch constructs
+        // + short-circuit operators only) - it no longer inflates the
+        // cyclomatic count; maintainability tracking keeps hasGotoStatements.
         hasGotoStatements = true
       } else if (node.type === "labeled_statement") {
-        cyclomaticComplexity++ // each label is a potential jump target
+        // labels are jump TARGETS, not decisions - same T1 rationale.
+        hasGotoStatements = true
       } else if (node.type === "type_qualifier") {
         if (node.text === "volatile") hasVolatileQualifier = true
         if (node.text === "restrict" || node.text === "__restrict") hasRestrictQualifier = true
         if (node.text === "_Atomic") hasAtomicTypes = true
-      } else if (node.type === "gnu_asm_expression" || node.type === "asm_expression") {
+      } else if (node.type === "gnu_asm_expression") {
+        // Pinned wasm emits gnu_asm_expression; 'asm_expression' was a dead
+        // literal (grammar audit).
         hasInlineAsm = true
         patterns["Inline Assembly"] = true
       } else if (node.type === "binary_expression") {
@@ -368,10 +375,31 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (field) target = field.text
             isFuncPtr = true
           } else if (fnNode.type === "parenthesized_expression") {
+            // CAST vs FUNCTION POINTER: `(Type)expr` through vendor macros
+            // parses as a call with a parenthesized callee whose child is a
+            // type - that is a CAST, not a callable. Genuine function-pointer
+            // calls dereference ((*fp)(x)) or hold a variable.
+            const inner = fnNode.namedChild(0)
+            // A parenthesized BARE identifier followed by arguments is the
+            // classic vendor-macro CAST shape `(Unit)(x)` (typedef from an
+            // untracked header). Genuine function-pointer invocations
+            // dereference ((*fp)(x)) or wrap member expressions.
+            if (
+              inner &&
+              (inner.type === "type_identifier" ||
+                inner.type === "sized_type_specifier" || inner.type === "identifier")
+            ) {
+              continue
+            }
             isFuncPtr = true // simplified, we just assume paren is func ptr
           }
 
-          if (target && target.trim() !== "") {
+          if (
+            target && target.trim() !== "" &&
+            // Malformed recovery guard: include-adjacent macros produced
+            // targets containing quotes/newlines (never real callees).
+            !target.includes('"') && !target.includes("\n") && !target.includes("{")
+          ) {
             relationships.push({
               source: scopeManager.getRelationshipSource(),
               target: target,
@@ -380,6 +408,15 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
               metadata: { relationshipType: "c_function_call", isFunctionPointer: isFuncPtr },
             })
 
+            // #383 payload: calls of the enclosing function (C has no
+            // qualification - the plain call target IS the qualified path).
+            const qcFn = scopeManager.getCurrentFunctionName()
+            if (qcFn) {
+              const list = qcByFunction.get(qcFn) ?? []
+              list.push(target)
+              qcByFunction.set(qcFn, list)
+            }
+
             // Single pass security tracking
             if (inArray(MALLOC_FUNCTIONS, target)) {
               mallocCount++
@@ -387,14 +424,10 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
               if (activeFunctionSymbol && activeFunctionSymbol.metadata) {
                 activeFunctionSymbol.metadata.usesMalloc = true
               }
-              // instantiates: malloc/calloc allocate new memory objects — treat as instantiation
-              relationships.push({
-                source: scopeManager.getRelationshipSource(),
-                target: target,
-                type: ASTEngine.RelationshipType.Instantiates,
-                confidence: 0.9,
-                metadata: { relationshipType: "memory_allocation", allocator: target },
-              })
+              // malloc allocates BYTES, not a named type - an Instantiates
+              // edge to the literal 'malloc' could never resolve to a type
+              // symbol and was pure noise (removed; allocation tracking
+              // lives in metadata + patterns).
             } else if (inArray(FREE_FUNCTIONS, target)) {
               freeCount++
             } else if (inArray(UNSAFE_STRINGS, target)) {
@@ -615,6 +648,15 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
       })
     }
 
+    // #383 payload attach: calls per enclosing function.
+    for (const sym of symbols) {
+      const qc = qcByFunction.get(sym.name)
+      if (qc && qc.length > 0) sym.qualified_calls = [...new Set(qc)]
+    }
+
+    // #419-D evidence tiers on EVERY edge (family classifier).
+    this.classifyEvidenceTier(relationships)
+
     return {
       language: "c",
       symbols,
@@ -628,7 +670,10 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
       })),
       errors,
       metadata: {
-        complexity: symbols.length + relationships.length,
+        // REAL cyclomatic complexity - the old 'complexity' field was the
+        // synthetic symbols+relationships heuristic (fifth analyzer with
+        // that disease).
+        complexity: cyclomaticComplexity,
         linesOfCode: content.split("\n").length,
         cyclomaticComplexity,
         framework: frameworks[0] || "Standard C",
@@ -649,6 +694,59 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   // --- O(1) Extractor Helpers ---
+
+  /**
+   * T1 family contract: 1 + decision points (branch constructs +
+   * short-circuit operators; goto/labels are NOT decisions).
+   */
+  private functionComplexity(node: Node): number {
+    const decisionTypes = new Set([
+      "if_statement", "for_statement", "while_statement", "do_statement",
+      "case_statement", "conditional_expression",
+    ])
+    let c = 1
+    const st: Node[] = [node]
+    while (st.length) {
+      const n = st.pop()!
+      if (decisionTypes.has(n.type)) c++
+      else if (n.type === "binary_expression") {
+        const op = n.childForFieldName("operator")?.text
+        if (op === "&&" || op === "||") c++
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const ch = n.namedChild(i)
+        if (ch) st.push(ch)
+      }
+    }
+    return c
+  }
+
+  /**
+   * #419-D evidence-tier classification for EVERY emitted relationship
+   * (family rules).
+   */
+  private classifyEvidenceTier(relationships: ASTEngine.UniversalRelationship[]): void {
+    for (const r of relationships) {
+      const md = r.metadata ?? (r.metadata = {})
+      if (md.evidenceClass) continue
+      const t = String(r.type ?? "")
+      const conf = typeof r.confidence === "number" ? r.confidence : 1
+      if (t === "contains" || t === "exports") { md.evidenceClass = "structural"; continue }
+      if (t === "references") {
+        md.evidenceClass =
+          md.includeDependency || md.isImport ? "import_based"
+          : md.relationshipType === "type_reference" ? "reference_qualified"
+          : "usage_contextual"
+        continue
+      }
+      if (t === "extends" || t === "implements" || t === "overrides") {
+        md.evidenceClass = conf >= 1 ? "structural" : conf >= 0.85 ? "usage_contextual" : "inferred"
+        continue
+      }
+      if (t === "instantiates") { md.evidenceClass = "structural"; continue }
+      md.evidenceClass = "usage_contextual"
+    }
+  }
 
   private findChild(node: Node, predicate: (child: Node) => boolean): Node | null {
     for (let i = 0; i < node.childCount; i++) {
@@ -750,6 +848,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
       kind: ASTEngine.SymbolKind.Function,
       range: this.recoverFunctionRange(node, content),
       scope: "global",
+      complexity: this.functionComplexity(node),
       visibility: isStatic ? "private" : "public",
       isStatic,
       returnType: returnTypeNode ? returnTypeNode.text : "any",

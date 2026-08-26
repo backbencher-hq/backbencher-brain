@@ -206,6 +206,7 @@ self-declaration of "done" is never sufficient (M13 lesson, re-learned).
 | typescript | 1 (b84cea5: 5 verified defects) + ongoing | decorators/heritage/usage-pass/contract/ranges | fixed + gated |
 | javascript | 2 (853f022: 8 defects; a00969e: 5 incl. 2 Tier-1) | barrel re-exports invisible, accessor-name collision, private methods, CJS chains | fixed + gated |
 | vue | 2 waves (732e1dc dual-blocks/lang-dispatch/dedupe/metrics; 25fa235 script-setup contract/watch) + element-plus corpus 156/156 100% | 7 defects incl. entire setup-block loss, lang dispatch, duplicate components, script-setup contract loss | fixed + gated |
+| c | 1 wave (this wave: metrics fake #5 cured, evidence tiers, qc payload, cast/call fix, goto de-counted) + `jq` corpus 1692/1692 100% | 8 defects incl. cast/call confusion (127 noise edges), malloc instantiates noise | fixed + gated |
 | svelte | 2 waves (d7784bf tiers/metrics/columns/dispatch; 7dcd251+this wave #419 A/B/C: snippets, rune noise, module-block ownership, kind catalog, payload pins) + `svelte` repo corpus floors true 0/0 | 11 defects total (incl. oracle type_arguments over-derivation, LIFO block-index inversion, render_tag opaque text) | fixed + gated; #419 A/B/C closed at fixture level; L5 pending owner spot-check |
 
 Sign-off ritual (pending, per contract §5.6): owner samples claims per
@@ -240,6 +241,15 @@ G. Docs truthful
 H. Cross-language consistency
 
 No partial closure. "Future work" absorption is banned by Matrix 3b/4b rules.
+
+### Dotted-name convention — RATIFIED (owner decision)
+
+All analyzers emit FULL DOTTED NAMES as relationship targets when types are
+qualified (`collection.mutable.ArrayBuffer`, not `ArrayBuffer`). Rationale:
+full path carries more information (last segment always extractable; path
+cannot be reconstructed from segment alone). Cross-language consumers must
+normalize via lastSegment() when comparing. Applied to java, groovy, kotlin,
+scala uniformly.
 
 ## Standing rules
 
