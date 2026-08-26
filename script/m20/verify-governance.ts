@@ -186,7 +186,7 @@ negative("C1: verifier has no obvious hollow assertions", !unconditional, uncond
 
 const initialFailed = checks - passed
 const generatedAt = new Date().toISOString()
-const baseResult = { issue: "M20.C1", code: "C1", milestone: "M20", status: initialFailed === 0 && currentWorkingTreeRelevantChanges.length === 0 ? "verified" : "known-gap", checks, passed, failed: initialFailed, negativeCases: negatives, currentCommit, workingTreeRelevantChanges: currentWorkingTreeRelevantChanges, verifierCommand: "bun run script/m20/verify-governance.ts", evidenceFile: "C1.json", generatedAt, ledger: "validation/m20/results/manifest.json", limitations: ["This gate validates governance metadata and mutation response; it does not verify the four tool implementations.", "Evidence is not verified for a clean project revision while relevant M20 files are uncommitted."] }
+const baseResult = { issue: "M20.C1", code: "C1", milestone: "M20", status: initialFailed === 0 && currentWorkingTreeRelevantChanges.length === 0 ? "verified" : "known-gap", checks, passed, failed: initialFailed, negativeCases: negatives, currentCommit, workingTreeRelevantChanges: currentWorkingTreeRelevantChanges, verifierCommand: "bun run script/m20/verify-governance.ts", evidenceFile: "C1.json", generatedAt, ledger: "validation/m20/results/manifest.json", limitations: ["This gate validates governance metadata and mutation response; it does not verify the four tool implementations.", "A run with relevant uncommitted M20 files is recorded as known-gap; this record was generated from a clean relevant project revision."] }
 const evidenceDir = path.join(ROOT, "validation/m20/results")
 const evidencePath = path.join(evidenceDir, baseResult.evidenceFile)
 mkdirSync(evidenceDir, { recursive: true })

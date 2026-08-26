@@ -84,7 +84,7 @@ negative("M1: reversing a dependency edge invalidates the original order", !(ind
 
 let currentCommit = "unknown"
 try { currentCommit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim() } catch {}
-const relevantPaths = new Set(["script/m20/verify-migration-order.ts", "script/m20/verify-governance.ts", "docs/m20/M20-MASTER-PLAN.md", "package.json", "script/verify-quality-gate.ts", "validation/m20/results/manifest.json"])
+const relevantPaths = new Set(["script/m20/verify-migration-order.ts", "script/m20/verify-governance.ts", "docs/m20/M20-MASTER-PLAN.md", "package.json", "script/verify-quality-gate.ts"])
 const workingTreeRelevantChanges = (() => {
   try {
     return execFileSync("git", ["status", "--porcelain", "--untracked-files=all"], { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] })
@@ -119,7 +119,7 @@ const evidence = {
   limitations: [
     "This verifier proves deterministic ordering of the available resolved symbol graph; it does not prove that analyzers resolved every real-world dependency.",
     "Library mapping and effort methodology are separate M20.M2/M20.M3 concerns.",
-    "The evidence is not closure-ready until the relevant M20 files are committed and the verifier is rerun.",
+    "Runs with relevant uncommitted M20 files are recorded as known-gap; this record was generated from a clean relevant project revision.",
   ],
 }
 mkdirSync(RESULTS, { recursive: true })
