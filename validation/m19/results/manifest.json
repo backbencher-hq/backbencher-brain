@@ -8,7 +8,7 @@
     { "code": "S3", "evidence": "S3.json", "closed": false, "note": "MEGA index totals verified, but complete ten-slice wall-time ledger is missing; must rerun timing capture before closure" },
     { "code": "Q1", "evidence": "Q1.json", "closed": true, "note": "retrieval at scale verified 7/7; NOCASE index + bounded content search shipped" },
     { "code": "Q2", "evidence": "Q2.json", "closed": true, "note": "fallback at scale verified 13/13; labeled degradation + tfidf exclusion proven" },
-    { "code": "B1", "evidence": "B1.json", "closed": true, "note": "SCALE.md and BENCHMARKS.md verified 18/18; giant timing gaps explicitly documented" },
-    { "code": "X9", "evidence": "X9.json", "closed": false, "note": "gate hardening pending" }
+    { "code": "B1", "evidence": "B1.json", "closed": true, "note": "SCALE.md and BENCHMARKS.md verified 22/22; giant timing gaps explicitly documented" },
+    { "code": "X9", "evidence": "X9.json", "closed": true, "note": "mutation harness verified 6/6: poison, hollow, scale, corpus, restore" }
   ]
 }
