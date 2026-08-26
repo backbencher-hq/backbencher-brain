@@ -106,5 +106,10 @@ flows remain `source_only`/`unresolved` observations and are excluded when
 deterministic policy matrix (exact state/severity/confidence per injected row),
 real concatenation-vs-clean behavior, a mutation proof, and a tautology audit
 that rejects any security verifier containing unconditional assertions
-(`check(..., true)`, `>= 0`, `|| true`). These are fixture-level evidence; they
-do not prove complete real-repository taint recall (owned by M20.X2).
+(`check(..., true)`, `>= 0`, `|| true`). `script/m20/verify-security-history.ts`
+proves the history contract: live `source_only`/`unresolved` observations are
+surfaced as unvalidated sources but excluded from persisted history; persisted
+rows never carry `rule="unresolved"` or `severity="unknown"`; repeat runs keep
+finding counts stable; CLI and direct handler record the same set. These are
+fixture-level evidence; they do not prove complete real-repository taint recall
+(owned by M20.X2).
