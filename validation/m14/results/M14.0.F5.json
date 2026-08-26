@@ -50,96 +50,41 @@
     },
     {
       "description": "fmt@e27cc20bd9: tree-truth vs analyzer diff",
-      "detail": "47 files, coverage 91.2%, unexplained 1.9%",
+      "detail": "47 files, coverage 97.3%, unexplained 2.2%",
       "id": "differential-cpp",
       "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "a1d6f398ead2f61f4700a84a137886ba4fdc2037",
-  "committedAt": "2026-08-26T02:39:01+02:00",
+  "commit": "f8acca3f438eff908898d19de8b54580c00dd075",
+  "committedAt": "2026-08-26T02:42:01+02:00",
   "data": {
     "corpusPins": {
       "fmt": "e27cc20bd93a4e280fb9268d41cd131069a9c73f"
     },
     "report": {
       "cpp": {
-        "analyzerEdges": 162,
-        "coveragePct": 91.2,
-        "coveredByAnalyzer": 134,
-        "explainableByTree": 159,
-        "fabricationPct": 1.9,
+        "analyzerEdges": 184,
+        "coveragePct": 97.3,
+        "coveredByAnalyzer": 143,
+        "explainableByTree": 180,
+        "fabricationPct": 2.2,
         "filesSampled": 47,
         "heuristicUnexplained": 0,
-        "missingInAnalyzer": 13,
+        "missingInAnalyzer": 4,
         "perf": {
-          "avgMsPerFile": 99.1,
-          "maxMsPerFile": 1483.5,
+          "avgMsPerFile": 81.8,
+          "maxMsPerFile": 1279.5,
           "samplesTimed": 47
         },
         "samples": [
           {
-            "dir": "MISSING",
-            "file": "test/xchar-test.cc",
-            "from": "no_grouping.do_decimal_point",
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/format-test.cc",
             "label": "overrides",
-            "target": "numpunct.do_decimal_point"
-          },
-          {
-            "dir": "MISSING",
-            "file": "test/xchar-test.cc",
-            "from": "no_grouping.do_grouping",
-            "label": "overrides",
-            "target": "numpunct.do_grouping"
-          },
-          {
-            "dir": "MISSING",
-            "file": "test/xchar-test.cc",
-            "from": "no_grouping.do_thousands_sep",
-            "label": "overrides",
-            "target": "numpunct.do_thousands_sep"
-          },
-          {
-            "dir": "MISSING",
-            "file": "test/xchar-test.cc",
-            "from": "special_grouping.do_decimal_point",
-            "label": "overrides",
-            "target": "numpunct.do_decimal_point"
-          },
-          {
-            "dir": "MISSING",
-            "file": "test/xchar-test.cc",
-            "from": "special_grouping.do_grouping",
-            "label": "overrides",
-            "target": "numpunct.do_grouping"
-          },
-          {
-            "dir": "MISSING",
-            "file": "test/xchar-test.cc",
-            "from": "special_grouping.do_thousands_sep",
-            "label": "overrides",
-            "target": "numpunct.do_thousands_sep"
-          },
-          {
-            "dir": "MISSING",
-            "file": "test/xchar-test.cc",
-            "from": "small_grouping.do_decimal_point",
-            "label": "overrides",
-            "target": "numpunct.do_decimal_point"
-          },
-          {
-            "dir": "MISSING",
-            "file": "test/xchar-test.cc",
-            "from": "small_grouping.do_grouping",
-            "label": "overrides",
-            "target": "numpunct.do_grouping"
-          },
-          {
-            "dir": "MISSING",
-            "file": "test/xchar-test.cc",
-            "from": "small_grouping.do_thousands_sep",
-            "label": "overrides",
-            "target": "numpunct.do_thousands_sep"
+            "line": 0,
+            "target": "format_facet.do_put"
           },
           {
             "dir": "MISSING",
@@ -195,7 +140,7 @@
           }
         ],
         "treeTruthEdges": 147,
-        "unexplainedInAnalyzer": 3
+        "unexplainedInAnalyzer": 4
       },
       "groovy": {
         "analyzerEdges": 0,
@@ -243,8 +188,8 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 33.1,
-          "maxMsPerFile": 33.1,
+          "avgMsPerFile": 26.3,
+          "maxMsPerFile": 26.3,
           "samplesTimed": 1
         },
         "samples": [],
