@@ -108,6 +108,13 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => ({ ...s, comments: [] })) }),
   },
   {
+    id: "java/drop-declared-types",
+    language: "java",
+    defectClass: "relationship-loss",
+    description: "drops all declared_type references (the silent type-usage-graph bug class fixed in M14)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => x.metadata?.relationshipType !== "declared_type") }),
+  },
+  {
     id: "typescript/drop-qualified-calls",
     language: "typescript",
     defectClass: "symbol-payload-loss",
