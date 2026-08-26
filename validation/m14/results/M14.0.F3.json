@@ -38,7 +38,7 @@
     },
     {
       "description": "kotlin adversarial fixtures",
-      "detail": "24/24 fixtures pass",
+      "detail": "35/35 fixtures pass",
       "id": "fixtures-kotlin",
       "status": "pass"
     },
@@ -80,8 +80,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "69a2264b99fd1082e090ad0f4591de9cede29237",
-  "committedAt": "2026-08-27T00:20:49+02:00",
+  "commit": "87dda846ed3b5c472ede1f56d6e5147736563015",
+  "committedAt": "2026-08-27T01:04:13+02:00",
   "data": {
     "details": [
       {
@@ -815,6 +815,11 @@
         "problems": []
       },
       {
+        "fixture": "kotlin/callable-refs",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "kotlin/calls-and-instantiation",
         "ok": true,
         "problems": []
@@ -841,6 +846,11 @@
       },
       {
         "fixture": "kotlin/coroutine-dispatch",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/ctor-delegation",
         "ok": true,
         "problems": []
       },
@@ -875,6 +885,26 @@
         "problems": []
       },
       {
+        "fixture": "kotlin/import-edges",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/indexing-uses",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/init-attribution",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/instantiates-edges",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "kotlin/interface-multi-extends",
         "ok": true,
         "problems": []
@@ -890,7 +920,17 @@
         "problems": []
       },
       {
+        "fixture": "kotlin/object-literal",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "kotlin/override-fallback-confidence",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/parameters-payload",
         "ok": true,
         "problems": []
       },
@@ -915,7 +955,22 @@
         "problems": []
       },
       {
+        "fixture": "kotlin/template-uses",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/type-alias",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "kotlin/type-usage-graph",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/visibility-payload",
         "ok": true,
         "problems": []
       },
@@ -1132,7 +1187,7 @@
       },
       "kotlin": {
         "fail": 0,
-        "pass": 24
+        "pass": 35
       },
       "python": {
         "fail": 0,

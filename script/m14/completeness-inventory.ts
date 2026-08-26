@@ -112,19 +112,19 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "imports"],
     payloads: {
       qualified_calls: { key: "expectQualifiedCalls", pin: "kotlin/qualified-calls-builtin-names" },
-      docstrings: { key: "expectComments", pin: "kotlin/kdoc-extraction (add comment pin in wave)" },
+      docstrings: { key: "expectComments", pin: "kotlin/kdoc-extraction" },
       complexity: { key: "expectComplexity", pin: "kotlin/complexity-parity" },
-      typeParameters: { key: "expectTypeParameters", pin: "kotlin/generic-parameters-payload" },
-      visibility: { key: "expectVisibility", pin: "kotlin/visibility pin (wave)" },
+      typeParameters: { key: "expectTypeParameters", pin: "kotlin/generic-parameters" },
+      visibility: { key: "expectVisibility", pin: "kotlin/visibility-payload" },
       apiContract: { key: "expectApiContractPaths", pin: "kotlin/api-contract-routes" },
-      parameters: { key: "expectParameters", pin: "kotlin/parameters pin (wave)" },
+      parameters: { key: "expectParameters", pin: "kotlin/parameters-payload" },
     },
     title: "kotlin pass (#419)",
   },
 }
 
 // Languages that have reached CONFORMANT and therefore run in npm run verify.
-const GATED_LANGS = ["java", "groovy"]
+const GATED_LANGS = ["java", "groovy", "kotlin"]
 
 async function loadNamedNodeTypes(cfg: LangConfig): Promise<string[]> {
   const wts: any = await import("web-tree-sitter")
@@ -172,7 +172,10 @@ function verifySectionB(cfg: LangConfig): SectionCheck {
     for (const rel of exp.expectRelationships ?? []) {
       if (typeof rel.type === "string") pinned.add(rel.type)
       if (rel["meta.relationshipType"]) pinned.add(rel["meta.relationshipType"])
-      if (rel["meta.isJavaImport"] || rel["meta.isGroovyImport"] || rel["meta.isImport"]) pinned.add("imports")
+      // isImportDep: kotlin/scala import edges carry this flag (the K8
+      // JVM-family finding — the gate had the same blind spot the tier
+      // classifier had).
+      if (rel["meta.isJavaImport"] || rel["meta.isGroovyImport"] || rel["meta.isImport"] || rel["meta.isImportDep"]) pinned.add("imports")
     }
   }
   const unpinned = cfg.requiredKinds.filter((k) => !pinned.has(k))
@@ -214,17 +217,25 @@ function verifySectionD(cfg: LangConfig): SectionCheck {
 }
 
 function verifySectionE(cfg: LangConfig): SectionCheck {
-  const p = path.join(RESULTS, "M14.0.F5.json")
-  if (!fs.existsSync(p)) return { id: "section-e-differential", description: "differential evidence (M14.0.F5.json) exists", status: "fail", detail: "missing M14.0.F5.json" }
-  const ev = JSON.parse(fs.readFileSync(p, "utf8"))
-  const check = (ev.checks ?? []).find((c: any) => c.id === cfg.differentialCheck)
-  if (!check) return { id: "section-e-differential", description: `${cfg.differentialCheck} check present`, status: "fail", detail: `no ${cfg.differentialCheck} check in M14.0.F5.json` }
-  const ok = check.status === "pass" && /coverage 100%/.test(check.detail ?? "") && /unexplained 0%/.test(check.detail ?? "")
+  // The corpus FLOOR is pinned in differential-baseline.json under the
+  // language's floor key (perfKey: grails-core:java / grails-core:groovy /
+  // Exposed:kotlin). M14.0.F5.json is a SNAPSHOT of the last single
+  // differential run (emitEvidence overwrites per repo), so reading it for
+  // the floor would fail any language whose floor repo isn't the last run
+  // (kotlin's floor is Exposed; the sweep's audit:differential runs
+  // grails-core). The baseline is the pinned truth; the differential's own
+  // regression gate enforces current counts never exceed it.
+  const p = path.join(ROOT, "validation", "m14", "differential-baseline.json")
+  if (!fs.existsSync(p)) return { id: "section-e-differential", description: "corpus floor pinned in differential-baseline.json", status: "fail", detail: "missing differential-baseline.json" }
+  const b = JSON.parse(fs.readFileSync(p, "utf8"))
+  const row = b?.counts?.[cfg.perfKey]
+  if (!row) return { id: "section-e-differential", description: `${cfg.perfKey} floor row present`, status: "fail", detail: `no baseline floor row for ${cfg.perfKey}` }
+  const ok = row.missing === 0 && row.unexplained === 0
   return {
     id: "section-e-differential",
-    description: `${cfg.differentialCheck} at corpus floor (coverage 100%, unexplained 0%)`,
+    description: `${cfg.perfKey} at corpus floor (missing 0, unexplained 0)`,
     status: ok ? "pass" : "fail",
-    detail: check.detail ?? String(check.status),
+    detail: `floor ${cfg.perfKey}: missing=${row.missing}, unexplained=${row.unexplained} (differential-baseline.json)`,
   }
 }
 
