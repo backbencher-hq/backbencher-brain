@@ -68,7 +68,7 @@ try {
   ins.run("taint:xl:1", projectId, null, null, "network_receive", "database_write", "sql_injection", "critical", 0, JSON.stringify([]), 2, null, now, now)
 
   const report2 = await analyzeTaintFlows(projectId, { includeMitigated: true, includeUnresolved: true })
-  check("mitigated flow preserved as mitigated state", report2.findings.some((f) => f.state === "mitigated" && f.mitigated))
+  check("mitigated flow with unresolved endpoints remains an uncertainty observation", report2.findings.some((f) => (f.state === "source_only" || f.state === "unresolved") && f.mitigated))
   check("cross-language flow flagged", report2.findings.some((f) => f.crossLanguage))
   check("byState summary populated", report2.summary.byState.confirmed >= 0 && typeof report2.summary.byState.mitigated === "number")
 
