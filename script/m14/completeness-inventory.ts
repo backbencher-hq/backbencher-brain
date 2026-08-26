@@ -104,7 +104,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
 }
 
 // Languages that have reached CONFORMANT and therefore run in npm run verify.
-const GATED_LANGS = ["java"]
+const GATED_LANGS = ["java", "groovy"]
 
 async function loadNamedNodeTypes(cfg: LangConfig): Promise<string[]> {
   const wts: any = await import("web-tree-sitter")
@@ -355,7 +355,7 @@ async function main() {
     limitations: [
       { description: "classified against pinned wasm grammars; grammar drift re-validates on every run" },
       { description: "java gaps G1-G4 closed fixture-first (2026-08-26); rulings G5/G6/S1 applied; CONFORMANT" },
-      { description: "groovy inventory built 2026-08-26: G1-G8 confirmed by live probes, awaiting owner review before any fix; S1-S5 rulings pending" },
+      { description: "groovy G1-G8 closed fixture-first 2026-08-27 (34/34 fixtures, 41/41 mutants incl. 13 groovy); S1-S5 ruled: gstring Uses declared limitation (grammar emits no interpolation nodes), JPMS never-reachable, exports/apiContractPath NOT EMITTED, parameters GATED; exports + permits declared not-required for groovy" },
     ],
     data,
   })

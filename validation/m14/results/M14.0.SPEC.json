@@ -1,120 +1,262 @@
 {
   "checks": [
     {
-      "description": "every named node type classified",
+      "description": "java: every named node type classified",
       "id": "inventory-fully-classified",
+      "language": "java",
       "status": "pass"
     },
     {
-      "description": "4 confirmed gaps declared",
+      "description": "java: 4 confirmed gaps declared",
       "id": "gap-list-present",
+      "language": "java",
       "status": "pass"
     },
     {
-      "description": "3 ruled, 0 pending owner",
+      "description": "java: 3 ruled, 0 pending owner",
       "id": "design-decisions-tracked",
+      "language": "java",
       "status": "pass"
     },
     {
-      "description": "every named node type classified (143)",
+      "description": "every named node type classified (java)",
       "detail": "143 types, 70 handled, 60 silent, 4 gaps, 3 decisions",
       "id": "section-a-structural",
+      "language": "java",
       "status": "pass"
     },
     {
       "description": "11 relationship kinds pinned by java fixtures",
       "detail": "pinned: calls, config_property, constructor_invocation, contains, declared_type, exports, extends, implements, imports, instantiates, mapped_table, overrides, permits, record_pattern, references, throws_type, uses",
       "id": "section-b-relationship-kinds",
+      "language": "java",
       "status": "pass"
     },
     {
-      "description": "Matrix 1b payload rows pinned (7)",
+      "description": "Matrix 1b payload rows pinned for java (7)",
       "detail": "qualified_calls, docstrings, complexity, typeParameters, visibility, apiContract, parameters",
       "id": "section-c-payload-matrix",
+      "language": "java",
       "status": "pass"
     },
     {
       "description": ">=2 distinct evidenceClass values pinned by fixtures",
       "detail": "2 tier(s) pinned: import_based, structural",
       "id": "section-d-evidence-tiers",
+      "language": "java",
       "status": "pass"
     },
     {
-      "description": "differential-java at grails-core floor (coverage 100%, unexplained 0%)",
+      "description": "differential-java at corpus floor (coverage 100%, unexplained 0%)",
       "detail": "60 files, coverage 100%, unexplained 0%",
       "id": "section-e-differential",
+      "language": "java",
       "status": "pass"
     },
     {
       "description": "java avgMsPerFile recorded (F9 gate enforces budget)",
       "detail": "grails-core:java 7.9 ms/file",
       "id": "section-f-perf-budget",
+      "language": "java",
       "status": "pass"
     },
     {
       "description": "java analyzer docs present and committed",
       "detail": "docs/analyzers/java.md, docs/analyzers/real-java-analyzer.md",
       "id": "section-g-docs",
+      "language": "java",
       "status": "pass"
     },
     {
       "description": "cross-language consistency checks all pass",
       "detail": "3 checks pass",
       "id": "section-h-cross-language",
+      "language": "java",
+      "status": "pass"
+    },
+    {
+      "description": "groovy: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "groovy",
+      "status": "pass"
+    },
+    {
+      "description": "groovy: 8 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "groovy",
+      "status": "pass"
+    },
+    {
+      "description": "groovy: 5 ruled, 0 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "groovy",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (groovy)",
+      "detail": "153 types, 68 handled, 66 silent, 8 gaps, 5 decisions",
+      "id": "section-a-structural",
+      "language": "groovy",
+      "status": "pass"
+    },
+    {
+      "description": "9 relationship kinds pinned by groovy fixtures",
+      "detail": "pinned: calls, case_pattern, cast_type, constructor_invocation, contains, declared_type, extends, implements, imports, instanceof_expression, instantiates, method_reference, overrides, references, throws_type, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "groovy",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for groovy (6)",
+      "detail": "qualified_calls, docstrings, complexity, typeParameters, visibility, parameters",
+      "id": "section-c-payload-matrix",
+      "language": "groovy",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "2 tier(s) pinned: import_based, structural",
+      "id": "section-d-evidence-tiers",
+      "language": "groovy",
+      "status": "pass"
+    },
+    {
+      "description": "differential-groovy at corpus floor (coverage 100%, unexplained 0%)",
+      "detail": "60 files, coverage 100%, unexplained 0%",
+      "id": "section-e-differential",
+      "language": "groovy",
+      "status": "pass"
+    },
+    {
+      "description": "groovy avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "grails-core:groovy 7.5 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "groovy",
+      "status": "pass"
+    },
+    {
+      "description": "groovy analyzer docs present and committed",
+      "detail": "docs/analyzers/groovy.md, docs/analyzers/real-groovy-analyzer.md",
+      "id": "section-g-docs",
+      "language": "groovy",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "3 checks pass",
+      "id": "section-h-cross-language",
+      "language": "groovy",
       "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "50d50dae26ea9e7e7043940630f97e0d20fbaefd",
-  "committedAt": "2026-08-26T23:34:24+02:00",
+  "commit": "c360143d0fd8e4ab0e6c6095c81eb6389a65d1a8",
+  "committedAt": "2026-08-27T00:07:55+02:00",
   "data": {
-    "gaps": [
-      "G1: Uses relationship on the array expression",
-      "G2: Calls relationship for super(...) / this(...)",
-      "G3: Type reference for the record type in instanceof Point(int x, int y)",
-      "G4: Calls relationships for invocations outside method bodies: static initializers, instance initializers, field initializers, enum constant bodies"
-    ],
-    "handledVerified": 70,
-    "internalSilent": 60,
-    "nodeTypeCount": 143,
-    "pendingDecisions": [],
-    "ruledDecisions": [
-      "G5",
-      "G6",
-      "S1"
-    ],
-    "sections": {
-      "section-a-structural": {
-        "detail": "143 types, 70 handled, 60 silent, 4 gaps, 3 decisions",
-        "status": "pass"
+    "languages": {
+      "groovy": {
+        "gaps": [
+          "G1: Uses relationship on the array expression (xs[i] reads/writes emit no Uses on xs)",
+          "G2: Calls relationship for super(...)/this(...) constructor delegation",
+          "G3: Pattern type references lost (instanceof Point(int x, int y) and instanceof String s emit no reference to the pattern type)",
+          "G4: Type reference for Foo::bar method references (no reference to Foo emitted)",
+          "G5: Cast type reference ((String) o emits no reference to String)",
+          "G6: record Point(int x, int y) emits no symbol (Groovy 4 records invisible)",
+          "G7: @interface Marker emits no symbol",
+          "G8: imports relationship kind unpinned (isGroovyImport edge exists but no fixture guards it)"
+        ],
+        "nodeTypeCount": 153,
+        "pendingDecisions": [],
+        "ruledDecisions": [
+          "S1",
+          "S2",
+          "S3",
+          "S4",
+          "S5"
+        ],
+        "sections": {
+          "section-a-structural": {
+            "detail": "153 types, 68 handled, 66 silent, 8 gaps, 5 decisions",
+            "status": "pass"
+          },
+          "section-b-relationship-kinds": {
+            "detail": "pinned: calls, case_pattern, cast_type, constructor_invocation, contains, declared_type, extends, implements, imports, instanceof_expression, instantiates, method_reference, overrides, references, throws_type, uses",
+            "status": "pass"
+          },
+          "section-c-payload-matrix": {
+            "detail": "qualified_calls, docstrings, complexity, typeParameters, visibility, parameters",
+            "status": "pass"
+          },
+          "section-d-evidence-tiers": {
+            "detail": "2 tier(s) pinned: import_based, structural",
+            "status": "pass"
+          },
+          "section-e-differential": {
+            "detail": "60 files, coverage 100%, unexplained 0%",
+            "status": "pass"
+          },
+          "section-f-perf-budget": {
+            "detail": "grails-core:groovy 7.5 ms/file",
+            "status": "pass"
+          },
+          "section-g-docs": {
+            "detail": "docs/analyzers/groovy.md, docs/analyzers/real-groovy-analyzer.md",
+            "status": "pass"
+          },
+          "section-h-cross-language": {
+            "detail": "3 checks pass",
+            "status": "pass"
+          }
+        }
       },
-      "section-b-relationship-kinds": {
-        "detail": "pinned: calls, config_property, constructor_invocation, contains, declared_type, exports, extends, implements, imports, instantiates, mapped_table, overrides, permits, record_pattern, references, throws_type, uses",
-        "status": "pass"
-      },
-      "section-c-payload-matrix": {
-        "detail": "qualified_calls, docstrings, complexity, typeParameters, visibility, apiContract, parameters",
-        "status": "pass"
-      },
-      "section-d-evidence-tiers": {
-        "detail": "2 tier(s) pinned: import_based, structural",
-        "status": "pass"
-      },
-      "section-e-differential": {
-        "detail": "60 files, coverage 100%, unexplained 0%",
-        "status": "pass"
-      },
-      "section-f-perf-budget": {
-        "detail": "grails-core:java 7.9 ms/file",
-        "status": "pass"
-      },
-      "section-g-docs": {
-        "detail": "docs/analyzers/java.md, docs/analyzers/real-java-analyzer.md",
-        "status": "pass"
-      },
-      "section-h-cross-language": {
-        "detail": "3 checks pass",
-        "status": "pass"
+      "java": {
+        "gaps": [
+          "G1: Uses relationship on the array expression",
+          "G2: Calls relationship for super(...) / this(...)",
+          "G3: Type reference for the record type in instanceof Point(int x, int y)",
+          "G4: Calls relationships for invocations outside method bodies: static initializers, instance initializers, field initializers, enum constant bodies"
+        ],
+        "nodeTypeCount": 143,
+        "pendingDecisions": [],
+        "ruledDecisions": [
+          "G5",
+          "G6",
+          "S1"
+        ],
+        "sections": {
+          "section-a-structural": {
+            "detail": "143 types, 70 handled, 60 silent, 4 gaps, 3 decisions",
+            "status": "pass"
+          },
+          "section-b-relationship-kinds": {
+            "detail": "pinned: calls, config_property, constructor_invocation, contains, declared_type, exports, extends, implements, imports, instantiates, mapped_table, overrides, permits, record_pattern, references, throws_type, uses",
+            "status": "pass"
+          },
+          "section-c-payload-matrix": {
+            "detail": "qualified_calls, docstrings, complexity, typeParameters, visibility, apiContract, parameters",
+            "status": "pass"
+          },
+          "section-d-evidence-tiers": {
+            "detail": "2 tier(s) pinned: import_based, structural",
+            "status": "pass"
+          },
+          "section-e-differential": {
+            "detail": "60 files, coverage 100%, unexplained 0%",
+            "status": "pass"
+          },
+          "section-f-perf-budget": {
+            "detail": "grails-core:java 7.9 ms/file",
+            "status": "pass"
+          },
+          "section-g-docs": {
+            "detail": "docs/analyzers/java.md, docs/analyzers/real-java-analyzer.md",
+            "status": "pass"
+          },
+          "section-h-cross-language": {
+            "detail": "3 checks pass",
+            "status": "pass"
+          }
+        }
       }
     }
   },
@@ -125,19 +267,16 @@
   ],
   "limitations": [
     {
-      "description": "classified against pinned tree-sitter-java wasm (143 public named types); grammar drift re-validates on every run"
+      "description": "classified against pinned wasm grammars; grammar drift re-validates on every run"
     },
     {
-      "description": "gaps G1-G4 probe-verified on synthetic fixtures and closed with fixture-gated fixes (2026-08-26)"
+      "description": "java gaps G1-G4 closed fixture-first (2026-08-26); rulings G5/G6/S1 applied; CONFORMANT"
     },
     {
-      "description": "G5/G6/S1 ruled by owner 2026-08-26: declared out of scope / declared limitation / spec-table corrected"
-    },
-    {
-      "description": "B-section imports pin added 2026-08-26 (java/import-edges + mutant java/drop-import-edges): static-import isStatic flag added to edge metadata; sections A-H verified mechanically on committed artifacts"
+      "description": "groovy G1-G8 closed fixture-first 2026-08-27 (34/34 fixtures, 41/41 mutants incl. 13 groovy); S1-S5 ruled: gstring Uses declared limitation (grammar emits no interpolation nodes), JPMS never-reachable, exports/apiContractPath NOT EMITTED, parameters GATED; exports + permits declared not-required for groovy"
     }
   ],
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
-  "title": "Completeness spec — java pilot (#419), A–H sections"
+  "title": "Completeness spec (#419) — A–H sections per language"
 }

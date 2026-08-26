@@ -32,7 +32,7 @@
     },
     {
       "description": "groovy adversarial fixtures",
-      "detail": "24/24 fixtures pass",
+      "detail": "34/34 fixtures pass",
       "id": "fixtures-groovy",
       "status": "pass"
     },
@@ -80,8 +80,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "50d50dae26ea9e7e7043940630f97e0d20fbaefd",
-  "committedAt": "2026-08-26T23:34:24+02:00",
+  "commit": "c360143d0fd8e4ab0e6c6095c81eb6389a65d1a8",
+  "committedAt": "2026-08-27T00:07:55+02:00",
   "data": {
     "details": [
       {
@@ -635,6 +635,21 @@
         "problems": []
       },
       {
+        "fixture": "groovy/annotation-type",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/array-access-uses",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/cast-types",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "groovy/chained-field-access",
         "ok": true,
         "problems": []
@@ -651,6 +666,16 @@
       },
       {
         "fixture": "groovy/complexity-parity",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/contains-edges",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/ctor-delegation",
         "ok": true,
         "problems": []
       },
@@ -705,7 +730,17 @@
         "problems": []
       },
       {
+        "fixture": "groovy/import-edges",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "groovy/interface-multi-extends",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/method-refs",
         "ok": true,
         "problems": []
       },
@@ -716,6 +751,16 @@
       },
       {
         "fixture": "groovy/overrides",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/parameters-payload",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/pattern-refs",
         "ok": true,
         "problems": []
       },
@@ -731,6 +776,11 @@
       },
       {
         "fixture": "groovy/qualified-calls-payload",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/record-symbol",
         "ok": true,
         "problems": []
       },
@@ -1070,7 +1120,7 @@
       },
       "groovy": {
         "fail": 0,
-        "pass": 24
+        "pass": 34
       },
       "java": {
         "fail": 0,
