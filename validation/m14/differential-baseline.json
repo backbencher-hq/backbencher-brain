@@ -66,9 +66,9 @@
       }
     },
     "scala3:scala": {
-      "missing": 3,
+      "missing": 0,
       "unexplained": 0,
-      "heuristic": 58,
+      "heuristic": 69,
       "perf": {
         "avgMsPerFile": 9.2
       }
