@@ -229,6 +229,14 @@ Status: issue #419 filed, java pilot first. All open L5 issues (#251–#291)
 require spec conformance before L5 (banner pending). Spec conformance is
 now the DEFINITION of done — retroactively binding on all wave issues.
 
+Java pilot progress (2026-08-26): inventory machinery live —
+`script/m14/completeness-inventory.ts` + `spec/java-completeness.json`
+classify ALL 143 pinned tree-sitter-java node types mechanically
+(70 handled_verified, 60 internal_silent, 4 probe-confirmed gaps G1–G4,
+3 owner rulings G5/G6/S1 pending). Wired into `npm run verify` as
+`audit:completeness`; evidence `M14.0.SPEC.json`. Gap list is printed and
+awaiting OWNER REVIEW before any gap is fixed (acceptance #2).
+
 ### #419 section definition — the eight mandatory judgments per language
 
 A language closes #419 only when ALL sections are satisfied:
