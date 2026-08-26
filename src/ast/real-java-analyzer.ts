@@ -1105,7 +1105,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
       const conf = typeof r.confidence === "number" ? r.confidence : 1
       if (t === "contains" || t === "exports") { md.evidenceClass = "structural"; continue }
       if (t === "references") {
-        md.evidenceClass = (md.isGroovyImport || md.isImport) ? "import_based" : "reference_qualified"
+        md.evidenceClass = (md.isJavaImport || md.isGroovyImport || md.isImport) ? "import_based" : "reference_qualified"
         continue
       }
       if (t === "extends" || t === "implements") {

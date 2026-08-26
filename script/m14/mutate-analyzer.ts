@@ -157,6 +157,13 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, parameters: undefined })) }),
   },
   {
+    id: "java/reclassify-import-tier",
+    language: "java",
+    defectClass: "evidence-mislabel",
+    description: "reclassifies import edges from import_based back to reference_qualified (the JVM-family tier bug: classifier ignored isJavaImport)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => (x.metadata ?? {}).isJavaImport ? { ...x, metadata: { ...x.metadata, evidenceClass: "reference_qualified" } } : x) }),
+  },
+  {
     id: "kotlin/drop-declared-types",
     language: "kotlin",
     defectClass: "relationship-loss",
