@@ -710,9 +710,16 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
 
       else if (type === "method_invocation") {
-         if (parentContext && parentContext.kind === ASTEngine.SymbolKind.Method && parentContext.symbolRef) {
-            const callExpression = this.buildJavaCallExpression(node)
-            if (callExpression && !this.isJavaBuiltin(callExpression)) {
+         const callExpression = this.buildJavaCallExpression(node)
+         if (callExpression && !this.isJavaBuiltin(callExpression)) {
+            // JLS 4.12.5/15.9: Java objects are created ONLY by `new`
+            // (object_creation_expression, handled separately). A
+            // method_invocation is never an instantiation — PascalCase method
+            // names are idiomatic (JsonObject(), DateUtils.now()), so a
+            // name-shape heuristic here fabricated edges on real code
+            // (measured: 4.2% of instantiation edges in the grails-core
+            // sample were fabrications). Deliberately removed, M14.1.
+            if (parentContext && parentContext.kind === ASTEngine.SymbolKind.Method && parentContext.symbolRef) {
               if (!parentContext.symbolRef.qualified_calls) parentContext.symbolRef.qualified_calls = []
               parentContext.symbolRef.qualified_calls.push(callExpression)
               relationships.push({
@@ -722,15 +729,52 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
                 confidence: 0.7,
                 metadata: { javaCallExpression: callExpression },
               })
-              // JLS 4.12.5/15.9: Java objects are created ONLY by `new`
-              // (object_creation_expression, handled separately). A
-              // method_invocation is never an instantiation — PascalCase method
-              // names are idiomatic (JsonObject(), DateUtils.now()), so a
-              // name-shape heuristic here fabricated edges on real code
-              // (measured: 4.2% of instantiation edges in the grails-core
-              // sample were fabrications). Deliberately removed, M14.1.
+            } else {
+              // M14 #419 G4: calls outside method bodies (static/instance
+              // initializers, field initializers, enum constant bodies,
+              // annotation values) previously vanished because the guard
+              // above required a Method scope. Attribute the edge to the
+              // nearest enclosing type scope so the call graph is not
+              // silently missing edges. No symbol payload exists to attach
+              // qualified_calls to — the edge itself is the honest signal.
+              const typeScope = this.resolveEnclosingTypeScope(scopeStack)
+              if (typeScope && typeScope.name) {
+                relationships.push({
+                  source: typeScope.name,
+                  target: callExpression.split(".").pop() || callExpression,
+                  type: ASTEngine.RelationshipType.Calls,
+                  confidence: 0.7,
+                  metadata: { javaCallExpression: callExpression, callSite: parentContext?.node?.type ?? node.parent?.type, inInitializer: true },
+                })
+              }
             }
          }
+      }
+
+      else if (type === "explicit_constructor_invocation") {
+        // M14 #419 G2: constructor delegation — super(...)/this(...)/Foo.super(...)
+        // — is a call edge and was previously invisible (only the argument
+        // list was walked). super/this are UNNAMED keyword children, so the
+        // receiver is read from node text; the qualified form Foo.super()
+        // keeps its receiver. The target is NOT resolved to the parent type:
+        // parents[] mixes extends and implements entries, so any guess could
+        // fabricate a wrong edge — the honest edge names the receiver and the
+        // class's own extends edge carries the real parent. confidence 1.0:
+        // the delegation is structural syntax, not a heuristic.
+        const text = node.text.trim()
+        const source = parentContext?.name || parentContext?.symbolRef?.name || "global"
+        let target = "super"
+        let ctorKind = "super"
+        if (text.startsWith("this")) { target = "this"; ctorKind = "this" }
+        else if (text.startsWith("super")) { target = "super"; ctorKind = "super" }
+        else { const q = text.split("(")[0].trim().split("."); target = q[0] + ".super"; ctorKind = "qualified" }
+        relationships.push({
+          source,
+          target,
+          type: ASTEngine.RelationshipType.Calls,
+          confidence: 1.0,
+          metadata: { relationshipType: "constructor_invocation", constructorReceiver: ctorKind, callExpression: text },
+        })
       }
 
       else if (type === "object_creation_expression") {
@@ -785,6 +829,32 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
                   type === "cast_expression" ? "cast_target" : type === "instanceof_expression" ? "instanceof_check" : "class_literal",
               },
             })
+          }
+        }
+      }
+
+      else if (type === "record_pattern") {
+        // M14 #419 G3: record patterns (JLS 14.30.2) reference the record type
+        // by name. The pinned grammar names the type child `identifier` (NOT
+        // type_identifier) followed by record_pattern_body — which is why the
+        // generic type_identifier search in the instanceof branch missed it
+        // entirely. Emitting from the record_pattern node covers both the
+        // instanceof form (o instanceof Point(int x)) and the switch-case form
+        // (case Point(int x) -> ...).
+        for (let i = 0; i < node.namedChildCount; i++) {
+          const c = node.namedChild(i)
+          if (c && c.type !== "record_pattern_body") {
+            const typeName = c.type === "type_identifier" ? c.text : this.extractJavaTypeBaseName(c)
+            if (typeName && typeName !== "var") {
+              relationships.push({
+                source: parentContext?.name || parentContext?.symbolRef?.name || "global",
+                target: typeName,
+                type: ASTEngine.RelationshipType.References,
+                confidence: 0.95,
+                metadata: { relationshipType: "record_pattern" },
+              })
+            }
+            break
           }
         }
       }
@@ -1453,6 +1523,46 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
         }
       }
+
+      // M14 #419 G1: array reads/writes (xs[i]) are USES of the array
+      // expression and must be visible to the graph. The grammar names the
+      // operands via fields 'array' and 'index' (verified against the pinned
+      // wasm). Bare identifiers resolve to the enclosing type (consistent
+      // with this.x -> uses:A->x); dotted arrays resolve to the receiver and
+      // dedupe against the field_access emission above (obj.rows[i] emits
+      // one uses:obj->rows edge, not two).
+      if (node.type === "array_access") {
+        const arrayNode = node.childForFieldName("array")
+        if (arrayNode) {
+          const at = arrayNode.type
+          let source: string | null = null
+          let target: string | null = null
+          if (at === "identifier") {
+            source = owner ?? arrayNode.text
+            target = arrayNode.text
+          } else if (at === "field_access" || at === "scoped_identifier") {
+            const parts = arrayNode.text.split(".")
+            if (parts.length >= 2) {
+              const first = parts[0]
+              source = first === "this" || first === "super" ? (owner ?? first) : first
+              target = parts[parts.length - 1]
+            }
+          }
+          if (source && target) {
+            const key = `${source}.${target}`
+            if (!seen.has(key)) {
+              seen.add(key)
+              relationships.push({
+                source,
+                target,
+                type: ASTEngine.RelationshipType.Uses,
+                confidence: 0.6,
+                metadata: { isArrayAccess: true },
+              })
+            }
+          }
+        }
+      }
       for (let i = node.namedChildCount - 1; i >= 0; i--) {
         const child = node.namedChild(i)
         if (child) stack.push({ node: child, owner })
@@ -1558,6 +1668,24 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
    * inheritance targets are clean symbol names (Repository<T> → Repository).
    * A scoped type (BaseService.Entity) keeps its full dotted name.
    */
+  /**
+   * M14 #419 G4: nearest enclosing type scope for call attribution when a
+   * method_invocation sits outside any method body (initializer blocks,
+   * field initializers, enum constant bodies). Scans the scope stack from
+   * the top, skipping member-level scopes (Property/Constant/EnumMember),
+   * and returns the nearest type-level scope. Defined in-class so the
+   * handler above can reach it without exposing Scope publicly.
+   */
+  private resolveEnclosingTypeScope(scopeStack: { kind: ASTEngine.SymbolKind; name: string }[]): { name: string; kind: ASTEngine.SymbolKind } | undefined {
+    for (let i = scopeStack.length - 1; i >= 0; i--) {
+      const s = scopeStack[i]
+      if (s.kind === ASTEngine.SymbolKind.Class || s.kind === ASTEngine.SymbolKind.Interface || s.kind === ASTEngine.SymbolKind.Enum || s.kind === ASTEngine.SymbolKind.Type) {
+        return { name: s.name, kind: s.kind }
+      }
+    }
+    return undefined
+  }
+
   private extractJavaTypeBaseName(typeNode: Node): string {
     if (typeNode.type === "generic_type") {
       const idNode = this.findChildByType(typeNode, "type_identifier") || this.findChildByType(typeNode, "scoped_type_identifier")

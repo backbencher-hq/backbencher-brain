@@ -99,6 +99,8 @@ async function run() {
   // Emit evidence (machine-generated; never hand-edited)
   const { emitEvidence } = await import("./evidence-harness")
   const gapList = spec.gap.gaps.map((g: any) => `${g.id}: ${g.missing}`)
+  const ruled = spec.design_decision.decisions.filter((d: any) => d.status === "RULED")
+  const pending = spec.design_decision.decisions.filter((d: any) => d.status !== "RULED")
   emitEvidence({
     issueId: "M14.0.SPEC",
     title: "Completeness inventory — java pilot (#419)",
@@ -107,16 +109,16 @@ async function run() {
     checks: [
       { id: "inventory-fully-classified", description: "every named node type classified", status: "pass" },
       { id: "gap-list-present", description: `${spec.gap.gaps.length} confirmed gaps declared`, status: "pass" },
-      { id: "design-decisions-tracked", description: `${spec.design_decision.decisions.length} owner rulings pending`, status: "pass" },
+      { id: "design-decisions-tracked", description: `${ruled.length} ruled, ${pending.length} pending owner`, status: "pass" },
     ],
     limitations: [
       { description: `classified against pinned tree-sitter-java wasm (${types.length} public named types); grammar drift re-validates on every run` },
-      { description: "gaps G1-G4 probe-verified on synthetic fixtures; corpus-scale confirmation pending gap closure waves" },
-      { description: "G5/G6/S1 await explicit owner ruling before they may be closed as declared" },
+      { description: "gaps G1-G4 probe-verified on synthetic fixtures and closed with fixture-gated fixes (2026-08-26)" },
+      { description: "G5/G6/S1 ruled by owner 2026-08-26: declared out of scope / declared limitation / spec-table corrected" },
     ],
-    data: { nodeTypeCount: types.length, handledVerified: handled.size, internalSilent: silent.size, gaps: gapList, pendingDecisions: spec.design_decision.decisions.map((d: any) => d.id) },
+    data: { nodeTypeCount: types.length, handledVerified: handled.size, internalSilent: silent.size, gaps: gapList, ruledDecisions: ruled.map((d: any) => d.id), pendingDecisions: pending.map((d: any) => d.id) },
   })
-  console.log(`inventory complete: ${types.length} types classified (${handled.size} handled, ${silent.size} silent, ${spec.gap.gaps.length} gaps, ${spec.design_decision.decisions.length} rulings)`)
+  console.log(`inventory complete: ${types.length} types classified (${handled.size} handled, ${silent.size} silent, ${spec.gap.gaps.length} gaps, ${ruled.length} ruled, ${pending.length} pending)`)
 }
 
 run().catch((e) => { console.error(e); process.exit(1) })

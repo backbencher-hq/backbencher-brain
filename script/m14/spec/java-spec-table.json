@@ -99,9 +99,9 @@
   "switch_block_statement_group",
   "switch_rule",
   "catch_clause",
-  "try_with_resources_statement",
-  "throw_statement",
-  "assert_statement",
   "ternary_expression"
- ]
+ ],
+ "_corrections": {
+  "note": "#419 S1 (owner ruling 2026-08-26): removed try_with_resources_statement, throw_statement, assert_statement from statements_affecting_complexity — they are not McCabe decision points and were never counted by calculateJavaMethodComplexity; keeping them in the table over-claimed. Complexity contract now matches the analyzer and the other JVM languages (CC1)."
+ }
 }
