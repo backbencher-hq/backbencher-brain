@@ -65,6 +65,7 @@ const REQUIRED_PAYLOADS: Record<string, { key: string; pin: string }> = {
   typeParameters: { key: "expectTypeParameters", pin: "java/generic-parameters-payload" },
   visibility: { key: "expectVisibility", pin: "java/generic-visibility-payload" },
   apiContract: { key: "expectApiContractPaths", pin: "java/fq-api-endpoint" },
+  parameters: { key: "expectParameters", pin: "java/parameters-payload" },
 }
 
 async function loadNamedNodeTypes(): Promise<string[]> {

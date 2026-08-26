@@ -28,8 +28,8 @@
       "status": "pass"
     },
     {
-      "description": "Matrix 1b payload rows pinned (6)",
-      "detail": "qualified_calls, docstrings, complexity, typeParameters, visibility, apiContract",
+      "description": "Matrix 1b payload rows pinned (7)",
+      "detail": "qualified_calls, docstrings, complexity, typeParameters, visibility, apiContract, parameters",
       "id": "section-c-payload-matrix",
       "status": "pass"
     },
@@ -65,8 +65,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "65af8584025bf8800da974ce9cf298df9a2ea24d",
-  "committedAt": "2026-08-26T22:58:23+02:00",
+  "commit": "9d9953f99dbed4af6a69e36591495781c083368d",
+  "committedAt": "2026-08-26T23:22:37+02:00",
   "data": {
     "gaps": [
       "G1: Uses relationship on the array expression",
@@ -93,7 +93,7 @@
         "status": "pass"
       },
       "section-c-payload-matrix": {
-        "detail": "qualified_calls, docstrings, complexity, typeParameters, visibility, apiContract",
+        "detail": "qualified_calls, docstrings, complexity, typeParameters, visibility, apiContract, parameters",
         "status": "pass"
       },
       "section-d-evidence-tiers": {

@@ -150,6 +150,13 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(x.metadata ?? {}).isJavaImport) }),
   },
   {
+    id: "java/drop-parameters",
+    language: "java",
+    defectClass: "payload-loss",
+    description: "drops the parameters payload from method symbols — #383 Matrix 1b parameters pin (java cell PENDING -> #383)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, parameters: undefined })) }),
+  },
+  {
     id: "kotlin/drop-declared-types",
     language: "kotlin",
     defectClass: "relationship-loss",
