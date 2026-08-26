@@ -4,7 +4,7 @@
 //   bun script/m19/giant-slice.ts <repoPath> [--slice N --total M] [--ext "cs|fs|vb"] [--dry]
 // Prints a JSON summary line. Accumulates in the real project DB.
 
-import { existsSync, readdirSync } from "node:fs"
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { indexProjectParallel } from "../../src/ast/parallel-indexer"
 import { BrainDatabase } from "../../src/brain/database"
@@ -25,6 +25,8 @@ function arg(name: string): string | undefined {
   return i >= 0 && i + 1 < process.argv.length ? process.argv[i + 1] : undefined
 }
 const repo = process.argv[2]
+// The caller must persist each JSON summary; S2/S3 verifiers refuse to close
+// without a complete checked-in timing ledger.
 if (!repo || !existsSync(repo)) { console.error("repo missing"); process.exit(2) }
 const dry = process.argv.includes("--dry")
 const ext = arg("ext") || "cs|fs|vb|cshtml|razor"
@@ -33,6 +35,7 @@ const total = parseInt(arg("total") || "1", 10)
 const files = walk(repo, new RegExp("\\.(" + ext + ")$"))
 const chunk = Math.ceil(files.length / total)
 const sliceFiles = files.slice(sliceIdx * chunk, (sliceIdx + 1) * chunk)
+const timingFile = arg("timing-file")
 console.log("total vetted:", files.length, "| slice", sliceIdx, "of", total, "| filesInSlice:", sliceFiles.length)
 if (dry) {
   console.log(JSON.stringify({ ok: true, dry: true, total: files.length, slice: sliceIdx, filesInSlice: sliceFiles.length, sample: sliceFiles.slice(0, 3) }))
@@ -42,11 +45,22 @@ if (dry) {
 const pid = getProjectId(repo)
 const t0 = Date.now()
 process.env.BB_EMBEDDING_BATCH_LIMIT = "1"
-await indexProjectParallel(pid, repo, { files: sliceFiles, skipDiscovery: true })
-delete process.env.BB_EMBEDDING_BATCH_LIMIT
+try {
+  await indexProjectParallel(pid, repo, { files: sliceFiles, skipDiscovery: true })
+} finally {
+  delete process.env.BB_EMBEDDING_BATCH_LIMIT
+}
 const wallMs = Date.now() - t0
 const raw = await BrainDatabase.getRawInstance(pid)
 const symbols = (raw.prepare("SELECT COUNT(*) c FROM brain_symbol WHERE project_id=?").get(pid) as any).c
 const rels = (raw.prepare("SELECT COUNT(*) c FROM brain_relationship WHERE project_id=?").get(pid) as any).c
-console.log(JSON.stringify({ ok: true, slice: sliceIdx, filesInSlice: sliceFiles.length, wallMs, wallSec: Math.round(wallMs / 1000), totalSymbols: symbols, totalRels: rels }))
+const summary = { ok: true, slice: sliceIdx, totalSlices: total, filesInSlice: sliceFiles.length, wallMs, wallSec: Math.round(wallMs / 1000), totalSymbols: symbols, totalRels: rels }
+if (timingFile) {
+  const prior = existsSync(timingFile) ? JSON.parse(readFileSync(timingFile, "utf8")) : { repo, totalSlices: total, machine: { platform: process.platform, arch: process.arch }, slices: [] }
+  const slices = Array.isArray(prior.slices) ? prior.slices.filter((r: any) => r.slice !== sliceIdx) : []
+  slices.push(summary)
+  slices.sort((a: any, b: any) => a.slice - b.slice)
+  writeFileSync(timingFile, JSON.stringify({ ...prior, repo, totalSlices: total, slices }, null, 2) + "\\n")
+}
+console.log(JSON.stringify(summary))
 process.exit(0)

@@ -58,9 +58,16 @@ async function main() {
     ck("S3: known symbol " + n + " present (exact or LIKE)", exact.c > 0 || like.c > 0, "exact=" + exact.c + " like=" + like.c)
   }
 
+  const timingPath = path.join(RESULTS_DIR, "S3-timings.json")
+  const timing = existsSync(timingPath) ? JSON.parse(readFileSync(timingPath, "utf8")) : null
+  const timingRows = Array.isArray(timing?.slices) ? timing.slices : []
+  const timingComplete = timingRows.length === 10 && timingRows.every((r: any) => Number.isInteger(r.slice) && r.slice >= 0 && r.slice < 10 && typeof r.wallMs === "number" && r.wallMs > 0 && typeof r.filesInSlice === "number" && r.filesInSlice > 0)
+  ck("S3: complete timing ledger exists for all ten slices", timingComplete, timing ? "invalid or incomplete timing ledger" : "missing " + timingPath)
+
   const measured = {
     repo: "intellij-community", path: REPO,
     files, symbols, rels, languages: langs, machine: MACHINE,
+    timing: timingComplete ? timing : null,
     note: "indexed as 10 bounded slices via giant-slice.ts (no corpus copy); slices 0-9 each < 400s; final taint/gravity enrich ran per-slice; DB read at verify time",
   }
 

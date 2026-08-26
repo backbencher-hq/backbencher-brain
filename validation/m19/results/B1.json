@@ -1,0 +1,48 @@
+{
+  "issue": "M19.B1",
+  "code": "B1",
+  "tool": "scale benchmark documentation",
+  "title": "benchmark docs truth — SCALE.md and BENCHMARKS.md",
+  "verified": true,
+  "checks": 22,
+  "passed": 22,
+  "failed": 0,
+  "measured": {
+    "anchorCurve": [
+      {
+        "repo": "rake",
+        "files": 57,
+        "symbols": 779,
+        "ms": 3765
+      },
+      {
+        "repo": "lodash",
+        "files": 36,
+        "symbols": 1048,
+        "ms": 3929
+      },
+      {
+        "repo": "element-plus",
+        "files": 2580,
+        "symbols": 27751,
+        "ms": 89580
+      }
+    ],
+    "aspnetcore": {
+      "files": 10431,
+      "symbols": 132744,
+      "timing": null
+    },
+    "intellij": {
+      "files": 69504,
+      "symbols": 1071809,
+      "timing": null
+    }
+  },
+  "negatives": [
+    "S2 and S3 timing ledgers are intentionally open because the old logs were incomplete and a controlled rerun exceeded the 600-second execution bound.",
+    "Peak RSS was not captured by the existing giant runs.",
+    "Scale completion does not prove analyzer AST precision."
+  ],
+  "generatedAt": "2026-08-26T00:18:41.434Z"
+}
