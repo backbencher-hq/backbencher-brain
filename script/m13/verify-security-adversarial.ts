@@ -11,7 +11,7 @@
 // All findings must carry evidence + confidence. e2e via both CLI and MCP.
 
 import { execFileSync } from "node:child_process"
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync } from "node:fs"
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync, readFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { getProjectId } from "../../src/cli/index"
@@ -89,13 +89,16 @@ const harness = new Harness({
   const result = await CrossLanguageSecurityAnalysis.analyzeSecurityAcrossLanguages(projectId)
   const all = [...result.findings, ...result.suspiciousSources]
   const sqliFindings = all.filter((f) => f.type === "sql_injection")
-
-  // Parameterized queries may still be flagged by the regex-based taint
-  // heuristics — documented limitation in docs/BB_SECURITY.md.
+  // The taint analyzer cannot distinguish a parameterized sink from a
+  // concatenated one (verified: it emits resolved sql_injection rows for both).
+  // The honest assertion is therefore NOT "zero findings" (that would be
+  // pretending the analyzer is better than it is) but that the tool truthfully
+  // documents this limitation wherever it reports findings.
+  const resolvedSqli = result.findings.filter((f) => f.type === "sql_injection")
   harness.check(
-    "LIMITATION: parameterized SQL — regex heuristics may flag it (known, documented)",
-    true,
-    `SQLi flagged: ${sqliFindings.length} — known regex heuristic blind spot`,
+    "NEGATIVE: parameterized-SQL blind spot is truthfully documented (analyzer flags it; docs admit it)",
+    readFileSync(path.join(process.cwd(), "docs/BB_SECURITY.md"), "utf8").includes("parameterized or escaped sink can still be"),
+    `resolved SQLi=${resolvedSqli.length} (analyzer limitation; docs must state it)`,
   )
 
   rmSync(root, { recursive: true, force: true })
@@ -162,13 +165,15 @@ const harness = new Harness({
 
   const { CrossLanguageSecurityAnalysis } = await import("../../src/security/cross-language-security")
   const result = await CrossLanguageSecurityAnalysis.analyzeSecurityAcrossLanguages(projectId)
-  const cmdFindings = [...result.findings, ...result.suspiciousSources].filter((f) => f.type === "command_injection")
-  // Python os.system with sys.argv may not trigger the regex heuristics
-  // if source and sink are on different symbols. Known limitation.
+const cmdFindings = [...result.findings, ...result.suspiciousSources].filter((f) => f.type === "command_injection")
+  // Python os.system with sys.argv may not trigger the regex heuristics.
+  // Whatever the heuristics produce, they must never fabricate a RESOLVED
+  // command-injection flow: cross-symbol source resolution is not proven here.
+  const resolvedCmd = result.findings.filter((f) => f.type === "command_injection")
   harness.check(
-    "LIMITATION: Python CMDi — regex heuristics may miss cross-symbol flows (known, documented)",
-    true,
-    `cmdFindings=${cmdFindings.length} — regex only matches per-symbol snippets`,
+    "NEGATIVE: Python cross-symbol CMDi produces no resolved/confirmed command-injection finding",
+    resolvedCmd.length === 0,
+    `resolved CMDi=${resolvedCmd.length}, total CMDi incl. unresolved=${cmdFindings.length} (regex only matches per-symbol snippets)`,
   )
   rmSync(root, { recursive: true, force: true })
 }
@@ -217,7 +222,12 @@ const harness = new Harness({
 
   const { CrossLanguageSecurityAnalysis } = await import("../../src/security/cross-language-security")
   const result = await CrossLanguageSecurityAnalysis.analyzeSecurityAcrossLanguages(projectId)
-  harness.check("XSS: security scan completes without error", result.summary.total >= 0, `total=${result.summary.total}`)
+  // Template-literal interpolation into HTML is not detected by the innerHTML
+  // regex heuristic. Asserting zero RESOLVED XSS findings documents this
+  // false-negative blind spot honestly; the moment the analyzer detects it,
+  // this check forces the limitation note to be revisited.
+  const resolvedXss = result.findings.filter((f) => f.type === "xss")
+  harness.check("NEGATIVE: template-literal XSS is not overclaimed as a resolved flow (analyzer blind spot documented)", resolvedXss.length === 0, `resolved XSS=${resolvedXss.length} total=${result.summary.total}`)
   rmSync(root, { recursive: true, force: true })
 }
 
@@ -286,9 +296,12 @@ const harness = new Harness({
 
 // ── 10. Corpus sampling ────────────────────────────────────────────────────
 const REPO_ROOT = "$HOME/fixtures/repositories"
+// graphql-js 17.x checkout has no top-level src/: the only real TypeScript on
+// this revision lives under website/pages (docs tooling). Point the corpus at
+// actual TS so the scan exercises a genuine TypeScript corpus.
 const SAMPLE: Array<[string, string, string]> = [
   ["rake", "lib/rake", "Ruby"],
-  ["graphql-js", "src", "TypeScript"],
+  ["graphql-js", "website/pages", "TypeScript"],
   ["rebar3", "apps", "Erlang"],
 ]
 
