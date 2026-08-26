@@ -416,7 +416,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 8.3
+        "avgMsPerFile": 11.1
       }
     },
     "svelte:typescript": {
@@ -424,7 +424,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 72.1
+        "avgMsPerFile": 107.2
       }
     },
     "svelte:kotlin": {
@@ -472,7 +472,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 48.2
+        "avgMsPerFile": 19.3
       }
     },
     "grails-core:svelte": {
