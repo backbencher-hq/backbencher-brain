@@ -9,6 +9,7 @@ import { execFileSync } from "node:child_process"
 import path from "node:path"
 import { migrationSourceFingerprint } from "../../src/intelligence/migration/migration-evidence"
 import { patternSourceFingerprint } from "../../src/intelligence/patterns/evidence"
+import { securitySourceFingerprint } from "../../src/intelligence/security/evidence"
 
 type Issue = {
   code: string
@@ -113,7 +114,9 @@ function isEvidenceOnlyChange(changed: string[]): boolean {
 }
 
 function sourceFingerprintFor(issue: Issue): string {
-  return issue.tool === "bb_patterns" ? patternSourceFingerprint(ROOT) : migrationSourceFingerprint(ROOT)
+  if (issue.tool === "bb_patterns") return patternSourceFingerprint(ROOT)
+  if (issue.tool === "bb_security") return securitySourceFingerprint(ROOT)
+  return migrationSourceFingerprint(ROOT)
 }
 
 function evidenceRevisionIsFresh(testedCommit: string, fingerprint: string | undefined, issue: Issue): boolean {
