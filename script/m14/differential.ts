@@ -32,6 +32,7 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   vue: { wasm: "tree-sitter-vue.wasm", analyzerFile: "real-vue-analyzer", className: "RealVueAnalyzer", ext: "vue" },
   svelte: { wasm: "tree-sitter-svelte.wasm", analyzerFile: "real-svelte-analyzer", className: "RealSvelteAnalyzer", ext: "svelte" },
   cpp: { wasm: "tree-sitter-cpp.wasm", analyzerFile: "real-cpp-analyzer", className: "RealCppAnalyzer", ext: "cc" },
+  c: { wasm: "tree-sitter-c.wasm", analyzerFile: "real-c-analyzer", className: "RealCAnalyzer", ext: "c" },
 }
 
 function seededPick<T>(items: T[], n: number, seedStr: string): T[] {
@@ -142,6 +143,32 @@ async function deriveEmbeddedScriptTrees(root: any, content: string, lang: strin
   }
   walk(root)
   return out
+}
+
+// C call-truth: a call_expression with an IDENTIFIER callee is an
+// independently derivable call edge (function pointers excluded - opaque).
+function deriveCCalls(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const stack: any[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()!
+    if (n.type === "call_expression") {
+      // identifier callee OR member/pointer callee -> its callable LEAF
+      const fn = n.namedChildren.find((c: any) => c.type === "identifier" || c.type === "field_expression")
+      let name: string | undefined
+      if (fn?.type === "field_expression") {
+        const leaf = fn.namedChildren.find((c: any) => c.type === "field_identifier")
+        name = leaf?.text
+      } else name = fn?.text
+      if (name && !seen.has(name)) {
+        seen.add(name)
+        edges.push({ label: "calls", from: "(expr)", target: name })
+      }
+    }
+    for (let k = 0; k < n.namedChildCount; k++) stack.push(n.namedChild(k))
+  }
+  return edges
 }
 
 // Independent oracle: derive extends/implements/instantiates edges straight
@@ -497,6 +524,11 @@ async function main() {
           ;(truth as any[]).push(e)
         }
       }
+      if (lang === "c") {
+        for (const e of deriveCCalls(root)) {
+          ;(truth as any[]).push(e)
+        }
+      }
       if (lang === "svelte") {
         for (const e of deriveSvelteComponentUsages(root)) {
           ;(truth as any[]).push(e)
@@ -523,7 +555,10 @@ async function main() {
         target: String(r.target ?? r.to ?? r.toSymbol ?? ""),
         line: r.line_number ?? 0,
         confidence: typeof r.confidence === "number" ? r.confidence : 1,
-      })).filter((r: any) => ["extends", "implements", "instantiates", "overrides"].includes(r.label))
+      // c compares CALL edges too (its independently derivable truth);
+      // other languages do not derive call truth, so including calls there
+      // would flag every real call edge as unexplained.
+      })).filter((r: any) => ["extends", "implements", "instantiates", "overrides", ...(lang === "c" ? ["calls"] : [])].includes(r.label))
 
       treeEdgesTotal += truth.length
       analyzerEdgesTotal += rels.length

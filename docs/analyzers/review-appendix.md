@@ -999,3 +999,49 @@ RECORDED (verified, dispositioned):
     deferred until a consumer needs it.
   - memorySafetyScore: unmeasured heuristic (+make_unique/-new delete).
     Flagged; measure against a real corpus before trusting.
+
+## C review wave (2026-08-24)
+
+Universal method on real-c-analyzer.ts (1,636 lines - richest of the
+family: security heuristics, kernel patterns, ABI inference all
+pre-existing and kept). Grammar = tree-sitter/tree-sitter-c.
+
+FIXED (2 fixtures proven failing pre-fix + corpus evidence):
+  - **METRICS FAKES - FIFTH AND FINAL OCCURRENCE**: file 'complexity'
+    was symbols+relationships synthetic while real cyclomatic ran beside
+    it. Now complexity == cyclomaticComplexity (canonical shape = 5).
+  - **Per-symbol complexity absent** on functions; added via in-place
+    walk (T1 contract).
+  - **qualified_calls absent** (#383): calls per enclosing function now
+    attached.
+  - **Evidence tiers absent** (#419-D): classifier ported; include-
+    dependencies map to import_based, type references to
+    reference_qualified.
+  - **malloc Instantiates noise**: malloc allocates BYTES, not a named
+    type - edge to literal 'malloc' removed (allocation tracking stays
+    in metadata/patterns).
+  - **CAST/CALL confusion** (corpus-found): `(Unit)(x)` vendor-macro
+    casts through untracked typedef headers emitted Calls edges to the
+    TYPE name. Parenthesized bare-identifier callees are treated as
+    casts; dereference forms ((*fp)(x)) still resolve. 127 noise edges
+    eliminated on jq.
+  - **Malformed-target guard**: include-adjacent macros produced call
+    targets containing quotes/newlines.
+  - **Dead literal**: asm_expression removed (pinned wasm emits
+    gnu_asm_expression only). Audit unknowns -> 0.
+  - **goto/labels de-counted** from cyclomatic (T1: they are not
+    decisions); maintainability tracking keeps them.
+
+DIFFERENTIAL PARITY:
+  - c added to harness/oracle with CALL-edge truth (identifier callees +
+    member-pointer leaves). jq pinned as standing C corpus (45 files):
+    **1692/1692 tree-truth (100%), 0 unexplained**, 9,411 analyzer
+    edges verified.
+
+GOTCHAS:
+  - vendor-macro casts through untracked typedefs parse as
+    call_expression > parenthesized > identifier - indistinguishable
+    from paren-wrapped calls without whole-program typedef knowledge;
+    heuristic documented above.
+  - function_declarator NESTS the name (declarator > field_identifier) -
+    one level deeper than cpp's shapes.
