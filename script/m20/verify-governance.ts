@@ -7,6 +7,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
+import { migrationSourceFingerprint } from "../../src/intelligence/migration/migration-evidence"
 
 type Issue = {
   code: string
@@ -16,7 +17,7 @@ type Issue = {
   scope: string
   acceptanceCriteria: string[]
   closureRequirements: string[]
-  evidence?: { status: Issue["status"]; currentCommit: string; workingTreeRelevantChanges: string[]; verifierCommand: string; evidenceFile: string; generatedAt: string; passed: number; failed: number; negativeCases: number }
+  evidence?: { status: Issue["status"]; currentCommit: string; sourceFingerprint?: string; workingTreeRelevantChanges: string[]; verifierCommand: string; evidenceFile: string; generatedAt: string; passed: number; failed: number; negativeCases: number }
 }
 type Ledger = {
   schemaVersion: number
@@ -110,15 +111,16 @@ function isEvidenceOnlyChange(changed: string[]): boolean {
   return changed.length > 0 && changed.every((file) => file.startsWith("validation/m20/results/"))
 }
 
-function evidenceRevisionIsFresh(testedCommit: string): boolean {
+function evidenceRevisionIsFresh(testedCommit: string, fingerprint?: string): boolean {
+  if (fingerprint) {
+    try { return fingerprint === migrationSourceFingerprint(ROOT) } catch { return false }
+  }
   if (testedCommit === currentCommit) return true
   try {
     const changed = execFileSync("git", ["diff", "--name-only", `${testedCommit}..${currentCommit}`], { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] })
       .split("\n").map((file) => file.trim()).filter(Boolean)
     return isEvidenceOnlyChange(changed)
-  } catch {
-    return false
-  }
+  } catch { return false }
 }
 check("C1: ledger has authoritative M20 identity", ledger.milestone === "M20" && ledger.githubMilestone === 20)
 const completedCodes = new Set(ledger.issues.filter((issue) => issue.status === "verified").map((issue) => issue.code))
@@ -132,7 +134,7 @@ check("C1: evidence freshness rejects production changes after the tested revisi
 check("C1: known gaps and blocked runs cannot be verified by wording", plan.includes("known-gap") && plan.includes("blocked") && plan.includes("never as `verified`"))
 
 let evidenceErrors: string[] = []
-for (const issue of ledger.issues.filter((item) => item.status !== "planned" && item.code !== "C1")) {
+for (const issue of ledger.issues.filter((item) => item.status !== "planned")) {
   const evidence = issue.evidence
   const evidencePath = evidence ? path.join(ROOT, "validation/m20/results", evidence.evidenceFile) : ""
   if (!evidence || !existsSync(evidencePath)) {
@@ -145,7 +147,8 @@ for (const issue of ledger.issues.filter((item) => item.status !== "planned" && 
       if (!sameValue(persisted[field], expected)) evidenceErrors.push(`${issue.code}:${field}`)
     }
     if (typeof persisted.generatedAt !== "string" || !Number.isFinite(Date.parse(persisted.generatedAt))) evidenceErrors.push(`${issue.code}:generatedAt`)
-    if (typeof persisted.currentCommit !== "string" || !evidenceRevisionIsFresh(persisted.currentCommit)) evidenceErrors.push(`${issue.code}:stale-currentCommit`)
+    if (typeof persisted.currentCommit !== "string" || !evidenceRevisionIsFresh(persisted.currentCommit, typeof persisted.sourceFingerprint === "string" ? persisted.sourceFingerprint : undefined)) evidenceErrors.push(`${issue.code}:stale-source`)
+    if (typeof persisted.sourceFingerprint !== "string" || persisted.sourceFingerprint !== migrationSourceFingerprint(ROOT)) evidenceErrors.push(`${issue.code}:sourceFingerprint`)
     if (persisted.issue !== `M20.${issue.code}` || persisted.code !== issue.code) evidenceErrors.push(`${issue.code}:identity`)
   } catch {
     evidenceErrors.push(`${issue.code}:unreadable-evidence`)
@@ -194,7 +197,7 @@ writeFileSync(evidencePath, JSON.stringify(baseResult, null, 2) + "\n")
 const persisted = JSON.parse(readFileSync(evidencePath, "utf8")) as typeof baseResult
 check("C1: evidence is persisted and re-readable", persisted.issue === baseResult.issue && persisted.currentCommit === currentCommit && persisted.failed === initialFailed)
 const finalFailed = checks - passed
-const result = { ...baseResult, status: finalFailed === 0 && currentWorkingTreeRelevantChanges.length === 0 ? "verified" : "known-gap", checks, passed, failed: finalFailed }
+const result = { ...baseResult, sourceFingerprint: migrationSourceFingerprint(ROOT), status: finalFailed === 0 && currentWorkingTreeRelevantChanges.length === 0 ? "verified" : "known-gap", checks, passed, failed: finalFailed }
 writeFileSync(evidencePath, JSON.stringify(result, null, 2) + "\n")
 console.log(`C1: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${negatives} negative)`)
 process.exit(finalFailed === 0 ? 0 : 1)
