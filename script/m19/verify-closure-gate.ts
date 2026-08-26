@@ -55,27 +55,31 @@ async function main() {
   const verifierDir = path.join(ROOT_DIR, "script/m19")
   const verifiers = readdirSync(verifierDir).filter((f) => f.endsWith(".ts"))
   let hollow = 0
-  const hardTrue = new RegExp("ck\\(\\s*\"[^\"]*\",\\s*true\\s*\\)" + "|" + "nk\\(\\s*\"[^\"]*\",\\s*true\\s*\\)", "g")
-  const orTrue = new RegExp("\\|\\|\\s*true\\s*\\)", "g")
+  const hardTrue = /(?:ck|nk)\(\s*"[^"]*",\s*true\s*\)/g
+  const orTrue = /\|\|\s*true\s*\)/g
   const gte0 = /(?:ck|nk)\([^\n]*>=\s*0(?![.\d])/g
   for (const v of verifiers) {
     const src = readFileSync(path.join(verifierDir, v), "utf8")
-    const assertionSource = src.split("function ck").slice(1).join("function ck")
-    hollow += (assertionSource.match(hardTrue) || []).length + (assertionSource.match(orTrue) || []).length + (assertionSource.match(gte0) || []).length
+    hollow += (src.match(hardTrue) || []).length + (src.match(orTrue) || []).length + (src.match(gte0) || []).length
   }
   ck("C1: zero hollow patterns across " + verifiers.length + " M19 verifiers", hollow === 0, "hollow=" + hollow)
 
-  // ── 3. Wiring ────────────────────────────────────────────────────────────
+  // ── 3. Scale corpus presence ───────────────────────────────────────────
+  for (const [code, corpus] of [["S2", "$HOME/aspnetcore"], ["S3", "$HOME/intellij-community"]] as const) {
+    ck("C1: " + code + " corpus path present", existsSync(corpus), corpus)
+  }
+
+  // ── 4. Wiring ────────────────────────────────────────────────────────────
   const pkg = readFileSync(path.join(ROOT_DIR, "package.json"), "utf8")
   const gate = readFileSync(path.join(ROOT_DIR, "script/verify-quality-gate.ts"), "utf8")
-  for (const v of ["verify-closure-gate.ts", "verify-bench-docs.ts"]) {
+  for (const v of ["verify-closure-gate.ts", "verify-bench-docs.ts", "verify-mutation.ts"]) {
     ck("C1: m19/" + v + " wired into package.json", pkg.includes("m19/" + v))
     ck("C1: m19/" + v + " wired into quality gate", gate.includes("m19/" + v))
   }
 
   ck("C1: the gate itself performed a real number of checks", checks >= 6, "checks=" + checks)
 
-  // ── 4. Emit + self-handshake ────────────────────────────────────────────
+  // ── 5. Emit + self-handshake ────────────────────────────────────────────
   const e = { issue: "M19.C1", code: "C1", tool: "governance", title: "master plan, ledger, closure gate, scale-benchmark governance", verified: failed === 0, checks, passed, failed, negatives: 0, generatedAt: new Date().toISOString() }
   writeFileSync(path.join(RESULTS_DIR, "C1.json"), JSON.stringify(e, null, 2) + "\n")
   const reread = JSON.parse(readFileSync(path.join(RESULTS_DIR, "C1.json"), "utf8"))

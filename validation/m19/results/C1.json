@@ -4,9 +4,9 @@
   "tool": "governance",
   "title": "master plan, ledger, closure gate, scale-benchmark governance",
   "verified": true,
-  "checks": 9,
-  "passed": 9,
+  "checks": 13,
+  "passed": 13,
   "failed": 0,
   "negatives": 0,
-  "generatedAt": "2026-08-26T00:18:41.563Z"
+  "generatedAt": "2026-08-26T00:34:35.789Z"
 }

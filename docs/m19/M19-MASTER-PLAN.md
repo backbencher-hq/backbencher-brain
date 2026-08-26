@@ -60,7 +60,7 @@ GitHub milestone #19 · Started 2026-08-25
 | Q1 | Retrieval at scale | CLOSED — 7/7 | validation/m19/results/Q1.json |
 | Q2 | Fallback at scale | CLOSED — 13/13 | validation/m19/results/Q2.json |
 | B1 | Benchmarks docs | CLOSED — 22/22 | validation/m19/results/B1.json |
-| X9 | Gate | OPEN — planted mutation pending | validation/m19/results/X9.json |
+| X9 | Gate | CLOSED — mutation 6/6 | validation/m19/results/X9.json |
 
 ## 6. Negative list (what M19 does NOT claim)
 
