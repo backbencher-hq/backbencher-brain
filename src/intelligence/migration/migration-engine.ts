@@ -19,14 +19,54 @@ export interface MigrationDependencyGraph {
   orderingStatus: "complete" | "no-edges" | "partial" | "cyclic"
 }
 
+export interface MigrationMethodology {
+  baseHours: number
+  relationshipHours: number
+  relationshipCount: number
+  missingMappingHours: number
+  missingMappingCount: number
+  ordering: "dependency-first"
+  deduplication: "relationship-id-or-structural-identity"
+}
+
 export interface MigrationPlanResult {
   targetLanguage: string
   plans: any[]
   dependencyOrder: string[]
   dependencyGraph: MigrationDependencyGraph
   unsupported: Array<{ symbolName: string; reason: string }>
-  methodology: { baseHours: number; relationshipHours: number; missingMappingHours: number; ordering: "dependency-first" }
+  methodology: MigrationMethodology
   truncation: { truncated: boolean; requested: number; returned: number }
+}
+
+/**
+ * Calculate migration methodology from structured plan evidence. Presentation
+ * text is intentionally not an input. Relationship IDs are globally
+ * deduplicated because one indexed edge may be attached to both planned
+ * components.
+ */
+export function calculateMigrationMethodology(plans: Array<{
+  relationshipEvidence?: Array<{ id: string; sourceSymbolId: string | null; targetSymbolId: string | null; relationshipType: string }>
+  dependencies?: Array<{ confidence?: number }>
+}>): MigrationMethodology {
+  const relationshipIds = new Set<string>()
+  let missingMappingCount = 0
+  for (const plan of plans) {
+    for (const relationship of plan.relationshipEvidence ?? []) {
+      const identity = relationship.id || [relationship.sourceSymbolId ?? "", relationship.targetSymbolId ?? "", relationship.relationshipType].join("|")
+      relationshipIds.add(identity)
+    }
+    missingMappingCount += (plan.dependencies ?? []).filter((dependency) => (dependency.confidence ?? 0) < 0.5).length
+  }
+  return {
+    baseHours: plans.length * 4,
+    relationshipHours: relationshipIds.size * 2,
+    relationshipCount: relationshipIds.size,
+    missingMappingHours: missingMappingCount * 6,
+    missingMappingCount,
+    ordering: "dependency-first",
+    deduplication: "relationship-id-or-structural-identity",
+  }
 }
 
 /**
@@ -122,9 +162,8 @@ export async function generateMigrationPlans(projectId: string, request: Migrati
     if (dependent && dependency) graphRelationships.push({ dependent, dependency, relationshipType: String(relationship.type) })
   }
   const { order: dependencyOrder, graph: dependencyGraph } = computeDependencyOrder(planNames, graphRelationships)
-  const missingMappings = plans.reduce((total, plan) => total + (plan.dependencies ?? []).filter((dependency: any) => (dependency.confidence ?? 0) < 0.5).length, 0)
-  const relationshipCount = plans.reduce((total, plan) => total + Math.max(0, ((plan.strategySteps ?? []).find((step: string) => step.includes("cross-boundary relationships"))?.match(/\d+/)?.[0] ? Number((plan.strategySteps ?? []).find((step: string) => step.includes("cross-boundary relationships"))?.match(/\d+/)?.[0]) : 0)), 0)
-  return { targetLanguage: request.targetLanguage, plans, dependencyOrder, dependencyGraph, unsupported, methodology: { baseHours: plans.length * 4, relationshipHours: relationshipCount * 2, missingMappingHours: missingMappings * 6, ordering: "dependency-first" }, truncation: { truncated: request.symbolNames.length > names.length, requested: request.symbolNames.length, returned: names.length } }
+  const methodology = calculateMigrationMethodology(plans)
+  return { targetLanguage: request.targetLanguage, plans, dependencyOrder, dependencyGraph, unsupported, methodology, truncation: { truncated: request.symbolNames.length > names.length, requested: request.symbolNames.length, returned: names.length } }
 }
 
 export function formatMigrationPlans(result: MigrationPlanResult, format: "text" | "json" = "text"): string {
