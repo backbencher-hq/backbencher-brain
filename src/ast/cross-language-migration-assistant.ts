@@ -17,11 +17,22 @@ export namespace CrossLanguageMigrationAssistant {
     factors: string[]
   }
 
+  export interface MigrationRelationshipEvidence {
+    id: string
+    relationshipType: string
+    sourceSymbolId: string | null
+    targetSymbolId: string | null
+    sourceFile: string
+    targetFile: string
+    strength: number
+  }
+
   export interface MigrationPlan {
     componentName: string
     sourceLanguage: string
     targetLanguage: string
     dependencies: LibraryEquivalence[]
+    relationshipEvidence: MigrationRelationshipEvidence[]
     effortEstimateHours: number
     complexityScore: number // 1-10
     riskAssessment: MigrationRisk
@@ -713,10 +724,36 @@ export namespace CrossLanguageMigrationAssistant {
     }
 
     // 2. Analyze Component Dependencies & Relationships
+    // Relationship evidence is symbol-scoped, not file-scoped. A file can
+    // contain several components; counting every relationship touching that
+    // file silently charges one migration for its unrelated neighbors.
+    const symbolIds = new Set([
+      symbol.id,
+      ...(symbol.definitions ?? []).map((definition) => definition.symbolId).filter(Boolean),
+    ])
     const relatedRels = analysis.crossLanguageRelationships.filter(
-      (r) =>
-        r.source.filePath === symbol.definitions[0]?.filePath || r.target.filePath === symbol.definitions[0]?.filePath,
+      (relationship) => symbolIds.has(relationship.source.symbolId ?? "") || symbolIds.has(relationship.target.symbolId ?? ""),
     )
+    const relationshipEvidence = [...new Map(
+      relatedRels.map((relationship) => {
+        const id = String(relationship.id || [
+          relationship.source.symbolId ?? "",
+          relationship.target.symbolId ?? "",
+          relationship.type,
+          relationship.source.filePath,
+          relationship.target.filePath,
+        ].join("|"))
+        return [id, {
+          id,
+          relationshipType: String(relationship.type),
+          sourceSymbolId: relationship.source.symbolId ?? null,
+          targetSymbolId: relationship.target.symbolId ?? null,
+          sourceFile: relationship.source.filePath,
+          targetFile: relationship.target.filePath,
+          strength: Number.isFinite(relationship.strength) ? relationship.strength : 0,
+        }]
+      }),
+    ).values()].sort((a, b) => a.id.localeCompare(b.id))
 
     // Extract dependencies based on metadata or infer from relationships
     // For God-Mode we will mock some inferred libraries if none are present in AST metadata,
@@ -735,7 +772,7 @@ export namespace CrossLanguageMigrationAssistant {
     // 4. Estimate Effort and Risk
     // Effort: Base hours + per relationship + per missing mapping
     let effortEstimateHours = 4 // Base setup
-    effortEstimateHours += relatedRels.length * 2 // 2 hours per integration point
+    effortEstimateHours += relationshipEvidence.length * 2 // 2 hours per unique indexed relationship
 
     const missingMappings = dependencies.filter((d) => d.confidence < 0.5).length
     effortEstimateHours += missingMappings * 6 // 6 hours per unknown dependency
@@ -745,8 +782,8 @@ export namespace CrossLanguageMigrationAssistant {
     let riskLevel: MigrationRisk["level"] = "Low"
     let complexityScore = 2
 
-    if (relatedRels.length > 5) {
-      riskFactors.push(`High coupling: Component has ${relatedRels.length} cross-boundary relationships.`)
+    if (relationshipEvidence.length > 5) {
+      riskFactors.push(`High coupling: Component has ${relationshipEvidence.length} unique indexed relationships.`)
       complexityScore += 3
       riskLevel = "High"
     }
@@ -777,7 +814,7 @@ export namespace CrossLanguageMigrationAssistant {
           .join(", ") || "N/A"
       }.`,
       `Step 3: Port the core domain logic from ${sourceLanguage} to ${targetLanguage}.`,
-      `Step 4: Update ${relatedRels.length} cross-language call sites to point to the new implementation.`,
+      `Step 4: Update ${relationshipEvidence.length} cross-language integration points to point to the new implementation.`,
       `Step 5: Write unit tests using target language framework to match original coverage.`,
       `Step 6: Deprecate and remove the original ${sourceLanguage} implementation.`,
     ]
@@ -789,6 +826,7 @@ export namespace CrossLanguageMigrationAssistant {
       sourceLanguage,
       targetLanguage,
       dependencies,
+      relationshipEvidence,
       effortEstimateHours,
       complexityScore: Math.min(10, complexityScore),
       riskAssessment: {
