@@ -3,16 +3,17 @@
   "code": "S2",
   "tool": "indexing pipeline (giant corpus)",
   "title": "index aspnetcore end-to-end - honest completion + time/memory",
-  "verified": true,
-  "checks": 8,
+  "verified": false,
+  "checks": 9,
   "passed": 8,
-  "failed": 0,
+  "failed": 1,
   "measured": {
     "repo": "aspnetcore",
     "path": "$HOME/aspnetcore",
     "files": 10431,
     "symbols": 132744,
     "rels": 471421,
+    "timing": null,
     "languages": [
       {
         "l": "csharp",
@@ -36,5 +37,5 @@
     "Wall-time includes the final taint/gravity steps cut once at the 350s CLI cap on the last slice; the index DB itself is complete (all 11,910 vetted files indexed across slices).",
     "The DB lives in the local brain store for this project; counts are read at verify time, not hardcoded."
   ],
-  "generatedAt": "2026-08-25T19:53:53.234Z"
+  "generatedAt": "2026-08-25T23:52:50.570Z"
 }

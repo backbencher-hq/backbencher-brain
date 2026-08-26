@@ -53,14 +53,14 @@ GitHub milestone #19 · Started 2026-08-25
 
 | # | Issue | Status | Evidence |
 |---|-------|--------|----------|
-| C1 | Governance | OPEN | validation/m19/results/C1.json |
-| S1 | Scale benchmark at anchors | OPEN | validation/m19/results/S1.json |
-| S2 | Index aspnetcore (59k files) | OPEN | validation/m19/results/S2.json |
-| S3 | Index intellij-community (273k files) | OPEN | validation/m19/results/S3.json |
-| Q1 | Retrieval at scale | OPEN | validation/m19/results/Q1.json |
-| Q2 | Fallback at scale | OPEN | validation/m19/results/Q2.json |
-| B1 | Benchmarks docs | OPEN | validation/m19/results/B1.json |
-| X9 | Gate | OPEN | validation/m19/results/X9.json |
+| C1 | Governance | CLOSED — gate 10/10 | validation/m19/results/C1.json |
+| S1 | Scale benchmark at anchors | CLOSED — 16/16 | validation/m19/results/S1.json |
+| S2 | Index aspnetcore (59k files) | OPEN — timing ledger missing | validation/m19/results/S2.json |
+| S3 | Index intellij-community (273k files) | OPEN — timing ledger missing | validation/m19/results/S3.json |
+| Q1 | Retrieval at scale | CLOSED — 7/7 | validation/m19/results/Q1.json |
+| Q2 | Fallback at scale | CLOSED — 13/13 | validation/m19/results/Q2.json |
+| B1 | Benchmarks docs | CLOSED — 22/22 | validation/m19/results/B1.json |
+| X9 | Gate | OPEN — planted mutation pending | validation/m19/results/X9.json |
 
 ## 6. Negative list (what M19 does NOT claim)
 

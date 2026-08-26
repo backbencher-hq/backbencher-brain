@@ -57,22 +57,22 @@
         "repo": "rake",
         "files": 57,
         "symbols": 779,
-        "ms": 3182,
-        "seconds": 3.182
+        "ms": 3765,
+        "seconds": 3.765
       },
       {
         "repo": "lodash",
         "files": 36,
         "symbols": 1048,
-        "ms": 5728,
-        "seconds": 5.728
+        "ms": 3929,
+        "seconds": 3.929
       },
       {
         "repo": "element-plus",
         "files": 2580,
         "symbols": 27751,
-        "ms": 83402,
-        "seconds": 83.402
+        "ms": 89580,
+        "seconds": 89.58
       }
     ],
     "curve": [
@@ -80,19 +80,19 @@
         "repo": "rake",
         "files": 57,
         "symbols": 779,
-        "ms": 3182
+        "ms": 3765
       },
       {
         "repo": "lodash",
         "files": 36,
         "symbols": 1048,
-        "ms": 5728
+        "ms": 3929
       },
       {
         "repo": "element-plus",
         "files": 2580,
         "symbols": 27751,
-        "ms": 83402
+        "ms": 89580
       }
     ]
   },
@@ -101,5 +101,5 @@
     "Giant file counts are DISCOVERY here - indexing them is S2/S3.",
     "Element-plus is the largest INDEXED anchor; intellij is not indexed in this verifier."
   ],
-  "generatedAt": "2026-08-25T19:29:06.561Z"
+  "generatedAt": "2026-08-25T23:37:12.527Z"
 }

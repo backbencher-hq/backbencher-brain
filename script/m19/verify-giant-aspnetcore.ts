@@ -61,12 +61,19 @@ async function main() {
     ck("S2: known symbol " + k.name + " resolves in the giant index", !!hit, hit ? hit.relative_path + " (" + hit.symbol_type + ")" : "missing")
   }
 
+  const timingPath = path.join(RESULTS_DIR, "S2-timings.json")
+  const timing = existsSync(timingPath) ? JSON.parse(readFileSync(timingPath, "utf8")) : null
+  const timingRows = Array.isArray(timing?.slices) ? timing.slices : []
+  const timingComplete = timingRows.length === 4 && timingRows.every((r: any) => Number.isInteger(r.slice) && r.slice >= 0 && r.slice < 4 && typeof r.wallMs === "number" && r.wallMs > 0 && typeof r.filesInSlice === "number" && r.filesInSlice > 0)
+  ck("S2: complete timing ledger exists for all four slices", timingComplete, timing ? "invalid or incomplete timing ledger" : "missing " + timingPath)
+
   const measured = {
     repo: "aspnetcore",
     path: REPO,
     files,
     symbols,
     rels,
+    timing: timingComplete ? timing : null,
     languages: langs,
     machine: MACHINE,
     note: "indexed as 4 bounded slices via giant-slice.ts (no corpus copy); per-slice wall-times recorded in the run log; this verifier reads the accumulated DB",
