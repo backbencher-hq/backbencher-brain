@@ -303,6 +303,14 @@ CONFIRMED findings for their waves (fix + fixture pin land together,
 per the standing rule that a bug class becomes a permanent gate before
 its fix counts as landed).
 
+Single-source-of-truth cleanup (2026-08-26): script/m14/spec/ previously
+held TWO classification artifacts — the live java-completeness.json (the
+gate's source) and the superseded java-type-classification.json (the
+co-agent's early classification, zero references), plus the prototype
+generator java-inventory.ts and its dump java-nodetypes.json (also zero
+references). Removed all three; the spec dir now holds exactly one
+classification and the spec table. Git history preserves the originals.
+
 ### #419 acceptance status (java pilot, 2026-08-26)
 
 1. Generator produces complete inventory from grammar — DONE (143/143
