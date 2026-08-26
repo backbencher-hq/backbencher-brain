@@ -8,6 +8,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
 import { migrationSourceFingerprint } from "../../src/intelligence/migration/migration-evidence"
+import { patternSourceFingerprint } from "../../src/intelligence/patterns/evidence"
 
 type Issue = {
   code: string
@@ -111,9 +112,13 @@ function isEvidenceOnlyChange(changed: string[]): boolean {
   return changed.length > 0 && changed.every((file) => file.startsWith("validation/m20/results/"))
 }
 
-function evidenceRevisionIsFresh(testedCommit: string, fingerprint?: string): boolean {
+function sourceFingerprintFor(issue: Issue): string {
+  return issue.tool === "bb_patterns" ? patternSourceFingerprint(ROOT) : migrationSourceFingerprint(ROOT)
+}
+
+function evidenceRevisionIsFresh(testedCommit: string, fingerprint: string | undefined, issue: Issue): boolean {
   if (fingerprint) {
-    try { return fingerprint === migrationSourceFingerprint(ROOT) } catch { return false }
+    try { return fingerprint === sourceFingerprintFor(issue) } catch { return false }
   }
   if (testedCommit === currentCommit) return true
   try {
@@ -147,8 +152,8 @@ for (const issue of ledger.issues.filter((item) => item.status !== "planned" && 
       if (!sameValue(persisted[field], expected)) evidenceErrors.push(`${issue.code}:${field}`)
     }
     if (typeof persisted.generatedAt !== "string" || !Number.isFinite(Date.parse(persisted.generatedAt))) evidenceErrors.push(`${issue.code}:generatedAt`)
-    if (typeof persisted.currentCommit !== "string" || !evidenceRevisionIsFresh(persisted.currentCommit, typeof persisted.sourceFingerprint === "string" ? persisted.sourceFingerprint : undefined)) evidenceErrors.push(`${issue.code}:stale-source`)
-    if (typeof persisted.sourceFingerprint !== "string" || persisted.sourceFingerprint !== migrationSourceFingerprint(ROOT)) evidenceErrors.push(`${issue.code}:sourceFingerprint`)
+    if (typeof persisted.currentCommit !== "string" || !evidenceRevisionIsFresh(persisted.currentCommit, typeof persisted.sourceFingerprint === "string" ? persisted.sourceFingerprint : undefined, issue)) evidenceErrors.push(`${issue.code}:stale-source`)
+    if (typeof persisted.sourceFingerprint !== "string" || persisted.sourceFingerprint !== sourceFingerprintFor(issue)) evidenceErrors.push(`${issue.code}:sourceFingerprint`)
     if (persisted.issue !== `M20.${issue.code}` || persisted.code !== issue.code) evidenceErrors.push(`${issue.code}:identity`)
   } catch {
     evidenceErrors.push(`${issue.code}:unreadable-evidence`)
