@@ -140,7 +140,7 @@ async function main() {
 
   const e = {
     issue: "M19.S3", code: "S3", tool: "indexing pipeline (mega corpus)",
-    title: "stress-test intellij-community (273k files) - worker pool + memory + parallelism",
+    title: "stress-test intellij-community (273k total files; supported source subset) - worker pool + memory + parallelism",
     verified: failed === 0, checks, passed, failed,
     measured,
     negatives: [

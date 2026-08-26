@@ -2,7 +2,7 @@
   "issue": "M19.S3",
   "code": "S3",
   "tool": "indexing pipeline (mega corpus)",
-  "title": "stress-test intellij-community (273k files) - worker pool + memory + parallelism",
+  "title": "stress-test intellij-community (273k total files; supported source subset) - worker pool + memory + parallelism",
   "verified": true,
   "checks": 23,
   "passed": 23,
@@ -137,5 +137,5 @@
     "Embeddings were bounded off during the fresh batch (BB_EMBEDDING_BATCH_LIMIT=1); semantic coverage is Q1/Q2 scope.",
     "Analyzer-kind precision is M14's lane; this issue verifies scale/index substrate, not analyzer correctness."
   ],
-  "generatedAt": "2026-08-26T15:24:16.596Z"
+  "generatedAt": "2026-08-26T17:15:36.308Z"
 }
