@@ -12,6 +12,12 @@
 Same taxonomy as JVM family. Template instantiates = usage_contextual.
 Script-level calls attributed to `(script)` sentinel.
 
+## Type-reference semantics
+- Fields, params, locals, throws clauses, instanceof targets emit references
+- Generics expand to base + arguments; `def`/`as` keywords never become edges
+- Grammar quirk: dangling `x as T` mis-parses as a declaration with
+  type_identifier("as") — excluded by name
+
 ## Known limitations
 - Same-name ambiguity resolution imprecise
 - Chain topology root-anchored (documented decision)
@@ -25,4 +31,4 @@ does not. No rebuild needed.
 - Fixtures: 18+ (`validation/m14/fixtures/groovy/`)
 - Corpus: grails-core@HEAD differential 100% coverage / 0 fabrications
 - Grammar audit: PASS (0 unknown node-type references)
-- Mutation hardening: covered by existing suite
+- Mutation hardening: drop-declared-types mutant CAUGHT via type-usage-graph fixture

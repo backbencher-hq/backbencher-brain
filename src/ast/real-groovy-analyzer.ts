@@ -476,6 +476,12 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Uses relationships for field accesses (this.x, obj.x — incl. ?. and *.)
     this.collectFieldAccessUses(rootNode, relationships, symbols)
 
+    // Declared-type reference graph (M14): fields, params, locals, throws,
+    // instanceof targets, as-casts, return types. Absent until M14 because
+    // the corpus oracle never checked it. `def` is a type_identifier token
+    // in this grammar but is not a type — excluded by name.
+    this.collectDeclaredTypeRefs(rootNode, relationships)
+
     const fw = this.detectGroovyFrameworks(content, symbols, imports)
 
     for (let i = 0; i < symbols.length; i++) {
@@ -660,6 +666,139 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         })
       }
     }
+  }
+
+  /**
+   * Declared-type reference graph (M14). References edges from the enclosing
+   * method/class to every named type in a declaration position. Collection
+   * descends but stops at value boundaries (variable_declarator values,
+   * closures, blocks) so initializer contents are never mistaken for the
+   * declared type clause.
+   */
+  private collectDeclaredTypeRefs(rootNode: Node, relationships: ASTEngine.UniversalRelationship[]): void {
+    const emitted = new Set<string>()
+    const TYPE_STOP = new Set(["variable_declarator", "closure", "block", "closure_expression"])
+
+    const collectTypeNames = (n: Node, out: string[]): void => {
+      if (n.type === "type_identifier") {
+        // `def` is the dynamic-type keyword; `as` is how the grammar lexes
+        // the keyword inside its mis-parsed dangling as-expression
+        // (`= [] as Set` becomes local_variable_declaration(as, Set)).
+        // Both are type_identifier TOKENS but never types.
+        if (n.text !== "def" && n.text !== "as" && !out.includes(n.text)) out.push(n.text)
+        return
+      }
+      if (n.type === "type_arguments") {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c) collectTypeNames(c, out)
+        }
+        return
+      }
+      if (TYPE_STOP.has(n.type)) return
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) collectTypeNames(c, out)
+      }
+    }
+
+    const resolveSource = (start: Node): string => {
+      let p: Node | null = start.parent
+      while (p) {
+        if (p.type === "method_declaration" || p.type === "constructor_declaration" || p.type === "function_definition") {
+          const name = this.findChild(p, (c) => c.type === "identifier")
+          if (name) return name.text
+        }
+        if (p.type === "class_declaration" || p.type === "trait_declaration" || p.type === "enum_declaration") {
+          const name = this.findChild(p, (c) => c.type === "identifier")
+          if (name) return name.text
+        }
+        p = p.parent
+      }
+      return "global"
+    }
+
+    const emit = (decl: Node, roots: Node[], kind: string, relType = "declared_type"): void => {
+      const source = resolveSource(decl)
+      for (const r of roots) {
+        const names: string[] = []
+        collectTypeNames(r, names)
+        for (const t of names) {
+          const key = `${source}|${t}|${kind}`
+          if (emitted.has(key)) continue
+          emitted.add(key)
+          relationships.push({
+            source,
+            target: t,
+            type: ASTEngine.RelationshipType.References,
+            confidence: 0.95,
+            metadata: { relationshipType: relType, declaredOn: decl.type },
+          })
+        }
+      }
+    }
+
+    const walk = (n: Node): void => {
+      switch (n.type) {
+        case "field_declaration":
+        case "formal_parameter":
+        case "local_variable_declaration": {
+          // Type clause = direct children that are types (generic_type /
+          // type_identifier / scoped), before any declarator begins.
+          const roots: Node[] = []
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (!c || TYPE_STOP.has(c.type)) continue
+            if (/type$/.test(c.type) || c.type.endsWith("_type") || c.type === "type_identifier") roots.push(c)
+          }
+          if (roots.length) emit(n, roots, n.type)
+          break
+        }
+        case "throws": {
+          const kids: Node[] = []
+          for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) kids.push(c) }
+          emit(n, kids, "throws", "throws_type")
+          break
+        }
+        case "instanceof_expression": {
+          if (n.namedChildCount >= 2) {
+            const right = n.namedChild(n.namedChildCount - 1)
+            if (right) emit(n, [right], n.type, "instanceof_expression")
+          }
+          break
+        }
+        case "juxt_function_call": {
+          // `x as Type` parses as juxt_function_call(as, argument_list).
+          const first = n.namedChild(0)
+          if (first && first.text === "as") {
+            for (let i = 0; i < n.namedChildCount; i++) {
+              const c = n.namedChild(i)
+              if (c && c.type === "argument_list") emit(n, [c], "as_expression")
+            }
+          }
+          break
+        }
+        case "method_declaration": {
+          // Return type: leading type children before the name identifier;
+          // `def` return type is correctly skipped by collectTypeNames.
+          const roots: Node[] = []
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (!c) continue
+            if (c.type === "identifier") break
+            if (c.type.endsWith("_type") || c.type === "type_identifier") roots.push(c)
+            else break
+          }
+          if (roots.length) emit(n, roots, "return_type")
+          break
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) walk(c)
+      }
+    }
+    walk(rootNode)
   }
 
   private collectFieldAccessUses(
