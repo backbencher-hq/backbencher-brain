@@ -301,6 +301,12 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       })
     }
 
+    // Declared-type reference graph (M14): constructor params, val/var type
+    // clauses, function params, return types, @throws annotations,
+    // asInstanceOf/isInstanceOf targets. Absent until M14 — the corpus
+    // oracle never checked it.
+    this.collectDeclaredTypeRefs(rootNode, relationships)
+
     this.classifyEvidenceTier(relationships)
 
     return {
@@ -560,6 +566,145 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
    * | inferred (sub-1.0 resolutions). Applied centrally at end of analyze()
    * so no emission site can forget it.
    */
+  /**
+   * Declared-type reference graph (M14). References edges from the enclosing
+   * function/class to every named type in a declaration position. Scala's
+   * @throws[IO] annotation parses as generic_type("throws", [IO]) — the
+   * "throws" name is skipped, its arguments become throws_type edges.
+   */
+  private collectDeclaredTypeRefs(rootNode: Node, relationships: ASTEngine.UniversalRelationship[]): void {
+    const emitted = new Set<string>()
+
+    const collectTypeNames = (n: Node, out: string[]): void => {
+      if (n.type === "type_identifier") {
+        if (n.text !== "throws" && !out.includes(n.text)) out.push(n.text)
+        return
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) collectTypeNames(c, out)
+      }
+    }
+
+    const resolveSource = (start: Node): string => {
+      let p: Node | null = start.type === "function_definition" || start.type === "function_declaration"
+        ? start
+        : start.parent
+      while (p) {
+        if (p.type === "function_definition" || p.type === "function_declaration") {
+          const name = this.findChild(p, "identifier")
+          if (name) return name.text
+        }
+        if (p.type === "class_definition" || p.type === "object_definition" || p.type === "trait_definition") {
+          const name = this.findChild(p, "identifier")
+          if (name) return name.text
+        }
+        p = p.parent
+      }
+      return "root"
+    }
+
+    const emit = (decl: Node, roots: Node[], kind: string, relType = "declared_type"): void => {
+      const source = resolveSource(decl)
+      for (const r of roots) {
+        if (!r) continue
+        const names: string[] = []
+        collectTypeNames(r, names)
+        for (const t of names) {
+          const key = `${source}|${t}|${kind}`
+          if (emitted.has(key)) continue
+          emitted.add(key)
+          relationships.push({
+            source,
+            target: t,
+            type: ASTEngine.RelationshipType.References,
+            confidence: 0.95,
+            metadata: { relationshipType: relType, declaredOn: decl.type },
+          })
+        }
+      }
+    }
+
+    const walk = (n: Node): void => {
+      switch (n.type) {
+        case "class_parameter":
+        case "parameter": {
+          emit(n, [n], n.type)
+          break
+        }
+        case "val_definition":
+        case "var_definition": {
+          // Type clause = direct type children. The name identifier precedes
+          // the type in this grammar, so no positional break; initializers
+          // are call_expression/literal children and never match type nodes.
+          const roots: Node[] = []
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (c && (/type$|_type$/.test(c.type) || c.type === "type_identifier")) roots.push(c)
+          }
+          if (roots.length) emit(n, roots, n.type)
+          break
+        }
+        case "annotation": {
+          // @throws[IO] — see function_definition note.
+          const gt = this.findChild(n, "generic_type")
+          if (gt && gt.namedChild(0)?.text === "throws") {
+            const argsNode = this.findChild(gt, "type_arguments")
+            if (argsNode) emit(n, [argsNode], "throws_annotation", "throws_type")
+          }
+          break
+        }
+        case "function_definition":
+        case "function_declaration": {
+          let sawParams = false
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (!c) continue
+            if (c.type === "parameters") { sawParams = true; continue }
+            if (c.type === "generic_type" || c.type === "type_identifier" || c.type === "functional_type") {
+              // @throws[IO] annotation type parses as generic_type("throws",
+              // [IO]) and appears BEFORE parameters; skip "throws" itself,
+              // emit its arguments as throws_type edges.
+              if (!sawParams && c.namedChild(0)?.text === "throws") {
+                const argsNode = this.findChild(c, "type_arguments")
+                if (argsNode) emit(n, [argsNode], "throws_annotation", "throws_type")
+                continue
+              }
+              emit(n, [c], sawParams ? "return_type" : "annotation_type", sawParams ? "return_type" : "declared_type")
+            }
+          }
+          break
+        }
+        case "call_expression": {
+          // x.asInstanceOf[T] / o.isInstanceOf[T] (call-shaped parses)
+          const fn = n.childForFieldName?.("function")
+          const fnText = fn ? fn.text : ""
+          if (fnText.endsWith("asInstanceOf") || fnText.endsWith("isInstanceOf")) {
+            const args = n.childForFieldName?.("arguments") || this.findChild(n, "type_arguments")
+            if (args) emit(n, [args], fnText.endsWith("asInstanceOf") ? "cast_target" : "instanceof_check")
+          }
+          break
+        }
+        case "generic_function": {
+          // x.asInstanceOf[T] / o.isInstanceOf[T] parse as generic_function
+          // (field_expression + type_arguments), not call_expression.
+          const fe = this.findChild(n, "field_expression")
+          const tail = fe ? (fe.namedChild(fe.namedChildCount - 1)?.text ?? "") : ""
+          if (tail === "asInstanceOf" || tail === "isInstanceOf") {
+            const args = this.findChild(n, "type_arguments")
+            if (args) emit(n, [args], tail === "asInstanceOf" ? "cast_target" : "instanceof_check", tail === "asInstanceOf" ? "cast_target" : "instanceof_check")
+          }
+          break
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) walk(c)
+      }
+    }
+    walk(rootNode)
+  }
+
   private classifyEvidenceTier(relationships: ASTEngine.UniversalRelationship[]): void {
     for (const r of relationships) {
       const md = r.metadata ?? (r.metadata = {})
