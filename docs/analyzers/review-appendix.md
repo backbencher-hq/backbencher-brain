@@ -973,3 +973,29 @@ GOTCHAS:
   - out-of-line definitions (void X::f(){}) resolve their owner via the
     qualified_identifier scope walk; template bases strip to leaf names
     or the override registry keys mismatch.
+
+## C++ second adversarial pass (2026-08-24, final)
+
+Attack on the wave's own fixes. TWO defects found, both fixture-proven:
+
+  - **SIGNATURE-BLIND overrides**: a same-name DIFFERENT-parameter method
+    (C++ NAME-HIDING) was emitted as Overrides - virtual dispatch only
+    matches exact signatures. Registry now stores normalized parameter
+    text per name; resolution requires signature equality. Keyword-less
+    same-signature redefinitions still resolve; transitive chains intact
+    (C->B->A verified); multiple-inheritance diamond resolves through
+    every path.
+  - **Template args leaked into instantiation targets**: `new
+    std::vector<int>()` emitted target 'vector<int>'. Stripped to the
+    constructed type name.
+
+VERIFIED CLEAN: out-of-line static member definitions keep their owner
+(Repo::count -> Repo, private); cross-file override isolation holds;
+complexity parity on the canonical shape (=5).
+
+RECORDED (verified, dispositioned):
+  - friend declarations: Scope.friends is a dead field and no edge is
+    emitted. A References edge (A grants B access) is the natural shape -
+    deferred until a consumer needs it.
+  - memorySafetyScore: unmeasured heuristic (+make_unique/-new delete).
+    Flagged; measure against a real corpus before trusting.

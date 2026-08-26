@@ -52,8 +52,8 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
     const usesSeen = new Set<string>()
     let fileDecisions = 0
     const qcBySource = new Map<string, string[]>()
-    const classVirtuals = new Map<string, string[]>()
-    const pendingOverrides: Array<{ cls: string; method: string }> = []
+    const classVirtuals = new Map<string, Map<string, string>>()
+    const pendingOverrides: Array<{ cls: string; method: string; params: string }> = []
     const classBases = new Map<string, string[]>()
 
     interface Scope {
@@ -446,11 +446,14 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
             parentContext?.kind === ASTEngine.SymbolKind.Class &&
             funcName !== parentContext.name
           ) {
-            const list = classVirtuals.get(parentContext.name) ?? []
-            list.push(funcName)
-            classVirtuals.set(parentContext.name, list)
+            // Signature-aware registry: name -> normalized parameter text.
+            const decl2 = this.findChild(node, "function_declarator")
+            const rawParams = decl2?.childForFieldName("parameters")?.text ?? ""
+            const sigs = classVirtuals.get(parentContext.name) ?? new Map()
+            sigs.set(funcName, rawParams.replace(/\s+/g, ""))
+            classVirtuals.set(parentContext.name, sigs)
             if ((classBases.get(parentContext.name)?.length ?? 0) > 0) {
-              pendingOverrides.push({ cls: parentContext.name, method: funcName })
+              pendingOverrides.push({ cls: parentContext.name, method: funcName, params: rawParams.replace(/\s+/g, "") })
             }
           }
 
@@ -625,6 +628,10 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
             const nameNode = typeNode.namedChild(typeNode.namedChildCount - 1)
             if (nameNode) typeName = nameNode.text
           }
+          // Template arguments are not part of the constructed type name
+          // (`new std::vector<int>` instantiates vector, not 'vector<int>').
+          const lt3 = typeName.indexOf("<")
+          if (lt3 !== -1) typeName = typeName.slice(0, lt3)
           const source = parentContext?.name || "global"
           relationships.push({
             source,
@@ -676,7 +683,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
     // POST-LOOP override resolution: every class and virtual is known now.
     // Resolves transitively (A->B->C) with a depth cap.
     {
-      const resolves = (startCls: string, method: string): string[] => {
+      const resolves = (startCls: string, method: string, params: string): string[] => {
         const found: string[] = []
         const seen = new Set<string>()
         const queue = [startCls]
@@ -687,14 +694,17 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (seen.has(cls)) continue
           seen.add(cls)
           for (const base of classBases.get(cls) ?? []) {
-            if ((classVirtuals.get(base) ?? []).includes(method)) found.push(base)
+            const baseSigs = classVirtuals.get(base)
+            // SIGNATURE-AWARE: a same-name DIFFERENT-parameter overload is
+            // C++ name-hiding, not virtual dispatch.
+            if (baseSigs && baseSigs.get(method) === params) found.push(base)
             queue.push(base)
           }
         }
         return found
       }
       for (const pend of pendingOverrides) {
-        for (const base of resolves(pend.cls, pend.method)) {
+        for (const base of resolves(pend.cls, pend.method, pend.params)) {
           relationships.push({
             source: `${pend.cls}.${pend.method}`,
             target: `${base}.${pend.method}`,
