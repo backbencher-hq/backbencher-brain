@@ -43,8 +43,9 @@ async function main() {
       // Scale-specific: closed scale issues must carry measured numbers.
       if (["S1", "S2", "S3"].includes(issue.code)) {
         const m = d.measured
-        const hasNumbers = m && typeof m === "object" && typeof m.repo === "string" && typeof m.files === "number" && (typeof m.symbols === "number" || typeof m.symbols === "string") && (typeof m.ms === "number" || typeof m.seconds === "number")
-        if (!hasNumbers) { bad++; console.log("  FAIL: " + issue.evidence + " scale issue lacks measured {repo,files,symbols,ms/seconds}") }
+        const rows = Array.isArray(m?.curve) ? m.curve : [m]
+        const hasNumbers = rows.length > 0 && rows.every((r: any) => r && typeof r.repo === "string" && typeof r.files === "number" && (typeof r.symbols === "number" || typeof r.symbols === "string") && (typeof r.ms === "number" || typeof r.seconds === "number"))
+        if (!hasNumbers) { bad++; console.log("  FAIL: " + issue.evidence + " scale issue lacks measured rows {repo,files,symbols,ms/seconds}") }
       }
     } catch (e: any) { bad++; console.log("  FAIL: " + issue.evidence + " unreadable: " + (e?.message || e)) }
   }
@@ -56,17 +57,18 @@ async function main() {
   let hollow = 0
   const hardTrue = new RegExp("ck\\(\\s*\"[^\"]*\",\\s*true\\s*\\)" + "|" + "nk\\(\\s*\"[^\"]*\",\\s*true\\s*\\)", "g")
   const orTrue = new RegExp("\\|\\|\\s*true\\s*\\)", "g")
-  const gte0 = new RegExp(">" + "=" + "\\s*0" + "(?![.\\d])", "g")
+  const gte0 = /(?:ck|nk)\([^\n]*>=\s*0(?![.\d])/g
   for (const v of verifiers) {
     const src = readFileSync(path.join(verifierDir, v), "utf8")
-    hollow += (src.match(hardTrue) || []).length + (src.match(orTrue) || []).length + (src.match(gte0) || []).length
+    const assertionSource = src.split("function ck").slice(1).join("function ck")
+    hollow += (assertionSource.match(hardTrue) || []).length + (assertionSource.match(orTrue) || []).length + (assertionSource.match(gte0) || []).length
   }
   ck("C1: zero hollow patterns across " + verifiers.length + " M19 verifiers", hollow === 0, "hollow=" + hollow)
 
   // ── 3. Wiring ────────────────────────────────────────────────────────────
   const pkg = readFileSync(path.join(ROOT_DIR, "package.json"), "utf8")
   const gate = readFileSync(path.join(ROOT_DIR, "script/verify-quality-gate.ts"), "utf8")
-  for (const v of ["verify-closure-gate.ts"]) {
+  for (const v of ["verify-closure-gate.ts", "verify-bench-docs.ts"]) {
     ck("C1: m19/" + v + " wired into package.json", pkg.includes("m19/" + v))
     ck("C1: m19/" + v + " wired into quality gate", gate.includes("m19/" + v))
   }

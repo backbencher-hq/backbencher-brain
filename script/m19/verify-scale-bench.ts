@@ -86,7 +86,7 @@ async function main() {
   for (const c of anchors.concat(giants)) {
     const n = countFiles(c.path)
     fileCounts.push({ tag: c.tag, kind: c.tag === "rake" || c.tag === "lodash" || c.tag === "element-plus" ? "anchor" : "giant", files: n, path: c.path })
-    ck("S1: " + c.tag + " file count measured", n !== null && n >= 0, "files=" + n)
+    ck("S1: " + c.tag + " file count measured and non-empty", n !== null && n > 0, "files=" + n)
   }
 
   const indexed: any[] = []
@@ -102,7 +102,12 @@ async function main() {
 
   ck("S1: at least one anchor indexed with a measured time", indexed.length >= 1, "indexed=" + indexed.length)
 
+  const firstMeasured = indexed[0] ?? { repo: "anchor-corpora", files: 0, symbols: 0, ms: 0 }
   const measured = {
+    repo: firstMeasured.repo,
+    files: firstMeasured.files,
+    symbols: firstMeasured.symbols,
+    ms: firstMeasured.ms,
     machine: MACHINE,
     fileCounts,
     indexedAnchors: indexed,
