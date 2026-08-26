@@ -201,6 +201,7 @@ check("C2: no unavailable repository is treated as evidence-eligible", observed.
 check("C2: syntax-error counts are measured or explicitly unmeasured", observed.every((repo) => repo.syntaxErrorStatus === "measured" ? typeof repo.syntaxErrorFiles === "number" && repo.syntaxMeasurements.every((measurement) => measurement.corpus === repo.path) : repo.syntaxErrorFiles === null))
 check("C2: syntax measurements carry language provenance", observed.every((repo) => repo.syntaxMeasurements.every((measurement) => typeof measurement.language === "string")), JSON.stringify(observed.filter((repo) => repo.syntaxMeasurements.some((measurement) => !measurement.language)).map((repo) => repo.id)))
 check("C2: undeclared local repositories are recorded", Array.isArray(localRepositories))
+check("C2: measured syntax artifacts identify corpus and language", observed.every((repo) => repo.syntaxMeasurements.every((measurement) => measurement.corpus === repo.path && typeof measurement.language === "string")), "missing corpus/language provenance")
 
 const missingFixture: DeclaredRepository = {
   id: "__m20_deliberately_missing__",
