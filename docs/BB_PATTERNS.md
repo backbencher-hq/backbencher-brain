@@ -84,10 +84,24 @@ confidence then file; `summary.truncated` is set when `maxResults` is exceeded
 ## recordRun persistence contract
 
 `bb_patterns { recordRun: true }` persists the **full analyzed set** — every
-detected pattern, not just the first `limit` shown in the preview. The response
-reports `(N found, M recorded)` where `M` equals `N`; run history therefore
-matches the run, and the auto-resolve pass never marks real findings past the
-display limit as gone. `limit` affects only the displayed preview lines.
+detected pattern, not just the first `limit` shown in the preview. The response reports `(N found, M recorded)` where `M` equals `N`; run history therefore
+matches the run, and the auto-resolve pass never marks real findings past the display
+limit as gone. `limit` affects only the displayed preview lines.
+
+## Scan completeness (M20.P1)
+
+The anti-pattern rules evaluate every indexed candidate before applying the public
+`maxResults` display budget. The `detectPatterns` result includes:
+
+- `scan.candidatesEvaluated`: all findings evaluated across enabled branches;
+- `scan.findingsBeforeDisplayLimit`: the full finding count before display slicing;
+- `scan.displayed`: the number returned in `patterns`;
+- `scan.truncated`: true when findings were omitted from the display page.
+
+`statistics.totalFound` describes the returned page and therefore equals
+`patterns.length`; use `scan.findingsBeforeDisplayLimit` for the full scan count.
+This prevents a late long-parameter candidate from being skipped merely because
+earlier candidates consumed a query or display budget.
 
 ## Verification
 
