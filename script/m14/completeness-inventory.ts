@@ -121,6 +121,25 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     },
     title: "kotlin pass (#419)",
   },
+  scala: {
+    id: "scala",
+    wasm: "tree-sitter-scala.wasm",
+    classification: "scala-completeness.json",
+    fixturesDir: "validation/m14/fixtures/scala",
+    docs: ["docs/analyzers/scala.md", "docs/analyzers/real-scala-analyzer.md"],
+    differentialCheck: "differential-scala",
+    perfKey: "scala3:scala",
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "imports"],
+    payloads: {
+      qualified_calls: { key: "expectQualifiedCalls", pin: "scala/qualified-calls-payload" },
+      docstrings: { key: "expectComments", pin: "scala/scaladoc-payload" },
+      complexity: { key: "expectComplexity", pin: "scala/complexity-parity" },
+      typeParameters: { key: "expectTypeParameters", pin: "scala/generic-parameters-payload" },
+      visibility: { key: "expectVisibility", pin: "scala/visibility pin (wave)" },
+      parameters: { key: "expectParameters", pin: "scala/parameters pin (wave)" },
+    },
+    title: "scala pass (#419)",
+  },
 }
 
 // Languages that have reached CONFORMANT and therefore run in npm run verify.
