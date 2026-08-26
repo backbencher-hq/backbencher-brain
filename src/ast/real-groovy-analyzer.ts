@@ -121,7 +121,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
             isDefault: false,
             range: this.nodeToRange(node),
             isNamespace: moduleName.endsWith(".*"),
-            metadata: { isWildcard: moduleName.endsWith(".*"), isStatic },
+            metadata: { isWildcard: node.text.indexOf(".*") !== -1, isStatic },
           })
           // DependsOn for imports — source rewritten to the file's primary
           // type after the walk (imports precede type declarations).
@@ -130,14 +130,16 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: moduleName,
             type: ASTEngine.RelationshipType.References,
             confidence: 0.9,
-            metadata: { isGroovyImport: true, isWildcard: moduleName.endsWith(".*") },
+            metadata: { isGroovyImport: true, isWildcard: node.text.indexOf(".*") !== -1 },
           })
         }
       } else if (
         type === "class_declaration" ||
         type === "interface_declaration" ||
         type === "trait_declaration" ||
-        type === "enum_declaration"
+        type === "enum_declaration" ||
+        type === "record_declaration" ||
+        type === "annotation_type_declaration"
       ) {
         const nameNode = this.findChild(node, (n) => n.type === "identifier")
         if (nameNode) {
@@ -224,11 +226,38 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
             decorators: classAnnotations,
             ownerName: scopeStack.length > 0 ? scopeStack[scopeStack.length - 1].name : undefined,
             ownerKind: scopeStack.length > 0 ? scopeStack[scopeStack.length - 1].kind : undefined,
-            metadata: { nodeType: type, annotations: classAnnotations },
+            metadata: { nodeType: type, annotations: classAnnotations, isRecord: type === "record_declaration" },
           }
           symbols.push(sym)
           symbolMap.set(fqn, sym)
           symbolMap.set(name, sym)
+
+          if (type === "record_declaration") {
+            // Record components are constructor-backed properties (Groovy 4
+            // records, mirroring the java analyzer): each formal_parameter of
+            // the record header becomes a public Property symbol.
+            const fp = this.findChild(node, (n) => n.type === "formal_parameters")
+            if (fp) {
+              for (let i = 0; i < fp.namedChildCount; i++) {
+                const p = fp.namedChild(i)
+                if (!p || p.type !== "formal_parameter") continue
+                const pName = this.findChild(p, (n) => n.type === "identifier")
+                const pType = this.findChild(p, (n) => n.type === "type_identifier" || n.type === "integral_type" || n.type === "floating_point_type" || n.type === "boolean_type" || n.type === "generic_type" || n.type === "array_type" || n.type === "scoped_type_identifier")
+                if (pName) {
+                  symbols.push({
+                    name: pName.text,
+                    kind: ASTEngine.SymbolKind.Property,
+                    range: this.nodeToRange(p),
+                    returnType: pType ? this.baseTypeName(pType) : undefined,
+                    visibility: "public",
+                    ownerName: name,
+                    ownerKind: kind,
+                    metadata: { nodeType: "record_component" },
+                  })
+                }
+              }
+            }
+          }
 
           newContext = {
             node,
@@ -261,11 +290,18 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
             for (let i = 0; i < paramList.namedChildCount; i++) {
               const p = paramList.namedChild(i)
               if (!p || (p.type !== "formal_parameter" && p.type !== "spread_parameter")) continue
-              const pName = this.findChild(p, (n) => n.type === "identifier")
+              const isSpread = p.type === "spread_parameter"
+              // Varargs: the grammar has no named fields; the name lives in
+              // the trailing variable_declarator (JVM erasure: type + "[]").
+              let pName = this.findChild(p, (n) => n.type === "identifier")
+              if (isSpread) {
+                const decl = this.findChild(p, (n) => n.type === "variable_declarator")
+                pName = decl ? this.findChild(decl, (n) => n.type === "identifier") : null
+              }
               const pType = this.findChild(p, (n) => n.type === "type_identifier" || n.type === "integral_type" || n.type === "floating_point_type" || n.type === "boolean_type" || n.type === "void_type" || n.type === "generic_type" || n.type === "array_type")
               parameters.push({
                 name: pName?.text ?? "anonymous",
-                type: pType ? this.baseTypeName(pType) : undefined,
+                type: pType ? this.baseTypeName(pType) + (isSpread ? "[]" : "") : undefined,
               })
             }
           }
@@ -393,6 +429,20 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
               metadata: { groovyCallExpression: callExpr },
             })
           }
+        }
+      } else if (type === "explicit_constructor_invocation") {
+        // super(...) / this(...) delegation (JLS-adjacent, Groovy ctor
+        // bodies produce this node). Honest literal target ("super"/"this")
+        // — never resolved to a guessed parent type.
+        const first = node.namedChild(0)
+        if (first && (first.type === "super" || first.type === "this")) {
+          relationships.push({
+            source: parentContext?.name ?? "(script)",
+            target: first.type,
+            type: ASTEngine.RelationshipType.Calls,
+            confidence: 1.0,
+            metadata: { relationshipType: "constructor_invocation" },
+          })
         }
       } else if (type === "juxt_function_call") {
         // Groovy juxtaposition call syntax: `echo "msg"` / `sh "cmd"` IS a
@@ -688,6 +738,13 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (n.text !== "def" && n.text !== "as" && !out.includes(n.text)) out.push(n.text)
         return
       }
+      if (n.type === "record_pattern") {
+        // The pattern's type is its FIRST named child (identifier):
+        // `Point(int x, int y)` under instanceof or a switch case label.
+        const t = n.namedChild(0)
+        if (t && t.type === "identifier" && t.text !== "this" && !out.includes(t.text)) out.push(t.text)
+        return
+      }
       if (n.type === "type_arguments") {
         for (let i = 0; i < n.namedChildCount; i++) {
           const c = n.namedChild(i)
@@ -761,9 +818,47 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
         }
         case "instanceof_expression": {
-          if (n.namedChildCount >= 2) {
-            const right = n.namedChild(n.namedChildCount - 1)
-            if (right) emit(n, [right], n.type, "instanceof_expression")
+          // The pattern type is any type-position child: a type_identifier
+          // (`o instanceof String s`), a scoped/generic type, or a
+          // record_pattern (`o instanceof Point(int x, int y)`). Emit from
+          // every child — plain identifiers carry no type names.
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (c) emit(n, [c], n.type, "instanceof_expression")
+          }
+          break
+        }
+        case "cast_expression": {
+          // (String) o — the cast type is the first named child.
+          const first = n.namedChild(0)
+          if (first) emit(n, [first], n.type, "cast_type")
+          break
+        }
+        case "switch_label": {
+          // case Point(int x, int y) -> / : — patterns under switch labels.
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (c && c.type === "pattern") emit(n, [c], "switch_pattern", "case_pattern")
+          }
+          break
+        }
+        case "method_reference": {
+          // Foo::bar — the receiver type is the first named child. `this` is
+          // not a type reference.
+          const first = n.namedChild(0)
+          if (first && first.type === "identifier" && first.text !== "this") {
+            const source = resolveSource(n)
+            const key = `${source}|${first.text}|method_reference`
+            if (!emitted.has(key)) {
+              emitted.add(key)
+              relationships.push({
+                source,
+                target: first.text,
+                type: ASTEngine.RelationshipType.References,
+                confidence: 0.9,
+                metadata: { relationshipType: "method_reference" },
+              })
+            }
           }
           break
         }
@@ -842,6 +937,27 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.6,
               metadata: { isFieldAccess: true },
+            })
+          }
+        }
+      }
+
+      if (node.type === "array_access") {
+        // xs[i] reads/writes are Uses on the array expression (G1). The
+        // array is the first named child; for bare identifiers that is the
+        // referenced array name.
+        const first = node.namedChild(0)
+        if (first && first.type === "identifier") {
+          const source = owner ?? first.text
+          const key = `arr:${source}.${first.text}`
+          if (!seen.has(key)) {
+            seen.add(key)
+            relationships.push({
+              source,
+              target: first.text,
+              type: ASTEngine.RelationshipType.Uses,
+              confidence: 0.6,
+              metadata: { isArrayAccess: true },
             })
           }
         }

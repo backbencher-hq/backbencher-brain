@@ -39,7 +39,7 @@ symbol-field rot. Every language wave must pin these symbol payloads:
 |---|---|---|---|---|
 | qualified_calls | PENDING -> #383 | PENDING -> #383 | GATED (qualified-calls-builtin-names) | adversarial names REQUIRED |
 | docstrings/kdoc | PENDING -> #383 | PENDING -> #383 | GATED (kdoc-extraction) | |
-| parameters (+defaults) | GATED (parameters-payload + mutant java/drop-parameters) | PENDING -> #383 | GATED (calls-and-instantiation partial) | |
+| parameters (+defaults) | GATED (parameters-payload + mutant java/drop-parameters) | GATED (groovy/parameters-payload incl. varargs String[]; mutants drop-parameters + drop-varargs-type CAUGHT) | GATED (calls-and-instantiation partial) | |
 | byte ranges (bb_edit depends) | indirect via M13 edit gates | same | same | M13 scope |
 | visibility/modifiers | GATED (generic-visibility-payload) | GATED F3 implicit | GATED F3 implicit (scala visibility flows) | explicit scala pins via generic fixture |
 | qualified_calls | GATED (CC1+payload fixture) | NOT EMITTED -> #383 (also javascript: NOT EMITTED, declared) | GATED (payload-pins) | GATED (extension-method-flag) |
@@ -260,7 +260,7 @@ INVENTORY-DONE / GAPS-CLOSED / CONFORMANT.
 | Language | #419 status | A | B (11 kinds) | C (payloads) | D (tiers) | E (differential) | F (perf) | G (docs) | H (CC1) |
 |---|---|---|---|---|---|---|---|---|---|
 | java | CONFORMANT (2026-08-26) | 143/143 types | 11/11 (imports pinned via java/import-edges + mutant) | 7/7 Matrix 1b rows (parameters pinned via java/parameters-payload + mutant) | 2 tiers | grails-core 100%/0% | 7.9 ms/file | java.md + real-java-analyzer.md | 3/3 checks |
-| groovy | INVENTORY-DONE (2026-08-26, gap list awaiting owner review) | 151/151 types | 7/9 pinned (contains + imports unpinned) | parameters missing (S5) | 0 tiers pinned | grails-core 100%/0% | 7.5 ms/file | groovy.md + real-groovy-analyzer.md | 3/3 checks |
+| groovy | CONFORMANT (2026-08-27, owner-approved plan; second reference implementation) | 151/151 types | 9/9 (contains-edges + import-edges pins) | 7/7 (parameters-payload incl. varargs) | 3 tiers (structural, import_based, usage_contextual) | grails-core 100%/0% | 7.5 ms/file | groovy.md + real-groovy-analyzer.md | 3/3 checks |
 | kotlin | NOT-STARTED | — | — | — | — | — | — | — | — |
 | scala | NOT-STARTED | — | — | — | — | — | — | — | — |
 | typescript | NOT-STARTED | — | — | — | — | — | — | — | — |

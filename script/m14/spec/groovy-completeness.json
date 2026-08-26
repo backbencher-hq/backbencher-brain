@@ -101,6 +101,7 @@
    "enum_body",
    "enum_body_declarations",
    "escape_sequence",
+   "exports_module_directive",
    "expression_statement",
    "false",
    "finally_clause",
@@ -114,12 +115,18 @@
    "map_item",
    "map_literal",
    "module_body",
+   "module_declaration",
    "null_literal",
    "octal_integer_literal",
+   "opens_module_directive",
    "parenthesized_expression",
+   "permits",
    "program",
+   "provides_module_directive",
    "range_expression",
    "receiver_parameter",
+   "requires_modifier",
+   "requires_module_directive",
    "return_statement",
    "shebang",
    "synchronized_statement",
@@ -131,6 +138,7 @@
    "unary_expression",
    "underscore_pattern",
    "update_expression",
+   "uses_module_directive",
    "wildcard",
    "yield_statement"
   ]
@@ -141,49 +149,65 @@
     "id": "G1",
     "node_type": "array_access",
     "severity": "high",
-    "missing": "Uses relationship on the array expression (xs[i] reads/writes emit no Uses on xs)"
+    "missing": "Uses relationship on the array expression (xs[i] reads/writes emit no Uses on xs)",
+    "status": "CLOSED",
+    "closure": "fixture-gated fix + mutant CAUGHT (2026-08-27)"
    },
    {
     "id": "G2",
     "node_type": "explicit_constructor_invocation",
     "severity": "high",
-    "missing": "Calls relationship for super(...)/this(...) constructor delegation"
+    "missing": "Calls relationship for super(...)/this(...) constructor delegation",
+    "status": "CLOSED",
+    "closure": "fixture-gated fix + mutant CAUGHT (2026-08-27)"
    },
    {
     "id": "G3",
     "node_type": "pattern,record_pattern,record_pattern_body,record_pattern_component,type_pattern",
     "severity": "high",
-    "missing": "Pattern type references lost (instanceof Point(int x, int y) and instanceof String s emit no reference to the pattern type)"
+    "missing": "Pattern type references lost (instanceof Point(int x, int y) and instanceof String s emit no reference to the pattern type)",
+    "status": "CLOSED",
+    "closure": "fixture-gated fix + mutant CAUGHT (2026-08-27)"
    },
    {
     "id": "G4",
     "node_type": "method_reference",
     "severity": "medium",
-    "missing": "Type reference for Foo::bar method references (no reference to Foo emitted)"
+    "missing": "Type reference for Foo::bar method references (no reference to Foo emitted)",
+    "status": "CLOSED",
+    "closure": "fixture-gated fix + mutant CAUGHT (2026-08-27)"
    },
    {
     "id": "G5",
     "node_type": "cast_expression",
     "severity": "medium",
-    "missing": "Cast type reference ((String) o emits no reference to String)"
+    "missing": "Cast type reference ((String) o emits no reference to String)",
+    "status": "CLOSED",
+    "closure": "fixture-gated fix + mutant CAUGHT (2026-08-27)"
    },
    {
     "id": "G6",
     "node_type": "record_declaration,compact_constructor_declaration",
     "severity": "high",
-    "missing": "record Point(int x, int y) emits no symbol (Groovy 4 records invisible)"
+    "missing": "record Point(int x, int y) emits no symbol (Groovy 4 records invisible)",
+    "status": "CLOSED",
+    "closure": "fixture-gated fix + mutant CAUGHT (2026-08-27)"
    },
    {
     "id": "G7",
     "node_type": "annotation_type_declaration,annotation_type_element_declaration",
     "severity": "medium",
-    "missing": "@interface Marker emits no symbol"
+    "missing": "@interface Marker emits no symbol",
+    "status": "CLOSED",
+    "closure": "fixture-gated fix + mutant CAUGHT (2026-08-27)"
    },
    {
     "id": "G8",
     "node_type": "",
     "severity": "medium",
-    "missing": "imports relationship kind unpinned (isGroovyImport edge exists but no fixture guards it)"
+    "missing": "imports relationship kind unpinned (isGroovyImport edge exists but no fixture guards it)",
+    "status": "CLOSED",
+    "closure": "fixture-gated fix + mutant CAUGHT (2026-08-27)"
    }
   ]
  },
@@ -192,32 +216,37 @@
    {
     "id": "S1",
     "node_type": "string_interpolation,template_expression,string_fragment,multiline_string_fragment",
-    "status": "PENDING",
-    "question": "Should interpolated identifiers in GStrings (\"hi ${name}\") emit a Uses edge on the referenced variable/property? The gstring-interpolation fixture pins no-garbage-symbols only. Recommend: emit Uses (semantically a property read, matching field_access behavior)."
+    "status": "RULED",
+    "question": "Should interpolated identifiers in GStrings (\"hi ${name}\") emit a Uses edge on the referenced variable/property? The gstring-interpolation fixture pins no-garbage-symbols only. Recommend: emit Uses (semantically a property read, matching field_access behavior).",
+    "resolution": "DECLARED LIMITATION: tree-sitter-groovy produces NO string_interpolation/template nodes (probed 2026-08-27: \"hi ${name}\", triple-quoted and slashy forms all parse as opaque string literals). Interpolated identifiers cannot emit Uses without string parsing \u2014 out of scope; gstring-interpolation fixture pins no-garbage-symbols."
    },
    {
     "id": "S2",
-    "node_type": "module_declaration,requires_module_directive,exports_module_directive,opens_module_directive,provides_module_directive,uses_module_directive,requires_modifier,permits",
-    "status": "PENDING",
-    "question": "JPMS module directives and permits: the grammar declares them but real Groovy source never produces them (probe: module foo {} is a parse error). Recommend: internal_silent (never-reachable), like java G5 ruling."
+    "node_type": "",
+    "status": "RULED",
+    "question": "JPMS module directives and permits: the grammar declares them but real Groovy source never produces them (probe: module foo {} is a parse error). Recommend: internal_silent (never-reachable), like java G5 ruling.",
+    "resolution": "JPMS module directives + permits never produced by real Groovy source (module foo {} is a parse error, probed 2026-08-27); types moved to internal_silent (never-reachable), mirroring java G5"
    },
    {
     "id": "S3",
     "node_type": "",
-    "status": "PENDING",
-    "question": "exports relationship kind: NOT EMITTED for groovy \u2014 no annotation-to-endpoint path exists (probe: Grails @Resource(uri=...) produces no exports edge or apiContractPath). Recommend: declared limitation."
+    "status": "RULED",
+    "question": "exports relationship kind: NOT EMITTED for groovy \u2014 no annotation-to-endpoint path exists (probe: Grails @Resource(uri=...) produces no exports edge or apiContractPath). Recommend: declared limitation.",
+    "resolution": "DECLARED LIMITATION: exports relationship kind NOT EMITTED for groovy (no annotation-to-endpoint path; Grails @Resource(uri=...) probe emits no exports edge). Section B requiredKinds excludes it."
    },
    {
     "id": "S4",
     "node_type": "",
-    "status": "PENDING",
-    "question": "apiContractPath payload: NOT EMITTED for groovy (same probe). Recommend: declared limitation."
+    "status": "RULED",
+    "question": "apiContractPath payload: NOT EMITTED for groovy (same probe). Recommend: declared limitation.",
+    "resolution": "DECLARED LIMITATION: apiContractPath payload NOT EMITTED for groovy (same probe)."
    },
    {
     "id": "S5",
     "node_type": "",
-    "status": "PENDING",
-    "question": "parameters payload pin: groovy has no expectParameters fixture (Matrix 1b cell PENDING -> #383). Section C reports it; the wave adds the fixture + mutant."
+    "status": "RULED",
+    "question": "parameters payload pin: groovy has no expectParameters fixture (Matrix 1b cell PENDING -> #383). Section C reports it; the wave adds the fixture + mutant.",
+    "resolution": "FIXED + GATED: groovy/parameters-payload fixture (incl. varargs String... parts -> String[] + name fix), mutants groovy/drop-parameters + groovy/drop-varargs-type CAUGHT. Matrix 1b cell GATED."
    }
   ]
  }
