@@ -33,6 +33,7 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   svelte: { wasm: "tree-sitter-svelte.wasm", analyzerFile: "real-svelte-analyzer", className: "RealSvelteAnalyzer", ext: "svelte" },
   cpp: { wasm: "tree-sitter-cpp.wasm", analyzerFile: "real-cpp-analyzer", className: "RealCppAnalyzer", ext: "cc" },
   c: { wasm: "tree-sitter-c.wasm", analyzerFile: "real-c-analyzer", className: "RealCAnalyzer", ext: "c" },
+  rust: { wasm: "tree-sitter-rust.wasm", analyzerFile: "real-rust-analyzer", className: "RealRustAnalyzer", ext: "rs" },
 }
 
 function seededPick<T>(items: T[], n: number, seedStr: string): T[] {
@@ -167,6 +168,104 @@ function deriveCCalls(root: any): { label: string; from: string; target: string 
       }
     }
     for (let k = 0; k < n.namedChildCount; k++) stack.push(n.namedChild(k))
+  }
+  return edges
+}
+
+// Rust truth: call edges (identifier + member-leaf callees), implements
+// (impl <Trait> for Type), extends (supertrait bounds on trait items).
+function deriveRustEdges(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seenCalls = new Set<string>()
+  const impls: { ty: string; trait: string }[] = []
+  const supertraits: Record<string, string[]> = {}
+  const stack: any[] = [root]
+  const leafOf = (fn: any): string | undefined => {
+    if (!fn) return undefined
+    if (fn.type === "identifier") return fn.text
+    if (fn.type === "field_expression" || fn.type === "scoped_identifier") {
+      const leaf = fn.namedChildren[fn.namedChildCount - 1]
+      return leaf?.type === "field_identifier" || leaf?.type === "identifier" ? leaf.text : undefined
+    }
+    return undefined
+  }
+  while (stack.length > 0) {
+    const n = stack.pop()!
+    if (n.type === "macro_invocation") {
+      // macro invocations are real call sites (format!/write!/vec!...)
+      const mn = n.namedChildren.find((c: any) => c.type === "identifier" || c.type === "scoped_identifier")
+      let mname = mn ? mn.namedChildren[mn.namedChildCount - 1]?.text ?? mn.text : undefined
+      if (mname && !seenCalls.has("macro:" + mname)) {
+        seenCalls.add("macro:" + mname)
+        edges.push({ label: "calls", from: "(expr)", target: mname })
+      }
+    }
+    if (n.type === "call_expression") {
+      const name = leafOf(n.childForFieldName?.("function"))
+      if (name && !seenCalls.has(name)) {
+        seenCalls.add(name)
+        edges.push({ label: "calls", from: "(expr)", target: name })
+      }
+    } else if (n.type === "struct_expression") {
+      const typeNode = n.childForFieldName?.("name") ?? n.namedChild(0)
+      if (typeNode && /^[A-Z]/.test(typeNode.text)) {
+        const t2 = lastSegment(typeNode.text)
+        if (!seenCalls.has("struct:" + t2)) {
+          seenCalls.add("struct:" + t2)
+          edges.push({ label: "instantiates", from: "(expr)", target: t2 })
+        }
+      }
+    } else if (n.type === "call_expression") {
+      // ::new / Type() constructor instantiation truth mirrors the family:
+      // receiver-type leaf for ::new, PascalCase leaf for tuple ctors.
+      const fn = n.childForFieldName?.("function")
+      if (fn) {
+        const calleeLeaf = fn.namedChildren[fn.namedChildCount - 1]
+        const isCtor = calleeLeaf?.text === "new"
+        const pascal = /^[A-Z]/.test(calleeLeaf?.text ?? "")
+        if ((isCtor || pascal) && (fn.type === "field_expression" || fn.type === "scoped_identifier" || fn.type === "identifier")) {
+          let recv: string | undefined
+          if (fn.type === "identifier") recv = fn.text
+          else {
+            const r2 = fn.childForFieldName?.("value") ?? fn.childForFieldName?.("path")
+            recv = lastSegment((r2?.text ?? "").split("<")[0].trim())
+          }
+          if (recv && /^[A-Z]/.test(recv) && !seenCalls.has("inst:" + recv)) {
+            seenCalls.add("inst:" + recv)
+            edges.push({ label: "instantiates", from: "(expr)", target: recv })
+          }
+        }
+      }
+    } else if (n.type === "impl_item") {
+      const traitN = n.childForFieldName?.("trait")
+      const typeN = n.childForFieldName?.("type")
+      if (traitN && typeN) {
+        const tName = lastSegment(typeN.text.split("<")[0].trim())
+        const trName = lastSegment(traitN.text.split("<")[0].trim())
+        if (tName && trName) {
+          edges.push({ label: "implements", from: tName, target: trName })
+          impls.push({ ty: tName, trait: trName })
+        }
+      }
+    } else if (n.type === "trait_item") {
+      const nameNode = n.childForFieldName?.("name")
+      const boundsNode = n.childForFieldName?.("bounds")
+      if (nameNode && boundsNode) {
+        const supers: string[] = []
+        for (const c of boundsNode.namedChildren) {
+          if (!c || c.type === "type_parameters" || c.type === "where_clause") continue
+          let bn = c.text.split("<")[0].split(":").pop() || ""
+          bn = lastSegment(bn.trim())
+          if (/^[A-Za-z_]/.test(bn)) supers.push(bn)
+        }
+        if (supers.length) supertraits[nameNode.text] = supers
+      }
+    }
+    for (let k = 0; k < n.namedChildCount; k++) stack.push(n.namedChild(k))
+  }
+  // supertrait extends truth
+  for (const [tr, supers] of Object.entries(supertraits)) {
+    for (const sp of supers) edges.push({ label: "extends", from: tr, target: sp })
   }
   return edges
 }
@@ -539,6 +638,11 @@ async function main() {
           ;(truth as any[]).push(e)
         }
       }
+      if (lang === "rust") {
+        for (const e of deriveRustEdges(root)) {
+          ;(truth as any[]).push(e)
+        }
+      }
       if (lang === "svelte") {
         for (const e of deriveSvelteComponentUsages(root)) {
           ;(truth as any[]).push(e)
@@ -565,10 +669,10 @@ async function main() {
         target: String(r.target ?? r.to ?? r.toSymbol ?? ""),
         line: r.line_number ?? 0,
         confidence: typeof r.confidence === "number" ? r.confidence : 1,
-      // c compares CALL edges too (its independently derivable truth);
-      // other languages do not derive call truth, so including calls there
-      // would flag every real call edge as unexplained.
-      })).filter((r: any) => ["extends", "implements", "instantiates", "overrides", ...(lang === "c" ? ["calls"] : [])].includes(r.label))
+      // c and rust compare CALL edges too (their independently derivable
+      // truth); other languages do not derive call truth, so including
+      // calls there would flag every real call edge as unexplained.
+      })).filter((r: any) => ["extends", "implements", "instantiates", "overrides", ...(lang === "c" || lang === "rust" ? ["calls"] : [])].includes(r.label))
 
       treeEdgesTotal += truth.length
       analyzerEdgesTotal += rels.length
