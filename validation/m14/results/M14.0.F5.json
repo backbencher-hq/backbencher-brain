@@ -1,85 +1,201 @@
 {
   "checks": [
     {
-      "description": "svelte@26786e9298: tree-truth vs analyzer diff",
-      "detail": "60 files, coverage 100%, unexplained 0%",
+      "description": "fmt@e27cc20bd9: tree-truth vs analyzer diff",
+      "detail": "1 files, coverage null%, unexplained null%",
       "id": "differential-javascript",
       "status": "pass"
     },
     {
-      "description": "svelte@26786e9298: tree-truth vs analyzer diff",
-      "detail": "60 files, coverage 100%, unexplained 0%",
+      "description": "fmt@e27cc20bd9: tree-truth vs analyzer diff",
+      "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-typescript",
       "status": "pass"
     },
     {
-      "description": "svelte@26786e9298: tree-truth vs analyzer diff",
+      "description": "fmt@e27cc20bd9: tree-truth vs analyzer diff",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-kotlin",
       "status": "pass"
     },
     {
-      "description": "svelte@26786e9298: tree-truth vs analyzer diff",
+      "description": "fmt@e27cc20bd9: tree-truth vs analyzer diff",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-scala",
       "status": "pass"
     },
     {
-      "description": "svelte@26786e9298: tree-truth vs analyzer diff",
+      "description": "fmt@e27cc20bd9: tree-truth vs analyzer diff",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-java",
       "status": "pass"
     },
     {
-      "description": "svelte@26786e9298: tree-truth vs analyzer diff",
+      "description": "fmt@e27cc20bd9: tree-truth vs analyzer diff",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-groovy",
       "status": "pass"
     },
     {
-      "description": "svelte@26786e9298: tree-truth vs analyzer diff",
+      "description": "fmt@e27cc20bd9: tree-truth vs analyzer diff",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-vue",
       "status": "pass"
     },
     {
-      "description": "svelte@26786e9298: tree-truth vs analyzer diff",
-      "detail": "60 files, coverage 100%, unexplained 0%",
+      "description": "fmt@e27cc20bd9: tree-truth vs analyzer diff",
+      "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-svelte",
       "status": "pass"
     },
     {
-      "description": "svelte@26786e9298: tree-truth vs analyzer diff",
-      "detail": "0 files, coverage null%, unexplained null%",
+      "description": "fmt@e27cc20bd9: tree-truth vs analyzer diff",
+      "detail": "47 files, coverage 91.2%, unexplained 1.9%",
       "id": "differential-cpp",
       "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "ce9189d28d535e418bcb47f2456cbf6b3567913d",
-  "committedAt": "2026-08-26T02:37:50+02:00",
+  "commit": "a1d6f398ead2f61f4700a84a137886ba4fdc2037",
+  "committedAt": "2026-08-26T02:39:01+02:00",
   "data": {
     "corpusPins": {
-      "svelte": "26786e92985842a6d563c67049a43bc5857bf792"
+      "fmt": "e27cc20bd93a4e280fb9268d41cd131069a9c73f"
     },
     "report": {
       "cpp": {
-        "analyzerEdges": 0,
-        "coveragePct": null,
-        "coveredByAnalyzer": 0,
-        "explainableByTree": 0,
-        "fabricationPct": null,
-        "filesSampled": 0,
+        "analyzerEdges": 162,
+        "coveragePct": 91.2,
+        "coveredByAnalyzer": 134,
+        "explainableByTree": 159,
+        "fabricationPct": 1.9,
+        "filesSampled": 47,
         "heuristicUnexplained": 0,
-        "missingInAnalyzer": 0,
+        "missingInAnalyzer": 13,
         "perf": {
-          "avgMsPerFile": null,
-          "maxMsPerFile": null,
-          "samplesTimed": 0
+          "avgMsPerFile": 99.1,
+          "maxMsPerFile": 1483.5,
+          "samplesTimed": 47
         },
-        "samples": [],
-        "treeTruthEdges": 0,
-        "unexplainedInAnalyzer": 0
+        "samples": [
+          {
+            "dir": "MISSING",
+            "file": "test/xchar-test.cc",
+            "from": "no_grouping.do_decimal_point",
+            "label": "overrides",
+            "target": "numpunct.do_decimal_point"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/xchar-test.cc",
+            "from": "no_grouping.do_grouping",
+            "label": "overrides",
+            "target": "numpunct.do_grouping"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/xchar-test.cc",
+            "from": "no_grouping.do_thousands_sep",
+            "label": "overrides",
+            "target": "numpunct.do_thousands_sep"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/xchar-test.cc",
+            "from": "special_grouping.do_decimal_point",
+            "label": "overrides",
+            "target": "numpunct.do_decimal_point"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/xchar-test.cc",
+            "from": "special_grouping.do_grouping",
+            "label": "overrides",
+            "target": "numpunct.do_grouping"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/xchar-test.cc",
+            "from": "special_grouping.do_thousands_sep",
+            "label": "overrides",
+            "target": "numpunct.do_thousands_sep"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/xchar-test.cc",
+            "from": "small_grouping.do_decimal_point",
+            "label": "overrides",
+            "target": "numpunct.do_decimal_point"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/xchar-test.cc",
+            "from": "small_grouping.do_grouping",
+            "label": "overrides",
+            "target": "numpunct.do_grouping"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/xchar-test.cc",
+            "from": "small_grouping.do_thousands_sep",
+            "label": "overrides",
+            "target": "numpunct.do_thousands_sep"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/gtest/gmock-gtest-all.cc",
+            "from": "OsStackTraceGetter.skip_count",
+            "label": "overrides",
+            "target": "OsStackTraceGetterInterface.skip_count"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/gtest/gmock-gtest-all.cc",
+            "from": "SocketWriter.message",
+            "label": "overrides",
+            "target": "AbstractSocketWriter.message"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/gtest/gmock-gtest-all.cc",
+            "from": "ForkingDeathTest.matcher",
+            "label": "overrides",
+            "target": "DeathTestImpl.matcher"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/gtest/gmock-gtest-all.cc",
+            "from": "NoExecDeathTest.matcher",
+            "label": "overrides",
+            "target": "ForkingDeathTest.matcher"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/gtest/gmock-gtest-all.cc",
+            "label": "overrides",
+            "line": 0,
+            "target": "OsStackTraceGetterInterface.CurrentStackTrace"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/gtest/gmock-gtest-all.cc",
+            "label": "overrides",
+            "line": 0,
+            "target": "OsStackTraceGetterInterface.GTEST_DISALLOW_COPY_AND_ASSIGN_"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/gtest/gmock-gtest-all.cc",
+            "label": "overrides",
+            "line": 0,
+            "target": "AbstractSocketWriter.Send"
+          }
+        ],
+        "treeTruthEdges": 147,
+        "unexplainedInAnalyzer": 3
       },
       "groovy": {
         "analyzerEdges": 0,
@@ -118,21 +234,21 @@
         "unexplainedInAnalyzer": 0
       },
       "javascript": {
-        "analyzerEdges": 1,
-        "coveragePct": 100,
-        "coveredByAnalyzer": 1,
-        "explainableByTree": 1,
-        "fabricationPct": 0,
-        "filesSampled": 60,
+        "analyzerEdges": 0,
+        "coveragePct": null,
+        "coveredByAnalyzer": 0,
+        "explainableByTree": 0,
+        "fabricationPct": null,
+        "filesSampled": 1,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 7.8,
-          "maxMsPerFile": 110.2,
-          "samplesTimed": 60
+          "avgMsPerFile": 33.1,
+          "maxMsPerFile": 33.1,
+          "samplesTimed": 1
         },
         "samples": [],
-        "treeTruthEdges": 1,
+        "treeTruthEdges": 0,
         "unexplainedInAnalyzer": 0
       },
       "kotlin": {
@@ -172,39 +288,39 @@
         "unexplainedInAnalyzer": 0
       },
       "svelte": {
-        "analyzerEdges": 8,
-        "coveragePct": 100,
-        "coveredByAnalyzer": 8,
-        "explainableByTree": 8,
-        "fabricationPct": 0,
-        "filesSampled": 60,
+        "analyzerEdges": 0,
+        "coveragePct": null,
+        "coveredByAnalyzer": 0,
+        "explainableByTree": 0,
+        "fabricationPct": null,
+        "filesSampled": 0,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 9.8,
-          "maxMsPerFile": 370.8,
-          "samplesTimed": 60
+          "avgMsPerFile": null,
+          "maxMsPerFile": null,
+          "samplesTimed": 0
         },
         "samples": [],
-        "treeTruthEdges": 8,
+        "treeTruthEdges": 0,
         "unexplainedInAnalyzer": 0
       },
       "typescript": {
-        "analyzerEdges": 249,
-        "coveragePct": 100,
-        "coveredByAnalyzer": 222,
-        "explainableByTree": 249,
-        "fabricationPct": 0,
-        "filesSampled": 60,
+        "analyzerEdges": 0,
+        "coveragePct": null,
+        "coveredByAnalyzer": 0,
+        "explainableByTree": 0,
+        "fabricationPct": null,
+        "filesSampled": 0,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 57.3,
-          "maxMsPerFile": 782.7,
-          "samplesTimed": 60
+          "avgMsPerFile": null,
+          "maxMsPerFile": null,
+          "samplesTimed": 0
         },
         "samples": [],
-        "treeTruthEdges": 222,
+        "treeTruthEdges": 0,
         "unexplainedInAnalyzer": 0
       },
       "vue": {
