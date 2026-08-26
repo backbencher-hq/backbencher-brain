@@ -1,146 +1,109 @@
 {
   "checks": [
     {
-      "description": "fmt@e27cc20bd9: tree-truth vs analyzer diff",
-      "detail": "1 files, coverage null%, unexplained null%",
+      "description": "svelte@26786e9298: tree-truth vs analyzer diff",
+      "detail": "60 files, coverage 100%, unexplained 0%",
       "id": "differential-javascript",
       "status": "pass"
     },
     {
-      "description": "fmt@e27cc20bd9: tree-truth vs analyzer diff",
-      "detail": "0 files, coverage null%, unexplained null%",
+      "description": "svelte@26786e9298: tree-truth vs analyzer diff",
+      "detail": "60 files, coverage 100%, unexplained 0%",
       "id": "differential-typescript",
       "status": "pass"
     },
     {
-      "description": "fmt@e27cc20bd9: tree-truth vs analyzer diff",
+      "description": "svelte@26786e9298: tree-truth vs analyzer diff",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-kotlin",
       "status": "pass"
     },
     {
-      "description": "fmt@e27cc20bd9: tree-truth vs analyzer diff",
+      "description": "svelte@26786e9298: tree-truth vs analyzer diff",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-scala",
       "status": "pass"
     },
     {
-      "description": "fmt@e27cc20bd9: tree-truth vs analyzer diff",
+      "description": "svelte@26786e9298: tree-truth vs analyzer diff",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-java",
       "status": "pass"
     },
     {
-      "description": "fmt@e27cc20bd9: tree-truth vs analyzer diff",
+      "description": "svelte@26786e9298: tree-truth vs analyzer diff",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-groovy",
       "status": "pass"
     },
     {
-      "description": "fmt@e27cc20bd9: tree-truth vs analyzer diff",
+      "description": "svelte@26786e9298: tree-truth vs analyzer diff",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-vue",
       "status": "pass"
     },
     {
-      "description": "fmt@e27cc20bd9: tree-truth vs analyzer diff",
-      "detail": "0 files, coverage null%, unexplained null%",
+      "description": "svelte@26786e9298: tree-truth vs analyzer diff",
+      "detail": "60 files, coverage 100%, unexplained 0%",
       "id": "differential-svelte",
       "status": "pass"
     },
     {
-      "description": "fmt@e27cc20bd9: tree-truth vs analyzer diff",
-      "detail": "47 files, coverage 97.3%, unexplained 2.2%",
+      "description": "svelte@26786e9298: tree-truth vs analyzer diff",
+      "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-cpp",
+      "status": "pass"
+    },
+    {
+      "description": "svelte@26786e9298: tree-truth vs analyzer diff",
+      "detail": "0 files, coverage null%, unexplained null%",
+      "id": "differential-c",
       "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "f8acca3f438eff908898d19de8b54580c00dd075",
-  "committedAt": "2026-08-26T02:42:01+02:00",
+  "commit": "fcadd83cb995f347b2b06755ba1b6283b423d053",
+  "committedAt": "2026-08-26T03:59:33+02:00",
   "data": {
     "corpusPins": {
-      "fmt": "e27cc20bd93a4e280fb9268d41cd131069a9c73f"
+      "svelte": "26786e92985842a6d563c67049a43bc5857bf792"
     },
     "report": {
-      "cpp": {
-        "analyzerEdges": 184,
-        "coveragePct": 97.3,
-        "coveredByAnalyzer": 143,
-        "explainableByTree": 180,
-        "fabricationPct": 2.2,
-        "filesSampled": 47,
+      "c": {
+        "analyzerEdges": 0,
+        "coveragePct": null,
+        "coveredByAnalyzer": 0,
+        "explainableByTree": 0,
+        "fabricationPct": null,
+        "filesSampled": 0,
         "heuristicUnexplained": 0,
-        "missingInAnalyzer": 4,
+        "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 81.8,
-          "maxMsPerFile": 1279.5,
-          "samplesTimed": 47
+          "avgMsPerFile": null,
+          "maxMsPerFile": null,
+          "samplesTimed": 0
         },
-        "samples": [
-          {
-            "confidence": 0.9,
-            "dir": "UNEXPLAINED",
-            "file": "test/format-test.cc",
-            "label": "overrides",
-            "line": 0,
-            "target": "format_facet.do_put"
-          },
-          {
-            "dir": "MISSING",
-            "file": "test/gtest/gmock-gtest-all.cc",
-            "from": "OsStackTraceGetter.skip_count",
-            "label": "overrides",
-            "target": "OsStackTraceGetterInterface.skip_count"
-          },
-          {
-            "dir": "MISSING",
-            "file": "test/gtest/gmock-gtest-all.cc",
-            "from": "SocketWriter.message",
-            "label": "overrides",
-            "target": "AbstractSocketWriter.message"
-          },
-          {
-            "dir": "MISSING",
-            "file": "test/gtest/gmock-gtest-all.cc",
-            "from": "ForkingDeathTest.matcher",
-            "label": "overrides",
-            "target": "DeathTestImpl.matcher"
-          },
-          {
-            "dir": "MISSING",
-            "file": "test/gtest/gmock-gtest-all.cc",
-            "from": "NoExecDeathTest.matcher",
-            "label": "overrides",
-            "target": "ForkingDeathTest.matcher"
-          },
-          {
-            "confidence": 0.9,
-            "dir": "UNEXPLAINED",
-            "file": "test/gtest/gmock-gtest-all.cc",
-            "label": "overrides",
-            "line": 0,
-            "target": "OsStackTraceGetterInterface.CurrentStackTrace"
-          },
-          {
-            "confidence": 0.9,
-            "dir": "UNEXPLAINED",
-            "file": "test/gtest/gmock-gtest-all.cc",
-            "label": "overrides",
-            "line": 0,
-            "target": "OsStackTraceGetterInterface.GTEST_DISALLOW_COPY_AND_ASSIGN_"
-          },
-          {
-            "confidence": 0.9,
-            "dir": "UNEXPLAINED",
-            "file": "test/gtest/gmock-gtest-all.cc",
-            "label": "overrides",
-            "line": 0,
-            "target": "AbstractSocketWriter.Send"
-          }
-        ],
-        "treeTruthEdges": 147,
-        "unexplainedInAnalyzer": 4
+        "samples": [],
+        "treeTruthEdges": 0,
+        "unexplainedInAnalyzer": 0
+      },
+      "cpp": {
+        "analyzerEdges": 0,
+        "coveragePct": null,
+        "coveredByAnalyzer": 0,
+        "explainableByTree": 0,
+        "fabricationPct": null,
+        "filesSampled": 0,
+        "heuristicUnexplained": 0,
+        "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": null,
+          "maxMsPerFile": null,
+          "samplesTimed": 0
+        },
+        "samples": [],
+        "treeTruthEdges": 0,
+        "unexplainedInAnalyzer": 0
       },
       "groovy": {
         "analyzerEdges": 0,
@@ -179,21 +142,21 @@
         "unexplainedInAnalyzer": 0
       },
       "javascript": {
-        "analyzerEdges": 0,
-        "coveragePct": null,
-        "coveredByAnalyzer": 0,
-        "explainableByTree": 0,
-        "fabricationPct": null,
-        "filesSampled": 1,
+        "analyzerEdges": 1,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 1,
+        "explainableByTree": 1,
+        "fabricationPct": 0,
+        "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 26.3,
-          "maxMsPerFile": 26.3,
-          "samplesTimed": 1
+          "avgMsPerFile": 9.5,
+          "maxMsPerFile": 131.7,
+          "samplesTimed": 60
         },
         "samples": [],
-        "treeTruthEdges": 0,
+        "treeTruthEdges": 1,
         "unexplainedInAnalyzer": 0
       },
       "kotlin": {
@@ -233,39 +196,39 @@
         "unexplainedInAnalyzer": 0
       },
       "svelte": {
-        "analyzerEdges": 0,
-        "coveragePct": null,
-        "coveredByAnalyzer": 0,
-        "explainableByTree": 0,
-        "fabricationPct": null,
-        "filesSampled": 0,
+        "analyzerEdges": 8,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 8,
+        "explainableByTree": 8,
+        "fabricationPct": 0,
+        "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": null,
-          "maxMsPerFile": null,
-          "samplesTimed": 0
+          "avgMsPerFile": 10,
+          "maxMsPerFile": 126.2,
+          "samplesTimed": 60
         },
         "samples": [],
-        "treeTruthEdges": 0,
+        "treeTruthEdges": 8,
         "unexplainedInAnalyzer": 0
       },
       "typescript": {
-        "analyzerEdges": 0,
-        "coveragePct": null,
-        "coveredByAnalyzer": 0,
-        "explainableByTree": 0,
-        "fabricationPct": null,
-        "filesSampled": 0,
+        "analyzerEdges": 249,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 222,
+        "explainableByTree": 249,
+        "fabricationPct": 0,
+        "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": null,
-          "maxMsPerFile": null,
-          "samplesTimed": 0
+          "avgMsPerFile": 68.2,
+          "maxMsPerFile": 942.1,
+          "samplesTimed": 60
         },
         "samples": [],
-        "treeTruthEdges": 0,
+        "treeTruthEdges": 222,
         "unexplainedInAnalyzer": 0
       },
       "vue": {
