@@ -1066,3 +1066,54 @@ Attack on the wave's own fixes + untouched corners:
   cleanly with gcc. PERF CHARACTERISTIC recorded: macro-dense generated
   files cost ~5s each; typical hand-written C costs milliseconds (jq
   avg). Optimization of the walk is future work if such files matter.
+
+## Rust review wave (2026-08-24)
+
+Universal method. Grammar = tree-sitter/tree-sitter-rust; ground truth
+against upstream node-types + pinned-wasm live probes (they agree on the
+four audit dead literals). 933-line analyzer, full read.
+
+FIXED (3 fixtures proven failing pre-fix + corpus evidence):
+  - **4 DEAD LITERALS** (audit): type_alias_declaration, if_let_expression,
+    while_let_expression ('if let' parses as a PLAIN if_expression -
+    verified live), trait_bound (trait_bounds children are direct types).
+  - **NO EVIDENCE TIERS** (#419-D) - classifier ported; where-clause
+    bounds = reference_qualified.
+  - **NO complexity fields**: per-symbol function complexity added (T1);
+    file-level 'complexity' field did not exist at all - now = cyclomatic.
+    match ARMS counted per-case (family granularity); counting
+    match_expression TOO double-counted every dispatch - caught during
+    fixture calibration.
+  - **NO qualified_calls payload** (#383) - calls per enclosing function.
+  - **0-BASED COLUMNS** in createSymbol (+1 applied family-wide).
+  - **visibility never set** in createSymbol - Rust default-private now
+    explicit instead of undefined.
+  - **Instantiates target garbage**: Foo::new() emitted Instantiates to
+    literal 'new' - now resolves the RECEIVER TYPE leaf (Foo).
+  - **INSTANTIATION NOISE (measured, corpus-found)**: the PascalCase/
+    ::new heuristic fired on every std/foreign type (Arc, Ok, foreign
+    builders) - 90%+ of such edges could never resolve to a project
+    symbol. Now DEFERRED and emitted only when the type is declared
+    in-file. ripgrep unexplained dropped 2092 -> 30.
+  - self_token phantom field reference removed (not serialized).
+
+DIFFERENTIAL PARITY:
+  - rust added to harness + oracle (call edges via identifier/member
+    leaves, macro invocations as call sites, impl->implements, trait
+    bounds->extends, struct literals + ctor shapes ->instantiates).
+  - ripgrep pinned as standing Rust corpus (60 files): **1894/1901
+    tree-truth (99.6%), unexplained 30 (0.4%)** - floors recorded at an
+    INVESTIGATED residual of three enumerable classes:
+      1. struct literals inside MACRO bodies (opaque to both sides)
+      2. fully-qualified path literals (globset::Glob {...})
+      3. tuple-VARIANT constructions where truth/analyzer disagree on
+         the constructed name.
+
+GOTCHAS:
+  - 'if let'/'while let' have NO dedicated nodes - plain if_expression/
+    while_expression (old grammar names are dead literals).
+  - function_declarator-style nesting does not apply; Rust parameter
+    names come from the 'pattern' field; self_parameter text IS '&self'.
+  - impl blocks intentionally emit one Impl symbol per (type,trait) pair
+    named after the type - duplicate names across traits are BY DESIGN
+    (stable identity); consumers must key on owner metadata.

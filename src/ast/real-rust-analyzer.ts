@@ -27,6 +27,8 @@ interface RustContext {
   exports: ASTEngine.ExportInfo[]
   metadata: Partial<ASTEngine.FileMetadata>
   emittedUses: Set<string>
+  qcByFunction: Map<string, string[]>
+  pendingInstantiations: Array<{ source: string; target: string; qualified: string }>
 }
 
 export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
@@ -49,6 +51,8 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         frameworkPatterns: [],
       },
       emittedUses: new Set<string>(),
+      qcByFunction: new Map<string, string[]>(),
+      pendingInstantiations: [],
     }
 
     if (rootNode.hasError) {
@@ -155,7 +159,9 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
           const sym = this.createSymbol(variantName, ASTEngine.SymbolKind.EnumMember, node, parent)
           ctx.symbols.push(sym)
         }
-      } else if (node.type === "type_item" || node.type === "type_alias_declaration") {
+      // 'type_alias_declaration' does not exist in this grammar - aliases
+      // are type_item nodes (grammar audit).
+      } else if (node.type === "type_item") {
         const name = this.extractIdentifier(node, "name")
         if (name) {
           const sym = this.createSymbol(name, ASTEngine.SymbolKind.Type, node, parent, { type: "type_alias" })
@@ -195,9 +201,27 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
             })
           }
         }
-      } else if (node.type === "match_expression" || node.type === "if_expression" || node.type === "while_expression" || node.type === "loop_expression" || node.type === "for_expression" || node.type === "if_let_expression" || node.type === "while_let_expression") {
+      } else if (
+        node.type === "if_expression" ||
+        node.type === "while_expression" || node.type === "loop_expression" ||
+        node.type === "for_expression"
+      ) {
+        // T1 family contract. DEAD literals removed: 'if_let_expression'/
+        // 'while_let_expression' do not exist in this grammar - `if let`
+        // parses as a plain if_expression (verified live).
         if (!ctx.metadata.cyclomaticComplexity) ctx.metadata.cyclomaticComplexity = 1
         ctx.metadata.cyclomaticComplexity++
+      } else if (node.type === "match_arm") {
+        // match arms are the Rust analogue of switch cases (per-case family
+        // granularity)
+        if (!ctx.metadata.cyclomaticComplexity) ctx.metadata.cyclomaticComplexity = 1
+        ctx.metadata.cyclomaticComplexity++
+      } else if (node.type === "binary_expression") {
+        const op = node.childForFieldName("operator")?.text
+        if (op === "&&" || op === "||") {
+          if (!ctx.metadata.cyclomaticComplexity) ctx.metadata.cyclomaticComplexity = 1
+          ctx.metadata.cyclomaticComplexity++
+        }
       } else if (node.type === "try_expression") {
         if (!ctx.metadata.patterns) ctx.metadata.patterns = []
         if (ctx.metadata.patterns.indexOf("Error Propagation (?)") === -1) ctx.metadata.patterns.push("Error Propagation (?)")
@@ -250,12 +274,71 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       const _owner = s.ownerName || s.scope; if (_owner) ctx.relationships.push({ source: _owner, target: s.name, type: ASTEngine.RelationshipType.Contains, confidence: 1.0, metadata: {} })
     }
 
+    // #383 payload attach: calls per enclosing function.
+    for (const sym of ctx.symbols) {
+      const qc = ctx.qcByFunction.get(sym.name)
+      if (qc && qc.length > 0) sym.qualified_calls = [...new Set(qc)]
+    }
+
+    // Deferred instantiation resolution: emit only constructions whose TYPE
+    // is declared in this file. Everything else (std/foreign crates) was
+    // unresolvable noise.
+    {
+      const inFile = new Set<string>()
+      for (const sym of ctx.symbols) {
+        if (
+          sym.kind === ASTEngine.SymbolKind.Struct || sym.kind === ASTEngine.SymbolKind.Enum ||
+          sym.kind === ASTEngine.SymbolKind.Type || sym.kind === ASTEngine.SymbolKind.Impl
+        ) inFile.add(sym.name)
+      }
+      for (const cand of ctx.pendingInstantiations) {
+        if (!inFile.has(cand.target)) continue
+        ctx.relationships.push({
+          source: cand.source,
+          target: cand.target,
+          fromSymbol: cand.source,
+          toSymbol: cand.qualified,
+          type: ASTEngine.RelationshipType.Instantiates,
+          confidence: 0.8,
+          metadata: { isConstructor: true },
+        })
+      }
+    }
+
+    // File-level complexity field (family contract - was absent; only a
+    // cyclomaticComplexity counter existed).
+    ctx.metadata.complexity = ctx.metadata.cyclomaticComplexity ?? 1
+
+    // #419-D evidence tiers on EVERY edge.
+    this.classifyEvidenceTier(ctx.relationships)
+
     return {
       symbols: ctx.symbols,
       relationships: ctx.relationships,
       imports: ctx.imports,
       exports: ctx.exports,
       metadata: ctx.metadata,
+    }
+  }
+
+  /** #419-D evidence-tier classification (family rules). */
+  private classifyEvidenceTier(relationships: ASTEngine.UniversalRelationship[]): void {
+    for (const r of relationships) {
+      const md = r.metadata ?? (r.metadata = {})
+      if (md.evidenceClass) continue
+      const t = String(r.type ?? "")
+      const conf = typeof r.confidence === "number" ? r.confidence : 1
+      if (t === "contains" || t === "exports") { md.evidenceClass = "structural"; continue }
+      if (t === "references") { md.evidenceClass = md.whereBound ? "reference_qualified" : "import_based"; continue }
+      if (t === "extends" || t === "implements" || t === "overrides") {
+        md.evidenceClass = conf >= 1 ? "structural" : conf >= 0.85 ? "usage_contextual" : "inferred"
+        continue
+      }
+      if (t === "instantiates") {
+        md.evidenceClass = conf >= 0.8 && md.isConstructor ? "usage_contextual" : "structural"
+        continue
+      }
+      md.evidenceClass = "usage_contextual"
     }
   }
 
@@ -372,11 +455,14 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     return {
       name,
       kind,
+      // Rust default visibility is private - never leave it undefined.
+      visibility: "private",
       range: {
         startLine: node.startPosition.row + 1,
-        startColumn: node.startPosition.column,
+        // Columns are 1-based family-wide (+1 was missing).
+        startColumn: node.startPosition.column + 1,
         endLine: node.endPosition.row + 1,
-        endColumn: node.endPosition.column,
+        endColumn: node.endPosition.column + 1,
         startIndex: node.startIndex,
         endIndex: node.endIndex,
       },
@@ -468,7 +554,9 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (boundsNode) {
       for (let i = 0; i < boundsNode.namedChildCount; i++) {
         const bound = boundsNode.namedChild(i)
-        if (bound && (bound.type === "type_identifier" || bound.type === "scoped_type_identifier" || bound.type === "trait_bound")) {
+        // Pinned wasm: trait_bounds children are direct type nodes -
+        // 'trait_bound' does not exist here (grammar audit).
+        if (bound && (bound.type === "type_identifier" || bound.type === "scoped_type_identifier" || bound.type === "generic_type")) {
           ctx.relationships.push({
             source: name,
             target: this.extractTraitName(bound),
@@ -666,13 +754,18 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       symbol.genericParameters = [typeParametersNode.text]
     }
 
+    // T1 family contract: per-symbol cyclomatic complexity (was absent).
+    symbol.complexity = this.functionComplexityRust(node)
+
     const parametersNode = node.childForFieldName("parameters")
     if (parametersNode) {
       const params: ASTEngine.Parameter[] = []
       for (let i = 0; i < parametersNode.namedChildCount; i++) {
         const p = parametersNode.namedChild(i)
         if (p && (p.type === "parameter" || p.type === "self_parameter")) {
-          const pName = p.childForFieldName("pattern") || p.childForFieldName("self_token") ||
+          // 'self_token' is not a serialized FIELD in this grammar - the
+          // self_parameter NODE itself is the fallback (its text is '&self').
+          const pName = p.childForFieldName("pattern") ||
             (p.type === "self_parameter" ? p : null)
           const pType = p.childForFieldName("type")
           params.push({
@@ -853,18 +946,66 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       metadata: { qualified },
     })
 
-    // Rust constructors: ::new() or PascalCase struct instantiation
-    if (target === "new" || qualified.endsWith("::new") || (target[0] === target[0].toUpperCase() && target[0] !== target[0].toLowerCase())) {
-      ctx.relationships.push({
-        source,
-        target,
-        fromSymbol: source,
-        toSymbol: qualified,
-        type: ASTEngine.RelationshipType.Instantiates,
-        confidence: 0.75,
-        metadata: { qualified, isConstructor: true },
-      })
+    // #383 payload: calls per enclosing function.
+    const qcFn = parent?.name
+    if (qcFn && !ctx.metadata.errors) {
+      const list = ctx.qcByFunction.get(qcFn) ?? []
+      list.push(qualified)
+      ctx.qcByFunction.set(qcFn, list)
     }
+
+    // Rust construction:
+    //   Foo::new() / Type::default() -> Instantiates of the RECEIVER TYPE
+    //   (target 'new' was garbage - the constructed TYPE is the receiver),
+    //   PascalCase tuple-struct constructor call -> Instantiates @0.75
+    //   (measured Rust convention: functions are snake_case).
+    let instTarget: string | null = null
+    if (functionNode.type === "field_expression" || functionNode.type === "scoped_identifier") {
+      // Receiver TYPE: value (field_expression) or path (scoped_identifier).
+      const receiver =
+        functionNode.childForFieldName("value") ??
+        functionNode.childForFieldName("path") ??
+        functionNode.namedChild(functionNode.namedChildCount - 2)
+      if (target === "new" && receiver) {
+        const recvText = this.stripGenerics(receiver.text)
+        const leaf = recvText.split("::").filter(Boolean).pop() ?? ""
+        if (/^[A-Z]/.test(leaf)) instTarget = leaf
+      }
+    } else if (/^[A-Z]/.test(target)) {
+      instTarget = target
+    }
+    // DEFERRED resolution: constructor candidates emit only when the type
+    // resolves to an IN-FILE symbol. Immediate emission fired on every
+    // std/external type (Arc, Ok, foreign builders) - 90%+ noise that could
+    // never resolve to a project symbol.
+    if (instTarget) {
+      ctx.pendingInstantiations.push({ source, target: instTarget, qualified })
+    }
+  }
+
+  /** Per-function cyclomatic complexity (T1 family contract). */
+  private functionComplexityRust(node: Node): number {
+    const decisionTypes = new Set([
+      // match ARMS are counted (per-case family granularity) - counting the
+      // match_expression TOO would double-count every dispatch.
+      "if_expression", "match_arm", "while_expression",
+      "loop_expression", "for_expression", "try_expression",
+    ])
+    let c = 1
+    const st: Node[] = [node]
+    while (st.length) {
+      const n = st.pop()!
+      if (decisionTypes.has(n.type)) c++
+      else if (n.type === "binary_expression") {
+        const op = n.childForFieldName("operator")?.text
+        if (op === "&&" || op === "||") c++
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const ch = n.namedChild(i)
+        if (ch) st.push(ch)
+      }
+    }
+    return c
   }
 
   // Extract macro invocations: println!(), vec![], format!(), etc.
