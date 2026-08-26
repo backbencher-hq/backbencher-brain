@@ -242,6 +242,11 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     // same-name method (in-file or via the cross-file companion index).
     this.extractOverrideRelationships(ctx)
 
+    // Declared-type reference graph (M14): annotated attributes, typed
+    // params, return annotations, and isinstance checks reference named
+    // types. Absent until M14 — the corpus oracle never checked it.
+    this.extractDeclaredTypeRefs(rootNode, ctx.relationships)
+
     const detectedFrameworks: string[] = []
     for (const k in ctx.frameworks) detectedFrameworks.push(k)
     const detectedPatterns: string[] = []
@@ -660,6 +665,113 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
   // ========================================================================
   // OVERRIDES (harness companion contract, mirrors JS analyzer)
   // ========================================================================
+
+  /**
+   * M14 — declared-type reference graph. Python type hints: annotated
+   * assignments (`x: T`), typed parameters, and return annotations all carry
+   * a `type` field node. isinstance(x, T) is the runtime type check. Builtin
+   * scalar types (str/int/float/bool/bytes) are excluded from names; unions
+   * (T | U), optionals, and generics descend via their children.
+   */
+  private extractDeclaredTypeRefs(rootNode: Node, relationships: ASTEngine.UniversalRelationship[]): void {
+    const emitted = new Set<string>()
+    const PRIMITIVES = new Set(["str", "int", "float", "complex", "bool", "bytes", "object", "None", "Any", "self", "cls"])
+
+    const collectTypeNames = (n: Node, out: string[]): void => {
+      if (n.type === "identifier") {
+        if (!PRIMITIVES.has(n.text) && !out.includes(n.text)) out.push(n.text)
+        return
+      }
+      if (n.type === "none" || n.type === "string" || n.type === "concatenated_string") return
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) collectTypeNames(c, out)
+      }
+    }
+
+    const resolveSource = (start: Node): string => {
+      // Include the start node itself: a function's return annotation
+      // resolves to the function, not its enclosing scope.
+      let p: Node | null =
+        start.type === "function_definition" || start.type === "class_definition" ? start : start.parent
+      while (p) {
+        if (p.type === "function_definition" || p.type === "class_definition") {
+          for (let i = 0; i < p.namedChildCount; i++) {
+            const c = p.namedChild(i)
+            if (!c) continue
+            if (c.type === "identifier") return c.text
+          }
+        }
+        p = p.parent
+      }
+      return "global"
+    }
+
+    const emit = (source: string, roots: (Node | null | undefined)[], relType: string): void => {
+      for (const r of roots) {
+        if (!r) continue
+        const names: string[] = []
+        collectTypeNames(r, names)
+        for (const t of names) {
+          const key = `${source}|${t}|${relType}`
+          if (emitted.has(key)) continue
+          emitted.add(key)
+          relationships.push({
+            source,
+            target: t,
+            type: ASTEngine.RelationshipType.References,
+            confidence: 0.95,
+            metadata: { relationshipType: relType },
+          })
+        }
+      }
+    }
+
+    const typeClauseOf = (n: Node): Node | null => {
+      // Newer tree-sitter-python wraps annotations in a `type` node; some
+      // versions expose it as a field. Handle both shapes.
+      const f = n.childForFieldName?.("type")
+      if (f) return f
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c && c.type === "type") return c
+      }
+      return null
+    }
+
+    const walk = (n: Node): void => {
+      switch (n.type) {
+        case "assignment": {
+          emit(resolveSource(n), [typeClauseOf(n)], "declared_type")
+          break
+        }
+        case "typed_parameter":
+        case "typed_default_parameter": {
+          emit(resolveSource(n), [typeClauseOf(n)], "declared_type")
+          break
+        }
+        case "function_definition": {
+          emit(resolveSource(n), [typeClauseOf(n)], "return_type")
+          break
+        }
+        case "call": {
+          // isinstance(x, T) / issubclass(a, B): second positional argument
+          // names a type.
+          const fn = n.childForFieldName?.("function")
+          if (fn && (fn.text === "isinstance" || fn.text === "issubclass")) {
+            const args = n.childForFieldName?.("arguments")
+            if (args && args.namedChildCount >= 2) emit(resolveSource(n), [args.namedChild(args.namedChildCount - 1)], "instanceof_check")
+          }
+          break
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) walk(c)
+      }
+    }
+    walk(rootNode)
+  }
 
   private extractOverrideRelationships(ctx: PythonContext) {
     const byName = new Map<string, ASTEngine.UniversalSymbol[]>()
