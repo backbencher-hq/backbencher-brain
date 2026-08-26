@@ -50,7 +50,7 @@
     },
     {
       "description": "c adversarial fixtures",
-      "detail": "2/2 fixtures pass",
+      "detail": "3/3 fixtures pass",
       "id": "fixtures-c",
       "status": "pass"
     },
@@ -62,8 +62,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "fcadd83cb995f347b2b06755ba1b6283b423d053",
-  "committedAt": "2026-08-26T03:59:33+02:00",
+  "commit": "2f23f068e7f7b493c6920fe3325afe65e56c5052",
+  "committedAt": "2026-08-26T04:59:47+02:00",
   "data": {
     "details": [
       {
@@ -922,6 +922,11 @@
         "problems": []
       },
       {
+        "fixture": "c/dispatch-table-filter",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "c/malloc-instantiates-noise",
         "ok": true,
         "problems": []
@@ -950,7 +955,7 @@
     "summary": {
       "c": {
         "fail": 0,
-        "pass": 2
+        "pass": 3
       },
       "cpp": {
         "fail": 0,

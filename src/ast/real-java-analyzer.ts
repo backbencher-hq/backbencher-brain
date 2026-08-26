@@ -614,6 +614,22 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
         const isConstant = modifiers.indexOf("final") !== -1 && isStatic
         const fieldType = this.extractJavaFieldType(node)
 
+        // Declared-type reference edges (same contract as locals/params):
+        // every named type in the field's type clause becomes a References
+        // edge from the owning class.
+        const fieldTypeNode = node.childForFieldName("type")
+        if (fieldTypeNode && parentContext) {
+          for (const t of this.collectJavaTypeNames(fieldTypeNode)) {
+            relationships.push({
+              source: parentContext.name,
+              target: t,
+              type: ASTEngine.RelationshipType.References,
+              confidence: 0.95,
+              metadata: { relationshipType: "declared_type", declaredOn: type },
+            })
+          }
+        }
+
         const declarators = this.findAllChildrenByType(node, "variable_declarator")
         for (let decIdx = 0; decIdx < declarators.length; decIdx++) { const declarator = declarators[decIdx]
           const nameNode = this.findChildByType(declarator, "identifier")
@@ -849,6 +865,49 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
                 metadata: { relationshipType: "switch_pattern" },
               })
             }
+          }
+        }
+      }
+
+      else if (
+        type === "local_variable_declaration" ||
+        type === "formal_parameter" ||
+        type === "spread_parameter" ||
+        type === "catch_formal_parameter"
+      ) {
+        // JLS 8.3/14.4/8.4.1: every declared variable references its type.
+        // These edges were never emitted before M14 — the corpus oracle only
+        // checked imports/inheritance/instantiations, so the entire
+        // type-usage graph was silently absent. Generic types contribute
+        // both the base and all argument types (Map<String, List<X>> →
+        // Map, String, X).
+        const typeNode = node.childForFieldName("type") || this.findChildByType(node, "catch_type") || this.findChildByType(node, "type_identifier")
+        if (typeNode) {
+          for (const t of this.collectJavaTypeNames(typeNode)) {
+            relationships.push({
+              source: parentContext?.name || parentContext?.symbolRef?.name || "global",
+              target: t,
+              type: ASTEngine.RelationshipType.References,
+              confidence: 0.95,
+              metadata: { relationshipType: "declared_type", declaredOn: type },
+            })
+          }
+        }
+      }
+
+      else if (type === "throws") {
+        // JLS 8.4.4: throws clauses reference each exception type.
+        for (let i = 0; i < node.namedChildCount; i++) {
+          const child = node.namedChild(i)
+          if (!child) continue
+          for (const t of this.collectJavaTypeNames(child)) {
+            relationships.push({
+              source: parentContext?.name || parentContext?.symbolRef?.name || "global",
+              target: t,
+              type: ASTEngine.RelationshipType.References,
+              confidence: 0.95,
+              metadata: { relationshipType: "throws_type" },
+            })
           }
         }
       }
@@ -1313,6 +1372,35 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (child && child.type === type) results.push(child)
     }
     return results
+  }
+
+  /**
+   * All named types referenced inside a type subtree: the base of a generic
+   * (`List<X>` → List), each type argument recursively (`Map<String,
+   * List<X>>` → Map, String, X), scoped names in full dotted form per the
+   * M14 dotted-name convention (`java.util.List` stays dotted), and array
+   * element types. Union catch types are visited via their catch_type parent.
+   * Primitives never match these node shapes and are correctly excluded.
+   */
+  private collectJavaTypeNames(node: Node): string[] {
+    const out: string[] = []
+    const seen = new Set<string>()
+    const visit = (n: Node): void => {
+      if (n.type === "type_identifier" || n.type === "scoped_type_identifier") {
+        if (!seen.has(n.text)) {
+          seen.add(n.text)
+          out.push(n.text)
+        }
+        return
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const child = n.namedChild(i)
+        // Wildcards and anonymous bodies carry no name; skip silently.
+        if (child && child.type !== "wildcard") visit(child)
+      }
+    }
+    visit(node)
+    return out
   }
 
   /**
