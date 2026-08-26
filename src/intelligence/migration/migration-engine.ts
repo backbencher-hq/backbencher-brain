@@ -29,12 +29,14 @@ export interface MigrationMethodology {
   deduplication: "relationship-id-or-structural-identity"
 }
 
+export type MigrationBatchUnsupportedReason = "missing-symbol" | "same-language" | "unsupported-target" | "unplannable"
+
 export interface MigrationPlanResult {
   targetLanguage: string
   plans: any[]
   dependencyOrder: string[]
   dependencyGraph: MigrationDependencyGraph
-  unsupported: Array<{ symbolName: string; reason: string }>
+  unsupported: Array<{ symbolName: string; reason: string; unsupportedReason: MigrationBatchUnsupportedReason }>
   methodology: MigrationMethodology
   truncation: { truncated: boolean; requested: number; returned: number }
 }
@@ -137,13 +139,26 @@ export function computeDependencyOrder(symbolNames: string[], relationships: Mig
 
 export async function generateMigrationPlans(projectId: string, request: MigrationRequest): Promise<MigrationPlanResult> {
   const names = [...new Set(request.symbolNames.map((name) => String(name).trim()).filter(Boolean))].slice(0, 100)
+  const normalizedTargetLanguage = String(request.targetLanguage ?? "").trim().toLowerCase()
   const analysis = await CrossLanguageIntelligence.analyzePolyglotProjectFromDB(projectId as any)
+  const symbolsByName = new Map(analysis.crossLanguageSymbols.map((symbol: any) => [String(symbol.name).toLowerCase(), symbol]))
   const plans: any[] = []
   const unsupported: MigrationPlanResult["unsupported"] = []
   for (const symbolName of names) {
     const plan = await CrossLanguageMigrationAssistant.generateMigrationPlan(symbolName, request.targetLanguage, analysis)
     if (plan) plans.push(plan)
-    else unsupported.push({ symbolName, reason: "symbol not found, same-language migration, or no supported mapping" })
+    else {
+      const symbol = symbolsByName.get(symbolName.toLowerCase()) as any
+      const source = String(symbol?.languages?.[0] ?? "").trim().toLowerCase()
+      const unsupportedReason: MigrationBatchUnsupportedReason = !symbol
+        ? "missing-symbol"
+        : source === normalizedTargetLanguage
+          ? "same-language"
+          : !normalizedTargetLanguage
+            ? "unsupported-target"
+            : "unplannable"
+      unsupported.push({ symbolName, reason: `migration is ${unsupportedReason}`, unsupportedReason })
+    }
   }
   const planNames = plans.map((plan) => plan.componentName)
   const idsByName = new Map<string, Set<string>>()
@@ -163,7 +178,7 @@ export async function generateMigrationPlans(projectId: string, request: Migrati
   }
   const { order: dependencyOrder, graph: dependencyGraph } = computeDependencyOrder(planNames, graphRelationships)
   const methodology = calculateMigrationMethodology(plans)
-  return { targetLanguage: request.targetLanguage, plans, dependencyOrder, dependencyGraph, unsupported, methodology, truncation: { truncated: request.symbolNames.length > names.length, requested: request.symbolNames.length, returned: names.length } }
+  return { targetLanguage: normalizedTargetLanguage, plans, dependencyOrder, dependencyGraph, unsupported, methodology, truncation: { truncated: request.symbolNames.length > names.length, requested: request.symbolNames.length, returned: names.length } }
 }
 
 export function formatMigrationPlans(result: MigrationPlanResult, format: "text" | "json" = "text"): string {
