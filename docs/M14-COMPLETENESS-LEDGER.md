@@ -272,7 +272,7 @@ INVENTORY-DONE / GAPS-CLOSED / CONFORMANT.
 |---|---|---|---|---|---|---|---|---|---|
 | java | CONFORMANT (2026-08-26) | 143/143 types | 11/11 (imports pinned via java/import-edges + mutant) | 7/7 Matrix 1b rows (parameters pinned via java/parameters-payload + mutant) | 2 tiers | grails-core 100%/0% | 7.9 ms/file | java.md + real-java-analyzer.md | 3/3 checks |
 | groovy | CONFORMANT (2026-08-27, owner-approved plan; second reference implementation) | 151/151 types | 9/9 (contains-edges + import-edges pins) | 7/7 (parameters-payload incl. varargs) | 3 tiers (structural, import_based, usage_contextual) | grails-core 100%/0% | 7.5 ms/file | groovy.md + real-groovy-analyzer.md | 3/3 checks |
-| kotlin | NOT-STARTED | — | — | — | — | — | — | — | — |
+| kotlin | INVENTORY-DONE (2026-08-27, K1-K8 gap list awaiting owner review) | 142/142 types | 7/9 pinned (instantiates + imports unpinned) | 4/7 pinned (docstrings/visibility/parameters missing) | 0 tiers pinned | Exposed:kotlin 1 missing + 1 unexplained residual (floor NOT met — work item) | 25.5 ms/file | kotlin.md + real-kotlin-analyzer.md | 3/3 checks |
 | scala | NOT-STARTED | — | — | — | — | — | — | — | — |
 | typescript | NOT-STARTED | — | — | — | — | — | — | — | — |
 | javascript | NOT-STARTED | — | — | — | — | — | — | — | — |
@@ -332,6 +332,19 @@ symbol; annotation_type_declaration symbol; imports pin), S1-S5 rulings
 pending (gstring Uses; JPMS never-reachable; exports/apiContractPath NOT
 EMITTED; parameters pin). Section state: A/E/F/G/H pass; B (contains +
 imports unpinned), C (parameters), D (0 tier pins) fail — declared work
+items. Gap list reported to owner before ANY fix (contract, acceptance 2).
+
+Kotlin inventory (2026-08-27): 142 unique named node types fully
+classified (67 handled, 44 internal_silent), K1-K8 confirmed by live
+probes (indexing Uses; ctor-delegation Calls; callable_reference ref;
+template identifier Uses; type_alias symbol; object_literal type ref +
+override misattribution; init/field-init call source "Global"; import
+tier mislabeled — isImportDep unrecognized, the kotlin/scala finding from
+java's pass). S1-S6 rulings pending (companion/accessors/destructuring /
+lambdas/modifiers internal_silent; exports NOT EMITTED). Section state:
+A/F/G/H pass; B (instantiates + imports unpinned), C (docstrings /
+visibility / parameters pins), D (0 tier pins), E (Exposed:kotlin 1
+missing + 1 unexplained residual — floor not met) fail as declared work
 items. Gap list reported to owner before ANY fix (contract, acceptance 2).
 
 ### #419 acceptance status (java pilot, 2026-08-26)

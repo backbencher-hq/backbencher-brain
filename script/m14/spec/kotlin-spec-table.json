@@ -1,0 +1,99 @@
+{
+ "declarations": {
+  "class_declaration": {
+   "symbol": "class",
+   "heritage": [
+    "implements (kotlin : convention)"
+   ]
+  },
+  "interface_declaration": {
+   "symbol": "interface",
+   "heritage": [
+    "extends_interfaces"
+   ]
+  },
+  "object_declaration": {
+   "symbol": "class",
+   "note": "object Foo {} singleton — symbol emitted (probe-verified)"
+  },
+  "companion_object": {
+   "symbol": null,
+   "note": "anonymous; contents emit with owner = enclosing class (S1 ruling pending)"
+  },
+  "enum_declaration": {
+   "symbol": "enum",
+   "members": "enum_entry"
+  },
+  "type_alias": {
+   "symbol": "type",
+   "note": "K5 confirmed gap — typealias Fn emits no symbol"
+  },
+  "function_declaration": {
+   "symbol": "function",
+   "payloads": [
+    "complexity",
+    "kdoc",
+    "annotations",
+    "visibility",
+    "generics"
+   ]
+  },
+  "constructor_declaration": {
+   "symbol": "constructor",
+   "note": "constructor_delegation_call inside -> Calls edge (K2 confirmed gap)"
+  },
+  "property_declaration": {
+   "symbol": "property",
+   "note": "field initializers attribute calls to Global (K7 confirmed gap)"
+  },
+  "anonymous_initializer": {
+   "symbol": null,
+   "note": "init {} calls captured but source Global (K7)"
+  },
+  "secondary_constructor": {
+   "symbol": "constructor"
+  },
+  "import_header": {
+   "import": true,
+   "note": "K8 confirmed gap: isImportDep mislabeled tier (reference_qualified instead of import_based)"
+  },
+  "package_header": {
+   "metadata": "currentPackage"
+  }
+ },
+ "types": [
+  "type_identifier",
+  "user_type",
+  "generic_type",
+  "function_type",
+  "nullable_type",
+  "dynamic",
+  "parenthesized_type"
+ ],
+ "expressions_requiring_uses_or_calls": [
+  "call_expression",
+  "object_creation_expression",
+  "navigation_expression",
+  "indexing_expression",
+  "callable_reference",
+  "string_template",
+  "when_expression",
+  "try_expression"
+ ],
+ "statements_affecting_complexity": [
+  "if_expression",
+  "for_statement",
+  "while_statement",
+  "do_statement",
+  "when_expression",
+  "catch_clause",
+  "guard_condition",
+  "elvis_expression",
+  "ternary"
+ ],
+ "_notes": {
+  "K1-K8": "confirmed gaps in kotlin-completeness.json — awaiting owner review before any fix",
+  "S1-S6": "owner rulings pending — companion/accessors/destructuring/lambdas/modifiers internal_silent, exports NOT EMITTED",
+  "complexity": "when counts as decision points (probe: 3-branch when + if => cx=5, matching the JVM family CC1 contract)"
+ }
+}
