@@ -10,6 +10,7 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
+import { migrationSourceFingerprint } from "../../src/intelligence/migration/migration-evidence"
 
 type DeclaredRepository = {
   id: string
@@ -252,6 +253,7 @@ const preliminary = {
   failed: preliminaryFailed,
   negativeCases,
   currentCommit,
+  sourceFingerprint: migrationSourceFingerprint(ROOT),
   workingTreeRelevantChanges: currentWorkingTreeRelevantChanges,
   verifierCommand: "bun run script/m20/verify-corpus-registry.ts",
   evidenceFile: "C2.json",
