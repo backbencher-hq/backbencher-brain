@@ -8,7 +8,7 @@
     },
     {
       "description": "drops every method symbol",
-      "detail": "0 -> 17",
+      "detail": "0 -> 18",
       "id": "mutation-java-drop-method-symbols",
       "status": "pass"
     },
@@ -97,6 +97,12 @@
       "status": "pass"
     },
     {
+      "description": "drops the parameters payload from method symbols — #383 Matrix 1b parameters pin (java cell PENDING -> #383)",
+      "detail": "0 -> 1",
+      "id": "mutation-java-drop-parameters",
+      "status": "pass"
+    },
+    {
       "description": "drops declared_type/return_type/as/check references (silent type-usage-graph bug class)",
       "detail": "0 -> 1",
       "id": "mutation-kotlin-drop-declared-types",
@@ -164,12 +170,12 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "65af8584025bf8800da974ce9cf298df9a2ea24d",
-  "committedAt": "2026-08-26T22:58:23+02:00",
+  "commit": "9d9953f99dbed4af6a69e36591495781c083368d",
+  "committedAt": "2026-08-26T23:22:37+02:00",
   "data": {
     "summary": {
-      "caught": 27,
-      "mutantsRun": 27,
+      "caught": 28,
+      "mutantsRun": 28,
       "survived": 0
     }
   },
@@ -191,163 +197,169 @@
     {
       "caughtBy": "java/class-extends-implements, java/fqn-extends, java/multi-interface-extends, java/sealed-varargs",
       "detail": "relationship-mislabel: 0 -> 4 fixture failures",
-      "injectedAt": "2026-08-26T21:11:29.348Z",
+      "injectedAt": "2026-08-26T21:26:47.360Z",
       "mutant": "java/mislabel-inheritance"
     },
     {
-      "caughtBy": "java/chained-field-access, java/class-extends-implements, java/complexity-parity, java/fq-api-endpoint, java/fqn-instantiation, java/generic-parameters-payload, java/generic-visibility-payload, java/generics-bounds, java/import-edges, java/initializer-calls, java/inner-class-instantiation, java/javadoc-payload, java/method-complexity-payload, java/nested-types, java/pure-field-chain, java/qualified-call-path, java/sealed-varargs",
-      "detail": "symbol-loss: 0 -> 17 fixture failures",
-      "injectedAt": "2026-08-26T21:11:29.888Z",
+      "caughtBy": "java/chained-field-access, java/class-extends-implements, java/complexity-parity, java/fq-api-endpoint, java/fqn-instantiation, java/generic-parameters-payload, java/generic-visibility-payload, java/generics-bounds, java/import-edges, java/initializer-calls, java/inner-class-instantiation, java/javadoc-payload, java/method-complexity-payload, java/nested-types, java/parameters-payload, java/pure-field-chain, java/qualified-call-path, java/sealed-varargs",
+      "detail": "symbol-loss: 0 -> 18 fixture failures",
+      "injectedAt": "2026-08-26T21:26:47.504Z",
       "mutant": "java/drop-method-symbols"
     },
     {
       "caughtBy": "java/ctor-value-injection, java/fqn-extends, java/fqn-instantiation, java/import-edges, java/inner-class-instantiation, java/overrides, java/type-usage-graph",
       "detail": "edge-drop: 0 -> 7 fixture failures",
-      "injectedAt": "2026-08-26T21:11:30.058Z",
+      "injectedAt": "2026-08-26T21:26:47.784Z",
       "mutant": "java/fqn-edge-drop"
     },
     {
       "caughtBy": "groovy/chained-field-access, groovy/override-fallback-confidence, groovy/safe-nav-chain",
       "detail": "confidence-dishonesty: 0 -> 3 fixture failures",
-      "injectedAt": "2026-08-26T21:11:30.920Z",
+      "injectedAt": "2026-08-26T21:26:48.337Z",
       "mutant": "groovy/confidence-tamper"
     },
     {
       "caughtBy": "groovy/chained-field-access, groovy/class-decorators, groovy/closure-and-typedef, groovy/field-decorators, groovy/fq-annotations, groovy/fqn-extends, groovy/fqn-implements, groovy/fqn-instantiation, groovy/framework-annotations-only, groovy/framework-imports, groovy/generic-visibility-payload, groovy/groovydoc-payload, groovy/gstring-interpolation, groovy/override-fallback-confidence, groovy/overrides, groovy/pure-field-chain, groovy/qualified-calls-payload, groovy/safe-nav-chain, groovy/trait-implements, groovy/type-usage-graph",
       "detail": "relationship-garbage: 0 -> 20 fixture failures",
-      "injectedAt": "2026-08-26T21:11:31.116Z",
+      "injectedAt": "2026-08-26T21:26:48.398Z",
       "mutant": "groovy/segment-garbage"
     },
     {
       "caughtBy": "javascript/optional-chaining",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-08-26T21:11:31.591Z",
+      "injectedAt": "2026-08-26T21:26:48.749Z",
       "mutant": "javascript/drop-field-access"
     },
     {
       "caughtBy": "javascript/payload-docs",
       "detail": "docstring-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-08-26T21:11:31.637Z",
+      "injectedAt": "2026-08-26T21:26:48.791Z",
       "mutant": "javascript/hide-jsdoc"
     },
     {
       "caughtBy": "scala/generic-parameters-payload",
       "detail": "symbol-payload-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-08-26T21:11:32.071Z",
+      "injectedAt": "2026-08-26T21:26:49.392Z",
       "mutant": "scala/drop-typeParameters"
     },
     {
       "caughtBy": "scala/decorators",
       "detail": "annotation-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-08-26T21:11:32.310Z",
+      "injectedAt": "2026-08-26T21:26:49.650Z",
       "mutant": "scala/drop-decorators"
     },
     {
       "caughtBy": "scala/scaladoc-payload",
       "detail": "docstring-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-08-26T21:11:32.421Z",
+      "injectedAt": "2026-08-26T21:26:49.721Z",
       "mutant": "scala/drop-docstrings"
     },
     {
       "caughtBy": "java/type-usage-graph",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-08-26T21:11:32.600Z",
+      "injectedAt": "2026-08-26T21:26:49.832Z",
       "mutant": "java/drop-declared-types"
     },
     {
       "caughtBy": "java/initializer-calls",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-08-26T21:11:32.662Z",
+      "injectedAt": "2026-08-26T21:26:49.930Z",
       "mutant": "java/drop-initializer-calls"
     },
     {
       "caughtBy": "java/array-access-uses",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-08-26T21:11:32.823Z",
+      "injectedAt": "2026-08-26T21:26:50.008Z",
       "mutant": "java/drop-array-access"
     },
     {
       "caughtBy": "java/ctor-delegation",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-08-26T21:11:32.907Z",
+      "injectedAt": "2026-08-26T21:26:50.074Z",
       "mutant": "java/drop-ctor-delegation"
     },
     {
       "caughtBy": "java/record-pattern-refs",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-08-26T21:11:32.984Z",
+      "injectedAt": "2026-08-26T21:26:50.117Z",
       "mutant": "java/drop-record-patterns"
     },
     {
       "caughtBy": "java/import-edges",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-08-26T21:11:33.070Z",
+      "injectedAt": "2026-08-26T21:26:50.160Z",
       "mutant": "java/drop-import-edges"
+    },
+    {
+      "caughtBy": "java/parameters-payload",
+      "detail": "payload-loss: 0 -> 1 fixture failures",
+      "injectedAt": "2026-08-26T21:26:50.203Z",
+      "mutant": "java/drop-parameters"
     },
     {
       "caughtBy": "kotlin/type-usage-graph",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-08-26T21:11:34.321Z",
+      "injectedAt": "2026-08-26T21:26:50.481Z",
       "mutant": "kotlin/drop-declared-types"
     },
     {
       "caughtBy": "groovy/type-usage-graph",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-08-26T21:11:34.419Z",
+      "injectedAt": "2026-08-26T21:26:50.534Z",
       "mutant": "groovy/drop-declared-types"
     },
     {
       "caughtBy": "scala/type-usage-graph",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-08-26T21:11:34.578Z",
+      "injectedAt": "2026-08-26T21:26:50.584Z",
       "mutant": "scala/drop-declared-types"
     },
     {
       "caughtBy": "typescript/type-usage-graph",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-08-26T21:11:35.747Z",
+      "injectedAt": "2026-08-26T21:26:51.080Z",
       "mutant": "typescript/drop-declared-types"
     },
     {
       "caughtBy": "javascript/type-usage-graph",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-08-26T21:11:35.869Z",
+      "injectedAt": "2026-08-26T21:26:51.134Z",
       "mutant": "javascript/drop-instanceof-refs"
     },
     {
       "caughtBy": "python/type-usage-graph",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-08-26T21:11:36.603Z",
+      "injectedAt": "2026-08-26T21:26:51.280Z",
       "mutant": "python/drop-declared-types"
     },
     {
       "caughtBy": "go/type-usage-graph",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-08-26T21:11:37.219Z",
+      "injectedAt": "2026-08-26T21:26:51.332Z",
       "mutant": "go/drop-declared-types"
     },
     {
       "caughtBy": "typescript/payload-pins, typescript/qualified-call-path",
       "detail": "symbol-payload-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-08-26T21:11:38.276Z",
+      "injectedAt": "2026-08-26T21:26:51.529Z",
       "mutant": "typescript/drop-qualified-calls"
     },
     {
       "caughtBy": "typescript/comment-boundary, typescript/payload-pins",
       "detail": "docstring-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-08-26T21:11:38.681Z",
+      "injectedAt": "2026-08-26T21:26:51.672Z",
       "mutant": "typescript/hide-jsdoc"
     },
     {
       "caughtBy": "typescript/abstract-class, typescript/consistency-tiers, typescript/generic-heritage, typescript/interface-extends",
       "detail": "relationship-mislabel: 0 -> 4 fixture failures",
-      "injectedAt": "2026-08-26T21:11:38.936Z",
+      "injectedAt": "2026-08-26T21:26:51.883Z",
       "mutant": "typescript/swap-heritage-labels"
     },
     {
       "caughtBy": "groovy/chained-field-access, groovy/class-decorators, groovy/closure-and-typedef, groovy/field-decorators, groovy/fq-annotations, groovy/fqn-extends, groovy/fqn-implements, groovy/fqn-instantiation, groovy/framework-annotations-only, groovy/framework-imports, groovy/generic-visibility-payload, groovy/groovydoc-payload, groovy/gstring-interpolation, groovy/override-fallback-confidence, groovy/overrides, groovy/pure-field-chain, groovy/qualified-calls-payload, groovy/safe-nav-chain, groovy/trait-implements",
       "detail": "symbol-loss: 0 -> 19 fixture failures",
-      "injectedAt": "2026-08-26T21:11:39.207Z",
+      "injectedAt": "2026-08-26T21:26:51.945Z",
       "mutant": "groovy/drop-class-symbols"
     }
   ],

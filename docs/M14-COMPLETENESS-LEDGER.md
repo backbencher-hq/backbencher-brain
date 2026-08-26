@@ -39,7 +39,7 @@ symbol-field rot. Every language wave must pin these symbol payloads:
 |---|---|---|---|---|
 | qualified_calls | PENDING -> #383 | PENDING -> #383 | GATED (qualified-calls-builtin-names) | adversarial names REQUIRED |
 | docstrings/kdoc | PENDING -> #383 | PENDING -> #383 | GATED (kdoc-extraction) | |
-| parameters (+defaults) | PENDING -> #383 | PENDING -> #383 | GATED (calls-and-instantiation partial) | |
+| parameters (+defaults) | GATED (parameters-payload + mutant java/drop-parameters) | PENDING -> #383 | GATED (calls-and-instantiation partial) | |
 | byte ranges (bb_edit depends) | indirect via M13 edit gates | same | same | M13 scope |
 | visibility/modifiers | GATED (generic-visibility-payload) | GATED F3 implicit | GATED F3 implicit (scala visibility flows) | explicit scala pins via generic fixture |
 | qualified_calls | GATED (CC1+payload fixture) | NOT EMITTED -> #383 (also javascript: NOT EMITTED, declared) | GATED (payload-pins) | GATED (extension-method-flag) |
@@ -259,7 +259,7 @@ INVENTORY-DONE / GAPS-CLOSED / CONFORMANT.
 
 | Language | #419 status | A | B (11 kinds) | C (payloads) | D (tiers) | E (differential) | F (perf) | G (docs) | H (CC1) |
 |---|---|---|---|---|---|---|---|---|---|
-| java | CONFORMANT (2026-08-26) | 143/143 types | 11/11 (imports pinned via java/import-edges + mutant) | 6/6 Matrix 1b rows | 2 tiers | grails-core 100%/0% | 7.9 ms/file | java.md + real-java-analyzer.md | 3/3 checks |
+| java | CONFORMANT (2026-08-26) | 143/143 types | 11/11 (imports pinned via java/import-edges + mutant) | 7/7 Matrix 1b rows (parameters pinned via java/parameters-payload + mutant) | 2 tiers | grails-core 100%/0% | 7.9 ms/file | java.md + real-java-analyzer.md | 3/3 checks |
 | groovy | NOT-STARTED | — | — | — | — | — | — | — | — |
 | kotlin | NOT-STARTED | — | — | — | — | — | — | — | — |
 | scala | NOT-STARTED | — | — | — | — | — | — | — | — |
@@ -281,6 +281,15 @@ fixture-first: java/import-edges authored from JLS 7.5 semantics (single /
 wildcard / static forms, full dotted targets), proved failing on the
 missing isStatic, one-line analyzer fix, mutant java/drop-import-edges
 CAUGHT.
+
+#383 Matrix 1b parameters pin (2026-08-26): java's parameters (+defaults)
+cell was PENDING -> #383 — the payload existed but nothing guarded it, and
+the fixture runner had no parameter matcher. Added expectParameters to
+run-fixtures.ts; java/parameters-payload authored from JLS 8.4.1 semantics
+(names + types, varargs as String[] per erasure convention, generic
+types kept full), passes on first run (correct-but-unpinned), mutant
+java/drop-parameters CAUGHT. Section C now verifies 7 Matrix 1b rows for
+java; groovy's parameters cell remains PENDING -> #383 for its own wave.
 
 ### #419 section definition — the eight mandatory judgments per language
 
