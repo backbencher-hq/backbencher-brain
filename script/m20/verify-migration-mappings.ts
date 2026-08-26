@@ -5,6 +5,7 @@ import { execFileSync } from "node:child_process"
 import path from "node:path"
 import { CrossLanguageMigrationAssistant } from "../../src/ast/cross-language-migration-assistant"
 import { generateMigrationPlans } from "../../src/intelligence/migration/migration-engine"
+import { migrationSourceFingerprint } from "../../src/intelligence/migration/migration-evidence"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const RESULTS = path.join(ROOT, "validation/m20/results")
@@ -53,7 +54,7 @@ const relevant = ["src/ast/cross-language-migration-assistant.ts", "src/intellig
 let dirty: string[] = []
 try { dirty = execFileSync("git", ["status", "--porcelain", "--untracked-files=all"], { cwd: ROOT, encoding: "utf8" }).split("\n").map(x => x.slice(3).trim()).filter(x => relevant.includes(x)) } catch { dirty = ["git-status-unavailable"] }
 const failed = checks - passed
-const evidence = { issue: "M20.M3", code: "M3", milestone: "M20", status: failed === 0 && dirty.length === 0 ? "verified" : "known-gap", checks, passed, failed, negativeCases, currentCommit: commit, workingTreeRelevantChanges: dirty, verifierCommand: "bun run script/m20/verify-migration-mappings.ts", evidenceFile: "M3.json", generatedAt: new Date().toISOString(), limitations: ["Mappings are advisory equivalence guidance, not translated source or proof of semantic compatibility.", "Only fixture-level mapping boundaries are measured here; real-repository coverage remains a later M20 item."] }
+const evidence = { issue: "M20.M3", code: "M3", milestone: "M20", status: failed === 0 && dirty.length === 0 ? "verified" : "known-gap", checks, passed, failed, negativeCases, currentCommit: commit, sourceFingerprint: migrationSourceFingerprint(ROOT), workingTreeRelevantChanges: dirty, verifierCommand: "bun run script/m20/verify-migration-mappings.ts", evidenceFile: "M3.json", generatedAt: new Date().toISOString(), limitations: ["Mappings are advisory equivalence guidance, not translated source or proof of semantic compatibility.", "Only fixture-level mapping boundaries are measured here; real-repository coverage remains a later M20 item."] }
 mkdirSync(RESULTS, { recursive: true }); writeFileSync(path.join(RESULTS, "M3.json"), JSON.stringify(evidence, null, 2) + "\n")
 console.log(`M3: ${evidence.status.toUpperCase()} (${passed}/${checks} passed, ${negativeCases} negative)`)
 process.exit(failed ? 1 : 0)

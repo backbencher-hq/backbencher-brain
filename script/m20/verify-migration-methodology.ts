@@ -9,6 +9,7 @@ import { execFileSync } from "node:child_process"
 import path from "node:path"
 import { CrossLanguageMigrationAssistant } from "../../src/ast/cross-language-migration-assistant"
 import { calculateMigrationMethodology } from "../../src/intelligence/migration/migration-engine"
+import { migrationSourceFingerprint } from "../../src/intelligence/migration/migration-evidence"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const RESULTS = path.join(ROOT, "validation/m20/results")
@@ -161,6 +162,7 @@ const evidence = {
   failed,
   negativeCases,
   currentCommit,
+  sourceFingerprint: migrationSourceFingerprint(ROOT),
   workingTreeRelevantChanges,
   verifierCommand: "bun run script/m20/verify-migration-methodology.ts",
   evidenceFile: "M2.json",

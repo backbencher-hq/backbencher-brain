@@ -9,6 +9,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
 import { computeDependencyOrder, type MigrationDependencyEdge } from "../../src/intelligence/migration/migration-engine"
+import { migrationSourceFingerprint } from "../../src/intelligence/migration/migration-evidence"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const RESULTS = path.join(ROOT, "validation/m20/results")
@@ -84,7 +85,7 @@ negative("M1: reversing a dependency edge invalidates the original order", !(ind
 
 let currentCommit = "unknown"
 try { currentCommit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim() } catch {}
-const relevantPaths = new Set(["script/m20/verify-migration-order.ts", "script/m20/verify-governance.ts", "docs/m20/M20-MASTER-PLAN.md", "package.json", "script/verify-quality-gate.ts"])
+const relevantPaths = new Set(["script/m20/verify-migration-order.ts", "script/m20/verify-governance.ts", "src/ast/cross-language-migration-assistant.ts", "src/intelligence/migration/migration-engine.ts", "src/intelligence/migration/migration-evidence.ts", "docs/BB_MIGRATE.md", "docs/tools/bb_migrate.md", "docs/m20/M20-MASTER-PLAN.md", "package.json", "script/verify-quality-gate.ts"])
 const workingTreeRelevantChanges = (() => {
   try {
     return execFileSync("git", ["status", "--porcelain", "--untracked-files=all"], { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] })
@@ -104,6 +105,7 @@ const evidence = {
   failed,
   negativeCases,
   currentCommit,
+  sourceFingerprint: migrationSourceFingerprint(ROOT),
   workingTreeRelevantChanges,
   verifierCommand: "bun run script/m20/verify-migration-order.ts",
   evidenceFile: "M1.json",
