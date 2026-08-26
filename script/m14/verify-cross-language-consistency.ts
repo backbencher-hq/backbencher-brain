@@ -36,6 +36,10 @@ const EQUIVALENTS: Record<string, { wasm: string; analyzerFile: string; classNam
     wasm: "tree-sitter-scala.wasm", analyzerFile: "real-scala-analyzer", className: "RealScalaAnalyzer", ext: "scala",
     source: `class Widget {\n  private var label: String = ""\n  def render(input: String): String = {\n    label + input\n  }\n}\n`,
   },
+  // NOTE: vue and svelte are NOT included here because they are framework-
+  // specific component formats requiring SFC pre-parse (context.sfcScriptTrees)
+  // which this gate doesn't provide. They are verified through their own
+  // fixture suites + CLI pipeline e2e instead (#384 covers web cluster).
 }
 
 async function main() {
