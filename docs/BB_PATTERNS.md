@@ -28,8 +28,13 @@ Verified against the indexer's actual relationship output:
 
 - A **symbol is used** iff it has an incoming edge of a USAGE type
   (`calls`, `instantiates`, `extends`, `implements`, `uses`) where
-  `target_symbol_id = symbol.id` (resolved) **or** `target_external = symbol.name`
-  (name-matched, cross-file). `exports` and `contains` are **not** usage.
+  `target_symbol_id = symbol.id` (resolved) **or** an unambiguous
+  `target_external = symbol.name` (name-matched, cross-file). `exports` and
+  `contains` are **not** usage.
+- If a name is declared more than once in the project, unresolved name-only
+  references are treated as **ambiguous** and do not suppress any declaration.
+  This is conservative: it may report extra candidates, but it does not claim
+  a specific declaration was used without identity evidence.
 - **Visibility is not used to filter.** Many languages (e.g. TypeScript) mark
   every symbol `public`, so the previous `visibility != public` filter silently
   suppressed *all* findings. Removed.
@@ -62,7 +67,10 @@ Verified against the indexer's actual relationship output:
 
 ## Known false-positive classes
 
-- Dynamic dispatch / reflection / string-keyed lookups.
+- Dynamic dispatch / reflection / string-keyed lookups remain unknown; they are
+  never converted into fabricated resolved usage edges.
+- Duplicate declarations with unresolved name-only references are reported
+  conservatively and carry an ambiguity limitation.
 - Framework entry points not covered by the built-in name/suffix rules.
 - Symbols referenced only from build configs, plugin manifests (XML), or test
   conventions (test files are excluded from scanning by default).

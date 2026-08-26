@@ -53,6 +53,7 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
   // Build the set of "used" symbol keys: both resolved ids and referenced names.
   const usedIds = new Set<string>()
   const usedNames = new Set<string>()
+  const ambiguousNames = new Set<string>()
   const usageRows = raw.prepare(
     "SELECT target_symbol_id AS id, target_external AS ext FROM brain_relationship " +
       "WHERE project_id = ? AND relationship_type IN (" + USAGE_TYPES.map(() => "?").join(",") + ")",
@@ -65,6 +66,10 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
       usedNames.add(tail)
     }
   }
+  const duplicateNames = raw.prepare(
+    "SELECT name FROM brain_symbol WHERE project_id = ? GROUP BY name HAVING COUNT(*) > 1",
+  ).all(projectId) as Array<{ name: string }>
+  for (const row of duplicateNames) ambiguousNames.add(row.name)
 
   const symbols = raw.prepare(
     "SELECT s.id, s.name, s.symbol_type AS symbolType, s.visibility, " +
@@ -104,7 +109,7 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
     if (AnalysisExclusions.isHardNoisePath(sym.file) || AnalysisExclusions.isNoiseSymbolName(sym.name)) continue
     if (isEntryPointName(sym.name)) continue
 
-    const used = usedIds.has(sym.id) || usedNames.has(sym.name)
+    const used = usedIds.has(sym.id) || (usedNames.has(sym.name) && !ambiguousNames.has(sym.name))
     if (used) continue
 
     const isClassLike = ["class", "interface", "struct", "enum"].includes(sym.symbolType)
@@ -131,6 +136,7 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
       ],
       limitations: [
         "Name-only matching cannot see dynamic dispatch, reflection, or string-based lookups.",
+        ...(ambiguousNames.has(sym.name) ? [`The name '${sym.name}' is declared multiple times; unresolved name-only references are treated as uncertain and do not suppress candidates.`] : []),
         "Framework entry points not matched by the built-in name/suffix rules may be false positives.",
         "Build configs, plugin manifests (XML), and test conventions are not scanned.",
       ],
@@ -201,7 +207,7 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
 
   return {
     findings: page,
-    provenance: makeProvenance({ evidenceClass: "static_finding", engine: ENGINE, engineVersion: "m10.02", projectId, source: "brain_symbol+brain_relationship+brain_file", limitations: ["Dynamic dispatch, reflection, string references, and external manifests are not fully observable."], truncated }),
+    provenance: makeProvenance({ evidenceClass: "static_finding", engine: ENGINE, engineVersion: "m10.02", projectId, source: "brain_symbol+brain_relationship+brain_file", limitations: ["Dynamic dispatch, reflection, string references, and external manifests are not fully observable.", ...(ambiguousNames.size ? [`${ambiguousNames.size} duplicate symbol name(s) were treated as ambiguous rather than globally resolved.`] : [])], truncated }),
     summary: {
       total: page.length,
       byRule,
