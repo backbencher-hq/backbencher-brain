@@ -260,7 +260,7 @@ INVENTORY-DONE / GAPS-CLOSED / CONFORMANT.
 | Language | #419 status | A | B (11 kinds) | C (payloads) | D (tiers) | E (differential) | F (perf) | G (docs) | H (CC1) |
 |---|---|---|---|---|---|---|---|---|---|
 | java | CONFORMANT (2026-08-26) | 143/143 types | 11/11 (imports pinned via java/import-edges + mutant) | 7/7 Matrix 1b rows (parameters pinned via java/parameters-payload + mutant) | 2 tiers | grails-core 100%/0% | 7.9 ms/file | java.md + real-java-analyzer.md | 3/3 checks |
-| groovy | NOT-STARTED | — | — | — | — | — | — | — | — |
+| groovy | INVENTORY-DONE (2026-08-26, gap list awaiting owner review) | 151/151 types | 7/9 pinned (contains + imports unpinned) | parameters missing (S5) | 0 tiers pinned | grails-core 100%/0% | 7.5 ms/file | groovy.md + real-groovy-analyzer.md | 3/3 checks |
 | kotlin | NOT-STARTED | — | — | — | — | — | — | — | — |
 | scala | NOT-STARTED | — | — | — | — | — | — | — | — |
 | typescript | NOT-STARTED | — | — | — | — | — | — | — | — |
@@ -310,6 +310,18 @@ co-agent's early classification, zero references), plus the prototype
 generator java-inventory.ts and its dump java-nodetypes.json (also zero
 references). Removed all three; the spec dir now holds exactly one
 classification and the spec table. Git history preserves the originals.
+
+Groovy inventory (2026-08-26, harness generalized per #419 acceptance 4):
+completeness-inventory.ts is now language-config driven (java + groovy;
+`--lang <id>` selects, default runs the gated set). Groovy: 151 unique
+named node types fully classified (68 handled, 58 internal_silent),
+G1-G8 confirmed by live probes (array_access Uses; explicit ctor Calls;
+pattern type refs; method_reference ref; cast ref; record_declaration
+symbol; annotation_type_declaration symbol; imports pin), S1-S5 rulings
+pending (gstring Uses; JPMS never-reachable; exports/apiContractPath NOT
+EMITTED; parameters pin). Section state: A/E/F/G/H pass; B (contains +
+imports unpinned), C (parameters), D (0 tier pins) fail — declared work
+items. Gap list reported to owner before ANY fix (contract, acceptance 2).
 
 ### #419 acceptance status (java pilot, 2026-08-26)
 
