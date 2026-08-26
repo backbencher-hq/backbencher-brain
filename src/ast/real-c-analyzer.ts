@@ -374,6 +374,11 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
             const field = fnNode.childForFieldName("field")
             if (field) target = field.text
             isFuncPtr = true
+          } else if (fnNode.type === "subscript_expression") {
+            // Dispatch-table invocation handlers[i]() - no static callee
+            // NAME exists (family contract with cpp: computed/dynamic
+            // calls are filtered rather than emitting bracket-text noise).
+            target = ""
           } else if (fnNode.type === "parenthesized_expression") {
             // CAST vs FUNCTION POINTER: `(Type)expr` through vendor macros
             // parses as a call with a parenthesized callee whose child is a

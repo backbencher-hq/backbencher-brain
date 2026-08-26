@@ -1045,3 +1045,24 @@ GOTCHAS:
     heuristic documented above.
   - function_declarator NESTS the name (declarator > field_identifier) -
     one level deeper than cpp's shapes.
+
+## C second adversarial pass (2026-08-24, final)
+
+Attack on the wave's own fixes + untouched corners:
+
+- **DISPATCH-TABLE NOISE**: `handlers[i]()` emitted the raw bracket text
+  as a call target. Subscript callees now filtered (family contract with
+  cpp - no static callee name exists). Fixture proven failing pre-fix.
+- VERIFIED CLEAN: function-pointer-parameter calls resolve (`fp(5)`);
+  recursive self-calls land in qualified_calls; static helpers stay
+  private; multi-declarator statements split; typedef-anonymous-struct
+  field uses resolve; enum member uses resolve; K&R definitions extract
+  the function (params=[] - museum-grade syntax, SPEC disposition);
+  cross-file registry isolation holds.
+- STRESS TEST (sqlite repo, autosetup/jimsh0.c - 25,495-line generated
+  TCL interpreter): parse 1.1s + analyze 5.7s, 2,133 symbols / 8,907
+  relationships, zero crashes. The 182 reported parse errors are the
+  documented tree-sitter limit (no macro expansion) - the file compiles
+  cleanly with gcc. PERF CHARACTERISTIC recorded: macro-dense generated
+  files cost ~5s each; typical hand-written C costs milliseconds (jq
+  avg). Optimization of the walk is future work if such files matter.
