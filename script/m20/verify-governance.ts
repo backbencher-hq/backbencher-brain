@@ -16,7 +16,7 @@ type Issue = {
   scope: string
   acceptanceCriteria: string[]
   closureRequirements: string[]
-  evidence?: { currentCommit: string; verifierCommand: string; evidenceFile: string; generatedAt: string; passed: number; failed: number; negativeCases: number }
+  evidence?: { status: Issue["status"]; currentCommit: string; workingTreeRelevantChanges: string[]; verifierCommand: string; evidenceFile: string; generatedAt: string; passed: number; failed: number; negativeCases: number }
 }
 type Ledger = {
   schemaVersion: number
@@ -51,7 +51,11 @@ function isClosable(issue: Issue): boolean {
   if (issue.status === "planned") return false
   if (!issue.evidence) return false
   const e = issue.evidence
-  return Boolean(e.currentCommit && e.verifierCommand && e.evidenceFile && e.generatedAt && e.passed > 0 && e.failed === 0 && e.negativeCases > 0)
+  return Boolean(e.status === issue.status && e.currentCommit && Array.isArray(e.workingTreeRelevantChanges) && e.workingTreeRelevantChanges.length === 0 && e.verifierCommand && e.evidenceFile && e.generatedAt && e.passed > 0 && e.failed === 0 && e.negativeCases > 0)
+}
+
+function sameValue(left: unknown, right: unknown): boolean {
+  return JSON.stringify(left) === JSON.stringify(right)
 }
 
 function validateLedger(ledger: Ledger, plan: string): string[] {
@@ -72,7 +76,7 @@ function validateLedger(ledger: Ledger, plan: string): string[] {
     if (!issue.tool || !issue.scope) errors.push(`identity:${issue.code}`)
     if (!Array.isArray(issue.acceptanceCriteria) || issue.acceptanceCriteria.length < 2) errors.push(`acceptance:${issue.code}`)
     if (!Array.isArray(issue.closureRequirements) || issue.closureRequirements.length < 2) errors.push(`closure:${issue.code}`)
-    if (issue.status === "verified" && !isClosable(issue)) errors.push(`hollow-verified:${issue.code}`)
+    if (issue.status !== "planned" && !isClosable(issue)) errors.push(`hollow-${issue.status}:${issue.code}`)
     if (issue.status === "planned" && issue.evidence) errors.push(`planned-evidence:${issue.code}`)
     if (!["planned", "verified", "known-gap", "blocked"].includes(issue.status)) errors.push(`state:${issue.code}`)
   }
@@ -84,6 +88,23 @@ const plan = readFileSync(planPath, "utf8")
 const errors = validateLedger(ledger, plan)
 let currentCommit = "unknown"
 try { currentCommit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim() } catch {}
+const relevantPaths = new Set([
+  "docs/m20/M20-MASTER-PLAN.md",
+  "script/verify-quality-gate.ts",
+  "package.json",
+])
+function isRelevantPath(file: string): boolean {
+  return relevantPaths.has(file) || file.startsWith("script/m20/")
+}
+function relevantWorkingTreeChanges(): string[] {
+  try {
+    return execFileSync("git", ["status", "--porcelain", "--untracked-files=all"], { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] })
+      .split("\n").map((line) => line.slice(3).trim()).filter(isRelevantPath)
+  } catch {
+    return ["git-status-unavailable"]
+  }
+}
+const currentWorkingTreeRelevantChanges = relevantWorkingTreeChanges()
 
 function isEvidenceOnlyChange(changed: string[]): boolean {
   return changed.length > 0 && changed.every((file) => file.startsWith("validation/m20/results/"))
@@ -111,7 +132,7 @@ check("C1: evidence freshness rejects production changes after the tested revisi
 check("C1: known gaps and blocked runs cannot be verified by wording", plan.includes("known-gap") && plan.includes("blocked") && plan.includes("never as `verified`"))
 
 let evidenceErrors: string[] = []
-for (const issue of ledger.issues.filter((item) => item.status === "verified" && item.code !== "C1")) {
+for (const issue of ledger.issues.filter((item) => item.status !== "planned" && item.code !== "C1")) {
   const evidence = issue.evidence
   const evidencePath = evidence ? path.join(ROOT, "validation/m20/results", evidence.evidenceFile) : ""
   if (!evidence || !existsSync(evidencePath)) {
@@ -120,8 +141,8 @@ for (const issue of ledger.issues.filter((item) => item.status === "verified" &&
   }
   try {
     const persisted = JSON.parse(readFileSync(evidencePath, "utf8")) as Record<string, unknown>
-    for (const [field, expected] of [["issue", `M20.${issue.code}`], ["code", issue.code], ["status", "verified"], ["failed", 0], ["checks", evidence.passed], ["passed", evidence.passed], ["negativeCases", evidence.negativeCases], ["currentCommit", evidence.currentCommit], ["verifierCommand", evidence.verifierCommand], ["evidenceFile", evidence.evidenceFile]] as const) {
-      if (persisted[field] !== expected) evidenceErrors.push(`${issue.code}:${field}`)
+    for (const [field, expected] of [["issue", `M20.${issue.code}`], ["code", issue.code], ["status", issue.status], ["failed", 0], ["checks", evidence.passed], ["passed", evidence.passed], ["negativeCases", evidence.negativeCases], ["currentCommit", evidence.currentCommit], ["workingTreeRelevantChanges", evidence.workingTreeRelevantChanges], ["verifierCommand", evidence.verifierCommand], ["evidenceFile", evidence.evidenceFile]] as const) {
+      if (!sameValue(persisted[field], expected)) evidenceErrors.push(`${issue.code}:${field}`)
     }
     if (typeof persisted.generatedAt !== "string" || !Number.isFinite(Date.parse(persisted.generatedAt))) evidenceErrors.push(`${issue.code}:generatedAt`)
     if (typeof persisted.currentCommit !== "string" || !evidenceRevisionIsFresh(persisted.currentCommit)) evidenceErrors.push(`${issue.code}:stale-currentCommit`)
@@ -137,6 +158,12 @@ const hollow = structuredClone(ledger)
 hollow.issues[0]!.status = "verified"
 delete hollow.issues[0]!.evidence
 negative("C1: verified without evidence is rejected", validateLedger(hollow, plan).some((error) => error === "hollow-verified:C1"), validateLedger(hollow, plan).join(","))
+
+// A known-gap without evidence is equally unsubstantiated and must fail closed.
+const hollowGap = structuredClone(ledger)
+hollowGap.issues[1]!.status = "known-gap"
+delete hollowGap.issues[1]!.evidence
+negative("C1: known-gap without evidence is rejected", validateLedger(hollowGap, plan).some((error) => error === "hollow-known-gap:C2"), validateLedger(hollowGap, plan).join(","))
 
 // Real negative: removing one issue must be rejected.
 const missing = structuredClone(ledger)
@@ -159,7 +186,7 @@ negative("C1: verifier has no obvious hollow assertions", !unconditional, uncond
 
 const initialFailed = checks - passed
 const generatedAt = new Date().toISOString()
-const baseResult = { issue: "M20.C1", code: "C1", milestone: "M20", status: initialFailed === 0 ? "verified" : "known-gap", checks, passed, failed: initialFailed, negativeCases: negatives, currentCommit, verifierCommand: "bun run script/m20/verify-governance.ts", evidenceFile: "C1.json", generatedAt, ledger: "validation/m20/results/manifest.json", limitations: ["This gate validates governance metadata and mutation response; it does not verify the four tool implementations."] }
+const baseResult = { issue: "M20.C1", code: "C1", milestone: "M20", status: initialFailed === 0 && currentWorkingTreeRelevantChanges.length === 0 ? "verified" : "known-gap", checks, passed, failed: initialFailed, negativeCases: negatives, currentCommit, workingTreeRelevantChanges: currentWorkingTreeRelevantChanges, verifierCommand: "bun run script/m20/verify-governance.ts", evidenceFile: "C1.json", generatedAt, ledger: "validation/m20/results/manifest.json", limitations: ["This gate validates governance metadata and mutation response; it does not verify the four tool implementations.", "Evidence is not verified for a clean project revision while relevant M20 files are uncommitted."] }
 const evidenceDir = path.join(ROOT, "validation/m20/results")
 const evidencePath = path.join(evidenceDir, baseResult.evidenceFile)
 mkdirSync(evidenceDir, { recursive: true })
@@ -167,7 +194,7 @@ writeFileSync(evidencePath, JSON.stringify(baseResult, null, 2) + "\n")
 const persisted = JSON.parse(readFileSync(evidencePath, "utf8")) as typeof baseResult
 check("C1: evidence is persisted and re-readable", persisted.issue === baseResult.issue && persisted.currentCommit === currentCommit && persisted.failed === initialFailed)
 const finalFailed = checks - passed
-const result = { ...baseResult, status: finalFailed === 0 ? "verified" : "known-gap", checks, passed, failed: finalFailed }
+const result = { ...baseResult, status: finalFailed === 0 && currentWorkingTreeRelevantChanges.length === 0 ? "verified" : "known-gap", checks, passed, failed: finalFailed }
 writeFileSync(evidencePath, JSON.stringify(result, null, 2) + "\n")
 console.log(`C1: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${negatives} negative)`)
 process.exit(finalFailed === 0 ? 0 : 1)
