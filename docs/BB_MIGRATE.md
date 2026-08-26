@@ -8,7 +8,7 @@ batch planning and retains `symbolName` as a single-symbol compatibility alias.
 The normalized result includes:
 
 - one plan per supported symbol
-- `dependencyOrder`, sorted dependency-first by observed plan dependencies
+- `dependencyOrder`, a deterministic topological order over resolved plan relationships, with dependency nodes before their dependents
 - source-to-target library mappings with confidence and notes
 - effort, complexity, risk factors, and strategy steps
 - `unsupported` symbols with explicit reasons
@@ -23,7 +23,9 @@ adding ordering, methodology, unsupported cases, and truncation.
 - 4 base hours per supported component
 - 2 hours per observed cross-boundary relationship
 - 6 hours per unsupported library mapping
-- dependency-first ordering is deterministic for equal inputs
+- dependency-first ordering is deterministic for equal inputs and is derived from resolved directed relationship edges, not dependency counts
+- `dependencyGraph` reports resolved edges, unresolved dependencies, cycles, and `orderingStatus` (`complete`, `partial`, `cyclic`, or `no-edges`)
+- cyclic or incomplete graphs are surfaced explicitly and must not be interpreted as a complete dependency order
 
 Unknown library equivalents are never presented as supported mappings. Same-
 language, missing-symbol, and unsupported cases appear in `unsupported`.

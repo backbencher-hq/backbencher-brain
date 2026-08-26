@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M20",
+  "githubMilestone": 20,
+  "title": "Niche Intelligence Tools Correctness & Trust",
+  "status": "open",
+  "authority": "docs/m20/M20-MASTER-PLAN.md",
+  "updatedAt": "2026-08-26T00:00:00.000Z",
+  "evidencePolicy": {
+    "verifiedRequires": ["currentCommit", "verifierCommand", "evidenceFile", "positiveAndNegativeChecks", "freshTimestamp", "limitations"],
+    "missingCorpusState": "blocked-or-known-gap",
+    "timeoutState": "blocked-or-known-gap",
+    "unexecutedState": "planned"
+  },
+  "issues": [
+    { "code": "C1", "githubIssue": 428, "tool": "governance", "status": "planned", "scope": "authority, ledger, closure gate", "acceptanceCriteria": ["machine-readable ledger", "fail-closed verifier", "explicit authority order"], "closureRequirements": ["persist current gate evidence", "mutation checks pass", "document limitations"] },
+    { "code": "C2", "githubIssue": 429, "tool": "corpus", "status": "planned", "scope": "repository identity and availability", "acceptanceCriteria": ["exact revisions", "missing paths fail visibly", "offline fixture fallback"], "closureRequirements": ["persist corpus registry", "run missing-path negative", "record syntax errors"] },
+    { "code": "M1", "githubIssue": 430, "tool": "bb_migrate", "status": "planned", "scope": "topological dependency ordering", "acceptanceCriteria": ["real graph order", "cycle handling", "unresolved dependency handling"], "closureRequirements": ["positive graph fixture", "cycle negative", "mutation evidence"] },
+    { "code": "M2", "githubIssue": 431, "tool": "bb_migrate", "status": "planned", "scope": "structured effort methodology", "acceptanceCriteria": ["typed relationship evidence", "prose-independent totals", "deduplication"], "closureRequirements": ["persist raw evidence", "prose mutation", "graph mutation"] },
+    { "code": "M3", "githubIssue": 432, "tool": "bb_migrate", "status": "planned", "scope": "mapping and uncertainty boundaries", "acceptanceCriteria": ["normalized targets", "distinct unsupported reasons", "batch honesty"], "closureRequirements": ["mapping coverage", "unsupported evidence", "removed-mapping mutation"] },
+    { "code": "P1", "githubIssue": 433, "tool": "bb_patterns", "status": "planned", "scope": "complete parameter candidate scan", "acceptanceCriteria": ["all candidates evaluated", "display budget separate", "scan counts"], "closureRequirements": ["late violation fixture", "benchmark", "scan-bound mutation"] },
+    { "code": "P2", "githubIssue": 434, "tool": "bb_patterns", "status": "planned", "scope": "orphan and dynamic-use semantics", "acceptanceCriteria": ["ordinary and dynamic cases", "file/symbol separation", "visible limitations"], "closureRequirements": ["multi-language fixtures", "real repository evidence", "unknown dynamic cases"] },
+    { "code": "P3", "githubIssue": 435, "tool": "bb_patterns", "status": "planned", "scope": "pagination, history, and transport parity", "acceptanceCriteria": ["full-set statistics", "full-set persistence", "CLI/MCP parity"], "closureRequirements": ["transport matrix", "history assertions", "tamper checks"] },
+    { "code": "S1", "githubIssue": 436, "tool": "bb_security", "status": "planned", "scope": "flow evidence and heuristic boundary", "acceptanceCriteria": ["endpoint states", "source/sink provenance", "no exploit overclaim"], "closureRequirements": ["adversarial matrix", "false-positive cases", "analyzer dependency list"] },
+    { "code": "S2", "githubIssue": 437, "tool": "bb_security", "status": "planned", "scope": "behavioral adversarial verification", "acceptanceCriteria": ["no unconditional assertions", "policy-based negatives", "tautology audit"], "closureRequirements": ["policy matrix", "verifier mutations", "persisted output"] },
+    { "code": "S3", "githubIssue": 438, "tool": "bb_security", "status": "planned", "scope": "history state persistence", "acceptanceCriteria": ["live observations visible", "unknowns excluded by policy", "repeat-run parity"], "closureRequirements": ["deterministic rows", "history inspection", "CLI/MCP parity"] },
+    { "code": "D1", "githubIssue": 439, "tool": "bb_doc", "status": "planned", "scope": "mode and option contract", "acceptanceCriteria": ["mode matrix", "empty semantics", "option behavior"], "closureRequirements": ["fresh/empty/stale fixtures", "registry agreement", "JSON/Markdown parity"] },
+    { "code": "D2", "githubIssue": 440, "tool": "bb_doc", "status": "planned", "scope": "citation resolution and freshness", "acceptanceCriteria": ["resolvable citations", "valid spans", "claim coverage"], "closureRequirements": ["broken citation fixture", "stale fixture", "mutation evidence"] },
+    { "code": "D3", "githubIssue": 441, "tool": "bb_doc", "status": "planned", "scope": "source-backed examples and diagrams", "acceptanceCriteria": ["cited examples", "resolvable graph edges", "honest unavailable state"], "closureRequirements": ["positive graph fixture", "no-evidence fixture", "tampered-edge negative"] },
+    { "code": "X1", "githubIssue": 442, "tool": "cross-tool", "status": "planned", "scope": "engine/handler/CLI/MCP parity and mutation", "acceptanceCriteria": ["equivalent facts", "read-only behavior", "fail-closed errors"], "closureRequirements": ["parity matrix", "mutation output", "scope report"] },
+    { "code": "X2", "githubIssue": 443, "tool": "cross-tool", "status": "planned", "scope": "real repositories and complexity ledger", "acceptanceCriteria": ["revisioned corpus runs", "resource metrics", "complexity evidence"], "closureRequirements": ["raw benchmarks", "large and small corpus", "blocked states visible"] },
+    { "code": "C3", "githubIssue": 444, "tool": "governance", "status": "planned", "scope": "final docs, claims, and closure", "acceptanceCriteria": ["all issue evidence current", "website claims truthful", "clean final gate"], "closureRequirements": ["final ledger", "dependency list", "unresolved claims"] }
+  ]
+}
