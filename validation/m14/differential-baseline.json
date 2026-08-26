@@ -546,6 +546,78 @@
       "perf": {
         "avgMsPerFile": 28.5
       }
+    },
+    "fmt:javascript": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 18.2
+      }
+    },
+    "fmt:typescript": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
+    },
+    "fmt:kotlin": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
+    },
+    "fmt:scala": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
+    },
+    "fmt:java": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
+    },
+    "fmt:groovy": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
+    },
+    "fmt:vue": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
+    },
+    "fmt:svelte": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
+    },
+    "fmt:cpp": {
+      "missing": 4,
+      "unexplained": 4,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 63.3
+      }
     }
   }
 }

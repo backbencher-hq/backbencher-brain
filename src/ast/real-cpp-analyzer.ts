@@ -44,6 +44,18 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
     const frameworks: Record<string, boolean> = {}
     let memorySafetyScore = 100
 
+    // PER-FILE state - the old version stored registries on `this`, which
+    // LEAKED ACROSS FILES when analyzer instances are reused by parallel
+    // indexing: identical source in a later file lost its Uses edges
+    // entirely (proven by probe), and virtual registries contaminated
+    // unrelated files.
+    const usesSeen = new Set<string>()
+    let fileDecisions = 0
+    const qcBySource = new Map<string, string[]>()
+    const classVirtuals = new Map<string, string[]>()
+    const pendingOverrides: Array<{ cls: string; method: string }> = []
+    const classBases = new Map<string, string[]>()
+
     interface Scope {
       node: Node
       name: string
@@ -105,6 +117,20 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       if (type === "new_expression" || type === "delete_expression") {
         memorySafetyScore = Math.max(0, memorySafetyScore - 5)
+      }
+
+      // T1 family contract: decisions = branch constructs + short-circuit
+      // operators. File-level cyclomatic was entirely absent before.
+      if (
+        type === "if_statement" || type === "for_statement" ||
+        type === "while_statement" || type === "do_statement" ||
+        type === "case_statement" || type === "catch_clause" ||
+        type === "conditional_expression"
+      ) {
+        fileDecisions++
+      } else if (type === "binary_expression") {
+        const op = node.childForFieldName("operator")?.text
+        if (op === "&&" || op === "||") fileDecisions++
       }
 
       if (type === "using_declaration") {
@@ -246,42 +272,38 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         const baseClasses: string[] = []
         const baseClause = this.findChild(node, "base_class_clause")
         if (baseClause) {
-          // 4. Empty Inheritance Graph Fix: Check inside base_class nodes
+          // Pinned-wasm shape: base_class_clause children are FLAT
+          // (access_specifier / type_identifier / template_type). The old
+          // 'base_class' wrapper branches were dead literals (grammar audit).
           for (let i = 0; i < baseClause.namedChildCount; i++) {
             const bc = baseClause.namedChild(i)
-            if (!bc) continue
-            let typeNode =
+            if (!bc || bc.type === "access_specifier") continue
+            const typeNode =
               this.findChild(bc, "type_identifier") ||
               this.findChild(bc, "qualified_identifier") ||
-              this.findChild(bc, "template_type")
-
-            if (!typeNode && bc.type !== "base_class" && bc.type !== "access_specifier") {
-              typeNode = bc
-            } else if (!typeNode && bc.type === "base_class") {
-              typeNode = bc.namedChild(bc.namedChildCount - 1)
-            }
-            if (typeNode && typeNode.type !== "access_specifier") {
-              const text = stripAccessSpecifier(typeNode.text)
-              if (text) {
-                baseClasses.push(text)
-                relationships.push({
-                  source: name,
-                  target: text,
-                  type: ASTEngine.RelationshipType.Extends,
-                  metadata: { nodeType: typeNode.type },
-                })
-              }
+              this.findChild(bc, "template_type") ||
+              bc
+            const rawText = stripAccessSpecifier(typeNode.text)
+            if (rawText) {
+              baseClasses.push(rawText)
+              relationships.push({
+                source: name,
+                target: rawText,
+                type: ASTEngine.RelationshipType.Extends,
+                confidence: 1.0,
+                metadata: { nodeType: typeNode.type },
+              })
             }
           }
-          
-          // Track base class virtual methods for Implements relationships
-          if (!((this as any)._baseVirtuals)) (this as any)._baseVirtuals = new Map<string, string[]>()
-          for (const baseClass of baseClasses) {
-            const baseKey = `${baseClass}`
-            if (!(this as any)._baseVirtuals.has(baseKey)) {
-              (this as any)._baseVirtuals.set(baseKey, [])
-            }
-          }
+          // Registry key = CLEAN base name (template args stripped, leaf
+          // segment) - methods register under the declared class name, so a
+          // raw 'numpunct<Char>' key never matched the 'numpunct' registry.
+          const cleanBases = baseClasses.map((b) => {
+            let t = b.split("<")[0].trim()
+            const parts = t.split(/::|\s+/).filter(Boolean)
+            return parts[parts.length - 1] ?? t
+          })
+          classBases.set(name, cleanBases)
         }
 
         const sym: ASTEngine.UniversalSymbol = {
@@ -393,6 +415,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
             name: symName,
             kind: kind,
             range: this.nodeToRange(node),
+            complexity: this.methodComplexityCpp(node),
             visibility: parentContext?.visibility || "public",
             isStatic,
             ownerName: actualOwnerName,
@@ -410,41 +433,24 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
               isOperatorOverload: isOperator,
             },
           }
-          // Detect Implements: virtual method override in derived class
-          if ((isVirtual || isPureVirtual) && parentContext?.kind === ASTEngine.SymbolKind.Class && !isConstructor) {
-            // This is a virtual method in a class. Track it for future overrides.
-            const bv = (this as any)._baseVirtuals
-            if (bv) {
-              const classVirtuals = bv.get(parentContext.name) || []
-              classVirtuals.push(funcName)
-              bv.set(parentContext.name, classVirtuals)
-            }
-          }
-          if (isVirtual && parentContext?.kind === ASTEngine.SymbolKind.Class && actualOwnerKind === ASTEngine.SymbolKind.Class && isConstructor === false) {
-            // Check if this overrides a base class virtual method
-            const bv = (this as any)._baseVirtuals
-            if (bv && parentContext.symbolRef) {
-              const baseClasses = parentContext.symbolRef.metadata?.baseClasses as string[] || []
-              for (const baseClass of baseClasses) {
-                const baseMethods = bv.get(baseClass)
-                if (baseMethods && baseMethods.includes(funcName)) {
-                  relationships.push({
-                    source: `${parentContext.name}.${funcName}`,
-                    target: `${baseClass}.${funcName}`,
-                    type: ASTEngine.RelationshipType.Implements,
-                    confidence: 0.9,
-                    metadata: { isOverride: true, isVirtual: true },
-                  })
-                  // overrides: explicit virtual method override detection
-                  relationships.push({
-                    source: `${parentContext.name}.${funcName}`,
-                    target: `${baseClass}.${funcName}`,
-                    type: ASTEngine.RelationshipType.Overrides,
-                    confidence: 0.95,
-                    metadata: { isVirtualOverride: true },
-                  })
-                }
-              }
+          // Override tracking. The OLD code stored registries on `this`
+          // AND gated registration on a prior base_class_clause - base-class
+          // methods were never registered before Derived was walked
+          // (top-down order), so the feature was DEAD in practice.
+          // Now: EVERY class-scope method registers (C++ virtual dispatch
+          // does not require the keywords); resolution is post-loop when
+          // all classes/bases are known. Constructors never register.
+          if (
+            !isConstructor &&
+            kind === ASTEngine.SymbolKind.Method &&
+            parentContext?.kind === ASTEngine.SymbolKind.Class &&
+            funcName !== parentContext.name
+          ) {
+            const list = classVirtuals.get(parentContext.name) ?? []
+            list.push(funcName)
+            classVirtuals.set(parentContext.name, list)
+            if ((classBases.get(parentContext.name)?.length ?? 0) > 0) {
+              pendingOverrides.push({ cls: parentContext.name, method: funcName })
             }
           }
 
@@ -552,12 +558,8 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         ) {
           const source = parentContext?.name || "global"
           const relKey = `${source}::uses::${field.text}`
-          if (!(this as any)._emittedUses) {
-            (this as any)._emittedUses = new Set<string>()
-          }
-          const uses = (this as any)._emittedUses
-          if (!uses.has(relKey)) {
-            uses.add(relKey)
+          if (!usesSeen.has(relKey)) {
+            usesSeen.add(relKey)
             relationships.push({
               source,
               target: field.text,
@@ -604,6 +606,14 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
               type: ASTEngine.RelationshipType.Calls,
               metadata: { line: node.startPosition.row, qualified: qualifiedName },
             })
+            // #383 payload: qualified path WITHOUT argument text (C++ keeps
+            // :: separators), attributed to the enclosing function/method.
+            // Previously absent - JS/TS/JVM family all carry this payload.
+            if (source !== "global") {
+              const list = qcBySource.get(source) ?? []
+              list.push(qualifiedName)
+              qcBySource.set(source, list)
+            }
           }
         }
       } else if (type === "new_expression") {
@@ -663,6 +673,39 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // POST-LOOP override resolution: every class and virtual is known now.
+    // Resolves transitively (A->B->C) with a depth cap.
+    {
+      const resolves = (startCls: string, method: string): string[] => {
+        const found: string[] = []
+        const seen = new Set<string>()
+        const queue = [startCls]
+        let depth = 0
+        while (queue.length && depth < 10) {
+          depth++
+          const cls = queue.shift()!
+          if (seen.has(cls)) continue
+          seen.add(cls)
+          for (const base of classBases.get(cls) ?? []) {
+            if ((classVirtuals.get(base) ?? []).includes(method)) found.push(base)
+            queue.push(base)
+          }
+        }
+        return found
+      }
+      for (const pend of pendingOverrides) {
+        for (const base of resolves(pend.cls, pend.method)) {
+          relationships.push({
+            source: `${pend.cls}.${pend.method}`,
+            target: `${base}.${pend.method}`,
+            type: ASTEngine.RelationshipType.Overrides,
+            confidence: 0.9,
+            metadata: { isVirtualOverride: true },
+          })
+        }
+      }
+    }
+
     // Post-loop: add contains for owned symbols (class→method, class→field, namespace→class)
     for (const s of symbols) {
       const _owner = s.ownerName || s.scope
@@ -677,6 +720,15 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // #383 payload attach: qualified_calls per enclosing function/method.
+    for (const sym of symbols) {
+      const qc = qcBySource.get(sym.name)
+      if (qc && qc.length > 0) sym.qualified_calls = [...new Set(qc)]
+    }
+
+    // #419-D evidence tiers on EVERY edge (family classifier).
+    this.classifyEvidenceTier(relationships)
+
     return {
       symbols,
       relationships,
@@ -685,10 +737,57 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
       errors,
       metadata: {
         linesOfCode: content.split("\n").length,
+        cyclomaticComplexity: 1 + fileDecisions,
+        complexity: 1 + fileDecisions,
         patterns: (() => { const arr: string[] = []; for (const p in patterns) arr.push(p); return arr; })(),
         detectedFrameworks: (() => { const arr: string[] = []; for (const f in frameworks) arr.push(f); return arr; })(),
         memorySafetyScore,
       },
+    }
+  }
+
+  private methodComplexityCpp(node: Node): number {
+    // T1 family contract: 1 + decision points (branch constructs +
+    // short-circuit operators; else adds nothing).
+    const decisionTypes = new Set([
+      "if_statement", "for_statement", "while_statement", "do_statement",
+      "case_statement", "catch_clause", "conditional_expression",
+    ])
+    let c = 1
+    const st: Node[] = [node]
+    while (st.length) {
+      const n = st.pop()!
+      if (decisionTypes.has(n.type)) c++
+      else if (n.type === "binary_expression") {
+        const op = n.childForFieldName("operator")?.text
+        if (op === "&&" || op === "||") c++
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const ch = n.namedChild(i)
+        if (ch) st.push(ch)
+      }
+    }
+    return c
+  }
+
+  /**
+   * #419-D - evidence-tier classification for EVERY emitted relationship
+   * (same rules as the JVM/web family).
+   */
+  private classifyEvidenceTier(relationships: ASTEngine.UniversalRelationship[]): void {
+    for (const r of relationships) {
+      const md = r.metadata ?? (r.metadata = {})
+      if (md.evidenceClass) continue
+      const t = String(r.type ?? "")
+      const conf = typeof r.confidence === "number" ? r.confidence : 1
+      if (t === "contains" || t === "exports") { md.evidenceClass = "structural"; continue }
+      if (t === "references") { md.evidenceClass = md.isImport ? "import_based" : "reference_qualified"; continue }
+      if (t === "extends" || t === "implements" || t === "overrides") {
+        md.evidenceClass = conf >= 1 ? "structural" : conf >= 0.85 ? "usage_contextual" : "inferred"
+        continue
+      }
+      if (t === "instantiates") { md.evidenceClass = "structural"; continue }
+      md.evidenceClass = "usage_contextual"
     }
   }
 
