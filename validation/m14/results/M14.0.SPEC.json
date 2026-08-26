@@ -1,0 +1,57 @@
+{
+  "checks": [
+    {
+      "description": "every named node type classified",
+      "id": "inventory-fully-classified",
+      "status": "pass"
+    },
+    {
+      "description": "4 confirmed gaps declared",
+      "id": "gap-list-present",
+      "status": "pass"
+    },
+    {
+      "description": "3 owner rulings pending",
+      "id": "design-decisions-tracked",
+      "status": "pass"
+    }
+  ],
+  "claimLevel": "L2",
+  "commit": "d2a41f18dbfe4150e495945f885d31b3db3c9b83",
+  "committedAt": "2026-08-26T21:57:57+02:00",
+  "data": {
+    "gaps": [
+      "G1: Uses relationship on the array expression",
+      "G2: Calls relationship for super(...) / this(...)",
+      "G3: Type reference for the record type in instanceof Point(int x, int y)",
+      "G4: Calls relationships for invocations outside method bodies: static initializers, instance initializers, field initializers, enum constant bodies"
+    ],
+    "handledVerified": 70,
+    "internalSilent": 60,
+    "nodeTypeCount": 143,
+    "pendingDecisions": [
+      "G5",
+      "G6",
+      "S1"
+    ]
+  },
+  "governance": "docs/M14-HONESTY-CONTRACT.md",
+  "issueId": "M14.0.SPEC",
+  "layers": [
+    "completeness"
+  ],
+  "limitations": [
+    {
+      "description": "classified against pinned tree-sitter-java wasm (143 public named types); grammar drift re-validates on every run"
+    },
+    {
+      "description": "gaps G1-G4 probe-verified on synthetic fixtures; corpus-scale confirmation pending gap closure waves"
+    },
+    {
+      "description": "G5/G6/S1 await explicit owner ruling before they may be closed as declared"
+    }
+  ],
+  "runtime": "node v24.3.0",
+  "schemaVersion": 2,
+  "title": "Completeness inventory — java pilot (#419)"
+}
