@@ -26,7 +26,7 @@
     },
     {
       "description": "java adversarial fixtures",
-      "detail": "30/30 fixtures pass",
+      "detail": "31/31 fixtures pass",
       "id": "fixtures-java",
       "status": "pass"
     },
@@ -80,8 +80,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "65af8584025bf8800da974ce9cf298df9a2ea24d",
-  "committedAt": "2026-08-26T22:58:23+02:00",
+  "commit": "9d9953f99dbed4af6a69e36591495781c083368d",
+  "committedAt": "2026-08-26T23:22:37+02:00",
   "data": {
     "details": [
       {
@@ -590,6 +590,11 @@
         "problems": []
       },
       {
+        "fixture": "java/parameters-payload",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "java/pure-field-chain",
         "ok": true,
         "problems": []
@@ -1069,7 +1074,7 @@
       },
       "java": {
         "fail": 0,
-        "pass": 30
+        "pass": 31
       },
       "javascript": {
         "fail": 0,

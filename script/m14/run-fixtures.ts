@@ -178,6 +178,21 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
         }
       }
     }
+    for (const want of exp.expectParameters ?? []) {
+      const sym = symbols.find((s: any) => s.name === want.symbol)
+      if (!sym) { problems.push(`expectParameters: symbol ${want.symbol} not found`); continue }
+      const actual: Entry[] = sym?.parameters ?? []
+      for (const wp of want.parameters ?? []) {
+        const hit = actual.some((p: any) => {
+          if (wp.name !== undefined && p.name !== wp.name) return false
+          if (wp.type !== undefined && p.type !== wp.type) return false
+          return true
+        })
+        if (!hit) {
+          problems.push(`expected ${want.symbol} parameter ${JSON.stringify(wp)}; got: ${JSON.stringify(actual.map((p: any) => ({ name: p.name, type: p.type })))}`)
+        }
+      }
+    }
     for (const want of exp.expectVisibility ?? []) {
       const sym = symbols.find((s: any) => s.name === want.symbol)
       if (!sym) { problems.push(`expectVisibility: symbol ${want.symbol} not found`); continue }
