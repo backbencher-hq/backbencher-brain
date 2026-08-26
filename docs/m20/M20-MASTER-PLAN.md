@@ -100,8 +100,10 @@ found these concrete gaps:
   report token collisions;
 - documentation implementation is narrower than its mode/examples/diagrams
   contract;
-- declared `graphql-js/src` corpus samples are unavailable in the current
-  environment, producing an honest `KNOWN-GAP`.
+- corpus identity is currently not reproducible for every declared checkout:
+  two revisions mismatch and five declared repositories are dirty; the C2 gate
+  records this as an honest `KNOWN-GAP` while preserving the extra local
+  repositories separately.
 
 None of those baseline observations is marked as fixed by this governance
 artifact. They are inputs to the corresponding open GitHub issues.
