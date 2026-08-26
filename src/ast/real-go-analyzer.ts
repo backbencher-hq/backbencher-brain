@@ -176,6 +176,13 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility || "public" })
       }
     }
+
+    // PHASE 5.5: Declared-type reference graph (M14): struct fields, params,
+    // receivers, return values, var declarations. Absent until M14 — the
+    // corpus oracle never checked it. qualified_type keeps its dotted
+    // pkg.Type form; builtins are excluded.
+    this.extractDeclaredTypeRefs(rootNode, relationships)
+
     return {
       language: "go",
       symbols,
@@ -204,6 +211,104 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         analysisVersion: "3.0.1-go-iterative-stateless",
       },
     }
+  }
+
+  /**
+   * M14 — declared-type reference graph. Go type positions: struct fields,
+   * parameter declarations (params, receivers, and the SECOND parameter_list
+   * holding return values), var/const specs, and composite literal types.
+   * qualified_type keeps its dotted pkg.Type form per the M14 dotted-name
+   * convention; pointer/array/map/etc. wrappers descend; builtins excluded.
+   */
+  private extractDeclaredTypeRefs(rootNode: Node, relationships: ASTEngine.UniversalRelationship[]): void {
+    const emitted = new Set<string>()
+    const BUILTINS = new Set(["int", "int8", "int16", "int32", "int64", "uint", "uint8", "uint16", "uint32", "uint64", "uintptr", "float32", "float64", "complex64", "complex128", "string", "bool", "byte", "rune", "error", "any"])
+
+    const collectTypeNames = (n: Node, out: string[], qualified?: string): void => {
+      if (n.type === "qualified_type") {
+        // Full dotted pkg.Type per dotted-name convention.
+        if (!out.includes(n.text) && !BUILTINS.has(n.text)) out.push(n.text)
+        return
+      }
+      if (n.type === "type_identifier") {
+        if (!BUILTINS.has(n.text) && !out.includes(n.text)) out.push(n.text)
+        return
+      }
+      if (n.type === "block" || n.type === "expression_list") return
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) collectTypeNames(c, out, qualified)
+      }
+    }
+
+    const resolveSource = (start: Node): string => {
+      let p: Node | null = start.type === "field_declaration" ? start : start.parent
+      let sawTypeSpec = false
+      while (p) {
+        // Struct fields attribute to the enclosing named struct/interface.
+        if (!sawTypeSpec && p.type === "type_spec") {
+          for (let i = 0; i < p.namedChildCount; i++) {
+            const c = p.namedChild(i)
+            if (c && c.type === "type_identifier") return c.text
+          }
+          sawTypeSpec = true
+        }
+        if (p.type === "function_declaration" || p.type === "method_declaration") {
+          for (let i = 0; i < p.namedChildCount; i++) {
+            const c = p.namedChild(i)
+            if (!c) continue
+            if ((p.type === "method_declaration" && c.type === "field_identifier") || (p.type === "function_declaration" && c.type === "identifier")) return c.text
+          }
+        }
+        p = p.parent
+      }
+      return "global"
+    }
+
+    const emit = (source: string, roots: (Node | null)[], relType: string): void => {
+      for (const r of roots) {
+        if (!r) continue
+        const names: string[] = []
+        collectTypeNames(r, names)
+        for (const t of names) {
+          const key = `${source}|${t}|${relType}`
+          if (emitted.has(key)) continue
+          emitted.add(key)
+          relationships.push({
+            source,
+            target: t,
+            type: ASTEngine.RelationshipType.References,
+            confidence: 0.95,
+            metadata: { relationshipType: relType },
+          })
+        }
+      }
+    }
+
+    const walk = (n: Node): void => {
+      switch (n.type) {
+        case "field_declaration": {
+          // Struct field: type is everything after the name identifier.
+          emit(resolveSource(n), [n], "declared_type")
+          break
+        }
+        case "parameter_declaration": {
+          // Params, receivers AND anonymous return-value declarations.
+          emit(resolveSource(n), [n], n.namedChildCount === 1 ? "return_type" : "declared_type")
+          break
+        }
+        case "var_spec":
+        case "const_spec": {
+          emit(resolveSource(n), [n], "declared_type")
+          break
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) walk(c)
+      }
+    }
+    walk(rootNode)
   }
 
   /**
