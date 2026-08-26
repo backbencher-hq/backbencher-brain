@@ -232,10 +232,22 @@ now the DEFINITION of done — retroactively binding on all wave issues.
 Java pilot progress (2026-08-26): inventory machinery live —
 `script/m14/completeness-inventory.ts` + `spec/java-completeness.json`
 classify ALL 143 pinned tree-sitter-java node types mechanically
-(70 handled_verified, 60 internal_silent, 4 probe-confirmed gaps G1–G4,
-3 owner rulings G5/G6/S1 pending). Wired into `npm run verify` as
-`audit:completeness`; evidence `M14.0.SPEC.json`. Gap list is printed and
-awaiting OWNER REVIEW before any gap is fixed (acceptance #2).
+(70 handled_verified, 60 internal_silent). Wired into `npm run verify`
+as `audit:completeness`; evidence `M14.0.SPEC.json`.
+Gap closure (owner-approved, fixture-first ritual):
+- G1 array_access → Uses edge (fixture java/array-access-uses, mutant
+  java/drop-array-access CAUGHT)
+- G2 explicit_constructor_invocation → Calls edge (fixture
+  java/ctor-delegation, mutant java/drop-ctor-delegation CAUGHT)
+- G3 record_pattern → References edge (fixture java/record-pattern-refs,
+  mutant java/drop-record-patterns CAUGHT)
+- G4 calls in initializers/field-init/enum bodies → Calls edge attributed
+  to enclosing type (fixture java/initializer-calls, mutant
+  java/drop-initializer-calls CAUGHT)
+Rulings (owner-approved 2026-08-26): G5 module-info DECLARED OUT OF
+SCOPE; G6 generic type bounds DECLARED LIMITATION; S1 java-spec-table
+corrected (throw/assert/try-with-resources removed from complexity).
+Java fixtures now 29; mutation suite 26/26 caught.
 
 ### #419 section definition — the eight mandatory judgments per language
 

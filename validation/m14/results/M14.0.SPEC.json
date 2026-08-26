@@ -11,14 +11,14 @@
       "status": "pass"
     },
     {
-      "description": "3 owner rulings pending",
+      "description": "3 ruled, 0 pending owner",
       "id": "design-decisions-tracked",
       "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "d2a41f18dbfe4150e495945f885d31b3db3c9b83",
-  "committedAt": "2026-08-26T21:57:57+02:00",
+  "commit": "639eeab60c78e2afd790479405619583efca18b2",
+  "committedAt": "2026-08-26T22:29:46+02:00",
   "data": {
     "gaps": [
       "G1: Uses relationship on the array expression",
@@ -29,7 +29,8 @@
     "handledVerified": 70,
     "internalSilent": 60,
     "nodeTypeCount": 143,
-    "pendingDecisions": [
+    "pendingDecisions": [],
+    "ruledDecisions": [
       "G5",
       "G6",
       "S1"
@@ -45,10 +46,10 @@
       "description": "classified against pinned tree-sitter-java wasm (143 public named types); grammar drift re-validates on every run"
     },
     {
-      "description": "gaps G1-G4 probe-verified on synthetic fixtures; corpus-scale confirmation pending gap closure waves"
+      "description": "gaps G1-G4 probe-verified on synthetic fixtures and closed with fixture-gated fixes (2026-08-26)"
     },
     {
-      "description": "G5/G6/S1 await explicit owner ruling before they may be closed as declared"
+      "description": "G5/G6/S1 ruled by owner 2026-08-26: declared out of scope / declared limitation / spec-table corrected"
     }
   ],
   "runtime": "node v24.3.0",
