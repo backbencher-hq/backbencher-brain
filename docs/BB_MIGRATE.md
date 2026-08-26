@@ -9,7 +9,7 @@ The normalized result includes:
 
 - one plan per supported symbol
 - `dependencyOrder`, a deterministic topological order over resolved plan relationships, with dependency nodes before their dependents
-- source-to-target library mappings with confidence and notes
+- source-to-target library mappings with confidence, explicit `supported`/`uncertain` status, and notes
 - effort, complexity, risk factors, and strategy steps
 - `unsupported` symbols with explicit reasons
 - methodology totals: base setup hours, relationship hours, relationship count, and missing-mapping hours/count
@@ -31,8 +31,7 @@ adding ordering, methodology, unsupported cases, and truncation.
 - `dependencyGraph` reports resolved edges, unresolved dependencies, cycles, and `orderingStatus` (`complete`, `partial`, `cyclic`, or `no-edges`)
 - cyclic or incomplete graphs are surfaced explicitly and must not be interpreted as a complete dependency order
 
-Unknown library equivalents are never presented as supported mappings. Same-
-language, missing-symbol, and unsupported cases appear in `unsupported`.
+Unknown library equivalents have `target: null`, `status: "uncertain"`, and an explicit `unsupportedReason`; they are never presented as supported mappings. Same-language, missing-symbol, invalid-target, and unsupported cases appear in `unsupported`.
 
 ```json
 {"symbolNames":["authenticate","authorize"],"targetLanguage":"go","format":"json"}
