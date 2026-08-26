@@ -50,20 +50,20 @@
     },
     {
       "description": "c adversarial fixtures",
-      "detail": "0/0 fixtures pass",
+      "detail": "2/2 fixtures pass",
       "id": "fixtures-c",
       "status": "pass"
     },
     {
       "description": "cpp adversarial fixtures",
-      "detail": "3/3 fixtures pass",
+      "detail": "4/4 fixtures pass",
       "id": "fixtures-cpp",
       "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "f8acca3f438eff908898d19de8b54580c00dd075",
-  "committedAt": "2026-08-26T02:42:01+02:00",
+  "commit": "fcadd83cb995f347b2b06755ba1b6283b423d053",
+  "committedAt": "2026-08-26T03:59:33+02:00",
   "data": {
     "details": [
       {
@@ -917,8 +917,19 @@
         "problems": []
       },
       {
-        "fixture": "(none)",
-        "ok": true
+        "fixture": "c/complexity-and-payloads",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "c/malloc-instantiates-noise",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "cpp/override-signature-aware",
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "cpp/payload-and-complexity",
@@ -939,11 +950,11 @@
     "summary": {
       "c": {
         "fail": 0,
-        "pass": 0
+        "pass": 2
       },
       "cpp": {
         "fail": 0,
-        "pass": 3
+        "pass": 4
       },
       "groovy": {
         "fail": 0,
