@@ -6,9 +6,14 @@ import { getProjectId } from "../../src/cli/index"
 import { indexProjectParallel } from "../../src/ast/parallel-indexer"
 import { BrainDatabase } from "../../src/brain/database"
 import { detectOrphans } from "../../src/intelligence/patterns/orphans"
+import { patternRelevantWorkingTreeChanges, patternSourceFingerprint } from "../../src/intelligence/patterns/evidence"
 
 let failures = 0
+let checks = 0
+let passed = 0
 function check(label: string, value: boolean, detail = ""): void {
+  checks++
+  if (value) passed++
   if (value) console.log(`  ok: ${label}`)
   else { failures++; console.log(`  FAIL: ${label}${detail ? ` — ${detail}` : ""}`) }
 }
@@ -39,5 +44,18 @@ try {
   rmSync(root, { recursive: true, force: true })
   rmSync(path.dirname(BrainDatabase.getDbPath(projectId)), { recursive: true, force: true })
 }
+const result = {
+  issue: "M20.P2", code: "P2", milestone: "M20",
+  status: failures === 0 && patternRelevantWorkingTreeChanges(path.resolve(".")).length === 0 ? "verified" : "known-gap",
+  checks, passed, failed: failures, negativeCases: 1,
+  currentCommit: (() => { try { return Bun.spawnSync(["git", "rev-parse", "HEAD"]).stdout.toString().trim() } catch { return "unknown" } })(),
+  sourceFingerprint: patternSourceFingerprint(path.resolve(".")),
+  verifierCommand: "bun run script/m20/verify-patterns-orphan-semantics.ts",
+  evidenceFile: "P2.json", generatedAt: new Date().toISOString(),
+  workingTreeRelevantChanges: patternRelevantWorkingTreeChanges(path.resolve(".")),
+  limitations: ["Fixture-level orphan and dynamic-use coverage; dynamic/reflection wiring remains uncertain by design.", "Real-repository corpus coverage is owned by M20.X2."]
+}
+mkdirSync(path.resolve("validation/m20/results"), { recursive: true })
+writeFileSync(path.resolve("validation/m20/results/P2.json"), JSON.stringify(result, null, 2) + "\n")
 console.log(failures === 0 ? "\nPATTERNS P2: PASS" : `\nPATTERNS P2: ${failures} FAILURES`)
 process.exit(failures ? 1 : 0)
