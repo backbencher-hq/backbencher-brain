@@ -664,6 +664,70 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => !((s.metadata ?? {}).isEmit && s.name === "close")) }),
   },
   {
+    id: "svelte/drop-template-member-uses",
+    language: "svelte",
+    defectClass: "relationship-loss",
+    description: "drops template-expression Uses edges (the S1 bug class: {count}, label={label}, {#each items} emitted nothing)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.metadata ?? {}).isTemplateExpression) }),
+  },
+  {
+    id: "svelte/reemit-shadowed-uses",
+    language: "svelte",
+    defectClass: "scope-blindness",
+    description: "re-emits Uses for template-LOCAL identifiers (the vue V4 bug class: each loop vars and await then/catch vars produced false uses)",
+    transform: r => {
+      const rels = r.relationships ?? []
+      const source = (rels.find((x: any) => x.type === "instantiates" || x.type === "uses")?.source) || "template-member-uses"
+      const extra = ["row", "i", "value", "err"].map(name => ({
+        source, target: name, type: "uses", confidence: 0.95,
+        metadata: { isTemplateExpression: true },
+      }))
+      return { ...r, relationships: [...rels, ...extra] }
+    },
+  },
+  {
+    id: "svelte/reduplicate-rune-props",
+    language: "svelte",
+    defectClass: "symbol-duplication",
+    description: "re-adds the JS sub-analyzer's destructured Variables for $props() bindings (the S2 bug class: let { a } = $props() declared a twice)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.metadata ?? {}).isSvelteProp ? { ...s, name: undefined } : s).filter((s: any) => s.name !== undefined).concat((r.symbols ?? []).filter((s: any) => (s.metadata ?? {}).isSvelteProp).map((s: any) => ({ ...s, name: s.name + "", kind: "variable", ownerName: undefined, metadata: { ...s.metadata, isSvelteProp: undefined, fromRunes: undefined, isDestructured: true } }))) }),
+  },
+  {
+    id: "svelte/drop-overrides-edges",
+    language: "svelte",
+    defectClass: "relationship-loss",
+    description: "drops overrides edges (section B overrides pin)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => String(x.type ?? x.relationshipType) !== "overrides") }),
+  },
+  {
+    id: "svelte/drop-references-edges",
+    language: "svelte",
+    defectClass: "relationship-loss",
+    description: "drops references edges (section B references pin)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => String(x.type ?? x.relationshipType) !== "references") }),
+  },
+  {
+    id: "svelte/drop-uses-edges",
+    language: "svelte",
+    defectClass: "relationship-loss",
+    description: "drops uses edges incl. template-expression uses (section B uses pin + S1)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => String(x.type ?? x.relationshipType) !== "uses") }),
+  },
+  {
+    id: "svelte/drop-parameters",
+    language: "svelte",
+    defectClass: "payload-loss",
+    description: "drops the parameters payload from function symbols (section C parameters pin)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, parameters: undefined })) }),
+  },
+  {
+    id: "svelte/drop-visibility",
+    language: "svelte",
+    defectClass: "payload-loss",
+    description: "drops the visibility payload from symbols (section C visibility pin)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, visibility: undefined })) }),
+  },
+  {
     id: "groovy/drop-class-symbols",
     language: "groovy",
     defectClass: "symbol-loss",
