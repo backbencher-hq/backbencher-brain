@@ -89,14 +89,18 @@ try {
   // ── 2. Read-only proof ────────────────────────────────────────────────
   const after = files.map((f) => readFileSync(path.join(root, f), "utf8"))
   check("read-only: fixture files byte-identical after tool runs", JSON.stringify(before) === JSON.stringify(after), "source mutated")
+  // Genuine negative: prove the read-only comparison is not vacuous — it is
+  // capable of detecting an actual mutation against the captured snapshot.
+  const tampered = files.map((f) => readFileSync(path.join(root, f), "utf8").replace("return a + b", "return a - b"))
+  negative("read-only: a real mutation is detected against the captured snapshot", JSON.stringify(tampered) !== JSON.stringify(before), "mutation not detected")
 
-  // ── 3. Fail-closed errors ─────────────────────────────────────────────
+  // ── 3. Fail-closed errors (genuine negatives: silent acceptance is absent) ─
   const badDoc = await handler.bb_doc({ mode: "bogus" }, { projectPath: root, projectId } as any)
-  check("fail-closed: bb_doc invalid mode is an error", badDoc.isError === true, badDoc.content[0].text.slice(0, 80))
+  negative("fail-closed: bb_doc invalid mode is NOT silently accepted", badDoc.isError === true, badDoc.content[0].text.slice(0, 80))
   const badMigrate = await handler.bb_migrate({ symbolNames: ["x"] }, { projectPath: root, projectId } as any)
-  check("fail-closed: bb_migrate missing targetLanguage is an error", badMigrate.isError === true, badMigrate.content[0].text.slice(0, 80))
+  negative("fail-closed: bb_migrate missing targetLanguage is NOT silently accepted", badMigrate.isError === true, badMigrate.content[0].text.slice(0, 80))
   const badAnalyze = await handler.bb_analyze({}, { projectPath: root, projectId } as any)
-  check("fail-closed: bb_analyze missing mode is an error", badAnalyze.isError === true, badAnalyze.content[0].text.slice(0, 80))
+  negative("fail-closed: bb_analyze missing mode is NOT silently accepted", badAnalyze.isError === true, badAnalyze.content[0].text.slice(0, 80))
 
   // ── 4. Fingerprint authority sanity ───────────────────────────────────
   const fps = [migrationSourceFingerprint(path.resolve(".")), patternSourceFingerprint(path.resolve(".")), securitySourceFingerprint(path.resolve(".")), docSourceFingerprint(path.resolve("."))]
