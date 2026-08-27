@@ -147,6 +147,13 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
     if (lang === "vue" || lang === "svelte") {
       const engine = await import("../../src/ast/engine")
       result = await (engine as any).ASTEngine.parseFile(path.join(dir, src), content)
+      // Mutation harness (M14.0.F4): the mutant wraps analyzer output. For
+      // SFC languages parseFile is the real entry, so apply the mutant's
+      // transform to its result (without this, vue/svelte mutants could
+      // never be caught — the suite would silently accept defects).
+      if (overrideAnalyzer && typeof (overrideAnalyzer as any).transform === "function") {
+        result = (overrideAnalyzer as any).transform(result)
+      }
     } else {
       result = await analyzer.analyze(tree.rootNode, content, `fixtures/${lang}/${src}`)
     }
@@ -302,6 +309,16 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
       const n = symbols.filter((s: any) => s.name === want.name).length
       if (n !== want.equals) {
         problems.push(`expected ${want.equals} symbol(s) named "${want.name}"; got ${n}`)
+      }
+    }
+    for (const want of exp.expectRelationshipCount ?? []) {
+      // { type, from, target, equals } — pins DEDUPE on relationship edges:
+      // vue re-emitted sub-analyzer contains edges, doubling every class
+      // member's containment. matchConstraints with an added equals check
+      // (exact count of matching edges, not >=1 like expectRelationships).
+      const n = rels.filter(r => matchConstraints(r, { ...want, equals: undefined })).length
+      if (n !== want.equals) {
+        problems.push(`expected ${want.equals} relationship(s) ${JSON.stringify({ type: want.type, from: want.from, target: want.target })}; got ${n}`)
       }
     }
     for (const want of exp.forbidImports ?? []) {
