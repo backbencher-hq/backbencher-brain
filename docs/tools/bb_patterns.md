@@ -79,6 +79,9 @@ Detect orphaned code, framework patterns, and anti-patterns. Use scope=orphaned 
 
 - Orphan status is static incoming-reference evidence, not proof that code is unused
 - Framework and anti-pattern detection is heuristic and confidence-qualified
+- Candidates are derived from analyzer-extracted symbols and relationships; the
+  same graph gaps (dynamic/reflection wiring, unresolved cross-file references)
+  that limit the analyzers also constrain these detections
 
 ## Performance
 
