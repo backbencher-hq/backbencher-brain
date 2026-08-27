@@ -72,7 +72,7 @@
         "missing": "template expressions emit NO references to the component's own members — {count}, label={label}, {#each items as item} (collection), {#await promise then value}, {@html raw}, {@const x = items.length}, {@debug items}, <svelte:component this={Comp}> all read script-side state but zero Uses/references edges are emitted. Only on: directives (calls) and {@render} (calls) produce edges; the template<->script data-flow is otherwise entirely silent.",
         "evidence": "probe: <span>{count}</span> + <MyButton label={label}/> + {#each items as item}<p>{item}</p>{/each} + {#await promise then value}<p>{value}</p>{/await} + {@html raw} -> only instantiates for MyButton; zero edges to count/label/items/promise/raw",
         "status": "CLOSED",
-        "closure": "CLOSED — fixture-gated fix (svelte/template-member-uses) + mutants svelte/drop-template-member-uses + svelte/reemit-shadowed-uses CAUGHT (2026-08-27). Template expressions ({count}, label={label}, {#each items as item}, {#await promise then value}, {@html raw}, {@const total}, {@debug x}, <svelte:component this={Comp}>) now emit Uses edges (isTemplateExpression) to member symbols, SCOPE-AWARE: {#each} loop vars, {#await} then/catch vars, and {#snippet} params are template-local and shadow same-named members (suppressed — the vue V4 lesson applied pre-fix)."
+        "closure": "CLOSED — fixture-gated fix (svelte/template-member-uses) + mutants svelte/drop-template-member-uses + svelte/reemit-shadowed-uses CAUGHT (2026-08-27). Template expressions ({count}, label={label}, {#each items as item}, {#await promise then value}, {@html raw}, {@const total}, {@debug x}, <svelte:component this={Comp}>) emit Uses edges (isTemplateExpression) to member symbols. Scope collision coverage is extended by S5: each-loop and declaration-order-aware {@const} shadowing is separately pinned by svelte/each-shadow-collision."
       },
       {
         "id": "S2",
@@ -82,6 +82,24 @@
         "evidence": "probe: let { a, b } = $props() -> a: 2x (property owner=comp [isSvelteProp,fromRunes] | variable owner=- [isConst,isDestructured]); same for b",
         "status": "CLOSED",
         "closure": "CLOSED — fixture-gated fix (svelte/rune-props-dedupe expectSymbolCount == 1) + mutant svelte/reduplicate-rune-props CAUGHT (2026-08-27). $props() destructured bindings (let { a, b, c = 5 } = $props()) are now declared EXACTLY once as component-owned Properties; the JS sub-analyzer's parallel destructured Variables are dropped during the merge."
+      },
+      {
+        "id": "S5",
+        "node_type": "each_statement, const_tag",
+        "severity": "high",
+        "missing": "template-local each-loop and {@const} bindings that collide with same-named component members leaked false template Uses edges. {#each rows as row} and nested {#each ... as item} read local values, not member functions; {@const total = ...} is local to its enclosing block and must shadow the member only after its declaration.",
+        "evidence": "probe + fixture: members row/item/total colliding with {#each rows as row}, nested {#each ... as item}, and {@const total = ...}; pre-fix emitted false uses -> row/item/total; post-fix svelte/each-shadow-collision passes and the scope-order probe preserves a legitimate use before the const declaration while suppressing later local reads",
+        "status": "CLOSED",
+        "closure": "CLOSED — fixture-gated fix (svelte/each-shadow-collision) + focused mutant svelte/reemit-shadowed-member-uses CAUGHT. Lexical template scopes now share state among siblings for declaration-order-aware {@const} bindings, isolate nested blocks, and register each-loop variables; no false member Uses remain for the tested collision shapes."
+      },
+      {
+        "id": "S6",
+        "node_type": "labeled_statement ($: reactive declaration)",
+        "severity": "medium",
+        "missing": "the same reactive state variable assigned by multiple `$:` blocks was emitted once per block, and the JS/TS sub-analyzer's plain declaration survived alongside the Svelte-owned reactive symbol, producing duplicate symbols and ambiguous containment.",
+        "evidence": "probe + fixture: reactive-dedupe pre-fix emitted doubled three times and total twice; post-fix expectSymbolCount equals 1 for doubled, total, and count",
+        "status": "CLOSED",
+        "closure": "CLOSED — fixture-gated fix (svelte/reactive-dedupe) + focused mutant svelte/reduplicate-reactive-targets CAUGHT. Reactive targets are deduplicated within Svelte extraction and the sub-analyzer copy is dropped in favor of the component-owned reactive symbol."
       }
     ]
   },
