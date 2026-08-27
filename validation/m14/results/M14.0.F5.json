@@ -1,75 +1,75 @@
 {
   "checks": [
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
+      "description": "grails-core: tree-truth vs analyzer diff @a83f87480e",
       "detail": "52 files, coverage null%, unexplained null%",
       "id": "differential-javascript",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
+      "description": "grails-core: tree-truth vs analyzer diff @a83f87480e",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-typescript",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
+      "description": "grails-core: tree-truth vs analyzer diff @a83f87480e",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-kotlin",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
+      "description": "grails-core: tree-truth vs analyzer diff @a83f87480e",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-scala",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
+      "description": "grails-core: tree-truth vs analyzer diff @a83f87480e",
       "detail": "60 files, coverage 100%, unexplained 0%",
       "id": "differential-java",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
+      "description": "grails-core: tree-truth vs analyzer diff @a83f87480e",
       "detail": "60 files, coverage 100%, unexplained 0%",
       "id": "differential-groovy",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
+      "description": "grails-core: tree-truth vs analyzer diff @a83f87480e",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-vue",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
+      "description": "grails-core: tree-truth vs analyzer diff @a83f87480e",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-svelte",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
+      "description": "grails-core: tree-truth vs analyzer diff @a83f87480e",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-cpp",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
+      "description": "grails-core: tree-truth vs analyzer diff @a83f87480e",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-c",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
+      "description": "grails-core: tree-truth vs analyzer diff @a83f87480e",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-rust",
       "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "31cf3eb7789e784f13d140fae26d4d92771d8b1e",
-  "committedAt": "2026-08-27T02:02:52+02:00",
+  "commit": "fa6634552dc369ad06c2a4d7e49de48784b3385d",
+  "committedAt": "2026-08-28T01:40:05+02:00",
   "data": {
     "corpusPins": {
       "grails-core": "a83f87480e0c0138caa5a7191a053b1e59a64066"
@@ -121,8 +121,8 @@
         "heuristicUnexplained": 34,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 8.9,
-          "maxMsPerFile": 53.1,
+          "avgMsPerFile": 16.2,
+          "maxMsPerFile": 108.3,
           "samplesTimed": 60
         },
         "samples": [],
@@ -139,8 +139,8 @@
         "heuristicUnexplained": 80,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 9.5,
-          "maxMsPerFile": 64.3,
+          "avgMsPerFile": 20.8,
+          "maxMsPerFile": 161.8,
           "samplesTimed": 60
         },
         "samples": [],
@@ -157,8 +157,8 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 9,
-          "maxMsPerFile": 91.4,
+          "avgMsPerFile": 10.8,
+          "maxMsPerFile": 95.1,
           "samplesTimed": 52
         },
         "samples": [],
