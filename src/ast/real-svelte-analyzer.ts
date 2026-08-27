@@ -149,13 +149,32 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     // element tag is a component usage (leaf tag name as written). on: event
     // directives produce a call to the leaf handler identifier in the
     // expression value.
-    const templateStack: Node[] = [rootNode]
+    const templateStack: Array<{ node: Node; shadowed: Set<string> }> = [{ node: rootNode, shadowed: new Set() }]
     const seenUsages = new Set<string>()
     let templateDecisions = 0
+    // S1 (#419): template expressions reference script-side members — collect
+    // the identifiers from expressions ({count}, label={label}, {#each items
+    // as item}, {#await promise then value}, {@html raw}, {@const total},
+    // {@debug x}, <svelte:component this={Comp}>) during the walk; the member
+    // symbols only exist after the script pass, so the Uses edges are emitted
+    // after the merge (step 3b).
+    //
+    // The svelte grammar exposes template expressions as opaque svelte_raw_text
+    // (no child AST), so identifier extraction is by text scan (the documented
+    // fallback).
+    //
+    // Scope (vue V4 lesson, applied pre-fix): template-LOCAL bindings shadow
+    // members — {#each items as item, i} binds item+i; {#await promise then
+    // value} binds value; {:catch err} binds err; {#snippet row(label)}
+    // binds label+count. A shadowed name must NOT emit a use.
+    const templateExprNames = new Set<string>()
     while (templateStack.length > 0) {
-      const n = templateStack.pop()!
+      const { node: n, shadowed } = templateStack.pop()!
       const t = n.type
       if (t === "script_element" || t === "style_element") continue
+      // The shadow set for this subtree: inherit, then add locals bound by
+      // this construct (each loop vars, await then/catch vars, snippet params).
+      const childShadowed = new Set(shadowed)
       // {#snippet name(params)} — reusable template functions; the name is
       // a component-owned Method, and {@render name(...)} calls it.
       if (t === "snippet_statement") {
@@ -172,6 +191,8 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
             visibility: "public",
             metadata: { isSnippet: true },
           })
+          // snippet params ({#snippet row(label)} of) are template-local
+          this.collectSnippetParams(n, childShadowed)
         }
       }
       if (t === "render_tag") {
@@ -196,9 +217,29 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       // loops, {#await} branches — they branch rendering like code.
       if (
         t === "if_statement" || t === "else_if_block" ||
-        t === "each_statement" || t === "await_statement"
+        t === "each_statement" || t === "await_statement" || t === "key_statement"
       ) {
         templateDecisions++
+      }
+      // S1: {#each items as item, i} — the collection is a member use, but
+      // the loop vars (item, i) are template-LOCAL.
+      if (t === "each_statement") {
+        this.collectEachExpression(n, templateExprNames, childShadowed)
+      }
+      // S1: {#await promise then value} {:catch err} — the promise is a member
+      // use; then/catch vars are template-LOCAL.
+      if (t === "await_statement") {
+        this.collectAwaitExpression(n, templateExprNames, childShadowed)
+      }
+      if (t === "expression") {
+        // {count}, label={label}, this={Comp}, {@const total}, {@debug x},
+        // {@html raw} — every expression body is a member read.
+        this.collectExpressionIdentifiers(n, templateExprNames, childShadowed)
+      }
+      // {@html raw} / {@const total = expr} / {@debug expr} carry the body
+      // directly as svelte_raw_text (no `expression` wrapper node).
+      if (t === "html_tag" || t === "const_tag" || t === "debug_tag") {
+        this.collectTagExpressionIdentifiers(n, templateExprNames, childShadowed)
       }
       if (t === "element" || t === "self_closing_tag") {
         const tag = this.elementTagName(n)
@@ -242,7 +283,7 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const child = n.namedChild(i)
-        if (child) templateStack.push(child)
+        if (child) templateStack.push({ node: child, shadowed: childShadowed })
       }
     }
 
@@ -290,7 +331,15 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       const isModuleBlock = this.isModuleContextBlock(rootNode, bi)
 
       // 3b. Merge JS analyzer output, offset to SFC lines, filter rune calls.
+      // S2 (#419): the names declared by $props() destructuring are emitted as
+      // component-owned Properties by extractSvelteDeclarations below; the JS
+      // sub-analyzer ALSO emits them as destructured Variables. Drop the JS
+      // duplicates so each rune-prop binding is declared EXACTLY once.
+      const runePropNames = new Set<string>()
+      this.collectPropsDestructuredNames(scriptTree.rootNode, runePropNames)
+      const runePropNamesLowered = new Set(scriptContent.length > 0 ? [...runePropNames] : [])
       for (const s of sub.symbols ?? []) {
+        if (runePropNamesLowered.has((s.name ?? "") as string)) continue
         s.range.startLine += lineOffset
         s.range.endLine += lineOffset
         if (s.range.startLine === 1 + lineOffset) s.range.startColumn += colOffset
@@ -340,6 +389,31 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       for (const e of sub.exports ?? []) exports.push(e)
       for (const er of sub.errors ?? []) errors.push(er)
       scriptDecisions += Math.max(0, ((sub.metadata as any)?.cyclomaticComplexity ?? 1) - 1)
+    }
+
+    // --- 3c. Template expression uses (S1) ------------------------------------
+    // The template reads the component's own members: {count}, label={label},
+    // {#each rows as row} (collection rows), {#await promise}, {@html raw},
+    // {@const total}, <svelte:component this={inc}> — each is a Use of a
+    // member symbol. Emit only for identifiers that resolve to a member;
+    // template-locals (already filtered by the shadow scope) and intrinsics
+    // stay silent — no junk edges.
+    if (templateExprNames.size > 0) {
+      const memberNames = new Set(symbols.map((s) => s.name))
+      const seenUses = new Set<string>()
+      for (const name of templateExprNames) {
+        if (!memberNames.has(name)) continue
+        const key = `${moduleName}:${name}`
+        if (seenUses.has(key)) continue
+        seenUses.add(key)
+        relationships.push({
+          source: moduleName,
+          target: name,
+          type: ASTEngine.RelationshipType.Uses,
+          confidence: 0.95,
+          metadata: { isTemplateExpression: true },
+        })
+      }
     }
 
     // --- 4. contains from ownerName -------------------------------------------
@@ -409,6 +483,52 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
   // ============================================================================
   // SVELTE-SPECIFIC DECLARATION EXTRACTION
   // ============================================================================
+
+  /**
+   * S2 (#419): the binding names declared by a $props() destructure
+   * (`let { a, b, c = 5 } = $props()`). These are component-owned Properties
+   * emitted by extractSvelteDeclarations; the JS sub-analyzer's parallel
+   * destructured Variables are dropped to avoid double declaration.
+   */
+  private collectPropsDestructuredNames(root: Node, out: Set<string>): void {
+    const stack: Node[] = [root]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "call_expression") {
+        const callee = n.childForFieldName?.("function") ?? n.namedChild(0)
+        if (callee && (callee.text === "$props" || callee.text === "$props()")) {
+          const declarator = this.findAncestor(n, (p) => p.type === "variable_declarator")
+          if (declarator) {
+            const pattern = declarator.childForFieldName?.("name") ?? this.findChildByType(declarator, "object_pattern")
+            const names = pattern ? this.objectPatternNames(pattern) : []
+            names.forEach((nm) => out.add(nm))
+          }
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+  }
+
+  private objectPatternNames(pattern: Node): string[] {
+    const out: string[] = []
+    if (pattern.type !== "object_pattern") return out
+    for (let i = 0; i < pattern.namedChildCount; i++) {
+      const pn = pattern.namedChild(i)
+      if (!pn) continue
+      if (pn.type === "shorthand_property_identifier_pattern") out.push(pn.text)
+      else if (pn.type === "object_assignment_pattern") {
+        const nm = pn.namedChild(0)
+        if (nm) out.push(nm.text)
+      } else if (pn.type === "pair_pattern") {
+        const key = pn.childForFieldName?.("key")?.text ?? pn.namedChild(0)?.text
+        if (key) out.push(key)
+      }
+    }
+    return out
+  }
 
   private extractSvelteDeclarations(
     root: Node,
@@ -513,6 +633,125 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (e.name === name && !e.isDefault) return true
     }
     return false
+  }
+
+  // ============================================================================
+  // S1 TEMPLATE EXPRESSION EXTRACTION
+  // ============================================================================
+
+  /** Extract the opaque expression text from a node (svelte_raw_text child). */
+  private expressionText(node: Node): string {
+    const stack: Node[] = [node]
+    while (stack.length > 0) {
+      const m = stack.pop()!
+      if (m.type === "svelte_raw_text") return m.text
+      for (let i = m.namedChildCount - 1; i >= 0; i--) {
+        const c = m.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return ""
+  }
+
+  private collectIdentifiersFromText(text: string, out: Set<string>, shadowed: Set<string>): void {
+    const re = /[A-Za-z_$][A-Za-z0-9_$]*/g
+    let m: RegExpExecArray | null
+    while ((m = re.exec(text)) !== null) {
+      if (shadowed.has(m[0])) continue
+      out.add(m[0])
+    }
+  }
+
+  /** {#each items as item, i} — collection is a use; loop vars shadow. */
+  private collectEachExpression(node: Node, out: Set<string>, shadowed: Set<string>): void {
+    const start = this.findDescendant(node, (c) => c.type === "each_start")
+    if (!start) return
+    const rawTexts: string[] = []
+    const s: Node[] = [start]
+    while (s.length > 0) {
+      const m = s.pop()!
+      if (m.type === "svelte_raw_text") rawTexts.push(m.text)
+      for (let i = m.namedChildCount - 1; i >= 0; i--) {
+        const c = m.namedChild(i)
+        if (c) s.push(c)
+      }
+    }
+    // each_start has two raw_text children: [collection, vars]
+    const collection = rawTexts[0] ?? ""
+    this.collectIdentifiersFromText(collection, out, shadowed)
+  }
+
+  /** {#await promise then value} {:catch err} — promise is a use; vars shadow. */
+  private collectAwaitExpression(node: Node, out: Set<string>, shadowed: Set<string>): void {
+    const start = this.findDescendant(node, (c) => c.type === "await_start")
+    const thenBlk = this.findDescendant(node, (c) => c.type === "then_start")
+    const catchBlk = this.findDescendant(node, (c) => c.type === "catch_start")
+    if (start) {
+      const rawTexts: string[] = []
+      const s: Node[] = [start]
+      while (s.length > 0) {
+        const m = s.pop()!
+        if (m.type === "svelte_raw_text") rawTexts.push(m.text)
+        for (let i = m.namedChildCount - 1; i >= 0; i--) {
+          const c = m.namedChild(i)
+          if (c) s.push(c)
+        }
+      }
+      // await_start raw_text: `promise then value` / `promise as value`
+      const text = rawTexts.join(" ")
+      // the promise expression is everything up to then/as; then/catch vars
+      // shadow. Simpler: collect all identifiers but drop the then/catch vars
+      // (already added to childShadowed), and only the promise survives.
+      const m = /^(.*?)\s+(?:then|as)\s+/.exec(text)
+      const promiseExpr = m ? m[1] : text
+      this.collectIdentifiersFromText(promiseExpr, out, shadowed)
+    }
+    // then/catch var names shadow members within their block — registered
+    // even if the block is empty.
+    for (const blk of [thenBlk, catchBlk]) {
+      if (!blk) continue
+      const rawTexts: string[] = []
+      const s: Node[] = [blk]
+      while (s.length > 0) {
+        const m = s.pop()!
+        if (m.type === "svelte_raw_text") rawTexts.push(m.text)
+        for (let i = m.namedChildCount - 1; i >= 0; i--) {
+          const c = m.namedChild(i)
+          if (c) s.push(c)
+        }
+      }
+      this.collectIdentifiersFromText(`${rawTexts.join(" ")} x`, shadowed, new Set())
+    }
+  }
+
+  /** {#snippet row(label, count)} heads — params are template-local. */
+  private collectSnippetParams(node: Node, shadowed: Set<string>): void {
+    const start = this.findDescendant(node, (c) => c.type === "snippet_start")
+    if (!start) return
+    const rawTexts: string[] = []
+    const s: Node[] = [start]
+    while (s.length > 0) {
+      const m = s.pop()!
+      if (m.type === "svelte_raw_text") rawTexts.push(m.text)
+      for (let i = m.namedChildCount - 1; i >= 0; i--) {
+        const c = m.namedChild(i)
+        if (c) s.push(c)
+      }
+    }
+    this.collectIdentifiersFromText(rawTexts.join(" "), shadowed, new Set())
+  }
+
+  /** A template expression body ({count}, label={label}, {@html raw}). */
+  private collectExpressionIdentifiers(node: Node, out: Set<string>, shadowed: Set<string>): void {
+    const text = this.expressionText(node)
+    this.collectIdentifiersFromText(text, out, shadowed)
+  }
+
+  /** {@html raw} / {@const total = expr} / {@debug expr} — body is a direct
+   *  svelte_raw_text child of the tag (no `expression` wrapper). */
+  private collectTagExpressionIdentifiers(node: Node, out: Set<string>, shadowed: Set<string>): void {
+    const text = this.expressionText(node)
+    this.collectIdentifiersFromText(text, out, shadowed)
   }
 
   private onHandlerLeaf(attr: Node): string | undefined {

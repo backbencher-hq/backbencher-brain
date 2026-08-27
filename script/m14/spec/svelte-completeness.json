@@ -70,14 +70,18 @@
         "node_type": "expression,attribute (template expressions)",
         "severity": "high",
         "missing": "template expressions emit NO references to the component's own members — {count}, label={label}, {#each items as item} (collection), {#await promise then value}, {@html raw}, {@const x = items.length}, {@debug items}, <svelte:component this={Comp}> all read script-side state but zero Uses/references edges are emitted. Only on: directives (calls) and {@render} (calls) produce edges; the template<->script data-flow is otherwise entirely silent.",
-        "evidence": "probe: <span>{count}</span> + <MyButton label={label}/> + {#each items as item}<p>{item}</p>{/each} + {#await promise then value}<p>{value}</p>{/await} + {@html raw} -> only instantiates for MyButton; zero edges to count/label/items/promise/raw"
+        "evidence": "probe: <span>{count}</span> + <MyButton label={label}/> + {#each items as item}<p>{item}</p>{/each} + {#await promise then value}<p>{value}</p>{/await} + {@html raw} -> only instantiates for MyButton; zero edges to count/label/items/promise/raw",
+        "status": "CLOSED",
+        "closure": "CLOSED — fixture-gated fix (svelte/template-member-uses) + mutants svelte/drop-template-member-uses + svelte/reemit-shadowed-uses CAUGHT (2026-08-27). Template expressions ({count}, label={label}, {#each items as item}, {#await promise then value}, {@html raw}, {@const total}, {@debug x}, <svelte:component this={Comp}>) now emit Uses edges (isTemplateExpression) to member symbols, SCOPE-AWARE: {#each} loop vars, {#await} then/catch vars, and {#snippet} params are template-local and shadow same-named members (suppressed — the vue V4 lesson applied pre-fix)."
       },
       {
         "id": "S2",
         "node_type": "$props() destructure",
         "severity": "medium",
         "missing": "let { a, b } = $props() double-declares each binding — extractSvelteDeclarations emits Property symbols (isSvelteProp/fromRunes, component-owned) AND the JS sub-analyzer's destructured Variable symbols (isConst/isDestructured, unowned) both survive the merge. Every rune-prop binding appears twice with conflicting kinds/ownership, polluting symbol consumers.",
-        "evidence": "probe: let { a, b } = $props() -> a: 2x (property owner=comp [isSvelteProp,fromRunes] | variable owner=- [isConst,isDestructured]); same for b"
+        "evidence": "probe: let { a, b } = $props() -> a: 2x (property owner=comp [isSvelteProp,fromRunes] | variable owner=- [isConst,isDestructured]); same for b",
+        "status": "CLOSED",
+        "closure": "CLOSED — fixture-gated fix (svelte/rune-props-dedupe expectSymbolCount == 1) + mutant svelte/reduplicate-rune-props CAUGHT (2026-08-27). $props() destructured bindings (let { a, b, c = 5 } = $props()) are now declared EXACTLY once as component-owned Properties; the JS sub-analyzer's parallel destructured Variables are dropped during the merge."
       }
     ]
   },
@@ -86,38 +90,44 @@
       {
         "id": "D1",
         "node_type": "style_element",
-        "status": "PENDING",
-        "question": "style blocks (CSS) are skipped entirely — no extraction. Recommend: DECLARED LIMITATION (CSS is handled by the dedicated css analyzer; the SFC analyzer owns structure + script) — same ruling as vue D1."
+        "status": "RULED",
+        "question": "style blocks (CSS) are skipped entirely — no extraction. Recommend: DECLARED LIMITATION (CSS is handled by the dedicated css analyzer; the SFC analyzer owns structure + script) — same ruling as vue D1.",
+        "resolution": "RULED — DECLARED LIMITATION (2026-08-27): style blocks are skipped entirely; CSS extraction belongs to the dedicated css analyzer, the SFC analyzer owns structure + script (same as vue D1)."
       },
       {
         "id": "D2",
         "node_type": "erroneous_end_tag,erroneous_end_tag_name",
-        "status": "PENDING",
-        "question": "error-recovery end-tag nodes — recommend INTERNAL SILENT (error handling, same as vue D3)."
+        "status": "RULED",
+        "question": "error-recovery end-tag nodes — recommend INTERNAL SILENT (error handling, same as vue D3).",
+        "resolution": "RULED — INTERNAL SILENT (2026-08-27): erroneous_end_tag nodes are tree-sitter error-recovery artifacts; the analyzer already reports parse errors, no extraction needed (same as vue D3)."
       },
       {
         "id": "D3",
         "node_type": "entity,doctype",
-        "status": "PENDING",
-        "question": "HTML entities and doctype declarations are document structure, not code — recommend INTERNAL SILENT."
+        "status": "RULED",
+        "question": "HTML entities and doctype declarations are document structure, not code — recommend INTERNAL SILENT.",
+        "resolution": "RULED — INTERNAL SILENT (2026-08-27): entity and doctype are HTML document structure, not code symbols; no extraction."
       },
       {
         "id": "D4",
         "node_type": "block_start_tag,block_tag,block_end_tag",
-        "status": "PENDING",
-        "question": "the {#...}/{:...}/{/...} brace markers are grammar scaffolding around the real block statements — recommend INTERNAL SILENT (structure-only; the statements themselves are handled)."
+        "status": "RULED",
+        "question": "the {#...}/{:...}/{/...} brace markers are grammar scaffolding around the real block statements — recommend INTERNAL SILENT (structure-only; the statements themselves are handled).",
+        "resolution": "RULED — INTERNAL SILENT (2026-08-27): block_start_tag/block_tag/block_end_tag are the {#}/{:}/{/} brace scaffolding markers; the block statements themselves (if/each/await/key/snippet) are handled_verified."
       },
       {
         "id": "D5",
         "node_type": "typeParameters",
-        "status": "PENDING",
-        "question": "typeParameters payload: the SFC component itself has no generics; script-side TS generics are handled by the TS sub-analyzer. Recommend: DECLARED N/A at the SFC level (same as vue D4)."
+        "status": "RULED",
+        "question": "typeParameters payload: the SFC component itself has no generics; script-side TS generics are handled by the TS sub-analyzer. Recommend: DECLARED N/A at the SFC level (same as vue D4).",
+        "resolution": "RULED — DECLARED N/A (2026-08-27): the SFC component itself has no generics; script-side TS generics are handled by the TS sub-analyzer. typeParameters payload row omitted from the svelte Matrix (family contract)."
       },
       {
         "id": "D6",
         "node_type": "apiContract",
-        "status": "PENDING",
-        "question": "apiContract payload: Svelte has no framework API-contract concept (like groovy/JS/vue) — recommend DECLARED N/A."
+        "status": "RULED",
+        "question": "apiContract payload: Svelte has no framework API-contract concept (like groovy/JS/vue) — recommend DECLARED N/A.",
+        "resolution": "RULED — DECLARED N/A (2026-08-27): Svelte has no framework API-contract concept (like groovy/JS/vue); the apiContract payload row is omitted from the svelte Matrix."
       }
     ]
   }
