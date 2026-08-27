@@ -1,0 +1,91 @@
+{
+  "language": "vue",
+  "grammar": "tree-sitter-vue.wasm",
+  "handled_verified": {
+    "types": [
+      "attribute",
+      "attribute_name",
+      "attribute_value",
+      "comment",
+      "component",
+      "directive_argument",
+      "directive_attribute",
+      "directive_name",
+      "element",
+      "end_tag",
+      "interpolation",
+      "quoted_attribute_value",
+      "raw_text",
+      "script_element",
+      "self_closing_tag",
+      "start_tag",
+      "style_element",
+      "tag_name",
+      "template_element",
+      "text"
+    ]
+  },
+  "internal_silent": {
+    "types": [
+      "directive_dynamic_argument",
+      "directive_dynamic_argument_value",
+      "directive_modifier",
+      "directive_modifiers",
+      "erroneous_end_tag",
+      "erroneous_end_tag_name"
+    ]
+  },
+  "gap": {
+    "_description": "Confirmed missing emissions (probe-verified against the real WASM)",
+    "gaps": [
+      {
+        "id": "V1",
+        "node_type": "directive_attribute (defineProps/defineEmits generic)",
+        "severity": "high",
+        "missing": "script-setup compiler macros in the TYPE-LITERAL generic form — defineProps<{ id: string }>() and defineEmits<{ (e: 'save'): void }>() — emit NO prop/event symbols. Only the runtime object/array form ({ size: Number } / ['change']) is extracted; the standard Vue 3.3+ generic form loses the entire public contract.",
+        "evidence": "probe: defineProps<{ id: string }>() -> no Property symbol for id; defineEmits<{ (e: 'save'): void }>() -> no Event symbol for save (TS tree: type_arguments -> object_type -> property_signature / call_signature)"
+      },
+      {
+        "id": "V2",
+        "node_type": "interpolation,directive_attribute",
+        "severity": "high",
+        "missing": "template expressions emit NO references to the component's own members — {{ count }}, @click=\"onSave\", :label=\"label\", v-model=\"count\", v-if=\"show\" read script-side state but no Uses/references edge is emitted. The template<->script data-flow is entirely silent.",
+        "evidence": "probe: <span>{{ count }}</span> <MyButton :label=\"label\" @click=\"onSave\" v-if=\"show\" /> <input v-model=\"count\" /> -> only instantiates for MyButton; zero edges to count/label/onSave/show"
+      }
+    ]
+  },
+  "design_decision": {
+    "decisions": [
+      {
+        "id": "D1",
+        "node_type": "style_element",
+        "status": "PENDING",
+        "question": "style blocks (CSS) are skipped entirely — no extraction. Recommend: DECLARED LIMITATION (CSS is handled by the dedicated css analyzer; the SFC analyzer owns structure + script)."
+      },
+      {
+        "id": "D2",
+        "node_type": "directive_modifier,directive_modifiers",
+        "status": "PENDING",
+        "question": "v-on modifier tokens (.prevent, .stop) and dynamic directive arguments ([expr]) are structure-only — recommend INTERNAL SILENT."
+      },
+      {
+        "id": "D3",
+        "node_type": "erroneous_end_tag,erroneous_end_tag_name",
+        "status": "PENDING",
+        "question": "error-recovery end-tag nodes — recommend INTERNAL SILENT (error handling)."
+      },
+      {
+        "id": "D4",
+        "node_type": "typeParameters",
+        "status": "PENDING",
+        "question": "typeParameters payload: the SFC component itself has no generics; script-side TS generics are handled by the TS sub-analyzer. Recommend: DECLARED N/A at the SFC level."
+      },
+      {
+        "id": "D5",
+        "node_type": "apiContract",
+        "status": "PENDING",
+        "question": "apiContract payload: Vue has no framework API-contract concept (like groovy/JS) — recommend DECLARED N/A."
+      }
+    ]
+  }
+}
