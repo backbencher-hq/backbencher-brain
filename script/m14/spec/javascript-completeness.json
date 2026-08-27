@@ -1,0 +1,216 @@
+{
+  "language": "javascript",
+  "grammar": "tree-sitter-javascript.wasm",
+  "handled_verified": {
+    "types": [
+      "identifier",
+      "arguments",
+      "array",
+      "arrow_function",
+      "assignment_expression",
+      "augmented_assignment_expression",
+      "await_expression",
+      "binary_expression",
+      "break_statement",
+      "call_expression",
+      "catch_clause",
+      "class",
+      "class_body",
+      "class_declaration",
+      "class_heritage",
+      "class_static_block",
+      "comment",
+      "continue_statement",
+      "decorator",
+      "do_statement",
+      "else_clause",
+      "export_clause",
+      "export_specifier",
+      "export_statement",
+      "expression_statement",
+      "false",
+      "field_definition",
+      "finally_clause",
+      "for_in_statement",
+      "formal_parameters",
+      "for_statement",
+      "function_declaration",
+      "function_expression",
+      "generator_function",
+      "generator_function_declaration",
+      "if_statement",
+      "import_clause",
+      "import_specifier",
+      "import_statement",
+      "labeled_statement",
+      "lexical_declaration",
+      "member_expression",
+      "method_definition",
+      "named_imports",
+      "namespace_export",
+      "namespace_import",
+      "new_expression",
+      "null",
+      "number",
+      "object",
+      "object_assignment_pattern",
+      "object_pattern",
+      "optional_chain",
+      "pair",
+      "pair_pattern",
+      "parenthesized_expression",
+      "private_property_identifier",
+      "program",
+      "property_identifier",
+      "regex",
+      "rest_pattern",
+      "return_statement",
+      "sequence_expression",
+      "shorthand_property_identifier",
+      "shorthand_property_identifier_pattern",
+      "spread_element",
+      "statement_block",
+      "string",
+      "string_fragment",
+      "subscript_expression",
+      "super",
+      "switch_body",
+      "switch_case",
+      "switch_default",
+      "switch_statement",
+      "template_string",
+      "template_substitution",
+      "ternary_expression",
+      "this",
+      "throw_statement",
+      "true",
+      "try_statement",
+      "unary_expression",
+      "undefined",
+      "update_expression",
+      "variable_declaration",
+      "variable_declarator",
+      "while_statement",
+      "yield_expression"
+    ]
+  },
+  "internal_silent": {
+    "types": [
+      "assignment_pattern",
+      "class_static_block",
+      "debugger_statement",
+      "empty_statement",
+      "escape_sequence",
+      "glimmer_closing_tag",
+      "glimmer_opening_tag",
+      "glimmer_template",
+      "hash_bang_line",
+      "html_character_reference",
+      "html_comment",
+      "import",
+      "import_attribute",
+      "meta_property",
+      "pair_pattern",
+      "regex",
+      "regex_flags",
+      "regex_pattern",
+      "statement_identifier",
+      "with_statement"
+    ]
+  },
+  "gap": {
+    "_description": "Confirmed missing emissions (probe-verified against the real WASM)",
+    "gaps": [
+      {
+        "id": "J1",
+        "node_type": "import_statement",
+        "severity": "high",
+        "missing": "imports kind misclassified usage_contextual instead of import_based — the tier classifier has no 'imports' branch (the TS T1 / JVM K8 finding): every ES6/require/re-export dependency edge falls to usage_contextual",
+        "evidence": "probe: import def from './m' -> imports: probe -> ./m:def conf=1 evidenceClass=usage_contextual (expect import_based)"
+      },
+      {
+        "id": "J2",
+        "node_type": "import_statement (dynamic)",
+        "severity": "high",
+        "missing": "dynamic import('./lazy') emits a spurious calls -> import edge and NO imports edge for the module — TS7 was closed in the TS wave; the JS dynamic-import fixture currently documents the bug as accepted",
+        "evidence": "probe: const lazy = import('./lazy') -> calls: probe -> import (spurious); no imports edge for ./lazy"
+      },
+      {
+        "id": "J3",
+        "node_type": "template_substitution",
+        "severity": "high",
+        "missing": "string interpolation `${x}` emits no Uses on the interpolated identifiers (TS3 T3 / kotlin K4 / scala G4 analog)",
+        "evidence": "probe: const s = `hi ${n} x` inside method -> no uses edge on n"
+      },
+      {
+        "id": "J4",
+        "node_type": "member_expression (call callee)",
+        "severity": "medium",
+        "missing": "obj.method() emits BOTH calls (obj.method -> method) AND uses (obj -> method, isFieldAccess) — the family contract (TS/kotlin/scala) skips the callee in uses because calls covers it; JS double-emits",
+        "evidence": "probe: obj.method() -> calls: method -> method AND uses: obj -> method"
+      },
+      {
+        "id": "J5",
+        "node_type": "class_static_block",
+        "severity": "medium",
+        "missing": "calls inside static { } blocks attribute to the MODULE, not the enclosing class — kotlin K7 init-attribution analog",
+        "evidence": "probe: class A { static { initStatic(); } } -> calls: probe-js1 -> initStatic (expect A)"
+      },
+      {
+        "id": "J6",
+        "node_type": "variable_declarator (instanceof source)",
+        "severity": "medium",
+        "missing": "top-level const r = x instanceof T attributes the reference to 'global' instead of r — the resolveSource walk lacks variable_declarator (TS fixed this in the same wave)",
+        "evidence": "probe: const r = obj instanceof TopLevel -> references: global -> TopLevel (expect r)"
+      },
+      {
+        "id": "J7",
+        "node_type": "object_pattern,array_pattern",
+        "severity": "medium",
+        "missing": "module-level destructured bindings (const { a } = obj / const [b] = arr) emit NO symbols — TS emits them as constants (probe-verified parity gap)",
+        "evidence": "probe: const { d2 } = someObj -> no symbol; TS same shape -> a [constant]"
+      },
+      {
+        "id": "J8",
+        "node_type": "jsx_element,jsx_self_closing_element,jsx_opening_element,jsx_closing_element,jsx_attribute,jsx_expression,jsx_namespace_name,jsx_text",
+        "severity": "high",
+        "missing": "JSX component usage emits NOTHING — <Button/> produces no edges. JSX is native to the JS grammar (8 types in the gate enumeration), unlike TS where it is a separate tsx dialect; the analyzer's detectsJsx only sets a pattern flag",
+        "evidence": "probe: const App = () => <div><Button label='x' /></div> -> no uses/instantiates edges for Button"
+      }
+    ]
+  },
+  "design_decision": {
+    "decisions": [
+      {
+        "id": "D1",
+        "node_type": "typeParameters (none)",
+        "status": "PENDING",
+        "question": "typeParameters payload: JavaScript has NO generics — the grammar declares no type_parameters node. Recommend: DECLARED N/A (omit from the payload matrix), consistent with the family contract that payloads exist only where the language declares them."
+      },
+      {
+        "id": "D2",
+        "node_type": "apiContract (none)",
+        "status": "PENDING",
+        "question": "apiContract payload: JS has no framework API-contract concept (TS's api-contract is typed). Recommend: DECLARED N/A (groovy also omits it)."
+      },
+      {
+        "id": "D3",
+        "node_type": "computed_property_name",
+        "status": "PENDING",
+        "question": "[key]: value computed names are recursed generically with no dedicated symbol — recommend INTERNAL SILENT (TS D6 consistency)."
+      },
+      {
+        "id": "D4",
+        "node_type": "glimmer_template,glimmer_opening_tag,glimmer_closing_tag",
+        "status": "PENDING",
+        "question": "Glimmer/Ember templates are declared by the grammar but ignored — recommend INTERNAL SILENT (TS D4 consistency)."
+      },
+      {
+        "id": "D5",
+        "node_type": "class_static_block",
+        "status": "PENDING",
+        "question": "class static blocks: the block is recursed (calls found) but attribution lands on the module — J5 covers the attribution fix; the block structure itself is handled."
+      }
+    ]
+  }
+}
