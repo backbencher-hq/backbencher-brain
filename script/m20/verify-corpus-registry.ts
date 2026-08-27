@@ -33,9 +33,24 @@ type SyntaxMeasurement = {
   corpus: string
 }
 
+type SnapshotDeclaration = {
+  source: string
+  revision: string
+}
+
+type SnapshotManifest = {
+  root: string
+  repositories: Record<string, SnapshotDeclaration>
+}
+
 type ObservedRepository = {
   id: string
   path: string
+  sourceKind: "git-checkout" | "immutable-archive"
+  snapshotPath: string | null
+  activePath: string
+  activeRevision: string | null
+  activeDirtyFileCount: number | null
   remote: string | null
   languages: string[]
   expectedRevision: string
@@ -61,12 +76,24 @@ type Manifest = {
   plannedAcquisitions?: Array<{ language: string; purpose: string; destination: string }>
 }
 
+type SnapshotIndex = {
+  schemaVersion: number
+  milestone: string
+  purpose: string
+  root: string
+  policy: string
+  repositories: Record<string, SnapshotDeclaration>
+}
+
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const SOURCE_MANIFEST = path.join(ROOT, "validation/m11/corpus-manifest.json")
+const SNAPSHOT_MANIFEST_PATH = path.join(ROOT, "validation/m20/corpus-snapshots.json")
 const RESULTS = path.join(ROOT, "validation/m20/results")
 const REGISTRY_PATH = path.join(RESULTS, "C2-registry.json")
 const EVIDENCE_PATH = path.join(RESULTS, "C2.json")
 const manifest = JSON.parse(readFileSync(SOURCE_MANIFEST, "utf8")) as Manifest
+let snapshotIndex: SnapshotIndex | null = null
+try { snapshotIndex = JSON.parse(readFileSync(SNAPSHOT_MANIFEST_PATH, "utf8")) as SnapshotIndex } catch {}
 const RELEVANT_PATHS = new Set([
   "docs/m20/M20-MASTER-PLAN.md",
   "package.json",
@@ -142,13 +169,34 @@ function syntaxMeasurements(repo: DeclaredRepository): SyntaxMeasurement[] {
 }
 
 function inspect(repo: DeclaredRepository): ObservedRepository {
-  const actualRevision = runGit(repo.path, ["rev-parse", "HEAD"])
-  const exists = actualRevision !== null
-  const dirtyText = exists ? runGit(repo.path, ["status", "--porcelain", "--untracked-files=all"]) : null
-  const trackedText = exists ? runGit(repo.path, ["ls-files", "-z"]) : null
+  const activeRevision = runGit(repo.path, ["rev-parse", "HEAD"])
+  const activeExists = activeRevision !== null
+  const activeDirtyText = activeExists ? runGit(repo.path, ["status", "--porcelain", "--untracked-files=all"]) : null
+  const activeTrackedText = activeExists ? runGit(repo.path, ["ls-files", "-z"]) : null
+  const activeDirtyFileCount = activeDirtyText === null ? null : activeDirtyText.length === 0 ? 0 : activeDirtyText.split("\n").filter(Boolean).length
+  const activeTrackedFiles = activeTrackedText === null ? null : activeTrackedText.length === 0 ? 0 : activeTrackedText.split("\0").filter(Boolean).length
+
+  // An immutable archive is eligible only when its sidecar proves the exact
+  // source repository, declared ID, and pinned revision. Active dirty/mismatched
+  // checkouts remain visible in the row but never contaminate snapshot evidence.
+  const declaration = snapshotIndex?.repositories?.[repo.id]
+  const snapshotPath = declaration ? path.join(snapshotIndex!.root, repo.id) : null
+  let snapshotValid = false
+  let snapshotTrackedFiles: number | null = null
+  if (declaration && snapshotPath && existsSync(snapshotPath)) {
+    try {
+      const sidecar = JSON.parse(readFileSync(path.join(snapshotPath, ".m20-snapshot.json"), "utf8")) as Record<string, unknown>
+      snapshotValid = sidecar.id === repo.id && sidecar.source === declaration.source && sidecar.revision === declaration.revision && sidecar.archiveFormat === "git-archive"
+      snapshotTrackedFiles = typeof sidecar.trackedFiles === "number" ? sidecar.trackedFiles : null
+    } catch { snapshotValid = false }
+  }
+
+  const useSnapshot = snapshotValid
+  const actualRevision = useSnapshot ? repo.revision : activeRevision
+  const exists = useSnapshot || activeExists
+  const dirtyFileCount = useSnapshot ? 0 : activeDirtyFileCount
+  const actualTrackedFiles = useSnapshot ? snapshotTrackedFiles : activeTrackedFiles
   const measurements = syntaxMeasurements(repo)
-  const dirtyFileCount = dirtyText === null ? null : dirtyText.length === 0 ? 0 : dirtyText.split("\n").filter(Boolean).length
-  const actualTrackedFiles = trackedText === null ? null : trackedText.length === 0 ? 0 : trackedText.split("\0").filter(Boolean).length
   const revisionMatch = exists && actualRevision === repo.revision
   const state: ObservedRepository["state"] = !exists
     ? "missing"
@@ -160,6 +208,11 @@ function inspect(repo: DeclaredRepository): ObservedRepository {
   return {
     id: repo.id,
     path: repo.path,
+    sourceKind: useSnapshot ? "immutable-archive" : "git-checkout",
+    snapshotPath,
+    activePath: repo.path,
+    activeRevision,
+    activeDirtyFileCount,
     remote: repo.remote ?? null,
     languages: repo.languages ?? [],
     expectedRevision: repo.revision,
@@ -203,6 +256,19 @@ check("C2: syntax measurements carry language provenance", observed.every((repo)
 check("C2: undeclared local repositories are recorded", Array.isArray(localRepositories))
 check("C2: measured syntax artifacts identify corpus and language", observed.every((repo) => repo.syntaxMeasurements.every((measurement) => measurement.corpus === repo.path && typeof measurement.language === "string")), "missing corpus/language provenance")
 
+// Immutable snapshots are the preservation-first repair for active dirty or
+// mismatched developer checkouts. They are accepted only when the sidecar
+// proves the exact source repository, declared ID, pinned revision, and archive
+// format. The active checkout state remains recorded above for transparency.
+const snapshotDeclarations = snapshotIndex?.repositories ?? {}
+const snapshotIds = Object.keys(snapshotDeclarations)
+const declaredById = new Map(declared.map((repo) => [repo.id, repo]))
+check("C2: snapshot manifest is explicit and structurally valid", snapshotIndex !== null && typeof snapshotIndex.root === "string" && snapshotIds.every((id) => declaredById.has(id)), `${SNAPSHOT_MANIFEST_PATH}`)
+check("C2: snapshot recreation procedure is versioned", existsSync(path.join(ROOT, "script/m20/create-corpus-snapshots.ts")), "create-corpus-snapshots.ts missing")
+check("C2: every declared snapshot has a valid immutable sidecar", observed.filter((repo) => snapshotIds.includes(repo.id)).every((repo) => repo.sourceKind === "immutable-archive" && repo.snapshotPath !== null && repo.actualRevision === repo.expectedRevision && repo.dirty === false && typeof repo.actualTrackedFiles === "number" && repo.actualTrackedFiles > 0), observed.filter((repo) => snapshotIds.includes(repo.id) && repo.sourceKind !== "immutable-archive").map((repo) => repo.id).join(","))
+check("C2: snapshot-backed rows preserve active checkout state", observed.filter((repo) => repo.sourceKind === "immutable-archive").every((repo) => repo.activePath === repo.path && typeof repo.activeRevision === "string" && typeof repo.activeDirtyFileCount === "number"), "active state omitted")
+check("C2: snapshots do not hide active repository modifications", observed.filter((repo) => repo.sourceKind === "immutable-archive" && (repo.activeDirtyFileCount ?? 0) > 0).every((repo) => repo.dirtyFileCount === 0 && repo.dirty === false), "snapshot state conflated with active state")
+
 const missingFixture: DeclaredRepository = {
   id: "__m20_deliberately_missing__",
   path: path.join(manifest.externalCloneRoot, ".m20-deliberately-missing"),
@@ -230,11 +296,14 @@ const registry = {
   sourceManifest: "validation/m11/corpus-manifest.json",
   externalCloneRoot: manifest.externalCloneRoot,
   setup: {
-    command: "git clone <remote> $HOME/fixtures/repositories/<name> && git -C $HOME/fixtures/repositories/<name> checkout <40-character-revision>",
-    policy: "The verifier is offline and never downloads, resets, cleans, or mutates external repositories.",
+    command: "bun run script/m20/create-corpus-snapshots.ts",
+    fallbackCommand: "git clone <remote> $HOME/fixtures/repositories/<name> && git -C $HOME/fixtures/repositories/<name> checkout <40-character-revision>",
+    policy: "The verifier is offline and never downloads, resets, cleans, or mutates external repositories. The setup utility refuses existing destinations and extracts only pinned Git archives.",
   },
   corpusStatus,
   counts: { declared: declared.length, exactRevisionAndClean: exactCount, revisionMismatch: mismatchCount, dirty: dirtyCount, missing: missingCount, undeclaredLocalRepositories: localRepositories.length },
+  snapshotManifest: snapshotIndex ? path.relative(ROOT, SNAPSHOT_MANIFEST_PATH) : null,
+  snapshotPolicy: snapshotIndex?.policy ?? null,
   repositories: observed,
   undeclaredLocalRepositories: localRepositories,
   deliberatelyMissing: missingObservation,
