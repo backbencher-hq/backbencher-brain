@@ -295,11 +295,85 @@
       "id": "section-h-cross-language",
       "language": "scala",
       "status": "pass"
+    },
+    {
+      "description": "typescript: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "typescript",
+      "status": "pass"
+    },
+    {
+      "description": "typescript: 9 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "typescript",
+      "status": "pass"
+    },
+    {
+      "description": "typescript: 6 ruled, 0 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "typescript",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (typescript)",
+      "detail": "191 types, 107 handled, 72 silent, 9 gaps, 6 decisions",
+      "id": "section-a-structural",
+      "language": "typescript",
+      "status": "pass"
+    },
+    {
+      "description": "10 relationship kinds pinned by typescript fixtures",
+      "detail": "pinned: calls, cast_target, contains, declared_type, exports, extends, implements, imports, instanceof_check, instantiates, overrides, references, return_type, satisfies_target, type_alias, type_argument, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "typescript",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for typescript (7)",
+      "detail": "qualified_calls, docstrings, complexity, typeParameters, visibility, apiContract, parameters",
+      "id": "section-c-payload-matrix",
+      "language": "typescript",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
+      "id": "section-d-evidence-tiers",
+      "language": "typescript",
+      "status": "pass"
+    },
+    {
+      "description": "vue-core:typescript at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor vue-core:typescript: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "typescript",
+      "status": "pass"
+    },
+    {
+      "description": "typescript avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "vue-core:typescript 95 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "typescript",
+      "status": "pass"
+    },
+    {
+      "description": "typescript analyzer docs present and committed",
+      "detail": "docs/analyzers/typescript.md, docs/analyzers/real-typescript-analyzer.md",
+      "id": "section-g-docs",
+      "language": "typescript",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "3 checks pass",
+      "id": "section-h-cross-language",
+      "language": "typescript",
+      "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "31cf3eb7789e784f13d140fae26d4d92771d8b1e",
-  "committedAt": "2026-08-27T02:02:52+02:00",
+  "commit": "b6fc5ac95004514f519172f0f7a2add2f14e7b77",
+  "committedAt": "2026-08-27T02:51:43+02:00",
   "data": {
     "languages": {
       "groovy": {
@@ -518,6 +592,63 @@
             "status": "pass"
           }
         }
+      },
+      "typescript": {
+        "gaps": [
+          "T1: import edges mislabeled usage_contextual instead of import_based — the classifier's references branch checks isImport but TS import edges are the dedicated 'imports' kind, which falls through to the usage_contextual default (the JVM-family finding, kotlin K8 / scala G1 analog)",
+          "T2: type alias RHS references lost — type Fn = (a: Id) => Id, type Pair = [Id, Id], type Rec = { next?: Rec } emit the Fn/Pair/Rec symbols but NO references to the RHS types (Id, Rec self-ref)",
+          "T3: string interpolation `got ${x}` emits no Uses on x (kotlin K4 / scala G4 analog)",
+          "T4: field-access Uses missing — this.h.value reads AND writes emit no Uses on the receiver h (scala G8 analog; only the call this.h.work() fires)",
+          "T5: cfg satisfies Config emits no reference to Config — the satisfies target type is dropped",
+          "T6: destructured locals colliding with property names produce FALSE references — const { name } = u inside main emits main --references--> name targeting User.name property (scope-blind name matching)",
+          "T7: dynamic import() — import('./lazy') captures the module in the imports array but emits NO imports relationship edge (and a spurious calls edge to 'import')",
+          "T8: <Foo>x type assertions emit no cast_target reference (as_expression works; the angle-bracket form is unhandled)",
+          "T9: f<Baz>(x) generic call type arguments emit no reference to Baz (instantiation_expression unhandled by the type walk)"
+        ],
+        "nodeTypeCount": 191,
+        "pendingDecisions": [],
+        "ruledDecisions": [
+          "D1",
+          "D2",
+          "D3",
+          "D4",
+          "D5",
+          "D6"
+        ],
+        "sections": {
+          "section-a-structural": {
+            "detail": "191 types, 107 handled, 72 silent, 9 gaps, 6 decisions",
+            "status": "pass"
+          },
+          "section-b-relationship-kinds": {
+            "detail": "pinned: calls, cast_target, contains, declared_type, exports, extends, implements, imports, instanceof_check, instantiates, overrides, references, return_type, satisfies_target, type_alias, type_argument, uses",
+            "status": "pass"
+          },
+          "section-c-payload-matrix": {
+            "detail": "qualified_calls, docstrings, complexity, typeParameters, visibility, apiContract, parameters",
+            "status": "pass"
+          },
+          "section-d-evidence-tiers": {
+            "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
+            "status": "pass"
+          },
+          "section-e-differential": {
+            "detail": "floor vue-core:typescript: missing=0, unexplained=0 (differential-baseline.json)",
+            "status": "pass"
+          },
+          "section-f-perf-budget": {
+            "detail": "vue-core:typescript 95 ms/file",
+            "status": "pass"
+          },
+          "section-g-docs": {
+            "detail": "docs/analyzers/typescript.md, docs/analyzers/real-typescript-analyzer.md",
+            "status": "pass"
+          },
+          "section-h-cross-language": {
+            "detail": "3 checks pass",
+            "status": "pass"
+          }
+        }
       }
     }
   },
@@ -537,7 +668,7 @@
       "description": "groovy G1-G8 closed fixture-first 2026-08-27 (34/34 fixtures, 41/41 mutants incl. 13 groovy); S1-S5 ruled: gstring Uses declared limitation (grammar emits no interpolation nodes), JPMS never-reachable, exports/apiContractPath NOT EMITTED, parameters GATED; exports + permits declared not-required for groovy"
     }
   ],
-  "runtime": "node v24.3.0",
+  "runtime": "node v22.22.1",
   "schemaVersion": 2,
   "title": "Completeness spec (#419) — A–H sections per language"
 }

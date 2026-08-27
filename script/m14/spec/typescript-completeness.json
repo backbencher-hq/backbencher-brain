@@ -196,63 +196,81 @@
         "node_type": "import_statement",
         "severity": "high",
         "missing": "import edges mislabeled usage_contextual instead of import_based — the classifier's references branch checks isImport but TS import edges are the dedicated 'imports' kind, which falls through to the usage_contextual default (the JVM-family finding, kotlin K8 / scala G1 analog)",
-        "evidence": "probe: import { List } from './data' -> probe --imports--> ./data:List (/usage_contextual)"
+        "evidence": "probe: import { List } from './data' -> probe --imports--> ./data:List (/usage_contextual)",
+        "status": "CLOSED",
+        "closure": "CLOSED — fixture-gated fix (typescript/import-edges) + mutants typescript/reclassify-import-tier and typescript/drop-import-edges CAUGHT (2026-08-27). The dedicated 'imports' kind now classifies as import_based (classifier isImport branch extended), matching kotlin K8 / scala G1."
       },
       {
         "id": "T2",
         "node_type": "type_alias_declaration",
         "severity": "high",
         "missing": "type alias RHS references lost — type Fn = (a: Id) => Id, type Pair = [Id, Id], type Rec = { next?: Rec } emit the Fn/Pair/Rec symbols but NO references to the RHS types (Id, Rec self-ref)",
-        "evidence": "probe: only 'global --references--> Id/Rec' from const annotations; nothing from the aliases"
+        "evidence": "probe: only 'global --references--> Id/Rec' from const annotations; nothing from the aliases",
+        "status": "CLOSED",
+        "closure": "CLOSED — fixture-gated fix (typescript/type-alias-refs) + mutant typescript/drop-type-alias-refs CAUGHT (2026-08-27). type_alias_declaration RHS now emits type_alias references to the referenced types (param, return, tuple elements, self-refs)."
       },
       {
         "id": "T3",
         "node_type": "template_string,template_substitution",
         "severity": "medium",
         "missing": "string interpolation `got ${x}` emits no Uses on x (kotlin K4 / scala G4 analog)",
-        "evidence": "probe: template_string with template_substitution children, zero uses edges"
+        "evidence": "probe: template_string with template_substitution children, zero uses edges",
+        "status": "CLOSED",
+        "closure": "CLOSED — fixture-gated fix (typescript/interp-uses) + mutant typescript/drop-expression-uses CAUGHT (2026-08-27). template_substitution identifiers now emit Uses (isTemplateInterpolation), matching kotlin K4 / scala G4."
       },
       {
         "id": "T4",
         "node_type": "member_expression,subscript_expression",
         "severity": "medium",
         "missing": "field-access Uses missing — this.h.value reads AND writes emit no Uses on the receiver h (scala G8 analog; only the call this.h.work() fires)",
-        "evidence": "probe: this.h.value / this.h.value = 2 / const x = this.h.value -> no uses edge on h"
+        "evidence": "probe: this.h.value / this.h.value = 2 / const x = this.h.value -> no uses edge on h",
+        "status": "CLOSED",
+        "closure": "CLOSED — fixture-gated fix (typescript/field-uses) + mutant typescript/drop-expression-uses CAUGHT (2026-08-27). member_expression/subscript_expression reads AND writes now emit Uses on the accessed member (isFieldAccess), matching scala G8."
       },
       {
         "id": "T5",
         "node_type": "satisfies_expression",
         "severity": "medium",
         "missing": "cfg satisfies Config emits no reference to Config — the satisfies target type is dropped",
-        "evidence": "probe: const ok = cfg satisfies Config -> no Config reference (only the const annotation's)"
+        "evidence": "probe: const ok = cfg satisfies Config -> no Config reference (only the const annotation's)",
+        "status": "CLOSED",
+        "closure": "CLOSED — fixture-gated fix (typescript/satisfies-ref) + mutant typescript/drop-satisfies-refs CAUGHT (2026-08-27). satisfies_expression now emits a satisfies_target reference to the asserted type."
       },
       {
         "id": "T6",
         "node_type": "object_pattern,array_pattern,assignment_pattern",
         "severity": "medium",
         "missing": "destructured locals colliding with property names produce FALSE references — const { name } = u inside main emits main --references--> name targeting User.name property (scope-blind name matching)",
-        "evidence": "probe: interface User { name: string } + const { name, age } = u in main -> main --references--> name (false)"
+        "evidence": "probe: interface User { name: string } + const { name, age } = u in main -> main --references--> name (false)",
+        "status": "CLOSED",
+        "closure": "CLOSED — fixture-gated fix (typescript/destructure-scope) + mutant typescript/reintroduce-shadowed-false-refs CAUGHT (2026-08-27). Function-body destructured locals shadow same-named properties — the scope-blind reference is suppressed (module-level destructured names remain symbols)."
       },
       {
         "id": "T7",
         "node_type": "import_statement",
         "severity": "medium",
         "missing": "dynamic import() — import('./lazy') captures the module in the imports array but emits NO imports relationship edge (and a spurious calls edge to 'import')",
-        "evidence": "probe: const dyn = await import('./dynamic') -> imports array has ./dynamic, no imports edge; (script) --calls--> import"
+        "evidence": "probe: const dyn = await import('./dynamic') -> imports array has ./dynamic, no imports edge; (script) --calls--> import",
+        "status": "CLOSED",
+        "closure": "CLOSED — fixture-gated fix (typescript/dynamic-import) + mutants typescript/drop-import-edges and typescript/reclassify-import-tier CAUGHT (2026-08-27). Dynamic import('./lazy') now emits an imports edge (module:item), and the spurious calls -> import edge is suppressed."
       },
       {
         "id": "T8",
         "node_type": "type_assertion",
         "severity": "medium",
         "missing": "<Foo>x type assertions emit no cast_target reference (as_expression works; the angle-bracket form is unhandled)",
-        "evidence": "probe: const a = <Foo>bar -> no reference to Foo"
+        "evidence": "probe: const a = <Foo>bar -> no reference to Foo",
+        "status": "CLOSED",
+        "closure": "CLOSED — fixture-gated fix (typescript/type-assertion) + mutants typescript/drop-cast-assertion-refs and typescript/drop-declared-types CAUGHT (2026-08-27). Angle-bracket <Foo>x assertions now emit cast_target like as Foo."
       },
       {
         "id": "T9",
         "node_type": "instantiation_expression",
         "severity": "medium",
         "missing": "f<Baz>(x) generic call type arguments emit no reference to Baz (instantiation_expression unhandled by the type walk)",
-        "evidence": "probe: const b = f<Baz>(qux) -> only (script) --calls--> f, no Baz reference"
+        "evidence": "probe: const b = f<Baz>(qux) -> only (script) --calls--> f, no Baz reference",
+        "status": "CLOSED",
+        "closure": "CLOSED — fixture-gated fix (typescript/instantiation-refs) + mutant typescript/drop-type-argument-refs CAUGHT (2026-08-27). f<Baz>(x) parses as call_expression with a type_arguments child (no instantiation_expression node) — hooking type_arguments itself emits type_argument references for both call and standalone shapes."
       }
     ]
   },
@@ -261,38 +279,44 @@
       {
         "id": "D1",
         "node_type": "jsx_element,jsx_opening_element,jsx_closing_element,jsx_self_closing_element,jsx_text,jsx_expression,jsx_attribute,jsx_namespace_name,html_character_reference,jsx_element_repeat1",
-        "status": "PENDING",
-        "question": "tsx/JSX dialect: the analyzer handles jsx nodes (probe-verified with tree-sitter-tsx.wasm: <Button> emits uses, JSX components detected) but the completeness gate enumerates the typescript wasm (191 types) — the 13 jsx types live in the tsx grammar (382 types) and never appear in the gate's node list. Recommend: declare the jsx types as handled_verified via the tsx dialect with a dedicated tsx-wasm inventory annex, OR declared limitation (JSX handled, dialect not independently gated)."
+        "status": "RULED",
+        "question": "tsx/JSX dialect: the analyzer handles jsx nodes (probe-verified with tree-sitter-tsx.wasm: <Button> emits uses, JSX components detected) but the completeness gate enumerates the typescript wasm (191 types) — the 13 jsx types live in the tsx grammar (382 types) and never appear in the gate's node list. Recommend: declare the jsx types as handled_verified via the tsx dialect with a dedicated tsx-wasm inventory annex, OR declared limitation (JSX handled, dialect not independently gated).",
+        "resolution": "RULED — tsx/JSX dialect HANDLED_VERIFIED (2026-08-27): the analyzer handles jsx nodes (probe-verified with the tsx wasm: <Button> -> uses). The 13 jsx types live in the tsx grammar (382 types), which the gate's nodeTypeIsNamed enumeration (typescript wasm, 191) never sees — declared handled via the tsx-dialect annex, not a gap."
       },
       {
         "id": "D2",
         "node_type": "accessibility_modifier,override_modifier",
-        "status": "PENDING",
-        "question": "visibility/modifiers: accessibility_modifier (public/private/protected) is extracted to symbol visibility; override_modifier is a no-op flag. Recommend: declare handled (visibility pinned via existing fixtures), no symbol payload for override."
+        "status": "RULED",
+        "question": "visibility/modifiers: accessibility_modifier (public/private/protected) is extracted to symbol visibility; override_modifier is a no-op flag. Recommend: declare handled (visibility pinned via existing fixtures), no symbol payload for override.",
+        "resolution": "RULED — DECLARED LIMITATION (2026-08-27): visibility is extracted to the symbol payload (pinned by typescript/visibility-payload); the override_modifier is a no-op flag (no semantic emission)."
       },
       {
         "id": "D3",
         "node_type": "non_null_expression",
-        "status": "PENDING",
-        "question": "non-null assertion x! — an expression operator, no emission. Recommend: internal_silent (consistent with kotlin/scala operator rulings)."
+        "status": "RULED",
+        "question": "non-null assertion x! — an expression operator, no emission. Recommend: internal_silent (consistent with kotlin/scala operator rulings).",
+        "resolution": "RULED — INTERNAL SILENT (2026-08-27): non-null assertion x! emits nothing — expression operator with no symbol/relationship semantics (kotlin/scala operator ruling consistency)."
       },
       {
         "id": "D4",
         "node_type": "glimmer_template,glimmer_opening_tag,glimmer_closing_tag",
-        "status": "PENDING",
-        "question": "Glimmer/Ember templates: the grammar declares them but the analyzer ignores them. Recommend: internal_silent (out of scope, consistent with scala XML-literal ruling)."
+        "status": "RULED",
+        "question": "Glimmer/Ember templates: the grammar declares them but the analyzer ignores them. Recommend: internal_silent (out of scope, consistent with scala XML-literal ruling).",
+        "resolution": "RULED — INTERNAL SILENT (2026-08-27): Glimmer/Ember templates are declared by the grammar but ignored by the analyzer (scala XML-literal consistency)."
       },
       {
         "id": "D5",
         "node_type": "statement_identifier,this_type",
-        "status": "PENDING",
-        "question": "legacy/rare type nodes (statement_identifier, this_type) — structure-only or handled by recursion. Recommend: internal_silent."
+        "status": "RULED",
+        "question": "legacy/rare type nodes (statement_identifier, this_type) — structure-only or handled by recursion. Recommend: internal_silent.",
+        "resolution": "RULED — INTERNAL SILENT (2026-08-27): legacy statement_identifier / this_type nodes are structure-only with no emission."
       },
       {
         "id": "D6",
         "node_type": "computed_property_name",
-        "status": "PENDING",
-        "question": "[key]: value computed names — recursed generically, symbols emit from the value expression. Recommend: internal_silent (no dedicated symbol for the computed name itself)."
+        "status": "RULED",
+        "question": "[key]: value computed names — recursed generically, symbols emit from the value expression. Recommend: internal_silent (no dedicated symbol for the computed name itself).",
+        "resolution": "RULED — INTERNAL SILENT (2026-08-27): computed_property_name is recursed generically; no dedicated symbol emission."
       }
     ]
   }

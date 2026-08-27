@@ -20,7 +20,7 @@
     },
     {
       "description": "typescript adversarial fixtures",
-      "detail": "32/32 fixtures pass",
+      "detail": "45/45 fixtures pass",
       "id": "fixtures-typescript",
       "status": "pass"
     },
@@ -80,8 +80,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "31cf3eb7789e784f13d140fae26d4d92771d8b1e",
-  "committedAt": "2026-08-27T02:02:52+02:00",
+  "commit": "b6fc5ac95004514f519172f0f7a2add2f14e7b77",
+  "committedAt": "2026-08-27T02:51:43+02:00",
   "data": {
     "details": [
       {
@@ -355,6 +355,11 @@
         "problems": []
       },
       {
+        "fixture": "typescript/contains-overrides",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "typescript/ctor-overload-single",
         "ok": true,
         "problems": []
@@ -365,12 +370,32 @@
         "problems": []
       },
       {
+        "fixture": "typescript/destructure-scope",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/dynamic-import",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "typescript/enum-types",
         "ok": true,
         "problems": []
       },
       {
         "fixture": "typescript/error-ranges",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/exports-edges",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/field-uses",
         "ok": true,
         "problems": []
       },
@@ -390,7 +415,17 @@
         "problems": []
       },
       {
+        "fixture": "typescript/import-edges",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "typescript/index-signature",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/instantiation-refs",
         "ok": true,
         "problems": []
       },
@@ -401,6 +436,11 @@
       },
       {
         "fixture": "typescript/interface-members",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/interp-uses",
         "ok": true,
         "problems": []
       },
@@ -440,6 +480,11 @@
         "problems": []
       },
       {
+        "fixture": "typescript/parameters-payload",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "typescript/payload-pins",
         "ok": true,
         "problems": []
@@ -460,7 +505,22 @@
         "problems": []
       },
       {
+        "fixture": "typescript/satisfies-ref",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "typescript/stdlib-colliding-names",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/type-alias-refs",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/type-assertion",
         "ok": true,
         "problems": []
       },
@@ -476,6 +536,11 @@
       },
       {
         "fixture": "typescript/usage-references",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/visibility-payload",
         "ok": true,
         "problems": []
       },
@@ -1267,7 +1332,7 @@
       },
       "typescript": {
         "fail": 0,
-        "pass": 32
+        "pass": 45
       },
       "vue": {
         "fail": 0,
@@ -1288,7 +1353,7 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "runtime": "node v24.3.0",
+  "runtime": "node v22.22.1",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"
 }
