@@ -14,6 +14,7 @@
 // security scan time + count. Missing corpus -> recorded as blocked.
 
 import { mkdirSync, writeFileSync, existsSync } from "node:fs"
+import { execFileSync } from "node:child_process"
 import path from "node:path"
 import { performance } from "node:perf_hooks"
 import { getProjectId } from "../../src/cli/index"
@@ -102,13 +103,25 @@ check("ledger: blocked states recorded without fabrication", blocked.length === 
 negative("ledger: no corpus reports measured with zero files", ledger.every((entry) => entry.state !== "measured" || entry.files > 0), JSON.stringify(ledger))
 
 const failed = checks - passed
+// Real relevant-dirty-check: prove the cross-tool boundary + M20 scripts are clean
+// before calling this evidence verified. Mirrors the governance verifier's gate.
+const relevantWorkingTreeChanges = (): string[] => {
+  try {
+    const relevant = new Set(["docs/m20/M20-MASTER-PLAN.md", "package.json"])
+    return execFileSync("git", ["status", "--porcelain", "--untracked-files=all"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] })
+      .split("\n").map((line) => line.slice(3).trim()).filter((file) => file && (file.startsWith("script/m20/") || file.startsWith("src/intelligence/") || relevant.has(file)))
+  } catch {
+    return ["git-status-unavailable"]
+  }
+}
+const dirty = relevantWorkingTreeChanges()
 const result = {
   issue: "M20.X2", code: "X2", milestone: "M20",
-  status: failed === 0 ? "verified" : "known-gap",
+  status: failed === 0 && dirty.length === 0 ? "verified" : "known-gap",
   checks, passed, failed, negativeCases,
   currentCommit: (() => { try { return Bun.spawnSync(["git", "rev-parse", "HEAD"]).stdout.toString().trim() } catch { return "unknown" } })(),
   sourceFingerprint: crossToolSourceFingerprint(path.resolve(".")),
-  workingTreeRelevantChanges: [],
+  workingTreeRelevantChanges: dirty,
   verifierCommand: "bun run script/m20/verify-real-repo-ledger.ts",
   evidenceFile: "X2.json",
   generatedAt: new Date().toISOString(),
@@ -117,5 +130,5 @@ const result = {
 }
 mkdirSync(path.resolve("validation/m20/results"), { recursive: true })
 writeFileSync(path.resolve("validation/m20/results/X2.json"), JSON.stringify(result, null, 2) + "\n")
-console.log(failed === 0 ? "\nCROSS-TOOL X2: PASS" : `\nCROSS-TOOL X2: ${failed} FAILURES`)
-process.exit(failed ? 1 : 0)
+console.log(result.status === "verified" ? "\nCROSS-TOOL X2: PASS" : `\nCROSS-TOOL X2: ${failed} FAILURES (dirty=${dirty.length})`)
+process.exit(failed || dirty.length ? 1 : 0)
