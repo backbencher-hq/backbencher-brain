@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs"
+import path from "node:path"
 import { BrainDatabase } from "../../brain/database"
 import { checkFileFreshness } from "../../brain/freshness"
 import { semanticVectorSearch } from "../search/semantic-search"
@@ -267,14 +268,31 @@ function addOptionalUnknowns(request: DocRequest, unknowns: DocUnknown[]): void 
 
 
 
+// A citation is broken when its source path no longer exists on disk or its
+// line span exceeds the current file. Findings carry a "file:line" location
+// string, not a real path, so they are excluded from the broken count.
+function citationBroken(projectPath: string, citation: DocCitation): boolean {
+  if (!["file", "symbol", "import", "relationship", "test"].includes(citation.kind)) return false
+  if (!citation.path) return false
+  try {
+    const abs = path.isAbsolute(citation.path) ? citation.path : path.join(projectPath, citation.path)
+    const content = readFileSync(abs, "utf8")
+    if (citation.lineStart && citation.lineStart > content.split(/\r?\n/).length) return true
+    return false
+  } catch {
+    return true
+  }
+}
+
 function makeResult(projectId: string, projectPath: string, request: DocRequest, files: Row[], symbols: Row[], sections: DocSection[], citations: DocCitation[], unknowns: DocUnknown[]): DocResult {
   const maxTokens = clamp(request.maxTokens, 4000, 16000)
   const estimatedTokens = Math.ceil(JSON.stringify({ sections, citations, unknowns }).length / 4)
   const stale = citations.filter((citation) => citation.freshness === "stale").length
   const missing = citations.filter((citation) => citation.freshness === "missing").length
+  const broken = citations.filter((citation) => citationBroken(projectPath, citation)).length
   const covered = sections.reduce((count, item) => count + item.facts.length, 0)
   const snapshotId = `${projectId}:${files.map((file) => file.file_hash).join(",")}`
-  const quality: DocQuality = { passed: estimatedTokens <= maxTokens && citations.every((citation) => citation.id && citation.evidence), factuality: { passed: sections.every((item) => item.facts.every((itemFact) => itemFact.citationIds.length > 0)), uncitedClaims: sections.flatMap((item) => item.facts).filter((itemFact) => !itemFact.citationIds.length).length, unsupportedClaims: 0 }, references: { passed: missing === 0, broken: 0, stale, missing }, completeness: { passed: unknowns.length === 0, covered, expected: covered + unknowns.length, unknown: unknowns.length }, freshness: { passed: stale === 0 && missing === 0, snapshot: snapshotId, staleClaims: stale }, budget: { passed: estimatedTokens <= maxTokens, estimatedTokens, maxTokens }, warnings: [...unknowns.map((unknown) => unknown.statement), ...(stale ? [`${stale} stale citations`] : [])] }
+  const quality: DocQuality = { passed: estimatedTokens <= maxTokens && citations.every((citation) => citation.id && citation.evidence), factuality: { passed: sections.every((item) => item.facts.every((itemFact) => itemFact.citationIds.length > 0)), uncitedClaims: sections.flatMap((item) => item.facts).filter((itemFact) => !itemFact.citationIds.length).length, unsupportedClaims: 0 }, references: { passed: missing === 0 && broken === 0, broken, stale, missing }, completeness: { passed: unknowns.length === 0, covered, expected: covered + unknowns.length, unknown: unknowns.length }, freshness: { passed: stale === 0 && missing === 0, snapshot: snapshotId, staleClaims: stale }, budget: { passed: estimatedTokens <= maxTokens, estimatedTokens, maxTokens }, warnings: [...unknowns.map((unknown) => unknown.statement), ...(stale ? [`${stale} stale citations`] : []), ...(broken ? [`${broken} broken citations`] : [])] }
   const language = files[0]?.language ?? symbols[0]?.language ?? null
   const canonicalPath = request.target ? String(request.target).replace(/^\/+/, "") : request.mode
   return { schemaVersion: "1", mode: request.mode, title: request.target ? `${request.mode}: ${request.target}` : `${request.mode} documentation`, summary: sections[0]?.prose ?? "No indexed evidence was found.", sections, citations, unknowns, quality, reference: { projectId, projectPath, snapshotId, generatedAt: new Date().toISOString(), indexVersion: null, schemaVersion: null, sourceLanguage: language, canonicalPath, slugs: [request.mode, ...(request.target ? String(request.target).split(/[\\/.: ]+/).filter(Boolean).slice(0, 4) : [])], tags: [request.mode, request.audience ?? "developer"], relatedReferences: [], diagrams: [] } }
@@ -303,6 +321,7 @@ export async function generateDocumentation(projectId: string, projectPath: stri
     if (importFacts.length) sections.push(section("dependencies", "Dependencies", importFacts.slice(0, clamp(request.limit, 20, 100)), citations))
   }
   if (!files.length && !symbols.length) unknowns.push({ statement: `No indexed evidence matched ${request.target ?? request.mode}.`, reason: "not-indexed", affectedSection: "overview" })
+  addOptionalUnknowns(request, unknowns)
   return makeResult(projectId, projectPath, request, files, symbols, sections, citations, unknowns)
 }
 

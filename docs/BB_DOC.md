@@ -195,8 +195,28 @@ website ingestion. A website may render `DocResult` directly, cache it by
 
 - Default evidence limit: 20 items per section.
 - Default output budget: 4,000 tokens; hard server maximum: 16,000.
-- Maximum diagram nodes: 100; additional nodes become an unknown summary.
+- Diagrams are not emitted in this implementation: `includeDiagrams=true`
+  records an honest `not-observed` unknown and `reference.diagrams` stays
+  empty. No fabricated mermaid/graph output is produced.
+- Examples are only emitted when source-backed evidence exists; otherwise
+  `includeExamples=true` records an honest `not-observed` unknown.
 - No source writes, refreshes, network calls, or generated test files.
 - Errors are structured and identify the mode, target, and unavailable evidence.
 
 See `docs/BB_DOC_EXAMPLES.md` for representative Markdown and JSON output.
+
+## Verification
+
+`script/m20/verify-doc-modes.ts` proves the full mode matrix (symbol, file,
+module, feature, api, project, coverage) through the real handler, invalid-mode
+and missing-target rejection, registry agreement, JSON/Markdown parity, and
+honest empty-project semantics. `script/m20/verify-doc-citations.ts` proves
+that every emitted citation resolves to a real file with a valid line span,
+that stale sources yield `freshness=stale` with `quality.freshness.passed`
+false, and that deleted sources yield `freshness=missing` plus a real
+`references.broken` count (no longer hardcoded to zero).
+`script/m20/verify-doc-examples-diagrams.ts` proves examples/diagrams are never
+fabricated (honest `not-observed` unknowns) and that removing a relationship
+from the index removes the corresponding fact (tamper-negative). These are
+fixture-level evidence; real-repository documentation coverage is owned by
+M20.X2.
