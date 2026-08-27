@@ -163,7 +163,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
 }
 
 // Languages that have reached CONFORMANT and therefore run in npm run verify.
-const GATED_LANGS = ["java", "groovy", "kotlin", "scala"]
+const GATED_LANGS = ["java", "groovy", "kotlin", "scala", "typescript"]
 
 async function loadNamedNodeTypes(cfg: LangConfig): Promise<string[]> {
   const wts: any = await import("web-tree-sitter")
