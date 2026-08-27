@@ -47,7 +47,11 @@ ck("C3: all 16 non-C3 issues carry a final status", closed.length === expectedCl
 
 // ── 2. Every non-planned issue has valid persisted evidence ───────────────
 let evidenceErrors: string[] = []
-for (const issue of manifest.issues.filter((i: any) => i.code !== "C3")) {
+// C1 and C3 are self-writing governance gates; C1.json is rewritten by every
+// governance run (its generatedAt fields in the ledger can never stay byte-
+// identical). Their VERIFIED/known-gap state is validated separately below by
+// C3's explicit governance checks, so exclude both from this field-diff loop.
+for (const issue of manifest.issues.filter((i: any) => i.code !== "C3" && i.code !== "C1")) {
   const ev = issue.evidence
   if (!ev) { evidenceErrors.push(`${issue.code}:no-evidence`); continue }
   const p = path.join(RESULTS_DIR, ev.evidenceFile)
