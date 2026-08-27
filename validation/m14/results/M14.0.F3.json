@@ -8,7 +8,7 @@
     },
     {
       "description": "vue adversarial fixtures",
-      "detail": "8/8 fixtures pass",
+      "detail": "12/12 fixtures pass",
       "id": "fixtures-vue",
       "status": "pass"
     },
@@ -80,8 +80,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "1a5d55118c800cb581c46987d77a1e61be980123",
-  "committedAt": "2026-08-27T04:14:21+02:00",
+  "commit": "4206881b76aee991a52b553f09eeb7d6e833eb21",
+  "committedAt": "2026-08-27T23:04:38+02:00",
   "data": {
     "details": [
       {
@@ -285,6 +285,11 @@
         "problems": []
       },
       {
+        "fixture": "vue/generic-props-emits",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "vue/options-api-sfc",
         "ok": true,
         "problems": []
@@ -295,7 +300,22 @@
         "problems": []
       },
       {
+        "fixture": "vue/payload-pins",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "vue/script-relations",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "vue/script-setup-props-emits",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "vue/template-member-uses",
         "ok": true,
         "problems": []
       },
@@ -1391,7 +1411,7 @@
       },
       "vue": {
         "fail": 0,
-        "pass": 8
+        "pass": 12
       }
     }
   },

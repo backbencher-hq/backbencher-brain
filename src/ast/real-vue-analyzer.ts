@@ -125,6 +125,12 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
     const templateStack: Node[] = [rootNode]
     const seenUsages = new Set<string>()
     let templateDecisions = 0
+    // V2 (#419): template expressions reference script-side members — collect
+    // the identifiers from {{ interp }} and directive value expressions
+    // (:label="x", @click="y", v-model="z", v-if="w") during the template
+    // walk; the member symbols only exist after the script pass, so the Uses
+    // edges are emitted after the merge (step 3b).
+    const templateExprNames = new Set<string>()
     while (templateStack.length > 0) {
       const n = templateStack.pop()!
       const t = n.type
@@ -134,6 +140,14 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
         // they branch rendering exactly like if/loops in code.
         const dname = this.findChildByType(n, "directive_name")?.text
         if (dname === "v-if" || dname === "v-else-if" || dname === "v-for" || dname === "v-show") templateDecisions++
+        // The binding VALUE expression (not the directive name/argument).
+        const value = this.findChildByType(n, "quoted_attribute_value")
+        const attrVal = value ? this.findChildByType(value, "attribute_value") : null
+        if (attrVal) this.collectIdentifiers(attrVal.text, templateExprNames)
+      }
+      if (t === "interpolation") {
+        const raw = this.findChildByType(n, "raw_text")
+        if (raw) this.collectIdentifiers(raw.text, templateExprNames)
       }
       if (t === "element") {
         const tag = this.elementTagName(n)
@@ -274,7 +288,15 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (fn && (fn.text === "defineProps" || fn.text === "defineEmits")) {
               const args = n.childForFieldName("arguments")
               const firstArg = args?.namedChild(0)
-              const names = this.propNames(firstArg ?? undefined)
+              // V1 (#419): the TYPE-LITERAL generic form defineProps<{ id:
+              // string }>() / defineEmits<{ (e: 'save'): void }>() carries no
+              // runtime argument — the contract lives in the type_arguments
+              // node. Extract it when the runtime form is absent (the standard
+              // Vue 3.3+ shape).
+              let names = this.propNames(firstArg ?? undefined)
+              if (names.length === 0) {
+                names = this.genericMacroNames(n, fn.text === "defineProps" ? "props" : "emits")
+              }
               const kind = fn.text === "defineProps"
                 ? ASTEngine.SymbolKind.Property
                 : ASTEngine.SymbolKind.Event
@@ -305,9 +327,46 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // --- 3c. Template expression uses (V2) ------------------------------------
+    // The template reads the component's own members: {{ count }},
+    // :label="label", @click="onSave", v-model="count", v-if="show" are
+    // Uses of script-side symbols. Emit only for identifiers that resolve to
+    // a member symbol (intrinsics and globals stay silent — no junk edges).
+    if (templateExprNames.size > 0) {
+      const memberNames = new Set(symbols.map((s) => s.name))
+      const seenUses = new Set<string>()
+      for (const name of templateExprNames) {
+        if (!memberNames.has(name)) continue
+        const key = `${moduleName}:${name}`
+        if (seenUses.has(key)) continue
+        seenUses.add(key)
+        relationships.push({
+          source: moduleName,
+          target: name,
+          type: ASTEngine.RelationshipType.Uses,
+          confidence: 0.95,
+          metadata: { isTemplateExpression: true },
+        })
+      }
+    }
+
     // --- 4. contains from ownerName -------------------------------------------
+    // V3 (#419): the JS/TS sub-analyzer ALREADY emits contains for script-side
+    // symbols (class -> method), and this pass re-emitted them — every class
+    // member got a duplicate contains edge. Only vue-owned members (props,
+    // emits, options members with ownerName = the component) need this pass;
+    // skip symbols the sub-analyzer's contains already covered.
+    const existingContains = new Set<string>()
+    for (const r of relationships) {
+      if (r.type === ASTEngine.RelationshipType.Contains && r.source && r.target) {
+        existingContains.add(`${r.source}::${r.target}`)
+      }
+    }
     for (const s of symbols) {
       if (s.ownerName) {
+        const key = `${s.ownerName}::${s.name}`
+        if (existingContains.has(key)) continue
+        existingContains.add(key)
         relationships.push({
           source: s.ownerName,
           target: s.name,
@@ -513,6 +572,82 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
     return out
+  }
+
+  /**
+   * V1 (#419): names from the TYPE-LITERAL generic form of the script-setup
+   * compiler macros — defineProps<{ id: string }>() and
+   * defineEmits<{ (e: 'save'): void }>() — where the public contract lives in
+   * the type_arguments node, not a runtime argument. Probe-verified against
+   * tree-sitter-typescript: props = property_identifier under object_type;
+   * emits = the first string literal of each call_signature's formal
+   * parameters.
+   */
+  private genericMacroNames(callNode: Node, which: "props" | "emits"): string[] {
+    const out: string[] = []
+    const typeArgs = this.findChildByType(callNode, "type_arguments")
+    if (!typeArgs) return out
+    const objectType = this.findChildByType(typeArgs, "object_type")
+    if (!objectType) return out
+    for (let i = 0; i < objectType.namedChildCount; i++) {
+      const member = objectType.namedChild(i)
+      if (!member) continue
+      if (which === "props") {
+        if (member.type === "property_signature") {
+          const pid = this.findChildByType(member, "property_identifier")
+          if (pid?.text) out.push(pid.text)
+        }
+      } else {
+        // emits: each call_signature is one event overload; the event name is
+        // the first string literal in its formal parameters ((e: 'save')).
+        if (member.type === "call_signature") {
+          const fp = this.findChildByType(member, "formal_parameters")
+          if (!fp) continue
+          for (let j = 0; j < fp.namedChildCount; j++) {
+            const p = fp.namedChild(j)
+            const lit = p ? this.findDescendantType(p, "literal_type") : null
+            const s = lit ? this.findDescendantType(lit, "string") : null
+            if (s) {
+              const v = unquote(s.text)
+              if (v) {
+                out.push(v)
+                break // first event name per overload
+              }
+            }
+          }
+        }
+      }
+    }
+    return out
+  }
+
+  private findDescendantType(root: Node, type: string): Node | null {
+    const stack: Node[] = [root]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === type) return n
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return null
+  }
+
+  /**
+   * V2 (#419): extract simple identifier tokens from a template expression's
+   * raw text ({{ count }}, :label="label", @click="onSave", v-model="count",
+   * v-if="show"). The vue grammar keeps these as opaque text — no child AST
+   * — so tokenization is by identifier pattern. Member chains (user.name)
+   * yield the root identifier (user); the member-resolution consumer can
+   * recurse. Literals (numbers/strings) and punctuation are dropped.
+   */
+  private collectIdentifiers(text: string, out: Set<string>): void {
+    const re = /[A-Za-z_$][A-Za-z0-9_$]*/g
+    let m: RegExpExecArray | null
+    while ((m = re.exec(text)) !== null) {
+      out.add(m[0])
+    }
   }
 
   private isLifecycleHook(key: string): boolean {

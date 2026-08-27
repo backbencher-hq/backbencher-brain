@@ -443,11 +443,85 @@
       "id": "section-h-cross-language",
       "language": "javascript",
       "status": "pass"
+    },
+    {
+      "description": "vue: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "vue",
+      "status": "pass"
+    },
+    {
+      "description": "vue: 3 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "vue",
+      "status": "pass"
+    },
+    {
+      "description": "vue: 5 ruled, 0 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "vue",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (vue)",
+      "detail": "37 types, 20 handled, 6 silent, 3 gaps, 5 decisions",
+      "id": "section-a-structural",
+      "language": "vue",
+      "status": "pass"
+    },
+    {
+      "description": "9 relationship kinds pinned by vue fixtures",
+      "detail": "pinned: calls, contains, exports, extends, imports, instantiates, overrides, references, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "vue",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for vue (3)",
+      "detail": "complexity, parameters, visibility",
+      "id": "section-c-payload-matrix",
+      "language": "vue",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "2 tier(s) pinned: import_based, structural",
+      "id": "section-d-evidence-tiers",
+      "language": "vue",
+      "status": "pass"
+    },
+    {
+      "description": "vue-core:vue at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor vue-core:vue: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "vue",
+      "status": "pass"
+    },
+    {
+      "description": "vue avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "vue-core:vue 142.1 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "vue",
+      "status": "pass"
+    },
+    {
+      "description": "vue analyzer docs present and committed",
+      "detail": "docs/analyzers/vue.md, docs/analyzers/real-vue-analyzer.md",
+      "id": "section-g-docs",
+      "language": "vue",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "3 checks pass",
+      "id": "section-h-cross-language",
+      "language": "vue",
+      "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "1a5d55118c800cb581c46987d77a1e61be980123",
-  "committedAt": "2026-08-27T04:14:21+02:00",
+  "commit": "4206881b76aee991a52b553f09eeb7d6e833eb21",
+  "committedAt": "2026-08-27T23:04:38+02:00",
   "data": {
     "languages": {
       "groovy": {
@@ -771,6 +845,56 @@
           },
           "section-g-docs": {
             "detail": "docs/analyzers/typescript.md, docs/analyzers/real-typescript-analyzer.md",
+            "status": "pass"
+          },
+          "section-h-cross-language": {
+            "detail": "3 checks pass",
+            "status": "pass"
+          }
+        }
+      },
+      "vue": {
+        "gaps": [
+          "V1: script-setup compiler macros in the TYPE-LITERAL generic form — defineProps<{ id: string }>() and defineEmits<{ (e: 'save'): void }>() — emit NO prop/event symbols. Only the runtime object/array form ({ size: Number } / ['change']) is extracted; the standard Vue 3.3+ generic form loses the entire public contract.",
+          "V2: template expressions emit NO references to the component's own members — {{ count }}, @click=\"onSave\", :label=\"label\", v-model=\"count\", v-if=\"show\" read script-side state but no Uses/references edge is emitted. The template<->script data-flow is entirely silent.",
+          "V3: duplicate contains edges — the JS/TS sub-analyzer already emits contains for script-side symbols (class -> method), and the vue analyzer's own contains pass re-emitted them, doubling every class member's containment edge in the analyzer output (the store dedupes at INSERT, but the analyzer result and any consumer of it saw 2x)."
+        ],
+        "nodeTypeCount": 37,
+        "pendingDecisions": [],
+        "ruledDecisions": [
+          "D1",
+          "D2",
+          "D3",
+          "D4",
+          "D5"
+        ],
+        "sections": {
+          "section-a-structural": {
+            "detail": "37 types, 20 handled, 6 silent, 3 gaps, 5 decisions",
+            "status": "pass"
+          },
+          "section-b-relationship-kinds": {
+            "detail": "pinned: calls, contains, exports, extends, imports, instantiates, overrides, references, uses",
+            "status": "pass"
+          },
+          "section-c-payload-matrix": {
+            "detail": "complexity, parameters, visibility",
+            "status": "pass"
+          },
+          "section-d-evidence-tiers": {
+            "detail": "2 tier(s) pinned: import_based, structural",
+            "status": "pass"
+          },
+          "section-e-differential": {
+            "detail": "floor vue-core:vue: missing=0, unexplained=0 (differential-baseline.json)",
+            "status": "pass"
+          },
+          "section-f-perf-budget": {
+            "detail": "vue-core:vue 142.1 ms/file",
+            "status": "pass"
+          },
+          "section-g-docs": {
+            "detail": "docs/analyzers/vue.md, docs/analyzers/real-vue-analyzer.md",
             "status": "pass"
           },
           "section-h-cross-language": {
