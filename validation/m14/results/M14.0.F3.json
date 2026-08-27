@@ -44,7 +44,7 @@
     },
     {
       "description": "scala adversarial fixtures",
-      "detail": "24/24 fixtures pass",
+      "detail": "36/36 fixtures pass",
       "id": "fixtures-scala",
       "status": "pass"
     },
@@ -80,8 +80,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "87dda846ed3b5c472ede1f56d6e5147736563015",
-  "committedAt": "2026-08-27T01:04:13+02:00",
+  "commit": "31cf3eb7789e784f13d140fae26d4d92771d8b1e",
+  "committedAt": "2026-08-27T02:02:52+02:00",
   "data": {
     "details": [
       {
@@ -1010,12 +1010,22 @@
         "problems": []
       },
       {
+        "fixture": "scala/derives-refs",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "scala/dotted-generic-supertype",
         "ok": true,
         "problems": []
       },
       {
         "fixture": "scala/extension-method-flag",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/field-uses",
         "ok": true,
         "problems": []
       },
@@ -1030,12 +1040,32 @@
         "problems": []
       },
       {
+        "fixture": "scala/implements-edges",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/import-edges",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "scala/instantiation-new",
         "ok": true,
         "problems": []
       },
       {
+        "fixture": "scala/interp-uses",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "scala/lambda-calls",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/method-value-refs",
         "ok": true,
         "problems": []
       },
@@ -1046,6 +1076,16 @@
       },
       {
         "fixture": "scala/override-fallback-confidence",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/parameters-payload",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/pattern-refs",
         "ok": true,
         "problems": []
       },
@@ -1080,6 +1120,11 @@
         "problems": []
       },
       {
+        "fixture": "scala/self-type-ref",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "scala/self-type",
         "ok": true,
         "problems": []
@@ -1095,7 +1140,22 @@
         "problems": []
       },
       {
+        "fixture": "scala/tuple-refs",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/type-alias-refs",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "scala/type-usage-graph",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/visibility-payload",
         "ok": true,
         "problems": []
       },
@@ -1199,7 +1259,7 @@
       },
       "scala": {
         "fail": 0,
-        "pass": 24
+        "pass": 36
       },
       "svelte": {
         "fail": 0,

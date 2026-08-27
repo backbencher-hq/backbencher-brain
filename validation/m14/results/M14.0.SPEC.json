@@ -221,11 +221,85 @@
       "id": "section-h-cross-language",
       "language": "kotlin",
       "status": "pass"
+    },
+    {
+      "description": "scala: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "scala",
+      "status": "pass"
+    },
+    {
+      "description": "scala: 9 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "scala",
+      "status": "pass"
+    },
+    {
+      "description": "scala: 6 ruled, 0 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "scala",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (scala)",
+      "detail": "189 types, 156 handled, 8 silent, 9 gaps, 6 decisions",
+      "id": "section-a-structural",
+      "language": "scala",
+      "status": "pass"
+    },
+    {
+      "description": "9 relationship kinds pinned by scala fixtures",
+      "detail": "pinned: calls, cast_target, contains, declared_type, derives_type, extends, implements, imports, instanceof_check, instantiates, method_value, overrides, pattern_type, references, return_type, self_type, throws_type, type_alias, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "scala",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for scala (6)",
+      "detail": "qualified_calls, docstrings, complexity, typeParameters, visibility, parameters",
+      "id": "section-c-payload-matrix",
+      "language": "scala",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
+      "id": "section-d-evidence-tiers",
+      "language": "scala",
+      "status": "pass"
+    },
+    {
+      "description": "scala3:scala at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor scala3:scala: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "scala",
+      "status": "pass"
+    },
+    {
+      "description": "scala avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "scala3:scala 9.2 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "scala",
+      "status": "pass"
+    },
+    {
+      "description": "scala analyzer docs present and committed",
+      "detail": "docs/analyzers/scala.md, docs/analyzers/real-scala-analyzer.md",
+      "id": "section-g-docs",
+      "language": "scala",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "3 checks pass",
+      "id": "section-h-cross-language",
+      "language": "scala",
+      "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "88cd22879579fd62f25eb5e398a2bc99bebdf9a3",
-  "committedAt": "2026-08-27T01:11:28+02:00",
+  "commit": "31cf3eb7789e784f13d140fae26d4d92771d8b1e",
+  "committedAt": "2026-08-27T02:02:52+02:00",
   "data": {
     "languages": {
       "groovy": {
@@ -380,6 +454,63 @@
           },
           "section-g-docs": {
             "detail": "docs/analyzers/kotlin.md, docs/analyzers/real-kotlin-analyzer.md",
+            "status": "pass"
+          },
+          "section-h-cross-language": {
+            "detail": "3 checks pass",
+            "status": "pass"
+          }
+        }
+      },
+      "scala": {
+        "gaps": [
+          "G1: import edges mislabeled reference_qualified (the tier classifier hardcodes reference_qualified for references, ignoring isImportDep — the JVM-family finding from java's pass) AND the edge source stays the 'root' placeholder (kotlin rewrites to the file's primary type; scala does not — family inconsistency)",
+          "G2: pattern type references lost — case p: Point, case Point(a, b), case s: String emit NO reference to Point/String",
+          "G3: Foo.bar method values emit no reference to Foo (the callable-reference analog of kotlin K3)",
+          "G4: string interpolation s\"hi $name\" emits no Uses on name (kotlin K4 analog)",
+          "G5: tuple-typed returns (Int, String) emit no type references (the return-type collector only matches generic_type/type_identifier/functional_type — tuple_type and compound/structural types are missed)",
+          "G6: derives Show, Hashing emits no references to the derived types",
+          "G7: type alias RHS references lost — type Fn = (Int) => String emits the Fn symbol (works) but NO references to Int/String from the alias's own definition",
+          "G8: field accesses h.value (reads AND writes) emit no Uses on the receiver — scala has no field-access uses collector (only extension methods emit Uses); family gap vs java/groovy/kotlin",
+          "G9: self-type references lost — trait Logging { self: Service => } emits no reference to Service"
+        ],
+        "nodeTypeCount": 189,
+        "pendingDecisions": [],
+        "ruledDecisions": [
+          "D1",
+          "D2",
+          "D3",
+          "D4",
+          "D5",
+          "D6"
+        ],
+        "sections": {
+          "section-a-structural": {
+            "detail": "189 types, 156 handled, 8 silent, 9 gaps, 6 decisions",
+            "status": "pass"
+          },
+          "section-b-relationship-kinds": {
+            "detail": "pinned: calls, cast_target, contains, declared_type, derives_type, extends, implements, imports, instanceof_check, instantiates, method_value, overrides, pattern_type, references, return_type, self_type, throws_type, type_alias, uses",
+            "status": "pass"
+          },
+          "section-c-payload-matrix": {
+            "detail": "qualified_calls, docstrings, complexity, typeParameters, visibility, parameters",
+            "status": "pass"
+          },
+          "section-d-evidence-tiers": {
+            "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
+            "status": "pass"
+          },
+          "section-e-differential": {
+            "detail": "floor scala3:scala: missing=0, unexplained=0 (differential-baseline.json)",
+            "status": "pass"
+          },
+          "section-f-perf-budget": {
+            "detail": "scala3:scala 9.2 ms/file",
+            "status": "pass"
+          },
+          "section-g-docs": {
+            "detail": "docs/analyzers/scala.md, docs/analyzers/real-scala-analyzer.md",
             "status": "pass"
           },
           "section-h-cross-language": {
