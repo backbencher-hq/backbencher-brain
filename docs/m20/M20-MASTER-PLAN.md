@@ -100,9 +100,13 @@ found these concrete gaps:
   report token collisions;
 - documentation implementation is narrower than its mode/examples/diagrams
   contract;
-- corpus identity is currently not reproducible for every declared checkout:
-  two revisions mismatch and five declared repositories are dirty; the C2 gate
-  records this as an honest `KNOWN-GAP` while preserving the extra local
+- active developer checkouts are not all reproducible evidence sources: three
+  revisions mismatch and five declared repositories are dirty. C2 now uses
+  versioned, immutable Git-archive snapshots for those affected rows without
+  resetting or cleaning active repositories; active checkout state remains
+  visible in the registry. C2 is `verified` only when the snapshot manifest,
+  sidecars, all pinned revisions, and the relevant project tree are current;
+  otherwise it records an honest `KNOWN-GAP` while preserving extra local
   repositories separately.
 
 None of those baseline observations is marked as fixed by this governance
