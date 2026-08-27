@@ -8,7 +8,7 @@
     },
     {
       "description": "vue adversarial fixtures",
-      "detail": "12/12 fixtures pass",
+      "detail": "14/14 fixtures pass",
       "id": "fixtures-vue",
       "status": "pass"
     },
@@ -80,8 +80,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "4206881b76aee991a52b553f09eeb7d6e833eb21",
-  "committedAt": "2026-08-27T23:04:38+02:00",
+  "commit": "83bce9eda745720698bcaed2d709687c594307db",
+  "committedAt": "2026-08-27T23:37:12+02:00",
   "data": {
     "details": [
       {
@@ -290,6 +290,11 @@
         "problems": []
       },
       {
+        "fixture": "vue/generic-union-emits",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "vue/options-api-sfc",
         "ok": true,
         "problems": []
@@ -316,6 +321,11 @@
       },
       {
         "fixture": "vue/template-member-uses",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "vue/template-scope-shadow",
         "ok": true,
         "problems": []
       },
@@ -1411,7 +1421,7 @@
       },
       "vue": {
         "fail": 0,
-        "pass": 12
+        "pass": 14
       }
     }
   },
