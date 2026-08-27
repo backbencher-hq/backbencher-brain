@@ -140,6 +140,26 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     },
     title: "scala pass (#419)",
   },
+  typescript: {
+    id: "typescript",
+    wasm: "tree-sitter-typescript.wasm",
+    classification: "typescript-completeness.json",
+    fixturesDir: "validation/m14/fixtures/typescript",
+    docs: ["docs/analyzers/typescript.md", "docs/analyzers/real-typescript-analyzer.md"],
+    differentialCheck: "differential-typescript",
+    perfKey: "vue-core:typescript",
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "exports", "imports"],
+    payloads: {
+      qualified_calls: { key: "expectQualifiedCalls", pin: "typescript/qualified-call-path" },
+      docstrings: { key: "expectComments", pin: "typescript/payload-docs (js) / comment pins" },
+      complexity: { key: "expectComplexity", pin: "typescript/complexity-parity" },
+      typeParameters: { key: "expectTypeParameters", pin: "typescript/generic-constraints" },
+      visibility: { key: "expectVisibility", pin: "typescript/visibility pin (wave)" },
+      apiContract: { key: "expectApiContractPaths", pin: "typescript/api-contract-bare-path" },
+      parameters: { key: "expectParameters", pin: "typescript/parameters pin (wave)" },
+    },
+    title: "typescript pass (#419)",
+  },
 }
 
 // Languages that have reached CONFORMANT and therefore run in npm run verify.
