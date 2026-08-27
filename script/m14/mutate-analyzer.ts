@@ -641,6 +641,29 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, parameters: undefined })) }),
   },
   {
+    id: "vue/reemit-shadowed-uses",
+    language: "vue",
+    defectClass: "scope-blindness",
+    description: "re-emits Uses for template-LOCAL identifiers that shadow members (the V4 bug class: v-for loop vars and slot props produced false uses)",
+    transform: r => {
+      const rels = r.relationships ?? []
+      const comp = rels.find((x: any) => x.type === "instantiates" || x.type === "uses")?.source
+      const source = typeof comp === "string" ? comp : "template-scope-shadow"
+      const extra = ["item", "row"].map(name => ({
+        source, target: name, type: "uses", confidence: 0.95,
+        metadata: { isTemplateExpression: true },
+      }))
+      return { ...r, relationships: [...rels, ...extra] }
+    },
+  },
+  {
+    id: "vue/drop-union-emit-names",
+    language: "vue",
+    defectClass: "symbol-loss",
+    description: "drops non-first union emit names (the V1b bug class: (e: 'save' | 'close') kept only save)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => !((s.metadata ?? {}).isEmit && s.name === "close")) }),
+  },
+  {
     id: "groovy/drop-class-symbols",
     language: "groovy",
     defectClass: "symbol-loss",
