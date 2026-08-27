@@ -2733,7 +2733,8 @@ class TypeScriptAnalysisRunner {
           p.type === "function_declaration" ||
           p.type === "generator_function_declaration" ||
           p.type === "method_definition" ||
-          p.type === "interface_declaration"
+          p.type === "interface_declaration" ||
+          p.type === "variable_declarator"
         ) {
           const name = this.findNamedChild(p)
           if (name) return name.text
@@ -2818,6 +2819,49 @@ class TypeScriptAnalysisRunner {
           }
           break
         }
+        case "type_alias_declaration": {
+          // M14 #419 T2: the alias RHS references its own types —
+          // type Fn = (a: Id) => Id references Id (param + return),
+          // type Pair = [Id, Id] references Id, type Rec = { next?: Rec }
+          // references Rec (self). Pre-fix the RHS types were silent; the
+          // alias symbol emitted but carried no reference edges.
+          const aliasName = n.childForFieldName("name")?.text
+          const value = n.childForFieldName("value")
+          if (aliasName && value) {
+            // The value's own type_parameters (T, K) are bindings, not
+            // references — collectTypeNames already skips nothing here, so
+            // the RHS value node alone carries the referenced types.
+            emit(aliasName, [value], "type_alias")
+          }
+          break
+        }
+        case "type_assertion": {
+          // M14 #419 T8: <Foo>x — the angle-bracket cast form. The type
+          // lives in the first named child (type_arguments wrapper holds
+          // the type_identifier(s)).
+          const inner = n.namedChild(0)
+          if (inner) emit(resolveSource(n), [inner], "cast_target")
+          break
+        }
+        case "type_arguments": {
+          // M14 #419 T9: explicit generic instantiation — f<Baz>(x) parses
+          // as call_expression with a type_arguments child (no
+          // instantiation_expression node), and foo<Bar> standalone parses
+          // as instantiation_expression with a type_arguments child. The
+          // walk recurses into type_arguments either way, so hooking the
+          // node itself covers both shapes: the type names inside (Baz) are
+          // references, not bindings.
+          const names: string[] = []
+          collectTypeNames(n, names)
+          if (names.length > 0) emit(resolveSource(n), [n], "type_argument")
+          break
+        }
+        case "satisfies_expression": {
+          // M14 #419 T5: x satisfies T — T is a type reference (TS 4.9).
+          const last = n.namedChild(n.namedChildCount - 1)
+          if (last) emit(resolveSource(n), [last], "satisfies_target")
+          break
+        }
       }
       for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
@@ -2848,6 +2892,11 @@ class TypeScriptAnalysisRunner {
       const t = String(r.type ?? r.relationshipType ?? "")
       const conf = typeof r.confidence === "number" ? r.confidence : 1
       if (t === "contains" || t === "exports") { md.evidenceClass = "structural"; continue }
+      // M14 #419 T1: the dedicated `imports` relationship kind carries
+      // module dependencies (target module:item) — same evidence class the
+      // JVM family gives its import references (isImportDep/import_based).
+      // Pre-fix this kind fell through to usage_contextual.
+      if (t === "imports") { md.evidenceClass = "import_based"; continue }
       if (t === "references") {
         md.evidenceClass = md.isImport ? "import_based" : "reference_qualified"
         continue
@@ -3286,6 +3335,12 @@ class TypeScriptAnalysisRunner {
         if (n.type === "call_expression") {
           const callee = n.namedChild(0)
           if (callee) {
+            // M14 #419 T7: dynamic import() is a module dependency, not a
+            // call — skip it here so no spurious calls edge to `import` is
+            // emitted (the imports edge comes from extractImportRelationships).
+            if (callee.text === "import" || callee.type === "import") {
+              return
+            }
             let targetName = callee.text
             let fullCallee = callee.text
 
@@ -3375,8 +3430,41 @@ class TypeScriptAnalysisRunner {
     for (const s of symbols) symbolNames[s.name] = true
     const processed: Record<string, boolean> = {}
 
+    // M14 #419 T6: destructured locals shadow same-named properties. The
+    // binding names are collected on first descent; an identifier reference
+    // to a shadowed name is a local usage, never a cross-symbol reference
+    // (const { name } = u in main must not emit main --references--> the
+    // User.name property).
+    const shadowedLocals = new Set<string>()
+    const collectPatternNames = (pat: Node): void => {
+      for (let i = 0; i < pat.namedChildCount; i++) {
+        const c = pat.namedChild(i)
+        if (!c) continue
+        if (c.type === "identifier" || c.type === "shorthand_property_identifier" || c.type === "shorthand_property_identifier_pattern" || c.type === "property_identifier") {
+          shadowedLocals.add(c.text)
+        } else if (c.type === "object_pattern" || c.type === "array_pattern" || c.type === "pair_pattern" || c.type === "assignment_pattern" || c.type === "rest_pattern" || c.type === "object" || c.type === "array") {
+          collectPatternNames(c)
+        }
+      }
+    }
+    const isShadowedLocal = (n: Node): boolean => {
+      // Only names bound in a destructuring pattern are shadowed locals here
+      // (plain declarations are handled by the declaration-skip below).
+      return shadowedLocals.has(n.text)
+    }
+
     const processNode = (n: Node, currentSymbol: ASTEngine.UniversalSymbol | null): void => {
       currentSymbol = this.resolveRelationshipSymbol(n, symbols, currentSymbol)
+
+      // M14 #419 T6: record destructuring bindings (object_pattern /
+      // array_pattern / rest_pattern in variable_declarator name position)
+      // so later identifier usages of the same name resolve as locals — but
+      // ONLY inside a function body. Module/class-level destructuring
+      // produces real symbols (extractDestructuringPattern), and references
+      // to those from elsewhere must keep resolving to the symbol.
+      if ((n.type === "object_pattern" || n.type === "array_pattern" || n.type === "rest_pattern") && currentSymbol && (currentSymbol.kind === ASTEngine.SymbolKind.Function || currentSymbol.kind === ASTEngine.SymbolKind.Method)) {
+        collectPatternNames(n)
+      }
 
       // JSX component usage detection
       if ((n.type === "jsx_element" || n.type === "jsx_self_closing_element") && currentSymbol) {
@@ -3433,8 +3521,13 @@ class TypeScriptAnalysisRunner {
           }
         }
 
-        // Check if this references a known symbol
-        if (!!symbolNames[name] && name !== currentSymbol.name) {
+        // M14 #419 T6: a name bound by a function-local destructuring
+        // pattern is a local — the identifier usage refers to the local,
+        // never to a same-named module/class symbol (const { name } = u in
+        // main must not emit main --references--> User.name).
+        if (isShadowedLocal(n)) {
+          // still recurse into children (e.g. nested member paths)
+        } else if (!!symbolNames[name] && name !== currentSymbol.name) {
           const key = `${currentSymbol.name}:${name}`
           if (!!!processed[key]) {
             processed[key] = true
@@ -3471,6 +3564,70 @@ class TypeScriptAnalysisRunner {
                 line: n.startPosition.row,
               },
             })
+          }
+        }
+      }
+
+      // M14 #419 T3: template_literal interpolation — `hi ${name} x${n + 1}`
+      // reads name and n inside the enclosing function. The substituted
+      // identifiers are expression usages, so emit Uses on each identifier
+      // child of template_substitution.
+      if (n.type === "template_substitution" && currentSymbol) {
+        const sub = (n: Node): void => {
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (!c) continue
+            if (c.type === "identifier" && c.text !== currentSymbol!.name) {
+              const key = `${currentSymbol!.name}:${c.text}:template`
+              if (!processed[key]) {
+                processed[key] = true
+                relationships.push({
+                  source: currentSymbol!.name,
+                  target: c.text,
+                  type: ASTEngine.RelationshipType.Uses,
+                  confidence: 0.85,
+                  metadata: {
+                    isTemplateInterpolation: true,
+                    line: c.startPosition.row,
+                  },
+                })
+              }
+            } else if (c.type !== "identifier") {
+              sub(c)
+            }
+          }
+        }
+        sub(n)
+      }
+
+      // M14 #419 T4: field-access Uses — this.value reads/writes (and any
+      // member access) are usages of the accessed member. Skip the member
+      // when it is the callee of a call (calls edges cover that), and skip
+      // JSX element tags (JSX uses/instantiates cover those).
+      if ((n.type === "member_expression" || n.type === "subscript_expression") && currentSymbol) {
+        const isCallCallee =
+          n.parent?.type === "call_expression" && n.parent.childForFieldName("function") === n
+        const isOptionalChainRoot = n.parent?.type === "optional_chain"
+        if (!isCallCallee && !isOptionalChainRoot) {
+          const prop = n.childForFieldName("property") ?? (n.namedChildCount > 0 ? n.namedChild(n.namedChildCount - 1) : null)
+          if (prop) {
+            const name = prop.text
+            if (!!symbolNames[name] && name !== currentSymbol.name) {
+              const key = `${currentSymbol.name}:${name}:field`
+              if (!processed[key]) {
+                processed[key] = true
+                relationships.push({
+                  source: currentSymbol.name,
+                  target: name,
+                  type: ASTEngine.RelationshipType.Uses,
+                  confidence: 0.85,
+                  metadata: {
+                    isFieldAccess: true,
+                    line: prop.startPosition.row,
+                  },
+                })
+              }
+            }
           }
         }
       }
@@ -3615,6 +3772,32 @@ class TypeScriptAnalysisRunner {
             alias: item.indexOf(" as ") !== -1 ? item.split(" as ")[1] : undefined,
           },
         })
+      }
+      return
+    }
+
+    // M14 #419 T7: dynamic import('./lazy') is a module dependency identical
+    // in kind to a static import. Pre-fix the module landed in the imports
+    // array but no imports relationship was emitted — and the call walk
+    // produced a spurious calls edge to the `import` keyword.
+    if (node.type === "call_expression") {
+      const callee = node.namedChild(0)
+      if (callee && (callee.text === "import" || callee.type === "import")) {
+        const args = node.childForFieldName("arguments")
+        const pathArg = args && args.namedChildCount > 0 ? args.namedChild(0) : null
+        if (pathArg && (pathArg.type === "string" || pathArg.type === "template_string")) {
+          const modulePath = stringContent(pathArg)
+          relationships.push({
+            source: this.moduleLeafName(),
+            target: `${modulePath}:*`,
+            type: ASTEngine.RelationshipType.Imports,
+            confidence: 1.0,
+            metadata: {
+              module: modulePath,
+              isDynamic: true,
+            },
+          })
+        }
       }
     }
 
