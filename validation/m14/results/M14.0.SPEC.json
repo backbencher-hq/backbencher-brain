@@ -369,11 +369,85 @@
       "id": "section-h-cross-language",
       "language": "typescript",
       "status": "pass"
+    },
+    {
+      "description": "javascript: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": "javascript: 8 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": "javascript: 5 ruled, 0 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (javascript)",
+      "detail": "125 types, 89 handled, 20 silent, 8 gaps, 5 decisions",
+      "id": "section-a-structural",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": "9 relationship kinds pinned by javascript fixtures",
+      "detail": "pinned: calls, contains, exports, extends, imports, instanceof_check, instantiates, overrides, references, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for javascript (5)",
+      "detail": "qualified_calls, docstrings, complexity, visibility, parameters",
+      "id": "section-c-payload-matrix",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "2 tier(s) pinned: import_based, structural",
+      "id": "section-d-evidence-tiers",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": "lodash:javascript at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor lodash:javascript: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": "javascript avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "lodash:javascript 193.7 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": "javascript analyzer docs present and committed",
+      "detail": "docs/analyzers/javascript.md, docs/analyzers/real-javascript-analyzer.md",
+      "id": "section-g-docs",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "3 checks pass",
+      "id": "section-h-cross-language",
+      "language": "javascript",
+      "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "b6fc5ac95004514f519172f0f7a2add2f14e7b77",
-  "committedAt": "2026-08-27T02:51:43+02:00",
+  "commit": "1a5d55118c800cb581c46987d77a1e61be980123",
+  "committedAt": "2026-08-27T04:14:21+02:00",
   "data": {
     "languages": {
       "groovy": {
@@ -472,6 +546,61 @@
           },
           "section-g-docs": {
             "detail": "docs/analyzers/java.md, docs/analyzers/real-java-analyzer.md",
+            "status": "pass"
+          },
+          "section-h-cross-language": {
+            "detail": "3 checks pass",
+            "status": "pass"
+          }
+        }
+      },
+      "javascript": {
+        "gaps": [
+          "J1: imports kind misclassified usage_contextual instead of import_based — the tier classifier has no 'imports' branch (the TS T1 / JVM K8 finding): every ES6/require/re-export dependency edge falls to usage_contextual",
+          "J2: dynamic import('./lazy') emits a spurious calls -> import edge and NO imports edge for the module — TS7 was closed in the TS wave; the JS dynamic-import fixture currently documents the bug as accepted",
+          "J3: string interpolation `${x}` emits no Uses on the interpolated identifiers (TS3 T3 / kotlin K4 / scala G4 analog)",
+          "J4: obj.method() emits BOTH calls (obj.method -> method) AND uses (obj -> method, isFieldAccess) — the family contract (TS/kotlin/scala) skips the callee in uses because calls covers it; JS double-emits",
+          "J5: calls inside static { } blocks attribute to the MODULE, not the enclosing class — kotlin K7 init-attribution analog",
+          "J6: top-level const r = x instanceof T attributes the reference to 'global' instead of r — the resolveSource walk lacks variable_declarator (TS fixed this in the same wave)",
+          "J7: module-level destructured bindings (const { a } = obj / const [b] = arr) emit NO symbols — TS emits them as constants (probe-verified parity gap)",
+          "J8: JSX component usage emits NOTHING — <Button/> produces no edges. JSX is native to the JS grammar (8 types in the gate enumeration), unlike TS where it is a separate tsx dialect; the analyzer's detectsJsx only sets a pattern flag"
+        ],
+        "nodeTypeCount": 125,
+        "pendingDecisions": [],
+        "ruledDecisions": [
+          "D1",
+          "D2",
+          "D3",
+          "D4",
+          "D5"
+        ],
+        "sections": {
+          "section-a-structural": {
+            "detail": "125 types, 89 handled, 20 silent, 8 gaps, 5 decisions",
+            "status": "pass"
+          },
+          "section-b-relationship-kinds": {
+            "detail": "pinned: calls, contains, exports, extends, imports, instanceof_check, instantiates, overrides, references, uses",
+            "status": "pass"
+          },
+          "section-c-payload-matrix": {
+            "detail": "qualified_calls, docstrings, complexity, visibility, parameters",
+            "status": "pass"
+          },
+          "section-d-evidence-tiers": {
+            "detail": "2 tier(s) pinned: import_based, structural",
+            "status": "pass"
+          },
+          "section-e-differential": {
+            "detail": "floor lodash:javascript: missing=0, unexplained=0 (differential-baseline.json)",
+            "status": "pass"
+          },
+          "section-f-perf-budget": {
+            "detail": "lodash:javascript 193.7 ms/file",
+            "status": "pass"
+          },
+          "section-g-docs": {
+            "detail": "docs/analyzers/javascript.md, docs/analyzers/real-javascript-analyzer.md",
             "status": "pass"
           },
           "section-h-cross-language": {

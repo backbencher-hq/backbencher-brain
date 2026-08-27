@@ -2,7 +2,7 @@
   "checks": [
     {
       "description": "javascript adversarial fixtures",
-      "detail": "26/26 fixtures pass",
+      "detail": "37/37 fixtures pass",
       "id": "fixtures-javascript",
       "status": "pass"
     },
@@ -80,8 +80,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "b6fc5ac95004514f519172f0f7a2add2f14e7b77",
-  "committedAt": "2026-08-27T02:51:43+02:00",
+  "commit": "1a5d55118c800cb581c46987d77a1e61be980123",
+  "committedAt": "2026-08-27T04:14:21+02:00",
   "data": {
     "details": [
       {
@@ -110,6 +110,11 @@
         "problems": []
       },
       {
+        "fixture": "javascript/callee-uses",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "javascript/class-method-calls",
         "ok": true,
         "problems": []
@@ -130,6 +135,11 @@
         "problems": []
       },
       {
+        "fixture": "javascript/contains-overrides",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "javascript/decorator-capture",
         "ok": true,
         "problems": []
@@ -141,6 +151,11 @@
       },
       {
         "fixture": "javascript/deep-cjs-exports",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/destructure-symbols",
         "ok": true,
         "problems": []
       },
@@ -165,12 +180,42 @@
         "problems": []
       },
       {
+        "fixture": "javascript/import-edges",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/instanceof-source",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/instantiations",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/interp-uses",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "javascript/js-member-heritage",
         "ok": true,
         "problems": []
       },
       {
+        "fixture": "javascript/jsx-usage",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "javascript/optional-chaining",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/parameters-payload",
         "ok": true,
         "problems": []
       },
@@ -205,12 +250,22 @@
         "problems": []
       },
       {
+        "fixture": "javascript/static-block",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "javascript/stdlib-colliding-names",
         "ok": true,
         "problems": []
       },
       {
         "fixture": "javascript/type-usage-graph",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/visibility-payload",
         "ok": true,
         "problems": []
       },
@@ -1308,7 +1363,7 @@
       },
       "javascript": {
         "fail": 0,
-        "pass": 26
+        "pass": 37
       },
       "kotlin": {
         "fail": 0,
