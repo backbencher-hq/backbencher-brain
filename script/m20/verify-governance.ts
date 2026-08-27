@@ -10,6 +10,7 @@ import path from "node:path"
 import { migrationSourceFingerprint } from "../../src/intelligence/migration/migration-evidence"
 import { patternSourceFingerprint } from "../../src/intelligence/patterns/evidence"
 import { securitySourceFingerprint } from "../../src/intelligence/security/evidence"
+import { docSourceFingerprint } from "../../src/intelligence/documentation/evidence"
 
 type Issue = {
   code: string
@@ -116,6 +117,7 @@ function isEvidenceOnlyChange(changed: string[]): boolean {
 function sourceFingerprintFor(issue: Issue): string {
   if (issue.tool === "bb_patterns") return patternSourceFingerprint(ROOT)
   if (issue.tool === "bb_security") return securitySourceFingerprint(ROOT)
+  if (issue.tool === "bb_doc") return docSourceFingerprint(ROOT)
   return migrationSourceFingerprint(ROOT)
 }
 
