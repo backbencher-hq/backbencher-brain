@@ -21,19 +21,31 @@
 - `export let`/exported bindings become component-owned Property symbols
   (module-block exports stay module API, not props)
 - Template pass: non-builtin element tags → `instantiates` (leaf tag name as
-  written); `on:` directives → `calls` to the handler leaf
+  written); `on:` directives → `calls` to the handler leaf; template
+  expressions → member `Uses` with lexical shadow handling for each/await/
+  snippet/`{@const}` bindings
 
 ## Evidence tiers
 Central classifier at end of analyze(): every relationship carries
 `metadata.evidenceClass`. Same rules as JVM/Vue family.
 
 ## Known limitations
-- Template expressions (`{count}`, `label={label}`, `{#each items as item}`,
-  `{#await promise}`, `{@html raw}`) emit no Uses/references to script
-  members (gap S1 — pending wave)
-- `let { a, b } = $props()` double-declares bindings — Property + the JS
-  sub-analyzer's destructured Variable both survive (gap S2 — pending wave)
-- Style blocks are skipped entirely (CSS belongs to the dedicated css analyzer)
+- Template expressions are scanned from opaque `svelte_raw_text` because the
+  maintained grammar does not expose a full expression AST; identifier-level
+  semantics beyond the scanner's lexical model remain a declared limitation.
+- Style blocks are skipped entirely (CSS belongs to the dedicated css analyzer).
+- The SFC-level `typeParameters` and `apiContract` payloads are declared N/A;
+  script-side TypeScript generics remain delegated to the TS analyzer.
+
+## Closed hardening findings (#419)
+- **S1**: template expressions now emit member `Uses` edges.
+- **S2**: `$props()` destructured bindings are declared once.
+- **S5**: each-loop and declaration-order-aware `{@const}` locals shadow
+  same-named members without leaking false Uses; nested scopes are isolated.
+- **S6**: repeated `$:` assignments and their sub-analyzer copies are
+  deduplicated to one component-owned reactive symbol.
 
 ## Verification
-- Fixtures: 13+ (`validation/m14/fixtures/svelte/`)
+- Fixtures: **18/18** (`validation/m14/fixtures/svelte/`)
+- Focused S5/S6 mutation checks: both **CAUGHT**
+- Full all-language fixture regression: **13 languages, zero fixture failures**

@@ -149,7 +149,10 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     // element tag is a component usage (leaf tag name as written). on: event
     // directives produce a call to the leaf handler identifier in the
     // expression value.
-    const templateStack: Array<{ node: Node; shadowed: Set<string> }> = [{ node: rootNode, shadowed: new Set() }]
+    // Each stack frame carries a mutable lexical scope shared by siblings.
+    // This is necessary for {@const}: its binding becomes visible to later
+    // siblings in the enclosing block, but must not leak to the parent or a
+    // nested block.
     const seenUsages = new Set<string>()
     let templateDecisions = 0
     // S1 (#419): template expressions reference script-side members — collect
@@ -168,13 +171,23 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     // value} binds value; {:catch err} binds err; {#snippet row(label)}
     // binds label+count. A shadowed name must NOT emit a use.
     const templateExprNames = new Set<string>()
+    const templateStack: Array<{ node: Node; scope: { shadowed: Set<string> } }> = [
+      { node: rootNode, scope: { shadowed: new Set() } },
+    ]
     while (templateStack.length > 0) {
-      const { node: n, shadowed } = templateStack.pop()!
+      const { node: n, scope } = templateStack.pop()!
       const t = n.type
       if (t === "script_element" || t === "style_element") continue
-      // The shadow set for this subtree: inherit, then add locals bound by
-      // this construct (each loop vars, await then/catch vars, snippet params).
-      const childShadowed = new Set(shadowed)
+      const shadowed = scope.shadowed
+      // A block gets an isolated scope shared by all of its children. Ordinary
+      // nodes keep the current scope so {@const} can update the enclosing
+      // block for later siblings without leaking across nested blocks.
+      const opensScope =
+        t === "each_statement" || t === "await_statement" ||
+        t === "if_statement" || t === "else_if_block" ||
+        t === "key_statement" || t === "snippet_statement"
+      const childScope = opensScope ? { shadowed: new Set(shadowed) } : scope
+      const childShadowed = childScope.shadowed
       // {#snippet name(params)} — reusable template functions; the name is
       // a component-owned Method, and {@render name(...)} calls it.
       if (t === "snippet_statement") {
@@ -240,6 +253,15 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       // directly as svelte_raw_text (no `expression` wrapper node).
       if (t === "html_tag" || t === "const_tag" || t === "debug_tag") {
         this.collectTagExpressionIdentifiers(n, templateExprNames, childShadowed)
+        // {@const total = expr} BINDS `total` as a template-LOCAL that
+        // shadows any same-named member within this subtree — register the
+        // binding name into childShadowed so later {total} reads don't emit a
+        // false member use (S5, {@const} shadow case).
+        if (t === "const_tag") {
+          const body = this.expressionText(n)
+          const eq = this.topLevelEq(body)
+          if (eq >= 0) this.collectIdentifiersFromText(body.slice(0, eq), childShadowed, new Set())
+        }
       }
       if (t === "element" || t === "self_closing_tag") {
         const tag = this.elementTagName(n)
@@ -283,7 +305,7 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const child = n.namedChild(i)
-        if (child) templateStack.push({ node: child, shadowed: childShadowed })
+        if (child) templateStack.push({ node: child, scope: childScope })
       }
     }
 
@@ -338,8 +360,15 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       const runePropNames = new Set<string>()
       this.collectPropsDestructuredNames(scriptTree.rootNode, runePropNames)
       const runePropNamesLowered = new Set(scriptContent.length > 0 ? [...runePropNames] : [])
+      // S6: a `$:` reactive target is component state declared by
+      // extractSvelteDeclarations below; the JS sub-analyzer's plain copy of
+      // the same `let` variable is DUPLICATE — drop it so the component-owned
+      // reactive symbol is the only one.
+      const reactiveTargetNames = new Set<string>()
+      this.collectReactiveTargetNames(scriptTree.rootNode, reactiveTargetNames)
       for (const s of sub.symbols ?? []) {
         if (runePropNamesLowered.has((s.name ?? "") as string)) continue
+        if (reactiveTargetNames.has((s.name ?? "") as string)) continue
         s.range.startLine += lineOffset
         s.range.endLine += lineOffset
         if (s.range.startLine === 1 + lineOffset) s.range.startColumn += colOffset
@@ -530,6 +559,32 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     return out
   }
 
+  /**
+   * S6 (#419): collect the target names of every `$:` reactive declaration
+   * (`$: doubled = expr` → `doubled`). Used at the merge to drop the JS/TS
+   * sub-analyzer's PLACE COPY of such a variable, so the component-owned
+   * reactive symbol emitted by extractSvelteDeclarations is the ONLY one —
+   * the same dedupe S2 applies to $props() bindings.
+   */
+  private collectReactiveTargetNames(root: Node, out: Set<string>): void {
+    const stack: Node[] = [root]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "labeled_statement") {
+        const label = n.namedChild(0)
+        if (label && label.text === "$") {
+          const assignment = this.findDescendant(n, (c) => c.type === "assignment_expression")
+          const left = assignment?.childForFieldName?.("left") ?? assignment?.namedChild(0)
+          if (left && left.type === "identifier") out.add(left.text)
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+  }
+
   private extractSvelteDeclarations(
     root: Node,
     componentName: string,
@@ -538,6 +593,10 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     colOffset: number,
   ): void {
     const stack: Node[] = [root]
+    // S6 (#419): a `$:` target assigned from MULTIPLE reactive blocks is still
+    // ONE variable — track already-declared targets so we never push a second
+    // identical symbol for the same name.
+    const reactiveTargets = new Set<string>()
     while (stack.length > 0) {
       const n = stack.pop()!
       // $props() destructure → Property symbols (`let { a, b } = $props()`)
@@ -582,6 +641,10 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (assignment) {
             const left = assignment.childForFieldName?.("left") ?? assignment.namedChild(0)
             if (left && left.type === "identifier") {
+              // S6: a target already declared by an earlier $: block is the SAME
+              // variable — only the first block declares it.
+              if (reactiveTargets.has(left.text)) continue
+              reactiveTargets.add(left.text)
               symbols.push({
                 name: left.text,
                 kind: ASTEngine.SymbolKind.Variable,
@@ -679,6 +742,15 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     // each_start has two raw_text children: [collection, vars]
     const collection = rawTexts[0] ?? ""
     this.collectIdentifiersFromText(collection, out, shadowed)
+    // S5 (#419): the loop-var list (rawTexts[1], e.g. `row, i` / `[a, b]` /
+    // `{ id }`) binds template-LOCAL names that SHADOW same-named members. They
+    // must be registered into `shadowed` (the set the children inherit) so a
+    // `{row}`/`{row.id}` reading the loop element never emits a false Use of a
+    // member function `row`. Previously this was never seeded — the shadow
+    // machinery was dead for `{#each}` and only "passed" fixtures where no
+    // same-named member existed to collide (the vue V4 bug class).
+    const vars = rawTexts[1] ?? ""
+    this.collectIdentifiersFromText(vars, shadowed, new Set())
   }
 
   /** {#await promise then value} {:catch err} — promise is a use; vars shadow. */
@@ -750,8 +822,28 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
   /** {@html raw} / {@const total = expr} / {@debug expr} — body is a direct
    *  svelte_raw_text child of the tag (no `expression` wrapper). */
   private collectTagExpressionIdentifiers(node: Node, out: Set<string>, shadowed: Set<string>): void {
-    const text = this.expressionText(node)
+    let text = this.expressionText(node)
+    // {@const total = expr} — `total` is the const's OWN template-local
+    // BINDING, not a member use; only the RHS expression reads members (and
+    // the RHS loop vars are already shadowed). Strip the binding LHS so the
+    // declared name never leaks as a use (S5, {@const} shadow case).
+    if (node.type === "const_tag") {
+      const eq = this.topLevelEq(text)
+      if (eq >= 0) text = text.slice(eq + 1)
+    }
     this.collectIdentifiersFromText(text, out, shadowed)
+  }
+
+  /** Index of the first top-level `=` (not inside () / [] / {}) in `text`.*/
+  private topLevelEq(text: string): number {
+    let depth = 0
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i]
+      if (c === "(" || c === "[" || c === "{") depth++
+      else if (c === ")" || c === "]" || c === "}") depth--
+      else if (c === "=" && depth === 0) return i
+    }
+    return -1
   }
 
   private onHandlerLeaf(attr: Node): string | undefined {

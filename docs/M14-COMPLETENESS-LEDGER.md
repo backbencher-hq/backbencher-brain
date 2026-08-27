@@ -219,7 +219,18 @@ self-declaration of "done" is never sufficient (M13 lesson, re-learned).
 | vue | 2 waves (732e1dc dual-blocks/lang-dispatch/dedupe/metrics; 25fa235 script-setup contract/watch) + element-plus corpus 156/156 100% | 7 defects incl. entire setup-block loss, lang dispatch, duplicate components, script-setup contract loss | fixed + gated |
 | rust | 1 wave (this wave: 4 dead literals, tiers #419-D, T1 complexity incl. match-arm calibration, qc payload, ::new receiver targets, deferred instantiation resolution, 0-based columns, visibility defaults) + `ripgrep` corpus 1894/1901 (99.6%) at investigated residual | 9 defects incl. instantiation noise (90%+ unresolvable), dead if_let/trait_bound literals | fixed + gated |
 | c | 1 wave (this wave: metrics fake #5 cured, evidence tiers, qc payload, cast/call fix, goto de-counted) + `jq` corpus 1692/1692 100% | 8 defects incl. cast/call confusion (127 noise edges), malloc instantiates noise | fixed + gated |
-| svelte | 2 waves (d7784bf tiers/metrics/columns/dispatch; 7dcd251+this wave #419 A/B/C: snippets, rune noise, module-block ownership, kind catalog, payload pins) + `svelte` repo corpus floors true 0/0 | 11 defects total (incl. oracle type_arguments over-derivation, LIFO block-index inversion, render_tag opaque text) | fixed + gated; #419 A/B/C closed at fixture level; L5 pending owner spot-check |
+| svelte | 3 waves (d7784bf tiers/metrics/columns/dispatch; 7dcd251 + #419 A/B/C; this review: S5/S6 lexical-shadow and reactive-dedupe hardening) + `svelte` repo corpus floors true 0/0 | 13 defects total (including oracle type_arguments over-derivation, LIFO block-index inversion, render_tag opaque text, each/const scope collision, repeated `$:` target duplication) | fixed + gated; #419 A/B/C closed at fixture level; L5 pending owner spot-check |
+
+Svelte review hardening (2026-08-28): two adversarial defects were found after
+the prior CONFORMANT claim. S5 was a real scope-collision leak: each-loop
+bindings were not registered, and `{@const}` bindings were not propagated in
+declaration order. S6 was duplicate `$:` reactive-target symbols. New
+ fixtures failed before their fixes and pass after them: 18/18 Svelte fixtures,
+ all-language fixture regression pass, and focused S5/S6 mutants both CAUGHT.
+The prior full mutation evidence was not rerun to completion in this session;
+therefore no fresh 109/109 claim is made here. The existing 107/107 evidence
+plus the two focused catches is the honest current state. Owner spot-check
+sign-off remains pending per §5.6.
 
 Sign-off ritual (pending, per contract §5.6): owner samples claims per
 language against evidence files; formal per-language sign-off closes the
@@ -288,7 +299,7 @@ INVENTORY-DONE / GAPS-CLOSED / CONFORMANT.
 | typescript | CONFORMANT (2026-08-27, owner-approved plan; first web-family reference implementation) | 191/191 types | 10/10 (contains-overrides + exports-edges + import-edges pins) | 7/7 (generic-constraints typeParameters, visibility-payload, parameters-payload) | 3 tiers (structural, usage_contextual, import_based) | vue-core:typescript 100%/0% (floor verified; ledger 0.9% note stale) | 95 ms/file | typescript.md + real-typescript-analyzer.md | 3/3 checks |
 | javascript | CONFORMANT (2026-08-27, owner-approved plan; second web-family reference implementation) | 125/125 types | 9/9 (instantiations + contains-overrides + import-edges pins) | 6/6 (visibility-payload, parameters-payload) | 3 tiers (structural, usage_contextual, import_based) | lodash:javascript 100%/0% (floor unchanged by the wave) | 193.7 ms/file | javascript.md + real-javascript-analyzer.md | 3/3 checks |
 | vue | CONFORMANT (2026-08-27, owner-approved plan; third web-family reference implementation) | 37/37 types | 9/9 (script-relations pins + generic-props-emits + template-member-uses; expectRelationshipCount added — dedupe is now a permanent gate class) | 3/3 (payload-pins: complexity/visibility/parameters) | 3 tiers (structural, usage_contextual, import_based) | vue-core:vue 100%/0% (floor unchanged by the wave) | recorded in baseline | vue.md + real-vue-analyzer.md | 3/3 checks |
-| svelte | CONFORMANT (2026-08-27, owner-approved plan; fourth web-family reference implementation — web family individually complete) | 74/74 types | 9/9 (relationship-kinds pins all kinds; S1 template-uses pin) | 3/3 (payload-pins complexity + relationship-kinds parameters/visibility) | 3 tiers (structural, usage_contextual, import_based) | svelte:svelte 100%/0% (floor unchanged by the wave) | recorded in baseline | svelte.md + real-svelte-analyzer.md | 3/3 checks |
+| svelte | CONFORMANT (2026-08-27 baseline; S5/S6 review hardening verified 2026-08-28) | 74/74 types | 9/9 (relationship-kinds pins all kinds; S1 template-uses pin; S5 collision fixture adds scope coverage) | 3/3 (payload-pins complexity + relationship-kinds parameters/visibility; S6 reactive-dedupe adds symbol-count coverage) | 3 tiers (structural, usage_contextual, import_based) | svelte:svelte 100%/0% (floor unchanged) | recorded in baseline | svelte.md + real-svelte-analyzer.md | 3/3 checks |
 
 Java is the reference implementation: the first analyzer to be L5-closed
 (#251) AND completeness-gated under #419. Its per-section evidence lives in

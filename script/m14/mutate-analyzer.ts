@@ -728,6 +728,34 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, visibility: undefined })) }),
   },
   {
+    id: "svelte/reemit-shadowed-member-uses",
+    language: "svelte",
+    defectClass: "scope-blindness",
+    description: "re-emits Uses for each-loop / {@const} bindings that collide with a SAME-NAMED MEMBER (the S5 bug class: {#each rows as row} or {@const total = r.id} leaked fake uses -> member row/item/total)",
+    transform: r => {
+      const rels = r.relationships || []
+      const source = (rels.find((x: any) => x.type === "instantiates" || x.type === "uses")?.source) || "each-shadow-collision"
+      const extra = ["row", "item", "total"].map(name => ({
+        source, target: name, type: "uses", confidence: 0.95,
+        metadata: { isTemplateExpression: true },
+      }))
+      return { ...r, relationships: [...rels, ...extra] }
+    },
+  },
+  {
+    id: "svelte/reduplicate-reactive-targets",
+    language: "svelte",
+    defectClass: "symbol-duplication",
+    description: "re-adds duplicate symbols for $: reactive targets (the S6 bug class: the same variable assigned from multiple $: blocks declared once PER BLOCK)",
+    transform: r => ({
+      ...r,
+      symbols: [
+        ...(r.symbols ?? []),
+        ...(r.symbols ?? []).filter((s: any) => (s.metadata ?? {}).isReactiveDeclaration).map((s: any) => ({ ...s })),
+      ],
+    }),
+  },
+  {
     id: "groovy/drop-class-symbols",
     language: "groovy",
     defectClass: "symbol-loss",
