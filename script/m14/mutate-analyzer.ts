@@ -581,6 +581,66 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, parameters: undefined })) }),
   },
   {
+    id: "vue/drop-generic-macro-symbols",
+    language: "vue",
+    defectClass: "symbol-loss",
+    description: "drops prop/event symbols from the type-literal generic macro form (the V1 bug class: defineProps<{ id: string }>() emitted nothing)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => !((s.metadata ?? {}).isProp || (s.metadata ?? {}).isEmit)) }),
+  },
+  {
+    id: "vue/drop-template-member-uses",
+    language: "vue",
+    defectClass: "relationship-loss",
+    description: "drops template-expression Uses edges (the V2 bug class: {{ count }}, :label, @click emitted nothing)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.metadata ?? {}).isTemplateExpression) }),
+  },
+  {
+    id: "vue/reduplicate-contains",
+    language: "vue",
+    defectClass: "relationship-duplication",
+    description: "re-adds duplicate contains edges for script-side class members (the V3 bug class: sub-analyzer contains + vue pass = 2x)",
+    transform: r => {
+      const rels = r.relationships ?? []
+      const dupes = rels.filter((x: any) => String(x.type ?? x.relationshipType) === "contains" && (x.metadata ?? {}).evidenceClass === "structural")
+      return { ...r, relationships: [...rels, ...dupes] }
+    },
+  },
+  {
+    id: "vue/drop-contains-edges",
+    language: "vue",
+    defectClass: "relationship-loss",
+    description: "drops all contains edges (section B contains pin)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => String(x.type ?? x.relationshipType) !== "contains") }),
+  },
+  {
+    id: "vue/drop-import-edges",
+    language: "vue",
+    defectClass: "relationship-loss",
+    description: "drops imports edges (section B imports pin)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => String(x.type ?? x.relationshipType) !== "imports") }),
+  },
+  {
+    id: "vue/drop-complexity",
+    language: "vue",
+    defectClass: "payload-loss",
+    description: "zeroes the complexity payload on script functions (section C complexity pin)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, complexity: undefined })) }),
+  },
+  {
+    id: "vue/drop-visibility",
+    language: "vue",
+    defectClass: "payload-loss",
+    description: "drops the visibility payload from symbols (section C visibility pin)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, visibility: undefined })) }),
+  },
+  {
+    id: "vue/drop-parameters",
+    language: "vue",
+    defectClass: "payload-loss",
+    description: "drops the parameters payload from function symbols (section C parameters pin)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, parameters: undefined })) }),
+  },
+  {
     id: "groovy/drop-class-symbols",
     language: "groovy",
     defectClass: "symbol-loss",
@@ -697,6 +757,10 @@ async function main() {
     const real = await realAnalyzer(m.language)
     const mutant = {
       analyze: async (...args: any[]) => m.transform(await real.analyze(...args)),
+      // SFC languages (vue/svelte) run through engine parseFile in runLang;
+      // runLang applies this transform to the parseFile result so mutants are
+      // exercised on the real production path.
+      transform: m.transform,
     }
     const mutated = await runLang(m.language, mutant)
     // Caught = more failing fixtures OR more distinct problems inside
