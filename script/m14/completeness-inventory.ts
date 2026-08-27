@@ -178,6 +178,22 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     },
     title: "javascript pass (#419)",
   },
+  vue: {
+    id: "vue",
+    wasm: "tree-sitter-vue.wasm",
+    classification: "vue-completeness.json",
+    fixturesDir: "validation/m14/fixtures/vue",
+    docs: ["docs/analyzers/vue.md", "docs/analyzers/real-vue-analyzer.md"],
+    differentialCheck: "differential-vue",
+    perfKey: "vue-core:vue",
+    requiredKinds: ["calls", "extends", "instantiates", "uses", "references", "contains", "overrides", "exports", "imports"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "vue/template-decision-complexity" },
+      parameters: { key: "expectParameters", pin: "vue/script-sub-analyzer parameters" },
+      visibility: { key: "expectVisibility", pin: "vue/component visibility" },
+    },
+    title: "vue pass (#419)",
+  },
 }
 
 // Languages that have reached CONFORMANT and therefore run in npm run verify.
