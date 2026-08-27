@@ -517,11 +517,85 @@
       "id": "section-h-cross-language",
       "language": "vue",
       "status": "pass"
+    },
+    {
+      "description": "svelte: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "svelte",
+      "status": "pass"
+    },
+    {
+      "description": "svelte: 2 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "svelte",
+      "status": "pass"
+    },
+    {
+      "description": "svelte: 6 ruled, 0 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "svelte",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (svelte)",
+      "detail": "74 types, 32 handled, 21 silent, 2 gaps, 6 decisions",
+      "id": "section-a-structural",
+      "language": "svelte",
+      "status": "pass"
+    },
+    {
+      "description": "9 relationship kinds pinned by svelte fixtures",
+      "detail": "pinned: calls, contains, exports, extends, imports, instantiates, overrides, references, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "svelte",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for svelte (3)",
+      "detail": "complexity, parameters, visibility",
+      "id": "section-c-payload-matrix",
+      "language": "svelte",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
+      "id": "section-d-evidence-tiers",
+      "language": "svelte",
+      "status": "pass"
+    },
+    {
+      "description": "svelte:svelte at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor svelte:svelte: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "svelte",
+      "status": "pass"
+    },
+    {
+      "description": "svelte avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "svelte:svelte 19.3 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "svelte",
+      "status": "pass"
+    },
+    {
+      "description": "svelte analyzer docs present and committed",
+      "detail": "docs/analyzers/svelte.md, docs/analyzers/real-svelte-analyzer.md",
+      "id": "section-g-docs",
+      "language": "svelte",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "3 checks pass",
+      "id": "section-h-cross-language",
+      "language": "svelte",
+      "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "83bce9eda745720698bcaed2d709687c594307db",
-  "committedAt": "2026-08-27T23:37:12+02:00",
+  "commit": "7dbb1a578ef66d4d8761f0e6d546578be4fd3a93",
+  "committedAt": "2026-08-28T00:04:56+02:00",
   "data": {
     "languages": {
       "groovy": {
@@ -788,6 +862,56 @@
           },
           "section-g-docs": {
             "detail": "docs/analyzers/scala.md, docs/analyzers/real-scala-analyzer.md",
+            "status": "pass"
+          },
+          "section-h-cross-language": {
+            "detail": "3 checks pass",
+            "status": "pass"
+          }
+        }
+      },
+      "svelte": {
+        "gaps": [
+          "S1: template expressions emit NO references to the component's own members — {count}, label={label}, {#each items as item} (collection), {#await promise then value}, {@html raw}, {@const x = items.length}, {@debug items}, <svelte:component this={Comp}> all read script-side state but zero Uses/references edges are emitted. Only on: directives (calls) and {@render} (calls) produce edges; the template<->script data-flow is otherwise entirely silent.",
+          "S2: let { a, b } = $props() double-declares each binding — extractSvelteDeclarations emits Property symbols (isSvelteProp/fromRunes, component-owned) AND the JS sub-analyzer's destructured Variable symbols (isConst/isDestructured, unowned) both survive the merge. Every rune-prop binding appears twice with conflicting kinds/ownership, polluting symbol consumers."
+        ],
+        "nodeTypeCount": 74,
+        "pendingDecisions": [],
+        "ruledDecisions": [
+          "D1",
+          "D2",
+          "D3",
+          "D4",
+          "D5",
+          "D6"
+        ],
+        "sections": {
+          "section-a-structural": {
+            "detail": "74 types, 32 handled, 21 silent, 2 gaps, 6 decisions",
+            "status": "pass"
+          },
+          "section-b-relationship-kinds": {
+            "detail": "pinned: calls, contains, exports, extends, imports, instantiates, overrides, references, uses",
+            "status": "pass"
+          },
+          "section-c-payload-matrix": {
+            "detail": "complexity, parameters, visibility",
+            "status": "pass"
+          },
+          "section-d-evidence-tiers": {
+            "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
+            "status": "pass"
+          },
+          "section-e-differential": {
+            "detail": "floor svelte:svelte: missing=0, unexplained=0 (differential-baseline.json)",
+            "status": "pass"
+          },
+          "section-f-perf-budget": {
+            "detail": "svelte:svelte 19.3 ms/file",
+            "status": "pass"
+          },
+          "section-g-docs": {
+            "detail": "docs/analyzers/svelte.md, docs/analyzers/real-svelte-analyzer.md",
             "status": "pass"
           },
           "section-h-cross-language": {

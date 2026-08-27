@@ -14,7 +14,7 @@
     },
     {
       "description": "svelte adversarial fixtures",
-      "detail": "13/13 fixtures pass",
+      "detail": "16/16 fixtures pass",
       "id": "fixtures-svelte",
       "status": "pass"
     },
@@ -80,8 +80,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "83bce9eda745720698bcaed2d709687c594307db",
-  "committedAt": "2026-08-27T23:37:12+02:00",
+  "commit": "7dbb1a578ef66d4d8761f0e6d546578be4fd3a93",
+  "committedAt": "2026-08-28T00:04:56+02:00",
   "data": {
     "details": [
       {
@@ -380,7 +380,17 @@
         "problems": []
       },
       {
+        "fixture": "svelte/relationship-kinds",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "svelte/rune-call-filter",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "svelte/rune-props-dedupe",
         "ok": true,
         "problems": []
       },
@@ -391,6 +401,11 @@
       },
       {
         "fixture": "svelte/store-derived",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "svelte/template-member-uses",
         "ok": true,
         "problems": []
       },
@@ -1413,7 +1428,7 @@
       },
       "svelte": {
         "fail": 0,
-        "pass": 13
+        "pass": 16
       },
       "typescript": {
         "fail": 0,
