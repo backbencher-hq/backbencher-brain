@@ -194,6 +194,22 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     },
     title: "vue pass (#419)",
   },
+  svelte: {
+    id: "svelte",
+    wasm: "tree-sitter-svelte.wasm",
+    classification: "svelte-completeness.json",
+    fixturesDir: "validation/m14/fixtures/svelte",
+    docs: ["docs/analyzers/svelte.md", "docs/analyzers/real-svelte-analyzer.md"],
+    differentialCheck: "differential-svelte",
+    perfKey: "svelte:svelte",
+    requiredKinds: ["calls", "extends", "instantiates", "uses", "references", "contains", "overrides", "exports", "imports"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "svelte/payload-pins (script complexity)" },
+      parameters: { key: "expectParameters", pin: "svelte/script-sub-analyzer parameters" },
+      visibility: { key: "expectVisibility", pin: "svelte/component visibility" },
+    },
+    title: "svelte pass (#419)",
+  },
 }
 
 // Languages that have reached CONFORMANT and therefore run in npm run verify.
