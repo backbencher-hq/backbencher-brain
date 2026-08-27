@@ -301,11 +301,29 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       })
     }
 
+    // M14 #419 G1: rewrite import-reference sources from the placeholder
+    // "root" to the file's primary top-level type so references carry a
+    // symbol identity (imports precede declarations in source order) —
+    // matching kotlin. Scoped to isImportDep edges only: top-level
+    // declared-type refs also resolve to "root".
+    const primaryType = symbols.find((s) => {
+      if (s.ownerName) return false
+      return s.kind === ASTEngine.SymbolKind.Class || s.kind === ASTEngine.SymbolKind.Interface || s.kind === ASTEngine.SymbolKind.Enum || s.kind === ASTEngine.SymbolKind.Module
+    })
+    if (primaryType) {
+      for (const rel of relationships) {
+        if (rel.type === ASTEngine.RelationshipType.References && rel.source === "root" && rel.metadata?.isImportDep) {
+          rel.source = primaryType.name
+        }
+      }
+    }
+
     // Declared-type reference graph (M14): constructor params, val/var type
     // clauses, function params, return types, @throws annotations,
     // asInstanceOf/isInstanceOf targets. Absent until M14 — the corpus
     // oracle never checked it.
     this.collectDeclaredTypeRefs(rootNode, relationships)
+    this.collectExpressionUses(rootNode, relationships)
 
     this.classifyEvidenceTier(relationships)
 
@@ -604,8 +622,8 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       return "root"
     }
 
-    const emit = (decl: Node, roots: Node[], kind: string, relType = "declared_type"): void => {
-      const source = resolveSource(decl)
+    const emit = (decl: Node, roots: Node[], kind: string, relType = "declared_type", sourceOverride?: string): void => {
+      const source = sourceOverride ?? resolveSource(decl)
       for (const r of roots) {
         if (!r) continue
         const names: string[] = []
@@ -661,7 +679,9 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
             const c = n.namedChild(i)
             if (!c) continue
             if (c.type === "parameters") { sawParams = true; continue }
-            if (c.type === "generic_type" || c.type === "type_identifier" || c.type === "functional_type") {
+            // M14 #419 G5: tuple_type (and other *_type forms) in RETURN
+            // position — def pair(): (Int, String) references Int and String.
+            if (c.type === "generic_type" || c.type === "type_identifier" || c.type === "functional_type" || c.type === "tuple_type") {
               // @throws[IO] annotation type parses as generic_type("throws",
               // [IO]) and appears BEFORE parameters; skip "throws" itself,
               // emit its arguments as throws_type edges.
@@ -670,7 +690,9 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
                 if (argsNode) emit(n, [argsNode], "throws_annotation", "throws_type")
                 continue
               }
-              emit(n, [c], sawParams ? "return_type" : "annotation_type", sawParams ? "return_type" : "declared_type")
+              // M14 #419 G5: tuple_type return refs carry declaredOn tuple_type
+              // so the mutant pins the fix precisely.
+              emit(n, [c], c.type === "tuple_type" ? "tuple_type" : (sawParams ? "return_type" : "annotation_type"), sawParams ? "return_type" : "declared_type")
             }
           }
           break
@@ -696,6 +718,150 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
           break
         }
+        case "typed_pattern": {
+          // M14 #419 G2: case p: Point — the pattern type is the LAST named
+          // child (type_identifier / type form). Previously pattern types
+          // were invisible; only the case-class param types emitted refs.
+          const last = n.namedChild(n.namedChildCount - 1)
+          if (last) emit(n, [last], "typed_pattern", "pattern_type")
+          break
+        }
+        case "case_class_pattern": {
+          // M14 #419 G2: case Point(a, b) — the constructor type is the
+          // FIRST named child (type_identifier).
+          const first = n.namedChild(0)
+          if (first) emit(n, [first], "case_class_pattern", "pattern_type")
+          break
+        }
+        case "derives_clause": {
+          // M14 #419 G6: derives Show, Hashing — the clause references the
+          // derived typeclasses; source is the enclosing declaration.
+          emit(n, [n], "derives_clause", "derives_type")
+          break
+        }
+        case "type_definition": {
+          // M14 #419 G7: type Fn = (Int) => String — the alias references
+          // its RHS types; source is the ALIAS name itself (not the
+          // enclosing declaration). The alias's own type parameters are
+          // bindings, not references.
+          const tName = this.findChild(n, "type_identifier") ?? this.findChild(n, "identifier")
+          if (tName) {
+            const rhs: Node[] = []
+            for (let i = 0; i < n.namedChildCount; i++) {
+              const c = n.namedChild(i)
+              if (c && c !== tName && c.type !== "type_parameters") rhs.push(c)
+            }
+            emit(n, rhs, "type_definition", "type_alias", tName.text)
+          }
+          break
+        }
+        case "self_type": {
+          // M14 #419 G9: self: Service => — the self type is the LAST named
+          // child; source is the enclosing trait/class.
+          const last = n.namedChild(n.namedChildCount - 1)
+          if (last) emit(n, [last], "self_type", "self_type")
+          break
+        }
+        case "field_expression": {
+          // M14 #419 G3: Foo.bar method values — a field_expression whose
+          // receiver is a CAPITALIZED identifier is a type-qualified member
+          // handle and references the type. Call positions (the function of
+          // a call_expression, e.g. xs.map) are skipped — the call edge
+          // carries them; lowercase receivers (h.value) are Uses (G8, in
+          // collectExpressionUses). Package paths (com.foo.bar) start
+          // lowercase and never match.
+          const isCallFn = n.parent && n.parent.type === "call_expression" && n.parent.childForFieldName?.("function") === n
+          if (!isCallFn) {
+            const recv = this.leftmostIdentifier(n)
+            // The receiver is an `identifier` (Foo), NOT a type_identifier,
+            // so the emit helper's collectTypeNames would never see it — push
+            // the edge directly.
+            if (recv && recv.text.length > 0 && recv.text.charCodeAt(0) >= 65 && recv.text.charCodeAt(0) <= 90) {
+              const source = resolveSource(n)
+              const key = `${source}|${recv.text}|field_expression`
+              if (!emitted.has(key)) {
+                emitted.add(key)
+                relationships.push({
+                  source,
+                  target: recv.text,
+                  type: ASTEngine.RelationshipType.References,
+                  confidence: 0.95,
+                  metadata: { relationshipType: "method_value", declaredOn: "field_expression" },
+                })
+              }
+            }
+          }
+          break
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) walk(c)
+      }
+    }
+    walk(rootNode)
+  }
+
+  /**
+   * M14 #419 G4/G8: expression-level Uses edges.
+   * - interpolated_string_expression > interpolation: s"hi $name" USES the
+   *   interpolated identifier (simple $name form — the direct identifier
+   *   child). The ${expr} block form is expression-use territory (scala
+   *   emits no expression-level uses by design — D1/D3 boundary).
+   * - field_expression (non-call position): h.value reads/writes and nullary
+   *   access xs.length USE the receiver — scala had no field-access uses
+   *   collector (only extension methods emitted Uses), the family gap vs
+   *   java/groovy/kotlin. Receiver-only: never guess method-vs-field (D3
+   *   ruling). Call positions (xs.map(...)) are skipped — the call edge
+   *   carries them; capitalized receivers (Foo.bar) are References (G3,
+   *   collectDeclaredTypeRefs). Deduped per (source, target).
+   */
+  private collectExpressionUses(rootNode: Node, relationships: ASTEngine.UniversalRelationship[]): void {
+    const emitted = new Set<string>()
+    const resolveSource = (start: Node | null): string => {
+      let p: Node | null = start && (start.type === "function_definition" || start.type === "function_declaration")
+        ? start
+        : start ? start.parent : null
+      while (p) {
+        if (p.type === "function_definition" || p.type === "function_declaration") {
+          const name = this.findChild(p, "identifier")
+          if (name) return name.text
+        }
+        if (p.type === "class_definition" || p.type === "object_definition" || p.type === "trait_definition" || p.type === "enum_definition") {
+          const name = this.findChild(p, "identifier")
+          if (name) return name.text
+        }
+        p = p.parent
+      }
+      return "root"
+    }
+    const emitUse = (n: Node, target: string): void => {
+      if (!target) return
+      const source = resolveSource(n.parent)
+      const key = `${source}|${target}|uses`
+      if (emitted.has(key)) return
+      emitted.add(key)
+      relationships.push({
+        source,
+        target,
+        type: ASTEngine.RelationshipType.Uses,
+        confidence: 0.9,
+        metadata: { relationshipType: "expression_use" },
+      })
+    }
+    const walk = (n: Node): void => {
+      if (n.type === "interpolation") {
+        const id = n.namedChild(0)
+        if (id && id.type === "identifier") emitUse(n, id.text)
+      } else if (n.type === "field_expression") {
+        const isCallFn = n.parent && n.parent.type === "call_expression" && n.parent.childForFieldName?.("function") === n
+        if (!isCallFn) {
+          const recv = this.leftmostIdentifier(n)
+          // Capitalized receivers are type references (G3) — never Uses.
+          if (recv && recv.text.length > 0 && !(recv.text.charCodeAt(0) >= 65 && recv.text.charCodeAt(0) <= 90)) {
+            emitUse(n, recv.text)
+          }
+        }
       }
       for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
@@ -713,7 +879,10 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       const conf = typeof r.confidence === "number" ? r.confidence : 1
       if (t === "contains" || t === "exports") { md.evidenceClass = "structural"; continue }
       if (t === "references") {
-        md.evidenceClass = "reference_qualified"
+        // M14 #419 G1: isImportDep — the JVM-family tier bug (the classifier
+        // ignored the flag, so every scala import edge was mislabeled
+        // reference_qualified; kotlin/java/groovy now recognize their flags).
+        md.evidenceClass = md.isImportDep ? "import_based" : "reference_qualified"
         continue
       }
       if (t === "extends" || t === "implements") {
@@ -1519,6 +1688,18 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         endIndex: node.endIndex,
       },
     })
+  }
+
+  /**
+   * M14 #419 G3/G8: the LEFTMOST identifier of a field_expression — for
+   * a.b.c that is a (recursing through nested field_expressions); package
+   * paths (com.foo.bar) yield com, so capitalized-receiver detection is
+   * safe against package-qualified members.
+   */
+  private leftmostIdentifier(node: Node): Node | null {
+    if (node.type === "identifier") return node
+    const first = node.namedChild(0)
+    return first ? this.leftmostIdentifier(first) : null
   }
 
   private findChild(node: Node, type: string): Node | null {
