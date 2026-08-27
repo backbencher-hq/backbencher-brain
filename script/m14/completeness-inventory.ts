@@ -160,6 +160,24 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     },
     title: "typescript pass (#419)",
   },
+  javascript: {
+    id: "javascript",
+    wasm: "tree-sitter-javascript.wasm",
+    classification: "javascript-completeness.json",
+    fixturesDir: "validation/m14/fixtures/javascript",
+    docs: ["docs/analyzers/javascript.md", "docs/analyzers/real-javascript-analyzer.md"],
+    differentialCheck: "differential-javascript",
+    perfKey: "lodash:javascript",
+    requiredKinds: ["calls", "extends", "instantiates", "uses", "references", "contains", "overrides", "exports", "imports"],
+    payloads: {
+      qualified_calls: { key: "expectQualifiedCalls", pin: "javascript/payload-pins" },
+      docstrings: { key: "expectComments", pin: "javascript/payload-docs" },
+      complexity: { key: "expectComplexity", pin: "javascript/complexity-parity" },
+      visibility: { key: "expectVisibility", pin: "javascript/private-methods" },
+      parameters: { key: "expectParameters", pin: "javascript/parameters pin (wave)" },
+    },
+    title: "javascript pass (#419)",
+  },
 }
 
 // Languages that have reached CONFORMANT and therefore run in npm run verify.
