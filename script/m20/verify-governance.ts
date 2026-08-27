@@ -4,6 +4,7 @@
 // the planned ledger without pretending that planned issues are verified.
 // It also mutates in-memory copies of the ledger to prove closure rules fail.
 
+import { createHash } from "node:crypto"
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
@@ -118,6 +119,10 @@ function sourceFingerprintFor(issue: Issue): string {
   if (issue.tool === "bb_patterns") return patternSourceFingerprint(ROOT)
   if (issue.tool === "bb_security") return securitySourceFingerprint(ROOT)
   if (issue.tool === "bb_doc") return docSourceFingerprint(ROOT)
+  if (issue.tool === "cross-tool") {
+    const joined = [migrationSourceFingerprint(ROOT), patternSourceFingerprint(ROOT), securitySourceFingerprint(ROOT), docSourceFingerprint(ROOT)].join("|")
+    return createHash("sha256").update(joined).digest("hex")
+  }
   return migrationSourceFingerprint(ROOT)
 }
 
