@@ -68,15 +68,14 @@ These facts establish an observability/reliability gap. They do not establish th
 ### R — Relationship and post-processing scale
 
 - **R1:** benchmark relationship resolution and enrichment over increasing relationship counts.
-- **R2:** measure and justify pagination/query strategy; specifically test whether `LIMIT/OFFSET` causes superlinear growth.
-- **R3:** measure taint, health, gravity, and integrity passes independently on large indexes.
+- **R2:** measure gravity, taint, health, and integrity passes independently, including partial-failure visibility and resource use.
+- **R3:** measure cancellation, resume, and bounded-failure behavior on interrupted indexing runs.
 
 ### X — Real-repository acceptance
 
 - **X1:** cold controlled fixture with known file/symbol/relationship ground truth.
 - **X2:** real small, medium, and large repositories selected from `$HOME` and `$HOME/fixtures`.
-- **X3:** full-run cancellation, resume, and bounded-failure behavior.
-- **X4:** final report that classifies each observed bottleneck as confirmed, disproven, or unresolved.
+- **X3:** final report that classifies each observed bottleneck as confirmed, disproven, or unresolved.
 
 ## Required repositories
 
