@@ -141,9 +141,12 @@ O(n) scans.
 
 - External validation: pinned `jq` (45 C files) and `sqlite` (60 C files)
   achieved 100% tree-truth coverage with no missing edges; SQLite retained two
-  documented opaque indirect-call residuals. The broader historical 400-file
-  probe had 122 parse-recovery files, 0 crashes, and 0 timeouts. `Clyde` had
-  no `.c` files and was not counted as C evidence.
+  documented opaque indirect-call residuals. Both floors are enforced in
+  `validation/m14/differential-baseline.json` (`jq:c` 0/0, `sqlite:c` 0 missing
+  / 2 unexplained) so any regression in either corpus fails `audit:differential`.
+  `fmt`'s single C file (16/16, 0/0) is pinned as `fmt:c`. The broader
+  historical 400-file probe had 122 parse-recovery files, 0 crashes, and
+  0 timeouts. `Clyde` had no `.c` files and was not counted as C evidence.
 - Symbols 3692 / relationships 14593 / wall 58.3 s / **0 crashes / 0 timeouts
   / 122 error files** (30.5%) — down from 139/400 (34.8%) with the previous
   grammar; all 122 are genuine hard-system C gaps of the newest available
