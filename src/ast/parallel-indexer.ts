@@ -320,6 +320,49 @@ export interface ParallelIndexingStats {
   endTime?: number
   filesPerSecond?: number
   errors: Array<{ file: string; error: string }>
+  /** M21.I1: phase-level timing/accounting telemetry for indexing runs. */
+  phases?: IndexPhaseTimings
+}
+
+/**
+ * M21.I1 phase telemetry. Every duration is wall-clock milliseconds measured
+ * inside the index run; boundaries are documented so a reported completion
+ * duration can be reconciled with the phases it actually covers.
+ *
+ * Phase boundaries (all wall-clock, measured around the real code paths):
+ *  - discoveryMs: discoverAndFilterFiles (walk + ignore rules + skip-unchanged)
+ *  - workerStartupMs: the pool fork readiness probe (60s worst case)
+ *  - parseMs: time inside processWithWorkerPool/processInProcess (per-file parse)
+ *  - dbFlushMs: accumulated storeResults wall time (batches flushed inside the pool)
+ *  - finalAccountingMs: outcome aggregation + getIndexingStats + status update
+ *  - postProcessingMs: resolveRelationships/enrich/gravity/taint/health, only when
+ *    a full (non-incremental, non-skipPostProcessing) run executes it
+ *
+ * The reported completion duration (endTime - startTime) covers discovery,
+ * worker startup, parse, db flush, and final accounting. Post-processing is a
+ * separate phase and is NOT included in the reported completion duration; it is
+ * reported separately so the two never blur together.
+ */
+export interface IndexPhaseTimings {
+  discoveryMs: number
+  workerStartupMs: number
+  parseMs: number
+  dbFlushMs: number
+  finalAccountingMs: number
+  postProcessingMs?: number
+  mode: "worker-pool" | "in-process"
+  /** Number of pool workers actually spawned (0 for in-process mode). */
+  workerCount: number
+  /** Files handed to the parse phase (after discovery filtering). */
+  parsedFiles: number
+  /** Configured worker batch size used for pool dispatch. */
+  workerBatchSize: number
+  /** Configured DB batch size used for storeResults. */
+  dbBatchSize: number
+  /** Retries observed in the worker pool (0 for in-process mode). */
+  retries: number
+  /** True when discovery found nothing to parse (no-op run, no parser work). */
+  noop: boolean
 }
 
 export interface FileResult {
@@ -659,6 +702,7 @@ async function processInProcess(
   projectPath: string,
   files: string[],
   onProgress: (processed: number, total: number, currentFile: string) => void,
+  telemetry?: { dbFlushMs: number; retries: number; workerCount: number },
 ): Promise<FileResult[]> {
   const results: FileResult[] = []
   let processed = 0
@@ -728,10 +772,13 @@ async function processInProcess(
     // Store results in DB every 100 files (same as worker pool batch)
     if (results.length >= 100) {
       const batch = results.splice(0, results.length)
+      const flushStart = Date.now()
       try {
         await storeResults(projectId as any, projectPath, batch, { skipResolution: true })
+        if (telemetry) telemetry.dbFlushMs += Date.now() - flushStart
         log.info(`stored ${batch.length} file results in DB`)
       } catch (e: any) {
+        if (telemetry) telemetry.dbFlushMs += Date.now() - flushStart
         log.error(`storeResults failed: ${e?.message || String(e)}`)
       }
       // Re-add for return value
@@ -743,10 +790,13 @@ async function processInProcess(
   // relationship resolution pass runs once at the end (parity with the
   // opencode brain's final pass — otherwise cross-file edges are missing).
   if (results.length > 0) {
+    const flushStart = Date.now()
     try {
       await storeResults(projectId as any, projectPath, results, { skipResolution: false })
+      if (telemetry) telemetry.dbFlushMs += Date.now() - flushStart
       log.info(`stored final ${results.length} file results in DB`)
     } catch (e: any) {
+      if (telemetry) telemetry.dbFlushMs += Date.now() - flushStart
       log.error(`final storeResults failed: ${e?.message || String(e)}`)
     }
   }
@@ -836,6 +886,7 @@ export async function processWithWorkerPool(
   projectPath: string,
   files: string[],
   onProgress: (processed: number, total: number, currentFile: string) => void,
+  telemetry?: { dbFlushMs: number; retries: number; workerCount: number },
 ): Promise<FileResult[]> {
   const concurrency = ParallelIndexerConfig.concurrency
   const batchSize = ParallelIndexerConfig.workerBatchSize
@@ -852,10 +903,13 @@ export async function processWithWorkerPool(
     batchToStore: FileResult[],
   ): Promise<{ symbols: number; relationships: number; imports: number; failed?: boolean }> => {
     if (batchToStore.length === 0) return { symbols: 0, relationships: 0, imports: 0 }
+    const flushStart = Date.now()
     try {
       const stats = await storeResults(projectId, projectPath, batchToStore, { skipResolution: true })
+      if (telemetry) telemetry.dbFlushMs += Date.now() - flushStart
       return stats
     } catch (e: any) {
+      if (telemetry) telemetry.dbFlushMs += Date.now() - flushStart
       log.error("storeResults failed", { error: e?.message, batchSize: batchToStore.length })
       return { symbols: -1, relationships: -1, imports: -1, failed: true }
     }
@@ -921,6 +975,7 @@ export async function processWithWorkerPool(
                 onProgress(processed, files.length, f)
               } else {
                 fileRetries.set(f, retries)
+                if (telemetry) telemetry.retries++
                 fileQueue.unshift(f)
               }
             }
@@ -946,6 +1001,7 @@ export async function processWithWorkerPool(
                 onProgress(processed, files.length, f)
               } else {
                 fileRetries.set(f, retries)
+                if (telemetry) telemetry.retries++
                 fileQueue.unshift(f)
               }
             }
@@ -965,6 +1021,7 @@ export async function processWithWorkerPool(
         log.error("worker pool unavailable — no tsx binary found (dev mode)")
         return
       }
+      if (telemetry) telemetry.workerCount++
 
       const worker = fork(workerPath, workerArgs, {
         env: { ...process.env, BB_POOL_WORKER: "1" },
@@ -2395,17 +2452,36 @@ export async function indexProjectParallel(
 
   Bus.publishSafe(BrainService.Event.IndexingStarted, { projectId })
 
+  const phases: IndexPhaseTimings = {
+    discoveryMs: 0,
+    workerStartupMs: 0,
+    parseMs: 0,
+    dbFlushMs: 0,
+    finalAccountingMs: 0,
+    mode: "worker-pool",
+    workerCount: 0,
+    parsedFiles: 0,
+    workerBatchSize: ParallelIndexerConfig.workerBatchSize,
+    dbBatchSize: ParallelIndexerConfig.dbBatchSize,
+    retries: 0,
+    noop: false,
+  }
 
   try {
+    const discoveryStart = Date.now()
     const files = options.skipDiscovery && options.files
       ? options.files.filter(f => !shouldSkipCli(f) && hasValidExtension(f))
       : await discoverAndFilterFiles(projectId, projectPath, stats, options.files, options.excludePatterns)
+    phases.discoveryMs = Date.now() - discoveryStart
 
     // const files = await discoverAndFilterFiles(projectId, projectPath, stats, options.files)
     stats.totalFiles = files.length + stats.skippedFiles
+    phases.parsedFiles = files.length
 
     if (files.length === 0) {
       log.warn("no files to index (all skipped or none found)")
+      phases.noop = true
+      stats.phases = phases
 
       // Get global stats so they aren't 0
       const dbStats = await getIndexingStats(projectId)
@@ -2413,6 +2489,7 @@ export async function indexProjectParallel(
       stats.relationshipsFound = dbStats.relationships
       stats.endTime = Date.now()
       stats.processedFiles = stats.skippedFiles
+      phases.finalAccountingMs = Date.now() - discoveryStart - phases.discoveryMs
 
       await BrainDatabase.updateIndexStatus(projectId, {
         lastIndexed: Date.now(),
@@ -2443,6 +2520,7 @@ export async function indexProjectParallel(
     // Falls back to in-process only if fork() is unavailable
     let processFn = processWithWorkerPool
     // Test if fork works by spawning the binary with BB_POOL_WORKER=1
+    const workerStartupStart = Date.now()
     try {
       const { fork } = await import("child_process")
       const { workerPath: testWorkerPath, workerArgs: testWorkerArgs } = resolvePoolWorkerFork()
@@ -2482,7 +2560,11 @@ export async function indexProjectParallel(
       log.warn("worker pool fork unavailable, falling back to in-process", { error: e?.message })
       processFn = processInProcess
     }
+    phases.workerStartupMs = Date.now() - workerStartupStart
+    phases.mode = processFn === processInProcess ? "in-process" : "worker-pool"
 
+    const parseStart = Date.now()
+    const poolTelemetry = { dbFlushMs: 0, retries: 0, workerCount: 0 }
     const results = await processFn(projectId, projectPath, files, (processed, total, file) => {
       stats.processedFiles = processed + stats.skippedFiles
 
@@ -2509,7 +2591,16 @@ export async function indexProjectParallel(
           options.onProgress({ ...stats })
         }
       }
-    })
+    }, poolTelemetry)
+    phases.parseMs = Date.now() - parseStart
+    phases.dbFlushMs = poolTelemetry.dbFlushMs
+    phases.retries = poolTelemetry.retries
+    phases.workerCount = poolTelemetry.workerCount
+    stats.phases = phases
+
+    // M21.I1: final accounting spans outcome aggregation, missed-file fallback,
+    // DB stats read, and status update — everything between parse end and endTime.
+    const finalAccountingStart = Date.now()
 
     // Aggregate one final outcome per input file. Worker retries can append a
     // failure and then a later success for the same path; counting the raw
@@ -2608,6 +2699,7 @@ export async function indexProjectParallel(
     stats.importsFound = stored.imports // We don't have total imports in dbStats yet
 
     stats.endTime = Date.now()
+    phases.finalAccountingMs = Date.now() - finalAccountingStart
     const duration = (stats.endTime - stats.startTime) / 1000
     stats.filesPerSecond = stats.processedFiles / duration
 
@@ -2625,6 +2717,7 @@ export async function indexProjectParallel(
     })
 
     if (!options.isIncremental && !options.skipPostProcessing) {
+      const postProcessingStart = Date.now()
       try {
         log.debug("running heavy cross-symbol taints and health metrics (full index only)")
 
@@ -2697,6 +2790,7 @@ export async function indexProjectParallel(
       } catch (err) {
         log.warn("failed to compute project health or resolve taints", { error: err })
       }
+      phases.postProcessingMs = Date.now() - postProcessingStart
     } else {
       log.debug(options.skipPostProcessing
         ? "skipping heavy post-processing because the caller requested deferred finalization"
