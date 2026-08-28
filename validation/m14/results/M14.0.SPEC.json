@@ -742,8 +742,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "d0816c75a5ae47698c1faa5e7b0480e1bde9132e",
-  "committedAt": "2026-08-28T17:14:55+02:00",
+  "commit": "0452873c5c799bd045d0f5378f1522d9a2246af7",
+  "committedAt": "2026-08-28T17:39:05+02:00",
   "data": {
     "languages": {
       "c": {
@@ -1282,6 +1282,9 @@
     },
     {
       "description": "groovy G1-G8 closed fixture-first 2026-08-27 (34/34 fixtures, 41/41 mutants incl. 13 groovy); S1-S5 ruled: gstring Uses declared limitation (grammar emits no interpolation nodes), JPMS never-reachable, exports/apiContractPath NOT EMITTED, parameters GATED; exports + permits declared not-required for groovy"
+    },
+    {
+      "description": "cpp rulings CPP-D1/D2/D3 (2026-08-28): GNU asm + extension_expression parsed not modeled; MSVC SEH/declspec/based/call/pointer modifiers parsed not modeled; cross-file resolution + template instantiation across TUs are per-file by contract. 256/256 types classified A-H 8/8; fmt:cpp differential 145/145 0 missing 0 unexplained; 115/115 mutants incl. 3 cpp"
     }
   ],
   "runtime": "node v24.3.0",
