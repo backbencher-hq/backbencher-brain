@@ -7,10 +7,9 @@
   "passed": 40,
   "failed": 0,
   "negativeCases": 6,
-  "currentCommit": "cbdecd2a2055c616057f1090335fb5c51abb048e",
+  "currentCommit": "48c5317a0867c5c9baded14c6450766857470d18",
   "workingTreeRelevantChanges": [
     " M docs/data/m10-benchmark-last-run.json",
-    " M script/m21/verify-governance.ts",
     " M src/ast/real-go-analyzer.ts",
     " M validation/m13/results/d1.json",
     " M validation/m13/results/d2.json",
@@ -58,11 +57,12 @@
     "?? script/m20/benchmark-tool-latency.ts",
     "?? script/m20/diagnose-index-phases.ts",
     "?? validation/m14/fixtures/go/implements-params.expectation.json",
-    "?? validation/m14/fixtures/go/implements-params.go"
+    "?? validation/m14/fixtures/go/implements-params.go",
+    "?? validation/m20/results/PERF-DIAGNOSTIC.json"
   ],
   "verifierCommand": "bun run script/m21/verify-x3-closure.ts",
   "evidenceFile": "X3.json",
-  "generatedAt": "2026-08-28T23:20:47.764Z",
+  "generatedAt": "2026-08-28T23:23:42.091Z",
   "closure": {
     "issuesTotal": 21,
     "completedVerified": [
