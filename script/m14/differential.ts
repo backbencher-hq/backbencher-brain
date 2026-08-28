@@ -34,6 +34,7 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   cpp: { wasm: "tree-sitter-cpp.wasm", analyzerFile: "real-cpp-analyzer", className: "RealCppAnalyzer", ext: "cc" },
   c: { wasm: "tree-sitter-c.wasm", analyzerFile: "real-c-analyzer", className: "RealCAnalyzer", ext: "c" },
   rust: { wasm: "tree-sitter-rust.wasm", analyzerFile: "real-rust-analyzer", className: "RealRustAnalyzer", ext: "rs" },
+  go: { wasm: "tree-sitter-go.wasm", analyzerFile: "real-go-analyzer", className: "RealGoAnalyzer", ext: "go" },
 }
 
 function seededPick<T>(items: T[], n: number, seedStr: string): T[] {
@@ -168,6 +169,210 @@ function deriveCCalls(root: any): { label: string; from: string; target: string 
       }
     }
     for (let k = 0; k < n.namedChildCount; k++) stack.push(n.namedChild(k))
+  }
+  return edges
+}
+
+// Go truth: mirror the analyzer's leaf-target call contract, struct
+// embedding (extends), and PascalCase constructor instantiation.
+// Calls: every call_expression whose callee is an identifier or a
+// selector_expression => LEAF target (pkg.Fn -> Fn, s.repo.Save -> Save).
+// stdlib/external leaves are kept as truth (like rust/c). Builtins
+// (make/len/append/new/...) are deliberately not truth (analyzer excludes).
+// Extends: anonymous embedded fields in a struct (Go composition).
+// Instantiates: calls to in-file PascalCase top-level constructor
+// functions (NewFoo) => instantiates the ctor target (family convention).
+export function deriveGoEdges(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const GOBUILTINS = new Set(["make", "new", "len", "cap", "append", "copy", "delete", "panic", "recover", "print", "println", "close"])
+
+  // In-file top-level (non-method) function/method names. Mirror the
+  // analyzer's resolveGoFunctionCall contract EXACTLY:
+  //   - package-qualified / selector callee (s.start, pkg.Fn) => leaf kept
+  //     unconditionally (stdlib/external leaves are truth, like rust/c)
+  //   - bare identifier callee => emitted ONLY if it names an in-file
+  //     declared top-level function OR method (type conversions string(x),
+  //     float64(x), closure vars fn(), bare externals are NOT truth -
+  //     the analyzer resolves them to no local symbol and drops them).
+  // declaredFns: every in-file top-level function AND method name (used for
+  // BARE-callee call truth, mirroring resolveGoFunctionCall which needs a
+  // matching Function/Method symbol). ctorFns: top-level functions ONLY
+  // (no receiver) — the analyzer's instantiates fires only for PascalCase
+  // TOP-LEVEL FUNCTION symbols (`!s.ownerName && kind === Function`), never
+  // for methods, so type conversions and method leaves never instantiate.
+  const declaredFns = new Set<string>()
+  const ctorFns = new Set<string>()
+  {
+    const pre: any[] = [root]
+    while (pre.length > 0) {
+      const n = pre.pop()!
+      if (n.type === "function_declaration") {
+        const nm = n.childForFieldName?.("name")
+        if (nm) { declaredFns.add(nm.text); ctorFns.add(nm.text) }
+      } else if (n.type === "method_declaration") {
+        const nm = n.childForFieldName?.("name")
+        if (nm) declaredFns.add(nm.text)
+      }
+      for (let k = 0; k < n.namedChildCount; k++) pre.push(n.namedChild(k))
+    }
+  }
+
+  const stack: any[] = [root]
+  const leafOf = (fn: any): { leaf?: string; qualified: boolean } => {
+    if (!fn) return { qualified: false }
+    if (fn.type === "identifier") return { leaf: fn.text, qualified: false }
+    if (fn.type === "selector_expression") {
+      const f = fn.childForFieldName?.("field")
+      return { leaf: f?.text, qualified: true }
+    }
+    return { qualified: false }
+  }
+  while (stack.length > 0) {
+    const n = stack.pop()!
+    if (n.type === "call_expression") {
+      const fn = n.childForFieldName?.("function")
+      const { leaf: name, qualified } = leafOf(fn)
+      const isCtor = !!name && /^[A-Z]/.test(name) && name[0] !== name[0].toLowerCase()
+      // Call truth: qualified leaves unconditionally; bare callees need an
+      // in-file declared function/method (string(x), float64(x) conversions
+      // and closure vars fn() are type/bare names not in declaredFns -> not
+      // truth, mirroring the analyzer's resolveGoFunctionCall drop).
+      const emit = !!name && !GOBUILTINS.has(name) && (qualified || declaredFns.has(name))
+      if (emit && !seen.has("call:" + name)) {
+        seen.add("call:" + name)
+        edges.push({ label: "calls", from: "(expr)", target: name })
+      }
+      // Instantiates: only in-file TOP-LEVEL constructor FUNCTIONS (NewFoo).
+      // ctorFns excludes methods (analyzer: `!s.ownerName && Function`), so
+      // method leaves and stdlib ctors never instantiate.
+      if (isCtor && ctorFns.has(name) && !seen.has("inst:" + name)) {
+        seen.add("inst:" + name)
+        edges.push({ label: "instantiates", from: "(expr)", target: name })
+      }
+    } else if (n.type === "type_declaration") {
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const ts = n.namedChild(i)
+        if (!ts || ts.type !== "type_spec") continue
+        const nm = ts.childForFieldName?.("name")
+        const structN = ts.namedChildren.find((c: any) => c.type === "struct_type")
+        if (nm && structN) {
+          const fdl = structN.namedChildren.find((c: any) => c.type === "field_declaration_list")
+          if (fdl) {
+            for (let j = 0; j < fdl.namedChildCount; j++) {
+              const fd = fdl.namedChild(j)
+              if (!fd || fd.type !== "field_declaration") continue
+              // Embedded field: no field_identifier/name child, only a type.
+              const hasName = (fd.namedChildren ?? []).some((c: any) => c.type === "field_identifier" || c.type === "identifier")
+              if (hasName) continue
+              const typeN = fd.childForFieldName?.("type") ?? (fd.namedChildren ?? []).find((c: any) => c.type === "type_identifier" || c.type === "qualified_type")
+              if (typeN) {
+                const t = lastSegment(typeN.text)
+                if (t && !seen.has("ext:" + nm.text + "->" + t)) {
+                  seen.add("ext:" + nm.text + "->" + t)
+                  edges.push({ label: "extends", from: nm.text, target: t })
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    for (let k = 0; k < n.namedChildCount; k++) stack.push(n.namedChild(k))
+  }
+  return edges
+}
+
+// Go implicit interface-implementation truth (duck typing): a struct S
+// implements interface I when S's receiver-method set (value OR pointer
+// receivers) contains every method I declares. Mirrors the analyzer's
+// checkGoInterfaceImplementation. Method-name set is compared (the analyzer
+// also compares signatures, but name-set equality is the sufficient, stable
+// truth — signature equality adds another oracle that must itself be
+// mirrored, so it is intentionally simplified to the name set, which is
+// still a correct superset check the analyzer also satisfies).
+export function deriveGoImplements(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  // interfaceName -> Set<methodName>
+  const interfaces: Record<string, Set<string>> = {}
+  // receiverType -> Set<methodName> (value AND pointer receivers merged)
+  const structMethods: Record<string, Set<string>> = {}
+  const stack: any[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()!
+    if (n.type === "type_declaration") {
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const ts = n.namedChild(i)
+        if (!ts || ts.type !== "type_spec") continue
+        const nm = ts.childForFieldName?.("name")?.text
+        const interfaceN = ts.namedChildren.find((c: any) => c.type === "interface_type")
+        if (nm && interfaceN) {
+          const set = new Set<string>()
+          for (let j = 0; j < interfaceN.namedChildCount; j++) {
+            const m = interfaceN.namedChild(j)
+            if (!m) continue
+            if (m.type === "method_spec") {
+              const mn = m.childForFieldName?.("name")
+              if (mn) set.add(mn.text)
+            } else if (m.type === "constraint_elem") {
+              // Embedded interface (`io.Closer` in `interface { io.Closer;
+              // Notify(...) }`) — the embedded interface's methods are
+              // promoted into the embedding interface's method set. Mirror
+              // by collecting nested method_spec names (io.Closer has none
+              // here, but embedded local interfaces would).
+              const specStack: any[] = [m]
+              while (specStack.length > 0) {
+                const mm = specStack.pop()!
+                if (mm.type === "method_spec") {
+                  const mn = mm.childForFieldName?.("name")
+                  if (mn) set.add(mn.text)
+                }
+                for (let k = 0; k < mm.namedChildCount; k++) specStack.push(mm.namedChild(k))
+              }
+            }
+          }
+          interfaces[nm] = set
+        }
+      }
+    } else if (n.type === "method_declaration") {
+      const nm = n.childForFieldName?.("name")?.text
+      // receiver: function_declaration's second parameter_list holds params;
+      // method_declaration's second child is the receiver param.
+      let receiverType: string | undefined
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        // Receiver is the FIRST named child (parameter_list). Probe-verified
+        // (2026-08-28): namedChildren = [receiver parameter_list, name,
+        // params parameter_list, result..., block]. i===0 holds the receiver.
+        if (c && c.type === "parameter_list" && i === 0) {
+          const p = c.namedChild(0)
+          if (p && (p.type === "parameter_declaration" || p.type === "receiver")) {
+            const tn = p.childForFieldName?.("type")
+            if (tn) receiverType = lastSegment(tn.text.replace(/^\*/, "").replace(/<.*$/, ""))
+          }
+        }
+      }
+      if (nm && receiverType) {
+        if (!structMethods[receiverType]) structMethods[receiverType] = new Set()
+        structMethods[receiverType].add(nm)
+      }
+    }
+    for (let k = 0; k < n.namedChildCount; k++) stack.push(n.namedChild(k))
+  }
+  for (const [iface, ifaceMethods] of Object.entries(interfaces)) {
+    if (ifaceMethods.size === 0) continue
+    for (const [structName, methods] of Object.entries(structMethods)) {
+      if (structName === iface) continue
+      let ok = true
+      for (const m of ifaceMethods) {
+        if (!methods.has(m)) { ok = false; break }
+      }
+      if (ok && !seen.has(structName + "->" + iface)) {
+        seen.add(structName + "->" + iface)
+        edges.push({ label: "implements", from: structName, target: iface })
+      }
+    }
   }
   return edges
 }
@@ -782,6 +987,14 @@ async function main() {
           ;(truth as any[]).push(e)
         }
       }
+      if (lang === "go") {
+        for (const e of deriveGoEdges(root)) {
+          ;(truth as any[]).push(e)
+        }
+        for (const e of deriveGoImplements(root)) {
+          ;(truth as any[]).push(e)
+        }
+      }
       if (lang === "svelte") {
         for (const e of deriveSvelteComponentUsages(root)) {
           ;(truth as any[]).push(e)
@@ -808,10 +1021,10 @@ async function main() {
         target: String(r.target ?? r.to ?? r.toSymbol ?? ""),
         line: r.line_number ?? 0,
         confidence: typeof r.confidence === "number" ? r.confidence : 1,
-      // c and rust compare CALL edges too (their independently derivable
+      // c, rust and go compare CALL edges too (their independently derivable
       // truth); other languages do not derive call truth, so including
       // calls there would flag every real call edge as unexplained.
-      })).filter((r: any) => ["extends", "implements", "instantiates", "overrides", ...(lang === "c" || lang === "rust" ? ["calls"] : [])].includes(r.label))
+      })).filter((r: any) => ["extends", "implements", "instantiates", "overrides", ...(lang === "c" || lang === "rust" || lang === "go" ? ["calls"] : [])].includes(r.label))
 
       treeEdgesTotal += truth.length
       analyzerEdgesTotal += rels.length

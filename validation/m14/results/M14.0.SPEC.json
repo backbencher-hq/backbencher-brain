@@ -813,11 +813,85 @@
       "id": "section-h-cross-language",
       "language": "rust",
       "status": "pass"
+    },
+    {
+      "description": "go: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "go",
+      "status": "pass"
+    },
+    {
+      "description": "go: 0 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "go",
+      "status": "pass"
+    },
+    {
+      "description": "go: 3 ruled, 0 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "go",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (go)",
+      "detail": "107 types, 36 handled, 67 silent, 0 gaps, 3 decisions",
+      "id": "section-a-structural",
+      "language": "go",
+      "status": "pass"
+    },
+    {
+      "description": "8 relationship kinds pinned by go fixtures",
+      "detail": "pinned: calls, contains, declared_type, extends, go_function_call, go_instantiation, go_interface_implementation, go_package_scope_call, go_selector_use, go_struct_embedding, implements, imports, instantiates, references, return_type, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "go",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for go (2)",
+      "detail": "complexity, qualified_calls",
+      "id": "section-c-payload-matrix",
+      "language": "go",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "5 tier(s) pinned: import_based, inferred, reference_qualified, structural, usage_contextual",
+      "id": "section-d-evidence-tiers",
+      "language": "go",
+      "status": "pass"
+    },
+    {
+      "description": "go-tools:go at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor go-tools:go: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "go",
+      "status": "pass"
+    },
+    {
+      "description": "go avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "go-tools:go 9.3 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "go",
+      "status": "pass"
+    },
+    {
+      "description": "go analyzer docs present and committed",
+      "detail": "docs/analyzers/go.md, docs/analyzers/real-go-analyzer.md",
+      "id": "section-g-docs",
+      "language": "go",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "3 checks pass",
+      "id": "section-h-cross-language",
+      "language": "go",
+      "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "7ed95ff8b684e4ba92f0390925ef9fbf459f9072",
-  "committedAt": "2026-08-28T23:55:09+02:00",
+  "commit": "31d387843987217c148b165ce6dab4a0479b8e44",
+  "committedAt": "2026-08-28T23:55:53+02:00",
   "data": {
     "languages": {
       "c": {
@@ -900,6 +974,50 @@
           },
           "section-g-docs": {
             "detail": "docs/analyzers/real-cpp-analyzer.md",
+            "status": "pass"
+          },
+          "section-h-cross-language": {
+            "detail": "3 checks pass",
+            "status": "pass"
+          }
+        }
+      },
+      "go": {
+        "gaps": [],
+        "nodeTypeCount": 107,
+        "pendingDecisions": [],
+        "ruledDecisions": [
+          "GOD1",
+          "GOD2",
+          "GOD3"
+        ],
+        "sections": {
+          "section-a-structural": {
+            "detail": "107 types, 36 handled, 67 silent, 0 gaps, 3 decisions",
+            "status": "pass"
+          },
+          "section-b-relationship-kinds": {
+            "detail": "pinned: calls, contains, declared_type, extends, go_function_call, go_instantiation, go_interface_implementation, go_package_scope_call, go_selector_use, go_struct_embedding, implements, imports, instantiates, references, return_type, uses",
+            "status": "pass"
+          },
+          "section-c-payload-matrix": {
+            "detail": "complexity, qualified_calls",
+            "status": "pass"
+          },
+          "section-d-evidence-tiers": {
+            "detail": "5 tier(s) pinned: import_based, inferred, reference_qualified, structural, usage_contextual",
+            "status": "pass"
+          },
+          "section-e-differential": {
+            "detail": "floor go-tools:go: missing=0, unexplained=0 (differential-baseline.json)",
+            "status": "pass"
+          },
+          "section-f-perf-budget": {
+            "detail": "go-tools:go 9.3 ms/file",
+            "status": "pass"
+          },
+          "section-g-docs": {
+            "detail": "docs/analyzers/go.md, docs/analyzers/real-go-analyzer.md",
             "status": "pass"
           },
           "section-h-cross-language": {
