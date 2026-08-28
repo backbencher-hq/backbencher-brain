@@ -39,12 +39,12 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "38fefa283ae81b44ac299130c9b9adb60c573249",
-        "sourceFingerprint": "078486fd99728bb0d7614c4fe5b8b89975a782d3e8efcde7be868162f01b4cd0",
+        "currentCommit": "52dee4c14d3e2e456d25992260e6bcfc3bbf184c",
+        "sourceFingerprint": "452f4ad1f54e73e69dc911b91feeb2f72547d082b8677994c56c2a51ce5d3a03",
         "workingTreeRelevantChanges": [],
         "verifierCommand": "bun run script/m20/verify-governance.ts",
         "evidenceFile": "C1.json",
-        "generatedAt": "2026-08-27T23:04:31.000Z",
+        "generatedAt": "2026-08-28T00:41:36.995Z",
         "passed": 15,
         "failed": 0,
         "negativeCases": 5
@@ -54,7 +54,7 @@
       "code": "C2",
       "githubIssue": 429,
       "tool": "corpus",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "repository identity and availability",
       "acceptanceCriteria": [
         "exact revisions",
@@ -67,14 +67,14 @@
         "record syntax errors"
       ],
       "evidence": {
-        "status": "known-gap",
-        "currentCommit": "904d912e28b2545d98f20c5e27d22bae601ba69a",
-        "sourceFingerprint": "078486fd99728bb0d7614c4fe5b8b89975a782d3e8efcde7be868162f01b4cd0",
+        "status": "verified",
+        "currentCommit": "52dee4c14d3e2e456d25992260e6bcfc3bbf184c",
+        "sourceFingerprint": "452f4ad1f54e73e69dc911b91feeb2f72547d082b8677994c56c2a51ce5d3a03",
         "workingTreeRelevantChanges": [],
         "verifierCommand": "bun run script/m20/verify-corpus-registry.ts",
         "evidenceFile": "C2.json",
-        "generatedAt": "2026-08-27T22:23:11.406Z",
-        "passed": 15,
+        "generatedAt": "2026-08-28T00:40:58.835Z",
+        "passed": 20,
         "failed": 0,
         "negativeCases": 3
       }
@@ -97,12 +97,12 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "7dbb1a578ef66d4d8761f0e6d546578be4fd3a93",
-        "sourceFingerprint": "078486fd99728bb0d7614c4fe5b8b89975a782d3e8efcde7be868162f01b4cd0",
+        "currentCommit": "38cc482f32dc4f35f6846c1f14fe28a4006d7198",
+        "sourceFingerprint": "452f4ad1f54e73e69dc911b91feeb2f72547d082b8677994c56c2a51ce5d3a03",
         "workingTreeRelevantChanges": [],
         "verifierCommand": "bun run script/m20/verify-migration-order.ts",
         "evidenceFile": "M1.json",
-        "generatedAt": "2026-08-27T22:09:06.896Z",
+        "generatedAt": "2026-08-28T00:36:43.825Z",
         "passed": 13,
         "failed": 0,
         "negativeCases": 3
@@ -126,12 +126,12 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "7dbb1a578ef66d4d8761f0e6d546578be4fd3a93",
-        "sourceFingerprint": "078486fd99728bb0d7614c4fe5b8b89975a782d3e8efcde7be868162f01b4cd0",
+        "currentCommit": "38cc482f32dc4f35f6846c1f14fe28a4006d7198",
+        "sourceFingerprint": "452f4ad1f54e73e69dc911b91feeb2f72547d082b8677994c56c2a51ce5d3a03",
         "workingTreeRelevantChanges": [],
         "verifierCommand": "bun run script/m20/verify-migration-methodology.ts",
         "evidenceFile": "M2.json",
-        "generatedAt": "2026-08-27T22:09:08.046Z",
+        "generatedAt": "2026-08-28T00:36:44.385Z",
         "passed": 17,
         "failed": 0,
         "negativeCases": 3
@@ -155,12 +155,12 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "7dbb1a578ef66d4d8761f0e6d546578be4fd3a93",
-        "sourceFingerprint": "078486fd99728bb0d7614c4fe5b8b89975a782d3e8efcde7be868162f01b4cd0",
+        "currentCommit": "38cc482f32dc4f35f6846c1f14fe28a4006d7198",
+        "sourceFingerprint": "452f4ad1f54e73e69dc911b91feeb2f72547d082b8677994c56c2a51ce5d3a03",
         "workingTreeRelevantChanges": [],
         "verifierCommand": "bun run script/m20/verify-migration-mappings.ts",
         "evidenceFile": "M3.json",
-        "generatedAt": "2026-08-27T22:09:08.738Z",
+        "generatedAt": "2026-08-28T00:36:44.967Z",
         "passed": 15,
         "failed": 0,
         "negativeCases": 5
@@ -184,12 +184,12 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "7dbb1a578ef66d4d8761f0e6d546578be4fd3a93",
-        "sourceFingerprint": "5bebaf034adf8905052ad6dd7f7da7557f3a2fb485b5d2b605ac4aadd6903ff3",
+        "currentCommit": "38cc482f32dc4f35f6846c1f14fe28a4006d7198",
+        "sourceFingerprint": "38292221c0b119e4438b154e940216c775d76a17bf1f5eeeb8b6c5a790cf282f",
         "workingTreeRelevantChanges": [],
         "verifierCommand": "bun run script/m20/verify-patterns-parameter-scan.ts",
         "evidenceFile": "P1.json",
-        "generatedAt": "2026-08-27T22:09:11.811Z",
+        "generatedAt": "2026-08-28T00:36:46.391Z",
         "passed": 6,
         "failed": 0,
         "negativeCases": 1
@@ -213,12 +213,12 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "7dbb1a578ef66d4d8761f0e6d546578be4fd3a93",
-        "sourceFingerprint": "5bebaf034adf8905052ad6dd7f7da7557f3a2fb485b5d2b605ac4aadd6903ff3",
+        "currentCommit": "38cc482f32dc4f35f6846c1f14fe28a4006d7198",
+        "sourceFingerprint": "38292221c0b119e4438b154e940216c775d76a17bf1f5eeeb8b6c5a790cf282f",
         "workingTreeRelevantChanges": [],
         "verifierCommand": "bun run script/m20/verify-patterns-orphan-semantics.ts",
         "evidenceFile": "P2.json",
-        "generatedAt": "2026-08-27T22:09:16.385Z",
+        "generatedAt": "2026-08-28T00:36:47.729Z",
         "passed": 6,
         "failed": 0,
         "negativeCases": 1
@@ -242,12 +242,12 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "7dbb1a578ef66d4d8761f0e6d546578be4fd3a93",
-        "sourceFingerprint": "5bebaf034adf8905052ad6dd7f7da7557f3a2fb485b5d2b605ac4aadd6903ff3",
+        "currentCommit": "38cc482f32dc4f35f6846c1f14fe28a4006d7198",
+        "sourceFingerprint": "38292221c0b119e4438b154e940216c775d76a17bf1f5eeeb8b6c5a790cf282f",
         "workingTreeRelevantChanges": [],
         "verifierCommand": "bun run script/m20/verify-patterns-pagination-history.ts",
         "evidenceFile": "P3.json",
-        "generatedAt": "2026-08-27T22:09:24.592Z",
+        "generatedAt": "2026-08-28T00:36:52.303Z",
         "passed": 8,
         "failed": 0,
         "negativeCases": 1
@@ -445,12 +445,12 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "7dbb1a578ef66d4d8761f0e6d546578be4fd3a93",
-        "sourceFingerprint": "851e04bede78f67f99512c5c00ca6320bd4b2bb506fcf2a411f5ae5e77b23669",
+        "currentCommit": "38cc482f32dc4f35f6846c1f14fe28a4006d7198",
+        "sourceFingerprint": "6d38c8eedca197d908e530dd6761326797e56149b1cb3c4bf43da19ba2c8582a",
         "workingTreeRelevantChanges": [],
         "verifierCommand": "bun run script/m20/verify-cross-tool-parity.ts",
         "evidenceFile": "X1.json",
-        "generatedAt": "2026-08-27T22:10:30.742Z",
+        "generatedAt": "2026-08-28T00:37:12.065Z",
         "passed": 12,
         "failed": 0,
         "negativeCases": 4
@@ -474,12 +474,12 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "904d912e28b2545d98f20c5e27d22bae601ba69a",
-        "sourceFingerprint": "851e04bede78f67f99512c5c00ca6320bd4b2bb506fcf2a411f5ae5e77b23669",
+        "currentCommit": "52dee4c14d3e2e456d25992260e6bcfc3bbf184c",
+        "sourceFingerprint": "6d38c8eedca197d908e530dd6761326797e56149b1cb3c4bf43da19ba2c8582a",
         "workingTreeRelevantChanges": [],
         "verifierCommand": "bun run script/m20/verify-real-repo-ledger.ts",
         "evidenceFile": "X2.json",
-        "generatedAt": "2026-08-27T22:21:37.354Z",
+        "generatedAt": "2026-08-28T00:40:04.157Z",
         "passed": 12,
         "failed": 0,
         "negativeCases": 1
@@ -503,12 +503,12 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "38fefa283ae81b44ac299130c9b9adb60c573249",
-        "sourceFingerprint": "078486fd99728bb0d7614c4fe5b8b89975a782d3e8efcde7be868162f01b4cd0",
+        "currentCommit": "52dee4c14d3e2e456d25992260e6bcfc3bbf184c",
+        "sourceFingerprint": "452f4ad1f54e73e69dc911b91feeb2f72547d082b8677994c56c2a51ce5d3a03",
         "workingTreeRelevantChanges": [],
         "verifierCommand": "bun run script/m20/verify-closure-C3.ts",
         "evidenceFile": "C3.json",
-        "generatedAt": "2026-08-27T23:04:31.184Z",
+        "generatedAt": "2026-08-28T00:42:03.389Z",
         "passed": 21,
         "failed": 0,
         "negativeCases": 2
