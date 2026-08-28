@@ -87,7 +87,11 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       const { node, parent } = popped
       let currentParent = parent
 
-      if (node.type === "struct_item") {
+      if (node.type === "struct_item" || node.type === "union_item") {
+        // union_item (pub union Pixel { .. }) is structurally identical to
+        // struct_item (name field + field_declaration_list) and is a real
+        // declaration site — previously unhandled, so Rust unions emitted
+        // NO symbol (completeness gap found 2026-08-28).
         currentParent = this.handleStruct(node, ctx, parent) ?? parent
       } else if (node.type === "trait_item") {
         currentParent = this.handleTrait(node, ctx, parent) ?? parent
@@ -139,17 +143,24 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
         }
       } else if (node.type === "struct_expression") {
-        // User { id, name } — struct literal construction → instantiates
+        // User { id, name } — struct literal construction → instantiates.
+        // Enum-variant literals (MatchStrategy::Suffix { … }) carry a
+        // scoped_type_identifier name field; the TARGET is the variant LEAF
+        // (Suffix), matching the oracle's lastSegment and the family
+        // leaf-target contract (#419-B instantiates pin).
         const typeNode = node.childForFieldName("name") || node.namedChild(0)
-        if (typeNode && typeNode.type === "type_identifier") {
-          const source = parent?.name || "global"
-          ctx.relationships.push({
-            source,
-            target: typeNode.text,
-            type: ASTEngine.RelationshipType.Instantiates,
-            confidence: 0.8,
-            metadata: { relationshipType: "struct_literal", isConstructor: true },
-          })
+        if (typeNode && (typeNode.type === "type_identifier" || typeNode.type === "scoped_type_identifier")) {
+          const leaf = this.stripGenerics(typeNode.text).split("::").filter(Boolean).pop() ?? typeNode.text
+          if (leaf) {
+            const source = parent?.name || "global"
+            ctx.relationships.push({
+              source,
+              target: leaf,
+              type: ASTEngine.RelationshipType.Instantiates,
+              confidence: 0.8,
+              metadata: { relationshipType: "struct_literal", isConstructor: true },
+            })
+          }
         }
       } else if (node.type === "macro_invocation") {
         this.handleMacroInvocation(node, ctx, parent)
@@ -160,8 +171,11 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
           ctx.symbols.push(sym)
         }
       // 'type_alias_declaration' does not exist in this grammar - aliases
-      // are type_item nodes (grammar audit).
-      } else if (node.type === "type_item") {
+      // are type_item nodes (grammar audit). Trait-level associated types
+      // (type Item; inside a trait body) are associated_type nodes — a real
+      // declaration site that previously emitted NO symbol (completeness
+      // gap found 2026-08-28); impl-level `type Item = u32` stays type_item.
+      } else if (node.type === "type_item" || node.type === "associated_type") {
         const name = this.extractIdentifier(node, "name")
         if (name) {
           const sym = this.createSymbol(name, ASTEngine.SymbolKind.Type, node, parent, { type: "type_alias" })
@@ -921,16 +935,38 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         qualified = functionNode.text
       }
     } else if (functionNode.type === "generic_function") {
-      // foo::<T>()
+      // foo::<T>() / obj.method::<T>() — turbofish wraps the real callee.
+      // The TARGET is the LEAF name (field for field_expression, last
+      // segment for scoped_identifier), never the whole base text
+      // (cap.parse::<u32>() must target `parse`, not `cap.parse`;
+      // .cast::<T>() chains must target `cast`, not the whole expression).
       const baseNode = functionNode.childForFieldName("function")
       if (baseNode) {
-        target = baseNode.text
-        qualified = baseNode.text
+        if (baseNode.type === "field_expression") {
+          const fieldNode = baseNode.childForFieldName("field")
+          if (fieldNode) {
+            target = fieldNode.text
+            qualified = baseNode.text
+          }
+        } else if (baseNode.type === "scoped_identifier") {
+          const nameNode = baseNode.childForFieldName("name") || baseNode.namedChild(baseNode.namedChildCount - 1)
+          if (nameNode) {
+            target = nameNode.text
+            qualified = baseNode.text
+          }
+        } else {
+          target = baseNode.text
+          qualified = baseNode.text
+        }
       }
     } else {
-      // Simple identifier: foo()
-      target = functionNode.text
-      qualified = target
+      // Simple identifier: foo(). Non-identifier callees — parenthesized
+      // closure calls ((self.0)(...)) — have no static name and must not
+      // fabricate a target (the differential oracle derives none either).
+      if (functionNode.type === "identifier") {
+        target = functionNode.text
+        qualified = target
+      }
     }
 
     if (!target) return

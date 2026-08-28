@@ -91,6 +91,21 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     },
     title: "c systems wave (#419)",
   },
+  rust: {
+    id: "rust",
+    wasm: "tree-sitter-rust.wasm",
+    classification: "rust-completeness.json",
+    fixturesDir: "validation/m14/fixtures/rust",
+    docs: ["docs/analyzers/real-rust-analyzer.md"],
+    differentialCheck: "differential-rust",
+    perfKey: "ripgrep:rust",
+    requiredKinds: ["uses", "references", "exports", "contains", "calls", "extends", "implements", "instantiates"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "rust/payload-parity" },
+      qualified_calls: { key: "expectQualifiedCalls", pin: "rust/payload-parity" },
+    },
+    title: "rust systems wave (#261)",
+  },
   java: {
     id: "java",
     wasm: "tree-sitter-java.wasm",
@@ -242,7 +257,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
 }
 
 // Languages that have reached CONFORMANT and therefore run in npm run verify.
-const GATED_LANGS = ["java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp"]
+const GATED_LANGS = ["java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp", "rust"]
 
 async function loadNamedNodeTypes(cfg: LangConfig): Promise<string[]> {
   const wts: any = await import("web-tree-sitter")
@@ -507,6 +522,7 @@ async function main() {
       { description: "groovy G1-G8 closed fixture-first 2026-08-27 (34/34 fixtures, 41/41 mutants incl. 13 groovy); S1-S5 ruled: gstring Uses declared limitation (grammar emits no interpolation nodes), JPMS never-reachable, exports/apiContractPath NOT EMITTED, parameters GATED; exports + permits declared not-required for groovy" },
       { description: "c rulings C-D1/D2/D3 (2026-08-28): no class/interface hierarchy grammar constructs; function pointers + macro expansion + preprocessor control flow not always statically resolvable; completeness scope tied to pinned tree-sitter-c grammar. 160/160 types classified A-H 8/8; jq:c differential 1692/1692 0 missing 0 unexplained; 115/115 mutants incl. 3 c" },
       { description: "cpp rulings CPP-D1/D2/D3 (2026-08-28): GNU asm + extension_expression parsed not modeled; MSVC SEH/declspec/based/call/pointer modifiers parsed not modeled; cross-file resolution + template instantiation across TUs are per-file by contract. 256/256 types classified A-H 8/8; fmt:cpp differential 145/145 0 missing 0 unexplained; 115/115 mutants incl. 3 cpp" },
+      { description: "rust rulings RUST-D1/D2/D3 (2026-08-28): trait supertraits -> extends, impl -> implements, no class-based overrides edge; macro_rules! bodies opaque token trees (invocations call the macro NAME only, no expansion); scope tied to pinned tree-sitter-rust. 185/185 types classified A-H 8/8; ripgrep:rust differential 1948/1948 0 missing 0 unexplained; 120/120 mutants incl. 5 rust; union_item + trait associated_type gaps closed fixture-first" },
     ],
     data,
   })
