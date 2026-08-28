@@ -786,6 +786,22 @@
       "perf": {
         "avgMsPerFile": 109.4
       }
+    },
+    "sqlite:c": {
+      "missing": 0,
+      "unexplained": 2,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 255.8
+      }
+    },
+    "fmt:c": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": null
+      }
     }
   }
 }
