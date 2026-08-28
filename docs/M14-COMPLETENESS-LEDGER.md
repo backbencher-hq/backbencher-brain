@@ -210,16 +210,18 @@ self-declaration of "done" is never sufficient (M13 lesson, re-learned).
 
 | Language | Owner review rounds | Findings | Disposition |
 |---|---|---|---|
-| java | 2 (0765d36 + c044dff owner fix waves) | 6+ (FQ annotations, apiContractPath shadowing, varargs, compact ctors, permits, confidence tiering) | fixed + gated |
-| groovy | 3 waves (73abae5, afdcdc4, 261c8a8 owner commits) | FQ annotations, class/field decorators, tiered overrides, framework detection D1/D2 | fixed + gated |
-| kotlin | 3 waves (8c8e8b9, 2c62f1a, f51879d owner commits incl. wasm rebuild) | 5 defects + contract unification + silent misparse root-fix | fixed + gated |
-| scala | 3 (dual-corpus wave + 2 review rounds) | isExtension dead flag, positional labels, dotted supertypes, column bases, unmeasured heuristic, synthetic complexity, orphaned comment | fixed + gated |
-| typescript | 1 (b84cea5: 5 verified defects) + ongoing | decorators/heritage/usage-pass/contract/ranges | fixed + gated |
-| javascript | 2 (853f022: 8 defects; a00969e: 5 incl. 2 Tier-1) | barrel re-exports invisible, accessor-name collision, private methods, CJS chains | fixed + gated |
-| vue | 2 waves (732e1dc dual-blocks/lang-dispatch/dedupe/metrics; 25fa235 script-setup contract/watch) + element-plus corpus 156/156 100% | 7 defects incl. entire setup-block loss, lang dispatch, duplicate components, script-setup contract loss | fixed + gated |
+| java | 2 (0765d36 + c044dff owner fix waves); delegated sign-off authorized 2026-08-28 | 6+ (FQ annotations, apiContractPath shadowing, varargs, compact ctors, permits, confidence tiering) | fixed + gated; delegated sign-off recorded in `docs/M14-JVM-WEB-DELEGATED-SIGNOFF.md` |
+| groovy | 3 waves (73abae5, afdcdc4, 261c8a8 owner commits); delegated sign-off authorized 2026-08-28 | FQ annotations, class/field decorators, tiered overrides, framework detection D1/D2 | fixed + gated; delegated sign-off recorded in `docs/M14-JVM-WEB-DELEGATED-SIGNOFF.md` |
+| kotlin | 3 waves (8c8e8b9, 2c62f1a, f51879d owner commits incl. wasm rebuild); delegated sign-off authorized 2026-08-28 | 5 defects + contract unification + silent misparse root-fix | fixed + gated; delegated sign-off recorded in `docs/M14-JVM-WEB-DELEGATED-SIGNOFF.md` |
+| scala | 3 (dual-corpus wave + 2 review rounds); delegated sign-off authorized 2026-08-28 | isExtension dead flag, positional labels, dotted supertypes, column bases, unmeasured heuristic, synthetic complexity, orphaned comment | fixed + gated; delegated sign-off recorded in `docs/M14-JVM-WEB-DELEGATED-SIGNOFF.md` |
+| typescript | 1 (b84cea5: 5 verified defects) + ongoing; delegated sign-off authorized 2026-08-28 | decorators/heritage/usage-pass/contract/ranges | fixed + gated; delegated sign-off recorded in `docs/M14-JVM-WEB-DELEGATED-SIGNOFF.md` |
+| javascript | 2 (853f022: 8 defects; a00969e: 5 incl. 2 Tier-1); delegated sign-off authorized 2026-08-28 | barrel re-exports invisible, accessor-name collision, private methods, CJS chains | fixed + gated; delegated sign-off recorded in `docs/M14-JVM-WEB-DELEGATED-SIGNOFF.md` |
+| vue | 2 waves (732e1dc dual-blocks/lang-dispatch/dedupe/metrics; 25fa235 script-setup contract/watch) + element-plus corpus 156/156 100%; delegated sign-off authorized 2026-08-28 | 7 defects incl. entire setup-block loss, lang dispatch, duplicate components, script-setup contract loss | fixed + gated; delegated sign-off recorded in `docs/M14-JVM-WEB-DELEGATED-SIGNOFF.md` |
 | rust | 1 wave (this wave: 4 dead literals, tiers #419-D, T1 complexity incl. match-arm calibration, qc payload, ::new receiver targets, deferred instantiation resolution, 0-based columns, visibility defaults) + `ripgrep` corpus 1894/1901 (99.6%) at investigated residual | 9 defects incl. instantiation noise (90%+ unresolvable), dead if_let/trait_bound literals | fixed + gated |
 | c | 1 wave (this wave: metrics fake #5 cured, evidence tiers, qc payload, cast/call fix, goto de-counted) + `jq` corpus 1692/1692 100% | 8 defects incl. cast/call confusion (127 noise edges), malloc instantiates noise | fixed + gated |
-| svelte | 3 waves (d7784bf tiers/metrics/columns/dispatch; 7dcd251 + #419 A/B/C; this review: S5/S6 lexical-shadow and reactive-dedupe hardening) + `svelte` repo corpus floors true 0/0 | 13 defects total (including oracle type_arguments over-derivation, LIFO block-index inversion, render_tag opaque text, each/const scope collision, repeated `$:` target duplication) | fixed + gated; #419 A/B/C closed at fixture level; L5 pending owner spot-check |
+| svelte | 3 waves (d7784bf tiers/metrics/columns/dispatch; 7dcd251 + #419 A/B/C; this review: S5/S6 lexical-shadow and reactive-dedupe hardening) + `svelte` repo corpus floors true 0/0; delegated sign-off authorized 2026-08-28 | 13 defects total (including oracle type_arguments over-derivation, LIFO block-index inversion, render_tag opaque text, each/const scope collision, repeated `$:` target duplication) | fixed + gated; #419 A/B/C closed at fixture level; delegated sign-off recorded in `docs/M14-JVM-WEB-DELEGATED-SIGNOFF.md` |
+
+Delegated JVM/web sign-off (2026-08-28): the owner authorized the agent to sign on the owner's behalf. The tracked record is `docs/M14-JVM-WEB-DELEGATED-SIGNOFF.md`; supporting spot-check packs remain in `.probe/m14/`. This is delegated verification, not a claim of personal owner execution.
 
 Svelte review hardening (2026-08-28): two adversarial defects were found after
 the prior CONFORMANT claim. S5 was a real scope-collision leak: each-loop
@@ -232,9 +234,7 @@ therefore no fresh 109/109 claim is made here. The existing 107/107 evidence
 plus the two focused catches is the honest current state. Owner spot-check
 sign-off remains pending per §5.6.
 
-Sign-off ritual (pending, per contract §5.6): owner samples claims per
-language against evidence files; formal per-language sign-off closes the
-wave issues #251–#254.
+Sign-off ritual: delegated owner authorization is recorded for issues #251–#258 in `docs/M14-JVM-WEB-DELEGATED-SIGNOFF.md`. The record preserves the distinction between delegated verification and personal execution; no personal execution is claimed.
 
 ## Matrix 4b — Completeness specification (#419)
 
