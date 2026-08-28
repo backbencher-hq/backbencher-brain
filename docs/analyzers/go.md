@@ -39,6 +39,44 @@ five genuine analyzer defects; all five are fixed and pinned:
    `float64(x)` are `type_conversion_expression`, NOT calls; the oracle
    filters by its declared set, and the analyzer now does too.
 
+### Deep review round 2 (2026-08-29, terraform corpus: 1423/1423, 0 missing)
+
+A second deep pass over ~1,300 real Terraform Go files surfaced THREE more
+defects the go-tools corpus could not (its interfaces are parameterless):
+
+6. **Return-type scanners captured receiver/parameters as a fake return
+   type** — `extractGoReturnType` and `extractGoMethodSpecReturnType` scanned
+   for `parameter_list` children: `func (v *S) Notify(name string) {}`
+   reported return type `(v *S)` (the RECEIVER) and a `method_spec` with
+   parameters reported them as its return type. Signature comparison then
+   failed, and parameterized interfaces silently produced NO implements edge
+   (terraform `views.Plan` → `PlanHuman`/`PlanJSON`; the oracle saw them as
+   MISSING). `parameter_list` is no longer scanned in the fallback — named
+   result lists come from the `result` field.
+7. **Embedded-interface methods never promoted** — `interface { Reader;
+   Close() }` parses the embedded `Reader` as a `constraint_elem`, which the
+   analyzer ignored (`method_spec`-only). The embedding interface's method
+   set lost `Reader.Read`, so a struct implementing only `Close()` was
+   (wrongly) declared to implement the interface, and one implementing the
+   full promoted set was missed. Embedded-interface symbols are now emitted
+   (leaf-named) and `getGoInterfaceMethods` folds their method sets
+   transitively. The differential oracle was aligned (it shared the same
+   blind spot).
+8. **Embedded-struct method promotion** — `type Worker struct { *Shape }`
+   promotes `Shape`'s methods into `Worker`'s method set, so `Worker`
+   implements any interface `Shape` implements. Both analyzer and oracle
+   silently omitted this (Worker could never satisfy an interface through an
+   embedded type). `collectGoPromotedMethods` now resolves the
+   `go_struct_embedding` closure (transitive, signature-deduped with
+   shadowing honored) and the interface-implements check includes promoted
+   methods; the oracle `structEmbedded` fold mirrors it exactly.
+
+All three are pinned by `go/implements-params` (parameterized implements +
+embedded-interface false-positive guard + embedded-struct `Worker→Runner2`
+promotion + negative `PlainWorker` guard) and the differential now holds
+0 missing / 0 unexplained on BOTH `go-tools` (822/822) and `terraform`
+(1423/1423).
+
 ## #419-D evidence tiers (family standard)
 
 Go was the ONLY systems sibling (rust/c/cpp) that never tagged relationship

@@ -160,6 +160,20 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => (x.metadata ?? {}).relationshipType !== "go_interface_implementation") }),
   },
   {
+    id: "go/drop-promoted-struct-implements",
+    language: "go",
+    defectClass: "relationship-loss",
+    description: "drops implements edges that arise from EMBEDDED-STRUCT method promotion (Worker impl Runner via *Shape.Run, no own methods): the pre-promotion analyzer (and oracle) silently lost these, so a struct implementing an interface through an embedded type was missed",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(x.type === "implements" && x.source === "Worker" && x.target === "Runner2")) }),
+  },
+  {
+    id: "go/false-implements-embedded-only",
+    language: "go",
+    defectClass: "relationship-fabrication",
+    description: "restores the pre-fix embedded-interface blind spot: emits FileBad->ReadCloser (a struct with ONLY Close()) as if it satisfied the embedding ReadCloser { Reader; Close() } — the false positive that existed because promoted Reader.Read was never folded into ReadCloser's method set",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { source: "FileBad", target: "ReadCloser", type: "implements", confidence: 1, metadata: { relationshipType: "go_interface_implementation", isImplicit: true, matchedMethods: ["Close"], implementationType: "duck_typing", receiverSet: "pointer" } }] }),
+  },
+  {
     id: "go/drop-symbol-complexity",
     language: "go",
     defectClass: "payload-loss",
