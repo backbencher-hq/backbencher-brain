@@ -178,13 +178,34 @@ and two oracle defects:
 7. **Oracle leafOf didn't unwrap `generic_function`**: turbofish calls
    (`crossbeam_channel::bounded::<DirEntry>`) produced no call truth.
 
-All four fixes are pinned by fixtures: `rust/scoped-and-turbofish`
-(variant-leaf instantiates, tuple-ctor, turbofish leaf, no `(self.0)`),
-`rust/union-and-associated-type` (union + trait associated types),
-`rust/relationship-kinds` (uses/references/extends/exports with evidence
-classes). Five rust mutants guard the fixes; all caught (suite 120/120).
-The floor `ripgrep:rust {missing:0, unexplained:0}` is enforced in
-`validation/m14/differential-baseline.json`.
+### Second deep pass (wave 3, same session)
+
+Re-reading the sections the first pass didn't cover surfaced two more real
+defects:
+
+8. **Broken use-list import extraction**: `use std::io::{Read, Write as W}`
+   produced `module="std::io::{Read, Write as W}"` with garbage items —
+   violating the family contract (module = path prefix, items = individual
+   names). `handleUseDeclaration` now separates the path prefix from the
+   item names (alias-aware: `{a as b}` binds `b`), matching the JS family
+   contract; `use std::io::*` wildcards emit `items:["*"]` (probe-confirmed
+   `std::io` → `[Read, W]`, `crate::foo` → `[foo, Bar, B]`, `super::util`
+   → `[*]`).
+9. **Awaited-call DUPLICATE edge**: the `await_expression` branch pushed a
+   raw calls edge with the FULL function text as target, and the DFS then
+   visited the inner `call_expression` too — so `do_connect(host,port)
+   .await` produced TWO calls edges (one full-text, one leaf-qualified).
+   The oracle derives one edge per call site, so the duplicate was a
+   fabrication that only appeared on awaited code (ripgrep corpus has
+   none). The await branch now records the inner node and the canonical
+   call/macro handler attaches `rustSpecific + isAwait` to its SINGLE edge.
+
+Both fixes are pinned: `rust/await-single-edge` (exactly one calls edge
+per awaited site, isAwait metadata, leaf target + qualified) and the
+import contract via the same fixture set; six rust mutants guard the
+fixes (incl. `rust/duplicate-awaited-call-edge`), all caught (suite
+121/121). The floor `ripgrep:rust {missing:0, unexplained:0}` is enforced
+in `validation/m14/differential-baseline.json`.
 
 ### Completeness contract (#419) — 185 types, A–H 8/8
 
