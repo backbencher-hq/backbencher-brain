@@ -320,6 +320,11 @@ export interface ParallelIndexingStats {
   endTime?: number
   filesPerSecond?: number
   errors: Array<{ file: string; error: string }>
+  /**
+   * M21.I3: structured error records (phase/language/retry/fallback) derived
+   * from this run, ready for durable persistence. Populated alongside errors.
+   */
+  structuredErrors?: BrainDatabase.IndexingErrorRecord[]
   /** M21.I1: phase-level timing/accounting telemetry for indexing runs. */
   phases?: IndexPhaseTimings
 }
@@ -2518,6 +2523,19 @@ export async function indexProjectParallel(
         filesIndexed: stats.totalFiles,
         symbolsIndexed: stats.symbolsExtracted,
         status: "complete",
+        errors: [],
+        performanceStats: {
+          schemaVersion: 1,
+          runs: [
+            {
+              generatedAt: Date.now(),
+              mode: "worker-pool",
+              noop: true,
+              phases: { discoveryMs: phases.discoveryMs, workerStartupMs: 0, parseMs: 0, dbFlushMs: 0, finalAccountingMs: phases.finalAccountingMs, totalWallMs: phases.totalWallMs },
+              counts: { totalFiles: stats.totalFiles, processedFiles: stats.skippedFiles, successFiles: 0, timeoutFiles: 0, errorFiles: 0, skippedFiles: stats.skippedFiles, workerCount: 0, parsedFiles: 0, retries: 0 },
+            },
+          ],
+        },
       })
 
       Bus.publishSafe(BrainService.Event.IndexingCompleted, {
@@ -2633,15 +2651,33 @@ export async function indexProjectParallel(
       const previous = finalOutcomes.get(result.filePath)
       if (!previous || result.success || !previous.success) finalOutcomes.set(result.filePath, result)
     }
+    stats.structuredErrors = []
     for (const result of finalOutcomes.values()) {
       if (result.success) {
         stats.successFiles++
       } else if (result.timeout) {
         stats.timeoutFiles++
         stats.errors.push({ file: result.filePath, error: "Timeout" })
+        stats.structuredErrors.push({
+          phase: "parse",
+          message: "Timeout",
+          file: result.filePath,
+          language: detectLanguageFromPath(result.filePath)?.language ?? null,
+          retry: 0,
+          timestamp: Date.now(),
+        })
       } else {
         stats.errorFiles++
         stats.errors.push({ file: result.filePath, error: result.error || "Unknown error" })
+        stats.structuredErrors.push({
+          phase: "parse",
+          message: result.error || "Unknown error",
+          file: result.filePath,
+          language: detectLanguageFromPath(result.filePath)?.language ?? null,
+          retry: 0,
+          fallback: (result as any).fallback ?? undefined,
+          timestamp: Date.now(),
+        })
       }
     }
 
@@ -2731,11 +2767,46 @@ export async function indexProjectParallel(
       filesPerSecond: stats.filesPerSecond.toFixed(1),
     })
 
+    // M21.I3: versioned performance stats for this run (bounded history kept
+    // by updateIndexStatus so a later run never erases prior evidence).
+    const perfStats: BrainDatabase.IndexPerformanceStats = {
+      schemaVersion: 1,
+      runs: [
+        {
+          generatedAt: Date.now(),
+          mode: phases.mode,
+          noop: false,
+          phases: {
+            discoveryMs: phases.discoveryMs,
+            workerStartupMs: phases.workerStartupMs,
+            parseMs: phases.parseMs,
+            dbFlushMs: phases.dbFlushMs,
+            finalAccountingMs: phases.finalAccountingMs,
+            postProcessingMs: phases.postProcessingMs,
+            totalWallMs: phases.totalWallMs,
+          },
+          counts: {
+            totalFiles: stats.totalFiles,
+            processedFiles: stats.processedFiles,
+            successFiles: stats.successFiles,
+            timeoutFiles: stats.timeoutFiles,
+            errorFiles: stats.errorFiles,
+            skippedFiles: stats.skippedFiles,
+            workerCount: phases.workerCount,
+            parsedFiles: phases.parsedFiles,
+            retries: phases.retries,
+          },
+        },
+      ],
+    }
+
     await BrainDatabase.updateIndexStatus(projectId, {
       lastIndexed: Date.now(),
       filesIndexed: stats.successFiles + stats.skippedFiles,
       symbolsIndexed: stats.symbolsExtracted,
       status: stats.errorFiles > 0 ? "partial" : "complete",
+      errors: stats.structuredErrors,
+      performanceStats: perfStats,
     })
 
     if (!options.isIncremental && !options.skipPostProcessing) {

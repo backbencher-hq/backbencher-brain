@@ -23,7 +23,9 @@ export interface UnifiedHealthReport {
   projectPath: string
   timestamp: number
   counts: { files: number; symbols: number; relationships: number; imports: number; syntaxErrors: number }
-  indexStatus: { lastFullIndex: number | null; lastIncrementalIndex: number | null; indexedFiles: number; indexingVersion: string | null; errors: unknown[] }
+  indexStatus: { lastFullIndex: number | null; lastIncrementalIndex: number | null; indexedFiles: number; indexingVersion: string | null; status: string | null; errors: unknown[] }
+  /** M21.I3: versioned performance stats from the durable index status. */
+  performanceStats: { schemaVersion: number | null; runs: any[]; latestRun: any | null }
   freshness: { mode: "sampled" | "complete"; checked: number; total: number; fresh: number; stale: number; missing: number; staleFiles: string[]; missingFiles: string[] }
   embeddings: { total: number; embeddedEntities: number; symbolCoveragePercent: number; models: Array<{ model: string; count: number; dimensions: number[] }> }
   schema: { version: number | null; migration: string | null; tables: number }
@@ -137,11 +139,18 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
   if (stale + missing > 0) warnings.push({ code: "STALE_FILES", message: `${stale} stale and ${missing} missing files in ${freshnessMode} check`, severity: "warning" })
   const indexingErrors = parseArray(status?.indexing_errors)
   if (indexingErrors.length > 0) warnings.push({ code: "INDEXING_ERRORS", message: `${indexingErrors.length} indexing errors recorded`, severity: "warning" })
+  // M21.I3: parse the versioned performance stats and expose them alongside
+  // errors so health output reflects the same recorded state as the DB.
+  const perfRaw = status?.performance_stats
+  const performanceStats = typeof perfRaw === "string" && perfRaw ? (() => { try { const p = JSON.parse(perfRaw); return Array.isArray(p?.runs) ? p : null } catch { return null } })() : null
+  const perfRuns = performanceStats?.runs ?? []
+  const latestPerfRun = perfRuns.length > 0 ? perfRuns[perfRuns.length - 1] : null
 
   return {
     projectId, projectPath, timestamp: Date.now(),
     counts: { files, symbols, relationships, imports, syntaxErrors },
-    indexStatus: { lastFullIndex: status?.last_full_index ?? null, lastIncrementalIndex: status?.last_incremental_index ?? null, indexedFiles: status?.indexed_files ?? 0, indexingVersion: status?.indexing_version ?? null, errors: indexingErrors },
+    indexStatus: { lastFullIndex: status?.last_full_index ?? null, lastIncrementalIndex: status?.last_incremental_index ?? null, indexedFiles: status?.indexed_files ?? 0, indexingVersion: status?.indexing_version ?? null, status: status?.status ?? null, errors: indexingErrors },
+    performanceStats: { schemaVersion: performanceStats?.schemaVersion ?? null, runs: perfRuns, latestRun: latestPerfRun },
     freshness: { mode: freshnessMode, checked: fileRows.length, total: files, fresh, stale, missing, staleFiles, missingFiles },
     embeddings: { total: embeddingTotal, embeddedEntities, symbolCoveragePercent: symbols > 0 ? Math.round((embeddedEntities / symbols) * 1000) / 10 : 0, models: modelRows.map((row) => ({ model: row.model, count: Number(row.c), dimensions: String(row.dims ?? "").split(",").filter(Boolean).map(Number) })) },
     schema: { version: schema?.version ?? null, migration: schema?.migration_name ?? null, tables: tableCount },
@@ -163,7 +172,8 @@ export function formatUnifiedHealth(report: UnifiedHealthReport): string {
     `embeddings: ${e.total} rows / ${e.embeddedEntities} entities / ${e.symbolCoveragePercent}% symbol coverage`,
     `models: ${e.models.map((model) => `${model.model}:${model.count}[${model.dimensions.join(",")}]`).join(" ") || "none"}`,
     `schema: ${report.schema.version ?? "unknown"} (${report.schema.migration ?? "no migration record"}), ${report.schema.tables} tables`,
-    `index: version=${report.indexStatus.indexingVersion ?? "unknown"} indexedFiles=${report.indexStatus.indexedFiles} errors=${report.indexStatus.errors.length}`,
+    `index: version=${report.indexStatus.indexingVersion ?? "unknown"} indexedFiles=${report.indexStatus.indexedFiles} status=${report.indexStatus.status ?? "unknown"} errors=${report.indexStatus.errors.length}`,
+    `perf: schemaVersion=${report.performanceStats.schemaVersion ?? "none"} runs=${report.performanceStats.runs.length} latestWallMs=${report.performanceStats.latestRun?.phases?.totalWallMs ?? "n/a"}`,
     `runtime: ${report.runtime.runtime} ${report.runtime.version} / ${report.runtime.database}`,
   ]
   if (report.refresh.requested) lines.push(`refresh: ${report.refresh.completed ? "completed" : report.refresh.wait ? "failed" : "started (pending)"} force=${report.refresh.force} wait=${report.refresh.wait} durationMs=${report.refresh.durationMs}`)
