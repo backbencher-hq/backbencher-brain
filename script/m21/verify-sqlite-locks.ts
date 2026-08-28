@@ -5,7 +5,7 @@
 import { mkdtempSync, rmSync, writeFileSync, existsSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
-import { spawn, spawnSync } from "node:child_process"
+import { spawnSync } from "node:child_process"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const work = mkdtempSync(path.join(tmpdir(), "bb-m21-d1-"))
@@ -24,18 +24,30 @@ function negative(label: string, ok: boolean, detail = "") {
   check(`${label} [negative]`, ok, detail)
 }
 function sleep(ms: number) { return new Promise((resolve) => setTimeout(resolve, ms)) }
-function startChild(args: string[]) {
-  return spawn(process.execPath, ["run", child, ...args], { stdio: ["ignore", "pipe", "pipe"] })
+function classifyContender(stdout: string): { locked: boolean; committed: boolean } {
+  const locked = /CONTENDER_ERROR\|\d+\|.*(locked|busy|timeout)/i.test(stdout)
+  const committed = /^CONTENDER_COMMITTED\|/.test(stdout)
+  return { locked, committed }
 }
-async function collect(proc: ReturnType<typeof spawn>) {
+function startChild(args: string[]) {
+  // Bun-native spawn: Node-style 'close' events proved unreliable under Bun,
+  // causing verifier hangs. Bun.spawn exposes .exited and stream bodies.
+  return (Bun as any).spawn([process.execPath, "run", child, ...args], { stdout: "pipe", stderr: "pipe", stdin: "ignore" })
+}
+async function collect(proc: any) {
   let stdout = ""
   let stderr = ""
-  proc.stdout?.on("data", (chunk) => { stdout += String(chunk) })
-  proc.stderr?.on("data", (chunk) => { stderr += String(chunk) })
-  const outcome = await new Promise<{ code: number | null; signal: string | null }>((resolve) => {
-    proc.once("close", (code, signal) => resolve({ code, signal }))
-  })
-  return { ...outcome, stdout, stderr }
+  let killed = false
+  const killTimer = setTimeout(() => { killed = true; try { proc.kill(9) } catch {} }, 10000)
+  const [out, err] = await Promise.all([
+    new Response(proc.stdout as ReadableStream).text().catch(() => ""),
+    new Response(proc.stderr as ReadableStream).text().catch(() => ""),
+  ])
+  stdout = out
+  stderr = err
+  const code = await proc.exited
+  clearTimeout(killTimer)
+  return { code, signal: null, killed, stdout, stderr }
 }
 
 writeFileSync(child, `
@@ -83,8 +95,10 @@ try {
   await sleep(180)
   const contender = startChild([dbPath, "contend", "", "50"])
   const [holderOut, contenderOut] = await Promise.all([collect(holder), collect(contender)])
-  const contenderLocked = /CONTENDER_ERROR\|\d+\|.*(locked|busy|timeout)/i.test(contenderOut.stdout)
-  const contenderCommitted = contenderOut.stdout.startsWith("CONTENDER_COMMITTED|")
+  const outcome = classifyContender(contenderOut.stdout)
+  const contenderLocked = outcome.locked
+  const contenderCommitted = outcome.committed
+  check("D1 child processes finished within the hard 10s kill bound", !holderOut.killed && !contenderOut.killed, JSON.stringify({ holderKilled: holderOut.killed, contenderKilled: contenderOut.killed }))
   check("D1 holder acquired and committed its write", holderOut.stdout.includes("LOCK_HELD") && holderOut.stdout.includes("HOLDER_COMMITTED"), JSON.stringify(holderOut))
   check("D1 contender produced a bounded outcome", contenderLocked || contenderCommitted, JSON.stringify(contenderOut))
   negative("D1 contention is observable rather than silently discarded", contenderLocked || contenderCommitted, contenderOut.stdout)
@@ -99,7 +113,11 @@ try {
   `], { encoding: "utf8" })
   check("D1 final database remains readable and structurally valid", verify.status === 0, verify.stderr)
   negative("D1 missing database is not treated as evidence", !existsSync(path.join(work, "missing.db")))
-  negative("D1 malformed child output is rejected", !/^CONTENDER_(COMMITTED|ERROR)\|/.test("not-a-contender-result"))
+  const corruptDb = path.join(work, "corrupt.db")
+  writeFileSync(corruptDb, Buffer.from("this is not a sqlite database at all", "utf8"))
+  const corrupt = await collect(startChild([corruptDb, "contend", "", "50"]))
+  negative("D1 corrupt database is not treated as a successful write", corrupt.code !== 0 && /^CONTENDER_ERROR\||^CHILD_ERROR\|/.test(corrupt.stdout), JSON.stringify(corrupt))
+  negative("D1 classifier rejects malformed child output", !classifyContender("garbage-output").committed && !classifyContender("garbage-output").locked && !classifyContender("CHILD_ERROR|x").committed)
 
   const commit = spawnSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).stdout.trim()
   result = {

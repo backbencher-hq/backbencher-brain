@@ -55,13 +55,20 @@ check("evidence policy distinguishes measured zero from missing data", validEvid
 check("plan requires real repositories and raw timings", plan.includes("$HOME") && plan.includes("wall-clock") && plan.includes("raw artifacts"))
 check("plan forbids unsupported root-cause claims", plan.includes("do not establish the root cause") && plan.includes("no claim of production performance"))
 
-const hollow = structuredClone(ledger)
-hollow.issues[0]!.status = "verified"
-negative("verified issue without evidence is rejected", !closable(hollow.issues[0]!), "mutation was considered closable")
+// Mutation negatives are self-contained: they must not depend on the live
+// shape of any particular ledger entry (issues[0] used to be assumed
+// evidence-less, which broke once C1 legitimately carried evidence).
+const hollow = structuredClone(ledger.issues[0]!)
+hollow.status = "verified"
+delete (hollow as any).evidence
+negative("verified issue without evidence is rejected", !closable(hollow), "mutation was considered closable")
 const missing = structuredClone(ledger)
 missing.issues.pop()
 negative("missing issue entry is rejected", missing.issues.length !== codes.length, `issues=${missing.issues.length}`)
-negative("planned issue is not closable", !closable(ledger.issues[0]!), "planned item was considered closable")
+const plannedWithEvidence = structuredClone(ledger.issues[0]!)
+plannedWithEvidence.status = "planned"
+if (!plannedWithEvidence.evidence) (plannedWithEvidence as any).evidence = { status: "verified", currentCommit: "x", workingTreeRelevantChanges: [], verifierCommand: "x", evidenceFile: "x", generatedAt: "x", passed: 1, failed: 0, negativeCases: 1 }
+negative("planned issue is not closable", !closable(plannedWithEvidence), "planned item was considered closable")
 const emptyAcceptance = structuredClone(ledger)
 emptyAcceptance.issues[1]!.acceptanceCriteria = []
 negative("empty acceptance criteria is rejected", emptyAcceptance.issues[1]!.acceptanceCriteria.length < 2, "empty acceptance")
