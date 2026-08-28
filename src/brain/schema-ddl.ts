@@ -131,6 +131,7 @@ CREATE TABLE IF NOT EXISTS brain_schema_version (version INTEGER PRIMARY KEY, ap
       -- Index Status Tracking
       CREATE TABLE IF NOT EXISTS brain_index_status (
         project_id TEXT PRIMARY KEY NOT NULL,
+        status TEXT,
         last_full_index INTEGER,
         last_incremental_index INTEGER,
         total_files INTEGER DEFAULT 0 NOT NULL,
@@ -299,6 +300,16 @@ export function ensureSchema(raw: any): void {
   raw.exec(DDL)
   try {
     raw.prepare("INSERT OR IGNORE INTO brain_schema_version (version, applied_at, migration_name) VALUES (?, strftime('%s','now') * 1000, ?)").run(SCHEMA_VERSION, SCHEMA_MIGRATION_NAME)
+  } catch {}
+  // Idempotent column migration for databases created before the status column
+  // existed: pre-existing brain_index_status tables lack `status`, and the
+  // indexer persists complete/partial there. SQLite can't add a column inside
+  // CREATE TABLE IF NOT EXISTS, so check PRAGMA and ALTER TABLE when missing.
+  try {
+    const indexStatusCols = raw.prepare("PRAGMA table_info(brain_index_status)").all() as Array<{ name: string }>
+    if (!indexStatusCols.some((c) => c.name === "status")) {
+      raw.exec("ALTER TABLE brain_index_status ADD COLUMN status TEXT")
+    }
   } catch {}
   raw.exec(`
     CREATE TABLE IF NOT EXISTS brain_analysis_run (

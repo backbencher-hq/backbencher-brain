@@ -183,9 +183,10 @@ export namespace BrainDatabase {
     const raw = await getRawInstance(projectId)
     raw
       .prepare(
-        `INSERT INTO brain_index_status (project_id, indexing_version, last_full_index, total_files, total_symbols, indexing_errors, time_created, time_updated)
-         VALUES (?, 'v1.0.0', ?, ?, ?, ?, strftime('%s','now') * 1000, strftime('%s','now') * 1000)
+        `INSERT INTO brain_index_status (project_id, indexing_version, status, last_full_index, total_files, total_symbols, indexing_errors, time_created, time_updated)
+         VALUES (?, 'v1.0.0', ?, ?, ?, ?, ?, strftime('%s','now') * 1000, strftime('%s','now') * 1000)
          ON CONFLICT(project_id) DO UPDATE SET
+           status = COALESCE(excluded.status, status),
            last_full_index = excluded.last_full_index,
            total_files = excluded.total_files,
            total_symbols = excluded.total_symbols,
@@ -194,10 +195,22 @@ export namespace BrainDatabase {
       )
       .run(
         projectId,
+        data.status ?? null,
         data.lastIndexed ?? Date.now(),
         data.files ?? 0,
         data.symbols ?? 0,
         data.error ? JSON.stringify([data.error]) : "[]",
       )
+  }
+
+  /** M21.I2: read the persisted index status (complete/partial/…) for a project. */
+  export async function getIndexStatus(projectId: string): Promise<{ status: string | null }> {
+    const raw = await getRawInstance(projectId)
+    try {
+      const row = raw.prepare("SELECT status FROM brain_index_status WHERE project_id = ?").get(projectId) as { status: string | null } | undefined
+      return { status: row?.status ?? null }
+    } catch {
+      return { status: null }
+    }
   }
 }

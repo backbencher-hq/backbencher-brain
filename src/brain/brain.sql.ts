@@ -362,6 +362,7 @@ export const BrainIndexStatusTable = sqliteTable("brain_index_status", {
     .$type<ProjectID>()
     .primaryKey()
     .references(() => ProjectTable.id, { onDelete: "cascade" }),
+  status: text(), // M21.I2: persisted complete/partial status (previously dropped)
   last_full_index: integer(), // Timestamp
   last_incremental_index: integer(),
   total_files: integer().notNull().default(0),
