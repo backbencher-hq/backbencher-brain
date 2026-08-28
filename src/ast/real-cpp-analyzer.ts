@@ -184,12 +184,17 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         // depends: #include = compile-time dependency
         const includePath = stripIncludeChars(text.slice(text.indexOf("include") + "include".length)).trim()
         if (includePath) {
+          // #419 family contract: include edges carry the SAME metadata shape
+          // as the C analyzer (relationshipType "include_dependency" +
+          // isImport) — the C++ variant previously emitted only
+          // isIncludeDependency, so the completeness gate's Section B saw no
+          // pin for the include dependency kind.
           relationships.push({
             source: "global",
             target: includePath,
             type: ASTEngine.RelationshipType.References,
             confidence: 1.0,
-            metadata: { isIncludeDependency: true },
+            metadata: { relationshipType: "include_dependency", isSystem: includePath.startsWith("<"), isImport: true, isIncludeDependency: true },
           })
         }
 
@@ -694,6 +699,15 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (seen.has(cls)) continue
           seen.add(cls)
           for (const base of classBases.get(cls) ?? []) {
+            // CROSS-FILE BASE COLLISION GUARD: `class format_facet : public
+            // fmt::format_facet<std::locale>` leaf-cleans to a base named
+            // `format_facet` — identical to the class's own name. Resolving it
+            // against the in-file registry (which holds the class's OWN
+            // methods) fabricates a self-override (`format_facet.do_put ->
+            // format_facet.do_put`). A class cannot inherit from itself, so any
+            // base equal to the start class is a cross-file name collision and
+            // must be skipped, not resolved.
+            if (base === startCls) continue
             const baseSigs = classVirtuals.get(base)
             // SIGNATURE-AWARE: a same-name DIFFERENT-parameter overload is
             // C++ name-hiding, not virtual dispatch.

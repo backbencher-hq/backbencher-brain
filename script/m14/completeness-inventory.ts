@@ -62,6 +62,21 @@ interface LangConfig {
 }
 
 const LANG_CONFIGS: Record<string, LangConfig> = {
+  cpp: {
+    id: "cpp",
+    wasm: "tree-sitter-cpp.wasm",
+    classification: "cpp-completeness.json",
+    fixturesDir: "validation/m14/fixtures/cpp",
+    docs: ["docs/analyzers/real-cpp-analyzer.md"],
+    differentialCheck: "differential-cpp",
+    perfKey: "fmt:cpp",
+    requiredKinds: ["uses", "references", "calls", "instantiates", "extends", "overrides", "imports"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "cpp/payload-and-complexity" },
+      qualified_calls: { key: "expectQualifiedCalls", pin: "cpp/payload-and-complexity" },
+    },
+    title: "cpp systems wave (#419)",
+  },
   c: {
     id: "c",
     wasm: "tree-sitter-c.wasm",
@@ -227,7 +242,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
 }
 
 // Languages that have reached CONFORMANT and therefore run in npm run verify.
-const GATED_LANGS = ["java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c"]
+const GATED_LANGS = ["java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp"]
 
 async function loadNamedNodeTypes(cfg: LangConfig): Promise<string[]> {
   const wts: any = await import("web-tree-sitter")
