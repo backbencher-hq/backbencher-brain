@@ -80,4 +80,6 @@ const result = {
 mkdirSync(path.join(ROOT, "validation/m21/results"), { recursive: true })
 writeFileSync(path.join(ROOT, "validation/m21/results/E2.json"), JSON.stringify(result, null, 2) + "\n")
 console.log(`E2: ${status.toUpperCase()} (${passed}/${checks}, ${negatives} negative)`)
-process.exit(status === "known-gap" ? 1 : 1)
+// Known-gap must fail CI; if the production telemetry lands and status becomes
+// verified, this gate flips to pass like every other verifier.
+process.exit(status === "verified" ? 0 : 1)

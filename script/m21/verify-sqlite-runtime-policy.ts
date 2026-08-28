@@ -46,6 +46,13 @@ function nodeRunner(): string[] | null {
   return null
 }
 
+function isValidProbeOutput(text: string): boolean {
+  try {
+    const parsed = JSON.parse(text.trim())
+    return parsed?.journal?.toLowerCase() === "wal" && parsed?.count === 1
+  } catch { return false }
+}
+
 const work = mkdtempSync(path.join(tmpdir(), "bb-m21-d2-"))
 const bunDb = path.join(work, "bun.db")
 try {
@@ -57,7 +64,7 @@ try {
 
   const bun = runBunProbe(bunDb)
   check("D2 Bun runtime probe executes", bun.status === 0, bun.stderr)
-  check("D2 Bun probe confirms WAL and row integrity", bun.status === 0 && /"journal"\s*:\s*"wal"/i.test(bun.stdout) && /"count"\s*:\s*1/.test(bun.stdout), bun.stdout)
+  check("D2 Bun probe confirms WAL and row integrity", bun.status === 0 && isValidProbeOutput(bun.stdout), bun.stdout)
 
   const runner = nodeRunner()
   if (!runner) {
@@ -68,8 +75,11 @@ try {
     check("D2 Node adapter runtime probe executes", nodeProbe.status === 0, nodeProbe.stderr)
   }
 
-  negative("D2 malformed runtime output is rejected", !/^\{"journal":"wal","count":1\}$/.test('{"journal":"wal","count":0}'))
-  negative("D2 missing database is not a runtime success", !existsSync(path.join(work, "missing.db")))
+  negative("D2 malformed runtime output is rejected by the verifier's own validator", !isValidProbeOutput('{"journal":"delete","count":1}') && !isValidProbeOutput('not-json'))
+  const corruptDb = path.join(work, "corrupt.db")
+  writeFileSync(corruptDb, Buffer.from("not a database", "utf8"))
+  const corruptProbe = spawnSync(process.execPath, ["-e", `import { Database } from "bun:sqlite"; const db = new Database(${JSON.stringify(corruptDb)}); try { db.query("SELECT COUNT(*) c FROM t").get() } catch (e) { console.log("CORRUPT_REJECTED"); process.exit(2) } db.close()`], { encoding: "utf8", timeout: 15000 })
+  negative("D2 corrupt database is not treated as a successful probe", corruptProbe.status === 2 && corruptProbe.stdout.includes("CORRUPT_REJECTED"), JSON.stringify({ status: corruptProbe.status, stdout: corruptProbe.stdout }))
 
   const commit = spawnSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).stdout.trim()
   const nodeVerified = runner !== null
