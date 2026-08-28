@@ -201,11 +201,15 @@ defects:
    call/macro handler attaches `rustSpecific + isAwait` to its SINGLE edge.
 
 Both fixes are pinned: `rust/await-single-edge` (exactly one calls edge
-per awaited site, isAwait metadata, leaf target + qualified) and the
-import contract via the same fixture set; six rust mutants guard the
-fixes (incl. `rust/duplicate-awaited-call-edge`), all caught (suite
-121/121). The floor `ripgrep:rust {missing:0, unexplained:0}` is enforced
-in `validation/m14/differential-baseline.json`.
+per awaited site, isAwait metadata, leaf target + qualified) and
+`rust/use-list-imports` (module/items contract: `std::io` → `[Read, W]`,
+alias-aware `Write as W` → W, wildcards → `[*]`, `extern crate` with
+externalCrate metadata — the differential oracle derives no import
+truth, so the fixture is the SOLE regression guard for the import fix).
+Seven rust mutants guard the fixes (incl. `rust/duplicate-awaited-call-edge`
+and `rust/raw-use-list-import`), all caught (suite 122/122; 8 rust
+fixtures). The floor `ripgrep:rust {missing:0, unexplained:0}` is
+enforced in `validation/m14/differential-baseline.json`.
 
 ### Completeness contract (#419) — 185 types, A–H 8/8
 
