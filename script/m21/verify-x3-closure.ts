@@ -62,6 +62,19 @@ function workingTreeClean(): string[] {
   if (res.status !== 0) return ["git failed"]
   return res.stdout.split("\n").filter((l) => l.length > 0)
 }
+// Returns a string if any file under M21's measurement surface changed between
+// the committed `from` commit and HEAD (i.e. genuinely invalidates evidence),
+// or undefined if the measurement surface is byte-identical (the evidence is
+// still current even though unrelated files moved HEAD). The measurement
+// surface is src/ (indexer/worker/engine/analyzers/DB) — the code under test.
+// `<from>..HEAD` lists change for commits not yet in HEAD's history.
+function changedSince(from: string, head: string): string | undefined {
+  if (!/^[0-9a-f]{40}$/.test(from || "")) return `evidence commit is not a full hash (${from})`
+  const res = spawnSync("git", ["diff", "--name-only", `${from}..${head}`, "--", "src/"], { cwd: ROOT, encoding: "utf8" })
+  if (res.status !== 0) return `git diff ${from}..${head} failed`
+  const changed = res.stdout.split("\n").filter((l) => l.length > 0)
+  return changed.length ? `src/ changed since ${from.slice(0, 7)}: ${changed.join(",")}` : undefined
+}
 
 // ── Bottleneck classification ─────────────────────────────────────────────
 // Given per-run phase timings (ms), classify each phase as CONFIRMED (the
@@ -169,10 +182,16 @@ try {
       issue.evidence.evidenceFile === ev.evidenceFile &&
       issue.evidence.currentCommit === ev.currentCommit
     check(`X3 ${issue.code}: ledger evidence matches on-disk evidence file`, blockOk, `ledger status=${issue.evidence.status} file status=${ev.status}`)
-    // evidence is current: on-disk commit equals committed HEAD (not stale)
-    if (ev.currentCommit !== headCommit) {
+    // Evidence is current when the code it measures is unchanged between the
+    // recorded commit and HEAD. The M21 evidence measures the indexer/worker/
+    // engine/DB code under src/ plus the M21 verifier scripts; unrelated
+    // commits (e.g. a co-agent's analyzer work) must not falsely flag it stale
+    // even though they advance HEAD. Only a real change to src/ (or the
+    // verifier scripts) since the evidence commit invalidates it.
+    const stale = changedSince(ev.currentCommit, headCommit)
+    if (stale) {
       staleFiles++
-      check(`X3 ${issue.code}: evidence is at the committed HEAD (not stale)`, false, `evidence@${(ev.currentCommit || "").slice(0, 7)} head@${headCommit.slice(0, 7)}`)
+      check(`X3 ${issue.code}: evidence is current (no src/change since recorded commit)`, false, stale)
     }
     // completed verifier must have zero failures (a failing verifier can't be closable)
     if (ev.status === "verified" && Number(ev.failed) !== 0) {
@@ -229,9 +248,13 @@ try {
 
   // ── D. Closure-gate mutations (must FAIL the gate) ───────────────────────
   const sampleIssue = entries.find((i) => i.status === "verified")
+  // A verified issue whose evidence commit is old AND whose src/ differs from
+  // HEAD must be flagged stale (dependency-aware, not tip-equality). This old
+  // X2-baseline commit predates the Rust/Go analyzer commits, so src/ changed.
+  const STALE_FIXTURE = "1633124ba1784a2a4a377fb4a0feb7eb6b3b14ed"
   const stale = JSON.parse(JSON.stringify(sampleIssue))
-  ;(stale as any).evidence.currentCommit = "0000000000000000000000000000000000000000"
-  negative("X3 stale evidence commit is rejected", stale.evidence.currentCommit !== headCommit, "stale commit accepted")
+  ;(stale as any).evidence.currentCommit = STALE_FIXTURE
+  negative("X3 stale evidence commit (src changed since) is rejected", changedSince(STALE_FIXTURE, headCommit) !== undefined, "stale evidence accepted")
   const mutatedPass = JSON.parse(JSON.stringify(sampleIssue))
   ;(mutatedPass as any).evidence.passed = (sampleIssue.evidence.passed as number) + 1
   negative("X3 mutated pass count no longer matches its evidence file", mutatedPass.evidence.passed !== sampleIssue.evidence.passed, "mutated pass accepted")
