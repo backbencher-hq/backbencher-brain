@@ -68,8 +68,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "1633124ba1784a2a4a377fb4a0feb7eb6b3b14ed",
-  "committedAt": "2026-08-28T23:05:03+02:00",
+  "commit": "c02cc8aca5e2fa9ca57a07fa4cd2bba0eb833a79",
+  "committedAt": "2026-08-28T23:30:43+02:00",
   "data": {
     "corpusPins": {
       "grails-core": "a83f87480e0c0138caa5a7191a053b1e59a64066"
@@ -121,8 +121,8 @@
         "heuristicUnexplained": 34,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 19,
-          "maxMsPerFile": 166.7,
+          "avgMsPerFile": 12.7,
+          "maxMsPerFile": 77.9,
           "samplesTimed": 60
         },
         "samples": [],
@@ -139,8 +139,8 @@
         "heuristicUnexplained": 80,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 12.9,
-          "maxMsPerFile": 123.6,
+          "avgMsPerFile": 9,
+          "maxMsPerFile": 69.6,
           "samplesTimed": 60
         },
         "samples": [],
@@ -157,8 +157,8 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 20.2,
-          "maxMsPerFile": 237.9,
+          "avgMsPerFile": 8.6,
+          "maxMsPerFile": 90.2,
           "samplesTimed": 52
         },
         "samples": [],

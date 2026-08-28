@@ -111,6 +111,13 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, symbols: (r.symbols ?? []).filter(s => !(s.name === "Item" && s.ownerName === "Container")) }),
   },
   {
+    id: "rust/duplicate-awaited-call-edge",
+    language: "rust",
+    defectClass: "relationship-duplication",
+    description: "re-emits the raw await edge in ADDITION to the canonical call edge (the pre-fix await_expression branch pushed a second calls edge with the full function text as target): one awaited call site must produce exactly ONE calls edge",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { source: "connect", target: "do_connect", type: "calls", confidence: 1, metadata: { rustSpecific: true, isAwait: true } }] }),
+  },
+  {
     id: "java/mislabel-inheritance",
     language: "java",
     defectClass: "relationship-mislabel",
