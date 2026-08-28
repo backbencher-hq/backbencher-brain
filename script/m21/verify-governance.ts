@@ -48,7 +48,7 @@ check("all planned issue entries exist exactly once", ledger.issues.length === c
 check("all GitHub issue numbers are unique integers", ledger.issues.every((i) => Number.isInteger(i.githubIssue)) && new Set(ledger.issues.map((i) => i.githubIssue)).size === ledger.issues.length)
 check("every issue has scope and acceptance criteria", ledger.issues.every((i) => i.tool && i.scope && i.acceptanceCriteria.length >= 2))
 check("every issue has closure requirements", ledger.issues.every((i) => i.closureRequirements.length >= 2))
-check("initial ledger does not fabricate evidence", ledger.issues.every((i) => i.status === "planned" && !i.evidence))
+check("ledger does not fabricate evidence", ledger.issues.every((i) => i.status === "planned" ? !i.evidence : closable(i)))
 check("allowed states are explicit", ledger.issues.every((i) => ["planned","verified","known-gap","blocked"].includes(i.status)))
 check("authority and fail-closed policy are documented", ledger.authority === "docs/m21/M21-MASTER-PLAN.md" && plan.includes("verified") && plan.includes("known-gap") && plan.includes("never silently substituted"))
 check("evidence policy distinguishes measured zero from missing data", validEvidencePolicy(ledger.evidencePolicy))
