@@ -296,6 +296,10 @@ export function deriveGoImplements(root: any): { label: string; from: string; ta
   const seen = new Set<string>()
   // interfaceName -> Set<methodName>
   const interfaces: Record<string, Set<string>> = {}
+  // interfaceName -> Set<embeddedInterfaceName>
+  const embedded: Record<string, Set<string>> = {}
+  // structName -> Set<embeddedStructName> (Go struct embedding promotion)
+  const structEmbedded: Record<string, Set<string>> = {}
   // receiverType -> Set<methodName> (value AND pointer receivers merged)
   const structMethods: Record<string, Set<string>> = {}
   const stack: any[] = [root]
@@ -306,6 +310,34 @@ export function deriveGoImplements(root: any): { label: string; from: string; ta
         const ts = n.namedChild(i)
         if (!ts || ts.type !== "type_spec") continue
         const nm = ts.childForFieldName?.("name")?.text
+        const structN = ts.namedChildren.find((c: any) => c.type === "struct_type")
+        if (nm && structN) {
+          // Anonymous (embedded) fields: field_declaration with NO name child —
+          // its type node is the embedded type (type_identifier for `*Shape`
+          // under a pointer_type). Record leaf name (mirrors analyzer's
+          // embedding resolution).
+          const fdl = structN.namedChildren.find((c: any) => c.type === "field_declaration_list")
+          if (fdl) {
+            if (!structMethods[nm]) structMethods[nm] = new Set()
+          for (let k = 0; k < fdl.namedChildCount; k++) {
+              const fd = fdl.namedChild(k)
+              if (!fd || fd.type !== "field_declaration") continue
+              const nameF = fd.childForFieldName?.("name")
+              if (nameF) continue // named field, not embedding
+              const typeNode = fd.childForFieldName?.("type") ?? (fd.namedChildCount > 0 ? fd.namedChild(0) : undefined)
+              if (!typeNode) continue
+              // Descend pointer/qualified wrappers to the leaf identifier.
+              let inner: any = typeNode
+              let guard = 0
+              while (inner && guard++ < 4 && (inner.type === "pointer_type" || inner.type === "qualified_type")) {
+                inner = inner.namedChildCount > 0 ? inner.namedChild(0) : undefined
+              }
+              const raw = inner?.text ?? typeNode.text
+              const leaf = raw.lastIndexOf(".") !== -1 ? raw.slice(raw.lastIndexOf(".") + 1) : raw
+              if (leaf) { if (!structEmbedded[nm]) structEmbedded[nm] = new Set(); structEmbedded[nm].add(leaf) }
+            }
+          }
+        }
         const interfaceN = ts.namedChildren.find((c: any) => c.type === "interface_type")
         if (nm && interfaceN) {
           const set = new Set<string>()
@@ -316,19 +348,22 @@ export function deriveGoImplements(root: any): { label: string; from: string; ta
               const mn = m.childForFieldName?.("name")
               if (mn) set.add(mn.text)
             } else if (m.type === "constraint_elem") {
-              // Embedded interface (`io.Closer` in `interface { io.Closer;
-              // Notify(...) }`) — the embedded interface's methods are
-              // promoted into the embedding interface's method set. Mirror
-              // by collecting nested method_spec names (io.Closer has none
-              // here, but embedded local interfaces would).
-              const specStack: any[] = [m]
-              while (specStack.length > 0) {
-                const mm = specStack.pop()!
-                if (mm.type === "method_spec") {
-                  const mn = mm.childForFieldName?.("name")
-                  if (mn) set.add(mn.text)
-                }
-                for (let k = 0; k < mm.namedChildCount; k++) specStack.push(mm.namedChild(k))
+              // Embedded interface (`Reader`/`io.Closer` in
+              // `interface { Reader; Close() error }`) — the embedded
+              // interface's methods are promoted into the embedding
+              // interface's method set. Record the embedded interface's LEAF
+              // name so its methods can be folded in transitively after the
+              // walk (a named embedded LOCAL interface like `Reader`
+              // contribs its method set; an external `io.Closer` (leaf
+              // `Closer`) is only contributed when a local interface of that
+              // name exists). Matches the analyzer's promotion (fixed go
+              // wave deep-review 2026-08-29).
+              const child0 = m.namedChildCount > 0 ? m.namedChild(0) : undefined
+              if (child0) {
+                const raw = child0.text
+                const leaf = raw.lastIndexOf(".") !== -1 ? raw.slice(raw.lastIndexOf(".") + 1) : raw
+                if (!embedded[nm]) embedded[nm] = new Set()
+                embedded[nm].add(leaf)
               }
             }
           }
@@ -360,6 +395,43 @@ export function deriveGoImplements(root: any): { label: string; from: string; ta
     }
     for (let k = 0; k < n.namedChildCount; k++) stack.push(n.namedChild(k))
   }
+  // Fold embedded-interface method sets into embedding interfaces,
+  // transitively (interface { Reader } promotes Reader's methods).
+  const fold = (name: string, visiting: Set<string>) => {
+    const target = interfaces[name]
+    if (!target || visiting.has(name)) return
+    visiting.add(name)
+    const embs = embedded[name]
+    if (embs) {
+      for (const e of embs) {
+        const eSet = interfaces[e]
+        if (!eSet) continue
+        for (const m of eSet) target.add(m)
+        fold(e, visiting)
+      }
+    }
+    visiting.delete(name)
+  }
+  for (const name of Object.keys(interfaces)) fold(name, new Set())
+  // Promoted struct method sets: an embedding struct includes its embedded
+  // struct's methods (Go method promotion) — `Worker struct { *Shape }`
+  // includes Shape's methods, so Worker implements any interface Shape
+  // implements. Transitive + cycle-safe, mirrors the analyzer exactly.
+  const foldStruct = (name: string, visiting: Set<string>) => {
+    const target = structMethods[name]
+    if (!target || visiting.has(name)) return
+    visiting.add(name)
+    const embs = structEmbedded[name]
+    if (embs) {
+      for (const e of embs) {
+        const eSet = structMethods[e]
+        if (eSet) for (const m of eSet) target.add(m)
+        foldStruct(e, visiting)
+      }
+    }
+    visiting.delete(name)
+  }
+  for (const name of Object.keys(structMethods)) foldStruct(name, new Set())
   for (const [iface, ifaceMethods] of Object.entries(interfaces)) {
     if (ifaceMethods.size === 0) continue
     for (const [structName, methods] of Object.entries(structMethods)) {
