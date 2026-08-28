@@ -165,6 +165,42 @@ list. No O(n²) or per-symbol O(n) scans.
   `base_class` is dead in both grammars, referenced only in a defensive
   condition); differential unchanged at 1.000/1.000
 
+## M14 external validation (2026-08-28, #260 / #419)
+
+- **Differential corpus (issue-pinned): `fmtlib/fmt`** — 47 C++ files sampled
+  (seeded 60/language, deterministic), 145 tree-truth edges, **145/145 covered
+  (100%), 0 missing, 0 unexplained**, 113.6 ms/file. Floor recorded in
+  `validation/m14/differential-baseline.json` (`fmt:cpp`), enforced by
+  `audit:differential`; evidence `validation/m14/results/M14.0.F5.json`.
+  Defects this exposed and fixed:
+  - **Self-override fabrication**: `class format_facet : public
+    fmt::format_facet<std::locale>` leaf-cleans the cross-file base to
+    `format_facet`, identical to the class's own name, so the post-loop
+    override resolver fabricated `format_facet.do_put -> format_facet.do_put`.
+    A class cannot inherit from itself — such bases are now skipped.
+  - **Oracle LIFO name extraction**: the second-opinion oracle popped the
+    declarator subtree in LIFO order and grabbed *parameter* identifiers
+    (`Send(const std::string& message)` -> `message`, `skip_count`, and
+    constructor `matcher`), fabricating override truth; fixed to read only the
+    `declarator` field and require `field_identifier` (macro bodies like
+    `GTEST_DISALLOW_COPY_AND_ASSIGN_` parse as bare `identifier`).
+- **Completeness contract (#419)**: all **256** tree-sitter-cpp public named
+  node types classified A–H 8/8 (`script/m14/spec/cpp-completeness.json`);
+  rulings CPP-D1/D2/D3: GNU asm + `extension_expression` parsed not modeled;
+  MSVC SEH/declspec/based/call/pointer modifiers parsed not modeled;
+  cross-file resolution + template instantiation across TUs are per-file by
+  contract. Fixture pins calls, instantiates, references, imports,
+  include_dependency, overrides, uses (`system-completeness`).
+- **Mutation hardening**: 3 C++-specific mutants (drop-virtual-overrides,
+  drop-extends-edges, drop-qualified-calls) all caught; suite 115/115.
+- **Include metadata**: C++ include edges now carry the family contract
+  `relationshipType: "include_dependency"` + `isImport` (previously only
+  `isIncludeDependency`), matching the C analyzer.
+- **Heuristic honesty**: sub-1.0 edges carry machine-readable reason codes
+  (`relationshipType: "field_access"` on uses; `reasonCode:
+  "signature-match"` on overrides). Heuristic ratio reported per corpus repo
+  in the F5 report; fmt:cpp heuristic = 0.
+
 ## Evidence pointers
 
 - Fixtures: `validation/m12/fixtures/cpp/`
