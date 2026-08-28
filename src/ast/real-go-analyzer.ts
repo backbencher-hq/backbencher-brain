@@ -641,10 +641,26 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
             },
           })
         } else {
+          // Embedded interface (`Reader`/`io.Closer` in
+          // `interface { Reader; Close() error }`). Parsed as constraint_elem
+          // whose single named child is the type node (type_identifier or
+          // qualified_type) — NOT a named "type" field. The pre-fix code
+          // read childForFieldName("type"), which returned nothing, so NO
+          // embedded-interface symbol was emitted and the embedding
+          // interface's method set silently lost the promoted methods. That
+          // let a struct with only Close() be (wrongly) declared to
+          // implement ReadCloser — a false positive the differential missed
+          // because the oracle shared the same blind spot (go wave deep
+          // review 2026-08-29). We set name = LEAF so local embedded
+          // interfaces (Reader) resolve; external ones (io.Closer, leaf
+          // Closer) find no local interface and contribute nothing.
           const embeddedType = method.childForFieldName("type")
-          if (embeddedType) {
+          const embeddedNode = embeddedType ?? (method.namedChildCount > 0 ? method.namedChild(0) : undefined)
+          if (embeddedNode) {
+            const rawText = embeddedNode.text
+            const leaf = rawText.lastIndexOf(".") !== -1 ? rawText.slice(rawText.lastIndexOf(".") + 1) : rawText
             symbols.push({
-              name: embeddedType.text,
+              name: leaf,
               kind: ASTEngine.SymbolKind.Interface,
               range: this.nodeToRange(method),
               visibility: "public",
@@ -653,10 +669,41 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
               metadata: {
                 nodeType: method.type,
                 isEmbeddedInterface: true,
-                embeddedInterface: embeddedType.text,
+                embeddedInterface: rawText,
               },
             })
           }
+        }
+        continue
+      }
+
+      // Embedded interface — parsed as a constraint_elem whose single named
+      // child is the type node (type_identifier for `Reader`, qualified_type
+      // for `io.Closer`). The pre-fix code only handled embedded interfaces
+      // in the method_spec ELSE branch (no-name), which constraint_elem never
+      // reached — so embedded-interface symbols were never emitted, the
+      // embedding interface's method set lost promoted methods, and a struct
+      // with only Close() was (wrongly) declared to implement ReadCloser (or
+      // not recognized as implementing ReadCloser when it satisfied the
+      // promoted Read too). go wave deep-review 2026-08-29.
+      if (method?.type === "constraint_elem") {
+        const embeddedNode = method.namedChildCount > 0 ? method.namedChild(0) : undefined
+        if (embeddedNode) {
+          const rawText = embeddedNode.text
+          const leaf = rawText.lastIndexOf(".") !== -1 ? rawText.slice(rawText.lastIndexOf(".") + 1) : rawText
+          symbols.push({
+            name: leaf,
+            kind: ASTEngine.SymbolKind.Interface,
+            range: this.nodeToRange(method),
+            visibility: "public",
+            ownerName: interfaceName,
+            ownerKind: ASTEngine.SymbolKind.Interface,
+            metadata: {
+              nodeType: method.type,
+              isEmbeddedInterface: true,
+              embeddedInterface: rawText,
+            },
+          })
         }
       }
     }
@@ -822,7 +869,17 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       return resultNode.text
     }
 
-    // Fallback: look for common return type nodes
+    // Fallback: look for common return type nodes. NOTE: parameter_list is
+    // deliberately NOT in this list. In tree-sitter-go the named result list
+    // (func f() (int, error)) is the `result` FIELD, handled above; bare
+    // parameter_list children are the RECEIVER (methods) and the PARAMETERS.
+    // Scanning for parameter_list here made `func (v *S) HelpPrompt() {}`
+    // return "(v *S)" (the receiver!) and made method_spec/method
+    // `Diagnostics(diags X)` return the parameters as a fake return type.
+    // Those corrupt signatures silently broke interface implements
+    // detection (terraform views.Plan -> PlanHuman/PlanJSON, go wave
+    // deep-review 2026-08-29: analyzer emitted 0 implements edges where
+    // duck typing clearly holds).
     for (let i = 0; i < node.namedChildCount; i++) {
       const child = node.namedChild(i)
       if (
@@ -837,7 +894,6 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
             "map_type",
             "channel_type",
             "function_type",
-            "parameter_list",
           ],
           child.type,
         )
@@ -1161,19 +1217,56 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     const structs = filterSymbols(symbols, (s) => s.metadata?.isStruct)
     const methods = filterSymbols(symbols, (s) => s.kind === ASTEngine.SymbolKind.Method)
 
+    // Embedded-struct method promotion: `type Worker struct { *Shape }`
+    // promotes Shape's methods into Worker's method set (Go spec — a
+    // promoted method is an element of the embedding struct's method set, so
+    // Worker implements any interface Shape implements). The pre-promotion
+    // analyzer (and the differential oracle) silently omitted this — Worker
+    // could never satisfy an interface via an embedded type, so real
+    // satisfied interfaces were missed (and, absent promotion, a struct with
+    // only Shape embedded appeared NOT to implement an interface it does).
+    // Resolve embedding via the go_struct_embedding extends edges (source =
+    // embedding struct, target = embedded type).
+    const embeddedOf: Record<string, string[]> = {}
+    for (const r of relationships) {
+      if (
+        (r.type || r.relationshipType || "") === ASTEngine.RelationshipType.Extends &&
+        (r.metadata as any)?.relationshipType === "go_struct_embedding"
+      ) {
+        const src = String(r.source ?? r.from ?? "")
+        const tgt = String(r.target ?? r.to ?? r.toSymbol ?? "")
+        if (src && tgt) { if (!embeddedOf[src]) embeddedOf[src] = []; embeddedOf[src].push(tgt) }
+      }
+    }
+
     forEachSymbol(interfaces, (interfaceSymbol) => {
       const interfaceMethods = this.getGoInterfaceMethods(interfaceSymbol, symbols)
 
       forEachSymbol(structs, (structSymbol) => {
-        const valueMethods = filterSymbols(methods, (m) => {
-          const receiverType = m.metadata?.receiverType || m.metadata?.receiver?.typeName
-          const isPointer = !!(m.metadata?.isPointerReceiver || m.metadata?.receiver?.isPointer)
-          return receiverType === structSymbol.name && !isPointer
-        })
-        const pointerMethods = filterSymbols(methods, (m) => {
-          const receiverType = m.metadata?.receiverType || m.metadata?.receiver?.typeName
-          return receiverType === structSymbol.name
-        })
+        const structName = structSymbol.name
+        // Promoted methods: direct + transitive embedding closure (Go
+        // method promotion — an embedded type's methods are elements of the
+        // embedding struct's method set). We promote the FULL method set
+        // (value + pointer receivers) because the overwhelmingly common and
+        // spec-valid form is value embedding of a pointer (`*Shape`), which
+        // promotes both. This mirrors the oracle exactly.
+        const promoted = this.collectGoPromotedMethods(structName, methods, symbols, embeddedOf, new Set())
+
+        const valueMethods = [
+          ...filterSymbols(methods, (m) => {
+            const receiverType = m.metadata?.receiverType || m.metadata?.receiver?.typeName
+            const isPointer = !!(m.metadata?.isPointerReceiver || m.metadata?.receiver?.isPointer)
+            return receiverType === structName && !isPointer
+          }),
+          ...promoted,
+        ]
+        const pointerMethods = [
+          ...filterSymbols(methods, (m) => {
+            const receiverType = m.metadata?.receiverType || m.metadata?.receiver?.typeName
+            return receiverType === structName
+          }),
+          ...promoted,
+        ]
 
         // In Go method sets: T has value methods only; *T has value + pointer methods.
         const valueImpl = this.checkGoInterfaceImplementation(interfaceMethods, valueMethods)
@@ -1210,8 +1303,67 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
             },
           })
         }
-      })
-    })
+      })    })
+  }
+
+  /**
+   * Go embedded-struct method promotion (Go spec, promoted methods).
+   * Returns the method-symbol set reachable on `structName` through embedded
+   * structs (the go_struct_embedding closure built in
+   * analyzeGoInterfaceImplementation). `worker struct { *shape; name string }`
+   * promotes shape's methods into worker's method set, so worker satisfies
+   * any interface shape satisfies. Transitive and cycle-safe. NOTE: deduped
+   * by method signature (name+params+return); a struct defining its own
+   * method with the same signature as a promoted one shadows the promotion
+   * (Go rule: a promoted method at shallower depth wins / is shadowed by an
+   * explicit method).
+   */
+  private collectGoPromotedMethods(
+    structName: string,
+    methods: ASTEngine.UniversalSymbol[],
+    symbols: ASTEngine.UniversalSymbol[],
+    embeddedOf: Record<string, string[]>,
+    visiting: Set<string>,
+  ): ASTEngine.UniversalSymbol[] {
+    if (visiting.has(structName)) return []
+    visiting.add(structName)
+    const acc: ASTEngine.UniversalSymbol[] = []
+    const embeddedTypes = embeddedOf[structName]
+    if (embeddedTypes) {
+      for (const et of embeddedTypes) {
+        // Only promote methods belonging to a type ACTUALLY declared in this
+        // file (external embedded types have no local methods).
+        const embeddedMethods = filterSymbols(
+          methods,
+          (m) => (m.metadata?.receiverType || m.metadata?.receiver?.typeName) === et,
+        )
+        const ownSig = (m: ASTEngine.UniversalSymbol) => this.buildGoMethodSignature(m)
+        forEachSymbol(embeddedMethods, (m) => {
+          // Shadowing: an explicit/shallower method with the same signature
+          // wins over a promoted one.
+          const shadowed = someSymbol(
+            [...filterSymbols(methods, (sm) => (sm.metadata?.receiverType || sm.metadata?.receiver?.typeName) === structName), ...acc],
+            (x) => x !== m && this.buildGoMethodSignature(x) === ownSig(m),
+          )
+          if (!shadowed && !someSymbol(acc, (x) => this.buildGoMethodSignature(x) === ownSig(m))) {
+            acc.push(m)
+          }
+        })
+        // Transitive: embedded struct may itself embed another.
+        const transitive = this.collectGoPromotedMethods(et, methods, symbols, embeddedOf, visiting)
+        forEachSymbol(transitive, (m) => {
+          const shadowed = someSymbol(
+            [...filterSymbols(methods, (sm) => (sm.metadata?.receiverType || sm.metadata?.receiver?.typeName) === structName), ...acc],
+            (x) => x !== m && this.buildGoMethodSignature(x) === this.buildGoMethodSignature(m),
+          )
+          if (!shadowed && !someSymbol(acc, (x) => this.buildGoMethodSignature(x) === this.buildGoMethodSignature(m))) {
+            acc.push(m)
+          }
+        })
+      }
+    }
+    visiting.delete(structName)
+    return acc
   }
 
   /**
@@ -2602,6 +2754,13 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     const resultNode = node.childForFieldName("result")
     if (resultNode) return resultNode.text
 
+    // Same guard as extractGoReturnType: parameter_list is NOT a return type
+    // here. method_spec children are [name, parameter_list(parameters)] and
+    // an optional result field; scanning for parameter_list returned the
+    // PARAMETERS as a fake return type for `Diagnostics(diags X)` ("(diags
+    // tfdiags.Diagnostics)"), silently breaking interface implements
+    // detection (terraform views.Plan -> PlanHuman/PlanJSON, go wave
+    // deep-review 2026-08-29).
     for (let i = 0; i < node.namedChildCount; i++) {
       const child = node.namedChild(i)
       if (
@@ -2616,7 +2775,6 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
             "map_type",
             "channel_type",
             "function_type",
-            "parameter_list",
           ],
           child.type,
         )
