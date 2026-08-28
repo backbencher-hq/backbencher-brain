@@ -354,11 +354,11 @@ const cliSkipPatterns: RegExp[] = [
   /yarn\.lock$/, /bun\.lockb$/,
 ]
 
-function shouldSkipCli(filePath: string): boolean {
+export function shouldSkipCli(filePath: string): boolean {
   return cliSkipPatterns.some((p) => p.test(filePath))
 }
 
-function hasValidExtension(filePath: string): boolean {
+export function hasValidExtension(filePath: string): boolean {
   return detectLanguageFromPath(filePath) !== null
 }
 
@@ -2365,6 +2365,7 @@ export async function indexProjectParallel(
     files?: string[]
     excludePatterns?: string[]
     isIncremental?: boolean
+    skipPostProcessing?: boolean // M19: defer heavy resolution/enrichment for bounded slice timing
     skipDiscovery?: boolean // @backbencher: skip discoverAndFilterFiles entirely
     logger?: { log: (...args: any[]) => void; write: (s: string) => void }
   } = {},
@@ -2510,8 +2511,16 @@ export async function indexProjectParallel(
       }
     })
 
-    // Aggregate results
+    // Aggregate one final outcome per input file. Worker retries can append a
+    // failure and then a later success for the same path; counting the raw
+    // result array over-reports successes and makes the public stats exceed
+    // totalFiles. A later successful parse is the authoritative outcome.
+    const finalOutcomes = new Map<string, FileResult>()
     for (const result of results) {
+      const previous = finalOutcomes.get(result.filePath)
+      if (!previous || result.success || !previous.success) finalOutcomes.set(result.filePath, result)
+    }
+    for (const result of finalOutcomes.values()) {
       if (result.success) {
         stats.successFiles++
       } else if (result.timeout) {
@@ -2615,7 +2624,7 @@ export async function indexProjectParallel(
       status: stats.errorFiles > 0 ? "partial" : "complete",
     })
 
-    if (!options.isIncremental) {
+    if (!options.isIncremental && !options.skipPostProcessing) {
       try {
         log.debug("running heavy cross-symbol taints and health metrics (full index only)")
 
@@ -2689,7 +2698,9 @@ export async function indexProjectParallel(
         log.warn("failed to compute project health or resolve taints", { error: err })
       }
     } else {
-      log.debug("skipping heavy cross-symbol taints and health metrics for incremental run")
+      log.debug(options.skipPostProcessing
+        ? "skipping heavy post-processing because the caller requested deferred finalization"
+        : "skipping heavy cross-symbol taints and health metrics for incremental run")
     }
 
     Bus.publishSafe(BrainService.Event.IndexingCompleted, {
