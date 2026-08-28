@@ -7,9 +7,8 @@
 // honest KNOWN-GAP result while the verifier itself exits successfully when its
 // reporting rules are satisfied.
 
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs"
 import { execFileSync } from "node:child_process"
-import { createHash } from "node:crypto"
 import path from "node:path"
 import { migrationSourceFingerprint } from "../../src/intelligence/migration/migration-evidence"
 
@@ -92,25 +91,6 @@ const SNAPSHOT_MANIFEST_PATH = path.join(ROOT, "validation/m20/corpus-snapshots.
 const RESULTS = path.join(ROOT, "validation/m20/results")
 const REGISTRY_PATH = path.join(RESULTS, "C2-registry.json")
 const EVIDENCE_PATH = path.join(RESULTS, "C2.json")
-function snapshotContentSha256(root: string): string {
-  const hash = createHash("sha256")
-  const visit = (dir: string, relative: string): void => {
-    for (const name of readdirSync(dir).sort()) {
-      if (relative === "" && name === ".m20-snapshot.json") continue
-      const full = path.join(dir, name)
-      const rel = relative ? `${relative}/${name}` : name
-      const stat = statSync(full)
-      hash.update(rel)
-      hash.update("\0")
-      if (stat.isDirectory()) visit(full, rel)
-      else hash.update(readFileSync(full))
-      hash.update("\0")
-    }
-  }
-  visit(root, "")
-  return hash.digest("hex")
-}
-
 const manifest = JSON.parse(readFileSync(SOURCE_MANIFEST, "utf8")) as Manifest
 let snapshotIndex: SnapshotIndex | null = null
 try { snapshotIndex = JSON.parse(readFileSync(SNAPSHOT_MANIFEST_PATH, "utf8")) as SnapshotIndex } catch {}
@@ -206,8 +186,8 @@ function inspect(repo: DeclaredRepository): ObservedRepository {
   if (declaration && snapshotPath && existsSync(snapshotPath)) {
     try {
       const sidecar = JSON.parse(readFileSync(path.join(snapshotPath, ".m20-snapshot.json"), "utf8")) as Record<string, unknown>
-      const contentSha256 = snapshotContentSha256(snapshotPath)
-      snapshotValid = sidecar.id === repo.id && sidecar.source === declaration.source && sidecar.revision === declaration.revision && sidecar.archiveFormat === "git-archive" && sidecar.contentSha256 === contentSha256
+      const sourceTree = runGit(declaration.source, ["rev-parse", `${declaration.revision}^{tree}`])
+      snapshotValid = sidecar.id === repo.id && sidecar.source === declaration.source && sidecar.revision === declaration.revision && sidecar.archiveFormat === "git-archive" && sidecar.treeHash === sourceTree
       snapshotTrackedFiles = typeof sidecar.trackedFiles === "number" ? sidecar.trackedFiles : null
     } catch { snapshotValid = false }
   }
