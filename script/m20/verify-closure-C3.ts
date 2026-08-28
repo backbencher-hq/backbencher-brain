@@ -69,7 +69,14 @@ ck("C3: every issue has consistent persisted evidence, zero failed checks", evid
 // ── 3. Governance evidence is verified from a clean relevant tree ─────────
 const gov = JSON.parse(readFileSync(path.join(RESULTS_DIR, "C1.json"), "utf8"))
 ck("C3: governance (C1) evidence is VERIFIED", gov.status === "verified", `gov.status=${gov.status}`)
-ck("C3: governance record ran at current commit", typeof gov.currentCommit === "string" && gov.currentCommit === commits.current, ``)
+function onlyEvidenceCommitsBetween(testedCommit: string, current: string): boolean {
+  if (testedCommit === current) return true
+  try {
+    const changed = execFileSync("git", ["diff", "--name-only", `${testedCommit}..${current}`], { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).split("\n").map((x) => x.trim()).filter(Boolean)
+    return changed.length > 0 && changed.every((file) => file.startsWith("validation/m20/results/"))
+  } catch { return false }
+}
+ck("C3: governance record is current or separated only by evidence commits", typeof gov.currentCommit === "string" && onlyEvidenceCommitsBetween(gov.currentCommit, commits.current), `gov=${gov.currentCommit} current=${commits.current}`)
 ck("C3: governance clean relevant tree", Array.isArray(gov.workingTreeRelevantChanges) && gov.workingTreeRelevantChanges.length === 0, JSON.stringify(gov.workingTreeRelevantChanges))
 
 // ── 4. Real-repo ledger and corpus identity present ───────────────────────
