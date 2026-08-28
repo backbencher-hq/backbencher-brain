@@ -395,6 +395,13 @@ export interface IndexPhaseTimings {
    * "failed" and stays visible; a skipped phase records "skipped".
    */
   postProcessingPhases?: PostProcessingPhaseTiming[]
+  /**
+   * M21.W3: per-language outcome counts for the files that reached the parse
+   * phase, keyed by detected language. "fallback" counts files whose parse
+   * used regex/structural extraction instead of the full AST grammar
+   * (FileResult.fallback === true) — never presented as full AST parsing.
+   */
+  byLanguage?: Record<string, { files: number; success: number; error: number; timeout: number; fallback: number }>
 }
 
 /** M21.I2: one measured post-processing phase with its outcome. */
@@ -2747,28 +2754,38 @@ export async function indexProjectParallel(
       if (!previous || result.success || !previous.success) finalOutcomes.set(result.filePath, result)
     }
     stats.structuredErrors = []
+    const byLanguage: Record<string, { files: number; success: number; error: number; timeout: number; fallback: number }> = {}
     for (const result of finalOutcomes.values()) {
+      // detectLanguageFromPath returns the language string directly (not an
+      // object) — never use `.language` on it.
+      const lang = detectLanguageFromPath(result.filePath) ?? "unknown"
+      const acc = (byLanguage[lang] ??= { files: 0, success: 0, error: 0, timeout: 0, fallback: 0 })
+      acc.files++
       if (result.success) {
         stats.successFiles++
+        acc.success++
+        if ((result as any).fallback) acc.fallback++
       } else if (result.timeout) {
         stats.timeoutFiles++
+        acc.timeout++
         stats.errors.push({ file: result.filePath, error: "Timeout" })
         stats.structuredErrors.push({
           phase: "parse",
           message: "Timeout",
           file: result.filePath,
-          language: detectLanguageFromPath(result.filePath)?.language ?? null,
+          language: detectLanguageFromPath(result.filePath) ?? null,
           retry: 0,
           timestamp: Date.now(),
         })
       } else {
         stats.errorFiles++
+        acc.error++
         stats.errors.push({ file: result.filePath, error: result.error || "Unknown error" })
         stats.structuredErrors.push({
           phase: "parse",
           message: result.error || "Unknown error",
           file: result.filePath,
-          language: detectLanguageFromPath(result.filePath)?.language ?? null,
+          language: detectLanguageFromPath(result.filePath) ?? null,
           retry: 0,
           fallback: (result as any).fallback ?? undefined,
           timestamp: Date.now(),
@@ -2802,18 +2819,25 @@ export async function indexProjectParallel(
         const mainOutcomes = new Map<string, { success: boolean; timeout: boolean }>()
         for (const r of results) mainOutcomes.set(r.filePath, { success: r.success, timeout: !!r.timeout })
         for (const r of reprocessed) {
+          const lang = detectLanguageFromPath(r.filePath) ?? "unknown"
+          const acc = (byLanguage[lang] ??= { files: 0, success: 0, error: 0, timeout: 0, fallback: 0 })
           if (r.success) {
             const prev = mainOutcomes.get(r.filePath)
             if (prev) {
               if (!prev.success) {
                 // Recovery: move the stale failure tally to success.
-                if (prev.timeout) stats.timeoutFiles = Math.max(0, stats.timeoutFiles - 1)
-                else stats.errorFiles = Math.max(0, stats.errorFiles - 1)
+                if (prev.timeout) { stats.timeoutFiles = Math.max(0, stats.timeoutFiles - 1); acc.timeout = Math.max(0, acc.timeout - 1) }
+                else { stats.errorFiles = Math.max(0, stats.errorFiles - 1); acc.error = Math.max(0, acc.error - 1) }
                 stats.successFiles++
+                acc.success++
+                if ((r as any).fallback) acc.fallback++
               }
               // prev.success: already counted as success — don't count again
             } else {
               stats.successFiles++
+              acc.files++
+              acc.success++
+              if ((r as any).fallback) acc.fallback++
             }
             process.stderr.write(`  ✓ ${r.filePath.split('/').pop()}\n`)
           } else {
@@ -2821,7 +2845,12 @@ export async function indexProjectParallel(
             // main pass keeps its single failure tally. Only count a fallback
             // failure when the file was never tallied before (e.g. it was lost
             // in a batch rollback without any result).
-            if (!mainOutcomes.has(r.filePath)) stats.errorFiles++
+            if (!mainOutcomes.has(r.filePath)) {
+              stats.errorFiles++
+              acc.files++
+              if (r.timeout) acc.timeout++
+              else acc.error++
+            }
             process.stderr.write(`  ✗ ${r.filePath.split('/').pop()}\n`)
           }
         }
@@ -2829,6 +2858,8 @@ export async function indexProjectParallel(
     } catch (e: any) {
       process.stderr.write(`[brain] fallback error: ${e?.message}\n`)
     }
+
+    phases.byLanguage = byLanguage
 
     log.debug("storing results in database", { successFiles: stats.successFiles })
 
