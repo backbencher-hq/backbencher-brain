@@ -739,11 +739,85 @@
       "id": "section-h-cross-language",
       "language": "cpp",
       "status": "pass"
+    },
+    {
+      "description": "rust: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "rust",
+      "status": "pass"
+    },
+    {
+      "description": "rust: 0 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "rust",
+      "status": "pass"
+    },
+    {
+      "description": "rust: 3 ruled, 0 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "rust",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (rust)",
+      "detail": "185 types, 42 handled, 121 silent, 0 gaps, 3 decisions",
+      "id": "section-a-structural",
+      "language": "rust",
+      "status": "pass"
+    },
+    {
+      "description": "8 relationship kinds pinned by rust fixtures",
+      "detail": "pinned: calls, contains, exports, extends, implements, instantiates, references, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "rust",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for rust (2)",
+      "detail": "complexity, qualified_calls",
+      "id": "section-c-payload-matrix",
+      "language": "rust",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "3 tier(s) pinned: reference_qualified, structural, usage_contextual",
+      "id": "section-d-evidence-tiers",
+      "language": "rust",
+      "status": "pass"
+    },
+    {
+      "description": "ripgrep:rust at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor ripgrep:rust: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "rust",
+      "status": "pass"
+    },
+    {
+      "description": "rust avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "ripgrep:rust 32.9 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "rust",
+      "status": "pass"
+    },
+    {
+      "description": "rust analyzer docs present and committed",
+      "detail": "docs/analyzers/real-rust-analyzer.md",
+      "id": "section-g-docs",
+      "language": "rust",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "3 checks pass",
+      "id": "section-h-cross-language",
+      "language": "rust",
+      "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "c25a847572d98d822fa9e890c3ad360033e5ba8c",
-  "committedAt": "2026-08-28T21:23:14+02:00",
+  "commit": "1633124ba1784a2a4a377fb4a0feb7eb6b3b14ed",
+  "committedAt": "2026-08-28T23:05:03+02:00",
   "data": {
     "languages": {
       "c": {
@@ -1049,6 +1123,50 @@
           }
         }
       },
+      "rust": {
+        "gaps": [],
+        "nodeTypeCount": 185,
+        "pendingDecisions": [],
+        "ruledDecisions": [
+          "RUST-D1",
+          "RUST-D2",
+          "RUST-D3"
+        ],
+        "sections": {
+          "section-a-structural": {
+            "detail": "185 types, 42 handled, 121 silent, 0 gaps, 3 decisions",
+            "status": "pass"
+          },
+          "section-b-relationship-kinds": {
+            "detail": "pinned: calls, contains, exports, extends, implements, instantiates, references, uses",
+            "status": "pass"
+          },
+          "section-c-payload-matrix": {
+            "detail": "complexity, qualified_calls",
+            "status": "pass"
+          },
+          "section-d-evidence-tiers": {
+            "detail": "3 tier(s) pinned: reference_qualified, structural, usage_contextual",
+            "status": "pass"
+          },
+          "section-e-differential": {
+            "detail": "floor ripgrep:rust: missing=0, unexplained=0 (differential-baseline.json)",
+            "status": "pass"
+          },
+          "section-f-perf-budget": {
+            "detail": "ripgrep:rust 32.9 ms/file",
+            "status": "pass"
+          },
+          "section-g-docs": {
+            "detail": "docs/analyzers/real-rust-analyzer.md",
+            "status": "pass"
+          },
+          "section-h-cross-language": {
+            "detail": "3 checks pass",
+            "status": "pass"
+          }
+        }
+      },
       "scala": {
         "gaps": [
           "G1: import edges mislabeled reference_qualified (the tier classifier hardcodes reference_qualified for references, ignoring isImportDep — the JVM-family finding from java's pass) AND the edge source stays the 'root' placeholder (kotlin rewrites to the file's primary type; scala does not — family inconsistency)",
@@ -1288,6 +1406,9 @@
     },
     {
       "description": "cpp rulings CPP-D1/D2/D3 (2026-08-28): GNU asm + extension_expression parsed not modeled; MSVC SEH/declspec/based/call/pointer modifiers parsed not modeled; cross-file resolution + template instantiation across TUs are per-file by contract. 256/256 types classified A-H 8/8; fmt:cpp differential 145/145 0 missing 0 unexplained; 115/115 mutants incl. 3 cpp"
+    },
+    {
+      "description": "rust rulings RUST-D1/D2/D3 (2026-08-28): trait supertraits -> extends, impl -> implements, no class-based overrides edge; macro_rules! bodies opaque token trees (invocations call the macro NAME only, no expansion); scope tied to pinned tree-sitter-rust. 185/185 types classified A-H 8/8; ripgrep:rust differential 1948/1948 0 missing 0 unexplained; 120/120 mutants incl. 5 rust; union_item + trait associated_type gaps closed fixture-first"
     }
   ],
   "runtime": "node v24.3.0",

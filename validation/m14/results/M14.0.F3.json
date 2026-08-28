@@ -62,7 +62,7 @@
     },
     {
       "description": "rust adversarial fixtures",
-      "detail": "3/3 fixtures pass",
+      "detail": "6/6 fixtures pass",
       "id": "fixtures-rust",
       "status": "pass"
     },
@@ -80,8 +80,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "b6493d67e233f1780599fc80df2600675e00082c",
-  "committedAt": "2026-08-28T21:33:11+02:00",
+  "commit": "1633124ba1784a2a4a377fb4a0feb7eb6b3b14ed",
+  "committedAt": "2026-08-28T23:05:03+02:00",
   "data": {
     "details": [
       {
@@ -1390,7 +1390,22 @@
         "problems": []
       },
       {
+        "fixture": "rust/relationship-kinds",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "rust/scoped-and-turbofish",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "rust/trait-impl-and-visibility",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "rust/union-and-associated-type",
         "ok": true,
         "problems": []
       },
@@ -1440,7 +1455,7 @@
       },
       "rust": {
         "fail": 0,
-        "pass": 3
+        "pass": 6
       },
       "scala": {
         "fail": 0,

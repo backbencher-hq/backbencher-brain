@@ -179,10 +179,39 @@ function deriveRustEdges(root: any): { label: string; from: string; target: stri
   const seenCalls = new Set<string>()
   const impls: { ty: string; trait: string }[] = []
   const supertraits: Record<string, string[]> = {}
+
+  // In-file declared type names (struct/enum/type-alias/impl targets),
+  // mirroring the analyzer's deferred-instantiation contract: ctor
+  // instantiates resolve ONLY to types declared in this file (std/foreign
+  // receivers like String::new() are deliberately not truth). Impl types
+  // are stored as FULL text (io::Error) to mirror the analyzer's inFile
+  // symbol names - a foreign type implemented here is not a local
+  // declaration and must not resolve io::Error::new() to the leaf Error.
+  const declaredTypes = new Set<string>()
+  {
+    const pre: any[] = [root]
+    while (pre.length > 0) {
+      const n = pre.pop()!
+      if (n.type === "struct_item" || n.type === "enum_item" || n.type === "type_item") {
+        const nm = n.childForFieldName?.("name") ?? n.namedChild(0)
+        if (nm) declaredTypes.add(nm.text)
+      } else if (n.type === "impl_item") {
+        const typeN = n.childForFieldName?.("type")
+        if (typeN) declaredTypes.add(typeN.text.split("<")[0].trim())
+      }
+      for (let k = 0; k < n.namedChildCount; k++) pre.push(n.namedChild(k))
+    }
+  }
+
   const stack: any[] = [root]
   const leafOf = (fn: any): string | undefined => {
     if (!fn) return undefined
     if (fn.type === "identifier") return fn.text
+    // turbofish: foo::<T>() wraps the real callee - unwrap it.
+    if (fn.type === "generic_function") {
+      const inner = fn.childForFieldName?.("function")
+      return leafOf(inner)
+    }
     if (fn.type === "field_expression" || fn.type === "scoped_identifier") {
       const leaf = fn.namedChildren[fn.namedChildCount - 1]
       return leaf?.type === "field_identifier" || leaf?.type === "identifier" ? leaf.text : undefined
@@ -201,10 +230,43 @@ function deriveRustEdges(root: any): { label: string; from: string; target: stri
       }
     }
     if (n.type === "call_expression") {
-      const name = leafOf(n.childForFieldName?.("function"))
+      const fn = n.childForFieldName?.("function")
+      const name = leafOf(fn)
       if (name && !seenCalls.has(name)) {
         seenCalls.add(name)
         edges.push({ label: "calls", from: "(expr)", target: name })
+      }
+      // ::new / Type() constructor instantiation truth mirrors the family:
+      // receiver-type leaf for ::new, PascalCase leaf for tuple ctors.
+      // FILTERED to in-file declared types - the analyzer resolves ctor
+      // instantiates only for locally-declared types (deferred resolution),
+      // so std/foreign receivers (String::new(), Arc::new()) are not truth.
+      if (fn) {
+        // Mirror the analyzer's ctor contract EXACTLY:
+        //   Foo::new() on a field/scoped receiver -> instantiates(Foo leaf)
+        //   Bare PascalCase Foo(...) identifier callee -> instantiates(Foo)
+        // Enum-variant constructions (Token::Literal('.')) are CALLS, not
+        // instantiates - the analyzer emits calls Literal there and never
+        // instantiates Token (fixture-pinned contract). Bare identifiers
+        // have no named children, so calleeLeaf is undefined - use fn.text.
+        const calleeLeaf = fn.namedChildren[fn.namedChildCount - 1]
+        const isNewCtor = calleeLeaf?.text === "new"
+        const barePascal = fn.type === "identifier" && /^[A-Z]/.test(fn.text)
+        if (
+          (isNewCtor && (fn.type === "field_expression" || fn.type === "scoped_identifier")) ||
+          (barePascal && fn.type === "identifier")
+        ) {
+          let recv: string | undefined
+          if (fn.type === "identifier") recv = fn.text
+          else {
+            const r2 = fn.childForFieldName?.("value") ?? fn.childForFieldName?.("path")
+            recv = lastSegment((r2?.text ?? "").split("<")[0].trim())
+          }
+          if (recv && /^[A-Z]/.test(recv) && declaredTypes.has(recv) && !seenCalls.has("inst:" + recv)) {
+            seenCalls.add("inst:" + recv)
+            edges.push({ label: "instantiates", from: "(expr)", target: recv })
+          }
+        }
       }
     } else if (n.type === "struct_expression") {
       const typeNode = n.childForFieldName?.("name") ?? n.namedChild(0)
@@ -213,27 +275,6 @@ function deriveRustEdges(root: any): { label: string; from: string; target: stri
         if (!seenCalls.has("struct:" + t2)) {
           seenCalls.add("struct:" + t2)
           edges.push({ label: "instantiates", from: "(expr)", target: t2 })
-        }
-      }
-    } else if (n.type === "call_expression") {
-      // ::new / Type() constructor instantiation truth mirrors the family:
-      // receiver-type leaf for ::new, PascalCase leaf for tuple ctors.
-      const fn = n.childForFieldName?.("function")
-      if (fn) {
-        const calleeLeaf = fn.namedChildren[fn.namedChildCount - 1]
-        const isCtor = calleeLeaf?.text === "new"
-        const pascal = /^[A-Z]/.test(calleeLeaf?.text ?? "")
-        if ((isCtor || pascal) && (fn.type === "field_expression" || fn.type === "scoped_identifier" || fn.type === "identifier")) {
-          let recv: string | undefined
-          if (fn.type === "identifier") recv = fn.text
-          else {
-            const r2 = fn.childForFieldName?.("value") ?? fn.childForFieldName?.("path")
-            recv = lastSegment((r2?.text ?? "").split("<")[0].trim())
-          }
-          if (recv && /^[A-Z]/.test(recv) && !seenCalls.has("inst:" + recv)) {
-            seenCalls.add("inst:" + recv)
-            edges.push({ label: "instantiates", from: "(expr)", target: recv })
-          }
         }
       }
     } else if (n.type === "impl_item") {

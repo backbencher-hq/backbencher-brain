@@ -780,11 +780,11 @@
       }
     },
     "ripgrep:rust": {
-      "missing": 7,
-      "unexplained": 30,
+      "missing": 0,
+      "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 109.4
+        "avgMsPerFile": 32.9
       }
     },
     "sqlite:c": {
