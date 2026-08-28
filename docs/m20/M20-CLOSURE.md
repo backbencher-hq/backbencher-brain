@@ -19,7 +19,7 @@ reports zero failed checks. Statuses:
 | Code | Issue | Status | Checks / negatives |
 |------|-------|--------|--------------------|
 | C1 | governance + closure gate | verified | 15 / 5 |
-| C2 | corpus identity & availability | **known-gap while package.json is dirty** | 20 / 3 |
+| C2 | corpus identity & availability | verified | 20 / 3 |
 | M1 | migration ordering | verified | 13 / 3 |
 | M2 | migration methodology | verified | 17 / 3 |
 | M3 | migration unsupported cases / mappings | verified | 15 / 5 |
@@ -39,12 +39,12 @@ reports zero failed checks. Statuses:
 ## Unresolved claims (honest, not hidden)
 
 1. **Active checkout state (C2).** Three declared active checkouts do not match
-   their pinned revisions and five are locally dirty. They are not mutated.
-   C2 now uses six immutable Git-archive snapshots, extracted from the exact
-   pinned local Git objects, with sidecars proving source, ID, revision, archive
-   format, and tracked-file count. The active checkout state remains visible in
-   `C2-registry.json`; the snapshot-backed corpus is eligible once the relevant
-   project tree is clean. The extra local repositories in `$HOME/` and
+   their pinned revisions and five are locally dirty. They were not mutated.
+   C2 uses six immutable Git-archive snapshots, extracted from the exact pinned
+   local Git objects, with sidecars proving source, ID, revision, archive format,
+   tracked-file count, and deterministic content digest. The active checkout
+   state remains visible in `C2-registry.json`; the snapshot-backed corpus is
+   now evidence-eligible. The extra local repositories in `$HOME/` and
    `$HOME/fixtures/repositories` are preserved separately.
 2. **Security sink classification is heuristic.** `bb_security` produces
    findings for sinks that are written with parameterized/escaped queries
@@ -85,7 +85,7 @@ tool-source change invalidates the corresponding evidence automatically.
 The final committed gate state:
 
 - `bun run script/m20/verify-governance.ts` → **C1: VERIFIED (15/15, 5 negative)**
-- `bun run script/m20/verify-corpus-registry.ts` → snapshot registry **20/20 checks passed**, currently `KNOWN-GAP` only because an unrelated co-agent `package.json` change is uncommitted
+- `bun run script/m20/verify-corpus-registry.ts` → **C2: VERIFIED (20/20, 3 negative)**; all 30 declared rows are exact and clean as evidence sources, including six immutable snapshots for active checkouts
 - `bun run script/m20/verify-closure-C3.ts` → **C3: VERIFIED** when C1 is current (see `C3.json`)
 - `bunx tsc --noEmit` → passes
 - Each tool verifier wired into `package.json` `verify` chain passes with the
