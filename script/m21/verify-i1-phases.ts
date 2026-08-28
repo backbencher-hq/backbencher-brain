@@ -127,6 +127,13 @@ try {
   const realOutcome: any = { eligible: REAL_REPO_ELIGIBLE }
   if (REAL_REPO_ELIGIBLE) {
     const realId = getProjectId(REAL_REPO)
+    // Guarantee a COLD run every time: wipe the project's index DB (the
+    // checkout itself stays untouched — the registry policy treats the repo
+    // as read-only, not the derived index). Without this, a rerun sees all
+    // files unchanged and degrades to a no-op, which would make the real-repo
+    // evidence unreproducible.
+    BrainDatabase.close(realId as any)
+    try { rmSync(path.dirname(BrainDatabase.getDbPath(realId)), { recursive: true, force: true }) } catch {}
     const realStats = await indexProjectParallel(realId, REAL_REPO, { skipPostProcessing: true })
     realOutcome.stats = realStats
     check("I1 real repo indexes successfully", realStats.endTime !== undefined && realStats.successFiles > 0, JSON.stringify({ success: realStats.successFiles, error: realStats.errorFiles }))
