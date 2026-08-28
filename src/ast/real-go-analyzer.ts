@@ -159,7 +159,11 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         target: imp.module || "",
         type: ASTEngine.RelationshipType.References,
         confidence: 0.9,
-        metadata: { isGoImportDep: true, packageName: imp.metadata?.packageName },
+        // isImport:true makes the edge pinnable as the "imports" relationship
+        // kind by completeness section B (family convention — c pins the
+        // stdlib.h include edge the same way); isGoImportDep keeps the go-idiom
+        // marker for the oracle.
+        metadata: { isGoImportDep: true, isImport: true, packageName: imp.metadata?.packageName },
       })
     }
 
@@ -182,6 +186,11 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     // corpus oracle never checked it. qualified_type keeps its dotted
     // pkg.Type form; builtins are excluded.
     this.extractDeclaredTypeRefs(rootNode, relationships)
+
+    // PHASE 5.6: #419-D evidence-tier classification for EVERY emitted
+    // relationship (family rules — rust/c/cpp/cpp all classify; go did NOT,
+    // so the completeness D-tier gate could never pin >=2 tiers for go).
+    this.classifyEvidenceTier(relationships)
 
     return {
       language: "go",
@@ -210,6 +219,35 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         hasFrameworkIntelligence: true,
         analysisVersion: "3.0.1-go-iterative-stateless",
       },
+    }
+  }
+
+  /**
+   * #419-D evidence-tier classification for EVERY emitted relationship
+   * (family rules — mirrors rust/c/cpp so the go analyzer is not the one
+   * sibling that leaves edges untagged, keeping completeness section D
+   * achievable). Metadata tags already set by the emitter are left intact.
+   */
+  private classifyEvidenceTier(relationships: ASTEngine.UniversalRelationship[]): void {
+    for (const r of relationships) {
+      const md = r.metadata ?? (r.metadata = {})
+      if (md.evidenceClass) continue
+      const t = String(r.type ?? "")
+      const conf = typeof r.confidence === "number" ? r.confidence : 1
+      if (t === "contains" || t === "exports") { md.evidenceClass = "structural"; continue }
+      if (t === "references") {
+        md.evidenceClass =
+          md.isGoImportDep || md.isImport ? "import_based"
+          : md.relationshipType === "declared_type" || md.relationshipType === "return_type" ? "reference_qualified"
+          : "usage_contextual"
+        continue
+      }
+      if (t === "extends" || t === "implements" || t === "overrides") {
+        md.evidenceClass = conf >= 1 ? "structural" : conf >= 0.85 ? "usage_contextual" : "inferred"
+        continue
+      }
+      if (t === "instantiates") { md.evidenceClass = "structural"; continue }
+      md.evidenceClass = "usage_contextual"
     }
   }
 
@@ -380,6 +418,11 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       returnType,
       qualified_calls: qualifiedCalls,
       apiContractPath,
+      // Per-symbol cyclomatic complexity (family contract — rust/c/cpp all
+      // emit symbol.complexity; go was the only sibling that didn't, so the
+      // completeness section-C payload pin was impossible. Added go wave
+      // 2026-08-28, same counter as calculateCyclomaticComplexity).
+      complexity: this.calculateCyclomaticComplexity(node),
       visibility: this.isGoExported(functionName) ? "public" : "private",
       ownerName: parentStruct,
       ownerKind: parentStruct ? ASTEngine.SymbolKind.Class : undefined,
@@ -426,6 +469,8 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       returnType,
       qualified_calls: qualifiedCalls,
       apiContractPath,
+      // Per-symbol cyclomatic complexity (family contract, go wave 2026-08-28).
+      complexity: this.calculateCyclomaticComplexity(node),
       visibility: this.isGoExported(methodName) ? "public" : "private",
       ownerName: receiver?.typeName,
       ownerKind: ASTEngine.SymbolKind.Struct,
@@ -570,7 +615,11 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Look for method signatures in interface
     for (let i = 0; i < interfaceNode.namedChildCount; i++) {
       const method = interfaceNode.namedChild(i)
-      if (method?.type === "method_spec" || method?.type === "method_elem") {
+      // method_spec is the ONLY interface-method node in the pinned
+      // tree-sitter-go grammar (probe-verified 2026-08-28). 'method_elem'
+      // was a dead literal from an older grammar — referencing it FAILED the
+      // F1 grammar audit (unknown node type), so it is removed here.
+      if (method?.type === "method_spec") {
         const methodName = method.childForFieldName("name")
         if (methodName) {
           const parameters = this.extractGoMethodSpecParameters(method)
@@ -826,7 +875,14 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     return calls
   }
 
-  private buildGoCallExpression(funcNode: Node): string {
+  private buildGoCallExpression(funcNode: Node): string | undefined {
+    // Non-nameable callees (inline func-literals func(){...}(), parenthesized
+    // empty, generics) have no static callable name — skip them. Pre-fix the
+    // default branch returned the WHOLE func-literal text, polluting
+    // qualified_calls with garbage that resolveGoFunctionCall then emitted
+    // as fabricated calls targets (Go wave 2026-08-28, same class as Rust's
+    // `(self.0)` — the differential found `depth--\n\t}`, closure bodies etc.
+    // as `calls` targets). Identifier and selector callees keep leaf targets.
     switch (funcNode.type) {
       case "identifier":
         return funcNode.text
@@ -835,7 +891,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         return this.buildGoSelectorExpression(funcNode)
 
       default:
-        return funcNode.text
+        return undefined
     }
   }
 
@@ -866,6 +922,47 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       "close",
     ]
     return inArray(builtins, call.split(".")[0])
+  }
+
+  /**
+   * Resolve a goroutine/defer call target through the SAME bare-call symbol
+   * contract as analyzeGoFunctionCalls: package-qualified (has a dot) emits
+   * the leaf unconditionally; bare names emit only if they name an in-file
+   * declared function/method symbol. This drops closure-variable callees
+   * (`go done()`, `defer release()` where done/release are var-assigned
+   * funcs, NOT declared symbols) so goroutine/defer edges stay consistent
+   * with the analyzer's own call resolution and with the differential
+   * oracle — which derives only declared-function + qualified leaves.
+   */
+  private isGoResolvableCallTarget(target: string | undefined, symbols: ASTEngine.UniversalSymbol[]): boolean {
+    if (!target) return false
+    if (target.indexOf(".") !== -1) return true // qualified -> leaf kept
+    return someSymbol(
+      symbols,
+      (s) =>
+        (s.kind === ASTEngine.SymbolKind.Function || s.kind === ASTEngine.SymbolKind.Method) &&
+        s.name === target,
+    )
+  }
+
+  /**
+   * Resolve the callable LEAF name of a callee node, for goroutine/defer/
+   * channel handlers. Anonymous func-literal callees (`go func(){...}()`,
+   * `defer func(){...}()`) and non-named callees have NO static name and
+   * must be skipped — the pre-fix handlers returned the whole func-literal
+   * text / "anonymous_closure", fabricating garbage calls targets (found
+   * #261-family Go wave 2026-08-28, same class as Rust's `(self.0)` fix).
+   * Selector callees (`s.start`) resolve to the field LEAF (family contract).
+   */
+  private resolveGoCallLeaf(funcNode: Node | null | undefined): string | undefined {
+    if (!funcNode) return undefined
+    if (funcNode.type === "identifier") return funcNode.text
+    if (funcNode.type === "selector_expression") {
+      const field = funcNode.childForFieldName("field")
+      return field?.text
+    }
+    // func_literal / parenthesized / index / generic callees: no static name.
+    return undefined
   }
 
   // Framework detection
@@ -966,6 +1063,13 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     // 3. Analyze function call relationships (leaf targets, incl. stdlib)
     this.analyzeGoFunctionCalls(rootNode, relationships, symbols)
+
+    // 3.5. Package-scope call expressions (var/const initializers, e.g.
+    // `var _ = intVar(123)`, `var r = regexp.MustCompile(...)`). These are
+    // real calls at package level that findGoFunctionCalls (body-only) never
+    // captures — a genuine analyzer gap (Go wave 2026-08-28: newexpr.go,
+    // session.go NewString, semtok.go MustCompile all leaked as MISSING).
+    this.analyzeGoPackageScopeCalls(rootNode, relationships, symbols)
 
     // 4. Analyze Go-specific patterns (channels, goroutines, defer)
     this.analyzeGoSpecificPatterns(rootNode, relationships, symbols)
@@ -1176,6 +1280,85 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
+   * Package-scope call analysis. Captures call_expression nodes that sit at
+   * package level (var/const initializers, top-level assignments) — e.g.
+   * `var _ = intVar(123)`, `var r = regexp.MustCompile(...)`, or
+   * `keys.NewString("view_type", "")`. findGoFunctionCalls only walks
+   * function/method bodies, so these real calls were NEVER emitted (Go wave
+   * 2026-08-28: newexpr.go, session.go NewString, semtok.go MustCompile all
+   * leaked as differential MISSING). Emitted with source = package/"global"
+   * (no enclosing function). Mirrors resolveGoFunctionCall: bare callee emits
+   * only if it names an in-file declared function/method; qualified callee
+   * emits the leaf unconditionally; builtins and func-literals skipped.
+   */
+  private analyzeGoPackageScopeCalls(
+    rootNode: Node,
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+  ) {
+    const declared = new Set<string>()
+    for (const s of symbols) {
+      if (s.kind === ASTEngine.SymbolKind.Function || s.kind === ASTEngine.SymbolKind.Method) {
+        declared.add(s.name)
+      }
+    }
+    const stack: Node[] = [rootNode]
+    const emitted = new Set<string>()
+    while (stack.length > 0) {
+      const node = stack.pop()!
+      // Do not descend into function/method bodies — already handled by
+      // findGoFunctionCalls on the function/method symbols.
+      if (node.type === "function_declaration" || node.type === "method_declaration") continue
+      // A call inside another call's argument that is itself inside a function
+      // body is excluded because we skip function/method bodies entirely, but a
+      // package-scope call_expression is captured on the way down. Func-literal
+      // bodies inside package-scope calls (`var f = func(){ foo() }`) contain
+      // their own calls; descending would over-emit, so stop at func_literal
+      // bodies too (their calls are local closures, not static top-level calls).
+      if (node.type === "func_literal") continue
+      if (node.type === "call_expression") {
+        const fn = node.childForFieldName("function")
+        if (fn) {
+          const leaf = this.resolveGoCallLeaf(fn)
+          // Skip func-literal callees (`func(){...}()` at package scope).
+          if (!leaf || fn.type === "func_literal") continue
+          const qualified = fn.type === "selector_expression"
+          const isCtor = leaf[0] === leaf[0].toUpperCase() && leaf[0] !== leaf[0].toLowerCase()
+          const emit = !this.isGoBuiltin(leaf) && (qualified || declared.has(leaf) || (isCtor && declared.has(leaf)))
+          if (emit && !emitted.has("call:" + leaf)) {
+            emitted.add("call:" + leaf)
+            relationships.push({
+              source: "global",
+              target: leaf,
+              type: ASTEngine.RelationshipType.Calls,
+              confidence: 0.8,
+              metadata: {
+                relationshipType: "go_package_scope_call",
+                callExpression: fn.text,
+                isPackageQualified: qualified,
+              },
+            })
+          }
+          if (isCtor && declared.has(leaf) && !emitted.has("inst:" + leaf)) {
+            emitted.add("inst:" + leaf)
+            relationships.push({
+              source: "global",
+              target: leaf,
+              type: ASTEngine.RelationshipType.Instantiates,
+              confidence: 0.6,
+              metadata: { relationshipType: "go_package_scope_instantiation", callExpression: fn.text },
+            })
+          }
+        }
+      }
+      for (let i = node.namedChildCount - 1; i >= 0; i--) {
+        const child = node.namedChild(i)
+        if (child) stack.push(child)
+      }
+    }
+  }
+
+  /**
    * Go-Specific Pattern Analysis
    * Analyzes goroutines, channels, defer statements, and Go idioms
    */
@@ -1199,7 +1382,10 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       const node = stack.pop()!
       if (node.type === "go_statement") {
         const functionCall = this.extractGoRoutineFunction(node)
-        if (functionCall) {
+        // Drop unresolvable bare closure-var goroutines (see
+        // isGoResolvableCallTarget): `go done()` where done is a local func
+        // var is not a static call to a declared symbol.
+        if (functionCall && this.isGoResolvableCallTarget(functionCall, symbols)) {
           const containingFunction = this.findContainingGoFunction(node)
           if (containingFunction && !emittedCalls.has(`${containingFunction}->${functionCall}`)) {
             emittedCalls.add(`${containingFunction}->${functionCall}`)
@@ -1257,7 +1443,10 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (node.type === "defer_statement") {
         const deferredFunction = this.extractDeferredFunction(node)
         const containingFunction = this.findContainingGoFunction(node)
-        if (deferredFunction && containingFunction && !emittedCalls.has(`${containingFunction}->${deferredFunction}`)) {
+        // Drop unresolvable bare closure-var defers (see
+        // isGoResolvableCallTarget): `defer release()` where release is a
+        // local func var is not a static call to a declared symbol.
+        if (deferredFunction && this.isGoResolvableCallTarget(deferredFunction, symbols) && containingFunction && !emittedCalls.has(`${containingFunction}->${deferredFunction}`)) {
           emittedCalls.add(`${containingFunction}->${deferredFunction}`)
           relationships.push({
             source: containingFunction,
@@ -2312,10 +2501,10 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     const callExpr = this.findChildByType(node, "call_expression")
     if (callExpr) {
       const functionNode = callExpr.childForFieldName("function")
-      if (functionNode?.type === "func_literal") {
-        return "anonymous_closure"
-      }
-      return functionNode?.text
+      // Leaf resolution (skips anonymous func-literal / non-named callees).
+      // Pre-fix this returned "anonymous_closure" / full text — garbage
+      // `calls` targets that no static callee name supports (Go wave 2026).
+      return this.resolveGoCallLeaf(functionNode)
     }
     return undefined
   }
@@ -2365,7 +2554,10 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     const callExpr = this.findChildByType(node, "call_expression")
     if (callExpr) {
       const functionNode = callExpr.childForFieldName("function")
-      return functionNode?.text
+      // Leaf resolution (skips anonymous func-literal / non-named callees).
+      // Pre-fix this returned the whole func-literal text — garbage `calls`
+      // targets for `defer func(){...}()` (Go wave 2026-08-28).
+      return this.resolveGoCallLeaf(functionNode)
     }
     return undefined
   }
