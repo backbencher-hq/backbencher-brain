@@ -106,6 +106,21 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     },
     title: "rust systems wave (#261)",
   },
+  go: {
+    id: "go",
+    wasm: "tree-sitter-go.wasm",
+    classification: "go-completeness.json",
+    fixturesDir: "validation/m14/fixtures/go",
+    docs: ["docs/analyzers/go.md", "docs/analyzers/real-go-analyzer.md"],
+    differentialCheck: "differential-go",
+    perfKey: "go-tools:go",
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "imports"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "go/complexity-parity" },
+      qualified_calls: { key: "expectQualifiedCalls", pin: "go/qualified-calls-payload" },
+    },
+    title: "go systems wave (#262)",
+  },
   java: {
     id: "java",
     wasm: "tree-sitter-java.wasm",
@@ -257,7 +272,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
 }
 
 // Languages that have reached CONFORMANT and therefore run in npm run verify.
-const GATED_LANGS = ["java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp", "rust"]
+const GATED_LANGS = ["java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp", "rust", "go"]
 
 async function loadNamedNodeTypes(cfg: LangConfig): Promise<string[]> {
   const wts: any = await import("web-tree-sitter")
