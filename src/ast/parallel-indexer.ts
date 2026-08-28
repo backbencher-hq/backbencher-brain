@@ -98,8 +98,10 @@ export const ParallelIndexerConfig = {
   // Concurrency tuning (leave some cores for the OS/DB)
   concurrency: Math.max(2, Math.min(cpus().length - 1, 12)),
 
-  // Hard timeout per file in ms - worker gets KILLED if exceeded
-  fileTimeoutMs: 45000, // 45s — fast enough to skip hung files, long enough for large AST parsing
+  // Hard timeout per file in ms - worker gets KILLED if exceeded.
+  // Env-configurable (BB_FILE_TIMEOUT_MS) so deterministic crash/timeout
+  // fixtures can run without waiting 45s per file (M21.W1).
+  fileTimeoutMs: Number(process.env.BB_FILE_TIMEOUT_MS || 45000),
 
   // Maximum file size to parse (larger files get basic extraction)
   maxFileSizeBytes: 1 * 1024 * 1024, // 1MB - skip huge YAML files that cause memory exhaustion
@@ -366,6 +368,17 @@ export interface IndexPhaseTimings {
   dbBatchSize: number
   /** Retries observed in the worker pool (0 for in-process mode). */
   retries: number
+  /**
+   * M21.W1: worker fork/startup failures — distinct from per-file parser
+   * failures. A worker that never signals ready (broken runtime, hung engine
+   * boot) increments this instead of being mislabeled as a parse error.
+   */
+  workerStartupFailures: number
+  /**
+   * M21.W1: poison pills — batches dropped because a worker died before
+   * reporting file_start. Bounded by the per-file retry cap; visible in stats.
+   */
+  poisonFiles: number
   /** True when discovery found nothing to parse (no-op run, no parser work). */
   noop: boolean
   /**
@@ -912,12 +925,16 @@ export async function processWithWorkerPool(
   projectPath: string,
   files: string[],
   onProgress: (processed: number, total: number, currentFile: string) => void,
-  telemetry?: { dbFlushMs: number; retries: number; workerCount: number },
+  telemetry?: { dbFlushMs: number; retries: number; workerCount: number; workerStartupFailures: number; poisonFiles: number },
 ): Promise<FileResult[]> {
   const concurrency = ParallelIndexerConfig.concurrency
   const batchSize = ParallelIndexerConfig.workerBatchSize
   const numWorkers = Math.min(concurrency, Math.ceil(files.length / batchSize) || 1)
   const timeoutMs = ParallelIndexerConfig.fileTimeoutMs
+  // M21.W1: a forked worker must signal `ready` within this window or it is
+  // presumed hung (engine boot crash, broken runtime). Env-configurable so the
+  // startup watchdog is deterministically exercisable in fixtures.
+  const workerStartupTimeoutMs = Number(process.env.BB_WORKER_STARTUP_TIMEOUT_MS || 30000)
 
   log.debug("starting worker pool", { numWorkers, files: files.length, batchSize })
 
@@ -1009,6 +1026,7 @@ export async function processWithWorkerPool(
         } else {
           // Worker died BEFORE reporting file_start. This is a Poison Pill batch.
           log.warn("Worker crashed before file_start. Dropping suspected poison pill.", { droppedFile: batch.files[0] })
+          if (telemetry) telemetry.poisonFiles++
           results.push({ filePath: batch.files[0], success: false, error: "Worker crashed before file_start" })
           pendingDbBatch.push({ filePath: batch.files[0], success: false, error: "Worker crashed before file_start" })
           processed++
@@ -1040,11 +1058,48 @@ export async function processWithWorkerPool(
       scheduleNext()
     }
 
+    // M21.W1: a worker that never reaches the ready state (fork failure, tsx
+    // missing, engine boot crash) is a STARTUP failure — distinct from a
+    // per-file parser failure. Track it so the pool can fail visibly instead
+    // of silently stalling with zero usable workers.
+    let startupFailures = 0
+    // Allow at most one full pool of startup attempts before giving up. This
+    // bounds the restart loop: a broken worker runtime must not cause an
+    // infinite spawn-kill-spawn cycle with zero progress.
+    const MAX_STARTUP_FAILURES = Math.max(numWorkers, 2)
+
+    // Fail every file still queued with a visible startup-failure outcome so
+    // the pool terminates instead of hanging with zero usable workers.
+    const failRemainingAsStartup = () => {
+      if (fileQueue.length === 0 && pendingBatches.size === 0) return
+      const stuck = fileQueue.splice(0)
+      for (const f of stuck) {
+        results.push({ filePath: f, success: false, error: "worker pool unavailable (startup failure)" })
+        processed++
+        try { onProgress(processed, files.length, f) } catch {}
+      }
+      // The queue is now empty; without this the pool never resolves and the
+      // whole index run hangs (the resolve only happens inside scheduleNext).
+      scheduleNext()
+    }
+
+    const onStartupFailure = () => {
+      startupFailures++
+      if (telemetry) telemetry.workerStartupFailures = startupFailures
+      // Bootstrap case: the very first createWorker calls all failed with no
+      // worker ever forked (e.g. tsx missing). Nothing else will fire, so fail
+      // visibly right here instead of hanging.
+      if (workers.size === 0 && idleWorkers.length === 0 && fileQueue.length > 0 && startupFailures >= numWorkers) {
+        failRemainingAsStartup()
+      }
+    }
+
     function createWorker(workerId: number) {
       // Worker pool: fork a child process that enters pool-worker IPC mode.
       const { workerPath, workerArgs } = resolvePoolWorkerFork()
       if (!workerPath) {
         log.error("worker pool unavailable — no tsx binary found (dev mode)")
+        onStartupFailure()
         return
       }
       if (telemetry) telemetry.workerCount++
@@ -1054,6 +1109,29 @@ export async function processWithWorkerPool(
         stdio: ["ignore", "pipe", "pipe", "ipc"],
       })
       workers.add(worker)
+
+      // M21.W1 startup watchdog: if this worker never signals `ready` within
+      // workerStartupTimeoutMs, kill it and count a startup failure. The exit
+      // handler decides whether to spawn a replacement (within the restart
+      // cap) or fail the remaining queue visibly.
+      const startupTimer = setTimeout(() => {
+        if (!workers.has(worker)) return
+        log.warn("Worker did not become ready within startup timeout — killing", {
+          workerId,
+          timeoutMs: workerStartupTimeoutMs,
+        })
+        onStartupFailure()
+        try { worker.kill("SIGKILL") } catch (e: any) {}
+      }, workerStartupTimeoutMs)
+      ;(worker as any)._bbStartupTimer = startupTimer
+
+      const clearStartupTimer = (w: ChildProcess) => {
+        const t = (w as any)._bbStartupTimer
+        if (t) {
+          clearTimeout(t)
+          ;(w as any)._bbStartupTimer = undefined
+        }
+      }
 
       worker.stderr?.on("data", (data: Buffer) => {
         process.stderr.write(`[WORKER-ERR] ${data.toString()}`)
@@ -1065,10 +1143,12 @@ export async function processWithWorkerPool(
       worker.on("message", (msg: any) => {
         try {
           if (msg.type === "ready") {
+            clearStartupTimer(worker)
             idleWorkers.push(worker)
             scheduleNext()
           } else if (msg.type === "engine_fail") {
             process.stderr.write(`[brain] worker ${msg.workerId} engine load FAILED: ${msg.error}\n`)
+            clearStartupTimer(worker)
             // Still add to idle — regex fallback can handle files without engine
             idleWorkers.push(worker)
             scheduleNext()
@@ -1116,6 +1196,7 @@ export async function processWithWorkerPool(
 
       worker.on("exit", (code, signal) => {
         try {
+          clearStartupTimer(worker)
           workers.delete(worker)
           const idx = idleWorkers.indexOf(worker)
           if (idx !== -1) idleWorkers.splice(idx, 1)
@@ -1128,11 +1209,23 @@ export async function processWithWorkerPool(
           })
 
           if (workers.size < numWorkers && (fileQueue.length > 0 || pendingBatches.size > 0)) {
-            // Spawn replacement immediately — do NOT use setTimeout.
-            // If the event loop is blocked by a DB transaction (flushDbBatch),
-            // the timer never fires and the pool permanently stalls.
-            createWorker(Date.now())
-            scheduleNext()
+            // M21.W1 restart cap: if startup has failed more than a full pool's
+            // worth of attempts, the worker runtime is broken — stop spawning
+            // replacements and fail the remaining queue visibly instead of
+            // looping forever with zero progress.
+            if (startupFailures > MAX_STARTUP_FAILURES) {
+              log.error("worker pool startup repeatedly failed — failing remaining files", {
+                startupFailures,
+                queued: fileQueue.length,
+              })
+              failRemainingAsStartup()
+            } else {
+              // Spawn replacement immediately — do NOT use setTimeout.
+              // If the event loop is blocked by a DB transaction (flushDbBatch),
+              // the timer never fires and the pool permanently stalls.
+              createWorker(Date.now())
+              scheduleNext()
+            }
           } else {
             scheduleNext()
           }
@@ -2531,7 +2624,7 @@ export async function indexProjectParallel(
               generatedAt: Date.now(),
               mode: "worker-pool",
               noop: true,
-              phases: { discoveryMs: phases.discoveryMs, workerStartupMs: 0, parseMs: 0, dbFlushMs: 0, finalAccountingMs: phases.finalAccountingMs, totalWallMs: phases.totalWallMs },
+              phases: { discoveryMs: phases.discoveryMs, workerStartupMs: 0, parseMs: 0, dbFlushMs: 0, finalAccountingMs: phases.finalAccountingMs, totalWallMs: phases.totalWallMs, workerStartupFailures: 0, poisonFiles: 0 },
               counts: { totalFiles: stats.totalFiles, processedFiles: stats.skippedFiles, successFiles: 0, timeoutFiles: 0, errorFiles: 0, skippedFiles: stats.skippedFiles, workerCount: 0, parsedFiles: 0, retries: 0 },
             },
           ],
@@ -2604,7 +2697,7 @@ export async function indexProjectParallel(
     phases.mode = processFn === processInProcess ? "in-process" : "worker-pool"
 
     const parseStart = Date.now()
-    const poolTelemetry = { dbFlushMs: 0, retries: 0, workerCount: 0 }
+    const poolTelemetry = { dbFlushMs: 0, retries: 0, workerCount: 0, workerStartupFailures: 0, poisonFiles: 0 }
     const results = await processFn(projectId, projectPath, files, (processed, total, file) => {
       stats.processedFiles = processed + stats.skippedFiles
 
@@ -2636,6 +2729,8 @@ export async function indexProjectParallel(
     phases.dbFlushMs = poolTelemetry.dbFlushMs
     phases.retries = poolTelemetry.retries
     phases.workerCount = poolTelemetry.workerCount
+    phases.workerStartupFailures = poolTelemetry.workerStartupFailures
+    phases.poisonFiles = poolTelemetry.poisonFiles
     stats.phases = phases
 
     // M21.I1: final accounting spans outcome aggregation, missed-file fallback,
@@ -2722,7 +2817,11 @@ export async function indexProjectParallel(
             }
             process.stderr.write(`  ✓ ${r.filePath.split('/').pop()}\n`)
           } else {
-            stats.errorFiles++
+            // One final outcome per file: a file that already failed in the
+            // main pass keeps its single failure tally. Only count a fallback
+            // failure when the file was never tallied before (e.g. it was lost
+            // in a batch rollback without any result).
+            if (!mainOutcomes.has(r.filePath)) stats.errorFiles++
             process.stderr.write(`  ✗ ${r.filePath.split('/').pop()}\n`)
           }
         }
@@ -2795,6 +2894,10 @@ export async function indexProjectParallel(
             workerCount: phases.workerCount,
             parsedFiles: phases.parsedFiles,
             retries: phases.retries,
+            // M21.W1: startup-failure and poison-pill accounting, persisted so
+            // a run that silently degraded is visible after the fact.
+            workerStartupFailures: phases.workerStartupFailures,
+            poisonFiles: phases.poisonFiles,
           },
         },
       ],
