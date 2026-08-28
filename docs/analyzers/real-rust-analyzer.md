@@ -140,9 +140,72 @@ post-loop is one pass over the symbol list. No O(n²) or per-symbol O(n) scans.
   present — 4 dead defensive references absent from both grammars);
   differential unchanged at 1.000/1.000
 
+## M14 verification (issue #261, 2026-08-28)
+
+Deep line-by-line review of the analyzer and its differential residuals
+against the pinned tree-sitter-rust grammar.
+
+### Differential: ripgrep 1948/1948 (100%), 0 missing, 0 unexplained
+
+Live run on the pinned `ripgrep` corpus (60 sampled files) is now
+**0 missing / 0 unexplained** — previously 7 missing / 30 unexplained
+(99.6%). The residual investigation found and fixed four analyzer defects
+and two oracle defects:
+
+1. **Scoped enum-variant struct literals dropped** (`MatchStrategy::Suffix
+   { … }`): the `struct_expression` branch required a plain `type_identifier`
+   and silently skipped `scoped_type_identifier` names. The instantiates
+   target is now the VARIANT leaf (`Suffix`), matching the oracle's
+   lastSegment and the family leaf-target contract.
+2. **Turbofish whole-text call targets** (`cap.parse::<u32>()`): the
+   `generic_function` branch took `baseNode.text` verbatim, so calls targeted
+   `cap.parse` / the whole chain text instead of the callee leaf (`parse`).
+3. **Parenthesized-closure callees fabricated** (`(self.0)(…)`): the else
+   branch emitted `(self.0)` as a calls target; non-identifier callees are
+   now skipped (no static name exists).
+4. **`union_item` emitted NO symbol**: the grammar's union declaration node
+   (`pub union Pixel { … }`) is `union_item`, not `struct_item`, and was
+   unhandled. Unions now emit a struct symbol with fields.
+5. **Trait associated types invisible**: trait-body `type Item;` parses as
+   `associated_type` (only impl-level `type_item` was handled); both now emit
+   Type symbols with correct ownership.
+6. **Oracle dead branch**: the constructor-instantiation truth branch in
+   `deriveRustEdges` was an `else if` after the first `call_expression`
+   branch, so it NEVER ran — the oracle never derived `Foo::new()`
+   instantiates. Enabled with an in-file declared-type filter mirroring the
+   analyzer's deferred-resolution contract (impl types stored as full text,
+   so `io::Error::new()` does not resolve to a local `Error`).
+7. **Oracle leafOf didn't unwrap `generic_function`**: turbofish calls
+   (`crossbeam_channel::bounded::<DirEntry>`) produced no call truth.
+
+All four fixes are pinned by fixtures: `rust/scoped-and-turbofish`
+(variant-leaf instantiates, tuple-ctor, turbofish leaf, no `(self.0)`),
+`rust/union-and-associated-type` (union + trait associated types),
+`rust/relationship-kinds` (uses/references/extends/exports with evidence
+classes). Five rust mutants guard the fixes; all caught (suite 120/120).
+The floor `ripgrep:rust {missing:0, unexplained:0}` is enforced in
+`validation/m14/differential-baseline.json`.
+
+### Completeness contract (#419) — 185 types, A–H 8/8
+
+`script/m14/spec/rust-completeness.json` classifies every named node type
+of the pinned grammar (42 handled_verified, 121 internal_silent, 0 gaps,
+3 RULED decisions: RUST-D1 trait-hierarchy semantics, RUST-D2 opaque
+macro_rules! bodies, RUST-D3 grammar-scoped scope). Registered in
+`completeness-inventory.ts` with requiredKinds (uses/references/exports/
+contains/calls/extends/implements/instantiates), payload pins
+(complexity + qualified_calls via `rust/payload-parity`), and the
+`ripgrep:rust` floor. Grammar audit PASS (329 node types, 63 referenced,
+0 unknown).
+
 ## Evidence pointers
 
-- Fixtures: `validation/m12/fixtures/rust/`
+- Fixtures: `validation/m14/fixtures/rust/` (M14) and
+  `validation/m12/fixtures/rust/` (M12)
+- M14 differential evidence: `validation/m14/results/M14.0.F5.json`
+- M14 completeness evidence: `validation/m14/results/M14.0.SPEC.json`
+- M14 mutation evidence: `validation/m14/results/M14.0.F4.json`
+- Fixtures baseline: `validation/m14/fixture-baseline.json`
 - Ground truth: `validation/m12/ground-truth/rust.json`
 - Differential: `validation/m12/results/rust-differential.json`
 - Complexity: `validation/m12/results/rust-complexity.json`
