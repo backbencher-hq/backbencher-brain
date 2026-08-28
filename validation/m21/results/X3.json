@@ -7,7 +7,7 @@
   "passed": 40,
   "failed": 0,
   "negativeCases": 6,
-  "currentCommit": "b394a798f878b905c7143a46a232ca5901ca17c1",
+  "currentCommit": "cbdecd2a2055c616057f1090335fb5c51abb048e",
   "workingTreeRelevantChanges": [
     " M docs/data/m10-benchmark-last-run.json",
     " M script/m21/verify-governance.ts",
@@ -17,6 +17,8 @@
     " M validation/m13/results/p2.json",
     " M validation/m13/results/p3.json",
     " M validation/m13/results/sec3.json",
+    " M validation/m14/results/M14.0.F3.json",
+    " M validation/m14/results/M14.0.F4.json",
     " M validation/m14/results/M14.0.F5.json",
     " M validation/m15/results/d1.json",
     " M validation/m15/results/d2.json",
@@ -51,14 +53,16 @@
     "?? .client-tooling/",
     "?? .probe/",
     "?? docs/m20/PERFORMANCE-DIAGNOSTIC.md",
+    "?? script/m14/probe-go-edge.ts",
     "?? script/m14/probe-go-missing.ts",
     "?? script/m20/benchmark-tool-latency.ts",
     "?? script/m20/diagnose-index-phases.ts",
-    "?? validation/m20/results/PERF-DIAGNOSTIC.json"
+    "?? validation/m14/fixtures/go/implements-params.expectation.json",
+    "?? validation/m14/fixtures/go/implements-params.go"
   ],
   "verifierCommand": "bun run script/m21/verify-x3-closure.ts",
   "evidenceFile": "X3.json",
-  "generatedAt": "2026-08-28T23:07:41.369Z",
+  "generatedAt": "2026-08-28T23:20:47.764Z",
   "closure": {
     "issuesTotal": 21,
     "completedVerified": [
