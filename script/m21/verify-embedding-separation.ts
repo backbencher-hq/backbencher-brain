@@ -58,7 +58,8 @@ export class Calculator { total(value: number): number { return add(value, 1) } 
   check("E1 local embeddings are durable after flush", embeddingsAfter > 0 && embeddingsAfter <= symbols, `before=${embeddingsBefore} after=${embeddingsAfter} symbols=${symbols}`)
   check("E1 embedding model is explicitly recorded", models.length === 1 && typeof models[0] === "string" && models[0].length > 0, JSON.stringify(models))
   negative("E1 provider timing is not fabricated without explicit API configuration", !process.env.BB_EMBEDDING_BASE_URL && !process.env.BB_EMBEDDING_MODEL)
-  negative("E1 missing phase timing is rejected", !Number.isNaN(structuralMs) && !Number.isNaN(embeddingFlushMs))
+  const isFinitePhase = (t: any) => typeof t === "number" && Number.isFinite(t) && t >= 0
+  negative("E1 non-finite or negative phase timing is rejected", !isFinitePhase(Number.NaN) && !isFinitePhase(-1) && isFinitePhase(structuralMs) && isFinitePhase(embeddingFlushMs))
   negative("E1 zero embeddings cannot be relabeled as completed vectors", !(embeddingsAfter === 0 && symbols > 0))
 
   const commit = (await import("node:child_process")).spawnSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).stdout.trim()

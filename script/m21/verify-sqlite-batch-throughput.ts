@@ -64,15 +64,18 @@ try {
   try { data = JSON.parse(run.stdout.trim()) } catch (error) { check("D3 benchmark emits valid JSON", false, String(error)) }
   if (data) {
     const measurements = data.measurements as { size: number; elapsedMs: number; rowsAfterCommit: number }[]
+    const isValidMeasurement = (m: any) => Number.isInteger(m?.size) && m.size > 0 && Number.isFinite(m?.elapsedMs) && m.elapsedMs >= 0 && Number.isInteger(m?.rowsAfterCommit) && m.rowsAfterCommit >= 0
     check("D3 records all increasing batch sizes", Array.isArray(measurements) && measurements.map((m) => m.size).join(",") === "10,100,1000,5000")
     check("D3 records finite positive timings", measurements.every((m) => Number.isFinite(m.elapsedMs) && m.elapsedMs >= 0))
     check("D3 committed row counts are strictly accounted", measurements.every((m, i) => m.rowsAfterCommit === measurements.slice(0, i + 1).reduce((n, x) => n + x.size, 0)))
     check("D3 rollback is observed", data.rollbackObserved === true)
     check("D3 rollback leaves committed count unchanged", data.afterRollback === data.beforeRollback)
     check("D3 final count equals committed batches", data.afterRollback === measurements.reduce((n, m) => n + m.size, 0))
-    negative("D3 negative batch size is rejected", !(data.malformed.size > 0 && Number.isFinite(data.malformed.elapsedMs) && data.malformed.rowsAfterCommit >= 0))
-    negative("D3 non-finite timing is rejected", !Number.isFinite(Number.NaN))
-    negative("D3 missing database evidence is rejected", !data.missingDatabase)
+    negative("D3 malformed measurement fixture is rejected by the validator", !isValidMeasurement(data.bad) && !isValidMeasurement({ ...data.bad, elapsedMs: Number.NaN }) && !isValidMeasurement({ size: 5 }))
+    negative("D3 valid committed measurements all pass the validator", measurements.every(isValidMeasurement))
+    const accountingHolds = (rows: any[]) => rows.every((m, i) => m.rowsAfterCommit === rows.slice(0, i + 1).reduce((n: number, x: any) => n + x.size, 0))
+    const falsified = measurements.map((m, i) => i === measurements.length - 1 ? { ...m, rowsAfterCommit: m.rowsAfterCommit - 1 } : m)
+    negative("D3 falsified cumulative row count is rejected by the accounting invariant", !accountingHolds(falsified) && accountingHolds(measurements))
     const commit = spawnSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).stdout.trim()
     const result = {
       issue: "M21.D3", code: "D3", milestone: "M21",

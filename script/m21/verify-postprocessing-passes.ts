@@ -55,10 +55,13 @@ export class Service { run(input: string): string { return query(input) } }
   const integrityChecks = (integritySource.match(/checks\.push\(/g) || []).length
   check("R2 integrity checks are represented by health checks", integrityChecks >= 12)
   const validHealthReport = (report: any) => Number.isInteger(report?.overallHealth) && report.overallHealth >= 0 && report.overallHealth <= 100 && Array.isArray(report?.checks)
+  const summaryReconciles = (report: any) => report.summary.ok + report.summary.warn + report.summary.error === report.checks.length
   negative("R2 invalid health report is rejected", !validHealthReport({ ...health.value, overallHealth: 101 }))
-  const missingHealth = await runIndexHealthCheck((projectId + "-missing") as any)
+  negative("R2 non-reconciling health summary is rejected", !summaryReconciles({ ...health.value, summary: { ...health.value.summary, ok: health.value.summary.ok + 1 } }) && summaryReconciles(health.value))
+  const missingId = (projectId + "-missing") as any
+  const missingHealth = await runIndexHealthCheck(missingId)
   negative("R2 missing project does not produce malformed empty checks", missingHealth.checks.length === 12 && missingHealth.checks.every((c: any) => typeof c.name === "string" && c.name.length > 0))
-  negative("R2 invalid integrity count is rejected", !Number.isFinite(Number.NaN))
+  try { rmSync(path.join(process.env.HOME ?? "", ".bb", "projects", String(missingId)), { recursive: true, force: true }) } catch {}
 
   const commit = spawnSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).stdout.trim()
   result = {
