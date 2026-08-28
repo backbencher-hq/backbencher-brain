@@ -724,7 +724,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: `${base}.${pend.method}`,
             type: ASTEngine.RelationshipType.Overrides,
             confidence: 0.9,
-            metadata: { isVirtualOverride: true },
+            metadata: { isVirtualOverride: true, reasonCode: "signature-match" },
           })
         }
       }
