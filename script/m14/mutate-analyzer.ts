@@ -34,6 +34,27 @@ function normRel(r: any) { return { ...r, type: r.type ?? r.relationshipType } }
 
 const MUTANTS: Mutant[] = [
   {
+    id: "c/drop-field-access-uses",
+    language: "c",
+    defectClass: "relationship-loss",
+    description: "drops C field-access Uses edges",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => (x.metadata ?? {}).relationshipType !== "field_access") }),
+  },
+  {
+    id: "c/drop-include-references",
+    language: "c",
+    defectClass: "relationship-loss",
+    description: "drops C include dependency References edges",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => (x.metadata ?? {}).relationshipType !== "include_dependency") }),
+  },
+  {
+    id: "c/drop-complexity",
+    language: "c",
+    defectClass: "payload-loss",
+    description: "removes C cyclomatic complexity from function symbols",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => ({ ...s, complexity: undefined })) }),
+  },
+  {
     id: "java/mislabel-inheritance",
     language: "java",
     defectClass: "relationship-mislabel",

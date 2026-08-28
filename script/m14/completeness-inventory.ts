@@ -62,6 +62,20 @@ interface LangConfig {
 }
 
 const LANG_CONFIGS: Record<string, LangConfig> = {
+  c: {
+    id: "c",
+    wasm: "tree-sitter-c.wasm",
+    classification: "c-completeness.json",
+    fixturesDir: "validation/m14/fixtures/c",
+    docs: ["docs/analyzers/real-c-analyzer.md"],
+    differentialCheck: "differential-c",
+    perfKey: "jq:c",
+    requiredKinds: ["uses", "references", "exports", "imports"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "c/complexity-and-payloads" },
+    },
+    title: "c systems wave (#419)",
+  },
   java: {
     id: "java",
     wasm: "tree-sitter-java.wasm",
@@ -213,7 +227,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
 }
 
 // Languages that have reached CONFORMANT and therefore run in npm run verify.
-const GATED_LANGS = ["java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte"]
+const GATED_LANGS = ["java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c"]
 
 async function loadNamedNodeTypes(cfg: LangConfig): Promise<string[]> {
   const wts: any = await import("web-tree-sitter")
