@@ -612,8 +612,8 @@
       }
     },
     "fmt:cpp": {
-      "missing": 4,
-      "unexplained": 3,
+      "missing": 0,
+      "unexplained": 0,
       "heuristic": 0,
       "perf": {
         "avgMsPerFile": 113.6

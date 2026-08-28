@@ -525,7 +525,7 @@
       "status": "pass"
     },
     {
-      "description": "svelte: 2 confirmed gaps declared",
+      "description": "svelte: 4 confirmed gaps declared",
       "id": "gap-list-present",
       "language": "svelte",
       "status": "pass"
@@ -538,7 +538,7 @@
     },
     {
       "description": "every named node type classified (svelte)",
-      "detail": "74 types, 32 handled, 21 silent, 2 gaps, 6 decisions",
+      "detail": "74 types, 32 handled, 21 silent, 4 gaps, 6 decisions",
       "id": "section-a-structural",
       "language": "svelte",
       "status": "pass"
@@ -591,13 +591,249 @@
       "id": "section-h-cross-language",
       "language": "svelte",
       "status": "pass"
+    },
+    {
+      "description": "c: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "c",
+      "status": "pass"
+    },
+    {
+      "description": "c: 0 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "c",
+      "status": "pass"
+    },
+    {
+      "description": "c: 3 ruled, 0 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "c",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (c)",
+      "detail": "160 types, 22 handled, 103 silent, 0 gaps, 3 decisions",
+      "id": "section-a-structural",
+      "language": "c",
+      "status": "pass"
+    },
+    {
+      "description": "4 relationship kinds pinned by c fixtures",
+      "detail": "pinned: exports, imports, include_dependency, references, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "c",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for c (1)",
+      "detail": "complexity",
+      "id": "section-c-payload-matrix",
+      "language": "c",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "3 tier(s) pinned: reference_qualified, structural, usage_contextual",
+      "id": "section-d-evidence-tiers",
+      "language": "c",
+      "status": "pass"
+    },
+    {
+      "description": "jq:c at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor jq:c: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "c",
+      "status": "pass"
+    },
+    {
+      "description": "c avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "jq:c 147.3 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "c",
+      "status": "pass"
+    },
+    {
+      "description": "c analyzer docs present and committed",
+      "detail": "docs/analyzers/real-c-analyzer.md",
+      "id": "section-g-docs",
+      "language": "c",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "3 checks pass",
+      "id": "section-h-cross-language",
+      "language": "c",
+      "status": "pass"
+    },
+    {
+      "description": "cpp: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "cpp",
+      "status": "pass"
+    },
+    {
+      "description": "cpp: 0 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "cpp",
+      "status": "pass"
+    },
+    {
+      "description": "cpp: 3 ruled, 0 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "cpp",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (cpp)",
+      "detail": "256 types, 42 handled, 144 silent, 0 gaps, 3 decisions",
+      "id": "section-a-structural",
+      "language": "cpp",
+      "status": "pass"
+    },
+    {
+      "description": "7 relationship kinds pinned by cpp fixtures",
+      "detail": "pinned: calls, extends, imports, include_dependency, instantiates, overrides, references, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "cpp",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for cpp (2)",
+      "detail": "complexity, qualified_calls",
+      "id": "section-c-payload-matrix",
+      "language": "cpp",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "2 tier(s) pinned: structural, usage_contextual",
+      "id": "section-d-evidence-tiers",
+      "language": "cpp",
+      "status": "pass"
+    },
+    {
+      "description": "fmt:cpp at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor fmt:cpp: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "cpp",
+      "status": "pass"
+    },
+    {
+      "description": "cpp avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "fmt:cpp 113.6 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "cpp",
+      "status": "pass"
+    },
+    {
+      "description": "cpp analyzer docs present and committed",
+      "detail": "docs/analyzers/real-cpp-analyzer.md",
+      "id": "section-g-docs",
+      "language": "cpp",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "3 checks pass",
+      "id": "section-h-cross-language",
+      "language": "cpp",
+      "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "7dbb1a578ef66d4d8761f0e6d546578be4fd3a93",
-  "committedAt": "2026-08-28T00:04:56+02:00",
+  "commit": "d0816c75a5ae47698c1faa5e7b0480e1bde9132e",
+  "committedAt": "2026-08-28T17:14:55+02:00",
   "data": {
     "languages": {
+      "c": {
+        "gaps": [],
+        "nodeTypeCount": 160,
+        "pendingDecisions": [],
+        "ruledDecisions": [
+          "C-D1",
+          "C-D2",
+          "C-D3"
+        ],
+        "sections": {
+          "section-a-structural": {
+            "detail": "160 types, 22 handled, 103 silent, 0 gaps, 3 decisions",
+            "status": "pass"
+          },
+          "section-b-relationship-kinds": {
+            "detail": "pinned: exports, imports, include_dependency, references, uses",
+            "status": "pass"
+          },
+          "section-c-payload-matrix": {
+            "detail": "complexity",
+            "status": "pass"
+          },
+          "section-d-evidence-tiers": {
+            "detail": "3 tier(s) pinned: reference_qualified, structural, usage_contextual",
+            "status": "pass"
+          },
+          "section-e-differential": {
+            "detail": "floor jq:c: missing=0, unexplained=0 (differential-baseline.json)",
+            "status": "pass"
+          },
+          "section-f-perf-budget": {
+            "detail": "jq:c 147.3 ms/file",
+            "status": "pass"
+          },
+          "section-g-docs": {
+            "detail": "docs/analyzers/real-c-analyzer.md",
+            "status": "pass"
+          },
+          "section-h-cross-language": {
+            "detail": "3 checks pass",
+            "status": "pass"
+          }
+        }
+      },
+      "cpp": {
+        "gaps": [],
+        "nodeTypeCount": 256,
+        "pendingDecisions": [],
+        "ruledDecisions": [
+          "CPP-D1",
+          "CPP-D2",
+          "CPP-D3"
+        ],
+        "sections": {
+          "section-a-structural": {
+            "detail": "256 types, 42 handled, 144 silent, 0 gaps, 3 decisions",
+            "status": "pass"
+          },
+          "section-b-relationship-kinds": {
+            "detail": "pinned: calls, extends, imports, include_dependency, instantiates, overrides, references, uses",
+            "status": "pass"
+          },
+          "section-c-payload-matrix": {
+            "detail": "complexity, qualified_calls",
+            "status": "pass"
+          },
+          "section-d-evidence-tiers": {
+            "detail": "2 tier(s) pinned: structural, usage_contextual",
+            "status": "pass"
+          },
+          "section-e-differential": {
+            "detail": "floor fmt:cpp: missing=0, unexplained=0 (differential-baseline.json)",
+            "status": "pass"
+          },
+          "section-f-perf-budget": {
+            "detail": "fmt:cpp 113.6 ms/file",
+            "status": "pass"
+          },
+          "section-g-docs": {
+            "detail": "docs/analyzers/real-cpp-analyzer.md",
+            "status": "pass"
+          },
+          "section-h-cross-language": {
+            "detail": "3 checks pass",
+            "status": "pass"
+          }
+        }
+      },
       "groovy": {
         "gaps": [
           "G1: Uses relationship on the array expression (xs[i] reads/writes emit no Uses on xs)",
@@ -873,7 +1109,9 @@
       "svelte": {
         "gaps": [
           "S1: template expressions emit NO references to the component's own members — {count}, label={label}, {#each items as item} (collection), {#await promise then value}, {@html raw}, {@const x = items.length}, {@debug items}, <svelte:component this={Comp}> all read script-side state but zero Uses/references edges are emitted. Only on: directives (calls) and {@render} (calls) produce edges; the template<->script data-flow is otherwise entirely silent.",
-          "S2: let { a, b } = $props() double-declares each binding — extractSvelteDeclarations emits Property symbols (isSvelteProp/fromRunes, component-owned) AND the JS sub-analyzer's destructured Variable symbols (isConst/isDestructured, unowned) both survive the merge. Every rune-prop binding appears twice with conflicting kinds/ownership, polluting symbol consumers."
+          "S2: let { a, b } = $props() double-declares each binding — extractSvelteDeclarations emits Property symbols (isSvelteProp/fromRunes, component-owned) AND the JS sub-analyzer's destructured Variable symbols (isConst/isDestructured, unowned) both survive the merge. Every rune-prop binding appears twice with conflicting kinds/ownership, polluting symbol consumers.",
+          "S5: template-local each-loop and {@const} bindings that collide with same-named component members leaked false template Uses edges. {#each rows as row} and nested {#each ... as item} read local values, not member functions; {@const total = ...} is local to its enclosing block and must shadow the member only after its declaration.",
+          "S6: the same reactive state variable assigned by multiple `$:` blocks was emitted once per block, and the JS/TS sub-analyzer's plain declaration survived alongside the Svelte-owned reactive symbol, producing duplicate symbols and ambiguous containment."
         ],
         "nodeTypeCount": 74,
         "pendingDecisions": [],
@@ -887,7 +1125,7 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "74 types, 32 handled, 21 silent, 2 gaps, 6 decisions",
+            "detail": "74 types, 32 handled, 21 silent, 4 gaps, 6 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -1046,7 +1284,7 @@
       "description": "groovy G1-G8 closed fixture-first 2026-08-27 (34/34 fixtures, 41/41 mutants incl. 13 groovy); S1-S5 ruled: gstring Uses declared limitation (grammar emits no interpolation nodes), JPMS never-reachable, exports/apiContractPath NOT EMITTED, parameters GATED; exports + permits declared not-required for groovy"
     }
   ],
-  "runtime": "node v22.22.1",
+  "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Completeness spec (#419) — A–H sections per language"
 }

@@ -532,11 +532,25 @@ function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
               let mn: any = null
               if (!fd && /field_declaration|declaration/.test(m.type)) continue // member VARIABLE, not a method
               if (fd) {
-                // cpp nests the name: function_declarator > declarator > field_identifier
-                const st2: any[] = [fd]
+                // cpp nests the name: function_declarator has a `declarator`
+                // FIELD holding the method name (field_identifier, possibly
+                // wrapped in pointer/reference_declarator) and a separate
+                // `parameters` field. Walking the WHOLE subtree in LIFO order
+                // grabs a parameter identifier instead (e.g. `Send(const
+                // std::string& message)` -> `message`), fabricating
+                // override pairs that the analyzer rightly rejects. Only the
+                // declarator field carries the name.
+                const declField = fd.childForFieldName?.("declarator")
+                const st2: any[] = [declField ?? fd]
                 while (st2.length && !mn) {
                   const x = st2.pop()!
-                  if (/identifier|field_identifier/.test(x.type)) { mn = x; break }
+                  // Class-member methods carry field_identifier as the name;
+                  // a bare `identifier` in a class body is a MACRO invocation
+                  // (`GTEST_DISALLOW_COPY_AND_ASSIGN_(A);` parses as
+                  // declaration > function_declarator > identifier). Treating
+                  // the macro as a method fabricates override pairs shared by
+                  // every class that disables copies.
+                  if (x.type === "field_identifier") { mn = x; break }
                   for (let k = 0; k < x.namedChildCount; k++) st2.push(x.namedChild(k))
                 }
               } else {
@@ -544,7 +558,9 @@ function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
               }
               // constructors are NOT virtually dispatched - no family
               // analyzer emits ctor-overrides, so truth must not either.
-              if (mn && mn.text !== "constructor") decls[nm].methods.add(mn.text)
+              // (cpp ctor name == class name; also skip same-name-as-class
+              // members to avoid self/hierarchy name collisions)
+              if (mn && mn.text !== "constructor" && mn.text !== nm) decls[nm].methods.add(mn.text)
             }
           }
         }

@@ -55,6 +55,27 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => ({ ...s, complexity: undefined })) }),
   },
   {
+    id: "cpp/drop-virtual-overrides",
+    language: "cpp",
+    defectClass: "relationship-loss",
+    description: "drops C++ virtual override edges (isVirtualOverride)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(x.metadata ?? {}).isVirtualOverride) }),
+  },
+  {
+    id: "cpp/drop-extends-edges",
+    language: "cpp",
+    defectClass: "relationship-loss",
+    description: "drops C++ class inheritance (extends) edges",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => x.type !== "extends") }),
+  },
+  {
+    id: "cpp/drop-qualified-calls",
+    language: "cpp",
+    defectClass: "payload-loss",
+    description: "removes C++ qualified_calls payloads from method symbols",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => ({ ...s, qualified_calls: undefined })) }),
+  },
+  {
     id: "java/mislabel-inheritance",
     language: "java",
     defectClass: "relationship-mislabel",
