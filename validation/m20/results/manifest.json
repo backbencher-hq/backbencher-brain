@@ -39,12 +39,12 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "52dee4c14d3e2e456d25992260e6bcfc3bbf184c",
+        "currentCommit": "dc3bcf6697240013ee704044ad66b9c93a31be75",
         "sourceFingerprint": "452f4ad1f54e73e69dc911b91feeb2f72547d082b8677994c56c2a51ce5d3a03",
         "workingTreeRelevantChanges": [],
         "verifierCommand": "bun run script/m20/verify-governance.ts",
         "evidenceFile": "C1.json",
-        "generatedAt": "2026-08-28T00:41:36.995Z",
+        "generatedAt": "2026-08-28T00:58:34.768Z",
         "passed": 15,
         "failed": 0,
         "negativeCases": 5
@@ -68,12 +68,12 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "52dee4c14d3e2e456d25992260e6bcfc3bbf184c",
+        "currentCommit": "dc3bcf6697240013ee704044ad66b9c93a31be75",
         "sourceFingerprint": "452f4ad1f54e73e69dc911b91feeb2f72547d082b8677994c56c2a51ce5d3a03",
         "workingTreeRelevantChanges": [],
         "verifierCommand": "bun run script/m20/verify-corpus-registry.ts",
         "evidenceFile": "C2.json",
-        "generatedAt": "2026-08-28T00:40:58.835Z",
+        "generatedAt": "2026-08-28T00:44:24.366Z",
         "passed": 20,
         "failed": 0,
         "negativeCases": 3
@@ -503,12 +503,12 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "52dee4c14d3e2e456d25992260e6bcfc3bbf184c",
+        "currentCommit": "dc3bcf6697240013ee704044ad66b9c93a31be75",
         "sourceFingerprint": "452f4ad1f54e73e69dc911b91feeb2f72547d082b8677994c56c2a51ce5d3a03",
         "workingTreeRelevantChanges": [],
         "verifierCommand": "bun run script/m20/verify-closure-C3.ts",
         "evidenceFile": "C3.json",
-        "generatedAt": "2026-08-28T00:42:03.389Z",
+        "generatedAt": "2026-08-28T00:59:01.165Z",
         "passed": 21,
         "failed": 0,
         "negativeCases": 2
