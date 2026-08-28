@@ -19,8 +19,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "7dbb1a578ef66d4d8761f0e6d546578be4fd3a93",
-  "committedAt": "2026-08-28T00:04:56+02:00",
+  "commit": "4d6e561a7b9465df112604649cb594f7c0916265",
+  "committedAt": "2026-08-28T02:01:45+02:00",
   "data": {
     "languages": {
       "bash": {
@@ -1137,7 +1137,7 @@
         "oracleGrammars": 3,
         "oracleNodeTypeCount": 457,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 24,
+        "referencedTypeLiterals": 25,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
