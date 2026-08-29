@@ -61,7 +61,7 @@ function formatETA(s: { processedFiles: number; totalFiles: number; elapsedSecon
   return `${Math.floor(remaining / 3600)}h${Math.floor((remaining % 3600) / 60)}m`
 }
 
-async function cmdIndex(dir: string | undefined, opts: { force?: boolean }) {
+async function cmdIndex(dir: string | undefined, opts: { force?: boolean; skipPostProcessing?: boolean; file?: string; changed?: boolean }) {
   // M22.C1: default `<dir>` to the current directory like every other command
   // (search/health/mcp all fall back to process.cwd()); `cd proj && bb index`
   // must index the project you are standing in.
@@ -83,12 +83,15 @@ async function cmdIndex(dir: string | undefined, opts: { force?: boolean }) {
   }
   console.log(`indexing ${abs} (project ${pid.slice(0, 8)}…)`)
   const t = Date.now()
+  const indexOpts: { onProgress: (s: any) => void; skipPostProcessing?: boolean; files?: string[]; isIncremental?: boolean } = { onProgress: (s) => {} }
+  if (opts.skipPostProcessing) indexOpts.skipPostProcessing = true
+  if (opts.file) indexOpts.files = [opts.file]
+  if (opts.changed) indexOpts.isIncremental = true
   // M22.V1: render a live single-line progress update on stderr (never stdout,
   // so stdout stays clean for any consuming process). Clears the line on the
   // terminal without disturbing the final summary on stdout.
   let lastProgressT = 0
-  const stats = await indexProjectParallel(pid, abs, {
-    onProgress: (s) => {
+  indexOpts.onProgress = (s: any) => {
       const now = Date.now()
       if (now - lastProgressT < 80) return
       lastProgressT = now
@@ -101,8 +104,8 @@ async function cmdIndex(dir: string | undefined, opts: { force?: boolean }) {
       process.stderr.write(
         `${pw}${s.processedFiles}/${total} files (${pct}%) ${fps}/s ETA ${formatETA(s)} ${file ? `— ${file}` : ""}`,
       )
-    },
-  })
+    }
+  const stats = await indexProjectParallel(pid, abs, indexOpts)
   if (process.stderr.isTTY) process.stderr.write("\r\x1b[K")
   else process.stderr.write("\n")
   const secs = ((Date.now() - t) / 1000).toFixed(1)
@@ -280,6 +283,17 @@ export async function runCli(argv: string[]): Promise<void> {
     .description("index a project (default: current directory)")
     .argument("[dir]", "project directory (default: current directory)")
     .option("--force", "wipe the existing index and rebuild")
+    .option("--skip-post-processing", "parse + store only; defer relationship resolution/enrichment/gravity/taint/health")
+    .option("--file <path>", "reindex a single file's symbols + relationships")
+    .option("--changed", "reindex only files changed since the last index")
+    .addHelpText("after", `
+Examples:
+  $ bb index                 # index the current directory
+  $ bb index ../my-project   # index another directory
+  $ bb index --changed       # reindex only changed files
+  $ bb index --file src/a.ts # reindex a single file
+  $ bb index --force         # wipe and rebuild in place
+`)
     .action(async (dir: string | undefined, opts: any) => {
       await cmdIndex(dir, opts)
     })
