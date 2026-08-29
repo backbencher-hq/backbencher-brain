@@ -1392,6 +1392,16 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       forEachSymbol(qualifiedCalls, (call) => {
         // Handle package-qualified calls (package.Function) — leaf target
         const targetFunction = this.resolveGoFunctionCall(call, symbols)
+        // Builtin-leaf guard (deep-review 2026-08-29, go-tools @200): the
+        // oracle filters Go builtins by RESOLVED leaf name. findGoFunctionCalls
+        // checks the FULL call text (`v.len` -> prefix `v`), so a method call
+        // like `v.len()` on a receiver whose leaf collides with a builtin
+        // (`len`) slips through and emits a fabricated `calls len`. Skip any
+        // call edge whose resolved target is a Go builtin, mirroring the
+        // differential oracle exactly.
+        if (targetFunction && this.isGoBuiltin(targetFunction)) {
+          return
+        }
         if (targetFunction) {
           relationships.push({
             source: func.name,
