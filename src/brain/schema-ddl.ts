@@ -296,21 +296,47 @@ CREATE INDEX IF NOT EXISTS brain_embed_hash_idx ON brain_semantic_embedding(cont
 export const SCHEMA_VERSION = 1
 export const SCHEMA_MIGRATION_NAME = "m13-universal-brain"
 
+/**
+ * M22.W2: idempotent column migrations that must run on EVERY open, not just
+ * fresh schema creation. Pre-existing brain_index_status tables (created before
+ * later columns existed) lack them; the indexer persists complete/partial +
+ * timing columns there, so a missing column crashes the whole run (noop path
+ * updateIndexStatus ws: "table brain_index_status has no column named …").
+ * SQLite can't add a column inside CREATE TABLE IF NOT EXISTS, so compare
+ * PRAGMA columns against the current definition and ALTER TABLE for any that
+ * are missing. Safe to call repeatedly; the DDL types for NOT NULL DEFAULT
+ * columns are preserved so existing rows satisfy the constraint.
+ */
+export function migrateSchemaColumns(raw: any): void {
+  try {
+    const cols = new Set((raw.prepare("PRAGMA table_info(brain_index_status)").all() as Array<{ name: string }>).map((c) => c.name))
+    const expected: Array<[string, string]> = [
+      ["status", "TEXT"],
+      ["last_full_index", "INTEGER"],
+      ["last_incremental_index", "INTEGER"],
+      ["total_files", "INTEGER NOT NULL DEFAULT 0"],
+      ["indexed_files", "INTEGER NOT NULL DEFAULT 0"],
+      ["total_symbols", "INTEGER NOT NULL DEFAULT 0"],
+      ["total_relationships", "INTEGER NOT NULL DEFAULT 0"],
+      ["time_created", "INTEGER"],
+      ["time_updated", "INTEGER"],
+    ]
+    for (const [name, ddl] of expected) {
+      if (!cols.has(name)) {
+        raw.exec(`ALTER TABLE brain_index_status ADD COLUMN ${name} ${ddl}`)
+        cols.add(name)
+      }
+    }
+  } catch {}
+}
+
 export function ensureSchema(raw: any): void {
   raw.exec(DDL)
   try {
     raw.prepare("INSERT OR IGNORE INTO brain_schema_version (version, applied_at, migration_name) VALUES (?, strftime('%s','now') * 1000, ?)").run(SCHEMA_VERSION, SCHEMA_MIGRATION_NAME)
   } catch {}
-  // Idempotent column migration for databases created before the status column
-  // existed: pre-existing brain_index_status tables lack `status`, and the
-  // indexer persists complete/partial there. SQLite can't add a column inside
-  // CREATE TABLE IF NOT EXISTS, so check PRAGMA and ALTER TABLE when missing.
-  try {
-    const indexStatusCols = raw.prepare("PRAGMA table_info(brain_index_status)").all() as Array<{ name: string }>
-    if (!indexStatusCols.some((c) => c.name === "status")) {
-      raw.exec("ALTER TABLE brain_index_status ADD COLUMN status TEXT")
-    }
-  } catch {}
+  // Column migrations run for freshly-created databases too (idempotent).
+  migrateSchemaColumns(raw)
   raw.exec(`
     CREATE TABLE IF NOT EXISTS brain_analysis_run (
       id TEXT PRIMARY KEY NOT NULL, project_id TEXT NOT NULL, kind TEXT NOT NULL,
