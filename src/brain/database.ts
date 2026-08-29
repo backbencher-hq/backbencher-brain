@@ -7,7 +7,7 @@ import type { CoreDatabase } from "#db"
 import path from "path"
 import { mkdirSync, existsSync } from "fs"
 import * as BrainSchema from "./brain.sql"
-import { ensureSchema } from "./schema-ddl"
+import { ensureSchema, migrateSchemaColumns } from "./schema-ddl"
 import { bbProjectsDir } from "../util/bb-data-dir"
 
 export type { CoreDatabase, CoreStatement } from "#db"
@@ -63,7 +63,15 @@ async function buildDrizzle(raw: CoreDatabase): Promise<any> {
 
   function ensureSchemaIfNew(raw: CoreDatabase): void {
     const hasFile = raw.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='brain_file'").get()
-    if (!hasFile) ensureSchema(raw)
+    if (!hasFile) {
+      ensureSchema(raw)
+    } else {
+      // M22.W2: a pre-existing DB that already has tables skips fresh schema
+      // creation, but must still run the idempotent column migrations (e.g.
+      // brain_index_status.status) or a legacy DB can crash the indexer's
+      // status write with "no column named status".
+      migrateSchemaColumns(raw)
+    }
   }
 
 export namespace BrainDatabase {
