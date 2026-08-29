@@ -92,14 +92,14 @@
     },
     {
       "description": "dart adversarial fixtures",
-      "detail": "1/1 fixtures pass",
+      "detail": "2/2 fixtures pass",
       "id": "fixtures-dart",
       "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "bdc375b92e08dbbd98d461c8af9eb6bc7d8e7d75",
-  "committedAt": "2026-08-29T23:06:07+02:00",
+  "commit": "ddd433d7331f358dd82e57bbd9deff95aae7f201",
+  "committedAt": "2026-08-29T23:09:02+02:00",
   "data": {
     "details": [
       {
@@ -1468,6 +1468,11 @@
         "problems": []
       },
       {
+        "fixture": "dart/part-of",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "dart/payload-and-complexity",
         "ok": true,
         "problems": []
@@ -1488,7 +1493,7 @@
       },
       "dart": {
         "fail": 0,
-        "pass": 1
+        "pass": 2
       },
       "go": {
         "fail": 0,

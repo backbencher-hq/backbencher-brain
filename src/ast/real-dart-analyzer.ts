@@ -143,7 +143,8 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         t === "for_statement" ||
         t === "while_statement" ||
         t === "do_statement" ||
-        t === "switch_statement" ||
+        t === "switch_statement_case" ||
+        t === "switch_expression_case" ||
         t === "catch_clause" ||
         t === "conditional_expression" ||
         t === "logical_and_expression" ||
@@ -154,10 +155,23 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       switch (t) {
         case "class_definition": {
-          const name = node.childForFieldName("name")?.text
+          // `class A = Base with M;` is a mixin-application class: the name is
+          // an identifier child of the mixin_application_class node (no name
+          // field), so fall back to it for the symbol.
+          const name = node.childForFieldName("name")?.text ||
+            (this.findChildByType(node, "mixin_application_class")
+              ? this.findDescendantByType(node, "identifier")?.text
+              : undefined)
           if (name) {
             const comments = this.collectComments(node)
-            const isAbstract = this.hasModifier(node, "abstract")
+            // Dart 3 class modifiers (sealed/base/interface/final): sealed is
+            // implicitly abstract (can't be instantiated, only subtyped in
+            // the same library); the rest are captured for the symbol model.
+            const isSealed = this.hasModifier(node, "sealed")
+            const isBase = this.hasModifier(node, "base")
+            const isInterfaceClass = this.hasModifier(node, "interface")
+            const isFinalClass = this.hasModifier(node, "final")
+            const isAbstract = this.hasModifier(node, "abstract") || isSealed
             symbols.push({
               name,
               kind: ASTEngine.SymbolKind.Class,
@@ -167,7 +181,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
               comments,
               isAbstract,
               genericParameters: this.extractTypeParameters(node),
-              metadata: { isClass: true, isAbstract },
+              metadata: { isClass: true, isAbstract, isSealed, isBase, isInterfaceClass, isFinalClass },
             })
             scopeStack.push({ name, kind: DartScopeKind.Class })
 
@@ -354,7 +368,8 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
 
         case "import_specification":
         case "library_export":
-        case "part_directive": {
+        case "part_directive":
+        case "part_of_directive": {
           this.processImportExport(node, imports, exports, frameworks, relationships, moduleName)
           break
         }
@@ -486,10 +501,8 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Dig through method_signature wrappers to the inner getter/setter/function
     // signature which carries the name field.
     const inner = this.findInnerSignature(sig)
-    const nameNode = inner.childForFieldName("name") || this.findChildByType(inner, "identifier")
-    if (!nameNode) return
-
-    const name = nameNode.text
+    const name = this.signatureName(inner)
+    if (!name) return
     const owner = scopeOwnerName(scopeStack)
     const dedupKey = `${owner ?? "module"}:${name}`
     if (seenMembers.has(dedupKey)) return
@@ -661,7 +674,11 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     relationships: ASTEngine.UniversalRelationship[],
     moduleName: string,
   ): void {
-    if (node.type === "part_directive") {
+    // `part 'x.dart'` (library lists a part) and `part of 'lib.dart'`
+    // (part file names its library) are both library-coupling directives —
+    // each produces an imports edge so the part graph is visible (ProxiCall
+    // has 29 `part of` files, incl. generated freezed output).
+    if (node.type === "part_directive" || node.type === "part_of_directive") {
       const uriNode = this.findDescendantByType(node, "string_literal") || this.findDescendantByType(node, "uri")
       const uri = uriNode ? unquote(uriNode.text) : ""
       if (uri) {
@@ -671,7 +688,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: `${uri}:*`,
           type: ASTEngine.RelationshipType.Imports,
           confidence: 1.0,
-          metadata: { isPart: true },
+          metadata: { isPart: true, isPartOf: node.type === "part_of_directive" },
         })
       }
       return
@@ -800,7 +817,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (sig) {
         const inner = this.findInnerSignature(sig)
         if (this.isConstructorSignature(sig.type) || this.isConstructorSignature(inner.type)) return "constructor"
-        const nm = inner.childForFieldName("name")?.text
+        const nm = this.signatureName(inner)
         if (nm) return nm
       }
       return current
@@ -912,6 +929,39 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     relationships: ASTEngine.UniversalRelationship[],
     patterns: Record<string, boolean>,
   ): void {
+    // Mixin application class: `class A = Base with M;` — the base + mixins
+    // live in a mixin_application node (no superclass node). The base is
+    // `extends`, the with-clause mixins are `uses`.
+    const mixinAppCls = this.findChildByType(node, "mixin_application_class")
+    if (mixinAppCls) {
+      const app = this.findChildByType(mixinAppCls, "mixin_application")
+      if (app) {
+        const base = this.firstTypeIdentifier(app, /*excludeMixins*/ true)
+        if (base) {
+          relationships.push({
+            source: className,
+            target: base.text,
+            type: ASTEngine.RelationshipType.Extends,
+            confidence: 1.0,
+            metadata: {},
+          })
+        }
+        const mx = this.findChildByType(app, "mixins")
+        if (mx) {
+          patterns["Mixins"] = true
+          for (const ti of this.allTypeIdentifiers(mx)) {
+            relationships.push({
+              source: className,
+              target: ti.text,
+              type: ASTEngine.RelationshipType.Uses,
+              confidence: 1.0,
+              metadata: { isMixin: true },
+            })
+          }
+        }
+      }
+    }
+
     // superclass: `extends X with M1, M2` — first type_identifier is the base,
     // the `mixins` child carries the with-clause.
     const superclass = this.findChildByType(node, "superclass")
@@ -1046,7 +1096,8 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       type === "function_signature" || type === "method_signature" ||
       type === "getter_signature" || type === "setter_signature" ||
       type === "constructor_signature" || type === "factory_constructor_signature" ||
-      type === "constant_constructor_signature" || type === "redirecting_factory_constructor_signature"
+      type === "constant_constructor_signature" || type === "redirecting_factory_constructor_signature" ||
+      type === "operator_signature"
     )
   }
 
@@ -1055,6 +1106,20 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       type === "constructor_signature" || type === "factory_constructor_signature" ||
       type === "constant_constructor_signature" || type === "redirecting_factory_constructor_signature"
     )
+  }
+
+  private signatureName(inner: Node): string | null {
+    const nameNode = inner.childForFieldName("name")
+    if (nameNode) return nameNode.text
+    // Operator overloads (`Vec operator +(Vec other)`) carry the operator
+    // token as the 3rd child of operator_signature (return type, `operator`
+    // keyword, token, parameters) — no name field, no identifier.
+    if (inner.type === "operator_signature") {
+      const opTok = inner.childCount >= 3 ? inner.child(2) : null
+      return opTok ? `operator ${opTok.text}` : null
+    }
+    const id = this.findChildByType(inner, "identifier")
+    return id ? id.text : null
   }
 
   private findSignatureIn(node: Node): Node | null {
@@ -1318,8 +1383,8 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       const n = stack.pop()!
       if (
         n.type === "if_statement" || n.type === "for_statement" || n.type === "while_statement" ||
-        n.type === "do_statement" || n.type === "switch_statement" || n.type === "catch_clause" ||
-        n.type === "conditional_expression" || n.type === "logical_and_expression" || n.type === "logical_or_expression"
+        n.type === "do_statement" || n.type === "switch_statement_case" || n.type === "switch_expression_case" ||
+        n.type === "catch_clause" || n.type === "conditional_expression" || n.type === "logical_and_expression" || n.type === "logical_or_expression"
       ) {
         c++
       }

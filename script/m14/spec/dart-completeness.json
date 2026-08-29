@@ -78,6 +78,9 @@
       "super_formal_parameter",
       "superclass",
       "switch_statement",
+      "switch_statement_case",
+      "switch_expression",
+      "switch_expression_case",
       "symbol_literal",
       "type_alias",
       "type_arguments",
@@ -183,7 +186,6 @@
       "spread_element",
       "super",
       "switch_block",
-      "switch_statement_case",
       "switch_statement_default",
       "template_substitution",
       "this",
@@ -203,7 +205,7 @@
     ]
   },
   "gap": {
-    "_description": "Dart 3 modern constructs (extension types, records, patterns, switch expressions) are parsed but not yet emitted as symbols; they are tracked as gaps for a future wave. The differential floor and fixtures pin the stable core (classes, mixins, extensions, enums, heritage, calls, instantiates, imports).",
+    "_description": "Dart 3 modern constructs (extension types, records, patterns) are parsed but not yet emitted as symbols; they are tracked as gaps for a future wave. Switch expressions are HANDLED: each switch_expression_case contributes to cyclomatic complexity (family convention, csharp case_switch_label / java switch_block_statement_group parity). The differential floor and fixtures pin the stable core (classes, mixins, extensions, enums, heritage, calls, instantiates, imports, parts).",
     "gaps": [
       {
         "node_type": "record_type, record_type_field, record_type_named_field, record_literal, record_field, field_initializer, initializer_list_entry, initializers",
@@ -218,11 +220,6 @@
       {
         "node_type": "extension_type_declaration, representation_declaration",
         "missing": "Dart 3 extension type symbols",
-        "issue": "dart wave (#264 family)"
-      },
-      {
-        "node_type": "switch_expression, switch_expression_case",
-        "missing": "switch-expression complexity contribution",
         "issue": "dart wave (#264 family)"
       },
       {
