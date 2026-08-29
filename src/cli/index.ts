@@ -233,6 +233,15 @@ export async function runCli(argv: string[]): Promise<void> {
   program.name("bb").description("Backbencher Brain — universal code intelligence (40+ languages)")
   program.version(BACKBENCHER_BRAIN_VERSION)
 
+  // M22 e2e: the header docs (and users) expect `bb version` as a command,
+  // not only the --version flag.
+  program
+    .command("version")
+    .description("print the bb version")
+    .action(() => {
+      console.log(BACKBENCHER_BRAIN_VERSION)
+    })
+
   program
     .command("tool")
     .description("run one of the 10 public tools with JSON arguments")
