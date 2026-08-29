@@ -320,7 +320,51 @@ export function deriveGoEdges(root: any): { label: string; from: string; target:
 // entry is an interface (implements). Instantiates comes from
 // object_creation_expression; calls come from invocation_expression leaf
 // targets (the analyzer's leaf-target M12 contract, like go/rust).
-export function deriveCSharpEdges(root: any): { label: string; from: string; target: string }[] {
+
+// Mirror of RealCSharpAnalyzer.cleanTypeName: strip generics (`<...>`) and
+// nullable (`?`) suffixes, but KEEP the full qualified prefix (no lastSegment)
+// so the oracle's implicit-new target matches the analyzer's instantiates
+// target byte-for-byte before normTarget reduction.
+function csharpCleanTypeName(text: string): string {
+  const lt = text.indexOf("<")
+  const base = lt > 0 ? text.slice(0, lt) : text
+  const q = base.indexOf("?")
+  return (q > 0 ? base.slice(0, q) : base).trim()
+}
+
+// Mirror of RealCSharpAnalyzer.resolveImplicitNewType: a target-typed `new()`
+// carries no syntactic type, so the type comes from the enclosing
+// variable_declarator (or property_declaration) declaration. Walks `.parent`
+// exactly like the analyzer so both sides resolve the SAME target.
+function csharpImplicitNewType(node: any): string | null {
+  let cur: any = node.parent
+  while (cur) {
+    if (cur.type === "variable_declarator") {
+      const parentDecl = cur.parent
+      if (parentDecl && parentDecl.type === "variable_declaration") {
+        for (let k = 0; k < parentDecl.namedChildCount; k++) {
+          const c = parentDecl.namedChild(k)
+          if (c && /^(generic_name|identifier|qualified_name|predefined_type|nullable_type|array_type)$/.test(c.type)) return csharpCleanTypeName(c.text)
+        }
+      }
+      return null
+    }
+    if (cur.type === "field_declaration") return null
+    if (cur.type === "property_declaration") {
+      const stack: any[] = [cur]
+      while (stack.length) {
+        const t = stack.pop()!
+        if (t && /^(generic_name|identifier|qualified_name|predefined_type|nullable_type)$/.test(t.type) && t.type !== "variable_declarator") return csharpCleanTypeName(t.text)
+        for (let k = 0; k < t.namedChildCount; k++) stack.push(t.namedChild(k))
+      }
+      return null
+    }
+    cur = cur.parent
+  }
+  return null
+}
+
+export function deriveCSharpEdges(root: any, corpusInterfaces?: Set<string>): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
   const leafOf = (t: string): string => {
@@ -331,7 +375,20 @@ export function deriveCSharpEdges(root: any): { label: string; from: string; tar
   // Receiver wrappers the analyzer suppresses (isCSharpBuiltin: Console
   // output, Environment/GC/Debug/Trace noise). Deliberately NOT `string`/
   // `object` — string.Create / object.Equals are real framework calls.
-  const SUPPRESSED_RECEIVERS = new Set(["Console", "Environment", "GC", "Debug", "Trace", "Math"])
+  // Mirror RealCSharpAnalyzer.isCSharpBuiltin: the ANALYZER filters only the
+  // exact full-call CSHARP_BUILTINS strings (Console.WriteLine, GC.Collect,
+  // Debug.Write, ...) plus Object-method leaves — it does NOT blanket-suppress
+  // whole receivers. So `Debug.Assert`, `File.Close`, `Math.Abs` are real
+  // framework calls the analyzer keeps and the oracle must CONFIRM, not hide.
+  const CSHARP_BUILTINS_ORACLE = new Set([
+    "Console.WriteLine", "Console.Write", "Console.WriteAsync",
+    "Console.Error.WriteLine", "Console.Error.Write", "Console.Error.WriteAsync",
+    "Console.Out.WriteLine", "Console.Out.Write", "Console.Out.WriteAsync",
+    "Environment.Exit", "Environment.GetEnvironmentVariable", "Environment.GetEnvironmentVariables", "Environment.SetEnvironmentVariable",
+    "GC.Collect", "GC.SuppressFinalize", "GC.WaitForPendingFinalizers",
+    "Debug.WriteLine", "Debug.Write", "Debug.Print",
+    "Trace.WriteLine", "Trace.Write",
+  ])
   // In-file declared type kinds, mirroring the analyzer's typeKinds pre-pass
   // (CSD1). Lets `class X : ISomeInterface` resolve to implements even when
   // the interface is the FIRST base-list entry — the two sides only diverge
@@ -358,14 +415,33 @@ export function deriveCSharpEdges(root: any): { label: string; from: string; tar
       const baseList = n.namedChildren.find((c: any) => c.type === "base_list")
       if (nm && baseList) {
         const baseTypes: string[] = []; for (const b of baseList.namedChildren) if (b) baseTypes.push(leafOf(b.text))
+        const isInterfaceDecl = n.type === "interface_declaration"
         for (let i = 0; i < baseTypes.length; i++) {
           const target = baseTypes[i]
           if (!target) continue
-          // Mirror analyzer: isImplements = in-file declared interface || (not
-          // first && unknown). Unknown first entry => extends (deterministic
-          // base-class-first rule), same as the analyzer's fallback.
-          const declaredKind = declKinds.get(target)
-          const label = declaredKind === "interface" || (i > 0 && !declaredKind) ? "implements" : "extends"
+          // C#: an interface only EVER $extends other interfaces (no
+          // interface-implements keyword). Mirror the analyzer's isInterface
+          // branch exactly.
+          if (isInterfaceDecl) {
+            const key = `extends:${nm}->${target}`
+            if (!seen.has(key)) { seen.add(key); edges.push({ label: "extends", from: nm, target }) }
+            continue
+          }
+          // class/struct/record: mirror the analyzer — in-file kind, then the
+          // corpus interface set (the oracle's cross-file companion), then the
+          // qualified-name leaf (a nested type like Outer.Base is keyed by its
+          // leaf Base in the kind maps), then the deterministic rule
+          // (first=extends, later-unknown=implements).
+          const dot = target.lastIndexOf(".")
+          const leaf = dot > 0 ? target.slice(dot + 1) : target
+          const knownIface =
+            declKinds.get(target) === "interface" || corpusInterfaces?.has(target) ||
+            declKinds.get(leaf) === "interface" || corpusInterfaces?.has(leaf)
+          const knownClass =
+            declKinds.get(target) === "class" || declKinds.get(target) === "struct" ||
+            declKinds.get(leaf) === "class" || declKinds.get(leaf) === "struct"
+          const declaredKind = knownIface ? "interface" : knownClass ? "class" : undefined
+          const label = knownIface || (i > 0 && !declaredKind) ? "implements" : "extends"
           const key = `${label}:${nm}->${target}`
           if (!seen.has(key)) {
             seen.add(key)
@@ -389,6 +465,22 @@ export function deriveCSharpEdges(root: any): { label: string; from: string; tar
           edges.push({ label: "instantiates", from: "(expr)", target: t })
         }
       }
+    } else if (n.type === "implicit_object_creation_expression") {
+      // Target-typed `new()` — the type is NOT inside the node. Resolve it
+      // from the enclosing variable_declarator / property_declaration exactly
+      // like RealCSharpAnalyzer.resolveImplicitNewType, so the oracle
+      // CONFIRMS the analyzer's instantiates (csharp #264 Station-6: `object
+      // x = new()` / `Dictionary<..> d = new()` were UNEXPLAINED because the
+      // oracle only understood explicit object_creation_expression). Same
+      // inst: key dedups explicit+implicit constructions of one type per file.
+      const t = csharpImplicitNewType(n)
+      if (t) {
+        const key = "inst:" + t
+        if (!seen.has(key)) {
+          seen.add(key)
+          edges.push({ label: "instantiates", from: "(expr)", target: t })
+        }
+      }
     } else if (n.type === "invocation_expression") {
       const fn = n.childForFieldName?.("function")
       if (fn) {
@@ -398,16 +490,40 @@ export function deriveCSharpEdges(root: any): { label: string; from: string; tar
           leaf = nameNode ? (nameNode.type === "generic_name" ? (nameNode.childForFieldName?.("name")?.text ?? nameNode.text.split("<")[0]) : nameNode.text) : ""
         } else if (fn.type === "identifier" || fn.type === "generic_name") {
           leaf = fn.type === "generic_name" ? (fn.childForFieldName?.("name")?.text ?? fn.text.split("<")[0]) : fn.text
+        } else if (fn.type === "conditional_access_expression") {
+          // Null-conditional call `x?.M(args)` — the callee is a
+          // member_binding_expression (`.M`) whose `name` field is the member
+          // identifier. csharp #264 Station-6: `postActionHandler?.PostVisit(ast)`,
+          // `subscriber.Action?.NotifyJobStopped()`, `destinationStream?.Close()`
+          // were UNEXPLAINED because the oracle only read member_access_expression
+          // / identifier callees. Mirror the analyzer's leaf (Close, Translate,
+          // PostVisit, ...) so it confirms these real calls.
+          const stack: any[] = [fn]
+          while (stack.length && !leaf) {
+            const t = stack.pop()!
+            if (t.type === "member_binding_expression") {
+              const nm = t.childForFieldName?.("name")
+              if (nm) leaf = nm.type === "generic_name" ? (nm.childForFieldName?.("name")?.text ?? nm.text.split("<")[0]) : nm.text
+            }
+            for (let k = 0; k < t.namedChildCount; k++) stack.push(t.namedChild(k))
+          }
         }
-        // Mirror the analyzer's isCSharpBuiltin suppression so the oracle does
-        // not assert calls the analyzer deliberately filters (Console/Math/
-        // Environment/GC/Debug/Trace wrappers and Object-method leaves).
+        // Mirror the analyzer's isCSharpBuiltin: suppress a call ONLY when its
+        // exact full name matches CSHARP_BUILTINS (or the leaf is an Object
+        // method). Debug.Assert / File.Close / Math.Abs / NotifyJobStopped are
+        // NOT in that set, so the oracle confirms them instead of assuming the
+        // whole receiver is noise.
         const OBJMETHODS = new Set(["ToString", "GetHashCode", "Equals", "GetType", "ReferenceEquals"])
         const rcvr = fn.type === "member_access_expression" ? (fn.childForFieldName?.("expression")?.text ?? "") : ""
-        const isSuppressed =
-          (fn.type === "member_access_expression" && SUPPRESSED_RECEIVERS.has(rcvr)) || OBJMETHODS.has(leaf)
+        const full = fn.type === "member_access_expression" ? (rcvr ? rcvr + "." + leaf : leaf) : leaf
+        const isSuppressed = CSHARP_BUILTINS_ORACLE.has(full) || OBJMETHODS.has(leaf)
+        // Call-target hygiene mirror of the analyzer: tree-sitter mislabels
+        // `if (...)` as an invocation_expression, and unsafe vtable dispatch can
+        // slot pointer indexes / element-addresses as the callee. A real target
+        // is a clean, non-keyword identifier.
+        const isKeyword = /^(if|for|foreach|while|do|switch|case|else|return|throw|using|new|delegate|in|is|as|sizeof|fixed|lock|checked|unchecked|params|ref|out|base|this|get|set)$/.test(leaf)
         const key = "call:" + leaf
-        if (leaf && !isSuppressed && !seen.has(key)) {
+        if (leaf && !isKeyword && /^[A-Za-z_][A-Za-z0-9_]*$/.test(leaf) && !isSuppressed && !seen.has(key)) {
           seen.add(key)
           edges.push({ label: "calls", from: "(expr)", target: leaf })
         }
@@ -1190,6 +1306,33 @@ async function main() {
     const mod: any = await import(`../../src/ast/${cfg.analyzerFile}`)
     const analyzer = new mod[cfg.className]()
 
+    // Cross-file type-kind aid for csharp (CSD1): the analyzer resolves a
+    // base-list entry's interface-vs-class kind via a cross-file symbol
+    // companion. The per-file oracle can't see other files, so give it the
+    // corpus-level set of all C# INTERFACE names (regex pass over the corpus
+    // text — cheap, no second parse) so `class X : ICommandRuntime2` and
+    // `interface Y : IWSManConnectionOptions` resolve deterministically to
+    // implements / extends the same way the analyzer does.
+    const CSHARP_INTERFACES = new Set<string>()
+    if (lang === "csharp") {
+      const re = /\binterface\s+([A-Za-z_][A-Za-z0-9_]*)/g
+      for (const f of files) {
+        let s: string
+        try { s = fs.readFileSync(f, "utf8") } catch { continue }
+        re.lastIndex = 0
+        let m: RegExpExecArray | null
+        while ((m = re.exec(s))) if (m[1]) CSHARP_INTERFACES.add(m[1])
+      }
+      // Same corpus knowledge handed to the ANALYZER as its cross-file
+      // `context.typeKinds` companion (values = SymbolKind.Interface string).
+      // Now `class X : IArgumentCompleter` resolves to implements on BOTH
+      // sides — the analyzer with a real companion and the oracle with the
+      // same set — instead of the analyzer falling back to deterministic
+      // extends (which the oracle would then contradict).
+    }
+    const CSHARP_INTERFACE_KINDS = new Map<string, string>()
+    if (lang === "csharp") for (const nm of CSHARP_INTERFACES) CSHARP_INTERFACE_KINDS.set(nm, "interface")
+
     const sample = seededPick(files, SAMPLE_PER_LANG, `${REPO}:${lang}:m14-f5`)
     let treeEdgesTotal = 0, coveredByAnalyzer = 0, missingInAnalyzer = 0
     let analyzerEdgesTotal = 0, explainableByTree = 0, unexplainedInAnalyzer = 0
@@ -1223,7 +1366,7 @@ async function main() {
           const eng = await import("../../src/ast/engine")
           result = await (eng as any).ASTEngine.parseFile(f, content)
         } else {
-          result = await analyzer.analyze(root, content, relPath)
+          result = await analyzer.analyze(root, content, relPath, lang === "csharp" ? { typeKinds: CSHARP_INTERFACE_KINDS as Map<string, string> } : undefined)
         }
       } catch { continue }
       durations.push(performance.now() - tf0)
@@ -1259,7 +1402,7 @@ async function main() {
         }
       }
       if (lang === "csharp") {
-        for (const e of deriveCSharpEdges(root)) {
+        for (const e of deriveCSharpEdges(root, CSHARP_INTERFACES)) {
           ;(truth as any[]).push(e)
         }
       }
@@ -1294,6 +1437,18 @@ async function main() {
       // call truth, so including calls there would flag every real call edge
       // as unexplained.
       })).filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" ? ["overrides"] : []), ...(lang === "c" || lang === "rust" || lang === "go" ? ["calls"] : []), ...(lang === "zig" ? ["calls", "uses"] : []), ...(lang === "csharp" ? ["calls"] : [])].includes(r.label))
+        // The tree-truth oracles already emit UNIQUE (label,target) edges per
+        // file (each oracle keeps a `seen` set keyed by label+target). The
+        // analyzer, by contrast, emits one edge per source SEARCH HIT, so a
+        // target constructed/called N times yields N duplicate (label,target)
+        // edges. Because the coverage match below is deliberately site-agnostic
+        // (it compares label+target only, never the source line), those
+        // duplicates were being double-counted as fabrication. Collapsing them
+        // to one edge per (label,target) aligns the analyzer side with the
+        // truth-side semantics. This never removes a match a truth edge relied
+        // on (the kept occurrence still matches), so it is safe for every
+        // already-gated language -- it can only remove duplicate fabrication.
+        .filter((r: any, i: number, arr: any[]) => { const k = r.label + "|" + r.target; return i === arr.findIndex((x: any) => (x.label + "|" + x.target) === k) })
 
       treeEdgesTotal += truth.length
       analyzerEdgesTotal += rels.length

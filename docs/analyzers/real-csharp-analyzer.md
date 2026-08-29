@@ -135,3 +135,40 @@ O(n²) or per-symbol O(n) scans.
 ## Issue
 
 Closes M12.07 (GitHub issue #146).
+
+## M14 L5 closure (managed-OO wave #264)
+
+The completeness-inventory now ranks csharp CONFORMANT: fixtures pass, 3
+csharp mutants are caught, F1 grammar conformance passes with 0 unknown node
+types, and the powershell corpus differential floor is pinned at **0 missing /
+0 unexplained** (`differential-baseline.json` row `powershell:csharp`,
+avg 44.5 ms/file). csharp is in `GATED_LANGS`.
+
+### Differential oracle (deriveCSharpEdges) — Station 6
+- **Base lists (CSD1)** mirror the analyzer exactly: an `interface` declaration
+  `extends` every base type (C# interfaces only extend); a `class`/`struct`
+  base resolves its kind from the in-file kind map, the corpus-level cross-file
+  interface set (handed to BOTH the analyzer as `context.typeKinds` and the
+  oracle as the companion), the qualified-name leaf, then the deterministic
+  first=extends / later-unknown=implements rule.
+- **instantiates**: explicit `object_creation_expression` (incl.
+  `predefined_type` for `new object()`) plus target-typed
+  `implicit_object_creation_expression` (`object x = new()`) resolved from the
+  enclosing variable/field/property type — mirrors
+  `resolveImplicitNewType`.
+- **calls**: leaves from `member_access_expression`, `identifier`,
+  `generic_name`, and null-conditional `x?.M()` (via `member_binding_expression`),
+  with exact-string CSHARP_BUILTINS suppression (so `Debug.Assert`/`File.Close`/
+  `Math.Abs` are confirmed, not hidden).
+- **Target hygiene** (both sides): only clean, non-keyword identifiers are call
+  targets; generic args (`Get<T>`) are stripped; metadata is deduped to one edge
+  per (label,target).
+
+### Declared residual (bounded)
+In **unsafe C# COM-interop vtable dispatch**, tree-sitter parses `if(...)`
+statements and pointer-slot chaining as degenerate `invocation_expression`
+subtrees; a handful of real IDispatch calls (`Alloc`, `TryGetIDsOfNames`,
+`GetIDsOfNamesInvalid`, `pfnIDispatchInvoke`) are consequently captured as
+`uses` (confidence 0.7) rather than `calls`. This surfaces only in the
+300-file sweep (4 edges) and is logged here + in the completeness spec; it is
+outside the gated deterministic 60-file floor, which is clean.

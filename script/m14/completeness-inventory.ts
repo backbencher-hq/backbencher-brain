@@ -151,7 +151,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     fixturesDir: "validation/m14/fixtures/csharp",
     docs: ["docs/analyzers/real-csharp-analyzer.md"],
     differentialCheck: "differential-csharp",
-    perfKey: "csharp:csharp",
+    perfKey: "powershell:csharp",
     requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "imports"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "csharp/payload-and-complexity" },
@@ -311,12 +311,13 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
 }
 
 // Languages that have reached CONFORMANT and therefore run in npm run verify.
-// csharp is NOT yet gated: its csharp:csharp differential floor must reach
-// 0 missing / 0 unexplained for completeness sections E/F (the F5 improvement
-// gate may never grow, and cross-file interface-kind + target-typed new() tails
-// are still being chased — csharp #264 wave in progress). It stays runnable via
-// --lang csharp / --repo powershell while the wave finishes.
-const GATED_LANGS = ["java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp", "rust", "go", "zig"]
+// csharp reached it in the #264 wave: the powershell corpus differential floor
+// is pinned at 0 missing / 0 unexplained (completeness sections E/F now pass),
+// fixtures + mutation + F1 all green. Declared residual (300-file sweep):
+// unsafe C# COM-interop vtable-dispatch calls are captured as `uses` rather
+// than `calls` (tree-sitter parses `if(...)` and pointer-slot chaining as
+// degenerate invocation_expression subtrees) — bounded to that corpus corner.
+const GATED_LANGS = ["java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp", "rust", "go", "zig", "csharp"]
 
 async function loadNamedNodeTypes(cfg: LangConfig): Promise<string[]> {
   const wts: any = await import("web-tree-sitter")
