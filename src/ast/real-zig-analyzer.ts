@@ -96,7 +96,11 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
         }
 
-        let kind: ASTEngine.SymbolKind = ASTEngine.SymbolKind.Constant
+        // `const` vs `var` (anonymous tokens, probe-verified): a mutable
+        // global `var` is a Variable, not a Constant (deep-review finding
+        // 2026-08-29 — previously every global was labeled constant).
+        const isVar = this.hasToken(node, "var")
+        let kind: ASTEngine.SymbolKind = isVar ? ASTEngine.SymbolKind.Variable : ASTEngine.SymbolKind.Constant
         const isContainer =
           rhsType === "struct_declaration" ||
           rhsType === "enum_declaration" ||
@@ -121,7 +125,8 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
           rhsType === "builtin_type"
         ) {
           // Value constant (`const MAX_POINTS: usize = 1024`) — not a type.
-          kind = ASTEngine.SymbolKind.Constant
+          // A `var` global stays Variable even for literal RHS.
+          if (!isVar) kind = ASTEngine.SymbolKind.Constant
         } else if (varName[0] === varName[0].toUpperCase() && varName[0] !== varName[0].toLowerCase()) {
           kind = ASTEngine.SymbolKind.Type
         }
@@ -529,35 +534,62 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
-  /** Best-effort single leaf type name for a parameter/field/return node. */
+  /** Best-effort single leaf type name for a parameter/field/return node.
+   *
+   * Deep-review fixes (2026-08-29, final zig pass):
+   *   (1) builtin_type nodes are NO LONGER collected — they are never
+   *       declared-type dependencies and, worse, shadowed the real leaf:
+   *       `map: *std.StringHashMap(usize)` returned "usize" (the generic
+   *       argument, a builtin) and the StringHashMap dependency was silently
+   *       lost. A local generic `x: MyList(u32)` lost MyList identically.
+   *   (2) for parameter/container_field, the FIRST identifier is the
+   *       declaration NAME (`flags: Flag` -> name "flags") — it is excluded
+   *       so the leaf is the type. A bare identifier node (plain return
+   *       type `fn f() MyError`) IS the type and is returned directly.
+   *   (3) enum members (`North`) and builtin-only fields (`sides: u32`)
+   *       now yield undefined — no more phantom declared-type refs to
+   *       enum members. */
   private zigTypeLeaf(node: Node): string | undefined {
-    // For container_field: the type comes after the ':' (identifier(s)).
-    // Collect named children and use the last identifier/type-ish token.
+    if (node.type === "identifier") return node.text
     const idents: string[] = []
     const stack: Node[] = [node]
     let guard = 0
     while (stack.length > 0 && guard++ < 200) {
       const n = stack.pop()!
-      if (
-        n.type === "identifier" ||
-        n.type === "builtin_type"
-        // NOTE: `type_identifier` is a go-family node, NOT tree-sitter-zig
-        // (dead literal removed in the zig wave grammar audit).
-      ) {
-        idents.push(n.text)
-      }
+      if (n.type === "identifier") idents.push(n.text)
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const c = n.namedChild(i)
         if (c) stack.push(c)
       }
     }
     if (idents.length === 0) return undefined
-    // The LAST identifier after the field name is the type leaf.
+    // parameter/container_field: child 0 is the declaration NAME — drop it.
+    if (
+      (node.type === "parameter" || node.type === "container_field") &&
+      node.namedChildCount > 0 &&
+      node.namedChild(0)?.type === "identifier"
+    ) {
+      idents.shift()
+      if (idents.length === 0) return undefined
+    }
+    // The LAST identifier after the name is the type leaf.
     return idents[idents.length - 1]
   }
 
   /** Per-symbol cyclomatic complexity of a function/method body (family
-   *  standard — go/c/rust all emit symbol.complexity; zig did NOT). */
+   *  standard — go/c/rust all emit symbol.complexity; zig did NOT).
+   *
+   * Deep-review fixes (2026-08-29, final zig pass):
+   *   (1) Expression forms if_expression / for_expression / while_expression
+   *       are Zig's DOMINANT forms (`const a = if (c) 1 else 2;`) and were
+   *       never counted — only the statement forms were. All six now count.
+   *   (2) `else` in expression forms is an ANONYMOUS token inside the
+   *       if_expression (probe-verified), not an else_clause — both are
+   *       counted now (else_clause node OR hasToken "else").
+   *   (3) binary_expression used a substring trap: `t.indexOf("and")`
+   *       falsely matched identifiers (`x + standard + order` -> +2). The
+   *       operator is an anonymous child token (`and`/`or`/`orelse`,
+   *       probe-verified) — we now match the token type exactly. */
   private zigBodyComplexity(node: Node): number {
     let c = 1
     const stack: Node[] = [node]
@@ -565,21 +597,41 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
       const n = stack.pop()!
       if (
         n.type === "if_statement" ||
+        n.type === "if_expression" ||
         n.type === "for_statement" ||
+        n.type === "for_expression" ||
         n.type === "while_statement" ||
+        n.type === "while_expression" ||
         n.type === "switch_expression" ||
         n.type === "else_clause" ||
         n.type === "catch_expression"
         // NOTE: NO `orelse_expression` literal — tree-sitter-zig models
         // `a orelse b` as a binary_expression (anonymous `orelse` token),
-        // probe-verified 2026-08-29. orelse still increments complexity via
-        // the binary_expression branch below ("orelse" contains "or").
+        // probe-verified 2026-08-29. orelse is counted via the operator
+        // token check below.
+      ) {
+        c++
+      }
+      // `else` branch of an if/for/while EXPRESSION is an anonymous `else`
+      // token (probe-verified: if_expression children include else(anon)).
+      // else_clause (statement form) is already counted above.
+      if (
+        (n.type === "if_expression" || n.type === "for_expression" || n.type === "while_expression") &&
+        this.hasToken(n, "else")
       ) {
         c++
       }
       if (n.type === "binary_expression") {
-        const t = n.text
-        if (t.indexOf("and") !== -1 || t.indexOf("or") !== -1) c++
+        // The operator is an anonymous child token (and/or/orelse/+ etc.) —
+        // match the token TYPE, never substrings of the whole expression text
+        // ("x + standard + order" must NOT count; "a and b" must).
+        for (let i = 0; i < n.childCount; i++) {
+          const op = n.child(i)
+          if (op && !op.isNamed && (op.type === "and" || op.type === "or" || op.type === "orelse")) {
+            c++
+            break
+          }
+        }
       }
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const c2 = n.namedChild(i)

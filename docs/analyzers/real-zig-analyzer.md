@@ -49,6 +49,31 @@ Per-symbol cyclomatic complexity on every function/method: `if`/`for`/`while`/
 `switch`/`else`/`catch`/`orelse` and `and`/`or` binary expressions each
 increment from a base of 1. Added in the zig wave (go/rust/c/cpp already had it).
 
+Deep-review fixes (final zig pass 2026-08-29):
+
+- **Expression forms count**: `if_expression` / `for_expression` /
+  `while_expression` are Zig's dominant forms (`const a = if (c) 1 else 2;`)
+  and were previously never counted — only the statement forms were. All six
+  now count, and the anonymous `else` token of an expression form counts like
+  `else_clause` does for statements.
+- **Operator-token matching, not substrings**: `binary_expression` used
+  `text.indexOf("and")` / `indexOf("or")`, which falsely matched identifiers
+  (`x + standard + order` gained +2). The operator is an anonymous child token
+  (`and`/`or`/`orelse`), matched by type now. Verified: `x + standard + order`
+  is complexity 1; `a and b` is +1.
+
+## Symbol kinds & declared-type references (deep-review)
+
+- `var` globals are `Variable`, not `Constant` (a mutable global is not a
+  constant); `const` globals stay `Constant`.
+- Generic type applications in parameter/field/return positions emit the
+  generic BASE leaf: `x: MyList(u32)` → `references -> MyList`. Previously
+  `zigTypeLeaf` returned the LAST collected node, which for a generic
+  application was the builtin argument (`*std.StringHashMap(usize)` → `usize`,
+  filtered) — the real dependency was silently lost.
+- Enum members emit NO declared-type references (they are not types);
+  builtin-only fields (`sides: u32`) emit none either.
+
 ## Design decisions (see `script/m14/spec/zig-completeness.json`)
 
 - **ZIG.D.1** — Zig has no class inheritance / interfaces / overrides, so the
