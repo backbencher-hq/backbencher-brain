@@ -887,11 +887,85 @@
       "id": "section-h-cross-language",
       "language": "go",
       "status": "pass"
+    },
+    {
+      "description": "zig: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "zig",
+      "status": "pass"
+    },
+    {
+      "description": "zig: 2 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "zig",
+      "status": "pass"
+    },
+    {
+      "description": "zig: 3 ruled, 0 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "zig",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (zig)",
+      "detail": "96 types, 10 handled, 83 silent, 2 gaps, 3 decisions",
+      "id": "section-a-structural",
+      "language": "zig",
+      "status": "pass"
+    },
+    {
+      "description": "5 relationship kinds pinned by zig fixtures",
+      "detail": "pinned: calls, contains, declared_type, imports, references, uses, zig_field_access, zig_function_call, zig_import",
+      "id": "section-b-relationship-kinds",
+      "language": "zig",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for zig (3)",
+      "detail": "complexity, parameters, visibility",
+      "id": "section-c-payload-matrix",
+      "language": "zig",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "4 tier(s) pinned: import_based, reference_qualified, structural, usage_contextual",
+      "id": "section-d-evidence-tiers",
+      "language": "zig",
+      "status": "pass"
+    },
+    {
+      "description": "zig:zig at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor zig:zig: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "zig",
+      "status": "pass"
+    },
+    {
+      "description": "zig avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "zig:zig 59.3 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "zig",
+      "status": "pass"
+    },
+    {
+      "description": "zig analyzer docs present and committed",
+      "detail": "docs/analyzers/real-zig-analyzer.md",
+      "id": "section-g-docs",
+      "language": "zig",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "3 checks pass",
+      "id": "section-h-cross-language",
+      "language": "zig",
+      "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "a606fa84423ec3959ba534a9f756538b9328f54f",
-  "committedAt": "2026-08-29T01:47:23+02:00",
+  "commit": "e27733044c8e0855f1d77774affb7fa349e3c321",
+  "committedAt": "2026-08-29T01:49:51+02:00",
   "data": {
     "languages": {
       "c": {
@@ -1494,6 +1568,53 @@
           },
           "section-g-docs": {
             "detail": "docs/analyzers/vue.md, docs/analyzers/real-vue-analyzer.md",
+            "status": "pass"
+          },
+          "section-h-cross-language": {
+            "detail": "3 checks pass",
+            "status": "pass"
+          }
+        }
+      },
+      "zig": {
+        "gaps": [
+          "ZIG.GAP.1: `opaque {}` types parse cleanly but emit no symbol. Zig models runtime interfaces via opaque types + function pointers (no class inheritance), so there are no fields/extends to surface; the type is intentionally not indexed.",
+          "ZIG.GAP.2: `test \"name\" {}` blocks emit no function symbol (anonymous, unstable scope). Calls and field-uses inside a test body are still captured with source '(global)', so the code-intel graph does not lose them."
+        ],
+        "nodeTypeCount": 96,
+        "pendingDecisions": [],
+        "ruledDecisions": [
+          "ZIG.D.1",
+          "ZIG.D.2",
+          "ZIG.D.3"
+        ],
+        "sections": {
+          "section-a-structural": {
+            "detail": "96 types, 10 handled, 83 silent, 2 gaps, 3 decisions",
+            "status": "pass"
+          },
+          "section-b-relationship-kinds": {
+            "detail": "pinned: calls, contains, declared_type, imports, references, uses, zig_field_access, zig_function_call, zig_import",
+            "status": "pass"
+          },
+          "section-c-payload-matrix": {
+            "detail": "complexity, parameters, visibility",
+            "status": "pass"
+          },
+          "section-d-evidence-tiers": {
+            "detail": "4 tier(s) pinned: import_based, reference_qualified, structural, usage_contextual",
+            "status": "pass"
+          },
+          "section-e-differential": {
+            "detail": "floor zig:zig: missing=0, unexplained=0 (differential-baseline.json)",
+            "status": "pass"
+          },
+          "section-f-perf-budget": {
+            "detail": "zig:zig 59.3 ms/file",
+            "status": "pass"
+          },
+          "section-g-docs": {
+            "detail": "docs/analyzers/real-zig-analyzer.md",
             "status": "pass"
           },
           "section-h-cross-language": {
