@@ -138,6 +138,25 @@ async function cmdSearch(query: string, opts: { dir?: string; limit?: number; la
   console.log(`\n${results.length} results${results.staleCount ? ` (${results.staleCount} stale — run bb index --force)` : ""}`)
 }
 
+async function cmdStats(dir: string | undefined) {
+  // M22.V4: query committed index counts anytime, independent of any run state.
+  const abs = dir ? requireDir(dir) : process.cwd()
+  const pid = getProjectId(abs)
+  const { composeStatus } = await import("../ast/index-status")
+  const s = await composeStatus(pid)
+  if (!s.hasIndex) {
+    console.log(`no index for ${abs}. Run: bb index "${abs}"`)
+    return
+  }
+  let embeddings = 0
+  try {
+    const r = await BrainDatabase.getRawInstance(pid)
+    embeddings = (r.prepare("SELECT COUNT(*) c FROM brain_semantic_embedding").get() as any)?.c ?? 0
+  } catch {}
+  console.log(`index stats for ${abs}:`)
+  console.log(`  files ${s.dbStats.files} | symbols ${s.dbStats.symbols} | relationships ${s.dbStats.relationships} | embeddings ${embeddings}`)
+}
+
 async function cmdStatus(dir: string | undefined) {
   // M22.V2: `bb status [<dir>]` — in-flight + last-run index state from any shell.
   const abs = dir ? requireDir(dir) : process.cwd()
@@ -229,6 +248,14 @@ export async function runCli(argv: string[]): Promise<void> {
     .option("--force", "wipe the existing index and rebuild")
     .action(async (dir: string | undefined, opts: any) => {
       await cmdIndex(dir, opts)
+    })
+
+  program
+    .command("stats")
+    .description("query index counts anytime: files/symbols/relationships/embeddings (default: cwd)")
+    .argument("[dir]", "project directory (default: current directory)")
+    .action(async (dir: string | undefined) => {
+      await cmdStats(dir)
     })
 
   program
