@@ -225,7 +225,7 @@
     ]
   },
   "gap": {
-    "_description": "csharp differential oracle (deriveCSharpEdges) pending pin; completeness A-H gates require fixtures, differential floor, docs.",
+    "_description": "csharp differential oracle (deriveCSharpEdges) PINNED at powershell corpus floor 0 missing / 0 unexplained; completeness A-H 8/8 pass. Declared residual (300-file sweep): unsafe C# COM-interop vtable-dispatch calls parse as degenerate tree-sitter invocation_expression subtrees (pointer-slot indexes, `if(...)` statements), so those 4 calls surface as `uses` (confidence 0.7) rather than `calls` — bounded, logged, and outside the gated 60-file floor which is deterministic-unclean-free.",
     "gaps": []
   },
   "design_decision": {

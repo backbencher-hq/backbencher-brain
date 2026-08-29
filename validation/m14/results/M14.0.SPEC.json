@@ -961,11 +961,85 @@
       "id": "section-h-cross-language",
       "language": "zig",
       "status": "pass"
+    },
+    {
+      "description": "csharp: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "csharp",
+      "status": "pass"
+    },
+    {
+      "description": "csharp: 0 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "csharp",
+      "status": "pass"
+    },
+    {
+      "description": "csharp: 1 ruled, 0 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "csharp",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (csharp)",
+      "detail": "239 types, 51 handled, 164 silent, 0 gaps, 1 decisions",
+      "id": "section-a-structural",
+      "language": "csharp",
+      "status": "pass"
+    },
+    {
+      "description": "9 relationship kinds pinned by csharp fixtures",
+      "detail": "pinned: calls, contains, csharp_field_access, extends, implements, imports, instantiates, method_override, overrides, references, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "csharp",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for csharp (3)",
+      "detail": "complexity, parameters, visibility",
+      "id": "section-c-payload-matrix",
+      "language": "csharp",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "4 tier(s) pinned: import_based, inferred, structural, usage_contextual",
+      "id": "section-d-evidence-tiers",
+      "language": "csharp",
+      "status": "pass"
+    },
+    {
+      "description": "powershell:csharp at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor powershell:csharp: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "csharp",
+      "status": "pass"
+    },
+    {
+      "description": "csharp avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "powershell:csharp 44.5 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "csharp",
+      "status": "pass"
+    },
+    {
+      "description": "csharp analyzer docs present and committed",
+      "detail": "docs/analyzers/real-csharp-analyzer.md",
+      "id": "section-g-docs",
+      "language": "csharp",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "6 checks pass",
+      "id": "section-h-cross-language",
+      "language": "csharp",
+      "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "d0227ce27866d2159118758ef8079463945b515c",
-  "committedAt": "2026-08-29T06:48:06+02:00",
+  "commit": "8820b07c83f08a4273893c5018a0913f70a4b0b8",
+  "committedAt": "2026-08-29T07:44:19+02:00",
   "data": {
     "languages": {
       "c": {
@@ -1048,6 +1122,48 @@
           },
           "section-g-docs": {
             "detail": "docs/analyzers/real-cpp-analyzer.md",
+            "status": "pass"
+          },
+          "section-h-cross-language": {
+            "detail": "6 checks pass",
+            "status": "pass"
+          }
+        }
+      },
+      "csharp": {
+        "gaps": [],
+        "nodeTypeCount": 239,
+        "pendingDecisions": [],
+        "ruledDecisions": [
+          "CSD1"
+        ],
+        "sections": {
+          "section-a-structural": {
+            "detail": "239 types, 51 handled, 164 silent, 0 gaps, 1 decisions",
+            "status": "pass"
+          },
+          "section-b-relationship-kinds": {
+            "detail": "pinned: calls, contains, csharp_field_access, extends, implements, imports, instantiates, method_override, overrides, references, uses",
+            "status": "pass"
+          },
+          "section-c-payload-matrix": {
+            "detail": "complexity, parameters, visibility",
+            "status": "pass"
+          },
+          "section-d-evidence-tiers": {
+            "detail": "4 tier(s) pinned: import_based, inferred, structural, usage_contextual",
+            "status": "pass"
+          },
+          "section-e-differential": {
+            "detail": "floor powershell:csharp: missing=0, unexplained=0 (differential-baseline.json)",
+            "status": "pass"
+          },
+          "section-f-perf-budget": {
+            "detail": "powershell:csharp 44.5 ms/file",
+            "status": "pass"
+          },
+          "section-g-docs": {
+            "detail": "docs/analyzers/real-csharp-analyzer.md",
             "status": "pass"
           },
           "section-h-cross-language": {
