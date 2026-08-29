@@ -37,6 +37,7 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   go: { wasm: "tree-sitter-go.wasm", analyzerFile: "real-go-analyzer", className: "RealGoAnalyzer", ext: "go" },
   zig: { wasm: "tree-sitter-zig.wasm", analyzerFile: "real-zig-analyzer", className: "RealZigAnalyzer", ext: "zig" },
   csharp: { wasm: "tree-sitter-c_sharp.wasm", analyzerFile: "real-csharp-analyzer", className: "RealCSharpAnalyzer", ext: "cs" },
+  dart: { wasm: "tree-sitter-dart.wasm", analyzerFile: "real-dart-analyzer", className: "RealDartAnalyzer", ext: "dart" },
 }
 
 function seededPick<T>(items: T[], n: number, seedStr: string): T[] {
@@ -534,6 +535,120 @@ export function deriveCSharpEdges(root: any, corpusInterfaces?: Set<string>): { 
   return edges
 }
 
+// Dart tree-truth oracle (dart managed-OO wave #264). Mirrors
+// RealDartAnalyzer's M12.11 leaf-target contract exactly:
+//   - extends:  superclass first type_identifier
+//   - implements: every type_identifier under `interfaces` (not type_arguments)
+//   - uses:     every type_identifier under the mixins (with-clause)
+//   - instantiates: constructor_invocation / new_expression /
+//     const_object_expression type_identifier, PLUS a capitalized bare
+//     identifier directly before an argument_part selector (Dart types are
+//     capitalized; `Foo()` is a constructor invocation)
+//   - calls:    selector(argument_part) callee leaf — member_access chains
+//     resolve to the LAST identifier (obj.method -> method), null-conditional
+//     `x?.M()` via conditional_assignable_selector, cascade_section via
+//     cascade_selector; dart global builtins (print/assert/identical) and
+//     Object methods (toString/hashCode/runtimeType/noSuchMethod) filtered.
+// The oracle emits UNIQUE (label,target) edges (seen-set per label+target),
+// matching the site-agnostic coverage match in main().
+export function deriveDartEdges(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const isCapitalized = (t: string): boolean => t.length > 0 && t.charCodeAt(0) >= 65 && t.charCodeAt(0) <= 90
+  const DART_BUILTINS = new Set(["print", "assert", "identical", "toString", "hashCode", "runtimeType", "noSuchMethod"])
+  const key = (label: string, target: string) => label + ":" + target
+  const push = (label: string, target: string) => {
+    const k = key(label, target)
+    if (!seen.has(k)) { seen.add(k); edges.push({ label, from: "(expr)", target }) }
+  }
+
+  // Collect type_identifier leaves of a container, excluding generic args.
+  const typeLeaves = (n: any): string[] => {
+    const out: string[] = []
+    const st: any[] = [n]
+    while (st.length) {
+      const t = st.pop()!
+      if (t.type === "type_identifier") { out.push(t.text); continue }
+      if (t.type === "type_arguments") continue // generic args are NOT bases
+      for (let k = 0; k < t.namedChildCount; k++) { const c = t.namedChild(k); if (c) st.push(c) }
+    }
+    return out
+  }
+
+  const stack: any[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()!
+    const t = n.type
+    if (t === "class_definition" || t === "mixin_declaration") {
+      const nm = n.childForFieldName?.("name")?.text
+      if (nm) {
+        const sup = n.namedChildren.find((c: any) => c.type === "superclass")
+        if (sup) {
+          // first type_identifier directly under superclass (base class),
+          // EXCLUDING the mixins (with-clause) child.
+          for (let k = 0; k < sup.namedChildCount; k++) {
+            const c = sup.namedChild(k)
+            if (c && c.type === "mixins") continue
+            if (c && (c.type === "type_identifier" || c.type === "generic_type")) {
+              const ti = c.type === "generic_type" ? (c.namedChildren.find((x: any) => x.type === "type_identifier") ?? c) : c
+              if (ti?.text) push("extends", ti.text)
+              break
+            }
+          }
+          // mixins under superclass (extends A with M)
+          const mx = sup.namedChildren.find((c: any) => c.type === "mixins")
+          if (mx) for (const m of typeLeaves(mx)) push("uses", m)
+        }
+        // mixins directly on the class (class A with M implements C)
+        const mxDirect = n.namedChildren.find((c: any) => c.type === "mixins")
+        if (mxDirect) for (const m of typeLeaves(mxDirect)) push("uses", m)
+        // interfaces
+        const ifc = n.namedChildren.find((c: any) => c.type === "interfaces")
+        if (ifc) for (const m of typeLeaves(ifc)) push("implements", m)
+      }
+    }
+    if (t === "constructor_invocation" || t === "new_expression" || t === "const_object_expression") {
+      const tn = n.namedChildren.find((c: any) => c.type === "type_identifier")
+      if (tn && isCapitalized(tn.text)) push("instantiates", tn.text)
+    }
+    if (t === "selector") {
+      const hasArgs = n.namedChildren.some((c: any) => c.type === "argument_part")
+      if (hasArgs) {
+        const prev = n.previousNamedSibling
+        if (prev) {
+          let leaf: string | null = null
+          if (prev.type === "unconditional_assignable_selector" || prev.type === "conditional_assignable_selector" || prev.type === "selector") {
+            const id = prev.namedChildren.find((c: any) => c.type === "identifier")
+            leaf = id ? id.text : (() => { const stk: any[] = [prev]; let last: string | null = null; while (stk.length) { const x = stk.pop()!; if (x.type === "identifier" || x.type === "type_identifier") last = x.text; for (let k = 0; k < x.namedChildCount; k++) { const c = x.namedChild(k); if (c) stk.push(c) } } return last })()
+          } else if (prev.type === "identifier" || prev.type === "type_identifier") {
+            leaf = prev.text
+          }
+          if (leaf && !DART_BUILTINS.has(leaf)) {
+            if (isCapitalized(leaf) && (prev.type === "identifier" || prev.type === "type_identifier")) {
+              push("instantiates", leaf)
+            } else if (/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(leaf)) {
+              // Dart identifiers may contain $ (json_serializable generates
+              // _$FooFromJson / _$FooToJson helpers); the analyzer emits
+              // calls for them, so the oracle must too.
+              push("calls", leaf)
+            }
+          }
+        }
+      }
+    }
+    if (t === "cascade_section") {
+      const sel = n.namedChildren.find((c: any) => c.type === "cascade_selector")
+      const hasArgs = n.namedChildren.some((c: any) => c.type === "argument_part")
+      if (sel && hasArgs) {
+        const id = sel.namedChildren.find((c: any) => c.type === "identifier")
+        if (id && !DART_BUILTINS.has(id.text) && /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(id.text)) push("calls", id.text)
+      }
+    }
+    for (let k = 0; k < n.namedChildCount; k++) { const c = n.namedChild(k); if (c) stack.push(c) }
+  }
+  return edges
+}
+
 // Go implicit interface-implementation truth (duck typing): a struct S
 // implements interface I when S's receiver-method set (value OR pointer
 // receivers) contains every method I declares. Mirrors the analyzer's
@@ -892,7 +1007,7 @@ function deriveRustEdges(root: any): { label: string; from: string; target: stri
 
 // Independent oracle: derive extends/implements/instantiates edges straight
 // from clause node structure — no analyzer code involved.
-function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
+export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
   const edges: TreeEdge[] = []
   const TYPE = /type_identifier|scoped_type_identifier|generic_type|^identifier$/
   const collect = (x: any, label: string, clsName: string) => {
@@ -933,8 +1048,22 @@ function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
         }
       }
       if (sup) {
-        if (sup.type === "superclass" || sup.type === "extends_interfaces") collect(sup, "extends", clsName)
-        else if (sup.type === "extends_type_clause") {
+        if (sup.type === "superclass" || sup.type === "extends_interfaces") {
+          if (lang === "dart") {
+            // dart superclass = seq(base_type, type_arguments?, mixins?) —
+            // type ARGUMENTS are arguments, not inherited bases (same rule
+            // as the typescript extends_type_clause fix below), and mixins
+            // are `uses`, not `extends` (deriveDartEdges emits them as uses).
+            // Without this, `class _X extends State<X>` pushed extends->X
+            // (the generic arg) as a fake base.
+            for (const c of sup.namedChildren) {
+              if (!c || c.type === "type_arguments" || c.type === "mixins") continue
+              collect(c, "extends", clsName)
+            }
+          } else {
+            collect(sup, "extends", clsName)
+          }
+        } else if (sup.type === "extends_type_clause") {
           // typescript interface heritage: type_arguments are ARGUMENTS,
           // not inherited bases - descend only into real type nodes
           // (mirrors the analyzer's fix for phantom "<string>" targets)
@@ -1406,6 +1535,11 @@ async function main() {
           ;(truth as any[]).push(e)
         }
       }
+      if (lang === "dart") {
+        for (const e of deriveDartEdges(root)) {
+          ;(truth as any[]).push(e)
+        }
+      }
       if (lang === "svelte") {
         for (const e of deriveSvelteComponentUsages(root)) {
           ;(truth as any[]).push(e)
@@ -1436,7 +1570,7 @@ async function main() {
       // truth); zig derives calls AND uses; other languages do not derive
       // call truth, so including calls there would flag every real call edge
       // as unexplained.
-      })).filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" ? ["overrides"] : []), ...(lang === "c" || lang === "rust" || lang === "go" ? ["calls"] : []), ...(lang === "zig" ? ["calls", "uses"] : []), ...(lang === "csharp" ? ["calls"] : [])].includes(r.label))
+      })).filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" ? ["overrides"] : []), ...(lang === "c" || lang === "rust" || lang === "go" || lang === "dart" ? ["calls"] : []), ...(lang === "zig" ? ["calls", "uses"] : []), ...(lang === "dart" ? ["uses"] : []), ...(lang === "csharp" ? ["calls"] : [])].includes(r.label))
         // The tree-truth oracles already emit UNIQUE (label,target) edges per
         // file (each oracle keeps a `seen` set keyed by label+target). The
         // analyzer, by contrast, emits one edge per source SEARCH HIT, so a
