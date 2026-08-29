@@ -14,6 +14,7 @@ import { BrainTools } from "../ast/tools"
 import { BACKBENCHER_BRAIN_VERSION } from "../version"
 import { getUnifiedHealth, formatUnifiedHealth } from "../intelligence/health/health-provider"
 import { bbProjectsDir } from "../util/bb-data-dir"
+import { LogLevel, setLogLevel } from "../util/log"
 
 export function getProjectId(projectPath: string): string {
   const resolved = path.resolve(projectPath)
@@ -112,6 +113,10 @@ async function cmdIndex(dir: string | undefined, opts: { force?: boolean }) {
   const emb = (db.prepare("SELECT COUNT(*) c FROM brain_semantic_embedding").get() as any).c
   console.log(`✓ indexed ${files} files, ${symbols} symbols, ${rels} relationships, ${emb} embeddings in ${secs}s`)
   console.log(`  stats: ${JSON.stringify({ totalFiles: stats.totalFiles, processed: stats.processedFiles, errors: stats.errorFiles })}`)
+  if (stats.summary) {
+    const s = stats.summary
+    console.log(`  breakdown: ${s.newlyParsed} newly parsed | ${s.unchanged} unchanged | ${s.skipped} skipped | ${s.symbolLoss} symbol-loss (parsed 0 symbols) | ${s.errors} errors | ${s.timeouts} timeouts`)
+  }
 }
 
 async function cmdSearch(query: string, opts: { dir?: string; limit?: number; language?: string }) {
@@ -230,8 +235,28 @@ async function cmdTool(name: string, opts: { dir?: string; args?: string }): Pro
 
 export async function runCli(argv: string[]): Promise<void> {
   const program = new Command()
-  program.name("bb").description("Backbencher Brain — universal code intelligence (40+ languages)")
-  program.version(BACKBENCHER_BRAIN_VERSION)
+  program
+    .name("bb")
+    .description("Backbencher Brain — universal code intelligence (40+ languages)")
+    .version(BACKBENCHER_BRAIN_VERSION)
+    // M22.W1: one logging story. Workers inherit BB_LOG_LEVEL from the parent
+    // (pool-worker.ts only defaults to "error" when the parent sets nothing).
+    .option("--verbose", "show diagnostics (debug logs, per-file worker/WASM lines)")
+    .option("--quiet", "suppress informational output (warnings/errors only)")
+    .hook("preAction", (thisCommand) => {
+      // M22.W1: one logging story. Apply the level to this process's logger
+      // immediately and publish it through the environment so forked pool
+      // workers (which inherit the parent env) honor the same level instead
+      // of their hardcoded "error" default.
+      const opts = thisCommand.opts()
+      if (opts.verbose) {
+        process.env.BB_LOG_LEVEL = "debug"
+        setLogLevel(LogLevel.DEBUG)
+      } else if (opts.quiet) {
+        process.env.BB_LOG_LEVEL = "warn"
+        setLogLevel(LogLevel.WARN)
+      }
+    })
 
   // M22 e2e: the header docs (and users) expect `bb version` as a command,
   // not only the --version flag.
