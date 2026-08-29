@@ -80,8 +80,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "e27733044c8e0855f1d77774affb7fa349e3c321",
-  "committedAt": "2026-08-29T01:49:51+02:00",
+  "commit": "d1677fe4b46fbaba343351f4901c0987bbe343b8",
+  "committedAt": "2026-08-29T03:37:24+02:00",
   "data": {
     "corpusPins": {
       "zig": "738d2be9d6b6ef3ff3559130c05159ef53336224"
@@ -97,8 +97,8 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 5,
-          "maxMsPerFile": 70.8,
+          "avgMsPerFile": 11.8,
+          "maxMsPerFile": 132,
           "samplesTimed": 60
         },
         "samples": [],
@@ -187,8 +187,8 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 594.6,
-          "maxMsPerFile": 594.6,
+          "avgMsPerFile": 640,
+          "maxMsPerFile": 640,
           "samplesTimed": 1
         },
         "samples": [],
@@ -313,8 +313,8 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 34.3,
-          "maxMsPerFile": 535.2,
+          "avgMsPerFile": 97.7,
+          "maxMsPerFile": 1321.8,
           "samplesTimed": 60
         },
         "samples": [],
