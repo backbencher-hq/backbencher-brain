@@ -19,8 +19,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "d84e0fb10c9982327de865afb090c7620ac47a48",
-  "committedAt": "2026-08-29T18:31:31+02:00",
+  "commit": "bdc375b92e08dbbd98d461c8af9eb6bc7d8e7d75",
+  "committedAt": "2026-08-29T23:06:07+02:00",
   "data": {
     "languages": {
       "bash": {
