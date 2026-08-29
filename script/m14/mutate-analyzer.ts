@@ -1021,6 +1021,27 @@ const MUTANTS: Mutant[] = [
     description: "drops contains edges for type/member/field containment — #419 groovy section B contains pin",
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => x.type !== "contains") }),
   },
+  {
+    id: "csharp/drop-field-access-uses",
+    language: "csharp",
+    defectClass: "relationship-loss",
+    description: "drops csharp field-access Uses edges — #264 section B uses pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => (x.metadata ?? {}).relationshipType !== "csharp_field_access") }),
+  },
+  {
+    id: "csharp/drop-symbol-complexity",
+    language: "csharp",
+    defectClass: "payload-loss",
+    description: "drops csharp per-symbol complexity — #264 section C complexity pin",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, complexity: undefined })) }),
+  },
+  {
+    id: "csharp/drop-implements-edge",
+    language: "csharp",
+    defectClass: "relationship-loss",
+    description: "drops csharp implements edges (Shape->IShape) — #264 section B implements pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "implements") }),
+  },
 ]
 
 async function realAnalyzer(lang: string): Promise<any> {

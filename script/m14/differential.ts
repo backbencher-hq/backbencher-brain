@@ -36,6 +36,7 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   rust: { wasm: "tree-sitter-rust.wasm", analyzerFile: "real-rust-analyzer", className: "RealRustAnalyzer", ext: "rs" },
   go: { wasm: "tree-sitter-go.wasm", analyzerFile: "real-go-analyzer", className: "RealGoAnalyzer", ext: "go" },
   zig: { wasm: "tree-sitter-zig.wasm", analyzerFile: "real-zig-analyzer", className: "RealZigAnalyzer", ext: "zig" },
+  csharp: { wasm: "tree-sitter-c_sharp.wasm", analyzerFile: "real-csharp-analyzer", className: "RealCSharpAnalyzer", ext: "cs" },
 }
 
 function seededPick<T>(items: T[], n: number, seedStr: string): T[] {
@@ -303,6 +304,112 @@ export function deriveGoEdges(root: any): { label: string; from: string; target:
               }
             }
           }
+        }
+      }
+    }
+    for (let k = 0; k < n.namedChildCount; k++) stack.push(n.namedChild(k))
+  }
+  return edges
+}
+
+// C# second-opinion oracle (csharp #264 wave). Re-derives the SAME relationship
+// set the analyzer emits, independently, so disagreements surface as
+// missing/unexplained rather than being copied. Mirrors the analyzer's
+// deterministic C# base-list rule (CSD1): a type's base_list children are
+// ordered — the FIRST entry is the base class (extends), every remaining
+// entry is an interface (implements). Instantiates comes from
+// object_creation_expression; calls come from invocation_expression leaf
+// targets (the analyzer's leaf-target M12 contract, like go/rust).
+export function deriveCSharpEdges(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const leafOf = (t: string): string => {
+    // generic_name: IComparer<Circle> -> IComparer; qualified: A.B.C -> C
+    const lt = t.indexOf("<")
+    return lastSegment(lt >= 0 ? t.slice(0, lt) : t)
+  }
+  // Receiver wrappers the analyzer suppresses (isCSharpBuiltin: Console
+  // output, Environment/GC/Debug/Trace noise). Deliberately NOT `string`/
+  // `object` — string.Create / object.Equals are real framework calls.
+  const SUPPRESSED_RECEIVERS = new Set(["Console", "Environment", "GC", "Debug", "Trace", "Math"])
+  // In-file declared type kinds, mirroring the analyzer's typeKinds pre-pass
+  // (CSD1). Lets `class X : ISomeInterface` resolve to implements even when
+  // the interface is the FIRST base-list entry — the two sides only diverge
+  // on cross-file interface kinds, which is the declared per-file limitation.
+  const declKinds = new Map<string, string>()
+  {
+    const pre: any[] = [root]
+    while (pre.length) {
+      const t = pre.pop()!
+      if (/^(class|interface|struct|record)_declaration$/.test(t.type)) {
+        const nm = t.childForFieldName?.("name")?.text
+        if (nm) declKinds.set(nm, t.type.startsWith("interface") ? "interface" : t.type.includes("struct") ? "struct" : "class")
+      }
+      for (let k = 0; k < t.namedChildCount; k++) pre.push(t.namedChild(k))
+    }
+  }
+
+  const stack: any[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()!
+    if (n.type === "class_declaration" || n.type === "interface_declaration" || n.type === "struct_declaration" || n.type === "record_declaration") {
+      const nameNode = n.childForFieldName?.("name")
+      const nm = nameNode?.text
+      const baseList = n.namedChildren.find((c: any) => c.type === "base_list")
+      if (nm && baseList) {
+        const baseTypes: string[] = []; for (const b of baseList.namedChildren) if (b) baseTypes.push(leafOf(b.text))
+        for (let i = 0; i < baseTypes.length; i++) {
+          const target = baseTypes[i]
+          if (!target) continue
+          // Mirror analyzer: isImplements = in-file declared interface || (not
+          // first && unknown). Unknown first entry => extends (deterministic
+          // base-class-first rule), same as the analyzer's fallback.
+          const declaredKind = declKinds.get(target)
+          const label = declaredKind === "interface" || (i > 0 && !declaredKind) ? "implements" : "extends"
+          const key = `${label}:${nm}->${target}`
+          if (!seen.has(key)) {
+            seen.add(key)
+            edges.push({ label, from: nm, target })
+          }
+        }
+      }
+    } else if (n.type === "object_creation_expression") {
+      const typeNode =
+        n.namedChildren.find((c: any) => c.type === "generic_name" || c.type === "identifier" || c.type === "qualified_name" || c.type === "predefined_type") ??
+        n.namedChildren.find((c: any) => c.type === "type_argument_list")
+      if (typeNode) {
+        const t = leafOf(typeNode.text)
+        const key = "inst:" + t
+        // A construction target is always a constructible type — `new object()`
+        // and `new string(...)` are real instantiations, so CSBUILTINS must NOT
+        // filter them (only `var`/`nameof` can never be `new` targets, and those
+        // never parse as object_creation_expression anyway).
+        if (t && !seen.has(key)) {
+          seen.add(key)
+          edges.push({ label: "instantiates", from: "(expr)", target: t })
+        }
+      }
+    } else if (n.type === "invocation_expression") {
+      const fn = n.childForFieldName?.("function")
+      if (fn) {
+        let leaf = ""
+        if (fn.type === "member_access_expression") {
+          const nameNode = fn.childForFieldName?.("name")
+          leaf = nameNode ? (nameNode.type === "generic_name" ? (nameNode.childForFieldName?.("name")?.text ?? nameNode.text.split("<")[0]) : nameNode.text) : ""
+        } else if (fn.type === "identifier" || fn.type === "generic_name") {
+          leaf = fn.type === "generic_name" ? (fn.childForFieldName?.("name")?.text ?? fn.text.split("<")[0]) : fn.text
+        }
+        // Mirror the analyzer's isCSharpBuiltin suppression so the oracle does
+        // not assert calls the analyzer deliberately filters (Console/Math/
+        // Environment/GC/Debug/Trace wrappers and Object-method leaves).
+        const OBJMETHODS = new Set(["ToString", "GetHashCode", "Equals", "GetType", "ReferenceEquals"])
+        const rcvr = fn.type === "member_access_expression" ? (fn.childForFieldName?.("expression")?.text ?? "") : ""
+        const isSuppressed =
+          (fn.type === "member_access_expression" && SUPPRESSED_RECEIVERS.has(rcvr)) || OBJMETHODS.has(leaf)
+        const key = "call:" + leaf
+        if (leaf && !isSuppressed && !seen.has(key)) {
+          seen.add(key)
+          edges.push({ label: "calls", from: "(expr)", target: leaf })
         }
       }
     }
@@ -1151,6 +1258,11 @@ async function main() {
           ;(truth as any[]).push(e)
         }
       }
+      if (lang === "csharp") {
+        for (const e of deriveCSharpEdges(root)) {
+          ;(truth as any[]).push(e)
+        }
+      }
       if (lang === "svelte") {
         for (const e of deriveSvelteComponentUsages(root)) {
           ;(truth as any[]).push(e)
@@ -1181,7 +1293,7 @@ async function main() {
       // truth); zig derives calls AND uses; other languages do not derive
       // call truth, so including calls there would flag every real call edge
       // as unexplained.
-      })).filter((r: any) => ["extends", "implements", "instantiates", "overrides", ...(lang === "c" || lang === "rust" || lang === "go" ? ["calls"] : []), ...(lang === "zig" ? ["calls", "uses"] : [])].includes(r.label))
+      })).filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" ? ["overrides"] : []), ...(lang === "c" || lang === "rust" || lang === "go" ? ["calls"] : []), ...(lang === "zig" ? ["calls", "uses"] : []), ...(lang === "csharp" ? ["calls"] : [])].includes(r.label))
 
       treeEdgesTotal += truth.length
       analyzerEdgesTotal += rels.length
