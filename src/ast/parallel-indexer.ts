@@ -338,6 +338,21 @@ export interface ParallelIndexingStats {
   elapsedSeconds?: number
   /** M22.V1: execution mode of the parse phase (worker-pool | in-process). */
   phase?: string
+  /**
+   * M22.V5: honest per-bucket run summary. Every input file lands in exactly
+   * one bucket so a run that "succeeds" but silently loses files is visible.
+   * symbolLoss = parsed successfully but yielded 0 symbols (e.g. ENGINE_EMPTY
+   * bypass on SCSS) — the silent-loss class the probe exposed.
+   */
+  summary?: {
+    totalCandidates: number
+    newlyParsed: number
+    unchanged: number
+    skipped: number
+    symbolLoss: number
+    errors: number
+    timeouts: number
+  }
 }
 
 /**
@@ -2627,6 +2642,18 @@ export async function indexProjectParallel(
       phases.finalAccountingMs = Date.now() - discoveryStart - phases.discoveryMs
       phases.totalWallMs = Date.now() - stats.startTime
 
+      // M22.V5: even the noop path must carry an honest summary so callers
+      // always have a complete bucket breakdown regardless of run type.
+      stats.summary = {
+        totalCandidates: stats.totalFiles,
+        newlyParsed: 0,
+        unchanged: stats.skippedFiles,
+        skipped: 0,
+        symbolLoss: 0,
+        errors: 0,
+        timeouts: 0,
+      }
+
       await BrainDatabase.updateIndexStatus(projectId, {
         lastIndexed: Date.now(),
         filesIndexed: stats.totalFiles,
@@ -2824,6 +2851,23 @@ export async function indexProjectParallel(
           timestamp: Date.now(),
         })
       }
+    }
+
+    // M22.V5: honest per-bucket summary. symbolLoss = parsed OK but zero
+    // symbols (ENGINE_EMPTY bypass) — the silent-loss class the probe exposed
+    // on element-plus SCSS (~250 files parsed to nothing with no user signal).
+    let symbolLoss = 0
+    for (const r of finalOutcomes.values()) {
+      if (r.success && (!r.symbols || r.symbols.length === 0)) symbolLoss++
+    }
+    stats.summary = {
+      totalCandidates: stats.totalFiles,
+      newlyParsed: stats.successFiles,
+      unchanged: stats.skippedFiles,
+      skipped: Math.max(0, stats.totalFiles - files.length - stats.skippedFiles),
+      symbolLoss,
+      errors: stats.errorFiles,
+      timeouts: stats.timeoutFiles,
     }
 
     // Post-processing fallback: re-process files that may have been lost
