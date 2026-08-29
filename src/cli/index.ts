@@ -61,7 +61,7 @@ function formatETA(s: { processedFiles: number; totalFiles: number; elapsedSecon
   return `${Math.floor(remaining / 3600)}h${Math.floor((remaining % 3600) / 60)}m`
 }
 
-async function cmdIndex(dir: string | undefined, opts: { force?: boolean; skipPostProcessing?: boolean; file?: string; changed?: boolean }) {
+async function cmdIndex(dir: string | undefined, opts: { force?: boolean; skipPostProcessing?: boolean; file?: string; changed?: boolean; resume?: boolean }) {
   // M22.C1: default `<dir>` to the current directory like every other command
   // (search/health/mcp all fall back to process.cwd()); `cd proj && bb index`
   // must index the project you are standing in.
@@ -87,6 +87,22 @@ async function cmdIndex(dir: string | undefined, opts: { force?: boolean; skipPo
   if (opts.skipPostProcessing) indexOpts.skipPostProcessing = true
   if (opts.file) indexOpts.files = [opts.file]
   if (opts.changed) indexOpts.isIncremental = true
+  // M22.R1: resume from an interrupted run's checkpoint. The live status file
+  // is the checkpoint: phase "indexing" (left behind if the process died) vs
+  // "complete"/"failed". Resume always runs incremental (mtime/size skip the
+  // already-indexed files, so strictly fewer files are processed than a fresh
+  // run), and reports whether a checkpoint was actually found.
+  if (opts.resume) {
+    const { readLiveStatus } = await import("../ast/index-status")
+    const ck = readLiveStatus(pid)
+    const inProgress = !!ck && ck.phase === "indexing" && Date.now() - ck.updatedAt < 3_600_000
+    if (inProgress) {
+      console.log(`resuming interrupted index (checkpoint: ${ck.processedFiles}/${ck.totalFiles} files done)`)
+    } else {
+      console.log("no in-progress checkpoint; running incremental (only missing/changed files)")
+    }
+    indexOpts.isIncremental = true
+  }
   // M22.V1: render a live single-line progress update on stderr (never stdout,
   // so stdout stays clean for any consuming process). Clears the line on the
   // terminal without disturbing the final summary on stdout.
@@ -286,6 +302,7 @@ export async function runCli(argv: string[]): Promise<void> {
     .option("--skip-post-processing", "parse + store only; defer relationship resolution/enrichment/gravity/taint/health")
     .option("--file <path>", "reindex a single file's symbols + relationships")
     .option("--changed", "reindex only files changed since the last index")
+    .option("--resume", "continue from an interrupted run's checkpoint (incremental: only missing/changed files)")
     .addHelpText("after", `
 Examples:
   $ bb index                 # index the current directory
