@@ -574,12 +574,35 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         const isCallSite =
           enclosingKind === ASTEngine.SymbolKind.Method ||
           enclosingKind === ASTEngine.SymbolKind.Constructor ||
-          enclosingKind === ASTEngine.SymbolKind.Property
+          enclosingKind === ASTEngine.SymbolKind.Property ||
+          // Class-body expression contexts (field/type-member initializers and
+          // attribute arguments) — csharp #264 Station-6: calls like
+          // `Thread.AllocateDataSlot()`, `PSTraceSource.GetTracer(...)`,
+          // `DependencyProperty.Register(...)` in static field initializers
+          // live at class scope, so the enclosing context is the Class/Struct/
+          // Interface, not a method. Previously dropped, the differential
+          // oracle surfaced them ALL as MISSING (it derives every
+          // invocation_expression leaf from `(expr)`).
+          enclosingKind === ASTEngine.SymbolKind.Class ||
+          enclosingKind === ASTEngine.SymbolKind.Struct ||
+          enclosingKind === ASTEngine.SymbolKind.Interface
         if (callExpr && parentContext?.name && isCallSite) {
-          if (!this.isCSharpBuiltin(callExpr)) {
+          // Strip generic type arguments so a generic call `x?.Get<T>(...)` /
+          // `Foo.Gen<T>(...)` resolves to its clean leaf `Get` / `Gen` before
+          // hygiene (the raw callExpr leaf carries `<T>`).
+          const target = String(callExpr.split(".").pop() || callExpr).split("<")[0]
+          // Call-target hygiene (csharp #264 Station-6 differential surfaced
+          // fabricated Calls to non-method callee shapes): `if (...)` parses as
+          // an invocation_expression in the tree-sitter grammar but is a
+          // statement, and unsafe vtable dispatch chains slot a bare pointer
+          // index as the callee (`... 2 ...))(...)`), element accesses
+          // (`handlers[handler](...)`) and argument fragments surface as junk
+          // targets too. Only a clean identifier is a real call target.
+          const isCSharpKeyword = /^(if|for|foreach|while|do|switch|case|else|return|throw|using|new|delegate|in|is|as|sizeof|fixed|lock|checked|unchecked|params|ref|out|base|this|get|set)$/.test(target)
+          if (!isCSharpKeyword && /^[A-Za-z_][A-Za-z0-9_]*$/.test(target) && !this.isCSharpBuiltin(callExpr)) {
             relationships.push({
               source: parentContext.rawName,
-              target: callExpr.split(".").pop() || callExpr,
+              target,
               type: ASTEngine.RelationshipType.Calls,
               confidence: 0.9,
               metadata: { csharpCallExpression: callExpr },
