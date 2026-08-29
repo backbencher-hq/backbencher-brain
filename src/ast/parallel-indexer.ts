@@ -329,6 +329,14 @@ export interface ParallelIndexingStats {
   structuredErrors?: BrainDatabase.IndexingErrorRecord[]
   /** M21.I1: phase-level timing/accounting telemetry for indexing runs. */
   phases?: IndexPhaseTimings
+  /** M22.V1: live fields surfaced to the onProgress callback for the CLI. */
+  currentFile?: string
+  /** M22.V1: overall progress 0..98 during parsing (100 reached at completion). */
+  progress?: number
+  /** M22.V1: elapsed wall-clock in ms since the run started. */
+  elapsedSeconds?: number
+  /** M22.V1: execution mode of the parse phase (worker-pool | in-process). */
+  phase?: string
 }
 
 /**
@@ -2728,7 +2736,19 @@ export async function indexProjectParallel(
         })
 
         if (options.onProgress) {
-          options.onProgress({ ...stats })
+          // M22.V1: enrich the public progress payload with the live fields the
+          // CLI renders (files/s, current file, overall %, elapsed) so callers
+          // can draw a live progress line without recomputing them. These are
+          // additive and do not change the internal Bus contract consumed by
+          // BrainService.
+          options.onProgress({
+            ...stats,
+            currentFile: path.basename(file),
+            progress: (stats.processedFiles / stats.totalFiles) * 98,
+            filesPerSecond: fps,
+            elapsedSeconds: now - stats.startTime, // ms; /1000 for seconds
+            phase: processFn === processInProcess ? "in-process" : "worker-pool",
+          })
         }
       }
     }, poolTelemetry)

@@ -45,6 +45,21 @@ function requireDir(p: string): string {
   return abs
 }
 
+// M22.V1: remaining-time estimate from a live progress sample. Honest rule:
+// no ETA is produced before there is at least one second of elapsed time and a
+// non-zero processed rate; otherwise it returns "…". elapsedSeconds is the
+// wall-clock ms elapsed since the run started (see parallel-indexer enrichment).
+function formatETA(s: { processedFiles: number; totalFiles: number; elapsedSeconds?: number }): string {
+  const elapsedS =
+    s.elapsedSeconds !== undefined && s.elapsedSeconds > 0 ? s.elapsedSeconds / 1000 : 0
+  if (elapsedS < 1 || s.processedFiles <= 0 || s.totalFiles <= 0) return "…"
+  const perFileS = elapsedS / s.processedFiles
+  const remaining = Math.max(0, (s.totalFiles - s.processedFiles) * perFileS)
+  if (remaining < 60) return `${Math.round(remaining)}s`
+  if (remaining < 3600) return `${Math.floor(remaining / 60)}m${Math.round(remaining % 60)}s`
+  return `${Math.floor(remaining / 3600)}h${Math.floor((remaining % 3600) / 60)}m`
+}
+
 async function cmdIndex(dir: string, opts: { force?: boolean }) {
   const abs = requireDir(dir)
   const pid = getProjectId(abs)
@@ -64,7 +79,28 @@ async function cmdIndex(dir: string, opts: { force?: boolean }) {
   }
   console.log(`indexing ${abs} (project ${pid.slice(0, 8)}…)`)
   const t = Date.now()
-  const stats = await indexProjectParallel(pid, abs, {})
+  // M22.V1: render a live single-line progress update on stderr (never stdout,
+  // so stdout stays clean for any consuming process). Clears the line on the
+  // terminal without disturbing the final summary on stdout.
+  let lastProgressT = 0
+  const stats = await indexProjectParallel(pid, abs, {
+    onProgress: (s) => {
+      const now = Date.now()
+      if (now - lastProgressT < 80) return
+      lastProgressT = now
+      const total = s.totalFiles > 0 ? s.totalFiles : s.processedFiles
+      const pct =
+        s.totalFiles > 0 ? Math.floor((s.processedFiles / s.totalFiles) * 100) : 0
+      const fps = typeof s.filesPerSecond === "number" ? s.filesPerSecond.toFixed(1) : "?"
+      const file = s.currentFile ?? ""
+      const pw = process.stderr.isTTY ? `\r` : `\r[progress] `
+      process.stderr.write(
+        `${pw}${s.processedFiles}/${total} files (${pct}%) ${fps}/s ETA ${formatETA(s)} ${file ? `— ${file}` : ""}`,
+      )
+    },
+  })
+  if (process.stderr.isTTY) process.stderr.write("\r\x1b[K")
+  else process.stderr.write("\n")
   const secs = ((Date.now() - t) / 1000).toFixed(1)
   const db = await BrainDatabase.getRawInstance(pid)
   const files = (db.prepare("SELECT COUNT(*) c FROM brain_file").get() as any).c
