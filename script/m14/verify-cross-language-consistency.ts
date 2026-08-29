@@ -42,6 +42,38 @@ const EQUIVALENTS: Record<string, { wasm: string; analyzerFile: string; classNam
   // fixture suites + CLI pipeline e2e instead (#384 covers web cluster).
 }
 
+// Systems-family equivalents (added 2026-08-29, family closure): the same
+// struct + method shape expressed in c/cpp/rust/go/zig. Asserts 1-based
+// ranges, consistent struct/method kinds, and per-symbol complexity presence
+// (the family standard all five emit).
+const SYSTEMS_EQUIVALENTS: Record<string, { wasm: string; analyzerFile: string; className: string; ext: string; source: string; methodName: string }> = {
+  c: {
+    wasm: "tree-sitter-c.wasm", analyzerFile: "real-c-analyzer", className: "RealCAnalyzer", ext: "c",
+    source: `typedef struct { int w; } Widget;\nint render(Widget* w) {\n  return w->w;\n}\n`,
+    methodName: "render",
+  },
+  cpp: {
+    wasm: "tree-sitter-cpp.wasm", analyzerFile: "real-cpp-analyzer", className: "RealCppAnalyzer", ext: "cpp",
+    source: `struct Widget {\n  int w;\n  int render() { return w; }\n};\n`,
+    methodName: "render",
+  },
+  rust: {
+    wasm: "tree-sitter-rust.wasm", analyzerFile: "real-rust-analyzer", className: "RealRustAnalyzer", ext: "rs",
+    source: `struct Widget {\n  w: i32,\n}\nimpl Widget {\n  fn render(&self) -> i32 { self.w }\n}\n`,
+    methodName: "render",
+  },
+  go: {
+    wasm: "tree-sitter-go.wasm", analyzerFile: "real-go-analyzer", className: "RealGoAnalyzer", ext: "go",
+    source: `type Widget struct {\n  W int\n}\nfunc (w *Widget) Render() int {\n  return w.W\n}\n`,
+    methodName: "Render",
+  },
+  zig: {
+    wasm: "tree-sitter-zig.wasm", analyzerFile: "real-zig-analyzer", className: "RealZigAnalyzer", ext: "zig",
+    source: `const Widget = struct {\n  w: u32,\n  pub fn render(self: *const Widget) u32 {\n    return self.w;\n  }\n};\n`,
+    methodName: "render",
+  },
+}
+
 async function main() {
   const wts: any = await import("web-tree-sitter")
   const ParserClass = wts.Parser ?? wts.default ?? wts
@@ -69,7 +101,15 @@ async function main() {
     for (const s of [...(cls ? [cls] : []), ...(method ? [method] : [])]) {
       const rng = s.range ?? {}
       if (!(rng.startColumn >= 1)) failures.push(`${lang}/${s.name}: startColumn=${rng.startColumn} is not 1-based`)
-      if (!(rng.endColumn >= (rng.startColumn ?? 0))) failures.push(`${lang}/${s.name}: endColumn < startColumn`)
+      // Multi-line symbols: endColumn lives on the LAST line, so it is
+      // naturally < startColumn (which lives on the FIRST line). The correct
+      // invariant is endLine >= startLine, and endColumn >= startColumn only
+      // when the symbol is single-line. (Gate fix 2026-08-29: the old
+      // unconditional endColumn >= startColumn only ever passed for symbols
+      // starting at column 0 — java's class passed by accident, go's Widget
+      // at column 5 failed despite a correct range.)
+      if (!(rng.endLine >= (rng.startLine ?? 1))) failures.push(`${lang}/${s.name}: endLine < startLine`)
+      if (rng.endLine === rng.startLine && !(rng.endColumn >= (rng.startColumn ?? 0))) failures.push(`${lang}/${s.name}: endColumn < startColumn on single line`)
       if (!(rng.startLine >= 1)) failures.push(`${lang}/${s.name}: startLine not 1-based`)
     }
 
@@ -94,6 +134,36 @@ async function main() {
     }
   }
 
+  // ── Systems family (c/cpp/rust/go/zig) — family closure 2026-08-29 ──
+  const sysFailures: string[] = []
+  const sysSummary: Record<string, any> = {}
+  for (const [lang, cfg] of Object.entries(SYSTEMS_EQUIVALENTS)) {
+    const grammar = await Language.load(fs.readFileSync(path.join(ROOT, "wasm", cfg.wasm)))
+    const parser = new ParserClass()
+    parser.setLanguage(grammar)
+    const mod: any = await import(`../../src/ast/${cfg.analyzerFile}`)
+    const analyzer = new mod[cfg.className]()
+    const r = await analyzer.analyze(parser.parse(cfg.source).rootNode, cfg.source, `Widget.${cfg.ext}`)
+    const symbols = r.symbols ?? []
+    const st = symbols.find(s => s.name === "Widget")
+    const method = symbols.find(s => s.name === cfg.methodName)
+    if (!st) sysFailures.push(`${lang}: Widget struct not extracted`)
+    if (!method) sysFailures.push(`${lang}: method ${cfg.methodName} not extracted`)
+    for (const s of [...(st ? [st] : []), ...(method ? [method] : [])]) {
+      const rng = s.range ?? {}
+      if (!(rng.startColumn >= 1)) sysFailures.push(`${lang}/${s.name}: startColumn=${rng.startColumn} is not 1-based`)
+      if (!(rng.endLine >= (rng.startLine ?? 1))) sysFailures.push(`${lang}/${s.name}: endLine < startLine`)
+      if (rng.endLine === rng.startLine && !(rng.endColumn >= (rng.startColumn ?? 0))) sysFailures.push(`${lang}/${s.name}: endColumn < startColumn on single line`)
+      if (!(rng.startLine >= 1)) sysFailures.push(`${lang}/${s.name}: startLine not 1-based`)
+    }
+    // kind: struct-like for the container, method/function for the member
+    if (st && !/struct|class/.test(String(st.kind).toLowerCase())) sysFailures.push(`${lang}: Widget kind ${st.kind} is not struct-like`)
+    if (method && !/method|function/.test(String(method.kind).toLowerCase())) sysFailures.push(`${lang}: ${cfg.methodName} kind ${method.kind} unexpected`)
+    // complexity: family standard — every systems analyzer emits it
+    if (method && !(typeof method.complexity === "number" && method.complexity >= 1)) sysFailures.push(`${lang}: ${cfg.methodName} missing per-symbol complexity`)
+    sysSummary[lang] = { structKind: st?.kind, methodKind: method?.kind, complexity: method?.complexity }
+  }
+
   const { emitEvidence } = await import("./evidence-harness")
   emitEvidence({
     issueId: "M14.CC1",
@@ -104,13 +174,22 @@ async function main() {
       { id: "ranges-1based", description: "all symbol ranges use 1-based lines AND columns across java/groovy/kotlin/scala", status: failures.length ? "fail" : "pass" },
       { id: "kind-consistency", description: "equivalent declarations map to consistent symbol kinds", status: failures.some(f => f.includes("kind")) ? "fail" : "pass" },
       { id: "payload-presence", description: "qualified_calls present in languages that emit it", status: failures.some(f => f.includes("qualified_calls")) ? "fail" : "pass" },
+      { id: "systems-ranges-1based", description: "1-based ranges across c/cpp/rust/go/zig", status: sysFailures.some(f => f.includes("startColumn") || f.includes("startLine")) ? "fail" : "pass" },
+      { id: "systems-kind-consistency", description: "struct/method kinds consistent across c/cpp/rust/go/zig", status: sysFailures.some(f => f.includes("kind")) ? "fail" : "pass" },
+      { id: "systems-complexity", description: "per-symbol complexity present in all five systems analyzers", status: sysFailures.some(f => f.includes("complexity")) ? "fail" : "pass" },
     ],
     limitations: [
-      { description: "covers JVM-family equivalents; other clusters added with their waves (#384)" },
+      { description: "covers JVM-family + systems-family equivalents; other clusters added with their waves (#384)" },
       { description: "scala qualified_calls absence declared pending under #383" },
     ],
-    data: { failures, summary },
+    data: { failures, summary, systemsFailures: sysFailures, systemsSummary: sysSummary },
   })
+
+  if (sysFailures.length) {
+    console.error("SYSTEMS CONSISTENCY FAILED:")
+    for (const f of sysFailures) console.error("  -", f)
+    process.exit(9)
+  }
 
   if (failures.length) {
     console.error("CONSISTENCY FAILED:")

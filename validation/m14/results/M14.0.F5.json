@@ -1,108 +1,108 @@
 {
   "checks": [
     {
-      "description": "zig: tree-truth vs analyzer diff @738d2be9d6",
-      "detail": "1 files, coverage null%, unexplained null%",
+      "description": "grails-core: tree-truth vs analyzer diff @a83f87480e",
+      "detail": "52 files, coverage null%, unexplained null%",
       "id": "differential-javascript",
       "status": "pass"
     },
     {
-      "description": "zig: tree-truth vs analyzer diff @738d2be9d6",
+      "description": "grails-core: tree-truth vs analyzer diff @a83f87480e",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-typescript",
       "status": "pass"
     },
     {
-      "description": "zig: tree-truth vs analyzer diff @738d2be9d6",
+      "description": "grails-core: tree-truth vs analyzer diff @a83f87480e",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-kotlin",
       "status": "pass"
     },
     {
-      "description": "zig: tree-truth vs analyzer diff @738d2be9d6",
+      "description": "grails-core: tree-truth vs analyzer diff @a83f87480e",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-scala",
       "status": "pass"
     },
     {
-      "description": "zig: tree-truth vs analyzer diff @738d2be9d6",
-      "detail": "0 files, coverage null%, unexplained null%",
+      "description": "grails-core: tree-truth vs analyzer diff @a83f87480e",
+      "detail": "60 files, coverage 100%, unexplained 0%",
       "id": "differential-java",
       "status": "pass"
     },
     {
-      "description": "zig: tree-truth vs analyzer diff @738d2be9d6",
-      "detail": "0 files, coverage null%, unexplained null%",
+      "description": "grails-core: tree-truth vs analyzer diff @a83f87480e",
+      "detail": "60 files, coverage 100%, unexplained 0%",
       "id": "differential-groovy",
       "status": "pass"
     },
     {
-      "description": "zig: tree-truth vs analyzer diff @738d2be9d6",
+      "description": "grails-core: tree-truth vs analyzer diff @a83f87480e",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-vue",
       "status": "pass"
     },
     {
-      "description": "zig: tree-truth vs analyzer diff @738d2be9d6",
+      "description": "grails-core: tree-truth vs analyzer diff @a83f87480e",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-svelte",
       "status": "pass"
     },
     {
-      "description": "zig: tree-truth vs analyzer diff @738d2be9d6",
+      "description": "grails-core: tree-truth vs analyzer diff @a83f87480e",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-cpp",
       "status": "pass"
     },
     {
-      "description": "zig: tree-truth vs analyzer diff @738d2be9d6",
-      "detail": "60 files, coverage 100%, unexplained 0%",
+      "description": "grails-core: tree-truth vs analyzer diff @a83f87480e",
+      "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-c",
       "status": "pass"
     },
     {
-      "description": "zig: tree-truth vs analyzer diff @738d2be9d6",
+      "description": "grails-core: tree-truth vs analyzer diff @a83f87480e",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-rust",
       "status": "pass"
     },
     {
-      "description": "zig: tree-truth vs analyzer diff @738d2be9d6",
+      "description": "grails-core: tree-truth vs analyzer diff @a83f87480e",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-go",
       "status": "pass"
     },
     {
-      "description": "zig: tree-truth vs analyzer diff @738d2be9d6",
-      "detail": "60 files, coverage 100%, unexplained 0%; regression detected",
+      "description": "grails-core: tree-truth vs analyzer diff @a83f87480e",
+      "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-zig",
-      "status": "fail"
+      "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "d1677fe4b46fbaba343351f4901c0987bbe343b8",
-  "committedAt": "2026-08-29T03:37:24+02:00",
+  "commit": "66f9fbc9ffc1b4b72803d215b95e2b634f8a762b",
+  "committedAt": "2026-08-29T04:08:59+02:00",
   "data": {
     "corpusPins": {
-      "zig": "738d2be9d6b6ef3ff3559130c05159ef53336224"
+      "grails-core": "a83f87480e0c0138caa5a7191a053b1e59a64066"
     },
     "report": {
       "c": {
-        "analyzerEdges": 270,
-        "coveragePct": 100,
-        "coveredByAnalyzer": 142,
-        "explainableByTree": 270,
-        "fabricationPct": 0,
-        "filesSampled": 60,
+        "analyzerEdges": 0,
+        "coveragePct": null,
+        "coveredByAnalyzer": 0,
+        "explainableByTree": 0,
+        "fabricationPct": null,
+        "filesSampled": 0,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 11.8,
-          "maxMsPerFile": 132,
-          "samplesTimed": 60
+          "avgMsPerFile": null,
+          "maxMsPerFile": null,
+          "samplesTimed": 0
         },
         "samples": [],
-        "treeTruthEdges": 142,
+        "treeTruthEdges": 0,
         "unexplainedInAnalyzer": 0
       },
       "cpp": {
@@ -142,39 +142,39 @@
         "unexplainedInAnalyzer": 0
       },
       "groovy": {
-        "analyzerEdges": 0,
-        "coveragePct": null,
-        "coveredByAnalyzer": 0,
-        "explainableByTree": 0,
-        "fabricationPct": null,
-        "filesSampled": 0,
-        "heuristicUnexplained": 0,
+        "analyzerEdges": 257,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 151,
+        "explainableByTree": 223,
+        "fabricationPct": 0,
+        "filesSampled": 60,
+        "heuristicUnexplained": 34,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": null,
-          "maxMsPerFile": null,
-          "samplesTimed": 0
+          "avgMsPerFile": 24.2,
+          "maxMsPerFile": 225.5,
+          "samplesTimed": 60
         },
         "samples": [],
-        "treeTruthEdges": 0,
+        "treeTruthEdges": 151,
         "unexplainedInAnalyzer": 0
       },
       "java": {
-        "analyzerEdges": 0,
-        "coveragePct": null,
-        "coveredByAnalyzer": 0,
-        "explainableByTree": 0,
-        "fabricationPct": null,
-        "filesSampled": 0,
-        "heuristicUnexplained": 0,
+        "analyzerEdges": 247,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 132,
+        "explainableByTree": 167,
+        "fabricationPct": 0,
+        "filesSampled": 60,
+        "heuristicUnexplained": 80,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": null,
-          "maxMsPerFile": null,
-          "samplesTimed": 0
+          "avgMsPerFile": 24.2,
+          "maxMsPerFile": 371,
+          "samplesTimed": 60
         },
         "samples": [],
-        "treeTruthEdges": 0,
+        "treeTruthEdges": 132,
         "unexplainedInAnalyzer": 0
       },
       "javascript": {
@@ -183,13 +183,13 @@
         "coveredByAnalyzer": 0,
         "explainableByTree": 0,
         "fabricationPct": null,
-        "filesSampled": 1,
+        "filesSampled": 52,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 640,
-          "maxMsPerFile": 640,
-          "samplesTimed": 1
+          "avgMsPerFile": 26.1,
+          "maxMsPerFile": 528.6,
+          "samplesTimed": 52
         },
         "samples": [],
         "treeTruthEdges": 0,
@@ -304,21 +304,21 @@
         "unexplainedInAnalyzer": 0
       },
       "zig": {
-        "analyzerEdges": 6678,
-        "coveragePct": 100,
-        "coveredByAnalyzer": 3731,
-        "explainableByTree": 6678,
-        "fabricationPct": 0,
-        "filesSampled": 60,
+        "analyzerEdges": 0,
+        "coveragePct": null,
+        "coveredByAnalyzer": 0,
+        "explainableByTree": 0,
+        "fabricationPct": null,
+        "filesSampled": 0,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 97.7,
-          "maxMsPerFile": 1321.8,
-          "samplesTimed": 60
+          "avgMsPerFile": null,
+          "maxMsPerFile": null,
+          "samplesTimed": 0
         },
         "samples": [],
-        "treeTruthEdges": 3731,
+        "treeTruthEdges": 0,
         "unexplainedInAnalyzer": 0
       }
     },
