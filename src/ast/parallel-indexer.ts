@@ -18,6 +18,7 @@ import { readdir, stat } from "fs/promises"
 import { computeAndStoreProjectHealth } from "./project-health"
 import { CrossLanguageIntelligencePersister } from "./cross-language-intelligence-persister"
 import { detectLanguageFromPath } from "./language-detection"
+import { writeLiveStatus } from "./index-status"
 
 const log = Log.create({ service: "parallel-indexer" })
 
@@ -2750,6 +2751,18 @@ export async function indexProjectParallel(
             phase: processFn === processInProcess ? "in-process" : "worker-pool",
           })
         }
+        // M22.V2: persist a live cross-process status sample so `bb status` in
+        // another shell shows this run's progress/totals while it is in flight.
+        writeLiveStatus(projectId, {
+          projectId,
+          phase: "indexing",
+          processedFiles: stats.processedFiles,
+          totalFiles: stats.totalFiles,
+          filesPerSecond: fps,
+          currentFile: path.basename(file),
+          startedAt: stats.startTime,
+          updatedAt: now,
+        })
       }
     }, poolTelemetry)
     phases.parseMs = Date.now() - parseStart
@@ -3102,10 +3115,27 @@ export async function indexProjectParallel(
         skippedFiles: stats.skippedFiles,
       },
     })
+    // M22.V2: finalize the live status sample with full phase telemetry so
+    // `bb status` shows the complete per-phase breakdown (incl. the co-dominant
+    // dbFlush line) and worker count after the run.
+    try {
+      writeLiveStatus(projectId, {
+        projectId,
+        phase: stats.errorFiles > 0 ? "failed" : "complete",
+        processedFiles: stats.processedFiles,
+        totalFiles: stats.totalFiles,
+        filesPerSecond: stats.filesPerSecond,
+        workerCount: phases.workerCount,
+        startedAt: stats.startTime,
+        updatedAt: Date.now(),
+        error: stats.errorFiles > 0 ? `${stats.errorFiles} files errored` : undefined,
+      })
+    } catch {}
 
     return stats
   } catch (error) {
     stats.endTime = Date.now()
+    writeLiveStatus(projectId, { projectId, phase: "failed", processedFiles: stats.processedFiles, totalFiles: stats.totalFiles, startedAt: stats.startTime, updatedAt: Date.now(), error: error instanceof Error ? error.message : String(error) })
     const errorMsg = error instanceof Error ? error.message : String(error)
 
     log.error("parallel indexing failed", { projectId, error: errorMsg })
