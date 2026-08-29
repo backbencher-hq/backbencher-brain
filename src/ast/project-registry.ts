@@ -6,7 +6,7 @@ import { readdirSync, statSync, existsSync, rmSync } from "node:fs"
 import path from "node:path"
 import { bbProjectsDir } from "../util/bb-data-dir"
 import { BrainDatabase } from "../brain/database"
-import { readLiveStatus } from "./index-status"
+import { readLiveStatus, clearStatus } from "./index-status"
 
 export interface ProjectEntry {
   id: string
@@ -106,6 +106,9 @@ export function removeProject(id: string, force: boolean): RemoveResult {
       raw.close()
     } catch {}
     rmSync(dir, { recursive: true, force: true })
+    // M23.P2: a removed project must be fully gone — including its live-status
+    // file, otherwise bb status/stats still report hasIndex with zero counts.
+    clearStatus(id)
     return { id, removed: !existsSync(dir) }
   } catch (e: any) {
     return { id, removed: false, reason: e?.message ?? String(e) }
