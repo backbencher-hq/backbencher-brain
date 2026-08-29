@@ -229,8 +229,35 @@ export function deriveGoEdges(root: any): { label: string; from: string; target:
     }
     return { qualified: false }
   }
+  // Deep-review alignment 2026-08-29 (go family final pass, go-tools @200
+  // measured 12 MISSING): mirror the analyzer's package-scope closure
+  // contract. Inside a function body findGoFunctionCalls descends closure
+  // bodies (goroutines/callbacks are reachable), but at PACKAGE scope only an
+  // IMMEDIATELY-invoked func literal (`var x = func(){...}()` -> parent is
+  // call_expression) runs at init, so only those bodies are descended; a
+  // STORED package closure (`var table = map...{func(){...}}`) is a template
+  // not executed at init and its body must be skipped. The flat DFS below
+  // previously descended every func_literal body, over-deriving calls from
+  // stored package closures the analyzer correctly omits.
+  const isInsideFunctionBody = (node: any): boolean => {
+    let p: any = node.parent
+    while (p) {
+      if (p.type === "function_declaration" || p.type === "method_declaration") return true
+      p = p.parent
+    }
+    return false
+  }
   while (stack.length > 0) {
     const n = stack.pop()!
+    if (n.type === "func_literal") {
+      // Stored package-scope closure (non-IIFE, not inside any function body):
+      // template, not executed at init -> skip body entirely. IIFE closures
+      // and in-function closures are descended normally below.
+      const isIIFE = n.parent && n.parent.type === "call_expression"
+      if (!isIIFE && !isInsideFunctionBody(n)) {
+        continue
+      }
+    }
     if (n.type === "call_expression") {
       const fn = n.childForFieldName?.("function")
       const { leaf: name, qualified } = leafOf(fn)

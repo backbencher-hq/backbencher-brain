@@ -1449,9 +1449,19 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     symbols: ASTEngine.UniversalSymbol[],
   ) {
     const declared = new Set<string>()
+    // Instantiates contract (family, mirrored in the differential oracle
+    // deriveGoEdges.ctorFns): only PascalCase TOP-LEVEL FUNCTION symbols
+    // instantiate — never methods and never unresolved stdlib/external leaves.
+    // `flag.String(...)` at package scope must NOT emit instantiates->String
+    // even when a same-named method `func (f T) String()` exists in-file
+    // (measured as 2 UNEXPLAINED on go-tools beyond the 60-file floor).
+    const ctorFns = new Set<string>()
     for (const s of symbols) {
       if (s.kind === ASTEngine.SymbolKind.Function || s.kind === ASTEngine.SymbolKind.Method) {
         declared.add(s.name)
+      }
+      if (s.kind === ASTEngine.SymbolKind.Function && !s.ownerName) {
+        ctorFns.add(s.name)
       }
     }
     const stack: Node[] = [rootNode]
@@ -1461,19 +1471,36 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       // Do not descend into function/method bodies — already handled by
       // findGoFunctionCalls on the function/method symbols.
       if (node.type === "function_declaration" || node.type === "method_declaration") continue
-      // A call inside another call's argument that is itself inside a function
-      // body is excluded because we skip function/method bodies entirely, but a
-      // package-scope call_expression is captured on the way down. Func-literal
-      // bodies inside package-scope calls (`var f = func(){ foo() }`) contain
-      // their own calls; descending would over-emit, so stop at func_literal
-      // bodies too (their calls are local closures, not static top-level calls).
-      if (node.type === "func_literal") continue
+      // Deep-review alignment 2026-08-29 (go family final pass): a
+      // package-scope IMMEDIATELY-invoked func literal (`var x = func(){...}()`,
+      // where the func_literal's parent is a call_expression) RUNS at package
+      // init, so its qualified stdlib calls ARE real top-level calls and MUST
+      // be emitted (they were silently dropped before — measured 12 MISSING on
+      // go-tools beyond the 60-file floor; `var cwd = func(){ os.Getwd() }()`
+      // lost Getwd/Fatalf). A STORED closure (`var h = func(){...}` whose
+      // parent is NOT a call_expression) is a template that is not statically
+      // executed at init — descending it would over-emit, so it is skipped
+      // (children pushed only for immediately-invoked bodies).
+      if (node.type === "func_literal" && node.parent?.type !== "call_expression") continue
       if (node.type === "call_expression") {
         const fn = node.childForFieldName("function")
         if (fn) {
           const leaf = this.resolveGoCallLeaf(fn)
-          // Skip func-literal callees (`func(){...}()` at package scope).
-          if (!leaf || fn.type === "func_literal") continue
+          // func-literal callee = an IMMEDIATELY-invoked package closure
+          // (`var x = func(){...}()`), which RUNS at package init. No call
+          // edge to the anonymous func itself, but DESCEND its body so real
+          // qualified calls inside it (`os.Getwd`) are emitted (deep-review
+          // go family final pass 2026-08-29 — previously dropped, measured
+          // 12 MISSING on go-tools beyond the 60-file floor). Stored,
+          // non-invoked closures are skipped by the func_literal guard above.
+          if (fn.type === "func_literal") {
+            for (let i = fn.namedChildCount - 1; i >= 0; i--) {
+              const fc = fn.namedChild(i)
+              if (fc) stack.push(fc)
+            }
+            continue
+          }
+          if (!leaf) continue
           const qualified = fn.type === "selector_expression"
           const isCtor = leaf[0] === leaf[0].toUpperCase() && leaf[0] !== leaf[0].toLowerCase()
           const emit = !this.isGoBuiltin(leaf) && (qualified || declared.has(leaf) || (isCtor && declared.has(leaf)))
@@ -1491,7 +1518,11 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
               },
             })
           }
-          if (isCtor && declared.has(leaf) && !emitted.has("inst:" + leaf)) {
+          // Instantiates contract (family): ONLY PascalCase top-level
+          // FUNCTION symbols — flag.String(...) must not instantiate->String
+          // when a method String() exists (deep-review 2026-08-29, go-tools
+          // @200 measured 2 UNEXPLAINED). ctorFns = top-level functions only.
+          if (isCtor && ctorFns.has(leaf) && !emitted.has("inst:" + leaf)) {
             emitted.add("inst:" + leaf)
             relationships.push({
               source: "global",
