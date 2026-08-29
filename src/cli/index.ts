@@ -60,8 +60,11 @@ function formatETA(s: { processedFiles: number; totalFiles: number; elapsedSecon
   return `${Math.floor(remaining / 3600)}h${Math.floor((remaining % 3600) / 60)}m`
 }
 
-async function cmdIndex(dir: string, opts: { force?: boolean }) {
-  const abs = requireDir(dir)
+async function cmdIndex(dir: string | undefined, opts: { force?: boolean }) {
+  // M22.C1: default `<dir>` to the current directory like every other command
+  // (search/health/mcp all fall back to process.cwd()); `cd proj && bb index`
+  // must index the project you are standing in.
+  const abs = dir ? requireDir(dir) : process.cwd()
   const pid = getProjectId(abs)
   if (opts.force) {
     // In-place wipe (never delete the DB file): deleting + recreating the file
@@ -189,10 +192,10 @@ export async function runCli(argv: string[]): Promise<void> {
 
   program
     .command("index")
-    .description("index a project")
-    .argument("<dir>", "project directory")
+    .description("index a project (default: current directory)")
+    .argument("[dir]", "project directory (default: current directory)")
     .option("--force", "wipe the existing index and rebuild")
-    .action(async (dir: string, opts: any) => {
+    .action(async (dir: string | undefined, opts: any) => {
       await cmdIndex(dir, opts)
     })
 
