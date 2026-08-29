@@ -2657,6 +2657,7 @@ export async function indexProjectParallel(
       await BrainDatabase.updateIndexStatus(projectId, {
         lastIndexed: Date.now(),
         filesIndexed: stats.totalFiles,
+        filesParsed: 0, // noop: nothing parsed this run
         symbolsIndexed: stats.symbolsExtracted,
         status: "complete",
         errors: [],
@@ -3014,6 +3015,7 @@ export async function indexProjectParallel(
     await BrainDatabase.updateIndexStatus(projectId, {
       lastIndexed: Date.now(),
       filesIndexed: stats.successFiles + stats.skippedFiles,
+      filesParsed: stats.successFiles,
       symbolsIndexed: stats.symbolsExtracted,
       status: stats.errorFiles > 0 ? "partial" : "complete",
       errors: stats.structuredErrors,
