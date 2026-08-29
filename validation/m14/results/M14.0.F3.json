@@ -83,11 +83,17 @@
       "detail": "1/1 fixtures pass",
       "id": "fixtures-zig",
       "status": "pass"
+    },
+    {
+      "description": "csharp adversarial fixtures",
+      "detail": "1/1 fixtures pass",
+      "id": "fixtures-csharp",
+      "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "d2a4f5f22e00642a0606b4d338f2ec20c3470b79",
-  "committedAt": "2026-08-29T06:13:09+02:00",
+  "commit": "d0227ce27866d2159118758ef8079463945b515c",
+  "committedAt": "2026-08-29T06:48:06+02:00",
   "data": {
     "details": [
       {
@@ -1449,6 +1455,11 @@
         "fixture": "zig/calls-uses-complexity",
         "ok": true,
         "problems": []
+      },
+      {
+        "fixture": "csharp/payload-and-complexity",
+        "ok": true,
+        "problems": []
       }
     ],
     "summary": {
@@ -1459,6 +1470,10 @@
       "cpp": {
         "fail": 0,
         "pass": 5
+      },
+      "csharp": {
+        "fail": 0,
+        "pass": 1
       },
       "go": {
         "fail": 0,

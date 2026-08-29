@@ -144,6 +144,22 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     },
     title: "zig systems wave (#262)",
   },
+  csharp: {
+    id: "csharp",
+    wasm: "tree-sitter-c_sharp.wasm",
+    classification: "csharp-completeness.json",
+    fixturesDir: "validation/m14/fixtures/csharp",
+    docs: ["docs/analyzers/real-csharp-analyzer.md"],
+    differentialCheck: "differential-csharp",
+    perfKey: "csharp:csharp",
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "imports"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "csharp/payload-and-complexity" },
+      parameters: { key: "expectParameters", pin: "csharp/payload-and-complexity" },
+      visibility: { key: "expectVisibility", pin: "csharp/payload-and-complexity" },
+    },
+    title: "csharp managed-OO wave (#264)",
+  },
   java: {
     id: "java",
     wasm: "tree-sitter-java.wasm",
@@ -295,6 +311,11 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
 }
 
 // Languages that have reached CONFORMANT and therefore run in npm run verify.
+// csharp is NOT yet gated: its csharp:csharp differential floor must reach
+// 0 missing / 0 unexplained for completeness sections E/F (the F5 improvement
+// gate may never grow, and cross-file interface-kind + target-typed new() tails
+// are still being chased — csharp #264 wave in progress). It stays runnable via
+// --lang csharp / --repo powershell while the wave finishes.
 const GATED_LANGS = ["java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp", "rust", "go", "zig"]
 
 async function loadNamedNodeTypes(cfg: LangConfig): Promise<string[]> {
