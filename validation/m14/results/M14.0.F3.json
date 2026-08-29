@@ -77,11 +77,17 @@
       "detail": "3/3 fixtures pass",
       "id": "fixtures-go",
       "status": "pass"
+    },
+    {
+      "description": "zig adversarial fixtures",
+      "detail": "1/1 fixtures pass",
+      "id": "fixtures-zig",
+      "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "a606fa84423ec3959ba534a9f756538b9328f54f",
-  "committedAt": "2026-08-29T01:47:23+02:00",
+  "commit": "e27733044c8e0855f1d77774affb7fa349e3c321",
+  "committedAt": "2026-08-29T01:49:51+02:00",
   "data": {
     "details": [
       {
@@ -1438,6 +1444,11 @@
         "fixture": "go/type-usage-graph",
         "ok": true,
         "problems": []
+      },
+      {
+        "fixture": "zig/calls-uses-complexity",
+        "ok": true,
+        "problems": []
       }
     ],
     "summary": {
@@ -1492,6 +1503,10 @@
       "vue": {
         "fail": 0,
         "pass": 14
+      },
+      "zig": {
+        "fail": 0,
+        "pass": 1
       }
     }
   },
