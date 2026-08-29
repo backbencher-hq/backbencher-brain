@@ -38,6 +38,7 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   go: { wasm: "tree-sitter-go.wasm", analyzerFile: "real-go-analyzer", className: "RealGoAnalyzer", ext: "go" },
   zig: { wasm: "tree-sitter-zig.wasm", analyzerFile: "real-zig-analyzer", className: "RealZigAnalyzer", ext: "zig" },
   csharp: { wasm: "tree-sitter-c_sharp.wasm", analyzerFile: "real-csharp-analyzer", className: "RealCSharpAnalyzer", ext: "cs" },
+  dart: { wasm: "tree-sitter-dart.wasm", analyzerFile: "real-dart-analyzer", className: "RealDartAnalyzer", ext: "dart" },
 }
 
 interface Entry { [k: string]: any }
@@ -188,8 +189,12 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
       }
     }
     for (const want of exp.expectParameters ?? []) {
-      const sym = symbols.find((s: any) => s.name === want.symbol)
-      if (!sym) { problems.push(`expectParameters: symbol ${want.symbol} not found`); continue }
+      // ownerName-aware lookup (mirrors expectSymbols): overloaded names like
+      // dart's multiple `constructor` symbols need the owning class to disambiguate.
+      const sym = symbols.find((s: any) =>
+        s.name === want.symbol &&
+        (want.ownerName === undefined || s.ownerName === want.ownerName))
+      if (!sym) { problems.push(`expectParameters: symbol ${want.symbol}${want.ownerName ? " in " + want.ownerName : ""} not found`); continue }
       const actual: Entry[] = sym?.parameters ?? []
       for (const wp of want.parameters ?? []) {
         const hit = actual.some((p: any) => {

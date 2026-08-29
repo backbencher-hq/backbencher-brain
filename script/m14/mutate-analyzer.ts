@@ -1042,6 +1042,27 @@ const MUTANTS: Mutant[] = [
     description: "drops csharp implements edges (Shape->IShape) — #264 section B implements pin",
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "implements") }),
   },
+  {
+    id: "dart/drop-implements-edge",
+    language: "dart",
+    defectClass: "relationship-loss",
+    description: "drops dart implements edges (OrderRepositoryImpl->OrderRepository) — dart section B implements pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "implements") }),
+  },
+  {
+    id: "dart/drop-mixin-uses-edge",
+    language: "dart",
+    defectClass: "relationship-loss",
+    description: "drops dart mixin uses edges (with RepositoryLogger) — dart section B uses pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).isMixin && x.type === "uses")) }),
+  },
+  {
+    id: "dart/drop-constructor-instantiates",
+    language: "dart",
+    defectClass: "relationship-loss",
+    description: "drops dart constructor-invocation instantiates edges (OrderLoading etc.) — dart section B instantiates pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "instantiates") }),
+  },
 ]
 
 async function realAnalyzer(lang: string): Promise<any> {

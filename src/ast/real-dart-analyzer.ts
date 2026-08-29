@@ -339,10 +339,14 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
 
         case "initialized_identifier_list":
-        case "initialized_variable_declaration":
         case "static_final_declaration_list": {
+          // Top-level variables: the tree-sitter-dart root is `program` (there
+          // is no compilation_unit/library_definition wrapper — a library
+          // directive is a `library_name` child). Final/const top-level vars
+          // live in static_final_declaration_list; var/inferred ones in
+          // initialized_identifier_list.
           const parent = node.parent
-          if (parent && (parent.type === "program" || parent.type === "compilation_unit" || parent.type === "library_definition")) {
+          if (parent && parent.type === "program") {
             this.processTopLevelVariables(node, symbols, scopeStack)
           }
           break
@@ -369,6 +373,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.addContainmentRelationships(symbols, relationships)
     this.extractOverrideRelationships(symbols, relationships, context?.overrideCompanion)
     this.extractCallRelationships(rootNode, relationships, moduleName)
+    this.classifyEvidenceTier(relationships)
 
     // --- Metadata ------------------------------------------------------------
     const architecturalScore = Math.min(100, Math.max(0, 100 - errors.length * 5))
@@ -571,10 +576,8 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     scopeStack: DartScopeEntry[],
   ): void {
     const declList = this.findChildByType(node, "initialized_identifier_list") ||
-      this.findChildByType(node, "initialized_variable_declaration") ||
       this.findChildByType(node, "static_final_declaration_list") ||
-      (node.type === "initialized_identifier_list" || node.type === "initialized_variable_declaration" ||
-        node.type === "static_final_declaration_list"
+      (node.type === "initialized_identifier_list" || node.type === "static_final_declaration_list"
         ? node
         : undefined)
     if (!declList) return
@@ -757,7 +760,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: `${base}.${s.name}`,
           type: ASTEngine.RelationshipType.Overrides,
           confidence: 0.95,
-          metadata: {},
+          metadata: { isOverride: true, relationshipType: "method_override" },
         })
       }
     }
@@ -770,8 +773,13 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
   ): void {
     // Current call source = enclosing function/method/constructor leaf name.
     const resolveCurrent = (n: Node, current: string | null): string | null => {
-      if (n.type === "function_declaration") {
-        const nm = n.childForFieldName("name")?.text
+      // Local functions: `local_function_declaration` wraps a lambda_expression
+      // whose function_signature carries the name. Top-level functions are
+      // bare function_signature + sibling function_body (handled below).
+      if (n.type === "local_function_declaration") {
+        const inner = this.findChildByType(n, "function_signature") || this.findChildByType(n, "lambda_expression")
+        const sig = inner ? this.findChildByType(inner, "function_signature") ?? inner : n
+        const nm = sig.childForFieldName("name")?.text
         if (nm) return nm
       }
       // Only signature-bearing nodes change the call context. `declaration`
@@ -818,8 +826,12 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       const callSource = current || moduleName
 
-      // Constructor invocation: `List<int>.filled(3, 0)` → instantiates List
-      if (t === "constructor_invocation") {
+      // Constructor invocation: `List<int>.filled(3, 0)` → instantiates List.
+      // `new Foo()` parses as new_expression and `const Foo()` as
+      // const_object_expression — both are explicit constructor invocations
+      // with a type_identifier child and construction args (the dart wave
+      // differential oracle surfaced them as MISSING before this branch).
+      if (t === "constructor_invocation" || t === "new_expression" || t === "const_object_expression") {
         const typeNode = this.findChildByType(n, "type_identifier")
         if (typeNode && isCapitalized(typeNode.text)) {
           relationships.push({
@@ -915,7 +927,6 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         })
       }
     }
-
     // interfaces: `implements A, B<C>`
     const interfaces = this.findChildByType(node, "interfaces")
     if (interfaces) {
@@ -925,7 +936,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: ti.text,
           type: ASTEngine.RelationshipType.Implements,
           confidence: 1.0,
-          metadata: {},
+          metadata: { isImplements: true },
         })
       }
     }
@@ -948,6 +959,36 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   // ============================================================================
+  // EVIDENCE TIERS
+  // ============================================================================
+
+  /**
+   * Evidence-tier classification (family contract — mirrors csharp/java/rust;
+   * M14 section D requires >=2 distinct evidenceClass values). Same rules as
+   * the managed-OO family: structural (grammar clauses, conf 1.0) |
+   * usage_contextual (calls, mixin uses) | import_based (import/export/part
+   * directives) | inferred (confidence < 1 edges).
+   */
+  private classifyEvidenceTier(relationships: ASTEngine.UniversalRelationship[]): void {
+    for (const r of relationships) {
+      const type = r.type ?? r.relationshipType ?? ""
+      const md: any = r.metadata ?? {}
+      if (type === "contains") { md.evidenceClass = "structural"; continue }
+      if (type === "imports" || type === "exports") { md.evidenceClass = "import_based"; continue }
+      if (type === "calls" || type === "uses") {
+        md.evidenceClass = (r.confidence ?? 0) >= 0.85 ? "usage_contextual" : "inferred"
+        continue
+      }
+      if (type === "instantiates" || type === "extends" || type === "implements") {
+        md.evidenceClass = (r.confidence ?? 0) >= 0.9 ? "structural" : "inferred"
+        continue
+      }
+      if (type === "overrides") { md.evidenceClass = "structural"; continue }
+      md.evidenceClass = "usage_contextual"
+    }
+  }
+
+  // ============================================================================
   // HELPERS
   // ============================================================================
 
@@ -965,14 +1006,14 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     // identifier/type_identifier (no assignable selector chain).
     const prev = selector.previousNamedSibling
     if (!prev) return false
-    return prev.type === "identifier" || prev.type === "type_identifier" || prev.type === "simple_identifier"
+    return prev.type === "identifier" || prev.type === "type_identifier"
   }
 
   private resolveSelectorCallee(selector: Node): string | null {
     const prev = selector.previousNamedSibling
     if (!prev) return null
     if (prev.type === "unconditional_assignable_selector" || prev.type === "conditional_assignable_selector" ||
-        prev.type === "assignable_selector" || prev.type === "selector") {
+        prev.type === "selector") {
       // obj.method(...) / Future.delayed(...) / super.toString()
       const inner = this.findChildByType(prev, "identifier")
       if (inner) return inner.text
@@ -980,7 +1021,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       const chain = this.lastIdentifier(prev)
       return chain
     }
-    if (prev.type === "identifier" || prev.type === "type_identifier" || prev.type === "simple_identifier") {
+    if (prev.type === "identifier" || prev.type === "type_identifier") {
       return prev.text
     }
     return null
@@ -1094,8 +1135,12 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       const c = node.child(i)
       if (c && (c.type === modifier || c.text === modifier)) return true
     }
-    // modifiers may live on the parent declaration wrapper
-    if (node.parent) {
+    // Modifiers may live on the parent `declaration` wrapper (class fields:
+    // `declaration > static_final_declaration_list` carries static/final
+    // tokens on the declaration). ONLY scan a declaration wrapper — scanning
+    // an arbitrary parent like class_body (thousands of sibling members)
+    // made per-member modifier checks O(class)² on large files.
+    if (node.parent && node.parent.type === "declaration") {
       for (let i = 0; i < node.parent.childCount; i++) {
         const c = node.parent.child(i)
         if (c && (c.type === modifier || c.text === modifier)) return true
@@ -1112,18 +1157,25 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     while (stack.length > 0) {
       const n = stack.pop()!
       if (
-        n.type === "formal_parameter" || n.type === "optional_formal_parameter" ||
-        n.type === "named_formal_parameter" || n.type === "default_formal_parameter" ||
-        n.type === "constructor_param" || n.type === "typed_identifier"
+        n.type === "formal_parameter" || n.type === "constructor_param" || n.type === "typed_identifier"
       ) {
         const nameNode = n.childForFieldName("name") || this.findChildByType(n, "identifier")
         if (nameNode && nameNode.text !== "this" && nameNode.text !== "super") {
           const typeNode = n.childForFieldName("type") ||
             (n.type === "typed_identifier" ? this.firstTypeIdentifier(n, false) : undefined)
-          const isNamed =
-            n.type === "named_formal_parameter" || n.type === "default_formal_parameter" ||
-            n.parent?.type === "named_formal_parameters"
-          const isOptional = n.type === "optional_formal_parameter" || n.type === "default_formal_parameter"
+          // Named vs positional-optional: the grammar wraps BOTH `{...}` and
+          // `[...]` parameter groups in optional_formal_parameters — the
+          // distinction is the container's opening bracket (`{` = named,
+          // `[` = positional). `this.id` / `super.key` constructor params sit
+          // under a formal_parameter wrapper, so walk ancestors to find the
+          // group. Default values are sibling literals.
+          let group: Node | undefined
+          let p: Node | null = n.parent
+          while (p && p.type !== "optional_formal_parameters") p = p.parent
+          if (p && p.type === "optional_formal_parameters") group = p
+          const isNamed = group ? group.text.startsWith("{") : false
+          const isOptional = group !== undefined
+          const hasDefault = n.text.includes("=")
           const already = out.some((p) => p.name === nameNode.text)
           if (!already) out.push({ name: nameNode.text, type: typeNode?.text ?? "dynamic", isOptional, isNamed })
         }
@@ -1147,7 +1199,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       const c = node.namedChild(i)
       if (!c) continue
       if (c === nameNode) break
-      if (c.type === "type_identifier" || c.type === "builtin_type" || c.type === "generic_type") return c.text
+      if (c.type === "type_identifier" || c.type === "void_type") return c.text
     }
     return undefined
   }
@@ -1158,8 +1210,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       for (let i = 0; i < cand.namedChildCount; i++) {
         const c = cand.namedChild(i)
         if (!c) continue
-        if (c.type === "type_identifier" || c.type === "builtin_type" || c.type === "generic_type" ||
-            c.type === "void_type") {
+        if (c.type === "type_identifier" || c.type === "void_type") {
           return c.text
         }
       }
@@ -1168,7 +1219,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       for (let i = 0; i < node.parent.namedChildCount; i++) {
         const c = node.parent.namedChild(i)
         if (!c) continue
-        if (c.type === "type_identifier" || c.type === "builtin_type" || c.type === "generic_type") return c.text
+        if (c.type === "type_identifier" || c.type === "void_type") return c.text
       }
     }
     return undefined
@@ -1192,8 +1243,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
       if (!c || c.type === "extension_body" || c.type === "identifier") continue
-      if (c.type === "type_identifier" || c.type === "builtin_type" || c.type === "generic_type" ||
-          c.type === "void_type") {
+      if (c.type === "type_identifier" || c.type === "void_type") {
         if (c.text === name) continue
         return c.text
       }
@@ -1207,7 +1257,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     let prev: Node | null = node.previousNamedSibling
     let guard = 0
     while (prev && guard++ < 8) {
-      if (prev.type === "annotation" || prev.type === "marker_annotation") {
+      if (prev.type === "annotation") {
         annotations.unshift(prev.text)
         prev = prev.previousNamedSibling
       } else {
@@ -1227,7 +1277,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (sibling.type === "comment" || sibling.type === "documentation_comment") {
         comments.unshift(stripCommentMarkers(sibling.text))
         sibling = sibling.previousSibling
-      } else if (sibling.type === "annotation" || sibling.type === "marker_annotation") {
+      } else if (sibling.type === "annotation") {
         sibling = sibling.previousSibling
       } else {
         break
@@ -1247,8 +1297,23 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private methodComplexity(node: Node): number {
     let c = 1
+    // The method BODY is a sibling of the signature node (tree-sitter-dart:
+    // `method_signature`/`function_signature` then a following `function_body`
+    // or `function_expression_body` inside class_body/program), so walk both
+    // the node and its next named sibling(s) — otherwise per-method
+    // cyclomatic complexity never counts branches inside the body.
     const stack: Node[] = [node]
+    let sib: Node | null = node.nextNamedSibling
     let guard = 0
+    while (sib && guard++ < 8) {
+      if (sib.type === "function_body" || sib.type === "block" || sib.type === "function_expression_body") {
+        stack.push(sib)
+        break
+      }
+      if (sib.type === "class_body" || sib.type === "extension_body" || sib.type === "}" || sib.type === "declaration" || sib.type === "method_signature" || sib.type === "function_signature") break
+      sib = sib.nextNamedSibling
+    }
+    guard = 0
     while (stack.length > 0 && guard++ < 200000) {
       const n = stack.pop()!
       if (
@@ -1271,9 +1336,8 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       const c = node.namedChild(i)
       if (!c) continue
       if (excludeMixins && c.type === "mixins") continue
-      if (c.type === "type_identifier" || c.type === "generic_type" || c.type === "builtin_type") {
-        const ti = this.findChildByType(c, "type_identifier") || c
-        return ti
+      if (c.type === "type_identifier") {
+        return c
       }
       if (c.type === "identifier") return c
     }

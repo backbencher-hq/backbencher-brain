@@ -1035,11 +1035,85 @@
       "id": "section-h-cross-language",
       "language": "csharp",
       "status": "pass"
+    },
+    {
+      "description": "dart: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "dart",
+      "status": "pass"
+    },
+    {
+      "description": "dart: 6 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "dart",
+      "status": "pass"
+    },
+    {
+      "description": "dart: 5 ruled, 0 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "dart",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (dart)",
+      "detail": "222 types, 87 handled, 106 silent, 6 gaps, 5 decisions",
+      "id": "section-a-structural",
+      "language": "dart",
+      "status": "pass"
+    },
+    {
+      "description": "8 relationship kinds pinned by dart fixtures",
+      "detail": "pinned: calls, contains, extends, implements, imports, instantiates, overrides, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "dart",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for dart (3)",
+      "detail": "complexity, parameters, visibility",
+      "id": "section-c-payload-matrix",
+      "language": "dart",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
+      "id": "section-d-evidence-tiers",
+      "language": "dart",
+      "status": "pass"
+    },
+    {
+      "description": "proxicall:dart at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor proxicall:dart: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "dart",
+      "status": "pass"
+    },
+    {
+      "description": "dart avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "proxicall:dart 106.6 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "dart",
+      "status": "pass"
+    },
+    {
+      "description": "dart analyzer docs present and committed",
+      "detail": "docs/analyzers/real-dart-analyzer.md",
+      "id": "section-g-docs",
+      "language": "dart",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "6 checks pass",
+      "id": "section-h-cross-language",
+      "language": "dart",
+      "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "8820b07c83f08a4273893c5018a0913f70a4b0b8",
-  "committedAt": "2026-08-29T07:44:19+02:00",
+  "commit": "d84e0fb10c9982327de865afb090c7620ac47a48",
+  "committedAt": "2026-08-29T18:31:31+02:00",
   "data": {
     "languages": {
       "c": {
@@ -1164,6 +1238,59 @@
           },
           "section-g-docs": {
             "detail": "docs/analyzers/real-csharp-analyzer.md",
+            "status": "pass"
+          },
+          "section-h-cross-language": {
+            "detail": "6 checks pass",
+            "status": "pass"
+          }
+        }
+      },
+      "dart": {
+        "gaps": [
+          "undefined: record type/literal symbols and typed fields",
+          "undefined: destructuring pattern variables as symbols",
+          "undefined: Dart 3 extension type symbols",
+          "undefined: switch-expression complexity contribution",
+          "undefined: library directive name symbol",
+          "undefined: constructor tear-off as distinct symbol"
+        ],
+        "nodeTypeCount": 222,
+        "pendingDecisions": [],
+        "ruledDecisions": [
+          "DARTD1",
+          "DARTD2",
+          "DARTD3",
+          "DARTD4",
+          "DARTD5"
+        ],
+        "sections": {
+          "section-a-structural": {
+            "detail": "222 types, 87 handled, 106 silent, 6 gaps, 5 decisions",
+            "status": "pass"
+          },
+          "section-b-relationship-kinds": {
+            "detail": "pinned: calls, contains, extends, implements, imports, instantiates, overrides, uses",
+            "status": "pass"
+          },
+          "section-c-payload-matrix": {
+            "detail": "complexity, parameters, visibility",
+            "status": "pass"
+          },
+          "section-d-evidence-tiers": {
+            "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
+            "status": "pass"
+          },
+          "section-e-differential": {
+            "detail": "floor proxicall:dart: missing=0, unexplained=0 (differential-baseline.json)",
+            "status": "pass"
+          },
+          "section-f-perf-budget": {
+            "detail": "proxicall:dart 106.6 ms/file",
+            "status": "pass"
+          },
+          "section-g-docs": {
+            "detail": "docs/analyzers/real-dart-analyzer.md",
             "status": "pass"
           },
           "section-h-cross-language": {

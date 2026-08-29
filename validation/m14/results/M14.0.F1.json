@@ -13,14 +13,14 @@
       "status": "pass"
     },
     {
-      "description": "regression gate vs grammar-audit-baseline.json (28/41 languages pass)",
+      "description": "regression gate vs grammar-audit-baseline.json (29/41 languages pass)",
       "id": "baseline-gate",
       "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "40847f43206ed48299a326be5c63cfdba5f40764",
-  "committedAt": "2026-08-29T07:55:13+02:00",
+  "commit": "d84e0fb10c9982327de865afb090c7620ac47a48",
+  "committedAt": "2026-08-29T18:31:31+02:00",
   "data": {
     "languages": {
       "bash": {
@@ -190,151 +190,10 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 517,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 67,
-        "status": "fail",
+        "referencedTypeLiterals": 59,
+        "status": "pass",
         "unknownFields": [],
-        "unknownNodeTypes": [
-          {
-            "context": "real-dart-analyzer.ts:comparison",
-            "line": 345,
-            "literal": "compilation_unit"
-          },
-          {
-            "context": "real-dart-analyzer.ts:comparison",
-            "line": 345,
-            "literal": "library_definition"
-          },
-          {
-            "context": "real-dart-analyzer.ts:findChildByType",
-            "line": 574,
-            "literal": "initialized_variable_declaration"
-          },
-          {
-            "context": "real-dart-analyzer.ts:comparison",
-            "line": 576,
-            "literal": "initialized_variable_declaration"
-          },
-          {
-            "context": "real-dart-analyzer.ts:comparison",
-            "line": 773,
-            "literal": "function_declaration"
-          },
-          {
-            "context": "real-dart-analyzer.ts:comparison",
-            "line": 968,
-            "literal": "simple_identifier"
-          },
-          {
-            "context": "real-dart-analyzer.ts:comparison",
-            "line": 983,
-            "literal": "simple_identifier"
-          },
-          {
-            "context": "real-dart-analyzer.ts:comparison",
-            "line": 975,
-            "literal": "assignable_selector"
-          },
-          {
-            "context": "real-dart-analyzer.ts:comparison",
-            "line": 1115,
-            "literal": "optional_formal_parameter"
-          },
-          {
-            "context": "real-dart-analyzer.ts:comparison",
-            "line": 1126,
-            "literal": "optional_formal_parameter"
-          },
-          {
-            "context": "real-dart-analyzer.ts:comparison",
-            "line": 1116,
-            "literal": "named_formal_parameter"
-          },
-          {
-            "context": "real-dart-analyzer.ts:comparison",
-            "line": 1124,
-            "literal": "named_formal_parameter"
-          },
-          {
-            "context": "real-dart-analyzer.ts:comparison",
-            "line": 1116,
-            "literal": "default_formal_parameter"
-          },
-          {
-            "context": "real-dart-analyzer.ts:comparison",
-            "line": 1124,
-            "literal": "default_formal_parameter"
-          },
-          {
-            "context": "real-dart-analyzer.ts:comparison",
-            "line": 1126,
-            "literal": "default_formal_parameter"
-          },
-          {
-            "context": "real-dart-analyzer.ts:comparison",
-            "line": 1125,
-            "literal": "named_formal_parameters"
-          },
-          {
-            "context": "real-dart-analyzer.ts:comparison",
-            "line": 1150,
-            "literal": "builtin_type"
-          },
-          {
-            "context": "real-dart-analyzer.ts:comparison",
-            "line": 1161,
-            "literal": "builtin_type"
-          },
-          {
-            "context": "real-dart-analyzer.ts:comparison",
-            "line": 1171,
-            "literal": "builtin_type"
-          },
-          {
-            "context": "real-dart-analyzer.ts:comparison",
-            "line": 1195,
-            "literal": "builtin_type"
-          },
-          {
-            "context": "real-dart-analyzer.ts:comparison",
-            "line": 1274,
-            "literal": "builtin_type"
-          },
-          {
-            "context": "real-dart-analyzer.ts:comparison",
-            "line": 1150,
-            "literal": "generic_type"
-          },
-          {
-            "context": "real-dart-analyzer.ts:comparison",
-            "line": 1161,
-            "literal": "generic_type"
-          },
-          {
-            "context": "real-dart-analyzer.ts:comparison",
-            "line": 1171,
-            "literal": "generic_type"
-          },
-          {
-            "context": "real-dart-analyzer.ts:comparison",
-            "line": 1195,
-            "literal": "generic_type"
-          },
-          {
-            "context": "real-dart-analyzer.ts:comparison",
-            "line": 1274,
-            "literal": "generic_type"
-          },
-          {
-            "context": "real-dart-analyzer.ts:comparison",
-            "line": 1210,
-            "literal": "marker_annotation"
-          },
-          {
-            "context": "real-dart-analyzer.ts:comparison",
-            "line": 1230,
-            "literal": "marker_annotation"
-          }
-        ],
+        "unknownNodeTypes": [],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-dart.wasm"
@@ -1436,10 +1295,10 @@
       }
     },
     "summary": {
-      "fail": 13,
+      "fail": 12,
       "languagesAudited": 41,
-      "pass": 28,
-      "totalUnknownReferences": 121
+      "pass": 29,
+      "totalUnknownReferences": 93
     }
   },
   "governance": "docs/M14-HONESTY-CONTRACT.md",

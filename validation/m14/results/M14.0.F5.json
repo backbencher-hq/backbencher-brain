@@ -83,14 +83,21 @@
       "detail": "60 files, coverage 100%, unexplained 0%",
       "id": "differential-csharp",
       "status": "pass"
+    },
+    {
+      "description": "proxicall: tree-truth vs analyzer diff @490d8bcbd8",
+      "detail": "60 files, coverage 100%, unexplained 0%",
+      "id": "differential-dart",
+      "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "8820b07c83f08a4273893c5018a0913f70a4b0b8",
-  "committedAt": "2026-08-29T07:44:19+02:00",
+  "commit": "d84e0fb10c9982327de865afb090c7620ac47a48",
+  "committedAt": "2026-08-29T22:51:30+02:00",
   "data": {
     "corpusPins": {
-      "powershell": "91ce9844e2a70e7184a8fcb26848f019eac151b4"
+      "powershell": "91ce9844e2a70e7184a8fcb26848f019eac151b4",
+      "proxicall": "490d8bcbd8f109d6511c62c43365322e1fc4718d"
     },
     "report": {
       "c": {
@@ -343,6 +350,24 @@
         },
         "samples": [],
         "treeTruthEdges": 0,
+        "unexplainedInAnalyzer": 0
+      },
+      "dart": {
+        "analyzerEdges": 1470,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 1620,
+        "explainableByTree": 1470,
+        "fabricationPct": 0,
+        "filesSampled": 60,
+        "heuristicUnexplained": 0,
+        "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": 106.6,
+          "maxMsPerFile": 2187.8,
+          "samplesTimed": 60
+        },
+        "samples": [],
+        "treeTruthEdges": 1620,
         "unexplainedInAnalyzer": 0
       }
     },
