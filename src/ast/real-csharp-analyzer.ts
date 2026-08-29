@@ -129,9 +129,13 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       ])
       if (complexityNodes.has(type)) cyclomaticComplexity++
 
-      if (type === "using_directive" || type === "using_static_directive") {
+      // tree-sitter-c_sharp has no `using_static_directive` node type — `using
+      // static X.Y` parses as a `using_directive` with a `name_modifier`/modifier
+      // child (deep-review csharp #264). The old `using_static_directive` literal
+      // was a dead branch (grammar drift) and is removed.
+      if (type === "using_directive") {
         const nameNode =
-          this.findChild(node, (n) => n.type === "identifier" || n.type === "qualified_name" || n.type === "name")
+          this.findChild(node, (n) => n.type === "identifier" || n.type === "qualified_name")
         if (nameNode) {
           const text = nameNode.text
           imports.push({
@@ -146,7 +150,10 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: text,
             type: ASTEngine.RelationshipType.References,
             confidence: 0.9,
-            metadata: { isUsingDirective: true },
+            // isImport (family contract — c/go emit import deps with isImport)
+            // lets the completeness section-B `imports` pin and the tier
+            // classifier mark this import_based.
+            metadata: { isUsingDirective: true, isImport: true },
           })
           const lowerText = text.toLowerCase()
           if (lowerText.startsWith("system.linq")) (this as any)._patterns ? null : null
@@ -516,6 +523,11 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           parameters,
           returnType,
           decorators: this.extractAttributes(node),
+          // Per-symbol cyclomatic complexity (family contract — JVM/rust/go/c
+          // all emit symbol.complexity; csharp only had file-level complexity, so
+          // the completeness section-C payload pin was impossible. Added csharp
+          // #264 wave, same counter as the file-level one).
+          complexity: this.calculateCyclomaticComplexity(node),
           metadata: {
             returnType,
             isExtensionMethod,
@@ -553,7 +565,17 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         pushedScope = true
       } else if (type === "invocation_expression") {
         const callExpr = this.buildCSharpCallExpression(node)
-        if (callExpr && parentContext?.name && parentContext.kind === ASTEngine.SymbolKind.Method) {
+        // Call sites live in method bodies AND constructor/property/indexer
+        // bodies (csharp #264 Station-6: calls inside a constructor like
+        // `this._list.Add(...)` were silently dropped because the guard
+        // required the enclosing symbol to be a Method — the differential
+        // oracle surfaced `Add`/`AddRange`/`DeepClone` as MISSING).
+        const enclosingKind = parentContext?.kind
+        const isCallSite =
+          enclosingKind === ASTEngine.SymbolKind.Method ||
+          enclosingKind === ASTEngine.SymbolKind.Constructor ||
+          enclosingKind === ASTEngine.SymbolKind.Property
+        if (callExpr && parentContext?.name && isCallSite) {
           if (!this.isCSharpBuiltin(callExpr)) {
             relationships.push({
               source: parentContext.rawName,
@@ -628,8 +650,27 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           ownerName: parentContext?.rawName,
           ownerKind: parentContext?.kind,
           decorators: this.extractAttributes(node),
+          complexity: this.calculateCyclomaticComplexity(node),
           metadata: { hasGet, hasSet, hasInit, isAutoProperty, dataType },
         })
+        // Push a property/indexer scope so calls inside a getter/setter/accessor
+        // body attribute to the property (csharp #264 Station-6: setter bodies
+        // like `this.NotifyPropertyChanged(...)` were dropped because the
+        // enclosing context stayed at the class — the differential surfaced
+        // NotifyPropertyChanged/InvalidateValidationResult as MISSING).
+        newContext = {
+          node,
+          name,
+          rawName: name,
+          kind: ASTEngine.SymbolKind.Property,
+          fqn: parentContext ? `${parentContext.fqn}.${name}` : name,
+          visibility,
+          symbolRef: symbols[symbols.length - 1],
+          isInterface: parentContext?.isInterface ?? false,
+          parents: [],
+        }
+        scopeStack.push(newContext)
+        pushedScope = true
       } else if (type === "field_declaration") {
         const dataType = this.extractTypeString(node)
         const varDecl = this.findChild(node, "variable_declaration")
@@ -707,6 +748,14 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // Field-access Uses pass (csharp #264 wave). The M12 contract declares
+    // `uses (field access)` but it was never emitted — a genuine Station-3
+    // gap. Mirrors the go/rust family: member_access_expression on a field
+    // (not in call-callee position) emits `uses containingFn -> field`.
+    this.analyzeFieldAccessUses(rootNode, relationships, symbols)
+
+    this.classifyEvidenceTier(relationships)
+
     return {
       symbols,
       relationships,
@@ -721,6 +770,60 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         analysisVersion: "4.1.0-pure-ast-m12",
       },
     }
+  }
+
+  /**
+   * Evidence-tier classification (family contract — mirrors JVM/rust/zig; M14
+   * section D requires >=2 distinct evidenceClass values). Same rules as the
+   * JVM family: structural (grammar clauses, conf 1.0) | usage_contextual
+   * (calls, field access) | import_based (using-directive dependencies) |
+   * reference_qualified (type references) | inferred (confidence < 1 edges).
+   */
+  private classifyEvidenceTier(relationships: ASTEngine.UniversalRelationship[]): void {
+    for (const r of relationships) {
+      const type = r.type ?? r.relationshipType ?? ""
+      const md: any = r.metadata ?? {}
+      if (type === "contains") { md.evidenceClass = "structural"; continue }
+      if (type === "references") {
+        md.evidenceClass = (md.isUsingDirective || md.isImport) ? "import_based" : "reference_qualified"
+        continue
+      }
+      if (type === "imports") { md.evidenceClass = "import_based"; continue }
+      if (type === "calls" || type === "uses") {
+        md.evidenceClass = r.confidence >= 0.85 ? "usage_contextual" : "inferred"
+        continue
+      }
+      if (type === "instantiates" || type === "extends" || type === "implements") {
+        md.evidenceClass = r.confidence >= 0.9 ? "structural" : "inferred"
+        continue
+      }
+      if (type === "overrides") { md.evidenceClass = "structural"; continue }
+      md.evidenceClass = "usage_contextual"
+    }
+  }
+
+  /**
+   * Per-symbol cyclomatic complexity (family contract — csharp #264 wave).
+   * Same node set as the file-level counter above so per-symbol and
+   * file-level agree; base complexity 1.
+   */
+  private calculateCyclomaticComplexity(node: Node): number {
+    let complexity = 1
+    const complexityNodes = new Set([
+      "if_statement", "for_statement", "foreach_statement", "while_statement",
+      "case_switch_label", "catch_declaration", "conditional_expression",
+      "logical_and_expression", "logical_or_expression",
+    ])
+    const stack = [node]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (complexityNodes.has(n.type)) complexity++
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return complexity
   }
 
   /** Pre-pass: record every type declaration's kind for in-file base-list resolution. */
@@ -817,6 +920,90 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
+  /**
+   * Field-access Uses pass (csharp #264 wave, Station 3). Emits `uses
+   * containingFn -> field` for member_access_expression on a field (e.g.
+   * `this.Name`, `obj.Radius`) that is NOT the callee of a call. Mirror of the
+   * go/rust selector-uses family contract. Call-callee member accesses are
+   * skipped (calls analysis emits the leaf-target calls edge instead).
+   */
+  private analyzeFieldAccessUses(
+    rootNode: Node,
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+  ): void {
+    // Dedup against calls edges (member_access in call-callee position).
+    const emittedCalls = new Set<string>()
+    for (const r of relationships) {
+      if ((r.type || r.relationshipType || "") === ASTEngine.RelationshipType.Calls) {
+        emittedCalls.add(`${r.source}->${r.target}`)
+      }
+    }
+    const stack: Node[] = [rootNode]
+    const seen = new Set<string>()
+    while (stack.length > 0) {
+      const node = stack.pop()!
+      if (node.type === "member_access_expression") {
+        // Skip when the selectoing member_access is the callee of a call
+        // expression (call-callee position).
+        let isCallee = false
+        const parent = node.parent
+        if (parent && parent.type === "invocation_expression") {
+          const fn = parent.childForFieldName("function")
+          if (fn === node) isCallee = true
+        }
+        if (!isCallee) {
+          const field = node.childForFieldName("name")
+          const expr = node.childForFieldName("expression")
+          if (field && expr) {
+            const containing = this.findContainingCSharpFunction(node)
+            const src = containing || "global"
+            const tgt = field.text
+            const key = `${src}.${tgt}`
+            if (!seen.has(key) && !emittedCalls.has(`${src}->${tgt}`)) {
+              seen.add(key)
+              relationships.push({
+                source: src,
+                target: tgt,
+                type: ASTEngine.RelationshipType.Uses,
+                confidence: 0.7,
+                metadata: { relationshipType: "csharp_field_access", fieldAccess: key },
+              })
+            }
+          }
+        }
+      }
+      for (let i = node.namedChildCount - 1; i >= 0; i--) {
+        const child = node.namedChild(i)
+        if (child) stack.push(child)
+      }
+    }
+  }
+
+  /** Find the nearest enclosing method/constructor/property symbol name. */
+  private findContainingCSharpFunction(node: Node): string | null {
+    let cur: Node | null = node.parent
+    while (cur) {
+      if (
+        cur.type === "method_declaration" || cur.type === "constructor_declaration" ||
+        cur.type === "destructor_declaration"
+      ) {
+        const name =
+          cur.childForFieldName("name")?.text ||
+          this.childText(cur, "identifier") ||
+          (cur.type === "constructor_declaration" ? "constructor" : "anonymous")
+        if (cur.type === "constructor_declaration") return "constructor"
+        if (cur.type === "destructor_declaration") return "Finalize"
+        return name
+      }
+      if (cur.type === "property_declaration" || cur.type === "indexer_declaration") {
+        return cur.type === "indexer_declaration" ? "this" : cur.childForFieldName("name")?.text || this.childText(cur, "identifier") || "anonymous"
+      }
+      cur = cur.parent
+    }
+    return null
+  }
+
   private buildCSharpCallExpression(node: Node): string | null {
     const func = node.childForFieldName("function") || this.findChild(node, (n) => n.type === "identifier" || n.type === "generic_name" || n.type === "member_access_expression")
     if (!func) return null
@@ -898,7 +1085,7 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private extractNamespaceName(node: Node): string {
     // file-scoped: `namespace A.B;` → qualified_name; block: `namespace A.B {`
-    const nameNode = this.findChild(node, (n) => n.type === "qualified_name" || n.type === "identifier" || n.type === "name")
+    const nameNode = this.findChild(node, (n) => n.type === "qualified_name" || n.type === "identifier")
     return nameNode ? nameNode.text : "anonymous"
   }
 
@@ -940,7 +1127,7 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       for (let i = 0; i < list.namedChildCount; i++) {
         const attr = list.namedChild(i)
         if (attr && attr.type === "attribute") {
-          const nameNode = this.findChild(attr, (n) => n.type === "identifier" || n.type === "qualified_name" || n.type === "name")
+          const nameNode = this.findChild(attr, (n) => n.type === "identifier" || n.type === "qualified_name")
           if (nameNode) attrs.push(nameNode.text)
         }
       }
