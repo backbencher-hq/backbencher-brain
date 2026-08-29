@@ -58,7 +58,16 @@ function queueRefresh(
   const current = previous.catch(() => undefined).then(async () => {
     const database = await BrainDatabase.getRawInstance(projectId)
     if (force) wipeProjectData(database)
-    return indexProjectParallel(projectId as any, projectPath, logger ? { logger } : {})
+    // M22.D2: a non-force refresh must NOT be as expensive as a first index.
+    // Incremental skips unchanged files (mtime/size) and defers the heavy
+    // post-processing phases (relationship resolution/enrichment/gravity/taint/
+    // health) — an unchanged repo refresh is a near-no-op. A forced refresh
+    // still wipes and does the full run.
+    return indexProjectParallel(projectId as any, projectPath, {
+      isIncremental: !force,
+      skipPostProcessing: !force,
+      ...(logger ? { logger } : {}),
+    })
   })
   refreshQueues.set(projectId, current)
   void current.finally(() => {
