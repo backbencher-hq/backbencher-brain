@@ -121,6 +121,29 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     },
     title: "go systems wave (#262)",
   },
+  zig: {
+    id: "zig",
+    wasm: "tree-sitter-zig.wasm",
+    classification: "zig-completeness.json",
+    fixturesDir: "validation/m14/fixtures/zig",
+    docs: ["docs/analyzers/real-zig-analyzer.md"],
+    differentialCheck: "differential-zig",
+    perfKey: "zig:zig",
+    // Zig emits these relationship kinds by design — no inheritance /
+    // interfaces / overrides (zig-completeness.json ZIG.D.1), and no `exports`
+    // GRAPH edge (pub/export facts live in the exports array + visibility
+    // metadata; an `exports -> <symbol>` edge has no resolvable foreign
+    // boundary target and would be a phantom, exactly the class the family
+    // contract forbids). imports is pinned via the references edge whose
+    // meta.isImport is true (c family standard).
+    requiredKinds: ["calls", "uses", "contains", "references", "imports"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "zig/calls-uses-complexity (symbol complexity)" },
+      parameters: { key: "expectParameters", pin: "zig/calls-uses-complexity (parameters payload)" },
+      visibility: { key: "expectVisibility", pin: "zig/calls-uses-complexity (pub visibility)" },
+    },
+    title: "zig systems wave (#262)",
+  },
   java: {
     id: "java",
     wasm: "tree-sitter-java.wasm",
@@ -272,7 +295,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
 }
 
 // Languages that have reached CONFORMANT and therefore run in npm run verify.
-const GATED_LANGS = ["java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp", "rust", "go"]
+const GATED_LANGS = ["java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp", "rust", "go", "zig"]
 
 async function loadNamedNodeTypes(cfg: LangConfig): Promise<string[]> {
   const wts: any = await import("web-tree-sitter")

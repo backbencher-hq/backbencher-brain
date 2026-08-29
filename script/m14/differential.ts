@@ -35,6 +35,7 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   c: { wasm: "tree-sitter-c.wasm", analyzerFile: "real-c-analyzer", className: "RealCAnalyzer", ext: "c" },
   rust: { wasm: "tree-sitter-rust.wasm", analyzerFile: "real-rust-analyzer", className: "RealRustAnalyzer", ext: "rs" },
   go: { wasm: "tree-sitter-go.wasm", analyzerFile: "real-go-analyzer", className: "RealGoAnalyzer", ext: "go" },
+  zig: { wasm: "tree-sitter-zig.wasm", analyzerFile: "real-zig-analyzer", className: "RealZigAnalyzer", ext: "zig" },
 }
 
 function seededPick<T>(items: T[], n: number, seedStr: string): T[] {
@@ -444,6 +445,57 @@ export function deriveGoImplements(root: any): { label: string; from: string; ta
         seen.add(structName + "->" + iface)
         edges.push({ label: "implements", from: structName, target: iface })
       }
+    }
+  }
+  return edges
+}
+
+// Zig truth: calls (identifier + field_expression-leaf callees) and uses
+// (field access NOT in call-callee position), mirroring the family leaf
+// contract the analyzer implements (zig wave 2026-08-29): a call_expression
+// emits calls -> callee LEAF (helper -> helper, std.debug.print -> print,
+// lst.append -> append); a field_expression that is not a call's direct
+// callee emits uses -> field leaf (list.items.len -> len). Both skip bare
+// numeric/builtin tokens. This mirrors the analyzer's analyzeZigCodeRelationships
+// so the differential can verify it (it previously had NO oracle and the
+// analyzer emitted no calls/uses at all).
+export function deriveZigEdges(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seenCalls = new Set<string>()
+  const seenUses = new Set<string>()
+  const leafOf = (fe: any): string | undefined => {
+    if (!fe) return undefined
+    const last = fe.namedChildCount > 0 ? fe.namedChild(fe.namedChildCount - 1) : null
+    if (last && last.type === "identifier") return last.text
+    return undefined
+  }
+  const stack: any[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()!
+    if (n.type === "call_expression") {
+      const callee = n.namedChildCount > 0 ? n.namedChild(0) : null
+      let leaf: string | undefined
+      if (callee && callee.type === "identifier") leaf = callee.text
+      else if (callee && callee.type === "field_expression") leaf = leafOf(callee)
+      if (leaf && !seenCalls.has("call:" + leaf)) {
+        seenCalls.add("call:" + leaf)
+        edges.push({ label: "calls", from: "(expr)", target: leaf })
+      }
+    }
+    if (n.type === "field_expression") {
+      const parent = (n as any).parent
+      const isCallee = !!parent && parent.type === "call_expression"
+      if (!isCallee) {
+        const leaf = leafOf(n)
+        if (leaf && !seenUses.has("use:" + leaf)) {
+          seenUses.add("use:" + leaf)
+          edges.push({ label: "uses", from: "(expr)", target: leaf })
+        }
+      }
+    }
+    for (let k = n.namedChildCount - 1; k >= 0; k--) {
+      const c = n.namedChild(k)
+      if (c) stack.push(c)
     }
   }
   return edges
@@ -1067,6 +1119,11 @@ async function main() {
           ;(truth as any[]).push(e)
         }
       }
+      if (lang === "zig") {
+        for (const e of deriveZigEdges(root)) {
+          ;(truth as any[]).push(e)
+        }
+      }
       if (lang === "svelte") {
         for (const e of deriveSvelteComponentUsages(root)) {
           ;(truth as any[]).push(e)
@@ -1094,9 +1151,10 @@ async function main() {
         line: r.line_number ?? 0,
         confidence: typeof r.confidence === "number" ? r.confidence : 1,
       // c, rust and go compare CALL edges too (their independently derivable
-      // truth); other languages do not derive call truth, so including
-      // calls there would flag every real call edge as unexplained.
-      })).filter((r: any) => ["extends", "implements", "instantiates", "overrides", ...(lang === "c" || lang === "rust" || lang === "go" ? ["calls"] : [])].includes(r.label))
+      // truth); zig derives calls AND uses; other languages do not derive
+      // call truth, so including calls there would flag every real call edge
+      // as unexplained.
+      })).filter((r: any) => ["extends", "implements", "instantiates", "overrides", ...(lang === "c" || lang === "rust" || lang === "go" ? ["calls"] : []), ...(lang === "zig" ? ["calls", "uses"] : [])].includes(r.label))
 
       treeEdgesTotal += truth.length
       analyzerEdgesTotal += rels.length
