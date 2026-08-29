@@ -138,6 +138,38 @@ async function cmdSearch(query: string, opts: { dir?: string; limit?: number; la
   console.log(`\n${results.length} results${results.staleCount ? ` (${results.staleCount} stale — run bb index --force)` : ""}`)
 }
 
+async function cmdStatus(dir: string | undefined) {
+  // M22.V2: `bb status [<dir>]` — in-flight + last-run index state from any shell.
+  const abs = dir ? requireDir(dir) : process.cwd()
+  const pid = getProjectId(abs)
+  const { composeStatus } = await import("../ast/index-status")
+  const s = await composeStatus(pid)
+  if (!s.hasIndex) {
+    console.log(`no index for ${abs}. Run: bb index "${abs}"`)
+    return
+  }
+  const ms = (v?: number) => (typeof v === "number" ? `${v}ms` : "n/a")
+  if (s.isRunning && s.live) {
+    const l = s.live
+    const total = l.totalFiles > 0 ? l.totalFiles : l.processedFiles
+    const pct = l.totalFiles > 0 ? Math.floor((l.processedFiles / l.totalFiles) * 100) : 0
+    const elapsed = ((Date.now() - l.startedAt) / 1000).toFixed(0)
+    console.log(`▶ indexing ${abs}: ${l.processedFiles}/${total} files (${pct}%) in ${elapsed}s${typeof l.filesPerSecond === "number" ? ` @ ${l.filesPerSecond.toFixed(1)} files/s` : ""}${l.currentFile ? ` — ${l.currentFile}` : ""}`)
+    console.log(`  phase: ${l.phase}`)
+  } else if (s.lastRun) {
+    const r = s.lastRun
+    console.log(`✓ last index of ${abs}: ${s.dbStats.files} files, ${s.dbStats.symbols} symbols, ${s.dbStats.relationships} relationships`)
+    const t = r.phaseTimings ?? {}
+    console.log(`  total ${ms(t.totalWallMs)} | parse ${ms(t.parseMs)} | dbFlush ${ms(t.dbFlushMs)} | discovery ${ms(t.discoveryMs)} | startup ${ms(t.workerStartupMs)}`)
+    if (Array.isArray(r.postProcessing) && r.postProcessing.length) {
+      console.log(`  post-processing: ${r.postProcessing.map((p: any) => `${p.phase ? p.phase : "?"}=${ms(p.ms)}`).join(", ")}`)
+    }
+    console.log(`  mode ${r.mode ?? "n/a"} | workers ${r.workerCount ?? "n/a"} | noop ${r.noop ? "yes" : "no"}`)
+  } else {
+    console.log(`index meta: ${s.dbStats.files} files, ${s.dbStats.symbols} symbols, ${s.dbStats.relationships} relationships (no recent run)`)
+  }
+}
+
 async function cmdHealth(dir: string | undefined, opts: { refresh?: boolean; force?: boolean; wait?: boolean; complete?: boolean; integrity?: boolean; sampleSize?: number }) {
   const abs = dir ? requireDir(dir) : process.cwd()
   const pid = getProjectId(abs)
@@ -197,6 +229,14 @@ export async function runCli(argv: string[]): Promise<void> {
     .option("--force", "wipe the existing index and rebuild")
     .action(async (dir: string | undefined, opts: any) => {
       await cmdIndex(dir, opts)
+    })
+
+  program
+    .command("status")
+    .description("show in-flight/last-run index state and per-phase timings (default: cwd)")
+    .argument("[dir]", "project directory (default: current directory)")
+    .action(async (dir: string | undefined) => {
+      await cmdStatus(dir)
     })
 
   program
