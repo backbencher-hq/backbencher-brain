@@ -674,11 +674,14 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
   // ─── PURE HELPER FUNCTIONS ───
 
   private nodeRange(node: Node): ASTEngine.UniversalSymbol["range"] {
+    // 1-based columns (family standard — go/rust/c/cpp all +1; caught by the
+    // systems-family consistency gate M14.CC1, 2026-08-29: zig emitted raw
+    // 0-based columns, failing startColumn >= 1).
     return {
       startLine: node.startPosition.row + 1,
-      startColumn: node.startPosition.column,
+      startColumn: node.startPosition.column + 1,
       endLine: node.endPosition.row + 1,
-      endColumn: node.endPosition.column,
+      endColumn: node.endPosition.column + 1,
       startIndex: node.startIndex,
       endIndex: node.endIndex,
     }

@@ -175,14 +175,20 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       } else if (type === "preproc_include") {
         const text = node.text
-        imports.push({
-          source: text,
-          imported: [],
-          range: this.nodeToRange(node),
-          isTypeOnly: false,
-        })
-        // depends: #include = compile-time dependency
+        // Family contract (c wave): ImportInfo canonical fields are
+        // module/items — the persister reads imp.module ?? imp.path ??
+        // imp.localName and DROPS imports with none. The legacy shape
+        // { source, imported, isTypeOnly } produced no module, so C++
+        // #include imports were NEVER persisted to brain_import (caught by
+        // the systems-cluster e2e gate M14.0.F9, 2026-08-29). Align with c.
         const includePath = stripIncludeChars(text.slice(text.indexOf("include") + "include".length)).trim()
+        imports.push({
+          module: includePath,
+          items: ["*"],
+          range: this.nodeToRange(node),
+          metadata: { isSystemInclude: includePath.startsWith("<"), isImport: true, isIncludeDependency: true },
+        })
+        // depends: #include = compile-time dependency (includePath computed above)
         if (includePath) {
           // #419 family contract: include edges carry the SAME metadata shape
           // as the C analyzer (relationshipType "include_dependency" +
