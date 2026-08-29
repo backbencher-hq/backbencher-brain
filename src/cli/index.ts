@@ -179,6 +179,36 @@ async function cmdStats(dir: string | undefined) {
   } catch {}
   console.log(`index stats for ${abs}:`)
   console.log(`  files ${s.dbStats.files} | symbols ${s.dbStats.symbols} | relationships ${s.dbStats.relationships} | embeddings ${embeddings}`)
+  // M23.P1: always show where this index lives so users can find/reclaim it.
+  console.log(`  db: ${BrainDatabase.getDbPath(pid)}`)
+}
+
+async function cmdProjects(opts: { sort?: string; remove?: string; force?: boolean }) {
+  // M23.P1/P2: registry of every indexed project with DB path + size, and
+  // safe removal. Ground truth: without this, users can't see what's indexed,
+  // where the DB lives, or reclaim disk (e.g. 1,178 dirs / 16 GB on this box).
+  const { listProjects, removeProject, totalProjectsBytes } = await import("../ast/project-registry")
+  if (opts.remove) {
+    const r = removeProject(opts.remove, opts.force === true)
+    if (r.removed) console.log(`removed project ${opts.remove.slice(0, 8)} (index reclaimed)`)
+    else console.error(`✗ ${r.reason}`)
+    process.exitCode = r.removed ? 0 : 1
+    return
+  }
+  const projects = listProjects()
+  if (projects.length === 0) {
+    console.log("no indexed projects")
+    return
+  }
+  const sort = opts.sort ?? "name"
+  projects.sort((a, b) => (sort === "size" ? b.dbSizeBytes - a.dbSizeBytes : sort === "time" ? (b.lastIndexed ?? 0) - (a.lastIndexed ?? 0) : a.id.localeCompare(b.id)))
+  const mb = (b: number) => `${(b / 1024 / 1024).toFixed(1)}MB`
+  const when = (t: number | null) => (t ? new Date(t).toISOString().slice(0, 10) : "n/a")
+  for (const p of projects) {
+    const where = p.humanPath ?? "(no path recorded)"
+    console.log(`${p.id.slice(0, 8)} | ${p.files} files ${p.symbols} syms | ${mb(p.dbSizeBytes)} | idx ${when(p.lastIndexed)} | ${p.status ?? ""} | ${where} | db: ${p.dbPath}`)
+  }
+  console.log(`\n${projects.length} projects, ${mb(totalProjectsBytes(projects))} total index size (${bbProjectsDir()})`)
 }
 
 async function cmdStatus(dir: string | undefined) {
@@ -211,6 +241,8 @@ async function cmdStatus(dir: string | undefined) {
   } else {
     console.log(`index meta: ${s.dbStats.files} files, ${s.dbStats.symbols} symbols, ${s.dbStats.relationships} relationships (no recent run)`)
   }
+  // M23.P1: always show where this index lives so users can find/reclaim it.
+  console.log(`  db: ${BrainDatabase.getDbPath(pid)}`)
 }
 
 async function cmdHealth(dir: string | undefined, opts: { refresh?: boolean; force?: boolean; wait?: boolean; complete?: boolean; integrity?: boolean; sampleSize?: number }) {
@@ -329,6 +361,22 @@ Examples:
     .argument("[dir]", "project directory (default: current directory)")
     .action(async (dir: string | undefined) => {
       await cmdStatus(dir)
+    })
+
+  program
+    .command("projects")
+    .description("list every indexed project: DB path, size, counts, last index (default: all projects)")
+    .option("--sort <field>", "sort by name|size|time", "name")
+    .option("--remove <id>", "remove one indexed project by id (reclaims its DB + embeddings)")
+    .option("--force", "remove even if that project is currently being indexed")
+    .addHelpText("after", `
+Examples:
+  $ bb projects                # list all indexed projects with DB path + size
+  $ bb projects --sort size    # biggest indexes first
+  $ bb projects --remove 1a2b3c4d   # reclaim that project's index space
+`)
+    .action(async (opts: any) => {
+      await cmdProjects(opts)
     })
 
   program

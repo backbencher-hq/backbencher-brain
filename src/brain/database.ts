@@ -234,6 +234,11 @@ export namespace BrainDatabase {
       status?: string
       symbols?: number
       files?: number
+      /** M23.P1: the indexer passes these; persisted as total_files/total_symbols. */
+      filesIndexed?: number
+      symbolsIndexed?: number
+      /** M23.P1: files actually parsed this run; persisted as indexed_files. */
+      filesParsed?: number
       lastIndexed?: number
       error?: string
       /** M21.I3: structured errors to APPEND. Passing none never wipes prior errors. */
@@ -281,14 +286,23 @@ export namespace BrainDatabase {
       perfJson = existing.performance_stats
     }
 
+    // M23.P1: persist the real index counts. Callers pass filesIndexed/
+    // symbolsIndexed (the indexer's own totals); the older files/symbols keys
+    // are honored for backward compatibility. indexed_files is written too,
+    // since health-provider reads it and it was never populated before.
+    const filesTotal = data.filesIndexed ?? data.files ?? 0
+    const symbolsTotal = data.symbolsIndexed ?? data.symbols ?? 0
+    const filesParsed = data.filesParsed ?? filesTotal
+
     raw
       .prepare(
-        `INSERT INTO brain_index_status (project_id, indexing_version, status, last_full_index, total_files, total_symbols, indexing_errors, performance_stats, time_created, time_updated)
-         VALUES (?, 'v1.0.0', ?, ?, ?, ?, ?, ?, strftime('%s','now') * 1000, strftime('%s','now') * 1000)
+        `INSERT INTO brain_index_status (project_id, indexing_version, status, last_full_index, total_files, indexed_files, total_symbols, indexing_errors, performance_stats, time_created, time_updated)
+         VALUES (?, 'v1.0.0', ?, ?, ?, ?, ?, ?, ?, strftime('%s','now') * 1000, strftime('%s','now') * 1000)
          ON CONFLICT(project_id) DO UPDATE SET
            status = COALESCE(excluded.status, status),
            last_full_index = excluded.last_full_index,
            total_files = excluded.total_files,
+           indexed_files = excluded.indexed_files,
            total_symbols = excluded.total_symbols,
            indexing_errors = excluded.indexing_errors,
            performance_stats = COALESCE(excluded.performance_stats, performance_stats),
@@ -298,8 +312,9 @@ export namespace BrainDatabase {
         projectId,
         data.status ?? null,
         data.lastIndexed ?? Date.now(),
-        data.files ?? 0,
-        data.symbols ?? 0,
+        filesTotal,
+        filesParsed,
+        symbolsTotal,
         errorsJson,
         perfJson,
       )
