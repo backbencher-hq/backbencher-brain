@@ -21,6 +21,19 @@ const LEVEL_LABELS: Record<LogLevel, string> = {
 
 let globalLevel: LogLevel = LogLevel.INFO
 
+// M22.W1: honor BB_LOG_LEVEL from the environment at module load. The CLI sets
+// it in its preAction hook (--verbose/--quiet), and pool workers inherit the
+// parent's env so workers honor the same level instead of being hard-pinned.
+if (process.env.BB_LOG_LEVEL) {
+  const parsed = Number(process.env.BB_LOG_LEVEL)
+  const byName = (LEVEL_LABELS as unknown as Record<string, LogLevel>)[process.env.BB_LOG_LEVEL.toUpperCase()]
+  if (byName !== undefined) {
+    globalLevel = byName
+  } else if (!Number.isNaN(parsed) && parsed >= LogLevel.TRACE && parsed <= LogLevel.SILENT) {
+    globalLevel = parsed as LogLevel
+  }
+}
+
 export function setLogLevel(level: LogLevel): void {
   globalLevel = level
 }
