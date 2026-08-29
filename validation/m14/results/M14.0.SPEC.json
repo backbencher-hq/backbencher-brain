@@ -1043,7 +1043,7 @@
       "status": "pass"
     },
     {
-      "description": "dart: 6 confirmed gaps declared",
+      "description": "dart: 5 confirmed gaps declared",
       "id": "gap-list-present",
       "language": "dart",
       "status": "pass"
@@ -1056,7 +1056,7 @@
     },
     {
       "description": "every named node type classified (dart)",
-      "detail": "222 types, 87 handled, 106 silent, 6 gaps, 5 decisions",
+      "detail": "222 types, 90 handled, 105 silent, 5 gaps, 5 decisions",
       "id": "section-a-structural",
       "language": "dart",
       "status": "pass"
@@ -1112,8 +1112,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "bdc375b92e08dbbd98d461c8af9eb6bc7d8e7d75",
-  "committedAt": "2026-08-29T23:06:07+02:00",
+  "commit": "ddd433d7331f358dd82e57bbd9deff95aae7f201",
+  "committedAt": "2026-08-29T23:09:02+02:00",
   "data": {
     "languages": {
       "c": {
@@ -1251,7 +1251,6 @@
           "undefined: record type/literal symbols and typed fields",
           "undefined: destructuring pattern variables as symbols",
           "undefined: Dart 3 extension type symbols",
-          "undefined: switch-expression complexity contribution",
           "undefined: library directive name symbol",
           "undefined: constructor tear-off as distinct symbol"
         ],
@@ -1266,7 +1265,7 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "222 types, 87 handled, 106 silent, 6 gaps, 5 decisions",
+            "detail": "222 types, 90 handled, 105 silent, 5 gaps, 5 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
