@@ -1,0 +1,25 @@
+{
+  "issue": "M24.G1",
+  "code": "G1",
+  "milestone": "M24",
+  "status": "known-gap",
+  "checks": 20,
+  "passed": 20,
+  "failed": 0,
+  "negativeCases": 9,
+  "currentCommit": "1a5d55118c800cb581c46987d77a1e61be980123",
+  "workingTreeRelevantChanges": [
+    "docs/IDE-HONESTY-CONTRACT.md",
+    "docs/IDE-PROGRAM-DECISIONS.md",
+    "docs/m24/M24-MASTER-PLAN.md",
+    "script/m24/verify-governance.ts"
+  ],
+  "verifierCommand": "bun run script/m24/verify-governance.ts",
+  "evidenceFile": "G1.json",
+  "generatedAt": "2026-08-30T22:46:26.750Z",
+  "ledger": "validation/m24/results/manifest.json",
+  "limitations": [
+    "This gate validates governance metadata and mutation response; it does not verify LSP feature implementations.",
+    "A run with relevant uncommitted M24 files is recorded as known-gap; verified status requires a clean relevant tree."
+  ]
+}
