@@ -15,6 +15,7 @@ import { BACKBENCHER_BRAIN_VERSION } from "../version"
 import { getUnifiedHealth, formatUnifiedHealth } from "../intelligence/health/health-provider"
 import { bbProjectsDir } from "../util/bb-data-dir"
 import { LogLevel, setLogLevel } from "../util/log"
+import { computeCheckoutFingerprint, readStoredFingerprint } from "../ast/fingerprint"
 
 export function getProjectId(projectPath: string): string {
   const resolved = path.resolve(projectPath)
@@ -61,12 +62,52 @@ function formatETA(s: { processedFiles: number; totalFiles: number; elapsedSecon
   return `${Math.floor(remaining / 3600)}h${Math.floor((remaining % 3600) / 60)}m`
 }
 
-async function cmdIndex(dir: string | undefined, opts: { force?: boolean; skipPostProcessing?: boolean; file?: string; changed?: boolean; resume?: boolean }) {
+async function cmdIndex(
+  dir: string | undefined,
+  opts: { force?: boolean; skipPostProcessing?: boolean; file?: string; changed?: boolean; resume?: boolean; import?: string },
+) {
   // M22.C1: default `<dir>` to the current directory like every other command
   // (search/health/mcp all fall back to process.cwd()); `cd proj && bb index`
   // must index the project you are standing in.
   const abs = dir ? requireDir(dir) : process.cwd()
   const pid = getProjectId(abs)
+  // M23.P3: `bb index --import <db>` re-homes an existing brain.db (from a
+  // moved project or another machine) onto this checkout's project id.
+  if (opts.import != null) {
+    const { importDbFile } = await import("../ast/project-registry")
+    const result = importDbFile(opts.import, pid, abs)
+    if (result.adopted) {
+      console.log(`imported ${opts.import} as project ${pid.slice(0, 8)} (index rebound to this checkout)`)
+      return
+    }
+    console.error(`✗ import failed: ${result.reason}`)
+    process.exitCode = 1
+    return
+  }
+  // M23.P3: adoption — if this checkout has no DB but a previously indexed
+  // project matches its codebase fingerprint, re-home that DB to this id so
+  // the index (symbols, relationships, embeddings) survives the move.
+  let adopted = false
+  if (!opts.force) {
+    const dbPath = BrainDatabase.getDbPath(pid)
+    if (!existsSync(dbPath)) {
+      const { findAdoptableDb, adoptProject } = await import("../ast/project-registry")
+      const { computeCheckoutFingerprint } = await import("../ast/fingerprint")
+      const cf = await computeCheckoutFingerprint(abs)
+      if (cf.fingerprint) {
+        const candidate = findAdoptableDb(cf.fingerprint)
+        if (candidate) {
+          const result = adoptProject(candidate.id, pid, abs)
+          if (result.adopted) {
+            adopted = true
+            console.log(`adopted existing index from project ${candidate.id.slice(0, 8)} (moved/rebound to ${pid.slice(0, 8)})`)
+          } else {
+            console.warn(`adoption failed: ${result.reason}`)
+          }
+        }
+      }
+    }
+  }
   if (opts.force) {
     // In-place wipe (never delete the DB file): deleting + recreating the file
     // orphans any running MCP server's open handle into a stale view. An
@@ -87,6 +128,10 @@ async function cmdIndex(dir: string | undefined, opts: { force?: boolean; skipPo
   if (opts.skipPostProcessing) indexOpts.skipPostProcessing = true
   if (opts.file) indexOpts.files = [opts.file]
   if (opts.changed) indexOpts.isIncremental = true
+  // M23.P3: right after adoption the checkout is unchanged relative to the
+  // adopted index (the move preserves mtimes), so top up incrementally instead
+  // of re-parsing everything and duplicating symbol rows.
+  if (adopted) indexOpts.isIncremental = true
   // M22.R1: resume from an interrupted run's checkpoint. The live status file
   // is the checkpoint: phase "indexing" (left behind if the process died) vs
   // "complete"/"failed". Resume always runs incremental (mtime/size skip the
@@ -335,6 +380,7 @@ export async function runCli(argv: string[]): Promise<void> {
     .option("--file <path>", "reindex a single file's symbols + relationships")
     .option("--changed", "reindex only files changed since the last index")
     .option("--resume", "continue from an interrupted run's checkpoint (incremental: only missing/changed files)")
+    .option("--import <db>", "adopt an existing brain.db file (re-home a moved project's index)")
     .addHelpText("after", `
 Examples:
   $ bb index                 # index the current directory
@@ -342,6 +388,7 @@ Examples:
   $ bb index --changed       # reindex only changed files
   $ bb index --file src/a.ts # reindex a single file
   $ bb index --force         # wipe and rebuild in place
+  $ bb index import --db <path>  # adopt an existing DB for a moved project
 `)
     .action(async (dir: string | undefined, opts: any) => {
       await cmdIndex(dir, opts)
@@ -414,4 +461,17 @@ Examples:
     })
 
   await program.parseAsync(argv, { from: "user" })
+}
+
+// M23.P3: allow running the CLI module directly (bun src/cli/index.ts <args>).
+// Without this entry the module only defines runCli, so direct invocation is a
+// silent no-op — a real trap for scripts and verifiers.
+if (import.meta.main) {
+  try {
+    await runCli(process.argv.slice(2))
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.error(`error: ${message}`)
+    process.exitCode = 1
+  }
 }
