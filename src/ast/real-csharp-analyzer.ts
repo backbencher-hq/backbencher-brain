@@ -813,11 +813,11 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       if (type === "imports") { md.evidenceClass = "import_based"; continue }
       if (type === "calls" || type === "uses") {
-        md.evidenceClass = r.confidence >= 0.85 ? "usage_contextual" : "inferred"
+        md.evidenceClass = (r.confidence ?? 0) >= 0.85 ? "usage_contextual" : "inferred"
         continue
       }
       if (type === "instantiates" || type === "extends" || type === "implements") {
-        md.evidenceClass = r.confidence >= 0.9 ? "structural" : "inferred"
+        md.evidenceClass = (r.confidence ?? 0) >= 0.9 ? "structural" : "inferred"
         continue
       }
       if (type === "overrides") { md.evidenceClass = "structural"; continue }

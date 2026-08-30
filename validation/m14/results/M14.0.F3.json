@@ -107,11 +107,17 @@
       "detail": "2/2 fixtures pass",
       "id": "fixtures-objc",
       "status": "pass"
+    },
+    {
+      "description": "php adversarial fixtures",
+      "detail": "1/1 fixtures pass",
+      "id": "fixtures-php",
+      "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "0e8cc143a0c4ec87db15580965f6694efb869436",
-  "committedAt": "2026-08-30T05:33:57+02:00",
+  "commit": "b4fb17601be1d371329cadddebb1266cd3c9d107",
+  "committedAt": "2026-08-30T05:41:41+02:00",
   "data": {
     "details": [
       {
@@ -1508,6 +1514,11 @@
         "fixture": "objc/payload-and-complexity",
         "ok": true,
         "problems": []
+      },
+      {
+        "fixture": "php/payload-and-complexity",
+        "ok": true,
+        "problems": []
       }
     ],
     "summary": {
@@ -1550,6 +1561,10 @@
       "objc": {
         "fail": 0,
         "pass": 2
+      },
+      "php": {
+        "fail": 0,
+        "pass": 1
       },
       "python": {
         "fail": 0,
