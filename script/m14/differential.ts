@@ -38,6 +38,7 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   zig: { wasm: "tree-sitter-zig.wasm", analyzerFile: "real-zig-analyzer", className: "RealZigAnalyzer", ext: "zig" },
   csharp: { wasm: "tree-sitter-c_sharp.wasm", analyzerFile: "real-csharp-analyzer", className: "RealCSharpAnalyzer", ext: "cs" },
   dart: { wasm: "tree-sitter-dart.wasm", analyzerFile: "real-dart-analyzer", className: "RealDartAnalyzer", ext: "dart" },
+  swift: { wasm: "tree-sitter-swift.wasm", analyzerFile: "real-swift-analyzer", className: "RealSwiftAnalyzer", ext: "swift" },
 }
 
 function seededPick<T>(items: T[], n: number, seedStr: string): T[] {
@@ -645,6 +646,162 @@ export function deriveDartEdges(root: any): { label: string; from: string; targe
       }
     }
     for (let k = 0; k < n.namedChildCount; k++) { const c = n.namedChild(k); if (c) stack.push(c) }
+  }
+  return edges
+}
+
+// Swift tree-truth oracle (swift managed-OO wave #266). Mirrors
+// RealSwiftAnalyzer's M12.21 leaf-target contract exactly:
+//   - extends:  FIRST inheritance base of class/struct/actor (superclass),
+//     from the inheritance_specifier children
+//   - implements: REMAINING bases (adopted protocols)
+//   - instantiates: bare CAPITALIZED call `User(...)` -> instantiates ONLY
+//     (no calls edge — Swift construction syntax, Java `new Foo()` analog)
+//   - calls:    member calls resolve to the LEAF target (`users.first` ->
+//     `first`); bare non-capitalized identifiers, with the analyzer's
+//     BUILTIN_BARE_CALLS set filtered (print/String/Int/... AND the `defer`
+//     keyword-construct which parses as a call in the pinned grammar)
+//   - uses:     ONLY `self.` member READS — navigation_expression with a
+//     self receiver that is NOT the callee of a call_expression
+//   - references: imports -> root -> module (mirrors handleImport)
+// The oracle emits UNIQUE (label,target) edges (seen-set per label+target),
+// matching the site-agnostic coverage match in main().
+export function deriveSwiftEdges(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const SWIFT_BUILTINS = new Set([
+    "print", "debugPrint", "assert", "precondition", "fatalError",
+    "String", "Int", "Double", "Float", "Bool", "Array", "Dictionary",
+    "Set", "Optional", "Any", "Void", "Character", "Data", "Date", "defer",
+  ])
+  const isCapitalized = (t: string): boolean => t.length > 1 && t.charCodeAt(0) >= 65 && t.charCodeAt(0) <= 90
+  const key = (label: string, target: string) => label + ":" + target
+  const push = (label: string, target: string) => {
+    const k = key(label, target)
+    if (!seen.has(k)) { seen.add(k); edges.push({ label, from: "(expr)", target }) }
+  }
+
+  // self on the navigation RECEIVER chain only (mirrors the analyzer's
+  // hasSelfReceiver): navigation > (navigation | self_expression) — stops at
+  // the first non-receiver child (call_expression/try_expression).
+  const hasSelfReceiver = (n: any): boolean => {
+    let cur: any = n
+    let guard = 0
+    while (cur && guard++ < 64) {
+      if (cur.type === "self_expression") return true
+      const next = cur.namedChildren.find((c: any) => c.type === "navigation_expression" || c.type === "self_expression")
+      if (!next) return false
+      cur = next
+    }
+    return false
+  }
+
+  // Leaf name of a navigation_expression: last navigation_suffix's
+  // simple_identifier/identifier (mirrors navigationLeaf).
+  const navLeaf = (n: any): string | null => {
+    let leaf: any = null
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c && c.type === "navigation_suffix") {
+        const id = c.namedChildren.find((x: any) => x.type === "simple_identifier" || x.type === "identifier")
+        leaf = id ?? c
+      }
+    }
+    return leaf ? leaf.text : null
+  }
+
+  // Base names from the inheritance_specifier (mirrors extractBaseName).
+  const baseName = (spec: any): string | null => {
+    for (let i = 0; i < spec.namedChildCount; i++) {
+      const c = spec.namedChild(i)
+      if (!c) continue
+      if (c.type === "type_identifier") return c.text
+      if (c.type === "user_type") {
+        const leaf = c.namedChildren.find((x: any) => x.type === "type_identifier")
+        if (leaf) return leaf.text
+      }
+    }
+    const txt = spec.text.trim()
+    return txt && !txt.includes(" ") ? txt : null
+  }
+
+  const stack: any[] = [{ n: root, parentType: "" }]
+  while (stack.length > 0) {
+    const { n, parentType } = stack.pop()!
+    const t = n.type
+    if (t === "class_declaration") {
+      // Actor/struct/enum/extension are all class_declaration in the pinned
+      // grammar, decided by the anonymous keyword token. Only class/struct/
+      // actor carry extends/implements (enum/extension excluded — the
+      // analyzer's handleDeclaration guard). Swift semantics: ONLY a class
+      // can have a superclass (first base extends); struct/actor bases are
+      // all protocol adoptions (implements) — mirrors the analyzer fix.
+      let isEnum = false
+      let isExtension = false
+      let isClass = false
+      for (let i = 0; i < n.childCount; i++) {
+        const c = n.child(i)
+        if (c && !c.isNamed) {
+          if (c.type === "enum") isEnum = true
+          if (c.type === "extension") isExtension = true
+          if (c.type === "class") isClass = true
+        }
+      }
+      if (!isEnum && !isExtension) {
+        const bases: string[] = []
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c && c.type === "inheritance_specifier") {
+            const nm = baseName(c)
+            if (nm) bases.push(nm)
+          }
+        }
+        for (let i = 0; i < bases.length; i++) {
+          const isExtends = isClass && i === 0
+          push(isExtends ? "extends" : "implements", bases[i])
+        }
+      }
+    }
+    if (t === "call_expression") {
+      // Subscript READ (`entries[key]`) parses as call_expression with a
+      // `[key]` call_suffix — a property access, NOT a call (mirrors the
+      // analyzer's isSubscriptRead gate).
+      const suffix = n.namedChildren.find((c: any) => c.type === "call_suffix")
+      const isSubscript = !!suffix && !!suffix.namedChildren.find((c: any) => c.type === "value_arguments" && c.text.startsWith("["))
+      if (isSubscript) { for (let i = n.namedChildCount - 1; i >= 0; i--) { const c = n.namedChild(i); if (c) stack.push({ n: c, parentType: t }) }; continue }
+      // callee: simple_identifier / identifier / navigation_expression
+      const callee = n.namedChildren.find((c: any) => c.type === "simple_identifier" || c.type === "identifier" || c.type === "navigation_expression")
+      if (callee && callee.type === "navigation_expression") {
+        const leaf = navLeaf(callee)
+        if (leaf && leaf !== "$0" && !SWIFT_BUILTINS.has(leaf)) push("calls", leaf)
+      } else if (callee) {
+        const target = callee.text
+        if (target && !SWIFT_BUILTINS.has(target)) {
+          if (isCapitalized(target)) push("instantiates", target)
+          else push("calls", target)
+        }
+      }
+    }
+    if (t === "navigation_expression") {
+      // uses: self. member READ — not the callee of a call_expression, and
+      // self must be on the RECEIVER chain (navigation > navigation > self),
+      // never inside a call: `self.decode(...)?.buffer` reads .buffer off the
+      // CALL RESULT, not off self (mirrors the analyzer's hasSelfReceiver).
+      const hasSelf = hasSelfReceiver(n)
+      if (hasSelf && parentType !== "call_expression") {
+        const leaf = navLeaf(n)
+        if (leaf) push("uses", leaf)
+      }
+    }
+    if (t === "import_declaration") {
+      // mirror handleImport: first simple_identifier/type_identifier/identifier
+      const id = n.namedChildren.find((c: any) => c.type === "simple_identifier" || c.type === "type_identifier" || c.type === "identifier")
+      if (id && id.text) push("references", id.text)
+    }
+    for (let i = n.namedChildCount - 1; i >= 0; i--) {
+      const c = n.namedChild(i)
+      if (c) stack.push({ n: c, parentType: t })
+    }
   }
   return edges
 }
@@ -1540,6 +1697,11 @@ async function main() {
           ;(truth as any[]).push(e)
         }
       }
+      if (lang === "swift") {
+        for (const e of deriveSwiftEdges(root)) {
+          ;(truth as any[]).push(e)
+        }
+      }
       if (lang === "svelte") {
         for (const e of deriveSvelteComponentUsages(root)) {
           ;(truth as any[]).push(e)
@@ -1570,7 +1732,7 @@ async function main() {
       // truth); zig derives calls AND uses; other languages do not derive
       // call truth, so including calls there would flag every real call edge
       // as unexplained.
-      })).filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" ? ["overrides"] : []), ...(lang === "c" || lang === "rust" || lang === "go" || lang === "dart" ? ["calls"] : []), ...(lang === "zig" ? ["calls", "uses"] : []), ...(lang === "dart" ? ["uses"] : []), ...(lang === "csharp" ? ["calls"] : [])].includes(r.label))
+      })).filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" ? ["overrides"] : []), ...(lang === "c" || lang === "rust" || lang === "go" || lang === "dart" ? ["calls"] : []), ...(lang === "zig" || lang === "swift" ? ["calls", "uses"] : []), ...(lang === "dart" ? ["uses"] : []), ...(lang === "csharp" ? ["calls"] : []), ...(lang === "swift" ? ["references"] : [])].includes(r.label))
         // The tree-truth oracles already emit UNIQUE (label,target) edges per
         // file (each oracle keeps a `seen` set keyed by label+target). The
         // analyzer, by contrast, emits one edge per source SEARCH HIT, so a
