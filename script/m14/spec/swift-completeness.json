@@ -213,7 +213,7 @@
         "node_type": "class_declaration",
         "status": "RULED",
         "question": "The pinned grammar (alex-pinkus style) has ONE class_declaration node for class/struct/actor/enum/extension \u2014 the kind is decided by the anonymous keyword token.",
-        "resolution": "The analyzer reads the anonymous keyword token (class/struct/enum/extension/actor) to pick the kind \u2014 never source-text scanning. Only CLASS has a superclass (first base = extends); struct/actor bases are all protocol adoptions (implements)."
+        "resolution": "The analyzer reads the anonymous keyword token (class/struct/enum/extension/actor) to pick the kind \u2014 never source-text scanning. Only CLASS can have a superclass: its FIRST base is extends ONLY when that base is a class. A first-base protocol is still an adoption (implements). Kind resolution: an in-file pre-pass records declared protocol/class names, and the cross-file companion (context.typeKinds, corpus protocol set) covers other files; unknown externals follow the deterministic Swift rule (first base = superclass extends). Structs and actors have NO superclass \u2014 every base is implements."
       },
       {
         "id": "SWIFTD2",
