@@ -76,6 +76,10 @@ try {
   }
   ck("S1: source backup file survives import", existsSync(backupDb))
 
+  // Second negative: re-importing into an already-occupied target is refused.
+  const rDup = importDbFile(backupDb, pid1, moved)
+  negative("S1: re-import into occupied target refused", !rDup.adopted && /already has an index/.test(rDup.reason ?? ""), rDup.reason ?? "")
+
   // ── S2: >500 files, first 500 under one subdir, rest outside ────────────
   const big = path.join(base, "big-proj")
   mkdirSync(path.join(big, "aaa"), { recursive: true })
