@@ -3,6 +3,7 @@
  "grammar": "tree-sitter-objc (pinned wasm/wasm/tree-sitter-objc.wasm)",
  "handled_verified": {
   "types": [
+   "assignment_expression",
    "binary_expression",
    "block_literal",
    "call_expression",
@@ -12,6 +13,8 @@
    "conditional_expression",
    "declaration",
    "do_statement",
+   "field_expression",
+   "field_identifier",
    "for_statement",
    "function_declarator",
    "function_definition",
@@ -26,6 +29,7 @@
    "preproc_include",
    "property_declaration",
    "protocol_declaration",
+   "protocol_reference_list",
    "string_content",
    "string_literal",
    "struct_declaration",
@@ -52,7 +56,6 @@
    "array_declarator",
    "array_literal",
    "array_type_specifier",
-   "assignment_expression",
    "at_expression",
    "atdef_field",
    "atomic_declaration",
@@ -96,8 +99,6 @@
    "field_declaration",
    "field_declaration_list",
    "field_designator",
-   "field_expression",
-   "field_identifier",
    "finally_clause",
    "generic_arguments",
    "generic_expression",
@@ -183,7 +184,6 @@
    "property_implementation",
    "protocol_forward_declaration",
    "protocol_qualifier",
-   "protocol_reference_list",
    "qualified_protocol_interface_declaration",
    "range_expression",
    "return_statement",
@@ -258,6 +258,13 @@
     "status": "RULED",
     "question": "Blocks `^{ ... }` are anonymous \u2014 should they produce symbols?",
     "resolution": "No symbol (generated names are execution artifacts, same as C function pointers and closure literals elsewhere in the family). Their BODY message/calls ARE still captured (a block calling setHidden inside a method emits calls from the enclosing method scope)."
+   },
+   {
+    "id": "OBJCD4",
+    "node_type": "field_expression",
+    "status": "RULED",
+    "question": "ObjC dot-syntax property access (`self.next`, `w.next`, `self.origin.x`) parses as field_expression with a field_identifier \u2014 should these produce uses edges?",
+    "resolution": "Yes for READS (managed-OO family contract \u2014 dart/swift/csharp emit uses for member reads): a field_expression inside a method body emits uses -> the field name with isFieldRead metadata. The LHS of an assignment_expression is a WRITE, never a read, so it is excluded (pure AST: the walk carries the parent type \u2014 never source-text scanning). This mirrors the C analyzer's field_access handling while honoring the family's read-vs-write distinction."
    }
   ]
  }

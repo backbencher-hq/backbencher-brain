@@ -199,7 +199,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     docs: ["docs/analyzers/real-objective-c-analyzer.md"],
     differentialCheck: "differential-objc",
     perfKey: "Clyde:objc",
-    requiredKinds: ["calls", "extends", "implements", "instantiates", "references", "contains"],
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "objc/payload-and-complexity" },
     },

@@ -1197,21 +1197,21 @@
       "status": "pass"
     },
     {
-      "description": "objc: 3 ruled, 0 pending owner",
+      "description": "objc: 4 ruled, 0 pending owner",
       "id": "design-decisions-tracked",
       "language": "objc",
       "status": "pass"
     },
     {
       "description": "every named node type classified (objc)",
-      "detail": "214 types, 31 handled, 150 silent, 3 gaps, 3 decisions",
+      "detail": "214 types, 35 handled, 146 silent, 3 gaps, 4 decisions",
       "id": "section-a-structural",
       "language": "objc",
       "status": "pass"
     },
     {
-      "description": "6 relationship kinds pinned by objc fixtures",
-      "detail": "pinned: calls, contains, extends, implements, instantiates, references",
+      "description": "7 relationship kinds pinned by objc fixtures",
+      "detail": "pinned: calls, contains, extends, implements, instantiates, references, uses",
       "id": "section-b-relationship-kinds",
       "language": "objc",
       "status": "pass"
@@ -1260,8 +1260,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "bcc6816013ec642dc6c8d10426a775a8157dc586",
-  "committedAt": "2026-08-30T05:28:55+02:00",
+  "commit": "0e8cc143a0c4ec87db15580965f6694efb869436",
+  "committedAt": "2026-08-30T05:33:57+02:00",
   "data": {
     "languages": {
       "c": {
@@ -1716,15 +1716,16 @@
         "ruledDecisions": [
           "OBJCD1",
           "OBJCD2",
-          "OBJCD3"
+          "OBJCD3",
+          "OBJCD4"
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "214 types, 31 handled, 150 silent, 3 gaps, 3 decisions",
+            "detail": "214 types, 35 handled, 146 silent, 3 gaps, 4 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
-            "detail": "pinned: calls, contains, extends, implements, instantiates, references",
+            "detail": "pinned: calls, contains, extends, implements, instantiates, references, uses",
             "status": "pass"
           },
           "section-c-payload-matrix": {

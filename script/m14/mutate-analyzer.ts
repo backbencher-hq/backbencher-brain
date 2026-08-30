@@ -1188,6 +1188,39 @@ const MUTANTS: Mutant[] = [
       symbols: [...(r.symbols ?? []), ...(r.symbols ?? [])],
     }),
   },
+  {
+    id: "objc/drop-member-read-uses",
+    language: "objc",
+    defectClass: "relationship-loss",
+    description: "drops objc dot-syntax member-read uses edges (self.superview, superview.hidden, self.layer) — objc section B uses pin (managed-OO family contract)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).isFieldRead && x.type === "uses")) }),
+  },
+  {
+    id: "objc/drop-protocol-inheritance",
+    language: "objc",
+    defectClass: "relationship-loss",
+    description: "drops objc protocol-inheritance extends edges (Animatable->Renderable) — objc protocol_reference_list extends pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).isProtocolInheritance)) }),
+  },
+  {
+    id: "objc/drop-category-protocol",
+    language: "objc",
+    defectClass: "relationship-loss",
+    description: "drops objc category-declared protocol conformance (UIView->Animatable) — objc category implements pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).isCategoryProtocol)) }),
+  },
+  {
+    id: "objc/emit-write-as-uses",
+    language: "objc",
+    defectClass: "relationship-loss",
+    description: "regresses the read/write gate: emits uses for assignment LHS writes (self.clipsToBounds = YES as a read) — objc forbid pin",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), {
+        type: "uses", source: "animate", target: "clipsToBounds", isExternal: true, weight: 1, confidence: 0.9, metadata: { isFieldRead: true },
+      }],
+    }),
+  },
 ]
 
 async function realAnalyzer(lang: string): Promise<any> {
