@@ -175,6 +175,18 @@ export namespace BrainDatabase {
     drizzleInstances.clear()
   }
 
+  /** Close an explicit-path handle AND evict its cache entry (probe safety). */
+  export function closeByPath(dbPath: string): void {
+    const key = `ro:${dbPath}`
+    const raw = rawInstances.get(key)
+    if (raw) {
+      try {
+        raw.close()
+      } catch {}
+      rawInstances.delete(key)
+    }
+  }
+
   export async function getStats(projectId: string): Promise<BrainStats> {
     const raw = await getRawInstance(projectId)
     const files = (raw.prepare("SELECT COUNT(*) as c FROM brain_file WHERE project_id = ?").get(projectId) as any)?.c ?? 0
