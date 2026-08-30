@@ -191,6 +191,20 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     },
     title: "swift managed-OO wave (#266)",
   },
+  objc: {
+    id: "objc",
+    wasm: "tree-sitter-objc.wasm",
+    classification: "objc-completeness.json",
+    fixturesDir: "validation/m14/fixtures/objc",
+    docs: ["docs/analyzers/real-objective-c-analyzer.md"],
+    differentialCheck: "differential-objc",
+    perfKey: "Clyde:objc",
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "references", "contains"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "objc/payload-and-complexity" },
+    },
+    title: "objc managed-OO wave (#267)",
+  },
   java: {
     id: "java",
     wasm: "tree-sitter-java.wasm",
@@ -348,7 +362,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
 // unsafe C# COM-interop vtable-dispatch calls are captured as `uses` rather
 // than `calls` (tree-sitter parses `if(...)` and pointer-slot chaining as
 // degenerate invocation_expression subtrees) — bounded to that corpus corner.
-const GATED_LANGS = ["java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp", "rust", "go", "zig", "csharp", "dart", "swift"]
+const GATED_LANGS = ["java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp", "rust", "go", "zig", "csharp", "dart", "swift", "objc"]
 
 async function loadNamedNodeTypes(cfg: LangConfig): Promise<string[]> {
   const wts: any = await import("web-tree-sitter")

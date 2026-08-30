@@ -1183,11 +1183,85 @@
       "id": "section-h-cross-language",
       "language": "swift",
       "status": "pass"
+    },
+    {
+      "description": "objc: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "objc",
+      "status": "pass"
+    },
+    {
+      "description": "objc: 3 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "objc",
+      "status": "pass"
+    },
+    {
+      "description": "objc: 3 ruled, 0 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "objc",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (objc)",
+      "detail": "214 types, 31 handled, 150 silent, 3 gaps, 3 decisions",
+      "id": "section-a-structural",
+      "language": "objc",
+      "status": "pass"
+    },
+    {
+      "description": "6 relationship kinds pinned by objc fixtures",
+      "detail": "pinned: calls, contains, extends, implements, instantiates, references",
+      "id": "section-b-relationship-kinds",
+      "language": "objc",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for objc (1)",
+      "detail": "complexity",
+      "id": "section-c-payload-matrix",
+      "language": "objc",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
+      "id": "section-d-evidence-tiers",
+      "language": "objc",
+      "status": "pass"
+    },
+    {
+      "description": "Clyde:objc at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor Clyde:objc: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "objc",
+      "status": "pass"
+    },
+    {
+      "description": "objc avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "Clyde:objc 48.2 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "objc",
+      "status": "pass"
+    },
+    {
+      "description": "objc analyzer docs present and committed",
+      "detail": "docs/analyzers/real-objective-c-analyzer.md",
+      "id": "section-g-docs",
+      "language": "objc",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "6 checks pass",
+      "id": "section-h-cross-language",
+      "language": "objc",
+      "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "637f9d1e23a77ac1e5f6dc5cfc526b7bf9cac672",
-  "committedAt": "2026-08-30T05:05:51+02:00",
+  "commit": "bcc6816013ec642dc6c8d10426a775a8157dc586",
+  "committedAt": "2026-08-30T05:28:55+02:00",
   "data": {
     "languages": {
       "c": {
@@ -1623,6 +1697,54 @@
           },
           "section-g-docs": {
             "detail": "docs/analyzers/kotlin.md, docs/analyzers/real-kotlin-analyzer.md",
+            "status": "pass"
+          },
+          "section-h-cross-language": {
+            "detail": "6 checks pass",
+            "status": "pass"
+          }
+        }
+      },
+      "objc": {
+        "gaps": [
+          "undefined: preprocessor conditional branches (ifdef/if/else) are not tracked as decision points or symbols; only preproc_include is consumed (imports)",
+          "undefined: block-literal inner declarations are anonymous (generated names, no symbols); captured variables are not emitted as distinct symbols",
+          "undefined: obsolete/dead grammar-era names (pre-pinned-wasm aliases) — the pinned wasm has no such nodes; the analyzer never emits them. Documented to prevent future dead-literal regressions"
+        ],
+        "nodeTypeCount": 214,
+        "pendingDecisions": [],
+        "ruledDecisions": [
+          "OBJCD1",
+          "OBJCD2",
+          "OBJCD3"
+        ],
+        "sections": {
+          "section-a-structural": {
+            "detail": "214 types, 31 handled, 150 silent, 3 gaps, 3 decisions",
+            "status": "pass"
+          },
+          "section-b-relationship-kinds": {
+            "detail": "pinned: calls, contains, extends, implements, instantiates, references",
+            "status": "pass"
+          },
+          "section-c-payload-matrix": {
+            "detail": "complexity",
+            "status": "pass"
+          },
+          "section-d-evidence-tiers": {
+            "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
+            "status": "pass"
+          },
+          "section-e-differential": {
+            "detail": "floor Clyde:objc: missing=0, unexplained=0 (differential-baseline.json)",
+            "status": "pass"
+          },
+          "section-f-perf-budget": {
+            "detail": "Clyde:objc 48.2 ms/file",
+            "status": "pass"
+          },
+          "section-g-docs": {
+            "detail": "docs/analyzers/real-objective-c-analyzer.md",
             "status": "pass"
           },
           "section-h-cross-language": {

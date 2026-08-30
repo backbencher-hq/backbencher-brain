@@ -1130,6 +1130,14 @@
       "perf": {
         "avgMsPerFile": 96.4
       }
+    },
+    "Clyde:objc": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 48.2
+      }
     }
   }
 }

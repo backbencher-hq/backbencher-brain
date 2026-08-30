@@ -109,16 +109,18 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
               const cn = node.namedChild(ci)
               if (!cn) continue
               if (cn.type === "identifier" && !foundName) { foundName = true; continue }
-              if ((cn.type === "type_identifier" || cn.type === "superclass_reference" || cn.type === "identifier") && !superName) { superName = cn.text }
-              if (cn.type === "protocol_qualifiers" || cn.type === "protocol_list" || cn.type === "parameterized_arguments") {
+              // Pinned grammar: superclass is the plain identifier after `:`;
+              // protocols live under parameterized_arguments > type_name.
+              if ((cn.type === "type_identifier" || cn.type === "identifier") && !superName) { superName = cn.text }
+              if (cn.type === "parameterized_arguments") {
                 for (let pj = 0; pj < cn.namedChildCount; pj++) {
                   const pn = cn.namedChild(pj)
                   if (pn && (pn.type === "type_identifier" || pn.type === "identifier" || pn.type === "type_name")) protocols.push(pn.text)
                 }
               }
             }
-            if (superName) { relationships.push({ source: nameNode.text, target: superName, type: ASTEngine.RelationshipType.Extends, metadata: { objcSpecific: true } }) }
-            for (let pk = 0; pk < protocols.length; pk++) { relationships.push({ source: nameNode.text, target: protocols[pk], type: ASTEngine.RelationshipType.Implements, metadata: { objcSpecific: true, isProtocol: true } }) }
+            if (superName) { relationships.push({ source: nameNode.text, target: superName, type: ASTEngine.RelationshipType.Extends, confidence: 1.0, metadata: { objcSpecific: true } }) }
+            for (let pk = 0; pk < protocols.length; pk++) { relationships.push({ source: nameNode.text, target: protocols[pk], type: ASTEngine.RelationshipType.Implements, confidence: 1.0, metadata: { objcSpecific: true, isProtocol: true } }) }
             symbols.push({
               name: nameNode.text,
               kind: ASTEngine.SymbolKind.Class,
@@ -127,20 +129,6 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
               metadata: { objcSpecific: true, type: node.type, superClass: superName, protocols },
             })
           }
-        }
-      } 
-      // 2. Explicit category node types (some grammars emit these directly).
-      else if (node.type === "category_interface" || node.type === "category_implementation") {
-        const nameNode = this.findChild(node, (n) => n.type === "identifier" || n.type === "type_identifier")
-        if (nameNode) {
-          nextActiveScope = nameNode.text
-          symbols.push({
-            name: nameNode.text,
-            kind: ASTEngine.SymbolKind.Extension,
-            range: this.getRange(node),
-            ownerName: activeScope !== "global" ? activeScope : undefined,
-            metadata: { objcSpecific: true, isCategory: true },
-          })
         }
       }
       // 3. Protocols (@protocol)
@@ -159,7 +147,7 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
       // 4. Methods (@method)
       else if (node.type === "method_declaration" || node.type === "method_definition") {
         // Obj-C method selectors can be disjointed, but we grab the first logical identifier or selector 
-        const nameNode = this.findChild(node, (n) => n.type === "selector" || n.type === "identifier")
+        const nameNode = this.findChild(node, (n) => n.type === "identifier")
         if (nameNode) {
           nextActiveScope = nameNode.text
           // The `+`/`-` sign is an anonymous token child of the method node
@@ -170,6 +158,7 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
             kind: ASTEngine.SymbolKind.Method,
             range: this.getRange(node),
             ownerName: activeScope !== "global" ? activeScope : undefined,
+            complexity: this.calculateCyclomaticComplexity(node),
             metadata: { objcSpecific: true, isClassMethod, isInstanceMethod: !isClassMethod },
           })
         }
@@ -185,6 +174,7 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
             name: nameNode.text,
             kind: ASTEngine.SymbolKind.Function,
             range: this.getRange(node),
+            complexity: this.calculateCyclomaticComplexity(node),
             metadata: { objcSpecific: true },
           })
         }
@@ -219,7 +209,7 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       // 7. Variables (C-style declarations) — file-scope only; method-body
       // declarations are locals (execution artifacts) and blocks are generated.
-      else if (node.type === "block_literal" || node.type === "block_expression") {
+      else if (node.type === "block_literal") {
         // Anonymous blocks have generated names — skip as symbols.
       } else if (node.type === "declaration" && activeScope === "global") {
          const declarator = this.findChild(node, (n) => n.type === "init_declarator" || n.type === "identifier")
@@ -275,6 +265,7 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
                 source: activeScope,
                 target: selectorNode.text,
                 type: ASTEngine.RelationshipType.Calls,
+                confidence: 0.95,
                 metadata: { isMessageExpression: true }
               })
             }
@@ -287,6 +278,7 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
               source: activeScope,
               target: funcNode.text,
               type: ASTEngine.RelationshipType.Calls,
+              confidence: 0.95,
               metadata: { isCFunctionCall: true }
             })
         }
@@ -302,13 +294,17 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    // Law 3: O(1) MAP deduplications — include ownerName AND start line so a
-    // class_interface and a same-named category (or two distinct declarations)
-    // never collapse into one symbol.
+    // Law 3: O(1) MAP deduplications. @interface + @implementation are the
+    // SAME class/method/property in Obj-C (the header declares, the .m
+    // defines) — they must merge into one symbol, so the key is
+    // kind:owner:name (no start line). Categories are the exception: several
+    // distinct categories may exist on one class, so the category NAME joins
+    // the key (extension::NSString:MyAdditions vs extension::NSString:Other).
     const uniqueSymbolsMap = new Map<string, ASTEngine.UniversalSymbol>()
     for (let i = 0; i < symbols.length; i++) {
         const s = symbols[i]
-        uniqueSymbolsMap.set(`${s.kind}:${s.ownerName || ''}:${s.name}:${s.range?.startLine || 0}`, s)
+        const catKey = s.kind === ASTEngine.SymbolKind.Extension && s.metadata?.isCategory ? `:${s.metadata?.categoryName ?? ''}` : ''
+        uniqueSymbolsMap.set(`${s.kind}:${s.ownerName || ''}:${s.name}${catKey}`, s)
     }
     const uniqueSymbols = Array.from(uniqueSymbolsMap.values())
 
@@ -340,6 +336,12 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
     }
+    // Evidence-tier classification (managed-OO family contract — swift/dart/
+    // csharp #264–#266 precedent; M14 section D requires >=2 distinct
+    // evidenceClass values). structural (grammar clauses, conf 1.0) |
+    // usage_contextual (calls, conf >= 0.85) | import_based (import
+    // directives) | inferred (confidence < 1 non-call edges).
+    this.classifyEvidenceTier(uniqueRelationships)
     for (let i = 0; i < uniqueSymbols.length; i++) { const s = uniqueSymbols[i]; exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: "public" }); }
     return {
       language: "objective-c",
@@ -352,12 +354,68 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
+  /**
+   * Evidence-tier classification — same rules as the swift/dart/csharp
+   * family (see swift wave #266 for the full rationale).
+   */
+  private classifyEvidenceTier(relationships: ASTEngine.UniversalRelationship[]): void {
+    for (const r of relationships) {
+      const type = r.type ?? r.relationshipType ?? ""
+      const md: any = r.metadata ?? {}
+      if (type === "contains") { md.evidenceClass = "structural"; continue }
+      if (type === "imports" || type === "exports" || type === "references") { md.evidenceClass = "import_based"; continue }
+      if (type === "calls" || type === "uses") {
+        md.evidenceClass = (r.confidence ?? 0) >= 0.85 ? "usage_contextual" : "inferred"
+        continue
+      }
+      if (type === "instantiates" || type === "extends" || type === "implements") {
+        md.evidenceClass = (r.confidence ?? 0) >= 0.9 ? "structural" : "inferred"
+        continue
+      }
+      if (type === "overrides") { md.evidenceClass = "structural"; continue }
+      md.evidenceClass = "usage_contextual"
+    }
+  }
+
+  /**
+   * Per-symbol cyclomatic complexity (managed-OO family contract — csharp
+   * #264 wave precedent). The objc grammar is a C superset, so the node set
+   * mirrors the C analyzer's exactly: branch constructs + short-circuit
+   * &&/|| operators only; base 1. Probe-verified against the pinned wasm
+   * (do_statement confirmed present, 2026-08-30).
+   */
+  private calculateCyclomaticComplexity(node: Node): number {
+    let complexity = 1
+    const complexityNodes = new Set([
+      "if_statement", "for_statement", "while_statement", "do_statement",
+      "case_statement", "conditional_expression",
+    ])
+    const stack: Node[] = [node]
+    let guard = 0
+    while (stack.length > 0 && guard++ < 200000) {
+      const n = stack.pop()!
+      if (complexityNodes.has(n.type)) complexity++
+      else if (n.type === "binary_expression") {
+        // Short-circuit operators count as decision points (C family T1) —
+        // same operator-field lookup as the C analyzer (the token is an
+        // anonymous child, so namedChild iteration misses it).
+        const op = n.childForFieldName("operator")
+        if (op && (op.text === "&&" || op.text === "||")) complexity++
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return complexity
+  }
+
   // Walk struct_declaration → struct_declarator → (pointer/reference) →
   // identifier to find the declared property/ivar name.
   private findDeclaredName(node: Node): string | null {
     const walkForIdentifier = (n: Node | null): Node | null => {
       if (!n) return null
-      if (n.type === "identifier" || n.type === "property_identifier") return n
+      if (n.type === "identifier") return n
       for (let i = 0; i < n.namedChildCount; i++) {
         const found = walkForIdentifier(n.namedChild(i))
         if (found) return found
