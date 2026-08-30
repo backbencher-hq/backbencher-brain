@@ -1221,6 +1221,67 @@ const MUTANTS: Mutant[] = [
       }],
     }),
   },
+  {
+    id: "php/drop-implements-edge",
+    language: "php",
+    defectClass: "relationship-loss",
+    description: "drops php implements edges (PaymentService->Authorizer/Refundable) — php section B implements pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "implements") }),
+  },
+  {
+    id: "php/drop-extends-edge",
+    language: "php",
+    defectClass: "relationship-loss",
+    description: "drops php extends edges (PaymentService->BaseService) — php extends pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "extends") }),
+  },
+  {
+    id: "php/drop-instantiates-edge",
+    language: "php",
+    defectClass: "relationship-loss",
+    description: "drops php instantiates edges (new PaymentService / new StripeGateway) — php instantiates pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "instantiates") }),
+  },
+  {
+    id: "php/drop-trait-use",
+    language: "php",
+    defectClass: "relationship-loss",
+    description: "drops php trait-composition uses edges (OrderService->Loggable) — php trait pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).isTraitUse)) }),
+  },
+  {
+    id: "php/drop-member-read-uses",
+    language: "php",
+    defectClass: "relationship-loss",
+    description: "drops php member-read uses edges ($this->balance reads) — php section B uses pin (managed-OO family contract)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).isMemberRead && x.type === "uses")) }),
+  },
+  {
+    id: "php/emit-write-as-uses",
+    language: "php",
+    defectClass: "relationship-loss",
+    description: "regresses the read/write gate: emits uses for assignment-LHS writes ($this->balance = ... as a read) — php forbid pin",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), {
+        type: "uses", source: "__construct", target: "gateway", isExternal: true, weight: 1, confidence: 0.9, metadata: { phpSpecific: true, isMemberRead: true },
+      }],
+    }),
+  },
+  {
+    id: "php/drop-symbol-complexity",
+    language: "php",
+    defectClass: "payload-loss",
+    description: "drops php per-symbol complexity (authorize if/for/while/switch/ternary/&& count) — php section C complexity pin",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, complexity: undefined })) }),
+  },
+  {
+    id: "php/drop-override-edge",
+    language: "php",
+    defectClass: "relationship-loss",
+    description: "drops php override edges (PaymentService.__construct -> BaseService.__construct) — php overrides pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "overrides") }),
+  },
 ]
 
 async function realAnalyzer(lang: string): Promise<any> {
