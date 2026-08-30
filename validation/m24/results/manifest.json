@@ -1,0 +1,213 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M24",
+  "githubMilestone": 24,
+  "title": "bb_lsp — The Server (IDE Program v0)",
+  "status": "open",
+  "authority": "docs/m24/M24-MASTER-PLAN.md",
+  "governingContract": "docs/IDE-HONESTY-CONTRACT.md",
+  "updatedAt": "2026-08-31T00:00:00.000Z",
+  "evidencePolicy": {
+    "verifiedRequires": [
+      "currentCommit",
+      "sourceFingerprint",
+      "verifierCommand",
+      "evidenceFile",
+      "positiveAndNegativeChecks",
+      "freshTimestamp",
+      "limitations"
+    ],
+    "missingCorpusState": "blocked-or-known-gap",
+    "timeoutState": "blocked-or-known-gap",
+    "unexecutedState": "planned"
+  },
+  "issues": [
+    {
+      "code": "G1",
+      "githubIssue": 487,
+      "tool": "governance",
+      "status": "planned",
+      "scope": "authority, ledger, closure gate, npm run verify wiring",
+      "acceptanceCriteria": [
+        "machine-readable ledger with all 11 M24 issues",
+        "fail-closed governance verifier with negative checks",
+        "explicit authority order in master plan"
+      ],
+      "closureRequirements": [
+        "persist current gate evidence",
+        "mutation checks pass",
+        "document limitations"
+      ]
+    },
+    {
+      "code": "P1",
+      "githubIssue": 488,
+      "tool": "lsp-positions",
+      "status": "planned",
+      "scope": "LSP 0-based UTF-16 <-> index 1-based lines/byte ranges conversion component with mutation suite",
+      "acceptanceCriteria": [
+        "dedicated position mapping component, no inline conversion elsewhere",
+        "mutation suite covers off-by-one, multi-byte, astral-plane, CRLF, tab cases",
+        "planted defects fail the suite"
+      ],
+      "closureRequirements": [
+        "persist current gate evidence",
+        "mutation checks pass",
+        "document limitations"
+      ]
+    },
+    {
+      "code": "P2",
+      "githubIssue": 489,
+      "tool": "lsp-freshness",
+      "status": "planned",
+      "scope": "file-watch, incremental reindex, machine-readable stale markers with declared debounce/catch-up guarantees",
+      "acceptanceCriteria": [
+        "watcher triggers incremental reindex with declared debounce",
+        "stale results carry machine-readable markers",
+        "stale marker rendered in-UI never silent"
+      ],
+      "closureRequirements": [
+        "persist current gate evidence",
+        "mutation checks pass",
+        "document limitations"
+      ]
+    },
+    {
+      "code": "L1",
+      "githubIssue": 490,
+      "tool": "lsp-server",
+      "status": "planned",
+      "scope": "server lifecycle, capabilities advertisement, stdio transport, project resolution",
+      "acceptanceCriteria": [
+        "initialize/shutdown handshake works over stdio",
+        "capabilities advertise only complement-stance features",
+        "single-root scope declared; unsupported languages respond declared-absent"
+      ],
+      "closureRequirements": [
+        "persist current gate evidence",
+        "negative test for unsupported language passes",
+        "document limitations"
+      ]
+    },
+    {
+      "code": "L2",
+      "githubIssue": 491,
+      "tool": "lsp-hover",
+      "status": "planned",
+      "scope": "hover with signature, usage count, evidence class, stale marker",
+      "acceptanceCriteria": [
+        "hover returns signature plus usage count plus evidence class",
+        "stale marker present when index is stale",
+        "latency budget p95 < 50ms warm measured"
+      ],
+      "closureRequirements": [
+        "persist current gate evidence",
+        "mutation checks pass",
+        "document limitations"
+      ]
+    },
+    {
+      "code": "L3",
+      "githubIssue": 492,
+      "tool": "lsp-navigation",
+      "status": "planned",
+      "scope": "definition and references over brain_symbol/brain_relationship",
+      "acceptanceCriteria": [
+        "go-to-definition resolves across indexed files",
+        "find-references returns all indexed references with evidence tiers",
+        "latency budget p95 < 50ms warm measured"
+      ],
+      "closureRequirements": [
+        "persist current gate evidence",
+        "mutation checks pass",
+        "document limitations"
+      ]
+    },
+    {
+      "code": "L4",
+      "githubIssue": 493,
+      "tool": "lsp-symbols",
+      "status": "planned",
+      "scope": "document symbols and workspace symbols from the index",
+      "acceptanceCriteria": [
+        "document symbols reflect indexed structure",
+        "workspace symbol search over the full index",
+        "latency budgets met per contract section 3"
+      ],
+      "closureRequirements": [
+        "persist current gate evidence",
+        "mutation checks pass",
+        "document limitations"
+      ]
+    },
+    {
+      "code": "L5",
+      "githubIssue": 494,
+      "tool": "lsp-callhierarchy",
+      "status": "planned",
+      "scope": "prepare/incoming/outgoing calls over the bounded traverseGraph engine",
+      "acceptanceCriteria": [
+        "prepareCallHierarchy item resolves to indexed symbols",
+        "incoming/outgoing calls traverse the bounded graph engine",
+        "latency budget p95 < 100ms warm measured"
+      ],
+      "closureRequirements": [
+        "persist current gate evidence",
+        "mutation checks pass",
+        "document limitations"
+      ]
+    },
+    {
+      "code": "V1",
+      "githubIssue": 495,
+      "tool": "lsp-verifier",
+      "status": "planned",
+      "scope": "reference LSP client harness and latency-budget gate (the I1 gate)",
+      "acceptanceCriteria": [
+        "reference client issues real protocol requests against bb lsp",
+        "harness has positive and negative cases and can fail",
+        "latency budget gate enforced per contract section 3"
+      ],
+      "closureRequirements": [
+        "persist current gate evidence",
+        "mutation checks pass",
+        "document limitations"
+      ]
+    },
+    {
+      "code": "D1",
+      "githubIssue": 496,
+      "tool": "lsp-docs",
+      "status": "planned",
+      "scope": "tool documentation truthful per contract vocabulary, claim levels published",
+      "acceptanceCriteria": [
+        "documentation states claim levels and limitations",
+        "no banned vocabulary in any M24 artifact",
+        "complement stance documented"
+      ],
+      "closureRequirements": [
+        "persist current gate evidence",
+        "vocabulary lint passes",
+        "document limitations"
+      ]
+    },
+    {
+      "code": "X1",
+      "githubIssue": 497,
+      "tool": "lsp-gate",
+      "status": "planned",
+      "scope": "closure gate with contract section 6 mutation set and v0 completion bar audit",
+      "acceptanceCriteria": [
+        "all contract section 6 mutants fail the suite",
+        "v0 completion bar audited with evidence",
+        "ledger clean with no PENDING cells in dependency paths"
+      ],
+      "closureRequirements": [
+        "persist current gate evidence",
+        "mutation checks pass",
+        "document limitations"
+      ]
+    }
+  ]
+}
