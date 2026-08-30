@@ -13,14 +13,14 @@
       "status": "pass"
     },
     {
-      "description": "regression gate vs grammar-audit-baseline.json (30/41 languages pass)",
+      "description": "regression gate vs grammar-audit-baseline.json (31/41 languages pass)",
       "id": "baseline-gate",
       "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "637f9d1e23a77ac1e5f6dc5cfc526b7bf9cac672",
-  "committedAt": "2026-08-30T05:05:51+02:00",
+  "commit": "bcc6816013ec642dc6c8d10426a775a8157dc586",
+  "committedAt": "2026-08-30T05:28:55+02:00",
   "data": {
     "languages": {
       "bash": {
@@ -644,51 +644,10 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 535,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 34,
-        "status": "fail",
+        "referencedTypeLiterals": 27,
+        "status": "pass",
         "unknownFields": [],
-        "unknownNodeTypes": [
-          {
-            "context": "real-objective-c-analyzer.ts:comparison",
-            "line": 112,
-            "literal": "superclass_reference"
-          },
-          {
-            "context": "real-objective-c-analyzer.ts:comparison",
-            "line": 113,
-            "literal": "protocol_qualifiers"
-          },
-          {
-            "context": "real-objective-c-analyzer.ts:comparison",
-            "line": 113,
-            "literal": "protocol_list"
-          },
-          {
-            "context": "real-objective-c-analyzer.ts:comparison",
-            "line": 133,
-            "literal": "category_interface"
-          },
-          {
-            "context": "real-objective-c-analyzer.ts:comparison",
-            "line": 133,
-            "literal": "category_implementation"
-          },
-          {
-            "context": "real-objective-c-analyzer.ts:comparison",
-            "line": 162,
-            "literal": "selector"
-          },
-          {
-            "context": "real-objective-c-analyzer.ts:comparison",
-            "line": 222,
-            "literal": "block_expression"
-          },
-          {
-            "context": "real-objective-c-analyzer.ts:comparison",
-            "line": 360,
-            "literal": "property_identifier"
-          }
-        ],
+        "unknownNodeTypes": [],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-objc.wasm"
@@ -1114,10 +1073,10 @@
       }
     },
     "summary": {
-      "fail": 11,
+      "fail": 10,
       "languagesAudited": 41,
-      "pass": 30,
-      "totalUnknownReferences": 57
+      "pass": 31,
+      "totalUnknownReferences": 49
     }
   },
   "governance": "docs/M14-HONESTY-CONTRACT.md",

@@ -39,6 +39,7 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   csharp: { wasm: "tree-sitter-c_sharp.wasm", analyzerFile: "real-csharp-analyzer", className: "RealCSharpAnalyzer", ext: "cs" },
   dart: { wasm: "tree-sitter-dart.wasm", analyzerFile: "real-dart-analyzer", className: "RealDartAnalyzer", ext: "dart" },
   swift: { wasm: "tree-sitter-swift.wasm", analyzerFile: "real-swift-analyzer", className: "RealSwiftAnalyzer", ext: "swift" },
+  objc: { wasm: "tree-sitter-objc.wasm", analyzerFile: "real-objective-c-analyzer", className: "RealObjectiveCAnalyzer", ext: "m" },
 }
 
 function seededPick<T>(items: T[], n: number, seedStr: string): T[] {
@@ -807,6 +808,125 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
     for (let i = n.namedChildCount - 1; i >= 0; i--) {
       const c = n.namedChild(i)
       if (c) stack.push({ n: c, parentType: t })
+    }
+  }
+  return edges
+}
+
+// Objective-C tree-truth oracle (objective-c managed-OO wave #267). Mirrors
+// RealObjectiveCAnalyzer's emission contract exactly:
+//   - extends: superclass (the first identifier/type_identifier AFTER the
+//     class name, past the `:` in class_interface/class_implementation),
+//     from non-category declarations only
+//   - implements: protocols under parameterized_arguments (type_identifier /
+//     identifier / type_name children)
+//   - instantiates: message_expression whose selector is alloc/new — the
+//     receiver leaf is the instantiated class (nested [[Foo alloc] ...] too)
+//   - calls: message_expression selectors (non alloc/new) AND C call_expression
+//     identifiers, ONLY inside method/function bodies (the analyzer guards
+//     `activeScope !== "global"`)
+//   - references: preproc_include -> root -> module name (system_lib_string
+//     stripped of <>, or string_literal content)
+// The oracle emits UNIQUE (label,target) edges (seen-set per label+target),
+// matching the site-agnostic coverage match in main().
+export function deriveObjcEdges(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const key = (label: string, target: string) => label + ":" + target
+  const push = (label: string, target: string) => {
+    const k = key(label, target)
+    if (!seen.has(k)) { seen.add(k); edges.push({ label, from: "(expr)", target }) }
+  }
+
+  // Walk with an inBody flag: calls/instantiates only inside method/function
+  // bodies (mirrors the analyzer's activeScope !== "global" guard).
+  const stack: any[] = [{ n: root, inBody: false }]
+  while (stack.length > 0) {
+    const { n, inBody } = stack.pop()!
+    const t = n.type
+    if (t === "class_interface" || t === "class_implementation") {
+      // Category detection: an anonymous `(` child (like swift's actor via
+      // keyword token). Categories emit Extension symbols, no inheritance.
+      let isCategory = false
+      for (let i = 0; i < n.childCount; i++) {
+        const c = n.child(i)
+        if (c && !c.isNamed && c.type === "(") { isCategory = true; break }
+      }
+      if (!isCategory) {
+        let foundName = false
+        let superName: string | null = null
+        const protocols: string[] = []
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (!c) continue
+          if (c.type === "identifier" && !foundName) { foundName = true; continue }
+          if ((c.type === "type_identifier" || c.type === "identifier") && !superName) { superName = c.text }
+          if (c.type === "parameterized_arguments") {
+            for (let j = 0; j < c.namedChildCount; j++) {
+              const pn = c.namedChild(j)
+              if (pn && (pn.type === "type_identifier" || pn.type === "identifier" || pn.type === "type_name")) protocols.push(pn.text)
+            }
+          }
+        }
+        if (superName) push("extends", superName)
+        for (const p of protocols) push("implements", p)
+      }
+    }
+    if (t === "message_expression" && inBody) {
+      // Selector = first identifier AFTER the receiver (mirrors the analyzer:
+      // never the receiver itself). alloc/new -> instantiates the receiver
+      // leaf; nested [[Foo alloc] ...] resolves through the inner message.
+      let selectorNode: any = null
+      for (let i = 1; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c && c.type === "identifier") { selectorNode = c; break }
+      }
+      if (selectorNode) {
+        if (selectorNode.text === "alloc" || selectorNode.text === "new") {
+          let receiverLeaf: string | null = null
+          const receiver = n.namedChild(0)
+          if (receiver) {
+            if (receiver.type === "identifier" || receiver.type === "type_identifier") receiverLeaf = receiver.text
+            else if (receiver.type === "message_expression") {
+              const innerSel = receiver.namedChildren.find((c: any) => c.type === "identifier")
+              if (innerSel && (innerSel.text === "alloc" || innerSel.text === "new")) {
+                const innerRecv = receiver.namedChild(0)
+                if (innerRecv && (innerRecv.type === "identifier" || innerRecv.type === "type_identifier")) receiverLeaf = innerRecv.text
+              }
+            }
+          }
+          if (receiverLeaf) push("instantiates", receiverLeaf)
+        } else {
+          push("calls", selectorNode.text)
+        }
+      }
+    }
+    if (t === "call_expression" && inBody) {
+      const fn = n.namedChildren.find((c: any) => c.type === "identifier")
+      if (fn) push("calls", fn.text)
+    }
+    if (t === "preproc_include") {
+      // module name: system_lib_string stripped of <>, or string_literal
+      // content (mirrors handleImport's modName extraction)
+      let modName: string | null = null
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (!c) continue
+        if (c.type === "system_lib_string") {
+          const txt = c.text
+          if (txt.length >= 2) modName = txt.slice(1, txt.length - 1)
+        } else if (c.type === "string_literal") {
+          const content = c.namedChildren.find((x: any) => x.type === "string_content")
+          modName = content ? content.text : c.text
+        }
+        if (modName) break
+      }
+      if (modName) push("references", modName)
+    }
+    const nextBody = inBody || t === "method_definition" || t === "method_declaration" || t === "function_definition"
+    for (let i = n.namedChildCount - 1; i >= 0; i--) {
+      const c = n.namedChild(i)
+      if (c) stack.push({ n: c, inBody: nextBody })
     }
   }
   return edges
@@ -1727,6 +1847,11 @@ async function main() {
           ;(truth as any[]).push(e)
         }
       }
+      if (lang === "objc") {
+        for (const e of deriveObjcEdges(root)) {
+          ;(truth as any[]).push(e)
+        }
+      }
       if (lang === "svelte") {
         for (const e of deriveSvelteComponentUsages(root)) {
           ;(truth as any[]).push(e)
@@ -1757,7 +1882,7 @@ async function main() {
       // truth); zig derives calls AND uses; other languages do not derive
       // call truth, so including calls there would flag every real call edge
       // as unexplained.
-      })).filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" ? ["overrides"] : []), ...(lang === "c" || lang === "rust" || lang === "go" || lang === "dart" ? ["calls"] : []), ...(lang === "zig" || lang === "swift" ? ["calls", "uses"] : []), ...(lang === "dart" ? ["uses"] : []), ...(lang === "csharp" ? ["calls"] : []), ...(lang === "swift" ? ["references"] : [])].includes(r.label))
+      })).filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" ? ["overrides"] : []), ...(lang === "c" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" ? ["calls"] : []), ...(lang === "zig" || lang === "swift" ? ["calls", "uses"] : []), ...(lang === "dart" ? ["uses"] : []), ...(lang === "csharp" ? ["calls"] : []), ...(lang === "swift" || lang === "objc" ? ["references"] : [])].includes(r.label))
         // The tree-truth oracles already emit UNIQUE (label,target) edges per
         // file (each oracle keeps a `seen` set keyed by label+target). The
         // analyzer, by contrast, emits one edge per source SEARCH HIT, so a

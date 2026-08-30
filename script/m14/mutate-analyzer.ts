@@ -1129,6 +1129,65 @@ const MUTANTS: Mutant[] = [
       ),
     }),
   },
+  {
+    id: "objc/drop-implements-edge",
+    language: "objc",
+    defectClass: "relationship-loss",
+    description: "drops objc implements edges (PaymentService->PaymentGateway, CustomView->Renderable) — objc section B implements pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "implements") }),
+  },
+  {
+    id: "objc/drop-extends-edge",
+    language: "objc",
+    defectClass: "relationship-loss",
+    description: "drops objc extends edges (BaseService->NSObject, PaymentService->BaseService) — objc payload extends pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "extends") }),
+  },
+  {
+    id: "objc/drop-instantiates-edge",
+    language: "objc",
+    defectClass: "relationship-loss",
+    description: "drops objc instantiates edges (sharedService->PaymentService via alloc/new) — objc instantiates pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "instantiates") }),
+  },
+  {
+    id: "objc/drop-category-extension",
+    language: "objc",
+    defectClass: "symbol-loss",
+    description: "drops objc category Extension symbols (PaymentService (Audit), UIView (RoundedCorner)) — objc category pin",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => !((s.metadata ?? {}).isCategory)) }),
+  },
+  {
+    id: "objc/drop-symbol-complexity",
+    language: "objc",
+    defectClass: "payload-loss",
+    description: "drops objc per-symbol complexity (authorizeAmount if/for/&&/ternary count) — objc section C complexity pin",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, complexity: undefined })) }),
+  },
+  {
+    id: "objc/emit-receiver-call",
+    language: "objc",
+    defectClass: "relationship-loss",
+    description: "re-adds the bogus receiver-as-call edge (calls->PaymentService from [PaymentService sharedService]) — objc forbid pin",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), {
+        type: "calls", source: "auditTrail", target: "PaymentService", isExternal: true, weight: 1, confidence: 0.95, metadata: {},
+      }],
+    }),
+  },
+  {
+    id: "objc/duplicate-interface-impl",
+    language: "objc",
+    defectClass: "symbol-loss",
+    description: "regresses the interface+implementation dedup: emits the same class/method/property twice — objc unique-symbol pins",
+    transform: r => ({
+      ...r,
+      // Genuinely duplicate every symbol: the @interface/@implementation
+      // dedup regression makes each class/method/property appear twice.
+      symbols: [...(r.symbols ?? []), ...(r.symbols ?? [])],
+    }),
+  },
 ]
 
 async function realAnalyzer(lang: string): Promise<any> {

@@ -40,6 +40,7 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   csharp: { wasm: "tree-sitter-c_sharp.wasm", analyzerFile: "real-csharp-analyzer", className: "RealCSharpAnalyzer", ext: "cs" },
   dart: { wasm: "tree-sitter-dart.wasm", analyzerFile: "real-dart-analyzer", className: "RealDartAnalyzer", ext: "dart" },
   swift: { wasm: "tree-sitter-swift.wasm", analyzerFile: "real-swift-analyzer", className: "RealSwiftAnalyzer", ext: "swift" },
+  objc: { wasm: "tree-sitter-objc.wasm", analyzerFile: "real-objective-c-analyzer", className: "RealObjectiveCAnalyzer", ext: "m" },
 }
 
 interface Entry { [k: string]: any }
@@ -216,7 +217,12 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
       }
     }
         for (const want of exp.expectComplexity ?? []) {
-      const sym = symbols.find((s: any) => s.name === want.symbol)
+      // ownerName-aware lookup (mirrors expectSymbols): overloaded / repeated
+      // names across owners (protocol declaration + implementation of the
+      // same selector) need the owning scope to disambiguate.
+      const sym = symbols.find((s: any) =>
+        s.name === want.symbol &&
+        (want.ownerName === undefined || s.ownerName === want.ownerName))
       const cx: number | undefined = sym?.complexity
       if (want.equals !== undefined && cx !== want.equals) {
         problems.push(`expected ${want.symbol} complexity ${want.equals}; got ${cx}`)
@@ -274,7 +280,12 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
       if (actual !== want) problems.push(`expected primary framework ${JSON.stringify(want)}; got ${JSON.stringify(actual)} (detected=${JSON.stringify((result.metadata as any)?.detectedFrameworks)})`)
     }
     for (const want of exp.expectComplexity ?? []) {
-      const sym = symbols.find((s: any) => s.name === want.symbol)
+      // ownerName-aware lookup (mirrors expectSymbols): overloaded / repeated
+      // names across owners (protocol declaration + implementation of the
+      // same selector) need the owning scope to disambiguate.
+      const sym = symbols.find((s: any) =>
+        s.name === want.symbol &&
+        (want.ownerName === undefined || s.ownerName === want.ownerName))
       const cx: number | undefined = sym?.complexity
       if (want.equals !== undefined && cx !== want.equals) {
         problems.push(`expected ${want.symbol} complexity ${want.equals}; got ${cx}`)
