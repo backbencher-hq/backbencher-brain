@@ -6,3 +6,4 @@ bb-ts-core.wasm
 .bb-data/
 bb.json
 .bb_backups/
+.p3-runner.tmp.ts
