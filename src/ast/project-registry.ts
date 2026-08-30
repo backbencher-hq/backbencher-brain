@@ -221,12 +221,24 @@ export function importDbFile(dbFilePath: string, toId: string, newPath: string,
   }
   const fromId = opts.fromId ?? projectIdFromDbFile(src)
   try {
-    // Validate BEFORE touching anything: this must be a brain DB.
-    const probe = BrainDatabase.openByPath(src, { readonly: true })
+    // Validate BEFORE touching anything: this must be a brain DB. Any failure
+    // here (missing table, unreadable file, driver init error on non-SQLite
+    // content) means "not a brain DB". The probe handle may be left closed by
+    // a failed driver init while still cached, so always evict via closeByPath
+    // — otherwise the next openByPath throws "Cannot use a closed database".
+    let isBrainDb = false
     try {
-      const t = probe.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='brain_file'").get()
-      if (!t) return { adopted: false, toId, reason: `not a brain DB (no brain_file table): ${src}` }
-    } finally { probe.close() }
+      const probe = BrainDatabase.openByPath(src, { readonly: true })
+      try {
+        const t = probe.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='brain_file'").get()
+        isBrainDb = !!t
+      } finally {
+        BrainDatabase.closeByPath(src)
+      }
+    } catch {
+      BrainDatabase.closeByPath(src)
+    }
+    if (!isBrainDb) return { adopted: false, toId, reason: `not a brain DB (no brain_file table): ${src}` }
 
     mkdirSync(dstDir, { recursive: true })
     copyFileSync(src, dstDb)
@@ -259,10 +271,29 @@ export function importDbFile(dbFilePath: string, toId: string, newPath: string,
   }
 }
 
-/** Best-effort project id for a DB file: its parent directory name if 40-hex. */
+/**
+ * Best-effort project id for a DB file: its parent directory name if 40-hex.
+ * Falls back to deriving the id from the rows themselves — a DB copied to a
+ * backup folder (parent not 40-hex) still carries its project_id in every row.
+ */
 function projectIdFromDbFile(dbFilePath: string): string | null {
   const parent = path.basename(path.dirname(path.resolve(dbFilePath)))
-  return /^[0-9a-f]{40}$/.test(parent) ? parent : null
+  if (/^[0-9a-f]{40}$/.test(parent)) return parent
+  // Deep-review fix (S1): fall back to reading the id from the rows so a
+  // backup/nested copy still gets its project_id rewritten on import.
+  try {
+    const probe = BrainDatabase.openByPath(dbFilePath, { readonly: true })
+    try {
+      const row = probe.prepare("SELECT project_id FROM brain_file LIMIT 1").get() as { project_id?: string } | undefined
+      if (row?.project_id && /^[0-9a-f]{40}$/.test(row.project_id)) return row.project_id
+    } finally {
+      // Must evict, not bare-close: the handle is cached, and a closed-but-
+      // cached handle makes the next openByPath throw "Cannot use a closed
+      // database" (which then makes importDbFile wrongly refuse the file).
+      BrainDatabase.closeByPath(dbFilePath)
+    }
+  } catch {}
+  return null
 }
 
 /**
@@ -274,7 +305,11 @@ function projectIdFromDbFile(dbFilePath: string): string | null {
  */
 function rewriteBrainFilePaths(raw: any, newPath: string): void {
   try {
-    const sample = (raw.prepare("SELECT path FROM brain_file LIMIT 500").all() as any[]).map((r: any) => String(r.path))
+    // Deep-review fix (S2): infer the old root from ALL rows, not a 500-row
+    // sample. A sample that happens to sit under one subdir yields a wrong
+    // common prefix, leaving every row outside that subdir unrewritten
+    // (verified: 101/701 paths left stale after a move).
+    const sample = (raw.prepare("SELECT path FROM brain_file").all() as any[]).map((r: any) => String(r.path))
     const oldRoot = commonRoot(sample)
     if (oldRoot && oldRoot !== "/" && newPath) {
       const escaped = oldRoot.replace(/[\\%_]/g, (c) => `\\${c}`) + "%"
