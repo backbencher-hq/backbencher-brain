@@ -1063,6 +1063,58 @@ const MUTANTS: Mutant[] = [
     description: "drops dart constructor-invocation instantiates edges (OrderLoading etc.) — dart section B instantiates pin",
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "instantiates") }),
   },
+  {
+    id: "swift/drop-implements-edge",
+    language: "swift",
+    defectClass: "relationship-loss",
+    description: "drops swift implements edges (OrderRepositoryImpl->OrderRepository, Order->Equatable) — swift section B implements pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "implements") }),
+  },
+  {
+    id: "swift/drop-self-uses-edge",
+    language: "swift",
+    defectClass: "relationship-loss",
+    description: "drops swift self. member-read uses edges (OrderStore->state) — swift section B uses pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).isFieldAccess && x.type === "uses")) }),
+  },
+  {
+    id: "swift/drop-operator-symbol",
+    language: "swift",
+    defectClass: "symbol-loss",
+    description: "drops swift operator overload symbols (operator + / == on Vector) — swift edges-and-patterns symbol pin",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => !(s.name && s.name.startsWith("operator ")) ) }),
+  },
+  {
+    id: "swift/drop-symbol-complexity",
+    language: "swift",
+    defectClass: "payload-loss",
+    description: "drops swift per-symbol complexity (parse classify guard/if/switch count) — swift section C complexity pin",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, complexity: undefined })) }),
+  },
+  {
+    id: "swift/emit-subscript-call",
+    language: "swift",
+    defectClass: "relationship-loss",
+    description: "re-adds the bogus subscript-read calls edge (entries[key] as a call) — swift edges-and-patterns forbid pin",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), {
+        type: "calls", source: "Registry", target: "entries", isExternal: true, weight: 1, confidence: 0.95, metadata: {},
+      }],
+    }),
+  },
+  {
+    id: "swift/emit-defer-call",
+    language: "swift",
+    defectClass: "relationship-loss",
+    description: "re-adds the bogus defer keyword-call edge (defer {} as calls->defer) — swift edges-and-patterns forbid pin",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), {
+        type: "calls", source: "parse", target: "defer", isExternal: true, weight: 1, confidence: 0.95, metadata: {},
+      }],
+    }),
+  },
 ]
 
 async function realAnalyzer(lang: string): Promise<any> {
