@@ -16,6 +16,7 @@
 import * as fs from "fs"
 import * as path from "path"
 import { execSync } from "child_process"
+import { PHP_BUILTINS } from "../../src/ast/real-php-analyzer"
 
 const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 const CORPUS_ROOT = "$HOME/fixtures/repositories"
@@ -40,6 +41,7 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   dart: { wasm: "tree-sitter-dart.wasm", analyzerFile: "real-dart-analyzer", className: "RealDartAnalyzer", ext: "dart" },
   swift: { wasm: "tree-sitter-swift.wasm", analyzerFile: "real-swift-analyzer", className: "RealSwiftAnalyzer", ext: "swift" },
   objc: { wasm: "tree-sitter-objc.wasm", analyzerFile: "real-objective-c-analyzer", className: "RealObjectiveCAnalyzer", ext: "m" },
+  php: { wasm: "tree-sitter-php.wasm", analyzerFile: "real-php-analyzer", className: "RealPhpAnalyzer", ext: "php" },
 }
 
 function seededPick<T>(items: T[], n: number, seedStr: string): T[] {
@@ -969,6 +971,134 @@ export function deriveObjcEdges(root: any): { label: string; from: string; targe
   return edges
 }
 
+// PHP tree-truth oracle (php managed-OO wave #268). Mirrors
+// RealPhpAnalyzer's emission contract exactly:
+//   - extends: class base_clause (FIRST child = superclass) + interface
+//     base_clause (ALL children — interfaces inherit multiple parents)
+//   - implements: class_interface_clause children
+//   - calls: function_call_expression (PHP_BUILTINS filtered), member_call /
+//     nullsafe_member_call / scoped_call name fields
+//   - uses: trait use_declaration names (isTraitUse) AND member_access_expression
+//     READS (the field name; assignment-LHS writes and call receivers excluded)
+//   - instantiates: object_creation_expression first name/qualified_name
+//   - references: require/include expression include paths (mirrors
+//     emitInclude — namespace `use` declarations go to imports, NOT
+//     references, exactly like the analyzer)
+// The oracle emits UNIQUE (label,target) edges (seen-set per label+target),
+// matching the site-agnostic coverage match in main().
+export function derivePhpEdges(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  // Import the analyzer's EXACT builtin set (never a hand-duplicated copy —
+  // a drift here would fabricate or hide call edges).
+  const key = (label: string, target: string) => label + ":" + target
+  const push = (label: string, target: string) => {
+    const k = key(label, target)
+    if (!seen.has(k)) { seen.add(k); edges.push({ label, from: "(expr)", target }) }
+  }
+  const leafName = (t: string): string => {
+    const parts = t.split(/\\|\./).filter(Boolean)
+    return parts[parts.length - 1] ?? t
+  }
+  // Mirror RealPhpAnalyzer.extractIncludePath (probe-verified shapes).
+  const cleanString = (t: string): string => {
+    const m = t.match(/^['"](.*)['"]$/s)
+    return m ? m[1] : t
+  }
+  const collapseWhitespace = (t: string): string => t.replace(/\s+/g, "")
+  const extractPhpIncludePath = (node: any): string | undefined => {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const child = node.namedChild(i)
+      if (!child) continue
+      if (child.type === "encapsed_string" || child.type === "string") return cleanString(child.text)
+      if (child.type === "binary_expression") return collapseWhitespace(child.text)
+      if (child.type === "name" || child.type === "qualified_name") return child.text
+    }
+    return undefined
+  }
+
+  const stack: any[] = [{ n: root, parent: null, inBody: false }]
+  while (stack.length > 0) {
+    const { n, parent, inBody } = stack.pop()!
+    const t = n.type
+    if (t === "class_declaration") {
+      const nameNode = n.namedChildren.find((c: any) => c.type === "name")
+      const className = nameNode?.text ?? "?"
+      const baseClause = n.namedChildren.find((c: any) => c.type === "base_clause")
+      if (baseClause) {
+        const first = baseClause.namedChild(0)
+        if (first) push("extends", leafName(first.text))
+      }
+      const ifaceClause = n.namedChildren.find((c: any) => c.type === "class_interface_clause")
+      if (ifaceClause) {
+        for (let i = 0; i < ifaceClause.namedChildCount; i++) {
+          const c = ifaceClause.namedChild(i)
+          if (c) push("implements", leafName(c.text))
+        }
+      }
+    }
+    if (t === "interface_declaration") {
+      const baseClause = n.namedChildren.find((c: any) => c.type === "base_clause")
+      if (baseClause) {
+        for (let i = 0; i < baseClause.namedChildCount; i++) {
+          const c = baseClause.namedChild(i)
+          if (c) push("extends", leafName(c.text))
+        }
+      }
+    }
+    if (t === "use_declaration" && inBody) {
+      // Trait use inside a class body
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c && (c.type === "name" || c.type === "qualified_name")) push("uses", leafName(c.text))
+      }
+    }
+    if (t === "require_once_expression" || t === "include_once_expression" ||
+        t === "require_expression" || t === "include_expression") {
+      // Mirror the analyzer's emitInclude: references -> the include path
+      // (cleanString/collapseWhitespace equivalents).
+      const p = extractPhpIncludePath(n)
+      if (p) push("references", p)
+    }
+    if (t === "function_call_expression") {
+      const fn = n.childForFieldName?.("function") ?? n.namedChildren.find((c: any) => c.type === "name" || c.type === "qualified_name")
+      if (fn) {
+        const target = leafName(fn.text)
+        if (!PHP_BUILTINS.has(target)) push("calls", target)
+      }
+    }
+    if (t === "member_call_expression" || t === "nullsafe_member_call_expression") {
+      const nameNode = n.childForFieldName?.("name")
+      if (nameNode) push("calls", nameNode.text)
+    }
+    if (t === "scoped_call_expression") {
+      const nameNode = n.childForFieldName?.("name")
+      if (nameNode) push("calls", nameNode.text)
+    }
+    if (t === "object_creation_expression") {
+      const target = n.namedChildren.find((c: any) => c.type === "name" || c.type === "qualified_name")
+      if (target) push("instantiates", leafName(target.text))
+    }
+    if (t === "member_access_expression" && inBody) {
+      // Member READS only: assignment-LHS is a write; member_call receiver is
+      // a call target (mirrors the analyzer's read/write + call-receiver gate).
+      const lhs = parent ? parent.namedChild(0) : null
+      const isWrite = parent && parent.type === "assignment_expression" && lhs && lhs.startIndex === n.startIndex && lhs.endIndex === n.endIndex
+      const isCallReceiver = parent && (parent.type === "member_call_expression" || parent.type === "nullsafe_member_call_expression")
+      if (!isWrite && !isCallReceiver) {
+        const nameNode = n.childForFieldName?.("name")
+        if (nameNode) push("uses", nameNode.text)
+      }
+    }
+    const nextBody = inBody || t === "method_declaration" || t === "function_definition"
+    for (let i = n.namedChildCount - 1; i >= 0; i--) {
+      const c = n.namedChild(i)
+      if (c) stack.push({ n: c, parent: n, inBody: nextBody })
+    }
+  }
+  return edges
+}
+
 // Go implicit interface-implementation truth (duck typing): a struct S
 // implements interface I when S's receiver-method set (value OR pointer
 // receivers) contains every method I declares. Mirrors the analyzer's
@@ -1889,6 +2019,11 @@ async function main() {
           ;(truth as any[]).push(e)
         }
       }
+      if (lang === "php") {
+        for (const e of derivePhpEdges(root)) {
+          ;(truth as any[]).push(e)
+        }
+      }
       if (lang === "svelte") {
         for (const e of deriveSvelteComponentUsages(root)) {
           ;(truth as any[]).push(e)
@@ -1919,7 +2054,7 @@ async function main() {
       // truth); zig derives calls AND uses; other languages do not derive
       // call truth, so including calls there would flag every real call edge
       // as unexplained.
-      })).filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" ? ["overrides"] : []), ...(lang === "c" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" ? ["calls"] : []), ...(lang === "zig" || lang === "swift" || lang === "objc" ? ["calls", "uses"] : []), ...(lang === "dart" ? ["uses"] : []), ...(lang === "csharp" ? ["calls"] : []), ...(lang === "swift" || lang === "objc" ? ["references"] : [])].includes(r.label))
+      })).filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" ? ["overrides"] : []), ...(lang === "c" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" ? ["calls"] : []), ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" ? ["calls", "uses"] : []), ...(lang === "dart" ? ["uses"] : []), ...(lang === "csharp" ? ["calls"] : []), ...(lang === "swift" || lang === "objc" || lang === "php" ? ["references"] : [])].includes(r.label))
         // The tree-truth oracles already emit UNIQUE (label,target) edges per
         // file (each oracle keeps a `seen` set keyed by label+target). The
         // analyzer, by contrast, emits one edge per source SEARCH HIT, so a

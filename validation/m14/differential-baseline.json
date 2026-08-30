@@ -1138,6 +1138,14 @@
       "perf": {
         "avgMsPerFile": 48.2
       }
+    },
+    "phpunit:php": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 10.8
+      }
     }
   }
 }
