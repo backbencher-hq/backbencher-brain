@@ -1257,11 +1257,85 @@
       "id": "section-h-cross-language",
       "language": "objc",
       "status": "pass"
+    },
+    {
+      "description": "php: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "php",
+      "status": "pass"
+    },
+    {
+      "description": "php: 2 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "php",
+      "status": "pass"
+    },
+    {
+      "description": "php: 4 ruled, 0 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "php",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (php)",
+      "detail": "177 types, 59 handled, 98 silent, 2 gaps, 4 decisions",
+      "id": "section-a-structural",
+      "language": "php",
+      "status": "pass"
+    },
+    {
+      "description": "8 relationship kinds pinned by php fixtures",
+      "detail": "pinned: calls, contains, extends, implements, instantiates, overrides, references, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "php",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for php (1)",
+      "detail": "complexity",
+      "id": "section-c-payload-matrix",
+      "language": "php",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
+      "id": "section-d-evidence-tiers",
+      "language": "php",
+      "status": "pass"
+    },
+    {
+      "description": "phpunit:php at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor phpunit:php: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "php",
+      "status": "pass"
+    },
+    {
+      "description": "php avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "phpunit:php 10.8 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "php",
+      "status": "pass"
+    },
+    {
+      "description": "php analyzer docs present and committed",
+      "detail": "docs/analyzers/real-php-analyzer.md",
+      "id": "section-g-docs",
+      "language": "php",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "6 checks pass",
+      "id": "section-h-cross-language",
+      "language": "php",
+      "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "0e8cc143a0c4ec87db15580965f6694efb869436",
-  "committedAt": "2026-08-30T05:33:57+02:00",
+  "commit": "b4fb17601be1d371329cadddebb1266cd3c9d107",
+  "committedAt": "2026-08-30T05:41:41+02:00",
   "data": {
     "languages": {
       "c": {
@@ -1746,6 +1820,54 @@
           },
           "section-g-docs": {
             "detail": "docs/analyzers/real-objective-c-analyzer.md",
+            "status": "pass"
+          },
+          "section-h-cross-language": {
+            "detail": "6 checks pass",
+            "status": "pass"
+          }
+        }
+      },
+      "php": {
+        "gaps": [
+          "undefined: HTML/text interpolation segments outside <?php blocks are not symbols; string interpolation internals are opaque",
+          "undefined: ini directives and shell hash-bang lines are not parsed as symbols or decision points"
+        ],
+        "nodeTypeCount": 177,
+        "pendingDecisions": [],
+        "ruledDecisions": [
+          "PHPD1",
+          "PHPD2",
+          "PHPD3",
+          "PHPD4"
+        ],
+        "sections": {
+          "section-a-structural": {
+            "detail": "177 types, 59 handled, 98 silent, 2 gaps, 4 decisions",
+            "status": "pass"
+          },
+          "section-b-relationship-kinds": {
+            "detail": "pinned: calls, contains, extends, implements, instantiates, overrides, references, uses",
+            "status": "pass"
+          },
+          "section-c-payload-matrix": {
+            "detail": "complexity",
+            "status": "pass"
+          },
+          "section-d-evidence-tiers": {
+            "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
+            "status": "pass"
+          },
+          "section-e-differential": {
+            "detail": "floor phpunit:php: missing=0, unexplained=0 (differential-baseline.json)",
+            "status": "pass"
+          },
+          "section-f-perf-budget": {
+            "detail": "phpunit:php 10.8 ms/file",
+            "status": "pass"
+          },
+          "section-g-docs": {
+            "detail": "docs/analyzers/real-php-analyzer.md",
             "status": "pass"
           },
           "section-h-cross-language": {
