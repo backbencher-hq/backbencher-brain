@@ -13,14 +13,14 @@
       "status": "pass"
     },
     {
-      "description": "regression gate vs grammar-audit-baseline.json (29/41 languages pass)",
+      "description": "regression gate vs grammar-audit-baseline.json (30/41 languages pass)",
       "id": "baseline-gate",
       "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "85862e0b71817fe5f09fab7e73eed1080aef6be5",
-  "committedAt": "2026-08-30T00:27:17+02:00",
+  "commit": "ab4a688e0b5e4247f3f3d6cdffe1f5dbd546e3b1",
+  "committedAt": "2026-08-30T00:35:55+02:00",
   "data": {
     "languages": {
       "bash": {
@@ -997,191 +997,10 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 526,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 77,
-        "status": "fail",
+        "referencedTypeLiterals": 62,
+        "status": "pass",
         "unknownFields": [],
-        "unknownNodeTypes": [
-          {
-            "context": "real-swift-analyzer.ts:comparison",
-            "line": 159,
-            "literal": "actor_declaration"
-          },
-          {
-            "context": "real-swift-analyzer.ts:comparison",
-            "line": 368,
-            "literal": "actor_declaration"
-          },
-          {
-            "context": "real-swift-analyzer.ts:comparison",
-            "line": 178,
-            "literal": "variable_declaration"
-          },
-          {
-            "context": "real-swift-analyzer.ts:comparison",
-            "line": 179,
-            "literal": "constant_declaration"
-          },
-          {
-            "context": "real-swift-analyzer.ts:comparison",
-            "line": 193,
-            "literal": "typealias_statement"
-          },
-          {
-            "context": "real-swift-analyzer.ts:comparison",
-            "line": 198,
-            "literal": "associated_type_clause"
-          },
-          {
-            "context": "real-swift-analyzer.ts:comparison",
-            "line": 213,
-            "literal": "willSet_specifier"
-          },
-          {
-            "context": "real-swift-analyzer.ts:comparison",
-            "line": 213,
-            "literal": "didSet_specifier"
-          },
-          {
-            "context": "real-swift-analyzer.ts:comparison",
-            "line": 213,
-            "literal": "willSet_didSet_block"
-          },
-          {
-            "context": "real-swift-analyzer.ts:comparison",
-            "line": 215,
-            "literal": "defer_statement"
-          },
-          {
-            "context": "real-swift-analyzer.ts:comparison",
-            "line": 221,
-            "literal": "platform_condition"
-          },
-          {
-            "context": "real-swift-analyzer.ts:comparison",
-            "line": 223,
-            "literal": "macro_expansion"
-          },
-          {
-            "context": "real-swift-analyzer.ts:comparison",
-            "line": 225,
-            "literal": "closure_expression"
-          },
-          {
-            "context": "real-swift-analyzer.ts:comparison",
-            "line": 230,
-            "literal": "try_statement"
-          },
-          {
-            "context": "real-swift-analyzer.ts:comparison",
-            "line": 231,
-            "literal": "catch_clause"
-          },
-          {
-            "context": "real-swift-analyzer.ts:comparison",
-            "line": 232,
-            "literal": "throw_statement"
-          },
-          {
-            "context": "real-swift-analyzer.ts:comparison",
-            "line": 236,
-            "literal": "await_operator"
-          },
-          {
-            "context": "real-swift-analyzer.ts:comparison",
-            "line": 236,
-            "literal": "async_keyword"
-          },
-          {
-            "context": "real-swift-analyzer.ts:comparison",
-            "line": 741,
-            "literal": "async_keyword"
-          },
-          {
-            "context": "real-swift-analyzer.ts:comparison",
-            "line": 241,
-            "literal": "optional_chaining_expression"
-          },
-          {
-            "context": "real-swift-analyzer.ts:comparison",
-            "line": 242,
-            "literal": "implicitly_unwrapped_optional_type"
-          },
-          {
-            "context": "real-swift-analyzer.ts:comparison",
-            "line": 243,
-            "literal": "if_let_statement"
-          },
-          {
-            "context": "real-swift-analyzer.ts:comparison",
-            "line": 248,
-            "literal": "type_parameter_clause"
-          },
-          {
-            "context": "real-swift-analyzer.ts:comparison",
-            "line": 259,
-            "literal": "weak_keyword"
-          },
-          {
-            "context": "real-swift-analyzer.ts:comparison",
-            "line": 259,
-            "literal": "unowned_keyword"
-          },
-          {
-            "context": "real-swift-analyzer.ts:comparison",
-            "line": 261,
-            "literal": "lazy_keyword"
-          },
-          {
-            "context": "real-swift-analyzer.ts:comparison",
-            "line": 263,
-            "literal": "final_keyword"
-          },
-          {
-            "context": "real-swift-analyzer.ts:findChildByType",
-            "line": 522,
-            "literal": "pattern_initializer"
-          },
-          {
-            "context": "real-swift-analyzer.ts:comparison",
-            "line": 742,
-            "literal": "throws_keyword"
-          },
-          {
-            "context": "real-swift-analyzer.ts:comparison",
-            "line": 742,
-            "literal": "throw_expression"
-          },
-          {
-            "context": "real-swift-analyzer.ts:comparison",
-            "line": 758,
-            "literal": "public_keyword"
-          },
-          {
-            "context": "real-swift-analyzer.ts:comparison",
-            "line": 759,
-            "literal": "private_keyword"
-          },
-          {
-            "context": "real-swift-analyzer.ts:comparison",
-            "line": 760,
-            "literal": "fileprivate_keyword"
-          },
-          {
-            "context": "real-swift-analyzer.ts:comparison",
-            "line": 761,
-            "literal": "internal_keyword"
-          },
-          {
-            "context": "real-swift-analyzer.ts:comparison",
-            "line": 762,
-            "literal": "open_keyword"
-          },
-          {
-            "context": "real-swift-analyzer.ts:comparison",
-            "line": 791,
-            "literal": "module_identifier"
-          }
-        ],
+        "unknownNodeTypes": [],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-swift.wasm"
@@ -1295,10 +1114,10 @@
       }
     },
     "summary": {
-      "fail": 12,
+      "fail": 11,
       "languagesAudited": 41,
-      "pass": 29,
-      "totalUnknownReferences": 93
+      "pass": 30,
+      "totalUnknownReferences": 57
     }
   },
   "governance": "docs/M14-HONESTY-CONTRACT.md",
