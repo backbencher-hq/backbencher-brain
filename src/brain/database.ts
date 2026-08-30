@@ -245,6 +245,8 @@ export namespace BrainDatabase {
       errors?: IndexingErrorRecord[]
       /** M21.I3: versioned performance stats for this run. Passing null preserves prior. */
       performanceStats?: IndexPerformanceStats | null
+      /** M23.P3: project path used to compute the persisted codebase fingerprint. */
+      codebaseFingerprintProjectPath?: string
     },
   ): Promise<void> {
     const raw = await getRawInstance(projectId)
@@ -294,10 +296,22 @@ export namespace BrainDatabase {
     const symbolsTotal = data.symbolsIndexed ?? data.symbols ?? 0
     const filesParsed = data.filesParsed ?? filesTotal
 
+    // M23.P3: compute and persist codebase fingerprint + git identity.
+    let fingerprint: string | null = null
+    let gitIdentity: string | null = null
+    if (data.codebaseFingerprintProjectPath) {
+      try {
+        const { computeCheckoutFingerprint } = await import("../ast/fingerprint")
+        const cf = await computeCheckoutFingerprint(data.codebaseFingerprintProjectPath)
+        fingerprint = cf.fingerprint
+        gitIdentity = cf.git
+      } catch {}
+    }
+
     raw
       .prepare(
-        `INSERT INTO brain_index_status (project_id, indexing_version, status, last_full_index, total_files, indexed_files, total_symbols, indexing_errors, performance_stats, time_created, time_updated)
-         VALUES (?, 'v1.0.0', ?, ?, ?, ?, ?, ?, ?, strftime('%s','now') * 1000, strftime('%s','now') * 1000)
+        `INSERT INTO brain_index_status (project_id, indexing_version, status, last_full_index, total_files, indexed_files, total_symbols, indexing_errors, performance_stats, codebase_fingerprint, codebase_git, time_created, time_updated)
+         VALUES (?, 'v1.0.0', ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%s','now') * 1000, strftime('%s','now') * 1000)
          ON CONFLICT(project_id) DO UPDATE SET
            status = COALESCE(excluded.status, status),
            last_full_index = excluded.last_full_index,
@@ -306,6 +320,8 @@ export namespace BrainDatabase {
            total_symbols = excluded.total_symbols,
            indexing_errors = excluded.indexing_errors,
            performance_stats = COALESCE(excluded.performance_stats, performance_stats),
+           codebase_fingerprint = COALESCE(excluded.codebase_fingerprint, codebase_fingerprint),
+           codebase_git = COALESCE(excluded.codebase_git, codebase_git),
            time_updated = excluded.time_updated`,
       )
       .run(
@@ -317,6 +333,8 @@ export namespace BrainDatabase {
         symbolsTotal,
         errorsJson,
         perfJson,
+        fingerprint,
+        gitIdentity,
       )
   }
 

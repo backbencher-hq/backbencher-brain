@@ -320,6 +320,9 @@ export function migrateSchemaColumns(raw: any): void {
       ["total_relationships", "INTEGER NOT NULL DEFAULT 0"],
       ["time_created", "INTEGER"],
       ["time_updated", "INTEGER"],
+      // M23.P3: codebase identity for index portability (adopt-on-move).
+      ["codebase_fingerprint", "TEXT"],
+      ["codebase_git", "TEXT"],
     ]
     for (const [name, ddl] of expected) {
       if (!cols.has(name)) {
