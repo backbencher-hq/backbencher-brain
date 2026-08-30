@@ -6,7 +6,7 @@ import { readdirSync, statSync, existsSync, rmSync } from "node:fs"
 import path from "node:path"
 import { bbProjectsDir } from "../util/bb-data-dir"
 import { BrainDatabase } from "../brain/database"
-import { readLiveStatus, clearStatus } from "./index-status"
+import { readLiveStatus, writeLiveStatus, clearStatus } from "./index-status"
 
 export interface ProjectEntry {
   id: string
@@ -117,4 +117,170 @@ export function removeProject(id: string, force: boolean): RemoveResult {
 
 export function totalProjectsBytes(entries: ProjectEntry[]): number {
   return entries.reduce((a, e) => a + e.dbSizeBytes, 0)
+}
+
+// ===========================================================================
+// M23.P3 — INDEX PORTABILITY
+// project id = sha1(realpath), so moving a project orphans its DB. Adoption
+// finds the orphaned DB by codebase fingerprint and re-homes it under the new
+// id, so `bb index` at the moved path reuses the existing index.
+// ===========================================================================
+
+export interface AdoptionCandidate {
+  id: string
+  dbPath: string
+  fingerprint: string
+  git: string | null
+  files: number
+}
+
+/**
+ * Scan every indexed project DB for one whose codebase fingerprint matches
+ * this checkout. Prefers the persisted codebase_fingerprint column (indexed
+ * after M23.P3); for DBs that predate the column but already store
+ * relative_path, recomputes from the file rows. Never guesses for a DB with
+ * no recoverable fingerprint.
+ */
+export function findAdoptableDb(checkoutFingerprint: string): AdoptionCandidate | null {
+  const { computeDbFingerprint, readStoredFingerprint } = require("./fingerprint")
+  const dir = bbProjectsDir()
+  if (!existsSync(dir)) return null
+  for (const id of readdirSync(dir)) {
+    if (!/^[0-9a-f]{40}$/.test(id)) continue
+    const dbPath = path.join(dir, id, "brain.db")
+    if (!existsSync(dbPath)) continue
+    try {
+      const raw = BrainDatabase.openByPath(dbPath, { readonly: true })
+      const stored = readStoredFingerprint(raw, id)
+      let fp = stored
+      let git: string | null = null
+      try {
+        const row = raw.prepare("SELECT codebase_git FROM brain_index_status WHERE project_id = ?").get(id) as
+          | { codebase_git: string | null }
+          | undefined
+        git = row?.codebase_git ?? null
+      } catch {}
+      if (!fp) {
+        try { fp = computeDbFingerprint(raw, git) } catch { continue }
+      }
+      if (fp && fp === checkoutFingerprint) {
+        const files = Number((raw.prepare("SELECT COUNT(*) c FROM brain_file").get() as any)?.c ?? 0)
+        return { id, dbPath, fingerprint: fp, git, files }
+      }
+    } catch {
+      continue
+    }
+  }
+  return null
+}
+
+export interface AdoptResult {
+  adopted: boolean
+  fromId?: string
+  toId: string
+  reason?: string
+}
+
+/**
+ * Re-home an existing project DB to a new project id: copy the DB file into
+ * the new id's directory, rewrite every project_id row reference inside it,
+ * rewrite brain_file.path prefixes from the old root to the new root, then
+ * remove the old directory. The new id's dir must not already exist.
+ */
+export function adoptProject(fromId: string, toId: string, newPath: string): AdoptResult {
+  if (!/^[0-9a-f]{40}$/.test(fromId) || !/^[0-9a-f]{40}$/.test(toId)) {
+    return { adopted: false, toId, reason: "invalid project id" }
+  }
+  if (fromId === toId) {
+    return { adopted: false, toId, reason: "source and target ids are identical" }
+  }
+  const srcDb = path.join(bbProjectsDir(), fromId, "brain.db")
+  return importDbFile(srcDb, toId, newPath, { fromId, dropSource: true })
+}
+
+/**
+ * M23.P3: `bb index --import <db>` — adopt a brain.db FILE directly (a moved
+ * project or one carried over from another machine). Validates the file is a
+ * real brain DB (has the brain_file table), re-homes it under toId, rewrites
+ * project_id rows and brain_file.path prefixes to the new checkout root.
+ */
+export function importDbFile(dbFilePath: string, toId: string, newPath: string,
+                             opts: { fromId?: string; dropSource?: boolean } = {}): AdoptResult {
+  const { copyFileSync, mkdirSync } = require("node:fs")
+  if (!/^[0-9a-f]{40}$/.test(toId)) {
+    return { adopted: false, toId, reason: "invalid project id" }
+  }
+  const src = path.resolve(dbFilePath)
+  if (!existsSync(src)) {
+    return { adopted: false, toId, reason: `no such DB file: ${src}` }
+  }
+  const dstDir = path.join(bbProjectsDir(), toId)
+  const dstDb = path.join(dstDir, "brain.db")
+  if (existsSync(dstDir)) {
+    return { adopted: false, toId, reason: `target project ${toId.slice(0, 8)} already has an index` }
+  }
+  const fromId = opts.fromId ?? projectIdFromDbFile(src)
+  try {
+    // Validate BEFORE touching anything: this must be a brain DB.
+    const probe = BrainDatabase.openByPath(src, { readonly: true })
+    try {
+      const t = probe.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='brain_file'").get()
+      if (!t) return { adopted: false, toId, reason: `not a brain DB (no brain_file table): ${src}` }
+    } finally { probe.close() }
+
+    mkdirSync(dstDir, { recursive: true })
+    copyFileSync(src, dstDb)
+    const raw = BrainDatabase.openByPath(dstDb)
+    if (fromId && fromId !== toId) {
+      for (const table of ["brain_file", "brain_symbol", "brain_relationship", "brain_import",
+                           "brain_query_cache", "brain_project_health", "brain_taint_flow",
+                           "brain_semantic_embedding", "brain_analysis_run", "brain_analysis_finding",
+                           "brain_analysis_occurrence", "brain_index_status"] as const) {
+        try { raw.prepare(`UPDATE ${table} SET project_id = ? WHERE project_id = ?`).run(toId, fromId) } catch {}
+      }
+    }
+    rewriteBrainFilePaths(raw, newPath)
+    raw.close()
+    // Re-key the live status file so in-flight/last-run views follow the move.
+    if (fromId) {
+      const live = readLiveStatus(fromId)
+      if (live) {
+        writeLiveStatus(toId, { ...live, projectId: toId })
+        clearStatus(fromId)
+      }
+    }
+    if (opts.dropSource) {
+      rmSync(path.dirname(src), { recursive: true, force: true })
+    }
+    return { adopted: true, fromId: fromId ?? undefined, toId }
+  } catch (e: any) {
+    try { rmSync(dstDir, { recursive: true, force: true }) } catch {}
+    return { adopted: false, toId, reason: e?.message ?? String(e) }
+  }
+}
+
+/** Best-effort project id for a DB file: its parent directory name if 40-hex. */
+function projectIdFromDbFile(dbFilePath: string): string | null {
+  const parent = path.basename(path.dirname(path.resolve(dbFilePath)))
+  return /^[0-9a-f]{40}$/.test(parent) ? parent : null
+}
+
+/**
+ * Rewrite absolute brain_file.path prefixes after a move: old root = longest
+ * common prefix of stored paths; new root = the moved checkout. relative_path
+ * stays untouched (it is already root-relative). LIKE special chars in the old
+ * root are escaped and ESCAPE '\\' is declared so paths containing _ or %
+ * still match (a bare LIKE would silently rewrite nothing).
+ */
+function rewriteBrainFilePaths(raw: any, newPath: string): void {
+  try {
+    const sample = (raw.prepare("SELECT path FROM brain_file LIMIT 500").all() as any[]).map((r: any) => String(r.path))
+    const oldRoot = commonRoot(sample)
+    if (oldRoot && oldRoot !== "/" && newPath) {
+      const escaped = oldRoot.replace(/[\\%_]/g, (c) => `\\${c}`) + "%"
+      raw.prepare(
+        "UPDATE brain_file SET path = ? || SUBSTR(path, LENGTH(?) + 1) WHERE path LIKE ? ESCAPE '\\'",
+      ).run(newPath, oldRoot, escaped)
+    }
+  } catch {}
 }

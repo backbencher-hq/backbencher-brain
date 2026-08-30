@@ -2661,6 +2661,7 @@ export async function indexProjectParallel(
         symbolsIndexed: stats.symbolsExtracted,
         status: "complete",
         errors: [],
+        codebaseFingerprintProjectPath: projectPath,
         performanceStats: {
           schemaVersion: 1,
           runs: [
@@ -3020,6 +3021,7 @@ export async function indexProjectParallel(
       status: stats.errorFiles > 0 ? "partial" : "complete",
       errors: stats.structuredErrors,
       performanceStats: perfStats,
+      codebaseFingerprintProjectPath: projectPath,
     })
 
     if (!options.isIncremental && !options.skipPostProcessing) {
