@@ -15,15 +15,15 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
     // String.includes check on the module name.
 
     // Law 3 & 4: Explicit Iterative Stack (O(N) single-pass) and ZERO mutable class props
-    const walkStack: Array<{ node: Node; isExit: boolean; activeScope: string }> = [
-      { node: rootNode, isExit: false, activeScope: "global" }
+    const walkStack: Array<{ node: Node; isExit: boolean; activeScope: string; parentType: string }> = [
+      { node: rootNode, isExit: false, activeScope: "global", parentType: "" }
     ]
 
     while (walkStack.length > 0) {
       const state = walkStack.pop()!
       if (!state) continue
       
-      const { node, isExit, activeScope } = state
+      const { node, isExit, activeScope, parentType } = state
       if (isExit || !node || node.isMissing) continue
 
       let nextActiveScope = activeScope
@@ -100,6 +100,22 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
               ownerName: activeScope !== "global" ? activeScope : undefined,
               metadata: { objcSpecific: true, isCategory: true, categoryName: identNodes[1] },
             })
+            // Categories can ALSO declare protocol conformance:
+            // `@interface NSString (Cat) <NSCoding>` — the class genuinely
+            // adopts the protocol (same parameterized_arguments shape as a
+            // plain class). Emit implements sourced from the EXTENDED class
+            // (family convention: swift extension protocol adoption).
+            for (let ci = 0; ci < node.namedChildCount; ci++) {
+              const cn = node.namedChild(ci)
+              if (cn && cn.type === "parameterized_arguments") {
+                for (let pj = 0; pj < cn.namedChildCount; pj++) {
+                  const pn = cn.namedChild(pj)
+                  if (pn && (pn.type === "type_identifier" || pn.type === "identifier" || pn.type === "type_name")) {
+                    relationships.push({ source: nameNode.text, target: pn.text, type: ASTEngine.RelationshipType.Implements, confidence: 1.0, metadata: { objcSpecific: true, isProtocol: true, isCategoryProtocol: true } })
+                  }
+                }
+              }
+            }
           } else {
             // Plain class: extract superclass + protocols for relationships.
             let foundName = false
@@ -142,6 +158,20 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
             range: this.getRange(node),
             metadata: { objcSpecific: true, isProtocol: true },
           })
+          // Protocol inheritance: `@protocol Child <Parent, Grandparent>` —
+          // inherited protocols are the identifiers under
+          // protocol_reference_list (probe-verified 2026-08-30). Protocols
+          // inherit other protocols in ObjC (family convention: interface
+          // extends interface), so emit extends for each inherited parent.
+          const refList = this.findChild(node, (n) => n.type === "protocol_reference_list")
+          if (refList) {
+            for (let ci = 0; ci < refList.namedChildCount; ci++) {
+              const cn = refList.namedChild(ci)
+              if (cn && cn.type === "identifier") {
+                relationships.push({ source: nameNode.text, target: cn.text, type: ASTEngine.RelationshipType.Extends, confidence: 1.0, metadata: { objcSpecific: true, isProtocolInheritance: true } })
+              }
+            }
+          }
         }
       }
       // 4. Methods (@method)
@@ -283,13 +313,35 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
             })
         }
       }
+      // 8b. Member READS (managed-OO family contract — dart/swift/csharp
+      // emit uses for property/ivar reads). ObjC dot-syntax `self.next`,
+      // `w.next`, `self.origin.x` parse as field_expression with a
+      // field_identifier (probe-verified 2026-08-30). Emit uses -> the
+      // field name, from the enclosing method scope. Writes (LHS of
+      // assignment_expression) are NOT reads — only reads become uses.
+      else if (node.type === "field_expression" && activeScope !== "global") {
+        const field = node.childForFieldName("field") ?? this.findChild(node, (n) => n.type === "field_identifier")
+        if (field && field.text.trim()) {
+          // Skip the LHS of an assignment (a write, not a read): the
+          // field_expression is the assignment's left child.
+          if (parentType !== "assignment_expression") {
+            relationships.push({
+              source: activeScope,
+              target: field.text,
+              type: ASTEngine.RelationshipType.Uses,
+              confidence: 0.9,
+              metadata: { isFieldRead: true, relationshipType: "field_access" },
+            })
+          }
+        }
+      }
 
       // Law 2: Absolute Zero array bridge. Bounds checked loops only.
       const childCount = node.namedChildCount
       for (let i = childCount - 1; i >= 0; i--) {
         const child = node.namedChild(i)
         if (child) {
-           walkStack.push({ node: child, isExit: false, activeScope: nextActiveScope })
+           walkStack.push({ node: child, isExit: false, activeScope: nextActiveScope, parentType: node.type })
         }
       }
     }
