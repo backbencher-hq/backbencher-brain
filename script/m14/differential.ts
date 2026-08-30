@@ -840,9 +840,9 @@ export function deriveObjcEdges(root: any): { label: string; from: string; targe
 
   // Walk with an inBody flag: calls/instantiates only inside method/function
   // bodies (mirrors the analyzer's activeScope !== "global" guard).
-  const stack: any[] = [{ n: root, inBody: false }]
+  const stack: any[] = [{ n: root, inBody: false, parentType: "" }]
   while (stack.length > 0) {
-    const { n, inBody } = stack.pop()!
+    const { n, inBody, parentType } = stack.pop()!
     const t = n.type
     if (t === "class_interface" || t === "class_implementation") {
       // Category detection: an anonymous `(` child (like swift's actor via
@@ -870,6 +870,43 @@ export function deriveObjcEdges(root: any): { label: string; from: string; targe
         }
         if (superName) push("extends", superName)
         for (const p of protocols) push("implements", p)
+      } else {
+        // Category protocol conformance: `@interface NSString (Cat) <NSCoding>`
+        // — the class genuinely adopts the protocol (mirrors the analyzer).
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c && c.type === "parameterized_arguments") {
+            for (let j = 0; j < c.namedChildCount; j++) {
+              const pn = c.namedChild(j)
+              if (pn && (pn.type === "type_identifier" || pn.type === "identifier" || pn.type === "type_name")) push("implements", pn.text)
+            }
+          }
+        }
+      }
+    }
+    if (t === "protocol_declaration") {
+      // Protocol inheritance: `@protocol Child <Parent, Grandparent>` —
+      // inherited parents under protocol_reference_list (mirrors the
+      // analyzer). Protocols inherit other protocols in ObjC.
+      const nameNode = n.namedChildren.find((c: any) => c.type === "identifier")
+      if (nameNode) {
+        const refList = n.namedChildren.find((c: any) => c.type === "protocol_reference_list")
+        if (refList) {
+          for (let i = 0; i < refList.namedChildCount; i++) {
+            const cn = refList.namedChild(i)
+            if (cn && cn.type === "identifier") push("extends", cn.text)
+          }
+        }
+      }
+    }
+    if (t === "field_expression" && inBody) {
+      // Member READS (managed-OO family contract): dot-syntax property
+      // reads (`self.next`, `w.next`, `self.origin.x`) emit uses -> the
+      // field name. The LHS of an assignment_expression is a WRITE, not a
+      // read (mirrors the analyzer's parentType gate).
+      const field = n.childForFieldName?.("field") ?? n.namedChildren.find((c: any) => c.type === "field_identifier")
+      if (field && field.text.trim() && parentType !== "assignment_expression") {
+        push("uses", field.text)
       }
     }
     if (t === "message_expression" && inBody) {
@@ -926,7 +963,7 @@ export function deriveObjcEdges(root: any): { label: string; from: string; targe
     const nextBody = inBody || t === "method_definition" || t === "method_declaration" || t === "function_definition"
     for (let i = n.namedChildCount - 1; i >= 0; i--) {
       const c = n.namedChild(i)
-      if (c) stack.push({ n: c, inBody: nextBody })
+      if (c) stack.push({ n: c, inBody: nextBody, parentType: t })
     }
   }
   return edges
@@ -1882,7 +1919,7 @@ async function main() {
       // truth); zig derives calls AND uses; other languages do not derive
       // call truth, so including calls there would flag every real call edge
       // as unexplained.
-      })).filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" ? ["overrides"] : []), ...(lang === "c" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" ? ["calls"] : []), ...(lang === "zig" || lang === "swift" ? ["calls", "uses"] : []), ...(lang === "dart" ? ["uses"] : []), ...(lang === "csharp" ? ["calls"] : []), ...(lang === "swift" || lang === "objc" ? ["references"] : [])].includes(r.label))
+      })).filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" ? ["overrides"] : []), ...(lang === "c" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" ? ["calls"] : []), ...(lang === "zig" || lang === "swift" || lang === "objc" ? ["calls", "uses"] : []), ...(lang === "dart" ? ["uses"] : []), ...(lang === "csharp" ? ["calls"] : []), ...(lang === "swift" || lang === "objc" ? ["references"] : [])].includes(r.label))
         // The tree-truth oracles already emit UNIQUE (label,target) edges per
         // file (each oracle keeps a `seen` set keyed by label+target). The
         // analyzer, by contrast, emits one edge per source SEARCH HIT, so a
