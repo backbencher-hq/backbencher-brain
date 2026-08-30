@@ -136,6 +136,13 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     const classHierarchy = new Map<string, string[]>()
     const symbolMap = new Map<string, ASTEngine.UniversalSymbol>()
 
+    // In-file declared kinds (SWIFTD1): protocol names are knowable from the
+    // parse tree itself, so `class X: LocalProtocol` resolves to implements
+    // even without the cross-file companion. (Mirrors csharp M12.07's
+    // collectDeclaredTypeKinds pre-pass.)
+    const inFileKinds = new Map<string, string>()
+    this.collectDeclaredKinds(rootNode, inFileKinds)
+
     const emittedCalls = new Set<string>()
     const emittedUses = new Set<string>()
     const emittedContains = new Set<string>()
@@ -158,7 +165,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
         newParentSymbol = this.handleProtocol(curr, symbols, relationships, parentSymbol, patternsObj, classHierarchy)
         if (newParentSymbol) newTypeName = newParentSymbol.name
       } else if (curr.type === "class_declaration") {
-        newParentSymbol = this.handleDeclaration(curr, symbols, relationships, parentSymbol, patternsObj, classHierarchy)
+        newParentSymbol = this.handleDeclaration(curr, symbols, relationships, parentSymbol, patternsObj, classHierarchy, inFileKinds, context?.typeKinds as Map<string, string> | undefined)
         if (newParentSymbol) newTypeName = newParentSymbol.name
       } else if (curr.type === "function_declaration" || curr.type === "protocol_function_declaration") {
         newParentSymbol = this.handleFunction(curr, symbols, relationships, parentSymbol, overrideTasks, context?.overrideCompanion)
@@ -328,6 +335,31 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
+  /** Pre-pass: record every protocol/class/struct/actor/enum/extension name. */
+  private collectDeclaredKinds(rootNode: Node, out: Map<string, string>): void {
+    const stack: Node[] = [rootNode]
+    let guard = 0
+    while (stack.length > 0 && guard++ < 500000) {
+      const n = stack.pop()!
+      if (n.type === "protocol_declaration") {
+        const nm = this.findChildByType(n, "type_identifier")
+        if (nm) out.set(nm.text, "interface")
+      } else if (n.type === "class_declaration") {
+        const nm = this.findChildByType(n, "type_identifier") || this.findChildByType(n, "user_type")
+        if (nm) {
+          const leaf = nm.type === "user_type" && nm.namedChildCount > 0 ? nm.namedChild(0)!.text : nm.text
+          if (this.hasAnonToken(n, "class")) out.set(leaf, "class")
+          else if (this.hasAnonToken(n, "struct")) out.set(leaf, "struct")
+          else if (this.hasAnonToken(n, "actor")) out.set(leaf, "actor")
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const child = n.namedChild(i)
+        if (child) stack.push(child)
+      }
+    }
+  }
+
   // ============================================================================
   // EVIDENCE TIERS
   // ============================================================================
@@ -391,6 +423,8 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     parent: ASTEngine.UniversalSymbol | null,
     patternsObj: Record<string, boolean>,
     classHierarchy: Map<string, string[]>,
+    inFileKinds: Map<string, string>,
+    crossFileKinds?: Map<string, string>,
   ): ASTEngine.UniversalSymbol | null {
     let kind = ASTEngine.SymbolKind.Class
 
@@ -438,11 +472,16 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       const bases = this.extractBases(node)
       const parents: string[] = []
       // Swift semantics (probe-verified fixture #266): ONLY a class can have
-      // a superclass — its FIRST base is extends, the rest are adopted
-      // protocols (implements). Structs and actors have NO superclass, so
-      // every base is a protocol adoption -> implements. (M12.21 previously
-      // emitted extends for struct/actor first-bases; fixed in the #266 wave.)
-      const firstIsSuperclass = kind === ASTEngine.SymbolKind.Class
+      // a superclass. A class's FIRST base is extends ONLY IF it is actually
+      // a class — a first-base protocol is still an adoption (implements).
+      // The cross-file companion (context.typeKinds) carries corpus protocol
+      // names so `class X: SomeProtocol` resolves to implements on BOTH
+      // sides; unknown externals keep the deterministic Swift rule: first
+      // base = superclass (extends) when the kind is a class, else implements.
+      // Structs and actors have NO superclass, so every base is implements.
+      const firstIsSuperclass =
+        kind === ASTEngine.SymbolKind.Class &&
+        (bases.length > 0 ? (inFileKinds.get(bases[0]) ?? crossFileKinds?.get(bases[0]) ?? "class") === "class" : true)
       for (let i = 0; i < bases.length; i++) {
         const base = bases[i]
         parents.push(base)

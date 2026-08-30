@@ -1115,6 +1115,20 @@ const MUTANTS: Mutant[] = [
       }],
     }),
   },
+  {
+    id: "swift/class-protocol-first-as-extends",
+    language: "swift",
+    defectClass: "relationship-loss",
+    description: "regresses the SWIFTD1 rule: treats a class's first-base protocol as extends (Circle->Shape) — swift edges-and-patterns implements/forbid pins",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.type === "implements" && x.source === "Circle" && x.target === "Shape"
+          ? { ...x, type: "extends", metadata: { ...(x.metadata ?? {}), isImplements: false } }
+          : x,
+      ),
+    }),
+  },
 ]
 
 async function realAnalyzer(lang: string): Promise<any> {

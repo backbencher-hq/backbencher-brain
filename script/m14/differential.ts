@@ -666,7 +666,7 @@ export function deriveDartEdges(root: any): { label: string; from: string; targe
 //   - references: imports -> root -> module (mirrors handleImport)
 // The oracle emits UNIQUE (label,target) edges (seen-set per label+target),
 // matching the site-agnostic coverage match in main().
-export function deriveSwiftEdges(root: any): { label: string; from: string; target: string }[] {
+export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
   const SWIFT_BUILTINS = new Set([
@@ -756,8 +756,14 @@ export function deriveSwiftEdges(root: any): { label: string; from: string; targ
             if (nm) bases.push(nm)
           }
         }
+        // Mirror the analyzer: a class's first base is extends only when it
+        // is NOT a known corpus protocol; a known protocol first-base (or any
+        // struct/actor base) is implements.
+        const firstIsSuperclass =
+          isClass &&
+          (bases.length > 0 ? !(corpusProtocols?.has(bases[0]) ?? false) : true)
         for (let i = 0; i < bases.length; i++) {
-          const isExtends = isClass && i === 0
+          const isExtends = firstIsSuperclass && i === 0
           push(isExtends ? "extends" : "implements", bases[i])
         }
       }
@@ -1619,6 +1625,25 @@ async function main() {
     const CSHARP_INTERFACE_KINDS = new Map<string, string>()
     if (lang === "csharp") for (const nm of CSHARP_INTERFACES) CSHARP_INTERFACE_KINDS.set(nm, "interface")
 
+    // Swift: same cross-file companion for protocol adoption. A class's first
+    // base is extends ONLY if it is a class — a first-base protocol is still
+    // implements (SWIFTD1 resolution). The corpus protocol-name set (regex
+    // pass, cheap) is handed to BOTH the analyzer (context.typeKinds) and the
+    // oracle so `class X: SomeProtocol` resolves to implements identically.
+    const SWIFT_PROTOCOLS = new Set<string>()
+    const SWIFT_TYPE_KINDS = new Map<string, string>()
+    if (lang === "swift") {
+      const re = /\bprotocol\s+([A-Za-z_][A-Za-z0-9_]*)/g
+      for (const f of files) {
+        let s: string
+        try { s = fs.readFileSync(f, "utf8") } catch { continue }
+        re.lastIndex = 0
+        let m: RegExpExecArray | null
+        while ((m = re.exec(s))) if (m[1]) SWIFT_PROTOCOLS.add(m[1])
+      }
+      for (const nm of SWIFT_PROTOCOLS) SWIFT_TYPE_KINDS.set(nm, "interface")
+    }
+
     const sample = seededPick(files, SAMPLE_PER_LANG, `${REPO}:${lang}:m14-f5`)
     let treeEdgesTotal = 0, coveredByAnalyzer = 0, missingInAnalyzer = 0
     let analyzerEdgesTotal = 0, explainableByTree = 0, unexplainedInAnalyzer = 0
@@ -1652,7 +1677,7 @@ async function main() {
           const eng = await import("../../src/ast/engine")
           result = await (eng as any).ASTEngine.parseFile(f, content)
         } else {
-          result = await analyzer.analyze(root, content, relPath, lang === "csharp" ? { typeKinds: CSHARP_INTERFACE_KINDS as Map<string, string> } : undefined)
+          result = await analyzer.analyze(root, content, relPath, lang === "csharp" ? { typeKinds: CSHARP_INTERFACE_KINDS as Map<string, string> } : lang === "swift" ? { typeKinds: SWIFT_TYPE_KINDS as Map<string, string> } : undefined)
         }
       } catch { continue }
       durations.push(performance.now() - tf0)
@@ -1698,7 +1723,7 @@ async function main() {
         }
       }
       if (lang === "swift") {
-        for (const e of deriveSwiftEdges(root)) {
+        for (const e of deriveSwiftEdges(root, SWIFT_PROTOCOLS)) {
           ;(truth as any[]).push(e)
         }
       }
