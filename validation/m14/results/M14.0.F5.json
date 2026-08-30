@@ -95,16 +95,23 @@
       "detail": "60 files, coverage 100%, unexplained 0%",
       "id": "differential-swift",
       "status": "pass"
+    },
+    {
+      "description": "Clyde: tree-truth vs analyzer diff @8fec41dd6ee03f863643aa958425c8bb4a6673ae",
+      "detail": "4 files, coverage 100%, unexplained 0%",
+      "id": "differential-objc",
+      "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "cf951d06a3335fc4c0295139b0024603442e8d1e",
-  "committedAt": "2026-08-30T04:46:00+02:00",
+  "commit": "bcc6816013ec642dc6c8d10426a775a8157dc586",
+  "committedAt": "2026-08-30T03:33:24.150960+00:00",
   "data": {
     "corpusPins": {
       "powershell": "91ce9844e2a70e7184a8fcb26848f019eac151b4",
       "proxicall": "d9c69cfded5c4a78e5f5e8f9d6cdf0a31468adbc",
-      "swift-nio": "ec51fff05fe1f0a55efa78fdbc6a0f380c3e841a"
+      "swift-nio": "ec51fff05fe1f0a55efa78fdbc6a0f380c3e841a",
+      "Clyde": "8fec41dd6ee03f863643aa958425c8bb4a6673ae"
     },
     "report": {
       "c": {
@@ -416,5 +423,9 @@
   ],
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
-  "title": "Differential corpus harness"
+  "title": "Differential corpus harness",
+  "meta": {
+    "updatedAt": "2026-08-30T03:30:41.421082+00:00",
+    "updatedBy": "codebuff-m14-objc-wave"
+  }
 }
