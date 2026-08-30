@@ -114,15 +114,22 @@ async function walk(root: string, dir: string, ig: any, depth: number, rel: stri
     const fullPath = path.join(dir, entry.name)
     const relativePath = path.relative(root, fullPath)
     const withSlash = relativePath + (entry.isDirectory() ? "/" : "")
-    if (compiledDirTokens.some((t) => relativePath.includes(t))) continue
-    if (localIg.ignores(withSlash) || localIg.ignores(withSlash)) continue
+    // Deep-review fix (S3): discovery tests its skip patterns against
+    // "/" + relativePath (the shouldSkip contract). Testing the bare
+    // relativePath here let top-level dist/, build/, node_modules/ … leak into
+    // the fingerprint while discovery skips them — so the fingerprint stopped
+    // matching the indexed set and adoption silently never fired for repos
+    // with root-level build dirs.
+    const normPath = "/" + relativePath + (entry.isDirectory() ? "/" : "")
+    if (compiledDirTokens.some((t) => normPath.includes(t))) continue
+    if (localIg.ignores(withSlash)) continue
     if (entry.isDirectory()) {
       jobs.push(walk(root, fullPath, localIg, depth + 1, rel))
       continue
     }
     if (!entry.isFile()) continue
     if (!detectLanguageFromPath(fullPath)) continue
-    if (cliSkipPatterns.some((p) => p.test(relativePath))) continue
+    if (cliSkipPatterns.some((p) => p.test(normPath))) continue
     jobs.push(
       (async () => {
         try {
