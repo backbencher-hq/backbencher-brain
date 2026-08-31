@@ -4,14 +4,16 @@
   "milestone": "M24",
   "status": "known-gap",
   "checks": 21,
-  "passed": 19,
-  "failed": 2,
+  "passed": 21,
+  "failed": 0,
   "negativeCases": 9,
-  "currentCommit": "67db8e8c11222bc0d3c3531f3d98f965bfa97a65",
-  "workingTreeRelevantChanges": [],
+  "currentCommit": "cc6f02f19c87f3e87e02997536ede71c8a422132",
+  "workingTreeRelevantChanges": [
+    "script/m24/verify-governance.ts"
+  ],
   "verifierCommand": "bun run script/m24/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-08-31T10:37:56.711Z",
+  "generatedAt": "2026-08-31T20:14:43.633Z",
   "ledger": "validation/m24/results/manifest.json",
   "limitations": [
     "This gate validates governance metadata and mutation response; it does not verify LSP feature implementations.",
