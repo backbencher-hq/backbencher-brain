@@ -1,0 +1,62 @@
+{
+  "issue": "M24.P1",
+  "code": "P1",
+  "milestone": "M24",
+  "status": "verified",
+  "checks": 17,
+  "passed": 17,
+  "failed": 0,
+  "negativeCases": 8,
+  "mutants": [
+    {
+      "name": "off-by-one line (indexToLsp)",
+      "caught": true,
+      "detail": "caught: index(1,1)->lsp(0,0) (got {\"line\":1,\"character\":0}, want {\"line\":0,\"character\":0})"
+    },
+    {
+      "name": "off-by-one column (byte col not decremented)",
+      "caught": true,
+      "detail": "caught: index(1,1)->lsp(0,0) (got {\"line\":0,\"character\":1}, want {\"line\":0,\"character\":0})"
+    },
+    {
+      "name": "missing byte->utf16 conversion",
+      "caught": true,
+      "detail": "caught: index(2,6) after café ->lsp(1,4) (got {\"line\":1,\"character\":5}, want {\"line\":1,\"character\":4})"
+    },
+    {
+      "name": "lsp->index misses line +1",
+      "caught": true,
+      "detail": "caught: lsp(3,1)->index(4,2) (got {\"line\":3,\"column\":2}, want {\"line\":4,\"column\":2})"
+    },
+    {
+      "name": "mid-code-point check removed",
+      "caught": true,
+      "detail": "caught: mid-code-point byte col 5 throws (expected throw, got none)"
+    },
+    {
+      "name": "surrogate-half check removed",
+      "caught": true,
+      "detail": "caught: surrogate trailing half throws (expected throw, got none)"
+    },
+    {
+      "name": "CRLF not handled (split on \\n only)",
+      "caught": true,
+      "detail": "caught: index(1,7) past line1 throws (catches CR-as-content) (expected throw, got none)"
+    },
+    {
+      "name": "line count drops phantom line",
+      "caught": true,
+      "detail": "caught: lineCount 3 (phantom) (got 2, want 3)"
+    }
+  ],
+  "currentCommit": "022812506584a00b136e3a7da36c679cbb735e5b",
+  "sourceFingerprint": "796dfdd0e024387cd552c552befbe7bd34942fb5aee5801e4b34bab082ebd8b6",
+  "verifierCommand": "npx tsx script/m24/verify-positions.ts",
+  "evidenceFile": "P1.json",
+  "generatedAt": "2026-08-31T00:58:05.546Z",
+  "limitations": [
+    "Fixture-based; does not exercise real analyzer output end-to-end (covered by the V1 harness).",
+    "Tab-width treated as 1 UTF-16 unit (LSP standard); editor tab rendering is a client concern.",
+    "Roundtrip property samples code-point boundaries, not every byte of multi-byte sequences."
+  ]
+}
