@@ -4,22 +4,28 @@
 // the LSP wire format. No other M24 code may convert positions inline
 // (IDE Honesty Contract §5).
 //
-// Index format (what analyzers store, see ast/real-*-analyzer.ts):
-//   1-based lines, 1-based BYTE columns (Tree-sitter startPosition.column
-//   counts bytes). Range end is inclusive of the last character's position.
+// Index format (what the analyzers actually store — verified against
+// ast/real-*-analyzer.ts, e.g. real-swift-analyzer.ts:
+//   startLine: node.startPosition.row + 1      startColumn: n.startPosition.column + 1
+//   endLine:   node.endPosition.row + 1        endColumn:   n.endPosition.column + 1):
+//   1-based lines. 1-based BYTE columns (Tree-sitter startPosition.column
+//   counts bytes). The END column is endPosition.column + 1 — i.e. the
+//   1-based column ONE PAST the last byte. Tree-sitter endPosition is
+//   exclusive, so the stored end is exclusive expressed in 1-based columns.
+//   Example: identifier "main" at bytes 8..11 stores start col 9, end col 13.
 //
 // LSP format (protocol 3.18):
 //   0-based lines, 0-based columns in UTF-16 code units. Range end is
 //   exclusive.
 //
-// Conversion therefore requires three simultaneous corrections:
-//   line:   -1
-//   column: byte offset -> UTF-16 code units, -1
-//   range:  end inclusive -> exclusive
+// Because BOTH ends are exclusive (one in 1-based byte columns, one in
+// 0-based UTF-16 units), the end conversion is the same operation as the
+// start conversion — no advancing, no stepping back. Any such adjustment
+// here was a bug; the mutation suite guards against reintroducing one.
 //
 // Byte-to-UTF-16 conversion requires the actual line text: a byte offset is
 // meaningless without the bytes of its line. The component takes the source
-// text (or a per-line memo) and never guesses.
+// text and never guesses.
 
 export interface IndexPosition {
   /** 1-based line */
@@ -30,7 +36,7 @@ export interface IndexPosition {
 
 export interface IndexRange {
   start: IndexPosition
-  /** inclusive of the last character */
+  /** end column = 1-based column one past the last byte (exclusive) */
   end: IndexPosition
 }
 
@@ -60,9 +66,9 @@ export interface PositionConverter {
   indexToLsp(pos: IndexPosition): LspPosition
   /** LSP (0-based line, UTF-16 col) -> index (1-based line, 1-based byte col) */
   lspToIndex(pos: LspPosition): IndexPosition
-  /** index range (end inclusive) -> LSP range (end exclusive) */
+  /** index range (exclusive 1-based end) -> LSP range (exclusive 0-based end) */
   indexRangeToLsp(range: IndexRange): LspRange
-  /** LSP range (end exclusive) -> index range (end inclusive) */
+  /** LSP range (exclusive) -> index range (exclusive, 1-based) */
   lspRangeToIndex(range: LspRange): IndexRange
 }
 
@@ -76,16 +82,12 @@ export class PositionMapper implements PositionConverter {
 
   constructor(sourceText: string) {
     // Split keeping the content; terminators are \n, \r\n, or \r.
+    // A trailing terminator produces a final empty "phantom" line — keep it:
+    // both LSP and Tree-sitter allow positions on the line after the last
+    // newline (e.g. an EOF node's endPosition).
     this.lineTexts = sourceText.split(/\r\n|\r|\n/)
-    // A trailing terminator produces a final empty line — keep it: LSP
-    // allows a position on the phantom line after the last newline.
     this.lineUtf16Lengths = this.lineTexts.map((line) => line.length)
     this.lineByteLengths = this.lineTexts.map((line) => Buffer.byteLength(line, "utf8"))
-  }
-
-  private lineText(line0: number): string {
-    this.assertLine(line0)
-    return this.lineTexts[line0]
   }
 
   private assertLine(line0: number): void {
@@ -99,13 +101,14 @@ export class PositionMapper implements PositionConverter {
    * The byte offset must land on a code point boundary.
    */
   private byteOffsetToUtf16Offset(line0: number, byteOffset: number): number {
-    const text = this.lineText(line0)
+    this.assertLine(line0)
+    const text = this.lineTexts[line0]
     const byteLen = this.lineByteLengths[line0]
     if (!Number.isInteger(byteOffset) || byteOffset < 0 || byteOffset > byteLen) {
       throw new PositionError(`byte offset ${byteOffset} out of range (0..${byteLen}) on line ${line0 + 1}`)
     }
-    if (byteOffset === byteLen) return text.length
     if (byteOffset === 0) return 0
+    if (byteOffset === byteLen) return text.length
     const buf = Buffer.from(text, "utf8")
     // Must land on a code point boundary; a mid-code-point byte is an invalid
     // position, not something to snap.
@@ -117,19 +120,17 @@ export class PositionMapper implements PositionConverter {
 
   /**
    * Convert a UTF-16 code unit offset within a line to a byte offset.
-   * Surrogate halves are invalid positions (they are not character starts).
+   * A low-surrogate offset is not a character start — fail rather than guess.
    */
   private utf16OffsetToByteOffset(line0: number, utf16Offset: number): number {
-    const text = this.lineText(line0)
+    this.assertLine(line0)
+    const text = this.lineTexts[line0]
     const utf16Len = this.lineUtf16Lengths[line0]
     if (!Number.isInteger(utf16Offset) || utf16Offset < 0 || utf16Offset > utf16Len) {
       throw new PositionError(`utf16 offset ${utf16Offset} out of range (0..${utf16Len}) on line ${line0 + 1}`)
     }
     if (utf16Offset === 0) return 0
     if (utf16Offset === utf16Len) return this.lineByteLengths[line0]
-    // A position on a low surrogate (second half of a pair) is not a character
-    // start — LSP allows it syntactically, but it is not a valid symbol
-    // boundary for byte conversion; fail rather than guess.
     const unit = text.charCodeAt(utf16Offset)
     if (unit >= 0xdc00 && unit <= 0xdfff) {
       throw new PositionError(`utf16 offset ${utf16Offset} on line ${line0 + 1} lands on a surrogate trailing half`)
@@ -151,63 +152,30 @@ export class PositionMapper implements PositionConverter {
   }
 
   lspToIndex(pos: LspPosition): IndexPosition {
-    const line0 = pos.line
-    this.assertLine(line0)
+    if (!Number.isInteger(pos.line) || pos.line < 0) {
+      throw new PositionError(`LSP line must be >= 0, got ${pos.line}`)
+    }
     if (!Number.isInteger(pos.character) || pos.character < 0) {
       throw new PositionError(`LSP character must be >= 0, got ${pos.character}`)
     }
+    const line0 = pos.line
     const byteOffset = this.utf16OffsetToByteOffset(line0, pos.character)
     return { line: line0 + 1, column: byteOffset + 1 }
   }
 
   indexRangeToLsp(range: IndexRange): LspRange {
-    const start = this.indexToLsp(range.start)
-    // Index end is inclusive of the last character; LSP end is exclusive.
-    // Advance the end position by one character (which may roll to the next
-    // line when the end column is the last character of its line).
-    const endLine0 = range.end.line - 1
-    this.assertLine(endLine0)
-    const endText = this.lineTexts[endLine0]
-    const endByteOffset = range.end.column - 1
-    if (endByteOffset === this.lineByteLengths[endLine0]) {
-      // End sits past the last character of its line: exclusive end rolls to
-      // the start of the next line (or the phantom line after the file).
-      return { start, end: { line: endLine0 + 1, character: 0 } }
+    // Both ends are exclusive (see header), so both convert identically.
+    return {
+      start: this.indexToLsp(range.start),
+      end: this.indexToLsp(range.end),
     }
-    const endUtf16 = this.byteOffsetToUtf16Offset(endLine0, endByteOffset)
-    // Advance one character — by code point, not code unit.
-    const codePoint = endText.codePointAt(endUtf16)
-    const advance = codePoint !== undefined && codePoint >= 0x10000 ? 2 : 1
-    return { start, end: { line: endLine0, character: endUtf16 + advance } }
   }
 
   lspRangeToIndex(range: LspRange): IndexRange {
-    const start = this.lspToIndex(range.start)
-    // LSP end is exclusive; index end is inclusive. Step back one character.
-    const endLine0 = range.end.line
-    // Exclusive end may sit on the phantom line after the file.
-    if (endLine0 === this.lineTexts.length && range.end.character === 0) {
-      // End rolled past the last line: index end is the last byte of the
-      // previous line.
-      const lastLine0 = this.lineTexts.length - 1
-      return { start, end: { line: lastLine0 + 1, column: this.lineByteLengths[lastLine0] } }
+    return {
+      start: this.lspToIndex(range.start),
+      end: this.lspToIndex(range.end),
     }
-    this.assertLine(endLine0)
-    if (range.end.character === 0) {
-      // Exclusive end at column 0 = inclusive end at the last byte of the
-      // previous line.
-      if (endLine0 === 0) throw new PositionError("empty LSP range cannot map to an index range")
-      return { start, end: { line: endLine0, column: this.lineByteLengths[endLine0 - 1] } }
-    }
-    const byteOffset = this.utf16OffsetToByteOffset(endLine0, range.end.character)
-    // Step back one character — by code point, not code unit.
-    const text = this.lineTexts[endLine0]
-    // Walk back over the code point ending at byteOffset.
-    const buf = Buffer.from(text, "utf8")
-    let byteBack = byteOffset - 1
-    if (byteBack < 0) throw new PositionError("empty LSP range cannot map to an index range")
-    while (byteBack > 0 && (buf[byteBack]! & 0xc0) === 0x80) byteBack--
-    return { start, end: { line: endLine0 + 1, column: byteBack + 1 } }
   }
 }
 
