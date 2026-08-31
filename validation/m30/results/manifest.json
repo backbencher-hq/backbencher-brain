@@ -1,0 +1,156 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M30",
+  "githubMilestone": 30,
+  "title": "Embedding Onboarding & Vector Honesty",
+  "status": "open",
+  "authority": "docs/m30/M30-MASTER-PLAN.md",
+  "governingContract": "docs/M14-HONESTY-CONTRACT.md",
+  "updatedAt": "2026-08-31T00:00:00.000Z",
+  "evidencePolicy": {
+    "verifiedRequires": [
+      "currentCommit",
+      "sourceFingerprint",
+      "verifierCommand",
+      "evidenceFile",
+      "positiveAndNegativeChecks",
+      "freshTimestamp",
+      "limitations"
+    ],
+    "missingCorpusState": "blocked-or-known-gap",
+    "missingLiveKeysState": "blocked-with-reason",
+    "timeoutState": "blocked-or-known-gap",
+    "unexecutedState": "planned"
+  },
+  "secretHygiene": {
+    "keyStorage": ".env.local (gitignored, mode 0600)",
+    "evidenceRecords": "key fingerprint (last 4 chars) only",
+    "guard": "verifier fails if any raw key pattern appears in tracked files"
+  },
+  "issues": [
+    {
+      "code": "G1",
+      "githubIssue": 548,
+      "tool": "governance",
+      "status": "planned",
+      "scope": "master plan, ledger, npm run verify wiring, secret-hygiene guard",
+      "acceptanceCriteria": [
+        "master plan with explicit authority order and issue order",
+        "machine-readable ledger with all 7 M30 issues",
+        "fail-closed governance verifier with negative checks",
+        "gated as a permanent part of npm run verify"
+      ],
+      "closureRequirements": [
+        "persist current gate evidence",
+        "negative checks pass",
+        "document limitations"
+      ]
+    },
+    {
+      "code": "S1",
+      "githubIssue": 549,
+      "tool": "setup-wizard",
+      "status": "planned",
+      "scope": "bb setup: provider menu with prefilled base URL + model, key input, config save (mode 0600), precedence env > ~/.bb/config.json > bb.json",
+      "acceptanceCriteria": [
+        "provider menu prefills base URL + model; user pastes only the key",
+        "config written with mode 0600; bad perms corrected or warned",
+        "precedence tests for every override path",
+        "mutation suite: dropped precedence tier, wrong file mode, menu tampering all fail"
+      ],
+      "closureRequirements": [
+        "persist current gate evidence",
+        "mutation checks pass",
+        "document limitations"
+      ]
+    },
+    {
+      "code": "S2",
+      "githubIssue": 550,
+      "tool": "first-run-hook",
+      "status": "planned",
+      "scope": "bb index prompts when unconfigured AND TTY; --no-setup escape; one-line notice when non-TTY; never hangs",
+      "acceptanceCriteria": [
+        "TTY prompt shown exactly once per unconfigured run with honest skip notice",
+        "hang regression tests: piped stdin, empty stdin, CI env, non-TTY never block",
+        "pseudo-TTY test proves prompt appears; --no-setup honored everywhere",
+        "mutation suite: removed TTY guard, removed --no-setup handling all fail"
+      ],
+      "closureRequirements": [
+        "persist current gate evidence",
+        "mutation checks pass",
+        "document limitations"
+      ]
+    },
+    {
+      "code": "S3",
+      "githubIssue": 551,
+      "tool": "key-validation",
+      "status": "planned",
+      "scope": "pre-save live /embeddings probe with actionable 401/429/network error mapping; mock negative paths + live-key tests",
+      "acceptanceCriteria": [
+        "mock server covers 401, 429, 5xx, timeout, malformed response",
+        "live-key tests gated on BB_M30_LIVE_KEYS=1 + env keys; blocked-with-reason otherwise",
+        "live call budget capped; key fingerprint only in evidence",
+        "mutation suite: removed error mapping, wrong status branch all fail"
+      ],
+      "closureRequirements": [
+        "persist current gate evidence",
+        "mutation checks pass",
+        "document limitations"
+      ]
+    },
+    {
+      "code": "Q1",
+      "githubIssue": 552,
+      "tool": "rate-limit-resilience",
+      "status": "planned",
+      "scope": "per-batch fallback + 429 backoff replaces the process-wide _apiFailed latch",
+      "acceptanceCriteria": [
+        "mock 429 storm: later batches still embed via API",
+        "backoff respects Retry-After; bounded jitter; declared caps",
+        "mutation suite: restored latch, removed backoff all fail",
+        "honest limitation: fixes quality cliff, not wall-clock time"
+      ],
+      "closureRequirements": [
+        "persist current gate evidence",
+        "mutation checks pass",
+        "document limitations"
+      ]
+    },
+    {
+      "code": "H1",
+      "githubIssue": 553,
+      "tool": "honesty-docs",
+      "status": "planned",
+      "scope": "EMBEDDINGS.md + README: no-key trade-off, vector-space mixing rule, --force re-embed requirement",
+      "acceptanceCriteria": [
+        "docs state no-key trade-off, mixing rule, --force requirement",
+        "docs-truth check: claims map to named checks or declared limitations; banned vocabulary fails",
+        "docs cover S2 notice and S3 error messages verbatim"
+      ],
+      "closureRequirements": [
+        "persist current gate evidence",
+        "docs-truth check passes",
+        "document limitations"
+      ]
+    },
+    {
+      "code": "X1",
+      "githubIssue": 554,
+      "tool": "closure-gate",
+      "status": "planned",
+      "scope": "closure gate: all M30 mutants fail the combined suite; gates permanent in npm run verify; completion bar audited",
+      "acceptanceCriteria": [
+        "all planted mutants fail the suite with catcher recorded",
+        "full suite green on current commit via npm run verify",
+        "completion bar audited with evidence; ledger clean"
+      ],
+      "closureRequirements": [
+        "persist current gate evidence",
+        "mutation checks pass",
+        "document limitations"
+      ]
+    }
+  ]
+}
