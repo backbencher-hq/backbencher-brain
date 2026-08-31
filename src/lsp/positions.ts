@@ -78,7 +78,7 @@ export class PositionMapper implements PositionConverter {
   /** 0-based line -> byte length of that line (excluding terminator) */
   private lineByteLengths: number[]
   /** 0-based line -> the line's text (excluding terminator) */
-  private lineTexts: string[]
+  lineTexts: string[]
 
   constructor(sourceText: string) {
     // Split keeping the content; terminators are \n, \r\n, or \r.
@@ -181,5 +181,5 @@ export class PositionMapper implements PositionConverter {
 
 export function createPositionMapper(sourceText: string): PositionMapper & { lineCount: number } {
   const mapper = new PositionMapper(sourceText)
-  return Object.assign(mapper, { lineCount: mapper.lineTexts.length })
+  return Object.assign(mapper, { get lineCount() { return mapper.lineTexts.length } })
 }
