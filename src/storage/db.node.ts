@@ -21,7 +21,15 @@ export interface CoreDatabase {
 
 export function openDatabase(path: string, options: { readonly?: boolean } = {}): CoreDatabase {
   const db = new Database(path, { readonly: options.readonly ?? false })
-  db.pragma("journal_mode = WAL")
+  // M21.D2: explicit cross-runtime concurrency policy (mirrors db.bun.ts).
+  // WAL + busy_timeout + synchronous=NORMAL on both runtimes so concurrent
+  // indexer workers behave identically; transient locks recover within the
+  // busy timeout, permanent locks/corruption still fail closed (throw).
+  if (!options.readonly) {
+    db.pragma("journal_mode = WAL")
+    db.pragma("busy_timeout = 5000")
+    db.pragma("synchronous = NORMAL")
+  }
   return {
     native: db,
     prepare(sql: string): CoreStatement {
