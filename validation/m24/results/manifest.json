@@ -78,7 +78,7 @@
       "code": "P2",
       "githubIssue": 489,
       "tool": "lsp-freshness",
-      "status": "planned",
+      "status": "verified",
       "scope": "file-watch, incremental reindex, machine-readable stale markers with declared debounce/catch-up guarantees",
       "acceptanceCriteria": [
         "watcher triggers incremental reindex with declared debounce",
