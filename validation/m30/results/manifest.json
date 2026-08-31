@@ -6,7 +6,7 @@
   "status": "open",
   "authority": "docs/m30/M30-MASTER-PLAN.md",
   "governingContract": "docs/M14-HONESTY-CONTRACT.md",
-  "updatedAt": "2026-08-31T00:00:00.000Z",
+  "updatedAt": "2026-09-01T00:00:00.000Z",
   "evidencePolicy": {
     "verifiedRequires": [
       "currentCommit",
@@ -32,8 +32,18 @@
       "code": "G1",
       "githubIssue": 548,
       "tool": "governance",
-      "status": "planned",
+      "status": "verified",
       "scope": "master plan, ledger, npm run verify wiring, secret-hygiene guard",
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "991aad16a03a1dc55a622f3b561863f5ce05821e",
+        "verifierCommand": "bun run script/m30/verify-governance.ts",
+        "evidenceFile": "G1.json",
+        "generatedAt": "2026-08-31T21:11:24.996Z",
+        "passed": 24,
+        "failed": 0,
+        "negativeCases": 8
+      },
       "acceptanceCriteria": [
         "master plan with explicit authority order and issue order",
         "machine-readable ledger with all 7 M30 issues",
