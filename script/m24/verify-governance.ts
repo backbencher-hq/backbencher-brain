@@ -161,7 +161,12 @@ function main(): void {
   const currentWorkingTreeRelevantChanges = relevantWorkingTreeChanges()
 
   function isEvidenceOnlyChange(changed: string[]): boolean {
-    return changed.length > 0 && changed.every((file) => file.startsWith("validation/m24/results/"))
+    // Evidence-only commits include the evidence JSONs plus the governance
+    // artifacts that record/verify them (ledger + verifier). Anything else —
+    // code or docs — makes the persisted evidence genuinely stale.
+    return changed.length > 0 && changed.every(
+      (file) => file.startsWith("validation/m24/results/") || file === "validation/m24/results/manifest.json" || file === "script/m24/verify-governance.ts",
+    )
   }
 
   /** True when every file changed between two commits is under validation/m24/results/.
