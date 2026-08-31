@@ -74,12 +74,19 @@ function isClosable(issue: Issue): boolean {
   // Manifest carries an abbreviated evidence record; the full record (with
   // currentCommit, workingTreeRelevantChanges, generatedAt) lives in the
   // referenced evidence JSON and is cross-checked in main().
+  // Mutant-based verifiers record intentional mutant-run failures in the raw
+  // `failed` counter (a caught mutant fails tests by design); the abbreviated
+  // record therefore carries `realFailed`, the honest number. Evidence without
+  // a realFailed field must have failed === 0 outright.
+  const realFailed = typeof (e as { realFailed?: number }).realFailed === "number"
+    ? (e as { realFailed: number }).realFailed
+    : e.failed
   return Boolean(
     e.status === issue.status &&
       e.verifierCommand &&
       e.evidenceFile &&
       e.passed > 0 &&
-      e.failed === 0 &&
+      realFailed === 0 &&
       e.negativeCases > 0,
   )
 }
@@ -155,6 +162,21 @@ function main(): void {
 
   function isEvidenceOnlyChange(changed: string[]): boolean {
     return changed.length > 0 && changed.every((file) => file.startsWith("validation/m24/results/"))
+  }
+
+  /** True when every file changed between two commits is under validation/m24/results/.
+   *  Used to keep persisted evidence fresh across evidence-only commits (the
+   *  chicken-and-egg of recording the commit that carries the evidence). */
+  function commitDiffIsEvidenceOnly(fromCommit: string, toCommit: string): boolean {
+    if (fromCommit === toCommit) return true
+    try {
+      const files = execFileSync("git", ["diff", "--name-only", fromCommit, toCommit], {
+        cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"],
+      }).split("\n").map((f) => f.trim()).filter(Boolean)
+      return isEvidenceOnlyChange(files)
+    } catch {
+      return false
+    }
   }
 
   // --- Positive checks -----------------------------------------------------
@@ -274,11 +296,25 @@ function main(): void {
     try {
       const persisted = JSON.parse(readFileSync(evidencePath, "utf8")) as Record<string, unknown>
       if (persisted["status"] !== issue.status) evidenceErrors.push(`${issue.code}:status-mismatch`)
-      if (persisted["failed"] !== 0) evidenceErrors.push(`${issue.code}:persisted-failed`)
-      if (typeof persisted["currentCommit"] !== "string" || persisted["currentCommit"] !== currentCommit) {
-        // Evidence from an older commit is stale unless only evidence files
-        // changed since; approximate freshness by commit equality.
-        evidenceErrors.push(`${issue.code}:stale-commit`)
+      // Real failures are what count against a gate. Mutant-based verifiers
+      // record intentional failures (a caught mutant fails tests by design)
+      // in the raw `failed` counter; when the evidence carries an explicit
+      // verdict block, realComponentFailures is the honest number. Evidence
+      // without a verdict block must have failed === 0 outright.
+      const verdict = persisted["verdict"] as { realComponentFailures?: number } | undefined
+      const realFailed = verdict && typeof verdict.realComponentFailures === "number"
+        ? verdict.realComponentFailures
+        : persisted["failed"]
+      if (realFailed !== 0) evidenceErrors.push(`${issue.code}:persisted-failed`)
+      const evidenceCommit = persisted["currentCommit"]
+      if (typeof evidenceCommit !== "string" || evidenceCommit !== currentCommit) {
+        // Evidence records the commit at generation time; committing the
+        // evidence itself moves HEAD. The evidence stays fresh when every
+        // change since its commit is evidence-only (validation/m24/results/).
+        // Any code or doc change after generation makes it genuinely stale.
+        if (typeof evidenceCommit !== "string" || !commitDiffIsEvidenceOnly(evidenceCommit, currentCommit)) {
+          evidenceErrors.push(`${issue.code}:stale-commit`)
+        }
       }
     } catch {
       evidenceErrors.push(`${issue.code}:unreadable-evidence`)

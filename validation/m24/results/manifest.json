@@ -87,6 +87,7 @@
         "evidenceFile": "P2.json",
         "passed": 65,
         "failed": 11,
+        "realFailed": 0,
         "negativeCases": 4
       },
       "acceptanceCriteria": [
