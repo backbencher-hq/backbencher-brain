@@ -80,6 +80,15 @@
       "tool": "lsp-freshness",
       "status": "verified",
       "scope": "file-watch, incremental reindex, machine-readable stale markers with declared debounce/catch-up guarantees",
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see P2.json",
+        "verifierCommand": "npx tsx script/m24/verify-freshness.ts",
+        "evidenceFile": "P2.json",
+        "passed": 65,
+        "failed": 11,
+        "negativeCases": 4
+      },
       "acceptanceCriteria": [
         "watcher triggers incremental reindex with declared debounce",
         "stale results carry machine-readable markers",
