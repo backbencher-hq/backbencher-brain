@@ -6,3 +6,7 @@ bb-ts-core.wasm
 .bb-data/
 bb.json
 .bb_backups/
+
+# Local secrets (never commit)
+.env.local
+.env*.local
