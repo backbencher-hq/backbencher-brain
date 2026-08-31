@@ -81,13 +81,23 @@ function isClosable(issue: Issue): boolean {
   const realFailed = typeof (e as { realFailed?: number }).realFailed === "number"
     ? (e as { realFailed: number }).realFailed
     : e.failed
+  // A verifier proves it can fail in one of two honest ways: dedicated
+  // negative checks (negativeCases > 0) or planted-defect mutants that the
+  // suite demonstrably catches (mutantsCaught > 0). An LSP-feature verifier
+  // may legitimately have zero standalone negative checks when its mutant
+  // run is the negative proof — requiring both would force fake negatives.
+  const mutants = e as { mutantsCaught?: number; mutantsTotal?: number }
+  const mutantProof =
+    typeof mutants.mutantsCaught === "number" &&
+    mutants.mutantsCaught > 0 &&
+    mutants.mutantsTotal === mutants.mutantsCaught
   return Boolean(
     e.status === issue.status &&
       e.verifierCommand &&
       e.evidenceFile &&
       e.passed > 0 &&
       realFailed === 0 &&
-      e.negativeCases > 0,
+      (e.negativeCases > 0 || mutantProof),
   )
 }
 
