@@ -22,6 +22,22 @@ export interface CoreDatabase {
 export function openDatabase(path: string, options: { readonly?: boolean } = {}): CoreDatabase {
   // bun:sqlite throws SQLITE_MISUSE when readonly:false is passed explicitly.
   const db = options.readonly ? new Database(path, { readonly: true }) : new Database(path)
+  // M21.D2: explicit cross-runtime concurrency policy. Both adapters must
+  // configure the same pragmas so Bun and Node behave identically under
+  // concurrent access:
+  //   journal_mode = WAL  — concurrent readers during a write transaction.
+  //   busy_timeout        — bounded transient-lock recovery: a blocked
+  //                         statement waits up to the timeout instead of
+  //                         failing immediately with SQLITE_BUSY.
+  //   synchronous = NORMAL — WAL-safe durability with far fewer fsyncs than
+  //                         FULL; matches the Node adapter's throughput.
+  // A permanent lock (a foreign process holding the DB beyond the timeout)
+  // or corruption still fails closed: the statement throws after the timeout.
+  if (!options.readonly) {
+    db.exec("PRAGMA journal_mode = WAL")
+    db.exec("PRAGMA busy_timeout = 5000")
+    db.exec("PRAGMA synchronous = NORMAL")
+  }
   return {
     native: db,
     prepare(sql: string): CoreStatement {
