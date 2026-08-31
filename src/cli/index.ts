@@ -45,8 +45,13 @@ function requireDir(p: string): string {
   return abs
 }
 
-async function cmdIndex(dir: string, opts: { force?: boolean }) {
+async function cmdIndex(dir: string, opts: { force?: boolean; noSetup?: boolean }) {
   const abs = requireDir(dir)
+  // M30.S2: first-run embedding setup. Interactive ONLY on a TTY with no
+  // config anywhere; non-TTY never hangs. --no-setup skips entirely.
+  const { maybeRunFirstRunSetup } = await import("../setup/setup-wizard")
+  await maybeRunFirstRunSetup({ noSetup: opts.noSetup === true })
+
   const pid = getProjectId(abs)
   if (opts.force) {
     // In-place wipe (never delete the DB file): deleting + recreating the file
@@ -156,8 +161,21 @@ export async function runCli(argv: string[]): Promise<void> {
     .description("index a project")
     .argument("<dir>", "project directory")
     .option("--force", "wipe the existing index and rebuild")
+    .option("--no-setup", "skip the first-run embedding setup prompt")
     .action(async (dir: string, opts: any) => {
       await cmdIndex(dir, opts)
+    })
+
+  program
+    .command("setup")
+    .description("embedding sağlayıcısı kurulumu (API anahtarı, model)")
+    .action(async () => {
+      const { runSetupWizard } = await import("../setup/setup-wizard")
+      if (!process.stdin.isTTY) {
+        console.error("✗ bb setup etkileşimli bir terminal gerektirir.")
+        process.exit(1)
+      }
+      await runSetupWizard()
     })
 
   program
