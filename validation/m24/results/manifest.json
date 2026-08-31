@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "M24",
   "githubMilestone": 24,
-  "title": "bb_lsp — The Server (IDE Program v0)",
+  "title": "bb_lsp \u2014 The Server (IDE Program v0)",
   "status": "open",
   "authority": "docs/m24/M24-MASTER-PLAN.md",
   "governingContract": "docs/IDE-HONESTY-CONTRACT.md",
