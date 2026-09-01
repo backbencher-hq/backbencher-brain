@@ -36,10 +36,10 @@
       "scope": "master plan, ledger, npm run verify wiring, secret-hygiene guard",
       "evidence": {
         "status": "verified",
-        "currentCommit": "21cc3b3937edb53b7af507ee4ebdf2f661aea8f4",
+        "currentCommit": "c14c31b41e0048175432ba6c5ffd57ea2f08f794",
         "verifierCommand": "bun run script/m30/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "generatedAt": "2026-09-01T13:55:03.720Z",
+        "generatedAt": "2026-09-01T15:29:39.248Z",
         "passed": 24,
         "failed": 0,
         "negativeCases": 8
@@ -63,10 +63,10 @@
       "status": "verified",
       "evidence": {
         "status": "verified",
-        "currentCommit": "21cc3b3937edb53b7af507ee4ebdf2f661aea8f4",
+        "currentCommit": "c14c31b41e0048175432ba6c5ffd57ea2f08f794",
         "verifierCommand": "npx tsx script/m30/verify-setup.ts",
         "evidenceFile": "S1.json",
-        "generatedAt": "2026-09-01T13:56:17.506Z",
+        "generatedAt": "2026-09-01T15:30:43.129Z",
         "passed": 39,
         "failed": 0,
         "negativeCases": 11
@@ -91,10 +91,10 @@
       "status": "verified",
       "evidence": {
         "status": "verified",
-        "currentCommit": "21cc3b3937edb53b7af507ee4ebdf2f661aea8f4",
+        "currentCommit": "c14c31b41e0048175432ba6c5ffd57ea2f08f794",
         "verifierCommand": "npx tsx script/m30/verify-first-run-hook.ts",
         "evidenceFile": "S2.json",
-        "generatedAt": "2026-09-01T13:47:31.575Z",
+        "generatedAt": "2026-09-01T15:31:03.199Z",
         "passed": 17,
         "failed": 0,
         "negativeCases": 4
@@ -119,10 +119,10 @@
       "status": "verified",
       "evidence": {
         "status": "verified",
-        "currentCommit": "5dadb2afa3c9f565c822d49a71079341d3789a48",
+        "currentCommit": "c14c31b41e0048175432ba6c5ffd57ea2f08f794",
         "verifierCommand": "npx tsx script/m30/verify-key-validation.ts --live",
         "evidenceFile": "S3.json",
-        "generatedAt": "2026-09-01T14:30:13.472Z",
+        "generatedAt": "2026-09-01T15:31:22.396Z",
         "passed": 33,
         "failed": 0,
         "negativeCases": 8
@@ -147,10 +147,10 @@
       "status": "verified",
       "evidence": {
         "status": "verified",
-        "currentCommit": "4ca35cbf875a48e3658de2c77dcae9328c1de9c3",
+        "currentCommit": "c14c31b41e0048175432ba6c5ffd57ea2f08f794",
         "verifierCommand": "npx tsx script/m30/verify-rate-limit.ts",
         "evidenceFile": "Q1.json",
-        "generatedAt": "2026-09-01T14:42:25.158Z",
+        "generatedAt": "2026-09-01T15:31:49.551Z",
         "passed": 17,
         "failed": 0,
         "negativeCases": 4
@@ -175,10 +175,10 @@
       "status": "verified",
       "evidence": {
         "status": "verified",
-        "currentCommit": "7731546262a5c67f62beac3e7e32866b601194cc",
+        "currentCommit": "c14c31b41e0048175432ba6c5ffd57ea2f08f794",
         "verifierCommand": "npx tsx script/m30/verify-honesty-docs.ts",
         "evidenceFile": "H1.json",
-        "generatedAt": "2026-09-01T14:54:27.802Z",
+        "generatedAt": "2026-09-01T15:31:54.352Z",
         "passed": 29,
         "failed": 0,
         "negativeCases": 5
@@ -199,7 +199,17 @@
       "code": "X1",
       "githubIssue": 554,
       "tool": "closure-gate",
-      "status": "planned",
+      "status": "verified",
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "c14c31b41e0048175432ba6c5ffd57ea2f08f794",
+        "verifierCommand": "npx tsx script/m30/verify-closure.ts",
+        "evidenceFile": "X1.json",
+        "generatedAt": "2026-09-01T15:33:00.306Z",
+        "passed": 50,
+        "failed": 0,
+        "negativeCases": 5
+      },
       "scope": "closure gate: all M30 mutants fail the combined suite; gates permanent in npm run verify; completion bar audited",
       "acceptanceCriteria": [
         "all planted mutants fail the suite with catcher recorded",
