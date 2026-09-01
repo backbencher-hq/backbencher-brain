@@ -17,6 +17,7 @@ import * as fs from "fs"
 import * as path from "path"
 import { execSync } from "child_process"
 import { PHP_BUILTINS } from "../../src/ast/real-php-analyzer"
+import { RUBY_BUILTINS, RAILS_MACRO_METHODS } from "../../src/ast/real-ruby-analyzer"
 
 const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 const CORPUS_ROOT = "$HOME/fixtures/repositories"
@@ -42,6 +43,7 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   swift: { wasm: "tree-sitter-swift.wasm", analyzerFile: "real-swift-analyzer", className: "RealSwiftAnalyzer", ext: "swift" },
   objc: { wasm: "tree-sitter-objc.wasm", analyzerFile: "real-objective-c-analyzer", className: "RealObjectiveCAnalyzer", ext: "m" },
   php: { wasm: "tree-sitter-php.wasm", analyzerFile: "real-php-analyzer", className: "RealPhpAnalyzer", ext: "php" },
+  ruby: { wasm: "tree-sitter-ruby.wasm", analyzerFile: "real-ruby-analyzer", className: "RealRubyAnalyzer", ext: "rb" },
 }
 
 function seededPick<T>(items: T[], n: number, seedStr: string): T[] {
@@ -1099,6 +1101,331 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
   return edges
 }
 
+// Ruby truth: derive the same structural edges the analyzer emits, from
+// clause node structure only. Mirrors RealRubyAnalyzer (probe-verified):
+//   extends    — class superclass (leaf name after ::)
+//   implements — include/prepend (module mixin) inside a class/module body
+//   extends    — extend (module extension) inside a class/module body
+//   calls      — call/command/command_call method name, filtered by the
+//                analyzer's EXACT builtin set (imported, never duplicated)
+//   instantiates — `X.new(...)` call nodes (method name `new` with receiver)
+//   uses       — instance_variable NOT in assignment-LHS position (reads only)
+export function deriveRubyEdges(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const key = (label: string, target: string) => label + ":" + target
+  const push = (label: string, target: string) => {
+    const k = key(label, target)
+    if (!seen.has(k)) { seen.add(k); edges.push({ label, from: "(expr)", target }) }
+  }
+  const leafName = (t: string): string => {
+    const parts = t.replace(/^<\s*/, "").split(/::|\./).filter(Boolean)
+    return parts[parts.length - 1] ?? t
+  }
+  const isRubyBuiltin = (name: string): boolean => {
+    // Mirror RealRubyAnalyzer.pushBareCall filters: builtins, Rails macros,
+    // self/nil/true/false, capitalized constants (a bare uppercase identifier
+    // is a CONSTANT, never a call), __dunder__.
+    if (RUBY_BUILTINS.has(name)) return true
+    if (RAILS_MACRO_METHODS.has(name)) return true
+    if (name === "self" || name === "nil" || name === "true" || name === "false") return true
+    const firstChar = name.charCodeAt(0)
+    if (firstChar >= 65 && firstChar <= 90) return true
+    if (name.startsWith("__") && name.endsWith("__")) return true
+    return false
+  }
+  // Call-node filter mirrors RealRubyAnalyzer.processCall, which skips ONLY
+  // RUBY_BUILTINS + RAILS_MACRO_METHODS — NOT the uppercase rule: `Pathname
+  // (FOOFILE)` is a real Kernel method call (rake test_rake_rules.rb L86),
+  // and the analyzer emits calls:Pathname. Filtering uppercase names here
+  // wrongly dropped every capitalized Kernel call from the oracle.
+  const isRubyCallBuiltin = (name: string): boolean => {
+    if (RUBY_BUILTINS.has(name)) return true
+    if (RAILS_MACRO_METHODS.has(name)) return true
+    if (name === "self" || name === "nil" || name === "true" || name === "false") return true
+    if (name.startsWith("__") && name.endsWith("__")) return true
+    return false
+  }
+  const isVisibilityDirective = (name: string | undefined): boolean =>
+    name === "private" || name === "protected" || name === "public"
+
+  // Implicit overrides (RUBYD2): methods redeclared in a subclass that also
+  // exist in its superclass, from local class declarations in this file.
+  const classBases = new Map<string, string>()
+  const classMethods = new Map<string, Set<string>>()
+  const collectDecls = (start: any) => {
+    const stack: any[] = [start]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "class") {
+        const nameNode = n.childForFieldName?.("name")
+        const sup = n.childForFieldName?.("superclass")
+        if (nameNode?.text) {
+          if (sup) classBases.set(nameNode.text, leafName(sup.text.replace(/^<\s*/, "")))
+          const body = n.namedChildren.find((c: any) => c.type === "body_statement")
+          if (body) {
+            const names = classMethods.get(nameNode.text) ?? new Set<string>()
+            const mstack: any[] = [body]
+            while (mstack.length > 0) {
+              const m = mstack.pop()!
+              if (m.type === "method" || m.type === "singleton_method") {
+                const mn = m.childForFieldName?.("name")
+                if (mn?.text) names.add(mn.text)
+              }
+              for (let i = 0; i < m.namedChildCount; i++) mstack.push(m.namedChild(i))
+            }
+            classMethods.set(nameNode.text, names)
+          }
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) stack.push(n.namedChild(i))
+    }
+  }
+  collectDecls(root)
+
+  // Same-file method names (all classes + top-level): a bare identifier that
+  // names a method defined in this file is a CALL of that method, not noise.
+  // The analyzer emits these (bare-identifier branch); the oracle must too.
+  const fileMethods = new Set<string>()
+  for (const names of classMethods.values()) for (const m of names) fileMethods.add(m)
+
+  // Local-variable resolution (mirrors RealRubyAnalyzer.walkBody localNames):
+  // a bare identifier is a LOCAL READ, not a method call, if it names a
+  // parameter, a block parameter, or an assignment target ANYWHERE IN THE
+  // ENCLOSING METHOD BODY. Ruby resolves this at parse-of-scope time. The
+  // analyzer pre-scans EACH method body for assignment targets + block/lambda
+  // params and threads the method's own params in (walkBody scoping). The
+  // oracle must scope the same way: a whole-file pass wrongly treats `runlist`
+  // (assigned in test_invoke) as a local inside test_investigation_output,
+  // where Ruby actually resolves it as a METHOD CALL — verified on rake
+  // test_rake_task.rb (the analyzer's `calls:runlist` there is correct).
+  const methodLocals = new Map<string, Set<string>>()
+  const collectLocals = (start: any, into: Set<string>) => {
+    const st: any[] = [start]
+    while (st.length > 0) {
+      const n = st.pop()!
+      if (n.type === "assignment" || n.type === "operator_assignment") {
+        const left = n.childForFieldName?.("left") ?? n.namedChild(0)
+        if (left) {
+          if (left.type === "identifier") into.add(left.text)
+          for (let i = 0; i < left.namedChildCount; i++) {
+            const c = left.namedChild(i)
+            if (c?.type === "identifier") into.add(c.text)
+          }
+        }
+      }
+      // Method/block parameters live in a container node (method_parameters,
+      // block_parameters, lambda_parameters) and come in several forms:
+      // plain identifier, optional_parameter, splat_parameter,
+      // keyword_parameter, block_parameter, destructured_parameter. Recurse
+      // into the whole subtree so the bound name inside every form is added.
+      if (n.type === "method_parameters" || n.type === "block_parameters" ||
+          n.type === "lambda_parameters" || n.type === "parameters") {
+        const collectIdent = (qn: any) => {
+          for (let i = 0; i < qn.namedChildCount; i++) {
+            const c = qn.namedChild(i)
+            if (!c) continue
+            if (c.type === "identifier") into.add(c.text)
+            else collectIdent(c)
+          }
+        }
+        collectIdent(n)
+      }
+      // `rescue Exception => ex` binds `ex` as a local (mirrors the analyzer's
+      // exception_variable rule — probe-verified 2026-08-31).
+      if (n.type === "exception_variable") {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c?.type === "identifier") into.add(c.text)
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) st.push(n.namedChild(i))
+    }
+  }
+  // Per-method local sets, keyed by the method node's id (nested defs get
+  // their own scope). Code OUTSIDE any method has no local set — bare
+  // identifiers there are calls, matching the analyzer's walkBody scoping.
+  const methodScan: any[] = [root]
+  while (methodScan.length > 0) {
+    const n = methodScan.pop()!
+    if (n.type === "method" || n.type === "singleton_method" || n.type === "setter") {
+      const set = new Set<string>()
+      collectLocals(n, set)
+      methodLocals.set(String(n.id), set)
+    }
+    for (let i = 0; i < n.namedChildCount; i++) methodScan.push(n.namedChild(i))
+  }
+
+  const stack: any[] = [{ n: root, parent: null, inBody: false, cls: undefined as string | undefined, methodId: undefined as string | undefined }]
+  while (stack.length > 0) {
+    const { n, parent, inBody, cls: enclosingClass, methodId } = stack.pop()
+    const t = n.type
+    if (t === "class") {
+      // superclass field text is "< Name" — strip the marker, keep the leaf.
+      const sup = n.childForFieldName?.("superclass")
+      if (sup) push("extends", leafName(sup.text.replace(/^<\s*/, "")))
+    }
+    // Mixins: the analyzer emits include/extend/prepend wherever they appear
+    // (class level AND inside method bodies — `base.extend(ClassMethods)`,
+    // `exception.extend(Mixin)`). The oracle must not gate on !inBody.
+    if (t === "call" || t === "command" || t === "command_call") {
+      const methodNode = n.childForFieldName?.("method")
+      const methodName = methodNode?.text
+      if (methodName === "include" || methodName === "prepend") {
+        const args = n.namedChildren.find((c: any) => c.type === "argument_list")
+        if (args) {
+          for (let i = 0; i < args.namedChildCount; i++) {
+            const arg = args.namedChild(i)
+            if (arg && (arg.type === "constant" || arg.type === "scope_resolution")) {
+              push("implements", leafName(arg.text))
+            }
+          }
+        }
+      } else if (methodName === "extend") {
+        const args = n.namedChildren.find((c: any) => c.type === "argument_list")
+        if (args) {
+          for (let i = 0; i < args.namedChildCount; i++) {
+            const arg = args.namedChild(i)
+            if (arg && (arg.type === "constant" || arg.type === "scope_resolution")) {
+              push("extends", leafName(arg.text))
+            }
+          }
+        }
+      }
+    }
+    if (t === "call" || t === "command" || t === "command_call") {
+      const methodNode = n.childForFieldName?.("method")
+      if (methodNode) {
+        const methodName = methodNode.text
+        if (methodName === "new") {
+          // `X.new(...)` instantiates the receiver class. A receiverless `new`
+          // (e.g. `EMPTY = EmptyLinkedList.new` inside the class body, or a
+          // bare `new` in a class method) constructs the ENCLOSING class —
+          // resolve it from the nearest enclosing class/module, mirroring the
+          // analyzer. Track enclosing class names on the walk stack.
+          // The analyzer's contract (real-ruby-analyzer processCall): an
+          // UPPERCASE receiver -> instantiates:leaf; a lowercase-identifier
+          // receiver (`task_class.new`) is a REGULAR call (calls:new, not an
+          // instantiation — the receiver is a local, its class is unknowable);
+          // no receiver at all -> instantiates the enclosing class. The old
+          // scan only matched constant/scope_resolution, so `task_class.new`
+          // fell through to enclosingClass and fabricated instantiates
+          // (verified: rake task_manager.rb `task_class.new(task_name, self)`
+          // -> bogus instantiates:TaskManager).
+          let receiver: string | undefined
+          let receiverIsConst = false
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const child = n.namedChild(i)
+            if (child && child.id === methodNode.id) break
+            if (child && (child.type === "constant" || child.type === "scope_resolution")) {
+              receiver = child.text
+              receiverIsConst = true
+            } else if (child && child.type === "identifier") {
+              receiver = child.text
+            }
+          }
+          if (!receiver) {
+            if (enclosingClass) push("instantiates", leafName(enclosingClass))
+          } else if (receiverIsConst) {
+            push("instantiates", leafName(receiver))
+          } else {
+            // lowercase receiver (`task_class.new`) — analyzer emits calls:new
+            push("calls", "new")
+          }
+        } else if (!isRubyCallBuiltin(methodName) && !isVisibilityDirective(methodName)) {
+          push("calls", methodName)
+        }
+      }
+    }
+    if (t === "identifier" && inBody) {
+      // Bare identifiers in expression position are calls (RUBYD4) —
+      // mirrors the analyzer's bare-identifier branch. Skip assignment
+      // LHS, def names, parameters, hash keys, and LOCALS (parameters,
+      // block params, assignment targets — resolved just above), so Ruby
+      // locals are not misread as method calls.
+      const pt = parent?.type
+      // `assignment`/`operator_assignment` are deliberately NOT in the skip
+      // list: the LHS is already covered by the per-method local set
+      // (collectLocals adds assignment targets), while the RHS is a genuine
+      // bare call — `loc = find_location` must emit calls:find_location (the
+      // analyzer's walkBody recurses into the RHS; verified on rake
+      // task_manager.rb L242). Local check is scoped to the ENCLOSING METHOD
+      // (mirrors walkBody): an identifier assigned in test_invoke but used in
+      // test_investigation_output is a CALL in Ruby, not a local.
+      const localsHere = methodId ? methodLocals.get(methodId) : undefined
+      const skip = pt === "method" || pt === "singleton_method" || pt === "setter" ||
+        pt === "method_parameters" || pt === "parameters" ||
+        pt === "block_parameters" || pt === "lambda_parameters" ||
+        pt === "pair" || pt === "class" || pt === "module" ||
+        pt === "singleton_class" || pt === "call" || pt === "command" || pt === "command_call"
+      if (!skip && !(localsHere?.has(n.text) ?? false) && !isRubyBuiltin(n.text) && !isVisibilityDirective(n.text)) {
+        // A bare identifier naming a method defined in this file resolves to
+        // that method (Ruby parse-of-scope rule) — the analyzer emits it as a
+        // bare call, so the oracle must too (`until (fn = have_rakefile)`).
+        push("calls", n.text)
+      }
+    }
+    // Call node in a METHOD BODY: also emit the bare method name as a call
+    // (mirrors the analyzer's walkBody: `service.authorize(x)` -> calls:authorize
+    // regardless of receiver). Without this, the oracle misses the member-call
+    // surface the analyzer surfaces on every receiver.
+    // `new` is excluded here: `X.new` is handled above as instantiates (the
+    // analyzer RETURNS from processCall on `new`, so it never emits calls:new
+    // for an uppercase receiver — the old rule fabricated 41 bogus calls:new
+    // edges across rake). Lowercase `task_class.new` IS a calls:new, and the
+    // new-branch above now emits it.
+    if ((t === "call" || t === "command" || t === "command_call") && inBody) {
+      const methodNode = n.childForFieldName?.("method")
+      if (methodNode && methodNode.text !== "new" && !isRubyCallBuiltin(methodNode.text) && !isVisibilityDirective(methodNode.text)) {
+        push("calls", methodNode.text)
+      }
+    }
+    if (t === "instance_variable") {
+      // READS only (mirrors RUBD1 + RUBD5): plain `assignment` (@x = v) LHS is
+      // a pure WRITE. But `operator_assignment` (@x += / -= / ||= v) is a
+      // READ-MODIFY-WRITE — the current value is read before the op — so it
+      // emits a use. Verified against rake corpus (@options ||= ...).
+      const lhs = parent ? parent.childForFieldName?.("left") : null
+      const isLhs = parent && (parent.type === "assignment" || parent.type === "operator_assignment") &&
+        lhs && lhs.startIndex === n.startIndex && lhs.endIndex === n.endIndex
+      const isWrite = isLhs && parent.type === "assignment"
+      if (!isWrite) push("uses", n.text)
+    }
+    // Track nearest enclosing class/module for receiverless-new resolution.
+    let nextCls = enclosingClass
+    if (t === "class" || t === "module") {
+      const nameNode = n.childForFieldName?.("name")
+      if (nameNode?.text) nextCls = nameNode.text
+    }
+    // Track nearest enclosing method for per-method local resolution.
+    let nextMethodId = methodId
+    if (t === "method" || t === "singleton_method" || t === "setter") {
+      nextMethodId = String(n.id)
+    }
+    const nextBody = inBody || t === "method" || t === "singleton_method"
+    for (let i = n.namedChildCount - 1; i >= 0; i--) {
+      const c = n.namedChild(i)
+      if (c) stack.push({ n: c, parent: n, inBody: nextBody, cls: nextCls, methodId: nextMethodId })
+    }
+  }
+  // Implicit overrides (RUBYD2): subclass methods redeclaring a superclass
+  // method, emitted as `Sub.method -> Base.method` (analyzer contract).
+  for (const [cls, base] of classBases) {
+    const baseMethods = classMethods.get(base)
+    const subMethods = classMethods.get(cls)
+    if (!baseMethods || !subMethods) continue
+    for (const m of subMethods) {
+      // Analyzer contract: overrides edges point at the BASE method
+      // (source=Sub.method, target=Base.method). The old rule pushed the
+      // SUBclass method as target, so every ruby overrides edge was BOTH
+      // missing (oracle Sub.method) and unexplained (analyzer Base.method) —
+      // 6 phantom gaps on linked_list.rb alone.
+      if (baseMethods.has(m)) push("overrides", `${base}.${m}`)
+    }
+  }
+  return edges
+}
+
 // Go implicit interface-implementation truth (duck typing): a struct S
 // implements interface I when S's receiver-method set (value OR pointer
 // receivers) contains every method I declares. Mirrors the analyzer's
@@ -2024,6 +2351,11 @@ async function main() {
           ;(truth as any[]).push(e)
         }
       }
+      if (lang === "ruby") {
+        for (const e of deriveRubyEdges(root)) {
+          ;(truth as any[]).push(e)
+        }
+      }
       if (lang === "svelte") {
         for (const e of deriveSvelteComponentUsages(root)) {
           ;(truth as any[]).push(e)
@@ -2054,7 +2386,7 @@ async function main() {
       // truth); zig derives calls AND uses; other languages do not derive
       // call truth, so including calls there would flag every real call edge
       // as unexplained.
-      })).filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" ? ["overrides"] : []), ...(lang === "c" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" ? ["calls"] : []), ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" ? ["calls", "uses"] : []), ...(lang === "dart" ? ["uses"] : []), ...(lang === "csharp" ? ["calls"] : []), ...(lang === "swift" || lang === "objc" || lang === "php" ? ["references"] : [])].includes(r.label))
+      })).filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" ? ["overrides"] : []), ...(lang === "c" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" ? ["calls"] : []), ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" ? ["calls", "uses"] : []), ...(lang === "dart" || lang === "ruby" ? ["uses"] : []), ...(lang === "csharp" ? ["calls"] : []), ...(lang === "swift" || lang === "objc" || lang === "php" ? ["references"] : [])].includes(r.label))
         // The tree-truth oracles already emit UNIQUE (label,target) edges per
         // file (each oracle keeps a `seen` set keyed by label+target). The
         // analyzer, by contrast, emits one edge per source SEARCH HIT, so a
