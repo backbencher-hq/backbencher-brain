@@ -112,8 +112,18 @@ before capabilities can be kept, migrated, improved, quarantined, removed, or de
 
 See [EMBEDDINGS.md](./EMBEDDINGS.md). Real vector embeddings are generated
 when an OpenAI-compatible embeddings API is configured; otherwise a local
-word-vector fallback (50-dim) is used. Both are stored separately and the
-vector search never compares across vector spaces.
+word-vector fallback (`local-word-vectors`) is used — declared weaker, not
+"the same offline". Both are stored separately, labeled by producing model,
+and the vector search never compares across vector spaces.
+
+The easiest first step is `bb setup`: it offers prefilled free providers
+(OpenRouter free, NVIDIA NIM free), hides the key while you type, validates
+it with one live `/embeddings` call before saving (bad keys are never saved),
+and writes `~/.bb/config.json` with mode 0600. The first `bb index` run
+without any key shows a one-line honest notice and proceeds with local word
+vectors; add a real model later and re-embed with `bb index --force`.
+
+For manual configuration:
 
 Google Gemini (OpenAI-compatible endpoint) — the fastest way to turn on
 real embeddings:
@@ -145,10 +155,13 @@ Or put the same keys in `~/.bb/config.json`:
 ```
 
 Note: the free tier is quota-limited (roughly one 100-doc batch before HTTP
-429) — a paid key is needed for real projects. Vectors are labeled by the
-model that produced them (`gemini-embedding-001` vs `local-word-vectors`),
-and `BB_EMBEDDING_BATCH_LIMIT` controls the max symbols per index batch
-(default 50000) before falling back to offline TF-IDF vectors.
+429) — a paid key is needed for real projects. A 429 or provider blip degrades
+one batch to the local fallback with a bounded backoff; it does not silently
+poison the rest of the run. Vectors are labeled by the model that produced
+them (`gemini-embedding-001` vs `local-word-vectors`), and
+`BB_EMBEDDING_BATCH_LIMIT` controls the max symbols per index batch (default
+50000). Changing model or dimension requires `bb index --force`; vectors from
+different spaces are never mixed.
 
 ## Architecture and verification
 
