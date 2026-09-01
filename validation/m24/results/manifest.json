@@ -277,7 +277,7 @@
       "code": "D1",
       "githubIssue": 496,
       "tool": "lsp-docs",
-      "status": "planned",
+      "status": "verified",
       "scope": "tool documentation truthful per contract vocabulary, claim levels published",
       "acceptanceCriteria": [
         "documentation states claim levels and limitations",
@@ -288,7 +288,17 @@
         "persist current gate evidence",
         "vocabulary lint passes",
         "document limitations"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see D1.json",
+        "verifierCommand": "npx tsx script/m24/verify-docs.ts",
+        "evidenceFile": "D1.json",
+        "passed": 44,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 3
+      }
     },
     {
       "code": "X1",
