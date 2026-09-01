@@ -116,7 +116,17 @@
       "code": "S3",
       "githubIssue": 551,
       "tool": "key-validation",
-      "status": "planned",
+      "status": "verified",
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "5dadb2afa3c9f565c822d49a71079341d3789a48",
+        "verifierCommand": "npx tsx script/m30/verify-key-validation.ts --live",
+        "evidenceFile": "S3.json",
+        "generatedAt": "2026-09-01T14:30:13.472Z",
+        "passed": 33,
+        "failed": 0,
+        "negativeCases": 8
+      },
       "scope": "pre-save live /embeddings probe with actionable 401/429/network error mapping; mock negative paths + live-key tests",
       "acceptanceCriteria": [
         "mock server covers 401, 429, 5xx, timeout, malformed response",
