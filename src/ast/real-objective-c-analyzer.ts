@@ -516,9 +516,9 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
   private getRange(node: Node) {
     return {
         startLine: node.startPosition.row + 1,
-        startColumn: node.startPosition.column,
+        startColumn: node.startPosition.column + 1,
         endLine: node.endPosition.row + 1,
-        endColumn: node.endPosition.column,
+        endColumn: node.endPosition.column + 1,
         startIndex: node.startIndex,
         endIndex: node.endIndex
     }

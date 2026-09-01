@@ -812,9 +812,9 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       kind,
       range: {
         startLine: node.startPosition.row + 1,
-        startColumn: node.startPosition.column,
+        startColumn: node.startPosition.column + 1,
         endLine: node.endPosition.row + 1,
-        endColumn: node.endPosition.column,
+        endColumn: node.endPosition.column + 1,
         startIndex: node.startIndex,
         endIndex: node.endIndex,
       },
@@ -902,9 +902,9 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
         isExternal: true,
         range: {
           startLine: node.startPosition.row + 1,
-          startColumn: node.startPosition.column,
+          startColumn: node.startPosition.column + 1,
           endLine: node.endPosition.row + 1,
-          endColumn: node.endPosition.column,
+          endColumn: node.endPosition.column + 1,
           startIndex: node.startIndex,
           endIndex: node.endIndex,
         },
