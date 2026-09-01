@@ -13,14 +13,14 @@
       "status": "pass"
     },
     {
-      "description": "regression gate vs grammar-audit-baseline.json (33/41 languages pass)",
+      "description": "regression gate vs grammar-audit-baseline.json (32/41 languages pass)",
       "id": "baseline-gate",
       "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "72991693d61b1d2a48354a7d76f95b077588070a",
-  "committedAt": "2026-08-30T07:51:34+02:00",
+  "commit": "439f9107a13a7e1ef3f4d72842c54fef4052e6be",
+  "committedAt": "2026-08-31T03:22:17+02:00",
   "data": {
     "languages": {
       "bash": {
@@ -758,10 +758,16 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 286,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 12,
-        "status": "pass",
+        "referencedTypeLiterals": 22,
+        "status": "fail",
         "unknownFields": [],
-        "unknownNodeTypes": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-ruby-analyzer.ts:comparison",
+            "line": 554,
+            "literal": "parameters"
+          }
+        ],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-ruby.wasm"
@@ -1046,10 +1052,10 @@
       }
     },
     "summary": {
-      "fail": 8,
+      "fail": 9,
       "languagesAudited": 41,
-      "pass": 33,
-      "totalUnknownReferences": 44
+      "pass": 32,
+      "totalUnknownReferences": 45
     }
   },
   "governance": "docs/M14-HONESTY-CONTRACT.md",

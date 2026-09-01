@@ -1282,6 +1282,46 @@ const MUTANTS: Mutant[] = [
     description: "drops php override edges (PaymentService.__construct -> BaseService.__construct) — php overrides pin",
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "overrides") }),
   },
+  {
+    id: "ruby/drop-implements-edge",
+    language: "ruby",
+    defectClass: "relationship-loss",
+    description: "drops ruby module-mixin implements edges (Service->Loggable) — ruby include pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "implements") }),
+  },
+  {
+    id: "ruby/drop-member-read-uses",
+    language: "ruby",
+    defectClass: "relationship-loss",
+    description: "drops ruby instance-var member-read uses edges (@balance reads) — ruby section B uses pin (managed-OO family contract)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).memberRead && x.type === "uses")) }),
+  },
+  {
+    id: "ruby/emit-write-as-uses",
+    language: "ruby",
+    defectClass: "relationship-loss",
+    description: "regresses the read/write gate: emits uses for assignment-LHS writes (@total = ... as a read) — ruby forbid pin",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), {
+        type: "uses", source: "initialize", target: "@gateway", isExternal: true, weight: 1, confidence: 0.9, metadata: { memberRead: true },
+      }],
+    }),
+  },
+  {
+    id: "ruby/drop-instantiates-edge",
+    language: "ruby",
+    defectClass: "relationship-loss",
+    description: "drops ruby instantiates edges (Service.new / Gateway.new) — ruby instantiates pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "instantiates") }),
+  },
+  {
+    id: "ruby/drop-symbol-complexity",
+    language: "ruby",
+    defectClass: "payload-loss",
+    description: "drops ruby per-symbol complexity (authorize if/while/&& count) — ruby section C complexity pin",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, complexity: undefined })) }),
+  },
 ]
 
 async function realAnalyzer(lang: string): Promise<any> {

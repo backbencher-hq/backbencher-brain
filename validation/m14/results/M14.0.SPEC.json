@@ -55,7 +55,7 @@
     },
     {
       "description": "java avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "grails-core:java 7.9 ms/file",
+      "detail": "grails-core:java 4.5 ms/file",
       "id": "section-f-perf-budget",
       "language": "java",
       "status": "pass"
@@ -129,7 +129,7 @@
     },
     {
       "description": "groovy avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "grails-core:groovy 7.5 ms/file",
+      "detail": "grails-core:groovy 5.5 ms/file",
       "id": "section-f-perf-budget",
       "language": "groovy",
       "status": "pass"
@@ -1331,11 +1331,85 @@
       "id": "section-h-cross-language",
       "language": "php",
       "status": "pass"
+    },
+    {
+      "description": "ruby: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "ruby",
+      "status": "pass"
+    },
+    {
+      "description": "ruby: 1 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "ruby",
+      "status": "pass"
+    },
+    {
+      "description": "ruby: 5 ruled, 0 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "ruby",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (ruby)",
+      "detail": "158 types, 107 handled, 27 silent, 1 gaps, 5 decisions",
+      "id": "section-a-structural",
+      "language": "ruby",
+      "status": "pass"
+    },
+    {
+      "description": "6 relationship kinds pinned by ruby fixtures",
+      "detail": "pinned: calls, contains, extends, implements, instantiates, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "ruby",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for ruby (1)",
+      "detail": "complexity",
+      "id": "section-c-payload-matrix",
+      "language": "ruby",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "2 tier(s) pinned: structural, usage_contextual",
+      "id": "section-d-evidence-tiers",
+      "language": "ruby",
+      "status": "pass"
+    },
+    {
+      "description": "rake:ruby at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor rake:ruby: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "ruby",
+      "status": "pass"
+    },
+    {
+      "description": "ruby avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "rake:ruby 5 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "ruby",
+      "status": "pass"
+    },
+    {
+      "description": "ruby analyzer docs present and committed",
+      "detail": "docs/analyzers/real-ruby-analyzer.md",
+      "id": "section-g-docs",
+      "language": "ruby",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "6 checks pass",
+      "id": "section-h-cross-language",
+      "language": "ruby",
+      "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "b4fb17601be1d371329cadddebb1266cd3c9d107",
-  "committedAt": "2026-08-30T05:41:41+02:00",
+  "commit": "439f9107a13a7e1ef3f4d72842c54fef4052e6be",
+  "committedAt": "2026-08-31T03:22:17+02:00",
   "data": {
     "languages": {
       "c": {
@@ -1606,7 +1680,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "grails-core:groovy 7.5 ms/file",
+            "detail": "grails-core:groovy 5.5 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -1655,7 +1729,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "grails-core:java 7.9 ms/file",
+            "detail": "grails-core:java 4.5 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -1868,6 +1942,54 @@
           },
           "section-g-docs": {
             "detail": "docs/analyzers/real-php-analyzer.md",
+            "status": "pass"
+          },
+          "section-h-cross-language": {
+            "detail": "6 checks pass",
+            "status": "pass"
+          }
+        }
+      },
+      "ruby": {
+        "gaps": [
+          "RUBYG1: Ruby 3 pattern-matching destructure bindings (in_clause/array_pattern/hash_pattern) are not emitted as symbols or uses; bodies still walked for calls"
+        ],
+        "nodeTypeCount": 158,
+        "pendingDecisions": [],
+        "ruledDecisions": [
+          "RUBD1",
+          "RUBD2",
+          "RUBD3",
+          "RUBD5",
+          "RUBD4"
+        ],
+        "sections": {
+          "section-a-structural": {
+            "detail": "158 types, 107 handled, 27 silent, 1 gaps, 5 decisions",
+            "status": "pass"
+          },
+          "section-b-relationship-kinds": {
+            "detail": "pinned: calls, contains, extends, implements, instantiates, uses",
+            "status": "pass"
+          },
+          "section-c-payload-matrix": {
+            "detail": "complexity",
+            "status": "pass"
+          },
+          "section-d-evidence-tiers": {
+            "detail": "2 tier(s) pinned: structural, usage_contextual",
+            "status": "pass"
+          },
+          "section-e-differential": {
+            "detail": "floor rake:ruby: missing=0, unexplained=0 (differential-baseline.json)",
+            "status": "pass"
+          },
+          "section-f-perf-budget": {
+            "detail": "rake:ruby 5 ms/file",
+            "status": "pass"
+          },
+          "section-g-docs": {
+            "detail": "docs/analyzers/real-ruby-analyzer.md",
             "status": "pass"
           },
           "section-h-cross-language": {
