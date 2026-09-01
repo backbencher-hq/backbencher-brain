@@ -250,7 +250,7 @@
       "code": "V1",
       "githubIssue": 495,
       "tool": "lsp-verifier",
-      "status": "planned",
+      "status": "verified",
       "scope": "reference LSP client harness and latency-budget gate (the I1 gate)",
       "acceptanceCriteria": [
         "reference client issues real protocol requests against bb lsp",
@@ -261,7 +261,17 @@
         "persist current gate evidence",
         "mutation checks pass",
         "document limitations"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see V1.json",
+        "verifierCommand": "npx tsx script/m24/verify-harness.ts",
+        "evidenceFile": "V1.json",
+        "passed": 9,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 1
+      }
     },
     {
       "code": "D1",

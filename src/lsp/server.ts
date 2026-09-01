@@ -122,7 +122,7 @@ export function isLaunchLanguage(language: string | null): boolean {
  */
 export class BbLspServer {
   private lifecycleState: "uninitialized" | "initialized" | "shutdown" = "uninitialized"
-  private handlers = new Map<string, () => unknown>()
+  private handlers = new Map<string, (params: any) => unknown>()
   private protocolEvents: ProtocolEvent[] = []
   private hooks: ServerHooks
   readonly context: LspContext
@@ -146,7 +146,7 @@ export class BbLspServer {
   }
 
   /** Register a feature handler. Capabilities derive from this table. */
-  register(method: string, handler: () => unknown): void {
+  register(method: string, handler: (params: any) => unknown): void {
     this.handlers.set(method, handler)
   }
 
@@ -253,7 +253,7 @@ export class BbLspServer {
     if (handler) {
       this.record("in", method)
       try {
-        const result = await handler()
+        const result = await handler(message.params)
         this.record("out", method)
         return { jsonrpc: JSONRPC, id: message.id, result }
       } catch (error: any) {
@@ -375,4 +375,118 @@ export class BbLspServer {
  *  the returned instance in L2-L5. */
 export function createServer(root: string, hooks: ServerHooks = {}): BbLspServer {
   return new BbLspServer(root, hooks)
+}
+
+// --- Standalone entry ---------------------------------------------------------
+// `bb lsp`-style binary: node dist/lsp/server.js --dir <workspace-root> or
+// bun/npx tsx src/lsp/server.ts --dir <workspace-root>. Wires the L2-L5
+// feature handlers over the persisted index and serves stdio.
+
+import { fileURLToPath } from "node:url"
+import { BrainDatabase } from "../brain/database"
+import { hover } from "./hover"
+import { resolveDefinition, resolveReferences } from "./navigation"
+import { documentSymbols, workspaceSymbols } from "./symbols"
+import { prepareCallHierarchy, expandCalls } from "./call_hierarchy"
+
+/** Convert a `file://` LSP URI to a filesystem path (or passthrough). */
+export function uriToPath(uri: string): string {
+  if (uri.startsWith("file://")) {
+    try {
+      return fileURLToPath(uri)
+    } catch {
+      return uri.slice("file://".length)
+    }
+  }
+  return uri
+}
+
+/** Wire all L2-L5 feature handlers onto a server instance. Each handler
+ *  opens the project's persisted index and delegates to the component. */
+export function wireFeatures(server: BbLspServer): void {
+  const projectId = server.context.projectId
+
+  server.register("textDocument/hover", async (params: any) => {
+    const raw = await BrainDatabase.getRawInstance(projectId)
+    return hover(raw, {
+      filePath: uriToPath(params?.textDocument?.uri ?? ""),
+      position: params?.position ?? { line: 0, character: 0 },
+    })
+  })
+
+  server.register("textDocument/definition", async (params: any) => {
+    const raw = await BrainDatabase.getRawInstance(projectId)
+    return resolveDefinition(raw, {
+      filePath: uriToPath(params?.textDocument?.uri ?? ""),
+      line: params?.position?.line ?? 0,
+      character: params?.position?.character ?? 0,
+    })
+  })
+
+  server.register("textDocument/references", async (params: any) => {
+    const raw = await BrainDatabase.getRawInstance(projectId)
+    return resolveReferences(raw, {
+      filePath: uriToPath(params?.textDocument?.uri ?? ""),
+      line: params?.position?.line ?? 0,
+      character: params?.position?.character ?? 0,
+      includeDeclaration: params?.context?.includeDeclaration ?? false,
+    })
+  })
+
+  server.register("textDocument/documentSymbol", async (params: any) => {
+    const raw = await BrainDatabase.getRawInstance(projectId)
+    return documentSymbols(raw, uriToPath(params?.textDocument?.uri ?? ""))
+  })
+
+  server.register("workspace/symbol", async (params: any) => {
+    const raw = await BrainDatabase.getRawInstance(projectId)
+    return workspaceSymbols(raw, {
+      query: params?.query ?? "",
+      limit: params?.limit,
+    })
+  })
+
+  server.register("textDocument/prepareCallHierarchy", async (params: any) => {
+    const raw = await BrainDatabase.getRawInstance(projectId)
+    return prepareCallHierarchy(raw, {
+      filePath: uriToPath(params?.textDocument?.uri ?? ""),
+      line: params?.position?.line ?? 0,
+      character: params?.position?.character ?? 0,
+    })
+  })
+
+  server.register("callHierarchy/incomingCalls", async (params: any) => {
+    const raw = await BrainDatabase.getRawInstance(projectId)
+    return expandCalls(raw, projectId, {
+      item: params?.item,
+      direction: "incoming",
+    })
+  })
+
+  server.register("callHierarchy/outgoingCalls", async (params: any) => {
+    const raw = await BrainDatabase.getRawInstance(projectId)
+    return expandCalls(raw, projectId, {
+      item: params?.item,
+      direction: "outgoing",
+    })
+  })
+}
+
+// Self-execution: node dist/lsp/server.js --dir <ws> (also bun src/lsp/server.ts).
+// Detects being run as the entry regardless of runtime.
+const isMain =
+  typeof (globalThis as any).Bun !== "undefined"
+    ? (import.meta as any).main === true
+    : process.argv[1] !== undefined &&
+      (process.argv[1].endsWith("lsp/server.js") || process.argv[1].endsWith("lsp/server.ts"))
+
+if (isMain) {
+  const dirIdx = process.argv.indexOf("--dir")
+  const root = dirIdx !== -1 ? process.argv[dirIdx + 1] : process.cwd()
+  const server = createServer(root)
+  wireFeatures(server)
+  server.run().catch((error: any) => {
+    console.error("bb_lsp failed:", error?.message ?? String(error))
+    process.exit(1)
+  })
 }
