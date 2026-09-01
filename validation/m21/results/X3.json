@@ -7,10 +7,11 @@
   "passed": 41,
   "failed": 0,
   "negativeCases": 7,
-  "currentCommit": "9c73475cb732eb398e6ac2ade1b1c18132000b07",
+  "currentCommit": "e36e6aed5c1e8f3868be3f068dadb751e25fd3bd",
   "workingTreeRelevantChanges": [
     " M validation/m14/results/M14.0.F5.json",
     " M validation/m17/results/S2.json",
+    " M validation/m21/results/manifest.json",
     "?? .client-tooling/",
     "?? docs/m20/PERFORMANCE-DIAGNOSTIC.md",
     "?? script/m20/benchmark-tool-latency.ts",
@@ -19,7 +20,7 @@
   ],
   "verifierCommand": "bun run script/m21/verify-x3-closure.ts",
   "evidenceFile": "X3.json",
-  "generatedAt": "2026-09-01T14:22:56.231Z",
+  "generatedAt": "2026-09-01T14:24:03.255Z",
   "closure": {
     "issuesTotal": 21,
     "completedVerified": [
