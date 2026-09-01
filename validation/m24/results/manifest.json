@@ -304,7 +304,7 @@
       "code": "X1",
       "githubIssue": 497,
       "tool": "lsp-gate",
-      "status": "planned",
+      "status": "verified",
       "scope": "closure gate with contract section 6 mutation set and v0 completion bar audit",
       "acceptanceCriteria": [
         "all contract section 6 mutants fail the suite",
@@ -315,7 +315,17 @@
         "persist current gate evidence",
         "mutation checks pass",
         "document limitations"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see X1.json",
+        "verifierCommand": "npx tsx script/m24/verify-closure.ts",
+        "evidenceFile": "X1.json",
+        "passed": 63,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 6
+      }
     }
   ]
 }
