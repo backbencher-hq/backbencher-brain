@@ -192,7 +192,7 @@
       "code": "L4",
       "githubIssue": 493,
       "tool": "lsp-symbols",
-      "status": "planned",
+      "status": "verified",
       "scope": "document symbols and workspace symbols from the index",
       "acceptanceCriteria": [
         "document symbols reflect indexed structure",
@@ -203,7 +203,19 @@
         "persist current gate evidence",
         "mutation checks pass",
         "document limitations"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see L4.json",
+        "verifierCommand": "npx tsx script/m24/verify-symbols.ts",
+        "evidenceFile": "L4.json",
+        "passed": 18,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 0,
+        "mutantsCaught": 4,
+        "mutantsTotal": 4
+      }
     },
     {
       "code": "L5",
