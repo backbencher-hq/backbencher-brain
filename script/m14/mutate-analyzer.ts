@@ -1322,6 +1322,20 @@ const MUTANTS: Mutant[] = [
     description: "drops ruby per-symbol complexity (authorize if/while/&& count) — ruby section C complexity pin",
     transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, complexity: undefined })) }),
   },
+  {
+    id: "ruby/pattern-bindings-leak-as-calls",
+    language: "ruby",
+    defectClass: "fabrication",
+    description: "injects the RUBYG1 bug class: pattern-match bindings (in [a, b] / in {amount:} / Integer => n) leak as bare calls — fixture forbid pins calls:a/b/amount/code/msg",
+    transform: r => ({ ...r, relationships: [
+      ...(r.relationships ?? []),
+      { type: "calls", source: "unpack", target: "a", fromSymbol: "unpack", toSymbol: "a", confidence: 0.9, metadata: { bareCall: true } },
+      { type: "calls", source: "unpack", target: "b", fromSymbol: "unpack", toSymbol: "b", confidence: 0.9, metadata: { bareCall: true } },
+      { type: "calls", source: "amount_of", target: "amount", fromSymbol: "amount_of", toSymbol: "amount", confidence: 0.9, metadata: { bareCall: true } },
+      { type: "calls", source: "amount_of", target: "code", fromSymbol: "amount_of", toSymbol: "code", confidence: 0.9, metadata: { bareCall: true } },
+      { type: "calls", source: "amount_of", target: "msg", fromSymbol: "amount_of", toSymbol: "msg", confidence: 0.9, metadata: { bareCall: true } },
+    ] }),
+  },
 ]
 
 async function realAnalyzer(lang: string): Promise<any> {

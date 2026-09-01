@@ -2,7 +2,7 @@
   "language": "ruby",
   "grammar": "tree-sitter-ruby.wasm",
   "handled_verified": {
-    "description": "Node types the analyzer processes with probe/fixture-confirmed emission or correct routing (2026-08-31 ruby wave)",
+    "description": "Node types the analyzer processes with probe/fixture-confirmed emission or correct routing (2026-08-31 ruby wave; pattern family added 2026-09-01 RUBYG1)",
     "types": [
       "program",
       "class",
@@ -110,12 +110,7 @@
       "operator",
       "undef",
       "alias",
-      "escape_sequence"
-    ]
-  },
-  "internal_silent": {
-    "description": "Container/literal/keyword types correctly emitting nothing (literals are payload, not relationships; pattern-matching family declared as gap RUBD2)",
-    "types": [
+      "escape_sequence",
       "case_match",
       "in_clause",
       "pattern",
@@ -132,6 +127,12 @@
       "expression_reference_pattern",
       "match_pattern",
       "test_pattern",
+      "in"
+    ]
+  },
+  "internal_silent": {
+    "description": "Container/literal/keyword types correctly emitting nothing (literals are payload, not relationships). Pattern-matching families now handled: bindings bind locals (RUBYG1 closed), guards/matches are walked for calls.",
+    "types": [
       "begin_block",
       "end_block",
       "uninterpreted",
@@ -141,19 +142,12 @@
       "hash_splat_argument",
       "heredoc_beginning",
       "heredoc_end",
-      "in",
       "then"
     ]
   },
   "gap": {
-    "description": "Confirmed missing emissions, numbered work items",
-    "gaps": [
-      {
-        "id": "RUBYG1",
-        "node_type": "case_match (pattern family)",
-        "missing": "Ruby 3 pattern-matching destructure bindings (in_clause/array_pattern/hash_pattern) are not emitted as symbols or uses; bodies still walked for calls"
-      }
-    ]
+    "description": "All confirmed gaps closed as of 2026-09-01",
+    "gaps": []
   },
   "design_decision": {
     "description": "Owner rulings — never silent absence",
@@ -209,6 +203,15 @@
         "status": "RULED",
         "question": "Do postfix (modifier) conditionals count toward cyclomatic complexity?",
         "resolution": "YES — postfix forms are genuine branches, semantically identical to the block forms (`return false if x` == `if x; return false; end`) and Ruby's most idiomatic branching. tree-sitter-ruby emits DISTINCT node types (if_modifier etc.) that the analyzer previously skipped, under-reporting every modifier-heavy method. Both the per-symbol counter and the file-level cyclomaticComplexity now count if/unless/while/until/rescue + their *_modifier forms. Verified: fixture authorize has 2 if_modifier + 1 while = complexity 4 (previously mis-pinned at 2); charge has 1 if_modifier = 2 (previously mis-pinned at 1).",
+        "decided_at": "2026-09-01",
+        "decided_by": "owner-delegated (M14 ruby re-review)"
+      },
+      {
+        "id": "RUBD7",
+        "node_type": "case_match / in_clause / array_pattern / hash_pattern / as_pattern (pattern family)",
+        "status": "RULED",
+        "question": "What do Ruby 3 pattern-matching bindings emit?",
+        "resolution": "BINDINGS ARE LOCALS, NEVER EDGES — same contract as left_assignment_list destructuring: `in [a, b]` binds a/b as locals of the match scope (visible in guards and match bodies); `in {name:}` binds name via hash_key_symbol (shorthand); `{age: x}` binds x; `Integer => n` binds n; `in x` binds x; `[*head, last]` binds head/last. `variable_reference_pattern` (^n) PINNS an outer local and binds nothing. Before RUBG1 the bindings leaked as bogus calls:a/calls:b edges in both the pattern and match body — now forbidden by fixture pins and the ruby/pattern-bindings-leak-as-calls mutant.",
         "decided_at": "2026-09-01",
         "decided_by": "owner-delegated (M14 ruby re-review)"
       }
