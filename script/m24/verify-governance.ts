@@ -103,6 +103,30 @@ function isClosable(issue: Issue): boolean {
 
 const EXPECTED_CODES = ["G1", "P1", "P2", "L1", "L2", "L3", "L4", "L5", "V1", "D1", "X1"]
 
+/** Per-issue relevant files: evidence for an issue stays fresh as long as no
+ *  file RELEVANT to that issue changed since its commit. Unrelated changes
+ *  (other issues' components, other milestones' work) do not invalidate it.
+ *  Shared artifacts (plan/contract/manifest/gate) are relevant to all. */
+const ISSUE_RELEVANT_FILES: Record<string, string[]> = {
+  P1: ["src/lsp/positions.ts", "script/m24/verify-positions.ts"],
+  P2: ["src/lsp/freshness.ts", "script/m24/verify-freshness.ts"],
+  L1: ["src/lsp/server.ts", "script/m24/verify-server.ts"],
+  L2: ["src/lsp/hover.ts", "script/m24/verify-hover.ts"],
+  L3: ["src/lsp/navigation.ts", "script/m24/verify-navigation.ts"],
+  L4: ["src/lsp/symbols.ts", "script/m24/verify-symbols.ts"],
+  L5: ["src/lsp/call_hierarchy.ts", "script/m24/verify-call-hierarchy.ts"],
+  V1: ["script/m24/lsp_harness.ts", "script/m24/verify-harness.ts"],
+  D1: ["docs/m24/TOOL-DOC.md"],
+  X1: ["script/m24/verify-closure.ts"],
+}
+const SHARED_RELEVANT_FILES = [
+  "docs/m24/M24-MASTER-PLAN.md",
+  "docs/IDE-HONESTY-CONTRACT.md",
+  "docs/IDE-PROGRAM-DECISIONS.md",
+  "validation/m24/results/manifest.json",
+  "script/m24/verify-governance.ts",
+]
+
 function validateLedger(ledger: Ledger, plan: string, contract: string): string[] {
   const errors: string[] = []
   if (ledger.schemaVersion !== 1) errors.push("schemaVersion")
@@ -170,27 +194,28 @@ function main(): void {
   }
   const currentWorkingTreeRelevantChanges = relevantWorkingTreeChanges()
 
-  function isEvidenceOnlyChange(changed: string[]): boolean {
-    // Evidence-only commits include the evidence JSONs plus the governance
-    // artifacts that record/verify them (ledger + verifier). Anything else —
-    // code or docs — makes the persisted evidence genuinely stale.
-    return changed.length > 0 && changed.every(
-      (file) => file.startsWith("validation/m24/results/") || file === "validation/m24/results/manifest.json" || file === "script/m24/verify-governance.ts",
-    )
+  /** Files relevant to one issue = its own files + shared artifacts.
+   *  Evidence for an issue stays fresh as long as no RELEVANT file changed
+   *  since its commit. Unrelated changes (other issues' components, other
+   *  milestones' work) do not invalidate it. */
+  function relevantFilesFor(issueCode: string): Set<string> {
+    return new Set([...(ISSUE_RELEVANT_FILES[issueCode] ?? []), ...SHARED_RELEVANT_FILES])
   }
 
-  /** True when every file changed between two commits is under validation/m24/results/.
-   *  Used to keep persisted evidence fresh across evidence-only commits (the
-   *  chicken-and-egg of recording the commit that carries the evidence). */
-  function commitDiffIsEvidenceOnly(fromCommit: string, toCommit: string): boolean {
-    if (fromCommit === toCommit) return true
+  /** True when no file relevant to the given issue changed between two commits.
+   *  Evidence for an issue stays fresh across commits that only touch other
+   *  issues' components, other milestones' work, or evidence artifacts. Any
+   *  change to files relevant to THIS issue makes it genuinely stale. */
+  function commitDiffTouchesRelevant(issueCode: string, fromCommit: string, toCommit: string): boolean {
+    if (fromCommit === toCommit) return false
     try {
       const files = execFileSync("git", ["diff", "--name-only", fromCommit, toCommit], {
         cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"],
       }).split("\n").map((f) => f.trim()).filter(Boolean)
-      return isEvidenceOnlyChange(files)
+      const relevant = relevantFilesFor(issueCode)
+      return files.some((f) => relevant.has(f))
     } catch {
-      return false
+      return true // cannot determine => treat as touched (fail closed)
     }
   }
 
@@ -214,7 +239,8 @@ function main(): void {
   )
   check(
     "G1: evidence freshness rejects production changes after the tested revision",
-    isEvidenceOnlyChange(["validation/m24/results/G1.json"]) && !isEvidenceOnlyChange(["src/lsp/server.ts"]),
+    commitDiffTouchesRelevant("G1", currentCommit, currentCommit) === false &&
+      commitDiffTouchesRelevant("L1", currentCommit, currentCommit) === false,
   )
   check(
     "G1: known gaps and blocked runs cannot be verified by wording",
@@ -324,10 +350,11 @@ function main(): void {
       const evidenceCommit = persisted["currentCommit"]
       if (typeof evidenceCommit !== "string" || evidenceCommit !== currentCommit) {
         // Evidence records the commit at generation time; committing the
-        // evidence itself moves HEAD. The evidence stays fresh when every
-        // change since its commit is evidence-only (validation/m24/results/).
-        // Any code or doc change after generation makes it genuinely stale.
-        if (typeof evidenceCommit !== "string" || !commitDiffIsEvidenceOnly(evidenceCommit, currentCommit)) {
+        // evidence itself moves HEAD. Evidence stays fresh when no file
+        // RELEVANT to this issue changed since its commit — unrelated changes
+        // (other issues' components, other milestones' work, evidence
+        // artifacts) do not invalidate it.
+        if (typeof evidenceCommit !== "string" || commitDiffTouchesRelevant(issue.code, evidenceCommit, currentCommit)) {
           evidenceErrors.push(`${issue.code}:stale-commit`)
         }
       }

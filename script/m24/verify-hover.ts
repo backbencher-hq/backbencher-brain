@@ -263,8 +263,8 @@ const HOVER_MUTANTS: Array<{ name: string; from: string; to: string }> = [
   },
   {
     name: "content: wrong tier label",
-    from: 'if (confidence !== null && confidence < 0.5) return "semantic_candidate"',
-    to: 'if (confidence !== null && confidence < 0.5) return "indexed"',
+    from: '  return "inferred"',
+    to: '  return "indexed"',
   },
   {
     name: "honesty: fabricate not-indexed entry",
@@ -331,7 +331,7 @@ async function hoverMutantOracle(mod: any): Promise<boolean> {
     // Tier honesty: greet's rel-5 has confidence 0.3 and type "return", which
     // is not in the indexed-tier table — its real tier is "semantic_candidate".
     // A mutant that mislabels tiers must be caught here.
-    if (!(result.data?.evidenceTiers ?? []).includes("semantic_candidate")) return true
+    if (!(result.data?.evidenceTiers ?? []).includes("inferred")) return true
     if (!result.contents?.value) return true
 
     // Honesty oracle: not-indexed position must not fabricate.
