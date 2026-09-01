@@ -55,7 +55,7 @@
     },
     {
       "description": "java avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "grails-core:java 4.5 ms/file",
+      "detail": "grails-core:java 7.9 ms/file",
       "id": "section-f-perf-budget",
       "language": "java",
       "status": "pass"
@@ -129,7 +129,7 @@
     },
     {
       "description": "groovy avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "grails-core:groovy 5.5 ms/file",
+      "detail": "grails-core:groovy 7.5 ms/file",
       "id": "section-f-perf-budget",
       "language": "groovy",
       "status": "pass"
@@ -1345,14 +1345,14 @@
       "status": "pass"
     },
     {
-      "description": "ruby: 5 ruled, 0 pending owner",
+      "description": "ruby: 6 ruled, 0 pending owner",
       "id": "design-decisions-tracked",
       "language": "ruby",
       "status": "pass"
     },
     {
       "description": "every named node type classified (ruby)",
-      "detail": "158 types, 107 handled, 27 silent, 1 gaps, 5 decisions",
+      "detail": "158 types, 107 handled, 27 silent, 1 gaps, 6 decisions",
       "id": "section-a-structural",
       "language": "ruby",
       "status": "pass"
@@ -1387,7 +1387,7 @@
     },
     {
       "description": "ruby avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "rake:ruby 5 ms/file",
+      "detail": "rake:ruby 5.1 ms/file",
       "id": "section-f-perf-budget",
       "language": "ruby",
       "status": "pass"
@@ -1408,8 +1408,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "439f9107a13a7e1ef3f4d72842c54fef4052e6be",
-  "committedAt": "2026-08-31T03:22:17+02:00",
+  "commit": "69484c162d6a6f1c0f760bb1564dc65fe6ff6969",
+  "committedAt": "2026-09-01T02:22:58+02:00",
   "data": {
     "languages": {
       "c": {
@@ -1680,7 +1680,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "grails-core:groovy 5.5 ms/file",
+            "detail": "grails-core:groovy 7.5 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -1729,7 +1729,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "grails-core:java 4.5 ms/file",
+            "detail": "grails-core:java 7.9 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -1961,11 +1961,12 @@
           "RUBD2",
           "RUBD3",
           "RUBD5",
-          "RUBD4"
+          "RUBD4",
+          "RUBD6"
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "158 types, 107 handled, 27 silent, 1 gaps, 5 decisions",
+            "detail": "158 types, 107 handled, 27 silent, 1 gaps, 6 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -1985,7 +1986,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "rake:ruby 5 ms/file",
+            "detail": "rake:ruby 5.1 ms/file",
             "status": "pass"
           },
           "section-g-docs": {

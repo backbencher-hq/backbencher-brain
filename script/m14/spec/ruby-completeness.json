@@ -202,6 +202,15 @@
         "resolution": "YES — grammar represents them as ordinary method nodes inside singleton_class; analyzer re-parents them to the enclosing class with isStatic/isSingleton metadata. Verified: def self.create emits Service.create static.",
         "decided_at": "2026-08-31",
         "decided_by": "owner-delegated (M14 wave authorization)"
+      },
+      {
+        "id": "RUBD6",
+        "node_type": "if_modifier / unless_modifier / while_modifier / until_modifier / rescue_modifier",
+        "status": "RULED",
+        "question": "Do postfix (modifier) conditionals count toward cyclomatic complexity?",
+        "resolution": "YES — postfix forms are genuine branches, semantically identical to the block forms (`return false if x` == `if x; return false; end`) and Ruby's most idiomatic branching. tree-sitter-ruby emits DISTINCT node types (if_modifier etc.) that the analyzer previously skipped, under-reporting every modifier-heavy method. Both the per-symbol counter and the file-level cyclomaticComplexity now count if/unless/while/until/rescue + their *_modifier forms. Verified: fixture authorize has 2 if_modifier + 1 while = complexity 4 (previously mis-pinned at 2); charge has 1 if_modifier = 2 (previously mis-pinned at 1).",
+        "decided_at": "2026-09-01",
+        "decided_by": "owner-delegated (M14 ruby re-review)"
       }
     ]
   }

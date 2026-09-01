@@ -551,7 +551,7 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       // method runs), so without this the params leak as bare calls of the
       // OUTER method (verified: rake top_level_functions.rb setup leaks
       // calls:a/calls:b from `def @app.method_missing(*a, &b)`).
-      if (sn.type === "method_parameters" || sn.type === "parameters") {
+      if (sn.type === "method_parameters") {
         const inner: Node[] = [sn]
         while (inner.length > 0) {
           const q = inner.pop()!
@@ -662,9 +662,13 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
 
       // --- Complexity counting ---
+      // Postfix modifiers count too (same rationale as calculateNodeComplexity:
+      // `x if cond` is a branch; the pinned grammar emits if_modifier etc.).
       if (type === "if" || type === "unless" || type === "while" ||
           type === "until" || type === "case" || type === "rescue" ||
-          type === "elsif") {
+          type === "elsif" || type === "if_modifier" ||
+          type === "unless_modifier" || type === "while_modifier" ||
+          type === "until_modifier" || type === "rescue_modifier") {
         if (metadata.cyclomaticComplexity !== undefined) {
           metadata.cyclomaticComplexity++
         }
@@ -1064,8 +1068,17 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   /** Per-symbol cyclomatic complexity (managed-OO family contract —
    * csharp #264 wave precedent). Mirrors the file-level counter's node set
-   * (if/unless/while/until/case/rescue/elsif), scoped to one method/function
-   * subtree; base 1. */
+   * (if/unless/while/until/case/rescue/elsif PLUS the postfix *modifier
+   * forms), scoped to one method/function subtree; base 1.
+   *
+   * Postfix conditionals MUST count: `return false if amount <= 0` is a
+   * genuine branch — semantically identical to the block form, and the most
+   * idiomatic Ruby. tree-sitter-ruby emits a DISTINCT node type
+   * (if_modifier/unless_modifier/while_modifier/until_modifier/
+   * rescue_modifier) for postfix forms; before this fix the analyzer counted
+   * only the block forms, under-reporting every modifier-heavy method
+   * (verified: fixture authorize has 2 if_modifier + 1 while = complexity 4,
+   * previously pinned at the wrong value 2). */
   private calculateNodeComplexity(node: Node): number {
     if (!node) return 1
     let complexity = 1
@@ -1075,7 +1088,9 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       const n = stack.pop()!
       if (n.type === "if" || n.type === "unless" || n.type === "while" ||
           n.type === "until" || n.type === "case" || n.type === "rescue" ||
-          n.type === "elsif") {
+          n.type === "elsif" || n.type === "if_modifier" ||
+          n.type === "unless_modifier" || n.type === "while_modifier" ||
+          n.type === "until_modifier" || n.type === "rescue_modifier") {
         complexity++
       }
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
