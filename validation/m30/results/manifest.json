@@ -144,7 +144,17 @@
       "code": "Q1",
       "githubIssue": 552,
       "tool": "rate-limit-resilience",
-      "status": "planned",
+      "status": "verified",
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "4ca35cbf875a48e3658de2c77dcae9328c1de9c3",
+        "verifierCommand": "npx tsx script/m30/verify-rate-limit.ts",
+        "evidenceFile": "Q1.json",
+        "generatedAt": "2026-09-01T14:42:25.158Z",
+        "passed": 17,
+        "failed": 0,
+        "negativeCases": 4
+      },
       "scope": "per-batch fallback + 429 backoff replaces the process-wide _apiFailed latch",
       "acceptanceCriteria": [
         "mock 429 storm: later batches still embed via API",

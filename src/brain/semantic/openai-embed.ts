@@ -39,6 +39,19 @@ export async function getEmbeddingConfig(): Promise<EmbeddingConfig | null> {
   }
 }
 
+// Typed API error: carries the HTTP status and (for 429) the Retry-After
+// seconds so callers can apply backoff instead of a blanket fallback latch.
+export class EmbeddingApiError extends Error {
+  status: number
+  retryAfterSec?: number
+  constructor(status: number, message: string, retryAfterSec?: number) {
+    super(message)
+    this.name = "EmbeddingApiError"
+    this.status = status
+    this.retryAfterSec = retryAfterSec
+  }
+}
+
 export async function embedOpenAICompatible(
   texts: string[],
   cfg: EmbeddingConfig,
@@ -88,7 +101,15 @@ export async function embedOpenAICompatible(
   const body = await res.text()
 
   if (status < 200 || status >= 300) {
-    throw new Error(`embedding API ${status}: ${body.slice(0, 200)}`)
+    // Retry-After may be delta-seconds or an HTTP-date; only delta-seconds
+    // are actionable here (dates require clock math we do not do).
+    let retryAfterSec: number | undefined
+    if (status === 429) {
+      const raw = res.headers.get("retry-after")
+      const secs = raw ? Number(raw) : NaN
+      if (Number.isFinite(secs) && secs > 0) retryAfterSec = secs
+    }
+    throw new EmbeddingApiError(status, `embedding API ${status}: ${body.slice(0, 200)}`, retryAfterSec)
   }
   const data = JSON.parse(body) as { data: Array<{ embedding: number[] }> }
   const embeddings = data.data.map((d) => d.embedding)
