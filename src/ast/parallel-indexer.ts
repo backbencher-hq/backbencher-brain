@@ -338,6 +338,8 @@ export interface ParallelIndexingStats {
   elapsedSeconds?: number
   /** M22.V1: execution mode of the parse phase (worker-pool | in-process). */
   phase?: string
+  /** M21.R3: true when the run ended because options.signal was aborted. */
+  cancelled?: boolean
   /**
    * M22.V5: honest per-bucket run summary. Every input file lands in exactly
    * one bucket so a run that "succeeds" but silently loses files is visible.
@@ -352,6 +354,8 @@ export interface ParallelIndexingStats {
     symbolLoss: number
     errors: number
     timeouts: number
+    /** M21.R3: files dropped because the run was cancelled (not errors). */
+    cancelled: number
   }
 }
 
@@ -773,7 +777,10 @@ async function processInProcess(
   files: string[],
   onProgress: (processed: number, total: number, currentFile: string) => void,
   telemetry?: { dbFlushMs: number; retries: number; workerCount: number },
+  signal?: AbortSignal,
 ): Promise<FileResult[]> {
+  // M21.R3: cooperative cancellation check for the in-process fallback path.
+  const aborted = () => signal?.aborted ?? false
   const results: FileResult[] = []
   let processed = 0
   let consecutiveTimeouts = 0
@@ -795,6 +802,15 @@ async function processInProcess(
   const parseFile = (poolWorker as any).parseFile
 
   for (const file of effectiveFiles) {
+    // M21.R3: cooperative cancellation — stop before starting the next file.
+    if (aborted()) {
+      stats.cancelled = true
+      for (const f of effectiveFiles.slice(effectiveFiles.indexOf(file))) {
+        results.push({ filePath: f, success: false, error: "cancelled by user" })
+        processed++
+      }
+      break
+    }
     // Check if we should abort due to consecutive hangs
     if (consecutiveTimeouts >= MAX_CONSECUTIVE_TIMEOUTS) {
       log.warn(`aborting in-process indexing after ${MAX_CONSECUTIVE_TIMEOUTS} consecutive timeouts at file ${processed}/${effectiveFiles.length}`)
@@ -957,6 +973,7 @@ export async function processWithWorkerPool(
   files: string[],
   onProgress: (processed: number, total: number, currentFile: string) => void,
   telemetry?: { dbFlushMs: number; retries: number; workerCount: number; workerStartupFailures: number; poisonFiles: number },
+  signal?: AbortSignal,
 ): Promise<FileResult[]> {
   const concurrency = ParallelIndexerConfig.concurrency
   const batchSize = ParallelIndexerConfig.workerBatchSize
@@ -1008,6 +1025,10 @@ export async function processWithWorkerPool(
       }
     >()
     let batchCounter = 0
+    // M21.R3: cooperative cancellation. Once aborted, stop dispatching new
+    // batches; in-flight batches drain and the pool resolves normally so the
+    // DB keeps only fully-stored files (the durable checkpoint).
+    const aborted = () => signal?.aborted ?? false
 
     const workers = new Set<ChildProcess>()
     const idleWorkers: ChildProcess[] = []
@@ -1302,6 +1323,20 @@ export async function processWithWorkerPool(
       }
 
       while (idleWorkers.length > 0 && fileQueue.length > 0) {
+        // M21.R3: stop dispatching new batches once aborted; queued files are
+        // dropped (they were never parsed or stored, so resume re-discovers
+        // them via the normal incremental path).
+        if (aborted()) {
+          for (const f of fileQueue.splice(0)) {
+            results.push({ filePath: f, success: false, error: "cancelled by user" })
+          }
+          // M21.R3: if no batch is in flight either, no future worker message
+          // will re-enter scheduleNext — the completion branch (which kills the
+          // workers, flushes the DB, and resolves) would never run and the pool
+          // would hang forever. Trigger it now.
+          if (pendingBatches.size === 0) scheduleNext()
+          break
+        }
         const worker = idleWorkers.shift()!
         const batchFiles = fileQueue.splice(0, batchSize)
         const batchId = ++batchCounter
@@ -2574,10 +2609,16 @@ export async function indexProjectParallel(
     isIncremental?: boolean
     skipPostProcessing?: boolean // M19: defer heavy resolution/enrichment for bounded slice timing
     skipDiscovery?: boolean // @backbencher: skip discoverAndFilterFiles entirely
+    // M21.R3: cooperative cancellation. When aborted, the run stops dispatching
+    // new parse batches, drains in-flight work, writes live status phase
+    // "cancelled", and returns stats normally (no throw) so the DB stays
+    // consistent and `bb index --resume` can continue from what was stored.
+    signal?: AbortSignal
     logger?: { log: (...args: any[]) => void; write: (s: string) => void }
   } = {},
 ): Promise<ParallelIndexingStats> {
   const _log = options.logger ?? { log: (...args: any[]) => console.log(...args), write: (s: string) => process.stdout.write(s) }
+  const signal = options.signal
   const stats: ParallelIndexingStats = {
     totalFiles: 0,
     processedFiles: 0,
@@ -2652,6 +2693,22 @@ export async function indexProjectParallel(
         symbolLoss: 0,
         errors: 0,
         timeouts: 0,
+        cancelled: 0,
+      }
+
+      // M21.R3: if this noop run was a resume that finished a cancelled
+      // checkpoint (everything already stored), finalize the live status to
+      // "complete" so the stale "cancelled" phase doesn't linger forever.
+      const { readLiveStatus } = await import("./index-status")
+      if (readLiveStatus(projectId)?.phase === "cancelled") {
+        writeLiveStatus(projectId, {
+          projectId,
+          phase: "complete",
+          processedFiles: stats.processedFiles,
+          totalFiles: stats.totalFiles,
+          startedAt: stats.startTime,
+          updatedAt: Date.now(),
+        })
       }
 
       await BrainDatabase.updateIndexStatus(projectId, {
@@ -2743,8 +2800,12 @@ export async function indexProjectParallel(
 
     const parseStart = Date.now()
     const poolTelemetry = { dbFlushMs: 0, retries: 0, workerCount: 0, workerStartupFailures: 0, poisonFiles: 0 }
-    const results = await processFn(projectId, projectPath, files, (processed, total, file) => {
-      stats.processedFiles = processed + stats.skippedFiles
+    const results = await processFn(
+      projectId,
+      projectPath,
+      files,
+      (processed, total, file) => {
+        stats.processedFiles = processed + stats.skippedFiles
 
       const now = Date.now()
       if (now - lastProgressUpdate > ParallelIndexerConfig.progressUpdateMs || processed === total) {
@@ -2793,7 +2854,8 @@ export async function indexProjectParallel(
           updatedAt: now,
         })
       }
-    }, poolTelemetry)
+    }, poolTelemetry, signal)
+    if (signal?.aborted) stats.cancelled = true
     phases.parseMs = Date.now() - parseStart
     phases.dbFlushMs = poolTelemetry.dbFlushMs
     phases.retries = poolTelemetry.retries
@@ -2816,8 +2878,15 @@ export async function indexProjectParallel(
       if (!previous || result.success || !previous.success) finalOutcomes.set(result.filePath, result)
     }
     stats.structuredErrors = []
-    const byLanguage: Record<string, { files: number; success: number; error: number; timeout: number; fallback: number }> = {}
+    const byLanguage: Record<string, { files: number; success: number; error: number; timeout: number; fallback: number; cancelled: number }> = {}
+    // M21.R3: cancelled files are a distinct bucket — they were never parsed,
+    // so counting them as "errors" misrepresents a cancelled run as broken.
+    let cancelledCount = 0
     for (const result of finalOutcomes.values()) {
+      if (result.error === "cancelled by user") {
+        cancelledCount++
+        continue
+      }
       // detectLanguageFromPath returns the language string directly (not an
       // object) — never use `.language` on it.
       const lang = detectLanguageFromPath(result.filePath) ?? "unknown"
@@ -2870,12 +2939,16 @@ export async function indexProjectParallel(
       symbolLoss,
       errors: stats.errorFiles,
       timeouts: stats.timeoutFiles,
+      cancelled: cancelledCount,
     }
 
     // Post-processing fallback: re-process files that may have been lost
     // during worker pool batch rollbacks. StoreResults uses INSERT OR REPLACE
     // so re-processing already-stored files is safe (idempotent).
-    try {
+    // M21.R3: skipped entirely on a cancelled run — the ~2,000 files queued
+    // behind the cancel are "not in DB" by design (user stopped on purpose);
+    // re-processing them would undo the cancel and keep indexing for minutes.
+    if (!stats.cancelled) try {
       const rawDb = await BrainDatabase.getRawInstance(projectId)
       const stored = new Set(
         (rawDb.prepare(`SELECT path FROM brain_file WHERE project_id = ?`).all(projectId) as any[])
@@ -2892,7 +2965,8 @@ export async function indexProjectParallel(
         // dotnet/fsharp's Cancellable.fs), taking the whole index run and any
         // unsaved evidence down with it. processWithWorkerPool stores successes
         // itself, so no extra storeResults call is needed here.
-        const reprocessed = await processWithWorkerPool(projectId, projectPath, missed, () => {})
+        const reprocessed = await processWithWorkerPool(projectId, projectPath, missed, () => {},
+                                                        signal)
         // Map of files already tallied in the main pass, so a file that failed
         // there but recovered here is counted ONCE (as a success), not twice.
         const mainOutcomes = new Map<string, { success: boolean; timeout: boolean }>()
@@ -3024,7 +3098,13 @@ export async function indexProjectParallel(
       codebaseFingerprintProjectPath: projectPath,
     })
 
-    if (!options.isIncremental && !options.skipPostProcessing) {
+    // M21.R3: a cancelled run skips heavy post-processing entirely — a user
+    // who pressed Ctrl+C wants a fast stop, and every post-processing phase
+    // (resolution, enrichment, taints, health) rewrites DB rows that the
+    // checkpoint contract assumes are untouched after the cancel point.
+    if (stats.cancelled) {
+      log.info("index cancelled — skipping post-processing (resume to continue)")
+    } else if (!options.isIncremental && !options.skipPostProcessing) {
       const postProcessingStart = Date.now()
       // M21.I2: every phase records its own start/end timing and outcome so a
       // failed phase stays visible and never silently reports "complete".
@@ -3163,22 +3243,37 @@ export async function indexProjectParallel(
         skippedFiles: stats.skippedFiles,
       },
     })
-    // M22.V2: finalize the live status sample with full phase telemetry so
-    // `bb status` shows the complete per-phase breakdown (incl. the co-dominant
-    // dbFlush line) and worker count after the run.
-    try {
+    // M21.R3: a cancelled run writes its own terminal phase so --resume can
+    // distinguish "user stopped it on purpose" from "process died".
+    if (stats.cancelled) {
       writeLiveStatus(projectId, {
         projectId,
-        phase: stats.errorFiles > 0 ? "failed" : "complete",
+        phase: "cancelled",
         processedFiles: stats.processedFiles,
         totalFiles: stats.totalFiles,
-        filesPerSecond: stats.filesPerSecond,
-        workerCount: phases.workerCount,
         startedAt: stats.startTime,
         updatedAt: Date.now(),
-        error: stats.errorFiles > 0 ? `${stats.errorFiles} files errored` : undefined,
       })
-    } catch {}
+    }
+    // M22.V2: finalize the live status sample with full phase telemetry so
+    // `bb status` shows the complete per-phase breakdown (incl. the co-dominant
+    // dbFlush line) and worker count after the run. A cancelled run keeps its
+    // "cancelled" phase — it must not be silently re-labelled "complete".
+    if (!stats.cancelled) {
+      try {
+        writeLiveStatus(projectId, {
+          projectId,
+          phase: stats.errorFiles > 0 ? "failed" : "complete",
+          processedFiles: stats.processedFiles,
+          totalFiles: stats.totalFiles,
+          filesPerSecond: stats.filesPerSecond,
+          workerCount: phases.workerCount,
+          startedAt: stats.startTime,
+          updatedAt: Date.now(),
+          error: stats.errorFiles > 0 ? `${stats.errorFiles} files errored` : undefined,
+        })
+      } catch {}
+    }
 
     return stats
   } catch (error) {
