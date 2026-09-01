@@ -36,7 +36,7 @@
       "scope": "master plan, ledger, npm run verify wiring, secret-hygiene guard",
       "evidence": {
         "status": "verified",
-        "currentCommit": "991aad16a03a1dc55a622f3b561863f5ce05821e",
+        "currentCommit": "e4579a15246a519a2a640938f41a126d86830622",
         "verifierCommand": "bun run script/m30/verify-governance.ts",
         "evidenceFile": "G1.json",
         "generatedAt": "2026-08-31T21:11:24.996Z",
@@ -63,7 +63,7 @@
       "status": "verified",
       "evidence": {
         "status": "verified",
-        "currentCommit": "be87a9a9d75add90ac220adc8320dba5ef309f92",
+        "currentCommit": "e4579a15246a519a2a640938f41a126d86830622",
         "verifierCommand": "npx tsx script/m30/verify-setup.ts",
         "evidenceFile": "S1.json",
         "generatedAt": "2026-09-01T00:43:28.685Z",
