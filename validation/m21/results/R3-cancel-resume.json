@@ -6,19 +6,19 @@
   "verifier": "script/m21/verify-cancel-resume.ts",
   "verifierCommand": "bun run script/m21/verify-cancel-resume.ts",
   "evidenceFile": "R3-cancel-resume.json",
-  "currentCommit": "dc90412947957c0d92ab29cf0c5b721f63019b44",
+  "currentCommit": "085c9cd0c8eb3c053cd1668a3d304e926e693cb6",
   "workingTreeRelevantChanges": [],
-  "generatedAt": "2026-09-01T13:48:34.649Z",
+  "generatedAt": "2026-09-01T14:03:58.914Z",
   "repo": "$HOME/fixtures/repositories/cabal",
-  "dataDir": "/tmp/m21r3-verify-1788270476458",
-  "passed": 17,
+  "dataDir": "/tmp/m21r3-verify-1788271335985",
+  "passed": 21,
   "failed": 0,
-  "negativeCases": 0,
+  "negativeCases": 4,
   "checks": [
     {
       "name": "R3: index process was alive when SIGINT was sent",
       "pass": true,
-      "detail": "pid=663681"
+      "detail": "pid=670685"
     },
     {
       "name": "R3: index showed real progress before cancel",
@@ -33,7 +33,7 @@
     {
       "name": "R3: live status file exists after cancel",
       "pass": true,
-      "detail": "{\"projectId\":\"dfe578092dcdd808b83bcd4c4784a5da09fb2a0b\",\"phase\":\"cancelled\",\"processedFiles\":160,\"totalFiles\":2348,\"star"
+      "detail": "{\"projectId\":\"dfe578092dcdd808b83bcd4c4784a5da09fb2a0b\",\"phase\":\"cancelled\",\"processedFiles\":70,\"totalFiles\":2348,\"start"
     },
     {
       "name": "R3: status phase is cancelled",
@@ -43,17 +43,22 @@
     {
       "name": "R3: cancelled run stored fewer files than total",
       "pass": true,
-      "detail": "160/2348"
+      "detail": "70/2348"
+    },
+    {
+      "name": "[negative] R3: cancelled run is not re-labelled complete",
+      "pass": true,
+      "detail": "phase=cancelled"
     },
     {
       "name": "R3: DB readable after cancel",
       "pass": true,
-      "detail": "{\"files\":160,\"symbols\":0,\"dupes\":0,\"emptyHashFiles\":0}"
+      "detail": "{\"files\":70,\"symbols\":0,\"dupes\":0,\"emptyHashFiles\":0}"
     },
     {
       "name": "R3: mid-run DB has partial files (< 2348)",
       "pass": true,
-      "detail": "files=160"
+      "detail": "files=70"
     },
     {
       "name": "R3: no duplicate brain_file rows after cancel",
@@ -68,12 +73,12 @@
     {
       "name": "R3: resume exits 0",
       "pass": true,
-      "detail": "exit=0 stderr=estsuite/PackageTests/NewBuild/CmdRun/Terminate/Main.hs: engine=6 rels, stored=0\n[STORE] TestCaseUtils.hs: 54s 97r\n[STORE] Utils.hs: 25s 36r\n\r[progress] 2321/2348 files (98%) 108.6/s ETA 0s — Main.hs\n"
+      "detail": "exit=0 stderr= Solver.hs: 93s 233r\n\r[progress] 2297/2348 files (97%) 37.3/s ETA 1s — ModuleB.hs[STORE] TestCaseUtils.hs: 54s 97r\n[STORE] Utils.hs: 25s 36r\n\r[progress] 2311/2348 files (98%) 37.4/s ETA 1s — MyLib.hs\n"
     },
     {
       "name": "R3: resume reported checkpoint",
       "pass": true,
-      "detail": "indexing $HOME/fixtures/repositories/cabal (project dfe57809…)\nresuming interrupted index (checkpoint: 160/2348 files done)\n[brain] ✓ worker"
+      "detail": "indexing $HOME/fixtures/repositories/cabal (project dfe57809…)\nresuming interrupted index (checkpoint: 70/2348 files done)\n[brain] ✓ worker "
     },
     {
       "name": "R3: post-resume DB readable",
@@ -99,6 +104,21 @@
       "name": "R3: final status phase is complete (not cancelled)",
       "pass": true,
       "detail": "phase=complete"
+    },
+    {
+      "name": "[negative] R3: resume does not leave a stale cancelled checkpoint",
+      "pass": true,
+      "detail": "phase=complete"
+    },
+    {
+      "name": "[negative] R3: finalize write is guarded by !stats.cancelled (no silent re-label)",
+      "pass": true,
+      "detail": "finalize=141737 guard=141633"
+    },
+    {
+      "name": "[negative] R3: missed-file fallback is skipped on cancelled runs",
+      "pass": true,
+      "detail": "fallbackBlock=126790"
     }
   ]
 }

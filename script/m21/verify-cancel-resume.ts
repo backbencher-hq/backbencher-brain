@@ -29,9 +29,17 @@ const RESULTS = path.join(ROOT, "validation", "m21", "results")
 
 type Check = { name: string; pass: boolean; detail: string }
 const checks: Check[] = []
+const negatives: string[] = []
 function ck(name: string, pass: boolean, detail: string) {
   checks.push({ name, pass, detail })
   console.log(`${pass ? "✓" : "✗"} ${name}${detail ? ` — ${detail}` : ""}`)
+}
+// Negative/regression case: asserts the WRONG behavior is ABSENT. Logged and
+// counted separately so the evidence distinguishes positive proof from
+// regression guards (M21.C1 closable() requires negativeCases > 0).
+function neg(name: string, wrongAbsent: boolean, detail: string) {
+  negatives.push(name)
+  ck(`[negative] ${name}`, wrongAbsent, detail)
 }
 
 function runIndex(args: string[], timeoutMs: number): { code: number | null; stdout: string; stderr: string } {
@@ -94,7 +102,14 @@ async function main() {
   child.stderr.on("data", (d: Buffer) => {
     if (String(d).includes("/2348")) sawProgress = true
   })
-  await new Promise((r) => setTimeout(r, 6000))
+  // Wait for REAL parse progress before signaling, so the cancel lands
+  // mid-parse rather than during startup (a fixed sleep is flaky under load).
+  const tStart = Date.now()
+  while (!sawProgress && Date.now() - tStart < 45_000) {
+    await new Promise((r) => setTimeout(r, 500))
+  }
+  // Let a few files land in the DB after the first progress line.
+  await new Promise((r) => setTimeout(r, 1500))
   const pidAlive = child.pid != null
   if (pidAlive) {
     process.kill(child.pid!, "SIGINT")
@@ -109,6 +124,11 @@ async function main() {
   ck("R3: status phase is cancelled", status?.phase === "cancelled", `phase=${status?.phase}`)
   ck("R3: cancelled run stored fewer files than total", status != null && status.processedFiles < status.totalFiles,
     `${status?.processedFiles}/${status?.totalFiles}`)
+  // Regression: the M22.V2 finalize used to overwrite the cancelled phase with
+  // complete/failed immediately after. A real cancelled run must NOT be
+  // re-labelled — the status the resume logic reads must stay "cancelled".
+  neg("R3: cancelled run is not re-labelled complete", status?.phase !== "complete",
+    `phase=${status?.phase}`)
 
   const mid = dbStats()
   ck("R3: DB readable after cancel", mid != null, JSON.stringify(mid))
@@ -133,6 +153,24 @@ async function main() {
   const finalStatus = readStatus()
   ck("R3: final status phase is complete (not cancelled)", finalStatus?.phase === "complete",
     `phase=${finalStatus?.phase}`)
+  // Regression: a resume that finds everything already stored used to return
+  // early leaving the checkpoint stuck at "cancelled" forever. After a
+  // successful resume the terminal phase must NOT remain cancelled.
+  neg("R3: resume does not leave a stale cancelled checkpoint", finalStatus?.phase !== "cancelled",
+    `phase=${finalStatus?.phase}`)
+
+  // Regression guards on the implementation itself (the two silent-failure
+  // bugs this verifier caught must never return).
+  const src = readFileSync(path.join(ROOT, "src/ast/parallel-indexer.ts"), "utf8")
+  const finalizeIdx = src.indexOf('phase: stats.errorFiles > 0 ? "failed" : "complete"')
+  const guardIdx = src.lastIndexOf("if (!stats.cancelled)", finalizeIdx)
+  neg("R3: finalize write is guarded by !stats.cancelled (no silent re-label)",
+    finalizeIdx > 0 && guardIdx > 0 && guardIdx < finalizeIdx,
+    `finalize=${finalizeIdx} guard=${guardIdx}`)
+  const fbIdx = src.indexOf("Post-processing fallback")
+  neg("R3: missed-file fallback is skipped on cancelled runs",
+    fbIdx > 0 && src.slice(fbIdx, fbIdx + 500).includes("if (!stats.cancelled)"),
+    `fallbackBlock=${fbIdx}`)
 
   const passed = checks.filter((c) => c.pass).length
   const failed = checks.length - passed
@@ -153,7 +191,7 @@ async function main() {
     dataDir: DATA,
     passed,
     failed,
-    negativeCases: 0,
+    negativeCases: negatives.length,
     checks,
   }
   writeFileSync(path.join(RESULTS, "R3-cancel-resume.json"), JSON.stringify(evidence, null, 2))
