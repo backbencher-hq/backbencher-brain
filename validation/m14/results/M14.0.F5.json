@@ -116,8 +116,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "f2b7f863f741e9a999f82843af05ee07b02fb16d",
-  "committedAt": "2026-09-01T16:24:03+02:00",
+  "commit": "7ab9a63b9d4206e7c1008b1b08763750ea8c1bba",
+  "committedAt": "2026-09-01T16:30:47+02:00",
   "data": {
     "corpusPins": {
       "phpunit": "c8d6921fb601b6988854cd84a672f06c1e49f80e"
@@ -313,8 +313,8 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 2.7,
-          "maxMsPerFile": 162.9,
+          "avgMsPerFile": 2.5,
+          "maxMsPerFile": 133.3,
           "samplesTimed": 200
         },
         "samples": [],
