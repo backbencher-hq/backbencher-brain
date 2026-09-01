@@ -36,10 +36,10 @@
       "scope": "master plan, ledger, npm run verify wiring, secret-hygiene guard",
       "evidence": {
         "status": "verified",
-        "currentCommit": "e4579a15246a519a2a640938f41a126d86830622",
+        "currentCommit": "21cc3b3937edb53b7af507ee4ebdf2f661aea8f4",
         "verifierCommand": "bun run script/m30/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "generatedAt": "2026-08-31T21:11:24.996Z",
+        "generatedAt": "2026-09-01T13:55:03.720Z",
         "passed": 24,
         "failed": 0,
         "negativeCases": 8
@@ -63,10 +63,10 @@
       "status": "verified",
       "evidence": {
         "status": "verified",
-        "currentCommit": "e4579a15246a519a2a640938f41a126d86830622",
+        "currentCommit": "21cc3b3937edb53b7af507ee4ebdf2f661aea8f4",
         "verifierCommand": "npx tsx script/m30/verify-setup.ts",
         "evidenceFile": "S1.json",
-        "generatedAt": "2026-09-01T00:43:28.685Z",
+        "generatedAt": "2026-09-01T13:56:17.506Z",
         "passed": 39,
         "failed": 0,
         "negativeCases": 11
@@ -88,7 +88,17 @@
       "code": "S2",
       "githubIssue": 550,
       "tool": "first-run-hook",
-      "status": "planned",
+      "status": "verified",
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "21cc3b3937edb53b7af507ee4ebdf2f661aea8f4",
+        "verifierCommand": "npx tsx script/m30/verify-first-run-hook.ts",
+        "evidenceFile": "S2.json",
+        "generatedAt": "2026-09-01T13:47:31.575Z",
+        "passed": 17,
+        "failed": 0,
+        "negativeCases": 4
+      },
       "scope": "bb index prompts when unconfigured AND TTY; --no-setup escape; one-line notice when non-TTY; never hangs",
       "acceptanceCriteria": [
         "TTY prompt shown exactly once per unconfigured run with honest skip notice",
