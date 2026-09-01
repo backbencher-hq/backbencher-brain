@@ -124,7 +124,7 @@ async function cmdIndex(
   }
   console.log(`indexing ${abs} (project ${pid.slice(0, 8)}…)`)
   const t = Date.now()
-  const indexOpts: { onProgress: (s: any) => void; skipPostProcessing?: boolean; files?: string[]; isIncremental?: boolean } = { onProgress: (s) => {} }
+  const indexOpts: Parameters<typeof indexProjectParallel>[2] = { onProgress: (s) => {} }
   if (opts.skipPostProcessing) indexOpts.skipPostProcessing = true
   if (opts.file) indexOpts.files = [opts.file]
   if (opts.changed) indexOpts.isIncremental = true
@@ -140,7 +140,10 @@ async function cmdIndex(
   if (opts.resume) {
     const { readLiveStatus } = await import("../ast/index-status")
     const ck = readLiveStatus(pid)
-    const inProgress = !!ck && ck.phase === "indexing" && Date.now() - ck.updatedAt < 3_600_000
+    const inProgress =
+      !!ck &&
+      (ck.phase === "indexing" || ck.phase === "cancelled") &&
+      Date.now() - ck.updatedAt < 3_600_000
     if (inProgress) {
       console.log(`resuming interrupted index (checkpoint: ${ck.processedFiles}/${ck.totalFiles} files done)`)
     } else {
@@ -166,7 +169,22 @@ async function cmdIndex(
         `${pw}${s.processedFiles}/${total} files (${pct}%) ${fps}/s ETA ${formatETA(s)} ${file ? `— ${file}` : ""}`,
       )
     }
+  // M21.R3: cooperative cancellation — Ctrl+C stops the run gracefully instead
+  // of killing the process mid-write. The abort signal makes the indexer stop
+  // dispatching new batches and drain in-flight work; the live status file gets
+  // phase "cancelled", so `bb index --resume` recognizes the checkpoint.
+  const abort = new AbortController()
+  const onSignal = (sig: string) => {
+    if (abort.signal.aborted) return
+    abort.abort()
+    console.log(`\n${sig} received — cancelling index (draining in-flight files; resume with: bb index --resume)...`)
+  }
+  process.once("SIGINT", () => onSignal("SIGINT"))
+  process.once("SIGTERM", () => onSignal("SIGTERM"))
+  indexOpts.signal = abort.signal
   const stats = await indexProjectParallel(pid, abs, indexOpts)
+  process.removeAllListeners("SIGINT")
+  process.removeAllListeners("SIGTERM")
   if (process.stderr.isTTY) process.stderr.write("\r\x1b[K")
   else process.stderr.write("\n")
   const secs = ((Date.now() - t) / 1000).toFixed(1)
@@ -177,6 +195,9 @@ async function cmdIndex(
   const emb = (db.prepare("SELECT COUNT(*) c FROM brain_semantic_embedding").get() as any).c
   console.log(`✓ indexed ${files} files, ${symbols} symbols, ${rels} relationships, ${emb} embeddings in ${secs}s`)
   console.log(`  stats: ${JSON.stringify({ totalFiles: stats.totalFiles, processed: stats.processedFiles, errors: stats.errorFiles })}`)
+  if (stats.cancelled) {
+    console.log("⏸ index cancelled — progress saved. Resume with: bb index --resume")
+  }
   if (stats.summary) {
     const s = stats.summary
     console.log(`  breakdown: ${s.newlyParsed} newly parsed | ${s.unchanged} unchanged | ${s.skipped} skipped | ${s.symbolLoss} symbol-loss (parsed 0 symbols) | ${s.errors} errors | ${s.timeouts} timeouts`)
