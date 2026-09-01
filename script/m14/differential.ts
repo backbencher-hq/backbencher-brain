@@ -991,6 +991,7 @@ export function deriveObjcEdges(root: any): { label: string; from: string; targe
 export function derivePhpEdges(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
+  const classBase = new Map<string, string>()  // class -> declared base (for new parent)
   // Import the analyzer's EXACT builtin set (never a hand-duplicated copy —
   // a drift here would fabricate or hide call edges).
   const key = (label: string, target: string) => label + ":" + target
@@ -1019,17 +1020,21 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
     return undefined
   }
 
-  const stack: any[] = [{ n: root, parent: null, inBody: false }]
+  const stack: any[] = [{ n: root, parent: null, inBody: false, cls: undefined as string | undefined, base: undefined as string | undefined }]
   while (stack.length > 0) {
-    const { n, parent, inBody } = stack.pop()!
+    const { n, parent, inBody, cls, base } = stack.pop()!
     const t = n.type
     if (t === "class_declaration") {
       const nameNode = n.namedChildren.find((c: any) => c.type === "name")
       const className = nameNode?.text ?? "?"
       const baseClause = n.namedChildren.find((c: any) => c.type === "base_clause")
+      let declaredBase: string | undefined
       if (baseClause) {
         const first = baseClause.namedChild(0)
-        if (first) push("extends", leafName(first.text))
+        if (first) {
+          declaredBase = leafName(first.text)
+          push("extends", declaredBase)
+        }
       }
       const ifaceClause = n.namedChildren.find((c: any) => c.type === "class_interface_clause")
       if (ifaceClause) {
@@ -1038,6 +1043,9 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
           if (c) push("implements", leafName(c.text))
         }
       }
+      // Hoisted for the walk-tail (nextCls/nextBase) via the stack object:
+      ;(stack as any)._curCls = className
+      ;(stack as any)._curBase = declaredBase
     }
     if (t === "interface_declaration") {
       const baseClause = n.namedChildren.find((c: any) => c.type === "base_clause")
@@ -1078,8 +1086,25 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
       if (nameNode) push("calls", nameNode.text)
     }
     if (t === "object_creation_expression") {
-      const target = n.namedChildren.find((c: any) => c.type === "name" || c.type === "qualified_name")
-      if (target) push("instantiates", leafName(target.text))
+      // Mirror the analyzer: named/qualified target -> leaf; self/static ->
+      // enclosing class; parent -> declared base class (probe-verified:
+      // pinned grammar parses new self/parent/static as name, not
+      // relative_scope). Unresolvable parent emits NOTHING.
+      const named = n.namedChildren.find((c: any) => c.type === "name" || c.type === "qualified_name")
+      if (named) {
+        if (named.text === "self" || named.text === "static" || named.text === "parent") {
+          const resolved = named.text === "parent" ? base : cls
+          if (resolved) push("instantiates", resolved)
+        } else {
+          push("instantiates", leafName(named.text))
+        }
+      } else {
+        const rel = n.namedChildren.find((c: any) => c.type === "relative_scope")
+        if (rel) {
+          const resolved = rel.text === "parent" ? base : cls
+          if (resolved) push("instantiates", resolved)
+        }
+      }
     }
     if (t === "member_access_expression" && inBody) {
       // Member READS only: assignment-LHS is a write; member_call receiver is
@@ -1093,9 +1118,11 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
       }
     }
     const nextBody = inBody || t === "method_declaration" || t === "function_definition"
+    const nextCls = t === "class_declaration" ? (stack as any)._curCls : cls
+    const nextBase = t === "class_declaration" ? (stack as any)._curBase : base
     for (let i = n.namedChildCount - 1; i >= 0; i--) {
       const c = n.namedChild(i)
-      if (c) stack.push({ n: c, parent: n, inBody: nextBody })
+      if (c) stack.push({ n: c, parent: n, inBody: nextBody, cls: nextCls, base: nextBase })
     }
   }
   return edges
