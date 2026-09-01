@@ -163,7 +163,7 @@
       "code": "L3",
       "githubIssue": 492,
       "tool": "lsp-navigation",
-      "status": "planned",
+      "status": "verified",
       "scope": "definition and references over brain_symbol/brain_relationship",
       "acceptanceCriteria": [
         "go-to-definition resolves across indexed files",
@@ -174,7 +174,19 @@
         "persist current gate evidence",
         "mutation checks pass",
         "document limitations"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see L3.json",
+        "verifierCommand": "npx tsx script/m24/verify-navigation.ts",
+        "evidenceFile": "L3.json",
+        "passed": 23,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 0,
+        "mutantsCaught": 4,
+        "mutantsTotal": 4
+      }
     },
     {
       "code": "L4",

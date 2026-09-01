@@ -1,0 +1,27 @@
+{
+  "issue": "492",
+  "code": "L3",
+  "status": "verified",
+  "currentCommit": "8850eb35d2f2da5d1f5c4fbcbff06ce04adb4894",
+  "sourceFingerprint": "734d048025b370508a34474025cf7741c102e0d4c28be628604f7fca5f9eb9f7",
+  "verifierCommand": "npx tsx script/m24/verify-navigation.ts",
+  "evidenceFile": "L3.json",
+  "generatedAt": "2026-09-01T14:05:35.236Z",
+  "passed": 23,
+  "failed": 0,
+  "failures": [],
+  "negativeCases": 0,
+  "verdict": {
+    "realComponentFailures": 0,
+    "mutantsCaught": 4,
+    "mutantsTotal": 4,
+    "ok": true,
+    "note": "`failed` counts real functional failures only; mutant runs are reported separately via the verdict block."
+  },
+  "limitations": [
+    "index-sourced only; no compiler-backed go-to-definition (complement stance)",
+    "reference sites resolve to relationship edge coordinates; heuristic-edge ratio per language is declared in the master plan",
+    "fixture-backed double for the DB layer; live brain.db path covered by upstream freshness verifiers and the V1 harness",
+    "latency measured on this machine only; cross-platform budgets are M25 scope"
+  ]
+}
