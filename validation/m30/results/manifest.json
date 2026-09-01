@@ -172,7 +172,17 @@
       "code": "H1",
       "githubIssue": 553,
       "tool": "honesty-docs",
-      "status": "planned",
+      "status": "verified",
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "7731546262a5c67f62beac3e7e32866b601194cc",
+        "verifierCommand": "npx tsx script/m30/verify-honesty-docs.ts",
+        "evidenceFile": "H1.json",
+        "generatedAt": "2026-09-01T14:54:27.802Z",
+        "passed": 29,
+        "failed": 0,
+        "negativeCases": 5
+      },
       "scope": "EMBEDDINGS.md + README: no-key trade-off, vector-space mixing rule, --force re-embed requirement",
       "acceptanceCriteria": [
         "docs state no-key trade-off, mixing rule, --force requirement",
