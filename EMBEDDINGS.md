@@ -8,6 +8,44 @@ brain-core ships two embedding layers:
 2. **Local word vectors** (offline fallback) — always available, no API key.
    Quality is keyword-level, not true semantics.
 
+## Interactive setup: `bb setup` (recommended first run)
+
+`bb setup` walks you through provider choice with prefilled base URL and model
+so you only paste the API key (input is hidden). It validates the key with one
+live `/embeddings` call before saving, writes `~/.bb/config.json` with mode
+0600 (owner-only), and never stores the key anywhere else. The built-in free
+options are:
+
+| Provider | base_url (prefilled) | model (prefilled) |
+|---|---|---|
+| OpenRouter free | `https://openrouter.ai/api/v1` | `liquid/lfm-2.5-embedding-350m:free` |
+| NVIDIA NIM free | `https://integrate.api.nvidia.com/v1` | `nvidia/nemotron-3-embed-1b` |
+| Custom / paid | you supply both | you supply both |
+
+If you skip setup or have no key, `bb index` shows exactly this notice (one
+line, non-interactive environments never block on it):
+
+```
+not: embedding anahtarı yok — semantik arama yerel vektörlerle çalışacak (daha zayıf). Kurulum: bb setup
+```
+
+### What a failed key validation means (pre-save, `bb setup`)
+
+A key is validated before it is saved. The exact messages users see:
+
+- `Anahtar kabul edilmedi (401). Anahtarı ve sağlayıcıyı kontrol et — kopyalarken eksik/ekstra karakter olabilir.`
+- `Hız limiti (429). Anahtar geçerli görünüyor; ücretsiz katman sınırı. Kaydedilebilir — dizinleme sırasında geri çekilme uygulanır.`
+- `Sağlayıcı hatası (503). Anahtar geçerli olabilir; sağlayıcı geçici olarak sorunlu. Kaydedilebilir — dizinleme sırasında yeniden denenir.`
+- `Model bulunamadı (404). Model adını kontrol et: sağlayıcının /embeddings ucu bu model adını tanımıyor.`
+- `Sağlayıcı yanıt vermedi (zaman aşımı). İnternet bağlantısını ve base URL'i kontrol et.`
+- `Sağlayıcıya ulaşılamadı: <error>. Base URL'i kontrol et.`
+- `Sağlayıcı geçersiz JSON döndü. Base URL bir /v1 uç noktası olmalı.`
+- `Sağlayıcı embedding döndürmedi. Base URL ve model adını kontrol et.`
+
+429 and 5xx are treated as "key shape accepted" (rate/provider side issue) and
+saved; index-time resilience (per-batch fallback + 429 backoff) retries them.
+A 401/403/404 or malformed response is a hard error: the key is NOT saved.
+
 ## Quick start (3 environment variables)
 
 ```bash
@@ -88,6 +126,26 @@ Dropped batches are recoverable: run `bb index --force <project>` (or re-run
 `bb_refresh(force)`) to generate vectors for the whole project at once. For
 measurement harnesses that must not touch the embedding API at all (e.g. the
 M11 corpus benchmarks), set `BB_EMBEDDING_BATCH_LIMIT=0` in the harness scope.
+
+## The no-key trade-off, in plain terms
+
+Without any embedding key, semantic search uses **local word vectors
+(`local-word-vectors`, keyword-level matching)**. That is a real, declared
+quality cost — not "the same, just offline". It is the honest default: nothing
+is silently degraded, and the notice above says so. Adding a real model later
+**requires `bb index --force <project>`** to re-embed the whole index; old
+vectors are never reused or mixed with new ones.
+
+## Vector-space mixing rule
+
+Vectors produced by different models live in **different vector spaces** and
+are **never compared or mixed**. Every stored vector records the model that
+produced it (`embedding_model`); the search only compares vectors with the
+same label, and the query vector's producing model
+(`SemanticEngine.getLastEmbeddingModel()`) is authoritative. Changing model or
+dimension therefore requires a forced reindex (`bb index --force`), and a rate
+limit or provider blip degrades one batch to the local fallback — never a
+silent cross-space comparison.
 
 ## Tool evidence semantics
 
