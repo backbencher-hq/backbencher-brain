@@ -134,7 +134,7 @@
       "code": "L2",
       "githubIssue": 491,
       "tool": "lsp-hover",
-      "status": "planned",
+      "status": "verified",
       "scope": "hover with signature, usage count, evidence class, stale marker",
       "acceptanceCriteria": [
         "hover returns signature plus usage count plus evidence class",
@@ -145,7 +145,19 @@
         "persist current gate evidence",
         "mutation checks pass",
         "document limitations"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see L2.json",
+        "verifierCommand": "npx tsx script/m24/verify-hover.ts",
+        "evidenceFile": "L2.json",
+        "passed": 20,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 0,
+        "mutantsCaught": 4,
+        "mutantsTotal": 4
+      }
     },
     {
       "code": "L3",
