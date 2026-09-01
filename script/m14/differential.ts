@@ -1239,6 +1239,36 @@ export function deriveRubyEdges(root: any): { label: string; from: string; targe
           if (c?.type === "identifier") into.add(c.text)
         }
       }
+      // Ruby 3 pattern-matching bindings (RUBYG1 — mirrors the analyzer rule
+      // with the identical shape set): identifiers in array_pattern /
+      // find_pattern / as_pattern, the value position of keyword_pattern,
+      // splat_parameter names, and a bare in_clause pattern are BINDINGS =
+      // locals, never calls. Without this the oracle (and the analyzer, now
+      // fixed) fabricated calls:a/calls:b etc. for every `in [a, b]`.
+      if (n.type === "array_pattern" || n.type === "find_pattern" ||
+          n.type === "as_pattern") {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (!c) continue
+          if (c.type === "identifier") into.add(c.text)
+          else if (c.type === "splat_parameter") {
+            const nm = c.childForFieldName?.("name") ?? c.namedChild(0)
+            if (nm?.type === "identifier") into.add(nm.text)
+          }
+        }
+      } else if (n.type === "keyword_pattern") {
+        // `{name:}` binds `name` via the hash_key_symbol (shorthand);
+        // `{age: x}` binds x via the value identifier.
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (!c) continue
+          if (c.type === "identifier") into.add(c.text)
+          else if (c.type === "hash_key_symbol") into.add(c.text.replace(/^:/, ""))
+        }
+      } else if (n.type === "in_clause") {
+        const first = n.namedChild(0)
+        if (first?.type === "identifier") into.add(first.text)
+      }
       for (let i = 0; i < n.namedChildCount; i++) st.push(n.namedChild(i))
     }
   }
