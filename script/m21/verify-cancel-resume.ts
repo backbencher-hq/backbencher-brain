@@ -99,9 +99,11 @@ async function main() {
     stdio: ["ignore", "pipe", "pipe"],
   })
   let sawProgress = false
+  let cancelStdout = ""
   child.stderr.on("data", (d: Buffer) => {
     if (String(d).includes("/2348")) sawProgress = true
   })
+  child.stdout.on("data", (d: Buffer) => { cancelStdout += String(d) })
   // Wait for REAL parse progress before signaling, so the cancel lands
   // mid-parse rather than during startup (a fixed sleep is flaky under load).
   const tStart = Date.now()
@@ -118,6 +120,11 @@ async function main() {
   ck("R3: index process was alive when SIGINT was sent", pidAlive, `pid=${child.pid}`)
   ck("R3: index showed real progress before cancel", sawProgress, "stderr contained n/2348")
   ck("R3: process exited after SIGINT (no hang)", exitCode !== null, `exit=${exitCode}`)
+  // The CLI breakdown must show the cancelled bucket, not hide the
+  // queued-but-unprocessed files or mislabel them as errors.
+  ck("R3: cancelled-run breakdown reports the cancelled bucket",
+    /breakdown: .*\| \d+ cancelled/.test(cancelStdout),
+    cancelStdout.split("\n").filter((l) => l.includes("breakdown"))[0] ?? cancelStdout.slice(-200))
 
   const status = readStatus()
   ck("R3: live status file exists after cancel", status != null, JSON.stringify(status)?.slice(0, 120))
