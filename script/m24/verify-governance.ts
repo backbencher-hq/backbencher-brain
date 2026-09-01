@@ -124,7 +124,11 @@ const SHARED_RELEVANT_FILES = [
   "docs/IDE-HONESTY-CONTRACT.md",
   "docs/IDE-PROGRAM-DECISIONS.md",
   "validation/m24/results/manifest.json",
-  "script/m24/verify-governance.ts",
+  // The gate script itself is deliberately NOT shared-relevant: it is a
+  // consumer of evidence, not part of any component's behavior, and its own
+  // correctness is re-proven on every run by the negative mutations below.
+  // Including it here would make every gate repair invalidate all component
+  // evidence — an eternal stale-commit loop.
 ]
 
 function validateLedger(ledger: Ledger, plan: string, contract: string): string[] {
