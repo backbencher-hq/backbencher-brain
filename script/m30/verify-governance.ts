@@ -240,8 +240,10 @@ hollowGap.issues[2]!.status = "known-gap"
 delete hollowGap.issues[2]!.evidence
 negative("G1: known-gap without evidence is rejected", validateLedger(hollowGap, plan, contract).some((e) => e.startsWith("hollow-known-gap:S2")))
 
-// Planned issues must not carry evidence.
+// Planned issues must not carry evidence. The status is pinned explicitly
+// because ledger progress (S3 now verified) must not break this negative.
 const fabricated = structuredClone(ledger)
+fabricated.issues[3]!.status = "planned"
 fabricated.issues[3]!.evidence = {
   status: "planned",
   currentCommit: "deadbeef",
