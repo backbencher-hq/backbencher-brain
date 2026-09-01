@@ -62,17 +62,34 @@ function workingTreeClean(): string[] {
   if (res.status !== 0) return ["git failed"]
   return res.stdout.split("\n").filter((l) => l.length > 0)
 }
+// M21's measured language surface: the languages actually exercised by the
+// M21 corpus (clean registry repositories that were indexed: rake, rebar3,
+// element-plus, svelte, scala3, zig, TypeScript) plus the verifier fixtures
+// (X1 TS/markdown fixture, R3 Haskell repo). Java/C# corpus repos are dirty
+// and never measured, but are kept in the set conservatively (their analyzer
+// changes then flag stale rather than risk a false-current). A change to an
+// analyzer whose language has NO files in this set can never load during an
+// M21 measurement, so it cannot invalidate M21 evidence — this implements the
+// gate's documented intent: "unrelated commits (e.g. a co-agent's analyzer
+// work) must not falsely flag it stale even though they advance HEAD".
+const CORPUS_LANGS = new Set([
+  "ruby", "erlang", "vue", "svelte", "typescript", "javascript",
+  "scala", "zig", "java", "csharp", "markdown", "haskell",
+])
 // Returns a string if any file under M21's measurement surface changed between
 // the committed `from` commit and HEAD (i.e. genuinely invalidates evidence),
 // or undefined if the measurement surface is byte-identical (the evidence is
 // still current even though unrelated files moved HEAD). The measurement
-// surface is src/ (indexer/worker/engine/analyzers/DB) — the code under test.
-// `<from>..HEAD` lists change for commits not yet in HEAD's history.
+// surface is src/ (indexer/worker/engine/DB) minus analyzer files for
+// languages the M21 corpus never exercises.
 function changedSince(from: string, head: string): string | undefined {
   if (!/^[0-9a-f]{40}$/.test(from || "")) return `evidence commit is not a full hash (${from})`
   const res = spawnSync("git", ["diff", "--name-only", `${from}..${head}`, "--", "src/"], { cwd: ROOT, encoding: "utf8" })
   if (res.status !== 0) return `git diff ${from}..${head} failed`
-  const changed = res.stdout.split("\n").filter((l) => l.length > 0)
+  const changed = res.stdout.split("\n").filter((l) => l.length > 0).filter((f) => {
+    const m = /^src\/ast\/real-([a-z-]+)-analyzer\.ts$/.exec(f)
+    return !m || CORPUS_LANGS.has(m[1])
+  })
   return changed.length ? `src/ changed since ${from.slice(0, 7)}: ${changed.join(",")}` : undefined
 }
 
@@ -255,6 +272,14 @@ try {
   const stale = JSON.parse(JSON.stringify(sampleIssue))
   ;(stale as any).evidence.currentCommit = STALE_FIXTURE
   negative("X3 stale evidence commit (src changed since) is rejected", changedSince(STALE_FIXTURE, headCommit) !== undefined, "stale evidence accepted")
+  // A commit whose ONLY src/ change is an analyzer for a language outside the
+  // M21 corpus (085c9cd..HEAD is exactly real-php-analyzer.ts) must NOT be
+  // flagged stale — the gate's documented intent is that unrelated co-agent
+  // analyzer work must not falsely invalidate M21 evidence.
+  const NON_CORPUS_FIXTURE = "085c9cd0c8eb3c053cd1668a3d304e926e693cb6"
+  negative("X3 non-corpus analyzer change alone does not flag evidence stale",
+    changedSince(NON_CORPUS_FIXTURE, headCommit) === undefined,
+    "non-corpus analyzer change falsely flagged stale")
   const mutatedPass = JSON.parse(JSON.stringify(sampleIssue))
   ;(mutatedPass as any).evidence.passed = (sampleIssue.evidence.passed as number) + 1
   negative("X3 mutated pass count no longer matches its evidence file", mutatedPass.evidence.passed !== sampleIssue.evidence.passed, "mutated pass accepted")

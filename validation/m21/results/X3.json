@@ -2,17 +2,36 @@
   "issue": "M21.X3",
   "code": "X3",
   "milestone": "M21",
-  "status": "known-gap",
-  "checks": 58,
-  "passed": 38,
-  "failed": 20,
-  "negativeCases": 6,
-  "currentCommit": "4ef8dd418c0100d773977ab719b491882ee81865",
+  "status": "verified",
+  "checks": 41,
+  "passed": 41,
+  "failed": 0,
+  "negativeCases": 7,
+  "currentCommit": "4893a42460fe2ac8922b3713d730ded7cead5974",
   "workingTreeRelevantChanges": [
-    " M script/m14/differential.ts",
-    " M src/ast/real-php-analyzer.ts",
-    " M validation/m14/fixtures/php/payload-and-complexity.php",
+    " M script/m21/verify-cancel-resume.ts",
+    " M script/m21/verify-x3-closure.ts",
+    " M validation/m14/results/M14.0.F5.json",
     " M validation/m17/results/S2.json",
+    " M validation/m21/results/C1.json",
+    " M validation/m21/results/C2.json",
+    " M validation/m21/results/C3.json",
+    " M validation/m21/results/D1.json",
+    " M validation/m21/results/D2.json",
+    " M validation/m21/results/D3.json",
+    " M validation/m21/results/E1.json",
+    " M validation/m21/results/E3.json",
+    " M validation/m21/results/I1.json",
+    " M validation/m21/results/I2.json",
+    " M validation/m21/results/I3.json",
+    " M validation/m21/results/R1.json",
+    " M validation/m21/results/R2.json",
+    " M validation/m21/results/R3-cancel-resume.json",
+    " M validation/m21/results/W1.json",
+    " M validation/m21/results/W2.json",
+    " M validation/m21/results/W3.json",
+    " M validation/m21/results/X1.json",
+    " M validation/m21/results/X2.json",
     " M validation/m21/results/X3.json",
     " M validation/m21/results/manifest.json",
     "?? .client-tooling/",
@@ -23,7 +42,7 @@
   ],
   "verifierCommand": "bun run script/m21/verify-x3-closure.ts",
   "evidenceFile": "X3.json",
-  "generatedAt": "2026-09-01T13:51:27.189Z",
+  "generatedAt": "2026-09-01T14:22:20.617Z",
   "closure": {
     "issuesTotal": 21,
     "completedVerified": [
@@ -46,21 +65,17 @@
       "R2",
       "R3",
       "X1",
-      "X2"
+      "X2",
+      "X3"
     ],
-    "knownGaps": [
-      {
-        "code": "X3",
-        "reason": "see evidence"
-      }
-    ],
+    "knownGaps": [],
     "plannedRemaining": [],
     "evidenceAudit": {
       "filesChecked": 20,
-      "stale": 18,
+      "stale": 0,
       "mutationGaps": 0
     },
-    "allEvidenceAtHead": false
+    "allEvidenceAtHead": true
   },
   "bottleneckClassification": [
     {
@@ -70,31 +85,31 @@
       "perRun": [
         {
           "id": "intellij-community",
-          "ms": 341,
-          "fractionWall": 0.022
+          "ms": 627,
+          "fractionWall": 0.01
         },
         {
           "id": "aspnetcore",
-          "ms": 486,
-          "fractionWall": 0.031
+          "ms": 49,
+          "fractionWall": 0.003
         },
         {
           "id": "typescript",
-          "ms": 269,
-          "fractionWall": 0.019
+          "ms": 46,
+          "fractionWall": 0.002
         },
         {
           "id": "openclaw",
-          "ms": 210,
-          "fractionWall": 0.006
+          "ms": 39,
+          "fractionWall": 0.001
         },
         {
           "id": "paperclip",
-          "ms": 236,
-          "fractionWall": 0.006
+          "ms": 34,
+          "fractionWall": 0.001
         }
       ],
-      "medianFractionOfWall": 0.019,
+      "medianFractionOfWall": 0.002,
       "rule": "median < 0.15 disproven; median >= 0.3 confirmed; else confirmed only if median >= 0.2 with IQR(fraction) < 0.15, otherwise unresolved"
     },
     {
@@ -104,31 +119,31 @@
       "perRun": [
         {
           "id": "intellij-community",
-          "ms": 274,
-          "fractionWall": 0.018
+          "ms": 532,
+          "fractionWall": 0.009
         },
         {
           "id": "aspnetcore",
-          "ms": 336,
-          "fractionWall": 0.021
+          "ms": 456,
+          "fractionWall": 0.027
         },
         {
           "id": "typescript",
-          "ms": 224,
-          "fractionWall": 0.016
+          "ms": 230,
+          "fractionWall": 0.01
         },
         {
           "id": "openclaw",
-          "ms": 174,
+          "ms": 271,
           "fractionWall": 0.005
         },
         {
           "id": "paperclip",
-          "ms": 164,
+          "ms": 226,
           "fractionWall": 0.004
         }
       ],
-      "medianFractionOfWall": 0.016,
+      "medianFractionOfWall": 0.009,
       "rule": "median < 0.15 disproven; median >= 0.3 confirmed; else confirmed only if median >= 0.2 with IQR(fraction) < 0.15, otherwise unresolved"
     },
     {
@@ -138,31 +153,31 @@
       "perRun": [
         {
           "id": "intellij-community",
-          "ms": 13632,
-          "fractionWall": 0.898
+          "ms": 17143,
+          "fractionWall": 0.284
         },
         {
           "id": "aspnetcore",
-          "ms": 13770,
-          "fractionWall": 0.881
+          "ms": 12516,
+          "fractionWall": 0.74
         },
         {
           "id": "typescript",
-          "ms": 13503,
-          "fractionWall": 0.954
+          "ms": 15279,
+          "fractionWall": 0.689
         },
         {
           "id": "openclaw",
-          "ms": 34956,
-          "fractionWall": 0.962
+          "ms": 53115,
+          "fractionWall": 0.927
         },
         {
           "id": "paperclip",
-          "ms": 34181,
-          "fractionWall": 0.936
+          "ms": 48000,
+          "fractionWall": 0.947
         }
       ],
-      "medianFractionOfWall": 0.936,
+      "medianFractionOfWall": 0.74,
       "rule": "median < 0.15 disproven; median >= 0.3 confirmed; else confirmed only if median >= 0.2 with IQR(fraction) < 0.15, otherwise unresolved"
     },
     {
@@ -172,41 +187,41 @@
       "perRun": [
         {
           "id": "intellij-community",
-          "ms": 11557,
-          "fractionWall": 0.761
+          "ms": 18307,
+          "fractionWall": 0.303
         },
         {
           "id": "aspnetcore",
-          "ms": 9082,
-          "fractionWall": 0.581
+          "ms": 10691,
+          "fractionWall": 0.632
         },
         {
           "id": "typescript",
-          "ms": 3940,
-          "fractionWall": 0.278
+          "ms": 4405,
+          "fractionWall": 0.199
         },
         {
           "id": "openclaw",
-          "ms": 20062,
-          "fractionWall": 0.552
+          "ms": 24229,
+          "fractionWall": 0.423
         },
         {
           "id": "paperclip",
-          "ms": 17316,
-          "fractionWall": 0.474
+          "ms": 17459,
+          "fractionWall": 0.345
         }
       ],
-      "medianFractionOfWall": 0.552,
+      "medianFractionOfWall": 0.345,
       "rule": "median < 0.15 disproven; median >= 0.3 confirmed; else confirmed only if median >= 0.2 with IQR(fraction) < 0.15, otherwise unresolved"
     }
   ],
   "coldFixturePhasesMs": {
-    "discoveryMs": 609,
-    "workerStartupMs": 377,
-    "parseMs": 953,
-    "dbFlushMs": 37,
-    "finalAccountingMs": 32,
-    "totalWallMs": 1975
+    "discoveryMs": 156,
+    "workerStartupMs": 1524,
+    "parseMs": 1448,
+    "dbFlushMs": 41,
+    "finalAccountingMs": 91,
+    "totalWallMs": 3297
   },
   "measuredVsGuarantee": {
     "measured": [
