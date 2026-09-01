@@ -3,48 +3,27 @@
   "code": "X3",
   "milestone": "M21",
   "status": "known-gap",
-  "checks": 57,
-  "passed": 37,
+  "checks": 58,
+  "passed": 38,
   "failed": 20,
   "negativeCases": 6,
-  "currentCommit": "439f9107a13a7e1ef3f4d72842c54fef4052e6be",
+  "currentCommit": "4ef8dd418c0100d773977ab719b491882ee81865",
   "workingTreeRelevantChanges": [
-    " M script/m14/completeness-inventory.ts",
     " M script/m14/differential.ts",
-    " M script/m14/mutate-analyzer.ts",
-    " M script/m14/run-fixtures.ts",
-    " M src/ast/parallel-indexer.ts",
-    " M src/ast/real-ruby-analyzer.ts",
-    " M src/cli/index.ts",
-    " M validation/m14/differential-baseline.json",
-    " M validation/m14/results/M14.0.F1.json",
-    " M validation/m14/results/M14.0.F2.json",
-    " M validation/m14/results/M14.0.F3.json",
-    " M validation/m14/results/M14.0.F4.json",
-    " M validation/m14/results/M14.0.F5.json",
-    " M validation/m14/results/M14.0.SPEC.json",
-    " M validation/m21/results/D2.json",
+    " M src/ast/real-php-analyzer.ts",
+    " M validation/m14/fixtures/php/payload-and-complexity.php",
+    " M validation/m17/results/S2.json",
+    " M validation/m21/results/X3.json",
+    " M validation/m21/results/manifest.json",
     "?? .client-tooling/",
     "?? docs/m20/PERFORMANCE-DIAGNOSTIC.md",
-    "?? script/m14/spec/ruby-completeness.json",
-    "?? script/m14/tmp-probe-detail.ts",
-    "?? script/m14/tmp-probe-detail2.ts",
-    "?? script/m14/tmp-probe-detail3.ts",
-    "?? script/m14/tmp-probe-detail4.ts",
-    "?? script/m14/tmp-probe-unexp-detail.ts",
-    "?? script/m14/tmp-probe-unexp-harness.ts",
-    "?? script/m14/tmp-probe-unexp15.ts",
-    "?? script/m14/tmp-ruby-oracle-mirror.ts",
     "?? script/m20/benchmark-tool-latency.ts",
     "?? script/m20/diagnose-index-phases.ts",
-    "?? script/m21/verify-cancel-resume.ts",
-    "?? validation/m14/fixtures/ruby/",
-    "?? validation/m20/results/PERF-DIAGNOSTIC.json",
-    "?? validation/m21/results/R3-cancel-resume.json"
+    "?? validation/m20/results/PERF-DIAGNOSTIC.json"
   ],
   "verifierCommand": "bun run script/m21/verify-x3-closure.ts",
   "evidenceFile": "X3.json",
-  "generatedAt": "2026-08-31T23:01:51.664Z",
+  "generatedAt": "2026-09-01T13:51:27.189Z",
   "closure": {
     "issuesTotal": 21,
     "completedVerified": [
@@ -58,33 +37,27 @@
       "W2",
       "W3",
       "D1",
+      "D2",
       "D3",
       "E1",
+      "E2",
       "E3",
       "R1",
       "R2",
+      "R3",
       "X1",
-      "X2",
-      "X3"
+      "X2"
     ],
     "knownGaps": [
       {
-        "code": "D2",
-        "reason": "see evidence"
-      },
-      {
-        "code": "E2",
-        "reason": "see evidence"
-      },
-      {
-        "code": "R3",
+        "code": "X3",
         "reason": "see evidence"
       }
     ],
     "plannedRemaining": [],
     "evidenceAudit": {
       "filesChecked": 20,
-      "stale": 17,
+      "stale": 18,
       "mutationGaps": 0
     },
     "allEvidenceAtHead": false
