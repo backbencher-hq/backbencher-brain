@@ -1382,17 +1382,50 @@ let backgroundEmbedQueuedItems = 0
 let embeddingFlushWaiters: Array<() => void> = []
 const EMBED_QUEUE_ITEM_CAP = Number(process.env.BB_EMBEDDING_QUEUE_LIMIT || 25000)
 
+// M21.E2: production counters for the embedding queue lifecycle. These are
+// exported so run summaries, `bb status`, and verifiers can report what the
+// queue actually did (embedded vs dropped vs failed vs fallback) instead of
+// claiming success for work that never happened.
+export const backgroundEmbedMetrics = {
+  /** Items accepted into the queue (cap-permitting). */
+  queued: 0,
+  /** Items dropped because the queue cap or batch limit was hit. */
+  dropped: 0,
+  /** Items embedded via the real provider. */
+  embedded: 0,
+  /** Items written via the TF-IDF fallback after a provider failure. */
+  fallback: 0,
+  /** Items whose provider attempt AND fallback both failed. */
+  failed: 0,
+  /** Jobs skipped entirely because the project/db was removed. */
+  skipped: 0,
+}
+
 /**
- * Await completion of all queued background embedding jobs. Returns when the
- * queue is fully drained and idle. Note: the queue is shared process-wide, so
- * this waits for every project's queued jobs, not just the caller's. Used by
- * tests and tools that need semantic vectors durable before reading them back
- * (verify-embed, verify-semantic).
+ * Await completion of all queued background embedding jobs, with a deadline.
+ * Returns when the queue is fully drained and idle, OR when the timeout
+ * expires (resolve="timeout") — a timed-out flush leaves embeddings PARTIAL,
+ * which callers must report honestly rather than claiming durability.
+ * Note: the queue is shared process-wide, so this waits for every project's
+ * queued jobs, not just the caller's. Used by tests and tools that need
+ * semantic vectors durable before reading them back (verify-embed,
+ * verify-semantic).
  */
-export async function flushBackgroundEmbeddings(): Promise<void> {
+export async function flushBackgroundEmbeddings(opts: { timeoutMs?: number } = {}): Promise<{ resolved: "drained" | "timeout"; pendingItems: number }> {
+  const deadline = opts.timeoutMs && opts.timeoutMs > 0 ? Date.now() + opts.timeoutMs : undefined
   while (backgroundEmbedActive || backgroundEmbedJobs.length > 0) {
-    await new Promise<void>((resolve) => embeddingFlushWaiters.push(resolve))
+    if (deadline !== undefined && Date.now() >= deadline) {
+      return { resolved: "timeout", pendingItems: backgroundEmbedQueuedItems }
+    }
+    const wait = deadline !== undefined
+      ? new Promise<void>((resolve) => {
+          const t = setTimeout(() => resolve(), Math.max(1, deadline - Date.now()))
+          embeddingFlushWaiters.push(() => { clearTimeout(t); resolve() })
+        })
+      : new Promise<void>((resolve) => embeddingFlushWaiters.push(resolve))
+    await wait
   }
+  return { resolved: "drained", pendingItems: 0 }
 }
 
 function queueBackgroundEmbeddings(projectId: ProjectID, projectPath: string, items: any[]) {
@@ -1411,9 +1444,11 @@ function queueBackgroundEmbeddings(projectId: ProjectID, projectPath: string, it
       dropped: items.length,
       cap: EMBED_QUEUE_ITEM_CAP,
     })
+    backgroundEmbedMetrics.dropped += items.length
     return
   }
   backgroundEmbedQueuedItems += items.length
+  backgroundEmbedMetrics.queued += items.length
   // Keep project identity, not a live SQLite handle. A caller may close or
   // remove a project while this non-blocking queue is draining.
   backgroundEmbedJobs.push({ projectId, projectPath, items })
@@ -1440,6 +1475,7 @@ async function drainBackgroundEmbeddings() {
         // temporary-project cleanup or an explicit project deletion.
         if (!existsSync(job.projectPath) || !existsSync(dbPath)) {
           log.debug("dropping embeddings for removed project", { projectId: job.projectId })
+          backgroundEmbedMetrics.skipped += job.items.length
           continue
         }
 
@@ -1462,13 +1498,23 @@ async function drainBackgroundEmbeddings() {
             directory: job.projectPath,
             fn: () => SemanticEngine.embedMany(docs),
           })
-          if (!embeddings) continue
+          // M21.E2: an empty result is a provider failure, not a success.
+          // SemanticEngine.embedMany returns [] once both the API and the
+          // local model are unavailable; an empty array is truthy, so the old
+          // truthiness guard on the result never fired and every item in the
+          // batch was silently dropped — no TF-IDF fallback, no accounting.
+          // Throwing routes the batch into the fallback path below, where it
+          // gets tfidf-v1 vectors and honest `fallback`/`failed` counters.
+          if (!embeddings || embeddings.length === 0) {
+            throw new Error("embedding provider returned no vectors")
+          }
 
           const modelLabel = SemanticEngine.getLastEmbeddingModel()
           // Reopen after provider latency if a caller closed the project DB.
           // Never use a handle captured by storeResults.
           if (!existsSync(job.projectPath) || !existsSync(dbPath)) {
             log.debug("dropping embeddings after project removal", { projectId: job.projectId })
+            backgroundEmbedMetrics.skipped += job.items.length
             break
           }
           rawDb = await BrainDatabase.getRawInstance(job.projectId)
@@ -1481,7 +1527,12 @@ async function drainBackgroundEmbeddings() {
             for (let k = 0; k < rows.length; k++) {
               const item = chunk[k]
               const vec = embeddings[k]
-              if (!vec) continue
+              // M21.E2: a missing vector inside a non-empty result is a
+              // partial provider failure — accounted as `failed`, never
+              // silently skipped (conservation: every queued item lands in
+              // exactly one of embedded/fallback/failed/skipped/dropped).
+              if (!vec) { backgroundEmbedMetrics.failed++; continue }
+              backgroundEmbedMetrics.embedded++
               const contentHash = createHash("sha256").update(item.snippet).digest("hex")
               insertEmbed.run(
                 `${item.symbolId}:embed`,
@@ -1511,6 +1562,7 @@ async function drainBackgroundEmbeddings() {
           const { existsSync } = await import("node:fs")
           if (!existsSync(job.projectPath) || !existsSync(BrainDatabase.getDbPath(job.projectId))) {
             log.debug("dropping fallback embeddings for removed project", { projectId: job.projectId })
+            backgroundEmbedMetrics.skipped += job.items.length
             continue
           }
           const fallbackDb = await BrainDatabase.getRawInstance(job.projectId)
@@ -1522,6 +1574,7 @@ async function drainBackgroundEmbeddings() {
           for (const item of job.items) {
             const tokens = tokenizeCodeForEmbedding(item.snippet, item.name)
             if (tokens.length === 0) continue
+            backgroundEmbedMetrics.fallback++
             const contentHash = createHash("sha256").update(item.snippet).digest("hex")
             tfidfInsert.run(
               `${item.symbolId}:tfidf`, job.projectId, item.symbolId, item.kind || "symbol",
@@ -1531,6 +1584,7 @@ async function drainBackgroundEmbeddings() {
           }
         } catch (fallbackErr: any) {
           log.warn("TF-IDF fallback also failed", { error: fallbackErr?.message })
+          backgroundEmbedMetrics.failed += job.items.length
         }
       }
       // Yield to the event loop between jobs so the indexer is never starved.
