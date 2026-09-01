@@ -2,122 +2,122 @@
   "checks": [
     {
       "description": "rake: tree-truth vs analyzer diff @dd5e851d75",
-      "detail": "0 files, coverage null%, unexplained null%",
+      "detail": "0 files; NOT COMPARABLE: baseline sampled 60/lang, run 200/lang",
       "id": "differential-javascript",
-      "status": "pass"
+      "status": "fail"
     },
     {
       "description": "rake: tree-truth vs analyzer diff @dd5e851d75",
-      "detail": "0 files, coverage null%, unexplained null%",
+      "detail": "0 files; NOT COMPARABLE: baseline sampled 60/lang, run 200/lang",
       "id": "differential-typescript",
-      "status": "pass"
+      "status": "fail"
     },
     {
       "description": "rake: tree-truth vs analyzer diff @dd5e851d75",
-      "detail": "0 files, coverage null%, unexplained null%",
+      "detail": "0 files; NOT COMPARABLE: baseline sampled 60/lang, run 200/lang",
       "id": "differential-kotlin",
-      "status": "pass"
+      "status": "fail"
     },
     {
       "description": "rake: tree-truth vs analyzer diff @dd5e851d75",
-      "detail": "0 files, coverage null%, unexplained null%",
+      "detail": "0 files; NOT COMPARABLE: baseline sampled 60/lang, run 200/lang",
       "id": "differential-scala",
-      "status": "pass"
+      "status": "fail"
     },
     {
       "description": "rake: tree-truth vs analyzer diff @dd5e851d75",
-      "detail": "0 files, coverage null%, unexplained null%",
+      "detail": "0 files; NOT COMPARABLE: baseline sampled 60/lang, run 200/lang",
       "id": "differential-java",
-      "status": "pass"
+      "status": "fail"
     },
     {
       "description": "rake: tree-truth vs analyzer diff @dd5e851d75",
-      "detail": "0 files, coverage null%, unexplained null%",
+      "detail": "0 files; NOT COMPARABLE: baseline sampled 60/lang, run 200/lang",
       "id": "differential-groovy",
-      "status": "pass"
+      "status": "fail"
     },
     {
       "description": "rake: tree-truth vs analyzer diff @dd5e851d75",
-      "detail": "0 files, coverage null%, unexplained null%",
+      "detail": "0 files; NOT COMPARABLE: baseline sampled 60/lang, run 200/lang",
       "id": "differential-vue",
-      "status": "pass"
+      "status": "fail"
     },
     {
       "description": "rake: tree-truth vs analyzer diff @dd5e851d75",
-      "detail": "0 files, coverage null%, unexplained null%",
+      "detail": "0 files; NOT COMPARABLE: baseline sampled 60/lang, run 200/lang",
       "id": "differential-svelte",
-      "status": "pass"
+      "status": "fail"
     },
     {
       "description": "rake: tree-truth vs analyzer diff @dd5e851d75",
-      "detail": "0 files, coverage null%, unexplained null%",
+      "detail": "0 files; NOT COMPARABLE: baseline sampled 60/lang, run 200/lang",
       "id": "differential-cpp",
-      "status": "pass"
+      "status": "fail"
     },
     {
       "description": "rake: tree-truth vs analyzer diff @dd5e851d75",
-      "detail": "3 files, coverage 100%, unexplained 0%",
+      "detail": "3 files; NOT COMPARABLE: baseline sampled 60/lang, run 200/lang",
       "id": "differential-c",
-      "status": "pass"
+      "status": "fail"
     },
     {
       "description": "rake: tree-truth vs analyzer diff @dd5e851d75",
-      "detail": "0 files, coverage null%, unexplained null%",
+      "detail": "0 files; NOT COMPARABLE: baseline sampled 60/lang, run 200/lang",
       "id": "differential-rust",
-      "status": "pass"
+      "status": "fail"
     },
     {
       "description": "rake: tree-truth vs analyzer diff @dd5e851d75",
-      "detail": "0 files, coverage null%, unexplained null%",
+      "detail": "0 files; NOT COMPARABLE: baseline sampled 60/lang, run 200/lang",
       "id": "differential-go",
-      "status": "pass"
+      "status": "fail"
     },
     {
       "description": "rake: tree-truth vs analyzer diff @dd5e851d75",
-      "detail": "0 files, coverage null%, unexplained null%",
+      "detail": "0 files; NOT COMPARABLE: baseline sampled 60/lang, run 200/lang",
       "id": "differential-zig",
-      "status": "pass"
+      "status": "fail"
     },
     {
       "description": "rake: tree-truth vs analyzer diff @dd5e851d75",
-      "detail": "0 files, coverage null%, unexplained null%",
+      "detail": "0 files; NOT COMPARABLE: baseline sampled 60/lang, run 200/lang",
       "id": "differential-csharp",
-      "status": "pass"
+      "status": "fail"
     },
     {
       "description": "rake: tree-truth vs analyzer diff @dd5e851d75",
-      "detail": "0 files, coverage null%, unexplained null%",
+      "detail": "0 files; NOT COMPARABLE: baseline sampled 60/lang, run 200/lang",
       "id": "differential-dart",
-      "status": "pass"
+      "status": "fail"
     },
     {
       "description": "rake: tree-truth vs analyzer diff @dd5e851d75",
-      "detail": "0 files, coverage null%, unexplained null%",
+      "detail": "0 files; NOT COMPARABLE: baseline sampled 60/lang, run 200/lang",
       "id": "differential-swift",
-      "status": "pass"
+      "status": "fail"
     },
     {
       "description": "rake: tree-truth vs analyzer diff @dd5e851d75",
-      "detail": "0 files, coverage null%, unexplained null%",
+      "detail": "0 files; NOT COMPARABLE: baseline sampled 60/lang, run 200/lang",
       "id": "differential-objc",
-      "status": "pass"
+      "status": "fail"
     },
     {
       "description": "rake: tree-truth vs analyzer diff @dd5e851d75",
-      "detail": "0 files, coverage null%, unexplained null%",
+      "detail": "0 files; NOT COMPARABLE: baseline sampled 60/lang, run 200/lang",
       "id": "differential-php",
-      "status": "pass"
+      "status": "fail"
     },
     {
       "description": "rake: tree-truth vs analyzer diff @dd5e851d75",
-      "detail": "60 files, coverage 100%, unexplained 0%",
+      "detail": "95 files; NOT COMPARABLE: baseline sampled 60/lang, run 200/lang",
       "id": "differential-ruby",
-      "status": "pass"
+      "status": "fail"
     }
   ],
   "claimLevel": "L1",
-  "commit": "439f9107a13a7e1ef3f4d72842c54fef4052e6be",
-  "committedAt": "2026-08-31T03:22:17+02:00",
+  "commit": "69484c162d6a6f1c0f760bb1564dc65fe6ff6969",
+  "committedAt": "2026-09-01T02:22:58+02:00",
   "data": {
     "corpusPins": {
       "rake": "dd5e851d75fd850a730aae4482f6ca59843ac869"
@@ -133,8 +133,8 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 4.7,
-          "maxMsPerFile": 12.6,
+          "avgMsPerFile": 4.1,
+          "maxMsPerFile": 10.6,
           "samplesTimed": 3
         },
         "samples": [],
@@ -322,21 +322,21 @@
         "unexplainedInAnalyzer": 0
       },
       "ruby": {
-        "analyzerEdges": 1174,
+        "analyzerEdges": 1876,
         "coveragePct": 100,
-        "coveredByAnalyzer": 1174,
-        "explainableByTree": 1174,
+        "coveredByAnalyzer": 1876,
+        "explainableByTree": 1876,
         "fabricationPct": 0,
-        "filesSampled": 60,
+        "filesSampled": 95,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 5.1,
-          "maxMsPerFile": 41.1,
-          "samplesTimed": 60
+          "avgMsPerFile": 4.9,
+          "maxMsPerFile": 32.7,
+          "samplesTimed": 95
         },
         "samples": [],
-        "treeTruthEdges": 1174,
+        "treeTruthEdges": 1876,
         "unexplainedInAnalyzer": 0
       },
       "rust": {
@@ -466,7 +466,7 @@
         "unexplainedInAnalyzer": 0
       }
     },
-    "samplingRule": "seeded 60 files/language"
+    "samplingRule": "seeded 200 files/language"
   },
   "governance": "docs/M14-HONESTY-CONTRACT.md",
   "issueId": "M14.0.F5",
