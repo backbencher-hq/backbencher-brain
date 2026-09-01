@@ -602,6 +602,48 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (c?.type === "identifier") localNames.add(c.text)
         }
       }
+      // Ruby 3 pattern matching (RUBYG1): `case v; in [a, b]`, `in {name:}`,
+      // `in Integer => n`, rightward `v => {x:}` — pattern identifiers BIND
+      // locals (same contract as left_assignment_list: a binding is a local,
+      // NEVER a bare-call edge). Before this rule every pattern binding
+      // leaked as a bogus calls edge BOTH in the pattern and in the match
+      // body (verified: `in [a, b]; a + b; end` emitted calls:a + calls:b x2).
+      // Bindings live as identifier children of array/find patterns, the
+      // value position of keyword_pattern (hash destructure), the right side
+      // of as_pattern (`Integer => n`), splat_parameter names (`[*head]`),
+      // and bare identifiers directly under in_clause (`in x`). Guard
+      // expressions (`if x > 0`) and match bodies (`then`) READ these
+      // names — registering them here makes those reads resolve as locals.
+      // `variable_reference_pattern` (`^n`) is deliberately EXCLUDED: it
+      // PINNS an outer local, it does not bind a new one.
+      if (sn.type === "array_pattern" || sn.type === "find_pattern" ||
+          sn.type === "as_pattern") {
+        for (let i = 0; i < sn.namedChildCount; i++) {
+          const c = sn.namedChild(i)
+          if (!c) continue
+          if (c.type === "identifier") {
+            localNames.add(c.text)
+          } else if (c.type === "splat_parameter") {
+            const nm = c.childForFieldName("name") ?? c.namedChild(0)
+            if (nm?.type === "identifier") localNames.add(nm.text)
+          }
+        }
+      } else if (sn.type === "keyword_pattern") {
+        // `{age: x}` binds x; `{name:}` binds name (shorthand — the name is
+        // the hash_key_symbol itself, not an identifier); `{point: [x, y]}`
+        // binds x/y through the nested array_pattern (recursed below).
+        for (let i = 0; i < sn.namedChildCount; i++) {
+          const c = sn.namedChild(i)
+          if (!c) continue
+          if (c.type === "identifier") localNames.add(c.text)
+          else if (c.type === "hash_key_symbol") localNames.add(this.stripSymbolColon(c.text))
+        }
+      } else if (sn.type === "in_clause") {
+        // Bare `in x` — the pattern is a lone identifier (first named child;
+        // the `then` body reads it and must resolve it as a local).
+        const first = sn.namedChild(0)
+        if (first?.type === "identifier") localNames.add(first.text)
+      }
       for (let i = sn.namedChildCount - 1; i >= 0; i--) {
         const child = sn.namedChild(i)
         if (child) scanStack.push(child)
