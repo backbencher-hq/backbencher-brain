@@ -221,7 +221,7 @@
       "code": "L5",
       "githubIssue": 494,
       "tool": "lsp-callhierarchy",
-      "status": "planned",
+      "status": "verified",
       "scope": "prepare/incoming/outgoing calls over the bounded traverseGraph engine",
       "acceptanceCriteria": [
         "prepareCallHierarchy item resolves to indexed symbols",
@@ -232,7 +232,19 @@
         "persist current gate evidence",
         "mutation checks pass",
         "document limitations"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see L5.json",
+        "verifierCommand": "npx tsx script/m24/verify-call-hierarchy.ts",
+        "evidenceFile": "L5.json",
+        "passed": 18,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 0,
+        "mutantsCaught": 4,
+        "mutantsTotal": 4
+      }
     },
     {
       "code": "V1",
