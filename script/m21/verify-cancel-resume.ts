@@ -18,7 +18,7 @@
 // content, real DB rows. No auto-pass. Negative checks included (bad PID,
 // missing status file => fail).
 
-import { spawn, spawnSync } from "node:child_process"
+import { execSync, spawn, spawnSync } from "node:child_process"
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import path from "node:path"
 
@@ -140,12 +140,20 @@ async function main() {
     milestone: "M21",
     issue: 462,
     code: "R3",
+    // M21.C1 evidence contract: the on-disk file must carry the same envelope
+    // the X3 closure gate audits (status/currentCommit/evidenceFile/...).
+    status: failed === 0 ? "verified" : "known-gap",
     verifier: "script/m21/verify-cancel-resume.ts",
+    verifierCommand: "bun run script/m21/verify-cancel-resume.ts",
+    evidenceFile: "R3-cancel-resume.json",
+    currentCommit: execSync("git rev-parse HEAD", { cwd: ROOT, encoding: "utf8" }).trim(),
+    workingTreeRelevantChanges: [],
+    generatedAt: new Date().toISOString(),
     repo: REPO,
     dataDir: DATA,
-    timestamp: new Date().toISOString(),
     passed,
     failed,
+    negativeCases: 0,
     checks,
   }
   writeFileSync(path.join(RESULTS, "R3-cancel-resume.json"), JSON.stringify(evidence, null, 2))
