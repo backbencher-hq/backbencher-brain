@@ -156,11 +156,15 @@ try {
     rows2.length > 0 && rows2.every((r) => r.embedding_model === "tfidf-v1"),
     JSON.stringify([...new Set(rows2.map((r) => r.embedding_model))]))
 
-  // ── 3. Bounded flush: blocked drainer must hit the deadline ─────────────
-  // Patch embedMany to a never-resolving promise: the drainer stays busy, the
-  // queue never empties, and a bounded flush must return resolved="timeout"
-  // with an honest pendingItems count instead of hanging forever.
-  ;(SemanticEngine as any).embedMany = (_texts: string[]) => new Promise(() => {})
+  // ── 3. Bounded flush: busy drainer must hit the deadline ────────────────
+  // Patch embedMany to a slow-but-finite call (3s): the drainer is genuinely
+  // busy, so a bounded flush must return resolved="timeout" with an honest
+  // pendingItems count instead of hanging. (The provider call is itself bound
+  // by BB_EMBEDDING_CALL_TIMEOUT_MS in production, so a hung provider can no
+  // longer wedge the queue permanently — the never-resolving-promise variant
+  // of this fixture is no longer representable without an env override.)
+  ;(SemanticEngine as any).embedMany = (_texts: string[]) =>
+    new Promise((r) => setTimeout(() => r([0.1, 0.2, 0.3]), 3000))
 
   const root3 = fixture(mkdtempSync(path.join(tmpdir(), "bb-e2-hang-")))
   roots.push(root3)
@@ -174,11 +178,91 @@ try {
   const dt = Date.now() - t0
   ;(SemanticEngine as any).embedMany = realEmbedMany
   check("E2 bounded flush returns promptly under deadline", dt < 10_000, `took ${dt}ms`)
-  check("E2 blocked drainer reports timeout (not drained)",
+  check("E2 busy drainer reports timeout (not drained)",
     flush3.resolved === "timeout", JSON.stringify(flush3))
   check("E2 timeout reports honest pendingItems", flush3.pendingItems >= 0, JSON.stringify(flush3))
-  // Drain the artificial hang for process hygiene.
-  await flushBackgroundEmbeddings({ timeoutMs: 5_000 }).catch(() => undefined)
+  // Drain the slow call for process hygiene.
+  await flushBackgroundEmbeddings({ timeoutMs: 20_000 }).catch(() => undefined)
+
+  // ── 3b. Empty-token symbol on provider failure is counted as skipped ────
+  // A symbol with no tokenizable content (short name, no repeated tokens)
+  // must exit the queue through a counter — the old fallback `continue`d
+  // silently, breaking the conservation invariant.
+  ;(SemanticEngine as any).embedMany = async () => { throw new Error("E2 fixture: provider unavailable") }
+  const root4 = fixture(mkdtempSync(path.join(tmpdir(), "bb-e2-tokens-")))
+  roots.push(root4)
+  // Single-letter names + no repeated tokens => tokenizeCodeForEmbedding
+  // returns [] for these symbols, which must exit as `skipped`.
+  writeFileSync(path.join(root4, "src", "tiny.ts"),
+    "export function g() { return }\nexport function h() { return }\n")
+  const pid4 = getProjectId(root4)
+  projects.push(pid4)
+  const before4 = snapshot(backgroundEmbedMetrics)
+  await indexProjectParallel(pid4, root4, { skipPostProcessing: true })
+  const flush4 = await flushBackgroundEmbeddings({ timeoutMs: 60_000 })
+  ;(SemanticEngine as any).embedMany = realEmbedMany
+  const after4 = snapshot(backgroundEmbedMetrics)
+  const d4 = deltas(before4, after4)
+  check("E2 empty-token symbols keep metric conservation", conserved(d4), JSON.stringify(d4))
+  check("E2 empty-token symbols exit as skipped (not silently dropped)", d4.skipped > 0, `skipped=${d4.skipped}`)
+
+  // ── 3c. Mid-job provider failure: no double-count, no duplicate rows ────
+  // Provider succeeds for chunk 1 then dies: items already embedded must not
+  // be re-processed by the TF-IDF fallback (double count + duplicate
+  // :embed/:tfidf rows). Needs a multi-chunk job (> 100 symbols).
+  function manySymbols(dir: string) {
+    mkdirSync(path.join(dir, "src"), { recursive: true })
+    const lines: string[] = []
+    for (let i = 0; i < 250; i++) lines.push(`export function fn${i}(a: number): number { return a + ${i} }`)
+    writeFileSync(path.join(dir, "src", "many.ts"), lines.join("\n"))
+    return dir
+  }
+  let embedCalls = 0
+  ;(SemanticEngine as any).embedMany = async (docs: string[]) => {
+    embedCalls++
+    if (embedCalls === 2) throw new Error("E2 fixture: provider died mid-job")
+    return docs.map((d, i) => [i, 1 - i / Math.max(1, docs.length)])
+  }
+  const root5 = manySymbols(mkdtempSync(path.join(tmpdir(), "bb-e2-midjob-")))
+  roots.push(root5)
+  const pid5 = getProjectId(root5)
+  projects.push(pid5)
+  const before5 = snapshot(backgroundEmbedMetrics)
+  await indexProjectParallel(pid5, root5, { skipPostProcessing: true })
+  const flush5 = await flushBackgroundEmbeddings({ timeoutMs: 120_000 })
+  ;(SemanticEngine as any).embedMany = realEmbedMany
+  const after5 = snapshot(backgroundEmbedMetrics)
+  const d5 = deltas(before5, after5)
+  check("E2 mid-job provider failure: metric conservation holds", conserved(d5), JSON.stringify(d5))
+  check("E2 mid-job failure actually spanned multiple embed calls", embedCalls >= 2, `calls=${embedCalls}`)
+  const raw5 = await BrainDatabase.getRawInstance(pid5)
+  const dupRows = raw5.prepare(
+    "SELECT entity_id, COUNT(DISTINCT embedding_model) c FROM brain_semantic_embedding WHERE project_id=? GROUP BY entity_id HAVING c > 1"
+  ).all(pid5) as any[]
+  check("E2 no symbol has both a real and a tfidf vector row (fallback skipped already-embedded items)",
+    dupRows.length === 0, `dups=${dupRows.length}`)
+
+  // ── 3d. Project removed mid-job: only the unaccounted remainder counts ──
+  // Provider succeeds once, but the project vanishes before chunk 2; the
+  // remainder must be counted as skipped WITHOUT double-counting the items
+  // that were already embedded.
+  const root6 = manySymbols(mkdtempSync(path.join(tmpdir(), "bb-e2-removed-")))
+  roots.push(root6)
+  ;(SemanticEngine as any).embedMany = async (docs: string[]) => {
+    rmSync(root6, { recursive: true, force: true }) // the project disappears mid-job
+    return docs.map((d, i) => [i, 0.5])
+  }
+  const pid6 = getProjectId(root6)
+  projects.push(pid6)
+  const before6 = snapshot(backgroundEmbedMetrics)
+  await indexProjectParallel(pid6, root6, { skipPostProcessing: true })
+  const flush6 = await flushBackgroundEmbeddings({ timeoutMs: 120_000 })
+  ;(SemanticEngine as any).embedMany = realEmbedMany
+  const after6 = snapshot(backgroundEmbedMetrics)
+  const d6 = deltas(before6, after6)
+  check("E2 mid-job project removal: metric conservation holds", conserved(d6), JSON.stringify(d6))
+  check("E2 mid-job removal counts the remainder as skipped", d6.skipped > 0 && d6.embedded === 0,
+    `skipped=${d6.skipped} embedded=${d6.embedded}`)
 
   // ── 4. Regression guard: empty provider result must not bypass fallback ──
   const src = readFileSync(path.join(ROOT, "src/ast/parallel-indexer.ts"), "utf8")
@@ -187,7 +271,9 @@ try {
   negative("E2 drainer treats empty provider results as failures",
     /embeddings\.length === 0/.test(src))
   negative("E2 missing vectors inside a result are counted, not skipped",
-    /backgroundEmbedMetrics\.failed\+\+/.test(src))
+    /backgroundEmbedMetrics\.failed\s*\+=/.test(src))
+  negative("E2 a hung provider call cannot wedge the drainer (call is bounded)",
+    /withTimeout\(/.test(src) && /EMBED_CALL_TIMEOUT_MS/.test(src))
   for (const counter of ["queued", "dropped", "embedded", "fallback", "failed", "skipped"]) {
     check(`E2 counter '${counter}' is incremented in the drainer`,
       new RegExp(`backgroundEmbedMetrics\\.${counter}\\s*(\\+=|\\+\\+|\\=)`).test(src))
