@@ -180,6 +180,80 @@ try {
   } catch {}
   check("D2 existing DB opens through the adapter and gains WAL", reopen.status === 0 && legacyOk, `journal=${legacyJournal} stderr=${reopen.stderr.slice(0, 200)}`)
 
+  // ── 6. Node adapter REALLY executed (not source-audited) ────────────────
+  // tsx + better-sqlite3 are present in this environment, so the Node side of
+  // the cross-runtime claim is verifiable, not just read. Two probes:
+  //   (a) policy readback through src/storage/db.node.ts on a fresh DB;
+  //   (b) real two-process contention under Node: a better-sqlite3 holder
+  //       holds BEGIN IMMEDIATE; a second process's write must COMMIT
+  //       (recovered by busy_timeout), and a permanent lock must error.
+  const nodeDb = path.join(work, "node-policy.db")
+  const nodeProbe = `
+import { openDatabase } from ${JSON.stringify(path.join(ROOT, "src/storage/db.node.ts"))}
+const db = openDatabase(${JSON.stringify(nodeDb)})
+const j = db.prepare("PRAGMA journal_mode").get() as any
+const b = db.prepare("PRAGMA busy_timeout").get() as any
+const s = db.prepare("PRAGMA synchronous").get() as any
+console.log(JSON.stringify({ journal: String(j.journal_mode ?? j), busy: Number(b.timeout ?? b.busy_timeout ?? b), sync: Number(s.synchronous ?? s) }))
+db.close()
+`
+  const tsx = spawnSync("which", ["tsx"], { encoding: "utf8" }).stdout.trim()
+  const nodeProbeRes = tsx ? spawnSync(tsx, ["-e", nodeProbe], { cwd: ROOT, encoding: "utf8", timeout: 30_000 }) : null
+  let nodeJournal = "", nodeBusy = -1, nodeSync = -1
+  try {
+    const parsed = JSON.parse(nodeProbeRes?.stdout?.trim() ?? "")
+    nodeJournal = String(parsed.journal ?? "")
+    nodeBusy = Number(parsed.busy ?? -1)
+    nodeSync = Number(parsed.sync ?? -1)
+  } catch {}
+  check("D2 tsx runner is available (node adapter is executable, not just source-audited)", tsx.length > 0, `tsx=${tsx || "not on PATH"}`)
+  check("D2 node adapter executes its open path", nodeProbeRes?.status === 0, nodeProbeRes?.stderr?.slice(0, 300) ?? "tsx unavailable")
+  check("D2 node live connection reports journal_mode=wal", nodeJournal.toLowerCase() === "wal", `journal=${nodeJournal}`)
+  check("D2 node live connection reports busy_timeout=5000", nodeBusy === 5000, `busy=${nodeBusy}`)
+  check("D2 node live connection reports synchronous=NORMAL(1)", nodeSync === 1, `sync=${nodeSync}`)
+
+  // Node-side contention: holder (BEGIN IMMEDIATE, 800ms) vs contender write.
+  const nodeChild = `
+import Database from "better-sqlite3"
+const db = new Database(process.argv[1])
+db.pragma("journal_mode = WAL")
+db.pragma("busy_timeout = 5000")
+const mode = process.argv[2]
+if (mode === "hold") {
+  db.exec("BEGIN IMMEDIATE")
+  db.prepare("INSERT INTO items(value) VALUES (?)").run("holder")
+  process.stdout.write("LOCK_HELD")
+  setTimeout(() => { db.exec("COMMIT"); process.stdout.write("|HOLDER_COMMITTED"); db.close() }, Number(process.argv[3] || 800))
+} else if (mode === "contend") {
+  const started = Date.now()
+  try {
+    db.prepare("INSERT INTO items(value) VALUES (?)").run("contender")
+    process.stdout.write("CONTENDER_COMMITTED|" + (Date.now() - started))
+  } catch (e: any) {
+    process.stdout.write("CONTENDER_ERROR|" + (Date.now() - started) + "|" + e.message)
+    process.exitCode = 3
+  } finally { db.close() }
+}
+`
+  const initNode = spawnSync(tsx, ["-e", `
+import Database from "better-sqlite3"
+const db = new Database(${JSON.stringify(nodeDb)})
+db.exec("CREATE TABLE items (id INTEGER PRIMARY KEY, value TEXT NOT NULL)")
+db.close()
+`], { cwd: ROOT, encoding: "utf8" })
+  check("D2 node contention table created", initNode.status === 0, initNode.stderr?.slice(0, 200))
+  // Non-blocking spawn so the holder's 800ms lock overlaps the contender
+  // (same pattern as the Bun-side contention above).
+  const nodeHold = (Bun as any).spawn([tsx, "-e", nodeChild, nodeDb, "hold", "800"], { cwd: ROOT, stdout: "pipe", stderr: "pipe", stdin: "ignore" })
+  await sleep(150)
+  const nodeContend = (Bun as any).spawn([tsx, "-e", nodeChild, nodeDb, "contend"], { cwd: ROOT, stdout: "pipe", stderr: "pipe", stdin: "ignore" })
+  const [nh, nc] = await Promise.all([collect(nodeHold), collect(nodeContend)])
+  const nodeCommitted = /^CONTENDER_COMMITTED\|/.test(nc.stdout)
+  const nodeWait = nodeCommitted ? Number(nc.stdout.split("|")[1]) : -1
+  check("D2 node holder committed its write", nh.stdout.includes("LOCK_HELD") && nh.stdout.includes("HOLDER_COMMITTED"), JSON.stringify(nh.stdout))
+  check("D2 node contender committed within the busy timeout (cross-runtime recovery)", nodeCommitted, nc.stdout)
+  check("D2 node contender really waited for the lock", nodeCommitted && nodeWait >= 300, `wait=${nodeWait}ms`)
+
   const commit = spawnSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).stdout.trim()
   const status = passed === checks && negatives >= 2 ? "verified" : "known-gap"
   const result = {
@@ -189,10 +263,15 @@ try {
     verifierCommand: "bun run script/m21/verify-sqlite-runtime-policy.ts",
     evidenceFile: "D2.json", generatedAt: new Date().toISOString(),
     policy: { journalMode: "WAL", busyTimeoutMs: 5000, synchronous: "NORMAL", appliedOnReadWriteOpensOnly: true },
-    details: { liveProbe: { journal: liveJournal, busyTimeout: liveBusy, synchronous: liveSync }, contentionWaitMs: contenderWait },
+    details: {
+      liveProbe: { journal: liveJournal, busyTimeout: liveBusy, synchronous: liveSync },
+      nodeProbe: { journal: nodeJournal, busyTimeout: nodeBusy, synchronous: nodeSync },
+      contentionWaitMs: contenderWait,
+      nodeContentionWaitMs: nodeWait,
+    },
     limitations: [
-      "Node adapter is source-audited for the identical policy; executing it requires a Node TypeScript runner (tsx), recorded as unavailable otherwise.",
-      "Permanent-lock fail-closed is tested with a 12s holder; the contender's SQLITE_BUSY after the 5s busy timeout is the fail-closed path."
+      "Permanent-lock fail-closed is tested with a 12s holder; the contender's SQLITE_BUSY after the 5s busy timeout is the fail-closed path.",
+      "journal_mode=WAL is read back as engaged on the live connections here; a filesystem that cannot enable WAL would degrade silently (the pragma returns the old mode without throwing), so the policy is verified on this machine, not guaranteed on exotic filesystems."
     ]
   }
   mkdirSync(path.join(ROOT, "validation/m21/results"), { recursive: true })
