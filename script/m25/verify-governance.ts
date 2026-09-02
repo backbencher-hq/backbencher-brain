@@ -114,7 +114,7 @@ const ISSUE_RELEVANT_FILES: Record<string, string[]> = {
   E2: ["ide/vscode/src/auto-index.ts", "ide/vscode/src/extension.ts", "ide/vscode/package.json", "script/m25/verify-auto-index.ts"],
   E3: ["ide/vscode/src/status-model.ts", "ide/vscode/src/extension.ts", "ide/vscode/package.json", "script/m25/verify-status-surface.ts", "docs/m24/TOOL-DOC.md"],
   E4: ["ide/vscode/package.json", "ide/vscode/.vscodeignore", "ide/vscode/publish-openvsx.mjs", "ide/vscode/esbuild-extension.mjs", "ide/vscode/README.md", "ide/vscode/CHANGELOG.md", "LICENSE", "script/m25/verify-packaging.ts"],
-  V1: ["script/m25/harness", "script/m25/verify-harness.ts"],
+  V1: ["script/m25/feature-assertions.ts", "script/m25/vscode-test-runner.ts", "script/m25/fork-runner.ts", "script/m25/verify-harness-core.ts"],
   E5: ["script/m25/verify-vscode-e2e.ts"],
   E6: ["script/m25/verify-forks.ts"],
   E7: ["script/m25/verify-cross-platform.ts"],
