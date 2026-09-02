@@ -26,9 +26,22 @@ bun run src/cli/index.ts search "calculateTotal" --dir ~/my-project
 | `bb search <query> [--dir] [--limit N] [--language LANG]` | Symbol search with freshness flags |
 | `bb health [dir]` | Index stats + file freshness sample |
 | `bb mcp [--dir DIR]` | Start the MCP server over stdio |
+| `bb setup` | Interactive embedding provider setup — key validated before save, config written 0600 |
+| `bb setup show` | Show the effective embedding config — key as last-4 fingerprint only, never the full key |
+| `bb doctor [--dir] [--fix]` | Diagnose embedding setup/index consistency; `--fix` repairs file permissions to 0600 only |
+| `bb -v` / `bb version` | Print the version (same as `bb --version`) |
 
 Indexes live at `~/.bb/projects/<sha1-of-dir>/brain.db` — no opencode, no
 global config required.
+
+### Help and manual
+
+Every command documents itself: `bb --help` lists all commands, and
+`bb <command> --help` (or `bb help <command>`) shows the options of that
+command. `bb -v`, `bb version`, and `bb --version` all print the version.
+A mistyped command suggests the closest real one (`bb docter` suggests
+`doctor`) and points to `bb --help`. After `npm install -g`, the full
+manual is available as `man bb`.
 
 ## MCP server (Claude Code, Cursor, VS Code, opencode, …)
 
