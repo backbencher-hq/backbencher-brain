@@ -4,20 +4,8 @@
   "description": "Universal code intelligence: index any project with 40+ language analyzers, query via CLI or any MCP host (Claude Code, Cursor, VS Code).",
   "type": "module",
   "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "bin": {
-    "bb": "./bin/bb"
-  },
-  "files": [
-    "dist/",
-    "wasm/",
-    "bin/",
-    "docs/data/",
-    "docs/tools/",
-    "README.md",
-    "EMBEDDINGS.md",
-    "CHANGELOG.md"
-  ],
+  "types": "./dist/index.d.ts",  "bin": {"bb": "./bin/bb"},
+  "man": ["./docs/man/bb.1"],  "files": ["dist/", "wasm/", "bin/", "docs/data/", "docs/tools/", "docs/man/", "README.md", "EMBEDDINGS.md", "CHANGELOG.md"],
   "exports": {
     ".": "./dist/index.js",
     "./*": "./dist/*.js"
