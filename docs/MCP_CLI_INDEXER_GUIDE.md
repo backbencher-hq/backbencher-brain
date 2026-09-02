@@ -368,6 +368,18 @@ protection, validation, atomic writes, rollback, formatting, and reindexing.
 {"mode":"update","symbolName":"helper","newContent":"return 2","dryRun":true}
 ```
 
+### `bb_index`
+
+Modes: `auto`, `file`, `dir`. This is the agent-fresh reindex tool: after writing or
+editing a file, call it to make that file (or an incremental directory set) visible in
+the index immediately instead of waiting for a full index run. A file reindex updates
+only that file's evidence; cross-file relationships refresh on the next incremental
+dir index. Write-capable against index data only; it never modifies source files.
+
+```json
+{"path":"src/new-file.ts"}
+```
+
 ### `bb_health`
 
 Reports counts, schema, freshness, embeddings, runtime, integrity, and optional analysis

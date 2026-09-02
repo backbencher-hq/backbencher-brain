@@ -52,6 +52,38 @@ const GATES: GateSpec[] = [
     mutatePattern: { marker: "  // M31.T1: scoped graphs require a target", until: "  // M31.T1: confidenceThreshold" },
   },
   {
+    name: "m31-tool-docs-deep",
+    script: "script/m31/verify-tool-docs-deep.ts",
+    surfaces: [{ from: "docs/tools/bb_search.md", to: "docs/tools/bb_search.md" }],
+    mutate: (sandbox) => {
+      // Mutation A: advertise a mode the registry cannot execute.
+      const p = path.join(sandbox, "docs/tools/bb_search.md")
+      writeFileSync(p, readFileSync(p, "utf8").replace("- Modes: `symbols`, `content`, `symbol`, `file`", "- Modes: `symbols`, `content`, `symbol`, `file`, `teleport`"))
+    },
+  },
+  {
+    name: "m31-tool-docs-deep-badschema",
+    script: "script/m31/verify-tool-docs-deep.ts",
+    surfaces: [{ from: "docs/tools/bb_search.md", to: "docs/tools/bb_search.md" }],
+    mutate: (sandbox) => {
+      // Mutation B: make an example violate the schema (query: number instead of string).
+      const p = path.join(sandbox, "docs/tools/bb_search.md")
+      writeFileSync(p, readFileSync(p, "utf8").replace('`{"mode":"symbols","query":"handleRequest","limit":5}`', '`{"mode":"symbols","query":42,"limit":5}`'))
+    },
+  },
+  {
+    name: "m31-tool-docs-deep-stale",
+    script: "script/verify-tool-docs.ts",
+    legacy: true,
+    surfaces: [{ from: "docs/tools/bb_search.md", to: "docs/tools/bb_search.md" }],
+    mutate: (sandbox) => {
+      // Mutation C (stale stamp): any doc drift must fail the byte gate that
+      // D1's freshness check executes.
+      const p = path.join(sandbox, "docs/tools/bb_search.md")
+      writeFileSync(p, readFileSync(p, "utf8").replace("## Returns", "## Returns TAMPERED"))
+    },
+  },
+  {
     name: "tool-docs-generator",
     script: "script/verify-tool-docs.ts",
     legacy: true,
@@ -73,12 +105,9 @@ const GATES: GateSpec[] = [
         ? [{ from: "validation/m31/results/gate-selftest.json", to: "validation/m31/results/gate-selftest.json" }]
         : []),
       // verified ledger entries require their evidence files on disk (governance check 3):
-      ...(existsSync(path.join(ROOT, "validation/m31/results/G1.json"))
-        ? [{ from: "validation/m31/results/G1.json", to: "validation/m31/results/G1.json" }]
-        : []),
-      ...(existsSync(path.join(ROOT, "validation/m31/results/T1.json"))
-        ? [{ from: "validation/m31/results/T1.json", to: "validation/m31/results/T1.json" }]
-        : []),
+      ...readdirSync(path.join(ROOT, "validation/m31/results"))
+        .filter((f) => /^[A-Z][A-Za-z0-9-]*\.json$/.test(f))
+        .map((f) => ({ from: `validation/m31/results/${f}`, to: `validation/m31/results/${f}` })),
       // governance audits the M31 verifier sources themselves (auto-pass grep):
       { from: "script/m31/verify-governance.ts", to: "script/m31/verify-governance.ts" },
       { from: "script/m31/verify-gate-selftest.ts", to: "script/m31/verify-gate-selftest.ts" },
@@ -146,6 +175,13 @@ for (const gate of GATES) {
     for (const s of gate.surfaces) {
       mkdirSync(path.dirname(path.join(sandbox, s.to)), { recursive: true })
       copyFileSync(path.join(ROOT, s.from), path.join(sandbox, s.to))
+    }
+    // Gates that read the whole docs/tools directory need all 11 docs in the sandbox.
+    if (gate.surfaces.some((s) => s.to.startsWith("docs/tools/")) && gate.surfaces.length === 1) {
+      mkdirSync(path.join(sandbox, "docs/tools"), { recursive: true })
+      for (const f of readdirSync(path.join(ROOT, "docs/tools"))) {
+        copyFileSync(path.join(ROOT, "docs/tools", f), path.join(sandbox, "docs/tools", f))
+      }
     }
 
     if (gate.legacy) {
