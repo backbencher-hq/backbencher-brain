@@ -4,16 +4,16 @@
   "milestone": "M25",
   "status": "known-gap",
   "checks": 69,
-  "passed": 68,
-  "failed": 1,
+  "passed": 69,
+  "failed": 0,
   "negativeCases": 10,
-  "currentCommit": "90fd7619619fa6478ec14191a6bfac46ab7484f4",
+  "currentCommit": "ebfd3617430e5c39df6c6170dbf736a3d25692c0",
   "workingTreeRelevantChanges": [
     "script/m25/verify-packaging.ts"
   ],
   "verifierCommand": "npx tsx script/m25/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-02T16:01:05.000Z",
+  "generatedAt": "2026-09-02T16:04:44.843Z",
   "ledger": "validation/m25/results/manifest.json",
   "m24Bar": {
     "ledgerStatus": "closed",
