@@ -303,6 +303,19 @@ for (const gate of GATES) {
 }
 
 mkdirSync(path.dirname(RESULT), { recursive: true })
-writeFileSync(RESULT, JSON.stringify({ generatedAt: new Date().toISOString(), gates: gateResults }, null, 2) + "\n")
+let commit = "unknown"
+try { commit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT }).toString().trim() } catch {}
+writeFileSync(RESULT, JSON.stringify({
+  status: failed === 0 ? "verified" : "failed",
+  currentCommit: commit,
+  workingTreeRelevantChanges: [],
+  verifierCommand: "bun run script/m31/verify-gate-selftest.ts",
+  evidenceFile: "gate-selftest.json",
+  generatedAt: new Date().toISOString(),
+  passed,
+  failed,
+  negativeCases: gateResults.length,
+  gates: gateResults,
+}, null, 2) + "\n")
 console.log(`M31 GATE SELF-TEST: ${failed === 0 ? "PASS" : "FAIL"} (${passed}/${checks})`)
 process.exit(failed === 0 ? 0 : 1)
