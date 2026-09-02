@@ -4,8 +4,13 @@
   "description": "Honest code navigation from the Backbencher index: hover with evidence tier and staleness, definition, references, symbols, call hierarchy. A complement to your editor's own language servers — graph, navigation, and evidence only.",
   "version": "0.1.0",
   "publisher": "backbencher",
-  "license": "SEE LICENSE IN ../../LICENSE",
-  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/backbencher-hq/backbencher-brain"
+  },
+  "homepage": "https://github.com/backbencher-hq/backbencher-brain/tree/main/ide/vscode",
+  "bugs": "https://github.com/backbencher-hq/backbencher-brain/issues",
   "engines": {
     "vscode": "^1.85.0"
   },

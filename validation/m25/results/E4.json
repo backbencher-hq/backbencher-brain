@@ -1,0 +1,27 @@
+{
+  "issue": "M25.E4",
+  "code": "E4",
+  "milestone": "M25",
+  "status": "verified",
+  "checks": 28,
+  "passed": 28,
+  "failed": 0,
+  "mutantsCaught": 4,
+  "mutantsTotal": 4,
+  "negativeCases": 4,
+  "currentCommit": "2993f2b3639dc64c1935b9e9cf5405c194ecdb37",
+  "verifierCommand": "npx tsx script/m25/verify-packaging.ts",
+  "evidenceFile": "E4.json",
+  "publishRecord": "validation/m25/results/E4-openvsx.json",
+  "vsix": "ide/vscode/bb-lsp-vscode-0.1.0.vsix",
+  "generatedAt": "2026-09-02T15:32:10.607Z",
+  "os": "linux",
+  "verdict": {
+    "realComponentFailures": 0
+  },
+  "limitations": [
+    "Live OpenVSX publish is honestly blocked awaiting owner credentials (OVSX_PAT); the dry-run records the real packaged artifact and the exact publish command — see E4-openvsx.json.",
+    "The VSIX is built from the working tree at HEAD after a clean dist rebuild; a CI job (E7 OS matrix) remains the declared place for scheduled reproducibility runs.",
+    "Marketplace (vsce publish to Visual Studio marketplace) is out of E4 scope: the issue names OpenVSX as the one-registry path for VS Code + forks; a marketplace listing is a declared owner decision, not silently skipped."
+  ]
+}
