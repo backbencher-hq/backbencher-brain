@@ -18,12 +18,12 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "9049118a3e34c8a43db7977f0ebbebc19f871099",
+      "currentCommit": "684467a96de6fc8ea5bc5ac4c237f9d76aa60db0",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m31/verify-governance.ts",
       "evidenceFile": "G1.json",
-      "generatedAt": "2026-09-02T15:35:07.842Z",
-      "passed": 31,
+      "generatedAt": "2026-09-02T16:10:43.298Z",
+      "passed": 29,
       "failed": 0,
       "negativeCases": 2
     }
@@ -46,11 +46,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "9049118a3e34c8a43db7977f0ebbebc19f871099",
+      "currentCommit": "684467a96de6fc8ea5bc5ac4c237f9d76aa60db0",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m31/verify-tool-docs-deep.ts",
       "evidenceFile": "D1.json",
-      "generatedAt": "2026-09-02T15:35:30.821Z",
+      "generatedAt": "2026-09-02T16:09:20.401Z",
       "passed": 140,
       "failed": 0,
       "negativeCases": 1
@@ -75,11 +75,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "9049118a3e34c8a43db7977f0ebbebc19f871099",
+      "currentCommit": "684467a96de6fc8ea5bc5ac4c237f9d76aa60db0",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m31/verify-bb-docs-truth.ts",
       "evidenceFile": "D2.json",
-      "generatedAt": "2026-09-02T15:35:31.006Z",
+      "generatedAt": "2026-09-02T16:09:20.956Z",
       "passed": 57,
       "failed": 0,
       "negativeCases": 1
@@ -103,11 +103,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "9049118a3e34c8a43db7977f0ebbebc19f871099",
+      "currentCommit": "684467a96de6fc8ea5bc5ac4c237f9d76aa60db0",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m31/verify-tools-overview.ts",
       "evidenceFile": "D3.json",
-      "generatedAt": "2026-09-02T15:35:31.070Z",
+      "generatedAt": "2026-09-02T16:09:21.110Z",
       "passed": 109,
       "failed": 0,
       "negativeCases": 4
@@ -131,11 +131,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "9049118a3e34c8a43db7977f0ebbebc19f871099",
+      "currentCommit": "684467a96de6fc8ea5bc5ac4c237f9d76aa60db0",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m31/tool-mode-corpus.ts --check",
       "evidenceFile": "T1.json",
-      "generatedAt": "2026-09-02T15:35:30.548Z",
+      "generatedAt": "2026-09-02T16:09:19.561Z",
       "passed": 67,
       "failed": 0,
       "negativeCases": 22
@@ -145,7 +145,7 @@
     "code": "X1",
     "githubIssue": 560,
     "tool": "closure",
-    "status": "blocked",
+    "status": "verified",
     "scope": "final closure gate: all M31 gates verified at same HEAD, staleness scoped to doc-adjacent surfaces",
     "acceptanceCriteria": [
       "X1 passes with all subordinate gates verified at the same HEAD",
@@ -157,14 +157,14 @@
       "manifest status flip only at passing HEAD"
     ],
     "evidence": {
-      "status": "blocked",
-      "currentCommit": "9049118a3e34c8a43db7977f0ebbebc19f871099",
+      "status": "verified",
+      "currentCommit": "684467a96de6fc8ea5bc5ac4c237f9d76aa60db0",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m31/verify-closure.ts",
       "evidenceFile": "X1.json",
-      "generatedAt": "2026-09-02T15:35:31.074Z",
-      "passed": 18,
-      "failed": 1,
+      "generatedAt": "2026-09-02T16:10:48.583Z",
+      "passed": 19,
+      "failed": 0,
       "negativeCases": 14
     }
   }
