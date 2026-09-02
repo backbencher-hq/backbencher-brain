@@ -144,7 +144,7 @@
       "code": "S3",
       "githubIssue": 832005,
       "tool": "cli",
-      "status": "planned",
+      "status": "verified",
       "scope": "bb doctor --fix: repairs config file mode to 0600 only; dry-run report default; every mutation printed; refuses key/index/config-content changes",
       "acceptanceCriteria": [
         "dry-run is the default and --fix is explicit",
@@ -154,7 +154,17 @@
       "closureRequirements": [
         "verifier proves mode repair, print-every-change, and refusal mutants",
         "evidence at current commit with negative cases"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "05ecb8904caf5a6b04a2604984d55ca7bd645aa2",
+        "verifierCommand": "npx tsx script/m32/verify-doctor-fix.ts",
+        "evidenceFile": "S3.json",
+        "generatedAt": "2026-09-02T03:57:40.502Z",
+        "passed": 27,
+        "failed": 0,
+        "negativeCases": 5
+      }
     },
     {
       "code": "H1",

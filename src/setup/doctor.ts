@@ -20,7 +20,7 @@
 // Exit code: 0 when healthy, 1 when at least one FAIL-level finding exists
 // (so scripts/CI can branch). WARN findings do not change the exit code.
 
-import { existsSync, readFileSync, statSync } from "node:fs"
+import { existsSync, readFileSync, statSync, chmodSync } from "node:fs"
 import { createRequire } from "node:module"
 import path from "node:path"
 import { bbDataDir } from "../util/bb-data-dir"
@@ -211,4 +211,105 @@ export function renderDoctorReport(r: DoctorReport): string {
     if (f.fix) lines.push(`  Çözüm: ${f.fix}`)
   }
   return lines.join("\n") + "\n"
+}
+
+// --- M32.S3: bb doctor --fix -------------------------------------------------
+//
+// The ONLY mutating arm of doctor. Contract (master plan, completion bar 3):
+//   - dry-run is the default; mutation requires apply=true
+//   - repairs ONLY file permissions of embedding config files to 0600
+//   - prints every change it makes (or would make, in dry-run)
+//   - refuses everything else: no key material, no config content, no index,
+//     no other files — a fix request outside the permission scope is a
+//     refusal with an explanatory message, never a silent no-op
+
+export type FixAction = {
+  id: string
+  file: string
+  fromMode?: number
+  toMode: 0o600
+}
+
+export type FixRefusal = {
+  id: string
+  reason: string
+}
+
+export type FixPlan = {
+  actions: FixAction[]
+  refusals: FixRefusal[]
+}
+
+// Maximum number of permission repairs per run — a safety valve against
+// pathological state; doctor is a local diagnostic, not a batch tool.
+const MAX_FIX_ACTIONS = 8
+
+export function planDoctorFixes(opts: {
+  cwd?: string
+  env?: Record<string, string | undefined>
+  dataDir?: string
+}): FixPlan {
+  const cwd = opts.cwd ?? process.cwd()
+  const env = opts.env ?? process.env
+  const dataDir = opts.dataDir ?? bbDataDir()
+  const state = describeEmbeddingConfig(cwd, env, dataDir)
+
+  const actions: FixAction[] = []
+  const refusals: FixRefusal[] = []
+  for (const t of state.tiers) {
+    if (t.fileMode !== undefined && t.fileMode !== 0o600 && t.file) {
+      if (actions.length >= MAX_FIX_ACTIONS) {
+        refusals.push({ id: `mode-${t.tier}`, reason: `onarım sınırı aşıldı (${MAX_FIX_ACTIONS}) — beklenmedik durum, manuel inceleme gerekli` })
+        continue
+      }
+      actions.push({ id: `mode-${t.tier}`, file: t.file, fromMode: t.fileMode, toMode: 0o600 })
+    }
+  }
+  return { actions, refusals }
+}
+
+export function renderFixPlan(plan: FixPlan, applied: boolean): string {
+  const lines: string[] = []
+  lines.push(applied ? "bb doctor --fix — uygulandı" : "bb doctor --fix — kuru çalışma (değişiklik yok; uygulamak için --fix)")
+  lines.push("")
+  if (plan.actions.length === 0 && plan.refusals.length === 0) {
+    lines.push("✓ Düzeltilecek izin sorunu yok.")
+  }
+  for (const a of plan.actions) {
+    const verb = applied ? "düzeltelecekti" : "düzeltiliyor"
+    lines.push(`${applied ? "✓" : "·"} ${a.file}: izin ${a.fromMode?.toString(8)} -> ${a.toMode.toString(8)} ${applied ? "(uygulandı)" : "(öneri)"}`)
+    void verb
+  }
+  for (const ref of plan.refusals) {
+    lines.push(`✗ REDDEDİLDİ ${ref.id}: ${ref.reason}`)
+  }
+  return lines.join("\n") + "\n"
+}
+
+export function applyDoctorFixes(opts: {
+  cwd?: string
+  env?: Record<string, string | undefined>
+  dataDir?: string
+  /** default false: dry-run. Only an explicit apply mutates. */
+  apply?: boolean
+}): { plan: FixPlan; applied: boolean } {
+  const plan = planDoctorFixes(opts)
+  const applied = opts.apply === true
+  if (applied) {
+    for (const a of plan.actions) {
+      // The action targets a config file identified by the diagnosis itself;
+      // re-verify it is still a regular file right before chmod.
+      try {
+        const st = statSync(a.file)
+        if (!st.isFile()) throw new Error("not a regular file")
+        chmodSync(a.file, a.toMode)
+      } catch {
+        // File vanished or changed between plan and apply: surface as refusal
+        // rather than mutating something unverified.
+        plan.refusals.push({ id: a.id, reason: "dosya plan ile uygulama arasında değişti — manuel inceleme gerekli" })
+        plan.actions = plan.actions.filter((x) => x !== a)
+      }
+    }
+  }
+  return { plan, applied }
 }
