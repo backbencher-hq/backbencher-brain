@@ -21,7 +21,7 @@
 // verifier (script/m30/verify-setup.ts), matching engine.ts's approach for
 // pre-existing Effect/Provider migration debt.
 
-import { existsSync, readFileSync, writeFileSync, statSync, mkdirSync } from "node:fs"
+import { existsSync, readFileSync, writeFileSync, statSync, mkdirSync, renameSync, chmodSync } from "node:fs"
 import path from "node:path"
 import * as readline from "node:readline"
 import { bbDataDir } from "../util/bb-data-dir"
@@ -58,6 +58,7 @@ export const PROVIDERS = [
 export type EmbeddingSetupState = {
   configured: boolean
   source: "env" | "global" | "project" | "none"
+  skipped?: boolean
 }
 
 function readJson(p) {
@@ -70,12 +71,15 @@ function readJson(p) {
 // Mirrors Config.get() precedence: env > ~/.bb/config.json > bb.json.
 // A tier "counts" only when it can actually produce embeddings: base URL AND
 // model must both be present (isEmbeddingConfigured's contract).
+// skipped: the user explicitly chose "Atla" in the wizard — remembered so the
+// wizard only ever runs once. `bb setup` (or deleting the key) re-enables it.
 export function hasEmbeddingConfig(cwd = process.cwd(), env = process.env): EmbeddingSetupState {
   if (env.BB_EMBEDDING_BASE_URL && env.BB_EMBEDDING_MODEL) return { configured: true, source: "env" }
   const home = readJson(path.join(bbDataDir(), "config.json"))
   if (home && home.embedding_base_url && home.embedding_model) return { configured: true, source: "global" }
   const local = readJson(path.join(cwd, "bb.json"))
   if (local && local.embedding_base_url && local.embedding_model) return { configured: true, source: "project" }
+  if (home && home.setup_skipped === true) return { configured: false, source: "none", skipped: true }
   return { configured: false, source: "none" }
 }
 
@@ -175,7 +179,6 @@ export function saveEmbeddingConfig(partial, dataDir = bbDataDir()) {
   // write never leaves a world-readable partial config.
   const tmp = cfgPath + ".tmp"
   writeFileSync(tmp, JSON.stringify(merged, null, 2) + "\n", { mode: 0o600 })
-  const { renameSync } = require("node:fs")
   renameSync(tmp, cfgPath)
   fixConfigMode(cfgPath)
   return cfgPath
@@ -186,7 +189,6 @@ export function fixConfigMode(cfgPath) {
   try {
     const mode = statSync(cfgPath).mode & 0o777
     if (mode !== 0o600) {
-      const { chmodSync } = require("node:fs")
       chmodSync(cfgPath, 0o600)
       return true
     }
@@ -266,7 +268,7 @@ export async function runSetupWizard(io = { input: process.stdin, output: proces
   })
   out.write(`  ${providers.length + 1}. Atla — yerel vektörlerle devam et\n\n`)
 
-  const answer = (await question(rl, "Seçim [1-5]: ")).trim()
+  const answer = (await question(rl, `Seçim [1-${providers.length + 1}]: `)).trim()
   const choice = parseInt(answer, 10)
 
   if (!choice || choice < 1 || choice > providers.length + 1) {
@@ -278,6 +280,10 @@ export async function runSetupWizard(io = { input: process.stdin, output: proces
   if (choice === providers.length + 1) {
     out.write("Yerel kelime vektörleriyle devam ediliyor. Bunlar daha zayıf sonuç verir;\n")
     out.write("gerçek bir model eklediğinde `bb index --force` ile indeksi yenile.\n")
+    // Remember the explicit skip (M30.S1 follow-up): the wizard runs once.
+    // Entering a key later via `bb setup` clears the marker automatically
+    // (saveEmbeddingConfig merges, and a real config outranks the flag).
+    save({ setup_skipped: true }, dataDir)
     rl.close()
     return { saved: false, skipped: true, reason: "user-skipped" }
   }
@@ -352,6 +358,8 @@ export async function maybeRunFirstRunSetup(opts = {}) {
   if (opts.noSetup) return { prompted: false, reason: "flag" }
   const state = hasEmbeddingConfig(process.cwd(), process.env)
   if (state.configured) return { prompted: false, reason: "configured" }
+  // Explicit skip is remembered: prompt only the first time.
+  if (state.skipped) return { prompted: false, reason: "skipped" }
   if (!process.stdin.isTTY) {
     if (!opts.quiet) {
       console.log("not: embedding anahtarı yok — semantik arama yerel vektörlerle çalışacak (daha zayıf). Kurulum: bb setup")
