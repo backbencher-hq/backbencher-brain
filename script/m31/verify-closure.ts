@@ -82,7 +82,10 @@ check("all subordinate evidence shares ONE closure stamp", stamps.size === expec
 // co-agent commit to src/ast/** does not and cannot stale these checks.
 function runGate(script: string, env: Record<string, string> = {}): number {
   try {
-    execSync(`bun run ${script}`, { cwd: ROOT, stdio: "pipe", env: { ...process.env, ...env } })
+    // Strip the evidence-stamping env: child content-gates must be pure reads
+    // (explicit-stamping model — only the caller stamps, never a child run).
+    const { BB_M31_EVIDENCE: _drop, ...rest } = process.env
+    execSync(`bun run ${script}`, { cwd: ROOT, stdio: "pipe", env: { ...rest, ...env } })
     return 0
   } catch {
     return 1
