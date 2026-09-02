@@ -115,6 +115,50 @@ const GATES: GateSpec[] = [
     },
   },
   {
+    name: "m31-tools-overview-sections",
+    script: "script/m31/verify-tools-overview.ts",
+    surfaces: [{ from: "docs/TOOLS_OVERVIEW.md", to: "docs/TOOLS_OVERVIEW.md" }, { from: "docs/tools/bb_search.md", to: "docs/tools/bb_search.md" }],
+    mutate: (sandbox) => {
+      // Mutation A: remove a tool section → section-coverage check must fail.
+      const p = path.join(sandbox, "docs/TOOLS_OVERVIEW.md")
+      const src = readFileSync(p, "utf8")
+      const start = src.indexOf("### bb_search")
+      const end = src.indexOf("### bb_ask")
+      writeFileSync(p, src.slice(0, start) + src.slice(end))
+    },
+  },
+  {
+    name: "m31-tools-overview-facts",
+    script: "script/m31/verify-tools-overview.ts",
+    surfaces: [{ from: "docs/TOOLS_OVERVIEW.md", to: "docs/TOOLS_OVERVIEW.md" }, { from: "docs/tools/bb_search.md", to: "docs/tools/bb_search.md" }],
+    mutate: (sandbox) => {
+      // Mutation B: advertise a mode the registry cannot execute.
+      const p = path.join(sandbox, "docs/TOOLS_OVERVIEW.md")
+      writeFileSync(p, readFileSync(p, "utf8").replace("**Modes:** `symbols`, `content`, `symbol`, `file`.", "**Modes:** `symbols`, `content`, `symbol`, `file`, `oracle`."))
+    },
+  },
+  {
+    name: "m31-tools-overview-artifacts",
+    script: "script/m31/verify-tools-overview.ts",
+    surfaces: [{ from: "docs/TOOLS_OVERVIEW.md", to: "docs/TOOLS_OVERVIEW.md" }, { from: "docs/tools/bb_search.md", to: "docs/tools/bb_search.md" }],
+    mutate: (sandbox) => {
+      // Mutation C: name a phantom DB artifact → schema existence check must fail.
+      const p = path.join(sandbox, "docs/TOOLS_OVERVIEW.md")
+      writeFileSync(p, readFileSync(p, "utf8").replace("brain_query_cache", "brain_query_cache, brain_magic_store"))
+    },
+  },
+  {
+    name: "m31-tools-overview-crosslink",
+    script: "script/m31/verify-tools-overview.ts",
+    surfaces: [{ from: "docs/TOOLS_OVERVIEW.md", to: "docs/TOOLS_OVERVIEW.md" }, { from: "docs/tools/bb_search.md", to: "docs/tools/bb_search.md" }],
+    mutate: (sandbox) => {
+      // Mutation D: corrupt a cross-link row (phantom relation target) → row
+      // validation must fail.
+      const p = path.join(sandbox, "docs/TOOLS_OVERVIEW.md")
+      writeFileSync(p, readFileSync(p, "utf8").replace("| bb_visualize | brain_symbol, brain_relationship | — | bb_analyze |", "| bb_visualize | brain_symbol, brain_relationship | — | bb_teleport |"))
+    },
+  },
+  {
     name: "tool-docs-generator",
     script: "script/verify-tool-docs.ts",
     legacy: true,
