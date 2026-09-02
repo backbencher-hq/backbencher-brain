@@ -7,15 +7,16 @@
   "passed": 69,
   "failed": 0,
   "negativeCases": 10,
-  "currentCommit": "4e0954e8249418bb7ac0816399cfad771a35c2ba",
+  "currentCommit": "db5e799d629ff9de448296f1a4bba0121aa134db",
   "workingTreeRelevantChanges": [
     "ide/vscode/bb-lsp-vscode-0.1.0.vsix",
     "package.json",
+    "script/m25/verify-governance.ts",
     "script/m25/verify-packaging.ts"
   ],
   "verifierCommand": "npx tsx script/m25/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-02T15:36:00.815Z",
+  "generatedAt": "2026-09-02T15:39:33.818Z",
   "ledger": "validation/m25/results/manifest.json",
   "m24Bar": {
     "ledgerStatus": "closed",
