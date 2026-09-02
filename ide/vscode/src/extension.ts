@@ -25,6 +25,7 @@ import {
   State,
 } from "vscode-languageclient/node"
 import { resolveServerLaunch, versionDecision, ServerLaunch, SourceMode } from "./server-resolution"
+import { createAutoIndexMachine, AutoIndexMachine } from "./auto-index"
 
 export const BB_ACTIVATION_BUDGET_SETTING = "bbLsp.activationBudgetMs"
 export const BB_MIN_SERVER_VERSION_SETTING = "bbLsp.minServerVersion"
@@ -45,6 +46,12 @@ export type ActivationReport = {
 let client: LanguageClient | null = null
 let activationReport: ActivationReport | null = null
 let statusItem: StatusBarItem | null = null
+let autoIndex: AutoIndexMachine | null = null
+
+/** Readable from tests/commands: the auto-index state machine (E2). */
+export function getAutoIndexMachine(): AutoIndexMachine | null {
+  return autoIndex
+}
 
 /** Readable from tests/commands: the last activation measurement. */
 export function getActivationReport(): ActivationReport | null {
@@ -201,10 +208,79 @@ export async function activate(context: ExtensionContext): Promise<void> {
     statusItem.text = "$(error) bb: version"
     statusItem.tooltip = "bb_lsp server version does not satisfy the declared minimum; features off."
   }
+
+  // E2 auto-index flow: started strictly after the measured activation
+  // window, never awaited by activate() (non-blocking guarantee).
+  if (report.versionOk) beginAutoIndexFlow()
 }
 
 export function deactivate(): Thenable<void> | undefined {
   return client?.stop()
+}
+
+// ---------------------------------------------------------------------------
+// E2: auto-index on open. Fire-and-forget AFTER the activation budget window
+// (issue #500: editor startup never blocked). Consent before any indexing;
+// scale estimate shown in the consent dialog; progress notification with a
+// working cancel that terminates the index process.
+// ---------------------------------------------------------------------------
+
+export function beginAutoIndexFlow(): void {
+  const root = workspaceRoot()
+  // Declared mode surface (manifest `bbLsp.autoIndexMode`); the machine also
+  // accepts BB_AUTOINDEX_MODE for headless/E5 runs. Default: ask.
+  const settingMode = workspace.getConfiguration().get<"ask" | "never">("bbLsp.autoIndexMode") ?? "ask"
+  const machine = createAutoIndexMachine({
+    root,
+    env: { ...process.env, BB_AUTOINDEX_MODE: settingMode },
+  })
+  autoIndex = machine
+  const unsubscribe = machine.onProgress((event) => {
+    if (statusItem !== null) {
+      const phaseText: Record<typeof event.phase, string> = {
+        estimating: "$(sync~spin) bb: estimating",
+        "awaiting-consent": "$(question) bb: consent",
+        indexing: "$(sync~spin) bb: indexing",
+        ready: "$(check) bb",
+        cancelled: "$(circle-slash) bb: paused",
+        failed: "$(error) bb: index failed",
+      }
+      statusItem.text = phaseText[event.phase]
+      statusItem.tooltip = event.message
+    }
+  })
+  void machine.start("not-granted").then(async () => {
+    if (machine.state.phase === "ready") return // existing index — nothing to ask
+    if (machine.state.phase !== "awaiting-consent") return // declined mode or failure
+    const scale = machine.state.scale
+    const choice = await window.showInformationMessage(
+      `Backbencher Brain found no index for this workspace. ${scale.message}\n\nBuild the index now? (${scale.files} source files)`,
+      "Index now",
+      "Not now",
+    )
+    if (choice !== "Index now") {
+      unsubscribe()
+      return // no indexing without explicit consent
+    }
+    // Progress surface with a cancel that actually terminates the process.
+    await window.withProgress(
+      { location: ProgressLocation.Notification, title: "bb_lsp: indexing workspace", cancellable: true },
+      async (_progress, token) => {
+        token.onCancellationRequested(() => machine.cancel())
+        const done = new Promise<void>((resolve) => {
+          const off = machine.onProgress((event) => {
+            if (event.phase === "ready" || event.phase === "cancelled" || event.phase === "failed") {
+              off()
+              resolve()
+            }
+          })
+        })
+        await machine.decideConsent(true)
+        await done
+      },
+    )
+    unsubscribe()
+  })
 }
 
 // Re-exported for the harness (V1/E5) to assert on without reaching into

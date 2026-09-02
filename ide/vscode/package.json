@@ -44,6 +44,19 @@
           "default": 150,
           "description": "Declared activation budget in milliseconds (contract §7.3). Measured activate()-to-ready time is recorded; a budget miss is a failed gate."
         },
+        "bbLsp.autoIndexMode": {
+          "type": "string",
+          "enum": [
+            "ask",
+            "never"
+          ],
+          "enumDescriptions": [
+            "Ask for consent before building an index (scale estimate shown first).",
+            "Never index automatically; features stay off until an index exists."
+          ],
+          "default": "ask",
+          "description": "Auto-index behavior on workspace open (issue #500). Indexing never starts without explicit consent."
+        },
         "bbLsp.trace.server": {
           "type": "string",
           "enum": [
