@@ -118,7 +118,7 @@
       "code": "S2",
       "githubIssue": 832004,
       "tool": "cli",
-      "status": "planned",
+      "status": "verified",
       "scope": "bb doctor: diagnoses no-config, never-validated key, model mismatch vs stored embeddings, wrong permissions — each with the exact fix command; reads local state only",
       "acceptanceCriteria": [
         "every reported cause is backed by real local state planted by the fixture (config file rows, brain_semantic_embedding.embedding_model)",
@@ -128,7 +128,17 @@
       "closureRequirements": [
         "verifier with planted-state fixtures and mutants for every diagnosis branch",
         "evidence at current commit with negative cases"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "5ab562063a568f81363faf89843c45d5c0fcc1a3",
+        "verifierCommand": "npx tsx script/m32/verify-doctor.ts",
+        "evidenceFile": "S2.json",
+        "generatedAt": "2026-09-02T03:46:52.793Z",
+        "passed": 33,
+        "failed": 0,
+        "negativeCases": 5
+      }
     },
     {
       "code": "S3",
