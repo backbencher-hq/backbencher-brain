@@ -18,12 +18,12 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "4c4c3f42009a7c8060dc7999deaac9637f17db0d",
+      "currentCommit": "9a735944570499f067ee586768afb87d8c87e936",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m31/verify-governance.ts",
       "evidenceFile": "G1.json",
-      "generatedAt": "2026-09-02T02:33:37.439Z",
-      "passed": 21,
+      "generatedAt": "2026-09-02T02:59:50.154Z",
+      "passed": 23,
       "failed": 0,
       "negativeCases": 2
     }
@@ -84,7 +84,7 @@
     "code": "T1",
     "githubIssue": 559,
     "tool": "behavioral-corpus",
-    "status": "planned",
+    "status": "verified",
     "scope": "observed-behavior corpus: every tool mode live through real MCP handler path, structural snapshot baseline",
     "acceptanceCriteria": [
       "harness runs all executable modes through the real handler path; any mock-only coverage is a declared named failure",
@@ -95,7 +95,18 @@
       "determinism proven by double-run",
       "persist T1 evidence with standard envelope",
       "negativeCases > 0"
-    ]
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "9a735944570499f067ee586768afb87d8c87e936",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m31/tool-mode-corpus.ts --check",
+      "evidenceFile": "T1.json",
+      "generatedAt": "2026-09-02T02:58:32.817Z",
+      "passed": 67,
+      "failed": 0,
+      "negativeCases": 22
+    }
   },
   {
     "code": "X1",

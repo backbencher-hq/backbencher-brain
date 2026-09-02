@@ -39,6 +39,23 @@ function validateModeSpecificArguments(tool: string, args: Record<string, unknow
   if (tool === "bb_ask" && (typeof args.query !== "string" || args.query.trim().length === 0)) {
     throw new Error("bb_ask requires a non-empty query")
   }
+  // M31.T1: scoped graphs require a target — the handler previously fell back
+  // to a project graph for missing/blank targets, contradicting the documented
+  // error "Missing target for a scoped graph" (docs/tools/bb_visualize.md).
+  if (tool === "bb_visualize") {
+    const scope = String(args.scope ?? "project")
+    if (["file", "module", "symbol", "feature"].includes(scope) && (typeof args.target !== "string" || args.target.trim().length === 0)) {
+      throw new Error(`bb_visualize ${scope} scope requires a non-empty target`)
+    }
+  }
+  // M31.T1: confidenceThreshold is documented as valid 0..1; out-of-range values
+  // were silently accepted and produced misleading findings.
+  if (tool === "bb_patterns" && args.confidenceThreshold != null) {
+    const c = Number(args.confidenceThreshold)
+    if (!Number.isFinite(c) || c < 0 || c > 1) {
+      throw new Error("bb_patterns confidenceThreshold must be between 0 and 1")
+    }
+  }
   if (tool === "bb_edit") {
     validateEditArguments(args)
   }

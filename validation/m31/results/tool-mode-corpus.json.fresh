@@ -1,0 +1,608 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-02T02:58:32.799Z",
+  "environment": {
+    "embeddingProvider": "local-fallback (API keys deliberately absent)",
+    "fixtureLanguages": [
+      "typescript",
+      "python",
+      "java",
+      "ruby",
+      "vue"
+    ],
+    "dispatchPath": "validateToolArguments -> handler (server.ts sequence)"
+  },
+  "validInvocations": 42,
+  "negativeInvocations": 22,
+  "corpus": {
+    "bb_search.symbols": {
+      "kind": "text",
+      "textHead": "User [interface] src/user-service.ts:1 (typescript)\ndeleteUser [function] src/user-service.ts:5 (typescript)\nfindUser [function] src/user-service.ts:2 (typescri"
+    },
+    "bb_search.content": {
+      "kind": "json-object",
+      "keys": [
+        "freshCount",
+        "query",
+        "results",
+        "searchMode",
+        "staleCount",
+        "total",
+        "truncated"
+      ],
+      "scalars": {
+        "searchMode": "content",
+        "query": "invoice",
+        "total": 1,
+        "staleCount": 0,
+        "freshCount": 1,
+        "truncated": false
+      }
+    },
+    "bb_search.symbol": {
+      "kind": "json-object",
+      "keys": [
+        "matches"
+      ],
+      "scalars": {}
+    },
+    "bb_search.file": {
+      "kind": "json-object",
+      "keys": [
+        "content",
+        "contentLength",
+        "file",
+        "fileId",
+        "language",
+        "searchMode",
+        "stale",
+        "truncated"
+      ],
+      "scalars": {
+        "searchMode": "file",
+        "file": "src/user-service.ts",
+        "fileId": "<SHA1>:src/user-service.ts",
+        "language": "typescript",
+        "content": "export interface User { id: number; name: string }\nexport function findUser(users: User[], id: number): User | undefined {\n  return users.find((u) => u.id === id)\n}\nexport function deleteUser(users: User[], id: number): boolean {\n  const before = users.length\n  const kept = users.filter((u) => u.id !== id)\n  users.length = 0\n  users.push(...kept)\n  return users.length < before\n}\n",
+        "contentLength": 382,
+        "truncated": false,
+        "stale": false
+      }
+    },
+    "bb_ask.answer": {
+      "kind": "text",
+      "textHead": "answer: I couldn't find a specific answer or matching code to your query in the brain database.\n\nno semantic matches for \"where are users deleted\"\n[provenance: "
+    },
+    "bb_health.status": {
+      "kind": "text",
+      "textHead": "project: <TMP>\nprojectId: <SHA1>\nfiles=6 symbols=19 relationships=29 imports=0 syntaxErrors=0\nfreshness: 6"
+    },
+    "bb_health.refresh": {
+      "kind": "text",
+      "textHead": "project: <TMP>\nprojectId: <SHA1>\nfiles=6 symbols=19 relationships=29 imports=0 syntaxErrors=0\nfreshness: 6"
+    },
+    "bb_patterns.orphaned": {
+      "kind": "text",
+      "textHead": "orphaned code (13):\n  orphaned_class Invoice — src/billing.py:1 (60%)\n  orphaned_function refund — src/billing.py:8 (60%)\n  orphaned_class Cart — src/cart.rb:1 "
+    },
+    "bb_patterns.all": {
+      "kind": "text",
+      "textHead": "patterns (15):\n  [info] orphaned_class @ src/billing.py:1 (60%)\n  [info] orphaned_function @ src/billing.py:8 (60%)\n  [info] orphaned_class @ src/cart.rb:1 (60%"
+    },
+    "bb_security.findings": {
+      "kind": "text",
+      "textHead": "security: 0 critical / 1 high / 0 medium / 0 low (0 resolved flows, 1 unvalidated sources, 0 mitigated)\n  clean\n\nunvalidated input sources:\n  [info] unvalidated"
+    },
+    "bb_visualize.project": {
+      "kind": "json-object",
+      "keys": [
+        "format",
+        "links",
+        "nodes",
+        "provenance",
+        "scope",
+        "target",
+        "truncation"
+      ],
+      "scalars": {
+        "scope": "project",
+        "target": null,
+        "format": "json"
+      }
+    },
+    "bb_visualize.file": {
+      "kind": "json-object",
+      "keys": [
+        "format",
+        "links",
+        "nodes",
+        "provenance",
+        "scope",
+        "target",
+        "truncation"
+      ],
+      "scalars": {
+        "scope": "file",
+        "target": "src/user-service.ts",
+        "format": "json"
+      }
+    },
+    "bb_visualize.symbol": {
+      "kind": "json-object",
+      "keys": [
+        "format",
+        "links",
+        "nodes",
+        "provenance",
+        "scope",
+        "target",
+        "truncation"
+      ],
+      "scalars": {
+        "scope": "symbol",
+        "target": "findUser",
+        "format": "json"
+      }
+    },
+    "bb_visualize.module": {
+      "kind": "json-object",
+      "keys": [
+        "format",
+        "links",
+        "nodes",
+        "provenance",
+        "scope",
+        "target",
+        "truncation"
+      ],
+      "scalars": {
+        "scope": "module",
+        "target": "src",
+        "format": "json"
+      }
+    },
+    "bb_visualize.feature": {
+      "kind": "json-object",
+      "keys": [
+        "format",
+        "links",
+        "nodes",
+        "provenance",
+        "scope",
+        "target",
+        "truncation"
+      ],
+      "scalars": {
+        "scope": "feature",
+        "target": "billing",
+        "format": "json"
+      }
+    },
+    "bb_migrate.plan": {
+      "kind": "text",
+      "textHead": "migration target: python\ndependency order: findUser (no-edges)\nmethodology: base=4h relationships=12h missing-mappings=0h\ntruncated: false (1/1)\n\nfindUser: type"
+    },
+    "bb_analyze.callers": {
+      "kind": "json-object",
+      "keys": [
+        "callees",
+        "callers",
+        "nodes",
+        "provenance",
+        "root",
+        "summary"
+      ],
+      "scalars": {}
+    },
+    "bb_analyze.callees": {
+      "kind": "json-object",
+      "keys": [
+        "callees",
+        "callers",
+        "nodes",
+        "provenance",
+        "root",
+        "summary"
+      ],
+      "scalars": {}
+    },
+    "bb_analyze.trace": {
+      "kind": "json-object",
+      "keys": [
+        "callees",
+        "callers",
+        "nodes",
+        "provenance",
+        "root",
+        "summary"
+      ],
+      "scalars": {}
+    },
+    "bb_analyze.dependencies": {
+      "kind": "json-array",
+      "length": 1,
+      "itemShape": {
+        "object": [
+          "dependencies",
+          "dependents",
+          "file",
+          "fileId",
+          "provenance",
+          "score"
+        ]
+      }
+    },
+    "bb_analyze.stats": {
+      "kind": "json-object",
+      "keys": [
+        "avgComplexity",
+        "avgFileSize",
+        "files",
+        "linesOfCode",
+        "projectId",
+        "provenance",
+        "relationships",
+        "symbols"
+      ],
+      "scalars": {
+        "files": 6,
+        "linesOfCode": 52,
+        "avgFileSize": 185.5,
+        "symbols": 19,
+        "avgComplexity": 1,
+        "relationships": 29,
+        "projectId": "<SHA1>"
+      }
+    },
+    "bb_analyze.complexity": {
+      "kind": "json-object",
+      "keys": [
+        "breakdown",
+        "metrics",
+        "provenance",
+        "scope",
+        "symbolCount",
+        "target"
+      ],
+      "scalars": {
+        "target": "entire project",
+        "scope": "project",
+        "symbolCount": 19
+      }
+    },
+    "bb_analyze.impact": {
+      "kind": "json-object",
+      "keys": [
+        "affectedFiles",
+        "crossLanguageFiles",
+        "directSymbols",
+        "found",
+        "provenance",
+        "riskLevel",
+        "scope",
+        "target",
+        "transitiveFiles",
+        "truncated",
+        "unresolvedEdges"
+      ],
+      "scalars": {
+        "target": "findUser",
+        "found": true,
+        "scope": "transitive",
+        "directSymbols": 0,
+        "transitiveFiles": 0,
+        "crossLanguageFiles": 0,
+        "unresolvedEdges": 0,
+        "riskLevel": "low",
+        "truncated": false
+      }
+    },
+    "bb_analyze.test_mapping": {
+      "kind": "json-object",
+      "keys": [
+        "entries",
+        "provenance",
+        "summary"
+      ],
+      "scalars": {}
+    },
+    "bb_analyze.test_gaps": {
+      "kind": "json-object",
+      "keys": [
+        "gaps",
+        "provenance",
+        "summary"
+      ],
+      "scalars": {}
+    },
+    "bb_analyze.test_impact": {
+      "kind": "json-object",
+      "keys": [
+        "affectedTestFiles",
+        "directTests",
+        "found",
+        "indirectTests",
+        "provenance",
+        "runtimeCoverage",
+        "target",
+        "truncated"
+      ],
+      "scalars": {
+        "target": "findUser",
+        "found": true,
+        "truncated": false
+      }
+    },
+    "bb_analyze.test_quality": {
+      "kind": "json-object",
+      "keys": [
+        "aggregate",
+        "files",
+        "provenance",
+        "summary"
+      ],
+      "scalars": {}
+    },
+    "bb_doc.symbol": {
+      "kind": "text",
+      "textHead": "# symbol: findUser\n\nsrc/user-service.ts is an indexed typescript file with 11 lines. function findUser is defined in src/user-service.ts at line 2 returns User "
+    },
+    "bb_doc.file": {
+      "kind": "text",
+      "textHead": "# file: src/billing.py\n\nsrc/billing.py is an indexed python file with 10 lines. class Invoice is defined in src/billing.py at line 1. method total is defined in"
+    },
+    "bb_doc.module": {
+      "kind": "text",
+      "textHead": "# module: src\n\nsrc/Order.java is an indexed java file with 6 lines. src/Widget.vue is an indexed vue file with 10 lines. src/billing.py is an indexed python fil"
+    },
+    "bb_doc.feature": {
+      "kind": "text",
+      "textHead": "# feature: billing\n\nNo indexed evidence was found for overview.\n\n## Overview\n\nNo indexed evidence was found for overview.\n\n\n## Unknowns\n\n- No indexed evidence m"
+    },
+    "bb_doc.api": {
+      "kind": "text",
+      "textHead": "# api documentation\n\nREADME.md is an indexed markdown file with 2 lines. src/Order.java is an indexed java file with 6 lines. src/Widget.vue is an indexed vue f"
+    },
+    "bb_doc.project": {
+      "kind": "text",
+      "textHead": "# project documentation\n\nREADME.md is an indexed markdown file with 2 lines. src/Order.java is an indexed java file with 6 lines. src/Widget.vue is an indexed v"
+    },
+    "bb_doc.coverage": {
+      "kind": "text",
+      "textHead": "# coverage documentation\n\ncorpus fixture is undocumented. Order is undocumented. total is undocumented. getTotal is undocumented. addItem is undocumented. Widge"
+    },
+    "bb_edit.write": {
+      "kind": "json-object",
+      "keys": [
+        "changes",
+        "dryRun",
+        "formatted",
+        "mode",
+        "reindexed",
+        "validated"
+      ],
+      "scalars": {
+        "mode": "write",
+        "dryRun": false,
+        "formatted": true,
+        "validated": true,
+        "reindexed": true
+      }
+    },
+    "bb_edit.update": {
+      "kind": "json-object",
+      "keys": [
+        "changes",
+        "dryRun",
+        "formatted",
+        "mode",
+        "reindexed",
+        "validated"
+      ],
+      "scalars": {
+        "mode": "update",
+        "dryRun": true,
+        "formatted": false,
+        "validated": false,
+        "reindexed": false
+      }
+    },
+    "bb_edit.insert": {
+      "kind": "json-object",
+      "keys": [
+        "changes",
+        "dryRun",
+        "formatted",
+        "mode",
+        "reindexed",
+        "validated"
+      ],
+      "scalars": {
+        "mode": "insert",
+        "dryRun": true,
+        "formatted": false,
+        "validated": false,
+        "reindexed": false
+      }
+    },
+    "bb_edit.delete": {
+      "kind": "json-object",
+      "keys": [
+        "changes",
+        "dryRun",
+        "formatted",
+        "mode",
+        "reindexed",
+        "validated"
+      ],
+      "scalars": {
+        "mode": "delete",
+        "dryRun": true,
+        "formatted": false,
+        "validated": false,
+        "reindexed": false
+      }
+    },
+    "bb_edit.refactor": {
+      "kind": "json-object",
+      "keys": [
+        "changes",
+        "dryRun",
+        "formatted",
+        "mode",
+        "reindexed",
+        "summary",
+        "validated",
+        "warnings"
+      ],
+      "scalars": {
+        "mode": "refactor",
+        "dryRun": true,
+        "formatted": false,
+        "validated": false,
+        "reindexed": false
+      }
+    },
+    "bb_index.file": {
+      "kind": "json-object",
+      "keys": [
+        "deleted",
+        "errors",
+        "indexed",
+        "mode",
+        "path"
+      ],
+      "scalars": {
+        "mode": "file",
+        "path": "<TMP>",
+        "indexed": 0,
+        "deleted": 0,
+        "errors": 0
+      }
+    },
+    "bb_index.auto": {
+      "kind": "json-object",
+      "keys": [
+        "deleted",
+        "errors",
+        "indexed",
+        "mode",
+        "path"
+      ],
+      "scalars": {
+        "mode": "file",
+        "path": "<TMP>",
+        "indexed": 0,
+        "deleted": 0,
+        "errors": 0
+      }
+    },
+    "bb_index.dir": {
+      "kind": "json-object",
+      "keys": [
+        "candidates",
+        "errors",
+        "mode",
+        "path",
+        "processed"
+      ],
+      "scalars": {
+        "mode": "dir",
+        "path": "<TMP>",
+        "candidates": 5,
+        "processed": 5,
+        "errors": 0
+      }
+    }
+  },
+  "negatives": {
+    "bb_search.missing-query": {
+      "isError": true,
+      "head": "error: bb_search symbols mode requires a non-empty query"
+    },
+    "bb_search.unindexed-file": {
+      "isError": true,
+      "head": "error: file not found: nope.ts"
+    },
+    "bb_ask.empty-query": {
+      "isError": true,
+      "head": "error: bb_ask requires a non-empty query"
+    },
+    "bb_ask.missing-query": {
+      "isError": true,
+      "head": "error: bb_ask: missing required option: query"
+    },
+    "bb_health.unknown-option": {
+      "isError": true,
+      "head": "error: bb_health: unknown or irrelevant options: refreshMode"
+    },
+    "bb_health.bad-sample": {
+      "isError": true,
+      "head": "error: bb_health: sampleSize must be non-negative"
+    },
+    "bb_patterns.bad-scope": {
+      "isError": true,
+      "head": "error: bb_patterns: scope must be one of: orphaned, all"
+    },
+    "bb_patterns.bad-confidence": {
+      "isError": true,
+      "head": "error: bb_patterns: confidenceThreshold must be between 0 and 1"
+    },
+    "bb_security.unknown-option": {
+      "isError": true,
+      "head": "error: bb_security: unknown or irrelevant options: scanMode"
+    },
+    "bb_security.bad-history-limit": {
+      "isError": true,
+      "head": "error: bb_security: limit must be non-negative"
+    },
+    "bb_visualize.bad-scope": {
+      "isError": true,
+      "head": "error: bb_visualize: scope must be one of: project, file, module, symbol, feature"
+    },
+    "bb_visualize.missing-target": {
+      "isError": true,
+      "head": "error: bb_visualize symbol scope requires a non-empty target"
+    },
+    "bb_migrate.missing-language": {
+      "isError": true,
+      "head": "error: bb_migrate: missing required option: targetLanguage"
+    },
+    "bb_migrate.missing-symbols": {
+      "isError": true,
+      "head": "bb_migrate requires symbolNames (or symbolName) and targetLanguage"
+    },
+    "bb_analyze.bad-mode": {
+      "isError": true,
+      "head": "error: bb_analyze: mode must be one of: callers, callees, trace, dependencies, stats, complexity, impact, test_mapping, test_gaps, test_impact, test_quality"
+    },
+    "bb_analyze.missing-target": {
+      "isError": true,
+      "head": "bb_analyze callers requires target"
+    },
+    "bb_doc.bad-mode": {
+      "isError": true,
+      "head": "error: bb_doc: mode must be one of: symbol, file, module, feature, api, project, coverage"
+    },
+    "bb_doc.missing-target": {
+      "isError": true,
+      "head": "bb_doc symbol mode requires target"
+    },
+    "bb_edit.bad-mode": {
+      "isError": true,
+      "head": "error: bb_edit: mode must be one of: write, update, insert, delete, refactor"
+    },
+    "bb_edit.path-escape": {
+      "isError": true,
+      "head": "error: path escapes project root: ../outside.ts"
+    },
+    "bb_index.missing-path": {
+      "isError": true,
+      "head": "error: bb_index: missing required option: path"
+    },
+    "bb_index.missing-file": {
+      "isError": true,
+      "head": "bb_index: no such path: <TMP>"
+    }
+  }
+}
