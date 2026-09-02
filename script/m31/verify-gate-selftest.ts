@@ -34,9 +34,23 @@ type GateSpec = {
   mutate: (sandbox: string) => void
   /** legacy gates have no BB_M31_ROOT seam; they are exercised by plant+restore on the real tree */
   legacy?: boolean
+  /** source-mutation gates plant a revert in a src file, run the gate, restore */
+  mutateSource?: string
+  mutatePattern?: { marker: string; until: string }
 }
 
 const GATES: GateSpec[] = [
+  {
+    name: "tool-mode-corpus",
+    script: "script/m31/tool-mode-corpus.ts",
+    surfaces: [],
+    // Mutation: revert the visualize scoped-target validation (the exact
+    // regression the corpus exists to catch). Control = --check passes on the
+    // clean tree; mutation = --check must fail with named drift.
+    mutate: () => {},
+    mutateSource: "src/mcp/tool-validation.ts",
+    mutatePattern: { marker: "  // M31.T1: scoped graphs require a target", until: "  // M31.T1: confidenceThreshold" },
+  },
   {
     name: "tool-docs-generator",
     script: "script/verify-tool-docs.ts",
@@ -57,6 +71,13 @@ const GATES: GateSpec[] = [
       { from: "package.json", to: "package.json" },
       ...(existsSync(path.join(ROOT, "validation/m31/results/gate-selftest.json"))
         ? [{ from: "validation/m31/results/gate-selftest.json", to: "validation/m31/results/gate-selftest.json" }]
+        : []),
+      // verified ledger entries require their evidence files on disk (governance check 3):
+      ...(existsSync(path.join(ROOT, "validation/m31/results/G1.json"))
+        ? [{ from: "validation/m31/results/G1.json", to: "validation/m31/results/G1.json" }]
+        : []),
+      ...(existsSync(path.join(ROOT, "validation/m31/results/T1.json"))
+        ? [{ from: "validation/m31/results/T1.json", to: "validation/m31/results/T1.json" }]
         : []),
       // governance audits the M31 verifier sources themselves (auto-pass grep):
       { from: "script/m31/verify-governance.ts", to: "script/m31/verify-governance.ts" },
@@ -91,6 +112,32 @@ for (const gate of GATES) {
   check(`${gate.name}: gate script exists`, existsSync(path.join(ROOT, gate.script)), gate.script)
   if (!existsSync(path.join(ROOT, gate.script))) {
     gateResults.push({ name: gate.name, mutationFailed: false, controlPassed: false })
+    continue
+  }
+
+  // Source-mutation gate: control (--check passes clean), plant a src revert,
+  // gate must fail, restore byte-identical. Independent of the sandbox path.
+  if (gate.mutateSource && gate.mutatePattern) {
+    const srcPath = path.join(ROOT, gate.mutateSource)
+    const backup = readFileSync(srcPath, "utf8")
+    try {
+      const control = runGate(gate.script, { BB_M31_CORPUS_CHECK_ONLY: "1" })
+      check(`${gate.name}: control — clean tree PASSES`, control.exit === 0, control.output.slice(-200))
+      const start = backup.indexOf(gate.mutatePattern.marker)
+      const end = backup.indexOf(gate.mutatePattern.until)
+      check(`${gate.name}: mutation markers found in source`, start !== -1 && end > start)
+      if (start !== -1 && end > start) {
+        writeFileSync(srcPath, backup.slice(0, start) + backup.slice(end))
+        const mutated = runGate(gate.script, { BB_M31_CORPUS_CHECK_ONLY: "1" })
+        check(`${gate.name}: mutation — reverted guard FAILS the gate`, mutated.exit !== 0, mutated.output.slice(-200))
+        gateResults.push({ name: gate.name, mutationFailed: mutated.exit !== 0, controlPassed: control.exit === 0 })
+      } else {
+        gateResults.push({ name: gate.name, mutationFailed: false, controlPassed: control.exit === 0 })
+      }
+    } finally {
+      writeFileSync(srcPath, backup)
+    }
+    check(`${gate.name}: source restored byte-identical`, readFileSync(srcPath, "utf8") === backup)
     continue
   }
 
