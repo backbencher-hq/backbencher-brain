@@ -17,7 +17,7 @@ Contract: [IDE-HONESTY-CONTRACT.md](./IDE-HONESTY-CONTRACT.md)
 
 | Version | Milestone | Name | State | Claim level | Status doc |
 | --- | --- | --- | --- | --- | --- |
-| v0 | M24 | The Server | **COMPLETE** | I1 (all five languages, all six features) | [m24/M24-FINAL-AUDIT.md](./m24/M24-FINAL-AUDIT.md) |
+| v0 | M24 | The Server | **CLOSED** (shipped at I1) | I1 (all five languages, all six features) | [m24/M24-FINAL-AUDIT.md](./m24/M24-FINAL-AUDIT.md) |
 | v1 | M25 | The Extension | not started | I3/I4 target — **not claimed** | — |
 | v2 | M26 | The Graph | not started | — | — |
 | v3 | M27 | Everywhere (JetBrains/Zed/Neovim/Helix) | not started | — | — |
