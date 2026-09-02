@@ -80,7 +80,7 @@ function completeTier(tier: TierId, baseURL: unknown, model: unknown, key: unkno
     keyFingerprint: typeof key === "string" && key.length > 0 ? fingerprintKey(key) : undefined,
     file,
     fileMode: file ? fileMode(file) : undefined,
-    incompleteReason: present && !complete ? `eksik: ${missing.join(" + ")}` : undefined,
+    incompleteReason: present && !complete ? `missing: ${missing.join(" + ")}` : undefined,
   }
 }
 
@@ -132,38 +132,38 @@ export function describeEmbeddingConfig(cwd = process.cwd(), env: Record<string,
 // key is structurally absent from SetupShowState.
 export function renderSetupShow(state: SetupShowState): string {
   const lines: string[] = []
-  lines.push("bb — embedding yapılandırması")
-  lines.push("Kaynak önceliği: env > ~/.bb/config.json > bb.json")
+  lines.push("bb — embedding configuration")
+  lines.push("Precedence: env > ~/.bb/config.json > bb.json")
   lines.push("")
   const tierLabel: Record<TierId, string> = { env: "env", global: "global", project: "project" }
   for (const t of state.tiers) {
     const label = tierLabel[t.tier].padEnd(7)
     if (!t.present) {
-      lines.push(`${label}: — (tanımlı değil)`)
+      lines.push(`${label}: — (not set)`)
       continue
     }
     if (!t.complete) {
-      const key = t.keyFingerprint ? ` (anahtar: ••••${t.keyFingerprint})` : ""
-      const skipped = t.skippedMarker ? " · sihirbaz atlandı" : ""
-      lines.push(`${label}: ✗ ${t.incompleteReason ?? "eksik"}${key}${skipped}`)
+      const key = t.keyFingerprint ? ` (key: ••••${t.keyFingerprint})` : ""
+      const skipped = t.skippedMarker ? " · wizard skipped" : ""
+      lines.push(`${label}: ✗ ${t.incompleteReason ?? "incomplete"}${key}${skipped}`)
       continue
     }
-    const key = t.keyFingerprint ? `anahtar: ••••${t.keyFingerprint}` : "anahtar: yok"
+    const key = t.keyFingerprint ? `key: ••••${t.keyFingerprint}` : "key: none"
     let line = `${label}: ✓ ${t.baseURL} · ${t.model} · ${key}`
     if (t.fileMode !== undefined && t.fileMode !== 0o600) {
-      line += ` · mod: ${t.fileMode.toString(8)} (beklenen: 600 — düzelt: bb doctor)`
+      line += ` · mode: ${t.fileMode.toString(8)} (expected: 600 — fix with bb doctor)`
     } else if (t.fileMode !== undefined) {
-      line += ` · mod: 600`
+      line += ` · mode: 600`
     }
-    if (t.skippedMarker) line += " · sihirbaz atlandı"
+    if (t.skippedMarker) line += " · wizard skipped"
     lines.push(line)
   }
   lines.push("")
   if (state.configured) {
     const w = state.winner as TierId
-    lines.push(`Kazanan: ${tierLabel[w]}`)
+    lines.push(`Winner: ${tierLabel[w]}`)
   } else {
-    lines.push("Kazanan: yok — semantik arama yerel vektörlerle çalışacak (daha zayıf). Kurulum: bb setup")
+    lines.push("Winner: none — semantic search will use local vectors (weaker). Setup: bb setup")
   }
   return lines.join("\n") + "\n"
 }

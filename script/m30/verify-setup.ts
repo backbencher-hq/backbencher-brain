@@ -316,7 +316,7 @@ await withMockServer(async (base) => {
   check("S1: 5xx is a soft pass", j.soft500?.kind === "ok" && j.soft500?.softPass === true, JSON.stringify(j.soft500))
   check("S1: 404 is a hard error mentioning model", j.notfound?.kind === "error" && /model/i.test(j.notfound.message ?? ""), JSON.stringify(j.notfound))
   check("S1: malformed JSON is a hard error", j.badjson?.kind === "error", JSON.stringify(j.badjson))
-  check("S1: missing embedding array is a hard error with actionable message", j.noembedding?.kind === "error" && /embedding döndürmedi/i.test(j.noembedding?.message ?? ""), JSON.stringify(j.noembedding))
+  check("S1: missing embedding array is a hard error with actionable message", j.noembedding?.kind === "error" && /returned no embedding/i.test(j.noembedding?.message ?? ""), JSON.stringify(j.noembedding))
   check("S1: unexpected status mapped with status code", j.teapot?.kind === "error" && String(j.teapot.message).includes("418"), JSON.stringify(j.teapot))
   check("S1: mapValidationError 401 branch", /401/i.test(j.map401?.msg ?? ""), j.map401?.msg)
   check("S1: mapValidationError 429 branch", /429/i.test(j.map429?.msg ?? ""), j.map429?.msg)
