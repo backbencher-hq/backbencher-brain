@@ -71,7 +71,7 @@ function readJson(p) {
 // Mirrors Config.get() precedence: env > ~/.bb/config.json > bb.json.
 // A tier "counts" only when it can actually produce embeddings: base URL AND
 // model must both be present (isEmbeddingConfigured's contract).
-// skipped: the user explicitly chose "Atla" in the wizard — remembered so the
+// skipped: the user explicitly chose "Skip" in the wizard — remembered so the
 // wizard only ever runs once. `bb setup` (or deleting the key) re-enables it.
 export function hasEmbeddingConfig(cwd = process.cwd(), env = process.env): EmbeddingSetupState {
   if (env.BB_EMBEDDING_BASE_URL && env.BB_EMBEDDING_MODEL) return { configured: true, source: "env" }
