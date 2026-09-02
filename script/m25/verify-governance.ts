@@ -110,7 +110,7 @@ const EXPECTED_ISSUE_NUMBERS = [498, 499, 500, 501, 502, 503, 504, 544, 505, 506
  *  exists). Evidence stays fresh while no relevant file changed since its
  *  commit. The gate script itself is excluded everywhere (consumer rule). */
 const ISSUE_RELEVANT_FILES: Record<string, string[]> = {
-  E1: ["ide/vscode/src/extension.ts", "ide/vscode/package.json", "script/m25/verify-extension-skeleton.ts"],
+  E1: ["ide/vscode/src/extension.ts", "ide/vscode/src/server-resolution.ts", "ide/vscode/package.json", "script/m25/verify-extension-skeleton.ts"],
   E2: ["ide/vscode/src/auto-index.ts", "script/m25/verify-auto-index.ts"],
   E3: ["ide/vscode/src/status.ts", "script/m25/verify-status.ts"],
   E4: ["script/m25/package-vsix.ts", "ide/vscode/package.json"],

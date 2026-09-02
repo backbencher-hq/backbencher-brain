@@ -43,7 +43,7 @@
       "code": "E1",
       "githubIssue": 499,
       "tool": "extension-skeleton",
-      "status": "planned",
+      "status": "verified",
       "scope": "VS Code extension (ide/vscode/): activation on workspace open for supported languages, LanguageClient wired to bb lsp (compiled dist preferred, source/bun fallback declared), activation budget gate (contract \u00a77.3)",
       "acceptanceCriteria": [
         "extension activates within declared activation budget (measured p95, machine recorded)",
@@ -54,7 +54,17 @@
         "I3-bound harness run recorded (with E5)",
         "budget evidence",
         "limitations declared"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see E1.json",
+        "verifierCommand": "npx tsx script/m25/verify-extension-skeleton.ts",
+        "evidenceFile": "E1.json",
+        "passed": 34,
+        "failed": 0,
+        "mutantsCaught": 3,
+        "mutantsTotal": 3
+      }
     },
     {
       "code": "E2",
