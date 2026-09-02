@@ -79,11 +79,10 @@ a limitation but cannot turn a failed or missing behavioral check into `verified
 
 ## GitHub issue numbers
 
-M32's GitHub issues are not filed yet. Ledger `githubIssue` values are provisional
-placeholders (unique, in a reserved range) so structure and uniqueness are still
-machine-enforced. When the issues are filed, the ledger and
-`EXPECTED_ISSUE_NUMBERS` in `script/m32/verify-governance.ts` must be updated to the
-real numbers — placeholder numbers are not a valid closure state for X1.
+M32's issues are filed on GitHub as milestone 32: G1=#561, SM1=#562, S1=#563,
+S2=#564, S3=#565, H1=#566, X1=#567. The ledger and `REAL_ISSUE_NUMBERS` in
+`script/m32/verify-governance.ts` enforce these values exactly — a placeholder
+or unknown number is a gate failure, so the ledger cannot drift from GitHub.
 
 ## Ledger states
 
