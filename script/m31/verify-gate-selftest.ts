@@ -84,6 +84,37 @@ const GATES: GateSpec[] = [
     },
   },
   {
+    name: "m31-bb-docs-truth-mode",
+    script: "script/m31/verify-bb-docs-truth.ts",
+    surfaces: [{ from: "docs/BB_VISUALIZE.md", to: "docs/BB_VISUALIZE.md" }],
+    mutate: (sandbox) => {
+      // Mutation A: advertise a fake scope in a mode list sentence.
+      const p = path.join(sandbox, "docs/BB_VISUALIZE.md")
+      writeFileSync(p, readFileSync(p, "utf8").replace("It supports `project`, `file`, `module`, `symbol`, and `feature` scopes.", "It supports `project`, `file`, `module`, `symbol`, `feature`, and `galaxy` scopes."))
+    },
+  },
+  {
+    name: "m31-bb-docs-truth-invocation",
+    script: "script/m31/verify-bb-docs-truth.ts",
+    surfaces: [{ from: "docs/BB_MIGRATE.md", to: "docs/BB_MIGRATE.md" }],
+    mutate: (sandbox) => {
+      // Mutation B: drop the required targetLanguage from a documented invocation.
+      const p = path.join(sandbox, "docs/BB_MIGRATE.md")
+      writeFileSync(p, readFileSync(p, "utf8").replace('"targetLanguage":"go",', ""))
+    },
+  },
+  {
+    name: "m31-bb-docs-truth-mutability",
+    script: "script/m31/verify-bb-docs-truth.ts",
+    surfaces: [{ from: "docs/BB_EDIT.md", to: "docs/BB_EDIT.md" }],
+    mutate: (sandbox) => {
+      // Mutation C: claim a WRITE tool (bb_edit, registry mutability=write) is
+      // read-only — the mutability claim must fail against the registry.
+      const p = path.join(sandbox, "docs/BB_EDIT.md")
+      writeFileSync(p, readFileSync(p, "utf8").replace("# Unified Editing (M9.13)", "# Unified Editing (M9.13)\n\nThis tool is read-only."))
+    },
+  },
+  {
     name: "tool-docs-generator",
     script: "script/verify-tool-docs.ts",
     legacy: true,
@@ -176,11 +207,15 @@ for (const gate of GATES) {
       mkdirSync(path.dirname(path.join(sandbox, s.to)), { recursive: true })
       copyFileSync(path.join(ROOT, s.from), path.join(sandbox, s.to))
     }
-    // Gates that read the whole docs/tools directory need all 11 docs in the sandbox.
-    if (gate.surfaces.some((s) => s.to.startsWith("docs/tools/")) && gate.surfaces.length === 1) {
-      mkdirSync(path.join(sandbox, "docs/tools"), { recursive: true })
-      for (const f of readdirSync(path.join(ROOT, "docs/tools"))) {
-        copyFileSync(path.join(ROOT, "docs/tools", f), path.join(sandbox, "docs/tools", f))
+    // Gates that read a whole docs/ directory need ALL files of it in the sandbox.
+    const docDirs = ["docs/tools", "docs"]
+    for (const dir of docDirs) {
+      if (gate.surfaces.some((s) => s.to.startsWith(dir + "/")) && gate.surfaces.length === 1) {
+        mkdirSync(path.join(sandbox, dir), { recursive: true })
+        for (const f of readdirSync(path.join(ROOT, dir))) {
+          if (!/\.md$/.test(f)) continue
+          copyFileSync(path.join(ROOT, dir, f), path.join(sandbox, dir, f))
+        }
       }
     }
 
