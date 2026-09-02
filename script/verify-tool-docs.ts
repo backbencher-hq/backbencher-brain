@@ -40,7 +40,7 @@ const curated: Readonly<Record<string, CuratedToolDocumentation>> = {
   bb_patterns: {
     returns: ["Pattern findings with confidence and locations", "Orphan, framework, and anti-pattern classifications", "Optional persisted run history"],
     errors: ["Invalid scope or confidence threshold", "Unavailable index", "Unknown option"],
-    limitations: ["Orphan status is static incoming-reference evidence, not proof that code is unused", "Framework and anti-pattern detection is heuristic and confidence-qualified"],
+    limitations: ["Orphan status is static incoming-reference evidence, not proof that code is unused", "Framework and anti-pattern detection is heuristic and confidence-qualified", "Candidates are derived from analyzer-extracted symbols and relationships; the same graph gaps (dynamic/reflection wiring, unresolved cross-file references) that limit the analyzers also constrain these detections"],
     performance: "The result limit and confidence threshold bound reporting; history access is separately limited.",
     safety: "Source is read-only. recordRun writes only analysis-history records in the brain database.",
     evidence: "Every finding is confidence-qualified and tied to indexed files, symbols, or relationships.",
@@ -72,7 +72,7 @@ const curated: Readonly<Record<string, CuratedToolDocumentation>> = {
   bb_migrate: {
     returns: ["Dependency-ordered migration plans", "Effort methodology, library mappings, and risks", "Explicit unsupported and truncation results"],
     errors: ["Missing targetLanguage", "No symbolName or symbolNames", "Unknown option"],
-    limitations: ["Plans are estimates, not translated source", "Library mappings are advisory and unsupported routes remain explicit"],
+    limitations: ["Plans are estimates, not translated source", "Library mappings are advisory and unsupported routes remain explicit", "Dependency ordering and mapping depend on the analyzer-extracted symbol and relationship graph; edge cases that the analyzers cannot resolve (reflection, dynamic dispatch, or cross-file relations the grammar does not model) limit the completeness of the resulting plan"],
     performance: "Requests are capped at 100 symbols and dependency traversal is bounded.",
     safety: "Read-only. It does not generate, replace, or compile target-language source.",
     evidence: "Dependency ordering comes from indexed relationships; effort and mappings are labeled methodology-driven estimates.",
@@ -84,6 +84,14 @@ const curated: Readonly<Record<string, CuratedToolDocumentation>> = {
     performance: "Only affected files are written, formatted, validated, and reindexed.",
     safety: "Write-capable. Uses project-root path checks, atomic writes, snapshots, validation, and rollback; use dryRun before risky edits.",
     evidence: "Mutation bounds come from indexed AST bytes; validation and reindex state report whether post-edit evidence is current.",
+  },
+  bb_index: {
+    returns: ["Indexed, deleted, and error counts for the refreshed path", "Mode actually applied (auto resolved, file, or dir)", "Per-file error names for any file that failed to reindex"],
+    errors: ["Missing path", "Path outside the project root", "Parse or store failure for an individual file"],
+    limitations: ["A file reindex updates only that file's evidence; cross-file relationships refresh on the next full or incremental dir index", "Dir mode reuses the incremental indexer: unchanged files are skipped by design"],
+    performance: "A single file reindex is bounded by that file's parse cost; dir mode is bounded by the changed-file set.",
+    safety: "Write-capable against index data only. It never modifies source files.",
+    evidence: "Counts come from the real parse/store pipeline; errors name the file that failed rather than swallowing it.",
   },
   bb_health: {
     returns: ["Index, schema, runtime, freshness, and embedding health", "Optional integrity and analysis-history summaries", "Typed warnings and refresh outcome"],

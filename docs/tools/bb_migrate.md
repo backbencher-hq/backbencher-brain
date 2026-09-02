@@ -69,10 +69,7 @@ Read-only single or batch migration planning with dependency order, explicit eff
 
 - Plans are estimates, not translated source
 - Library mappings are advisory and unsupported routes remain explicit
-- Dependency ordering and mapping depend on the analyzer-extracted symbol and
-  relationship graph; edge cases that the analyzers cannot resolve (reflection,
-  dynamic dispatch, or cross-file relations the grammar does not model) limit
-  the completeness of the resulting plan
+- Dependency ordering and mapping depend on the analyzer-extracted symbol and relationship graph; edge cases that the analyzers cannot resolve (reflection, dynamic dispatch, or cross-file relations the grammar does not model) limit the completeness of the resulting plan
 
 ## Performance
 

@@ -1,0 +1,116 @@
+[
+  {
+    "code": "G1",
+    "githubIssue": 555,
+    "tool": "governance",
+    "status": "verified",
+    "scope": "doc-truth ledger, gates wiring, mutation-based gate self-test",
+    "acceptanceCriteria": [
+      "ledger exists with all M31 issues, synced from evidence files, zero fabricated entries",
+      "every M31 gate fails under its planted mutation",
+      "npm run verify runs all M31 gates",
+      "evidence envelope persisted in validation/m31/results/"
+    ],
+    "closureRequirements": [
+      "persist G1 evidence with standard envelope",
+      "mutation self-test proves gates can fail",
+      "no auto-pass assertions in any M31 verifier"
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "4c4c3f42009a7c8060dc7999deaac9637f17db0d",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m31/verify-governance.ts",
+      "evidenceFile": "G1.json",
+      "generatedAt": "2026-09-02T02:33:37.439Z",
+      "passed": 21,
+      "failed": 0,
+      "negativeCases": 2
+    }
+  },
+  {
+    "code": "D1",
+    "githubIssue": 556,
+    "tool": "per-tool-docs",
+    "status": "planned",
+    "scope": "deepen per-tool doc gate: schema-valid examples, live-registry modes, freshness stamp",
+    "acceptanceCriteria": [
+      "extended gate fails on schema-invalid example, non-executable mode, or stale stamp",
+      "all 11 docs/tools/*.md pass the extended gate",
+      "3+ doc-corruption mutations wired into the G1 self-test"
+    ],
+    "closureRequirements": [
+      "persist D1 evidence with standard envelope",
+      "negativeCases > 0",
+      "evidence stamped at commit containing final code"
+    ]
+  },
+  {
+    "code": "D2",
+    "githubIssue": 557,
+    "tool": "top-level-docs",
+    "status": "planned",
+    "scope": "behavioral truth gate for the 15 ungated docs/BB_*.md files",
+    "acceptanceCriteria": [
+      "gate fails on planted doc drift (mutations from G1)",
+      "every BB_*.md has a machine-readable claim inventory, zero silent claims",
+      "docs corrected where the gate found real drift",
+      "evidence includes claim counts and executed-claim pass rate"
+    ],
+    "closureRequirements": [
+      "executed-claim pass rate 100% after corrections",
+      "persist D2 evidence with standard envelope",
+      "negativeCases > 0"
+    ]
+  },
+  {
+    "code": "D3",
+    "githubIssue": 558,
+    "tool": "tools-overview",
+    "status": "planned",
+    "scope": "create docs/TOOLS_OVERVIEW.md + structural gate over registry, schema artifacts, cross-link map",
+    "acceptanceCriteria": [
+      "gate verifies registry coverage, schema artifact existence, cross-link consistency, no aspirational tools",
+      "prose passes link/heading lint (no dead relative links)",
+      "mutation self-test covers this gate"
+    ],
+    "closureRequirements": [
+      "persist D3 evidence with standard envelope",
+      "negativeCases > 0",
+      "honesty wording review recorded"
+    ]
+  },
+  {
+    "code": "T1",
+    "githubIssue": 559,
+    "tool": "behavioral-corpus",
+    "status": "planned",
+    "scope": "observed-behavior corpus: every tool mode live through real MCP handler path, structural snapshot baseline",
+    "acceptanceCriteria": [
+      "harness runs all executable modes through the real handler path; any mock-only coverage is a declared named failure",
+      "baseline JSON committed; regeneration produces zero diff on unchanged tree",
+      "corpus catches a planted behavior change"
+    ],
+    "closureRequirements": [
+      "determinism proven by double-run",
+      "persist T1 evidence with standard envelope",
+      "negativeCases > 0"
+    ]
+  },
+  {
+    "code": "X1",
+    "githubIssue": 560,
+    "tool": "closure",
+    "status": "planned",
+    "scope": "final closure gate: all M31 gates verified at same HEAD, staleness scoped to doc-adjacent surfaces",
+    "acceptanceCriteria": [
+      "X1 passes with all subordinate gates verified at the same HEAD",
+      "stale count 0 across M31 evidence; mutationGaps 0",
+      "closure comment links every evidence file"
+    ],
+    "closureRequirements": [
+      "milestone closes only via this gate",
+      "manifest status flip only at passing HEAD"
+    ]
+  }
+]
