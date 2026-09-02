@@ -681,7 +681,12 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (c.type === "parameters") { sawParams = true; continue }
             // M14 #419 G5: tuple_type (and other *_type forms) in RETURN
             // position — def pair(): (Int, String) references Int and String.
-            if (c.type === "generic_type" || c.type === "type_identifier" || c.type === "functional_type" || c.type === "tuple_type") {
+            // M14.0.F6: "functional_type" was a dead literal — the pinned
+            // tree-sitter-scala grammar names arrow types "function_type"
+            // (probe-verified 2026-09: def pair(): (Int, String) => Int). It
+            // was added here once and could never fire, silently dropping
+            // arrow-type return references.
+            if (c.type === "generic_type" || c.type === "type_identifier" || c.type === "function_type" || c.type === "tuple_type") {
               // @throws[IO] annotation type parses as generic_type("throws",
               // [IO]) and appears BEFORE parameters; skip "throws" itself,
               // emit its arguments as throws_type edges.

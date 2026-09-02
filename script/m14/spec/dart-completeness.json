@@ -20,7 +20,6 @@
       "configurable_uri",
       "const_object_expression",
       "constant_constructor_signature",
-      "constructor_invocation",
       "constructor_param",
       "constructor_signature",
       "declaration",
@@ -67,9 +66,7 @@
       "part_directive",
       "part_of_directive",
       "program",
-      "qualified",
       "redirecting_factory_constructor_signature",
-      "scoped_identifier",
       "selector",
       "setter_signature",
       "static_final_declaration",
@@ -88,7 +85,6 @@
       "type_identifier",
       "type_parameter",
       "type_parameters",
-      "typed_identifier",
       "unconditional_assignable_selector",
       "uri",
       "void_type",
@@ -270,6 +266,13 @@
         "status": "RULED",
         "question": "tree-sitter-dart parses builtin types (int, String, double) and generics (List<String>) as type_identifier (+ type_arguments), not dedicated builtin_type/generic_type nodes.",
         "resolution": "All type positions resolve via type_identifier/void_type; generic arguments live in type_arguments and are preserved in the type string."
+      },
+      {
+        "id": "DARTD2",
+        "node_type": "constructor_invocation, qualified, scoped_identifier, typed_identifier",
+        "status": "RULED",
+        "question": "Are these four grammar rules realizable as parse-tree nodes by any Dart source in the pinned tree-sitter-dart grammar?",
+        "resolution": "No. Probe-verified 2026-09-02 across 25+ syntax shapes (prefixed calls/types, scoped library imports, constructor initializers super.named()/this(), typed literals, is/as casts, enum constant constructor args, super formal parameters): none produce these nodes. They are grammar-internal supertypes whose productions are folded into concrete siblings (type_identifier, identifier, selector, object_creation forms). The analyzer's branches on constructor_invocation/new_expression/const_object_expression and typed_identifier formal parameters are retained as defensive coverage and all resolve through the same concrete-node paths. Reclassified from handled_verified per the F6 fixture-coverage gate (M14.0.F6)."
       }
     ]
   }

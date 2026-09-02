@@ -44,7 +44,7 @@
     },
     {
       "description": "scala adversarial fixtures",
-      "detail": "36/36 fixtures pass",
+      "detail": "37/37 fixtures pass",
       "id": "fixtures-scala",
       "status": "pass"
     },
@@ -122,8 +122,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "7ab9a63b9d4206e7c1008b1b08763750ea8c1bba",
-  "committedAt": "2026-09-01T16:30:47+02:00",
+  "commit": "3ca3eb013f999120ac028436c4c654dba0f95e6d",
+  "committedAt": "2026-09-02T05:41:06+02:00",
   "data": {
     "details": [
       {
@@ -1242,6 +1242,11 @@
         "problems": []
       },
       {
+        "fixture": "scala/f6-coverage-wave",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "scala/field-uses",
         "ok": true,
         "problems": []
@@ -1591,7 +1596,7 @@
       },
       "scala": {
         "fail": 0,
-        "pass": 36
+        "pass": 37
       },
       "svelte": {
         "fail": 0,
