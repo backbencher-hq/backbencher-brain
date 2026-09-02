@@ -189,6 +189,18 @@ export async function runCli(argv: string[]): Promise<void> {
     })
 
   program
+    .command("doctor")
+    .description("embedding kurulum ve indeks tutarlılığını tanıla (salt okunur)")
+    .option("--dir <dir>", "project directory (default: cwd)")
+    .action(async (opts: any) => {
+      const { runDoctorChecks, renderDoctorReport } = await import("../setup/doctor")
+      const cwd = opts.dir ? requireDir(opts.dir) : process.cwd()
+      const report = runDoctorChecks({ cwd, projectId: getProjectId(cwd) })
+      console.log(renderDoctorReport(report))
+      if (!report.healthy) process.exitCode = 1
+    })
+
+  program
     .command("search")
     .description("search the index")
     .argument("<query>", "symbol name or fragment")

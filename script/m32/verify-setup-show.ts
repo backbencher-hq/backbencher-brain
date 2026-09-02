@@ -53,8 +53,11 @@ async function loadComponent(p: string): Promise<ShowMod> {
   return (await import(`${p}?v=${loadCounter}`)) as ShowMod
 }
 
-const FULL_ENV_KEY = "REDACTED"
-const FULL_GLOBAL_KEY = "nvapi-GLOBAL_KEY_DEADBEEF_1234567890"
+// Fixture keys deliberately do NOT match real provider key shapes (the
+// governance secret-hygiene gate scans tracked files for sk-or-v1-/nvapi-
+// patterns); they still exercise fingerprinting and leak detection.
+const FULL_ENV_KEY = "fixture-env-key-aaaabbbbccccdddd0000111122223333"
+const FULL_GLOBAL_KEY = "fixture-global-key-DEADBEEF_1234567890"
 
 function tmpEnv(): { dir: string; dataDir: string; proj: string; cleanup: () => void } {
   const dir = mkdtempSync(path.join(os.tmpdir(), "m32-s1-"))
