@@ -226,7 +226,15 @@ function shape(result: ToolResult): unknown {
   const parsed = (() => { try { return JSON.parse(text) } catch { return null } })()
   if (parsed === null) return { kind: result.isError ? "error-text" : "text", textHead: redact(text.slice(0, 160)) }
   if (Array.isArray(parsed)) return { kind: "json-array", length: parsed.length, itemShape: parsed.length ? shapeOfItem(parsed[0]) : null }
-  return { kind: "json-object", keys: Object.keys(parsed).sort(), scalars: redact(topLevelScalars(parsed)) }
+  // arrayItemKeys: keys of the first item of each top-level array field —
+  // output-field documentation often describes item fields (e.g. matches[].symbolName).
+  const arrayItemKeys: Record<string, string[]> = {}
+  for (const [k, v] of Object.entries(parsed)) {
+    if (Array.isArray(v) && v.length > 0 && v[0] && typeof v[0] === "object" && !Array.isArray(v[0])) {
+      arrayItemKeys[k] = Object.keys(v[0] as Record<string, unknown>).sort()
+    }
+  }
+  return { kind: "json-object", keys: Object.keys(parsed).sort(), scalars: redact(topLevelScalars(parsed)), arrayItemKeys }
 }
 
 async function main() {
