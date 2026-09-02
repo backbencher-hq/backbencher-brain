@@ -105,6 +105,14 @@ bb doctor --fix — applied
 ✓ /root/.bb/config.json: mode 644 -> 600 (applied)
 ```
 
+## Discovering these commands
+
+Every command documents itself: `bb --help` lists all commands,
+`bb <command> --help` shows that command's options, and `bb -v`,
+`bb version`, and `bb --version` all print the version. A mistyped command
+suggests the closest real one (`bb docter` suggests `doctor`). The full
+manual ships with npm installs and is available as `man bb`.
+
 ## Quick start (3 environment variables)
 
 ```bash
