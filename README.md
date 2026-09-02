@@ -122,6 +122,16 @@ it with one live `/embeddings` call before saving (bad keys are never saved),
 and writes `~/.bb/config.json` with mode 0600. The first `bb index` run
 without any key shows a one-line honest notice and proceeds with local word
 vectors; add a real model later and re-embed with `bb index --force`.
+The wizard prompts only once — an explicit skip is remembered.
+
+To inspect what is configured, `bb setup show` prints every precedence tier
+(env / global / project), the winning tier, and the key as a last-4
+fingerprint only — never the full key. To diagnose degraded semantic search,
+`bb doctor` reads real local state (config, permissions, stored embedding
+models) and names the exact fix command for each finding; its exit code is 1
+when a hard finding exists. `bb doctor --fix` mutates exactly one thing —
+config file permissions, repaired to 0600 — printing every change and
+refusing everything else. See EMBEDDINGS.md for details.
 
 For manual configuration:
 

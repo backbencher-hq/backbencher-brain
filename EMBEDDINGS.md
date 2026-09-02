@@ -29,6 +29,10 @@ line, non-interactive environments never block on it):
 not: embedding anahtarı yok — semantik arama yerel vektörlerle çalışacak (daha zayıf). Kurulum: bb setup
 ```
 
+The wizard runs **once**: an explicit skip is remembered (a `setup_skipped`
+marker in the 0600 config), so `bb index` never re-prompts after you chose to
+skip. Entering a key later via `bb setup` replaces the skip automatically.
+
 ### What a failed key validation means (pre-save, `bb setup`)
 
 A key is validated before it is saved. The exact messages users see:
@@ -45,6 +49,61 @@ A key is validated before it is saved. The exact messages users see:
 429 and 5xx are treated as "key shape accepted" (rate/provider side issue) and
 saved; index-time resilience (per-batch fallback + 429 backoff) retries them.
 A 401/403/404 or malformed response is a hard error: the key is NOT saved.
+
+## Inspecting and diagnosing: `bb setup show` and `bb doctor` (M32)
+
+`bb setup show` prints the effective embedding configuration without ever
+displaying the full key — the key appears only as its last four characters:
+
+```
+bb — embedding yapılandırması
+Kaynak önceliği: env > ~/.bb/config.json > bb.json
+
+env    : — (tanımlı değil)
+global : ✓ https://g.example/v1 · g-model · anahtar: ••••2345 · mod: 600
+project: — (tanımlı değil)
+
+Kazanan: global
+```
+
+It names the winning precedence tier, shows incomplete tiers with what is
+missing (an incomplete tier can never win), warns when a config file's mode is
+not 0600, and exits 1 when nothing is configured (scripts can branch on it).
+A corrupt config file is treated as an absent tier — it never crashes.
+
+`bb doctor` diagnoses degradation from real local state (config file, file
+permissions, and the embedding models actually stored in the project index —
+read-only, no network). Every finding names the exact fix command:
+
+```
+bb doctor — tanılama
+
+✗ Embedding yapılandırması yok.
+  Çözüm: bb setup
+! global yapılandırma dosyasının izni 644 — anahtar dünyaca okunabilir olabilir.
+  Çözüm: bb doctor --fix
+· Bu proje için kayıtlı vektör yok (indeks yok veya boş). Yapılandırmadaki model: g-model.
+  Çözüm: bb index .
+```
+
+A model mismatch (config says one model, the index was built with another) is
+reported as a hard failure with `Çözüm: bb index --force` — stored vectors
+from different models are never compared. `bb doctor` exits 1 when a fail-level
+finding exists.
+
+### `bb doctor --fix`: the only mutating arm
+
+`bb doctor --fix` repairs **only file permissions** of embedding config files
+to 0600. It prints every change it makes; config content, keys, and the index
+are never modified by `--fix`. Everything else remains advice naming the exact
+command — diagnosis never auto-mutates, and `--fix` never touches anything
+beyond permissions:
+
+```
+bb doctor --fix — uygulandı
+
+✓ /root/.bb/config.json: izin 644 -> 600 (uygulandı)
+```
 
 ## Quick start (3 environment variables)
 
