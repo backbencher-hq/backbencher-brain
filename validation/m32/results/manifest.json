@@ -1,0 +1,173 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M32",
+  "githubMilestone": 32,
+  "title": "Diagnostics & Self-Heal",
+  "status": "open",
+  "authority": "docs/m32/M32-MASTER-PLAN.md",
+  "governingContract": "docs/M14-HONESTY-CONTRACT.md",
+  "updatedAt": "2026-09-02T00:00:00.000Z",
+  "evidencePolicy": {
+    "verifiedRequires": [
+      "currentCommit",
+      "sourceFingerprint",
+      "verifierCommand",
+      "evidenceFile",
+      "positiveAndNegativeChecks",
+      "freshTimestamp",
+      "limitations"
+    ],
+    "missingCorpusState": "blocked-or-known-gap",
+    "missingLiveKeysState": "blocked-with-reason",
+    "timeoutState": "blocked-or-known-gap",
+    "unexecutedState": "planned"
+  },
+  "secretHygiene": {
+    "keyStorage": "not applicable to M32 (no provider keys used); .env.local remains gitignored, mode 0600",
+    "evidenceRecords": "key fingerprint (last 4 chars) only — bb setup show and bb doctor must never print full keys",
+    "guard": "verifier fails if any raw key pattern appears in tracked files, and fails if S1 output paths can emit full key material"
+  },
+  "issueNumberPolicy": {
+    "state": "provisional",
+    "note": "GitHub issues not yet filed; ledger githubIssue values are unique placeholders in a reserved range. X1 closure requires real numbers wired into the ledger and verify-governance.ts."
+  },
+  "issues": [
+    {
+      "code": "G1",
+      "githubIssue": 832001,
+      "tool": "governance",
+      "status": "verified",
+      "scope": "master plan, ledger, npm run verify wiring, secret-hygiene guard",
+      "acceptanceCriteria": [
+        "master plan with explicit authority order and issue order",
+        "machine-readable ledger with all 7 M32 issues",
+        "fail-closed governance verifier with negative checks",
+        "gated as a permanent part of npm run verify"
+      ],
+      "closureRequirements": [
+        "persist current gate evidence",
+        "negative checks pass",
+        "document limitations"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "99e15f43dc9c0d7fb62553f352051feabc7191d7",
+        "verifierCommand": "npx tsx script/m32/verify-governance.ts",
+        "evidenceFile": "G1.json",
+        "generatedAt": "2026-09-02T02:45:15.057Z",
+        "passed": 25,
+        "failed": 0,
+        "negativeCases": 8
+      }
+    },
+    {
+      "code": "SM1",
+      "githubIssue": 832002,
+      "tool": "smoke",
+      "status": "verified",
+      "scope": "built-binary smoke gate: fresh dist build, pty-driven first-run/skip/0600/non-TTY flows against isolated BB_DATA_DIR, timeout-guarded, negative planted-binary cases",
+      "acceptanceCriteria": [
+        "gate runs the compiled bin/bb (never tsx on source) and rebuilds dist first",
+        "prompt-once, skip persistence, 0600 save, and non-TTY honesty verified end-to-end",
+        "planted broken binaries (exit-nonzero, silent no-write) are caught",
+        "no provider keys and no network; loopback mock only where a key is needed"
+      ],
+      "closureRequirements": [
+        "evidence with positive and negative case counts at current commit",
+        "gate wired permanently into npm run verify",
+        "limitations recorded (e.g. pty utility availability)"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "99e15f43dc9c0d7fb62553f352051feabc7191d7",
+        "verifierCommand": "npx tsx script/m32/verify-smoke.ts",
+        "evidenceFile": "SM1.json",
+        "generatedAt": "2026-09-02T02:47:59.696Z",
+        "passed": 14,
+        "failed": 0,
+        "negativeCases": 2
+      }
+    },
+    {
+      "code": "S1",
+      "githubIssue": 832003,
+      "tool": "cli",
+      "status": "planned",
+      "scope": "bb setup show: safe config view (provider, model, base-URL host, key fingerprint, winning precedence tier); never prints the key",
+      "acceptanceCriteria": [
+        "renders all precedence tiers and names the winner",
+        "key shown as last-4 fingerprint only, masked input never echoed",
+        "handles missing/corrupt config with actionable output, non-TTY safe"
+      ],
+      "closureRequirements": [
+        "verifier covers env/global/project/none states with mutants",
+        "evidence at current commit with negative cases"
+      ]
+    },
+    {
+      "code": "S2",
+      "githubIssue": 832004,
+      "tool": "cli",
+      "status": "planned",
+      "scope": "bb doctor: diagnoses no-config, never-validated key, model mismatch vs stored embeddings, wrong permissions — each with the exact fix command; reads local state only",
+      "acceptanceCriteria": [
+        "every reported cause is backed by real local state planted by the fixture (config file rows, brain_semantic_embedding.embedding_model)",
+        "model mismatch names both models and prescribes bb index --force",
+        "no network calls; non-TTY safe; exits nonzero when a degrading state is found"
+      ],
+      "closureRequirements": [
+        "verifier with planted-state fixtures and mutants for every diagnosis branch",
+        "evidence at current commit with negative cases"
+      ]
+    },
+    {
+      "code": "S3",
+      "githubIssue": 832005,
+      "tool": "cli",
+      "status": "planned",
+      "scope": "bb doctor --fix: repairs config file mode to 0600 only; dry-run report default; every mutation printed; refuses key/index/config-content changes",
+      "acceptanceCriteria": [
+        "dry-run is the default and --fix is explicit",
+        "only permission mutation is performed and printed",
+        "refuses (with message) any request that would touch key material or index"
+      ],
+      "closureRequirements": [
+        "verifier proves mode repair, print-every-change, and refusal mutants",
+        "evidence at current commit with negative cases"
+      ]
+    },
+    {
+      "code": "H1",
+      "githubIssue": 832006,
+      "tool": "docs",
+      "status": "planned",
+      "scope": "README/EMBEDDINGS document bb setup show and bb doctor; docs-truth check pins verbatim output strings and the advice-not-auto-fix rule",
+      "acceptanceCriteria": [
+        "both commands documented with verbatim output strings",
+        "no banned vocabulary; honesty contract inherited",
+        "docs-truth verifier can fail (mutants on doc strings)"
+      ],
+      "closureRequirements": [
+        "docs-truth evidence at current commit",
+        "gate wired into npm run verify"
+      ]
+    },
+    {
+      "code": "X1",
+      "githubIssue": 832007,
+      "tool": "gate",
+      "status": "planned",
+      "scope": "closure gate: all M32 mutants fail the combined suite; gates permanent in npm run verify; completion bar audited",
+      "acceptanceCriteria": [
+        "combined audit proves every planted M32 mutant is caught",
+        "all M32 gates present in npm run verify",
+        "completion bar audited with evidence; ledger clean"
+      ],
+      "closureRequirements": [
+        "closure evidence at current commit",
+        "all six sibling issues verified or explicitly known-gap/blocked with reason",
+        "real GitHub issue numbers wired (placeholders rejected)"
+      ]
+    }
+  ]
+}
