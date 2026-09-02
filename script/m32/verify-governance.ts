@@ -56,16 +56,16 @@ const contractPath = path.join(ROOT, "docs/M14-HONESTY-CONTRACT.md")
 const evidenceDir = path.join(ROOT, "validation/m32/results")
 
 const EXPECTED_CODES = ["G1", "SM1", "S1", "S2", "S3", "H1", "X1"]
-// Provisional until the GitHub issues are filed (see plan §GitHub issue numbers).
-// Uniqueness and membership are enforced now; exact values gate X1 closure later.
-const PROVISIONAL_ISSUE_NUMBERS: Record<string, number> = {
-  G1: 832001,
-  SM1: 832002,
-  S1: 832003,
-  S2: 832004,
-  S3: 832005,
-  H1: 832006,
-  X1: 832007,
+// Real GitHub issue numbers (milestone 32). Enforced exactly — a provisional
+// or unknown number is a gate failure, so the ledger cannot drift from GitHub.
+const REAL_ISSUE_NUMBERS: Record<string, number> = {
+  G1: 561,
+  SM1: 562,
+  S1: 563,
+  S2: 564,
+  S3: 565,
+  H1: 566,
+  X1: 567,
 }
 // Raw provider key patterns (OpenRouter and NVIDIA NIM). Any occurrence in a
 // tracked file is a gate failure. (Pattern, not specific values — new keys of
@@ -129,6 +129,7 @@ function validateLedger(ledger: Ledger, plan: string, contract: string): string[
     codes.add(issue.code)
     if (!Number.isInteger(issue.githubIssue) || githubNumbers.has(issue.githubIssue)) errors.push(`github-issue-dup:${issue.code}`)
     githubNumbers.add(issue.githubIssue)
+    if (issue.githubIssue !== REAL_ISSUE_NUMBERS[issue.code]) errors.push(`github-issue-exact:${issue.code}`)
     if (!issue.tool || !issue.scope) errors.push(`identity:${issue.code}`)
     if (!Array.isArray(issue.acceptanceCriteria) || issue.acceptanceCriteria.length < 2) errors.push(`acceptance:${issue.code}`)
     if (!Array.isArray(issue.closureRequirements) || issue.closureRequirements.length < 2) errors.push(`closure:${issue.code}`)
@@ -193,8 +194,8 @@ check("G1: known-gap and blocked states cannot be verified by wording", plan.inc
 check("G1: secret-hygiene display rule declared (fingerprint, never full key)", plan.includes("fingerprint (last 4 chars only)") && plan.includes("never prints the key"))
 check("G1: ownership boundary declared (no MCP tool surface changes)", plan.includes("Non-goals / ownership boundary") && plan.includes("src/mcp/"))
 check("G1: dependency order in ledger (G1 first, X1 last)", !errors.some((e) => e.startsWith("order:")), errors.filter((e) => e.startsWith("order:")).join(","))
-check("G1: provisional issue-number policy declared", ledger.issueNumberPolicy?.state === "provisional" && plan.includes("GitHub issue numbers"))
-check("G1: provisional ledger numbers match the reserved range", EXPECTED_CODES.every((c) => ledger.issues.find((i) => i.code === c)?.githubIssue === PROVISIONAL_ISSUE_NUMBERS[c]))
+check("G1: real issue-number policy declared", ledger.issueNumberPolicy?.state === "real" && plan.includes("GitHub issue numbers"))
+check("G1: ledger numbers match the filed GitHub issues exactly", EXPECTED_CODES.every((c) => ledger.issues.find((i) => i.code === c)?.githubIssue === REAL_ISSUE_NUMBERS[c]))
 
 // --- Secret hygiene (positive) --------------------------------------------
 const tracked = gitTrackedFiles()
@@ -292,11 +293,21 @@ const removed = structuredClone(ledger)
 removed.issues = removed.issues.filter((i) => i.code !== "S1")
 negative("G1: removing an issue is rejected", validateLedger(removed, plan, contract).includes("issue-count"))
 
-// Duplicate issue numbers must be rejected (provisional range is still
-// enforced by uniqueness).
+// Duplicate issue numbers must be rejected (uniqueness is enforced even
+// though exact values are now also enforced).
 const renumbered = structuredClone(ledger)
 renumbered.issues[4]!.githubIssue = ledger.issues[0]!.githubIssue
 negative("G1: duplicate issue number is rejected", validateLedger(renumbered, plan, contract).some((e) => e.startsWith("github-issue-dup:S3")))
+
+// A provisional placeholder number must be rejected now that real issues exist.
+const provisional = structuredClone(ledger)
+provisional.issues[2]!.githubIssue = 832003
+negative("G1: provisional placeholder number is rejected", validateLedger(provisional, plan, contract).some((e) => e.startsWith("github-issue-exact:S1")))
+
+// An unknown real-looking number must be rejected too.
+const wrongNumber = structuredClone(ledger)
+wrongNumber.issues[2]!.githubIssue = 999999
+negative("G1: unknown issue number is rejected", validateLedger(wrongNumber, plan, contract).some((e) => e.startsWith("github-issue-exact:S1")))
 
 // A planted key leak in a tracked file must be caught by the pattern.
 const leakPatternWorks = KEY_PATTERNS.some(([, p]) => p.test("sk-or-v1-" + "a".repeat(32))) && KEY_PATTERNS.some(([, p]) => p.test("nvapi-" + "X".repeat(24)))
@@ -329,7 +340,7 @@ const evidence = {
     "Secret-hygiene scan covers tracked files only; untracked local files are outside the gate by design (.env.local is gitignored).",
     "Key patterns match OpenRouter (sk-or-v1-…) and NVIDIA (nvapi-…) shapes; a provider with a different key format must be added to KEY_PATTERNS.",
     "Banned-vocabulary lint covers M32 docs and the ledger, not arbitrary source comments.",
-    "GitHub issue numbers are provisional placeholders; X1 closure requires real numbers wired into the ledger and this verifier.",
+    "GitHub issue numbers are enforced exactly (milestone 32, issues 561–567); refiling on GitHub requires updating REAL_ISSUE_NUMBERS and the ledger together.",
   ],
 }
 mkdirSync(evidenceDir, { recursive: true })

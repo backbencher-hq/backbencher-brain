@@ -24,17 +24,17 @@
   },
   "secretHygiene": {
     "keyStorage": "not applicable to M32 (no provider keys used); .env.local remains gitignored, mode 0600",
-    "evidenceRecords": "key fingerprint (last 4 chars) only — bb setup show and bb doctor must never print full keys",
+    "evidenceRecords": "key fingerprint (last 4 chars) only \u2014 bb setup show and bb doctor must never print full keys",
     "guard": "verifier fails if any raw key pattern appears in tracked files, and fails if S1 output paths can emit full key material"
   },
   "issueNumberPolicy": {
-    "state": "provisional",
-    "note": "GitHub issues not yet filed; ledger githubIssue values are unique placeholders in a reserved range. X1 closure requires real numbers wired into the ledger and verify-governance.ts."
+    "state": "real",
+    "note": "Filed on GitHub as milestone 32: G1=#561, SM1=#562, S1=#563, S2=#564, S3=#565, H1=#566, X1=#567. Enforced exactly by verify-governance.ts (REAL_ISSUE_NUMBERS); placeholder or unknown numbers are gate failures."
   },
   "issues": [
     {
       "code": "G1",
-      "githubIssue": 832001,
+      "githubIssue": 561,
       "tool": "governance",
       "status": "verified",
       "scope": "master plan, ledger, npm run verify wiring, secret-hygiene guard",
@@ -51,18 +51,18 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "99e15f43dc9c0d7fb62553f352051feabc7191d7",
+        "currentCommit": "a04815ae24ab23d2734f4f9a5e2b9d7c2e75677c",
         "verifierCommand": "npx tsx script/m32/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "generatedAt": "2026-09-02T02:45:15.057Z",
-        "passed": 25,
+        "generatedAt": "2026-09-02T14:15:42.303Z",
+        "passed": 27,
         "failed": 0,
-        "negativeCases": 8
+        "negativeCases": 10
       }
     },
     {
       "code": "SM1",
-      "githubIssue": 832002,
+      "githubIssue": 562,
       "tool": "smoke",
       "status": "verified",
       "scope": "built-binary smoke gate: fresh dist build, pty-driven first-run/skip/0600/non-TTY flows against isolated BB_DATA_DIR, timeout-guarded, negative planted-binary cases",
@@ -79,10 +79,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "99e15f43dc9c0d7fb62553f352051feabc7191d7",
+        "currentCommit": "a04815ae24ab23d2734f4f9a5e2b9d7c2e75677c",
         "verifierCommand": "npx tsx script/m32/verify-smoke.ts",
         "evidenceFile": "SM1.json",
-        "generatedAt": "2026-09-02T02:47:59.696Z",
+        "generatedAt": "2026-09-02T14:15:59.705Z",
         "passed": 14,
         "failed": 0,
         "negativeCases": 2
@@ -90,7 +90,7 @@
     },
     {
       "code": "S1",
-      "githubIssue": 832003,
+      "githubIssue": 563,
       "tool": "cli",
       "status": "verified",
       "scope": "bb setup show: safe config view (provider, model, base-URL host, key fingerprint, winning precedence tier); never prints the key",
@@ -105,10 +105,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "46b8aed3aa5b0b61f8489b41bbb6e8be70721bb2",
+        "currentCommit": "a04815ae24ab23d2734f4f9a5e2b9d7c2e75677c",
         "verifierCommand": "npx tsx script/m32/verify-setup-show.ts",
         "evidenceFile": "S1.json",
-        "generatedAt": "2026-09-02T03:02:08.421Z",
+        "generatedAt": "2026-09-02T14:16:07.656Z",
         "passed": 32,
         "failed": 0,
         "negativeCases": 5
@@ -116,10 +116,10 @@
     },
     {
       "code": "S2",
-      "githubIssue": 832004,
+      "githubIssue": 564,
       "tool": "cli",
       "status": "verified",
-      "scope": "bb doctor: diagnoses no-config, never-validated key, model mismatch vs stored embeddings, wrong permissions — each with the exact fix command; reads local state only",
+      "scope": "bb doctor: diagnoses no-config, never-validated key, model mismatch vs stored embeddings, wrong permissions \u2014 each with the exact fix command; reads local state only",
       "acceptanceCriteria": [
         "every reported cause is backed by real local state planted by the fixture (config file rows, brain_semantic_embedding.embedding_model)",
         "model mismatch names both models and prescribes bb index --force",
@@ -131,10 +131,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "5ab562063a568f81363faf89843c45d5c0fcc1a3",
+        "currentCommit": "a04815ae24ab23d2734f4f9a5e2b9d7c2e75677c",
         "verifierCommand": "npx tsx script/m32/verify-doctor.ts",
         "evidenceFile": "S2.json",
-        "generatedAt": "2026-09-02T03:46:52.793Z",
+        "generatedAt": "2026-09-02T14:16:18.580Z",
         "passed": 33,
         "failed": 0,
         "negativeCases": 5
@@ -142,7 +142,7 @@
     },
     {
       "code": "S3",
-      "githubIssue": 832005,
+      "githubIssue": 565,
       "tool": "cli",
       "status": "verified",
       "scope": "bb doctor --fix: repairs config file mode to 0600 only; dry-run report default; every mutation printed; refuses key/index/config-content changes",
@@ -157,10 +157,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "05ecb8904caf5a6b04a2604984d55ca7bd645aa2",
+        "currentCommit": "a04815ae24ab23d2734f4f9a5e2b9d7c2e75677c",
         "verifierCommand": "npx tsx script/m32/verify-doctor-fix.ts",
         "evidenceFile": "S3.json",
-        "generatedAt": "2026-09-02T03:57:40.502Z",
+        "generatedAt": "2026-09-02T14:16:25.339Z",
         "passed": 27,
         "failed": 0,
         "negativeCases": 5
@@ -168,7 +168,7 @@
     },
     {
       "code": "H1",
-      "githubIssue": 832006,
+      "githubIssue": 566,
       "tool": "docs",
       "status": "verified",
       "scope": "README/EMBEDDINGS document bb setup show and bb doctor; docs-truth check pins verbatim output strings and the advice-not-auto-fix rule",
@@ -183,10 +183,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "5ea6511be0933466bcfd2d139e61c9c8b0e56762",
+        "currentCommit": "a04815ae24ab23d2734f4f9a5e2b9d7c2e75677c",
         "verifierCommand": "npx tsx script/m32/verify-honesty-docs.ts",
         "evidenceFile": "H1.json",
-        "generatedAt": "2026-09-02T04:07:34.398Z",
+        "generatedAt": "2026-09-02T14:16:32.205Z",
         "passed": 39,
         "failed": 0,
         "negativeCases": 5
@@ -194,9 +194,9 @@
     },
     {
       "code": "X1",
-      "githubIssue": 832007,
+      "githubIssue": 567,
       "tool": "gate",
-      "status": "planned",
+      "status": "verified",
       "scope": "closure gate: all M32 mutants fail the combined suite; gates permanent in npm run verify; completion bar audited",
       "acceptanceCriteria": [
         "combined audit proves every planted M32 mutant is caught",
@@ -207,7 +207,17 @@
         "closure evidence at current commit",
         "all six sibling issues verified or explicitly known-gap/blocked with reason",
         "real GitHub issue numbers wired (placeholders rejected)"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "a04815ae24ab23d2734f4f9a5e2b9d7c2e75677c",
+        "verifierCommand": "npx tsx script/m32/verify-closure.ts",
+        "evidenceFile": "X1.json",
+        "generatedAt": "2026-09-02T04:30:00.000Z",
+        "passed": 64,
+        "failed": 0,
+        "negativeCases": 6
+      }
     }
   ]
 }
