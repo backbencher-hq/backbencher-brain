@@ -2390,26 +2390,35 @@ async function main() {
     // second time and the per-file average takes the MINIMUM of the two runs:
     // min over runs converges on true steady-state cost under any load
     // profile. Correctness counts are computed once and never re-derived.
-    let retryDurations: number[] | null = null
+    let retryDurations: number[][] | null = null
     if (loadAvg1() > 4) {
-      const retryDurs: number[] = []
-      for (const f of sample) {
-        const content = fs.readFileSync(f, "utf8")
-        let r0
-        try { r0 = parser.parse(content).rootNode } catch { continue }
-        if (!r0) continue
-        const t0 = performance.now()
-        try {
-          if (lang === "vue" || lang === "svelte") {
-            const eng = await import("../../src/ast/engine")
-            await (eng as any).ASTEngine.parseFile(f, content)
-          } else {
-            await analyzer.analyze(r0, content, path.relative(repoDir, f))
-          }
-        } catch { continue }
-        retryDurs.push(performance.now() - t0)
+      // Up to 3 spaced attempts; per-file average takes the MINIMUM across
+      // the primary run and every attempt. min-over-runs converges on the
+      // true steady-state cost; a budget breach surviving 3 min-taken runs
+      // under load is treated as a REAL regression.
+      retryDurations = []
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const durs: number[] = []
+        for (const f of sample) {
+          const content = fs.readFileSync(f, "utf8")
+          let r0
+          try { r0 = parser.parse(content).rootNode } catch { continue }
+          if (!r0) continue
+          const t0 = performance.now()
+          try {
+            if (lang === "vue" || lang === "svelte") {
+              const eng = await import("../../src/ast/engine")
+              await (eng as any).ASTEngine.parseFile(f, content)
+            } else {
+              await analyzer.analyze(r0, content, path.relative(repoDir, f))
+            }
+          } catch { continue }
+          durs.push(performance.now() - t0)
+        }
+        if (durs.length) retryDurations.push(durs)
+        if (loadAvg1() <= 4) break
+        await new Promise((r) => setTimeout(r, 5000))
       }
-      retryDurations = retryDurs
     }
     // Warm-up: the first parse of a language in this process pays one-time
     // wasm compilation (measured: ~15s for tree-sitter core + grammar init,
@@ -2585,7 +2594,7 @@ async function main() {
         avgMsPerFile: durations.length
           ? +Math.min(
               durations.reduce((a, b) => a + b, 0) / durations.length,
-              ...(retryDurations && retryDurations.length ? [retryDurations.reduce((a, b) => a + b, 0) / retryDurations.length] : []),
+              ...(retryDurations ?? []).map((d) => d.reduce((a, b) => a + b, 0) / d.length),
             ).toFixed(1)
           : null,
         maxMsPerFile: durations.length ? +Math.max(...durations).toFixed(1) : null,
