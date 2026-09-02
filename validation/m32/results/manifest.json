@@ -92,7 +92,7 @@
       "code": "S1",
       "githubIssue": 832003,
       "tool": "cli",
-      "status": "planned",
+      "status": "verified",
       "scope": "bb setup show: safe config view (provider, model, base-URL host, key fingerprint, winning precedence tier); never prints the key",
       "acceptanceCriteria": [
         "renders all precedence tiers and names the winner",
@@ -102,7 +102,17 @@
       "closureRequirements": [
         "verifier covers env/global/project/none states with mutants",
         "evidence at current commit with negative cases"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "46b8aed3aa5b0b61f8489b41bbb6e8be70721bb2",
+        "verifierCommand": "npx tsx script/m32/verify-setup-show.ts",
+        "evidenceFile": "S1.json",
+        "generatedAt": "2026-09-02T03:02:08.421Z",
+        "passed": 32,
+        "failed": 0,
+        "negativeCases": 5
+      }
     },
     {
       "code": "S2",
