@@ -87,15 +87,22 @@ const fabricated = ledger.find((i) => i.status === "verified" && !evidenceConfor
 negative("no fabricated verified status exists in the ledger", fabricated === undefined, fabricated ? fabricated.code : "")
 
 // ── 3. Evidence files on disk match ledger claims ──
+// Compares result fields (status/passed/failed/negativeCases), NOT currentCommit:
+// verifiers legitimately re-stamp their evidence at HEAD on every run, so commit
+// equality with the synced ledger is a sync-ordering artifact, not truth. Whether
+// evidence is COMMIT-CURRENT is the closure gate's scoped staleness check (M21 pattern).
 for (const issue of ledger) {
   if (issue.status !== "verified") continue
+  // Skip this gate's own evidence: it is rewritten by the running invocation,
+  // so comparing it to the ledger is self-referential by construction.
+  if (issue.code === "G1") continue
   const file = path.join(GOV_ROOT, "validation/m31/results", String(issue.evidence?.evidenceFile ?? ""))
   check(`${issue.code}: evidence file exists on disk`, existsSync(file), file)
   if (!existsSync(file)) continue
   const ev = JSON.parse(readFileSync(file, "utf8")) as Record<string, unknown>
   check(
     `${issue.code}: evidence file agrees with ledger block`,
-    ev.status === issue.evidence?.status && ev.currentCommit === issue.evidence?.currentCommit && ev.passed === issue.evidence?.passed,
+    ev.status === issue.evidence?.status && ev.passed === issue.evidence?.passed && ev.failed === issue.evidence?.failed && ev.negativeCases === issue.evidence?.negativeCases,
   )
 }
 
