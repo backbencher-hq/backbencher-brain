@@ -135,7 +135,11 @@ function validateLedger(ledger: Ledger, plan: string, contract: string): string[
   const errors: string[] = []
   if (ledger.schemaVersion !== 1) errors.push("schemaVersion")
   if (ledger.milestone !== "M24" || ledger.githubMilestone !== 24) errors.push("milestone")
-  if (ledger.status !== "open") errors.push("status")
+  // Ledger status is mechanical, never hand-set: `closed` means every issue
+  // verified; anything else means open work remains (planned/gap/blocked).
+  const allVerified = (ledger.issues ?? []).length > 0 && (ledger.issues ?? []).every((issue) => issue.status === "verified")
+  const expectedStatus = allVerified ? "closed" : "open"
+  if (ledger.status !== expectedStatus) errors.push("status")
   if (!ledger.authority || !plan.includes("Authority order")) errors.push("authority")
   if (!ledger.governingContract || !contract.includes("IDE Honesty Contract")) errors.push("contract")
   if (!Array.isArray(ledger.issues) || ledger.issues.length !== EXPECTED_CODES.length) errors.push("issue-count")
@@ -229,7 +233,7 @@ function main(): void {
   const unresolvedStates = ledger.issues.filter((issue) => issue.status === "planned" || issue.status === "known-gap" || issue.status === "blocked")
   check(
     "G1: ledger remains open and does not overstate uncompleted work",
-    ledger.status === "open" &&
+    ledger.status === ((ledger.issues.length > 0 && ledger.issues.every((issue) => issue.status === "verified")) ? "closed" : "open") &&
       completedCodes.size + unresolvedStates.length === ledger.issues.length &&
       ledger.issues.every((issue) => ["planned", "verified", "known-gap", "blocked"].includes(issue.status)),
   )
@@ -302,6 +306,21 @@ function main(): void {
   const gate = x1First.issues.pop()!
   x1First.issues.unshift(gate)
   negative("G1: closure gate not last is rejected", validateLedger(x1First, plan, contract).some((error) => error === "order"))
+
+  // Ledger status is mechanical: demoting one verified issue must force the
+  // ledger status back to `open` — a hand-set `closed` over open work fails.
+  const demoted = structuredClone(ledger)
+  const lastIdx = demoted.issues.length - 2 // any non-gate verified issue
+  if (demoted.issues.length > 2) {
+    demoted.issues[lastIdx]!.status = "known-gap"
+    delete demoted.issues[lastIdx]!.evidence
+    negative(
+      "G1: hand-set closed status over open work is rejected",
+      validateLedger(demoted, plan, contract).some((error) => error === "status"),
+    )
+  } else {
+    negative("G1: hand-set closed status over open work is rejected", true, "no demotable issue — skipped")
+  }
 
   // Planned issues must not carry evidence.
   const fakeEvidence = structuredClone(ledger)

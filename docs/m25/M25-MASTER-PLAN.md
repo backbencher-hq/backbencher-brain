@@ -40,7 +40,8 @@ closure comments quote runs). Additions:
 1. Editor/fork runs record editor version, OS, workspace fixture, timestamp.
 2. Marketplace listing text is a governed artifact — the D1 verifier lints it
    with the contract vocabulary.
-3. No fork claim without a pinned run; "should work in forks" is banned.
+3. No fork claim without a pinned run; claiming a fork by assumption is
+   banned vocabulary under contract §1.
 
 ## Completion bar for v1 (M26 may not start until ALL are true)
 
