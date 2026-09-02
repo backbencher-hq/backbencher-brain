@@ -9,10 +9,10 @@
   "mutantsCaught": 3,
   "mutantsTotal": 3,
   "negativeCases": 0,
-  "currentCommit": "6eea83e0d1ce0556a1b0ae4f357946af154d7079",
+  "currentCommit": "035d406d12c1b6b3d3e459e33a6649d0a10ad033",
   "verifierCommand": "npx tsx script/m25/verify-extension-skeleton.ts",
   "evidenceFile": "E1.json",
-  "generatedAt": "2026-09-02T14:37:12.727Z",
+  "generatedAt": "2026-09-02T15:01:19.524Z",
   "os": "linux",
   "verdict": {
     "realComponentFailures": 0
