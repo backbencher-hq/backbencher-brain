@@ -3,7 +3,7 @@
   "milestone": "M24",
   "githubMilestone": 24,
   "title": "bb_lsp \u2014 The Server (IDE Program v0)",
-  "status": "open",
+  "status": "closed",
   "authority": "docs/m24/M24-MASTER-PLAN.md",
   "governingContract": "docs/IDE-HONESTY-CONTRACT.md",
   "updatedAt": "2026-08-31T00:00:00.000Z",
