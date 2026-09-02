@@ -20,7 +20,10 @@ const BASELINE = path.join(ROOT, "validation/m31/results/tool-mode-corpus.json")
 // --check (M31 gate entry): regenerate against the LIVE tree into a .fresh file
 // and diff against the committed baseline; any structural behavior change is a
 // nonzero exit with named drifting invocations.
-const CHECK = process.argv.includes("--check")
+// BB_M31_CORPUS_CHECK_ONLY (self-test seam) must be honored at module load —
+// before WRITE_TARGET is derived — so self-test runs can NEVER write the real
+// baseline (a mutated run writing the real file would poison it).
+const CHECK = process.argv.includes("--check") || process.env.BB_M31_CORPUS_CHECK_ONLY === "1"
 const WRITE_TARGET = CHECK ? BASELINE + ".fresh" : BASELINE
 
 delete process.env.BB_EMBEDDING_BASE_URL
@@ -227,9 +230,8 @@ function shape(result: ToolResult): unknown {
 }
 
 async function main() {
-  // Self-test seam: BB_M31_CORPUS_CHECK_ONLY=1 forces --check semantics so the
-  // gate-selftest can plant a source mutation and prove this gate fails.
-  if (process.env.BB_M31_CORPUS_CHECK_ONLY === "1") process.argv.push("--check")
+  // Self-test seam: honored at module load above (CHECK) so this run writes
+  // .fresh and never the real baseline.
   const { getProjectId } = await import(path.join(ROOT, "src/cli/index"))
   const { indexProjectParallel } = await import(path.join(ROOT, "src/ast/parallel-indexer"))
   const { createToolHandlers } = await import(path.join(ROOT, "src/mcp/tool-handlers"))

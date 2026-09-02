@@ -18,12 +18,12 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "3e204b47137fcbcee8115b73cac3a6d22a1d3021",
+      "currentCommit": "bef1e8c7e0a7de240e823a42c12edeb4d8c52263",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m31/verify-governance.ts",
       "evidenceFile": "G1.json",
-      "generatedAt": "2026-09-02T03:01:01.677Z",
-      "passed": 23,
+      "generatedAt": "2026-09-02T03:31:17.826Z",
+      "passed": 25,
       "failed": 0,
       "negativeCases": 2
     }
@@ -32,7 +32,7 @@
     "code": "D1",
     "githubIssue": 556,
     "tool": "per-tool-docs",
-    "status": "planned",
+    "status": "verified",
     "scope": "deepen per-tool doc gate: schema-valid examples, live-registry modes, freshness stamp",
     "acceptanceCriteria": [
       "extended gate fails on schema-invalid example, non-executable mode, or stale stamp",
@@ -43,7 +43,18 @@
       "persist D1 evidence with standard envelope",
       "negativeCases > 0",
       "evidence stamped at commit containing final code"
-    ]
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "bef1e8c7e0a7de240e823a42c12edeb4d8c52263",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m31/verify-tool-docs-deep.ts",
+      "evidenceFile": "D1.json",
+      "generatedAt": "2026-09-02T03:28:54.070Z",
+      "passed": 140,
+      "failed": 0,
+      "negativeCases": 1
+    }
   },
   {
     "code": "D2",
@@ -98,11 +109,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "9a735944570499f067ee586768afb87d8c87e936",
+      "currentCommit": "bef1e8c7e0a7de240e823a42c12edeb4d8c52263",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m31/tool-mode-corpus.ts --check",
       "evidenceFile": "T1.json",
-      "generatedAt": "2026-09-02T02:58:32.817Z",
+      "generatedAt": "2026-09-02T03:30:39.543Z",
       "passed": 67,
       "failed": 0,
       "negativeCases": 22
