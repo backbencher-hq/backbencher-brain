@@ -1,0 +1,26 @@
+{
+  "issue": "M25.E3",
+  "code": "E3",
+  "milestone": "M25",
+  "status": "verified",
+  "checks": 32,
+  "passed": 32,
+  "failed": 0,
+  "mutantsCaught": 4,
+  "mutantsTotal": 4,
+  "negativeCases": 4,
+  "currentCommit": "5aa56db3c47432abed145067ca5fef00c534cafc",
+  "verifierCommand": "npx tsx script/m25/verify-status-surface.ts",
+  "evidenceFile": "E3.json",
+  "renderCapture": "validation/m25/results/E3-render-capture.txt",
+  "generatedAt": "2026-09-02T14:59:43.785Z",
+  "os": "linux",
+  "verdict": {
+    "realComponentFailures": 0
+  },
+  "limitations": [
+    "Rendered states are captured as log evidence here (E3-render-capture.txt); in-editor screenshots of the status bar and panel are E5 editor-verification evidence per the contract's OS-scoped claim rules.",
+    "Staleness currently falls back to UNKNOWN (rendered stale) because the M24 server surface has no bb/staleness method yet; when the method lands, the same render path must be re-proven.",
+    "The drift gate re-runs on every verifier execution; it pins the extension to the generated docs/m24/TOOL-DOC.md, which is itself machine-generated from evidence."
+  ]
+}
