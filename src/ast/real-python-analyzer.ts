@@ -31,6 +31,8 @@ interface PythonContext {
   // O(1) instantiates check: names of in-file declared classes/enums
   declaredTypes: Set<string>
   seenRels: Set<string>
+  // (class\u001fattr) — one Property per instance attribute per class (PYD1)
+  instanceAttrs: Set<string>
   currentModule: string | undefined
   currentClass: string | undefined
   currentFunction: string | undefined
@@ -38,7 +40,9 @@ interface PythonContext {
 }
 
 // Python builtins — never legitimate in-file call targets.
-const PYTHON_BUILTINS = new Set([
+// Exported: the differential oracle imports this EXACT set (never a
+// hand-duplicated copy — a drift would fabricate or hide call edges).
+export const PYTHON_BUILTINS = new Set([
   "abs", "all", "any", "ascii", "bin", "bool", "breakpoint", "bytearray", "bytes",
   "callable", "chr", "classmethod", "compile", "complex", "delattr", "dict",
   "dir", "divmod", "enumerate", "eval", "exec", "filter", "float", "format",
@@ -74,6 +78,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       functionSymbolIndex: {},
       declaredTypes: new Set(),
       seenRels: new Set(),
+      instanceAttrs: new Set(),
       currentModule: moduleName,
       currentClass: undefined,
       currentFunction: undefined,
@@ -81,6 +86,25 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     let cyclomaticComplexity = 1
+
+    // PYD1 forward-reference pre-pass: collect in-file class/enum names
+    // BEFORE the main walk. The walk resolves calls as it visits them, so a
+    // class declared LATER in the file than its use site (`self.x =
+    // ClosureTempAllocator(scope)` in Code.py L1224, class at L3732) was
+    // invisible at call time — no instantiates edge. Python resolves names
+    // at runtime, not positionally; the oracle's pre-pass never had this
+    // bug (differential proved it: 72 forward-reference instantiates lost).
+    const preScan = (n: Node): void => {
+      if (n.type === "class_definition") {
+        const nameNode = this.findChildByType(n, "identifier")
+        if (nameNode?.text) ctx.declaredTypes.add(nameNode.text)
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) preScan(c)
+      }
+    }
+    preScan(rootNode)
 
     // Iterative stack traversal (no recursion, no call-stack explosions).
     // Each frame carries the node plus scope bookkeeping so class/function
@@ -242,10 +266,13 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     // same-name method (in-file or via the cross-file companion index).
     this.extractOverrideRelationships(ctx)
 
-    // Declared-type reference graph (M14): annotated attributes, typed
-    // params, return annotations, and isinstance checks reference named
-    // types. Absent until M14 — the corpus oracle never checked it.
+    // PYD1 family contract: member READS emit `uses` (csharp/dart/php/ruby/
+    // swift/objc all do — python was the only managedoo analyzer with none).
+    // classifyEvidenceTier runs LAST so every edge — including declared-type
+    // refs and member uses created above — leaves with an evidenceClass.
     this.extractDeclaredTypeRefs(rootNode, ctx.relationships)
+    this.extractMemberUses(rootNode, ctx)
+    this.classifyEvidenceTier(ctx.relationships)
 
     const detectedFrameworks: string[] = []
     for (const k in ctx.frameworks) detectedFrameworks.push(k)
@@ -300,9 +327,16 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (!baseLeaf) continue
         baseClasses.push(baseLeaf)
         if (baseLeaf === "Enum") isEnum = true
-        this.pushRel(ctx, className, baseLeaf, ASTEngine.RelationshipType.Extends, 1.0, {
-          pythonSpecific: true,
-        })
+        // Name-collision suppression (#299): `class _X(_X):` (the real
+        // IpythonMagic.py PGO shadowing idiom) rebinds the name — the inner
+        // class is NOT the outer one, so a same-name extends edge is a
+        // fabricated self-loop. Skip it (the leaf text is still recorded in
+        // baseClasses metadata for payload honesty).
+        if (baseLeaf !== className) {
+          this.pushRel(ctx, className, baseLeaf, ASTEngine.RelationshipType.Extends, 1.0, {
+            pythonSpecific: true,
+          })
+        }
       }
     }
 
@@ -386,6 +420,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       parameters,
       returnType,
       decorators,
+      complexity: this.methodComplexity(node),
       metadata: {
         pythonSpecific: true,
         hasDocstring: !!docstring,
@@ -444,6 +479,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       parameters,
       returnType,
       decorators,
+      complexity: this.methodComplexity(node),
       metadata: {
         pythonSpecific: true,
         hasTypeHints,
@@ -529,7 +565,40 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private extractAssignment(node: Node, ctx: PythonContext) {
     const left = node.namedChild(0)
-    if (!left || left.type !== "identifier") return
+    if (!left) return
+
+    // Instance attribute write: `self.host = ...` inside a method. The LHS is
+    // an `attribute` node (object + attr), NOT an identifier — the pre-M14
+    // code required `left.type === "identifier"` and therefore never reached
+    // this branch (dead code; the Property contract never fired). PYD1.
+    if (left.type === "attribute" && ctx.currentClass && ctx.currentFunction) {
+      const obj = left.namedChild(0)
+      if (obj && (obj.text === "self" || obj.text === "cls")) {
+        // PYD1 family contract: instance attribute WRITE → Property symbol
+        // only (the family excludes assignment-LHS writes from uses —
+        // ruby/php/objc/swift all gate them out; reads are handled by
+        // extractMemberUses). One Property per (class, attribute).
+        const attr = left.namedChild(left.namedChildCount - 1)
+        if (attr && attr.text) {
+          const key = `${ctx.currentClass}\u001f${attr.text}`
+          if (!ctx.instanceAttrs.has(key)) {
+            ctx.instanceAttrs.add(key)
+            ctx.symbols.push({
+              name: attr.text,
+              kind: ASTEngine.SymbolKind.Property,
+              range: this.nodeToRange(attr),
+              ownerName: ctx.currentClass,
+              ownerKind: ASTEngine.SymbolKind.Class,
+              visibility: this.pythonVisibility(attr.text),
+              metadata: { pythonSpecific: true, isInstanceAttribute: true },
+            })
+          }
+        }
+      }
+      return
+    }
+
+    if (left.type !== "identifier") return
     const name = left.text
 
     // __all__ → the explicit export contract.
@@ -547,26 +616,6 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
               })
             }
           }
-        }
-      }
-      return
-    }
-
-    // Inside a method: self.x = ... → Property (instance attribute).
-    if (ctx.currentClass && ctx.currentFunction) {
-      const parent = left.parent
-      if (parent && parent.type === "attribute") {
-        const obj = parent.namedChild(0)
-        if (obj && (obj.text === "self" || obj.text === "cls")) {
-          ctx.symbols.push({
-            name,
-            kind: ASTEngine.SymbolKind.Property,
-            range: this.nodeToRange(left),
-            ownerName: ctx.currentClass,
-            ownerKind: ASTEngine.SymbolKind.Class,
-            visibility: this.pythonVisibility(name),
-            metadata: { pythonSpecific: true, isInstanceAttribute: true },
-          })
         }
       }
       return
@@ -665,6 +714,67 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
   // ========================================================================
   // OVERRIDES (harness companion contract, mirrors JS analyzer)
   // ========================================================================
+
+  /**
+   * PYD1 — member READ uses (managed-OO family contract). `self.host`,
+   * `obj.attr`, `self.svc.inner` parse as `attribute`; the leaf name is the
+   * last named child. Excluded — each for a documented reason:
+   * - assignment LHS (`self.x = v`): a WRITE, not a read (extractAssignment
+   *   already emits the isWrite edge there — this walk never sees parents,
+   *   so compare byte ranges the php way);
+   * - a call's function child (`self.ping()`): that edge is the caller's
+   *   `calls self.ping` — a uses edge here would double-count;
+   * - the receiver position of a member call (`self.svc.ping()`): `self` and
+   *   `svc` are traversal, the read is `ping`'s receiver — emit ONLY the
+   *   deepest read leaf (`inner`) so `self.svc.inner` yields one edge.
+   * Sources: the enclosing function (method scope), never `global`.
+   * Pure AST — parents come from tree-sitter, never source text.
+   */
+  private extractMemberUses(rootNode: Node, ctx: PythonContext): void {
+    const walk = (n: Node, inFn: string | undefined, parent: Node | null): void => {
+      const t = n.type
+      let nextFn = inFn
+      if (t === "function_definition") {
+        const nameNode = this.findChildByType(n, "identifier")
+        nextFn = nameNode?.text
+      }
+      if (t === "attribute" && inFn && parent) {
+        const leaf = n.namedChild(n.namedChildCount - 1)
+        // Recursion guard: the deepest attribute's leaf must be a real leaf
+        // (identifier), not another nested attribute node.
+        if (leaf && leaf.type !== "attribute") {
+          // Parent-based gates (byte-range compare — web-tree-sitter wrappers
+          // are per-access, identity never holds).
+          const gp = parent.parent
+          const isAssignLhs = parent.type === "assignment" && parent.namedChild(0) === undefined
+            ? false
+            : parent.type === "assignment" && parent.namedChild(0)?.startIndex === n.startIndex && parent.namedChild(0)?.endIndex === n.endIndex
+          const gpIsAssign = gp?.type === "assignment"
+          const gpLhs = gpIsAssign ? gp!.namedChild(0) : undefined
+          const isGpAssignLhs = gpLhs && gpLhs.startIndex === n.startIndex && gpLhs.endIndex === n.endIndex
+          // augmented_assignment: `self.count += 1` — LHS is a write.
+          const isAugLhs = parent.type === "augmented_assignment" && parent.namedChild(0)?.startIndex === n.startIndex && parent.namedChild(0)?.endIndex === n.endIndex
+          // call function position: `self.ping()` — the attribute IS the call.
+          const isCallFn = parent.type === "call" && parent.namedChild(0)?.startIndex === n.startIndex && parent.namedChild(0)?.endIndex === n.endIndex
+          // receiver of a member call: `self.svc.ping()` — self.svc is the
+          // receiver (traversal), never a read.
+          const gpIsCall = gp?.type === "call"
+          const gpFn = gpIsCall ? gp!.namedChild(0) : undefined
+          const isReceiverOfCall = gpIsCall && !!gpFn && gpFn.type === "attribute" && gpFn.startIndex === n.startIndex && gpFn.endIndex === n.endIndex
+          if (!isAssignLhs && !isGpAssignLhs && !isAugLhs && !isCallFn && !isReceiverOfCall) {
+            this.pushRel(ctx, inFn, leaf.text, ASTEngine.RelationshipType.Uses, 0.9, {
+              pythonSpecific: true, isMemberRead: true,
+            })
+          }
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) walk(c, nextFn, n)
+      }
+    }
+    walk(rootNode, undefined, null)
+  }
 
   /**
    * M14 — declared-type reference graph. Python type hints: annotated
@@ -861,6 +971,13 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       const fn = node.namedChild(0)
       return fn ? this.callLeafName(fn) : undefined
     }
+    // Computed/dynamic member calls (PYD1): `FACTORIES[key](x)` — the callee
+    // is a subscript whose result is called, not `FACTORIES` itself. Naming
+    // the dict variable as the call target was a fabrication (5 corpus
+    // hits: unop_node_classes, binop_node_classes, ...). The JS family
+    // contract skips subscript callees; python now matches. A genuine
+    // static target can still arrive via identifier/attribute paths.
+    if (node.type === "subscript") return undefined
     if (node.type === "string") return undefined
     const first = node.namedChild(0)
     return first ? this.callLeafName(first) : undefined
@@ -992,6 +1109,69 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (name.startsWith("__") && !name.endsWith("__")) return "private"
     if (name.startsWith("_")) return "protected"
     return "public"
+  }
+
+  /**
+   * PYD1 — per-symbol cyclomatic complexity (family contract: csharp #264,
+   * ruby RUBD6, js/ts methodComplexity). Python decision points: if/elif,
+   * for/while, match/case, try/except, with, conditional_expression, and the
+   * `and`/`or` boolean_operator nodes. The walker's global counter counts the
+   * whole FILE; this per-node walk scopes the count to one function body.
+   * Nested defs are skipped — their branches belong to the nested symbol.
+   */
+  private methodComplexity(node: Node): number {
+    let c = 1
+    const stack: Node[] = [node]
+    while (stack.length) {
+      const n = stack.pop()!
+      if (
+        n.type === "if_statement" || n.type === "elif_clause" ||
+        n.type === "for_statement" || n.type === "while_statement" ||
+        n.type === "match_statement" || n.type === "case_clause" ||
+        n.type === "try_statement" || n.type === "except_clause" ||
+        n.type === "with_statement" || n.type === "conditional_expression"
+      ) {
+        c++
+      } else if (n.type === "boolean_operator") {
+        for (let i = 0; i < n.childCount; i++) {
+          const ch = n.child(i)
+          if (ch && (ch.type === "and" || ch.type === "or")) { c++; break }
+        }
+      }
+      // Nested function/class bodies are separate symbols — do not count
+      // their decision points into this one.
+      if (n !== node && (n.type === "function_definition" || n.type === "class_definition")) continue
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const child = n.namedChild(i)
+        if (child) stack.push(child)
+      }
+    }
+    return c
+  }
+
+  /**
+   * PYD1 — evidence tiers (csharp #419-D family contract). Every edge leaves
+   * this analyzer with an evidenceClass: contains/exports structural,
+   * imports import_based, references reference_qualified, extends/overrides
+   * structural, calls/uses/instantiates usage_contextual. Metadata already
+   * set at emission sites is never overwritten.
+   */
+  private classifyEvidenceTier(relationships: ASTEngine.UniversalRelationship[]): void {
+    for (const r of relationships) {
+      const md = r.metadata ?? (r.metadata = {})
+      if (md.evidenceClass) continue
+      const t = String(r.type ?? r.relationshipType ?? "")
+      if (t === "contains" || t === "exports" || t === "extends" || t === "overrides") {
+        md.evidenceClass = "structural"
+        continue
+      }
+      if (t === "imports") { md.evidenceClass = "import_based"; continue }
+      if (t === "references") {
+        md.evidenceClass = md.isImport ? "import_based" : "reference_qualified"
+        continue
+      }
+      md.evidenceClass = "usage_contextual"
+    }
   }
 
   private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {
