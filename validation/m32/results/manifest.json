@@ -51,10 +51,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "c5e28a30aacd7148babb2f40e0436dbee72a8a1a",
+        "currentCommit": "2c1d0186dfafe3f99e5476e316304acc2c4a2ec3",
         "verifierCommand": "npx tsx script/m32/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "generatedAt": "2026-09-02T14:19:46.814Z",
+        "generatedAt": "2026-09-02T16:14:49.829Z",
         "passed": 27,
         "failed": 0,
         "negativeCases": 10
@@ -79,10 +79,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "c5e28a30aacd7148babb2f40e0436dbee72a8a1a",
+        "currentCommit": "2c1d0186dfafe3f99e5476e316304acc2c4a2ec3",
         "verifierCommand": "npx tsx script/m32/verify-smoke.ts",
         "evidenceFile": "SM1.json",
-        "generatedAt": "2026-09-02T14:20:02.236Z",
+        "generatedAt": "2026-09-02T16:15:04.903Z",
         "passed": 14,
         "failed": 0,
         "negativeCases": 2
@@ -105,10 +105,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "c5e28a30aacd7148babb2f40e0436dbee72a8a1a",
+        "currentCommit": "2c1d0186dfafe3f99e5476e316304acc2c4a2ec3",
         "verifierCommand": "npx tsx script/m32/verify-setup-show.ts",
         "evidenceFile": "S1.json",
-        "generatedAt": "2026-09-02T14:20:10.634Z",
+        "generatedAt": "2026-09-02T16:15:13.840Z",
         "passed": 32,
         "failed": 0,
         "negativeCases": 5
@@ -131,10 +131,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "c5e28a30aacd7148babb2f40e0436dbee72a8a1a",
+        "currentCommit": "2c1d0186dfafe3f99e5476e316304acc2c4a2ec3",
         "verifierCommand": "npx tsx script/m32/verify-doctor.ts",
         "evidenceFile": "S2.json",
-        "generatedAt": "2026-09-02T14:20:21.348Z",
+        "generatedAt": "2026-09-02T16:15:28.435Z",
         "passed": 33,
         "failed": 0,
         "negativeCases": 5
@@ -157,10 +157,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "c5e28a30aacd7148babb2f40e0436dbee72a8a1a",
+        "currentCommit": "2c1d0186dfafe3f99e5476e316304acc2c4a2ec3",
         "verifierCommand": "npx tsx script/m32/verify-doctor-fix.ts",
         "evidenceFile": "S3.json",
-        "generatedAt": "2026-09-02T14:20:28.035Z",
+        "generatedAt": "2026-09-02T16:15:34.958Z",
         "passed": 27,
         "failed": 0,
         "negativeCases": 5
@@ -183,10 +183,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "c5e28a30aacd7148babb2f40e0436dbee72a8a1a",
+        "currentCommit": "2c1d0186dfafe3f99e5476e316304acc2c4a2ec3",
         "verifierCommand": "npx tsx script/m32/verify-honesty-docs.ts",
         "evidenceFile": "H1.json",
-        "generatedAt": "2026-09-02T14:20:34.809Z",
+        "generatedAt": "2026-09-02T16:15:42.767Z",
         "passed": 39,
         "failed": 0,
         "negativeCases": 5
