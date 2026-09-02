@@ -226,8 +226,11 @@ function main(): void {
     return (
       relevantPaths.has(file) ||
       file.startsWith("script/m25/") ||
-      file.startsWith("ide/vscode/") ||
-      file.startsWith("validation/m25/")
+      file.startsWith("ide/vscode/")
+      // Evidence files under validation/m25/ are deliberately excluded: they
+      // are OUTPUTS of the gates, rewritten on every run, never inputs. The
+      // ledger itself is guarded at the commit level (shared relevant file),
+      // which is what actually protects it (M24.G1 design).
     )
   }
   function relevantWorkingTreeChanges(): string[] {
