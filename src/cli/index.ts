@@ -166,9 +166,10 @@ export async function runCli(argv: string[]): Promise<void> {
       await cmdIndex(dir, opts)
     })
 
-  program
+  const setupCmd = program
     .command("setup")
     .description("embedding sağlayıcısı kurulumu (API anahtarı, model)")
+  setupCmd
     .action(async () => {
       const { runSetupWizard } = await import("../setup/setup-wizard")
       if (!process.stdin.isTTY) {
@@ -176,6 +177,15 @@ export async function runCli(argv: string[]): Promise<void> {
         process.exit(1)
       }
       await runSetupWizard()
+    })
+  setupCmd
+    .command("show")
+    .description("embedding yapılandırmasını göster (anahtar parmak izi ile)")
+    .action(async () => {
+      const { describeEmbeddingConfig, renderSetupShow } = await import("../setup/setup-show")
+      const state = describeEmbeddingConfig()
+      console.log(renderSetupShow(state))
+      if (!state.configured) process.exitCode = 1
     })
 
   program
