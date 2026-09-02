@@ -18,12 +18,12 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "bef1e8c7e0a7de240e823a42c12edeb4d8c52263",
+      "currentCommit": "b419518f63aeee087a94fb7f66641d8b10e8fd7e",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m31/verify-governance.ts",
       "evidenceFile": "G1.json",
-      "generatedAt": "2026-09-02T03:31:17.826Z",
-      "passed": 25,
+      "generatedAt": "2026-09-02T03:33:40.145Z",
+      "passed": 27,
       "failed": 0,
       "negativeCases": 2
     }
@@ -109,11 +109,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "bef1e8c7e0a7de240e823a42c12edeb4d8c52263",
+      "currentCommit": "b419518f63aeee087a94fb7f66641d8b10e8fd7e",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m31/tool-mode-corpus.ts --check",
       "evidenceFile": "T1.json",
-      "generatedAt": "2026-09-02T03:30:39.543Z",
+      "generatedAt": "2026-09-02T03:35:04.530Z",
       "passed": 67,
       "failed": 0,
       "negativeCases": 22
