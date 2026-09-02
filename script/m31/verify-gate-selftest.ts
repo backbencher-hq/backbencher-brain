@@ -313,12 +313,46 @@ for (const gate of GATES) {
       }
       check(`${gate.name}: real tree restored byte-identical`, readFileSync(realPath, "utf8") === backup)
     } else {
-      // The sandbox control world is "everything conforming": the selftest
-      // evidence baseline records every registered gate as proven (mutation
-      // fails, control passes). Governance must PASS this world.
-      const stPath = path.join(sandbox, "validation/m31/results/gate-selftest.json")
-      if (existsSync(stPath)) {
-        writeFileSync(stPath, JSON.stringify({ generatedAt: new Date().toISOString(), gates: GATES.map((g) => ({ name: g.name, mutationFailed: true, controlPassed: true })) }, null, 2) + "\n")
+      // The sandbox control world is "everything conforming": all six issue
+      // evidence files + the ledger + the self-test baseline are internally
+      // consistent at ONE in-world stamp. Governance must PASS this world;
+      // corrupting any governed surface must flip it to FAIL.
+      const evDir = path.join(sandbox, "validation/m31/results")
+      if (existsSync(evDir)) {
+        const worldStamp = JSON.parse(readFileSync(path.join(evDir, "D1.json"), "utf8")).currentCommit as string
+        const issues = ["G1", "T1", "D1", "D2", "D3", "X1"]
+        for (const code of issues) {
+          const evPath = path.join(evDir, `${code}.json`)
+          if (!existsSync(evPath)) continue
+          const ev = JSON.parse(readFileSync(evPath, "utf8"))
+          ev.status = "verified"
+          ev.currentCommit = worldStamp
+          if (!ev.verifierCommand) ev.verifierCommand = `bun run script/m31/verify-${code.toLowerCase()}.ts`
+          ev.evidenceFile = `${code}.json`
+          ev.workingTreeRelevantChanges = []
+          ev.passed = Math.max(Number(ev.passed) || 1, 1)
+          ev.failed = 0
+          ev.negativeCases = Math.max(Number(ev.negativeCases) || 1, 1)
+          writeFileSync(evPath, JSON.stringify(ev, null, 2) + "\n")
+        }
+        const stPath = path.join(evDir, "gate-selftest.json")
+        const gatesAllProven = GATES.map((g) => ({ name: g.name, mutationFailed: true, controlPassed: true }))
+        writeFileSync(stPath, JSON.stringify({
+          status: "verified", currentCommit: worldStamp, workingTreeRelevantChanges: [],
+          verifierCommand: "bun run script/m31/verify-gate-selftest.ts", evidenceFile: "gate-selftest.json",
+          generatedAt: new Date().toISOString(), passed: GATES.length, failed: 0,
+          negativeCases: gatesAllProven.length, gates: gatesAllProven,
+        }, null, 2) + "\n")
+        // Construct the conforming ledger from the (now conforming) evidence.
+        const worldLedger = issues.map((code) => {
+          const ev = JSON.parse(readFileSync(path.join(evDir, `${code}.json`), "utf8"))
+          const issueNumbers: Record<string, number> = { G1: 555, D1: 556, D2: 557, D3: 558, T1: 559, X1: 560 }
+          return { code, githubIssue: issueNumbers[code], tool: code.toLowerCase(), status: "verified",
+            scope: "conforming-world", acceptanceCriteria: ["a", "b"], closureRequirements: ["c", "d"],
+            evidence: { status: "verified", currentCommit: worldStamp, workingTreeRelevantChanges: [], verifierCommand: ev.verifierCommand, evidenceFile: `${code}.json`, generatedAt: ev.generatedAt, passed: ev.passed, failed: 0, negativeCases: ev.negativeCases } }
+        })
+        mkdirSync(path.join(sandbox, "validation/m31"), { recursive: true })
+        writeFileSync(path.join(sandbox, "validation/m31/ledger.json"), JSON.stringify(worldLedger, null, 2) + "\n")
       }
       // Control FIRST: unmutated sandbox passes.
       const control = runGate(gate.script, { BB_M31_ROOT: sandbox })
