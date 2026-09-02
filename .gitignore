@@ -8,3 +8,4 @@ bb.json
 .bb_backups/
 .p3-runner.tmp.ts
 .p3-runner.tmp.ts
+tool-mode-corpus.json.fresh
