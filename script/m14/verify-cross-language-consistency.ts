@@ -112,6 +112,11 @@ const OO_EQUIVALENTS: Record<string, { wasm: string; analyzerFile: string; class
     source: `class Widget\n  def initialize\n    @label = ""\n  end\n  def render(input)\n    @label + input\n  end\nend\n`,
     methodName: "render", classNameLiteral: "Widget",
   },
+  python: {
+    wasm: "tree-sitter-python.wasm", analyzerFile: "real-python-analyzer", className: "RealPythonAnalyzer", ext: "py",
+    source: `class Widget:\n    def __init__(self):\n        self.label = ""\n\n    def render(self, input):\n        return self.label + input\n`,
+    methodName: "render", classNameLiteral: "Widget",
+  },
 }
 
 async function main() {

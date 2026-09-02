@@ -205,6 +205,20 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     },
     title: "ruby managed-OO wave",
   },
+  python: {
+    id: "python",
+    wasm: "tree-sitter-python.wasm",
+    classification: "python-completeness.json",
+    fixturesDir: "validation/m14/fixtures/python",
+    docs: ["docs/analyzers/real-python-analyzer.md"],
+    differentialCheck: "differential-python",
+    perfKey: "cython:python",
+    requiredKinds: ["calls", "extends", "instantiates", "uses", "contains", "imports", "references"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "python/payload-and-complexity" },
+    },
+    title: "python managed-OO wave (PYD1)",
+  },
   php: {
     id: "php",
     wasm: "tree-sitter-php.wasm",
@@ -390,7 +404,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
 // unsafe C# COM-interop vtable-dispatch calls are captured as `uses` rather
 // than `calls` (tree-sitter parses `if(...)` and pointer-slot chaining as
 // degenerate invocation_expression subtrees) — bounded to that corpus corner.
-const GATED_LANGS = ["java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp", "rust", "go", "zig", "csharp", "dart", "swift", "objc", "php", "ruby"]
+const GATED_LANGS = ["java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp", "rust", "go", "zig", "csharp", "dart", "swift", "objc", "php", "ruby", "python"]
 
 async function loadNamedNodeTypes(cfg: LangConfig): Promise<string[]> {
   const wts: any = await import("web-tree-sitter")

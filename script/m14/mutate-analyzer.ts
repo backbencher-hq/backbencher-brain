@@ -1336,6 +1336,39 @@ const MUTANTS: Mutant[] = [
       { type: "calls", source: "amount_of", target: "msg", fromSymbol: "amount_of", toSymbol: "msg", confidence: 0.9, metadata: { bareCall: true } },
     ] }),
   },
+  {
+    id: "python/drop-instance-attribute-properties",
+    language: "python",
+    defectClass: "symbol-loss",
+    description: "regresses PYD1: self.x = ... writes emit NO Property symbols (the pre-fix dead-LHS-gate bug class) — python fixture property pins",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => !((s.metadata ?? {}).isInstanceAttribute)) }),
+  },
+  {
+    id: "python/drop-member-read-uses",
+    language: "python",
+    defectClass: "relationship-loss",
+    description: "drops python member-read uses edges (self.label reads) — python section B uses pin (managed-OO family contract)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).isMemberRead && x.type === "uses")) }),
+  },
+  {
+    id: "python/emit-self-shadow-extends",
+    language: "python",
+    defectClass: "fabrication",
+    description: "injects the #299 bug class: class Looped(Looped) self-shadowing emits a fabricated extends self-loop — fixture forbid pin",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), {
+        type: "extends", source: "Looped", target: "Looped", fromSymbol: "Looped", toSymbol: "Looped", confidence: 1.0, metadata: { pythonSpecific: true },
+      }],
+    }),
+  },
+  {
+    id: "python/drop-symbol-complexity",
+    language: "python",
+    defectClass: "payload-loss",
+    description: "drops python per-symbol complexity (total_for for/if/while count) — python section C complexity pin",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, complexity: undefined })) }),
+  },
 ]
 
 async function realAnalyzer(lang: string): Promise<any> {

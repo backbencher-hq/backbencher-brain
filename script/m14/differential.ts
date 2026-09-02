@@ -18,6 +18,7 @@ import * as path from "path"
 import { execSync } from "child_process"
 import { PHP_BUILTINS } from "../../src/ast/real-php-analyzer"
 import { RUBY_BUILTINS, RAILS_MACRO_METHODS } from "../../src/ast/real-ruby-analyzer"
+import { PYTHON_BUILTINS } from "../../src/ast/real-python-analyzer"
 
 function loadAvg1(): number {
   try { return parseFloat(fs.readFileSync("/proc/loadavg", "utf8").split(" ")[0] ?? "0") } catch { return 0 }
@@ -51,6 +52,7 @@ const LANG_REPOS: Record<string, string> = {
   objc: "Clyde",
   php: "phpunit",
   ruby: "rake",
+  python: "cython",
 }
 const REPO = process.argv.includes("--repo") ? process.argv[process.argv.indexOf("--repo") + 1] : undefined
 const SAMPLE_PER_LANG = process.argv.includes("--sample") ? parseInt(process.argv[process.argv.indexOf("--sample") + 1]) : 60
@@ -75,6 +77,7 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   objc: { wasm: "tree-sitter-objc.wasm", analyzerFile: "real-objective-c-analyzer", className: "RealObjectiveCAnalyzer", ext: "m" },
   php: { wasm: "tree-sitter-php.wasm", analyzerFile: "real-php-analyzer", className: "RealPhpAnalyzer", ext: "php" },
   ruby: { wasm: "tree-sitter-ruby.wasm", analyzerFile: "real-ruby-analyzer", className: "RealRubyAnalyzer", ext: "rb" },
+  python: { wasm: "tree-sitter-python.wasm", analyzerFile: "real-python-analyzer", className: "RealPythonAnalyzer", ext: "py" },
 }
 
 function seededPick<T>(items: T[], n: number, seedStr: string): T[] {
@@ -1161,13 +1164,6 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
 
 // Ruby truth: derive the same structural edges the analyzer emits, from
 // clause node structure only. Mirrors RealRubyAnalyzer (probe-verified):
-//   extends    — class superclass (leaf name after ::)
-//   implements — include/prepend (module mixin) inside a class/module body
-//   extends    — extend (module extension) inside a class/module body
-//   calls      — call/command/command_call method name, filtered by the
-//                analyzer's EXACT builtin set (imported, never duplicated)
-//   instantiates — `X.new(...)` call nodes (method name `new` with receiver)
-//   uses       — instance_variable NOT in assignment-LHS position (reads only)
 export function deriveRubyEdges(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -1689,6 +1685,317 @@ export function deriveGoImplements(root: any): { label: string; from: string; ta
 // numeric/builtin tokens. This mirrors the analyzer's analyzeZigCodeRelationships
 // so the differential can verify it (it previously had NO oracle and the
 // analyzer emitted no calls/uses at all).
+export function derivePythonEdges(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const push = (label: string, target: string) => {
+    const k = label + ":" + target
+    if (!seen.has(k)) { seen.add(k); edges.push({ label, from: "(expr)", target }) }
+  }
+  // Mirror the analyzer's PYTHON_BUILTINS filter (imported — never duplicated).
+  const isBuiltin = (name: string): boolean =>
+    PYTHON_BUILTINS.has(name) ||
+    (name.startsWith("__") && name.endsWith("__"))
+  // Uppercase-head leaf the analyzer treats as a possible class name; only
+  // in-file declared names become instantiates (tracked via declaredTypes
+  // pass below).
+  const isUpper = (name: string): boolean => {
+    const c = name.charCodeAt(0)
+    return c >= 65 && c <= 90
+  }
+
+  // Pass 1: collect in-file declared class/enum names (the analyzer's
+  // declaredTypes gate — instantiates is only emitted for those).
+  const declaredTypes = new Set<string>()
+  const scan = (n: any) => {
+    if (n.type === "class_definition") {
+      const nameNode = n.namedChildren.find((c: any) => c.type === "identifier")
+      if (nameNode?.text) declaredTypes.add(nameNode.text)
+    }
+    for (let i = 0; i < n.namedChildCount; i++) scan(n.namedChild(i))
+  }
+  scan(root)
+
+  // Class structure maps for in-file override resolution (same contract as
+  // the analyzer's extractOverrideRelationships: base from the FIRST
+  // extends edge — Python MRO; methods registered per class).
+  const baseByClass = new Map<string, string>()
+  const classMethods = new Map<string, Set<string>>()
+  const regMethod = (cls: string | undefined, m: string) => {
+    if (!cls || !m) return
+    const set = classMethods.get(cls) ?? new Set()
+    set.add(m)
+    classMethods.set(cls, set)
+  }
+
+  // Pass 2: structural edge derivation (mirrors RealPythonAnalyzer).
+  const stack: any[] = [{ n: root, parent: null, inFn: undefined as string | undefined }]
+  while (stack.length > 0) {
+    const { n, parent, inFn } = stack.pop()!
+    const t = n.type
+    let nextFn = inFn
+    if (t === "function_definition") {
+      const nameNode = n.namedChildren.find((c: any) => c.type === "identifier")
+      nextFn = nameNode?.text ?? inFn
+    }
+    // Enum flag shared by both class_definition branches below (extends
+    // derivation sets it; member registration reads it).
+    let isEnumCls = false
+
+    if (t === "class_definition") {
+      const className = n.namedChildren.find((c: any) => c.type === "identifier")?.text ?? "?"
+      const args = n.namedChildren.find((c: any) => c.type === "argument_list")
+      if (args) {
+        for (let i = 0; i < args.namedChildCount; i++) {
+          const arg = args.namedChild(i)
+          if (!arg) continue
+          // base-class LEAF only: subscript Generic[T] -> Generic,
+          // attribute a.b -> b (mirrors baseClassLeaf).
+          let leaf: string | undefined
+          if (arg.type === "identifier") leaf = arg.text
+          else if (arg.type === "subscript" || arg.type === "attribute") {
+            const inner = arg.type === "attribute"
+              ? arg.namedChild(arg.namedChildCount - 1)
+              : arg.namedChild(0)
+            leaf = inner?.text
+            if (leaf && leaf.includes(".")) leaf = leaf.split(".").pop()
+          }
+          if (leaf && leaf !== className) {
+            push("extends", leaf)
+            if (leaf === "Enum") isEnumCls = true
+            if (!baseByClass.has(className)) baseByClass.set(className, leaf)
+          }
+        }
+      }
+    }
+
+    if (t === "assignment") {
+      // annotated assignment `x: T = v` → references:declared_type (the
+      // analyzer's walk emits these from the assignment case; builtin
+      // scalars excluded; attribute-path types descend to leaves)
+      const typeNode = n.namedChildren.find((c: any) => c.type === "type")
+      if (typeNode) {
+        const stackT: any[] = [typeNode]
+        while (stackT.length > 0) {
+          const tn = stackT.pop()!
+          if (tn.type === "identifier") {
+            if (!["str", "int", "float", "complex", "bool", "bytes", "object", "None", "Any"].includes(tn.text)) push("references", tn.text)
+          } else if (tn.type !== "string" && tn.type !== "concatenated_string" && tn.type !== "none") {
+            for (let i = 0; i < tn.namedChildCount; i++) stackT.push(tn.namedChild(i))
+          }
+        }
+      }
+    }
+
+    if (t === "function_definition") {
+      // return annotation → references:return_type (builtin scalars excluded)
+      const typeNode = n.namedChildren.find((c: any) => c.type === "type")
+      if (typeNode) {
+        const stackT: any[] = [typeNode]
+        while (stackT.length > 0) {
+          const tn = stackT.pop()!
+          if (tn.type === "identifier") {
+            if (!["str", "int", "float", "complex", "bool", "bytes", "object", "None", "Any"].includes(tn.text)) push("references", tn.text)
+          } else if (tn.type !== "string" && tn.type !== "concatenated_string" && tn.type !== "none") {
+            for (let i = 0; i < tn.namedChildCount; i++) stackT.push(tn.namedChild(i))
+          }
+        }
+      }
+      // typed params → references:declared_type
+      const paramsNode = n.namedChildren.find((c: any) => c.type === "parameters")
+      if (paramsNode) {
+        for (let i = 0; i < paramsNode.namedChildCount; i++) {
+          const p = paramsNode.namedChild(i)
+          const ptype = p?.type === "typed_parameter" || p?.type === "typed_default_parameter"
+            ? p.namedChildren.find((c: any) => c.type === "type")
+            : undefined
+          if (ptype) {
+            const stackT: any[] = [ptype]
+            while (stackT.length > 0) {
+              const tn = stackT.pop()!
+              if (tn.type === "identifier") {
+                if (!["str", "int", "float", "complex", "bool", "bytes", "object", "None", "Any"].includes(tn.text)) push("references", tn.text)
+              } else if (tn.type !== "string" && tn.type !== "concatenated_string" && tn.type !== "none") {
+                for (let j = 0; j < tn.namedChildCount; j++) stackT.push(tn.namedChild(j))
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (t === "function_definition" && parent && parent.type === "class_definition") {
+      const clsName = parent.namedChildren.find((c: any) => c.type === "identifier")?.text
+      const mname = n.namedChildren.find((c: any) => c.type === "identifier")?.text
+      regMethod(clsName, mname)
+    }
+
+    if (t === "class_definition") {
+      // register own DIRECT methods too (the generic regMethod branch above
+      // needs parent — but during the LIFO walk the class node is popped
+      // before its methods, so methods deep inside the block reach the
+      // generic branch only via their own parent chain; direct scan here is
+      // the belt-and-braces pass the analyzer does at extractClass time)
+      const clsName2 = n.namedChildren.find((c: any) => c.type === "identifier")?.text
+      const block = n.namedChildren.find((c: any) => c.type === "block")
+      if (clsName2 && block) {
+        if (isEnumCls) {
+          // Enum class: members are ONLY the analyzer's extractClass contract
+          // — direct-body constant-valued assignments (string/integer/float/
+          // true/false/none/identifier RHS). No deep scan, no method
+          // registration (enum methods are registered by the generic
+          // function_definition branch above).
+          for (let i = 0; i < block.namedChildCount; i++) {
+            const stmt = block.namedChild(i)
+            if (stmt?.type !== "expression_statement") continue
+            const assign = stmt.namedChild(0)
+            if (assign?.type !== "assignment") continue
+            const left = assign.namedChild(0)
+            const right = assign.namedChild(assign.namedChildCount - 1)
+            if (left?.type !== "identifier") continue
+            if (right && (right.type === "string" || right.type === "integer" ||
+                right.type === "float" || right.type === "true" || right.type === "false" ||
+                right.type === "none" || right.type === "identifier")) {
+              regMethod(clsName2, left.text)
+            }
+          }
+        } else {
+          // register every method declared anywhere in the class body except
+          // inside NESTED classes (methods of inner classes belong to them) —
+          // descends decorated_definition wrappers and compound statements.
+          // Class-body assignment LHS also register: the analyzer's
+          // extractAssignment class-variable branch turns `code_object = None`
+          // at class scope into a Property owned by the class, and
+          // baseDeclares treats ANY base-owned symbol as an override target
+          // (Cython's CFuncDefNode.code_object -> FuncDefNode hook pattern).
+          // Function bodies are skipped (locals are not symbols); compound
+          // statements descend (the analyzer's currentClass persists inside
+          // if/for/try at class scope). `__all__` is intercepted before the
+          // Property branch by the analyzer, so it never registers.
+          const mstack: any[] = [block]
+          while (mstack.length > 0) {
+            const m = mstack.pop()!
+            if (m.type === "function_definition") {
+              regMethod(clsName2, m.namedChildren.find((c: any) => c.type === "identifier")?.text)
+              continue
+            }
+            if (m.type === "class_definition") continue
+            if (m.type === "assignment" || m.type === "augmented_assignment" || m.type === "named_expression") {
+              const lhs = m.namedChild(0)
+              if (lhs?.type === "identifier" && lhs.text !== "__all__") regMethod(clsName2, lhs.text)
+              continue
+            }
+            for (let i = 0; i < m.namedChildCount; i++) mstack.push(m.namedChild(i))
+          }
+        }
+      }
+    }
+
+    if (t === "function_definition") {
+      // In-file overrides (mirror the analyzer's harness-companion contract):
+      // method redeclared in a subclass whose base (from the extends edges
+      // derived above) declares the same-name method. Pure clause structure.
+      // NOTE: the method's structural parent is the class BLOCK, not the
+      // class — use the node's real .parent pointer and walk up to the
+      // class_definition.
+      let owner: any = null
+      let up: any = n.parent
+      while (up) {
+        if (up.type === "class_definition") { owner = up; break }
+        if (up.type === "function_definition" || up.type === "module") break
+        up = up.parent
+      }
+      if (owner) {
+        const clsName = owner.namedChildren.find((c: any) => c.type === "identifier")?.text
+        const mname = n.namedChildren.find((c: any) => c.type === "identifier")?.text
+        if (clsName && mname) {
+          const base = baseByClass.get(clsName)
+          if (base && classMethods.get(base)?.has(mname)) {
+            push("overrides", `${base}.${mname}`)
+          }
+        }
+      }
+    }
+
+    if (t === "call") {
+      // isinstance(x, T) / issubclass(a, B): second positional arg names a
+      // type → references:instanceof_check (mirror extractDeclaredTypeRefs).
+      const fn = n.namedChild(0)
+      if (fn && (fn.text === "isinstance" || fn.text === "issubclass")) {
+        const args = n.namedChildren.find((c: any) => c.type === "argument_list")
+        const last = args && args.namedChildCount >= 2 ? args.namedChild(args.namedChildCount - 1) : undefined
+        if (last) {
+          const stackT: any[] = [last]
+          while (stackT.length > 0) {
+            const tn = stackT.pop()!
+            if (tn.type === "identifier") {
+              if (!["str", "int", "float", "complex", "bool", "bytes", "object", "None", "Any"].includes(tn.text)) push("references", tn.text)
+            } else for (let i = 0; i < tn.namedChildCount; i++) stackT.push(tn.namedChild(i))
+          }
+        }
+      }
+      // Decorator-position calls (@wraps(f), @magic_arguments()): the
+      // analyzer treats decorators as metadata on the decorated symbol, not
+      // runtime call edges — the oracle must skip them identically (PYD1
+      // differential: 8 decorator-site calls were oracle-only noise).
+      let anc: any = parent
+      let inDecorator = false
+      while (anc) {
+        if (anc.type === "decorator") { inDecorator = true; break }
+        if (anc.type === "function_definition" || anc.type === "class_definition" || anc.type === "module") break
+        anc = anc.parent
+      }
+      if (!inDecorator) {
+      const fn = n.namedChild(0)
+      if (fn) {
+        // Leaf of the callee: identifier -> text; attribute -> last child;
+        // subscript (computed/dynamic call FACTORIES[key](x)) -> SKIP, the
+        // analyzer does not fabricate calls to the dict variable (PYD1).
+        const calleeLeaf =
+          fn.type === "identifier" ? fn.text :
+          fn.type === "attribute" ? fn.namedChild(fn.namedChildCount - 1)?.text :
+          undefined
+        if (calleeLeaf && fn.type !== "subscript" && !isBuiltin(calleeLeaf)) {
+          if (isUpper(calleeLeaf) && declaredTypes.has(calleeLeaf)) push("instantiates", calleeLeaf)
+          else if (!isUpper(calleeLeaf)) push("calls", calleeLeaf)
+        }
+      }
+      }
+    }
+
+    if (t === "attribute" && inFn && parent) {
+      const leaf = n.namedChild(n.namedChildCount - 1)
+      if (leaf && leaf.type === "identifier") {
+        // Write / call-function / call-receiver gates (byte-range compare —
+        // web-tree-sitter wrappers are per-access, identity never holds).
+        const gp = parent.parent
+        const isAssignLhs = parent.type === "assignment" &&
+          parent.namedChild(0)?.startIndex === n.startIndex && parent.namedChild(0)?.endIndex === n.endIndex
+        const gpIsAssign = gp?.type === "assignment"
+        const gpLhs = gpIsAssign ? gp!.namedChild(0) : undefined
+        const isGpAssignLhs = !!gpLhs && gpLhs.startIndex === n.startIndex && gpLhs.endIndex === n.endIndex
+        const isAugLhs = parent.type === "augmented_assignment" &&
+          parent.namedChild(0)?.startIndex === n.startIndex && parent.namedChild(0)?.endIndex === n.endIndex
+        const isCallFn = parent.type === "call" &&
+          parent.namedChild(0)?.startIndex === n.startIndex && parent.namedChild(0)?.endIndex === n.endIndex
+        const gpIsCall = gp?.type === "call"
+        const gpFn = gpIsCall ? gp!.namedChild(0) : undefined
+        const isReceiverOfCall = !!gpFn && gpFn.type === "attribute" &&
+          gpFn.startIndex === n.startIndex && gpFn.endIndex === n.endIndex
+        if (!isAssignLhs && !isGpAssignLhs && !isAugLhs && !isCallFn && !isReceiverOfCall) {
+          push("uses", leaf.text)
+        }
+      }
+    }
+
+    for (let i = n.namedChildCount - 1; i >= 0; i--) {
+      const c = n.namedChild(i)
+      if (c) stack.push({ n: c, parent: n, inFn: nextFn })
+    }
+  }
+  return edges
+}
+
 export function deriveZigEdges(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seenCalls = new Set<string>()
@@ -2510,6 +2817,11 @@ async function main() {
           ;(truth as any[]).push(e)
         }
       }
+      if (lang === "python") {
+        for (const e of derivePythonEdges(root)) {
+          ;(truth as any[]).push(e)
+        }
+      }
       if (lang === "svelte") {
         for (const e of deriveSvelteComponentUsages(root)) {
           ;(truth as any[]).push(e)
@@ -2540,7 +2852,7 @@ async function main() {
       // truth); zig derives calls AND uses; other languages do not derive
       // call truth, so including calls there would flag every real call edge
       // as unexplained.
-      })).filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" ? ["overrides"] : []), ...(lang === "c" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" ? ["calls"] : []), ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" ? ["calls", "uses"] : []), ...(lang === "dart" || lang === "ruby" ? ["uses"] : []), ...(lang === "csharp" ? ["calls"] : []), ...(lang === "swift" || lang === "objc" || lang === "php" ? ["references"] : [])].includes(r.label))
+      })).filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" ? ["overrides"] : []), ...(lang === "c" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" ? ["calls"] : []), ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" ? ["calls", "uses"] : []), ...(lang === "dart" || lang === "ruby" ? ["uses"] : []), ...(lang === "csharp" ? ["calls"] : []), ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" ? ["references"] : [])].includes(r.label))
         // The tree-truth oracles already emit UNIQUE (label,target) edges per
         // file (each oracle keeps a `seen` set keyed by label+target). The
         // analyzer, by contrast, emits one edge per source SEARCH HIT, so a
