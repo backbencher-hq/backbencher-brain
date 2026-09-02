@@ -1,0 +1,151 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M33",
+  "githubMilestone": 33,
+  "title": "CLI Discoverability",
+  "status": "open",
+  "authority": "docs/m33/M33-MASTER-PLAN.md",
+  "governingContract": "docs/M14-HONESTY-CONTRACT.md",
+  "updatedAt": "2026-09-02T00:00:00.000Z",
+  "evidencePolicy": {
+    "verifiedRequires": [
+      "currentCommit",
+      "sourceFingerprint",
+      "verifierCommand",
+      "evidenceFile",
+      "positiveAndNegativeChecks",
+      "freshTimestamp",
+      "limitations"
+    ],
+    "missingCorpusState": "blocked-or-known-gap",
+    "missingLiveKeysState": "blocked-with-reason",
+    "timeoutState": "blocked-or-known-gap",
+    "unexecutedState": "planned"
+  },
+  "secretHygiene": {
+    "keyStorage": "not applicable to M33 (no provider keys used); .env.local remains gitignored, mode 0600",
+    "evidenceRecords": "no key material anywhere in M33 artifacts; help/man surfaces never receive keys",
+    "guard": "verifier fails if any raw key pattern appears in tracked files"
+  },
+  "issueNumberPolicy": {
+    "state": "real",
+    "note": "Filed on GitHub as milestone 33: G1=#568, S1=#569, S2=#570, S3=#571, S4=#572, H1=#573, X1=#574. Enforced exactly by verify-governance.ts (REAL_ISSUE_NUMBERS); placeholder or unknown numbers are gate failures."
+  },
+  "issues": [
+    {
+      "code": "G1",
+      "githubIssue": 568,
+      "tool": "governance",
+      "status": "planned",
+      "scope": "master plan, ledger, npm run verify wiring, banned-vocab lint",
+      "acceptanceCriteria": [
+        "master plan with explicit authority order and issue order",
+        "machine-readable ledger with all 7 M33 issues and real GitHub numbers",
+        "fail-closed governance verifier with negative checks",
+        "gated as a permanent part of npm run verify"
+      ],
+      "closureRequirements": [
+        "persist current gate evidence",
+        "negative checks pass",
+        "document limitations"
+      ]
+    },
+    {
+      "code": "S1",
+      "githubIssue": 569,
+      "tool": "cli",
+      "status": "planned",
+      "scope": "version parity: bb -v, bb version, bb --version all work with the same version string",
+      "acceptanceCriteria": [
+        "all three forms exit 0 and print the same version",
+        "verified against the built binary, not only tsx source",
+        "planted mutants (missing alias, mismatched output) are caught"
+      ],
+      "closureRequirements": [
+        "verifier with built-binary checks and mutants",
+        "evidence at current commit with negative cases"
+      ]
+    },
+    {
+      "code": "S2",
+      "githubIssue": 570,
+      "tool": "cli",
+      "status": "planned",
+      "scope": "unknown-command UX: did-you-mean suggestions + pointer to bb --help, exit 1, never hang",
+      "acceptanceCriteria": [
+        "near-mistake commands suggest the closest real command",
+        "far-mistake commands still exit 1 with a help pointer",
+        "non-TTY safe; verified on the built binary with mutants"
+      ],
+      "closureRequirements": [
+        "verifier covers near-miss, far-miss, and suggestion-disabled cases",
+        "evidence at current commit with negative cases"
+      ]
+    },
+    {
+      "code": "S3",
+      "githubIssue": 571,
+      "tool": "docs",
+      "status": "planned",
+      "scope": "docs/man/bb.1 roff manual + package.json man wiring so npm installs expose it",
+      "acceptanceCriteria": [
+        "man page renders via man -l with NAME/SYNOPSIS/DESCRIPTION/COMMANDS/OPTIONS/EMBEDDING SETUP/EXIT STATUS sections",
+        "package.json man field points at the shipped file and the file is inside the npm files list",
+        "planted mutants (missing section, broken roff) are caught"
+      ],
+      "closureRequirements": [
+        "verifier renders the page and checks every required section",
+        "evidence at current commit with negative cases"
+      ]
+    },
+    {
+      "code": "S4",
+      "githubIssue": 572,
+      "tool": "cli",
+      "status": "planned",
+      "scope": "English help unification + help↔implementation parity gate (both directions, built binary)",
+      "acceptanceCriteria": [
+        "all CLI-facing strings in bb --help are English (Turkish list pinned as banned in help)",
+        "every command/flag in help exists in implementation and vice versa",
+        "planted mutants (help-only command, code-only flag, Turkish string) are caught"
+      ],
+      "closureRequirements": [
+        "verifier parses the built CLI's help and compares with the parsed program surface",
+        "evidence at current commit with negative cases"
+      ]
+    },
+    {
+      "code": "H1",
+      "githubIssue": 573,
+      "tool": "docs",
+      "status": "planned",
+      "scope": "README/EMBEDDINGS document version forms, man page, and discovery paths with verbatim strings",
+      "acceptanceCriteria": [
+        "docs carry verbatim strings for bb -v / bb version and man bb",
+        "docs-truth verifier can fail via planted doc mutants",
+        "no banned vocabulary; honesty contract inherited"
+      ],
+      "closureRequirements": [
+        "docs-truth evidence at current commit",
+        "gate wired into npm run verify"
+      ]
+    },
+    {
+      "code": "X1",
+      "githubIssue": 574,
+      "tool": "gate",
+      "status": "planned",
+      "scope": "closure gate: all M33 mutants fail the combined suite; gates permanent in npm run verify; completion bar audited",
+      "acceptanceCriteria": [
+        "combined audit proves every planted M33 mutant is caught",
+        "all M33 gates present in npm run verify",
+        "completion bar audited with evidence; ledger clean"
+      ],
+      "closureRequirements": [
+        "closure evidence at current commit",
+        "all six sibling issues verified or explicitly known-gap/blocked with reason",
+        "real GitHub issue numbers wired (placeholders rejected)"
+      ]
+    }
+  ]
+}
