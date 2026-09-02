@@ -1,0 +1,146 @@
+// script/m31/verify-gate-selftest.ts — M31.G1
+// Mutation-based gate self-test: for every registered M31 gate, prove two
+// things — (control) the gate PASSES on the clean tree, and (mutation) the gate
+// FAILS when a governed surface is corrupted. A gate that cannot fail is not a
+// gate. M31 gates honor BB_M31_ROOT (their declared test seam); the legacy
+// byte-diff gate is exercised by planting + restoring against the real tree
+// with a guaranteed restore in `finally`.
+
+import { mkdtempSync, mkdirSync, copyFileSync, writeFileSync, readFileSync, rmSync, readdirSync, existsSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { execFileSync } from "node:child_process"
+import path from "node:path"
+
+const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
+const RESULT = path.join(ROOT, "validation/m31/results/gate-selftest.json")
+
+let checks = 0
+let passed = 0
+let failed = 0
+function check(label: string, ok: boolean, detail = "") {
+  checks++
+  if (ok) passed++
+  else {
+    failed++
+    console.log(`FAIL: ${label}${detail ? ` — ${detail}` : ""}`)
+  }
+}
+
+type GateSpec = {
+  name: string
+  script: string
+  /** repo-relative files the gate reads that the mutation touches */
+  surfaces: { from: string; to: string }[]
+  mutate: (sandbox: string) => void
+  /** legacy gates have no BB_M31_ROOT seam; they are exercised by plant+restore on the real tree */
+  legacy?: boolean
+}
+
+const GATES: GateSpec[] = [
+  {
+    name: "tool-docs-generator",
+    script: "script/verify-tool-docs.ts",
+    legacy: true,
+    surfaces: [{ from: "docs/tools/bb_search.md", to: "docs/tools/bb_search.md" }],
+    mutate: (sandbox) => {
+      const p = path.join(sandbox, "docs/tools/bb_search.md")
+      writeFileSync(p, readFileSync(p, "utf8").replace("# `bb_search`", "# `bb_search` TAMPERED"))
+    },
+  },
+  {
+    name: "m31-governance",
+    script: "script/m31/verify-governance.ts",
+    // Governance reads the FULL governed surface — the sandbox must contain all of it:
+    surfaces: [
+      { from: "docs/m31/PLAN.md", to: "docs/m31/PLAN.md" },
+      { from: "validation/m31/ledger.json", to: "validation/m31/ledger.json" },
+      { from: "package.json", to: "package.json" },
+      ...(existsSync(path.join(ROOT, "validation/m31/results/gate-selftest.json"))
+        ? [{ from: "validation/m31/results/gate-selftest.json", to: "validation/m31/results/gate-selftest.json" }]
+        : []),
+      // governance audits the M31 verifier sources themselves (auto-pass grep):
+      { from: "script/m31/verify-governance.ts", to: "script/m31/verify-governance.ts" },
+      { from: "script/m31/verify-gate-selftest.ts", to: "script/m31/verify-gate-selftest.ts" },
+    ],
+    mutate: (sandbox) => {
+      const p = path.join(sandbox, "docs/m31/PLAN.md")
+      writeFileSync(p, readFileSync(p, "utf8").replace("src/mcp/tool-registry.ts", "src/REMOVED-AUTHORITY"))
+    },
+  },
+]
+
+// ── coverage: every m31 verifier must be covered here or declared infra ──
+const INFRA = new Set(["verify-governance.ts", "verify-gate-selftest.ts", "sync-ledger.ts"])
+const verifiers = readdirSync(path.join(ROOT, "script/m31")).filter((f) => f.startsWith("verify-") && f.endsWith(".ts"))
+const covered = new Set(GATES.map((g) => path.basename(g.script)))
+const uncovered = verifiers.filter((v) => !covered.has(v) && !INFRA.has(v))
+check("every M31 verifier is covered by a mutation or declared infra", uncovered.length === 0, uncovered.join(","))
+
+function runGate(script: string, env: Record<string, string> = {}): { exit: number; output: string } {
+  try {
+    const out = execFileSync("bun", ["run", script], { cwd: ROOT, encoding: "utf8", stdio: "pipe", env: { ...process.env, ...env } })
+    return { exit: 0, output: out }
+  } catch (e: unknown) {
+    const err = e as { stdout?: Buffer | string; stderr?: Buffer | string; status?: number }
+    return { exit: err.status ?? 1, output: String(err.stdout ?? "") + String(err.stderr ?? "") }
+  }
+}
+
+const gateResults: { name: string; mutationFailed: boolean; controlPassed: boolean }[] = []
+for (const gate of GATES) {
+  check(`${gate.name}: gate script exists`, existsSync(path.join(ROOT, gate.script)), gate.script)
+  if (!existsSync(path.join(ROOT, gate.script))) {
+    gateResults.push({ name: gate.name, mutationFailed: false, controlPassed: false })
+    continue
+  }
+
+  const sandbox = mkdtempSync(path.join(tmpdir(), "bb-m31-selftest-"))
+  try {
+    for (const s of gate.surfaces) {
+      mkdirSync(path.dirname(path.join(sandbox, s.to)), { recursive: true })
+      copyFileSync(path.join(ROOT, s.from), path.join(sandbox, s.to))
+    }
+
+    if (gate.legacy) {
+      // Control: clean tree passes.
+      const control = runGate(gate.script)
+      check(`${gate.name}: control — clean tree PASSES`, control.exit === 0, control.output.slice(-200))
+      // Mutation: plant the corrupted file in the real tree, run, RESTORE.
+      gate.mutate(sandbox) // corrupt the sandboxed copy first (legacy has no sandbox seam)
+      const realPath = path.join(ROOT, gate.surfaces[0].from)
+      const backup = readFileSync(realPath, "utf8")
+      try {
+        writeFileSync(realPath, readFileSync(path.join(sandbox, gate.surfaces[0].to), "utf8"))
+        const mutated = runGate(gate.script)
+        check(`${gate.name}: mutation — corrupted doc FAILS the gate`, mutated.exit !== 0, mutated.output.slice(-200))
+        gateResults.push({ name: gate.name, mutationFailed: mutated.exit !== 0, controlPassed: control.exit === 0 })
+      } finally {
+        writeFileSync(realPath, backup)
+      }
+      check(`${gate.name}: real tree restored byte-identical`, readFileSync(realPath, "utf8") === backup)
+    } else {
+      // The sandbox control world is "everything conforming": the selftest
+      // evidence baseline records every registered gate as proven (mutation
+      // fails, control passes). Governance must PASS this world.
+      const stPath = path.join(sandbox, "validation/m31/results/gate-selftest.json")
+      if (existsSync(stPath)) {
+        writeFileSync(stPath, JSON.stringify({ generatedAt: new Date().toISOString(), gates: GATES.map((g) => ({ name: g.name, mutationFailed: true, controlPassed: true })) }, null, 2) + "\n")
+      }
+      // Control FIRST: unmutated sandbox passes.
+      const control = runGate(gate.script, { BB_M31_ROOT: sandbox })
+      check(`${gate.name}: control — unmutated sandbox PASSES`, control.exit === 0, control.output.slice(-200))
+      // THEN plant the mutation and prove the gate flips to failing.
+      gate.mutate(sandbox)
+      const mutated = runGate(gate.script, { BB_M31_ROOT: sandbox })
+      check(`${gate.name}: mutation — corrupted surface FAILS the gate`, mutated.exit !== 0, mutated.output.slice(-200))
+      gateResults.push({ name: gate.name, mutationFailed: mutated.exit !== 0, controlPassed: control.exit === 0 })
+    }
+  } finally {
+    rmSync(sandbox, { recursive: true, force: true })
+  }
+}
+
+mkdirSync(path.dirname(RESULT), { recursive: true })
+writeFileSync(RESULT, JSON.stringify({ generatedAt: new Date().toISOString(), gates: gateResults }, null, 2) + "\n")
+console.log(`M31 GATE SELF-TEST: ${failed === 0 ? "PASS" : "FAIL"} (${passed}/${checks})`)
+process.exit(failed === 0 ? 0 : 1)
