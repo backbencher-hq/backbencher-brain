@@ -362,7 +362,7 @@ async function main() {
     failed: 0,
     negativeCases: NEGATIVES.length,
   }
-  writeFileSync(BASELINE.replace("tool-mode-corpus.json", "T1.json"), JSON.stringify(evidence, null, 2) + "\n")
+  if (process.env.BB_M31_EVIDENCE === "1") writeFileSync(BASELINE.replace("tool-mode-corpus.json", "T1.json"), JSON.stringify(evidence, null, 2) + "\n")
   process.exit(0)
 }
 

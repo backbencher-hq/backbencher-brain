@@ -284,9 +284,11 @@ async function main() {
     },
     declaredUnverifiable: unver,
   }
-  mkdirSync(path.dirname(RESULT), { recursive: true })
-  writeFileSync(RESULT, JSON.stringify(evidence, null, 2) + "\n")
-  writeFileSync(RESULT.replace("D2.json", "D2-claims.json"), JSON.stringify({ claims, unverifiable: unver }, null, 2) + "\n")
+  if (process.env.BB_M31_EVIDENCE === "1") {
+    mkdirSync(path.dirname(RESULT), { recursive: true })
+    writeFileSync(RESULT, JSON.stringify(evidence, null, 2) + "\n")
+    writeFileSync(RESULT.replace("D2.json", "D2-claims.json"), JSON.stringify({ claims, unverifiable: unver }, null, 2) + "\n")
+  }
   console.log(`M31 BB DOCS TRUTH: ${ok ? "PASS" : "FAIL"} (${passed}/${checks}, negatives=${negatives}) — executed=${executed.length} structural=${structural.length} declared-unverifiable=${unver.length}`)
   process.exit(ok ? 0 : 1)
 }
