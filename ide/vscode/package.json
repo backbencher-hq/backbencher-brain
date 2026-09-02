@@ -1,0 +1,85 @@
+{
+  "name": "bb-lsp-vscode",
+  "displayName": "Backbencher Brain (bb_lsp)",
+  "description": "Honest code navigation from the Backbencher index: hover with evidence tier and staleness, definition, references, symbols, call hierarchy. A complement to your editor's own language servers — graph, navigation, and evidence only.",
+  "version": "0.1.0",
+  "publisher": "backbencher",
+  "license": "SEE LICENSE IN ../../LICENSE",
+  "private": true,
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Backbencher Brain",
+      "properties": {
+        "bbLsp.serverPath": {
+          "type": "string",
+          "default": "",
+          "description": "Explicit path to the bb_lsp server entry (dist/lsp/server.js). Empty = auto-resolve from the workspace's backbencher-brain checkout, then the bundled copy."
+        },
+        "bbLsp.sourceMode": {
+          "type": "string",
+          "enum": [
+            "dist",
+            "source-bun",
+            "auto"
+          ],
+          "default": "auto",
+          "description": "How to launch the server: compiled dist (preferred), from source via bun (declared fallback), or auto (dist if resolvable, else bun source)."
+        },
+        "bbLsp.minServerVersion": {
+          "type": "string",
+          "default": "0.3.0",
+          "description": "Minimum bb_lsp server version this extension accepts (version-compatibility matrix, contract §2 honesty)."
+        },
+        "bbLsp.activationBudgetMs": {
+          "type": "number",
+          "default": 150,
+          "description": "Declared activation budget in milliseconds (contract §7.3). Measured activate()-to-ready time is recorded; a budget miss is a failed gate."
+        },
+        "bbLsp.trace.server": {
+          "type": "string",
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
+          "default": "off",
+          "scope": "window"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "bbLsp.restartServer",
+        "title": "Backbencher: Restart bb_lsp server",
+        "category": "Backbencher"
+      },
+      {
+        "command": "bbLsp.showServerStatus",
+        "title": "Backbencher: Show server status",
+        "category": "Backbencher"
+      }
+    ]
+  },
+  "scripts": {
+    "build": "node ./esbuild-extension.mjs",
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/vscode": "^1.85.0",
+    "esbuild": "^0.21.5",
+    "typescript": "^5.5.0"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  }
+}
