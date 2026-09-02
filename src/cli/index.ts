@@ -192,9 +192,16 @@ export async function runCli(argv: string[]): Promise<void> {
     .command("doctor")
     .description("embedding kurulum ve indeks tutarlılığını tanıla (salt okunur)")
     .option("--dir <dir>", "project directory (default: cwd)")
+    .option("--fix", "izin sorunlarını düzelt (yalnızca 0600; kuru çalışma varsayılan değildir)")
     .action(async (opts: any) => {
-      const { runDoctorChecks, renderDoctorReport } = await import("../setup/doctor")
+      const { runDoctorChecks, renderDoctorReport, applyDoctorFixes, renderFixPlan } = await import("../setup/doctor")
       const cwd = opts.dir ? requireDir(opts.dir) : process.cwd()
+      if (opts.fix) {
+        const { plan, applied } = applyDoctorFixes({ cwd, apply: true })
+        console.log(renderFixPlan(plan, applied))
+        if (plan.refusals.length > 0) process.exitCode = 1
+        return
+      }
       const report = runDoctorChecks({ cwd, projectId: getProjectId(cwd) })
       console.log(renderDoctorReport(report))
       if (!report.healthy) process.exitCode = 1
