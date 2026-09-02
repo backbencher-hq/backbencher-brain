@@ -3,7 +3,7 @@
     "code": "G1",
     "githubIssue": 555,
     "tool": "governance",
-    "status": "known-gap",
+    "status": "verified",
     "scope": "doc-truth ledger, gates wiring, mutation-based gate self-test",
     "acceptanceCriteria": [
       "ledger exists with all M31 issues, synced from evidence files, zero fabricated entries",
@@ -17,14 +17,14 @@
       "no auto-pass assertions in any M31 verifier"
     ],
     "evidence": {
-      "status": "known-gap",
-      "currentCommit": "447bf5f7cc89b31efaee4b7c7913835965c72a81",
+      "status": "verified",
+      "currentCommit": "3368be56e6edd7b3ef04fd08b2633ca2ff242cd5",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m31/verify-governance.ts",
       "evidenceFile": "G1.json",
-      "generatedAt": "2026-09-02T14:27:22.729Z",
-      "passed": 26,
-      "failed": 1,
+      "generatedAt": "2026-09-02T14:30:03.857Z",
+      "passed": 29,
+      "failed": 0,
       "negativeCases": 2
     }
   },
@@ -46,11 +46,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "447bf5f7cc89b31efaee4b7c7913835965c72a81",
+      "currentCommit": "3368be56e6edd7b3ef04fd08b2633ca2ff242cd5",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m31/verify-tool-docs-deep.ts",
       "evidenceFile": "D1.json",
-      "generatedAt": "2026-09-02T14:26:58.017Z",
+      "generatedAt": "2026-09-02T14:30:20.127Z",
       "passed": 140,
       "failed": 0,
       "negativeCases": 1
@@ -75,11 +75,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "447bf5f7cc89b31efaee4b7c7913835965c72a81",
+      "currentCommit": "3368be56e6edd7b3ef04fd08b2633ca2ff242cd5",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m31/verify-bb-docs-truth.ts",
       "evidenceFile": "D2.json",
-      "generatedAt": "2026-09-02T14:26:58.295Z",
+      "generatedAt": "2026-09-02T14:30:20.368Z",
       "passed": 57,
       "failed": 0,
       "negativeCases": 1
@@ -131,11 +131,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "447bf5f7cc89b31efaee4b7c7913835965c72a81",
+      "currentCommit": "3368be56e6edd7b3ef04fd08b2633ca2ff242cd5",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m31/tool-mode-corpus.ts --check",
       "evidenceFile": "T1.json",
-      "generatedAt": "2026-09-02T14:27:14.371Z",
+      "generatedAt": "2026-09-02T14:30:19.537Z",
       "passed": 67,
       "failed": 0,
       "negativeCases": 22
