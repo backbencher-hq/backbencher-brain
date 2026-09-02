@@ -13,14 +13,14 @@
       "status": "pass"
     },
     {
-      "description": "regression gate vs grammar-audit-baseline.json (33/41 languages pass)",
+      "description": "regression gate vs grammar-audit-baseline.json (34/41 languages pass)",
       "id": "baseline-gate",
       "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "7ab9a63b9d4206e7c1008b1b08763750ea8c1bba",
-  "committedAt": "2026-09-01T16:30:47+02:00",
+  "commit": "bef1e8c7e0a7de240e823a42c12edeb4d8c52263",
+  "committedAt": "2026-09-02T05:01:03+02:00",
   "data": {
     "languages": {
       "bash": {
@@ -797,15 +797,9 @@
         "oracleNodeTypeCount": 435,
         "referencedFieldLiterals": 0,
         "referencedTypeLiterals": 74,
-        "status": "fail",
+        "status": "pass",
         "unknownFields": [],
-        "unknownNodeTypes": [
-          {
-            "context": "real-scala-analyzer.ts:comparison",
-            "line": 684,
-            "literal": "functional_type"
-          }
-        ],
+        "unknownNodeTypes": [],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-scala.wasm"
@@ -1046,10 +1040,10 @@
       }
     },
     "summary": {
-      "fail": 8,
+      "fail": 7,
       "languagesAudited": 41,
-      "pass": 33,
-      "totalUnknownReferences": 44
+      "pass": 34,
+      "totalUnknownReferences": 43
     }
   },
   "governance": "docs/M14-HONESTY-CONTRACT.md",

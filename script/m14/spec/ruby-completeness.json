@@ -98,9 +98,6 @@
       "heredoc_body",
       "heredoc_content",
       "comment",
-      "line",
-      "file",
-      "encoding",
       "empty_statement",
       "parenthesized_statements",
       "element_reference",
@@ -126,7 +123,6 @@
       "variable_reference_pattern",
       "expression_reference_pattern",
       "match_pattern",
-      "test_pattern",
       "in"
     ]
   },
@@ -150,7 +146,7 @@
     "gaps": []
   },
   "design_decision": {
-    "description": "Owner rulings — never silent absence",
+    "description": "Owner rulings \u2014 never silent absence",
     "decisions": [
       {
         "id": "RUBD1",
@@ -175,7 +171,7 @@
         "node_type": "class_variable / global_variable",
         "status": "RULED",
         "question": "Do @@class_vars and $globals emit uses like instance_variable?",
-        "resolution": "NO — declared limitation: @@var/$var are file-global and cross-file by nature; per-file emission would fabricate cross-file semantics. Only instance_variable emits member-read uses.",
+        "resolution": "NO \u2014 declared limitation: @@var/$var are file-global and cross-file by nature; per-file emission would fabricate cross-file semantics. Only instance_variable emits member-read uses.",
         "decided_at": "2026-08-31",
         "decided_by": "owner-delegated (M14 wave authorization)"
       },
@@ -184,7 +180,7 @@
         "node_type": "instance_variable in read-modify-write (operator_assignment: @x += / -= / ||=)",
         "status": "RULED",
         "question": "Does @x += v emit a uses edge for @x, or is every operator_assignment LHS a pure write?",
-        "resolution": "EMITS USES — read-modify-write reads @x before writing it. Plain assignment (@x = v) stays a pure write. Verified in rake corpus (@balance += amount, @options ||= {}): fixture pins authorize->@balance x3 and refund->@balance x1; oracle already mirrored this rule.",
+        "resolution": "EMITS USES \u2014 read-modify-write reads @x before writing it. Plain assignment (@x = v) stays a pure write. Verified in rake corpus (@balance += amount, @options ||= {}): fixture pins authorize->@balance x3 and refund->@balance x1; oracle already mirrored this rule.",
         "decided_at": "2026-08-31",
         "decided_by": "owner-delegated (M14 wave authorization)"
       },
@@ -193,7 +189,7 @@
         "node_type": "singleton_class (class << self)",
         "status": "RULED",
         "question": "Do methods inside class << self belong to the enclosing class?",
-        "resolution": "YES — grammar represents them as ordinary method nodes inside singleton_class; analyzer re-parents them to the enclosing class with isStatic/isSingleton metadata. Verified: def self.create emits Service.create static.",
+        "resolution": "YES \u2014 grammar represents them as ordinary method nodes inside singleton_class; analyzer re-parents them to the enclosing class with isStatic/isSingleton metadata. Verified: def self.create emits Service.create static.",
         "decided_at": "2026-08-31",
         "decided_by": "owner-delegated (M14 wave authorization)"
       },
@@ -202,7 +198,7 @@
         "node_type": "if_modifier / unless_modifier / while_modifier / until_modifier / rescue_modifier",
         "status": "RULED",
         "question": "Do postfix (modifier) conditionals count toward cyclomatic complexity?",
-        "resolution": "YES — postfix forms are genuine branches, semantically identical to the block forms (`return false if x` == `if x; return false; end`) and Ruby's most idiomatic branching. tree-sitter-ruby emits DISTINCT node types (if_modifier etc.) that the analyzer previously skipped, under-reporting every modifier-heavy method. Both the per-symbol counter and the file-level cyclomaticComplexity now count if/unless/while/until/rescue + their *_modifier forms. Verified: fixture authorize has 2 if_modifier + 1 while = complexity 4 (previously mis-pinned at 2); charge has 1 if_modifier = 2 (previously mis-pinned at 1).",
+        "resolution": "YES \u2014 postfix forms are genuine branches, semantically identical to the block forms (`return false if x` == `if x; return false; end`) and Ruby's most idiomatic branching. tree-sitter-ruby emits DISTINCT node types (if_modifier etc.) that the analyzer previously skipped, under-reporting every modifier-heavy method. Both the per-symbol counter and the file-level cyclomaticComplexity now count if/unless/while/until/rescue + their *_modifier forms. Verified: fixture authorize has 2 if_modifier + 1 while = complexity 4 (previously mis-pinned at 2); charge has 1 if_modifier = 2 (previously mis-pinned at 1).",
         "decided_at": "2026-09-01",
         "decided_by": "owner-delegated (M14 ruby re-review)"
       },
@@ -211,9 +207,23 @@
         "node_type": "case_match / in_clause / array_pattern / hash_pattern / as_pattern (pattern family)",
         "status": "RULED",
         "question": "What do Ruby 3 pattern-matching bindings emit?",
-        "resolution": "BINDINGS ARE LOCALS, NEVER EDGES — same contract as left_assignment_list destructuring: `in [a, b]` binds a/b as locals of the match scope (visible in guards and match bodies); `in {name:}` binds name via hash_key_symbol (shorthand); `{age: x}` binds x; `Integer => n` binds n; `in x` binds x; `[*head, last]` binds head/last. `variable_reference_pattern` (^n) PINNS an outer local and binds nothing. Before RUBG1 the bindings leaked as bogus calls:a/calls:b edges in both the pattern and match body — now forbidden by fixture pins and the ruby/pattern-bindings-leak-as-calls mutant.",
+        "resolution": "BINDINGS ARE LOCALS, NEVER EDGES \u2014 same contract as left_assignment_list destructuring: `in [a, b]` binds a/b as locals of the match scope (visible in guards and match bodies); `in {name:}` binds name via hash_key_symbol (shorthand); `{age: x}` binds x; `Integer => n` binds n; `in x` binds x; `[*head, last]` binds head/last. `variable_reference_pattern` (^n) PINNS an outer local and binds nothing. Before RUBG1 the bindings leaked as bogus calls:a/calls:b edges in both the pattern and match body \u2014 now forbidden by fixture pins and the ruby/pattern-bindings-leak-as-calls mutant.",
         "decided_at": "2026-09-01",
         "decided_by": "owner-delegated (M14 ruby re-review)"
+      },
+      {
+        "id": "RUBD2",
+        "node_type": "line, file, encoding",
+        "status": "RULED",
+        "question": "Do the __LINE__/__FILE__/__encoding__ keyword tokens produce distinct parse-tree nodes in the pinned grammar?",
+        "resolution": "No. Probe-verified 2026-09-02: all three keyword tokens parse as plain `identifier` nodes in every context (assignment, call args, bare expression). The grammar declares the rules but the parser folds them into identifier. Analyzer needs no distinct handling; values remain available via text. Reclassified from handled_verified per the F6 fixture-coverage gate (M14.0.F6)."
+      },
+      {
+        "id": "RUBD3",
+        "node_type": "test_pattern",
+        "status": "RULED",
+        "question": "Is test_pattern a realizable parse-tree node for valid Ruby pattern-matching source in the pinned grammar?",
+        "resolution": "No. Probe-verified 2026-09-02 across 20+ case/in shapes (call patterns, bare literals, ranges, one-line `then` forms, parenthesized alts): the only source that produced test_pattern was `def m(v) = case v in 1 then 2 end`, which is an ERROR parse \u2014 the one-line case/in form is not supported by this grammar version. Every clean parse realizes other pattern nodes (as_pattern, alternative_pattern, parenthesized_pattern, find_pattern). Reclassified from handled_verified per the F6 fixture-coverage gate (M14.0.F6)."
       }
     ]
   }
