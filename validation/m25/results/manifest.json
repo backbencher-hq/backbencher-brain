@@ -124,7 +124,7 @@
       "code": "E4",
       "githubIssue": 502,
       "tool": "packaging",
-      "status": "planned",
+      "status": "verified",
       "scope": "repeatable VSIX build from the repo; OpenVSX publish pipeline (token-gated, scripted); server binary bundling strategy decided and documented; changelog discipline",
       "acceptanceCriteria": [
         "VSIX builds from clean checkout; contents audited (no dev artifacts, server binary present in full)",
@@ -135,7 +135,17 @@
         "published listing URL recorded in evidence",
         "dry-run evidence if live publish awaits owner credentials (blocked state recorded honestly)",
         "limitations declared"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see E4.json",
+        "verifierCommand": "npx tsx script/m25/verify-packaging.ts",
+        "evidenceFile": "E4.json",
+        "passed": 28,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 4
+      }
     },
     {
       "code": "V1",
