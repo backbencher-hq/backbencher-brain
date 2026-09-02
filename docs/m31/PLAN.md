@@ -68,3 +68,14 @@ Identical to M21's proven contract:
 - Non-tool project docs (ARCHITECTURE.md, GRAPH_ENGINE.md, etc.) — separate future work.
 - Website itself — these docs are prepared as its source, not the site build.
 - Analyzer accuracy — owned by M14 (co-agent).
+
+## Post-closure perfection audit (2026-09-02, commits 08d324c..4bf1f30)
+
+Full adversarial re-review after milestone closure. Found and fixed:
+
+1. **D3 emitter wrote evidence to the repo root, not the governed root** — a sandboxed self-test run with stamping enabled could poison real `D3.json` (the emitter-side twin of the T1 baseline bug). Fixed: writes go to `BB_M31_ROOT`.
+2. **Self-test child runs inherited `BB_M31_EVIDENCE`** — sandboxed gates could stamp real evidence. Fixed: `runGate` strips it; only the operator's explicit stamping pass writes evidence.
+3. **Closure demanded stamp-equality on harness evidence** — a 2-cycle dependency (G1/self-test can only pass after X1's own evidence exists) made convergence luck-based. Fixed: mutual stamp-equality scoped to the four content gates; G1/self-test evidence is conformance-checked.
+4. **#555 criterion 3 was not actually satisfied** — `npm run verify` did not run `docs:verify`; governance's check 6 never verified the `verify` script itself. Fixed: `verify` now chains `docs:verify`; governance (32/32) permanently enforces it.
+
+Evidence model after the audit: gate runs are pure reads by default; evidence is written only by an explicit `BB_M31_EVIDENCE=1` stamping pass at the current HEAD, then synced into the ledger.
