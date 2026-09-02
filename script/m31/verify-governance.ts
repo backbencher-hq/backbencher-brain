@@ -149,7 +149,9 @@ const evidence = {
   failed: checks - passed,
   negativeCases: negatives,
 }
-mkdirSync(path.dirname(RESULT), { recursive: true })
-writeFileSync(RESULT, JSON.stringify(evidence, null, 2) + "\n")
+if (process.env.BB_M31_EVIDENCE === "1") {
+  mkdirSync(path.dirname(RESULT), { recursive: true })
+  writeFileSync(RESULT, JSON.stringify(evidence, null, 2) + "\n")
+}
 console.log(`M31 GOVERNANCE: ${ok ? "PASS" : "FAIL"} (${passed}/${checks}, negatives=${negatives})`)
 process.exit(ok ? 0 : 1)
