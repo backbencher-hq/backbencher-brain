@@ -151,7 +151,7 @@
       "code": "V1",
       "githubIssue": 505,
       "tool": "extension-harness",
-      "status": "planned",
+      "status": "verified",
       "scope": "extension host test harness (vscode-test) + fork runner; shared feature-assertion core reused across VS Code and forks; latency budgets re-measured in-editor (full extension stack, not just the server)",
       "acceptanceCriteria": [
         "shared assertion core: one library, per-editor runners adapt transport only (M27 will reuse)",
@@ -162,7 +162,17 @@
         "wired into verify (where headless-safe)",
         "evidence with machine + versions",
         "limitations declared"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see V1.json",
+        "verifierCommand": "npx tsx script/m25/verify-harness-core.ts",
+        "evidenceFile": "V1.json",
+        "passed": 24,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 5
+      }
     },
     {
       "code": "E5",
