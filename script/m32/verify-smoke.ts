@@ -192,7 +192,7 @@ async function smokeSuite(bbPath: string, mockURL: string): Promise<void> {
     const r = await runProcess(bbPath, ["index", "."], { env: { BB_DATA_DIR: dataDir }, cwd: proj, timeoutMs: 60000 })
     check("SM1.A: non-TTY bb index resolves (never hangs)", !r.timedOut && r.code === 0, r.timedOut ? "timed out" : `exit=${r.code} ${r.error ?? ""}`)
     const clean = stripAnsi(r.stdout)
-    check("SM1.A: honest no-key notice present", clean.includes("embedding anahtarı yok") && clean.includes("bb setup"), clean.split("\n")[0] ?? "")
+    check("SM1.A: honest no-key notice present", clean.includes("no embedding key") && clean.includes("bb setup"), clean.split("\n")[0] ?? "")
     rmSync(proj, { recursive: true, force: true })
   }
 
@@ -204,7 +204,7 @@ async function smokeSuite(bbPath: string, mockURL: string): Promise<void> {
     writeFileSync(path.join(proj, "a.ts"), "export function foo() { return 1 }\n")
     const r1 = await runProcess(bbPath, ["index", "."], { env: { BB_DATA_DIR: dataDir }, cwd: proj, input: "4", timeoutMs: 60000, pty: true })
     const clean1 = stripAnsi(r1.stdout)
-    check("SM1.B: wizard prompt fires on real TTY", clean1.includes("Seçim [1-4]") && clean1.includes("embedding kurulumu"), clean1.slice(0, 200))
+    check("SM1.B: wizard prompt fires on real TTY", clean1.includes("Choice [1-4]") && clean1.includes("embedding setup"), clean1.slice(0, 200))
     check("SM1.B: skip flow resolves (no hang)", !r1.timedOut, r1.timedOut ? "timed out" : "")
     const cfg = readDataConfig(dataDir)
     check("SM1.B: skip persisted as setup_skipped", cfg?.json?.setup_skipped === true, JSON.stringify(cfg?.json))
@@ -213,7 +213,7 @@ async function smokeSuite(bbPath: string, mockURL: string): Promise<void> {
 
     const r2 = await runProcess(bbPath, ["index", "."], { env: { BB_DATA_DIR: dataDir }, cwd: proj, input: "4", timeoutMs: 60000, pty: true })
     const clean2 = stripAnsi(r2.stdout)
-    check("SM1.C: no second prompt after explicit skip (prompt-once)", !clean2.includes("Seçim [1-4]"), clean2.slice(0, 200))
+    check("SM1.C: no second prompt after explicit skip (prompt-once)", !clean2.includes("Choice [1-4]"), clean2.slice(0, 200))
     rmSync(proj, { recursive: true, force: true })
   }
 
@@ -231,11 +231,11 @@ async function smokeSuite(bbPath: string, mockURL: string): Promise<void> {
       pty: true,
     })
     const cleanSetup = stripAnsi(setup.stdout)
-    check("SM1.D: bb setup validates and saves (live probe)", cleanSetup.includes("kaydedildi ve doğrulandı") || cleanSetup.includes("kaydedildi"), cleanSetup.split("\n").filter((l) => l.includes("kaydedildi") || l.includes("✗"))[0] ?? "")
+    check("SM1.D: bb setup validates and saves (live probe)", cleanSetup.includes("saved and validated") || cleanSetup.includes("Key saved"), cleanSetup.split("\n").filter((l) => l.includes("Key saved") || l.includes("✗"))[0] ?? "")
     const cfg = readDataConfig(dataDir)
     check("SM1.D: key+model saved to 0600 config", cfg?.mode === 0o600 && cfg?.json?.embedding_model === "mock-model" && typeof cfg?.json?.embedding_api_key === "string", cfg ? `mode=${cfg.mode?.toString(8)} keys=${Object.keys(cfg.json).join(",")}` : "no config file")
     const idx = await runProcess(bbPath, ["index", "."], { env: { BB_DATA_DIR: dataDir }, cwd: proj, input: "4", timeoutMs: 60000, pty: true })
-    check("SM1.D: configured install never prompts on bb index", !stripAnsi(idx.stdout).includes("Seçim [1-4]"), stripAnsi(idx.stdout).slice(0, 200))
+    check("SM1.D: configured install never prompts on bb index", !stripAnsi(idx.stdout).includes("Choice [1-4]"), stripAnsi(idx.stdout).slice(0, 200))
     rmSync(proj, { recursive: true, force: true })
   }
 }
@@ -291,13 +291,13 @@ try {
     const dir = mkdtempSync(path.join(os.tmpdir(), "m32-smoke-neg2-"))
     const stub = plantStub(
       dir,
-      `process.stdout.write("Seçim [1-4]: "); process.stdin.once("data", () => process.exit(0)); setTimeout(() => process.exit(0), 3000)`,
+      `process.stdout.write("Choice [1-4]: "); process.stdin.once("data", () => process.exit(0)); setTimeout(() => process.exit(0), 3000)`,
     )
     const dataDir = path.join(dir, "d")
     mkdirSync(dataDir, { recursive: true })
     const r = await runProcess(stub, ["index", "."], { env: { BB_DATA_DIR: dataDir }, input: "4", timeoutMs: 15000 })
     const cfg = readDataConfig(dataDir)
-    const wouldPassPromptCheck = stripAnsi(r.stdout).includes("Seçim [1-4]") && !r.timedOut
+    const wouldPassPromptCheck = stripAnsi(r.stdout).includes("Choice [1-4]") && !r.timedOut
     negative("SM1: silent no-save binary (UI works, persist broken) is caught", wouldPassPromptCheck && cfg === null)
     rmSync(dir, { recursive: true, force: true })
   }

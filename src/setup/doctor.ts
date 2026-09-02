@@ -122,8 +122,8 @@ export function runDoctorChecks(opts: {
       id: "no-config",
       severity: "fail",
       message: skipped
-        ? "Embedding yapılandırması yok (sihirbaz daha önce atlanmış)."
-        : "Embedding yapılandırması yok.",
+        ? "No embedding configuration (the wizard was skipped earlier)."
+        : "No embedding configuration.",
       fix: "bb setup",
     })
   }
@@ -133,7 +133,7 @@ export function runDoctorChecks(opts: {
       findings.push({
         id: `incomplete-${t.tier}`,
         severity: "fail",
-        message: `${t.tier} katmanı eksik: ${missing.join(" + ")}.`,
+        message: `${t.tier} tier is incomplete: missing ${missing.join(" + ")}.`,
         fix: "bb setup",
       })
     }
@@ -141,7 +141,7 @@ export function runDoctorChecks(opts: {
       findings.push({
         id: `mode-${t.tier}`,
         severity: "warn",
-        message: `${t.tier} yapılandırma dosyasının izni ${t.fileMode?.toString(8)} — anahtar dünyaca okunabilir olabilir.`,
+        message: `${t.tier} config file has mode ${t.fileMode?.toString(8)} — the key may be world-readable.`,
         fix: "bb doctor --fix",
       })
     }
@@ -154,21 +154,21 @@ export function runDoctorChecks(opts: {
   if (winnerModel && storedModels.length > 0) {
     const matches = storedModels.filter((s) => s.model === winnerModel)
     if (matches.length === 0) {
-      const storedDesc = storedModels.map((s) => `${s.model} (${s.count} satır)`).join(", ")
+      const storedDesc = storedModels.map((s) => `${s.model} (${s.count} rows)`).join(", ")
       findings.push({
         id: "model-mismatch",
         severity: "fail",
-        message: `Model uyuşmazlığı: yapılandırmada ${winnerModel}, indekste ${storedDesc}. Farklı modellerin vektörleri karşılaştırılamaz — mevcut vektörler kullanılmıyor.`,
+        message: `Model mismatch: config has ${winnerModel}, index has ${storedDesc}. Vectors from different models cannot be compared — the stored vectors are unusable.`,
         fix: "bb index --force",
       })
     } else {
       const foreign = storedModels.filter((s) => s.model !== winnerModel)
       if (foreign.length > 0) {
-        const foreignDesc = foreign.map((s) => `${s.model} (${s.count} satır)`).join(", ")
+        const foreignDesc = foreign.map((s) => `${s.model} (${s.count} rows)`).join(", ")
         findings.push({
           id: "model-mixed",
           severity: "warn",
-          message: `İndekste yabancı model vektörleri var: ${foreignDesc}. Bunlar ${winnerModel} sorgularıyla karşılaştırılmaz.`,
+          message: `The index contains foreign-model vectors: ${foreignDesc}. They are never compared with ${winnerModel} queries.`,
           fix: "bb index --force",
         })
       }
@@ -177,7 +177,7 @@ export function runDoctorChecks(opts: {
     findings.push({
       id: "no-index",
       severity: "info",
-      message: `Bu proje için kayıtlı vektör yok (indeks yok veya boş). Yapılandırmadaki model: ${winnerModel}.`,
+      message: `No stored vectors for this project (no index or empty). Config model: ${winnerModel}.`,
       fix: "bb index .",
     })
   }
@@ -187,7 +187,7 @@ export function runDoctorChecks(opts: {
     findings.push({
       id: "semantic-degraded",
       severity: "warn",
-      message: `Semantik arama ${localLabel} ile çalışacak (daha zayıf).`,
+      message: `Semantic search will use ${localLabel} (weaker).`,
       fix: "bb setup",
     })
   }
@@ -200,15 +200,15 @@ export function runDoctorChecks(opts: {
 // tier view; runDoctorChecks never reads raw key material into findings).
 export function renderDoctorReport(r: DoctorReport): string {
   const lines: string[] = []
-  lines.push("bb doctor — tanılama")
+  lines.push("bb doctor — diagnostics")
   lines.push("")
   if (r.findings.length === 0) {
-    lines.push("✓ Sorun bulunamadı — yapılandırma ve indeks tutarlı görünüyor.")
+    lines.push("✓ No problems found — config and index look consistent.")
   }
   const icon: Record<Severity, string> = { fail: "✗", warn: "!", info: "·" }
   for (const f of r.findings) {
     lines.push(`${icon[f.severity]} ${f.message}`)
-    if (f.fix) lines.push(`  Çözüm: ${f.fix}`)
+    if (f.fix) lines.push(`  Fix: ${f.fix}`)
   }
   return lines.join("\n") + "\n"
 }
@@ -259,7 +259,7 @@ export function planDoctorFixes(opts: {
   for (const t of state.tiers) {
     if (t.fileMode !== undefined && t.fileMode !== 0o600 && t.file) {
       if (actions.length >= MAX_FIX_ACTIONS) {
-        refusals.push({ id: `mode-${t.tier}`, reason: `onarım sınırı aşıldı (${MAX_FIX_ACTIONS}) — beklenmedik durum, manuel inceleme gerekli` })
+        refusals.push({ id: `mode-${t.tier}`, reason: `repair cap exceeded (${MAX_FIX_ACTIONS}) — unexpected state, manual review required` })
         continue
       }
       actions.push({ id: `mode-${t.tier}`, file: t.file, fromMode: t.fileMode, toMode: 0o600 })
@@ -270,18 +270,16 @@ export function planDoctorFixes(opts: {
 
 export function renderFixPlan(plan: FixPlan, applied: boolean): string {
   const lines: string[] = []
-  lines.push(applied ? "bb doctor --fix — uygulandı" : "bb doctor --fix — kuru çalışma (değişiklik yok; uygulamak için --fix)")
+  lines.push(applied ? "bb doctor --fix — applied" : "bb doctor --fix — dry run (nothing changed; pass --fix to apply)")
   lines.push("")
   if (plan.actions.length === 0 && plan.refusals.length === 0) {
-    lines.push("✓ Düzeltilecek izin sorunu yok.")
+    lines.push("✓ No permission problems to fix.")
   }
   for (const a of plan.actions) {
-    const verb = applied ? "düzeltelecekti" : "düzeltiliyor"
-    lines.push(`${applied ? "✓" : "·"} ${a.file}: izin ${a.fromMode?.toString(8)} -> ${a.toMode.toString(8)} ${applied ? "(uygulandı)" : "(öneri)"}`)
-    void verb
+    lines.push(`${applied ? "✓" : "·"} ${a.file}: mode ${a.fromMode?.toString(8)} -> ${a.toMode.toString(8)} ${applied ? "(applied)" : "(proposed)"}`)
   }
   for (const ref of plan.refusals) {
-    lines.push(`✗ REDDEDİLDİ ${ref.id}: ${ref.reason}`)
+    lines.push(`✗ REFUSED ${ref.id}: ${ref.reason}`)
   }
   return lines.join("\n") + "\n"
 }
@@ -306,7 +304,7 @@ export function applyDoctorFixes(opts: {
       } catch {
         // File vanished or changed between plan and apply: surface as refusal
         // rather than mutating something unverified.
-        plan.refusals.push({ id: a.id, reason: "dosya plan ile uygulama arasında değişti — manuel inceleme gerekli" })
+        plan.refusals.push({ id: a.id, reason: "file changed between plan and apply — manual review required" })
         plan.actions = plan.actions.filter((x) => x !== a)
       }
     }

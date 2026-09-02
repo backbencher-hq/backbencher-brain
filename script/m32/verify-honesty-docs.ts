@@ -56,20 +56,20 @@ check("H1: EMBEDDINGS documents bb doctor", E.includes("`bb doctor`"))
 check("H1: EMBEDDINGS documents bb doctor --fix", E.includes("`bb doctor --fix`"))
 
 // 2. Verbatim show output (header, precedence line, winner line, fingerprint form).
-const SHOW_HEADER = "bb — embedding yapılandırması"
-const SHOW_PRECEDENCE = "Kaynak önceliği: env > ~/.bb/config.json > bb.json"
+const SHOW_HEADER = "bb — embedding configuration"
+const SHOW_PRECEDENCE = "Precedence: env > ~/.bb/config.json > bb.json"
 check("H1: show header verbatim", E.includes(SHOW_HEADER))
 check("H1: precedence line verbatim", E.includes(SHOW_PRECEDENCE))
-check("H1: fingerprint rendering form verbatim (••••)", E.includes("anahtar: ••••"))
-check("H1: mode rendering verbatim (mod: 600)", E.includes("mod: 600"))
+check("H1: fingerprint rendering form verbatim (••••)", E.includes("key: ••••"))
+check("H1: mode rendering verbatim (mode: 600)", E.includes("mode: 600"))
 
 // 3. Verbatim doctor output (header, no-config finding with fix, mode warn with fix).
-const DOCTOR_HEADER = "bb doctor — tanılama"
-const NOCONFIG = "✗ Embedding yapılandırması yok."
-const NOCONFIG_FIX = "Çözüm: bb setup"
-const MODE_WARN = "yapılandırma dosyasının izni 644 — anahtar dünyaca okunabilir olabilir."
-const MODE_FIX = "Çözüm: bb doctor --fix"
-const NOIDX = "Bu proje için kayıtlı vektör yok"
+const DOCTOR_HEADER = "bb doctor — diagnostics"
+const NOCONFIG = "✗ No embedding configuration."
+const NOCONFIG_FIX = "Fix: bb setup"
+const MODE_WARN = "config file has mode 644 — the key may be world-readable."
+const MODE_FIX = "Fix: bb doctor --fix"
+const NOIDX = "No stored vectors for this project"
 check("H1: doctor header verbatim", E.includes(DOCTOR_HEADER))
 check("H1: no-config finding verbatim", E.includes(NOCONFIG))
 check("H1: no-config fix verbatim", E.includes(NOCONFIG_FIX))
@@ -78,8 +78,8 @@ check("H1: mode fix verbatim", E.includes(MODE_FIX))
 check("H1: no-index info verbatim fragment", E.includes(NOIDX))
 
 // 4. Verbatim fix output (applied header, applied change line shape).
-const FIX_HEADER = "bb doctor --fix — uygulandı"
-const FIX_CHANGE = "izin 644 -> 600 (uygulandı)"
+const FIX_HEADER = "bb doctor --fix — applied"
+const FIX_CHANGE = "mode 644 -> 600 (applied)"
 check("H1: fix applied header verbatim", E.includes(FIX_HEADER))
 check("H1: fix change line shape verbatim", E.includes(FIX_CHANGE))
 
@@ -129,8 +129,8 @@ function runDocMutants(): { name: string; caught: boolean }[] {
   const mutants: DocMutant[] = [
     {
       name: "fingerprint form paraphrased (full key hinted)",
-      mutate: (src) => src.replace("anahtar: ••••", "anahtar: [key]"),
-      probe: (mutated) => !mutated.includes("anahtar: ••••"),
+      mutate: (src) => src.replace("key: ••••", "key: [full key]"),
+      probe: (mutated) => !mutated.includes("key: ••••"),
     },
     {
       name: "permissions-only rule weakened",
@@ -144,8 +144,8 @@ function runDocMutants(): { name: string; caught: boolean }[] {
     },
     {
       name: "doctor fix command paraphrased (bb index . instead of --force)",
-      mutate: (src) => src.replace("Çözüm: bb index --force", "Çözüm: bb index ."),
-      probe: (mutated) => !mutated.includes("Çözüm: bb index --force"),
+      mutate: (src) => src.replace("Fix: bb index --force", "Fix: bb index ."),
+      probe: (mutated) => !mutated.includes("Fix: bb index --force"),
     },
     {
       name: "fix applied header dropped",

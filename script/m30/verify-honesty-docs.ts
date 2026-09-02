@@ -39,18 +39,18 @@ function check(label: string, condition: boolean, detail = ""): void {
 // Verbatim strings sourced from the implementation (never paraphrased here).
 // ---------------------------------------------------------------------------
 
-const S2_NOTICE = "not: embedding anahtarı yok — semantik arama yerel vektörlerle çalışacak (daha zayıf). Kurulum: bb setup"
+const S2_NOTICE = "note: no embedding key — semantic search will use local vectors (weaker). Setup: bb setup"
 
 // S3 validation messages, exactly as emitted by mapValidationError / validateKey.
 const S3_MESSAGES: string[] = [
-  "Anahtar kabul edilmedi (401). Anahtarı ve sağlayıcıyı kontrol et — kopyalarken eksik/ekstra karakter olabilir.",
-  "Hız limiti (429). Anahtar geçerli görünüyor; ücretsiz katman sınırı. Kaydedilebilir — dizinleme sırasında geri çekilme uygulanır.",
-  "Sağlayıcı hatası (503). Anahtar geçerli olabilir; sağlayıcı geçici olarak sorunlu. Kaydedilebilir — dizinleme sırasında yeniden denenir.",
-  "Model bulunamadı (404). Model adını kontrol et: sağlayıcının /embeddings ucu bu model adını tanımıyor.",
-  "Sağlayıcı yanıt vermedi (zaman aşımı). İnternet bağlantısını ve base URL'i kontrol et.",
-  "Sağlayıcıya ulaşılamadı: ",
-  "Sağlayıcı geçersiz JSON döndü. Base URL bir /v1 uç noktası olmalı.",
-  "Sağlayıcı embedding döndürmedi. Base URL ve model adını kontrol et.",
+  "Key rejected (401). Check the key and provider — copy-paste may have dropped or added characters.",
+  "Rate limit (429). The key looks valid; free-tier limit. It can be saved — indexing backs off and retries.",
+  "Provider error (503). The key may be valid; the provider is temporarily failing. It can be saved — indexing retries automatically.",
+  "Model not found (404). Check the model name: the provider's /embeddings endpoint does not recognize it.",
+  "Provider did not respond (timeout). Check your internet connection and the base URL.",
+  "Could not reach the provider: ",
+  "Provider returned invalid JSON. The base URL must be a /v1 endpoint.",
+  "Provider returned no embedding. Check the base URL and model name.",
 ]
 
 const M14_BANNED = [
@@ -90,7 +90,7 @@ for (const msg of S3_MESSAGES) {
 // 3. The no-key trade-off is stated with the honest label, not as "the same".
 check(
   "H1: docs name the no-key fallback (local-word-vectors) and declare it weaker",
-  /local-word-vectors/.test(embeddings) && /daha zayıf|declared weaker|keyword-level/.test(embeddings),
+  /local-word-vectors/.test(embeddings) && /weaker|declared weaker|keyword-level/.test(embeddings),
   "fallback label or weakness declaration missing",
 )
 
@@ -154,11 +154,11 @@ type DocMutant = { name: string; mutate: (src: string) => string; probe: (mutate
 function makeDocMutants(): DocMutant[] {
   const variants: DocMutant[] = []
 
-  // Remove the honest weakness declaration ("daha zayıf" phrasing).
+  // Remove the honest weakness declaration ("weaker" phrasing).
   variants.push({
     name: "no-key weakness declaration removed",
-    mutate: (src) => src.replace(/\(daha zayıf\)/g, "()"),
-    probe: (src) => !/\(daha zayıf\)|declared weaker|keyword-level/.test(src),
+    mutate: (src) => src.replace(/\(weaker\)/g, "()"),
+    probe: (src) => !/\(weaker\)|declared weaker|keyword-level/.test(src),
   })
 
   // Paraphrase the S2 notice (must be verbatim, so any paraphrase fails).

@@ -191,7 +191,7 @@ console.log(`  component: ${path.relative(ROOT, COMPONENT)}`)
   // 2. Non-TTY without quiet emits exactly one honest notice line.
   const res = await runHook(HOOK_SCRIPT, {}, COMPONENT)
   check("S2: non-TTY unquiet hook resolves", res.ok && !res.timedOut, res.stderr.slice(0, 200))
-  const noticeLines = res.stdout.split("\n").filter((l) => l.includes("embedding anahtarı yok"))
+  const noticeLines = res.stdout.split("\n").filter((l) => l.includes("no embedding key"))
   check("S2: exactly one notice line on non-TTY", noticeLines.length === 1, JSON.stringify(noticeLines))
   check("S2: notice points to bb setup", /bb setup/.test(noticeLines[0] ?? ""), noticeLines[0])
 }
@@ -202,7 +202,7 @@ console.log(`  component: ${path.relative(ROOT, COMPONENT)}`)
   check("S2: --no-setup resolves fast", res.ok && !res.timedOut, res.stderr.slice(0, 200))
   const j = fixtureJSON(res)[0]
   check("S2: --no-setup reports reason=flag", j?.prompted === false && j?.reason === "flag", JSON.stringify(j))
-  check("S2: --no-setup emits no notice", !res.stdout.includes("embedding anahtarı yok"), res.stdout.slice(0, 200))
+  check("S2: --no-setup emits no notice", !res.stdout.includes("no embedding key"), res.stdout.slice(0, 200))
 }
 
 // 4. Configured env skips hook.
@@ -214,7 +214,7 @@ console.log(`  component: ${path.relative(ROOT, COMPONENT)}`)
 }
 
 // 4b. Explicit skip is remembered: a global config with setup_skipped=true
-// (what the wizard writes when the user chooses "Atla") must stop future
+// (what the wizard writes when the user chooses "Skip") must stop future
 // prompts — the wizard runs ONCE, never nags on every bb index.
 {
   const dir = mkdtempSync(path.join(os.tmpdir(), "m30-s2-skip-"))
@@ -225,7 +225,7 @@ console.log(`  component: ${path.relative(ROOT, COMPONENT)}`)
   const j = fixtureJSON(res)[0]
   check("S2: remembered skip resolves (no prompt, no hang)", res.ok && !res.timedOut, res.stderr.slice(0, 200))
   check("S2: remembered skip reports reason=skipped", j?.prompted === false && j?.reason === "skipped", JSON.stringify(j))
-  check("S2: remembered skip emits no notice", !res.stdout.includes("embedding anahtarı yok"), res.stdout.slice(0, 200))
+  check("S2: remembered skip emits no notice", !res.stdout.includes("no embedding key"), res.stdout.slice(0, 200))
   rmSync(dir, { recursive: true, force: true })
 }
 
@@ -270,7 +270,7 @@ console.log(`  component: ${path.relative(ROOT, COMPONENT)}`)
         resolve({ ok: code === 0, stdout, timedOut: false })
       }
     })
-    // Send skip choice (option 4 = Atla) shortly after start.
+    // Send skip choice (option 4 = Skip) shortly after start.
     setTimeout(() => {
       try {
         child.stdin?.write("4\r")
@@ -283,7 +283,7 @@ console.log(`  component: ${path.relative(ROOT, COMPONENT)}`)
     }, 3000)
   })
   rmSync(dir, { recursive: true, force: true })
-  check("S2: pseudo-TTY prompt appears (TTY branch fires)", /Seçim \[1-4\]/.test(result.stdout) && /embedding kurulumu/.test(result.stdout), result.stdout.slice(0, 300))
+  check("S2: pseudo-TTY prompt appears (TTY branch fires)", /Choice \[1-4\]/.test(result.stdout) && /embedding setup/.test(result.stdout), result.stdout.slice(0, 300))
   check("S2: pseudo-TTY session resolves (no hang)", !result.timedOut, result.stdout.slice(0, 200))
 }
 
@@ -321,7 +321,7 @@ const mutants: Mutant[] = [
   },
   {
     name: "non-TTY notice removed",
-    mutate: (src) => src.replace('console.log("not: embedding anahtarı yok — semantik arama yerel vektörlerle çalışacak (daha zayıf). Kurulum: bb setup")', "/* notice removed */"),
+    mutate: (src) => src.replace('console.log("note: no embedding key — semantic search will use local vectors (weaker). Setup: bb setup")', "/* notice removed */"),
     // The unquiet non-TTY run must emit exactly one honest notice line.
     probe: (m) => m.noticeCount !== 1,
   },
@@ -366,7 +366,7 @@ for (const mut of mutants) {
       hook: fixtureJSON(hookRes)[0],
       hookFlag: fixtureJSON(hookFlagRes)[0],
       hookConfigured: fixtureJSON(hookCfgRes)[0],
-      noticeCount: hookNoticeRes.stdout.split("\n").filter((l) => l.includes("embedding anahtarı yok")).length,
+      noticeCount: hookNoticeRes.stdout.split("\n").filter((l) => l.includes("no embedding key")).length,
       ptyPrompted: false,
       fixtureOk: hookRes.ok,
       skipReason: fixtureJSON(hookSkipRes)[0]?.reason,

@@ -26,7 +26,7 @@ If you skip setup or have no key, `bb index` shows exactly this notice (one
 line, non-interactive environments never block on it):
 
 ```
-not: embedding anahtarı yok — semantik arama yerel vektörlerle çalışacak (daha zayıf). Kurulum: bb setup
+note: no embedding key — semantic search will use local vectors (weaker). Setup: bb setup
 ```
 
 The wizard runs **once**: an explicit skip is remembered (a `setup_skipped`
@@ -37,14 +37,14 @@ skip. Entering a key later via `bb setup` replaces the skip automatically.
 
 A key is validated before it is saved. The exact messages users see:
 
-- `Anahtar kabul edilmedi (401). Anahtarı ve sağlayıcıyı kontrol et — kopyalarken eksik/ekstra karakter olabilir.`
-- `Hız limiti (429). Anahtar geçerli görünüyor; ücretsiz katman sınırı. Kaydedilebilir — dizinleme sırasında geri çekilme uygulanır.`
-- `Sağlayıcı hatası (503). Anahtar geçerli olabilir; sağlayıcı geçici olarak sorunlu. Kaydedilebilir — dizinleme sırasında yeniden denenir.`
-- `Model bulunamadı (404). Model adını kontrol et: sağlayıcının /embeddings ucu bu model adını tanımıyor.`
-- `Sağlayıcı yanıt vermedi (zaman aşımı). İnternet bağlantısını ve base URL'i kontrol et.`
-- `Sağlayıcıya ulaşılamadı: <error>. Base URL'i kontrol et.`
-- `Sağlayıcı geçersiz JSON döndü. Base URL bir /v1 uç noktası olmalı.`
-- `Sağlayıcı embedding döndürmedi. Base URL ve model adını kontrol et.`
+- `Key rejected (401). Check the key and provider — copy-paste may have dropped or added characters.`
+- `Rate limit (429). The key looks valid; free-tier limit. It can be saved — indexing backs off and retries.`
+- `Provider error (503). The key may be valid; the provider is temporarily failing. It can be saved — indexing retries automatically.`
+- `Model not found (404). Check the model name: the provider's /embeddings endpoint does not recognize it.`
+- `Provider did not respond (timeout). Check your internet connection and the base URL.`
+- `Could not reach the provider: <error>. Check the base URL.`
+- `Provider returned invalid JSON. The base URL must be a /v1 endpoint.`
+- `Provider returned no embedding. Check the base URL and model name.`
 
 429 and 5xx are treated as "key shape accepted" (rate/provider side issue) and
 saved; index-time resilience (per-batch fallback + 429 backoff) retries them.
@@ -56,14 +56,14 @@ A 401/403/404 or malformed response is a hard error: the key is NOT saved.
 displaying the full key — the key appears only as its last four characters:
 
 ```
-bb — embedding yapılandırması
-Kaynak önceliği: env > ~/.bb/config.json > bb.json
+bb — embedding configuration
+Precedence: env > ~/.bb/config.json > bb.json
 
-env    : — (tanımlı değil)
-global : ✓ https://g.example/v1 · g-model · anahtar: ••••2345 · mod: 600
-project: — (tanımlı değil)
+env    : — (not set)
+global : ✓ https://g.example/v1 · g-model · key: ••••2345 · mode: 600
+project: — (not set)
 
-Kazanan: global
+Winner: global
 ```
 
 It names the winning precedence tier, shows incomplete tiers with what is
@@ -76,18 +76,18 @@ permissions, and the embedding models actually stored in the project index —
 read-only, no network). Every finding names the exact fix command:
 
 ```
-bb doctor — tanılama
+bb doctor — diagnostics
 
-✗ Embedding yapılandırması yok.
-  Çözüm: bb setup
-! global yapılandırma dosyasının izni 644 — anahtar dünyaca okunabilir olabilir.
-  Çözüm: bb doctor --fix
-· Bu proje için kayıtlı vektör yok (indeks yok veya boş). Yapılandırmadaki model: g-model.
-  Çözüm: bb index .
+✗ No embedding configuration.
+  Fix: bb setup
+! global config file has mode 644 — the key may be world-readable.
+  Fix: bb doctor --fix
+· No stored vectors for this project (no index or empty). Config model: g-model.
+  Fix: bb index .
 ```
 
 A model mismatch (config says one model, the index was built with another) is
-reported as a hard failure with `Çözüm: bb index --force` — stored vectors
+reported as a hard failure with `Fix: bb index --force` — stored vectors
 from different models are never compared. `bb doctor` exits 1 when a fail-level
 finding exists.
 
@@ -100,9 +100,9 @@ command — diagnosis never auto-mutates, and `--fix` never touches anything
 beyond permissions:
 
 ```
-bb doctor --fix — uygulandı
+bb doctor --fix — applied
 
-✓ /root/.bb/config.json: izin 644 -> 600 (uygulandı)
+✓ /root/.bb/config.json: mode 644 -> 600 (applied)
 ```
 
 ## Quick start (3 environment variables)

@@ -301,10 +301,10 @@ await withMockServer(async (base) => {
   check("S3: 5xx soft-pass", j.soft500?.kind === "ok" && j.soft500?.softPass === true, JSON.stringify(j.soft500))
   check("S3: 404 hard error mentions model", j.notfound?.kind === "error" && /model/i.test(j.notfound.message ?? ""), JSON.stringify(j.notfound))
   check("S3: malformed JSON hard error", j.badjson?.kind === "error", JSON.stringify(j.badjson))
-  check("S3: missing embedding array hard error with actionable message", j.noembedding?.kind === "error" && /embedding döndürmedi/i.test(j.noembedding?.message ?? ""), JSON.stringify(j.noembedding))
+  check("S3: missing embedding array hard error with actionable message", j.noembedding?.kind === "error" && /returned no embedding/i.test(j.noembedding?.message ?? ""), JSON.stringify(j.noembedding))
   check("S3: unexpected status mapped with status code", j.teapot?.kind === "error" && String(j.teapot.message).includes("418"), JSON.stringify(j.teapot))
-  check("S3: unreachable host maps to actionable network error", j.unreachable?.kind === "error" && /ulaşılamadı|zaman/i.test(j.unreachable.message ?? ""), JSON.stringify(j.unreachable))
-  check("S3: TimeoutError maps to timeout-specific message", j.timeout?.kind === "error" && /zaman aşımı/i.test(j.timeout.message ?? ""), JSON.stringify(j.timeout))
+  check("S3: unreachable host maps to actionable network error", j.unreachable?.kind === "error" && /Could not reach|timeout/i.test(j.unreachable.message ?? ""), JSON.stringify(j.unreachable))
+  check("S3: TimeoutError maps to timeout-specific message", j.timeout?.kind === "error" && /did not respond \(timeout\)/i.test(j.timeout.message ?? ""), JSON.stringify(j.timeout))
   check("S3: fetch receives an AbortSignal (hang safety)", j.signal?.kind === "ok" && j.signal?.softPass === false && j.signal?.dimension === 3, JSON.stringify(j.signal))
   check("S3: trailing-slash base URL normalizes to exact path", j.slashok?.kind === "ok" && j.slashok?.softPass === false && j.slashok?.dimension === 3, JSON.stringify(j.slashok))
 
@@ -384,9 +384,9 @@ const mutants: Mutant[] = [
   {
     name: "timeout mapped as generic error (no actionable timeout branch)",
     mutate: (src) => src.replace('if (e && (e.name === "TimeoutError" || e.name === "AbortError")) {', "if (false) {"),
-    // The timeout branch must produce the actionable "zaman aşımı" message;
+    // The timeout branch must produce the actionable "did not respond (timeout)" message;
     // a generic fallback is a real UX regression and must be caught.
-    probe: (m) => !(m.timeout?.kind === "error" && /zaman aşımı/i.test(m.timeout?.message ?? "")),
+    probe: (m) => !(m.timeout?.kind === "error" && /did not respond \(timeout\)/i.test(m.timeout?.message ?? "")),
   },
   {
     name: "Authorization header dropped (all calls 401)",
@@ -403,7 +403,7 @@ const mutants: Mutant[] = [
   {
     name: "embedding-array check removed",
     mutate: (src) => src.replace("if (!Array.isArray(vec) || vec.length === 0) {", "if (false) {"),
-    probe: (m) => !(m.noembedding?.kind === "error" && /embedding döndürmedi/i.test(m.noembedding?.message ?? "")),
+    probe: (m) => !(m.noembedding?.kind === "error" && /returned no embedding/i.test(m.noembedding?.message ?? "")),
   },
   {
     name: "request timeout removed (hangs on dead provider)",
