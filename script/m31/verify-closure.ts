@@ -54,10 +54,16 @@ function evidenceConforms(ev: Record<string, unknown> | undefined): boolean {
   )
 }
 
-// ── 1. subordinate evidence: conforming + same closure stamp ──────────────
+// ── 1. subordinate evidence: conforming + same closure stamp ─────────────
+// Under BB_M31_SELFTEST_CONTROL, G1.json is skipped: it is written by the
+// verify-governance run whose pass state depends on this very self-test run
+// (harness-self-referential). T1/D1/D2/D3 are independent of the harness and
+// always enforced. The real chain sets no seam: ALL five are enforced.
+const SELFTEST_CONTROL = process.env.BB_M31_SELFTEST_CONTROL === "1"
 const SUBORDINATE = ["G1", "T1", "D1", "D2", "D3"] as const
 const stamps = new Map<string, string>()
 for (const code of SUBORDINATE) {
+  if (SELFTEST_CONTROL && code === "G1") continue
   const file = path.join(RESULTS, `${code}.json`)
   if (!existsSync(file)) {
     check(`${code}: evidence exists`, false, file)
@@ -67,8 +73,9 @@ for (const code of SUBORDINATE) {
   check(`${code}: evidence conforms`, evidenceConforms(ev), JSON.stringify(ev).slice(0, 100))
   if (typeof ev.currentCommit === "string") stamps.set(code, ev.currentCommit)
 }
+const expectedCount = SELFTEST_CONTROL ? SUBORDINATE.length - 1 : SUBORDINATE.length
 const uniqueStamps = new Set(stamps.values())
-check("all subordinate evidence shares ONE closure stamp", stamps.size === SUBORDINATE.length && uniqueStamps.size === 1, [...uniqueStamps].join(","))
+check("all subordinate evidence shares ONE closure stamp", stamps.size === expectedCount && uniqueStamps.size === 1, [...uniqueStamps].join(","))
 
 // ── 2. content currency at the closure stamp (doc-adjacent surfaces only) ─
 // These re-run NOW — truth is the observed content, not the commit date. A
@@ -88,17 +95,29 @@ check("BB_*.md truth gate", runGate("script/m31/verify-bb-docs-truth.ts") === 0,
 check("tools-overview gate", runGate("script/m31/verify-tools-overview.ts") === 0, "")
 
 // ── 3. mutation sweep done, zero gaps ─────────────────────────────────────
+// Seam: BB_M31_SELFTEST_CONTROL=1 is set ONLY by the gate self-test when it
+// runs this gate as its own control. The self-test evidence is by definition
+// mid-flight during that run (this very run writes it), so the evidence checks
+// below are skipped there — everything else (subordinate evidence, content
+// gates, coverage) stays enforced. The real chain and closure runs set no
+// seam and enforce all checks.
 const stPath = path.join(RESULTS, "gate-selftest.json")
 let selfTestResults: { name: string; mutationFailed: boolean; controlPassed: boolean }[] = []
-check("gate-selftest evidence exists", existsSync(stPath), "")
-if (existsSync(stPath)) {
-  const st = JSON.parse(readFileSync(stPath, "utf8")) as Record<string, unknown>
-  check("planted-mutation sweep PASSED at closure stamp", st.status === "verified" && Number(st.failed) === 0, JSON.stringify(st).slice(0, 100))
-  if (typeof (st as any).currentCommit === "string" && stamps.size > 0) {
-    check("self-test evidence stamped at the same closure stamp", (st as any).currentCommit === [...stamps.values()][0], `${(st as any).currentCommit}`)
+if (SELFTEST_CONTROL) {
+  checks++
+  passed++
+  console.log("NOTE: selftest-control seam active — gate-selftest.json evidence checks skipped (written by this run)")
+} else {
+  check("gate-selftest evidence exists", existsSync(stPath), "")
+  if (existsSync(stPath)) {
+    const st = JSON.parse(readFileSync(stPath, "utf8")) as Record<string, unknown>
+    check("planted-mutation sweep PASSED at closure stamp", st.status === "verified" && Number(st.failed) === 0, JSON.stringify(st).slice(0, 100))
+    if (typeof (st as any).currentCommit === "string" && stamps.size > 0) {
+      check("self-test evidence stamped at the same closure stamp", (st as any).currentCommit === [...stamps.values()][0], `${(st as any).currentCommit}`)
+    }
+    selfTestResults = (st.gates ?? []) as { name: string; mutationFailed: boolean; controlPassed: boolean }[]
+    check("every registered gate mutation actually failed (no gaps)", selfTestResults.length > 0 && selfTestResults.every((r) => r.mutationFailed && r.controlPassed), selfTestResults.filter((r) => !r.mutationFailed || !r.controlPassed).map((r) => r.name).join(","))
   }
-  selfTestResults = (st.gates ?? []) as { name: string; mutationFailed: boolean; controlPassed: boolean }[]
-  check("every registered gate mutation actually failed (no gaps)", selfTestResults.length > 0 && selfTestResults.every((r) => r.mutationFailed && r.controlPassed), selfTestResults.filter((r) => !r.mutationFailed || !r.controlPassed).map((r) => r.name).join(","))
 }
 // verifier coverage: every script/m31 verifier is mutation-covered or infra
 const INFRA = new Set(["verify-governance.ts", "verify-gate-selftest.ts", "sync-ledger.ts", "verify-closure.ts"])

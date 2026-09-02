@@ -37,9 +37,21 @@ type GateSpec = {
   /** source-mutation gates plant a revert in a src file, run the gate, restore */
   mutateSource?: string
   mutatePattern?: { marker: string; until: string }
+  /** evidence-mutation gates corrupt an evidence file on the real tree, run the gate, restore */
+  mutateEvidence?: { file: string; from: string; to: string }
 }
 
 const GATES: GateSpec[] = [
+  {
+    name: "m31-closure",
+    script: "script/m31/verify-closure.ts",
+    surfaces: [],
+    mutate: () => {},
+    // Mutation: corrupt a subordinate evidence status — the closure gate must
+    // refuse to declare the milestone closeable (this is exactly the
+    // fabrication it exists to catch).
+    mutateEvidence: { file: "validation/m31/results/D3.json", from: '"status": "verified"', to: '"status": "failed"' },
+  },
   {
     name: "tool-mode-corpus",
     script: "script/m31/tool-mode-corpus.ts",
@@ -242,6 +254,26 @@ for (const gate of GATES) {
       writeFileSync(srcPath, backup)
     }
     check(`${gate.name}: source restored byte-identical`, readFileSync(srcPath, "utf8") === backup)
+    continue
+  }
+
+  // Evidence-mutation gate: control passes clean, corrupt the evidence file,
+  // gate must fail, restore byte-identical.
+  if (gate.mutateEvidence) {
+    const evPath = path.join(ROOT, gate.mutateEvidence.file)
+    const backup = readFileSync(evPath, "utf8")
+    try {
+      const control = runGate(gate.script, { BB_M31_SELFTEST_CONTROL: "1" })
+      check(`${gate.name}: control — clean tree PASSES`, control.exit === 0, control.output.slice(-200))
+      check(`${gate.name}: mutation anchor found in evidence`, backup.includes(gate.mutateEvidence.from))
+      writeFileSync(evPath, backup.replace(gate.mutateEvidence.from, gate.mutateEvidence.to))
+      const mutated = runGate(gate.script)
+      check(`${gate.name}: mutation — corrupted evidence FAILS the gate`, mutated.exit !== 0, mutated.output.slice(-200))
+      gateResults.push({ name: gate.name, mutationFailed: mutated.exit !== 0, controlPassed: control.exit === 0 })
+    } finally {
+      writeFileSync(evPath, backup)
+    }
+    check(`${gate.name}: evidence restored byte-identical`, readFileSync(evPath, "utf8") === backup)
     continue
   }
 
