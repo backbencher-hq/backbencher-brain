@@ -1,6 +1,8 @@
 # M24: bb_lsp — The Server (IDE Program v0)
 
-Status: `open`
+Status: `closed` — all 11 issues (#487–#497) verified and closed; final
+audit in [M24-FINAL-AUDIT.md](./M24-FINAL-AUDIT.md). Program status lives in
+[../IDE-PROGRAM-STATUS.md](../IDE-PROGRAM-STATUS.md).
 GitHub milestone: `24` (IDE program v0 — "The Server")
 Parent program: [IDE Program Decision Record](../IDE-PROGRAM-DECISIONS.md)
 Governing contract: [IDE Honesty Contract](../IDE-HONESTY-CONTRACT.md)
