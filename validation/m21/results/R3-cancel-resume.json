@@ -6,19 +6,19 @@
   "verifier": "script/m21/verify-cancel-resume.ts",
   "verifierCommand": "bun run script/m21/verify-cancel-resume.ts",
   "evidenceFile": "R3-cancel-resume.json",
-  "currentCommit": "085c9cd0c8eb3c053cd1668a3d304e926e693cb6",
+  "currentCommit": "366513e9a7c6568a1e5932666896e8153f5227b9",
   "workingTreeRelevantChanges": [],
-  "generatedAt": "2026-09-01T14:03:58.914Z",
+  "generatedAt": "2026-09-01T15:43:01.451Z",
   "repo": "$HOME/fixtures/repositories/cabal",
-  "dataDir": "/tmp/m21r3-verify-1788271335985",
-  "passed": 21,
+  "dataDir": "/tmp/m21r3-verify-1788277347269",
+  "passed": 22,
   "failed": 0,
   "negativeCases": 4,
   "checks": [
     {
       "name": "R3: index process was alive when SIGINT was sent",
       "pass": true,
-      "detail": "pid=670685"
+      "detail": "pid=703055"
     },
     {
       "name": "R3: index showed real progress before cancel",
@@ -29,6 +29,11 @@
       "name": "R3: process exited after SIGINT (no hang)",
       "pass": true,
       "detail": "exit=0"
+    },
+    {
+      "name": "R3: cancelled-run breakdown reports the cancelled bucket",
+      "pass": true,
+      "detail": "  breakdown: 70 newly parsed | 0 unchanged | 0 skipped | 70 symbol-loss (parsed 0 symbols) | 0 errors | 0 timeouts | 2278 cancelled"
     },
     {
       "name": "R3: live status file exists after cancel",
@@ -73,7 +78,7 @@
     {
       "name": "R3: resume exits 0",
       "pass": true,
-      "detail": "exit=0 stderr= Solver.hs: 93s 233r\n\r[progress] 2297/2348 files (97%) 37.3/s ETA 1s — ModuleB.hs[STORE] TestCaseUtils.hs: 54s 97r\n[STORE] Utils.hs: 25s 36r\n\r[progress] 2311/2348 files (98%) 37.4/s ETA 1s — MyLib.hs\n"
+      "detail": "exit=0 stderr=e\":\"html\",\"wasmPath\":\"/tmp/bb-wasm_tree-sitter-html_tree-sitter-html.wasm\"}\n[STORE] TestCaseUtils.hs: 54s 97r\n\r[progress] 2340/2348 files (99%) 118.2/s ETA 0s — ChangeLog.md[STORE] Utils.hs: 25s 36r\n\n"
     },
     {
       "name": "R3: resume reported checkpoint",
@@ -113,12 +118,12 @@
     {
       "name": "[negative] R3: finalize write is guarded by !stats.cancelled (no silent re-label)",
       "pass": true,
-      "detail": "finalize=141737 guard=141633"
+      "detail": "finalize=144606 guard=144502"
     },
     {
       "name": "[negative] R3: missed-file fallback is skipped on cancelled runs",
       "pass": true,
-      "detail": "fallbackBlock=126790"
+      "detail": "fallbackBlock=129659"
     }
   ]
 }
