@@ -128,6 +128,9 @@ negative("no auto-pass assertions in any M31 verifier", autoPassHits.length === 
 const pkg = JSON.parse(readFileSync(PKG_PATH, "utf8"))
 const docsVerify: string = pkg.scripts["docs:verify"] ?? ""
 check("docs:verify chains the M31 gates", docsVerify.includes("script/m31/verify-governance.ts") && docsVerify.includes("script/m31/verify-gate-selftest.ts"), docsVerify.slice(0, 160))
+// #555 criterion 3: npm run verify must run all M31 gates (via docs:verify).
+const verifyScript: string = pkg.scripts["verify"] ?? ""
+check("npm run verify runs docs:verify (all M31 gates)", verifyScript.includes("npm run docs:verify"), verifyScript.slice(-80))
 
 // ── 7. Gate self-test has proven every registered gate can fail ──
 check("gate self-test evidence exists", existsSync(SELFTEST_RESULT))
