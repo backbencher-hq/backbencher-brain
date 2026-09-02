@@ -76,6 +76,16 @@
         "category": "Backbencher"
       },
       {
+        "command": "bbLsp.showStatusPanel",
+        "title": "Backbencher: Show status (evidence levels, staleness)",
+        "category": "Backbencher"
+      },
+      {
+        "command": "bbLsp.indexNow",
+        "title": "Backbencher: Index this workspace now",
+        "category": "Backbencher"
+      },
+      {
         "command": "bbLsp.showServerStatus",
         "title": "Backbencher: Show server status",
         "category": "Backbencher"

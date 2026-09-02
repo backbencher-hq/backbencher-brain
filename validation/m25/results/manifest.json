@@ -97,7 +97,7 @@
       "code": "E3",
       "githubIssue": 501,
       "tool": "status-surface",
-      "status": "planned",
+      "status": "verified",
       "scope": "status bar/panel: indexing progress, staleness indicators (P2 markers rendered), per-language claim levels visible to the user; stale results never render unmarked (contract §4.3)",
       "acceptanceCriteria": [
         "stale marker rendering proven by UI mutation (suppress marker -> test fails)",
@@ -108,7 +108,17 @@
         "UI mutation evidence",
         "screenshots/log captures in evidence",
         "limitations declared"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see E3.json",
+        "verifierCommand": "npx tsx script/m25/verify-status-surface.ts",
+        "evidenceFile": "E3.json",
+        "passed": 32,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 4
+      }
     },
     {
       "code": "E4",
