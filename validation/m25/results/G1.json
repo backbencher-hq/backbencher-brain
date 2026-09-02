@@ -7,18 +7,13 @@
   "passed": 69,
   "failed": 0,
   "negativeCases": 10,
-  "currentCommit": "8444d07457622f41716d26ff86ef4c8023f3d67f",
+  "currentCommit": "1689d19a326af2021d34e465b7c2a401f86d4986",
   "workingTreeRelevantChanges": [
-    "docs/IDE-PROGRAM-STATUS.md",
-    "docs/m25/M25-MASTER-PLAN.md",
-    "package.json",
-    "script/m25/verify-governance.ts",
-    "validation/m25/results/G1.json",
-    "validation/m25/results/manifest.json"
+    "validation/m25/results/G1.json"
   ],
   "verifierCommand": "npx tsx script/m25/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-02T03:09:05.382Z",
+  "generatedAt": "2026-09-02T03:17:10.796Z",
   "ledger": "validation/m25/results/manifest.json",
   "m24Bar": {
     "ledgerStatus": "closed",
