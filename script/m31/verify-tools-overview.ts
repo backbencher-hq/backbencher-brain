@@ -136,7 +136,9 @@ if (process.env.BB_M31_EVIDENCE) {
   let commit = "unknown"
   try { commit = execSync("git rev-parse HEAD", { cwd: ROOT }).toString().trim() } catch {}
   mkdirSync(path.join(ROOT, "validation/m31/results"), { recursive: true })
-  writeFileSync(path.join(ROOT, "validation/m31/results/D3.json"), JSON.stringify({
+  // Write into the GOVERNED root (BB_M31_ROOT), not the repo root — a sandboxed
+  // run must never poison the real evidence files (D1/T1 lesson, emitter side).
+  writeFileSync(path.join(REPO, "validation/m31/results/D3.json"), JSON.stringify({
     issue: "M31.D3", gate: "verify-tools-overview.ts", status: failures.length === 0 ? "verified" : "failed",
     passed, failed: failures.length, checks,
     workingTreeRelevantChanges: [],
