@@ -55,12 +55,16 @@ function evidenceConforms(ev: Record<string, unknown> | undefined): boolean {
 }
 
 // ── 1. subordinate evidence: conforming + same closure stamp ─────────────
-// Under BB_M31_SELFTEST_CONTROL, G1.json is skipped: it is written by the
-// verify-governance run whose pass state depends on this very self-test run
-// (harness-self-referential). T1/D1/D2/D3 are independent of the harness and
-// always enforced. The real chain sets no seam: ALL five are enforced.
+// Mutual stamp-equality applies to the FOUR CONTENT GATES (T1/D1/D2/D3) —
+// they are stamped together in one explicit pass and their content is
+// re-verified inside this gate. G1 (governance) and the gate self-test are
+// HARNESS artifacts with a 2-cycle dependency on X1's own evidence, so they
+// are checked for conformance + verified status only — requiring their stamps
+// to equal the content stamp is unsatisfiable by construction (the flaw that
+// made convergence luck-based).
 const SELFTEST_CONTROL = process.env.BB_M31_SELFTEST_CONTROL === "1"
 const SUBORDINATE = ["G1", "T1", "D1", "D2", "D3"] as const
+const CONTENT = new Set(["T1", "D1", "D2", "D3"])
 const stamps = new Map<string, string>()
 for (const code of SUBORDINATE) {
   if (SELFTEST_CONTROL && code === "G1") continue
@@ -71,11 +75,11 @@ for (const code of SUBORDINATE) {
   }
   const ev = JSON.parse(readFileSync(file, "utf8")) as Record<string, unknown>
   check(`${code}: evidence conforms`, evidenceConforms(ev), JSON.stringify(ev).slice(0, 100))
-  if (typeof ev.currentCommit === "string") stamps.set(code, ev.currentCommit)
+  if (CONTENT.has(code) && typeof ev.currentCommit === "string") stamps.set(code, ev.currentCommit)
 }
 const expectedCount = SELFTEST_CONTROL ? SUBORDINATE.length - 1 : SUBORDINATE.length
 const uniqueStamps = new Set(stamps.values())
-check("all subordinate evidence shares ONE closure stamp", stamps.size === expectedCount && uniqueStamps.size === 1, [...uniqueStamps].join(","))
+check("all content-gate evidence shares ONE closure stamp", stamps.size === CONTENT.size && uniqueStamps.size === 1, [...uniqueStamps].join(","))
 
 // ── 2. content currency at the closure stamp (doc-adjacent surfaces only) ─
 // These re-run NOW — truth is the observed content, not the commit date. A
