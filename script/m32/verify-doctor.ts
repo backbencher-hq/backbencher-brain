@@ -90,7 +90,7 @@ console.log(`  component: ${path.relative(ROOT, COMPONENT)}`)
   check("A1: fix is bb setup", f.get("no-config")?.fix === "bb setup")
   check("A1: report not healthy", r.healthy === false)
   const out = doctor.renderDoctorReport(r)
-  check("A1: render lists findings with fix lines", out.includes("✗") && out.includes("Çözüm: bb setup"))
+  check("A1: render lists findings with fix lines", out.includes("✗") && out.includes("Fix: bb setup"))
   t.cleanup()
 }
 
@@ -100,7 +100,7 @@ console.log(`  component: ${path.relative(ROOT, COMPONENT)}`)
   writeGlobalConfig(t.dataDir, { setup_skipped: true }, 0o600)
   const r = doctor.runDoctorChecks({ cwd: t.proj, env: {}, dataDir: t.dataDir })
   const f = findings(r)
-  check("A2: skipped marker acknowledged in message", f.get("no-config")?.message?.includes("atlanmış"), f.get("no-config")?.message)
+  check("A2: skipped marker acknowledged in message", f.get("no-config")?.message?.includes("skipped earlier"), f.get("no-config")?.message)
   t.cleanup()
 }
 

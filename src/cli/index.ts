@@ -146,7 +146,12 @@ async function cmdTool(name: string, opts: { dir?: string; args?: string }): Pro
 export async function runCli(argv: string[]): Promise<void> {
   const program = new Command()
   program.name("bb").description("Backbencher Brain — universal code intelligence (40+ languages)")
-  program.version(BACKBENCHER_BRAIN_VERSION)
+  // M33.S1: parity across all three version forms (-V was the only form before).
+  program.version(BACKBENCHER_BRAIN_VERSION, "-v, --version", "output the version number")
+  // M33.S2: unknown commands and options get did-you-mean suggestions (commander
+  // default) plus an explicit pointer to the help surface instead of a dead end.
+  program.showSuggestionAfterError(true)
+  program.showHelpAfterError("(run 'bb --help' for a list of commands)")
 
   program
     .command("tool")
@@ -168,19 +173,19 @@ export async function runCli(argv: string[]): Promise<void> {
 
   const setupCmd = program
     .command("setup")
-    .description("embedding sağlayıcısı kurulumu (API anahtarı, model)")
+    .description("embedding provider setup (API key, model)")
   setupCmd
     .action(async () => {
       const { runSetupWizard } = await import("../setup/setup-wizard")
       if (!process.stdin.isTTY) {
-        console.error("✗ bb setup etkileşimli bir terminal gerektirir.")
+        console.error("✗ bb setup requires an interactive terminal.")
         process.exit(1)
       }
       await runSetupWizard()
     })
   setupCmd
     .command("show")
-    .description("embedding yapılandırmasını göster (anahtar parmak izi ile)")
+    .description("show the embedding configuration (key as fingerprint only)")
     .action(async () => {
       const { describeEmbeddingConfig, renderSetupShow } = await import("../setup/setup-show")
       const state = describeEmbeddingConfig()
@@ -190,9 +195,9 @@ export async function runCli(argv: string[]): Promise<void> {
 
   program
     .command("doctor")
-    .description("embedding kurulum ve indeks tutarlılığını tanıla (salt okunur)")
+    .description("diagnose embedding setup and index consistency (read-only)")
     .option("--dir <dir>", "project directory (default: cwd)")
-    .option("--fix", "izin sorunlarını düzelt (yalnızca 0600; kuru çalışma varsayılan değildir)")
+    .option("--fix", "repair permission problems (0600 only; this IS the explicit apply — without it doctor is read-only)")
     .action(async (opts: any) => {
       const { runDoctorChecks, renderDoctorReport, applyDoctorFixes, renderFixPlan } = await import("../setup/doctor")
       const cwd = opts.dir ? requireDir(opts.dir) : process.cwd()
@@ -239,6 +244,15 @@ export async function runCli(argv: string[]): Promise<void> {
     .action(async (opts: any) => {
       const { startMcpServer } = await import("../mcp/server")
       await startMcpServer(opts.dir ? requireDir(opts.dir) : process.cwd())
+    })
+
+  // M33.S1: `bb version` subcommand — the documented form (see header comment)
+  // that did not exist until now.
+  program
+    .command("version")
+    .description("print the bb version")
+    .action(() => {
+      console.log(BACKBENCHER_BRAIN_VERSION)
     })
 
   await program.parseAsync(argv, { from: "user" })

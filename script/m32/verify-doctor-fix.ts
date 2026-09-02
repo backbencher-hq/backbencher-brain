@@ -88,7 +88,7 @@ console.log(`  component: ${path.relative(ROOT, COMPONENT)}`)
   check("A1: plan names the mode action", plan.actions.length === 1 && plan.actions[0]?.toMode === 0o600 && plan.actions[0]?.fromMode === 0o644, JSON.stringify(plan))
   check("A1: dry-run did NOT mutate the file", modeOf(fx.cfgPath) === 0o644)
   const out = doctor.renderFixPlan(plan, applied)
-  check("A1: render marks dry-run explicitly", out.includes("kuru çalışma"), out.split("\n")[0] ?? "")
+  check("A1: render marks dry-run explicitly", out.includes("dry run"), out.split("\n")[0] ?? "")
   check("A1: render prints the proposed change", out.includes("644") && out.includes("600"))
   fx.cleanup()
 }
@@ -100,7 +100,7 @@ console.log(`  component: ${path.relative(ROOT, COMPONENT)}`)
   check("A2: apply=true applies", applied === true)
   check("A2: file mode repaired to 0600", modeOf(fx.cfgPath) === 0o600, `mode=${modeOf(fx.cfgPath).toString(8)}`)
   const out = doctor.renderFixPlan(plan, applied)
-  check("A2: applied change is printed", out.includes("uygulandı") && out.includes("644") && out.includes("600"), out)
+  check("A2: applied change is printed", out.includes("(applied)") && out.includes("644") && out.includes("600"), out)
   fx.cleanup()
 }
 
@@ -121,7 +121,7 @@ console.log(`  component: ${path.relative(ROOT, COMPONENT)}`)
   const { plan } = doctor.applyDoctorFixes({ cwd: fx.dir, env: {}, dataDir: fx.dataDir, apply: true })
   check("A4: 0600 config yields no actions", plan.actions.length === 0 && plan.refusals.length === 0)
   const out = doctor.renderFixPlan(plan, true)
-  check("A4: clean render for nothing-to-fix", out.includes("Düzeltilecek izin sorunu yok"), out.split("\n")[2] ?? "")
+  check("A4: clean render for nothing-to-fix", out.includes("No permission problems to fix"), out.split("\n")[2] ?? "")
   fx.cleanup()
 }
 
@@ -239,7 +239,7 @@ const mutants: Mutant[] = [
   },
   {
     name: "printed-change requirement removed (silent mutation)",
-    mutate: (src) => src.replace('lines.push(`${applied ? "✓" : "·"} ${a.file}: izin ${a.fromMode?.toString(8)} -> ${a.toMode.toString(8)} ${applied ? "(uygulandı)" : "(öneri)"}`)', "/* change line removed */"),
+    mutate: (src) => src.replace('lines.push(`${applied ? "✓" : "·"} ${a.file}: mode ${a.fromMode?.toString(8)} -> ${a.toMode.toString(8)} ${applied ? "(applied)" : "(proposed)"}`)', "/* change line removed */"),
     probe: async (m) => {
       const dir = mkdtempSync(path.join(os.tmpdir(), "m32-s3-m4-"))
       const dataDir = path.join(dir, "d"); mkdirSync(dataDir, { recursive: true })
@@ -308,11 +308,11 @@ check("S3: every planted defect was caught", mutantResults.every((m) => m.caught
   const bb = path.join(ROOT, "bin", "bb")
   // --fix applies and prints.
   const r1 = execFileSync(bb, ["doctor", "--fix"], { env: { ...process.env, BB_DATA_DIR: fx.dataDir }, encoding: "utf8" }).toString()
-  check("C: binary --fix prints the applied change", r1.includes("uygulandı") && r1.includes("600"), r1.split("\n").slice(0, 4).join(" | "))
+  check("C: binary --fix prints the applied change", r1.includes("(applied)") && r1.includes("600"), r1.split("\n").slice(0, 4).join(" | "))
   check("C: binary --fix repaired the file", modeOf(fx.cfgPath) === 0o600)
   // Second --fix: nothing to fix, clean output, exit 0.
   const r2 = execFileSync(bb, ["doctor", "--fix"], { env: { ...process.env, BB_DATA_DIR: fx.dataDir }, encoding: "utf8" }).toString()
-  check("C: second --fix reports nothing to fix", r2.includes("Düzeltilecek izin sorunu yok"), r2.split("\n")[2] ?? "")
+  check("C: second --fix reports nothing to fix", r2.includes("No permission problems to fix"), r2.split("\n")[2] ?? "")
   fx.cleanup()
 }
 

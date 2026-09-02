@@ -32,24 +32,24 @@ import { bbDataDir } from "../util/bb-data-dir"
 export const PROVIDERS = [
   {
     id: "openrouter-free",
-    label: "OpenRouter (ücretsiz katman)",
+    label: "OpenRouter (free tier)",
     baseURL: "https://openrouter.ai/api/v1",
     model: "liquid/lfm-2.5-embedding-350m:free",
-    keyHint: "openrouter.ai/keys — ücretsiz anahtar, rate limit'li",
+    keyHint: "openrouter.ai/keys — free key, rate-limited",
   },
   {
     id: "nvidia-nim",
-    label: "NVIDIA NIM (ücretsiz katman)",
+    label: "NVIDIA NIM (free tier)",
     baseURL: "https://integrate.api.nvidia.com/v1",
     model: "nvidia/nemotron-3-embed-1b",
-    keyHint: "build.nvidia.com — ücretsiz anahtar, rate limit'li",
+    keyHint: "build.nvidia.com — free key, rate-limited",
   },
   {
     id: "custom",
-    label: "Özel / ücretli sağlayıcı",
+    label: "Custom / paid provider",
     baseURL: null,
     model: null,
-    keyHint: "OpenAI uyumlu /embeddings uç noktası",
+    keyHint: "OpenAI-compatible /embeddings endpoint",
   },
 ]
 
@@ -89,21 +89,21 @@ export function hasEmbeddingConfig(cwd = process.cwd(), env = process.env): Embe
 // verifier's mutation suite: removing a branch must fail the suite.
 export function mapValidationError(status, bodyText) {
   if (status === 401 || status === 403) {
-    return "Anahtar kabul edilmedi (401). Anahtarı ve sağlayıcıyı kontrol et — kopyalarken eksik/ekstra karakter olabilir."
+    return "Key rejected (401). Check the key and provider — copy-paste may have dropped or added characters."
   }
   if (status === 429) {
-    return "Hız limiti (429). Anahtar geçerli görünüyor; ücretsiz katman sınırı. Kaydedilebilir — dizinleme sırasında geri çekilme uygulanır."
+    return "Rate limit (429). The key looks valid; free-tier limit. It can be saved — indexing backs off and retries."
   }
   if (status >= 500) {
-    return `Sağlayıcı hatası (${status}). Anahtar geçerli olabilir; sağlayıcı geçici olarak sorunlu. Kaydedilebilir — dizinleme sırasında yeniden denenir.`
+    return `Provider error (${status}). The key may be valid; the provider is temporarily failing. It can be saved — indexing retries automatically.`
   }
   if (status === 404) {
-    return `Model bulunamadı (404). Model adını kontrol et: sağlayıcının /embeddings ucu bu model adını tanımıyor.`
+    return `Model not found (404). Check the model name: the provider's /embeddings endpoint does not recognize it.`
   }
-  return `Beklenmeyen yanıt (${status}): ${(bodyText || "").slice(0, 120)}`
+  return `Unexpected response (${status}): ${(bodyText || "").slice(0, 120)}`
 }
 
-// One tiny live probe before saving. Throws Error with an actionable Turkish
+// One tiny live probe before saving. Throws Error with an actionable
 // message on failure; resolves to { model, fingerprint } on success.
 // 429/5xx are treated as soft-pass (key shape accepted, rate/provider issue),
 // because the rate-limit resilience (Q1) handles them at index time.
@@ -137,9 +137,9 @@ export async function validateKey(baseURL, apiKey, model, fetchImpl = fetch) {
     })
   } catch (e) {
     if (e && (e.name === "TimeoutError" || e.name === "AbortError")) {
-      throw new Error("Sağlayıcı yanıt vermedi (zaman aşımı). İnternet bağlantısını ve base URL'i kontrol et.")
+      throw new Error("Provider did not respond (timeout). Check your internet connection and the base URL.")
     }
-    throw new Error(`Sağlayıcıya ulaşılamadı: ${e?.message || e}. Base URL'i kontrol et.`)
+    throw new Error(`Could not reach the provider: ${e?.message || e}. Check the base URL.`)
   }
   if (res.status === 429 || res.status >= 500) {
     // Soft-pass: the provider accepted the request shape; failure is rate or
@@ -153,11 +153,11 @@ export async function validateKey(baseURL, apiKey, model, fetchImpl = fetch) {
   try {
     data = await res.json()
   } catch {
-    throw new Error("Sağlayıcı geçersiz JSON döndü. Base URL bir /v1 uç noktası olmalı.")
+    throw new Error("Provider returned invalid JSON. The base URL must be a /v1 endpoint.")
   }
   const vec = data?.data?.[0]?.embedding
   if (!Array.isArray(vec) || vec.length === 0) {
-    throw new Error("Sağlayıcı embedding döndürmedi. Base URL ve model adını kontrol et.")
+    throw new Error("Provider returned no embedding. Check the base URL and model name.")
   }
   return { softPass: false, status: res.status, model, dimension: vec.length, fingerprint: fingerprintKey(apiKey) }
 }
@@ -254,32 +254,32 @@ export async function runSetupWizard(io = { input: process.stdin, output: proces
   const save = deps.saveImpl || saveEmbeddingConfig
   const validate = deps.validateImpl || validateKey
 
-  out.write("\nbb — embedding kurulumu\n")
-  out.write("Semantik arama (bb_search, bb_ask) embedding vektörleriyle çalışır.\n")
-  out.write("Anahtarsız: yerel kelime vektörleri kullanılır — daha zayıf sonuç verir.\n")
-  out.write("Bir model ekledikten sonra eski indeksi yenilemek için `bb index --force` gerekir.\n\n")
+  out.write("\nbb — embedding setup\n")
+  out.write("Semantic search (bb_search, bb_ask) works with embedding vectors.\n")
+  out.write("Without a key: local word vectors are used — weaker results.\n")
+  out.write("After adding a model, `bb index --force` is required to refresh the old index.\n\n")
 
   const providers = PROVIDERS
-  out.write("Embedding sağlayıcısı seç:\n")
+  out.write("Choose an embedding provider:\n")
   providers.forEach((p, i) => {
     out.write(`  ${i + 1}. ${p.label}\n`)
     if (p.baseURL) out.write(`     ${p.model} — ${p.keyHint}\n`)
     else out.write(`     ${p.keyHint}\n`)
   })
-  out.write(`  ${providers.length + 1}. Atla — yerel vektörlerle devam et\n\n`)
+  out.write(`  ${providers.length + 1}. Skip — continue with local vectors\n\n`)
 
-  const answer = (await question(rl, `Seçim [1-${providers.length + 1}]: `)).trim()
+  const answer = (await question(rl, `Choice [1-${providers.length + 1}]: `)).trim()
   const choice = parseInt(answer, 10)
 
   if (!choice || choice < 1 || choice > providers.length + 1) {
-    out.write("Geçersiz seçim — kurulum atlandı.\n")
+    out.write("Invalid choice — setup skipped.\n")
     rl.close()
     return { saved: false, skipped: true, reason: "invalid-choice" }
   }
 
   if (choice === providers.length + 1) {
-    out.write("Yerel kelime vektörleriyle devam ediliyor. Bunlar daha zayıf sonuç verir;\n")
-    out.write("gerçek bir model eklediğinde `bb index --force` ile indeksi yenile.\n")
+    out.write("Continuing with local word vectors. They give weaker results;\n")
+    out.write("when you add a real model, refresh the index with `bb index --force`.\n")
     // Remember the explicit skip (M30.S1 follow-up): the wizard runs once.
     // Entering a key later via `bb setup` clears the marker automatically
     // (saveEmbeddingConfig merges, and a real config outranks the flag).
@@ -293,38 +293,38 @@ export async function runSetupWizard(io = { input: process.stdin, output: proces
   let model = provider.model
 
   if (provider.id === "custom") {
-    const b = (await question(rl, "Base URL (örn. https://api.openai.com/v1): ")).trim()
+    const b = (await question(rl, "Base URL (e.g. https://api.openai.com/v1): ")).trim()
     if (!b) {
-      out.write("Base URL boş — kurulum atlandı.\n")
+      out.write("Base URL is empty — setup skipped.\n")
       rl.close()
       return { saved: false, skipped: true, reason: "empty-base-url" }
     }
     baseURL = b
-    const m = (await question(rl, "Model adı (örn. text-embedding-3-small): ")).trim()
+    const m = (await question(rl, "Model name (e.g. text-embedding-3-small): ")).trim()
     if (!m) {
-      out.write("Model adı boş — kurulum atlandı.\n")
+      out.write("Model name is empty — setup skipped.\n")
       rl.close()
       return { saved: false, skipped: true, reason: "empty-model" }
     }
     model = m
   }
 
-  const key = await hiddenQuestion(rl, "API anahtarı (giriş gizli): ")
+  const key = await hiddenQuestion(rl, "API key (input hidden): ")
   rl.close()
   if (!key || !key.trim()) {
-    out.write("Anahtar boş — kurulum atlandı.\n")
+    out.write("Key is empty — setup skipped.\n")
     return { saved: false, skipped: true, reason: "empty-key" }
   }
 
   // Pre-save live probe (M30.S3): fail fast with the provider's own error
   // instead of poisoning the index with a dead key.
-  out.write("Anahtar doğrulanıyor…\n")
+  out.write("Validating key…\n")
   let validation
   try {
     validation = await validate(baseURL, key.trim(), model)
   } catch (e) {
     out.write(`✗ ${e.message}\n`)
-    out.write("Anahtar KAYDEDİLMEDİ. Ayarları düzeltip `bb setup` ile yeniden dene.\n")
+    out.write("Key NOT saved. Fix the settings and try again with `bb setup`.\n")
     return { saved: false, skipped: true, reason: "validation-failed", error: e.message }
   }
 
@@ -335,11 +335,11 @@ export async function runSetupWizard(io = { input: process.stdin, output: proces
   }, dataDir)
 
   if (validation.softPass) {
-    out.write(`✓ Anahtar kaydedildi (sağlayıcı hız sınırı döndürdü — dizinleme sırasında yeniden denenir).\n`)
+    out.write(`✓ Key saved (provider returned a rate limit — indexing retries automatically).\n`)
   } else {
-    out.write(`✓ Anahtar kaydedildi ve doğrulandı (${model}, ${validation.dimension} boyut).\n`)
+    out.write(`✓ Key saved and validated (${model}, ${validation.dimension} dimensions).\n`)
   }
-  out.write(`Kayıt: ${path.join(dataDir, "config.json")} (yalnızca senin hesabın okuyabilir)\n`)
+  out.write(`Saved to: ${path.join(dataDir, "config.json")} (only your account can read it)\n`)
   return {
     saved: true,
     provider: provider.id,
@@ -362,7 +362,7 @@ export async function maybeRunFirstRunSetup(opts = {}) {
   if (state.skipped) return { prompted: false, reason: "skipped" }
   if (!process.stdin.isTTY) {
     if (!opts.quiet) {
-      console.log("not: embedding anahtarı yok — semantik arama yerel vektörlerle çalışacak (daha zayıf). Kurulum: bb setup")
+      console.log("note: no embedding key — semantic search will use local vectors (weaker). Setup: bb setup")
     }
     return { prompted: false, reason: "non-tty" }
   }

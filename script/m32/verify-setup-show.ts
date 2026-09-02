@@ -167,7 +167,7 @@ const show = await loadComponent(COMPONENT)
   const g = s.tiers.find((x: any) => x.tier === "global")
   check("A6: setup_skipped marker surfaced on global tier", g?.skippedMarker === true, JSON.stringify(g))
   const r = show.renderSetupShow(s)
-  check("A6: render mentions the skip marker", r.includes("atlandı"), r.split("\n").filter((l) => l.includes("global")).join(" | "))
+  check("A6: render mentions the skip marker", r.includes("wizard skipped"), r.split("\n").filter((l) => l.includes("global")).join(" | "))
   t.cleanup()
 }
 
@@ -183,7 +183,7 @@ const show = await loadComponent(COMPONENT)
   chmodSync(path.join(t.dataDir, "config.json"), 0o600)
   const s2 = show.describeEmbeddingConfig(t.proj, {}, t.dataDir)
   const r2 = show.renderSetupShow(s2)
-  check("A7: 0600 mode renders without warning", r2.includes("mod: 600") && !r2.includes("beklenen"), r2.split("\n").filter((l) => l.includes("global")).join(" | "))
+  check("A7: 0600 mode renders without warning", r2.includes("mode: 600") && !r2.includes("expected"), r2.split("\n").filter((l) => l.includes("global")).join(" | "))
   t.cleanup()
 }
 
@@ -271,7 +271,7 @@ const mutants: Mutant[] = [
   },
   {
     name: "mode warning removed from render",
-    mutate: (src) => src.replace("(beklenen: 600 — düzelt: bb doctor)", "(mod uyumsuz)"),
+    mutate: (src) => src.replace("(expected: 600 — fix with bb doctor)", "(mode mismatch)"),
     probe: async (m) => {
       const dir = mkdtempSync(path.join(os.tmpdir(), "m32-s1-mut5-"))
       const dataDir = path.join(dir, "d"); const proj = path.join(dir, "p")
@@ -279,7 +279,7 @@ const mutants: Mutant[] = [
       writeGlobalConfig(dataDir, { embedding_base_url: "https://g.example/v1", embedding_model: "g-model", embedding_api_key: FULL_GLOBAL_KEY }, 0o644)
       const r = m.renderSetupShow(m.describeEmbeddingConfig(proj, {}, dataDir))
       rmSync(dir, { recursive: true, force: true })
-      return !r.includes("düzelt: bb doctor")
+      return !r.includes("fix with bb doctor")
     },
   },
 ]
@@ -336,13 +336,13 @@ check("S1: every planted defect was caught", mutantResults.every((m) => m.caught
     r1 = String(e?.stdout ?? "")
     r1ok = e?.status === 1
   }
-  check("D: binary renders honest no-config view", r1ok && r1.includes("Kazanan: yok") && r1.includes("bb setup"), r1.split("\n").slice(-2).join(" | "))
+  check("D: binary renders honest no-config view", r1ok && r1.includes("Winner: none") && r1.includes("bb setup"), r1.split("\n").slice(-2).join(" | "))
   writeGlobalConfig(t.dataDir, { embedding_base_url: "https://g.example/v1", embedding_model: "g-model", embedding_api_key: FULL_GLOBAL_KEY }, 0o644)
   const r2 = execFileSync(bb, ["setup", "show"], { env: { ...process.env, BB_DATA_DIR: t.dataDir }, encoding: "utf8" }).toString()
-  check("D: binary shows global winner with fingerprint only", r2.includes("Kazanan: global") && r2.includes("••••" + FULL_GLOBAL_KEY.slice(-4)) && !r2.includes(FULL_GLOBAL_KEY))
+  check("D: binary shows global winner with fingerprint only", r2.includes("Winner: global") && r2.includes("••••" + FULL_GLOBAL_KEY.slice(-4)) && !r2.includes(FULL_GLOBAL_KEY))
   check("D: binary warns on 0644 config", r2.includes("644") && r2.includes("bb doctor"))
   const r3 = execFileSync(bb, ["setup", "show"], { env: { ...process.env, BB_EMBEDDING_BASE_URL: "https://e.example/v1", BB_EMBEDDING_MODEL: "e-model", BB_EMBEDDING_API_KEY: FULL_ENV_KEY, BB_DATA_DIR: t.dataDir }, encoding: "utf8" }).toString()
-  check("D: binary shows env winner over global", r3.includes("Kazanan: env"))
+  check("D: binary shows env winner over global", r3.includes("Winner: env"))
   t.cleanup()
 }
 
