@@ -1162,6 +1162,30 @@
       "perf": {
         "avgMsPerFile": 5.1
       }
+    },
+    "cython:javascript": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 149.1
+      }
+    },
+    "cython:c": {
+      "missing": 0,
+      "unexplained": 16,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 55.8
+      }
+    },
+    "cython:python": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 28.8
+      }
     }
   }
 }

@@ -62,6 +62,7 @@ const GATED_LANGS: Record<string, { wasm: string; ext: string[]; analyzer: strin
   objc:       { wasm: "tree-sitter-objc.wasm",       ext: [".m", ".h"], analyzer: "real-objective-c-analyzer.ts" },
   php:        { wasm: "tree-sitter-php.wasm",        ext: [".php"],    analyzer: "real-php-analyzer.ts" },
   ruby:       { wasm: "tree-sitter-ruby.wasm",       ext: [".rb"],     analyzer: "real-ruby-analyzer.ts" },
+  python:     { wasm: "tree-sitter-python.wasm",     ext: [".py"],     analyzer: "real-python-analyzer.ts" },
 }
 
 // Literals that look like node-type comparisons but are not node types

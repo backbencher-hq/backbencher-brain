@@ -1405,11 +1405,85 @@
       "id": "section-h-cross-language",
       "language": "ruby",
       "status": "pass"
+    },
+    {
+      "description": "python: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "python",
+      "status": "pass"
+    },
+    {
+      "description": "python: 0 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "python",
+      "status": "pass"
+    },
+    {
+      "description": "python: 5 ruled, 0 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "python",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (python)",
+      "detail": "128 types, 60 handled, 63 silent, 0 gaps, 5 decisions",
+      "id": "section-a-structural",
+      "language": "python",
+      "status": "pass"
+    },
+    {
+      "description": "7 relationship kinds pinned by python fixtures",
+      "detail": "pinned: calls, contains, declared_type, extends, imports, instanceof_check, instantiates, references, return_type, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "python",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for python (1)",
+      "detail": "complexity",
+      "id": "section-c-payload-matrix",
+      "language": "python",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "4 tier(s) pinned: import_based, reference_qualified, structural, usage_contextual",
+      "id": "section-d-evidence-tiers",
+      "language": "python",
+      "status": "pass"
+    },
+    {
+      "description": "cython:python at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor cython:python: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "python",
+      "status": "pass"
+    },
+    {
+      "description": "python avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "cython:python 28.8 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "python",
+      "status": "pass"
+    },
+    {
+      "description": "python analyzer docs present and committed",
+      "detail": "docs/analyzers/real-python-analyzer.md",
+      "id": "section-g-docs",
+      "language": "python",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "9 checks pass",
+      "id": "section-h-cross-language",
+      "language": "python",
+      "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "bef1e8c7e0a7de240e823a42c12edeb4d8c52263",
-  "committedAt": "2026-09-02T05:01:03+02:00",
+  "commit": "100fe45fdf795637bf101184df130477e15d9a83",
+  "committedAt": "2026-09-02T21:00:06+02:00",
   "data": {
     "languages": {
       "c": {
@@ -1943,6 +2017,52 @@
           },
           "section-g-docs": {
             "detail": "docs/analyzers/real-php-analyzer.md",
+            "status": "pass"
+          },
+          "section-h-cross-language": {
+            "detail": "9 checks pass",
+            "status": "pass"
+          }
+        }
+      },
+      "python": {
+        "gaps": [],
+        "nodeTypeCount": 128,
+        "pendingDecisions": [],
+        "ruledDecisions": [
+          "PY-D1",
+          "PY-D2",
+          "PY-D3",
+          "PY-D4",
+          "PY-D5"
+        ],
+        "sections": {
+          "section-a-structural": {
+            "detail": "128 types, 60 handled, 63 silent, 0 gaps, 5 decisions",
+            "status": "pass"
+          },
+          "section-b-relationship-kinds": {
+            "detail": "pinned: calls, contains, declared_type, extends, imports, instanceof_check, instantiates, references, return_type, uses",
+            "status": "pass"
+          },
+          "section-c-payload-matrix": {
+            "detail": "complexity",
+            "status": "pass"
+          },
+          "section-d-evidence-tiers": {
+            "detail": "4 tier(s) pinned: import_based, reference_qualified, structural, usage_contextual",
+            "status": "pass"
+          },
+          "section-e-differential": {
+            "detail": "floor cython:python: missing=0, unexplained=0 (differential-baseline.json)",
+            "status": "pass"
+          },
+          "section-f-perf-budget": {
+            "detail": "cython:python 28.8 ms/file",
+            "status": "pass"
+          },
+          "section-g-docs": {
+            "detail": "docs/analyzers/real-python-analyzer.md",
             "status": "pass"
           },
           "section-h-cross-language": {
