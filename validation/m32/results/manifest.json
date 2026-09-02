@@ -170,7 +170,7 @@
       "code": "H1",
       "githubIssue": 832006,
       "tool": "docs",
-      "status": "planned",
+      "status": "verified",
       "scope": "README/EMBEDDINGS document bb setup show and bb doctor; docs-truth check pins verbatim output strings and the advice-not-auto-fix rule",
       "acceptanceCriteria": [
         "both commands documented with verbatim output strings",
@@ -180,7 +180,17 @@
       "closureRequirements": [
         "docs-truth evidence at current commit",
         "gate wired into npm run verify"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "5ea6511be0933466bcfd2d139e61c9c8b0e56762",
+        "verifierCommand": "npx tsx script/m32/verify-honesty-docs.ts",
+        "evidenceFile": "H1.json",
+        "generatedAt": "2026-09-02T04:07:34.398Z",
+        "passed": 39,
+        "failed": 0,
+        "negativeCases": 5
+      }
     },
     {
       "code": "X1",
