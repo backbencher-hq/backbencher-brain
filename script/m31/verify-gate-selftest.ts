@@ -215,7 +215,10 @@ check("every M31 verifier is covered by a mutation or declared infra", uncovered
 
 function runGate(script: string, env: Record<string, string> = {}): { exit: number; output: string } {
   try {
-    const out = execFileSync("bun", ["run", script], { cwd: ROOT, encoding: "utf8", stdio: "pipe", env: { ...process.env, ...env } })
+    // Self-test child runs NEVER stamp real evidence (explicit-stamping model):
+    // strip BB_M31_EVIDENCE so a sandboxed gate cannot poison real results.
+    const { BB_M31_EVIDENCE: _drop, ...parentEnv } = process.env
+    const out = execFileSync("bun", ["run", script], { cwd: ROOT, encoding: "utf8", stdio: "pipe", env: { ...parentEnv, ...env } })
     return { exit: 0, output: out }
   } catch (e: unknown) {
     const err = e as { stdout?: Buffer | string; stderr?: Buffer | string; status?: number }
@@ -355,6 +358,8 @@ for (const gate of GATES) {
         writeFileSync(path.join(sandbox, "validation/m31/ledger.json"), JSON.stringify(worldLedger, null, 2) + "\n")
       }
       // Control FIRST: unmutated sandbox passes.
+      // Strip BB_M31_EVIDENCE: self-test child runs must NEVER stamp real
+      // evidence — only the operator's explicit stamping pass does that.
       const control = runGate(gate.script, { BB_M31_ROOT: sandbox })
       check(`${gate.name}: control — unmutated sandbox PASSES`, control.exit === 0, control.output.slice(-200))
       // THEN plant the mutation and prove the gate flips to failing.
