@@ -26,6 +26,7 @@ import {
 } from "vscode-languageclient/node"
 import { resolveServerLaunch, versionDecision, ServerLaunch, SourceMode } from "./server-resolution"
 import { createAutoIndexMachine, AutoIndexMachine } from "./auto-index"
+import { renderStatus, StatusInput, StaleMarkerInput } from "./status-model"
 
 export const BB_ACTIVATION_BUDGET_SETTING = "bbLsp.activationBudgetMs"
 export const BB_MIN_SERVER_VERSION_SETTING = "bbLsp.minServerVersion"
@@ -47,6 +48,9 @@ let client: LanguageClient | null = null
 let activationReport: ActivationReport | null = null
 let statusItem: StatusBarItem | null = null
 let autoIndex: AutoIndexMachine | null = null
+let lastStaleness: StaleMarkerInput | null = null
+let lastIndexMessage: string | null = null
+let contextRef: ExtensionContext | null = null
 
 /** Readable from tests/commands: the auto-index state machine (E2). */
 export function getAutoIndexMachine(): AutoIndexMachine | null {
@@ -195,6 +199,15 @@ export async function activate(context: ExtensionContext): Promise<void> {
     ]
     void window.showInformationMessage(lines.join("\n"), { modal: false })
   })
+  // E3 status surface commands (declared in the manifest).
+  commands.registerCommand("bbLsp.showStatusPanel", () => void showStatusPanel())
+  commands.registerCommand("bbLsp.indexNow", () => void indexNow())
+  // Staleness follows the active editor; status renders after every change.
+  context.subscriptions.push(
+    window.onDidChangeActiveTextEditor(() => {
+      void refreshStaleness().then(refreshStatus)
+    }),
+  )
 
   // Await client start inside the measured window (activation budget).
   await startClient(context, report)
@@ -212,10 +225,130 @@ export async function activate(context: ExtensionContext): Promise<void> {
   // E2 auto-index flow: started strictly after the measured activation
   // window, never awaited by activate() (non-blocking guarantee).
   if (report.versionOk) beginAutoIndexFlow()
+
+  // E3: initial honest render (server down/no-index render their failures
+  // with actions — never a blank or optimistic surface).
+  void refreshStaleness().then(refreshStatus)
 }
 
 export function deactivate(): Thenable<void> | undefined {
   return client?.stop()
+}
+
+// ---------------------------------------------------------------------------
+// E3: status surface. The single render path for the status bar — every fact
+// goes through status-model.renderStatus so the render laws (stale ⇒ visible
+// badge, unknown ⇒ never fresh, undeclared ⇒ never invented, failure ⇒
+// action) hold everywhere. Issue #501.
+// ---------------------------------------------------------------------------
+
+/** Ask the server for the active file's staleness. Declared absence (the
+ *  M24 server surface has no bb/staleness method yet) renders as UNKNOWN —
+ *  treated as stale, never as fresh (silence is guilt). */
+async function refreshStaleness(): Promise<void> {
+  const editor = window.activeTextEditor
+  if (client === null || client.state !== State.Running || editor === undefined) {
+    lastStaleness = null
+    return
+  }
+  try {
+    const marker = (await client.sendRequest("bb/staleness", { uri: editor.document.uri.toString() })) as StaleMarkerInput | null
+    lastStaleness = marker
+  } catch {
+    // Declared absence or transport failure: unknown, treated as stale.
+    lastStaleness = { stale: true, status: "unknown", pendingReindex: false }
+  }
+}
+
+/** Build the honest StatusInput from live state and render it. */
+export function refreshStatus(): void {
+  if (statusItem === null) return
+  const input: StatusInput = {
+    server: {
+      up: client !== null && client.state === State.Running,
+      version: activationReport?.serverVersion ?? null,
+      versionOk: activationReport?.versionOk ?? false,
+    },
+    index: { phase: autoIndex?.state.phase ?? "no-index" },
+    staleness: lastStaleness,
+    language: window.activeTextEditor?.document.languageId ?? null,
+  }
+  const view = renderStatus(input)
+  statusItem.text = view.badge
+  const lines = [...view.tooltipLines]
+  if (lastIndexMessage !== null) lines.push(`last event: ${lastIndexMessage}`)
+  lines.push(...view.perLanguage.map((p) => `${p.language}: ${p.level} (${p.description})`))
+  if (view.staleBadge !== null) lines.unshift(`⚠ STALE MARKER ACTIVE — results for this file may be wrong`)
+  statusItem.tooltip = lines.join("\n")
+  statusItem.command = "bbLsp.showStatusPanel"
+}
+
+/** The full panel: every fact, the per-language evidence table, and the
+ *  remediation actions for any failure state (law-failure). */
+export async function showStatusPanel(): Promise<void> {
+  const input: StatusInput = {
+    server: {
+      up: client !== null && client.state === State.Running,
+      version: activationReport?.serverVersion ?? null,
+      versionOk: activationReport?.versionOk ?? false,
+    },
+    index: { phase: autoIndex?.state.phase ?? "no-index" },
+    staleness: lastStaleness,
+    language: window.activeTextEditor?.document.languageId ?? null,
+  }
+  const view = renderStatus(input)
+  const lines = [
+    "Backbencher Brain — status (every fact carries its claim level)",
+    "",
+    ...view.tooltipLines,
+    "",
+    "per-language evidence levels (declared, drift-gated):",
+    ...view.perLanguage.map((p) => `  ${p.language.padEnd(12)} ${p.level.padEnd(4)} ${p.description}`),
+  ]
+  if (view.actions.length > 0) {
+    const choice = await window.showInformationMessage(lines.join("\n"), ...view.actions.map((a) => a.title))
+    const action = view.actions.find((a) => a.title === choice)
+    if (action !== undefined) void commands.executeCommand(action.command)
+  } else {
+    void window.showInformationMessage(lines.join("\n"))
+  }
+}
+
+// ---------------------------------------------------------------------------
+// E2: auto-index on open. Fire-and-forget AFTER the activation budget window
+// (issue #500: editor startup never blocked). Consent before any indexing;
+// scale estimate shown in the consent dialog; progress notification with a
+// working cancel that terminates the index process.
+// ---------------------------------------------------------------------------
+
+/** User-invoked indexing (also the panel's failure remediation). */
+export async function indexNow(): Promise<void> {
+  if (autoIndex === null) {
+    beginAutoIndexFlow()
+    return
+  }
+  if (autoIndex.state.phase === "awaiting-consent") {
+    const ai = autoIndex
+    await window.withProgress(
+      { location: ProgressLocation.Notification, title: "bb_lsp: indexing workspace", cancellable: true },
+      async (_progress, token) => {
+        token.onCancellationRequested(() => ai.cancel())
+        const done = new Promise<void>((resolve) => {
+          const off = ai.onProgress((event) => {
+            if (event.phase === "ready" || event.phase === "cancelled" || event.phase === "failed") {
+              off()
+              resolve()
+            }
+          })
+        })
+        await ai.decideConsent(true)
+        await done
+      },
+    )
+  } else if (autoIndex.state.phase !== "indexing" && autoIndex !== null) {
+    await autoIndex.start("granted")
+  }
+  refreshStatus()
 }
 
 // ---------------------------------------------------------------------------
@@ -236,18 +369,8 @@ export function beginAutoIndexFlow(): void {
   })
   autoIndex = machine
   const unsubscribe = machine.onProgress((event) => {
-    if (statusItem !== null) {
-      const phaseText: Record<typeof event.phase, string> = {
-        estimating: "$(sync~spin) bb: estimating",
-        "awaiting-consent": "$(question) bb: consent",
-        indexing: "$(sync~spin) bb: indexing",
-        ready: "$(check) bb",
-        cancelled: "$(circle-slash) bb: paused",
-        failed: "$(error) bb: index failed",
-      }
-      statusItem.text = phaseText[event.phase]
-      statusItem.tooltip = event.message
-    }
+    lastIndexMessage = event.message
+    refreshStatus()
   })
   void machine.start("not-granted").then(async () => {
     if (machine.state.phase === "ready") return // existing index — nothing to ask
