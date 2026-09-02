@@ -17,7 +17,7 @@ import { executeEdit, type EditRequest } from "../intelligence/edit/edit-engine"
 import { getUnifiedHealth, formatUnifiedHealth } from "../intelligence/health/health-provider"
 import { getAnalysisHistory, executeAnalysis } from "../intelligence/analysis/run-history"
 import { generateDocumentation, formatDocumentation, type DocRequest } from "../intelligence/documentation/doc-engine"
-import { visualizeProject, formatVisualization, type VisualizationRequest } from "../intelligence/visualization/visualization-engine"
+import { visualizeProject, formatVisualization, type VisualizationRequest, type VisualizationScope } from "../intelligence/visualization/visualization-engine"
 import { generateMigrationPlans, formatMigrationPlans } from "../intelligence/migration/migration-engine"
 import { graphTraversal } from "../intelligence/graph/graph-engine"
 import { getProjectStats } from "../intelligence/analysis/project-stats"
@@ -276,7 +276,12 @@ const handlers: Record<string, ToolHandler> = {
   },
 
   bb_visualize: async (args, { projectId }) => {
-    const request: VisualizationRequest = { scope: ["project", "file", "module", "symbol", "feature"].includes(String(args.scope)) ? args.scope : "project", target: args.target ? String(args.target) : undefined, format: ["text", "json", "html"].includes(String(args.format)) ? args.format : "text", maxNodes: args.maxNodes == null ? undefined : Number(args.maxNodes), maxLinks: args.maxLinks == null ? undefined : Number(args.maxLinks), relationshipTypes: Array.isArray(args.relationshipTypes) ? args.relationshipTypes.map(String) : undefined, languages: Array.isArray(args.languages) ? args.languages.map(String) : undefined }
+    // M31.T1: no silent scope/target fallback. The validation layer rejects
+    // scoped calls without a target; unknown scope strings here are a handler
+    // bug and must fail loudly rather than masquerade as a project graph.
+    const scope = String(args.scope ?? "project")
+    if (!["project", "file", "module", "symbol", "feature"].includes(scope)) return textResult(`bb_visualize: unknown scope: ${scope}`, true)
+    const request: VisualizationRequest = { scope: scope as VisualizationScope, target: args.target ? String(args.target) : undefined, format: ["text", "json", "html"].includes(String(args.format)) ? args.format : "text", maxNodes: args.maxNodes == null ? undefined : Number(args.maxNodes), maxLinks: args.maxLinks == null ? undefined : Number(args.maxLinks), relationshipTypes: Array.isArray(args.relationshipTypes) ? args.relationshipTypes.map(String) : undefined, languages: Array.isArray(args.languages) ? args.languages.map(String) : undefined }
     const result = await visualizeProject(projectId, request)
     return textResult(formatVisualization(result))
   },
