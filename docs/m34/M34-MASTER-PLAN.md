@@ -10,11 +10,33 @@ but two blind spots remain:
 
 1. **Nothing proves the INSTALLED copy works.** The verifiers all run from
    the repo (tsx on source, or `bin/bb` against a repo `dist/`). The npm
-   tarball carries 103 dist/bin files, 8 runtime dependencies including two
-   native modules (`better-sqlite3`, tree-sitter) — and no gate has ever
-   installed the package and run it from the install prefix. "Works in the
-   workspace, broken when installed" is the same defect class as M30's P0
-   ("works under tsx, broken in the bundle").
+   tarball carries 103 dist/bin files and runtime dependencies including
+   native modules — and no gate has ever installed the package and run it
+   from the install prefix. "Works in the workspace, broken when installed"
+   is the same defect class as M30's P0 ("works under tsx, broken in the
+   bundle").
+
+### S1 root-cause finding (recorded 2026-09-02)
+
+The first real-install attempt **failed deterministically** (reproduced
+twice): `tree-sitter-xml@1.0.0` — the only version ever published — compiles
+its native binding from source on install (no prebuilds) and the binding uses
+V8 APIs removed from Node 20's headers (`v8::Object::Set` 2-arg form,
+`FunctionTemplate::GetFunction()`), so **every fresh `npm install` of
+backbencher-brain died in node-gyp**. The workspace never noticed because its
+node_modules copy had been built on an earlier toolchain.
+
+Forensics showed the dependency was pure dead weight: no source or script
+loads the native module (grep + dynamic-`require` sweep); the analyzer loads
+the grammar exclusively as `web-tree-sitter` WASM, resolved from the vendored
+repo `wasm/tree-sitter-xml.wasm` via the registry temp-file fallback
+(`src/util/wasm.ts` + `src/util/bb-data-dir.ts`).
+
+**Fix:** `tree-sitter-xml` removed from `dependencies` (behavior-neutral —
+proven by an engine-level probe parsing XML to 6 correct symbols with the
+dep deleted from node_modules). The verifier now proves the tarball installs
+and the installed binary runs — and it plants mutants so a future dep that
+breaks fresh installs is caught, not discovered by a user.
 2. **No machine control over output language.** The M33 language-origin
    research found the Turkish leak and cleaned it, but today's protection is
    a curated denylist plus string pins. A general script gate — any
