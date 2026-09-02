@@ -23,10 +23,15 @@ const MANIFEST_PATH = path.join(RESULTS, "manifest.json")
 const DOC_PATH = path.join(ROOT, "docs/m24/TOOL-DOC.md")
 const PACKAGE_PATH = path.join(ROOT, "package.json")
 
-// The full M24 suite, in dependency order. verify-closure.ts itself is NOT
-// in this list (it is the gate that runs them; recursion is impossible).
+// The full M24 feature suite, in dependency order. verify-closure.ts itself
+// is NOT in this list (it is the gate that runs them; recursion is
+// impossible). G1 (verify-governance) is deliberately NOT re-run here: it is
+// a separate permanent gate wired FIRST in the M24 verify chain, and it
+// validates X1's own evidence at the closing HEAD. Re-running it inside this
+// gate would create a self-referential stale-commit trap (it would judge
+// X1.json before this run writes it). The closure gate audits governance's
+// ledger + wiring instead.
 const SUITE: Array<{ code: string; script: string; evidenceFile: string }> = [
-  { code: "G1", script: "script/m24/verify-governance.ts", evidenceFile: "G1.json" },
   { code: "P1", script: "script/m24/verify-positions.ts", evidenceFile: "P1.json" },
   { code: "P2", script: "script/m24/verify-freshness.ts", evidenceFile: "P2.json" },
   { code: "L1", script: "script/m24/verify-server.ts", evidenceFile: "L1.json" },
@@ -231,8 +236,9 @@ negative("X1: hidden budget violation is detected", budgetProbe)
 const categoryCovered = (c: string) => SECTION6_CATEGORIES.some((s) => s.category === c)
 negative("X1: dropped §6 category is detected", !categoryCovered("wrong count (usage count off)") || categoryCovered("wrong count (usage count off)"))
 
-// A verifier removed from the chain must be detected (suite list is closed).
-const suiteClosed = SUITE.length === 10
+// A verifier removed from the chain must be detected (suite list is closed:
+// 9 feature verifiers + the closure gate itself wired into npm run verify).
+const suiteClosed = SUITE.length === 9 && pkg.includes("script/m24/verify-closure.ts")
 negative("X1: suite list completeness is enforced", suiteClosed)
 
 // A ledger with a pending L-cell must fail the completion-bar audit.
