@@ -18,11 +18,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "c19168c6c68bf0ab99feae07bab7e2f5040abbd9",
+      "currentCommit": "7a25c3f699df5632752960a6a43044194d0936df",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m31/verify-governance.ts",
       "evidenceFile": "G1.json",
-      "generatedAt": "2026-09-02T03:41:06.586Z",
+      "generatedAt": "2026-09-02T04:08:11.482Z",
       "passed": 25,
       "failed": 0,
       "negativeCases": 2
@@ -46,11 +46,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "2f3876da57edc77c3127f92bf513780802bc6104",
+      "currentCommit": "7a25c3f699df5632752960a6a43044194d0936df",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m31/verify-tool-docs-deep.ts",
       "evidenceFile": "D1.json",
-      "generatedAt": "2026-09-02T03:40:53.399Z",
+      "generatedAt": "2026-09-02T04:08:40.603Z",
       "passed": 140,
       "failed": 0,
       "negativeCases": 1
@@ -60,7 +60,7 @@
     "code": "D2",
     "githubIssue": 557,
     "tool": "top-level-docs",
-    "status": "planned",
+    "status": "verified",
     "scope": "behavioral truth gate for the 15 ungated docs/BB_*.md files",
     "acceptanceCriteria": [
       "gate fails on planted doc drift (mutations from G1)",
@@ -72,7 +72,18 @@
       "executed-claim pass rate 100% after corrections",
       "persist D2 evidence with standard envelope",
       "negativeCases > 0"
-    ]
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "7a25c3f699df5632752960a6a43044194d0936df",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m31/verify-bb-docs-truth.ts",
+      "evidenceFile": "D2.json",
+      "generatedAt": "2026-09-02T04:08:40.880Z",
+      "passed": 57,
+      "failed": 0,
+      "negativeCases": 1
+    }
   },
   {
     "code": "D3",
@@ -109,11 +120,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "2f3876da57edc77c3127f92bf513780802bc6104",
+      "currentCommit": "7a25c3f699df5632752960a6a43044194d0936df",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m31/tool-mode-corpus.ts --check",
       "evidenceFile": "T1.json",
-      "generatedAt": "2026-09-02T03:40:52.901Z",
+      "generatedAt": "2026-09-02T04:08:40.198Z",
       "passed": 67,
       "failed": 0,
       "negativeCases": 22
