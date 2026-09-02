@@ -84,7 +84,7 @@ async function runHook(script: string, env: Record<string, string>, componentPat
   const result = await new Promise<HookResult>((resolve) => {
     const child = spawn(RUNNER.cmd, [...RUNNER.args, scriptPath], {
       cwd: dir,
-      env: { ...process.env, BB_DATA_DIR: dataDir, ...env },
+      env: { ...process.env, BB_DATA_DIR: dataDir, ...env, ...(env.BB_DATA_DIR_OVERRIDE ? { BB_DATA_DIR: env.BB_DATA_DIR_OVERRIDE } : {}) },
       stdio: ["ignore", "pipe", "pipe"],
     })
     let stdout = ""
@@ -156,6 +156,23 @@ async function main() {
 main()
 `
 
+// Wizard skip-write fixture: drives runSetupWizard to the skip choice with a
+// stubbed save, and reports exactly what the wizard asked to persist.
+const WIZARD_SKIP_SCRIPT = `
+import { Readable } from "node:stream"
+import { runSetupWizard } from __COMPONENT__
+const out = (v: unknown) => console.log("JSON:" + JSON.stringify(v))
+async function main() {
+  let captured = null
+  const r = await runSetupWizard(
+    { input: Readable.from(["4\\n"]), output: { write() {} } },
+    { save: (partial) => { captured = partial }, dataDir: "/tmp/m30-wizard-skip-unused" },
+  )
+  out({ result: r, savedPartial: captured })
+}
+main()
+`
+
 // ---------------------------------------------------------------------------
 // Positive checks
 // ---------------------------------------------------------------------------
@@ -194,6 +211,22 @@ console.log(`  component: ${path.relative(ROOT, COMPONENT)}`)
   check("S2: configured env hook resolves", res.ok && !res.timedOut, res.stderr.slice(0, 200))
   const j = fixtureJSON(res)[0]
   check("S2: configured env reports reason=configured", j?.prompted === false && j?.reason === "configured", JSON.stringify(j))
+}
+
+// 4b. Explicit skip is remembered: a global config with setup_skipped=true
+// (what the wizard writes when the user chooses "Atla") must stop future
+// prompts — the wizard runs ONCE, never nags on every bb index.
+{
+  const dir = mkdtempSync(path.join(os.tmpdir(), "m30-s2-skip-"))
+  const dataDir = path.join(dir, "bbdata")
+  mkdirSync(dataDir, { recursive: true })
+  writeFileSync(path.join(dataDir, "config.json"), JSON.stringify({ setup_skipped: true }) + "\n", { mode: 0o600 })
+  const res = await runHook(HOOK_SCRIPT, { HOOK_QUIET: "1", BB_DATA_DIR_OVERRIDE: dataDir }, COMPONENT)
+  const j = fixtureJSON(res)[0]
+  check("S2: remembered skip resolves (no prompt, no hang)", res.ok && !res.timedOut, res.stderr.slice(0, 200))
+  check("S2: remembered skip reports reason=skipped", j?.prompted === false && j?.reason === "skipped", JSON.stringify(j))
+  check("S2: remembered skip emits no notice", !res.stdout.includes("embedding anahtarı yok"), res.stdout.slice(0, 200))
+  rmSync(dir, { recursive: true, force: true })
 }
 
 // 5. Pseudo-TTY: prompt appears and wizard is reachable; driven to the skip
@@ -250,7 +283,7 @@ console.log(`  component: ${path.relative(ROOT, COMPONENT)}`)
     }, 3000)
   })
   rmSync(dir, { recursive: true, force: true })
-  check("S2: pseudo-TTY prompt appears (TTY branch fires)", /Seçim \[1-5\]/.test(result.stdout) && /embedding kurulumu/.test(result.stdout), result.stdout.slice(0, 300))
+  check("S2: pseudo-TTY prompt appears (TTY branch fires)", /Seçim \[1-4\]/.test(result.stdout) && /embedding kurulumu/.test(result.stdout), result.stdout.slice(0, 300))
   check("S2: pseudo-TTY session resolves (no hang)", !result.timedOut, result.stdout.slice(0, 200))
 }
 
@@ -266,6 +299,8 @@ type MutantProbe = {
   noticeCount: number
   ptyPrompted: boolean
   fixtureOk: boolean
+  skipReason?: string
+  wizardSkipMarker?: unknown
 }
 
 const mutants: Mutant[] = [
@@ -290,6 +325,16 @@ const mutants: Mutant[] = [
     // The unquiet non-TTY run must emit exactly one honest notice line.
     probe: (m) => m.noticeCount !== 1,
   },
+  {
+    name: "skip-marker write removed (user re-prompted every run)",
+    mutate: (src) => src.replace("save({ setup_skipped: true }, dataDir)", "/* skip marker removed */"),
+    probe: (m) => m.wizardSkipMarker !== true || m.skipReason !== "skipped",
+  },
+  {
+    name: "hook skip check removed (skipped users prompted again)",
+    mutate: (src) => src.replace('if (state.skipped) return { prompted: false, reason: "skipped" }', 'if (false) return { prompted: false, reason: "skipped" }'),
+    probe: (m) => m.skipReason !== "skipped",
+  },
 ]
 
 const mutantResults: { name: string; caught: boolean; detail: string }[] = []
@@ -309,6 +354,14 @@ for (const mut of mutants) {
     const hookFlagRes = await runHook(HOOK_SCRIPT, { HOOK_NO_SETUP: "1", HOOK_QUIET: "1" }, MUTANT_PATH, 10000)
     const hookCfgRes = await runHook(HOOK_SCRIPT, { BB_EMBEDDING_BASE_URL: "https://x.example", BB_EMBEDDING_MODEL: "m", HOOK_QUIET: "1" }, MUTANT_PATH, 10000)
     const hookNoticeRes = await runHook(HOOK_SCRIPT, {}, MUTANT_PATH, 10000)
+    const skipDir = mkdtempSync(path.join(os.tmpdir(), "m30-s2-skipmut-"))
+    const skipData = path.join(skipDir, "bbdata")
+    mkdirSync(skipData, { recursive: true })
+    writeFileSync(path.join(skipData, "config.json"), JSON.stringify({ setup_skipped: true }) + "\n", { mode: 0o600 })
+    const hookSkipRes = await runHook(HOOK_SCRIPT, { HOOK_QUIET: "1", BB_DATA_DIR_OVERRIDE: skipData }, MUTANT_PATH, 10000)
+    rmSync(skipDir, { recursive: true, force: true })
+    const wizardSkipRes = await runHook(WIZARD_SKIP_SCRIPT, {}, MUTANT_PATH, 10000)
+    const wizardSkipJson = fixtureJSON(wizardSkipRes)[0]
     probe = {
       hook: fixtureJSON(hookRes)[0],
       hookFlag: fixtureJSON(hookFlagRes)[0],
@@ -316,6 +369,8 @@ for (const mut of mutants) {
       noticeCount: hookNoticeRes.stdout.split("\n").filter((l) => l.includes("embedding anahtarı yok")).length,
       ptyPrompted: false,
       fixtureOk: hookRes.ok,
+      skipReason: fixtureJSON(hookSkipRes)[0]?.reason,
+      wizardSkipMarker: wizardSkipJson?.savedPartial?.setup_skipped,
     }
   } finally {
     if (existsSync(MUTANT_PATH)) rmSync(MUTANT_PATH, { force: true })
