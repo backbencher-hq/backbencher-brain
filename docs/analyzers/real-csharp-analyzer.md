@@ -172,3 +172,52 @@ subtrees; a handful of real IDispatch calls (`Alloc`, `TryGetIDsOfNames`,
 `uses` (confidence 0.7) rather than `calls`. This surfaces only in the
 300-file sweep (4 edges) and is logged here + in the completeness spec; it is
 outside the gated deterministic 60-file floor, which is clean.
+
+## 2026-09-04 re-review wave (CSD1–CSD10, dual-lens)
+
+Re-review with BOTH lenses: corpus census (node types occurring in 400 real
+powershell files vs types the analyzer references — 105 unreferenced) AND a
+full line-by-line read. The census alone missed two defects the reading
+caught (the dead no-op statement and the mvcPattern flag); the reading alone
+underestimated switch-arm impact until the census showed
+`switch_expression_arm` at 42 occurrences per 400 files.
+
+Defects found and fixed (each probe-verified on real parses, oracle mirrored
+where the differential compares the edge):
+
+- **CSD1**: file-scoped namespaces (`namespace X;`) produced BARE type
+  fullNames — the scope was tracked in a side variable but never pushed, so
+  `extends JsonSchemaReferenceResolutionException -> Exception` (bare) vs the
+  block-namespace scheme `X.Impl -> IFoo` in the same corpus. Cross-file
+  override/type-kind companions keyed by fullName desynced. Scope now pushed
+  WITHOUT an exit item (the scope must survive its subtree exit and cover the
+  sibling declarations; the naive push-with-exit was probe-refuted).
+- **CSD2**: switch-expression arms never counted as decision points — a
+  3-arm switch expression measured complexity 1. Added to both counters.
+- **CSD3**: every operator overload collapsed to the literal symbol name
+  "operator" (`operator +` vs `operator ==` indistinguishable) with no
+  complexity. Now named by identity (conversion ops by target type).
+- **CSD4**: null-conditional member reads (`_b?.Count`, 100 in corpus) emitted
+  nothing — member_binding_expression has no expression field. Also added the
+  2-level callee-skip so `x?.M()` doesn't fabricate a uses edge on the METHOD.
+- **CSD5**: accessor-form `event` declarations emitted NO symbol.
+- **CSD6**: dead no-op statement (`system.linq` check that did nothing) —
+  reading-only catch.
+- **CSD7**: alias usings (`using Aliased = System.Text;`) captured the ALIAS
+  as the module — now the qualified target, with alias metadata.
+- **CSD8**: constructor initializers (`: base(42)` / `: this()`, 120 in
+  corpus) emitted nothing; now calls edges, oracle-mirrored.
+- **CSD9**: primary-constructor bases leaked raw argument text as
+  base-list targets (`implements -> ("seed", 1)`); both parse shapes fixed.
+- **CSD10**: a file-scoped scope outlived its file-section in multi-namespace
+  files (nested to `Acme.F6.Domain.F6Tank`); new namespaces now replace it.
+- **Process note**: the mvcPattern flag-write that nothing reads was also
+  removed. And a trap worth recording: the CSD10 guard was initially placed
+  outside the dispatch chain, silently stripping qualification on every node
+  — the fixture briefly "passed" because emission and pins were BOTH wrong.
+  Pins were re-authored from re-probed emission, which exposed it.
+
+Gate hardening: fixture extended (operator/event/Pick/SafeCount symbols,
+ctor-initializer + `?.Invoke` calls, clean primary-base extends, CSD9
+forbids); 5 new mutants (190 total, all caught); F5 floor re-pinned
+powershell:csharp 1386 truth edges 100%/0/0 at 60 files.
