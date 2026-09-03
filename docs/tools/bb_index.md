@@ -70,4 +70,8 @@ Write-capable against index data only. It never modifies source files.
 
 Counts come from the real parse/store pipeline; errors name the file that failed rather than swallowing it.
 
+## Staleness
+
+This tool does not report index staleness. Output reflects the index as of the last bb index run; run bb index --changed to refresh changed files before acting on results.
+
 This page is generated from the executable registry and curated documentation. Run `npm run docs:generate` to update it.

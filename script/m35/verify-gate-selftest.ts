@@ -155,6 +155,20 @@ const GATES: GateSpec[] = [
     },
   },
   {
+    name: "m35-d1-doc-claims-unimplemented",
+    script: "script/m35/verify-docs-staleness.ts",
+    // D1 mutation (issue criterion 3): a doc claims staleness support for a
+    // tool that has NO staleness surface — the docs-truth gate must fail
+    // (unimplemented-mode claims are exactly what D1 exists to catch).
+    surfaces: [],
+    mutate: () => {},
+    mutateEvidence: {
+      file: "docs/tools/bb_health.md",
+      from: "This tool does not report index staleness. Output reflects the index as of the last bb index run; run bb index --changed to refresh changed files before acting on results.",
+      to: "Staleness surfaces as: per-row stale flags; remediation: run: bb reindex --changed",
+    },
+  },
+  {
     name: "m35-freshness-core",
     script: "script/m35/verify-freshness-core.ts",
     // Evidence-mutation form: F1's governed surface is the production core
