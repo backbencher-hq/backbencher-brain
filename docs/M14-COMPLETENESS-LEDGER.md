@@ -463,3 +463,16 @@ flagged for investigation under #385-family; budget passes at current margin).
 
 JavaScript (M14.2): 10/10 fixtures GATED; field-access uses collector ADDED (parity gap - analyzer had none); vue-core corpus shared with TS.
 JS update: payload-docs fixture GATED (JSDoc class+method); qualified_calls declared NOT EMITTED (#383); graphql-js differential 100%/0% baselined; 2 JS mutants added (11 total).
+
+Haskell re-review wave (2026-09-03): corpus-expanded re-review (shellcheck,
+hledger, postgrest added to cabal — 392 new files) exposed 8 defect classes
+the gates could not see because the differential oracle mirrors the analyzer
+(HSD11–HSD19: standalone deriving, pattern-position fabrication via
+alternative/guard/record-head paths, qualified-constructor loss, expression
+signature-annotation call loss, element-wise deriving entries, unnameable
+function heads). All fixed with probe-verified parse shapes, mirrored in the
+oracle; fixture extended (pins+forbids per class) and 4 mutants added — a
+same-day regression (deriving parens recursion) was caught by the new fixture
+pins, proving the hardening works. All 4 corpora 100%/0/0; 185 mutants
+caught; F1–F6+SPEC+CC1+honesty green. Grammar pinned at v0.23.1 (upstream
+rewrite unreleased — migration trigger recorded in issue #271).
