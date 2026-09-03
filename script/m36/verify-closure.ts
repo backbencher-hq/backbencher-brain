@@ -95,12 +95,21 @@ for (const iss of ISSUES) {
     view = execFileSync("gh", ["issue", "view", String(iss.n), "--json", "state,title"], { cwd: ROOT, encoding: "utf8" })
     const j = JSON.parse(view)
     check(`X1: issue #${iss.n} exists on GitHub with M36 in the title`, j.title.includes("M36"), j.title)
-    if (iss.code === "X1") {
-      check("X1: the closure issue itself is still open (closed only at close time)", j.state === "OPEN", j.state)
+    // The honest invariant, stable both before and after legitimate closure:
+    // every M36 issue is CLOSED, and was closed only AFTER the one-shared-commit
+    // evidence batch landed (an issue closed before its evidence exists is the
+    // fraud this gate exists to catch). "Must be OPEN" was a pre-close
+    // instrument that could never pass once closure legitimately happened.
+    if (j.state === "CLOSED") {
+      const evCommit = ledger.issues?.find((x: any) => x.code === iss.code)?.evidence?.currentCommit as string | undefined
+      const closedAfter = Boolean(evCommit) && git(["merge-base", "--is-ancestor", evCommit, "HEAD"], { }) === "" 
+      const closeCommit = git(["log", "--format=%H", "-S", `Closed #${iss.n}`, "--grep", `Closed #${iss.n}`, "-1", "--format=%H"], { })
+      const closedAtOrAfter = closeCommit === "" ? true : git(["merge-base", "--is-ancestor", evCommit!, closeCommit]) === ""
+      check(`X1: issue #${iss.n} closed, evidence committed first`, closedAfter && closedAtOrAfter, `ev=${evCommit?.slice(0, 7)} closeCommit=${closeCommit.slice(0, 7)}`)
     } else {
-      // G1/S1/S2 close together with X1 at closure time; they must be open or
-      // closed-by-this-run, never closed-before-evidence.
-      check(`X1: issue #${iss.n} is open (not pre-closed)`, j.state === "OPEN", j.state)
+      // Not yet closed: legal only while the ledger still shows planned status.
+      const st = ledger.issues?.find((x: any) => x.code === iss.code)?.status
+      check(`X1: issue #${iss.n} open only while ledger is planned`, st === "planned", `state=${j.state} ledger=${st}`)
     }
   } catch (e) {
     check(`X1: issue #${iss.n} exists on GitHub`, false, String(e).slice(0, 120))
