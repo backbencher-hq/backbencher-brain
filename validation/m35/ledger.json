@@ -18,11 +18,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "7b63ade3911fd9cbd6fa572fab583b2a697dc13b",
+      "currentCommit": "979b53f0edd6f9042c4710fb5205717bca070bea",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m35/verify-governance.ts",
       "evidenceFile": "G1.json",
-      "generatedAt": "2026-09-03T04:17:52.549Z",
+      "generatedAt": "2026-09-03T15:48:53.251Z",
       "passed": 27,
       "failed": 0,
       "negativeCases": 2
@@ -32,7 +32,7 @@
     "code": "F1",
     "githubIssue": 580,
     "tool": "freshness-core",
-    "status": "planned",
+    "status": "verified",
     "scope": "batch row-level staleness resolution for symbols and relationships (O(unique files), not O(rows))",
     "acceptanceCriteria": [
       "stale/missing/fresh/fast-path cases behaviorally correct on real fixtures",
@@ -43,7 +43,18 @@
       "persist F1 evidence with standard envelope",
       "negativeCases > 0",
       "evidence stamped at commit containing final code"
-    ]
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "979b53f0edd6f9042c4710fb5205717bca070bea",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m35/verify-freshness-core.ts",
+      "evidenceFile": "F1.json",
+      "generatedAt": "2026-09-03T16:13:29.014Z",
+      "passed": 29,
+      "failed": 0,
+      "negativeCases": 3
+    }
   },
   {
     "code": "E1",
