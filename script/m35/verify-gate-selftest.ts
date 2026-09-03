@@ -43,6 +43,33 @@ type GateSpec = {
 
 const GATES: GateSpec[] = [
   {
+    name: "m35-envelope-handler",
+    script: "script/m35/verify-envelope-contract.ts",
+    // E1 mutation 1 (issue criterion 2): a registered handler mode that OMITS
+    // the staleness block must fail the gate. Remove the symbol-mode block.
+    surfaces: [],
+    mutate: () => {},
+    mutateEvidence: {
+      file: "src/mcp/tool-handlers.ts",
+      from: "return textResult(JSON.stringify({ ...found, freshness: buildStalenessEnvelope(detail.summary, { kind: \"dir\" }) }, null, 2))",
+      to: "return textResult(JSON.stringify(found, null, 2))",
+    },
+  },
+  {
+    name: "m35-envelope-remediation",
+    script: "script/m35/verify-envelope-contract.ts",
+    // E1 mutation 2 (issue criterion 2): remediation text that does NOT match
+    // the registered constant must fail the gate. Corrupt the registered
+    // dir remediation — every dir-scope remediation check must flip.
+    surfaces: [],
+    mutate: () => {},
+    mutateEvidence: {
+      file: "src/brain/freshness.ts",
+      from: "dir: 'run: bb index --changed",
+      to: "dir: 'run: bb reindex --changed",
+    },
+  },
+  {
     name: "m35-freshness-core",
     script: "script/m35/verify-freshness-core.ts",
     // Evidence-mutation form: F1's governed surface is the production core

@@ -46,7 +46,10 @@ try { validateToolDescriptors(PUBLIC_TOOL_DESCRIPTORS) } catch (e) {
 check("PUBLIC_TOOL_DESCRIPTORS validate cleanly", registryValid)
 
 // 2. Exactly the approved ten tools exist and have unique names.
-check("exactly ten public tools advertised", PUBLIC_TOOL_DESCRIPTORS.length === 10)
+// M35.E1 repair: derive the advertised count from the frozen baseline instead
+// of a hardcoded literal — M22's bb_index addition rotted the hardcode and the
+// gate silently failed for the whole repo until E1 needed this surface.
+check("tool count matches baseline advertisement", PUBLIC_TOOL_DESCRIPTORS.length === baseline.runtimeMcp.toolNames.length)
 const names = PUBLIC_TOOL_DESCRIPTORS.map((t) => t.name)
 check("tool names are unique", new Set(names).size === names.length)
 check("tool names match baseline order and content",

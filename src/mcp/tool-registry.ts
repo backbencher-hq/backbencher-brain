@@ -29,6 +29,13 @@ export interface ToolDescriptor {
   modes: readonly string[]
   /** Modes on the roadmap but NOT executable. Never advertised as available. */
   plannedModes?: readonly string[]
+  /**
+   * M35.E1: modes whose JSON envelope must carry the registered staleness
+   * block ({ fresh, stale, missing, staleRatio, mode, remediation }).
+   * Enforced by script/m35/verify-envelope-contract.ts against the real
+   * handlers: a registered mode that omits the block fails the gate.
+   */
+  freshnessModes?: readonly string[]
   aliases: readonly string[]
   deprecated: boolean
   replacement?: {
@@ -41,7 +48,7 @@ export interface ToolDescriptor {
 const descriptors = [
   {
     name: "bb_search",
-    description: "Unified indexed retrieval for symbol lists, content, exact symbol source, or files. This is retrieval, not natural-language explanation or code analysis.",
+    description: "Unified indexed retrieval for symbol lists, content, exact symbol source, or files. This is retrieval, not natural-language explanation or code analysis. Symbol/content/file modes carry a freshness block ({ fresh, stale, missing, staleRatio, mode, remediation }) stating whether results reflect the current files; rows may carry stale=true. Remediation names the exact reindex command.",
     inputSchema: {
       type: "object",
       properties: {
@@ -63,6 +70,7 @@ const descriptors = [
     mutability: "read",
     requiresIndex: true,
     modes: ["symbols", "content", "symbol", "file"],
+    freshnessModes: ["symbol", "content", "file"],
     aliases: [],
     deprecated: false,
     documentation: { category: "search", summary: "Unified lexical, content, exact-symbol, and file retrieval.", defaults: { mode: "symbols", limit: 15, includeContent: false, exact: false, caseSensitive: false, regex: false, offset: 0 }, examples: [{ mode: "symbols", query: "handleRequest", limit: 5 }, { mode: "symbol", symbolName: "handleRequest" }, { mode: "file", filePath: "src/app.ts" }] },
@@ -180,7 +188,7 @@ const descriptors = [
     mutability: "write",
     requiresIndex: false,
     modes: ["auto", "file", "dir"],
-    aliases: ["bb_reindex"],
+    aliases: [],
     deprecated: false,
     documentation: { category: "operations", summary: "Immediately refresh the index for a just-written/edited file or directory.", defaults: { mode: "auto" }, examples: [{ path: "src/new-file.ts" }, { path: "src", mode: "dir" }] },
   },
@@ -208,6 +216,12 @@ export function validateToolDescriptors(items: readonly ToolDescriptor[]): void 
       const modeSet = new Set(item.modes)
       const overlap = item.plannedModes.filter((mode) => modeSet.has(mode))
       if (overlap.length) throw new Error(`${item.name}: planned modes overlap executable modes: ${overlap.join(", ")}`)
+    }
+    if (item.freshnessModes) {
+      if (new Set(item.freshnessModes).size !== item.freshnessModes.length) throw new Error(`${item.name}: duplicate freshness modes`)
+      const modeSet = new Set(item.modes)
+      const unknown = item.freshnessModes.filter((mode) => !modeSet.has(mode))
+      if (unknown.length) throw new Error(`${item.name}: freshness modes not in executable modes: ${unknown.join(", ")}`)
     }
     if (new Set(item.aliases).size !== item.aliases.length) throw new Error(`${item.name}: duplicate aliases`)
     if (item.deprecated && !item.replacement) throw new Error(`${item.name}: deprecated tools require a replacement`)

@@ -16,6 +16,7 @@ import { getUnifiedHealth, formatUnifiedHealth } from "../intelligence/health/he
 import { bbProjectsDir } from "../util/bb-data-dir"
 import { LogLevel, setLogLevel } from "../util/log"
 import { computeCheckoutFingerprint, readStoredFingerprint } from "../ast/fingerprint"
+import { FRESHNESS_REMEDIATION } from "../brain/freshness"
 
 export function getProjectId(projectPath: string): string {
   const resolved = path.resolve(projectPath)
@@ -225,7 +226,7 @@ async function cmdSearch(query: string, opts: { dir?: string; limit?: number; la
     const stale = r.stale ? " ⚠stale" : ""
     console.log(`  ${r.symbolName} [${r.symbolType}] (${r.language}, ${r.file}:${r.line})${stale}`)
   }
-  console.log(`\n${results.length} results${results.staleCount ? ` (${results.staleCount} stale — run bb index --force)` : ""}`)
+  console.log(`\n${results.length} results${results.staleCount ? ` (${results.staleCount} stale — ${FRESHNESS_REMEDIATION.dir})` : ""}`)
 }
 
 async function cmdStats(dir: string | undefined) {
