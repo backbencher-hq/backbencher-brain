@@ -46,11 +46,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "de387f9f1f11fdc107b73d9efdf3c5e5f32fca66",
+      "currentCommit": "d94b22807a3bebb786d191af61807b3159158442",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m31/verify-tool-docs-deep.ts",
       "evidenceFile": "D1.json",
-      "generatedAt": "2026-09-02T16:21:42.506Z",
+      "generatedAt": "2026-09-03T04:09:48.625Z",
       "passed": 140,
       "failed": 0,
       "negativeCases": 1
@@ -75,11 +75,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "de387f9f1f11fdc107b73d9efdf3c5e5f32fca66",
+      "currentCommit": "d94b22807a3bebb786d191af61807b3159158442",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m31/verify-bb-docs-truth.ts",
       "evidenceFile": "D2.json",
-      "generatedAt": "2026-09-02T16:21:43.158Z",
+      "generatedAt": "2026-09-03T04:09:48.918Z",
       "passed": 57,
       "failed": 0,
       "negativeCases": 1
@@ -103,11 +103,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "de387f9f1f11fdc107b73d9efdf3c5e5f32fca66",
+      "currentCommit": "d94b22807a3bebb786d191af61807b3159158442",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m31/verify-tools-overview.ts",
       "evidenceFile": "D3.json",
-      "generatedAt": "2026-09-02T16:21:43.316Z",
+      "generatedAt": "2026-09-03T04:09:49.018Z",
       "passed": 109,
       "failed": 0,
       "negativeCases": 4
@@ -131,12 +131,12 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "ccd73c61278eaff0f45a60158f37ff7a758a4e09",
+      "currentCommit": "d94b22807a3bebb786d191af61807b3159158442",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m31/tool-mode-corpus.ts --check",
       "evidenceFile": "T1.json",
-      "generatedAt": "2026-09-03T04:07:27.746Z",
-      "passed": 67,
+      "generatedAt": "2026-09-03T04:14:35.974Z",
+      "passed": 68,
       "failed": 0,
       "negativeCases": 22
     }
