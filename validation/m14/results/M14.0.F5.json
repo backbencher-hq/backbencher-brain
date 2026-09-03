@@ -1,37 +1,362 @@
 {
   "checks": [
     {
-      "description": "powershell: tree-truth vs analyzer diff @91ce9844e2",
+      "description": "proxicall: tree-truth vs analyzer diff @5a0f7bc442",
+      "detail": "60 files, coverage 100%, unexplained 12.1%",
+      "id": "differential-javascript",
+      "status": "pass"
+    },
+    {
+      "description": "proxicall: tree-truth vs analyzer diff @5a0f7bc442",
       "detail": "60 files, coverage 100%, unexplained 0%",
-      "id": "differential-csharp",
+      "id": "differential-typescript",
+      "status": "pass"
+    },
+    {
+      "description": "proxicall: tree-truth vs analyzer diff @5a0f7bc442",
+      "detail": "1 files, coverage 100%, unexplained 0%",
+      "id": "differential-kotlin",
+      "status": "pass"
+    },
+    {
+      "description": "proxicall: tree-truth vs analyzer diff @5a0f7bc442",
+      "detail": "1 files, coverage 100%, unexplained 0%",
+      "id": "differential-java",
+      "status": "pass"
+    },
+    {
+      "description": "proxicall: tree-truth vs analyzer diff @5a0f7bc442",
+      "detail": "4 files, coverage null%, unexplained null%",
+      "id": "differential-cpp",
+      "status": "pass"
+    },
+    {
+      "description": "proxicall: tree-truth vs analyzer diff @5a0f7bc442",
+      "detail": "60 files, coverage 99.2%, unexplained 0%; regression detected",
+      "id": "differential-dart",
+      "status": "fail"
+    },
+    {
+      "description": "proxicall: tree-truth vs analyzer diff @5a0f7bc442",
+      "detail": "6 files, coverage 100%, unexplained 0%",
+      "id": "differential-swift",
+      "status": "pass"
+    },
+    {
+      "description": "proxicall: tree-truth vs analyzer diff @5a0f7bc442",
+      "detail": "1 files, coverage 100%, unexplained 0%",
+      "id": "differential-objc",
+      "status": "pass"
+    },
+    {
+      "description": "proxicall: tree-truth vs analyzer diff @5a0f7bc442",
+      "detail": "60 files, coverage 100%, unexplained 0%",
+      "id": "differential-python",
       "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "79f517813272d156f3b73591f904183a09084c61",
-  "committedAt": "2026-09-03T22:36:23+02:00",
+  "commit": "529e5f812f6f32ab03e7c227147303b18b3ad42e",
+  "committedAt": "2026-09-04T00:04:26+02:00",
   "data": {
     "corpusPins": {
-      "powershell": "91ce9844e2a70e7184a8fcb26848f019eac151b4"
+      "proxicall": "5a0f7bc4427d004e11dc8dce978cac1fd634bfa8"
     },
     "report": {
-      "csharp": {
-        "analyzerEdges": 1333,
+      "cpp": {
+        "analyzerEdges": 0,
+        "coveragePct": null,
+        "coveredByAnalyzer": 0,
+        "explainableByTree": 0,
+        "fabricationPct": null,
+        "filesSampled": 4,
+        "heuristicUnexplained": 0,
+        "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": 2.9,
+          "loadAvgRetried": true,
+          "maxMsPerFile": 15,
+          "samplesTimed": 4
+        },
+        "samples": [],
+        "treeTruthEdges": 0,
+        "unexplainedInAnalyzer": 0
+      },
+      "dart": {
+        "analyzerEdges": 1514,
+        "coveragePct": 99.2,
+        "coveredByAnalyzer": 1638,
+        "explainableByTree": 1514,
+        "fabricationPct": 0,
+        "filesSampled": 60,
+        "heuristicUnexplained": 0,
+        "missingInAnalyzer": 13,
+        "perf": {
+          "avgMsPerFile": 38.7,
+          "loadAvgRetried": true,
+          "maxMsPerFile": 2321.2,
+          "samplesTimed": 60
+        },
+        "samples": [
+          {
+            "dir": "MISSING",
+            "file": "test/unit/services/fms/fms_service_test.dart",
+            "from": "MockHttpClient",
+            "label": "implements",
+            "target": "http"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/unit/services/database/queries/location_queries_test.mocks.dart",
+            "from": "_FakeDatabase_0",
+            "label": "extends",
+            "target": "_i1"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/unit/services/database/queries/location_queries_test.mocks.dart",
+            "from": "_FakeDatabase_0",
+            "label": "implements",
+            "target": "_i2"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/unit/services/database/queries/location_queries_test.mocks.dart",
+            "from": "_FakeFuture_1",
+            "label": "extends",
+            "target": "_i1"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/unit/services/database/queries/location_queries_test.mocks.dart",
+            "from": "_FakeFuture_1",
+            "label": "implements",
+            "target": "_i3"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/unit/services/database/queries/location_queries_test.mocks.dart",
+            "from": "_FakeQueryCursor_2",
+            "label": "extends",
+            "target": "_i1"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/unit/services/database/queries/location_queries_test.mocks.dart",
+            "from": "_FakeQueryCursor_2",
+            "label": "implements",
+            "target": "_i2"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/unit/services/database/queries/location_queries_test.mocks.dart",
+            "from": "_FakeBatch_3",
+            "label": "extends",
+            "target": "_i1"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/unit/services/database/queries/location_queries_test.mocks.dart",
+            "from": "_FakeBatch_3",
+            "label": "implements",
+            "target": "_i2"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/unit/services/database/queries/location_queries_test.mocks.dart",
+            "from": "MockDatabase",
+            "label": "extends",
+            "target": "_i1"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/unit/services/database/queries/location_queries_test.mocks.dart",
+            "from": "MockDatabase",
+            "label": "implements",
+            "target": "_i2"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/unit/services/database/queries/location_queries_test.mocks.dart",
+            "from": "MockBatch",
+            "label": "extends",
+            "target": "_i1"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/unit/services/database/queries/location_queries_test.mocks.dart",
+            "from": "MockBatch",
+            "label": "implements",
+            "target": "_i2"
+          }
+        ],
+        "treeTruthEdges": 1651,
+        "unexplainedInAnalyzer": 0
+      },
+      "java": {
+        "analyzerEdges": 38,
         "coveragePct": 100,
-        "coveredByAnalyzer": 1386,
-        "explainableByTree": 1333,
+        "coveredByAnalyzer": 38,
+        "explainableByTree": 38,
+        "fabricationPct": 0,
+        "filesSampled": 1,
+        "heuristicUnexplained": 0,
+        "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": 15.8,
+          "loadAvgRetried": true,
+          "maxMsPerFile": 25.7,
+          "samplesTimed": 1
+        },
+        "samples": [],
+        "treeTruthEdges": 38,
+        "unexplainedInAnalyzer": 0
+      },
+      "javascript": {
+        "analyzerEdges": 33,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 29,
+        "explainableByTree": 29,
+        "fabricationPct": 12.1,
+        "filesSampled": 60,
+        "heuristicUnexplained": 0,
+        "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": 47.8,
+          "loadAvgRetried": true,
+          "maxMsPerFile": 186,
+          "samplesTimed": 60
+        },
+        "samples": [
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "functions/test/two_factor_ratelimiter.test.js",
+            "label": "extends",
+            "line": 0,
+            "target": "Error"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "functions/test/two_factor_routes.test.js",
+            "label": "extends",
+            "line": 0,
+            "target": "Error"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "functions/test/security/two_factor_wallet_gate.test.js",
+            "label": "extends",
+            "line": 0,
+            "target": "Error"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "functions/services/employee_payout_service.js",
+            "label": "extends",
+            "line": 0,
+            "target": "Error"
+          }
+        ],
+        "treeTruthEdges": 29,
+        "unexplainedInAnalyzer": 4
+      },
+      "kotlin": {
+        "analyzerEdges": 1,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 1,
+        "explainableByTree": 1,
+        "fabricationPct": 0,
+        "filesSampled": 1,
+        "heuristicUnexplained": 0,
+        "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": 0.9,
+          "loadAvgRetried": true,
+          "maxMsPerFile": 1.7,
+          "samplesTimed": 1
+        },
+        "samples": [],
+        "treeTruthEdges": 1,
+        "unexplainedInAnalyzer": 0
+      },
+      "objc": {
+        "analyzerEdges": 38,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 38,
+        "explainableByTree": 38,
+        "fabricationPct": 0,
+        "filesSampled": 1,
+        "heuristicUnexplained": 0,
+        "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": 3.9,
+          "loadAvgRetried": true,
+          "maxMsPerFile": 29.1,
+          "samplesTimed": 1
+        },
+        "samples": [],
+        "treeTruthEdges": 38,
+        "unexplainedInAnalyzer": 0
+      },
+      "python": {
+        "analyzerEdges": 2205,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 2205,
+        "explainableByTree": 2205,
         "fabricationPct": 0,
         "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 37,
+          "avgMsPerFile": 35.1,
           "loadAvgRetried": true,
-          "maxMsPerFile": 340.1,
+          "maxMsPerFile": 393,
           "samplesTimed": 60
         },
         "samples": [],
-        "treeTruthEdges": 1386,
+        "treeTruthEdges": 2205,
+        "unexplainedInAnalyzer": 0
+      },
+      "swift": {
+        "analyzerEdges": 59,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 59,
+        "explainableByTree": 59,
+        "fabricationPct": 0,
+        "filesSampled": 6,
+        "heuristicUnexplained": 0,
+        "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": 5.7,
+          "loadAvgRetried": true,
+          "maxMsPerFile": 100.2,
+          "samplesTimed": 6
+        },
+        "samples": [],
+        "treeTruthEdges": 59,
+        "unexplainedInAnalyzer": 0
+      },
+      "typescript": {
+        "analyzerEdges": 7,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 8,
+        "explainableByTree": 7,
+        "fabricationPct": 0,
+        "filesSampled": 60,
+        "heuristicUnexplained": 0,
+        "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": 16.3,
+          "loadAvgRetried": true,
+          "maxMsPerFile": 132.6,
+          "samplesTimed": 60
+        },
+        "samples": [],
+        "treeTruthEdges": 8,
         "unexplainedInAnalyzer": 0
       }
     },

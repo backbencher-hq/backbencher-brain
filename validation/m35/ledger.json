@@ -18,12 +18,12 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "529e5f812f6f32ab03e7c227147303b18b3ad42e",
+      "currentCommit": "a901383faef458a8a86e73cf611082426c82a439",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m35/verify-governance.ts",
       "evidenceFile": "G1.json",
-      "generatedAt": "2026-09-03T22:49:05.016Z",
-      "passed": 43,
+      "generatedAt": "2026-09-03T22:50:49.489Z",
+      "passed": 45,
       "failed": 0,
       "negativeCases": 2
     }
