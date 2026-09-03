@@ -288,7 +288,7 @@
       "code": "D1",
       "githubIssue": 506,
       "tool": "marketplace-docs",
-      "status": "planned",
+      "status": "verified",
       "scope": "OpenVSX/VS Code marketplace listing text as a governed artifact: features, claim levels, limitations, complement stance; install/verification docs per editor",
       "acceptanceCriteria": [
         "listing linted with contract vocabulary (D1 verifier reads the listing source)",
@@ -299,7 +299,22 @@
         "listing evidence + drift gate",
         "honesty lint green",
         "limitations non-empty or justified"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see D1.json",
+        "verifierCommand": "npx tsx script/m25/verify-listing.ts",
+        "evidenceFile": "D1.json",
+        "passed": 39,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 4,
+        "installFollowAlong": {
+          "verifierCommand": "npx tsx script/m25/verify-install-docs.ts",
+          "evidenceFile": "D1-install.json",
+          "passed": 18
+        }
+      }
     },
     {
       "code": "X1",
