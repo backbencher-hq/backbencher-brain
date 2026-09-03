@@ -165,7 +165,7 @@
       "code": "W5",
       "githubIssue": 513,
       "tool": "impact-mode",
-      "status": "planned",
+      "status": "verified",
       "scope": "Reverse-dependency impact set from the graph engine (bounded, budgeted); truncation rendered in-UI with reason; counts consistent with references/call-hierarchy surfaces",
       "acceptanceCriteria": [
         "impact counts agree with L3 references for sampled symbols (differential, sampling stated)",
@@ -176,7 +176,18 @@
         "differential evidence recorded",
         "mutation: silent truncation fails",
         "limitations declared"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see W5.json",
+        "verifierCommand": "npx tsx script/m26/verify-impact-mode.ts",
+        "evidenceFile": "W5.json",
+        "passed": 13,
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": 5,
+        "mutantsTotal": 5
+      }
     },
     {
       "code": "W6",
