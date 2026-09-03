@@ -1,6 +1,6 @@
 # `bb_doc`
 
-Generate read-only, evidence-backed documentation with resolvable citations. Supports symbol, file, module, feature, API, project, and documentation-coverage modes in Markdown or JSON.
+Generate read-only, evidence-backed documentation with resolvable citations and a freshness block over the cited files. Supports symbol, file, module, feature, API, project, and documentation-coverage modes in Markdown or JSON.
 
 ## Contract
 

@@ -5,7 +5,7 @@ import { BrainTools, PatternBrainTools } from "../ast/tools"
 import { quickAnswer } from "../intelligence/search/quick-answer"
 import { detectOrphans } from "../intelligence/patterns/orphans"
 import { ASTEngine } from "../ast/engine"
-import { checkResultsFreshness, fileUnchangedSince, resolveRowsFreshnessDetailed, buildStalenessEnvelope } from "../brain/freshness"
+import { checkResultsFreshness, fileUnchangedSince, resolveRowsFreshnessDetailed, buildStalenessEnvelope, FRESHNESS_REMEDIATION, type FreshnessSummary } from "../brain/freshness"
 import { CrossLanguageSecurityAnalysis } from "../security/cross-language-security"
 import { DependencyGraphVisualizer } from "../ast/dependency-graph-visualizer"
 import { CrossLanguageIntelligence } from "../ast/cross-language-intelligence"
@@ -26,6 +26,37 @@ import { analyzeComplexity } from "../intelligence/analysis/complexity"
 import { analyzeImpact } from "../intelligence/analysis/impact"
 import { testMapping, testGaps, testImpact } from "../intelligence/testing/test-intel"
 import type { AnalysisFindingInput } from "../intelligence/contracts"
+
+// M35.S2: staleness for TEXT-mode derived-analysis read paths (bb_patterns,
+// bb_security). Resolve the status of every unique finding file through the
+// F1 batch resolver and render per-finding markers + a footer built from the
+// REGISTERED remediation constants — never ad-hoc text. Empty findings → no
+// footer (silence when fresh; the tools' existing zero-findings idiom stays).
+function derivedStaleness(raw: any, projectId: string, relPaths: Array<string | undefined | null>): { isStale: (rel: string | undefined | null) => boolean; footer: string; summary: FreshnessSummary } {
+  const rels = [...new Set(relPaths.filter((p): p is string => !!p))]
+  // brain_file.path is ABSOLUTE; findings carry relative_path. Resolve
+  // rel -> id first (one IN query on relative_path) and resolve freshness by
+  // fileId — the same contract the analyze modes use. Unmapped rels (finding
+  // file no longer indexed) resolve honestly as missing via no-row.
+  const relToId = new Map<string, string>()
+  if (rels.length) {
+    for (const r of raw.prepare(`SELECT id, relative_path FROM brain_file WHERE project_id = ? AND relative_path IN (${rels.map(() => "?").join(",")})`).all(projectId, ...rels) as Array<{ id: string; relative_path: string }>) {
+      relToId.set(r.relative_path, r.id)
+    }
+  }
+  const rows = rels.map((p) => ({ fileId: relToId.get(p) ?? null }))
+  const detail = rows.length ? resolveRowsFreshnessDetailed(raw, projectId, rows) : null
+  const statuses = detail?.statuses ?? new Map()
+  const fresh = rows.filter((r) => statuses.get(r.fileId ?? "") === "fresh").length
+  const stale = rows.filter((r) => statuses.get(r.fileId ?? "") === "stale").length
+  const missing = rows.filter((r) => statuses.get(r.fileId ?? "") !== "fresh" && statuses.get(r.fileId ?? "") !== "stale").length
+  const summary: FreshnessSummary = { fresh, stale, missing, staleRatio: rows.length ? (stale + missing) / rows.length : 0, freshnessMode: "complete" }
+  return {
+    isStale: (rel) => rel != null && statuses.get(relToId.get(rel) ?? "") === "stale",
+    footer: stale + missing > 0 ? `${stale} stale, ${missing} missing of ${rows.length} findings' files — ${FRESHNESS_REMEDIATION.dir}` : "",
+    summary,
+  }
+}
 
 export interface ToolContext {
   projectPath: string
@@ -371,12 +402,18 @@ const handlers: Record<string, ToolHandler> = {
     }
     const scope = args.scope === "orphaned" ? "orphaned" : "all"
     const limit = Number(args.limit ?? 20)
+    // M35.S2: live derived findings carry staleness truth — flagged per
+    // finding, never silently presented as current. History (above) keeps its
+    // recorded state; staleness applies to live reads only.
+    const rawDb = await BrainDatabase.getRawInstance(projectId as any)
     if (scope === "orphaned") {
       const report = await detectOrphans(projectId, { minConfidence: Number(args.confidenceThreshold ?? 0.6), maxResults: Math.max(limit, 100) })
       const items = report.findings.slice(0, limit)
-      const lines = items.map((f) => `  ${f.rule} ${f.location.symbol || f.location.file} — ${f.location.file}:${f.location.line} (${Math.round(f.confidence * 100)}%)`)
+      const derived = derivedStaleness(rawDb, projectId as any, items.map((f) => f.location.file))
+      const lines = items.map((f) => `  ${f.rule} ${f.location.symbol || f.location.file} — ${f.location.file}:${f.location.line} (${Math.round(f.confidence * 100)}%)${derived.isStale(f.location.file) ? " [stale]" : ""}`)
       const prov = `\n[provenance: ${report.provenance.evidenceClass} via ${report.provenance.engine}; ${report.findings.length} findings${report.provenance.truncated ? "; truncated" : ""}; limitations: ${report.provenance.limitations.length}]`
-      return textResult(`orphaned code (${report.summary?.total ?? items.length}):\n${lines.join("\n") || "  none"}${prov}`)
+      const footer = derived.footer ? `\n${derived.footer}` : ""
+      return textResult(`orphaned code (${report.summary?.total ?? items.length}):\n${lines.join("\n") || "  none"}${prov}${footer}`)
     }
     const result: any = await PatternBrainTools.detectPatterns(projectId, {
       includeOrphaned: args.includeOrphaned !== false,
@@ -387,7 +424,9 @@ const handlers: Record<string, ToolHandler> = {
     })
     const allPatterns = result?.patterns ?? []
     const items = allPatterns.slice(0, limit)
-    const lines = items.map((item: any) => `  [${item.severity}] ${item.type} @ ${item.location?.file}:${item.location?.line} (${Math.round(item.confidence * 100)}%)`)
+    const derived = derivedStaleness(rawDb, projectId as any, items.map((item: any) => item.location?.file))
+    const lines = items.map((item: any) => `  [${item.severity}] ${item.type} @ ${item.location?.file}:${item.location?.line} (${Math.round(item.confidence * 100)}%)${derived.isStale(item.location?.file) ? " [stale]" : ""}`)
+    const stalenessFooter = derived.footer ? `\n${derived.footer}` : ""
     if (args.recordRun === true) {
       const recorded = await executeAnalysis({
         projectId,
@@ -408,9 +447,9 @@ const handlers: Record<string, ToolHandler> = {
         })),
       })
       const found = result?.statistics?.totalFound ?? allPatterns.length
-      return textResult(`patterns (${found} found, ${recorded.report.run.findingCount} recorded) recorded run ${recorded.report.run.id}: new=${recorded.report.newFindings} repeated=${recorded.report.repeatedFindings} resolved=${recorded.report.resolvedFindings}\n${lines.join("\n") || "  none"}`)
+      return textResult(`patterns (${found} found, ${recorded.report.run.findingCount} recorded) recorded run ${recorded.report.run.id}: new=${recorded.report.newFindings} repeated=${recorded.report.repeatedFindings} resolved=${recorded.report.resolvedFindings}\n${lines.join("\n") || "  none"}${stalenessFooter}`)
     }
-    return textResult(`patterns (${result?.statistics?.totalFound ?? items.length}):\n${lines.join("\n") || "  none"}`)
+    return textResult(`patterns (${result?.statistics?.totalFound ?? items.length}):\n${lines.join("\n") || "  none"}${stalenessFooter}`)
   },
 
   bb_security: async (args, { projectId }) => {
@@ -422,11 +461,15 @@ const handlers: Record<string, ToolHandler> = {
     const findings = result?.findings ?? []
     const suspicious = result?.suspiciousSources ?? []
     const summary = result?.summary
+    // M35.S2: a stale taint/flow finding says so — security honesty. History
+    // paths (above) keep their recorded state; this is the live read.
+    const rawDb = await BrainDatabase.getRawInstance(projectId as any)
+    const derived = derivedStaleness(rawDb, projectId as any, findings.map((f: any) => f.file))
     const head = summary
       ? `security: ${summary.critical} critical / ${summary.high} high / ${summary.medium} medium / ${summary.low} low (${summary.resolved} resolved flows, ${summary.unresolvedSources} unvalidated sources, ${summary.mitigated} mitigated)`
       : `security findings (${findings.length})`
     const lines = findings.slice(0, 20).map(
-      (finding: any) => `  [${finding.severity}] ${finding.label ?? finding.type}${finding.symbol ? ` (${finding.symbol})` : ""} @ ${finding.file}:${finding.line ?? "?"}${finding.sinkType ? ` -> ${finding.sinkType}` : ""}${finding.mitigated ? " [mitigated]" : ""}`,
+      (finding: any) => `  [${finding.severity}] ${finding.label ?? finding.type}${finding.symbol ? ` (${finding.symbol})` : ""} @ ${finding.file}:${finding.line ?? "?"}${finding.sinkType ? ` -> ${finding.sinkType}` : ""}${finding.mitigated ? " [mitigated]" : ""}${derived.isStale(finding.file) ? " [stale]" : ""}`,
     )
     const sourceLines = suspicious.slice(0, 5).map(
       (source: any) => `  [info] unvalidated input${source.symbol ? ` ${source.symbol}` : ""} @ ${source.file}:${source.line ?? "?"} (no sink reached)`,
@@ -448,9 +491,9 @@ const handlers: Record<string, ToolHandler> = {
           state: finding.mitigated ? "mitigated" : undefined,
         })),
       })
-      return textResult(head + `\nrecorded run: ${recorded.report.run.id}\nnew=${recorded.report.newFindings} repeated=${recorded.report.repeatedFindings} resolved=${recorded.report.resolvedFindings}` + "\n" + `${findingCount} findings recorded` + (lines.length ? "\n" + lines.join("\n") : ""))
+      return textResult(head + `\nrecorded run: ${recorded.report.run.id}\nnew=${recorded.report.newFindings} repeated=${recorded.report.repeatedFindings} resolved=${recorded.report.resolvedFindings}` + "\n" + `${findingCount} findings recorded` + (lines.length ? "\n" + lines.join("\n") : "") + (derived.footer ? `\n${derived.footer}` : ""))
     }
-    return textResult(head + "\n" + (lines.length ? lines.join("\n") : "  clean") + (sourceLines.length ? `\n\nunvalidated input sources:\n${sourceLines.join("\n")}` : ""))
+    return textResult(head + "\n" + (lines.length ? lines.join("\n") : "  clean") + (sourceLines.length ? `\n\nunvalidated input sources:\n${sourceLines.join("\n")}` : "") + (derived.footer ? `\n\n${derived.footer}` : ""))
   },
 
   bb_visualize: async (args, { projectId }) => {
@@ -477,7 +520,19 @@ const handlers: Record<string, ToolHandler> = {
     if (["symbol", "file", "module", "feature"].includes(mode) && !args.target) return textResult(`bb_doc ${mode} mode requires target`, true)
     const request: DocRequest = { mode, target: args.target ? String(args.target) : undefined, format: args.format === "json" ? "json" : "markdown", audience: args.audience, detail: args.detail, includeExamples: args.includeExamples === true, includeDiagrams: args.includeDiagrams === true, includeTests: args.includeTests === true, limit: args.limit == null ? undefined : Number(args.limit), maxTokens: args.maxTokens == null ? undefined : Number(args.maxTokens) }
     const result = await generateDocumentation(projectId, projectPath, request)
-    return textResult(formatDocumentation(result, request.format))
+    // M35.S2: the doc carries the registered freshness envelope over its cited
+    // files; per-citation freshness is already resolved inside the engine and
+    // rendered in Sources. JSON gets the exact registered block; text/markdown
+    // get the footer built from the registered remediation constant.
+    const rawDb = await BrainDatabase.getRawInstance(projectId as any)
+    const derived = derivedStaleness(rawDb, projectId as any, (result.citations ?? []).map((c) => c.path ?? undefined))
+    if (request.format === "json") {
+      const parsed = JSON.parse(formatDocumentation(result, "json"))
+      parsed.freshness = buildStalenessEnvelope(derived.summary, { kind: "dir" })
+      return textResult(JSON.stringify(parsed, null, 2))
+    }
+    const base = formatDocumentation(result, request.format)
+    return textResult(derived.footer ? `${base}\n\n---\n${derived.footer}` : base)
   },
 
   bb_edit: async (args, { projectId, projectPath }) => {

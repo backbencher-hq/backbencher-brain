@@ -1,6 +1,6 @@
 # `bb_security`
 
-Cross-language security scan: SQL injection, XSS, command injection, hardcoded secrets, weak crypto.
+Cross-language security scan: SQL injection, XSS, command injection, hardcoded secrets, weak crypto. Findings whose underlying file changed after indexing carry a staleness marker.
 
 ## Contract
 
