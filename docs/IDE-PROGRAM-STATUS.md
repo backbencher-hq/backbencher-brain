@@ -18,14 +18,37 @@ Contract: [IDE-HONESTY-CONTRACT.md](./IDE-HONESTY-CONTRACT.md)
 | Version | Milestone | Name | State | Claim level | Status doc |
 | --- | --- | --- | --- | --- | --- |
 | v0 | M24 | The Server | **CLOSED** (shipped at I1) | I1 (all five languages, all six features) | [m24/M24-FINAL-AUDIT.md](./m24/M24-FINAL-AUDIT.md) |
-| v1 | M25 | The Extension | not started | I3/I4 target — **not claimed** | — |
+| v1 | M25 | The Extension | **CLOSED** (11/11 verified) | I3 (editor-verified, VS Code); I4 on Cursor 3.18.9 + Antigravity 1.107.0 — Windsurf declared blocked | [m25 ledger](../validation/m25/results/manifest.json) |
 | v2 | M26 | The Graph | not started | — | — |
 | v3 | M27 | Everywhere (JetBrains/Zed/Neovim/Helix) | not started | — | — |
 | v4 | M28 | The Union (MCP + agent) | not started | — | — |
 | v5 | M29 | Precision Waves | not started | — | — |
 
-Nothing on this page is a fork- or editor-verified claim until M25 pins a
-version, a run, and a machine (I3/I4 definitions, contract §2).
+Nothing on this page is a fork- or editor-verified claim until a milestone's
+ledger pins a version, a run, and a machine per claim (I3/I4 definitions,
+contract §2). v1's claims are pinned in `validation/m25/results/*.json` and
+the per-fork capability matrix
+([m25/FORK-CAPABILITY-MATRIX.md](./m25/FORK-CAPABILITY-MATRIX.md)).
+
+## v1 — The Extension (M25): shipped capabilities
+
+Thin VS Code-family client (`ide/vscode`) over `bb_lsp` — all intelligence
+stays in the server; the client owns launch, consent, and the status surface:
+
+| Capability | Level | Evidence |
+| --- | --- | --- |
+| Server resolution order (explicit path → workspace dist → source fallback), version-gated | I1 | `validation/m25/results/E1.json` |
+| Auto-index consent machine with declared modes, BB_DATA_DIR provenance | I1 | `validation/m25/results/E2.json` |
+| Status surface: staleness markers, claim tiers, activation budget law | I1 | `validation/m25/results/E3.json` |
+| Marketplace listing truthfulness (drift-gated claims, per-editor install doc) | I1 | `validation/m25/results/D1.json` |
+| In-editor verification (pinned VS Code 1.85.0, shared assertion core) | I3 | `validation/m25/results/E5.json` |
+| Fork verification: Cursor 3.18.9 + Antigravity 1.107.0 verified; Windsurf blocked-with-reason | I4 | `validation/m25/results/F-CURSOR.json`, `F-ANTIGRAVITY.json`, `F-WINDSURF.json` |
+| Cross-platform honesty: Linux verified; macOS/Windows recorded blocked (no runner — owner decision open) | §10 | `validation/m25/results/E7-linux.json`, `E7-darwin.json`, `E7-windows.json` |
+
+Honest gaps carried forward: macOS/Windows OS-matrix runners (or waiver) are
+an owner decision; OpenVSX live publish awaits `OVSX_PAT` (E4 declares the
+package verified, the listing not yet live); owner spot-check passes are
+scheduled in the issue-closure comments.
 
 ## v0 — The Server (M24): shipped capabilities
 
@@ -71,9 +94,9 @@ Standalone LSP 3.18 binary over stdio (`bb lsp`, entry in
 
 | Limitation | Retires in |
 | --- | --- |
-| Fixtures are TypeScript; per-language fixture evidence for java/groovy/kotlin/scala | M25 |
-| I3 (editor-verified) / I4 (fork-verified) levels unclaimed | M25 |
-| Latency budgets measured on one machine (recorded per evidence file) | M25.E7 cross-platform wave |
+| Fixtures are TypeScript; per-language fixture evidence for java/groovy/kotlin/scala | M26+ (unchanged by v1 — extension scope) |
+| ~~I3 (editor-verified) / I4 (fork-verified) levels unclaimed~~ — **retired by M25** (E5/E6 evidence) | M25 ✅ |
+| Latency budgets measured on one machine (recorded per evidence file) | partially retired by M25.E7: Linux verified; macOS/Windows blocked pending owner runner-or-waiver decision |
 | bun harness leg `blocked` where bun is absent — recorded with reason | standing rule |
 | Single-root workspaces only | M25+ |
 | No graph UI, no cross-language hover | M26 |
@@ -84,10 +107,10 @@ Standalone LSP 3.18 binary over stdio (`bb lsp`, entry in
 | Date | Event | Evidence |
 | --- | --- | --- |
 | 2026-09-02 | M24 closed: 11/11 issues verified, closure gate 60/60 + 6 negatives, full-suite re-run green at closing commit | [m24/M24-FINAL-AUDIT.md](./m24/M24-FINAL-AUDIT.md) |
+| 2026-09-03 | M25 closed: 11/11 issues verified at HEAD `e6125bb` — governance 72/72, E5 in-editor 26/26 (VS Code 1.85.0), E6 forks 26/26 ×2 (Cursor, Antigravity) + Windsurf blocked, E7 Linux 39/39 with darwin/win32 blocked records, X1 closure gate 37/37 incl. budget-violation-hidden mutant | [m25 ledger](../validation/m25/results/manifest.json), [X1](../validation/m25/results/X1.json) |
 
 ## Next up
 
-M25 — The Extension (VS Code thin client + forks via OpenVSX), per the
-decision record. May start: the v0 completion bar is fully satisfied and
-audited. Extension work must keep every standing gate green; a client change
-that breaks the harness fails `npm run verify` like any server regression.
+M26 — The Graph (webview usage graph, cross-language hover, evidence badges,
+impact mode), per the decision record. Ladder discipline holds: the M25 bar
+re-audit runs inside M26's governance gate before any M26 issue may close.
