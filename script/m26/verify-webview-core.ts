@@ -26,7 +26,7 @@
 // Run: npx tsx script/m26/verify-webview-core.ts
 // Evidence: validation/m26/results/W1.json (machine-emitted)
 
-import { readFileSync, mkdirSync, writeFileSync } from "node:fs"
+import { readFileSync, mkdirSync, writeFileSync, rmSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
 
@@ -309,6 +309,10 @@ async function main(): Promise<void> {
       detected = probe(m, mutant.name)
     } catch {
       detected = true // load failure counts as caught
+    } finally {
+      try {
+        rmSync(mutantPath, { force: true })
+      } catch {}
     }
     if (detected) {
       caught++
