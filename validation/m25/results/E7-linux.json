@@ -17,37 +17,37 @@
     "budgets": [
       {
         "op": "hover",
-        "p95WarmMs": 2.1327369999999064,
+        "p95WarmMs": 3.376081000000113,
         "samples": 40
       },
       {
         "op": "definition",
-        "p95WarmMs": 1.2712930000000142,
+        "p95WarmMs": 3.981751000000031,
         "samples": 40
       },
       {
         "op": "references",
-        "p95WarmMs": 2.1706510000001344,
+        "p95WarmMs": 2.8430219999997917,
         "samples": 40
       },
       {
         "op": "documentSymbol",
-        "p95WarmMs": 3.135588000000098,
+        "p95WarmMs": 1.4179700000001958,
         "samples": 40
       },
       {
         "op": "workspaceSymbol",
-        "p95WarmMs": 1.392750999999862,
+        "p95WarmMs": 1.600885000000062,
         "samples": 40
       },
       {
         "op": "prepareCallHierarchy",
-        "p95WarmMs": 1.270806999999877,
+        "p95WarmMs": 2.7765260000001035,
         "samples": 40
       },
       {
         "op": "callHierarchyExpand",
-        "p95WarmMs": 2.0754409999999552,
+        "p95WarmMs": 2.0466519999999946,
         "samples": 40
       }
     ],
@@ -64,10 +64,10 @@
     "node": "v20.19.5",
     "runtime": "node-dist-stdio"
   },
-  "currentCommit": "4d0b66bb436169fa14b3f407aab0d5ce16279449",
+  "currentCommit": "4266fb657f077f7ec9baa27faee00cb132875d5d",
   "verifierCommand": "npx tsx script/m25/verify-cross-platform.ts",
   "evidenceFile": "E7-linux.json",
-  "generatedAt": "2026-09-03T17:23:45.171Z",
+  "generatedAt": "2026-09-03T17:24:57.030Z",
   "limitations": [
     "One OS is executable on this machine (linux). macOS and Windows are machine-emitted blocked records (E7-darwin.json, E7-windows.json); the issue's two-OS acceptance stays an open, visible gap for the X1 completion-bar audit and the owner's waiver-or-runners decision.",
     "The platform mutants prove the identity/data-dir/path cases FAIL LOUDLY on POSIX; full win32 semantics (drive letters, % variables) require a Windows runner."
