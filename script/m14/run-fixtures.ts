@@ -50,6 +50,8 @@ interface Entry { [k: string]: any }
 
 function matchConstraints(actual: Entry, want: Entry): boolean {
   for (const [k, v] of Object.entries(want)) {
+    // Documentation fields on expectation entries are NOT match constraints.
+    if (k === "comment") continue
     if (k === "confidenceMin") {
       if (!(typeof actual.confidence === "number" && actual.confidence >= v)) return false
     } else if (k === "confidenceMax") {
