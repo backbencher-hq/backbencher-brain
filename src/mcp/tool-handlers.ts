@@ -5,7 +5,7 @@ import { BrainTools, PatternBrainTools } from "../ast/tools"
 import { quickAnswer } from "../intelligence/search/quick-answer"
 import { detectOrphans } from "../intelligence/patterns/orphans"
 import { ASTEngine } from "../ast/engine"
-import { checkResultsFreshness, fileUnchangedSince } from "../brain/freshness"
+import { checkResultsFreshness, fileUnchangedSince, resolveRowsFreshnessDetailed, buildStalenessEnvelope } from "../brain/freshness"
 import { CrossLanguageSecurityAnalysis } from "../security/cross-language-security"
 import { DependencyGraphVisualizer } from "../ast/dependency-graph-visualizer"
 import { CrossLanguageIntelligence } from "../ast/cross-language-intelligence"
@@ -90,6 +90,10 @@ const handlers: Record<string, ToolHandler> = {
       const content = readFileSync(target.absolute, "utf8")
       const maxChars = 100_000
       const truncated = content.length > maxChars
+      // M35.E1: freshness from the shared resolver — per-item flag + envelope
+      // block (file-scope remediation names this exact file).
+      const detail = resolveRowsFreshnessDetailed(raw, projectId as any, [{ fileId: row.id }])
+      const fileStatus = detail.statuses.get(row.id) ?? "missing"
       return textResult(JSON.stringify({
         searchMode: "file",
         file: target.relative,
@@ -98,7 +102,8 @@ const handlers: Record<string, ToolHandler> = {
         content: truncated ? content.slice(0, maxChars) : content,
         contentLength: content.length,
         truncated,
-        stale: !fileUnchangedSince(target.absolute, row.file_hash),
+        stale: fileStatus !== "fresh",
+        freshness: buildStalenessEnvelope(detail.summary, { kind: "file", path: target.relative }),
       }, null, 2))
     }
     if (mode === "content") {
@@ -108,6 +113,10 @@ const handlers: Record<string, ToolHandler> = {
       // wrap the results in an explicit envelope — otherwise the mode and freshness
       // metadata silently vanish for every MCP/CLI consumer.
       const results = await searchContent(projectId as any, String(args.query ?? ""), { maxResults: Number(args.limit ?? 15), languages: args.language ? [String(args.language)] : undefined, symbolKind: args.symbolKind ? String(args.symbolKind) : undefined })
+      // M35.E1: freshness block from the shared resolver (rows carry fileId;
+      // per-row stale flags are set by searchContent itself).
+      const raw = await BrainDatabase.getRawInstance(projectId as any)
+      const detail = resolveRowsFreshnessDetailed(raw, projectId as any, results.map((r: any) => ({ fileId: r.fileId })))
       return textResult(JSON.stringify({
         searchMode: "content",
         query: String(args.query ?? ""),
@@ -115,12 +124,19 @@ const handlers: Record<string, ToolHandler> = {
         staleCount: results.staleCount ?? 0,
         freshCount: results.freshCount ?? 0,
         truncated: results.truncated ?? false,
+        freshness: buildStalenessEnvelope(detail.summary, { kind: "dir" }),
         results,
       }, null, 2))
     }
     if (mode === "symbol") {
       const found = await ASTEngine.findSymbol(projectId, String(args.symbolName ?? args.query ?? ""), args.filePath ? String(args.filePath) : undefined)
-      return textResult(JSON.stringify(found, null, 2))
+      // M35.E1: per-match stale flag + envelope block. findSymbol rows alias
+      // fileId to the file PATH, so the resolver gets filePath rows.
+      const raw = await BrainDatabase.getRawInstance(projectId as any)
+      const matches = (found as { matches: any[] }).matches ?? []
+      const detail = resolveRowsFreshnessDetailed(raw, projectId as any, matches.map((m: any) => ({ filePath: m.fileId })))
+      for (const m of matches) m.stale = detail.statuses.get(m.fileId) !== "fresh"
+      return textResult(JSON.stringify({ ...found, freshness: buildStalenessEnvelope(detail.summary, { kind: "dir" }) }, null, 2))
     }
     const query = String(args.query ?? "")
     const results: any = await BrainTools.searchCode(projectId, query, {

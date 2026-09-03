@@ -8,7 +8,7 @@
   "tools": [
     {
       "name": "bb_search",
-      "description": "Unified indexed retrieval for symbol lists, content, exact symbol source, or files. This is retrieval, not natural-language explanation or code analysis.",
+      "description": "Unified indexed retrieval for symbol lists, content, exact symbol source, or files. This is retrieval, not natural-language explanation or code analysis. Symbol/content/file modes carry a freshness block ({ fresh, stale, missing, staleRatio, mode, remediation }) stating whether results reflect the current files; rows may carry stale=true. Remediation names the exact reindex command.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -75,6 +75,11 @@
         "symbols",
         "content",
         "symbol",
+        "file"
+      ],
+      "freshnessModes": [
+        "symbol",
+        "content",
         "file"
       ],
       "aliases": [],
@@ -1036,9 +1041,7 @@
         "file",
         "dir"
       ],
-      "aliases": [
-        "bb_reindex"
-      ],
+      "aliases": [],
       "deprecated": false,
       "documentation": {
         "category": "operations",

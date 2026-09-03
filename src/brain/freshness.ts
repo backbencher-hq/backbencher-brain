@@ -3,6 +3,7 @@
 import { createHash } from "crypto"
 import { readFileSync, existsSync, statSync } from "fs"
 import type { CoreDatabase } from "../brain/database"
+import type { StalenessEnvelope } from "../intelligence/contracts"
 
 export interface FileFreshness {
   fileId: string
@@ -285,4 +286,42 @@ export function resolveRowsFreshness(
   opts: { freshnessMode?: FreshnessMode } = {},
 ): Map<string, RowFreshnessStatus> {
   return resolveRowsFreshnessDetailed(raw, projectId, rows, opts).statuses
+}
+
+// ══ M35.E1 (#581): staleness envelope + machine-stable remediation ══════════
+// Single source of truth for the wire block every read tool attaches.
+// remediation strings name the REAL reindex interfaces:
+//   CLI:      bb index --changed | bb index "<file>"
+//   MCP tool: bb_index { path } (file path reindexes that file; a dir runs
+//             incremental changed-only indexing)
+export const FRESHNESS_REMEDIATION = {
+  dir: 'run: bb index --changed  (or the bb_index tool with the project path — incremental, changed files only)',
+  file: 'run: bb index "<file>"  (or the bb_index tool with that file path)',
+} as const
+
+/**
+ * Build the registered staleness envelope from a resolver result.
+ * remediation is "" while nothing is stale (silence when fresh), otherwise
+ * names the concrete reindex interface with the exact stale count.
+ * `scope` is the human-stable target for file-level remediation (relative
+ * path for single-file reads, project root path for multi-file reads).
+ */
+export function buildStalenessEnvelope(
+  summary: FreshnessSummary,
+  scope: { kind: "file" | "dir"; path?: string },
+): StalenessEnvelope {
+  const staleish = summary.stale + summary.missing
+  const remediation = staleish === 0
+    ? ""
+    : scope.kind === "file"
+      ? `${staleish} stale in this file — ${FRESHNESS_REMEDIATION.file.replace("<file>", scope.path ?? "this file")}`
+      : `${staleish} stale/missing — ${FRESHNESS_REMEDIATION.dir}`
+  return {
+    fresh: summary.fresh,
+    stale: summary.stale,
+    missing: summary.missing,
+    staleRatio: summary.staleRatio,
+    mode: summary.freshnessMode === "sampled" ? "sampled" : "complete",
+    remediation,
+  }
 }
