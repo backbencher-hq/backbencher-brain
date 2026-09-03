@@ -476,3 +476,18 @@ same-day regression (deriving parens recursion) was caught by the new fixture
 pins, proving the hardening works. All 4 corpora 100%/0/0; 185 mutants
 caught; F1–F6+SPEC+CC1+honesty green. Grammar pinned at v0.23.1 (upstream
 rewrite unreleased — migration trigger recorded in issue #271).
+
+Csharp re-review wave (2026-09-04): first OO backfill with the dual-lens
+method (corpus census + full analyzer read). Census: 105 unreferenced node
+types in 400 real powershell files. Reading caught what the census could not
+(dead no-op statement, side-variable scope never pushed, mvcPattern flag
+nothing reads); census quantified what reading underestimated (switch
+expression arms, member-binding reads). 10 defect classes fixed (CSD1-CSD10:
+file-scoped FQN desync, switch-arm complexity, operator-name collapse,
+null-conditional reads, accessor events, alias-using capture,
+constructor-initializer calls, primary-base argument leakage, file-scoped
+scope lifetime), each probe-verified, oracle mirrored where compared. Fixture
+pins+forbids per class; 5 new mutants; 190/190 caught; floor re-pinned 100%/0/0.
+Process lesson recorded: pins authored against broken emission "pass" while
+both sides are wrong — pins must be re-authored from re-probed emission after
+every fix (caught CSD10's over-firing guard exactly this way).

@@ -508,6 +508,17 @@ export function deriveCSharpEdges(root: any, corpusInterfaces?: Set<string>): { 
           edges.push({ label: "instantiates", from: "(expr)", target: t })
         }
       }
+    } else if (n.type === "constructor_initializer") {
+      // CSD8 mirror (re-review 2026-09-04): `public Sub() : base(42) { }` /
+      // `: this()` — a real constructor-to-constructor call the analyzer now
+      // emits (calls IS compared for csharp, so both sides must derive it).
+      // `from` is a placeholder (the matcher is label+target site-agnostic).
+      const tgt = /:\s*base\s*\(/.test(n.text) ? "base" : "this"
+      const key = `calls:${tgt}`
+      if (!seen.has(key)) {
+        seen.add(key)
+        edges.push({ label: "calls", from: "(ctor)", target: tgt })
+      }
     } else if (n.type === "implicit_object_creation_expression") {
       // Target-typed `new()` — the type is NOT inside the node. Resolve it
       // from the enclosing variable_declarator / property_declaration exactly
