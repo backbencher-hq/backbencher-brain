@@ -70,6 +70,34 @@ const GATES: GateSpec[] = [
     },
   },
   {
+    name: "m35-s1-stale-flag",
+    script: "script/m35/verify-s1-read-paths.ts",
+    // S1 mutation 1 (issue criterion 2): a stale row reported FRESH. Flip the
+    // graph-mode flag comparison — the edited-file node must be reported stale
+    // but comes out fresh, and the callees flag check fails.
+    surfaces: [],
+    mutate: () => {},
+    mutateEvidence: {
+      file: "src/mcp/tool-handlers.ts",
+      from: "{ onRows: (statuses) => { for (const n of nodes) if (!n.isExternal) n.stale = statuses.get(n.filePath || n.file) !== \"fresh\" } },",
+      to: "{ onRows: (statuses) => { for (const n of nodes) if (!n.isExternal) n.stale = statuses.get(n.filePath || n.file) === \"fresh\" } },",
+    },
+  },
+  {
+    name: "m35-s1-envelope-counts",
+    script: "script/m35/verify-s1-read-paths.ts",
+    // S1 mutation 2 (issue criterion 2): envelope counts WRONG. Zero the
+    // summary the graph-mode envelope is built from — every count check and
+    // the independent-recomputation check must fail.
+    surfaces: [],
+    mutate: () => {},
+    mutateEvidence: {
+      file: "src/mcp/tool-handlers.ts",
+      from: "      const detail = resolveRowsFreshnessDetailed(raw, projectId as any, resolved, { freshnessMode: mode })",
+      to: "      const detail = { ...resolveRowsFreshnessDetailed(raw, projectId as any, resolved, { freshnessMode: mode }), summary: { fresh: 0, stale: 0, missing: 0, staleRatio: 0, freshnessMode: mode } }",
+    },
+  },
+  {
     name: "m35-freshness-core",
     script: "script/m35/verify-freshness-core.ts",
     // Evidence-mutation form: F1's governed surface is the production core
