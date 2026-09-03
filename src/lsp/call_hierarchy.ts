@@ -20,7 +20,7 @@
 import { readFileSync } from "node:fs";
 import type { CoreDatabase } from "../brain/database";
 import type { ProjectID } from "../project/schema";
-import { createPositionMapper } from "./positions";
+import { createPositionMapper, resolveRowByteColumns } from "./positions";
 import { languageForPath } from "./hover";
 import { findIndexedSymbol } from "./navigation";
 import { traverseGraph } from "../intelligence/graph/graph-engine";
@@ -172,10 +172,15 @@ export function prepareCallHierarchy(
   ) {
     return { item: null, notIndexed: true };
   }
+  const startCol = resolveRowByteColumns(sourceText, symbol.line_start, symbol.byte_start);
+  const endCol = resolveRowByteColumns(sourceText, symbol.line_end, symbol.byte_end);
+  if (startCol === null || endCol === null) {
+    return { item: null, notIndexed: true };
+  }
   const mapper = createPositionMapper(sourceText);
   const range = mapper.indexRangeToLsp({
-    start: { line: symbol.line_start, column: symbol.byte_start },
-    end: { line: symbol.line_end, column: symbol.byte_end },
+    start: { line: startCol.line, column: startCol.column },
+    end: { line: endCol.line, column: endCol.column },
   });
   const lspRange: LspRange = {
     start: { line: range.start.line, character: range.start.character },

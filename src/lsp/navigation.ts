@@ -23,7 +23,7 @@
 
 import { readFileSync } from "node:fs";
 import type { CoreDatabase } from "../brain/database";
-import { createPositionMapper } from "./positions";
+import { createPositionMapper, resolveRowByteColumns } from "./positions";
 import { languageForPath } from "./hover";
 
 /** Hard cap on locations per response (contract §3 bounded result sets). */
@@ -215,13 +215,17 @@ function symbolLocation(symbol: SymbolRow): NavigationLocation | null {
   } catch {
     return null;
   }
-  // Index coordinates: 1-based lines, 1-based byte columns per line
-  // (Tree-sitter point style; end column exclusive) — same convention the
-  // analyzers store and the P1 component converts.
+  // Index coordinates: 1-based lines; byte columns normalized through the
+  // P1 resolver (the index carries both per-line and file-absolute rows —
+  // see positions.ts resolveRowByteColumns). Unconvertible rows return
+  // null: declared absence, never a fabricated position.
+  const startCol = resolveRowByteColumns(sourceText, symbol.line_start, symbol.byte_start);
+  const endCol = resolveRowByteColumns(sourceText, symbol.line_end, symbol.byte_end);
+  if (startCol === null || endCol === null) return null;
   const mapper = createPositionMapper(sourceText);
   const range = mapper.indexRangeToLsp({
-    start: { line: symbol.line_start, column: symbol.byte_start },
-    end: { line: symbol.line_end, column: symbol.byte_end },
+    start: { line: startCol.line, column: startCol.column },
+    end: { line: endCol.line, column: endCol.column },
   });
   return {
     path: symbol.path,
@@ -254,10 +258,13 @@ function edgeLocation(
     const line = Math.max(0, lineStart - 1);
     return { path, line, character: 0, endLine: line, endCharacter: 0 };
   }
+  const startCol = resolveRowByteColumns(sourceText, lineStart, byteStart);
+  const endCol = resolveRowByteColumns(sourceText, lineEnd, byteEnd);
+  if (startCol === null || endCol === null) return null;
   const mapper = createPositionMapper(sourceText);
   const range = mapper.indexRangeToLsp({
-    start: { line: lineStart, column: byteStart },
-    end: { line: lineEnd, column: byteEnd },
+    start: { line: startCol.line, column: startCol.column },
+    end: { line: endCol.line, column: endCol.column },
   });
   return {
     path,

@@ -215,7 +215,7 @@
       "code": "E6",
       "githubIssue": 504,
       "tool": "fork-verification",
-      "status": "planned",
+      "status": "verified",
       "scope": "separate I4 runs in each available fork at pinned versions, same assertion core; a fork we cannot run locally is recorded blocked with reason \u2014 never omitted, never claimed by inheritance",
       "acceptanceCriteria": [
         "per-fork evidence: version, OS, workspace, per-feature assertions",
@@ -226,7 +226,46 @@
         "per-fork evidence files",
         "capability matrix updated with claim levels or blocked",
         "owner spot-check scheduled"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see F-*.json",
+        "verifierCommand": "npx tsx script/m25/run-fork-e2e.mts",
+        "evidenceFile": "F-CURSOR.json",
+        "forks": {
+          "cursor": {
+            "status": "verified",
+            "version": "3.18.9",
+            "passed": 26,
+            "total": 26,
+            "evidenceFile": "F-CURSOR.json"
+          },
+          "antigravity": {
+            "status": "verified",
+            "version": "1.107.0",
+            "passed": 26,
+            "total": 26,
+            "evidenceFile": "F-ANTIGRAVITY.json"
+          },
+          "windsurf": {
+            "status": "blocked",
+            "reason": "windsurf CLI not found on PATH \u2014 install or record the waiver (E6 honest blocked state)",
+            "evidenceFile": "F-WINDSURF.json"
+          }
+        },
+        "perForkEvidence": true,
+        "noInheritance": true,
+        "negativeCases": 4,
+        "negativeCaseNames": [
+          "F-WINDSURF.json: unavailable fork recorded blocked with reason (a fork claim without a run would fail the matrix drift gate)",
+          "L2: hover outside index is declared absent (per fork)",
+          "L3: definition outside index is honest empty (per fork)",
+          "G1: forged fork claim in the capability matrix is detected (mutation proof)"
+        ],
+        "passed": 52,
+        "failed": 0,
+        "total": 52
+      }
     },
     {
       "code": "E7",
