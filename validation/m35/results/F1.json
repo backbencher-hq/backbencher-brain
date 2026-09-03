@@ -1,10 +1,10 @@
 {
   "status": "verified",
-  "currentCommit": "35161483a8969cc664731cd3e53dde24ea1b1170",
+  "currentCommit": "7bc2181f38afd9347382158847f57fe87deb0f46",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "bun run script/m35/verify-freshness-core.ts",
   "evidenceFile": "F1.json",
-  "generatedAt": "2026-09-03T16:21:51.180Z",
+  "generatedAt": "2026-09-03T17:03:36.318Z",
   "passed": 29,
   "failed": 0,
   "negativeCases": 3
