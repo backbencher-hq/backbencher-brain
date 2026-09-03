@@ -8,7 +8,7 @@ import { ASTEngine } from "./engine"
 // emits. This list covers the common core/extension globals that would
 // otherwise flood every file with self-evident call edges.
 // ============================================================================
-const PHP_BUILTINS = new Set([
+export const PHP_BUILTINS = new Set([
   // String
   "strlen", "strpos", "stripos", "strrpos", "strstr", "stristr", "substr",
   "str_replace", "str_ireplace", "strtolower", "strtoupper", "ucfirst", "lcfirst",
@@ -205,7 +205,10 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         const nameNode = this.findChildByType(node, "name")
         if (!nameNode) continue
         const ifaceName = nameNode.text
-        const baseClause = this.findChildByType(node, "base_clause") || this.findChildByType(node, "interface_base_clause")
+        // Pinned grammar: interface inheritance is a base_clause ("extends
+        // BaseRepo, AnotherInterface") — probe-verified 2026-08-30.
+        // 'interface_base_clause' was a dead literal from an older grammar.
+        const baseClause = this.findChildByType(node, "base_clause")
         const extended: string[] = []
         if (baseClause) {
           for (let i = 0; i < baseClause.namedChildCount; i++) {
@@ -300,6 +303,8 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
           visibility: "public",
           parameters,
           returnType,
+          // Per-symbol cyclomatic complexity (managed-OO family contract).
+          complexity: this.calculateNodeComplexity(node),
           metadata: { phpSpecific: true, fqn: ns ? `${ns}\\${fnName}` : fnName, namespace: ns },
         })
         const body = node.childForFieldName("body")
@@ -328,6 +333,10 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
           isAbstract: modifiers.includes("abstract"),
           parameters,
           returnType,
+          // Per-symbol cyclomatic complexity (managed-OO family contract —
+          // csharp/dart/swift/objc #264–#267). Same node set as the file-level
+          // counter, scoped to this method's subtree; base 1.
+          complexity: this.calculateNodeComplexity(node),
           metadata: {
             phpSpecific: true,
             isMethod: true,
@@ -414,7 +423,10 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (type === "namespace_use_declaration") {
         for (let i = 0; i < node.namedChildCount; i++) {
           const child = node.namedChild(i)
-          if (!child || (child.type !== "namespace_use_clause" && child.type !== "use_clause")) continue
+          // Pinned grammar: use-declaration clauses are namespace_use_clause
+          // ("use App\Models\User;", "use X as Y;", "use function f;") —
+          // probe-verified 2026-08-30. 'use_clause' was a dead literal.
+          if (!child || child.type !== "namespace_use_clause") continue
           let fqn = ""
           let alias: string | undefined
           for (let j = 0; j < child.namedChildCount; j++) {
@@ -502,9 +514,9 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     detectedFrameworks: Set<string>,
     patterns: Set<string>,
   ): void {
-    const stack: Node[] = [node]
+    const stack: Array<{ n: Node; parent: Node | null }> = [{ n: node, parent: null }]
     while (stack.length > 0) {
-      const n = stack.pop()!
+      const { n, parent } = stack.pop()!
       const type = n.type
 
       if (type === "function_call_expression") {
@@ -518,11 +530,39 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       } else if (type === "require_once_expression" || type === "include_once_expression" ||
                  type === "require_expression" || type === "include_expression") {
         this.emitInclude(n, imports, relationships, ns)
+      } else if (type === "member_access_expression") {
+        // Member READS (managed-OO family contract — dart/swift/objc emit
+        // uses for property reads). `$this->balance`, `$obj->name`,
+        // `$this->svc->inner` parse as member_access_expression with a
+        // "name" field (probe-verified 2026-08-30). Emit uses -> the field
+        // name for READS only: a member_access that is the FIRST child of
+        // an assignment_expression is a WRITE (never a read); a
+        // member_call_expression receiver is a call target, not a read.
+        // Pure AST (parent node carried in the walk), never source text
+        // scanning.
+        // Node wrappers are re-created per call in web-tree-sitter, so
+        // identity (===) never holds — compare by byte range instead.
+        const lhs = parent ? parent.namedChild(0) : null
+        const isWrite = parent && parent.type === "assignment_expression" && lhs && lhs.startIndex === n.startIndex && lhs.endIndex === n.endIndex
+        const isCallReceiver = parent && (parent.type === "member_call_expression" || parent.type === "nullsafe_member_call_expression")
+        if (!isWrite && !isCallReceiver) {
+          const nameNode = n.childForFieldName("name")
+          const member = nameNode ?? (n.namedChildCount > 0 ? n.namedChild(n.namedChildCount - 1) : null)
+          if (member && member.text && !member.text.startsWith("$")) {
+            relationships.push({
+              source: inFunction || "global",
+              target: member.text,
+              type: ASTEngine.RelationshipType.Uses,
+              confidence: 0.9,
+              metadata: { phpSpecific: true, isMemberRead: true },
+            })
+          }
+        }
       }
 
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const child = n.namedChild(i)
-        if (child) stack.push(child)
+        if (child) stack.push({ n: child, parent: n })
       }
     }
   }
@@ -882,6 +922,12 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     detectedFrameworks: Set<string>,
     patterns: Set<string>,
   ): ASTEngine.ParseResult {
+    // Evidence-tier classification (managed-OO family contract — swift/dart/
+    // csharp/objc #264–#267 precedent; M14 section D requires >=2 distinct
+    // evidenceClass values). structural (grammar clauses, conf 1.0) |
+    // usage_contextual (calls, member reads, conf >= 0.85) | import_based
+    // (import directives) | inferred (confidence < 1 non-call edges).
+    this.classifyEvidenceTier(relationships)
     const frameworks = [...detectedFrameworks]
     const patternList = [...patterns]
     return {
@@ -903,6 +949,79 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         })),
       },
     }
+  }
+
+  /**
+   * Evidence-tier classification — same rules as the swift/dart/csharp/objc
+   * family (see swift wave #266 for the full rationale).
+   */
+  private classifyEvidenceTier(relationships: ASTEngine.UniversalRelationship[]): void {
+    for (const r of relationships) {
+      const type = r.type ?? r.relationshipType ?? ""
+      const md: any = r.metadata ?? {}
+      if (type === "contains") { md.evidenceClass = "structural"; continue }
+      if (type === "imports" || type === "exports" || type === "references") { md.evidenceClass = "import_based"; continue }
+      if (type === "calls" || type === "uses") {
+        md.evidenceClass = (r.confidence ?? 0) >= 0.85 ? "usage_contextual" : "inferred"
+        continue
+      }
+      if (type === "instantiates" || type === "extends" || type === "implements") {
+        md.evidenceClass = (r.confidence ?? 0) >= 0.9 ? "structural" : "inferred"
+        continue
+      }
+      if (type === "overrides") { md.evidenceClass = "structural"; continue }
+      md.evidenceClass = "usage_contextual"
+    }
+  }
+
+  /**
+   * Per-symbol cyclomatic complexity (managed-OO family contract — csharp
+   * #264 wave precedent). Mirrors the file-level counter's node set exactly,
+   * scoped to a single method/function subtree; base 1. Same decision nodes:
+   * if/elseif/for/foreach/while/do/switch/match/try/catch/ternary +
+   * short-circuit && || and or.
+   */
+  private calculateNodeComplexity(node: Node): number {
+    if (!node) return 1
+    let complexity = 1
+    const stack: Node[] = [node]
+    let guard = 0
+    while (stack.length > 0 && guard++ < 200000) {
+      const n = stack.pop()!
+      switch (n.type) {
+        case "if_statement":
+        case "elseif_clause":
+        case "for_statement":
+        case "foreach_statement":
+        case "while_statement":
+        case "do_statement":
+        case "switch_statement":
+        case "match_expression":
+        case "match_conditional_expression":
+        case "try_statement":
+        case "catch_clause":
+        case "conditional_expression":
+          complexity++
+          break
+        case "binary_expression": {
+          let hasLogic = false
+          for (let i = 0; i < n.childCount; i++) {
+            const c = n.child(i)
+            if (c && (c.type === "&&" || c.type === "||" || c.type === "and" || c.type === "or")) {
+              hasLogic = true
+              break
+            }
+          }
+          if (hasLogic) complexity++
+          break
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const child = n.namedChild(i)
+        if (child) stack.push(child)
+      }
+    }
+    return complexity
   }
 
   private calculateCyclomaticComplexity(rootNode: Node): number {

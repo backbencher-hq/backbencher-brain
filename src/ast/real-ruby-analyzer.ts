@@ -11,7 +11,7 @@ const BARE_CALL_SKIP_PARENTS = new Set([
   "call", "command", "command_call",
   "method", "singleton_method",
   "pair",
-  "method_parameters", "parameters", "block_parameters", "lambda_parameters", "block_var",
+  "method_parameters", "parameters", "block_parameters", "lambda_parameters", "block_parameters",
   "class", "module", "singleton_class",
 ])
 
@@ -487,7 +487,10 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     const scanStack: Node[] = [node]
     while (scanStack.length > 0) {
       const sn = scanStack.pop()!
-      if (sn.type === "assignment" || sn.type === "operator_assignment" || sn.type === "multiple_assignment") {
+      if (sn.type === "assignment" || sn.type === "operator_assignment") {
+        // tree-sitter-ruby has NO `multiple_assignment` node: `a, b = 1, 2`
+        // parses as `assignment` whose left is a `left_assignment_list` —
+        // every identifier under it is an assignment target.
         const left = sn.childForFieldName("left") ?? sn.namedChild(0)
         if (left) {
           if (left.type === "identifier") {
@@ -507,7 +510,10 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (!c) continue
           if (c.type === "identifier") {
             localNames.add(c.text)
-          } else if (c.type === "block_var" || c.type === "destructured_left") {
+          } else if (c.type === "destructured_parameter") {
+            // tree-sitter-ruby has no `block_var`/`destructured_left`/`pattern_list`:
+            // `|(x, y)|` parses as block_parameters > destructured_parameter,
+            // whose children are the bound identifiers directly.
             for (let j = 0; j < c.namedChildCount; j++) {
               const d = c.namedChild(j)
               if (d?.type === "identifier") localNames.add(d.text)
@@ -902,8 +908,8 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       } else if (childType === "splat_parameter" || childType === "hash_splat_parameter") {
         const name = child.childForFieldName("name")
         if (name) result.push({ name: name.text })
-      } else if (childType === "block_parameter" || childType === "block_var") {
-        // &block — skip
+      } else if (childType === "block_parameter") {
+        // &block — skip (the pinned grammar has no `block_var` node)
       } else if (childType === "destructured_parameter") {
         // |a, b| — extract sub-identifiers
         for (let j = 0; j < child.namedChildCount; j++) {

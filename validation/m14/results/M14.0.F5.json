@@ -1,78 +1,124 @@
 {
   "checks": [
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
-      "detail": "52 files, coverage null%, unexplained null%",
+      "description": "powershell: tree-truth vs analyzer diff @91ce9844e2",
+      "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-javascript",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
+      "description": "powershell: tree-truth vs analyzer diff @91ce9844e2",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-typescript",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
+      "description": "powershell: tree-truth vs analyzer diff @91ce9844e2",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-kotlin",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
+      "description": "powershell: tree-truth vs analyzer diff @91ce9844e2",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-scala",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
-      "detail": "60 files, coverage 100%, unexplained 0%",
+      "description": "powershell: tree-truth vs analyzer diff @91ce9844e2",
+      "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-java",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
-      "detail": "60 files, coverage 100%, unexplained 0%",
+      "description": "powershell: tree-truth vs analyzer diff @91ce9844e2",
+      "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-groovy",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
+      "description": "powershell: tree-truth vs analyzer diff @91ce9844e2",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-vue",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
+      "description": "powershell: tree-truth vs analyzer diff @91ce9844e2",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-svelte",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
+      "description": "powershell: tree-truth vs analyzer diff @91ce9844e2",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-cpp",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
+      "description": "powershell: tree-truth vs analyzer diff @91ce9844e2",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-c",
       "status": "pass"
     },
     {
-      "description": "grails-core@a83f87480e: tree-truth vs analyzer diff",
+      "description": "powershell: tree-truth vs analyzer diff @91ce9844e2",
       "detail": "0 files, coverage null%, unexplained null%",
       "id": "differential-rust",
+      "status": "pass"
+    },
+    {
+      "description": "powershell: tree-truth vs analyzer diff @91ce9844e2",
+      "detail": "0 files, coverage null%, unexplained null%",
+      "id": "differential-go",
+      "status": "pass"
+    },
+    {
+      "description": "powershell: tree-truth vs analyzer diff @91ce9844e2",
+      "detail": "0 files, coverage null%, unexplained null%",
+      "id": "differential-zig",
+      "status": "pass"
+    },
+    {
+      "description": "powershell: tree-truth vs analyzer diff @91ce9844e2",
+      "detail": "60 files, coverage 100%, unexplained 0%",
+      "id": "differential-csharp",
+      "status": "pass"
+    },
+    {
+      "description": "proxicall: tree-truth vs analyzer diff @490d8bcbd8",
+      "detail": "60 files, coverage 100%, unexplained 0%",
+      "id": "differential-dart",
+      "status": "pass"
+    },
+    {
+      "description": "swift-nio: tree-truth vs analyzer diff @ec51fff05f",
+      "detail": "60 files, coverage 100%, unexplained 0%",
+      "id": "differential-swift",
+      "status": "pass"
+    },
+    {
+      "description": "Clyde: tree-truth vs analyzer diff @8fec41dd6ee03f863643aa958425c8bb4a6673ae",
+      "detail": "4 files, coverage 100%, unexplained 0%",
+      "id": "differential-objc",
+      "status": "pass"
+    },
+    {
+      "description": "phpunit: tree-truth vs analyzer diff @c8d6921fb6",
+      "detail": "60 files, coverage 100%, unexplained 0%",
+      "id": "differential-php",
       "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "31cf3eb7789e784f13d140fae26d4d92771d8b1e",
-  "committedAt": "2026-08-27T02:02:52+02:00",
+  "commit": "bcc6816013ec642dc6c8d10426a775a8157dc586",
+  "committedAt": "2026-08-30T03:33:24.150960+00:00",
   "data": {
     "corpusPins": {
-      "grails-core": "a83f87480e0c0138caa5a7191a053b1e59a64066"
+      "powershell": "91ce9844e2a70e7184a8fcb26848f019eac151b4",
+      "proxicall": "d9c69cfded5c4a78e5f5e8f9d6cdf0a31468adbc",
+      "swift-nio": "ec51fff05fe1f0a55efa78fdbc6a0f380c3e841a",
+      "Clyde": "8fec41dd6ee03f863643aa958425c8bb4a6673ae",
+      "phpunit": "c8d6921fb601b6988854cd84a672f06c1e49f80e"
     },
     "report": {
       "c": {
@@ -111,40 +157,76 @@
         "treeTruthEdges": 0,
         "unexplainedInAnalyzer": 0
       },
-      "groovy": {
-        "analyzerEdges": 257,
+      "csharp": {
+        "analyzerEdges": 1314,
         "coveragePct": 100,
-        "coveredByAnalyzer": 151,
-        "explainableByTree": 223,
+        "coveredByAnalyzer": 1366,
+        "explainableByTree": 1314,
         "fabricationPct": 0,
         "filesSampled": 60,
-        "heuristicUnexplained": 34,
+        "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 8.9,
-          "maxMsPerFile": 53.1,
+          "avgMsPerFile": 44.5,
+          "maxMsPerFile": 353.7,
           "samplesTimed": 60
         },
         "samples": [],
-        "treeTruthEdges": 151,
+        "treeTruthEdges": 1366,
+        "unexplainedInAnalyzer": 0
+      },
+      "go": {
+        "analyzerEdges": 0,
+        "coveragePct": null,
+        "coveredByAnalyzer": 0,
+        "explainableByTree": 0,
+        "fabricationPct": null,
+        "filesSampled": 0,
+        "heuristicUnexplained": 0,
+        "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": null,
+          "maxMsPerFile": null,
+          "samplesTimed": 0
+        },
+        "samples": [],
+        "treeTruthEdges": 0,
+        "unexplainedInAnalyzer": 0
+      },
+      "groovy": {
+        "analyzerEdges": 0,
+        "coveragePct": null,
+        "coveredByAnalyzer": 0,
+        "explainableByTree": 0,
+        "fabricationPct": null,
+        "filesSampled": 0,
+        "heuristicUnexplained": 0,
+        "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": null,
+          "maxMsPerFile": null,
+          "samplesTimed": 0
+        },
+        "samples": [],
+        "treeTruthEdges": 0,
         "unexplainedInAnalyzer": 0
       },
       "java": {
-        "analyzerEdges": 247,
-        "coveragePct": 100,
-        "coveredByAnalyzer": 132,
-        "explainableByTree": 167,
-        "fabricationPct": 0,
-        "filesSampled": 60,
-        "heuristicUnexplained": 80,
+        "analyzerEdges": 0,
+        "coveragePct": null,
+        "coveredByAnalyzer": 0,
+        "explainableByTree": 0,
+        "fabricationPct": null,
+        "filesSampled": 0,
+        "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 9.5,
-          "maxMsPerFile": 64.3,
-          "samplesTimed": 60
+          "avgMsPerFile": null,
+          "maxMsPerFile": null,
+          "samplesTimed": 0
         },
         "samples": [],
-        "treeTruthEdges": 132,
+        "treeTruthEdges": 0,
         "unexplainedInAnalyzer": 0
       },
       "javascript": {
@@ -153,13 +235,13 @@
         "coveredByAnalyzer": 0,
         "explainableByTree": 0,
         "fabricationPct": null,
-        "filesSampled": 52,
+        "filesSampled": 0,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 9,
-          "maxMsPerFile": 91.4,
-          "samplesTimed": 52
+          "avgMsPerFile": null,
+          "maxMsPerFile": null,
+          "samplesTimed": 0
         },
         "samples": [],
         "treeTruthEdges": 0,
@@ -272,6 +354,60 @@
         "samples": [],
         "treeTruthEdges": 0,
         "unexplainedInAnalyzer": 0
+      },
+      "zig": {
+        "analyzerEdges": 0,
+        "coveragePct": null,
+        "coveredByAnalyzer": 0,
+        "explainableByTree": 0,
+        "fabricationPct": null,
+        "filesSampled": 0,
+        "heuristicUnexplained": 0,
+        "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": null,
+          "maxMsPerFile": null,
+          "samplesTimed": 0
+        },
+        "samples": [],
+        "treeTruthEdges": 0,
+        "unexplainedInAnalyzer": 0
+      },
+      "dart": {
+        "analyzerEdges": 1470,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 1620,
+        "explainableByTree": 1470,
+        "fabricationPct": 0,
+        "filesSampled": 60,
+        "heuristicUnexplained": 0,
+        "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": 147.4,
+          "maxMsPerFile": 3210.6,
+          "samplesTimed": 60
+        },
+        "samples": [],
+        "treeTruthEdges": 1620,
+        "unexplainedInAnalyzer": 0
+      },
+      "swift": {
+        "analyzerEdges": 1936,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 1936,
+        "explainableByTree": 1936,
+        "fabricationPct": 0,
+        "filesSampled": 60,
+        "heuristicUnexplained": 0,
+        "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": 96.4,
+          "maxMsPerFile": 1014,
+          "samplesTimed": 60
+        },
+        "samples": [],
+        "treeTruthEdges": 1936,
+        "unexplainedInAnalyzer": 0
       }
     },
     "samplingRule": "seeded 60 files/language"
@@ -294,5 +430,9 @@
   ],
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
-  "title": "Differential corpus harness"
+  "title": "Differential corpus harness",
+  "meta": {
+    "updatedAt": "2026-08-30T04:29:54.374649+00:00",
+    "updatedBy": "codebuff-m14-php-wave"
+  }
 }

@@ -8,7 +8,23 @@ import { detectLanguageFromPath } from "./language-detection"
 
 const require = createRequire(import.meta.url)
 
-process.env.BB_LOG_LEVEL = "error"
+// M22.W1: respect an explicit log level handed down by the parent process
+// (--verbose/--quiet); only default to "error" when the parent did not set one.
+if (!process.env.BB_LOG_LEVEL) {
+  process.env.BB_LOG_LEVEL = "error"
+}
+
+// M22.W1: discoverable diagnostics location. Parse-error/symbol-loss evidence
+// used to be silently appended to /tmp/bb-parse-errors.log (undocumented,
+// machine-specific, never surfaced). It now lives under the bb data dir
+// (~/.bb/logs/ or $BB_DATA_DIR/logs/) so users can actually find it.
+function bbDiagnosticsLogPath(name: string): string {
+  const dataDir = process.env.BB_DATA_DIR || path.join((process.env.HOME || process.env.USERPROFILE || "/tmp"), ".bb")
+  const logsDir = path.join(dataDir, "logs")
+  try { fs.mkdirSync(logsDir, { recursive: true }) } catch {}
+  return path.join(logsDir, name)
+}
+
 const debug = false
 
 function log(..._args: unknown[]) {}
@@ -447,16 +463,15 @@ export async function parseFile(filePath: string, projectPath: string, context?:
     // Log when engine returns 0 symbols (silent failure — no exception thrown)
     if ((parsed?.symbols?.length || 0) === 0 && (parsed?.errors?.length || 0) > 0) {
       try {
-        const fs = require("fs")
         const errSample = parsed.errors.slice(0, 3).map((e: any) => e.message).join(" | ")
-        fs.appendFileSync("/tmp/bb-parse-errors.log",
+        fs.appendFileSync(bbDiagnosticsLogPath("parse-errors.log"),
           `${new Date().toISOString()} | ${language} | ${sizeBytes}B | ${filePath} | ENGINE_EMPTY: ${errSample.substring(0, 200)}\n`)
       } catch {}
     }
 
     if (ext === ".dart") {
       fs.appendFileSync(
-        "/tmp/bb-worker-debug.log",
+        bbDiagnosticsLogPath("worker-debug.log"),
         `[Worker] ASTEngine.parseFile returned ${parsed?.relationships?.length || 0} relationships for ${filePath}\n`,
       )
     }
@@ -582,7 +597,7 @@ export async function parseFile(filePath: string, projectPath: string, context?:
 
     if (ext === ".dart") {
       fs.appendFileSync(
-        "/tmp/bb-worker-debug.log",
+        bbDiagnosticsLogPath("worker-debug.log"),
         `[Worker] Returning object with ${ret.relationships?.length || 0} relationships for ${filePath}\n`,
       )
     }
@@ -618,16 +633,38 @@ process.on("message", async (msg: any) => {
     try {
       engineModule = await import("./engine")
     } catch {}
+    // M21.W1 debug hook: BB_WORKER_DELAY_READY_MS delays the `ready` signal so
+    // the parent's startup watchdog can be exercised deterministically. Zero by
+    // default — no production effect.
+    const delayReady = Number(process.env.BB_WORKER_DELAY_READY_MS || 0)
+    if (delayReady > 0) await new Promise((r) => setTimeout(r, delayReady))
     process.send?.({ type: "ready", workerId: msg.workerId })
   } else if (msg.type === "parse_batch") {
     const { batchId, files, projectPath } = msg
-    const FILE_TIMEOUT_MS = 45000 // 45s per-file self-timeout
+    // 45s per-file self-timeout; env-configurable (BB_FILE_TIMEOUT_MS) so
+    // deterministic crash/timeout fixtures die fast (M21.W1).
+    const FILE_TIMEOUT_MS = Number(process.env.BB_FILE_TIMEOUT_MS || 45000)
+
+    // M21.W1 debug hooks (env-gated, zero default effect):
+    //  - BB_WORKER_CRASH_ON_BATCH=1: exit immediately on parse_batch, before
+    //    reporting file_start — deterministic poison-pill fixture (worker dies
+    //    mid-batch with no in-flight file).
+    //  - BB_WORKER_DELAY_PARSE_MS: sleep after file_start so the parent's
+    //    per-file timeout fires deterministically (currentFile is already set,
+    //    exercising the timeout→kill→retry path, not the poison path).
+    if (process.env.BB_WORKER_CRASH_ON_BATCH === "1") {
+      process.stderr.write(`[BB-WORKER-FIXTURE] crashing on parse_batch (batch ${batchId})\n`)
+      process.exit(1)
+    }
+    const delayParse = Number(process.env.BB_WORKER_DELAY_PARSE_MS || 0)
 
     for (const filePath of files) {
       try {
         // Yield to event loop to ensure file_start is sent BEFORE sync tree-sitter block
         process.send?.({ type: "file_start", batchId, filePath })
         await new Promise((r) => setTimeout(r, 0))
+        // M21.W1 fixture hook: per-file delay AFTER file_start (see above).
+        if (delayParse > 0) await new Promise((r) => setTimeout(r, delayParse))
 
         // Self-timeout: kill worker if file processing hangs (doesn't rely on parent process)
         const fileTimer = setTimeout(() => {

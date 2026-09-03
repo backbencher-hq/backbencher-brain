@@ -34,6 +34,181 @@ function normRel(r: any) { return { ...r, type: r.type ?? r.relationshipType } }
 
 const MUTANTS: Mutant[] = [
   {
+    id: "c/drop-field-access-uses",
+    language: "c",
+    defectClass: "relationship-loss",
+    description: "drops C field-access Uses edges",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => (x.metadata ?? {}).relationshipType !== "field_access") }),
+  },
+  {
+    id: "c/drop-include-references",
+    language: "c",
+    defectClass: "relationship-loss",
+    description: "drops C include dependency References edges",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => (x.metadata ?? {}).relationshipType !== "include_dependency") }),
+  },
+  {
+    id: "c/drop-complexity",
+    language: "c",
+    defectClass: "payload-loss",
+    description: "removes C cyclomatic complexity from function symbols",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => ({ ...s, complexity: undefined })) }),
+  },
+  {
+    id: "cpp/drop-virtual-overrides",
+    language: "cpp",
+    defectClass: "relationship-loss",
+    description: "drops C++ virtual override edges (isVirtualOverride)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(x.metadata ?? {}).isVirtualOverride) }),
+  },
+  {
+    id: "cpp/drop-extends-edges",
+    language: "cpp",
+    defectClass: "relationship-loss",
+    description: "drops C++ class inheritance (extends) edges",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => x.type !== "extends") }),
+  },
+  {
+    id: "cpp/drop-qualified-calls",
+    language: "cpp",
+    defectClass: "payload-loss",
+    description: "removes C++ qualified_calls payloads from method symbols",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => ({ ...s, qualified_calls: undefined })) }),
+  },
+  {
+    id: "rust/drop-scoped-struct-literal-leaf",
+    language: "rust",
+    defectClass: "relationship-loss",
+    description: "drops enum-variant struct-literal instantiates whose target is the variant leaf (MatchStrategy::Suffix -> Suffix): the pre-fix analyzer required a plain type_identifier and silently dropped scoped names",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !((x.metadata ?? {}).relationshipType === "struct_literal" && x.target === "Suffix") && !((x.metadata ?? {}).relationshipType === "struct_literal" && x.target === "Literal")) }),
+  },
+  {
+    id: "rust/turbofish-whole-text-target",
+    language: "rust",
+    defectClass: "relationship-loss",
+    description: "targets turbofish calls (x.parse::<u32>()) by whole base text instead of the callee leaf: restores the pre-fix bug where generic_function used baseNode.text",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map(x => (x.type === "calls" && x.target === "parse" ? { ...x, target: "cap.parse" } : x)) }),
+  },
+  {
+    id: "rust/parenthesized-closure-callee",
+    language: "rust",
+    defectClass: "relationship-loss",
+    description: "re-emits calls edges for parenthesized closure callees ((self.0)(n)): the pre-fix else branch took functionNode.text verbatim and fabricated a (self.0) target",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { source: "run", target: "(self.0)", type: "calls", confidence: 1, metadata: {} }] }),
+  },
+  {
+    id: "rust/drop-union-symbols",
+    language: "rust",
+    defectClass: "symbol-loss",
+    description: "drops union_item declaration sites (Pixel): the pre-fix analyzer had no union_item branch, so Rust unions emitted NO symbol",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter(s => !(s.name === "Pixel" && s.kind === "struct")) }),
+  },
+  {
+    id: "rust/drop-trait-associated-types",
+    language: "rust",
+    defectClass: "symbol-loss",
+    description: "drops trait-level associated_type symbols (Container.Item): the pre-fix analyzer only handled impl-level type_item, so trait bodies' `type Item;` were invisible",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter(s => !(s.name === "Item" && s.ownerName === "Container")) }),
+  },
+  {
+    id: "rust/duplicate-awaited-call-edge",
+    language: "rust",
+    defectClass: "relationship-duplication",
+    description: "re-emits the raw await edge in ADDITION to the canonical call edge (the pre-fix await_expression branch pushed a second calls edge with the full function text as target): one awaited call site must produce exactly ONE calls edge",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { source: "connect", target: "do_connect", type: "calls", confidence: 1, metadata: { rustSpecific: true, isAwait: true } }] }),
+  },
+  {
+    id: "rust/raw-use-list-import",
+    language: "rust",
+    defectClass: "import-contract",
+    description: "stores the whole use-declaration raw text as the import module (pre-fix: `use std::io::{Read, Write as W}` became module='std::io::{Read, Write as W}' with comma-split items): restores the family-contract violation",
+    transform: r => ({ ...r, imports: (r.imports ?? []).map((i: any) => (i.module === "std::io" ? { ...i, module: "std::io::{Read, Write as W}", items: ["std::io::{Read", "Write as W}"] } : i)) }),
+  },
+  {
+    id: "go/whole-text-stdlib-callee",
+    language: "go",
+    defectClass: "relationship-loss",
+    description: "targets package-qualified stdlib calls by whole text instead of the leaf (fmt.Sprintf -> fmt.Sprintf target): restores the pre-fix buildGoCallExpression behavior the oracle flagged",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map(x => (x.type === "calls" && x.target === "Sprintf" ? { ...x, target: "fmt.Sprintf" } : x)) }),
+  },
+  {
+    id: "go/drop-package-scope-call",
+    language: "go",
+    defectClass: "relationship-loss",
+    description: "drops package-scope call edges (go_package_scope_call): the pre-fix analyzer never emitted NewShape() at package level",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => (x.metadata ?? {}).relationshipType !== "go_package_scope_call") }),
+  },
+  {
+    id: "go/closure-var-goroutine-defer",
+    language: "go",
+    defectClass: "relationship-fabrication",
+    description: "re-emits calls edges for anonymous func-literal goroutine/defer bodies (target 'anonymous_closure'): restores the pre-fix extractGoRoutineFunction/extractDeferredFunction behavior",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { source: "startWork", target: "anonymous_closure", type: "calls", confidence: 0.8, metadata: { relationshipType: "go_goroutine" } }, { source: "startWork", target: "anonymous_closure", type: "calls", confidence: 0.8, metadata: { relationshipType: "go_defer" } }] }),
+  },
+  {
+    id: "go/type-conversion-as-call",
+    language: "go",
+    defectClass: "relationship-fabrication",
+    description: "emits calls edges for builtin type-conversion expressions (float64(...)): the pre-fix oracle-mismatch class where bare builtin calls leaked as call truth",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { source: "startWork", target: "float64", type: "calls", confidence: 0.8, metadata: { relationshipType: "go_function_call", callExpression: "float64" } }] }),
+  },
+  {
+    id: "go/drop-implements-edge",
+    language: "go",
+    defectClass: "relationship-loss",
+    description: "drops implicit interface implements edges (go_interface_implementation): a regression that removes duck-typing satisfaction detection",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => (x.metadata ?? {}).relationshipType !== "go_interface_implementation") }),
+  },
+  {
+    id: "go/drop-promoted-struct-implements",
+    language: "go",
+    defectClass: "relationship-loss",
+    description: "drops implements edges that arise from EMBEDDED-STRUCT method promotion (Worker impl Runner via *Shape.Run, no own methods): the pre-promotion analyzer (and oracle) silently lost these, so a struct implementing an interface through an embedded type was missed",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(x.type === "implements" && x.source === "Worker" && x.target === "Runner2")) }),
+  },
+  {
+    id: "go/false-implements-embedded-only",
+    language: "go",
+    defectClass: "relationship-fabrication",
+    description: "restores the pre-fix embedded-interface blind spot: emits FileBad->ReadCloser (a struct with ONLY Close()) as if it satisfied the embedding ReadCloser { Reader; Close() } — the false positive that existed because promoted Reader.Read was never folded into ReadCloser's method set",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { source: "FileBad", target: "ReadCloser", type: "implements", confidence: 1, metadata: { relationshipType: "go_interface_implementation", isImplicit: true, matchedMethods: ["Close"], implementationType: "duck_typing", receiverSet: "pointer" } }] }),
+  },
+  {
+    id: "go/drop-symbol-complexity",
+    language: "go",
+    defectClass: "payload-loss",
+    description: "removes per-symbol cyclomatic complexity (the go wave added it; rust/c/cpp already had it)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => ({ ...s, complexity: undefined })) }),
+  },
+  {
+    id: "zig/drop-calls",
+    language: "zig",
+    defectClass: "relationship-loss",
+    description: "drops every zig_function_call edge: the pre-wave analyzer emitted ZERO calls on real Zig source (56 call sites in one 30KB std file produced nothing), so the fixture pins the callee-leaf call surface",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => (x.metadata ?? {}).relationshipType !== "zig_function_call") }),
+  },
+  {
+    id: "zig/drop-uses",
+    language: "zig",
+    defectClass: "relationship-loss",
+    description: "drops every zig_field_access (uses) edge: restores the pre-wave state where field-access dependency edges were never emitted",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => (x.metadata ?? {}).relationshipType !== "zig_field_access") }),
+  },
+  {
+    id: "zig/drop-import-reference",
+    language: "zig",
+    defectClass: "relationship-loss",
+    description: "drops the @import references edge (zig_import, meta.isImport): the fixture pins that imports are first-class graph facts, not just entries in the imports array",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => (x.metadata ?? {}).relationshipType !== "zig_import") }),
+  },
+  {
+    id: "zig/drop-symbol-complexity",
+    language: "zig",
+    defectClass: "payload-loss",
+    description: "removes per-symbol cyclomatic complexity (the zig wave added it; go/rust/c/cpp already had it)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => ({ ...s, complexity: undefined })) }),
+  },
+  {
     id: "java/mislabel-inheritance",
     language: "java",
     defectClass: "relationship-mislabel",
@@ -494,6 +669,268 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, genericParameters: undefined })) }),
   },
   {
+    id: "javascript/reclassify-import-tier",
+    language: "javascript",
+    defectClass: "evidence-mislabel",
+    description: "reclassifies the imports kind from import_based back to usage_contextual (the J1 bug class: classifier had no 'imports' branch)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => String(x.type ?? x.relationshipType) === "imports" ? { ...x, metadata: { ...(x.metadata ?? {}), evidenceClass: "usage_contextual" } } : x) }),
+  },
+  {
+    id: "javascript/drop-import-edges",
+    language: "javascript",
+    defectClass: "relationship-loss",
+    description: "drops ALL imports dependency edges (the J1/J2 bug class: ES6, require, and dynamic import() dependencies)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => String(x.type ?? x.relationshipType) !== "imports") }),
+  },
+  {
+    id: "javascript/drop-template-uses",
+    language: "javascript",
+    defectClass: "relationship-loss",
+    description: "drops template-interpolation Uses (the J3 bug class: `hi ${name}` reads were invisible)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(x.metadata ?? {}).isTemplateInterpolation) }),
+  },
+  {
+    id: "javascript/reintroduce-callee-uses",
+    language: "javascript",
+    defectClass: "relationship-garbage",
+    description: "re-adds the call-callee double-emission: uses edges for every member call (the J4 bug class: svc.fetch() emitted calls AND uses)",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), ...(r.relationships ?? []).filter((x: any) => String(x.type ?? x.relationshipType) === "calls" && typeof (x.metadata ?? {}).calleeExpression === "string" && (x.metadata.calleeExpression).includes(".")).map((x: any) => { const parts = (x.metadata.calleeExpression).split("."); return { type: "uses", source: parts[0], target: parts[parts.length - 1], confidence: 0.6, metadata: { isFieldAccess: true } } })] }),
+  },
+  {
+    id: "javascript/drop-static-calls",
+    language: "javascript",
+    defectClass: "relationship-loss",
+    description: "drops calls attributed to class scope (the J5 bug class: static-block and field-initializer calls)",
+    transform: r => {
+      const classNames = new Set((r.symbols ?? []).filter((s: any) => s.kind === "class" && !s.ownerName).map((s: any) => s.name))
+      return { ...r, relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type ?? x.relationshipType) === "calls" && classNames.has(x.source))) }
+    },
+  },
+  {
+    id: "javascript/global-instanceof-source",
+    language: "javascript",
+    defectClass: "relationship-mislabel",
+    description: "reverts instanceof reference sources to the global placeholder (the J6 bug class: top-level consts attributed to global)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => (x.metadata ?? {}).relationshipType === "instanceof_check" ? { ...x, source: "global" } : x) }),
+  },
+  {
+    id: "javascript/drop-destructure-symbols",
+    language: "javascript",
+    defectClass: "symbol-loss",
+    description: "drops module-level destructured binding symbols (the J7 bug class: const { a } = obj emitted nothing)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => !(s.metadata ?? {}).isDestructured) }),
+  },
+  {
+    id: "javascript/drop-jsx-uses",
+    language: "javascript",
+    defectClass: "relationship-loss",
+    description: "drops JSX component Uses edges (the J8 bug class: <Button/> emitted nothing)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.metadata ?? {}).jsxElement) }),
+  },
+  {
+    id: "javascript/drop-override-edges",
+    language: "javascript",
+    defectClass: "relationship-loss",
+    description: "drops overrides edges (section B overrides pin)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => String(x.type ?? x.relationshipType) !== "overrides") }),
+  },
+  {
+    id: "javascript/drop-instantiates-edges",
+    language: "javascript",
+    defectClass: "relationship-loss",
+    description: "drops instantiates edges (section B instantiates pin)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => String(x.type ?? x.relationshipType) !== "instantiates") }),
+  },
+  {
+    id: "javascript/drop-visibility",
+    language: "javascript",
+    defectClass: "payload-loss",
+    description: "drops the visibility payload from symbols (section C visibility pin)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, visibility: undefined })) }),
+  },
+  {
+    id: "javascript/drop-parameters",
+    language: "javascript",
+    defectClass: "payload-loss",
+    description: "drops the parameters payload from function/method symbols (section C parameters pin)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, parameters: undefined })) }),
+  },
+  {
+    id: "vue/drop-generic-macro-symbols",
+    language: "vue",
+    defectClass: "symbol-loss",
+    description: "drops prop/event symbols from the type-literal generic macro form (the V1 bug class: defineProps<{ id: string }>() emitted nothing)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => !((s.metadata ?? {}).isProp || (s.metadata ?? {}).isEmit)) }),
+  },
+  {
+    id: "vue/drop-template-member-uses",
+    language: "vue",
+    defectClass: "relationship-loss",
+    description: "drops template-expression Uses edges (the V2 bug class: {{ count }}, :label, @click emitted nothing)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.metadata ?? {}).isTemplateExpression) }),
+  },
+  {
+    id: "vue/reduplicate-contains",
+    language: "vue",
+    defectClass: "relationship-duplication",
+    description: "re-adds duplicate contains edges for script-side class members (the V3 bug class: sub-analyzer contains + vue pass = 2x)",
+    transform: r => {
+      const rels = r.relationships ?? []
+      const dupes = rels.filter((x: any) => String(x.type ?? x.relationshipType) === "contains" && (x.metadata ?? {}).evidenceClass === "structural")
+      return { ...r, relationships: [...rels, ...dupes] }
+    },
+  },
+  {
+    id: "vue/drop-contains-edges",
+    language: "vue",
+    defectClass: "relationship-loss",
+    description: "drops all contains edges (section B contains pin)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => String(x.type ?? x.relationshipType) !== "contains") }),
+  },
+  {
+    id: "vue/drop-import-edges",
+    language: "vue",
+    defectClass: "relationship-loss",
+    description: "drops imports edges (section B imports pin)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => String(x.type ?? x.relationshipType) !== "imports") }),
+  },
+  {
+    id: "vue/drop-complexity",
+    language: "vue",
+    defectClass: "payload-loss",
+    description: "zeroes the complexity payload on script functions (section C complexity pin)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, complexity: undefined })) }),
+  },
+  {
+    id: "vue/drop-visibility",
+    language: "vue",
+    defectClass: "payload-loss",
+    description: "drops the visibility payload from symbols (section C visibility pin)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, visibility: undefined })) }),
+  },
+  {
+    id: "vue/drop-parameters",
+    language: "vue",
+    defectClass: "payload-loss",
+    description: "drops the parameters payload from function symbols (section C parameters pin)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, parameters: undefined })) }),
+  },
+  {
+    id: "vue/reemit-shadowed-uses",
+    language: "vue",
+    defectClass: "scope-blindness",
+    description: "re-emits Uses for template-LOCAL identifiers that shadow members (the V4 bug class: v-for loop vars and slot props produced false uses)",
+    transform: r => {
+      const rels = r.relationships ?? []
+      const comp = rels.find((x: any) => x.type === "instantiates" || x.type === "uses")?.source
+      const source = typeof comp === "string" ? comp : "template-scope-shadow"
+      const extra = ["item", "row"].map(name => ({
+        source, target: name, type: "uses", confidence: 0.95,
+        metadata: { isTemplateExpression: true },
+      }))
+      return { ...r, relationships: [...rels, ...extra] }
+    },
+  },
+  {
+    id: "vue/drop-union-emit-names",
+    language: "vue",
+    defectClass: "symbol-loss",
+    description: "drops non-first union emit names (the V1b bug class: (e: 'save' | 'close') kept only save)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => !((s.metadata ?? {}).isEmit && s.name === "close")) }),
+  },
+  {
+    id: "svelte/drop-template-member-uses",
+    language: "svelte",
+    defectClass: "relationship-loss",
+    description: "drops template-expression Uses edges (the S1 bug class: {count}, label={label}, {#each items} emitted nothing)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.metadata ?? {}).isTemplateExpression) }),
+  },
+  {
+    id: "svelte/reemit-shadowed-uses",
+    language: "svelte",
+    defectClass: "scope-blindness",
+    description: "re-emits Uses for template-LOCAL identifiers (the vue V4 bug class: each loop vars and await then/catch vars produced false uses)",
+    transform: r => {
+      const rels = r.relationships ?? []
+      const source = (rels.find((x: any) => x.type === "instantiates" || x.type === "uses")?.source) || "template-member-uses"
+      const extra = ["row", "i", "value", "err"].map(name => ({
+        source, target: name, type: "uses", confidence: 0.95,
+        metadata: { isTemplateExpression: true },
+      }))
+      return { ...r, relationships: [...rels, ...extra] }
+    },
+  },
+  {
+    id: "svelte/reduplicate-rune-props",
+    language: "svelte",
+    defectClass: "symbol-duplication",
+    description: "re-adds the JS sub-analyzer's destructured Variables for $props() bindings (the S2 bug class: let { a } = $props() declared a twice)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.metadata ?? {}).isSvelteProp ? { ...s, name: undefined } : s).filter((s: any) => s.name !== undefined).concat((r.symbols ?? []).filter((s: any) => (s.metadata ?? {}).isSvelteProp).map((s: any) => ({ ...s, name: s.name + "", kind: "variable", ownerName: undefined, metadata: { ...s.metadata, isSvelteProp: undefined, fromRunes: undefined, isDestructured: true } }))) }),
+  },
+  {
+    id: "svelte/drop-overrides-edges",
+    language: "svelte",
+    defectClass: "relationship-loss",
+    description: "drops overrides edges (section B overrides pin)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => String(x.type ?? x.relationshipType) !== "overrides") }),
+  },
+  {
+    id: "svelte/drop-references-edges",
+    language: "svelte",
+    defectClass: "relationship-loss",
+    description: "drops references edges (section B references pin)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => String(x.type ?? x.relationshipType) !== "references") }),
+  },
+  {
+    id: "svelte/drop-uses-edges",
+    language: "svelte",
+    defectClass: "relationship-loss",
+    description: "drops uses edges incl. template-expression uses (section B uses pin + S1)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => String(x.type ?? x.relationshipType) !== "uses") }),
+  },
+  {
+    id: "svelte/drop-parameters",
+    language: "svelte",
+    defectClass: "payload-loss",
+    description: "drops the parameters payload from function symbols (section C parameters pin)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, parameters: undefined })) }),
+  },
+  {
+    id: "svelte/drop-visibility",
+    language: "svelte",
+    defectClass: "payload-loss",
+    description: "drops the visibility payload from symbols (section C visibility pin)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, visibility: undefined })) }),
+  },
+  {
+    id: "svelte/reemit-shadowed-member-uses",
+    language: "svelte",
+    defectClass: "scope-blindness",
+    description: "re-emits Uses for each-loop / {@const} bindings that collide with a SAME-NAMED MEMBER (the S5 bug class: {#each rows as row} or {@const total = r.id} leaked fake uses -> member row/item/total)",
+    transform: r => {
+      const rels = r.relationships || []
+      const source = (rels.find((x: any) => x.type === "instantiates" || x.type === "uses")?.source) || "each-shadow-collision"
+      const extra = ["row", "item", "total"].map(name => ({
+        source, target: name, type: "uses", confidence: 0.95,
+        metadata: { isTemplateExpression: true },
+      }))
+      return { ...r, relationships: [...rels, ...extra] }
+    },
+  },
+  {
+    id: "svelte/reduplicate-reactive-targets",
+    language: "svelte",
+    defectClass: "symbol-duplication",
+    description: "re-adds duplicate symbols for $: reactive targets (the S6 bug class: the same variable assigned from multiple $: blocks declared once PER BLOCK)",
+    transform: r => ({
+      ...r,
+      symbols: [
+        ...(r.symbols ?? []),
+        ...(r.symbols ?? []).filter((s: any) => (s.metadata ?? {}).isReactiveDeclaration).map((s: any) => ({ ...s })),
+      ],
+    }),
+  },
+  {
     id: "groovy/drop-class-symbols",
     language: "groovy",
     defectClass: "symbol-loss",
@@ -584,6 +1021,267 @@ const MUTANTS: Mutant[] = [
     description: "drops contains edges for type/member/field containment — #419 groovy section B contains pin",
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => x.type !== "contains") }),
   },
+  {
+    id: "csharp/drop-field-access-uses",
+    language: "csharp",
+    defectClass: "relationship-loss",
+    description: "drops csharp field-access Uses edges — #264 section B uses pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => (x.metadata ?? {}).relationshipType !== "csharp_field_access") }),
+  },
+  {
+    id: "csharp/drop-symbol-complexity",
+    language: "csharp",
+    defectClass: "payload-loss",
+    description: "drops csharp per-symbol complexity — #264 section C complexity pin",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, complexity: undefined })) }),
+  },
+  {
+    id: "csharp/drop-implements-edge",
+    language: "csharp",
+    defectClass: "relationship-loss",
+    description: "drops csharp implements edges (Shape->IShape) — #264 section B implements pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "implements") }),
+  },
+  {
+    id: "dart/drop-implements-edge",
+    language: "dart",
+    defectClass: "relationship-loss",
+    description: "drops dart implements edges (OrderRepositoryImpl->OrderRepository) — dart section B implements pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "implements") }),
+  },
+  {
+    id: "dart/drop-mixin-uses-edge",
+    language: "dart",
+    defectClass: "relationship-loss",
+    description: "drops dart mixin uses edges (with RepositoryLogger) — dart section B uses pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).isMixin && x.type === "uses")) }),
+  },
+  {
+    id: "dart/drop-constructor-instantiates",
+    language: "dart",
+    defectClass: "relationship-loss",
+    description: "drops dart constructor-invocation instantiates edges (OrderLoading etc.) — dart section B instantiates pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "instantiates") }),
+  },
+  {
+    id: "swift/drop-implements-edge",
+    language: "swift",
+    defectClass: "relationship-loss",
+    description: "drops swift implements edges (OrderRepositoryImpl->OrderRepository, Order->Equatable) — swift section B implements pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "implements") }),
+  },
+  {
+    id: "swift/drop-self-uses-edge",
+    language: "swift",
+    defectClass: "relationship-loss",
+    description: "drops swift self. member-read uses edges (OrderStore->state) — swift section B uses pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).isFieldAccess && x.type === "uses")) }),
+  },
+  {
+    id: "swift/drop-operator-symbol",
+    language: "swift",
+    defectClass: "symbol-loss",
+    description: "drops swift operator overload symbols (operator + / == on Vector) — swift edges-and-patterns symbol pin",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => !(s.name && s.name.startsWith("operator ")) ) }),
+  },
+  {
+    id: "swift/drop-symbol-complexity",
+    language: "swift",
+    defectClass: "payload-loss",
+    description: "drops swift per-symbol complexity (parse classify guard/if/switch count) — swift section C complexity pin",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, complexity: undefined })) }),
+  },
+  {
+    id: "swift/emit-subscript-call",
+    language: "swift",
+    defectClass: "relationship-loss",
+    description: "re-adds the bogus subscript-read calls edge (entries[key] as a call) — swift edges-and-patterns forbid pin",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), {
+        type: "calls", source: "Registry", target: "entries", isExternal: true, weight: 1, confidence: 0.95, metadata: {},
+      }],
+    }),
+  },
+  {
+    id: "swift/emit-defer-call",
+    language: "swift",
+    defectClass: "relationship-loss",
+    description: "re-adds the bogus defer keyword-call edge (defer {} as calls->defer) — swift edges-and-patterns forbid pin",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), {
+        type: "calls", source: "parse", target: "defer", isExternal: true, weight: 1, confidence: 0.95, metadata: {},
+      }],
+    }),
+  },
+  {
+    id: "swift/class-protocol-first-as-extends",
+    language: "swift",
+    defectClass: "relationship-loss",
+    description: "regresses the SWIFTD1 rule: treats a class's first-base protocol as extends (Circle->Shape) — swift edges-and-patterns implements/forbid pins",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.type === "implements" && x.source === "Circle" && x.target === "Shape"
+          ? { ...x, type: "extends", metadata: { ...(x.metadata ?? {}), isImplements: false } }
+          : x,
+      ),
+    }),
+  },
+  {
+    id: "objc/drop-implements-edge",
+    language: "objc",
+    defectClass: "relationship-loss",
+    description: "drops objc implements edges (PaymentService->PaymentGateway, CustomView->Renderable) — objc section B implements pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "implements") }),
+  },
+  {
+    id: "objc/drop-extends-edge",
+    language: "objc",
+    defectClass: "relationship-loss",
+    description: "drops objc extends edges (BaseService->NSObject, PaymentService->BaseService) — objc payload extends pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "extends") }),
+  },
+  {
+    id: "objc/drop-instantiates-edge",
+    language: "objc",
+    defectClass: "relationship-loss",
+    description: "drops objc instantiates edges (sharedService->PaymentService via alloc/new) — objc instantiates pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "instantiates") }),
+  },
+  {
+    id: "objc/drop-category-extension",
+    language: "objc",
+    defectClass: "symbol-loss",
+    description: "drops objc category Extension symbols (PaymentService (Audit), UIView (RoundedCorner)) — objc category pin",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => !((s.metadata ?? {}).isCategory)) }),
+  },
+  {
+    id: "objc/drop-symbol-complexity",
+    language: "objc",
+    defectClass: "payload-loss",
+    description: "drops objc per-symbol complexity (authorizeAmount if/for/&&/ternary count) — objc section C complexity pin",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, complexity: undefined })) }),
+  },
+  {
+    id: "objc/emit-receiver-call",
+    language: "objc",
+    defectClass: "relationship-loss",
+    description: "re-adds the bogus receiver-as-call edge (calls->PaymentService from [PaymentService sharedService]) — objc forbid pin",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), {
+        type: "calls", source: "auditTrail", target: "PaymentService", isExternal: true, weight: 1, confidence: 0.95, metadata: {},
+      }],
+    }),
+  },
+  {
+    id: "objc/duplicate-interface-impl",
+    language: "objc",
+    defectClass: "symbol-loss",
+    description: "regresses the interface+implementation dedup: emits the same class/method/property twice — objc unique-symbol pins",
+    transform: r => ({
+      ...r,
+      // Genuinely duplicate every symbol: the @interface/@implementation
+      // dedup regression makes each class/method/property appear twice.
+      symbols: [...(r.symbols ?? []), ...(r.symbols ?? [])],
+    }),
+  },
+  {
+    id: "objc/drop-member-read-uses",
+    language: "objc",
+    defectClass: "relationship-loss",
+    description: "drops objc dot-syntax member-read uses edges (self.superview, superview.hidden, self.layer) — objc section B uses pin (managed-OO family contract)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).isFieldRead && x.type === "uses")) }),
+  },
+  {
+    id: "objc/drop-protocol-inheritance",
+    language: "objc",
+    defectClass: "relationship-loss",
+    description: "drops objc protocol-inheritance extends edges (Animatable->Renderable) — objc protocol_reference_list extends pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).isProtocolInheritance)) }),
+  },
+  {
+    id: "objc/drop-category-protocol",
+    language: "objc",
+    defectClass: "relationship-loss",
+    description: "drops objc category-declared protocol conformance (UIView->Animatable) — objc category implements pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).isCategoryProtocol)) }),
+  },
+  {
+    id: "objc/emit-write-as-uses",
+    language: "objc",
+    defectClass: "relationship-loss",
+    description: "regresses the read/write gate: emits uses for assignment LHS writes (self.clipsToBounds = YES as a read) — objc forbid pin",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), {
+        type: "uses", source: "animate", target: "clipsToBounds", isExternal: true, weight: 1, confidence: 0.9, metadata: { isFieldRead: true },
+      }],
+    }),
+  },
+  {
+    id: "php/drop-implements-edge",
+    language: "php",
+    defectClass: "relationship-loss",
+    description: "drops php implements edges (PaymentService->Authorizer/Refundable) — php section B implements pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "implements") }),
+  },
+  {
+    id: "php/drop-extends-edge",
+    language: "php",
+    defectClass: "relationship-loss",
+    description: "drops php extends edges (PaymentService->BaseService) — php extends pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "extends") }),
+  },
+  {
+    id: "php/drop-instantiates-edge",
+    language: "php",
+    defectClass: "relationship-loss",
+    description: "drops php instantiates edges (new PaymentService / new StripeGateway) — php instantiates pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "instantiates") }),
+  },
+  {
+    id: "php/drop-trait-use",
+    language: "php",
+    defectClass: "relationship-loss",
+    description: "drops php trait-composition uses edges (OrderService->Loggable) — php trait pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).isTraitUse)) }),
+  },
+  {
+    id: "php/drop-member-read-uses",
+    language: "php",
+    defectClass: "relationship-loss",
+    description: "drops php member-read uses edges ($this->balance reads) — php section B uses pin (managed-OO family contract)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).isMemberRead && x.type === "uses")) }),
+  },
+  {
+    id: "php/emit-write-as-uses",
+    language: "php",
+    defectClass: "relationship-loss",
+    description: "regresses the read/write gate: emits uses for assignment-LHS writes ($this->balance = ... as a read) — php forbid pin",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), {
+        type: "uses", source: "__construct", target: "gateway", isExternal: true, weight: 1, confidence: 0.9, metadata: { phpSpecific: true, isMemberRead: true },
+      }],
+    }),
+  },
+  {
+    id: "php/drop-symbol-complexity",
+    language: "php",
+    defectClass: "payload-loss",
+    description: "drops php per-symbol complexity (authorize if/for/while/switch/ternary/&& count) — php section C complexity pin",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, complexity: undefined })) }),
+  },
+  {
+    id: "php/drop-override-edge",
+    language: "php",
+    defectClass: "relationship-loss",
+    description: "drops php override edges (PaymentService.__construct -> BaseService.__construct) — php overrides pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "overrides") }),
+  },
 ]
 
 async function realAnalyzer(lang: string): Promise<any> {
@@ -610,6 +1308,10 @@ async function main() {
     const real = await realAnalyzer(m.language)
     const mutant = {
       analyze: async (...args: any[]) => m.transform(await real.analyze(...args)),
+      // SFC languages (vue/svelte) run through engine parseFile in runLang;
+      // runLang applies this transform to the parseFile result so mutants are
+      // exercised on the real production path.
+      transform: m.transform,
     }
     const mutated = await runLang(m.language, mutant)
     // Caught = more failing fixtures OR more distinct problems inside

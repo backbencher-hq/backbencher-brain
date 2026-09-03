@@ -386,6 +386,23 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                 metadata: { isConst },
               })
             }
+          } else if (nameNode && (nameNode.type === "object_pattern" || nameNode.type === "array_pattern") && functionDepth === 0 && !inClassBody) {
+            // M14 #419 J7: module-level destructured bindings ARE symbols —
+            // const { a } = obj / const [b] = arr bind real module-scope
+            // names (TS parity, probe-verified). Pre-fix they emitted
+            // nothing. Locals/params/lambda params stay non-symbols.
+            const isConst = this.isConstDeclarator(node)
+            const names = this.collectPatternNames(nameNode)
+            for (const bound of names) {
+              symbols.push({
+                name: bound,
+                kind: isConst ? ASTEngine.SymbolKind.Constant : ASTEngine.SymbolKind.Variable,
+                range: this.nodeToRange(node),
+                scope: scopeString(scopeStack),
+                visibility: "public",
+                metadata: { isConst, isDestructured: true },
+              })
+            }
           } else if (isFunctionValue) {
             // Local function-valued variable: no symbol, but provides call scope
             scopeStack.push({ name: name ?? "anonymous", kind: JSScopeKind.Function })
@@ -477,28 +494,34 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
 
         case "call_expression": {
-          // CommonJS require() -> import
+          // CommonJS require() -> import AND dynamic import() -> import.
+          // Both are module dependencies, never calls (the extractCall
+          // pass skips the `import` callee the same way it skips require).
           const fn = node.childForFieldName("function")
-          if (fn && fn.type === "identifier" && fn.text === "require") {
+          // `import` lexes as its own node type (keyword), not identifier
+          // (the TS T7 quirk, verified by probe).
+          const isImportCall = !!fn && (fn.type === "import" || (fn.type === "identifier" && fn.text === "import"))
+          if (fn && ((fn.type === "identifier" && fn.text === "require") || isImportCall)) {
             const args = node.childForFieldName("arguments")
             if (args && args.namedChildCount > 0) {
               const arg = args.namedChild(0)
               if (arg && (arg.type === "string" || arg.type === "template_string")) {
                 const reqPath = stringContent(arg)
+                const isDynamic = isImportCall
                 imports.push({
                   module: reqPath,
                   items: ["*"],
                   isDefault: true,
                   range: this.nodeToRange(node),
-                  metadata: { type: "require" },
+                  metadata: { type: isDynamic ? "dynamic-import" : "require" },
                 })
-                patterns["CommonJS Imports"] = true
+                patterns[isDynamic ? "Dynamic Imports" : "CommonJS Imports"] = true
                 relationships.push({
                   source: moduleName,
                   target: `${reqPath}:*`,
                   type: ASTEngine.RelationshipType.Imports,
                   confidence: 1.0,
-                  metadata: { isRequire: true },
+                  metadata: { isRequire: !isDynamic, isDynamicImport: isDynamic },
                 })
               }
             }
@@ -829,6 +852,15 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           return nameNode.text
         }
       }
+      if (n.type === "class_declaration") {
+        // M14 #419 J5: static blocks and field initializers have no
+        // enclosing function — their calls belong to the CLASS (kotlin K7
+        // init-attribution analog). Instance method bodies resolve to the
+        // method first (this node is only reached when no closer function
+        // exists), so this never misattributes method calls.
+        const nm = n.childForFieldName("name")?.text
+        if (nm) return nm
+      }
       if (n.type === "assignment_expression") {
         // X.prototype.method = function () {} — calls inside source to `method`
         const left = n.childForFieldName("left")
@@ -855,7 +887,10 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       if (n.type === "call_expression") {
         const fn = n.childForFieldName("function")
-        if (fn && !(fn.type === "identifier" && fn.text === "require")) {
+        // `import` lexes as a keyword node type (TS T7 quirk) — skip both
+        // shapes so dynamic import() never emits a spurious calls edge.
+        const isImportCallee = !!fn && (fn.type === "import" || (fn.type === "identifier" && fn.text === "import"))
+        if (fn && !((fn.type === "identifier" && fn.text === "require") || isImportCallee)) {
           let targetName = fn.text
           let fullCallee = fn.text
           let skip = false
@@ -863,7 +898,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             const prop = fn.childForFieldName("property")
             if (prop) targetName = prop.text
           } else if (fn.type === "subscript_expression") {
-            // Computed/dynamic member calls (o[key](), o["literal"]()) are
+            // Computed/dynamic member calls (o[key](...), o["key"]()) are
             // not clean call targets — skip (family contract)
             skip = true
           }
@@ -906,6 +941,28 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               confidence: 0.95,
               metadata: {},
             })
+          }
+        }
+      } else if (n.type === "jsx_element" || n.type === "jsx_self_closing_element") {
+        // M14 #419 J8: JSX component usage. JSX is native to the JS
+        // grammar (unlike TS where it lives in the tsx dialect). Capitalized
+        // components (<Button/>) emit Uses with jsxElement metadata; lowercase
+        // intrinsics (div, span) and member components (A.B) do not — the TS
+        // family contract, probe-verified.
+        const opening = n.type === "jsx_self_closing_element" ? n : n.namedChild(0)
+        if (opening && (opening.type === "jsx_self_closing_element" || opening.type === "jsx_opening_element")) {
+          const identifier = opening.namedChild(0)
+          if (identifier && identifier.type === "identifier") {
+            const char = identifier.text[0]
+            if (char && char === char.toUpperCase() && char !== char.toLowerCase()) {
+              relationships.push({
+                source: callSource,
+                target: identifier.text,
+                type: ASTEngine.RelationshipType.Uses,
+                confidence: 0.9,
+                metadata: { jsxElement: identifier.text },
+              })
+            }
           }
         }
       }
@@ -988,6 +1045,53 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (kind) return kind.text === "const"
     }
     return false
+  }
+
+  /**
+   * M14 #419 J7 — collect binding names from a destructuring pattern.
+   * Handles object_pattern (shorthand, renamed pair, default assignment,
+   * object_assignment, rest) and array_pattern (elements, rest), recursing
+   * into nested patterns.
+   */
+  private collectPatternNames(pattern: Node): string[] {
+    const out: string[] = []
+    const walk = (n: Node): void => {
+      switch (n.type) {
+        case "shorthand_property_identifier":
+        case "shorthand_property_identifier_pattern":
+        case "identifier":
+          out.push(n.text)
+          break
+        case "pair_pattern": {
+          // { key: value } — the VALUE side binds (key is the property read)
+          const value = n.childForFieldName("value")
+          if (value) walk(value)
+          break
+        }
+        case "assignment_pattern":
+        case "object_assignment_pattern": {
+          // { a = 1 } / [a = 1] — the LEFT side binds
+          const left = n.childForFieldName("left")
+          if (left) walk(left)
+          break
+        }
+        case "rest_pattern": {
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (c) walk(c)
+          }
+          break
+        }
+        default:
+          // object_pattern / array_pattern / nested patterns — recurse
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (c) walk(c)
+          }
+      }
+    }
+    walk(pattern)
+    return out
   }
 
   private extractParameters(paramsNode: Node | null): ASTEngine.Parameter[] {
@@ -1177,7 +1281,11 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           p.type === "class_declaration" ||
           p.type === "function_declaration" ||
           p.type === "generator_function_declaration" ||
-          p.type === "method_definition"
+          p.type === "method_definition" ||
+          // M14 #419 J6: top-level const r = x instanceof T attributes the
+          // reference to r (the enclosing declaration), never the global
+          // placeholder (TS same-wave fix).
+          p.type === "variable_declarator"
         ) {
           for (let i = 0; i < p.namedChildCount; i++) {
             const c = p.namedChild(i)
@@ -1236,7 +1344,12 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (
         node.type === "class_declaration" ||
         node.type === "class" ||
-        node.type === "function_declaration"
+        node.type === "function_declaration" ||
+        // M14 #419: method_definition is an owner too — template
+        // substitutions and field accesses inside methods attribute to the
+        // METHOD, not the enclosing class (family parity; the J3/J4
+        // fixtures pin method-level sources).
+        node.type === "method_definition"
       ) {
         const nameNode =
           node.childForFieldName?.("name") ?? node.namedChildren.find((c: any) => c.type === "identifier")
@@ -1249,31 +1362,69 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
 
       if (node.type === "member_expression") {
-        const parts: string[] = []
-        let cur: Node | null | undefined = node
-        // flatten nested member_expression chain into segments
-        while (cur && cur.type === "member_expression") {
-          const prop = cur.childForFieldName("property")
-          if (prop) parts.unshift(prop.text)
-          cur = cur.childForFieldName("object")
-        }
-        const head = cur ? cur.text : ""
-        if (head && parts.length >= 1) {
-          for (const seg of parts) {
-            const source = head === "this" || head === "super" ? owner ?? head : head
-            const key = `${source}.${seg}`
-            if (!seen.has(key)) {
-              seen.add(key)
-              relationships.push({
-                source,
-                target: seg,
-                type: ASTEngine.RelationshipType.Uses,
-                confidence: 0.6,
-                metadata: { isFieldAccess: true },
-              })
+        // M14 #419 J4: a member_expression in call-callee position emits the
+        // Calls edge only — the Uses edge is a double-emission (family
+        // contract, TS/kotlin/scala). Skip the callee here; calls covers it.
+        // web-tree-sitter returns FRESH wrapper objects per access — compare
+        // by id, never by reference (the TS analyzer's documented quirk).
+        const isCallCallee =
+          node.parent?.type === "call_expression" &&
+          node.parent.childForFieldName("function")?.id === node.id
+        if (!isCallCallee) {
+          const parts: string[] = []
+          let cur: Node | null | undefined = node
+          // flatten nested member_expression chain into segments
+          while (cur && cur.type === "member_expression") {
+            const prop = cur.childForFieldName("property")
+            if (prop) parts.unshift(prop.text)
+            cur = cur.childForFieldName("object")
+          }
+          const head = cur ? cur.text : ""
+          if (head && parts.length >= 1) {
+            for (const seg of parts) {
+              const source = head === "this" || head === "super" ? owner ?? head : head
+              const key = `${source}.${seg}`
+              if (!seen.has(key)) {
+                seen.add(key)
+                relationships.push({
+                  source,
+                  target: seg,
+                  type: ASTEngine.RelationshipType.Uses,
+                  confidence: 0.6,
+                  metadata: { isFieldAccess: true },
+                })
+              }
             }
           }
         }
+      }
+
+      // M14 #419 J3: template-literal interpolation — `hi ${name}` reads
+      // name inside the enclosing function (TS T3 / kotlin K4 / scala G4
+      // analog). Emit Uses on the substituted identifiers.
+      if (node.type === "template_substitution") {
+        const sub = (n: Node): void => {
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (!c) continue
+            if (c.type === "identifier") {
+              const key = `${owner ?? "global"}.${c.text}`
+              if (!seen.has(key)) {
+                seen.add(key)
+                relationships.push({
+                  source: owner ?? "global",
+                  target: c.text,
+                  type: ASTEngine.RelationshipType.Uses,
+                  confidence: 0.85,
+                  metadata: { isTemplateInterpolation: true },
+                })
+              }
+            } else if (c.type !== "identifier") {
+              sub(c)
+            }
+          }
+        }
+        sub(node)
       }
       for (let i = node.namedChildCount - 1; i >= 0; i--) {
         const child = node.namedChild(i)
@@ -1294,6 +1445,10 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
       const t = String(r.type ?? r.relationshipType ?? "")
       const conf = typeof r.confidence === "number" ? r.confidence : 1
       if (t === "contains" || t === "exports") { md.evidenceClass = "structural"; continue }
+      // M14 #419 J1: the dedicated `imports` kind (ES6, CJS require, dynamic
+      // import, re-exports) carries module dependencies — import_based, the
+      // TS T1 / JVM K8 finding. Pre-fix this kind fell to usage_contextual.
+      if (t === "imports") { md.evidenceClass = "import_based"; continue }
       if (t === "references") {
         md.evidenceClass = md.isImport ? "import_based" : "reference_qualified"
         continue
