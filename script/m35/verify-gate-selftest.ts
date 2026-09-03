@@ -113,6 +113,34 @@ const GATES: GateSpec[] = [
     },
   },
   {
+    name: "m35-s3-stale-plan-unflagged",
+    script: "script/m35/verify-s3-graph-migrate.ts",
+    // S3 mutation 1 (issue criterion 2): a stale migration plan unflagged.
+    // Flip the per-plan comparison — the edited-file plan comes out fresh and
+    // the up-front notice miscounts; the plan flag checks must fail.
+    surfaces: [],
+    mutate: () => {},
+    mutateEvidence: {
+      file: "src/mcp/tool-handlers.ts",
+      from: "      p.stale = migStatus(p.sourceFile) === \"stale\"",
+      to: "      p.stale = migStatus(p.sourceFile) !== \"stale\"",
+    },
+  },
+  {
+    name: "m35-s3-link-wrong-endpoint",
+    script: "script/m35/verify-s3-graph-migrate.ts",
+    // S3 mutation 2 (issue criterion 2): link inherits the WRONG endpoint
+    // state — worst-of (OR) becomes all-of (AND), so a stale-source link
+    // with a fresh target drops its flag; the worst-of-endpoints check fails.
+    surfaces: [],
+    mutate: () => {},
+    mutateEvidence: {
+      file: "src/mcp/tool-handlers.ts",
+      from: "      l.stale = (!!s && vizStatus(s.filePath) === \"stale\") || (!!t && vizStatus(t.filePath) === \"stale\")",
+      to: "      l.stale = (!!s && vizStatus(s.filePath) === \"stale\") && (!!t && vizStatus(t.filePath) === \"stale\")",
+    },
+  },
+  {
     name: "m35-freshness-core",
     script: "script/m35/verify-freshness-core.ts",
     // Evidence-mutation form: F1's governed surface is the production core
