@@ -140,7 +140,7 @@ const ISSUE_RELEVANT_FILES: Record<string, string[]> = {
     "src/lsp/call_hierarchy.ts",
   ],
   E7: ["script/m25/verify-cross-platform.ts"],
-  D1: ["ide/vscode/marketplace-listing.md", "docs/m25/INSTALL.md"],
+  D1: ["ide/vscode/README.md", "docs/m25/INSTALL.md", "script/m25/verify-listing.ts", "script/m25/verify-install-docs.ts"],
   X1: ["script/m25/verify-closure.ts"],
 }
 const SHARED_RELEVANT_FILES = [
