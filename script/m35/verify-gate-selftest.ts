@@ -165,6 +165,13 @@ function runGate(script: string, env: Record<string, string> = {}): { exit: numb
   }
 }
 
+// Failure detail that surfaces the child's ACTUAL failing checks (FAIL lines
+// from its stdout) instead of trailing stderr noise (wasm/worker logs).
+function gateFailureDetail(output: string): string {
+  const failLines = output.split("\n").filter((l) => l.startsWith("FAIL") || l.includes("OVER") || l.includes("CRASH")).slice(0, 4).join(" | ")
+  return failLines || output.slice(-200)
+}
+
 const gateResults: { name: string; mutationFailed: boolean; controlPassed: boolean }[] = []
 for (const gate of GATES) {
   check(`${gate.name}: gate script exists`, existsSync(path.join(ROOT, gate.script)), gate.script)
@@ -181,11 +188,11 @@ for (const gate of GATES) {
     const backup = readFileSync(evPath, "utf8")
     try {
       const control = runGate(gate.script, { BB_M35_SELFTEST_CONTROL: "1" })
-      check(`${gate.name}: control — clean tree PASSES`, control.exit === 0, control.output.slice(-200))
+      check(`${gate.name}: control — clean tree PASSES`, control.exit === 0, gateFailureDetail(control.output))
       check(`${gate.name}: mutation anchor found in evidence`, backup.includes(gate.mutateEvidence.from))
       writeFileSync(evPath, backup.replace(gate.mutateEvidence.from, gate.mutateEvidence.to))
       const mutated = runGate(gate.script)
-      check(`${gate.name}: mutation — corrupted evidence FAILS the gate`, mutated.exit !== 0, mutated.output.slice(-200))
+      check(`${gate.name}: mutation — corrupted evidence FAILS the gate`, mutated.exit !== 0, gateFailureDetail(mutated.output))
       gateResults.push({ name: gate.name, mutationFailed: mutated.exit !== 0, controlPassed: control.exit === 0 })
     } finally {
       writeFileSync(evPath, backup)
@@ -242,11 +249,11 @@ for (const gate of GATES) {
     mkdirSync(path.join(sandbox, "validation/m35"), { recursive: true })
     writeFileSync(path.join(sandbox, "validation/m35/ledger.json"), JSON.stringify(worldLedger, null, 2) + "\n")
     const control = runGate(gate.script, { BB_M35_ROOT: sandbox })
-    check(`${gate.name}: control — unmutated sandbox PASSES`, control.exit === 0, control.output.slice(-200))
+    check(`${gate.name}: control — unmutated sandbox PASSES`, control.exit === 0, gateFailureDetail(control.output))
     // THEN plant the mutation and prove the gate flips to failing.
     gate.mutate(sandbox)
     const mutated = runGate(gate.script, { BB_M35_ROOT: sandbox })
-    check(`${gate.name}: mutation — corrupted surface FAILS the gate`, mutated.exit !== 0, mutated.output.slice(-200))
+    check(`${gate.name}: mutation — corrupted surface FAILS the gate`, mutated.exit !== 0, gateFailureDetail(mutated.output))
     gateResults.push({ name: gate.name, mutationFailed: mutated.exit !== 0, controlPassed: control.exit === 0 })
   } finally {
     rmSync(sandbox, { recursive: true, force: true })
