@@ -247,7 +247,7 @@
       "code": "D1",
       "githubIssue": 515,
       "tool": "graph-docs",
-      "status": "planned",
+      "status": "verified",
       "scope": "Docs for the graph surface: what renders, per-pair cross-language reality generated from evidence, tier legend, truncation policy",
       "acceptanceCriteria": [
         "per-pair table generated from brain_relationship reality, drift-gated",
@@ -258,7 +258,16 @@
         "drift test byte-identical",
         "evidence",
         "limitations declared"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "verifierCommand": "npx tsx script/m26/verify-graph-docs.ts",
+        "evidenceFile": "D1.json",
+        "passed": 28,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 2
+      }
     },
     {
       "code": "X1",

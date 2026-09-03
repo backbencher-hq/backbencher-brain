@@ -1,0 +1,13 @@
+{
+  "issue": "M26.D1",
+  "status": "verified",
+  "passed": 28,
+  "failed": 0,
+  "negativeCases": 2,
+  "realDbsScanned": 17,
+  "realDbsSkipped": 3,
+  "realCrossLanguagePairs": 0,
+  "docFile": "docs/m26/GRAPH.md",
+  "verifierCommand": "npx tsx script/m26/verify-graph-docs.ts",
+  "generatedAt": "2026-09-03T23:20:25.622Z"
+}
