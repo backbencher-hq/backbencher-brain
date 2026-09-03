@@ -292,8 +292,8 @@ function cleanupDir(dir: string): void {
 const SYMBOL_MUTANTS: Array<{ name: string; from: string; to: string }> = [
   {
     name: "positions: swapped start/end",
-    from: "  const selection = mapper.indexRangeToLsp({\n    start: { line: row.line_start, column: row.byte_start },\n    end: { line: row.line_end, column: row.byte_end },\n  });",
-    to: "  const selection = mapper.indexRangeToLsp({\n    start: { line: row.line_end, column: row.byte_end },\n    end: { line: row.line_start, column: row.byte_start },\n  });",
+    from: "  const selection = mapper.indexRangeToLsp({\n    start: { line: startCol.line, column: startCol.column },\n    end: { line: endCol.line, column: endCol.column },\n  });",
+    to: "  const selection = mapper.indexRangeToLsp({\n    start: { line: endCol.line, column: endCol.column },\n    end: { line: startCol.line, column: startCol.column },\n  });",
   },
   {
     name: "workspace: drop gravity ranking",
