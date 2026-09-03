@@ -491,3 +491,32 @@ pins+forbids per class; 5 new mutants; 190/190 caught; floor re-pinned 100%/0/0.
 Process lesson recorded: pins authored against broken emission "pass" while
 both sides are wrong — pins must be re-authored from re-probed emission after
 every fix (caught CSD10's over-firing guard exactly this way).
+
+Csharp claim-validation wave (2026-09-04, same day): the OWNER read the code
+and surfaced two suspects. Validation verdicts, both probe-tested on real
+parses before any fix: (1) "field target-typed new() silently dropped" —
+REFUTED as stated: the exact quoted shape `private List<int> _items = new();`
+emits correctly (the resolver's variable_declarator branch fires BEFORE the
+field_declaration early return, making that early return unreachable dead
+code — the owner's "intentional early-return never revisited" diagnosis was
+right about the mechanism, wrong about the consequence). The census then
+found the REAL sibling defect (CSD11): ASSIGNMENT-form `_items = new();` in a
+constructor emits nothing (6/400 files; explicit `new List<int>()` in the
+identical position emits — a pure target-typed asymmetry). Fixed via a
+member-type pre-pass map resolved through the assignment LHS; the dead early
+return was removed. Locals declared without initializer remain an honest
+no-edge. (2) "interface-only base lists mislabel index-0 external as
+extends" — CONFIRMED exactly as described (CSD12; 66/400 powershell files
+carry interface-only base lists). F5's corpus-interface companion narrows the
+fabrication to EXTERNAL interfaces (IDisposable, IComparable), still among
+the most common C# shapes. Fixed: unknown external index-0 I-prefixed
+PascalCase names (length > 2, so Icon/IntPtr never match) emit implements;
+structs/record-structs emit implements for EVERY base (C# structs cannot
+inherit — I-naming irrelevant). Oracle mirrored on both; the pre-existing
+fixture pin `extends F6Tank -> IDisposable` had codified the bug and was
+re-authored from re-probed emission. Note: an I-named external CLASS
+(`: IdentityMap`) still follows the first-base rule — a declared,
+documented limitation of the convention heuristic. Fixture extended
+(+4 pins, +2 forbids, assignment-form + struct shapes); 2 new mutants (192
+total, ALL caught); F5 re-verified 100%/0/0 (1386 truth edges); F1/F6 21
+languages green; SPEC 8/8; CC1 pass; honesty green.
