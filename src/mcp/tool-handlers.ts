@@ -504,14 +504,92 @@ const handlers: Record<string, ToolHandler> = {
     if (!["project", "file", "module", "symbol", "feature"].includes(scope)) return textResult(`bb_visualize: unknown scope: ${scope}`, true)
     const request: VisualizationRequest = { scope: scope as VisualizationScope, target: args.target ? String(args.target) : undefined, format: ["text", "json", "html"].includes(String(args.format)) ? args.format : "text", maxNodes: args.maxNodes == null ? undefined : Number(args.maxNodes), maxLinks: args.maxLinks == null ? undefined : Number(args.maxLinks), relationshipTypes: Array.isArray(args.relationshipTypes) ? args.relationshipTypes.map(String) : undefined, languages: Array.isArray(args.languages) ? args.languages.map(String) : undefined }
     const result = await visualizeProject(projectId, request)
-    return textResult(formatVisualization(result))
+    // M35.S3: per-node stale flags (node file changed since index); links
+    // inherit worst-of-endpoints — a link is stale if EITHER endpoint's file
+    // is stale (the edge crosses changed code on either side). Truncation
+    // metadata is untouched so truncated AND stale are both visible.
+    const vizRaw = await BrainDatabase.getRawInstance(projectId as any)
+    const vizFiles = [...new Set((result.nodes as any[]).map((n) => n.filePath).filter((p: unknown): p is string => typeof p === "string" && p.length > 0 && p !== "unknown"))]
+    const vizRelToId = new Map<string, string>()
+    if (vizFiles.length) {
+      for (const r of vizRaw.prepare(`SELECT id, relative_path FROM brain_file WHERE project_id = ? AND relative_path IN (${vizFiles.map(() => "?").join(",")})`).all(projectId, ...vizFiles) as Array<{ id: string; relative_path: string }>) {
+        vizRelToId.set(r.relative_path, r.id)
+      }
+    }
+    const vizRows = vizFiles.map((p) => ({ fileId: vizRelToId.get(p) ?? null }))
+    const vizDetail = vizRows.length ? resolveRowsFreshnessDetailed(vizRaw, projectId as any, vizRows) : null
+    const vizStatuses = vizDetail?.statuses ?? new Map<string, string>()
+    const vizStatus = (rel: string | undefined) => (rel ? vizStatuses.get(vizRelToId.get(rel) ?? "") ?? "missing" : "missing")
+    const vizSummary = {
+      fresh: vizRows.filter((r) => vizStatuses.get(r.fileId ?? "") === "fresh").length,
+      stale: vizRows.filter((r) => vizStatuses.get(r.fileId ?? "") === "stale").length,
+      missing: vizRows.filter((r) => vizStatuses.get(r.fileId ?? "") !== "fresh" && vizStatuses.get(r.fileId ?? "") !== "stale").length,
+    }
+    for (const n of result.nodes as any[]) n.stale = vizStatus(n.filePath) === "stale"
+    const nodeById = new Map((result.nodes as any[]).map((n) => [n.id, n]))
+    for (const l of result.links as any[]) {
+      const s = nodeById.get(l.source)
+      const t = nodeById.get(l.target)
+      l.stale = (!!s && vizStatus(s.filePath) === "stale") || (!!t && vizStatus(t.filePath) === "stale")
+    }
+    const vizEnvelopeSource = { ...vizSummary, staleRatio: vizRows.length ? (vizSummary.stale + vizSummary.missing) / vizRows.length : 0, freshnessMode: "complete" as const }
+    if (request.format === "json") {
+      const parsed = JSON.parse(formatVisualization(result))
+      parsed.freshness = buildStalenessEnvelope(vizEnvelopeSource, { kind: "dir" })
+      return textResult(JSON.stringify(parsed, null, 2))
+    }
+    const vizOut = formatVisualization(result)
+    const vizFooter = vizSummary.stale + vizSummary.missing > 0 ? `\n\n${vizSummary.stale} stale, ${vizSummary.missing} missing of ${vizRows.length} graph files — ${FRESHNESS_REMEDIATION.dir}` : ""
+    return textResult(vizOut + vizFooter)
   },
 
   bb_migrate: async (args, { projectId }) => {
     const symbolNames = Array.isArray(args.symbolNames) ? args.symbolNames.map(String) : args.symbolName ? [String(args.symbolName)] : []
     if (!symbolNames.length || !args.targetLanguage) return textResult("bb_migrate requires symbolNames (or symbolName) and targetLanguage", true)
     const result = await generateMigrationPlans(projectId, { symbolNames, targetLanguage: String(args.targetLanguage) })
-    return textResult(formatMigrationPlans(result, args.format === "json" ? "json" : "text"))
+    // M35.S3: a migration plan is a claim about CURRENT code. Resolve each
+    // plan's source file and flag plans whose file changed since the index —
+    // a stale plan says so up front instead of silently planning against
+    // outdated symbols.
+    const migRaw = await BrainDatabase.getRawInstance(projectId as any)
+    const planNames = (result.plans as any[]).map((p) => String(p.componentName ?? "").toLowerCase()).filter(Boolean)
+    const nameToRel = new Map<string, string>()
+    if (planNames.length) {
+      for (const r of migRaw.prepare(`SELECT lower(s.name) AS lname, f.relative_path AS rel FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id WHERE s.project_id = ? AND lower(s.name) IN (${planNames.map(() => "?").join(",")})`).all(projectId, ...planNames) as Array<{ lname: string; rel: string }>) {
+        if (!nameToRel.has(r.lname)) nameToRel.set(r.lname, r.rel)
+      }
+    }
+    const migFiles = [...new Set([...nameToRel.values()])]
+    const migRelToId = new Map<string, string>()
+    if (migFiles.length) {
+      for (const r of migRaw.prepare(`SELECT id, relative_path FROM brain_file WHERE project_id = ? AND relative_path IN (${migFiles.map(() => "?").join(",")})`).all(projectId, ...migFiles) as Array<{ id: string; relative_path: string }>) {
+        migRelToId.set(r.relative_path, r.id)
+      }
+    }
+    const migRows = migFiles.map((p) => ({ fileId: migRelToId.get(p) ?? null }))
+    const migDetail = migRows.length ? resolveRowsFreshnessDetailed(migRaw, projectId as any, migRows) : null
+    const migStatuses = migDetail?.statuses ?? new Map<string, string>()
+    const migStatus = (rel: string | undefined) => (rel ? migStatuses.get(migRelToId.get(rel) ?? "") ?? "missing" : "missing")
+    for (const p of result.plans as any[]) {
+      p.sourceFile = nameToRel.get(String(p.componentName ?? "").toLowerCase()) ?? null
+      p.stale = migStatus(p.sourceFile) === "stale"
+    }
+    const migSummary = {
+      fresh: migRows.filter((r) => migStatuses.get(r.fileId ?? "") === "fresh").length,
+      stale: migRows.filter((r) => migStatuses.get(r.fileId ?? "") === "stale").length,
+      missing: migRows.filter((r) => migStatuses.get(r.fileId ?? "") !== "fresh" && migStatuses.get(r.fileId ?? "") !== "stale").length,
+    }
+    const migEnvelopeSource = { ...migSummary, staleRatio: migRows.length ? (migSummary.stale + migSummary.missing) / migRows.length : 0, freshnessMode: "complete" as const }
+    const stalePlans = (result.plans as any[]).filter((p) => p.stale).length
+    if (args.format === "json") {
+      const parsed = JSON.parse(formatMigrationPlans(result, "json"))
+      parsed.freshness = buildStalenessEnvelope(migEnvelopeSource, { kind: "dir" })
+      return textResult(JSON.stringify(parsed, null, 2))
+    }
+    const migOut = formatMigrationPlans(result, "text")
+    const migNotice = stalePlans > 0 ? `⚠ ${stalePlans} of ${result.plans.length} plans reference files changed since the last index — reindex before acting on these plans.\n\n` : ""
+    const migFooter = migSummary.stale + migSummary.missing > 0 ? `\n\n${migSummary.stale} stale, ${migSummary.missing} missing of ${migRows.length} plan files — ${FRESHNESS_REMEDIATION.dir}` : ""
+    return textResult(migNotice + migOut + migFooter)
   },
 
   bb_doc: async (args, { projectId, projectPath }) => {
