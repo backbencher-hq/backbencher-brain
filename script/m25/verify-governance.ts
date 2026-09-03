@@ -135,7 +135,13 @@ const SHARED_RELEVANT_FILES = [
   "docs/IDE-HONESTY-CONTRACT.md",
   "docs/IDE-PROGRAM-DECISIONS.md",
   "docs/IDE-PROGRAM-STATUS.md",
-  "validation/m25/results/manifest.json",
+  // manifest.json is DELIBERATELY NOT here. It is the ledger — the OUTPUT of
+  // the evidence cycle, not an input to what a verifier run proves. Keeping
+  // it relevant caused infinite regress: every evidence pin updates the
+  // ledger, which staled every leg's evidence, which required another pin…
+  // (found live while closing E5: 70/70 checks but never VERIFIED).
+  // The governing docs above stay: if the contract or plan changes, old
+  // evidence may no longer prove what is claimed.
 ]
 
 /** Contract §1 banned vocabulary, enforced over M25 artifacts. */
