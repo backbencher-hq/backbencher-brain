@@ -333,6 +333,12 @@ export function refreshStatus(): void {
       version: activationReport?.serverVersion ?? null,
       versionOk: activationReport?.versionOk ?? false,
     },
+    // Law-budget (contract §6/§7.3): the measured activation cost is user-
+    // visible on the status surface — a budget miss degrades the badge and
+    // the tooltip says so; it is never hidden behind a clean check.
+    budget: activationReport
+      ? { activationMs: activationReport.activationMs, declaredBudgetMs: activationReport.declaredBudgetMs, withinBudget: activationReport.withinBudget }
+      : null,
     index: { phase: autoIndex?.state.phase ?? "no-index" },
     staleness: lastStaleness,
     language: window.activeTextEditor?.document.languageId ?? null,
@@ -356,6 +362,12 @@ export async function showStatusPanel(): Promise<void> {
       version: activationReport?.serverVersion ?? null,
       versionOk: activationReport?.versionOk ?? false,
     },
+    // Law-budget (contract §6/§7.3): the measured activation cost is user-
+    // visible on the status surface — a budget miss degrades the badge and
+    // the tooltip says so; it is never hidden behind a clean check.
+    budget: activationReport
+      ? { activationMs: activationReport.activationMs, declaredBudgetMs: activationReport.declaredBudgetMs, withinBudget: activationReport.withinBudget }
+      : null,
     index: { phase: autoIndex?.state.phase ?? "no-index" },
     staleness: lastStaleness,
     language: window.activeTextEditor?.document.languageId ?? null,
