@@ -241,6 +241,9 @@ const leakPatternWorks = KEY_PATTERNS.some(([, p]) => p.test("sk-or-v1-" + "a".r
 negative("G1: key-leak patterns detect planted key shapes", leakPatternWorks)
 
 const fabricated = structuredClone(ledger)
+// Force the fabricated state explicitly: status planned + evidence attached.
+// (Must not depend on S1's real ledger status, which progresses to verified.)
+fabricated.issues[1]!.status = "planned"
 fabricated.issues[1]!.evidence = { status: "verified", currentCommit: "deadbeef", verifierCommand: "x", evidenceFile: "x", generatedAt: "x", passed: 1, failed: 0, negativeCases: 1 }
 negative("G1: planned-with-evidence fabrication is rejected", validateLedger(fabricated, plan, contract).some((e) => e.startsWith("planned-evidence:S1")))
 
