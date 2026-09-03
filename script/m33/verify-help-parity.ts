@@ -102,7 +102,12 @@ function helpCommands(helpText: string): string[] {
     }
     if (inCommands) {
       if (/^[A-Za-z]/.test(line)) break // next section
-      const m = /^\s+([a-z][a-z0-9-]*)/.exec(line)
+      // Command entries start with EXACTLY two spaces (commander layout).
+      // Wrapped description continuation lines are indented to the description
+      // column (much deeper) and must not be parsed as commands (M22.V1 made
+      // multi-line descriptions possible). The token must be followed by
+      // whitespace/args/end — never a mid-word char like "/" or ")".
+      const m = /^ {2}([a-z][a-z0-9-]*)(?=\s|$|\[|<)/.exec(line)
       if (m) cmds.push(m[1]!)
     }
   }
