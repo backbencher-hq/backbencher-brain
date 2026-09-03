@@ -7,21 +7,13 @@
   "passed": 69,
   "failed": 0,
   "negativeCases": 10,
-  "currentCommit": "afa245b381ad3674851ef364e94dd6ba045ed56f",
+  "currentCommit": "d9037d2a7570f0367f2fcb94e7592283f2793dec",
   "workingTreeRelevantChanges": [
-    "ide/vscode/esbuild-extension.mjs",
-    "ide/vscode/package-lock.json",
-    "ide/vscode/package.json",
-    "ide/vscode/src/extension.ts",
-    "package.json",
-    "script/m25/feature-assertions.ts",
-    "script/m25/verify-governance.ts",
-    "script/m25/e5-inner.js",
-    "script/m25/run-vscode-e2e.mts"
+    "script/m25/verify-harness-core.ts"
   ],
   "verifierCommand": "npx tsx script/m25/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-03T03:06:04.920Z",
+  "generatedAt": "2026-09-03T03:12:36.822Z",
   "ledger": "validation/m25/results/manifest.json",
   "m24Bar": {
     "ledgerStatus": "closed",
