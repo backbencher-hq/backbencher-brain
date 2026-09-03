@@ -1,0 +1,167 @@
+[
+  {
+    "code": "G1",
+    "githubIssue": 579,
+    "tool": "governance",
+    "status": "verified",
+    "scope": "staleness ledger, gates wiring, mutation-based gate self-test",
+    "acceptanceCriteria": [
+      "ledger exists with all M35 issues, synced from evidence, zero fabricated entries",
+      "every M35 gate fails under its planted mutation",
+      "npm run verify runs all M35 gates (machine-checked against package.json)",
+      "evidence envelope persisted in validation/m35/results/"
+    ],
+    "closureRequirements": [
+      "persist G1 evidence with standard envelope",
+      "mutation self-test proves gates can fail",
+      "no auto-pass assertions in any M35 verifier"
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "d0b3fdb74a332335cb0b4de5242a6b2233a9b51a",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m35/verify-governance.ts",
+      "evidenceFile": "G1.json",
+      "generatedAt": "2026-09-03T03:33:07.104Z",
+      "passed": 27,
+      "failed": 0,
+      "negativeCases": 2
+    }
+  },
+  {
+    "code": "F1",
+    "githubIssue": 580,
+    "tool": "freshness-core",
+    "status": "planned",
+    "scope": "batch row-level staleness resolution for symbols and relationships (O(unique files), not O(rows))",
+    "acceptanceCriteria": [
+      "stale/missing/fresh/fast-path cases behaviorally correct on real fixtures",
+      "batch cost benchmark proves O(unique files) not O(rows)",
+      "gate fails under mutation (missing file marked fresh)"
+    ],
+    "closureRequirements": [
+      "persist F1 evidence with standard envelope",
+      "negativeCases > 0",
+      "evidence stamped at commit containing final code"
+    ]
+  },
+  {
+    "code": "E1",
+    "githubIssue": 581,
+    "tool": "envelope-contract",
+    "status": "planned",
+    "scope": "standard freshness envelope block + per-item stale flag in contracts.ts and executable registry",
+    "acceptanceCriteria": [
+      "contract type + registry schema updated; contract-diff and tool-docs byte-gate green after regeneration",
+      "gate fails when a handler omits the block or remediation drifts from the registered constant",
+      "2+ mutations wired into G1 self-test"
+    ],
+    "closureRequirements": [
+      "persist E1 evidence with standard envelope",
+      "negativeCases > 0",
+      "evidence stamped at commit containing final code"
+    ]
+  },
+  {
+    "code": "S1",
+    "githubIssue": 582,
+    "tool": "bb_search+bb_analyze",
+    "status": "planned",
+    "scope": "symbol mode and all bb_analyze read modes surface staleness (per-row flag + envelope)",
+    "acceptanceCriteria": [
+      "edit-after-index fixtures: every affected mode flags stale rows with correct envelope counts",
+      "gate fails under mutation (stale row reported fresh; counts wrong)",
+      "freshness resolution under 5% of handler latency, measured and recorded"
+    ],
+    "closureRequirements": [
+      "persist S1 evidence with standard envelope",
+      "negativeCases > 0",
+      "evidence stamped at commit containing final code"
+    ]
+  },
+  {
+    "code": "S2",
+    "githubIssue": 583,
+    "tool": "bb_patterns+bb_security+bb_doc",
+    "status": "planned",
+    "scope": "derived findings (patterns, security/taint, doc) surface staleness per finding + envelope",
+    "acceptanceCriteria": [
+      "mutate-after-index fixtures: each tool flags affected findings with correct counts",
+      "gate fails under mutation (stale finding presented fresh)",
+      "mutations wired into G1 self-test"
+    ],
+    "closureRequirements": [
+      "persist S2 evidence with standard envelope",
+      "negativeCases > 0",
+      "evidence stamped at commit containing final code"
+    ]
+  },
+  {
+    "code": "S3",
+    "githubIssue": 584,
+    "tool": "bb_visualize+bb_migrate",
+    "status": "planned",
+    "scope": "graph nodes/links and migration steps surface staleness (links inherit worst-of-endpoints)",
+    "acceptanceCriteria": [
+      "stale nodes/links/steps flagged with correct counts in both tools",
+      "gate fails under mutation (stale step unflagged; link inherits wrong)",
+      "mutations wired into G1 self-test"
+    ],
+    "closureRequirements": [
+      "persist S3 evidence with standard envelope",
+      "negativeCases > 0",
+      "evidence stamped at commit containing final code"
+    ]
+  },
+  {
+    "code": "C1",
+    "githubIssue": 585,
+    "tool": "staleness-corpus",
+    "status": "planned",
+    "scope": "mutate-after-index observed-behavior corpus across 3+ language families, baseline-diffed on --check",
+    "acceptanceCriteria": [
+      "corpus proves freshness reporting on every read mode across 3+ languages with precision+recall on flagged rows",
+      "--check fails on any behavior drift; baseline tampering detected",
+      "mutations wired into G1 self-test"
+    ],
+    "closureRequirements": [
+      "persist C1 evidence with standard envelope",
+      "negativeCases > 0",
+      "evidence stamped at commit containing final code"
+    ]
+  },
+  {
+    "code": "D1",
+    "githubIssue": 586,
+    "tool": "docs-staleness",
+    "status": "planned",
+    "scope": "staleness semantics documented per tool and machine-gated against the registry constant",
+    "acceptanceCriteria": [
+      "all 11 per-tool docs + TOOLS_OVERVIEW updated and passing ALL M31 gates unchanged",
+      "staleness-doc gate fails when a doc drifts from the remediation constant or claims an unimplemented mode",
+      "mutation wired into G1 self-test"
+    ],
+    "closureRequirements": [
+      "persist D1 evidence with standard envelope",
+      "negativeCases > 0",
+      "evidence stamped at commit containing final code"
+    ]
+  },
+  {
+    "code": "X1",
+    "githubIssue": 587,
+    "tool": "closure",
+    "status": "planned",
+    "scope": "closure gate: full staleness-truth audit at final HEAD, milestone closes via the gate",
+    "acceptanceCriteria": [
+      "closure fails when a subordinate gate is red, evidence is stale, or wiring is broken (proven by mutation)",
+      "chain green twice consecutively, zero working-tree residue",
+      "all M35 issues closed with evidence comments; milestone closed"
+    ],
+    "closureRequirements": [
+      "persist X1 evidence with standard envelope",
+      "negativeCases > 0",
+      "evidence stamped at commit containing final code"
+    ]
+  }
+]
