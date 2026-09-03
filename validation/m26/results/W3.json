@@ -1,0 +1,37 @@
+{
+  "issue": "M26.W3",
+  "code": "W3",
+  "milestone": "M26",
+  "status": "verified",
+  "checks": 17,
+  "passed": 17,
+  "failed": 0,
+  "mutantsCaught": 5,
+  "mutantsTotal": 5,
+  "currentCommit": "c954633b13b60672fa7db1bd7357aba860a2aa8c",
+  "verifierCommand": "npx tsx script/m26/verify-cross-language-hover.ts",
+  "evidenceFile": "W3.json",
+  "pairsFile": "W3-pairs.json",
+  "generatedAt": "2026-09-03T21:42:40.852Z",
+  "storedPairs": [
+    {
+      "source": "kotlin",
+      "target": "typescript",
+      "edgeCount": 1,
+      "sampleBridge": "kotlin-ts interop",
+      "origin": "fixture (W3 suite, seeded)"
+    },
+    {
+      "source": "typescript",
+      "target": "kotlin",
+      "edgeCount": 1,
+      "sampleBridge": null,
+      "origin": "fixture (W3 suite, seeded)"
+    }
+  ],
+  "realDbsScanned": 17,
+  "limitations": [
+    "Launch launch-language pairs with no stored rows are declared absent (doc generated per scan).",
+    "Coverage scan reads real project dbs read-only; unreadable dbs are skipped and counted in realDbsScanned."
+  ]
+}
