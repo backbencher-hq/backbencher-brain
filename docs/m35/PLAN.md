@@ -82,3 +82,8 @@ Identical to M31's proven contract (including its post-closure audit lessons):
 ## Post-merge role
 
 `script/m35/staleness-corpus.ts --check` is a designated acceptance probe in `MERGE_NOTES.md` merge-day procedure: after laptops merge, the corpus proves staleness behavior survived the merge, per tool, per language family. Until C1 delivers it, the two live M35 gates (governance + mutation self-test) already run inside `npm run verify` and are part of the merge-day procedure.
+
+## Delivery log
+
+- **F1 (#580) delivered** — `resolveRowsFreshness`/`resolveRowsFreshnessDetailed` in `src/brain/freshness.ts`: batch row-level resolver (id+path keys, per-call memoized stats, chunked IN loads, hash fallback on metadata mismatch), `FreshnessSummary` shape, observable `freshnessStats` counters. Gate `script/m35/verify-freshness-core.ts`: 29/29 behavioral + 3 negative cases, mutation-proven (O(rows) stat mutation flips it) via self-test entry `m35-freshness-core`. Wired into `npm run verify`. Evidence `validation/m35/results/F1.json` at `979b53f`.
+- **G1 (#579) closed** with stamped evidence — governance 30/30 (incl. new staged-wiring enforcement), self-test 9/9.

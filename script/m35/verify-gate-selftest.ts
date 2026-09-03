@@ -43,6 +43,16 @@ type GateSpec = {
 
 const GATES: GateSpec[] = [
   {
+    name: "m35-freshness-core",
+    script: "script/m35/verify-freshness-core.ts",
+    // Evidence-mutation form: F1's governed surface is the production core
+    // itself (src/brain/freshness.ts). Plant the O(rows) stat mutation → the
+    // batch-cost check must fail the gate → restore byte-identical.
+    surfaces: [],
+    mutate: () => {},
+    mutateEvidence: { file: "src/brain/freshness.ts", from: "return memoStat(p)", to: "return rawStat(p)" },
+  },
+  {
     name: "m35-governance",
     script: "script/m35/verify-governance.ts",
     // Governance reads the FULL governed surface — the sandbox must contain it:
