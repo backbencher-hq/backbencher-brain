@@ -25,12 +25,28 @@ Second finding: `npm run verify` (M30/M32/M33/M34 gates) has no CI job, so
 none of that discipline is machine-enforced. The full chain cannot run on a
 runner — M19 benchmarks against local corpora (`~/intellij-community`, a
 giant ASP.NET repo) — so CI gets a **`verify:fast`** subset: build + the
-M30/M32/M33/M36-milestone gates, explicitly excluding machine-specific legs.
+M30/M32/M33/M34 milestone gates, explicitly excluding machine-specific legs.
+
+### Further findings (recorded 2026-09-03)
+
+- **The package has no `test` script** — even with the lockfile committed,
+  the workflow's `npm test` step would fail. The repo's testing methodology
+  is the verifier chain, so the Test step is repaired to run the four
+  hermetic core verifiers (`verify-engine`, `verify-schema`,
+  `verify-tool-registry`, `verify-public-surface`) under `npx tsx` — proven
+  to pass under a fresh empty `HOME` (runner-like), 8–12s each.
+- **`script/verify-core.ts` is machine-specific**: it hard-codes a personal
+  opencode database path (`$HOME/.local/share/opencode/...`) and
+  asserts its row counts, so it fails on any other machine. It stays out of
+  CI like the M19 legs. (Its repair is a separate finding, not an M36 issue.)
 
 ## Non-goals / ownership boundary
 
-- The existing `build` job in `.github/workflows/ci.yml` must remain
-  **byte-identical**; S2's change is additive-only (a new `verify` job).
+- The **verify job** (S2) is additive-only; the existing build job's
+  install/typecheck/build steps remain byte-identical (diff-checked by the
+  S2 verifier). S1 *repairs* the broken Test step (`npm test` → hermetic
+  core verifiers) because the package has no test script — a recorded
+  root-cause fix, not a redesign.
 - No runner environment changes beyond what `npm ci` needs (the lockfile).
 - No `src/mcp/` changes (M21), no analyzer work (M14), no LSP/IDE work
   (M24–M29), no tool-documentation work (M31), no staleness work (M35).
