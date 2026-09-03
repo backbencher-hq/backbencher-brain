@@ -220,6 +220,8 @@ function truncationMarker(kind: string, shown: number, total: number, dom: Graph
   const el = dom.create("div")
   el.addClass("bb-truncation-marker")
   el.setAttribute("data-truncated", kind)
+  el.setAttribute("data-shown", String(shown))
+  el.setAttribute("data-total-if-known", String(total))
   el.textContent = `Showing ${shown} of ${total} ${kind} (render budget exhausted — not all data is displayed)`
   return el
 }
