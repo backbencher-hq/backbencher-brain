@@ -78,6 +78,16 @@ async function runSuite(): Promise<void> {
     const projectId = (getProjectId as (p: string) => string)(fixture)
     const stats = await indexProjectParallel(projectId as any, fixture, { skipPostProcessing: false })
     check("fixture indexes with enrichment", stats.errorFiles === 0, `errors=${stats.errorFiles}`)
+    // Phase 0 (nothing edited): the doc silence-when-fresh negative lives HERE
+    // because it is the only fully-fresh world. After the edits, dao.ts doc may
+    // legitimately cite its caller (app.ts, edited) when cross-file
+    // relationship resolution includes it — non-empty remediation is then
+    // CORRECT, so a post-edit "no remediation" assertion would be fixture-fragile.
+    const handlers0 = createToolHandlers() as any
+    const ctx0 = { projectPath: fixture, projectId }
+    const run0 = async (tool: string, args: any) => (await handlers0[tool](args, ctx0)).content[0].text as string
+    const freshDoc0 = JSON.parse(await run0("bb_doc", { mode: "file", target: "src/dao.ts", format: "json" }))
+    negative("doc phase 0: no remediation when nothing is edited", freshDoc0.freshness.remediation === "", JSON.stringify(freshDoc0.freshness))
     writeFileSync(editedFile, editedFile.endsWith("app.ts") ? [
       "import express from 'express'",
       "const app = express()",
@@ -140,7 +150,11 @@ async function runSuite(): Promise<void> {
 
     // Fresh doc: silence (no footer) when all citations fresh
     const freshDoc = JSON.parse(await run("bb_doc", { mode: "file", target: "src/dao.ts", format: "json" }))
-    negative("doc: no remediation when all citations fresh", freshDoc.freshness.remediation === "", JSON.stringify(freshDoc.freshness))
+    // Post-edit truthfulness: the dao.ts doc's remediation must be non-empty
+    // iff its citations include the edited file (caller citations are
+    // resolution-dependent, so the assertion is relative to observed citations).
+    const citesEdited = JSON.stringify(freshDoc).includes("src/app.ts")
+    check("doc: remediation truthfully tracks cited-file staleness", citesEdited ? freshDoc.freshness.remediation !== "" : freshDoc.freshness.remediation === "", `${JSON.stringify(freshDoc.freshness)} citesEdited=${citesEdited}`)
 
     // ── phase 2: edit dao.ts too — orphaned/pattern scope flagging turns on ──
     writeFileSync(path.join(fixture, "src", "dao.ts"), "export function getUser(id: number) { const q = 'SELECT * FROM users WHERE id=' + id; return q }\nexport function unusedHelper() { return 1 }\n// post-index edit: dao findings now stale\n")
