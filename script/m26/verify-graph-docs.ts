@@ -27,6 +27,7 @@
 // Run: npx tsx script/m26/verify-graph-docs.ts
 // Evidence: validation/m26/results/D1.json (machine-emitted)
 
+import { execFileSync } from "node:child_process"
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs"
 import { createRequire } from "node:module"
 import { join, dirname } from "node:path"
@@ -254,6 +255,10 @@ function main(): void {
   // --- Emit evidence -----------------------------------------------------------
   const dir = join(ROOT, "validation", "m26", "results")
   mkdirSync(dir, { recursive: true })
+  let commit = "unknown"
+  try {
+    commit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim()
+  } catch {}
   const result = {
     issue: "M26.D1",
     status: checks === passed ? "verified" : "failed",
@@ -264,6 +269,7 @@ function main(): void {
     realDbsSkipped: facts.realDbsSkipped,
     realCrossLanguagePairs: facts.realPairs.length,
     docFile: "docs/m26/GRAPH.md",
+    currentCommit: commit,
     verifierCommand: "npx tsx script/m26/verify-graph-docs.ts",
     generatedAt: new Date().toISOString(),
   }
