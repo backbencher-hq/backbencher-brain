@@ -169,6 +169,19 @@ const GATES: GateSpec[] = [
     },
   },
   {
+    name: "m35-x1-subordinate-evidence-flip",
+    script: "script/m35/verify-closure.ts",
+    // X1 mutation (issue criterion 1): a subordinate gate declared verified
+    // while actually failed — the closure aggregation must refuse closure.
+    surfaces: [],
+    mutate: () => {},
+    mutateEvidence: {
+      file: "validation/m35/results/S2.json",
+      from: '"status": "verified",\n  "currentCommit"',
+      to: '"status": "failed",\n  "currentCommit"',
+    },
+  },
+  {
     name: "m35-freshness-core",
     script: "script/m35/verify-freshness-core.ts",
     // Evidence-mutation form: F1's governed surface is the production core
