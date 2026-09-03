@@ -109,7 +109,7 @@
       "code": "W3",
       "githubIssue": 511,
       "tool": "cross-language-hover",
-      "status": "planned",
+      "status": "verified",
       "scope": "Hover text includes cross-language facts where the index stores them (is_cross_language, bridge_mechanism), per-pair, evidence-backed from brain_relationship rows only",
       "acceptanceCriteria": [
         "at least one real cross-language fixture per stored pair among launch languages, each verified",
@@ -120,7 +120,18 @@
         "per-pair evidence recorded",
         "mutation: unbacked cross-language claim fails",
         "limitations declared"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see W3.json",
+        "verifierCommand": "npx tsx script/m26/verify-cross-language-hover.ts",
+        "evidenceFile": "W3.json",
+        "passed": 17,
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": 5,
+        "mutantsTotal": 5
+      }
     },
     {
       "code": "W4",
