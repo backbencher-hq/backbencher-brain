@@ -18,12 +18,12 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "7bc2181f38afd9347382158847f57fe87deb0f46",
+      "currentCommit": "4af98b4c3fc1953e593a4c5b1eb7d58167714f5e",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m35/verify-governance.ts",
       "evidenceFile": "G1.json",
-      "generatedAt": "2026-09-03T17:03:45.651Z",
-      "passed": 33,
+      "generatedAt": "2026-09-03T21:21:24.523Z",
+      "passed": 37,
       "failed": 0,
       "negativeCases": 2
     }
@@ -46,11 +46,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "179d4f00748613ffa16dde48ad247fcb5fb21100",
+      "currentCommit": "4af98b4c3fc1953e593a4c5b1eb7d58167714f5e",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m35/verify-freshness-core.ts",
       "evidenceFile": "F1.json",
-      "generatedAt": "2026-09-03T20:29:10.933Z",
+      "generatedAt": "2026-09-03T21:19:45.871Z",
       "passed": 29,
       "failed": 0,
       "negativeCases": 3
@@ -74,11 +74,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "179d4f00748613ffa16dde48ad247fcb5fb21100",
+      "currentCommit": "4af98b4c3fc1953e593a4c5b1eb7d58167714f5e",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m35/verify-envelope-contract.ts",
       "evidenceFile": "E1.json",
-      "generatedAt": "2026-09-03T20:29:14.050Z",
+      "generatedAt": "2026-09-03T21:19:47.370Z",
       "passed": 33,
       "failed": 0,
       "negativeCases": 8
@@ -102,11 +102,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "bf103b94676c5dfc272e079c60754d600ecd1239",
+      "currentCommit": "4af98b4c3fc1953e593a4c5b1eb7d58167714f5e",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m35/verify-s1-read-paths.ts",
       "evidenceFile": "S1.json",
-      "generatedAt": "2026-09-03T20:34:46.584Z",
+      "generatedAt": "2026-09-03T21:20:01.145Z",
       "passed": 74,
       "failed": 0,
       "negativeCases": 5
@@ -116,7 +116,7 @@
     "code": "S2",
     "githubIssue": 583,
     "tool": "bb_patterns+bb_security+bb_doc",
-    "status": "planned",
+    "status": "verified",
     "scope": "derived findings (patterns, security/taint, doc) surface staleness per finding + envelope",
     "acceptanceCriteria": [
       "mutate-after-index fixtures: each tool flags affected findings with correct counts",
@@ -127,7 +127,18 @@
       "persist S2 evidence with standard envelope",
       "negativeCases > 0",
       "evidence stamped at commit containing final code"
-    ]
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "4af98b4c3fc1953e593a4c5b1eb7d58167714f5e",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m35/verify-s2-derived.ts",
+      "evidenceFile": "S2.json",
+      "generatedAt": "2026-09-03T21:20:03.194Z",
+      "passed": 24,
+      "failed": 0,
+      "negativeCases": 5
+    }
   },
   {
     "code": "S3",
