@@ -82,6 +82,10 @@ async function main(): Promise<void> {
         // forwarded to the spawned bb_lsp process, which appends fatal-stack
         // traces to the file (declared test-only hook in src/lsp/server.ts).
         BB_LSP_STDERR_LOG: path.join(outDir, "server-crash.log"),
+        // Regime declaration (§3): test-electron downloads and launches a
+        // fresh editor — a cold first launch. The inner test's budget gate
+        // then uses the declared cold ceiling (measured either way).
+        E5_COLD_FIRST_LAUNCH: "true",
       },
     })
   } catch (err) {

@@ -429,7 +429,10 @@ export function beginAutoIndexFlow(): void {
   const settingMode = workspace.getConfiguration().get<"ask" | "never">("bbLsp.autoIndexMode") ?? "ask"
   const machine = createAutoIndexMachine({
     root,
-    env: { ...process.env, BB_AUTOINDEX_MODE: settingMode },
+    // Precedence (declared): an explicitly-set BB_AUTOINDEX_MODE in the
+    // process env (headless/test orchestrators) wins over the workspace
+    // setting — otherwise the extension silently overrides its caller.
+    env: { ...process.env, BB_AUTOINDEX_MODE: process.env.BB_AUTOINDEX_MODE ?? settingMode },
   })
   autoIndex = machine
   const unsubscribe = machine.onProgress((event) => {

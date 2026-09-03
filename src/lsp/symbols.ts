@@ -21,7 +21,7 @@
 
 import { readFileSync } from "node:fs";
 import type { CoreDatabase } from "../brain/database";
-import { createPositionMapper } from "./positions";
+import { createPositionMapper, resolveRowByteColumns } from "./positions";
 import { languageForPath } from "./hover";
 
 /** Hard cap on workspace symbol results (contract §3 bounded result sets). */
@@ -109,10 +109,15 @@ function symbolRanges(
   ) {
     return null;
   }
+  // Normalize the index's dual byte conventions (per-line declared vs
+  // file-absolute stored by the parallel indexer — see positions.ts).
+  const startCol = resolveRowByteColumns(sourceText, row.line_start, row.byte_start);
+  const endCol = resolveRowByteColumns(sourceText, row.line_end, row.byte_end);
+  if (startCol === null || endCol === null) return null;
   const mapper = createPositionMapper(sourceText);
   const selection = mapper.indexRangeToLsp({
-    start: { line: row.line_start, column: row.byte_start },
-    end: { line: row.line_end, column: row.byte_end },
+    start: { line: startCol.line, column: startCol.column },
+    end: { line: endCol.line, column: endCol.column },
   });
   // The identifier range is the same span as the selection for now — the
   // index stores one span per symbol. Both round-trip through P1.

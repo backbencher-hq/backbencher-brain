@@ -125,6 +125,7 @@ export class BbLspServer {
   private handlers = new Map<string, (params: any) => unknown>()
   private protocolEvents: ProtocolEvent[] = []
   private hooks: ServerHooks
+  private stderrLogPath: string | null = process.env.BB_LSP_STDERR_LOG ?? null
   readonly context: LspContext
 
   constructor(root: string, hooks: ServerHooks = {}) {
@@ -274,6 +275,20 @@ export class BbLspServer {
    * exit notification arrives (or stdin closes).
    */
   async run(input: NodeJS.ReadableStream = process.stdin, output: NodeJS.WritableStream = process.stdout): Promise<void> {
+    // Broken pipe = the editor side is GONE. Exit cleanly: a dead transport
+    // cannot recover, and an unhandled EPIPE (via any console.* call racing
+    // the death) turns a normal shutdown into a crash (found live by E6:
+    // the host was SIGTERMed while the server wrote a stderr log line).
+    const onEpipe = (err: NodeJS.ErrnoException): void => {
+      if ((err as NodeJS.ErrnoException)?.code === "EPIPE") {
+        try { output.end() } catch {}
+        process.exit(0)
+      }
+    }
+    process.on("error", onEpipe)
+    if (output === process.stdout) process.stdout.on("error", onEpipe)
+    if (input === process.stdin) process.stdin.on("error", onEpipe)
+
     const writeMessage = (message: Record<string, unknown> | null): void => {
       if (!message) return
       const body = Buffer.from(JSON.stringify(message), "utf8")
@@ -359,6 +374,16 @@ export class BbLspServer {
       return
     }
     const response = await this.handleMessage(message)
+    // Test-only request/error trace (BB_LSP_STDERR_LOG): names the request
+    // and any error response, so an editor leg can attribute a failure to
+    // the exact method (E6 diagnosis; zero cost when unset).
+    if (this.stderrLogPath) {
+      const req = message as { id?: unknown; method?: unknown; params?: unknown }
+      const err = (response as { error?: { message?: unknown } } | null)?.error
+      try {
+        appendFileSync(this.stderrLogPath, `[${new Date().toISOString()}] ${req.method ?? "?"} id=${String(req.id)} params=${JSON.stringify(req.params ?? null)?.slice(0, 220)} -> ${err ? "ERROR " + String(err.message).slice(0, 200) : "ok"}\n`)
+      } catch {}
+    }
     write(response)
   }
 
