@@ -167,6 +167,7 @@ export class BbLspServer {
     ) {
       caps.callHierarchyProvider = true
     }
+    if (this.handlers.has("bb/graph")) caps.graphProvider = { schemaVersion: 1 }
     return caps
   }
 
@@ -485,6 +486,26 @@ export function wireFeatures(server: BbLspServer): void {
       return { stale: true, status: "missing", pendingReindex: false }
     }
     return mon.marker(fileId)
+  })
+
+  // Graph transport (M26.W2): the declared, versioned custom request feeding
+  // the webview. A missing/mismatched schemaVersion and an unindexed
+  // workspace are LOUD declared errors (`bb/graph:` prefix, machine-parseable)
+  // — never silent coercion, never an empty result that would render as
+  // "no connections". Advertisement: bb/ methods surface through
+  // capabilities.graphProvider so honest clients can detect the surface
+  // before calling it; a client that calls without the version gets the
+  // loud version error by design (that IS the versioning mechanism).
+  server.register("bb/graph", async (params: any) => {
+    const { handleGraphRequest } = await import("./graph_request")
+    // A db that cannot open (never indexed, missing dirs) degrades to the
+    // DECLARED not-indexed error inside handleGraphRequest — not an sqlite
+    // InternalError the client cannot act on.
+    let raw: Awaited<ReturnType<typeof BrainDatabase.getRawInstance>> | null = null
+    try {
+      raw = await BrainDatabase.getRawInstance(projectId)
+    } catch {}
+    return handleGraphRequest(raw, projectId, params)
   })
 
 
