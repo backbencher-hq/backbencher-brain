@@ -18,12 +18,12 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "a901383faef458a8a86e73cf611082426c82a439",
+      "currentCommit": "81d2d848b1a2fd14d4b96cc94c10149819a67f06",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m35/verify-governance.ts",
       "evidenceFile": "G1.json",
-      "generatedAt": "2026-09-03T22:50:49.489Z",
-      "passed": 45,
+      "generatedAt": "2026-09-03T23:07:55.433Z",
+      "passed": 46,
       "failed": 0,
       "negativeCases": 2
     }
@@ -46,11 +46,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "529e5f812f6f32ab03e7c227147303b18b3ad42e",
+      "currentCommit": "81d2d848b1a2fd14d4b96cc94c10149819a67f06",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m35/verify-freshness-core.ts",
       "evidenceFile": "F1.json",
-      "generatedAt": "2026-09-03T22:47:23.014Z",
+      "generatedAt": "2026-09-03T23:05:07.615Z",
       "passed": 29,
       "failed": 0,
       "negativeCases": 3
@@ -74,11 +74,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "529e5f812f6f32ab03e7c227147303b18b3ad42e",
+      "currentCommit": "81d2d848b1a2fd14d4b96cc94c10149819a67f06",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m35/verify-envelope-contract.ts",
       "evidenceFile": "E1.json",
-      "generatedAt": "2026-09-03T22:47:24.214Z",
+      "generatedAt": "2026-09-03T23:05:10.178Z",
       "passed": 37,
       "failed": 0,
       "negativeCases": 8
@@ -102,11 +102,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "529e5f812f6f32ab03e7c227147303b18b3ad42e",
+      "currentCommit": "81d2d848b1a2fd14d4b96cc94c10149819a67f06",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m35/verify-s1-read-paths.ts",
       "evidenceFile": "S1.json",
-      "generatedAt": "2026-09-03T22:47:38.564Z",
+      "generatedAt": "2026-09-03T23:05:46.511Z",
       "passed": 74,
       "failed": 0,
       "negativeCases": 5
@@ -130,11 +130,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "529e5f812f6f32ab03e7c227147303b18b3ad42e",
+      "currentCommit": "81d2d848b1a2fd14d4b96cc94c10149819a67f06",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m35/verify-s2-derived.ts",
       "evidenceFile": "S2.json",
-      "generatedAt": "2026-09-03T22:47:40.632Z",
+      "generatedAt": "2026-09-03T23:05:50.146Z",
       "passed": 25,
       "failed": 0,
       "negativeCases": 5
@@ -158,11 +158,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "529e5f812f6f32ab03e7c227147303b18b3ad42e",
+      "currentCommit": "81d2d848b1a2fd14d4b96cc94c10149819a67f06",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m35/verify-s3-graph-migrate.ts",
       "evidenceFile": "S3.json",
-      "generatedAt": "2026-09-03T22:47:42.499Z",
+      "generatedAt": "2026-09-03T23:05:52.802Z",
       "passed": 23,
       "failed": 0,
       "negativeCases": 4
@@ -186,11 +186,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "529e5f812f6f32ab03e7c227147303b18b3ad42e",
+      "currentCommit": "81d2d848b1a2fd14d4b96cc94c10149819a67f06",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m35/staleness-corpus.ts --check",
       "evidenceFile": "C1.json",
-      "generatedAt": "2026-09-03T22:47:44.867Z",
+      "generatedAt": "2026-09-03T23:05:55.852Z",
       "passed": 93,
       "failed": 0,
       "negativeCases": 23
@@ -200,7 +200,7 @@
     "code": "D1",
     "githubIssue": 586,
     "tool": "docs-staleness",
-    "status": "planned",
+    "status": "verified",
     "scope": "staleness semantics documented per tool and machine-gated against the registry constant",
     "acceptanceCriteria": [
       "all 11 per-tool docs + TOOLS_OVERVIEW updated and passing ALL M31 gates unchanged",
@@ -211,7 +211,18 @@
       "persist D1 evidence with standard envelope",
       "negativeCases > 0",
       "evidence stamped at commit containing final code"
-    ]
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "81d2d848b1a2fd14d4b96cc94c10149819a67f06",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m35/verify-docs-staleness.ts",
+      "evidenceFile": "D1.json",
+      "generatedAt": "2026-09-03T23:05:56.501Z",
+      "passed": 71,
+      "failed": 0,
+      "negativeCases": 16
+    }
   },
   {
     "code": "X1",

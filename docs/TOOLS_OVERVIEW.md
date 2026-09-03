@@ -37,6 +37,10 @@ source files ──bb_index (CLI) / bb_index (MCP)──▶ brain DB (SQLite)
 | Imports | `brain_import` |
 | Schema version | `brain_schema_version` |
 
+### Staleness semantics
+
+Read tools resolve freshness against the live working tree, not just the index. The shared envelope is `{ fresh, stale, missing, staleRatio, mode, remediation }`; rows (search matches, graph nodes/links, analyze report rows, migration plans) carry `stale` flags where their underlying file changed after indexing; text modes surface `[stale]` markers and counts footers. Remediation always names the registered reindex interfaces — project scope: `run: bb index --changed  (or the bb_index tool with the project path — incremental, changed files only)`; file scope: `run: bb index "<file>"  (or the bb_index tool with that file path)`. Nothing is stale → silence. Per-tool details live in each reference page's **Staleness** section (`docs/tools/*.md`, generated from the registry).
+
 ## Per-tool reference
 
 Each section below states registry-true facts: category (`search`/`analysis`/`operations`/`lifecycle`), mutability (`read`/`write`), whether it requires an index, and its executable modes. Facts are checked mechanically by the overview gate.
