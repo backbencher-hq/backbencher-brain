@@ -240,17 +240,22 @@ function main(): void {
   check("V: generated doc passes the banned-vocabulary lint", bannedHit.length === 0, bannedHit.join(","))
 
   // --- M1: an embedded fact lies -> drift gate fails -------------------------
+  const mutants: Array<{ name: string; caught: boolean }> = []
   {
     const lied = generated.replace("`" + facts.renderBudget.maxNodes + "` nodes / `" + facts.renderBudget.maxEdges + "` edges", "`99999` nodes / `88888` edges")
-    check("M1: doctored embedded fact fails the drift gate", lied !== readFileSync(DOC, "utf8"))
+    const caught = lied !== readFileSync(DOC, "utf8")
+    mutants.push({ name: "M1 doctored embedded fact", caught })
+    check("M1: doctored embedded fact fails the drift gate", caught)
   }
   // --- M2: the generator lies about pairs -> row cross-check fails -----------
   {
     const fakeCount = facts.realPairs.length + 1
     // The G2 rule: rows must equal the scan count, or be zero-and-declared.
     const crossCheckWouldFail = !(fakeCount === facts.realPairs.length || (fakeCount === 0 && generated.includes("_(none — no cross-language rows stored anywhere)_")))
+    mutants.push({ name: "M2 fabricated pair count", caught: crossCheckWouldFail })
     check("M2: fabricated pair count fails the row cross-check", crossCheckWouldFail)
   }
+  for (const m of mutants) console.log(`  ${m.caught ? "caught" : "SURVIVED"}: ${m.name}`)
 
   // --- Emit evidence -----------------------------------------------------------
   const dir = join(ROOT, "validation", "m26", "results")
@@ -265,6 +270,9 @@ function main(): void {
     passed,
     failed: checks - passed,
     negativeCases: 2,
+    mutants: mutants.map((m) => ({ name: m.name, caught: m.caught })),
+    mutantsCaught: mutants.filter((m) => m.caught).length,
+    mutantsTotal: mutants.length,
     realDbsScanned: facts.realDbsScanned,
     realDbsSkipped: facts.realDbsSkipped,
     realCrossLanguagePairs: facts.realPairs.length,
@@ -274,7 +282,7 @@ function main(): void {
     generatedAt: new Date().toISOString(),
   }
   writeFileSync(join(dir, "D1.json"), JSON.stringify(result, null, 2) + "\n")
-  console.log("D1: " + result.status.toUpperCase() + " (" + passed + "/" + checks + " passed, 2 mutants)")
+  console.log("D1: " + result.status.toUpperCase() + " (" + passed + "/" + checks + " passed, " + result.mutantsCaught + "/" + result.mutantsTotal + " mutants)")
   if (result.status !== "verified") process.exitCode = 1
 }
 

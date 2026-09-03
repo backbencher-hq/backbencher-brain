@@ -101,11 +101,16 @@ export const ADVERSARIAL_FIXTURES: Array<{ name: string; payload: string; mustCo
  *  in a nonce-bound script tag; repo-controlled strings inside state are
  *  escaped by the consumer through escapeHtml() before embedding (defence in
  *  depth: the shell escapes the JSON delimiters too). */
-export function buildWebviewHtml(options: { nonce?: string; cspSource: string; stateJson: string }): { html: string; nonce: string; csp: string } {
+export function buildWebviewHtml(options: { nonce?: string; cspSource: string; stateJson: string; bodyMarkup?: string }): { html: string; nonce: string; csp: string } {
   const nonce = options.nonce ?? randomBytes(16).toString("hex")
   const csp = cspFor(nonce, options.cspSource)
   // The state payload is double-defence: escapeHtml over the JSON string.
   const safeState = escapeHtml(options.stateJson)
+  // bodyMarkup: pre-rendered markup produced by the ONE renderer core
+  // (script/m26/graph-core.ts) through an escaping DOM port — the shell
+  // accepts it verbatim because the producer already escaped every
+  // repo-controlled string (W6 law; the verifier gates the producer).
+  const body = options.bodyMarkup ? `<div id="bb-graph-root">${options.bodyMarkup}</div>` : `<div id="bb-graph-root"></div>`
   const html = [
     "<!DOCTYPE html>",
     '<html lang="en">',
@@ -115,7 +120,7 @@ export function buildWebviewHtml(options: { nonce?: string; cspSource: string; s
     `<title>Backbencher Graph</title>`,
     "</head>",
     "<body>",
-    `<div id="bb-graph-root"></div>`,
+    body,
     `<script nonce="${nonce}" type="application/json" id="bb-state">${safeState}</script>`,
     "</body>",
     "</html>",
