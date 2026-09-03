@@ -111,7 +111,7 @@ const ISSUE_RELEVANT_FILES: Record<string, string[]> = {
   W1: ["script/m26/graph-core.ts", "script/m26/verify-webview-core.ts"],
   W2: ["src/lsp/server.ts", "src/lsp/graph_request.ts", "docs/m26/GRAPH-TRANSPORT.md", "script/m26/verify-graph-transport.ts"],
   W3: ["src/lsp/hover.ts", "src/lsp/cross_language_hover.ts", "docs/m26/CROSS-LANGUAGE.md", "script/m26/verify-cross-language-hover.ts"],
-  W4: ["ide/vscode/media/graph", "script/m26/verify-evidence-badges.ts"],
+  W4: ["script/m26/graph-core.ts", "src/lsp/cross_language_hover.ts", "docs/m26/EVIDENCE-TIERS.md", "script/m26/verify-evidence-badges.ts"],
   W5: ["src/lsp/graph_request.ts", "ide/vscode/media/graph", "script/m26/verify-impact-mode.ts"],
   W6: ["ide/vscode/media/graph", "script/m26/verify-content-security.ts"],
   V1: ["script/m26/webview-harness.ts", "script/m26/verify-webview-harness.ts"],

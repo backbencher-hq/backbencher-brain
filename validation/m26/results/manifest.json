@@ -137,7 +137,7 @@
       "code": "W4",
       "githubIssue": 512,
       "tool": "evidence-badges",
-      "status": "planned",
+      "status": "verified",
       "scope": "Edge badges from metadata.evidenceClass (structural / usage_contextual / import_based / reference_qualified / inferred) + confidence; inferred visually distinct; tier legend documented",
       "acceptanceCriteria": [
         "all tiers rendered distinctly; legend documented",
@@ -148,7 +148,18 @@
         "per-tier render evidence",
         "mutation proof both directions",
         "limitations declared"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see W4.json",
+        "verifierCommand": "npx tsx script/m26/verify-evidence-badges.ts",
+        "evidenceFile": "W4.json",
+        "passed": 18,
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": 5,
+        "mutantsTotal": 5
+      }
     },
     {
       "code": "W5",
