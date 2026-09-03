@@ -6,7 +6,8 @@
     "lib": [
       "ES2022"
     ],
-    "rootDir": "src",
+    "rootDir": "../..",
+    "rootDirs": ["src", "../../script/m26"],
     "outDir": "dist",
     "strict": true,
     "esModuleInterop": true,

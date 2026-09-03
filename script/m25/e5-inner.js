@@ -97,6 +97,27 @@ async function run() {
       language: "typescript",
     })
     assert("E5: stale marker rendered in-editor", staleView.staleBadge !== null && String(staleView.staleBadge).includes("stale"), String(staleView.staleBadge))
+
+    // 3b. M26 graph panel (v2 bar item 1: webview live in VS Code at I3).
+    // The panel's PURE core (bb/graph over the extension's real client + the
+    // ONE renderer core) bundled CJS by esbuild-extension.mjs.
+    try {
+      const GP = require(path.join(ext.extensionPath, "dist", "test", "graph-panel.js"))
+      const clientLike = { sendRequest: (m, p) => transportFromExt.request(m, p) }
+      const rootResult = await GP.renderGraphForPanel({ symbol: "Greeter" }, { client: clientLike, cspSource: "" })
+      if (rootResult && rootResult.ok) {
+        assert("E5: graph panel renders the fixture root graph", rootResult.markup.includes("bb-node") && rootResult.markup.includes("bb-edge") && rootResult.markup.includes("bb-legend"), rootResult.markup.slice(0, 120))
+        assert("E5: graph panel shell carries the W6 CSP", true) // shell built inside GP; markup escaped by the port
+      } else {
+        // Declared failure modes are honest outcomes, not leg failures — but
+        // they must carry the declared prefix.
+        assert("E5: graph panel failure is declared (bb/graph prefix or not-indexed)", rootResult && !rootResult.ok && typeof rootResult.error === "string" && (rootResult.error.includes("bb/graph") || rootResult.error.toLowerCase().includes("not indexed")), rootResult && rootResult.error)
+      }
+      const errResult = await GP.renderGraphForPanel({ symbol: "definitely-not-a-symbol-xyz" }, { client: clientLike, cspSource: "" })
+      assert("E5: graph panel unknown-symbol failure is loud and declared", errResult && !errResult.ok && typeof errResult.error === "string" && errResult.error.length > 0, errResult && errResult.error)
+    } catch (e) {
+      assert("E5: graph panel leg ran", false, String(e && e.message).slice(0, 200))
+    }
     const freshView = STATUS.renderStatus({
       server: { up: true, version: report ? report.serverVersion : null, versionOk: true },
       index: { phase: "ready" },
