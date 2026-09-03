@@ -126,6 +126,12 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         "if_statement", "for_statement", "foreach_statement", "while_statement",
         "case_switch_label", "catch_declaration", "conditional_expression",
         "logical_and_expression", "logical_or_expression",
+        // CSD2 (re-review 2026-09-04, probe): switch EXPRESSION arms are
+        // decision points exactly like case labels — a 3-arm switch
+        // expression measured complexity 1 (its legacy statement twin
+        // counted every case_switch_label). 42 arms in the first 400 corpus
+        // files were systematically undercounted.
+        "switch_expression_arm",
       ])
       if (complexityNodes.has(type)) cyclomaticComplexity++
 
@@ -137,7 +143,16 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         const nameNode =
           this.findChild(node, (n) => n.type === "identifier" || n.type === "qualified_name")
         if (nameNode) {
-          const text = nameNode.text
+          // CSD7 (re-review 2026-09-04): alias usings (`using A = B.C;`) parse
+          // with the alias identifier BEFORE the target qualified_name, so the
+          // old first-identifier match captured the ALIAS as the module. Prefer
+          // the qualified_name target; fall back to identifier (plain usings
+          // have no qualified child only when they are a single identifier).
+          // `global::X.Y` is captured raw (honest full path).
+          const nameNode2 =
+            this.findChild(node, (n) => n.type === "qualified_name") || nameNode
+          const text = nameNode2.text
+          const aliasMatch = /using\s+([\w.]+)\s*=/.exec(node.text)
           imports.push({
             module: text,
             source: text,
@@ -153,14 +168,26 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             // isImport (family contract — c/go emit import deps with isImport)
             // lets the completeness section-B `imports` pin and the tier
             // classifier mark this import_based.
-            metadata: { isUsingDirective: true, isImport: true },
+            metadata: {
+              isUsingDirective: true,
+              isImport: true,
+              ...(aliasMatch ? { isUsingAlias: true, usingAlias: aliasMatch[1] } : {}),
+            },
           })
-          const lowerText = text.toLowerCase()
-          if (lowerText.startsWith("system.linq")) (this as any)._patterns ? null : null
         }
       }
 
-      if (type === "namespace_declaration") {
+        if (type === "namespace_declaration") {
+        // CSD10 (re-review 2026-09-04, fixture-probe): a NEW namespace scope
+        // must replace a surviving file-scoped one (the CSD1 push has no exit
+        // item, so it would outlive its own file-section in multi-namespace
+        // files), otherwise `namespace A; ... namespace B { class T }` nests
+        // to A.B.T. Runs ONLY at namespace nodes — never at siblings.
+        if (fileScopedNamespace) {
+          const fi = scopeStack.indexOf(fileScopedNamespace)
+          if (fi >= 0) scopeStack.splice(fi, 1)
+          fileScopedNamespace = undefined
+        }
         const rawName = this.extractNamespaceName(node)
         const fullName = this.buildFullName(scopeStack, rawName)
         symbols.push({
@@ -183,6 +210,13 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         scopeStack.push(newContext)
         pushedScope = true
       } else if (type === "file_scoped_namespace_declaration") {
+        // CSD10: same replacement rule when a SECOND file-scoped section
+        // starts (multi-section files).
+        if (fileScopedNamespace) {
+          const fi = scopeStack.indexOf(fileScopedNamespace)
+          if (fi >= 0) scopeStack.splice(fi, 1)
+          fileScopedNamespace = undefined
+        }
         const rawName = this.extractNamespaceName(node)
         const fullName = this.buildFullName(scopeStack, rawName)
         symbols.push({
@@ -203,6 +237,18 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           isInterface: false,
           parents: [],
         }
+        // CSD1 (re-review 2026-09-04, probe on real powershell file-scoped
+        // file): the scope was tracked ONLY in the side variable and never
+        // pushed, so buildFullName produced BARE type fullNames (and the
+        // oracle/harness cross-file companions keyed by fullName desynced
+        // from block-namespace files in the same corpus). Push the scope
+        // WITHOUT an exit item: a file-scoped namespace has no closing
+        // brace — its scope must survive its own subtree exit and cover the
+        // SIBLING type declarations that follow it in the file (an exit item
+        // pops it before the siblings are visited; probe-verified).
+        newContext = fileScopedNamespace
+        scopeStack.push(newContext)
+        pushedScope = false
       } else if (
         type === "class_declaration" ||
         type === "struct_declaration" ||
@@ -211,7 +257,6 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         type === "record_struct_declaration"
       ) {
         let rawName = node.childForFieldName("name")?.text || this.childText(node, "identifier") || "anonymous"
-        if (rawName.endsWith("Controller")) (this as any).mvcPattern = true
 
         const fullName = this.buildFullName(scopeStack, rawName)
         const isInterface = type === "interface_declaration"
@@ -244,7 +289,20 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           const baseTypes: string[] = []
           for (let i = 0; i < baseList.namedChildCount; i++) {
             const baseType = baseList.namedChild(i)
-            if (baseType) baseTypes.push(this.cleanTypeName(baseType.text))
+            if (!baseType) continue
+            // CSD9 (re-review 2026-09-04, fixture-probe): two primary-base
+            // shapes carry ARGUMENT LISTS that fabricated garbage targets:
+            // records parse as primary_constructor_base_type (type name is
+            // the identifier child); CLASSES with primary bases parse as a
+            // bare identifier FOLLOWED BY a sibling argument_list inside the
+            // base_list (the argument_list is not a base type — skip it).
+            if (baseType.type === "primary_constructor_base_type") {
+              const tn = this.findChild(baseType, (n) => n.type === "identifier" || n.type === "generic_name")
+              if (tn) baseTypes.push(this.cleanTypeName(tn.text))
+              continue
+            }
+            if (baseType.type === "argument_list") continue
+            baseTypes.push(this.cleanTypeName(baseType.text))
           }
           if (isInterface) {
             // All base types of an interface are extended interfaces.
@@ -460,16 +518,70 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
         }
       } else if (type === "operator_declaration" || type === "conversion_operator_declaration") {
+        // CSD3 (re-review 2026-09-04): every overload collapsed into a symbol
+        // literally named "operator" — `operator +` and `operator ==` were
+        // indistinguishable (haskell/ruby name operators by identity). The
+        // operator token is an ANONYMOUS grammar child, so it is extracted
+        // from the declaration text. Conversion ops are named by their
+        // implicit/explicit target type. Per-symbol complexity added (was
+        // always missing here).
+        const opText = node.text
+        const convMatch = /\boperator\s+(implicit|explicit)\s+([\w.<>]+)/.exec(opText)
+        const opMatch = convMatch ? null : /\boperator\s+(checked\s+)?([^\s(]+)/.exec(opText)
+        const opName = convMatch
+          ? `${convMatch[1]} ${convMatch[2]}`
+          : opMatch
+            ? `operator ${opMatch[1] ? `${opMatch[1].trim()} ` : ""}${opMatch[2]}`
+            : "operator"
         const visibility = this.extractVisibility(node)
         symbols.push({
-          name: "operator",
+          name: opName,
           kind: ASTEngine.SymbolKind.Method,
           range: this.nodeToRange(node),
           visibility,
           ownerName: parentContext?.rawName,
           ownerKind: parentContext?.kind,
-          metadata: { isOperatorOverload: true },
+          complexity: this.calculateCyclomaticComplexity(node),
+          metadata: { isOperatorOverload: true, isConversionOperator: type === "conversion_operator_declaration" },
         })
+      } else if (type === "event_declaration") {
+        // CSD5 (re-review 2026-09-04, probe): accessor-form event declarations
+        // (`event EventHandler Ready { add {...} remove {...} }`) emitted NO
+        // symbol — only event_field_declaration was handled. The name is the
+        // grammar `name` field; the type is the qualified/generic type child.
+        const nameNode = node.childForFieldName("name")
+        const name = nameNode?.text || this.childText(node, "identifier") || "anonymous"
+        const typeNode = this.findChild(
+          node,
+          (n) => n.type === "qualified_name" || ((n.type === "identifier" || n.type === "generic_name") && n.id !== nameNode?.id),
+        )
+        symbols.push({
+          name,
+          kind: ASTEngine.SymbolKind.Event,
+          range: this.nodeToRange(node),
+          visibility: this.extractVisibility(node),
+          ownerName: parentContext?.rawName,
+          ownerKind: parentContext?.kind,
+          decorators: this.extractAttributes(node),
+          metadata: { isEvent: true, isAccessorForm: true, dataType: typeNode?.text },
+        })
+      } else if (type === "constructor_initializer") {
+        // CSD8 (re-review 2026-09-04, probe: 120 corpus occurrences):
+        // `public Sub() : base(42) { }` / `: this()` — a real constructor-to-
+        // constructor call that was never emitted. Attribute to the enclosing
+        // constructor (its scope is active when the initializer is visited).
+        // `: base(42)` vs `: this()` — node text STARTS with the colon, so
+        // the discriminator is the first identifier after it.
+        const target = /:\s*base\s*\(/.test(node.text) ? "base" : "this"
+        if (parentContext?.name) {
+          relationships.push({
+            source: parentContext.name === "constructor" ? parentContext.rawName || "constructor" : parentContext.name,
+            target,
+            type: ASTEngine.RelationshipType.Calls,
+            confidence: 0.95,
+            metadata: { isConstructorInitializer: true },
+          })
+        }
       } else if (
         type === "method_declaration" ||
         type === "constructor_declaration" ||
@@ -836,6 +948,8 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       "if_statement", "for_statement", "foreach_statement", "while_statement",
       "case_switch_label", "catch_declaration", "conditional_expression",
       "logical_and_expression", "logical_or_expression",
+      // CSD2: keep per-symbol in sync with the file-level counter above.
+      "switch_expression_arm",
     ])
     const stack = [node]
     while (stack.length > 0) {
@@ -966,19 +1080,30 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     const seen = new Set<string>()
     while (stack.length > 0) {
       const node = stack.pop()!
-      if (node.type === "member_access_expression") {
+      if (node.type === "member_access_expression" || node.type === "member_binding_expression") {
         // Skip when the selectoing member_access is the callee of a call
-        // expression (call-callee position).
+        // expression (call-callee position). CSD4 (re-review 2026-09-04):
+        // null-conditional calls `x?.M()` host the member binding inside a
+        // conditional_access_expression that is itself the call's function —
+        // that 2-level shape must be skipped too, or `?.M()` emits a bogus
+        // uses edge for the METHOD name.
         let isCallee = false
         const parent = node.parent
         if (parent && parent.type === "invocation_expression") {
           const fn = parent.childForFieldName("function")
           if (fn === node) isCallee = true
+        } else if (parent && parent.type === "conditional_access_expression") {
+          const gp = parent.parent
+          if (gp && gp.type === "invocation_expression" && gp.childForFieldName("function") === parent) isCallee = true
         }
         if (!isCallee) {
           const field = node.childForFieldName("name")
           const expr = node.childForFieldName("expression")
-          if (field && expr) {
+          // CSD4: member_binding_expression (`.Count`) has NO expression field
+          // — the binding itself is the member selection; its receiver lives
+          // in the parent conditional_access_expression. Require expr only for
+          // the member_access form, or `?.Count` reads never emit.
+          if (field && (expr || node.type === "member_binding_expression")) {
             const containing = this.findContainingCSharpFunction(node)
             const src = containing || "global"
             const tgt = field.text
