@@ -74,8 +74,11 @@ const GATES: GateSpec[] = [
     mutate: (sandbox) => {
       // Mutation: erase the declared authority from the plan — governance must
       // refuse a milestone whose plan no longer names its staleness oracle.
+      // Replace ALL occurrences: a partial first-hit replace stops being a
+      // mutation the moment the authority string legitimately appears more
+      // than once in the plan (it does, since the F1 delivery log).
       const p = path.join(sandbox, "docs/m35/PLAN.md")
-      writeFileSync(p, readFileSync(p, "utf8").replace("src/brain/freshness.ts", "src/REMOVED-AUTHORITY"))
+      writeFileSync(p, readFileSync(p, "utf8").replaceAll("src/brain/freshness.ts", "src/REMOVED-AUTHORITY"))
     },
   },
 ]
