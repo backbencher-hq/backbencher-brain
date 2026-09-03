@@ -84,6 +84,12 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     // class to implement an interface declared later in the same file).
     const typeKinds = new Map<string, string>()
     this.collectDeclaredTypeKinds(rootNode, typeKinds)
+    // CSD11 (re-review 2026-09-04): field/property declarator name -> declared
+    // type, built in the pre-pass so assignment-form target-typed `new()`
+    // (`_items = new();` in a constructor) can resolve through the assignment
+    // LHS regardless of declaration order.
+    const memberTypes = new Map<string, string>()
+    this.collectMemberTypes(rootNode, memberTypes)
 
     const scopeStack: Scope[] = []
     // File-scoped namespaces (C# 10: `namespace A.B;`) apply to every type
@@ -332,7 +338,19 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
                 typeKinds.get(leaf) || crossFileKinds?.get(leaf)
               // Unknown externals follow the deterministic C# rule: the base
               // class, if any, is listed first and the rest are interfaces.
-              const isImplements = declaredKind === ASTEngine.SymbolKind.Interface || (i > 0 && !declaredKind)
+              // CSD12 (re-review 2026-09-04): interface-only base lists are
+              // among the most common C# shapes (66 of ~400 powershell files
+              // carry one) and an unknown EXTERNAL index-0 entry there is
+              // conventionally an interface — `class Job : IDisposable` must
+              // emit implements, not a fabricated extends. An I-prefixed
+              // PascalCase name (I + uppercase, length > 2 so Icon/IntPtr
+              // never match) is the convention signal; declared kinds still
+              // win, non-I names keep the first-base rule. Structs/record
+              // structs can NEVER inherit (C#): every base of a struct is an
+              // interface regardless of naming.
+              const isStruct = kind === ASTEngine.SymbolKind.Struct
+              const looksLikeInterface = !declaredKind && (isStruct || (i === 0 && /^[I][A-Z]/.test(leaf) && leaf.length > 2))
+              const isImplements = declaredKind === ASTEngine.SymbolKind.Interface || looksLikeInterface || (i > 0 && !declaredKind)
               relationships.push({
                 source: fullName,
                 target: b,
@@ -738,7 +756,7 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       } else if (type === "implicit_object_creation_expression") {
         // Target-typed `new()` — the type comes from the enclosing
         // variable_declarator (pure AST resolution).
-        const declaredType = this.resolveImplicitNewType(node)
+        const declaredType = this.resolveImplicitNewType(node, memberTypes)
         if (declaredType) {
           const source = parentContext?.rawName || "global"
           relationships.push({
@@ -964,6 +982,53 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /** Pre-pass: record every type declaration's kind for in-file base-list resolution. */
+  // CSD11: declarator name -> declared type for fields and properties.
+  // Feeds assignment-form target-typed `new()` resolution (see
+  // resolveImplicitNewType). Locals are NOT collected — a local resolved
+  // through an assignment LHS would need a locals map with block scoping;
+  // out of scope here, honestly unresolved instead.
+  private collectMemberTypes(rootNode: Node, memberTypes: Map<string, string>): void {
+    const stack: Node[] = [rootNode]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      const t = n.type
+      if (t === "field_declaration" || t === "property_declaration") {
+        const isField = t === "field_declaration"
+        // The type node is a direct child of variable_declaration for fields
+        // (`field_declaration > variable_declaration > generic_name`) and a
+        // direct child of the property node itself for properties.
+        const typeContainer = isField ? this.findChild(n, "variable_declaration") : n
+        const typeNode = typeContainer
+          ? this.findChild(typeContainer, (c) =>
+              c.type === "generic_name" || c.type === "identifier" || c.type === "qualified_name" || c.type === "predefined_type" || c.type === "nullable_type",
+            )
+          : null
+        const declaredType = typeNode ? this.cleanTypeName(typeNode.text) : undefined
+        const names: string[] = []
+        if (isField) {
+          const varDecl = this.findChild(n, "variable_declaration")
+          if (varDecl) {
+            for (let i = 0; i < varDecl.namedChildCount; i++) {
+              const d = varDecl.namedChild(i)
+              if (d?.type === "variable_declarator") {
+                const nm = this.childText(d, "identifier")
+                if (nm) names.push(nm)
+              }
+            }
+          }
+        } else {
+          const nm = n.childForFieldName("name")?.text || this.childText(n, "identifier")
+          if (nm) names.push(nm)
+        }
+        if (declaredType) for (const nm of names) if (!memberTypes.has(nm)) memberTypes.set(nm, declaredType)
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const child = n.namedChild(i)
+        if (child) stack.push(child)
+      }
+    }
+  }
+
   private collectDeclaredTypeKinds(rootNode: Node, typeKinds: Map<string, string>): void {
     const stack: Node[] = [rootNode]
     while (stack.length > 0) {
@@ -1172,7 +1237,7 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     return func.text
   }
 
-  private resolveImplicitNewType(node: Node): string | null {
+  private resolveImplicitNewType(node: Node, memberTypes: Map<string, string>): string | null {
     // `= new()` inside a variable_declarator: type from the declaration.
     let cur: Node | null = node.parent
     while (cur) {
@@ -1186,7 +1251,10 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         return null
       }
-      if (cur.type === "field_declaration") return null
+      // NOTE: no `field_declaration` early return — for the standard field
+      // initializer shape the walk hits `variable_declarator` first (its
+      // branch returns), so a field branch here was unreachable dead code
+      // (CSD11 re-review 2026-09-04).
       if (cur.type === "property_declaration") {
         const typeNode = this.findChild(cur, (n) =>
           n.type === "generic_name" || n.type === "identifier" || n.type === "qualified_name" || n.type === "predefined_type" || n.type === "nullable_type",
@@ -1195,6 +1263,26 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         return null
       }
       cur = cur.parent
+    }
+    // CSD11 (re-review 2026-09-04): assignment-form `_items = new();` has NO
+    // declarator — the declared type lives on the field/property symbol keyed
+    // by the assignment LHS. Resolve through the member-type map (6 per 400
+    // powershell files; explicit `new List<int>()` in the same position already
+    // emitted, so this was a pure target-typed asymmetry). Locals declared
+    // without an initializer stay an honest no-edge — their type is not in
+    // any AST map to resolve from.
+    let walk: Node | null = node.parent
+    while (walk) {
+      if (walk.type === "assignment_expression") {
+        const lhs = walk.childForFieldName("left")
+        if (lhs) {
+          const name = lhs.type === "identifier" ? lhs.text : (lhs.childForFieldName?.("name")?.text ?? "")
+          const declared = name ? memberTypes.get(name) : undefined
+          if (declared) return declared
+        }
+        return null
+      }
+      walk = walk.parent
     }
     return null
   }

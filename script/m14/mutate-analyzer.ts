@@ -1081,6 +1081,20 @@ const MUTANTS: Mutant[] = [
     ] }),
   },
   {
+    id: "csharp/implicit-new-assignment-loss",
+    language: "csharp",
+    defectClass: "relationship-loss",
+    description: "injects the CSD11 regression class: assignment-form target-typed new() drops its instantiates (the constructor->Dictionary edge vanishes) — fixture instantiates pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).isImplicit && x.source === "constructor")) }),
+  },
+  {
+    id: "csharp/iface-base-extends-fabrication",
+    language: "csharp",
+    defectClass: "fabrication",
+    description: "injects the CSD12 regression class: interface-only external base lists fabricate extends again (F6Tank/F6Handle -> IDisposable become extends) — fixture forbids extends:F6Tank->IDisposable",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => x.type === "implements" && x.target === "IDisposable" ? { ...x, type: "extends", metadata: { ...x.metadata, isImplements: false } } : x) }),
+  },
+  {
     id: "dart/drop-implements-edge",
     language: "dart",
     defectClass: "relationship-loss",

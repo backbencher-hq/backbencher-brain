@@ -379,7 +379,7 @@ function csharpCleanTypeName(text: string): string {
 // carries no syntactic type, so the type comes from the enclosing
 // variable_declarator (or property_declaration) declaration. Walks `.parent`
 // exactly like the analyzer so both sides resolve the SAME target.
-function csharpImplicitNewType(node: any): string | null {
+function csharpImplicitNewType(node: any, memberTypes?: Map<string, string>): string | null {
   let cur: any = node.parent
   while (cur) {
     if (cur.type === "variable_declarator") {
@@ -403,6 +403,21 @@ function csharpImplicitNewType(node: any): string | null {
       return null
     }
     cur = cur.parent
+  }
+  // CSD11 mirror: assignment-form `_items = new();` — resolve through the
+  // member-type prepass map keyed by the assignment LHS (fields/properties).
+  let walk: any = node.parent
+  while (walk) {
+    if (walk.type === "assignment_expression") {
+      const lhs = walk.childForFieldName?.("left")
+      if (lhs && memberTypes) {
+        const name = lhs.type === "identifier" ? lhs.text : (lhs.childForFieldName?.("name")?.text ?? "")
+        const declared = name ? memberTypes.get(name) : undefined
+        if (declared) return declared
+      }
+      return null
+    }
+    walk = walk.parent
   }
   return null
 }
@@ -437,6 +452,10 @@ export function deriveCSharpEdges(root: any, corpusInterfaces?: Set<string>): { 
   // the interface is the FIRST base-list entry — the two sides only diverge
   // on cross-file interface kinds, which is the declared per-file limitation.
   const declKinds = new Map<string, string>()
+  // CSD11 mirror: field/property declarator name -> declared type, feeding
+  // assignment-form target-typed new() resolution (same pre-pass shape as
+  // RealCSharpAnalyzer.collectMemberTypes).
+  const memberTypes = new Map<string, string>()
   {
     const pre: any[] = [root]
     while (pre.length) {
@@ -444,6 +463,29 @@ export function deriveCSharpEdges(root: any, corpusInterfaces?: Set<string>): { 
       if (/^(class|interface|struct|record)_declaration$/.test(t.type)) {
         const nm = t.childForFieldName?.("name")?.text
         if (nm) declKinds.set(nm, t.type.startsWith("interface") ? "interface" : t.type.includes("struct") ? "struct" : "class")
+      }
+      if (t.type === "field_declaration" || t.type === "property_declaration") {
+        const isField = t.type === "field_declaration"
+        const typeContainer = isField ? t.namedChildren.find((c: any) => c.type === "variable_declaration") : t
+        const typeNode = typeContainer
+          ? typeContainer.namedChildren.find((c: any) =>
+              /^(generic_name|identifier|qualified_name|predefined_type|nullable_type)$/.test(c.type),
+            )
+          : undefined
+        const declaredType = typeNode ? csharpCleanTypeName(typeNode.text) : undefined
+        const names: string[] = []
+        if (isField && typeContainer) {
+          for (const d of typeContainer.namedChildren) {
+            if (d.type === "variable_declarator") {
+              const id = d.namedChildren.find((c: any) => c.type === "identifier")
+              if (id) names.push(id.text)
+            }
+          }
+        } else if (!isField) {
+          const nm = t.childForFieldName?.("name")?.text
+          if (nm) names.push(nm)
+        }
+        if (declaredType) for (const nm of names) if (!memberTypes.has(nm)) memberTypes.set(nm, declaredType)
       }
       for (let k = 0; k < t.namedChildCount; k++) pre.push(t.namedChild(k))
     }
@@ -484,7 +526,12 @@ export function deriveCSharpEdges(root: any, corpusInterfaces?: Set<string>): { 
             declKinds.get(target) === "class" || declKinds.get(target) === "struct" ||
             declKinds.get(leaf) === "class" || declKinds.get(leaf) === "struct"
           const declaredKind = knownIface ? "interface" : knownClass ? "class" : undefined
-          const label = knownIface || (i > 0 && !declaredKind) ? "implements" : "extends"
+          // CSD12 mirror: struct bases are ALWAYS interfaces; an unknown
+          // external index-0 I-prefixed PascalCase name is conventionally an
+          // interface (matches the analyzer's looksLikeInterface exactly).
+          const isStructDecl = n.type.includes("struct")
+          const looksLikeInterface = !declaredKind && (isStructDecl || (i === 0 && /^[I][A-Z]/.test(leaf) && leaf.length > 2))
+          const label = knownIface || looksLikeInterface || (i > 0 && !declaredKind) ? "implements" : "extends"
           const key = `${label}:${nm}->${target}`
           if (!seen.has(key)) {
             seen.add(key)
@@ -527,7 +574,7 @@ export function deriveCSharpEdges(root: any, corpusInterfaces?: Set<string>): { 
       // x = new()` / `Dictionary<..> d = new()` were UNEXPLAINED because the
       // oracle only understood explicit object_creation_expression). Same
       // inst: key dedups explicit+implicit constructions of one type per file.
-      const t = csharpImplicitNewType(n)
+      const t = csharpImplicitNewType(n, memberTypes)
       if (t) {
         const key = "inst:" + t
         if (!seen.has(key)) {

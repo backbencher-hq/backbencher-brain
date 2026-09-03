@@ -221,3 +221,30 @@ Gate hardening: fixture extended (operator/event/Pick/SafeCount symbols,
 ctor-initializer + `?.Invoke` calls, clean primary-base extends, CSD9
 forbids); 5 new mutants (190 total, all caught); F5 floor re-pinned
 powershell:csharp 1386 truth edges 100%/0/0 at 60 files.
+
+## 2026-09-04 claim-validation wave (CSD11–CSD12, owner-surfaced)
+
+The owner read the code and reported two suspects; both were probe-tested
+before any change.
+
+- **CSD11 (refuted as stated, real sibling found)**: `private List<int>
+  _items = new();` was NEVER dropped — `resolveImplicitNewType` hits
+  `variable_declarator` before the `field_declaration` early return, so that
+  return was unreachable dead code (now removed). The real gap, found by
+  census, is the ASSIGNMENT form `_items = new();` in a constructor: the
+  declared type lives on the field symbol, not a declarator, so nothing
+  resolved (6/400 powershell files; explicit `new List<int>()` in the same
+  position emitted — pure target-typed asymmetry). Fix: `collectMemberTypes`
+  pre-pass maps declarator name -> declared type; `resolveImplicitNewType`
+  falls back to the assignment LHS through that map.
+- **CSD12 (confirmed)**: `class Job : IDisposable` with an external
+  interface at index 0 fabricated `extends`. Rule now: unknown external
+  index-0 I-prefixed PascalCase (length > 2) -> implements; structs/
+  record-structs -> implements for every base (C# structs never inherit).
+  Oracle mirrored; the old fixture pin had codified the fabrication and was
+  re-authored from re-probed emission.
+
+Verification: 13-shape probe matrix (fixes + 8 controls + 1 declared
+limitation: I-named external CLASSES still follow the first-base rule).
+Fixture +4 pins/+2 forbids; 2 new mutants — 192/192 caught; F5 100%/0/0;
+F1/F2/F3/F4/F6/SPEC/CC1/honesty green.
