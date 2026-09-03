@@ -88,7 +88,7 @@
     "code": "S1",
     "githubIssue": 582,
     "tool": "bb_search+bb_analyze",
-    "status": "planned",
+    "status": "verified",
     "scope": "symbol mode and all bb_analyze read modes surface staleness (per-row flag + envelope)",
     "acceptanceCriteria": [
       "edit-after-index fixtures: every affected mode flags stale rows with correct envelope counts",
@@ -99,7 +99,18 @@
       "persist S1 evidence with standard envelope",
       "negativeCases > 0",
       "evidence stamped at commit containing final code"
-    ]
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "311d1f797287892f1d9a51ba632a621a8c943e31",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m35/verify-s1-read-paths.ts",
+      "evidenceFile": "S1.json",
+      "generatedAt": "2026-09-03T19:18:19.204Z",
+      "passed": 74,
+      "failed": 0,
+      "negativeCases": 5
+    }
   },
   {
     "code": "S2",
