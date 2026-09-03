@@ -113,6 +113,19 @@ export interface RenderStats {
 const STRUCTURAL_TYPES = new Set(["calls", "inherits", "implements", "overrides"])
 const IMPORT_TYPES = new Set(["imports", "import"])
 
+/** Tier meanings in UI terms — the legend vocabulary. Documented decision:
+ *  the 0.7 confidence floor mirrors patterns.ts inheritance — at or above it
+ *  a structural claim is stored/derived; below it the edge is a guess and
+ *  MUST render as inferred. Kept in sync with the hover gloss
+ *  (src/lsp/cross_language_hover.ts) — the W4 verifier drift-gates the two. */
+export const TIER_MEANINGS: Record<EdgeTier, string> = {
+  structural: "stored or derived structure (calls/extends/implements/overrides at confidence >= 0.7) — safe to trust for navigation",
+  import_based: "derived from import statements — the module relationship is real, the use may be indirect",
+  usage_contextual: "usage-site evidence — the name appears in context, not guaranteed to be a call",
+  reference_qualified: "reference with qualifier evidence — stronger than usage_contextual, weaker than structure",
+  inferred: "a guess (heuristic or confidence < 0.7) — treat as a hint, never as fact",
+}
+
 /** Tier for an edge: stored evidenceClass wins; else the declared derivation.
  *  The 0.7 confidence floor mirrors the inheritance threshold decision in
  *  patterns.ts — below it, an edge is a guess and must render as inferred. */
@@ -162,7 +175,45 @@ function edgeElement(edge: GraphEdgeLike, index: number, dom: GraphDom): GraphDo
   text.addClass("bb-edge-label")
   text.textContent = `${edge.relationshipType} (${tier}, ${edge.confidence})`
   el.appendChild(text)
+  // W4: the visible badge — tier name + confidence, class-distinct per tier.
+  // Rendered from the SAME tier resolution as the edge class, so a badge can
+  // never disagree with the edge it sits on.
+  const badge = dom.create("span")
+  badge.addClass("bb-edge-badge")
+  badge.addClass(`bb-badge-${tier}`)
+  badge.setAttribute("data-badge-tier", tier)
+  badge.setAttribute("data-badge-confidence", String(edge.confidence))
+  badge.textContent = `${tier} · ${edge.confidence}`
+  el.appendChild(badge)
   return el
+}
+
+/** The tier legend — rendered with every graph, in UI terms. Inferred is
+ *  always visually distinct by class (bb-badge-inferred / bb-edge-inferred). */
+export function renderLegend(dom: GraphDom): GraphDomElement {
+  const legend = dom.create("div")
+  legend.addClass("bb-legend")
+  legend.setAttribute("data-legend", "edge-evidence-tiers")
+  const title = dom.create("span")
+  title.addClass("bb-legend-title")
+  title.textContent = "Edge evidence tiers:"
+  legend.appendChild(title)
+  for (const tier of EDGE_TIERS) {
+    const item = dom.create("div")
+    item.addClass("bb-legend-item")
+    item.addClass(`bb-legend-${tier}`)
+    const swatch = dom.create("span")
+    swatch.addClass("bb-legend-swatch")
+    swatch.addClass(`bb-badge-${tier}`)
+    swatch.setAttribute("data-legend-tier", tier)
+    const meaning = dom.create("span")
+    meaning.addClass("bb-legend-meaning")
+    meaning.textContent = `${tier}: ${TIER_MEANINGS[tier]}`
+    item.appendChild(swatch)
+    item.appendChild(meaning)
+    legend.appendChild(item)
+  }
+  return legend
 }
 
 function truncationMarker(kind: string, shown: number, total: number, dom: GraphDom): GraphDomElement {
@@ -231,6 +282,9 @@ export function renderGraph(result: GraphResultLike, dom: GraphDom): RenderStats
 
   layer.appendChild(nodesEl)
   layer.appendChild(edgesEl)
+  // W4: the legend ships with every graph — tier meanings are UI law, not a
+  // docs garnish.
+  layer.appendChild(renderLegend(dom))
 
   // Truncation is always declared in-UI, with real counts.
   if (nodesTruncated) layer.appendChild(truncationMarker("nodes", nodesRendered, nodesTotal, dom))
