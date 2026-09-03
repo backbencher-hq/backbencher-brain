@@ -235,6 +235,31 @@ async function main(): Promise<void> {
   core.renderGraph(fixture({ edgeCount: 1 }), dNoRow as never)
   check("P5: no rowId is ever invented", dNoRow.el.findAll("bb-edge").every((e) => !("data-row-id" in e.attrs)))
 
+  // --- P6: render budget (contract section 3) -------------------------------
+  // The core is deterministic, I/O-free compute, so wall-clock over the
+  // pinned full-budget fixture IS the render cost (headless regime: no real
+  // DOM/CSS — the in-editor regime is measured by the editor legs and
+  // declared as a limitation). Warm p95 over 30 renders of the 500-node /
+  // 2000-edge fixture must hold the 300 ms warm budget.
+  const dBudget = makeDom()
+  const fullFixture = fixture({ edgeCount: 0 })
+  // Exactly the pinned budget: 1 root + 499 nodes = 500; 750 + 1250 = 2000
+  // edges (multiple edges may share endpoints — budget is about render cost).
+  for (let i = 0; i < 499; i++) fullFixture.nodes[`sym:n${i}`] = { id: `sym:n${i}`, name: `n${i}`, symbolType: "function", file: `f${i}.ts`, line: 1, lineEnd: 2, language: "typescript", isExternal: false }
+  fullFixture.callers = Array.from({ length: 750 }, (_, i) => ({ from: `sym:n${i % 499}`, to: "sym:root", relationshipType: "calls", confidence: 0.95, isCrossLanguage: false, callSite: { file: "p.ts", line: 1 }, depth: 0 }))
+  fullFixture.callees = Array.from({ length: 1250 }, (_, i) => ({ from: "sym:root", to: `sym:n${i % 499}`, relationshipType: "calls", confidence: 0.9, isCrossLanguage: false, callSite: { file: "r.ts", line: 1 }, depth: 0 }))
+  fullFixture.summary = { totalCallers: 750, totalCallees: 1250, truncated: false, crossLanguageEdges: 0 }
+  const samples: number[] = []
+  for (let i = 0; i < 30; i++) {
+    const t0 = performance.now()
+    core.renderGraph(fullFixture as never, dBudget as never)
+    samples.push(performance.now() - t0)
+  }
+  samples.sort((a, b) => a - b)
+  const p95 = samples[Math.floor(samples.length * 0.95)]!
+  check("P6: warm p95 render within the 300 ms budget on the pinned fixture", p95 < core.RENDER_BUDGET.warmMs, `p95=${p95.toFixed(2)}ms max=${Math.max(...samples).toFixed(2)}ms`)
+  check("P6: budget fixture actually full-size (500 nodes / 2000 edges)", Object.keys(fullFixture.nodes).length === 500 && fullFixture.callers.length + fullFixture.callees.length === 2000)
+
   // --- Mutants ---------------------------------------------------------------
   const mutants: Array<{ name: string; from: string; to: string }> = [
     {

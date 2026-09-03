@@ -70,7 +70,7 @@
         "currentCommit": "see W1.json",
         "verifierCommand": "npx tsx script/m26/verify-webview-core.ts",
         "evidenceFile": "W1.json",
-        "passed": 21,
+        "passed": 23,
         "failed": 0,
         "realFailed": 0,
         "mutantsCaught": 6,
