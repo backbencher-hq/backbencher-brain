@@ -141,6 +141,20 @@ const GATES: GateSpec[] = [
     },
   },
   {
+    name: "m35-c1-baseline-tamper",
+    script: "script/m35/staleness-corpus.ts",
+    // C1 mutation (issue criterion 3): committed-baseline tampering detected.
+    // Flip a recorded staleness summary (stale→fresh) — the --check deep-diff
+    // must catch the drift and fail the gate.
+    surfaces: [],
+    mutate: () => {},
+    mutateEvidence: {
+      file: "validation/m35/results/staleness-corpus.json",
+      from: '"stale": 1,\n        "missing": 0,\n        "staleRatio": 1,',
+      to: '"stale": 0,\n        "missing": 0,\n        "staleRatio": 1,',
+    },
+  },
+  {
     name: "m35-freshness-core",
     script: "script/m35/verify-freshness-core.ts",
     // Evidence-mutation form: F1's governed surface is the production core
@@ -230,11 +244,11 @@ for (const gate of GATES) {
     const evPath = path.join(ROOT, gate.mutateEvidence.file)
     const backup = readFileSync(evPath, "utf8")
     try {
-      const control = runGate(gate.script, { BB_M35_SELFTEST_CONTROL: "1" })
+      const control = runGate(gate.script, { BB_M35_SELFTEST_CONTROL: "1", ...(gate.name === "m35-c1-baseline-tamper" ? { BB_M35_CORPUS_CHECK_ONLY: "1" } : {}) })
       check(`${gate.name}: control — clean tree PASSES`, control.exit === 0, gateFailureDetail(control.output))
       check(`${gate.name}: mutation anchor found in evidence`, backup.includes(gate.mutateEvidence.from))
       writeFileSync(evPath, backup.replace(gate.mutateEvidence.from, gate.mutateEvidence.to))
-      const mutated = runGate(gate.script)
+      const mutated = runGate(gate.script, gate.name === "m35-c1-baseline-tamper" ? { BB_M35_CORPUS_CHECK_ONLY: "1" } : {})
       check(`${gate.name}: mutation — corrupted evidence FAILS the gate`, mutated.exit !== 0, gateFailureDetail(mutated.output))
       gateResults.push({ name: gate.name, mutationFailed: mutated.exit !== 0, controlPassed: control.exit === 0 })
     } finally {
