@@ -81,7 +81,7 @@
       "code": "W2",
       "githubIssue": 510,
       "tool": "lsp-transport",
-      "status": "planned",
+      "status": "verified",
       "scope": "Declared, versioned custom LSP request carrying graph queries (root symbol to GraphTraversalResult) between server and webview; schema documented and version-pinned",
       "acceptanceCriteria": [
         "schema documented with version; server rejects mismatched versions loudly",
@@ -92,7 +92,18 @@
         "protocol evidence with positive and negative cases",
         "mutation: forged edge without row id fails",
         "limitations declared"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see W2.json",
+        "verifierCommand": "npx tsx script/m26/verify-graph-transport.ts",
+        "evidenceFile": "W2.json",
+        "passed": 24,
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": 5,
+        "mutantsTotal": 5
+      }
     },
     {
       "code": "W3",
