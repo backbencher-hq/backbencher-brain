@@ -193,7 +193,7 @@
       "code": "W6",
       "githubIssue": 547,
       "tool": "content-security",
-      "status": "planned",
+      "status": "verified",
       "scope": "Webview content security: strict CSP (no inline script execution, no remote origins), systematic HTML-escaping of every repo-controlled string, adversarial fixtures (script tags, event-handler payloads, quote/unicode edge cases), mutation gate on un-escaped render",
       "acceptanceCriteria": [
         "strict CSP present in the webview HTML",
@@ -204,7 +204,18 @@
         "adversarial fixture evidence",
         "mutation proof recorded",
         "limitations declared"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see W6.json",
+        "verifierCommand": "npx tsx script/m26/verify-content-security.ts",
+        "evidenceFile": "W6.json",
+        "passed": 18,
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": 3,
+        "mutantsTotal": 3
+      }
     },
     {
       "code": "V1",
