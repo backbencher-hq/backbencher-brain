@@ -18,12 +18,12 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "1272d0bfab940a30ccb6e3468fbfc3771795429f",
+      "currentCommit": "529e5f812f6f32ab03e7c227147303b18b3ad42e",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m35/verify-governance.ts",
       "evidenceFile": "G1.json",
-      "generatedAt": "2026-09-03T22:03:28.653Z",
-      "passed": 42,
+      "generatedAt": "2026-09-03T22:49:05.016Z",
+      "passed": 43,
       "failed": 0,
       "negativeCases": 2
     }
@@ -46,11 +46,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "1272d0bfab940a30ccb6e3468fbfc3771795429f",
+      "currentCommit": "529e5f812f6f32ab03e7c227147303b18b3ad42e",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m35/verify-freshness-core.ts",
       "evidenceFile": "F1.json",
-      "generatedAt": "2026-09-03T22:02:21.539Z",
+      "generatedAt": "2026-09-03T22:47:23.014Z",
       "passed": 29,
       "failed": 0,
       "negativeCases": 3
@@ -74,11 +74,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "1272d0bfab940a30ccb6e3468fbfc3771795429f",
+      "currentCommit": "529e5f812f6f32ab03e7c227147303b18b3ad42e",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m35/verify-envelope-contract.ts",
       "evidenceFile": "E1.json",
-      "generatedAt": "2026-09-03T22:02:22.655Z",
+      "generatedAt": "2026-09-03T22:47:24.214Z",
       "passed": 37,
       "failed": 0,
       "negativeCases": 8
@@ -102,11 +102,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "1272d0bfab940a30ccb6e3468fbfc3771795429f",
+      "currentCommit": "529e5f812f6f32ab03e7c227147303b18b3ad42e",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m35/verify-s1-read-paths.ts",
       "evidenceFile": "S1.json",
-      "generatedAt": "2026-09-03T22:02:31.835Z",
+      "generatedAt": "2026-09-03T22:47:38.564Z",
       "passed": 74,
       "failed": 0,
       "negativeCases": 5
@@ -130,11 +130,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "1272d0bfab940a30ccb6e3468fbfc3771795429f",
+      "currentCommit": "529e5f812f6f32ab03e7c227147303b18b3ad42e",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m35/verify-s2-derived.ts",
       "evidenceFile": "S2.json",
-      "generatedAt": "2026-09-03T22:02:33.055Z",
+      "generatedAt": "2026-09-03T22:47:40.632Z",
       "passed": 25,
       "failed": 0,
       "negativeCases": 5
@@ -158,11 +158,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "1272d0bfab940a30ccb6e3468fbfc3771795429f",
+      "currentCommit": "529e5f812f6f32ab03e7c227147303b18b3ad42e",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m35/verify-s3-graph-migrate.ts",
       "evidenceFile": "S3.json",
-      "generatedAt": "2026-09-03T22:02:34.145Z",
+      "generatedAt": "2026-09-03T22:47:42.499Z",
       "passed": 23,
       "failed": 0,
       "negativeCases": 4
@@ -172,7 +172,7 @@
     "code": "C1",
     "githubIssue": 585,
     "tool": "staleness-corpus",
-    "status": "planned",
+    "status": "verified",
     "scope": "mutate-after-index observed-behavior corpus across 3+ language families, baseline-diffed on --check",
     "acceptanceCriteria": [
       "corpus proves freshness reporting on every read mode across 3+ languages with precision+recall on flagged rows",
@@ -183,7 +183,18 @@
       "persist C1 evidence with standard envelope",
       "negativeCases > 0",
       "evidence stamped at commit containing final code"
-    ]
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "529e5f812f6f32ab03e7c227147303b18b3ad42e",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m35/staleness-corpus.ts --check",
+      "evidenceFile": "C1.json",
+      "generatedAt": "2026-09-03T22:47:44.867Z",
+      "passed": 93,
+      "failed": 0,
+      "negativeCases": 23
+    }
   },
   {
     "code": "D1",
