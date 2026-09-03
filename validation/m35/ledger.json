@@ -3,7 +3,7 @@
     "code": "G1",
     "githubIssue": 579,
     "tool": "governance",
-    "status": "known-gap",
+    "status": "verified",
     "scope": "staleness ledger, gates wiring, mutation-based gate self-test",
     "acceptanceCriteria": [
       "ledger exists with all M35 issues, synced from evidence, zero fabricated entries",
@@ -17,14 +17,14 @@
       "no auto-pass assertions in any M35 verifier"
     ],
     "evidence": {
-      "status": "known-gap",
-      "currentCommit": "6cab9931b506ffd25a2fc7a1eeedcb33a8362bf7",
+      "status": "verified",
+      "currentCommit": "076cfc4ee0303c7d5a0dd5b1ad68565de7692319",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m35/verify-governance.ts",
       "evidenceFile": "G1.json",
-      "generatedAt": "2026-09-03T23:21:07.825Z",
-      "passed": 48,
-      "failed": 1,
+      "generatedAt": "2026-09-03T23:25:08.711Z",
+      "passed": 49,
+      "failed": 0,
       "negativeCases": 2
     }
   },
@@ -46,11 +46,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "6cab9931b506ffd25a2fc7a1eeedcb33a8362bf7",
+      "currentCommit": "076cfc4ee0303c7d5a0dd5b1ad68565de7692319",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m35/verify-freshness-core.ts",
       "evidenceFile": "F1.json",
-      "generatedAt": "2026-09-03T23:15:12.342Z",
+      "generatedAt": "2026-09-03T23:22:48.491Z",
       "passed": 29,
       "failed": 0,
       "negativeCases": 3
@@ -74,11 +74,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "6cab9931b506ffd25a2fc7a1eeedcb33a8362bf7",
+      "currentCommit": "076cfc4ee0303c7d5a0dd5b1ad68565de7692319",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m35/verify-envelope-contract.ts",
       "evidenceFile": "E1.json",
-      "generatedAt": "2026-09-03T23:15:13.923Z",
+      "generatedAt": "2026-09-03T23:22:49.661Z",
       "passed": 37,
       "failed": 0,
       "negativeCases": 8
@@ -102,11 +102,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "6cab9931b506ffd25a2fc7a1eeedcb33a8362bf7",
+      "currentCommit": "076cfc4ee0303c7d5a0dd5b1ad68565de7692319",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m35/verify-s1-read-paths.ts",
       "evidenceFile": "S1.json",
-      "generatedAt": "2026-09-03T23:15:30.949Z",
+      "generatedAt": "2026-09-03T23:23:09.834Z",
       "passed": 74,
       "failed": 0,
       "negativeCases": 5
@@ -130,11 +130,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "6cab9931b506ffd25a2fc7a1eeedcb33a8362bf7",
+      "currentCommit": "076cfc4ee0303c7d5a0dd5b1ad68565de7692319",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m35/verify-s2-derived.ts",
       "evidenceFile": "S2.json",
-      "generatedAt": "2026-09-03T23:15:33.050Z",
+      "generatedAt": "2026-09-03T23:23:11.881Z",
       "passed": 25,
       "failed": 0,
       "negativeCases": 5
@@ -158,11 +158,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "6cab9931b506ffd25a2fc7a1eeedcb33a8362bf7",
+      "currentCommit": "076cfc4ee0303c7d5a0dd5b1ad68565de7692319",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m35/verify-s3-graph-migrate.ts",
       "evidenceFile": "S3.json",
-      "generatedAt": "2026-09-03T23:15:34.713Z",
+      "generatedAt": "2026-09-03T23:23:13.534Z",
       "passed": 23,
       "failed": 0,
       "negativeCases": 4
@@ -186,11 +186,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "6cab9931b506ffd25a2fc7a1eeedcb33a8362bf7",
+      "currentCommit": "076cfc4ee0303c7d5a0dd5b1ad68565de7692319",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m35/staleness-corpus.ts --check",
       "evidenceFile": "C1.json",
-      "generatedAt": "2026-09-03T23:15:37.392Z",
+      "generatedAt": "2026-09-03T23:23:16.191Z",
       "passed": 93,
       "failed": 0,
       "negativeCases": 23
@@ -214,11 +214,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "6cab9931b506ffd25a2fc7a1eeedcb33a8362bf7",
+      "currentCommit": "076cfc4ee0303c7d5a0dd5b1ad68565de7692319",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m35/verify-docs-staleness.ts",
       "evidenceFile": "D1.json",
-      "generatedAt": "2026-09-03T23:15:37.990Z",
+      "generatedAt": "2026-09-03T23:23:16.841Z",
       "passed": 71,
       "failed": 0,
       "negativeCases": 16
