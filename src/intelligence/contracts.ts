@@ -669,3 +669,22 @@ export interface AnalysisHistoryReport {
   findings: AnalysisFindingRecord[]
   summary: Record<AnalysisFindingState, number>
 }
+
+// ── M35.E1 (#581): the one staleness wire shape for every read tool ──
+// Carried by read-mode JSON envelopes as `freshness`, with per-item
+// `stale?: boolean` where the row shape has a file identity. Registered per
+// tool+mode in the executable registry via descriptor.freshnessModes, so a
+// mode must carry this block exactly when it is registered to.
+// remediation is machine-stable text naming the real reindex interface —
+// its exact forms live in FRESHNESS_REMEDIATION (src/brain/freshness.ts).
+export interface StalenessEnvelope {
+  fresh: number
+  stale: number
+  missing: number
+  /** (stale + missing) / (fresh + stale + missing); 0 when nothing checked. */
+  staleRatio: number
+  /** sampled = subset of files checked; complete = every row's file checked. */
+  mode: "sampled" | "complete"
+  /** Actionable, machine-stable remediation; "" when nothing is stale. */
+  remediation: string
+}

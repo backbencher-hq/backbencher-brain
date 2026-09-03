@@ -26,7 +26,9 @@ function same(actual: unknown, expected: unknown): boolean {
 check("baseline schema is version 1", baseline.schemaVersion === 1)
 check("baseline is M10 issue 116", baseline.milestone === "M10" && baseline.issue === 116)
 check("package version matches baseline", packageJson.version === baseline.packageVersion)
-check("runtime has exactly ten tools", PUBLIC_TOOL_DESCRIPTORS.length === 10)
+// M35.E1 repair: derive from the baseline's own tool list — a hardcoded count
+// rotted when M22 legitimately added bb_index and the gate could not notice.
+check("runtime tool count matches baseline", PUBLIC_TOOL_DESCRIPTORS.length === baseline.runtimeMcp.toolNames.length)
 check("runtime names match baseline", same(PUBLIC_TOOL_DESCRIPTORS.map((tool) => tool.name), baseline.runtimeMcp.toolNames))
 for (const descriptor of PUBLIC_TOOL_DESCRIPTORS) {
   const expected = baseline.runtimeMcp.descriptors[descriptor.name]

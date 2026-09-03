@@ -60,7 +60,7 @@
     "code": "E1",
     "githubIssue": 581,
     "tool": "envelope-contract",
-    "status": "planned",
+    "status": "verified",
     "scope": "standard freshness envelope block + per-item stale flag in contracts.ts and executable registry",
     "acceptanceCriteria": [
       "contract type + registry schema updated; contract-diff and tool-docs byte-gate green after regeneration",
@@ -71,7 +71,18 @@
       "persist E1 evidence with standard envelope",
       "negativeCases > 0",
       "evidence stamped at commit containing final code"
-    ]
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "3f880629da93e09a0b85020feab4cefa4a97a386",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m35/verify-envelope-contract.ts",
+      "evidenceFile": "E1.json",
+      "generatedAt": "2026-09-03T16:55:08.932Z",
+      "passed": 29,
+      "failed": 0,
+      "negativeCases": 8
+    }
   },
   {
     "code": "S1",
