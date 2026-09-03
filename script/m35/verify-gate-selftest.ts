@@ -98,6 +98,21 @@ const GATES: GateSpec[] = [
     },
   },
   {
+    name: "m35-s2-stale-finding-fresh",
+    script: "script/m35/verify-s2-derived.ts",
+    // S2 mutation (issue criterion 3): a stale finding presented FRESH. Invert
+    // the derived-staleness flag source — edited-file findings come out fresh,
+    // untouched-file findings come out stale, footers count wrong, and the
+    // fresh-negative controls fail.
+    surfaces: [],
+    mutate: () => {},
+    mutateEvidence: {
+      file: "src/mcp/tool-handlers.ts",
+      from: "    isStale: (rel) => rel != null && statuses.get(relToId.get(rel) ?? \"\") === \"stale\",",
+      to: "    isStale: (rel) => rel != null && statuses.get(relToId.get(rel) ?? \"\") !== \"stale\",",
+    },
+  },
+  {
     name: "m35-freshness-core",
     script: "script/m35/verify-freshness-core.ts",
     // Evidence-mutation form: F1's governed surface is the production core
