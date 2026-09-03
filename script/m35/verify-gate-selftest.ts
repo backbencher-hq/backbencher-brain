@@ -78,6 +78,12 @@ const coveredScripts = new Set(GATES.map((g) => path.basename(g.script)))
 const uncovered = verifiers.filter((v) => !coveredScripts.has(v) && !INFRA.has(v))
 check("every M35 verifier is covered by a mutation or declared infra", uncovered.length === 0, uncovered.join(","))
 
+// Fresh-clone robustness: git does not track empty directories, so
+// validation/m35/results/ may not exist on a fresh checkout. Create it before
+// any readdirSync/copy — the self-test must NEVER crash; gates may fail, code
+// may not throw.
+mkdirSync(path.join(ROOT, "validation/m35/results"), { recursive: true })
+
 function runGate(script: string, env: Record<string, string> = {}): { exit: number; output: string } {
   try {
     // Self-test child runs NEVER stamp real evidence (explicit-stamping model):

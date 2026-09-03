@@ -64,3 +64,7 @@ bun run script/m31/sync-ledger.ts
 ## Recommended merge order
 
 Either order works; **merge laptop B first** (M30/32/33 are user-facing and their issues are still open — closing them needs the merged evidence), then laptop A's branch on top, then run the full procedure once. Alternative (A first) is fine but B's CLI work will then need the second pass anyway.
+
+## M35 post-merge acceptance probe
+
+M35 "Read-Path Staleness Honesty" (GitHub milestone #35, created 2026-09-03 on laptop A) adds read-path staleness gates to `npm run verify` — they run in this procedure automatically. Once M35.C1 (#585) delivers `script/m35/staleness-corpus.ts --check`, it becomes the designated merge-day acceptance step for staleness behavior: it proves staleness reporting survived the merge, per tool, per language family. Until C1 lands, the two live M35 gates (governance + mutation self-test) already run in the chain and must be green before the merge is declared done.
