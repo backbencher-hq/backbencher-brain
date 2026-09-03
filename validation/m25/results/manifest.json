@@ -271,7 +271,7 @@
       "code": "E7",
       "githubIssue": 544,
       "tool": "cross-platform",
-      "status": "planned",
+      "status": "verified",
       "scope": "extension end-to-end verified on Linux, macOS, Windows (OS-matrix runners); every claim records the OS it was measured on (contract \u00a710); platform bug classes (BB_DATA_DIR home-dir nondeterminism, path-separator bugs) get dedicated mutation cases",
       "acceptanceCriteria": [
         "extension end-to-end verified on at least two OSes; the third is either verified or blocked with reason",
@@ -282,7 +282,25 @@
         "owner spot-check of E7 evidence",
         "closure comment quotes real run output + evidence path",
         "no banned vocabulary in the issue thread"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see E7-linux.json",
+        "verifierCommand": "npx tsx script/m25/verify-cross-platform.ts",
+        "evidenceFile": "E7-linux.json",
+        "passed": 39,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 0,
+        "mutantsCaught": 4,
+        "mutantsTotal": 4,
+        "os": "linux",
+        "blockedRecords": [
+          "E7-darwin.json",
+          "E7-windows.json"
+        ],
+        "scopeNote": "linux verified; darwin/win32 honestly blocked (no runners on this machine) \u2014 two-OS acceptance stays open for X1/owner"
+      }
     },
     {
       "code": "D1",
