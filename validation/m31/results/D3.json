@@ -8,7 +8,7 @@
   "workingTreeRelevantChanges": [],
   "verifierCommand": "bun run script/m31/verify-tools-overview.ts",
   "evidenceFile": "D3.json",
-  "generatedAt": "2026-09-03T22:03:37.131Z",
+  "generatedAt": "2026-09-03T22:49:19.384Z",
   "surfaces": {
     "doc": "docs/TOOLS_OVERVIEW.md",
     "registryTools": 11,
@@ -30,5 +30,5 @@
   },
   "negativeCases": 4,
   "negativeCasesDescription": "self-test mutations: phantom tool section, wrong mode list, phantom DB artifact, corrupted cross-link row",
-  "currentCommit": "1272d0bfab940a30ccb6e3468fbfc3771795429f"
+  "currentCommit": "529e5f812f6f32ab03e7c227147303b18b3ad42e"
 }

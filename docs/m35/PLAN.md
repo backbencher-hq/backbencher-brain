@@ -92,3 +92,8 @@ Identical to M31's proven contract (including its post-closure audit lessons):
 ## Delivery log
 
 - **S1 (#582) delivered** — `script/m35/verify-s1-read-paths.ts` (74/74, 5 negatives, mutation-proven ×2): all 11 bb_analyze modes + bb_search symbol carry the registered envelope; project-wide modes resolve a deterministic stride sample (cap 64, `mode:"sampled"`, counts proven correct-for-sample by independent recomputation); targeted modes stay `complete`; complexity/test_quality resolve exactly their visible rows. Latency budget measured on the lodash M19 anchor (direct added-cost instrument, A/B noise recorded): ≤1.7–4.1% ratio for real handlers, <1.5ms absolute for trivial ones — documented in-gate and here as the criterion-3 rule.
+
+
+## Delivery notes
+
+- C1 (#585) delivered: `script/m35/staleness-corpus.ts` — 93/93 (23 negatives), deterministic (two-run byte-identical modulo timestamp), baseline diffed on `--check`, tamper mutation proven in the gate self-test (49/49). Wired into `npm run verify` and the MERGE_NOTES merge-day procedure.
