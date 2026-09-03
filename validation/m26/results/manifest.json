@@ -26,7 +26,7 @@
       "code": "G1",
       "githubIssue": 508,
       "tool": "governance",
-      "status": "planned",
+      "status": "verified",
       "scope": "M26 ledger, closure gate, verify wiring; standing M25 completion-bar re-audit automated; contract vocabulary lint over M26 artifacts",
       "acceptanceCriteria": [
         "ledger + gate + verify wiring as in M24/M25 G1",
@@ -37,7 +37,17 @@
         "gate evidence persisted",
         "mutation: ledger tamper fails",
         "clean rerun recorded"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see G1.json",
+        "verifierCommand": "npx tsx script/m26/verify-governance.ts",
+        "evidenceFile": "G1.json",
+        "passed": 70,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 10
+      }
     },
     {
       "code": "W1",
