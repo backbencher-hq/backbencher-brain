@@ -21,11 +21,13 @@ type SymbolRow = {
 }
 
 type EdgeRow = {
+  rowId: string
   lineNumber: number | null
   relType: string
   confidence: number
   isCrossLang: number | null
   bridge: string | null
+  meta: string | null
   symId: string | null
   symName: string | null
   line: number | null
@@ -42,6 +44,21 @@ type EdgeRow = {
 function cascadeBounds(symbolId: string): { prefix: string; upper: string } {
   const prefix = symbolId.includes(":") ? symbolId.slice(0, symbolId.lastIndexOf(":") + 1) : ""
   return { prefix, upper: prefix + ";" }
+}
+
+/** Parse the stored metadata JSON into the declared pass-through shape.
+ *  Malformed or foreign metadata degrades to undefined — never throws, never
+ *  invents fields (a row with unreadable metadata still renders, tierless). */
+function edgeMetadata(meta: string | null): { evidenceClass?: string } | undefined {
+  if (!meta) return undefined
+  try {
+    const parsed = JSON.parse(meta) as Record<string, unknown>
+    const out: { evidenceClass?: string } = {}
+    if (typeof parsed["evidenceClass"] === "string") out.evidenceClass = parsed["evidenceClass"]
+    return Object.keys(out).length > 0 ? out : undefined
+  } catch {
+    return undefined
+  }
 }
 
 function nodeFromEdge(row: EdgeRow): GraphNode {
@@ -104,8 +121,8 @@ export async function traverseGraph(
     const { prefix, upper } = cascadeBounds(symbolId)
     const cascade = "SELECT ? AS id UNION ALL SELECT m.id FROM brain_symbol m WHERE m.owner_symbol_id >= ? AND m.owner_symbol_id < ? AND m.project_id = ?"
     const rows = raw.prepare(
-      "SELECT r.line_number AS lineNumber, r.relationship_type AS relType, r.confidence AS confidence, " +
-        "r.is_cross_language AS isCrossLang, r.bridge_mechanism AS bridge, " +
+      "SELECT r.id AS rowId, r.line_number AS lineNumber, r.relationship_type AS relType, r.confidence AS confidence, " +
+        "r.is_cross_language AS isCrossLang, r.bridge_mechanism AS bridge, r.metadata AS meta, " +
         "s.id AS symId, s.name AS symName, s.line_start AS line, s.line_end AS lineEnd, " +
         "s.complexity AS complexity, s.symbol_type AS symType, " +
         "f.relative_path AS fileRel, f.path AS filePath, f.language AS fileLang, " +
@@ -133,6 +150,8 @@ export async function traverseGraph(
         bridgeMechanism: row.bridge || undefined,
         callSite: { file: row.srcFileRel || node.file, line: row.lineNumber || node.line },
         depth,
+        rowId: row.rowId,
+        metadata: edgeMetadata(row.meta),
       })
       maxDepthReached = Math.max(maxDepthReached, depth)
       if (row.symId) children.push(row.symId)
@@ -165,8 +184,8 @@ export async function traverseGraph(
     const cascade = "SELECT ? AS id UNION ALL SELECT m.id FROM brain_symbol m WHERE m.owner_symbol_id >= ? AND m.owner_symbol_id < ? AND m.project_id = ?"
 
     const selectCols =
-      "SELECT r.line_number AS lineNumber, r.relationship_type AS relType, r.confidence AS confidence, " +
-      "r.is_cross_language AS isCrossLang, r.bridge_mechanism AS bridge, " +
+      "SELECT r.id AS rowId, r.line_number AS lineNumber, r.relationship_type AS relType, r.confidence AS confidence, " +
+      "r.is_cross_language AS isCrossLang, r.bridge_mechanism AS bridge, r.metadata AS meta, " +
       "s.id AS symId, s.name AS symName, s.line_start AS line, s.line_end AS lineEnd, " +
       "s.complexity AS complexity, s.symbol_type AS symType, " +
       "f.relative_path AS fileRel, f.path AS filePath, f.language AS fileLang, " +
@@ -218,6 +237,8 @@ export async function traverseGraph(
         bridgeMechanism: row.bridge || undefined,
         callSite: { file: row.srcFileRel || srcFileRel, line: row.lineNumber || 0 },
         depth,
+        rowId: row.rowId,
+        metadata: edgeMetadata(row.meta),
       })
       maxDepthReached = Math.max(maxDepthReached, depth)
       if (row.symId) children.push({ id: row.symId, file: node.file })
