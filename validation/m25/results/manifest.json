@@ -199,7 +199,7 @@
         "total": 26,
         "inEditor": true,
         "pinnedEditor": "vscode-1.85.0",
-        "activationMs": 89,
+        "activationMs": 52,
         "declaredBudgetMs": 150,
         "liveStalenessLoop": true,
         "failed": 0,
