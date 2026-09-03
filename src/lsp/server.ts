@@ -31,7 +31,7 @@
 //      (also runs from compiled dist: node dist/lsp/server.js --dir <path>)
 
 import path from "node:path"
-import { realpathSync } from "node:fs"
+import { realpathSync, appendFileSync } from "node:fs"
 import { getProjectId } from "../cli/index"
 import { BACKBENCHER_BRAIN_VERSION } from "../version"
 
@@ -406,6 +406,63 @@ export function uriToPath(uri: string): string {
 export function wireFeatures(server: BbLspServer): void {
   const projectId = server.context.projectId
 
+  // Freshness (M25.E5): the P2 monitor watches the workspace, debounces
+  // edits into incremental reindexes, and answers bb/staleness with the
+  // machine-readable stale marker (contract §4.3: unknown counts as stale —
+  // silence is guilt). bb/ namespace = private honesty plumbing; it carries
+  // no I-claim itself, it is what the status surface renders.
+  // Lazy init: the raw handle opens async, so the monitor (and the watcher)
+  // start on the first bb/staleness request.
+  let monitor: import("./freshness").FreshnessMonitor | null = null
+  async function freshnessMonitor(): Promise<import("./freshness").FreshnessMonitor> {
+    if (monitor !== null) return monitor
+    const { createFreshnessMonitor } = await import("./freshness")
+    const { reindexFilesParallel } = await import("../ast/parallel-indexer")
+    const raw = await BrainDatabase.getRawInstance(projectId)
+    monitor = createFreshnessMonitor({
+      projectId,
+      projectPath: server.context.root,
+      raw,
+      fileIdForPath: (p: string): string | null => {
+        try {
+          const row = raw.prepare("SELECT id FROM brain_file WHERE path = ?").get(p) as { id: string } | undefined
+          return row?.id ?? null
+        } catch {
+          return null
+        }
+      },
+      // LSP-safety-critical: the indexer's DEFAULT logger writes progress to
+      // process.stdout — protocol poison on a stdio server (progress lines
+      // corrupt JSON-RPC framing; the editor client dies with "Header must
+      // provide a Content-Length property", found live by E5). All server-side
+      // indexer output must go to stderr; worker forks already do the same.
+      reindex: (changes) =>
+        reindexFilesParallel(projectId, server.context.root, changes, {
+          logger: { log: (...args: unknown[]) => console.error(...args), write: (s: string) => process.stderr.write(s) },
+        }),
+      log: (msg, meta) => console.error(`[bb_lsp] ${msg}`, meta ?? ""),
+    })
+    monitor.start()
+    return monitor
+  }
+
+  server.register("bb/staleness", async (params: any) => {
+    const mon = await freshnessMonitor()
+    const filePath = uriToPath(params?.uri ?? "")
+    let fileId: string | null = null
+    try {
+      const raw = await BrainDatabase.getRawInstance(projectId)
+      const row = raw.prepare("SELECT id FROM brain_file WHERE path = ?").get(filePath) as { id: string } | undefined
+      fileId = row?.id ?? null
+    } catch {}
+    if (fileId === null) {
+      // Not in the index: honest marker, never a fabricated fresh claim.
+      return { stale: true, status: "missing", pendingReindex: false }
+    }
+    return mon.marker(fileId)
+  })
+
+
   server.register("textDocument/hover", async (params: any) => {
     const raw = await BrainDatabase.getRawInstance(projectId)
     return hover(raw, {
@@ -483,10 +540,27 @@ const isMain =
 if (isMain) {
   const dirIdx = process.argv.indexOf("--dir")
   const root = dirIdx !== -1 ? process.argv[dirIdx + 1] : process.cwd()
+  // Test-only crash trace: the extension host drops server stderr (no output
+  // channel configured), so the editor leg cannot see WHY a server died.
+  // When BB_LSP_STDERR_LOG is set, fatal errors append to that file.
+  if (process.env.BB_LSP_STDERR_LOG) {
+    const trace = (what: string, err: unknown) => {
+      try {
+        appendFileSync(process.env.BB_LSP_STDERR_LOG as string, `[${new Date().toISOString()}] ${what}: ${(err as Error)?.stack ?? String(err)}\n`)
+      } catch {}
+    }
+    process.on("uncaughtException", (e) => trace("uncaughtException", e))
+    process.on("unhandledRejection", (e) => trace("unhandledRejection", e))
+  }
   const server = createServer(root)
   wireFeatures(server)
   server.run().catch((error: any) => {
     console.error("bb_lsp failed:", error?.message ?? String(error))
+    if (process.env.BB_LSP_STDERR_LOG) {
+      try {
+        appendFileSync(process.env.BB_LSP_STDERR_LOG, `[${new Date().toISOString()}] run-failed: ${(error as Error)?.stack ?? String(error)}\n`)
+      } catch {}
+    }
     process.exit(1)
   })
 }
