@@ -13,14 +13,14 @@
       "status": "pass"
     },
     {
-      "description": "regression gate vs grammar-audit-baseline.json (34/41 languages pass)",
+      "description": "regression gate vs grammar-audit-baseline.json (35/41 languages pass)",
       "id": "baseline-gate",
       "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "100fe45fdf795637bf101184df130477e15d9a83",
-  "committedAt": "2026-09-02T21:00:06+02:00",
+  "commit": "8be537f17aa30c495ccef67e32e6dc3f839b3820",
+  "committedAt": "2026-09-03T06:18:08+02:00",
   "data": {
     "languages": {
       "bash": {
@@ -334,111 +334,10 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 452,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 57,
-        "status": "fail",
+        "referencedTypeLiterals": 52,
+        "status": "pass",
         "unknownFields": [],
-        "unknownNodeTypes": [
-          {
-            "context": "real-haskell-analyzer.ts:findNamedChildByType",
-            "line": 243,
-            "literal": "identifier"
-          },
-          {
-            "context": "real-haskell-analyzer.ts:findNamedChildByType",
-            "line": 380,
-            "literal": "identifier"
-          },
-          {
-            "context": "real-haskell-analyzer.ts:findNamedChildByType",
-            "line": 750,
-            "literal": "identifier"
-          },
-          {
-            "context": "real-haskell-analyzer.ts:findNamedChildByType",
-            "line": 243,
-            "literal": "varid"
-          },
-          {
-            "context": "real-haskell-analyzer.ts:findNamedChildByType",
-            "line": 380,
-            "literal": "varid"
-          },
-          {
-            "context": "real-haskell-analyzer.ts:findNamedChildByType",
-            "line": 750,
-            "literal": "varid"
-          },
-          {
-            "context": "real-haskell-analyzer.ts:findNamedChildByType",
-            "line": 255,
-            "literal": "qconid"
-          },
-          {
-            "context": "real-haskell-analyzer.ts:findNamedChildByType",
-            "line": 748,
-            "literal": "qconid"
-          },
-          {
-            "context": "real-haskell-analyzer.ts:findNamedChildByType",
-            "line": 269,
-            "literal": "export_list"
-          },
-          {
-            "context": "real-haskell-analyzer.ts:findNamedChildByType",
-            "line": 381,
-            "literal": "signature_type"
-          },
-          {
-            "context": "real-haskell-analyzer.ts:findNamedChildByType",
-            "line": 498,
-            "literal": "type_constructor"
-          },
-          {
-            "context": "real-haskell-analyzer.ts:findNamedChildByType",
-            "line": 609,
-            "literal": "type_constructor"
-          },
-          {
-            "context": "real-haskell-analyzer.ts:findNamedChildByType",
-            "line": 498,
-            "literal": "tycon"
-          },
-          {
-            "context": "real-haskell-analyzer.ts:collectNamedChildrenByType",
-            "line": 574,
-            "literal": "tycon"
-          },
-          {
-            "context": "real-haskell-analyzer.ts:collectNamedChildrenByType",
-            "line": 577,
-            "literal": "tycon"
-          },
-          {
-            "context": "real-haskell-analyzer.ts:findNamedChildByType",
-            "line": 609,
-            "literal": "tycon"
-          },
-          {
-            "context": "real-haskell-analyzer.ts:findNamedChildByType",
-            "line": 672,
-            "literal": "tycon"
-          },
-          {
-            "context": "real-haskell-analyzer.ts:findNamedChildByType",
-            "line": 498,
-            "literal": "type_name"
-          },
-          {
-            "context": "real-haskell-analyzer.ts:findNamedChildByType",
-            "line": 609,
-            "literal": "type_name"
-          },
-          {
-            "context": "real-haskell-analyzer.ts:findNamedChildByType",
-            "line": 609,
-            "literal": "class_name"
-          }
-        ],
+        "unknownNodeTypes": [],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-haskell.wasm"
@@ -1040,10 +939,10 @@
       }
     },
     "summary": {
-      "fail": 7,
+      "fail": 6,
       "languagesAudited": 41,
-      "pass": 34,
-      "totalUnknownReferences": 43
+      "pass": 35,
+      "totalUnknownReferences": 23
     }
   },
   "governance": "docs/M14-HONESTY-CONTRACT.md",

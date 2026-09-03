@@ -55,7 +55,7 @@
     },
     {
       "description": "java avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "grails-core:java 7.9 ms/file",
+      "detail": "grails-core:java 2.7 ms/file",
       "id": "section-f-perf-budget",
       "language": "java",
       "status": "pass"
@@ -129,7 +129,7 @@
     },
     {
       "description": "groovy avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "grails-core:groovy 7.5 ms/file",
+      "detail": "grails-core:groovy 5.1 ms/file",
       "id": "section-f-perf-budget",
       "language": "groovy",
       "status": "pass"
@@ -203,7 +203,7 @@
     },
     {
       "description": "kotlin avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "Exposed:kotlin 25.5 ms/file",
+      "detail": "Exposed:kotlin 21.5 ms/file",
       "id": "section-f-perf-budget",
       "language": "kotlin",
       "status": "pass"
@@ -277,7 +277,7 @@
     },
     {
       "description": "scala avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "scala3:scala 9.2 ms/file",
+      "detail": "scala3:scala 4.8 ms/file",
       "id": "section-f-perf-budget",
       "language": "scala",
       "status": "pass"
@@ -351,7 +351,7 @@
     },
     {
       "description": "typescript avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "vue-core:typescript 95 ms/file",
+      "detail": "vue-core:typescript 44.9 ms/file",
       "id": "section-f-perf-budget",
       "language": "typescript",
       "status": "pass"
@@ -573,7 +573,7 @@
     },
     {
       "description": "svelte avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "svelte:svelte 19.3 ms/file",
+      "detail": "svelte:svelte 2.9 ms/file",
       "id": "section-f-perf-budget",
       "language": "svelte",
       "status": "pass"
@@ -721,7 +721,7 @@
     },
     {
       "description": "cpp avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "fmt:cpp 113.6 ms/file",
+      "detail": "fmt:cpp 43.3 ms/file",
       "id": "section-f-perf-budget",
       "language": "cpp",
       "status": "pass"
@@ -795,7 +795,7 @@
     },
     {
       "description": "rust avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "ripgrep:rust 32.9 ms/file",
+      "detail": "ripgrep:rust 9.3 ms/file",
       "id": "section-f-perf-budget",
       "language": "rust",
       "status": "pass"
@@ -869,7 +869,7 @@
     },
     {
       "description": "go avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "go-tools:go 9.3 ms/file",
+      "detail": "go-tools:go 8.4 ms/file",
       "id": "section-f-perf-budget",
       "language": "go",
       "status": "pass"
@@ -943,7 +943,7 @@
     },
     {
       "description": "zig avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "zig:zig 59.3 ms/file",
+      "detail": "zig:zig 21 ms/file",
       "id": "section-f-perf-budget",
       "language": "zig",
       "status": "pass"
@@ -1017,7 +1017,7 @@
     },
     {
       "description": "csharp avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "powershell:csharp 44.5 ms/file",
+      "detail": "powershell:csharp 16.7 ms/file",
       "id": "section-f-perf-budget",
       "language": "csharp",
       "status": "pass"
@@ -1091,7 +1091,7 @@
     },
     {
       "description": "dart avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "proxicall:dart 106.6 ms/file",
+      "detail": "proxicall:dart 30.4 ms/file",
       "id": "section-f-perf-budget",
       "language": "dart",
       "status": "pass"
@@ -1165,7 +1165,7 @@
     },
     {
       "description": "swift avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "swift-nio:swift 96.4 ms/file",
+      "detail": "swift-nio:swift 25.6 ms/file",
       "id": "section-f-perf-budget",
       "language": "swift",
       "status": "pass"
@@ -1239,7 +1239,7 @@
     },
     {
       "description": "objc avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "Clyde:objc 48.2 ms/file",
+      "detail": "Clyde:objc 11.7 ms/file",
       "id": "section-f-perf-budget",
       "language": "objc",
       "status": "pass"
@@ -1313,7 +1313,7 @@
     },
     {
       "description": "php avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "phpunit:php 10.8 ms/file",
+      "detail": "phpunit:php 3.3 ms/file",
       "id": "section-f-perf-budget",
       "language": "php",
       "status": "pass"
@@ -1461,7 +1461,7 @@
     },
     {
       "description": "python avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "cython:python 28.8 ms/file",
+      "detail": "cython:python 17.9 ms/file",
       "id": "section-f-perf-budget",
       "language": "python",
       "status": "pass"
@@ -1479,11 +1479,85 @@
       "id": "section-h-cross-language",
       "language": "python",
       "status": "pass"
+    },
+    {
+      "description": "haskell: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "haskell",
+      "status": "pass"
+    },
+    {
+      "description": "haskell: 9 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "haskell",
+      "status": "pass"
+    },
+    {
+      "description": "haskell: 8 ruled, 0 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "haskell",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (haskell)",
+      "detail": "253 types, 49 handled, 84 silent, 9 gaps, 8 decisions",
+      "id": "section-a-structural",
+      "language": "haskell",
+      "status": "pass"
+    },
+    {
+      "description": "6 relationship kinds pinned by haskell fixtures",
+      "detail": "pinned: calls, contains, extends, implements, instantiates, references",
+      "id": "section-b-relationship-kinds",
+      "language": "haskell",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for haskell (1)",
+      "detail": "complexity",
+      "id": "section-c-payload-matrix",
+      "language": "haskell",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
+      "id": "section-d-evidence-tiers",
+      "language": "haskell",
+      "status": "pass"
+    },
+    {
+      "description": "cabal:haskell at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor cabal:haskell: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "haskell",
+      "status": "pass"
+    },
+    {
+      "description": "haskell avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "cabal:haskell 8.2 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "haskell",
+      "status": "pass"
+    },
+    {
+      "description": "haskell analyzer docs present and committed",
+      "detail": "docs/analyzers/real-haskell-analyzer.md",
+      "id": "section-g-docs",
+      "language": "haskell",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "9 checks pass",
+      "id": "section-h-cross-language",
+      "language": "haskell",
+      "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "100fe45fdf795637bf101184df130477e15d9a83",
-  "committedAt": "2026-09-02T21:00:06+02:00",
+  "commit": "8be537f17aa30c495ccef67e32e6dc3f839b3820",
+  "committedAt": "2026-09-03T06:18:08+02:00",
   "data": {
     "languages": {
       "c": {
@@ -1561,7 +1635,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "fmt:cpp 113.6 ms/file",
+            "detail": "fmt:cpp 43.3 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -1603,7 +1677,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "powershell:csharp 44.5 ms/file",
+            "detail": "powershell:csharp 16.7 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -1656,7 +1730,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "proxicall:dart 106.6 ms/file",
+            "detail": "proxicall:dart 30.4 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -1700,7 +1774,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "go-tools:go 9.3 ms/file",
+            "detail": "go-tools:go 8.4 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -1755,11 +1829,70 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "grails-core:groovy 7.5 ms/file",
+            "detail": "grails-core:groovy 5.1 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
             "detail": "docs/analyzers/groovy.md, docs/analyzers/real-groovy-analyzer.md",
+            "status": "pass"
+          },
+          "section-h-cross-language": {
+            "detail": "9 checks pass",
+            "status": "pass"
+          }
+        }
+      },
+      "haskell": {
+        "gaps": [
+          "HS-G1: type aliases (`type Alias = Text`) emit no Type symbol — verified against the fixture probe",
+          "HS-G2: GADT-style data declarations emit no constructors/fields",
+          "HS-G3: type/data family machinery emits no symbols or edges",
+          "HS-G4: FFI declarations emit no function symbols",
+          "HS-G5: Template Haskell splices/quotes: spliced declarations are invisible to the analyzer",
+          "HS-G6: pattern synonyms emit no symbols",
+          "HS-G7: class defaults/fundeps/roles/kind signatures carry no metadata",
+          "HS-G8: anonymous case/if lambdas emit no function symbol; their internal complexity is only counted in the module total",
+          "HS-G9: deriving via strategies are not resolved as implements edges"
+        ],
+        "nodeTypeCount": 253,
+        "pendingDecisions": [],
+        "ruledDecisions": [
+          "HS-D1",
+          "HS-D2",
+          "HS-D3",
+          "HS-D4",
+          "HS-D5",
+          "HS-D6",
+          "HS-D7",
+          "HS-D8"
+        ],
+        "sections": {
+          "section-a-structural": {
+            "detail": "253 types, 49 handled, 84 silent, 9 gaps, 8 decisions",
+            "status": "pass"
+          },
+          "section-b-relationship-kinds": {
+            "detail": "pinned: calls, contains, extends, implements, instantiates, references",
+            "status": "pass"
+          },
+          "section-c-payload-matrix": {
+            "detail": "complexity",
+            "status": "pass"
+          },
+          "section-d-evidence-tiers": {
+            "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
+            "status": "pass"
+          },
+          "section-e-differential": {
+            "detail": "floor cabal:haskell: missing=0, unexplained=0 (differential-baseline.json)",
+            "status": "pass"
+          },
+          "section-f-perf-budget": {
+            "detail": "cabal:haskell 8.2 ms/file",
+            "status": "pass"
+          },
+          "section-g-docs": {
+            "detail": "docs/analyzers/real-haskell-analyzer.md",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -1804,7 +1937,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "grails-core:java 7.9 ms/file",
+            "detail": "grails-core:java 2.7 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -1915,7 +2048,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "Exposed:kotlin 25.5 ms/file",
+            "detail": "Exposed:kotlin 21.5 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -1964,7 +2097,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "Clyde:objc 48.2 ms/file",
+            "detail": "Clyde:objc 11.7 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -2012,7 +2145,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "phpunit:php 10.8 ms/file",
+            "detail": "phpunit:php 3.3 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -2058,7 +2191,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "cython:python 28.8 ms/file",
+            "detail": "cython:python 17.9 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -2152,7 +2285,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "ripgrep:rust 32.9 ms/file",
+            "detail": "ripgrep:rust 9.3 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -2210,7 +2343,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "scala3:scala 9.2 ms/file",
+            "detail": "scala3:scala 4.8 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -2262,7 +2395,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "svelte:svelte 19.3 ms/file",
+            "detail": "svelte:svelte 2.9 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -2313,7 +2446,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "swift-nio:swift 96.4 ms/file",
+            "detail": "swift-nio:swift 25.6 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -2370,7 +2503,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "vue-core:typescript 95 ms/file",
+            "detail": "vue-core:typescript 44.9 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -2469,7 +2602,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "zig:zig 59.3 ms/file",
+            "detail": "zig:zig 21 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
