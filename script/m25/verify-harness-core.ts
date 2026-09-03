@@ -175,7 +175,7 @@ try {
       // so running it against a WRONG fixture (different symbol name) still
       // passes — the honest core must fail there.
       name: "assertion weakened: hover-name check removed",
-      from: /assert\("L2: hover names greet", \(hover\?\.result\?\.data\?\.name \?\? ""\) === FIXTURE_SYMBOLS\.method, JSON\.stringify\(hover\?\.result\?\.data\)\)/,
+      from: /assert\("L2: hover names greet", \(hover\?\.data\?\.name \?\? ""\) === FIXTURE_SYMBOLS\.method \|\| hoverText\.includes\("\*\*greet\*\*"\), JSON\.stringify\(hover\?\.data \?\? null\)\)/,
       to: `assert("L2: hover names greet", true)`,
       probe: `async (mod) => {
         const { mkdtempSync, writeFileSync } = await import("node:fs")
