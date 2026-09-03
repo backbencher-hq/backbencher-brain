@@ -55,7 +55,10 @@ function runGate(script: string): { exit: number; output: string } {
   try {
     // Child content-gate runs must be pure reads (explicit-stamping model).
     const { BB_M35_EVIDENCE: _drop, ...parentEnv } = process.env
-    const out = execFileSync("bun", ["run", script], { cwd: ROOT, encoding: "utf8", stdio: "pipe", env: parentEnv, timeout: 300_000 })
+    // script may carry CLI args ("script/m35/staleness-corpus.ts --check") —
+    // split so bun receives them as separate argv entries.
+    const [file, ...args] = script.split(" ")
+    const out = execFileSync("bun", ["run", file, ...args], { cwd: ROOT, encoding: "utf8", stdio: "pipe", env: parentEnv, timeout: 300_000 })
     return { exit: 0, output: out }
   } catch (e: unknown) {
     const err = e as { stdout?: Buffer | string; stderr?: Buffer | string; status?: number }
