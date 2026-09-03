@@ -136,10 +136,13 @@ async function main() {
   const x1 = ledger.find((i) => i.code === "X1")
   check("ledger X1: present with a legal status", x1 !== undefined && ["planned", "verified"].includes(x1.status), String(x1?.status))
 
-  // ── 6. residue: governed surfaces clean in git at check time ──
+  // ── 6. residue: governed SOURCE surfaces clean in git at check time ──
+  // (Evidence files are excluded: they are legitimate write targets of stamping
+  // runs and of the self-test's mutate/restore cycle — evidence currency is
+  // enforced by the stamp-agreement + ledger-conformance checks above.)
   let dirty: string[] = []
   try {
-    const status = execFileSync("git", ["status", "--porcelain", "--untracked-files=no", "--", "validation/m35/", "script/m35/", "src/brain/freshness.ts", "src/mcp/tool-registry.ts", "docs/m35/"], { cwd: ROOT, encoding: "utf8" })
+    const status = execFileSync("git", ["status", "--porcelain", "--untracked-files=no", "--", "script/m35/", "src/brain/freshness.ts", "src/mcp/tool-registry.ts", "src/mcp/tool-handlers.ts", "docs/m35/"], { cwd: ROOT, encoding: "utf8" })
     dirty = status.split("\n").filter(Boolean)
   } catch {}
   check("governed surfaces: zero working-tree residue at check time", dirty.length === 0, dirty.join(", ").slice(0, 160))
