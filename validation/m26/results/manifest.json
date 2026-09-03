@@ -221,7 +221,7 @@
       "code": "V1",
       "githubIssue": 514,
       "tool": "webview-harness",
-      "status": "planned",
+      "status": "verified",
       "scope": "DOM-level headless render harness asserting node/edge/badge/truncation rendering; mutation set: fabricated edge, dropped edge, wrong tier label, wrong count, missing truncation marker",
       "acceptanceCriteria": [
         "harness can fail; positive and negative cases",
@@ -232,7 +232,16 @@
         "evidence per mutant",
         "budget evidence",
         "limitations declared"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "verifierCommand": "npx tsx script/m26/verify-webview-harness.ts",
+        "evidenceFile": "V1.json",
+        "passed": 17,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 5
+      }
     },
     {
       "code": "D1",
