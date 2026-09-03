@@ -80,7 +80,7 @@ type RunResult = { code: number | null; stdout: string; timedOut: boolean; error
 async function runProcess(
   cmd: string,
   args: string[],
-  opts: { env?: Record<string, string>; input?: string; timeoutMs?: number; pty?: boolean; cwd?: string },
+  opts: { env?: Record<string, string>; input?: string; inputMarkers?: Array<RegExp | null>; timeoutMs?: number; pty?: boolean; cwd?: string },
 ): Promise<RunResult> {
   const timeoutMs = opts.timeoutMs ?? 45000
   const childEnv = { ...process.env, TERM: "xterm", ...opts.env }
@@ -118,8 +118,11 @@ async function runProcess(
     })
     if (opts.input) {
       // Feed input with human-like pacing: a pty readline needs the prompt on
-      // screen before the next line arrives.
+      // screen before the next line arrives. When a marker is given for a
+      // line, wait until that prompt actually renders before writing it — a
+      // fixed delay loses the race on a loaded machine (and would flake CI).
       const lines = opts.input.split("\n").filter((l) => l !== "" || true)
+      const markers = opts.inputMarkers ?? []
       let i = 0
       const feed = () => {
         if (i >= lines.length) {
@@ -128,9 +131,38 @@ async function runProcess(
           }, 300)
           return
         }
-        try { child.stdin?.write(lines[i] + "\n") } catch {}
-        i++
-        setTimeout(feed, 400)
+        const marker = markers[i]
+        const writeLine = () => {
+          try { child.stdin?.write(lines[i] + "\n") } catch {}
+          i++
+          setTimeout(feed, 400)
+        }
+        if (marker) {
+          const cleanup = () => {
+            clearInterval(poll)
+            clearTimeout(fallback)
+          }
+          child.on("close", cleanup)
+          const poll = setInterval(() => {
+            if (done) {
+              cleanup()
+              return
+            }
+            if (marker.test(stdout)) {
+              clearInterval(poll)
+              clearTimeout(fallback)
+              writeLine()
+            }
+          }, 50)
+          // Never let a missing prompt hang the gate: fall back to the paced
+          // write after 8s.
+          const fallback = setTimeout(() => {
+            clearInterval(poll)
+            if (!done && i < lines.length) writeLine()
+          }, 8000)
+        } else {
+          setTimeout(writeLine, 400)
+        }
       }
       setTimeout(feed, 500)
     } else {
@@ -202,7 +234,7 @@ async function smokeSuite(bbPath: string, mockURL: string): Promise<void> {
     const dataDir = path.join(proj, "bbdata")
     mkdirSync(dataDir, { recursive: true })
     writeFileSync(path.join(proj, "a.ts"), "export function foo() { return 1 }\n")
-    const r1 = await runProcess(bbPath, ["index", "."], { env: { BB_DATA_DIR: dataDir }, cwd: proj, input: "4", timeoutMs: 60000, pty: true })
+    const r1 = await runProcess(bbPath, ["index", "."], { env: { BB_DATA_DIR: dataDir }, cwd: proj, input: "4", inputMarkers: [/Choice \[1-4\]:/], timeoutMs: 60000, pty: true })
     const clean1 = stripAnsi(r1.stdout)
     check("SM1.B: wizard prompt fires on real TTY", clean1.includes("Choice [1-4]") && clean1.includes("embedding setup"), clean1.slice(0, 200))
     check("SM1.B: skip flow resolves (no hang)", !r1.timedOut, r1.timedOut ? "timed out" : "")
@@ -211,7 +243,7 @@ async function smokeSuite(bbPath: string, mockURL: string): Promise<void> {
     check("SM1.B: config saved with mode 0600", cfg?.mode === 0o600, cfg ? `mode=${cfg.mode?.toString(8)}` : "no config file")
     check("SM1.B: skip writes no key material", !cfg?.json?.embedding_api_key, JSON.stringify(Object.keys(cfg?.json ?? {})))
 
-    const r2 = await runProcess(bbPath, ["index", "."], { env: { BB_DATA_DIR: dataDir }, cwd: proj, input: "4", timeoutMs: 60000, pty: true })
+    const r2 = await runProcess(bbPath, ["index", "."], { env: { BB_DATA_DIR: dataDir }, cwd: proj, input: "4", inputMarkers: [/Choice \[1-4\]:/], timeoutMs: 60000, pty: true })
     const clean2 = stripAnsi(r2.stdout)
     check("SM1.C: no second prompt after explicit skip (prompt-once)", !clean2.includes("Choice [1-4]"), clean2.slice(0, 200))
     rmSync(proj, { recursive: true, force: true })
@@ -227,6 +259,7 @@ async function smokeSuite(bbPath: string, mockURL: string): Promise<void> {
       env: { BB_DATA_DIR: dataDir },
       cwd: proj,
       input: ["3", mockURL, "mock-model", "smoke-test-key-1234"].join("\n"),
+      inputMarkers: [/Choice \[1-4\]:/, /Base URL \(e\.g\. https:\/\/api\.openai\.com\/v1\):/, /Model name \(e\.g\. text-embedding-3-small\):/, /API key \(input hidden\):/],
       timeoutMs: 45000,
       pty: true,
     })

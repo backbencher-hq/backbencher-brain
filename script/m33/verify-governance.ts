@@ -260,6 +260,9 @@ negative("G1: key-leak patterns detect planted key shapes", leakPatternWorks)
 
 // A planned issue carrying evidence is fabrication.
 const fabricated = structuredClone(ledger)
+// Force the fabricated state explicitly: status planned + evidence attached.
+// (Must not depend on S3's real ledger status, which progresses to verified.)
+fabricated.issues[3]!.status = "planned"
 fabricated.issues[3]!.evidence = { status: "verified", currentCommit: "deadbeef", verifierCommand: "x", evidenceFile: "x", generatedAt: "x", passed: 1, failed: 0, negativeCases: 1 }
 negative("G1: planned-with-evidence fabrication is rejected", validateLedger(fabricated, plan, contract).some((e) => e.startsWith("planned-evidence:S3")))
 
