@@ -83,4 +83,8 @@ Read-only. It does not generate, replace, or compile target-language source.
 
 Dependency ordering comes from indexed relationships; effort and mappings are labeled methodology-driven estimates.
 
+## Staleness
+
+Freshness modes (registered as `freshnessModes`): `plan`. Staleness surfaces as: per-plan `sourceFile` + `stale` flags with an up-front stale-plan notice + `freshness` envelope (`{ fresh, stale, missing, staleRatio, mode, remediation }`) on JSON. When something is stale/missing, the remediation names the registered reindex interfaces: project scope → `run: bb index --changed  (or the bb_index tool with the project path — incremental, changed files only)`; file scope → `run: bb index "<file>"  (or the bb_index tool with that file path)`. Nothing is stale → silence (no remediation text).
+
 This page is generated from the executable registry and curated documentation. Run `npm run docs:generate` to update it.

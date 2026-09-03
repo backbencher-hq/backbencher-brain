@@ -102,4 +102,8 @@ Read-only. HTML output contains the same bounded graph as JSON and does not muta
 
 Nodes and links resolve to canonical indexed entities; links with omitted endpoints are not emitted.
 
+## Staleness
+
+Freshness applies to the tool's read output (no registered per-mode split). Staleness surfaces as: per-node and per-link `stale` flags (links inherit worst-of-endpoints) + `freshness` envelope (`{ fresh, stale, missing, staleRatio, mode, remediation }`) on JSON; truncation composes with staleness. When something is stale/missing, the remediation names the registered reindex interfaces: project scope → `run: bb index --changed  (or the bb_index tool with the project path — incremental, changed files only)`; file scope → `run: bb index "<file>"  (or the bb_index tool with that file path)`. Nothing is stale → silence (no remediation text).
+
 This page is generated from the executable registry and curated documentation. Run `npm run docs:generate` to update it.

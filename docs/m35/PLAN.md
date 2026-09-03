@@ -97,3 +97,4 @@ Identical to M31's proven contract (including its post-closure audit lessons):
 ## Delivery notes
 
 - C1 (#585) delivered: `script/m35/staleness-corpus.ts` — 93/93 (23 negatives), deterministic (two-run byte-identical modulo timestamp), baseline diffed on `--check`, tamper mutation proven in the gate self-test (49/49). Wired into `npm run verify` and the MERGE_NOTES merge-day procedure.
+- D1 (#586) delivered: per-tool **Staleness** sections generated from the registry + registered remediation constants (docs cannot drift from code); docs-truth gate `script/m35/verify-docs-staleness.ts` 71/71 (16 negatives) cross-checks the doc map against the LIVE registry and fails on unimplemented-mode claims; mutation proven in self-test (54/54); TOOLS_OVERVIEW carries the staleness-semantics block.

@@ -65,4 +65,8 @@ Read-only. It does not write source or silently rebuild embeddings.
 
 Treat matched symbols and resolvable source locations as evidence; treat generated explanation as interpretation.
 
+## Staleness
+
+This tool does not report index staleness. Output reflects the index as of the last bb index run; run bb index --changed to refresh changed files before acting on results.
+
 This page is generated from the executable registry and curated documentation. Run `npm run docs:generate` to update it.
