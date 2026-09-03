@@ -210,7 +210,7 @@ const GATES: GateSpec[] = [
 ]
 
 // ── dynamic coverage: any other M35 verifier on disk must be covered or infra ──
-const INFRA = new Set(["verify-governance.ts", "verify-gate-selftest.ts", "sync-ledger.ts"])
+const INFRA = new Set(["verify-governance.ts", "verify-gate-selftest.ts", "verify-closure.ts", "sync-ledger.ts"])
 const m35Dir = path.join(ROOT, "script/m35")
 const verifiers = existsSync(m35Dir) ? readdirSync(m35Dir).filter((f) => f.startsWith("verify-") && f.endsWith(".ts")) : []
 const coveredScripts = new Set(GATES.map((g) => path.basename(g.script)))
