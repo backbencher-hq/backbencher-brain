@@ -62,7 +62,7 @@ Real project dbs scanned: 17 (skipped/unreadable: 3).
 | W6 | verified |
 | V1 | verified |
 | D1 | verified |
-| X1 | planned |
+| X1 | verified |
 
 Claim levels are the ledger's statuses at generation time. `verified`
 means the issue's own mutation-gated verifier passed at the pinned
