@@ -53,6 +53,7 @@ const LANG_REPOS: Record<string, string> = {
   php: "phpunit",
   ruby: "rake",
   python: "cython",
+  haskell: "cabal",
 }
 const REPO = process.argv.includes("--repo") ? process.argv[process.argv.indexOf("--repo") + 1] : undefined
 const SAMPLE_PER_LANG = process.argv.includes("--sample") ? parseInt(process.argv[process.argv.indexOf("--sample") + 1]) : 60
@@ -78,6 +79,7 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   php: { wasm: "tree-sitter-php.wasm", analyzerFile: "real-php-analyzer", className: "RealPhpAnalyzer", ext: "php" },
   ruby: { wasm: "tree-sitter-ruby.wasm", analyzerFile: "real-ruby-analyzer", className: "RealRubyAnalyzer", ext: "rb" },
   python: { wasm: "tree-sitter-python.wasm", analyzerFile: "real-python-analyzer", className: "RealPythonAnalyzer", ext: "py" },
+  haskell: { wasm: "tree-sitter-haskell.wasm", analyzerFile: "real-haskell-analyzer", className: "RealHaskellAnalyzer", ext: "hs" },
 }
 
 function seededPick<T>(items: T[], n: number, seedStr: string): T[] {
@@ -1996,6 +1998,249 @@ export function derivePythonEdges(root: any): { label: string; from: string; tar
   return edges
 }
 
+// Haskell oracle (HSD wave 2026-09-03): independently derivable truth for
+// class/instance/data/deriving/superclass structure + in-file calls. Mirrors
+// the analyzer's declared contract (see script/m14/spec/haskell-completeness.json).
+export function deriveHaskellEdges(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const push = (label: string, from: string, target: string) => {
+    // Self-edges are REAL for calls (Haskell self-recursion is a genuine
+    // call edge; the analyzer emits it deliberately). Structural labels
+    // (extends/implements/instantiates) can never legitimately be self-
+    // loops in this contract, so keep the from!==target guard for them.
+    if (!from || !target) return
+    if (label !== "calls" && from === target) return
+    const k = `${label}|${from}|${target}`
+    if (seen.has(k)) return
+    seen.add(k)
+    edges.push({ label, from, target })
+  }
+  const classMethods = new Map<string, Set<string>>()
+  const classAttrs = new Map<string, Set<string>>()
+  const instanceBases = new Map<string, string>() // instance CLASS name -> anonymous
+  const declared = new Set<string>()
+  const declaredOps = new Set<string>()
+
+  // Pass 1: declarations — classes (name/methods/superclass context),
+  // instances (class + target), data/newtype (constructors), callables.
+  const stack1: any[] = [{ n: root, cls: undefined as string | undefined, inBody: false }]
+  while (stack1.length > 0) {
+    const { n, cls, inBody } = stack1.pop()
+    const t = n.type
+
+    if (t === "function" || t === "bind") {
+      // Type-position function nodes (parameter/result fields) are types.
+      const isTypeFn = t === "function" && (n.childForFieldName?.("parameter") || n.childForFieldName?.("result"))
+      if (!isTypeFn) {
+        // Do-binds (`z <- fetch x`) are values, not callables.
+        const isArrowBind = t === "bind" && n.children.some((c: any) => c.type === "<-")
+        if (!isArrowBind) {
+          const head = n.namedChildCount > 0 ? n.namedChild(0) : null
+          if (head?.type === "variable") declared.add(head.text)
+          else if (head && (head.type === "infix" || head.type === "prefix_id")) {
+            const op = head.namedChildren.find((c: any) => c.type === "operator")
+            if (op?.text) declaredOps.add(op.text)
+          }
+        }
+      }
+      // NO early return: where/let locals hold more callables.
+    }
+    if (t === "signature" && !inBody) {
+      // Signature names are module-level callables (mirror the analyzer's
+      // prepass — a signature-only function is still a call target).
+      const nameNode = n.namedChildCount > 0 ? n.namedChild(0) : null
+      if (nameNode?.type === "variable") declared.add(nameNode.text)
+    }
+    if (t === "class") {
+      const nameNode = n.namedChildren.find((c: any) => c.type === "name")
+      const cn = nameNode?.text
+      if (cn) {
+        classMethods.set(cn, new Set())
+        classAttrs.set(cn, new Set())
+        // Superclass context: context -> apply(s); first child of each apply
+        // is the superclass name (name/constructor).
+        const context = n.namedChildren.find((c: any) => c.type === "context")
+        if (context) {
+          const supers: string[] = []
+          const stackC: any[] = [context]
+          while (stackC.length > 0) {
+            const x = stackC.pop()!
+            if (x.type === "apply") {
+              const first = x.namedChildCount > 0 ? x.namedChild(0) : null
+              if (first && (first.type === "name" || first.type === "constructor")) supers.push(first.text)
+            } else if (x.type === "parens") {
+              const ap = x.namedChildren.find((c: any) => c.type === "apply")
+              const first = ap?.namedChildCount ? ap.namedChild(0) : null
+              if (first && (first.type === "name" || first.type === "constructor")) supers.push(first.text)
+            }
+            for (let i = 0; i < x.namedChildCount; i++) stackC.push(x.namedChild(i))
+          }
+          for (const s of supers) push("extends", cn, s)
+        }
+      }
+    }
+    if (t === "instance") {
+      const nameNode = n.namedChildren.find((c: any) => c.type === "name")
+      const tp = n.namedChildren.find((c: any) => c.type === "type_patterns")
+      let target: string | undefined
+      if (tp) {
+        const direct = tp.namedChildren.find((c: any) => c.type === "name" || c.type === "constructor")
+        if (direct) target = direct.text
+        else {
+          const list = tp.namedChildren.find((c: any) => c.type === "list")
+          if (list) target = "[]"
+          else {
+            const parens = tp.namedChildren.find((c: any) => c.type === "parens")
+            const ap = parens?.namedChildren.find((c: any) => c.type === "apply")
+            const first = ap?.namedChildCount ? ap.namedChild(0) : null
+            if (first) target = first.text
+          }
+        }
+      }
+      const cn = nameNode?.text
+      if (cn && target) push("implements", target, cn)
+      if (cn && !target) instanceBases.set(cn, cn)
+      // Instance method bodies attribute to the TARGET name.
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) stack1.push({ n: c, cls: target ?? cn, inBody: true })
+      }
+      continue
+    }
+    if (t === "data_type" || t === "newtype") {
+      const nameNode = n.namedChildren.find((c: any) => c.type === "name")
+      const dn = nameNode?.text
+      if (dn) {
+        // deriving -> implements
+        const dv = n.namedChildren.find((c: any) => c.type === "deriving")
+        if (dv) {
+          const stackD: any[] = [dv]
+          while (stackD.length > 0) {
+            const x = stackD.pop()!
+            if (x.type === "name") push("implements", dn, x.text)
+            for (let i = 0; i < x.namedChildCount; i++) stackD.push(x.namedChild(i))
+          }
+        }
+      }
+      // Do NOT descend into data bodies — constructor references there are
+      // declarations, not call sites.
+      continue
+    }
+
+    let nextCls = cls
+    if (t === "signature" && cls) {
+      const nameNode = n.namedChildCount > 0 ? n.namedChild(0) : null
+      if (nameNode?.type === "variable") classMethods.get(cls)?.add(nameNode.text)
+    }
+    if (t === "class") {
+      const nameNode = n.namedChildren.find((c: any) => c.type === "name")
+      if (nameNode?.text) nextCls = nameNode.text
+    }
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c) stack1.push({ n: c, cls: nextCls, inBody: inBody || t === "function" || t === "bind" })
+    }
+  }
+
+  // Pass 2: call sites — apply heads (variable/qualified/constructor) and
+  // backtick infix_id, attributed to the enclosing callable; record
+  // construction in body position (constructor head) -> instantiates.
+  const stack2: any[] = [{ n: root, fn: undefined as string | undefined, inBody: false }]
+  while (stack2.length > 0) {
+    const { n, fn, inBody } = stack2.pop()
+    const t = n.type
+
+    if (t === "apply" || t === "infix" || t === "record") {
+      if (t === "apply" && fn) {
+        const head = n.namedChildCount > 0 ? n.namedChild(0) : null
+        if (head?.type === "variable" && declared.has(head.text)) push("calls", fn, head.text)
+        else if (head?.type === "qualified") {
+          const mod = head.namedChildren.find((c: any) => c.type === "module")
+          const func = head.namedChildren.find((c: any) => c.type === "variable")
+          const modText = mod?.text?.replace(/\.$/, "") ?? ""
+          if (modText && func?.text) push("calls", fn, `${modText}.${func.text}`)
+        } else if (head?.type === "constructor" || head?.type === "prefix") {
+          // Body-position constructor application → instantiates. Pattern-
+          // position applies (inside `patterns`) are excluded — mirror the
+          // analyzer's isPatternPosition gate.
+          if (inBody && !isPatternPos(n)) push("instantiates", fn, head.text)
+        }
+      } else if (t === "infix" && fn) {
+        const infixId = n.namedChildren.find((c: any) => c.type === "infix_id")
+        const opNode = n.namedChildren.find((c: any) => c.type === "operator")
+        if (infixId) {
+          const target = infixId.namedChildren.find((c: any) => c.type === "variable")
+          if (target?.text && (declared.has(target.text) || declaredOps.has(target.text))) push("calls", fn, target.text)
+        } else if (opNode?.text === "$") {
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (!c || c.type === "operator") continue
+            if (c.type === "variable" && declared.has(c.text)) push("calls", fn, c.text)
+            else if (c.type === "qualified") {
+              const mod = c.namedChildren.find((x: any) => x.type === "module")
+              const func = c.namedChildren.find((x: any) => x.type === "variable")
+              const modText = mod?.text?.replace(/\.$/, "") ?? ""
+              if (modText && func?.text) push("calls", fn, `${modText}.${func.text}`)
+            }
+            break
+          }
+        }
+      } else if (t === "record" && fn && inBody) {
+        // Body-position record with a CONSTRUCTOR head = construction; a
+        // variable head is an update (no edge). Data-declaration records sit
+        // under data_constructor and are excluded via inBody + parent chain:
+        // only descend here from function/bind bodies.
+        const ctor = n.namedChildren.find((c: any) => c.type === "constructor")
+        const inDecl = (() => {
+          let cur = n.parent
+          while (cur) {
+            if (cur.type === "match" || cur.type === "do" || cur.type === "bind" || cur.type === "let_in") return false
+            if (cur.type === "data_constructor" || cur.type === "newtype_constructor") return true
+            cur = cur.parent
+          }
+          return false
+        })()
+        if (ctor?.text && !inDecl) push("instantiates", fn, ctor.text)
+      }
+    }
+    if (t === "function" || t === "bind") {
+      const isTypeFn = t === "function" && (n.childForFieldName?.("parameter") || n.childForFieldName?.("result"))
+      const isArrowBind = t === "bind" && n.children.some((c: any) => c.type === "<-")
+      if (!isTypeFn && !isArrowBind) {
+        const head = n.namedChildCount > 0 ? n.namedChild(0) : null
+        let nextFn = fn
+        if (head?.type === "variable") nextFn = head.text
+        else if (head && (head.type === "infix" || head.type === "prefix_id")) {
+          const op = head.namedChildren.find((c: any) => c.type === "operator")
+          if (op?.text) nextFn = op.text
+        }
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c) stack2.push({ n: c, fn: nextFn, inBody: true })
+        }
+        continue
+      }
+    }
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c) stack2.push({ n: c, fn, inBody: inBody || t === "do" })
+    }
+  }
+  for (const op of declaredOps) if (!declared.has(op)) declared.add(op)
+  return edges
+}
+
+function isPatternPos(node: any): boolean {
+  let cur = node.parent
+  while (cur) {
+    if (cur.type === "patterns") return true
+    if (cur.type === "match" || cur.type === "function" || cur.type === "bind" || cur.type === "class" || cur.type === "instance") return false
+    cur = cur.parent
+  }
+  return false
+}
+
 export function deriveZigEdges(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seenCalls = new Set<string>()
@@ -2822,6 +3067,11 @@ async function main() {
           ;(truth as any[]).push(e)
         }
       }
+      if (lang === "haskell") {
+        for (const e of deriveHaskellEdges(root)) {
+          ;(truth as any[]).push(e)
+        }
+      }
       if (lang === "svelte") {
         for (const e of deriveSvelteComponentUsages(root)) {
           ;(truth as any[]).push(e)
@@ -2852,7 +3102,7 @@ async function main() {
       // truth); zig derives calls AND uses; other languages do not derive
       // call truth, so including calls there would flag every real call edge
       // as unexplained.
-      })).filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" ? ["overrides"] : []), ...(lang === "c" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" ? ["calls"] : []), ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" ? ["calls", "uses"] : []), ...(lang === "dart" || lang === "ruby" ? ["uses"] : []), ...(lang === "csharp" ? ["calls"] : []), ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" ? ["references"] : [])].includes(r.label))
+      })).filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" ? ["overrides"] : []), ...(lang === "c" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" ? ["calls"] : []), ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" ? ["calls", "uses"] : []), ...(lang === "dart" || lang === "ruby" ? ["uses"] : []), ...(lang === "csharp" ? ["calls"] : []), ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" ? ["references"] : [])].includes(r.label))
         // The tree-truth oracles already emit UNIQUE (label,target) edges per
         // file (each oracle keeps a `seen` set keyed by label+target). The
         // analyzer, by contrast, emits one edge per source SEARCH HIT, so a

@@ -1369,6 +1369,45 @@ const MUTANTS: Mutant[] = [
     description: "drops python per-symbol complexity (total_for for/if/while count) — python section C complexity pin",
     transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, complexity: undefined })) }),
   },
+  {
+    id: "haskell/drop-derived-implements",
+    language: "haskell",
+    defectClass: "relationship-loss",
+    description: "drops haskell deriving-clause implements edges (User->Show/Eq, UserId->Show) — haskell derived pins",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).derived && x.type === "implements")) }),
+  },
+  {
+    id: "haskell/drop-qualified-calls",
+    language: "haskell",
+    defectClass: "relationship-loss",
+    description: "drops haskell qualified calls (M.lookup) — haskell isQualifiedCall pin (HSD-qualified contract)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).isQualifiedCall && x.type === "calls")) }),
+  },
+  {
+    id: "haskell/drop-record-construction",
+    language: "haskell",
+    defectClass: "relationship-loss",
+    description: "drops haskell record-construction instantiates (mkUser->Person, choose->Bot) — HSD5 record pins",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).isRecordConstruction && x.type === "instantiates")) }),
+  },
+  {
+    id: "haskell/drop-symbol-complexity",
+    language: "haskell",
+    defectClass: "payload-loss",
+    description: "drops haskell per-symbol complexity (describe=3, signed=3) — haskell section C complexity pins",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, complexity: undefined })) }),
+  },
+  {
+    id: "haskell/pattern-bindings-leak-as-calls",
+    language: "haskell",
+    defectClass: "fabrication",
+    description: "injects the pattern-binding fabrication class: case/lambda pattern variables (a, b) leak as bare calls — haskell forbid pins calls:merged->a/b",
+    transform: r => ({ ...r, relationships: [
+      ...(r.relationships ?? []),
+      { type: "calls", source: "merged", target: "a", fromSymbol: "merged", toSymbol: "a", confidence: 0.9, metadata: { haskellSpecific: true, context: "local function call" } },
+      { type: "calls", source: "merged", target: "b", fromSymbol: "merged", toSymbol: "b", confidence: 0.9, metadata: { haskellSpecific: true, context: "local function call" } },
+    ] }),
+  },
 ]
 
 async function realAnalyzer(lang: string): Promise<any> {

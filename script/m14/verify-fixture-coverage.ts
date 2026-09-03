@@ -63,6 +63,7 @@ const GATED_LANGS: Record<string, { wasm: string; ext: string[]; analyzer: strin
   php:        { wasm: "tree-sitter-php.wasm",        ext: [".php"],    analyzer: "real-php-analyzer.ts" },
   ruby:       { wasm: "tree-sitter-ruby.wasm",       ext: [".rb"],     analyzer: "real-ruby-analyzer.ts" },
   python:     { wasm: "tree-sitter-python.wasm",     ext: [".py"],     analyzer: "real-python-analyzer.ts" },
+  haskell:    { wasm: "tree-sitter-haskell.wasm",    ext: [".hs"],     analyzer: "real-haskell-analyzer.ts" },
 }
 
 // Literals that look like node-type comparisons but are not node types
