@@ -1689,8 +1689,8 @@ export async function storeResults(
 
   const insertSymbol = rawDb.prepare(`
     INSERT OR REPLACE INTO brain_symbol
-    (id, project_id, file_id, name, qualified_name, symbol_type, line_start, line_end, byte_start, byte_end, visibility, parameters, return_type, qualified_calls, complexity, api_contract_path, gravity_score, layer, owner_symbol_id, annotations, is_async, is_static, is_abstract, generic_parameters, time_created, time_updated)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    (id, project_id, file_id, name, qualified_name, symbol_type, line_start, line_end, byte_start, byte_end, visibility, parameters, return_type, qualified_calls, complexity, api_contract_path, gravity_score, layer, owner_symbol_id, annotations, is_async, is_static, is_abstract, generic_parameters, docstring, time_created, time_updated)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `)
 
   const insertImport = rawDb.prepare(`
@@ -2081,6 +2081,12 @@ export async function storeResults(
               symbol.isStatic ? 1 : 0,
               symbol.isAbstract ? 1 : 0,
               symbol.genericParameters ? JSON.stringify(symbol.genericParameters) : null,
+              // M35 pre-work: persist the analyzer-extracted docstring. The
+              // column existed in the schema but was never bound here, so
+              // every brain_symbol.docstring was NULL — silently disabling
+              // docstring-based evidence matching in bb_doc (feature/api
+              // lexical SQL) and degrading symbol-mode doc facts.
+              symbol.docstring || null,
               now,
               now,
             )
