@@ -233,6 +233,21 @@ export async function activate(context: ExtensionContext): Promise<unknown> {
     if (client !== null) await client.stop()
     await startClient(context, activationReport ?? report)
   })
+  commands.registerCommand("bbLsp.showGraph", async () => {
+    const editor = window.activeTextEditor
+    if (editor === undefined) {
+      void window.showErrorMessage("Backbencher Graph: open a file and place the cursor on a symbol first.")
+      return
+    }
+    const selection = editor.selection
+    const word = editor.document.getText(selection.isEmpty ? editor.document.getWordRangeAtPosition(selection.active) : selection)
+    if (word === undefined || word.length === 0) {
+      void window.showErrorMessage("Backbencher Graph: place the cursor on a symbol first.")
+      return
+    }
+    const { showGraphPanel } = await import("./graph-panel")
+    await showGraphPanel(word, { client, cspSource: "" }, context)
+  })
   commands.registerCommand("bbLsp.showServerStatus", () => {
     const r = activationReport
     if (r === null) return

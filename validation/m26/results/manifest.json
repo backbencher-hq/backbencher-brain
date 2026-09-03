@@ -3,7 +3,7 @@
   "milestone": "M26",
   "githubMilestone": 26,
   "title": "The Graph (IDE Program v2)",
-  "status": "open",
+  "status": "closed",
   "authority": "docs/m26/M26-MASTER-PLAN.md",
   "governingContract": "docs/IDE-HONESTY-CONTRACT.md",
   "updatedAt": "2026-09-03T00:00:00.000Z",
@@ -273,7 +273,7 @@
       "code": "X1",
       "githubIssue": 516,
       "tool": "closure-gate",
-      "status": "planned",
+      "status": "verified",
       "scope": "Full mutation set over the graph surface + v2 completion-bar audit at current HEAD; clean rerun",
       "acceptanceCriteria": [
         "per-mutant records",
@@ -284,7 +284,16 @@
         "X1 evidence",
         "owner spot-check scheduled",
         "ledger clean"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "verifierCommand": "npx tsx script/m26/verify-closure.ts",
+        "evidenceFile": "X1.json",
+        "passed": 50,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 3
+      }
     }
   ]
 }
