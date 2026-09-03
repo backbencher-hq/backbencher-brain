@@ -1,0 +1,24 @@
+{
+  "issue": "M26.G1",
+  "code": "G1",
+  "milestone": "M26",
+  "status": "verified",
+  "checks": 69,
+  "passed": 69,
+  "failed": 0,
+  "negativeCases": 10,
+  "currentCommit": "a05cd24d1619486e22303b6989e0098ee642bab0",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "npx tsx script/m26/verify-governance.ts",
+  "evidenceFile": "G1.json",
+  "generatedAt": "2026-09-03T20:40:40.190Z",
+  "ledger": "validation/m26/results/manifest.json",
+  "m25Bar": {
+    "ledgerStatus": "closed",
+    "m25GateExit": 0
+  },
+  "limitations": [
+    "This gate validates governance metadata, mutation response, and the M25 bar; it does not verify graph features.",
+    "A run with relevant uncommitted M26 files is recorded as known-gap; verified status requires a clean relevant tree."
+  ]
+}
