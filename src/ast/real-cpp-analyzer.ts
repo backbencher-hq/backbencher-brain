@@ -175,21 +175,32 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       } else if (type === "preproc_include") {
         const text = node.text
-        imports.push({
-          source: text,
-          imported: [],
-          range: this.nodeToRange(node),
-          isTypeOnly: false,
-        })
-        // depends: #include = compile-time dependency
+        // Family contract (c wave): ImportInfo canonical fields are
+        // module/items — the persister reads imp.module ?? imp.path ??
+        // imp.localName and DROPS imports with none. The legacy shape
+        // { source, imported, isTypeOnly } produced no module, so C++
+        // #include imports were NEVER persisted to brain_import (caught by
+        // the systems-cluster e2e gate M14.0.F9, 2026-08-29). Align with c.
         const includePath = stripIncludeChars(text.slice(text.indexOf("include") + "include".length)).trim()
+        imports.push({
+          module: includePath,
+          items: ["*"],
+          range: this.nodeToRange(node),
+          metadata: { isSystemInclude: includePath.startsWith("<"), isImport: true, isIncludeDependency: true },
+        })
+        // depends: #include = compile-time dependency (includePath computed above)
         if (includePath) {
+          // #419 family contract: include edges carry the SAME metadata shape
+          // as the C analyzer (relationshipType "include_dependency" +
+          // isImport) — the C++ variant previously emitted only
+          // isIncludeDependency, so the completeness gate's Section B saw no
+          // pin for the include dependency kind.
           relationships.push({
             source: "global",
             target: includePath,
             type: ASTEngine.RelationshipType.References,
             confidence: 1.0,
-            metadata: { isIncludeDependency: true },
+            metadata: { relationshipType: "include_dependency", isSystem: includePath.startsWith("<"), isImport: true, isIncludeDependency: true },
           })
         }
 
@@ -694,6 +705,15 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (seen.has(cls)) continue
           seen.add(cls)
           for (const base of classBases.get(cls) ?? []) {
+            // CROSS-FILE BASE COLLISION GUARD: `class format_facet : public
+            // fmt::format_facet<std::locale>` leaf-cleans to a base named
+            // `format_facet` — identical to the class's own name. Resolving it
+            // against the in-file registry (which holds the class's OWN
+            // methods) fabricates a self-override (`format_facet.do_put ->
+            // format_facet.do_put`). A class cannot inherit from itself, so any
+            // base equal to the start class is a cross-file name collision and
+            // must be skipped, not resolved.
+            if (base === startCls) continue
             const baseSigs = classVirtuals.get(base)
             // SIGNATURE-AWARE: a same-name DIFFERENT-parameter overload is
             // C++ name-hiding, not virtual dispatch.
@@ -710,7 +730,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: `${base}.${pend.method}`,
             type: ASTEngine.RelationshipType.Overrides,
             confidence: 0.9,
-            metadata: { isVirtualOverride: true },
+            metadata: { isVirtualOverride: true, reasonCode: "signature-match" },
           })
         }
       }

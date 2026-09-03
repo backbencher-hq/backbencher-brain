@@ -29,6 +29,12 @@ interface RustContext {
   emittedUses: Set<string>
   qcByFunction: Map<string, string[]>
   pendingInstantiations: Array<{ source: string; target: string; qualified: string }>
+  // startIndex of call_expression / macro_invocation nodes that sit directly
+  // inside an await_expression (`.await`). The DFS visits the inner call node
+  // anyway, so the await branch must NOT push a second edge — instead it
+  // records the node here and the normal call/macro handler attaches the
+  // isAwait marker to its single edge (one edge per call site).
+  awaitedCalls: Set<number>
 }
 
 export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
@@ -53,6 +59,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       emittedUses: new Set<string>(),
       qcByFunction: new Map<string, string[]>(),
       pendingInstantiations: [],
+      awaitedCalls: new Set<number>(),
     }
 
     if (rootNode.hasError) {
@@ -87,7 +94,11 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       const { node, parent } = popped
       let currentParent = parent
 
-      if (node.type === "struct_item") {
+      if (node.type === "struct_item" || node.type === "union_item") {
+        // union_item (pub union Pixel { .. }) is structurally identical to
+        // struct_item (name field + field_declaration_list) and is a real
+        // declaration site — previously unhandled, so Rust unions emitted
+        // NO symbol (completeness gap found 2026-08-28).
         currentParent = this.handleStruct(node, ctx, parent) ?? parent
       } else if (node.type === "trait_item") {
         currentParent = this.handleTrait(node, ctx, parent) ?? parent
@@ -139,17 +150,24 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
         }
       } else if (node.type === "struct_expression") {
-        // User { id, name } — struct literal construction → instantiates
+        // User { id, name } — struct literal construction → instantiates.
+        // Enum-variant literals (MatchStrategy::Suffix { … }) carry a
+        // scoped_type_identifier name field; the TARGET is the variant LEAF
+        // (Suffix), matching the oracle's lastSegment and the family
+        // leaf-target contract (#419-B instantiates pin).
         const typeNode = node.childForFieldName("name") || node.namedChild(0)
-        if (typeNode && typeNode.type === "type_identifier") {
-          const source = parent?.name || "global"
-          ctx.relationships.push({
-            source,
-            target: typeNode.text,
-            type: ASTEngine.RelationshipType.Instantiates,
-            confidence: 0.8,
-            metadata: { relationshipType: "struct_literal", isConstructor: true },
-          })
+        if (typeNode && (typeNode.type === "type_identifier" || typeNode.type === "scoped_type_identifier")) {
+          const leaf = this.stripGenerics(typeNode.text).split("::").filter(Boolean).pop() ?? typeNode.text
+          if (leaf) {
+            const source = parent?.name || "global"
+            ctx.relationships.push({
+              source,
+              target: leaf,
+              type: ASTEngine.RelationshipType.Instantiates,
+              confidence: 0.8,
+              metadata: { relationshipType: "struct_literal", isConstructor: true },
+            })
+          }
         }
       } else if (node.type === "macro_invocation") {
         this.handleMacroInvocation(node, ctx, parent)
@@ -160,8 +178,11 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
           ctx.symbols.push(sym)
         }
       // 'type_alias_declaration' does not exist in this grammar - aliases
-      // are type_item nodes (grammar audit).
-      } else if (node.type === "type_item") {
+      // are type_item nodes (grammar audit). Trait-level associated types
+      // (type Item; inside a trait body) are associated_type nodes — a real
+      // declaration site that previously emitted NO symbol (completeness
+      // gap found 2026-08-28); impl-level `type Item = u32` stays type_item.
+      } else if (node.type === "type_item" || node.type === "associated_type") {
         const name = this.extractIdentifier(node, "name")
         if (name) {
           const sym = this.createSymbol(name, ASTEngine.SymbolKind.Type, node, parent, { type: "type_alias" })
@@ -189,17 +210,15 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (!ctx.metadata.patterns) ctx.metadata.patterns = []
         if (ctx.metadata.patterns.indexOf("Unsafe Code") === -1) ctx.metadata.patterns.push("Unsafe Code")
       } else if (node.type === "await_expression") {
+        // The DFS descends into the awaited inner node anyway, so a raw edge
+        // here would DUPLICATE the call site (probe-confirmed 2026-08-28:
+        // `do_connect(host, port).await` emitted BOTH a full-text raw edge
+        // and the leaf-qualified call edge). Record the inner node and let
+        // handleCallExpression / handleMacroInvocation attach isAwait to the
+        // single canonical edge.
         const inner = node.namedChild(0)
         if (inner && (inner.type === "call_expression" || inner.type === "macro_invocation")) {
-          const fnNode = inner.childForFieldName?.("function") || inner.childForFieldName?.("macro")
-          if (fnNode) {
-            ctx.relationships.push({
-              source: parent?.name || "global",
-              target: fnNode.text,
-              type: ASTEngine.RelationshipType.Calls,
-              metadata: { rustSpecific: true, isAwait: true },
-            })
-          }
+          ctx.awaitedCalls.add(inner.startIndex)
         }
       } else if (
         node.type === "if_expression" ||
@@ -830,51 +849,95 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private handleUseDeclaration(node: Node, ctx: RustContext): void {
     const isPublic = this.isPublic(node)
-    const collectPath = (n: Node, prefix: string = ""): string => {
-      if (n.type === "identifier" || n.type === "type_identifier") return prefix + n.text
+    // Split the import into MODULE (path prefix) and ITEMS (local bindings,
+    // alias-aware: `Write as W` binds W, `self` binds the module leaf).
+    // Family contract (JS/Java): module = path, items = imported names.
+    // Pre-fix, `use std::io::{Read, Write as W}` stored the whole raw text
+    // as module and comma-split garbage into items (found 2026-08-28).
+    const collect = (n: Node): { path: string; items: string[] } => {
+      if (n.type === "identifier" || n.type === "type_identifier") {
+        return { path: n.text, items: [n.text] }
+      }
       if (n.type === "scoped_identifier") {
         const path = n.childForFieldName("path") || n.namedChild(0)
         const name = n.childForFieldName("name") || n.namedChild(n.namedChildCount - 1)
-        const p = path ? collectPath(path) + "::" : ""
-        return prefix + p + (name ? name.text : "")
+        const p = path ? collect(path).path + "::" : ""
+        return { path: p + (name ? name.text : ""), items: [name ? name.text : ""] }
+      }
+      if (n.type === "scoped_use_list") {
+        const pathNode = n.namedChild(0)
+        const listNode = n.namedChild(1)
+        const base = pathNode ? collect(pathNode).path : ""
+        const items: string[] = []
+        if (listNode && listNode.type === "use_list") {
+          for (let i = 0; i < listNode.namedChildCount; i++) {
+            const c = listNode.namedChild(i)
+            if (!c) continue
+            if (c.type === "self") {
+              // `use crate::foo::{self}` binds the module itself
+              const leaf = base.split("::").filter(Boolean).pop()
+              if (leaf) items.push(leaf)
+            } else if (c.type === "use_as_clause") {
+              const aliasName = c.childForFieldName("alias") || c.namedChild(c.namedChildCount - 1)
+              if (aliasName) items.push(aliasName.text)
+            } else if (c.type === "identifier" || c.type === "type_identifier") {
+              items.push(c.text)
+            } else if (c.type === "scoped_identifier") {
+              const leaf = c.namedChild(c.namedChildCount - 1)
+              if (leaf) items.push(leaf.text)
+            }
+          }
+        }
+        return { path: base, items }
       }
       if (n.type === "use_list") {
         const items: string[] = []
         for (let i = 0; i < n.namedChildCount; i++) {
           const c = n.namedChild(i)
           if (!c) continue
-          if (c.type === "self") items.push(prefix ? prefix + "::self" : "self")
-          else if (c.type === "use_as_clause") {
-            const aliasPath = c.childForFieldName("path") || c.namedChild(0)
+          if (c.type === "use_as_clause") {
             const aliasName = c.childForFieldName("alias") || c.namedChild(c.namedChildCount - 1)
-            const ap = aliasPath ? collectPath(aliasPath) : ""
-            const an = aliasName ? aliasName.text : ""
-            items.push(prefix ? prefix + "::" + ap : ap)
+            if (aliasName) items.push(aliasName.text)
+          } else if (c.type === "identifier" || c.type === "type_identifier") {
+            items.push(c.text)
+          } else if (c.type === "scoped_identifier") {
+            const leaf = c.namedChild(c.namedChildCount - 1)
+            if (leaf) items.push(leaf.text)
           }
-          else items.push(prefix ? prefix + "::" + collectPath(c) : collectPath(c))
         }
-        return items.join(", ")
+        return { path: "", items }
       }
       if (n.type === "use_as_clause") {
         const path = n.childForFieldName("path") || n.namedChild(0)
-        return path ? collectPath(path) : n.text
+        const aliasName = n.childForFieldName("alias") || n.namedChild(n.namedChildCount - 1)
+        return { path: path ? collect(path).path : n.text, items: [aliasName ? aliasName.text : (path ? collect(path).items[0] : n.text)] }
       }
-      return prefix + n.text
+      if (n.type === "use_wildcard") {
+        // use super::util::* — module = path prefix, item = "*"
+        const inner = n.namedChild(0)
+        const path = inner ? collect(inner).path : n.text
+        return { path, items: ["*"] }
+      }
+      return { path: n.text, items: [n.text] }
     }
 
     let modulePath = ""
+    let items: string[] = []
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
       if (!c || c.type === "visibility_modifier" || c.type === "use" || c.type === "crate") continue
-      if (!modulePath) modulePath = collectPath(c)
+      const r = collect(c)
+      if (!modulePath) modulePath = r.path
+      if (r.items.length) items = items.concat(r.items)
     }
+    if (!items.length && modulePath) items = [modulePath.split("::").filter(Boolean).pop() || modulePath]
 
-    if (!modulePath) return
+    if (!modulePath && !items.length) return
 
     ctx.imports.push({
-      module: modulePath,
-      source: modulePath,
-      items: modulePath.includes(",") ? modulePath.split(",").map(s => s.trim()) : [modulePath.split("::").pop() || modulePath],
+      module: modulePath || items.join(", "),
+      source: modulePath || items.join(", "),
+      items,
       range: {
         startLine: node.startPosition.row + 1, startColumn: node.startPosition.column + 1,
         endLine: node.endPosition.row + 1, endColumn: node.endPosition.column + 1,
@@ -921,29 +984,58 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         qualified = functionNode.text
       }
     } else if (functionNode.type === "generic_function") {
-      // foo::<T>()
+      // foo::<T>() / obj.method::<T>() — turbofish wraps the real callee.
+      // The TARGET is the LEAF name (field for field_expression, last
+      // segment for scoped_identifier), never the whole base text
+      // (cap.parse::<u32>() must target `parse`, not `cap.parse`;
+      // .cast::<T>() chains must target `cast`, not the whole expression).
       const baseNode = functionNode.childForFieldName("function")
       if (baseNode) {
-        target = baseNode.text
-        qualified = baseNode.text
+        if (baseNode.type === "field_expression") {
+          const fieldNode = baseNode.childForFieldName("field")
+          if (fieldNode) {
+            target = fieldNode.text
+            qualified = baseNode.text
+          }
+        } else if (baseNode.type === "scoped_identifier") {
+          const nameNode = baseNode.childForFieldName("name") || baseNode.namedChild(baseNode.namedChildCount - 1)
+          if (nameNode) {
+            target = nameNode.text
+            qualified = baseNode.text
+          }
+        } else {
+          target = baseNode.text
+          qualified = baseNode.text
+        }
       }
     } else {
-      // Simple identifier: foo()
-      target = functionNode.text
-      qualified = target
+      // Simple identifier: foo(). Non-identifier callees — parenthesized
+      // closure calls ((self.0)(...)) — have no static name and must not
+      // fabricate a target (the differential oracle derives none either).
+      if (functionNode.type === "identifier") {
+        target = functionNode.text
+        qualified = target
+      }
     }
 
     if (!target) return
 
     const source = parent?.name || "global"
 
+    const metadata: Record<string, any> = { qualified }
+    // Awaited call sites carry the isAwait marker on the canonical edge
+    // (one edge per call site — the await branch records, it does not emit).
+    if (ctx.awaitedCalls.has(node.startIndex)) {
+      metadata.rustSpecific = true
+      metadata.isAwait = true
+    }
     ctx.relationships.push({
       source,
       target,
       fromSymbol: source,
       toSymbol: qualified,
       type: ASTEngine.RelationshipType.Calls,
-      metadata: { qualified },
+      metadata,
     })
 
     // #383 payload: calls per enclosing function.
@@ -1027,13 +1119,19 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     const source = parent?.name || "global"
 
+    const metadata: Record<string, any> = { macroInvocation: true }
+    // Awaited macros (foo!().await) carry isAwait on the single macro edge.
+    if (ctx.awaitedCalls.has(node.startIndex)) {
+      metadata.rustSpecific = true
+      metadata.isAwait = true
+    }
     ctx.relationships.push({
       source,
       target: macroName,
       fromSymbol: source,
       toSymbol: `macro:${macroName}`,
       type: ASTEngine.RelationshipType.Calls,
-      metadata: { macroInvocation: true },
+      metadata,
     })
 
     if (["panic", "todo", "unimplemented", "unreachable"].includes(macroName)) {

@@ -322,7 +322,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: includePath,
               type: ASTEngine.RelationshipType.References,
               confidence: 1.0,
-              metadata: { relationshipType: "include_dependency", isSystem: includePath.startsWith("<") },
+              metadata: { relationshipType: "include_dependency", isSystem: includePath.startsWith("<"), isImport: true },
             })
           }
           break
@@ -782,7 +782,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
         module: stripIncludeChars(rawPath),
         items: ["*"],
         range: this.nodeToRange(node),
-        metadata: { isSystemInclude: isSystem },
+        metadata: { isSystemInclude: isSystem, isImport: true },
       })
     }
   }

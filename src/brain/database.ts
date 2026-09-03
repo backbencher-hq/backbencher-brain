@@ -7,7 +7,7 @@ import type { CoreDatabase } from "#db"
 import path from "path"
 import { mkdirSync, existsSync } from "fs"
 import * as BrainSchema from "./brain.sql"
-import { ensureSchema } from "./schema-ddl"
+import { ensureSchema, migrateSchemaColumns } from "./schema-ddl"
 import { bbProjectsDir } from "../util/bb-data-dir"
 
 export type { CoreDatabase, CoreStatement } from "#db"
@@ -63,7 +63,15 @@ async function buildDrizzle(raw: CoreDatabase): Promise<any> {
 
   function ensureSchemaIfNew(raw: CoreDatabase): void {
     const hasFile = raw.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='brain_file'").get()
-    if (!hasFile) ensureSchema(raw)
+    if (!hasFile) {
+      ensureSchema(raw)
+    } else {
+      // M22.W2: a pre-existing DB that already has tables skips fresh schema
+      // creation, but must still run the idempotent column migrations (e.g.
+      // brain_index_status.status) or a legacy DB can crash the indexer's
+      // status write with "no column named status".
+      migrateSchemaColumns(raw)
+    }
   }
 
 export namespace BrainDatabase {
@@ -167,6 +175,18 @@ export namespace BrainDatabase {
     drizzleInstances.clear()
   }
 
+  /** Close an explicit-path handle AND evict its cache entry (probe safety). */
+  export function closeByPath(dbPath: string): void {
+    const key = `ro:${dbPath}`
+    const raw = rawInstances.get(key)
+    if (raw) {
+      try {
+        raw.close()
+      } catch {}
+      rawInstances.delete(key)
+    }
+  }
+
   export async function getStats(projectId: string): Promise<BrainStats> {
     const raw = await getRawInstance(projectId)
     const files = (raw.prepare("SELECT COUNT(*) as c FROM brain_file WHERE project_id = ?").get(projectId) as any)?.c ?? 0
@@ -176,28 +196,200 @@ export namespace BrainDatabase {
     return { files, symbols, relationships, imports }
   }
 
+  /**
+   * M21.I3: one structured, durable indexing error. `phase` identifies where
+   * it happened (discovery/parse/store/post-processing); file/language/retry/
+   * fallback are preserved when known, never fabricated.
+   */
+  export interface IndexingErrorRecord {
+    phase: string
+    message: string
+    file?: string
+    language?: string | null
+    retry?: number
+    fallback?: boolean
+    timestamp: number
+  }
+
+  /**
+   * M21.I3: versioned performance statistics persisted per run. A bounded
+   * history of recent runs is kept so a later run never erases prior evidence.
+   */
+  export interface IndexPerformanceStats {
+    schemaVersion: 1
+    runs: Array<{
+      generatedAt: number
+      mode: string
+      noop: boolean
+      phases: Record<string, number | undefined>
+      counts: Record<string, number | undefined>
+    }>
+  }
+
+  const MAX_INDEXING_ERRORS = 1000
+  const MAX_PERF_RUNS = 10
+
+  function parseJsonArray(value: unknown): any[] {
+    if (Array.isArray(value)) return value
+    if (typeof value !== "string") return []
+    try {
+      const parsed = JSON.parse(value)
+      return Array.isArray(parsed) ? parsed : []
+    } catch {
+      return []
+    }
+  }
+
   export async function updateIndexStatus(
     projectId: string,
-    data: { status?: string; symbols?: number; files?: number; lastIndexed?: number; error?: string },
+    data: {
+      status?: string
+      symbols?: number
+      files?: number
+      /** M23.P1: the indexer passes these; persisted as total_files/total_symbols. */
+      filesIndexed?: number
+      symbolsIndexed?: number
+      /** M23.P1: files actually parsed this run; persisted as indexed_files. */
+      filesParsed?: number
+      lastIndexed?: number
+      error?: string
+      /** M21.I3: structured errors to APPEND. Passing none never wipes prior errors. */
+      errors?: IndexingErrorRecord[]
+      /** M21.I3: versioned performance stats for this run. Passing null preserves prior. */
+      performanceStats?: IndexPerformanceStats | null
+      /** M23.P3: project path used to compute the persisted codebase fingerprint. */
+      codebaseFingerprintProjectPath?: string
+    },
   ): Promise<void> {
     const raw = await getRawInstance(projectId)
+    // M21.I3: merge, never wipe. A normal clean completion must not erase
+    // previously recorded worker/WASM/parser errors.
+    const existing = raw.prepare("SELECT indexing_errors, performance_stats FROM brain_index_status WHERE project_id = ?").get(projectId) as
+      | { indexing_errors: string | null; performance_stats: string | null }
+      | undefined
+    let mergedErrors = parseJsonArray(existing?.indexing_errors)
+    if (data.errors && data.errors.length > 0) {
+      mergedErrors = [...mergedErrors, ...data.errors].slice(-MAX_INDEXING_ERRORS)
+    } else if (data.error) {
+      const legacy: IndexingErrorRecord = {
+        phase: "index",
+        message: data.error,
+        timestamp: Date.now(),
+      }
+      mergedErrors = [...mergedErrors, legacy].slice(-MAX_INDEXING_ERRORS)
+    }
+    // If no new errors arrive, mergedErrors stays exactly as it was — never `[]`.
+    const errorsJson = JSON.stringify(mergedErrors)
+
+    let perfJson: string | null = null
+    if (data.performanceStats) {
+      // Prior history lives in an object-shaped JSON blob ({ schemaVersion, runs }),
+      // not an array — parse it as an object so prior runs are never lost.
+      let priorRuns: any[] = []
+      if (existing?.performance_stats) {
+        try {
+          const prior = JSON.parse(existing.performance_stats)
+          if (Array.isArray(prior?.runs)) priorRuns = prior.runs
+        } catch { /* tampered prior blob: start history fresh rather than crash */ }
+      }
+      perfJson = JSON.stringify({
+        schemaVersion: 1,
+        runs: [...priorRuns, ...data.performanceStats.runs].slice(-MAX_PERF_RUNS),
+      })
+    } else if (existing?.performance_stats) {
+      perfJson = existing.performance_stats
+    }
+
+    // M23.P1: persist the real index counts. Callers pass filesIndexed/
+    // symbolsIndexed (the indexer's own totals); the older files/symbols keys
+    // are honored for backward compatibility. indexed_files is written too,
+    // since health-provider reads it and it was never populated before.
+    const filesTotal = data.filesIndexed ?? data.files ?? 0
+    const symbolsTotal = data.symbolsIndexed ?? data.symbols ?? 0
+    const filesParsed = data.filesParsed ?? filesTotal
+
+    // M23.P3: compute and persist codebase fingerprint + git identity.
+    let fingerprint: string | null = null
+    let gitIdentity: string | null = null
+    if (data.codebaseFingerprintProjectPath) {
+      try {
+        const { computeCheckoutFingerprint } = await import("../ast/fingerprint")
+        const cf = await computeCheckoutFingerprint(data.codebaseFingerprintProjectPath)
+        fingerprint = cf.fingerprint
+        gitIdentity = cf.git
+      } catch {}
+    }
+
     raw
       .prepare(
-        `INSERT INTO brain_index_status (project_id, indexing_version, last_full_index, total_files, total_symbols, indexing_errors, time_created, time_updated)
-         VALUES (?, 'v1.0.0', ?, ?, ?, ?, strftime('%s','now') * 1000, strftime('%s','now') * 1000)
+        `INSERT INTO brain_index_status (project_id, indexing_version, status, last_full_index, total_files, indexed_files, total_symbols, indexing_errors, performance_stats, codebase_fingerprint, codebase_git, time_created, time_updated)
+         VALUES (?, 'v1.0.0', ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%s','now') * 1000, strftime('%s','now') * 1000)
          ON CONFLICT(project_id) DO UPDATE SET
+           status = COALESCE(excluded.status, status),
            last_full_index = excluded.last_full_index,
            total_files = excluded.total_files,
+           indexed_files = excluded.indexed_files,
            total_symbols = excluded.total_symbols,
            indexing_errors = excluded.indexing_errors,
+           performance_stats = COALESCE(excluded.performance_stats, performance_stats),
+           codebase_fingerprint = COALESCE(excluded.codebase_fingerprint, codebase_fingerprint),
+           codebase_git = COALESCE(excluded.codebase_git, codebase_git),
            time_updated = excluded.time_updated`,
       )
       .run(
         projectId,
+        data.status ?? null,
         data.lastIndexed ?? Date.now(),
-        data.files ?? 0,
-        data.symbols ?? 0,
-        data.error ? JSON.stringify([data.error]) : "[]",
+        filesTotal,
+        filesParsed,
+        symbolsTotal,
+        errorsJson,
+        perfJson,
+        fingerprint,
+        gitIdentity,
       )
+  }
+
+  /** M21.I2: read the persisted index status (complete/partial/…) for a project. */
+  export async function getIndexStatus(projectId: string): Promise<{ status: string | null }> {
+    const raw = await getRawInstance(projectId)
+    try {
+      const row = raw.prepare("SELECT status FROM brain_index_status WHERE project_id = ?").get(projectId) as { status: string | null } | undefined
+      return { status: row?.status ?? null }
+    } catch {
+      return { status: null }
+    }
+  }
+
+  /** M21.I3: read the full durable index status (status, errors, performance stats). */
+  export async function getDurableIndexStatus(projectId: string): Promise<{
+    status: string | null
+    errors: any[]
+    performanceStats: any
+  }> {
+    const raw = await getRawInstance(projectId)
+    try {
+      const row = raw.prepare("SELECT status, indexing_errors, performance_stats FROM brain_index_status WHERE project_id = ?").get(projectId) as
+        | { status: string | null; indexing_errors: string | null; performance_stats: string | null }
+        | undefined
+      // Each field is parsed independently: a tampered performance_stats blob
+      // must not lose the error read, and vice versa.
+      let performanceStats: any = null
+      if (row?.performance_stats) {
+        try {
+          const parsed = JSON.parse(row.performance_stats)
+          performanceStats = parsed && typeof parsed === "object" ? parsed : null
+        } catch {
+          performanceStats = null
+        }
+      }
+      return {
+        status: row?.status ?? null,
+        errors: parseJsonArray(row?.indexing_errors),
+        performanceStats,
+      }
+    } catch {
+      return { status: null, errors: [], performanceStats: null }
+    }
   }
 }

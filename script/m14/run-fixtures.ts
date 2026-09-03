@@ -36,6 +36,12 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   rust: { wasm: "tree-sitter-rust.wasm", analyzerFile: "real-rust-analyzer", className: "RealRustAnalyzer", ext: "rs" },
   python: { wasm: "tree-sitter-python.wasm", analyzerFile: "real-python-analyzer", className: "RealPythonAnalyzer", ext: "py" },
   go: { wasm: "tree-sitter-go.wasm", analyzerFile: "real-go-analyzer", className: "RealGoAnalyzer", ext: "go" },
+  zig: { wasm: "tree-sitter-zig.wasm", analyzerFile: "real-zig-analyzer", className: "RealZigAnalyzer", ext: "zig" },
+  csharp: { wasm: "tree-sitter-c_sharp.wasm", analyzerFile: "real-csharp-analyzer", className: "RealCSharpAnalyzer", ext: "cs" },
+  dart: { wasm: "tree-sitter-dart.wasm", analyzerFile: "real-dart-analyzer", className: "RealDartAnalyzer", ext: "dart" },
+  swift: { wasm: "tree-sitter-swift.wasm", analyzerFile: "real-swift-analyzer", className: "RealSwiftAnalyzer", ext: "swift" },
+  objc: { wasm: "tree-sitter-objc.wasm", analyzerFile: "real-objective-c-analyzer", className: "RealObjectiveCAnalyzer", ext: "m" },
+  php: { wasm: "tree-sitter-php.wasm", analyzerFile: "real-php-analyzer", className: "RealPhpAnalyzer", ext: "php" },
 }
 
 interface Entry { [k: string]: any }
@@ -147,6 +153,13 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
     if (lang === "vue" || lang === "svelte") {
       const engine = await import("../../src/ast/engine")
       result = await (engine as any).ASTEngine.parseFile(path.join(dir, src), content)
+      // Mutation harness (M14.0.F4): the mutant wraps analyzer output. For
+      // SFC languages parseFile is the real entry, so apply the mutant's
+      // transform to its result (without this, vue/svelte mutants could
+      // never be caught — the suite would silently accept defects).
+      if (overrideAnalyzer && typeof (overrideAnalyzer as any).transform === "function") {
+        result = (overrideAnalyzer as any).transform(result)
+      }
     } else {
       result = await analyzer.analyze(tree.rootNode, content, `fixtures/${lang}/${src}`)
     }
@@ -179,8 +192,12 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
       }
     }
     for (const want of exp.expectParameters ?? []) {
-      const sym = symbols.find((s: any) => s.name === want.symbol)
-      if (!sym) { problems.push(`expectParameters: symbol ${want.symbol} not found`); continue }
+      // ownerName-aware lookup (mirrors expectSymbols): overloaded names like
+      // dart's multiple `constructor` symbols need the owning class to disambiguate.
+      const sym = symbols.find((s: any) =>
+        s.name === want.symbol &&
+        (want.ownerName === undefined || s.ownerName === want.ownerName))
+      if (!sym) { problems.push(`expectParameters: symbol ${want.symbol}${want.ownerName ? " in " + want.ownerName : ""} not found`); continue }
       const actual: Entry[] = sym?.parameters ?? []
       for (const wp of want.parameters ?? []) {
         const hit = actual.some((p: any) => {
@@ -201,7 +218,12 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
       }
     }
         for (const want of exp.expectComplexity ?? []) {
-      const sym = symbols.find((s: any) => s.name === want.symbol)
+      // ownerName-aware lookup (mirrors expectSymbols): overloaded / repeated
+      // names across owners (protocol declaration + implementation of the
+      // same selector) need the owning scope to disambiguate.
+      const sym = symbols.find((s: any) =>
+        s.name === want.symbol &&
+        (want.ownerName === undefined || s.ownerName === want.ownerName))
       const cx: number | undefined = sym?.complexity
       if (want.equals !== undefined && cx !== want.equals) {
         problems.push(`expected ${want.symbol} complexity ${want.equals}; got ${cx}`)
@@ -259,7 +281,12 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
       if (actual !== want) problems.push(`expected primary framework ${JSON.stringify(want)}; got ${JSON.stringify(actual)} (detected=${JSON.stringify((result.metadata as any)?.detectedFrameworks)})`)
     }
     for (const want of exp.expectComplexity ?? []) {
-      const sym = symbols.find((s: any) => s.name === want.symbol)
+      // ownerName-aware lookup (mirrors expectSymbols): overloaded / repeated
+      // names across owners (protocol declaration + implementation of the
+      // same selector) need the owning scope to disambiguate.
+      const sym = symbols.find((s: any) =>
+        s.name === want.symbol &&
+        (want.ownerName === undefined || s.ownerName === want.ownerName))
       const cx: number | undefined = sym?.complexity
       if (want.equals !== undefined && cx !== want.equals) {
         problems.push(`expected ${want.symbol} complexity ${want.equals}; got ${cx}`)
@@ -302,6 +329,16 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
       const n = symbols.filter((s: any) => s.name === want.name).length
       if (n !== want.equals) {
         problems.push(`expected ${want.equals} symbol(s) named "${want.name}"; got ${n}`)
+      }
+    }
+    for (const want of exp.expectRelationshipCount ?? []) {
+      // { type, from, target, equals } — pins DEDUPE on relationship edges:
+      // vue re-emitted sub-analyzer contains edges, doubling every class
+      // member's containment. matchConstraints with an added equals check
+      // (exact count of matching edges, not >=1 like expectRelationships).
+      const n = rels.filter(r => matchConstraints(r, { ...want, equals: undefined })).length
+      if (n !== want.equals) {
+        problems.push(`expected ${want.equals} relationship(s) ${JSON.stringify({ type: want.type, from: want.from, target: want.target })}; got ${n}`)
       }
     }
     for (const want of exp.forbidImports ?? []) {

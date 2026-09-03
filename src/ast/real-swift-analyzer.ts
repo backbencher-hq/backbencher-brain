@@ -61,6 +61,9 @@ const BUILTIN_BARE_CALLS = new Set([
   "print", "debugPrint", "assert", "precondition", "fatalError",
   "String", "Int", "Double", "Float", "Bool", "Array", "Dictionary",
   "Set", "Optional", "Any", "Void", "Character", "Data", "Date",
+  // `defer { }` parses as call_expression(simple_identifier "defer", lambda_literal)
+  // in the pinned grammar — it is a control keyword, never a real function call.
+  "defer",
 ])
 
 interface OverrideTask {
@@ -133,6 +136,13 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     const classHierarchy = new Map<string, string[]>()
     const symbolMap = new Map<string, ASTEngine.UniversalSymbol>()
 
+    // In-file declared kinds (SWIFTD1): protocol names are knowable from the
+    // parse tree itself, so `class X: LocalProtocol` resolves to implements
+    // even without the cross-file companion. (Mirrors csharp M12.07's
+    // collectDeclaredTypeKinds pre-pass.)
+    const inFileKinds = new Map<string, string>()
+    this.collectDeclaredKinds(rootNode, inFileKinds)
+
     const emittedCalls = new Set<string>()
     const emittedUses = new Set<string>()
     const emittedContains = new Set<string>()
@@ -154,11 +164,8 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       } else if (curr.type === "protocol_declaration") {
         newParentSymbol = this.handleProtocol(curr, symbols, relationships, parentSymbol, patternsObj, classHierarchy)
         if (newParentSymbol) newTypeName = newParentSymbol.name
-      } else if (
-        curr.type === "class_declaration" ||
-        curr.type === "actor_declaration"
-      ) {
-        newParentSymbol = this.handleDeclaration(curr, symbols, relationships, parentSymbol, patternsObj, classHierarchy)
+      } else if (curr.type === "class_declaration") {
+        newParentSymbol = this.handleDeclaration(curr, symbols, relationships, parentSymbol, patternsObj, classHierarchy, inFileKinds, context?.typeKinds as Map<string, string> | undefined)
         if (newParentSymbol) newTypeName = newParentSymbol.name
       } else if (curr.type === "function_declaration" || curr.type === "protocol_function_declaration") {
         newParentSymbol = this.handleFunction(curr, symbols, relationships, parentSymbol, overrideTasks, context?.overrideCompanion)
@@ -175,8 +182,6 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
         // Not symbols (ObjC dealloc / C# indexer-not-materialized precedent).
       } else if (
         curr.type === "property_declaration" ||
-        curr.type === "variable_declaration" ||
-        curr.type === "constant_declaration" ||
         curr.type === "protocol_property_declaration"
       ) {
         this.handleVariable(curr, symbols, parentSymbol, newTypeName, frameworksObj, patternsObj)
@@ -190,12 +195,12 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
             this.createSymbol(caseName, ASTEngine.SymbolKind.EnumMember, curr, parentSymbol, symbols, { enumCase: true })
           }
         }
-      } else if (curr.type === "typealias_declaration" || curr.type === "typealias_statement") {
+      } else if (curr.type === "typealias_declaration") {
         const nameNode = this.findChildByType(curr, "type_identifier") || this.firstNamedChild(curr)
         if (nameNode && (nameNode.type === "type_identifier" || nameNode.type === "simple_identifier" || nameNode.type === "identifier")) {
           this.createSymbol(nameNode.text, ASTEngine.SymbolKind.Type, curr, parentSymbol, symbols, { isTypeAlias: true })
         }
-      } else if (curr.type === "associated_type_clause" || curr.type === "associatedtype_declaration") {
+      } else if (curr.type === "associatedtype_declaration") {
         const nameNode = this.findChildByType(curr, "type_identifier") || this.firstNamedChild(curr)
         if (nameNode && (nameNode.type === "type_identifier" || nameNode.type === "simple_identifier" || nameNode.type === "identifier")) {
           this.createSymbol(nameNode.text, ASTEngine.SymbolKind.Type, curr, parentSymbol, symbols, { isAssociatedType: true })
@@ -210,42 +215,40 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       // ---- pattern / metadata flags (unchanged from M11 behavior) ----
       if (curr.type === "where_clause") {
         patternsObj["Generics with Where Clauses"] = true
-      } else if (curr.type === "willSet_specifier" || curr.type === "didSet_specifier" || curr.type === "willSet_didSet_block") {
+      } else if (curr.type === "willset_clause" || curr.type === "didset_clause" || curr.type === "willset_didset_block") {
         patternsObj["Property Observers (willSet/didSet)"] = true
-      } else if (curr.type === "defer_statement") {
+      } else if (curr.type === "call_expression" && this.isDeferCall(curr)) {
         patternsObj["Defer (Cleanup)"] = true
       } else if (curr.type === "do_statement") {
         patternsObj["Do-Catch Blocks"] = true
       } else if (curr.type === "getter_specifier" || curr.type === "setter_specifier") {
         patternsObj["Computed Properties"] = true
-      } else if (curr.type === "availability_condition" || curr.type === "platform_condition") {
+      } else if (curr.type === "availability_condition") {
         patternsObj["Platform Availability Checks"] = true
-      } else if (curr.type === "macro_expansion" || curr.type === "macro_declaration") {
+      } else if (curr.type === "macro_declaration") {
         patternsObj["Swift Macros"] = true
-      } else if (curr.type === "closure_expression") {
+      } else if (curr.type === "lambda_literal") {
         patternsObj["Closures"] = true
       }
       if (
         curr.type === "try_operator" ||
-        curr.type === "try_statement" ||
-        curr.type === "catch_clause" ||
-        curr.type === "throw_statement"
+        curr.type === "catch_block" ||
+        (curr.type === "control_transfer_statement" && this.hasChildType(curr, "throw_keyword"))
       ) {
         patternsObj["Error Handling"] = true
       }
-      if (curr.type === "await_operator" || curr.type === "async_keyword" || curr.type === "async") {
+      if (curr.type === "await_expression" || curr.type === "async") {
         patternsObj["Async/Await"] = true
       }
       if (
         curr.type === "optional_type" ||
-        curr.type === "optional_chaining_expression" ||
-        curr.type === "implicitly_unwrapped_optional_type" ||
-        curr.type === "if_let_statement" ||
-        curr.type === "guard_statement"
+        curr.type === "guard_statement" ||
+        (curr.type === "navigation_expression" && this.hasAnonToken(curr, "?")) ||
+        ((curr.type === "if_statement" || curr.type === "while_statement") && this.hasChildType(curr, "value_binding_pattern"))
       ) {
         patternsObj["Optional Handling"] = true
       }
-      if (curr.type === "type_parameter_clause" || curr.type === "type_parameters") {
+      if (curr.type === "type_parameters") {
         patternsObj["Generics"] = true
       }
       if (curr.type === "if_statement" || curr.type === "for_statement" || curr.type === "while_statement" || curr.type === "repeat_while_statement" || curr.type === "switch_statement") {
@@ -256,11 +259,11 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
         for (let i = 0; i < curr.namedChildCount; i++) {
           const mod = curr.namedChild(i)
           if (!mod) continue
-          if (mod.type === "weak_keyword" || mod.type === "unowned_keyword")
+          if (mod.type === "ownership_modifier")
             patternsObj["ARC Memory Management"] = true
-          if (mod.type === "lazy_keyword" || mod.text === "lazy")
+          if (mod.type === "property_behavior_modifier" || mod.text === "lazy")
             patternsObj["Lazy Initialization"] = true
-          if (mod.type === "final_keyword" || mod.text === "final")
+          if (mod.type === "inheritance_modifier" || mod.text === "final")
             patternsObj["Final/Sealed"] = true
         }
       }
@@ -299,6 +302,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: s.name,
             isExternal: false,
             weight: 1,
+            confidence: 1.0,
             metadata: {},
           })
         }
@@ -312,12 +316,14 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: imp.module,
           isExternal: true,
           weight: 0.9,
+          confidence: 1.0,
           metadata: { importModule: imp.module },
         })
       }
     }
 
     this.resolveOverrides(overrideTasks, classHierarchy, symbolMap, relationships, context?.overrideCompanion)
+    this.classifyEvidenceTier(relationships)
 
     return {
       symbols,
@@ -326,6 +332,61 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       exports,
       metadata,
       errors: (metadata as any).errors || [],
+    }
+  }
+
+  /** Pre-pass: record every protocol/class/struct/actor/enum/extension name. */
+  private collectDeclaredKinds(rootNode: Node, out: Map<string, string>): void {
+    const stack: Node[] = [rootNode]
+    let guard = 0
+    while (stack.length > 0 && guard++ < 500000) {
+      const n = stack.pop()!
+      if (n.type === "protocol_declaration") {
+        const nm = this.findChildByType(n, "type_identifier")
+        if (nm) out.set(nm.text, "interface")
+      } else if (n.type === "class_declaration") {
+        const nm = this.findChildByType(n, "type_identifier") || this.findChildByType(n, "user_type")
+        if (nm) {
+          const leaf = nm.type === "user_type" && nm.namedChildCount > 0 ? nm.namedChild(0)!.text : nm.text
+          if (this.hasAnonToken(n, "class")) out.set(leaf, "class")
+          else if (this.hasAnonToken(n, "struct")) out.set(leaf, "struct")
+          else if (this.hasAnonToken(n, "actor")) out.set(leaf, "actor")
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const child = n.namedChild(i)
+        if (child) stack.push(child)
+      }
+    }
+  }
+
+  // ============================================================================
+  // EVIDENCE TIERS
+  // ============================================================================
+
+  /**
+   * Evidence-tier classification (managed-OO family contract — mirrors
+   * dart/csharp/java; M14 section D requires >=2 distinct evidenceClass
+   * values). Same rules as the family: structural (grammar clauses, conf
+   * 1.0) | usage_contextual (calls, mixin uses) | import_based (import
+   * directives) | inferred (confidence < 1 edges).
+   */
+  private classifyEvidenceTier(relationships: ASTEngine.UniversalRelationship[]): void {
+    for (const r of relationships) {
+      const type = r.type ?? r.relationshipType ?? ""
+      const md: any = r.metadata ?? {}
+      if (type === "contains") { md.evidenceClass = "structural"; continue }
+      if (type === "imports" || type === "exports" || type === "references") { md.evidenceClass = "import_based"; continue }
+      if (type === "calls" || type === "uses") {
+        md.evidenceClass = (r.confidence ?? 0) >= 0.85 ? "usage_contextual" : "inferred"
+        continue
+      }
+      if (type === "instantiates" || type === "extends" || type === "implements") {
+        md.evidenceClass = (r.confidence ?? 0) >= 0.9 ? "structural" : "inferred"
+        continue
+      }
+      if (type === "overrides") { md.evidenceClass = "structural"; continue }
+      md.evidenceClass = "usage_contextual"
     }
   }
 
@@ -362,10 +423,12 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     parent: ASTEngine.UniversalSymbol | null,
     patternsObj: Record<string, boolean>,
     classHierarchy: Map<string, string[]>,
+    inFileKinds: Map<string, string>,
+    crossFileKinds?: Map<string, string>,
   ): ASTEngine.UniversalSymbol | null {
     let kind = ASTEngine.SymbolKind.Class
 
-    if (node.type === "actor_declaration" || this.hasAnonToken(node, "actor")) {
+    if (this.hasAnonToken(node, "actor")) {
       kind = ASTEngine.SymbolKind.Actor
     } else if (this.hasAnonToken(node, "struct")) {
       kind = ASTEngine.SymbolKind.Struct
@@ -408,16 +471,29 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (kind !== ASTEngine.SymbolKind.Enum && kind !== ASTEngine.SymbolKind.Extension) {
       const bases = this.extractBases(node)
       const parents: string[] = []
+      // Swift semantics (probe-verified fixture #266): ONLY a class can have
+      // a superclass. A class's FIRST base is extends ONLY IF it is actually
+      // a class — a first-base protocol is still an adoption (implements).
+      // The cross-file companion (context.typeKinds) carries corpus protocol
+      // names so `class X: SomeProtocol` resolves to implements on BOTH
+      // sides; unknown externals keep the deterministic Swift rule: first
+      // base = superclass (extends) when the kind is a class, else implements.
+      // Structs and actors have NO superclass, so every base is implements.
+      const firstIsSuperclass =
+        kind === ASTEngine.SymbolKind.Class &&
+        (bases.length > 0 ? (inFileKinds.get(bases[0]) ?? crossFileKinds?.get(bases[0]) ?? "class") === "class" : true)
       for (let i = 0; i < bases.length; i++) {
         const base = bases[i]
         parents.push(base)
+        const isExtends = firstIsSuperclass && i === 0
         relationships.push({
-          type: i === 0 ? ASTEngine.RelationshipType.Extends : ASTEngine.RelationshipType.Implements,
+          type: isExtends ? ASTEngine.RelationshipType.Extends : ASTEngine.RelationshipType.Implements,
           source: symbol.name,
           target: base,
           isExternal: true,
-          weight: i === 0 ? 1 : 0.9,
-          metadata: {},
+          weight: isExtends ? 1 : 0.9,
+          confidence: 1.0,
+          metadata: { isImplements: !isExtends },
         })
       }
       if (parents.length > 0) classHierarchy.set(symbol.name, parents)
@@ -435,7 +511,12 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     companion?: OverrideCompanion,
   ): ASTEngine.UniversalSymbol | null {
     const nameNode = this.findChildByType(node, "simple_identifier") || this.findChildByType(node, "identifier")
-    if (!nameNode) return parent
+    // Operator overloads (`static func + (l:r:) -> V`): the name is the
+    // anonymous operator token after `func` (`+`, `==`, `[]`, ...) — no
+    // simple_identifier exists, and without this the whole method is
+    // silently dropped (the dart #265 operator-signature bug class).
+    const opName = nameNode ? null : this.operatorName(node)
+    if (!nameNode && !opName) return parent
 
     const isMethod = !!parent && MEMBER_OWNER_KINDS.has(parent.kind as ASTEngine.SymbolKind)
     const kind = isMethod ? ASTEngine.SymbolKind.Method : ASTEngine.SymbolKind.Function
@@ -447,8 +528,11 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     const funcAttrs = this.extractAttributes(node)
     if (funcAttrs.length > 0) meta.annotations = funcAttrs
 
-    const symbol = this.createSymbol(nameNode.text, kind, nameNode, parent, symbols, meta, vis)
+    const symbol = this.createSymbol(opName ?? nameNode!.text, kind, opName ? node : nameNode!, parent, symbols, meta, vis)
     this.collectFunctionMeta(node, meta, symbol)
+    // Per-symbol cyclomatic complexity (managed-OO family contract — csharp
+    // #264 / dart #265 waves; same node set as the file-level counter).
+    symbol.complexity = this.calculateCyclomaticComplexity(node)
 
     // override keyword -> Overrides task (qualified resolution deferred to
     // the post-loop with the hierarchy + companion, Java/C# semantics).
@@ -519,7 +603,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     // Name from the binding pattern: `var x: Int` / `let x = ...` — the
     // pattern's simple_identifier (first identifier child).
-    const patternNode = this.findChildByType(node, "pattern") || this.findChildByType(node, "pattern_initializer")
+    const patternNode = this.findChildByType(node, "pattern")
     if (patternNode) {
       const idNode = this.findChildByType(patternNode, "simple_identifier") || this.findChildByType(patternNode, "identifier") || this.firstNamedChild(patternNode)
       if (idNode) {
@@ -545,6 +629,11 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     const funcNode = this.findChildByType(node, "simple_identifier") || this.findChildByType(node, "identifier") || this.findChildByType(node, "navigation_expression")
 
     if (!funcNode) return
+
+    // Subscript READ (`entries[key]`) parses as call_expression with a
+    // `[key]` call_suffix in the pinned grammar — it is a property access,
+    // NOT a function call (no calls edge; family property-read precedent).
+    if (this.isSubscriptRead(node)) return
 
     if (funcNode.type === "navigation_expression") {
       // Member call -> leaf target (`users.first` -> `first`, `[1,2].map` -> `map`).
@@ -573,6 +662,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
           target,
           isExternal: true,
           weight: 0.7,
+          confidence: 1.0,
           metadata: { isInstantiation: true },
         })
       }
@@ -596,6 +686,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       target,
       isExternal: true,
       weight: 1,
+      confidence: 0.95,
       metadata: {},
     })
   }
@@ -609,8 +700,17 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
   ) {
     // `self.x` -> uses (source = enclosing TYPE, target = leaf). Other
     // receivers (locals, type names) emit nothing — only Swift's `this`.
-    const hasSelf = this.hasAnonToken(node, "self") || this.hasChildType(node, "self_expression")
+    // self may sit one level down on a nested chain (`self.pipeline.readerIndex`
+    // is navigation > navigation(self_expression) > suffix) — walk the RECEIVER
+    // chain only. NEVER into calls: `self.decode(...)?.buffer` reads `.buffer`
+    // off the CALL RESULT, not off self (the receiver chain ends at the call).
+    const hasSelf = this.hasSelfReceiver(node)
     if (!hasSelf) return
+
+    // `self.helper()` is a METHOD CALL — the callee of a call_expression
+    // emits `calls` via handleCall, never also `uses` (member reads only,
+    // the M12.21 contract). Rust M12.18 uses the same parent-type gate.
+    if (node.parent && node.parent.type === "call_expression") return
 
     const leaf = this.navigationLeaf(node)
     if (!leaf) return
@@ -625,6 +725,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       target: leaf,
       isExternal: false,
       weight: 0.7,
+      confidence: 0.95,
       metadata: { isFieldAccess: true },
     })
   }
@@ -686,7 +787,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
           isExternal: true,
           weight: 0.8,
           confidence: 1.0,
-          metadata: { relationshipType: "method_override", isSwiftOverride: true },
+          metadata: { relationshipType: "method_override", isSwiftOverride: true, evidenceClass: "structural" },
         })
       }
     }
@@ -738,8 +839,8 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     const nodeQueue: Node[] = [node]
     while (nodeQueue.length > 0) {
       const c = nodeQueue.pop()!
-      if (c.type === "async_keyword" || c.text === "async" || c.type === "async") isAsync = true
-      if (c.type === "throws_keyword" || c.text === "throws" || c.type === "throw_expression" || c.type === "throws") throws = true
+      if (c.text === "async" || c.type === "async") isAsync = true
+      if (c.type === "throw_keyword" || c.text === "throws" || c.type === "throws") throws = true
       for (let i = c.childCount - 1; i >= 0; i--) {
         if (c.child(i)) nodeQueue.push(c.child(i)!)
       }
@@ -755,11 +856,13 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
         for (let j = 0; j < child.namedChildCount; j++) {
           const mod = child.namedChild(j)
           if (mod) {
-            if (mod.type === "public_keyword" || mod.text === "public") return "public"
-            if (mod.type === "private_keyword" || mod.text === "private") return "private"
-            if (mod.type === "fileprivate_keyword" || mod.text === "fileprivate") return "fileprivate"
-            if (mod.type === "internal_keyword" || mod.text === "internal") return "internal"
-            if (mod.type === "open_keyword" || mod.text === "open") return "open"
+            // visibility_modifier holds the keyword as its token text
+            // (probe-verified against the pinned tree-sitter-swift).
+            if (mod.text === "public") return "public"
+            if (mod.text === "private") return "private"
+            if (mod.text === "fileprivate") return "fileprivate"
+            if (mod.text === "internal") return "internal"
+            if (mod.text === "open") return "open"
             if (mod.text === "package") return "package"
           }
         }
@@ -788,7 +891,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     let moduleName = ""
     for (let i = 0; i < node.childCount; i++) {
       const c = node.child(i)
-      if (c && (c.type === "simple_identifier" || c.type === "type_identifier" || c.type === "module_identifier" || c.type === "identifier")) {
+      if (c && (c.type === "simple_identifier" || c.type === "type_identifier" || c.type === "identifier")) {
         moduleName = c.text
         break
       }
@@ -835,11 +938,93 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     return node.namedChildCount > 0 ? node.namedChild(0) : null
   }
 
+  /**
+   * Per-symbol cyclomatic complexity (managed-OO family contract — csharp
+   * #264 wave precedent). Mirrors the file-level counter's node set, adapted
+   * to the pinned swift grammar (switch_entry per case, guard_statement,
+   * catch_block, conjunction/disjunction/ternary expressions); base 1.
+   */
+  private calculateCyclomaticComplexity(node: Node): number {
+    let complexity = 1
+    const complexityNodes = new Set([
+      "if_statement", "for_statement", "while_statement", "repeat_while_statement",
+      "switch_entry", "guard_statement", "catch_block",
+      "conjunction_expression", "disjunction_expression", "ternary_expression",
+    ])
+    const stack: Node[] = [node]
+    let guard = 0
+    while (stack.length > 0 && guard++ < 200000) {
+      const n = stack.pop()!
+      if (complexityNodes.has(n.type)) complexity++
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return complexity
+  }
+
+  /** `x[key]` parses as call_expression with a `[key]` call_suffix. */
+  private isSubscriptRead(node: Node): boolean {
+    const suffix = this.findChildByType(node, "call_suffix")
+    if (!suffix) return false
+    const args = this.findChildByType(suffix, "value_arguments")
+    return !!args && this.hasAnonToken(args, "[")
+  }
+
+  /** Operator overload name: the anonymous operator token after `func`. */
+  private operatorName(node: Node): string | null {
+    let sawFunc = false
+    for (let i = 0; i < node.childCount; i++) {
+      const c = node.child(i)
+      if (!c) continue
+      if (!c.isNamed && c.type === "func") { sawFunc = true; continue }
+      if (sawFunc) {
+        if (c.isNamed && c.type === "simple_identifier") return null
+        if (!c.isNamed && c.type !== "(" && c.type !== ")" && c.type !== "{") {
+          return `operator ${c.text}`
+        }
+      }
+    }
+    return null
+  }
+
+  /** `defer { ... }` parses as call_expression(simple_identifier "defer", call_suffix > lambda_literal). */
+  private isDeferCall(node: Node): boolean {
+    const fn = this.findChildByType(node, "simple_identifier") || this.findChildByType(node, "identifier")
+    if (!fn || fn.text !== "defer") return false
+    const suffix = this.findChildByType(node, "call_suffix")
+    return !!suffix && this.findChildByType(suffix, "lambda_literal") !== null
+  }
+
   /** Match an anonymous keyword token (`struct`, `enum`, `extension`, `actor`, `override`, `self`). */
   private hasAnonToken(node: Node, tokenType: string): boolean {
     for (let i = 0; i < node.childCount; i++) {
       const c = node.child(i)
       if (c && !c.isNamed && c.type === tokenType) return true
+    }
+    return false
+  }
+
+  /**
+   * Walk the navigation RECEIVER chain: navigation_expression > (nested
+   * navigation_expression | self_expression | anonymous self token). Stops at
+   * the first non-receiver child (a call_expression/try_expression) — the
+   * suffix then applies to that call's RESULT, not to self.
+   */
+  private hasSelfReceiver(node: Node): boolean {
+    let cur: Node | null = node
+    let guard = 0
+    while (cur && guard++ < 64) {
+      if (cur.type === "self_expression" || (cur.type === "self" && !cur.isNamed)) return true
+      let next: Node | null = null
+      for (let i = 0; i < cur.namedChildCount; i++) {
+        const c = cur.namedChild(i)
+        if (!c) continue
+        if (c.type === "navigation_expression" || c.type === "self_expression") { next = c; break }
+      }
+      if (!next) return false
+      cur = next
     }
     return false
   }

@@ -2,19 +2,19 @@
   "checks": [
     {
       "description": "javascript adversarial fixtures",
-      "detail": "26/26 fixtures pass",
+      "detail": "37/37 fixtures pass",
       "id": "fixtures-javascript",
       "status": "pass"
     },
     {
       "description": "vue adversarial fixtures",
-      "detail": "8/8 fixtures pass",
+      "detail": "14/14 fixtures pass",
       "id": "fixtures-vue",
       "status": "pass"
     },
     {
       "description": "svelte adversarial fixtures",
-      "detail": "13/13 fixtures pass",
+      "detail": "18/18 fixtures pass",
       "id": "fixtures-svelte",
       "status": "pass"
     },
@@ -50,19 +50,19 @@
     },
     {
       "description": "c adversarial fixtures",
-      "detail": "3/3 fixtures pass",
+      "detail": "4/4 fixtures pass",
       "id": "fixtures-c",
       "status": "pass"
     },
     {
       "description": "cpp adversarial fixtures",
-      "detail": "4/4 fixtures pass",
+      "detail": "5/5 fixtures pass",
       "id": "fixtures-cpp",
       "status": "pass"
     },
     {
       "description": "rust adversarial fixtures",
-      "detail": "3/3 fixtures pass",
+      "detail": "8/8 fixtures pass",
       "id": "fixtures-rust",
       "status": "pass"
     },
@@ -74,14 +74,50 @@
     },
     {
       "description": "go adversarial fixtures",
-      "detail": "1/1 fixtures pass",
+      "detail": "3/3 fixtures pass",
       "id": "fixtures-go",
+      "status": "pass"
+    },
+    {
+      "description": "zig adversarial fixtures",
+      "detail": "1/1 fixtures pass",
+      "id": "fixtures-zig",
+      "status": "pass"
+    },
+    {
+      "description": "csharp adversarial fixtures",
+      "detail": "1/1 fixtures pass",
+      "id": "fixtures-csharp",
+      "status": "pass"
+    },
+    {
+      "description": "dart adversarial fixtures",
+      "detail": "2/2 fixtures pass",
+      "id": "fixtures-dart",
+      "status": "pass"
+    },
+    {
+      "description": "swift adversarial fixtures",
+      "detail": "2/2 fixtures pass",
+      "id": "fixtures-swift",
+      "status": "pass"
+    },
+    {
+      "description": "objc adversarial fixtures",
+      "detail": "2/2 fixtures pass",
+      "id": "fixtures-objc",
+      "status": "pass"
+    },
+    {
+      "description": "php adversarial fixtures",
+      "detail": "1/1 fixtures pass",
+      "id": "fixtures-php",
       "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "b6fc5ac95004514f519172f0f7a2add2f14e7b77",
-  "committedAt": "2026-08-27T02:51:43+02:00",
+  "commit": "b4fb17601be1d371329cadddebb1266cd3c9d107",
+  "committedAt": "2026-08-30T05:41:41+02:00",
   "data": {
     "details": [
       {
@@ -110,6 +146,11 @@
         "problems": []
       },
       {
+        "fixture": "javascript/callee-uses",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "javascript/class-method-calls",
         "ok": true,
         "problems": []
@@ -130,6 +171,11 @@
         "problems": []
       },
       {
+        "fixture": "javascript/contains-overrides",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "javascript/decorator-capture",
         "ok": true,
         "problems": []
@@ -141,6 +187,11 @@
       },
       {
         "fixture": "javascript/deep-cjs-exports",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/destructure-symbols",
         "ok": true,
         "problems": []
       },
@@ -165,12 +216,42 @@
         "problems": []
       },
       {
+        "fixture": "javascript/import-edges",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/instanceof-source",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/instantiations",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/interp-uses",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "javascript/js-member-heritage",
         "ok": true,
         "problems": []
       },
       {
+        "fixture": "javascript/jsx-usage",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "javascript/optional-chaining",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/parameters-payload",
         "ok": true,
         "problems": []
       },
@@ -205,12 +286,22 @@
         "problems": []
       },
       {
+        "fixture": "javascript/static-block",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "javascript/stdlib-colliding-names",
         "ok": true,
         "problems": []
       },
       {
         "fixture": "javascript/type-usage-graph",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/visibility-payload",
         "ok": true,
         "problems": []
       },
@@ -230,6 +321,16 @@
         "problems": []
       },
       {
+        "fixture": "vue/generic-props-emits",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "vue/generic-union-emits",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "vue/options-api-sfc",
         "ok": true,
         "problems": []
@@ -240,7 +341,27 @@
         "problems": []
       },
       {
+        "fixture": "vue/payload-pins",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "vue/script-relations",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "vue/script-setup-props-emits",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "vue/template-member-uses",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "vue/template-scope-shadow",
         "ok": true,
         "problems": []
       },
@@ -270,6 +391,11 @@
         "problems": []
       },
       {
+        "fixture": "svelte/each-shadow-collision",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "svelte/evidence-tiers-and-columns",
         "ok": true,
         "problems": []
@@ -285,6 +411,11 @@
         "problems": []
       },
       {
+        "fixture": "svelte/reactive-dedupe",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "svelte/reactive-state",
         "ok": true,
         "problems": []
@@ -295,7 +426,17 @@
         "problems": []
       },
       {
+        "fixture": "svelte/relationship-kinds",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "svelte/rune-call-filter",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "svelte/rune-props-dedupe",
         "ok": true,
         "problems": []
       },
@@ -306,6 +447,11 @@
       },
       {
         "fixture": "svelte/store-derived",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "svelte/template-member-uses",
         "ok": true,
         "problems": []
       },
@@ -1225,6 +1371,11 @@
         "problems": []
       },
       {
+        "fixture": "c/c-completeness",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "c/complexity-and-payloads",
         "ok": true,
         "problems": []
@@ -1255,7 +1406,17 @@
         "problems": []
       },
       {
+        "fixture": "cpp/system-completeness",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "cpp/virtual-override-resolution",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "rust/await-single-edge",
         "ok": true,
         "problems": []
       },
@@ -1270,7 +1431,27 @@
         "problems": []
       },
       {
+        "fixture": "rust/relationship-kinds",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "rust/scoped-and-turbofish",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "rust/trait-impl-and-visibility",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "rust/union-and-associated-type",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "rust/use-list-imports",
         "ok": true,
         "problems": []
       },
@@ -1280,7 +1461,62 @@
         "problems": []
       },
       {
+        "fixture": "go/implements-params",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "go/relationship-and-payloads",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "go/type-usage-graph",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "zig/calls-uses-complexity",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "csharp/payload-and-complexity",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "dart/part-of",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "dart/payload-and-complexity",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "swift/edges-and-patterns",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "swift/payload-and-complexity",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "objc/edges-and-patterns",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "objc/payload-and-complexity",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "php/payload-and-complexity",
         "ok": true,
         "problems": []
       }
@@ -1288,15 +1524,23 @@
     "summary": {
       "c": {
         "fail": 0,
-        "pass": 3
+        "pass": 4
       },
       "cpp": {
         "fail": 0,
-        "pass": 4
+        "pass": 5
+      },
+      "csharp": {
+        "fail": 0,
+        "pass": 1
+      },
+      "dart": {
+        "fail": 0,
+        "pass": 2
       },
       "go": {
         "fail": 0,
-        "pass": 1
+        "pass": 3
       },
       "groovy": {
         "fail": 0,
@@ -1308,11 +1552,19 @@
       },
       "javascript": {
         "fail": 0,
-        "pass": 26
+        "pass": 37
       },
       "kotlin": {
         "fail": 0,
         "pass": 35
+      },
+      "objc": {
+        "fail": 0,
+        "pass": 2
+      },
+      "php": {
+        "fail": 0,
+        "pass": 1
       },
       "python": {
         "fail": 0,
@@ -1320,7 +1572,7 @@
       },
       "rust": {
         "fail": 0,
-        "pass": 3
+        "pass": 8
       },
       "scala": {
         "fail": 0,
@@ -1328,7 +1580,11 @@
       },
       "svelte": {
         "fail": 0,
-        "pass": 13
+        "pass": 18
+      },
+      "swift": {
+        "fail": 0,
+        "pass": 2
       },
       "typescript": {
         "fail": 0,
@@ -1336,7 +1592,11 @@
       },
       "vue": {
         "fail": 0,
-        "pass": 8
+        "pass": 14
+      },
+      "zig": {
+        "fail": 0,
+        "pass": 1
       }
     }
   },
@@ -1353,7 +1613,7 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "runtime": "node v22.22.1",
+  "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"
 }

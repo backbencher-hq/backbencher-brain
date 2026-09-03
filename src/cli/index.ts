@@ -14,6 +14,8 @@ import { BrainTools } from "../ast/tools"
 import { BACKBENCHER_BRAIN_VERSION } from "../version"
 import { getUnifiedHealth, formatUnifiedHealth } from "../intelligence/health/health-provider"
 import { bbProjectsDir } from "../util/bb-data-dir"
+import { LogLevel, setLogLevel } from "../util/log"
+import { computeCheckoutFingerprint, readStoredFingerprint } from "../ast/fingerprint"
 
 export function getProjectId(projectPath: string): string {
   const resolved = path.resolve(projectPath)
@@ -45,14 +47,71 @@ function requireDir(p: string): string {
   return abs
 }
 
-async function cmdIndex(dir: string, opts: { force?: boolean; noSetup?: boolean }) {
-  const abs = requireDir(dir)
+// M22.V1: remaining-time estimate from a live progress sample. Honest rule:
+// no ETA is produced before there is at least one second of elapsed time and a
+// non-zero processed rate; otherwise it returns "…". elapsedSeconds is the
+// wall-clock ms elapsed since the run started (see parallel-indexer enrichment).
+function formatETA(s: { processedFiles: number; totalFiles: number; elapsedSeconds?: number }): string {
+  const elapsedS =
+    s.elapsedSeconds !== undefined && s.elapsedSeconds > 0 ? s.elapsedSeconds / 1000 : 0
+  if (elapsedS < 1 || s.processedFiles <= 0 || s.totalFiles <= 0) return "…"
+  const perFileS = elapsedS / s.processedFiles
+  const remaining = Math.max(0, (s.totalFiles - s.processedFiles) * perFileS)
+  if (remaining < 60) return `${Math.round(remaining)}s`
+  if (remaining < 3600) return `${Math.floor(remaining / 60)}m${Math.round(remaining % 60)}s`
+  return `${Math.floor(remaining / 3600)}h${Math.floor((remaining % 3600) / 60)}m`
+}
+
+async function cmdIndex(
+  dir: string | undefined,
+  opts: { force?: boolean; skipPostProcessing?: boolean; file?: string; changed?: boolean; resume?: boolean; import?: string; noSetup?: boolean },
+) {
+  // M22.C1: default `<dir>` to the current directory like every other command
+  // (search/health/mcp all fall back to process.cwd()); `cd proj && bb index`
+  // must index the project you are standing in.
+  const abs = dir ? requireDir(dir) : process.cwd()
   // M30.S2: first-run embedding setup. Interactive ONLY on a TTY with no
   // config anywhere; non-TTY never hangs. --no-setup skips entirely.
   const { maybeRunFirstRunSetup } = await import("../setup/setup-wizard")
   await maybeRunFirstRunSetup({ noSetup: opts.noSetup === true })
-
   const pid = getProjectId(abs)
+  // M23.P3: `bb index --import <db>` re-homes an existing brain.db (from a
+  // moved project or another machine) onto this checkout's project id.
+  if (opts.import != null) {
+    const { importDbFile } = await import("../ast/project-registry")
+    const result = importDbFile(opts.import, pid, abs)
+    if (result.adopted) {
+      console.log(`imported ${opts.import} as project ${pid.slice(0, 8)} (index rebound to this checkout)`)
+      return
+    }
+    console.error(`✗ import failed: ${result.reason}`)
+    process.exitCode = 1
+    return
+  }
+  // M23.P3: adoption — if this checkout has no DB but a previously indexed
+  // project matches its codebase fingerprint, re-home that DB to this id so
+  // the index (symbols, relationships, embeddings) survives the move.
+  let adopted = false
+  if (!opts.force) {
+    const dbPath = BrainDatabase.getDbPath(pid)
+    if (!existsSync(dbPath)) {
+      const { findAdoptableDb, adoptProject } = await import("../ast/project-registry")
+      const { computeCheckoutFingerprint } = await import("../ast/fingerprint")
+      const cf = await computeCheckoutFingerprint(abs)
+      if (cf.fingerprint) {
+        const candidate = findAdoptableDb(cf.fingerprint)
+        if (candidate) {
+          const result = adoptProject(candidate.id, pid, abs)
+          if (result.adopted) {
+            adopted = true
+            console.log(`adopted existing index from project ${candidate.id.slice(0, 8)} (moved/rebound to ${pid.slice(0, 8)})`)
+          } else {
+            console.warn(`adoption failed: ${result.reason}`)
+          }
+        }
+      }
+    }
+  }
   if (opts.force) {
     // In-place wipe (never delete the DB file): deleting + recreating the file
     // orphans any running MCP server's open handle into a stale view. An
@@ -69,7 +128,51 @@ async function cmdIndex(dir: string, opts: { force?: boolean; noSetup?: boolean 
   }
   console.log(`indexing ${abs} (project ${pid.slice(0, 8)}…)`)
   const t = Date.now()
-  const stats = await indexProjectParallel(pid, abs, {})
+  const indexOpts: { onProgress: (s: any) => void; skipPostProcessing?: boolean; files?: string[]; isIncremental?: boolean } = { onProgress: (s) => {} }
+  if (opts.skipPostProcessing) indexOpts.skipPostProcessing = true
+  if (opts.file) indexOpts.files = [opts.file]
+  if (opts.changed) indexOpts.isIncremental = true
+  // M23.P3: right after adoption the checkout is unchanged relative to the
+  // adopted index (the move preserves mtimes), so top up incrementally instead
+  // of re-parsing everything and duplicating symbol rows.
+  if (adopted) indexOpts.isIncremental = true
+  // M22.R1: resume from an interrupted run's checkpoint. The live status file
+  // is the checkpoint: phase "indexing" (left behind if the process died) vs
+  // "complete"/"failed". Resume always runs incremental (mtime/size skip the
+  // already-indexed files, so strictly fewer files are processed than a fresh
+  // run), and reports whether a checkpoint was actually found.
+  if (opts.resume) {
+    const { readLiveStatus } = await import("../ast/index-status")
+    const ck = readLiveStatus(pid)
+    const inProgress = !!ck && ck.phase === "indexing" && Date.now() - ck.updatedAt < 3_600_000
+    if (inProgress) {
+      console.log(`resuming interrupted index (checkpoint: ${ck.processedFiles}/${ck.totalFiles} files done)`)
+    } else {
+      console.log("no in-progress checkpoint; running incremental (only missing/changed files)")
+    }
+    indexOpts.isIncremental = true
+  }
+  // M22.V1: render a live single-line progress update on stderr (never stdout,
+  // so stdout stays clean for any consuming process). Clears the line on the
+  // terminal without disturbing the final summary on stdout.
+  let lastProgressT = 0
+  indexOpts.onProgress = (s: any) => {
+      const now = Date.now()
+      if (now - lastProgressT < 80) return
+      lastProgressT = now
+      const total = s.totalFiles > 0 ? s.totalFiles : s.processedFiles
+      const pct =
+        s.totalFiles > 0 ? Math.floor((s.processedFiles / s.totalFiles) * 100) : 0
+      const fps = typeof s.filesPerSecond === "number" ? s.filesPerSecond.toFixed(1) : "?"
+      const file = s.currentFile ?? ""
+      const pw = process.stderr.isTTY ? `\r` : `\r[progress] `
+      process.stderr.write(
+        `${pw}${s.processedFiles}/${total} files (${pct}%) ${fps}/s ETA ${formatETA(s)} ${file ? `— ${file}` : ""}`,
+      )
+    }
+  const stats = await indexProjectParallel(pid, abs, indexOpts)
+  if (process.stderr.isTTY) process.stderr.write("\r\x1b[K")
+  else process.stderr.write("\n")
   const secs = ((Date.now() - t) / 1000).toFixed(1)
   const db = await BrainDatabase.getRawInstance(pid)
   const files = (db.prepare("SELECT COUNT(*) c FROM brain_file").get() as any).c
@@ -78,6 +181,10 @@ async function cmdIndex(dir: string, opts: { force?: boolean; noSetup?: boolean 
   const emb = (db.prepare("SELECT COUNT(*) c FROM brain_semantic_embedding").get() as any).c
   console.log(`✓ indexed ${files} files, ${symbols} symbols, ${rels} relationships, ${emb} embeddings in ${secs}s`)
   console.log(`  stats: ${JSON.stringify({ totalFiles: stats.totalFiles, processed: stats.processedFiles, errors: stats.errorFiles })}`)
+  if (stats.summary) {
+    const s = stats.summary
+    console.log(`  breakdown: ${s.newlyParsed} newly parsed | ${s.unchanged} unchanged | ${s.skipped} skipped | ${s.symbolLoss} symbol-loss (parsed 0 symbols) | ${s.errors} errors | ${s.timeouts} timeouts`)
+  }
 }
 
 async function cmdSearch(query: string, opts: { dir?: string; limit?: number; language?: string }) {
@@ -102,6 +209,89 @@ async function cmdSearch(query: string, opts: { dir?: string; limit?: number; la
     console.log(`  ${r.symbolName} [${r.symbolType}] (${r.language}, ${r.file}:${r.line})${stale}`)
   }
   console.log(`\n${results.length} results${results.staleCount ? ` (${results.staleCount} stale — run bb index --force)` : ""}`)
+}
+
+async function cmdStats(dir: string | undefined) {
+  // M22.V4: query committed index counts anytime, independent of any run state.
+  const abs = dir ? requireDir(dir) : process.cwd()
+  const pid = getProjectId(abs)
+  const { composeStatus } = await import("../ast/index-status")
+  const s = await composeStatus(pid)
+  if (!s.hasIndex) {
+    console.log(`no index for ${abs}. Run: bb index "${abs}"`)
+    return
+  }
+  let embeddings = 0
+  try {
+    const r = await BrainDatabase.getRawInstance(pid)
+    embeddings = (r.prepare("SELECT COUNT(*) c FROM brain_semantic_embedding").get() as any)?.c ?? 0
+  } catch {}
+  console.log(`index stats for ${abs}:`)
+  console.log(`  files ${s.dbStats.files} | symbols ${s.dbStats.symbols} | relationships ${s.dbStats.relationships} | embeddings ${embeddings}`)
+  // M23.P1: always show where this index lives so users can find/reclaim it.
+  console.log(`  db: ${BrainDatabase.getDbPath(pid)}`)
+}
+
+async function cmdProjects(opts: { sort?: string; remove?: string; force?: boolean }) {
+  // M23.P1/P2: registry of every indexed project with DB path + size, and
+  // safe removal. Ground truth: without this, users can't see what's indexed,
+  // where the DB lives, or reclaim disk (e.g. 1,178 dirs / 16 GB on this box).
+  const { listProjects, removeProject, totalProjectsBytes } = await import("../ast/project-registry")
+  if (opts.remove) {
+    const r = removeProject(opts.remove, opts.force === true)
+    if (r.removed) console.log(`removed project ${opts.remove.slice(0, 8)} (index reclaimed)`)
+    else console.error(`✗ ${r.reason}`)
+    process.exitCode = r.removed ? 0 : 1
+    return
+  }
+  const projects = listProjects()
+  if (projects.length === 0) {
+    console.log("no indexed projects")
+    return
+  }
+  const sort = opts.sort ?? "name"
+  projects.sort((a, b) => (sort === "size" ? b.dbSizeBytes - a.dbSizeBytes : sort === "time" ? (b.lastIndexed ?? 0) - (a.lastIndexed ?? 0) : a.id.localeCompare(b.id)))
+  const mb = (b: number) => `${(b / 1024 / 1024).toFixed(1)}MB`
+  const when = (t: number | null) => (t ? new Date(t).toISOString().slice(0, 10) : "n/a")
+  for (const p of projects) {
+    const where = p.humanPath ?? "(no path recorded)"
+    console.log(`${p.id.slice(0, 8)} | ${p.files} files ${p.symbols} syms | ${mb(p.dbSizeBytes)} | idx ${when(p.lastIndexed)} | ${p.status ?? ""} | ${where} | db: ${p.dbPath}`)
+  }
+  console.log(`\n${projects.length} projects, ${mb(totalProjectsBytes(projects))} total index size (${bbProjectsDir()})`)
+}
+
+async function cmdStatus(dir: string | undefined) {
+  // M22.V2: `bb status [<dir>]` — in-flight + last-run index state from any shell.
+  const abs = dir ? requireDir(dir) : process.cwd()
+  const pid = getProjectId(abs)
+  const { composeStatus } = await import("../ast/index-status")
+  const s = await composeStatus(pid)
+  if (!s.hasIndex) {
+    console.log(`no index for ${abs}. Run: bb index "${abs}"`)
+    return
+  }
+  const ms = (v?: number) => (typeof v === "number" ? `${v}ms` : "n/a")
+  if (s.isRunning && s.live) {
+    const l = s.live
+    const total = l.totalFiles > 0 ? l.totalFiles : l.processedFiles
+    const pct = l.totalFiles > 0 ? Math.floor((l.processedFiles / l.totalFiles) * 100) : 0
+    const elapsed = ((Date.now() - l.startedAt) / 1000).toFixed(0)
+    console.log(`▶ indexing ${abs}: ${l.processedFiles}/${total} files (${pct}%) in ${elapsed}s${typeof l.filesPerSecond === "number" ? ` @ ${l.filesPerSecond.toFixed(1)} files/s` : ""}${l.currentFile ? ` — ${l.currentFile}` : ""}`)
+    console.log(`  phase: ${l.phase}`)
+  } else if (s.lastRun) {
+    const r = s.lastRun
+    console.log(`✓ last index of ${abs}: ${s.dbStats.files} files, ${s.dbStats.symbols} symbols, ${s.dbStats.relationships} relationships`)
+    const t = r.phaseTimings ?? {}
+    console.log(`  total ${ms(t.totalWallMs)} | parse ${ms(t.parseMs)} | dbFlush ${ms(t.dbFlushMs)} | discovery ${ms(t.discoveryMs)} | startup ${ms(t.workerStartupMs)}`)
+    if (Array.isArray(r.postProcessing) && r.postProcessing.length) {
+      console.log(`  post-processing: ${r.postProcessing.map((p: any) => `${p.phase ? p.phase : "?"}=${ms(p.ms)}`).join(", ")}`)
+    }
+    console.log(`  mode ${r.mode ?? "n/a"} | workers ${r.workerCount ?? "n/a"} | noop ${r.noop ? "yes" : "no"}`)
+  } else {
+    console.log(`index meta: ${s.dbStats.files} files, ${s.dbStats.symbols} symbols, ${s.dbStats.relationships} relationships (no recent run)`)
+  }
+  // M23.P1: always show where this index lives so users can find/reclaim it.
+  console.log(`  db: ${BrainDatabase.getDbPath(pid)}`)
 }
 
 async function cmdHealth(dir: string | undefined, opts: { refresh?: boolean; force?: boolean; wait?: boolean; complete?: boolean; integrity?: boolean; sampleSize?: number }) {
@@ -145,13 +335,43 @@ async function cmdTool(name: string, opts: { dir?: string; args?: string }): Pro
 
 export async function runCli(argv: string[]): Promise<void> {
   const program = new Command()
-  program.name("bb").description("Backbencher Brain — universal code intelligence (40+ languages)")
-  // M33.S1: parity across all three version forms (-V was the only form before).
-  program.version(BACKBENCHER_BRAIN_VERSION, "-v, --version", "output the version number")
+  program
+    .name("bb")
+    .description("Backbencher Brain — universal code intelligence (40+ languages)")
+    // M33.S1: parity across all three version forms (-V was the only form before).
+    .version(BACKBENCHER_BRAIN_VERSION, "-v, --version", "output the version number")
+    // M22.W1: one logging story. Workers inherit BB_LOG_LEVEL from the parent
+    // (pool-worker.ts only defaults to "error" when the parent sets nothing).
+    .option("--verbose", "show diagnostics (debug logs, per-file worker/WASM lines)")
+    .option("--quiet", "suppress informational output (warnings/errors only)")
+    .hook("preAction", (thisCommand) => {
+      // M22.W1: one logging story. Apply the level to this process's logger
+      // immediately and publish it through the environment so forked pool
+      // workers (which inherit the parent env) honor the same level instead
+      // of their hardcoded "error" default.
+      const opts = thisCommand.opts()
+      if (opts.verbose) {
+        process.env.BB_LOG_LEVEL = "debug"
+        setLogLevel(LogLevel.DEBUG)
+      } else if (opts.quiet) {
+        process.env.BB_LOG_LEVEL = "warn"
+        setLogLevel(LogLevel.WARN)
+      }
+    })
+
   // M33.S2: unknown commands and options get did-you-mean suggestions (commander
   // default) plus an explicit pointer to the help surface instead of a dead end.
   program.showSuggestionAfterError(true)
   program.showHelpAfterError("(run 'bb --help' for a list of commands)")
+
+  // M22 e2e: the header docs (and users) expect `bb version` as a command,
+  // not only the --version flag.
+  program
+    .command("version")
+    .description("print the bb version")
+    .action(() => {
+      console.log(BACKBENCHER_BRAIN_VERSION)
+    })
 
   program
     .command("tool")
@@ -163,11 +383,25 @@ export async function runCli(argv: string[]): Promise<void> {
 
   program
     .command("index")
-    .description("index a project")
-    .argument("<dir>", "project directory")
+    .description("index a project (default: current directory)")
+    .argument("[dir]", "project directory (default: current directory)")
     .option("--force", "wipe the existing index and rebuild")
     .option("--no-setup", "skip the first-run embedding setup prompt")
-    .action(async (dir: string, opts: any) => {
+    .option("--skip-post-processing", "parse + store only; defer relationship resolution/enrichment/gravity/taint/health")
+    .option("--file <path>", "reindex a single file's symbols + relationships")
+    .option("--changed", "reindex only files changed since the last index")
+    .option("--resume", "continue from an interrupted run's checkpoint (incremental: only missing/changed files)")
+    .option("--import <db>", "adopt an existing brain.db file (re-home a moved project's index)")
+    .addHelpText("after", `
+Examples:
+  $ bb index                 # index the current directory
+  $ bb index ../my-project   # index another directory
+  $ bb index --changed       # reindex only changed files
+  $ bb index --file src/a.ts # reindex a single file
+  $ bb index --force         # wipe and rebuild in place
+  $ bb index import --db <path>  # adopt an existing DB for a moved project
+`)
+    .action(async (dir: string | undefined, opts: any) => {
       await cmdIndex(dir, opts)
     })
 
@@ -210,6 +444,38 @@ export async function runCli(argv: string[]): Promise<void> {
       const report = runDoctorChecks({ cwd, projectId: getProjectId(cwd) })
       console.log(renderDoctorReport(report))
       if (!report.healthy) process.exitCode = 1
+    })
+
+  program
+    .command("stats")
+    .description("query index counts anytime: files/symbols/relationships/embeddings (default: cwd)")
+    .argument("[dir]", "project directory (default: current directory)")
+    .action(async (dir: string | undefined) => {
+      await cmdStats(dir)
+    })
+
+  program
+    .command("status")
+    .description("show in-flight/last-run index state and per-phase timings (default: cwd)")
+    .argument("[dir]", "project directory (default: current directory)")
+    .action(async (dir: string | undefined) => {
+      await cmdStatus(dir)
+    })
+
+  program
+    .command("projects")
+    .description("list every indexed project: DB path, size, counts, last index (default: all projects)")
+    .option("--sort <field>", "sort by name|size|time", "name")
+    .option("--remove <id>", "remove one indexed project by id (reclaims its DB + embeddings)")
+    .option("--force", "remove even if that project is currently being indexed")
+    .addHelpText("after", `
+Examples:
+  $ bb projects                # list all indexed projects with DB path + size
+  $ bb projects --sort size    # biggest indexes first
+  $ bb projects --remove 1a2b3c4d   # reclaim that project's index space
+`)
+    .action(async (opts: any) => {
+      await cmdProjects(opts)
     })
 
   program
@@ -256,4 +522,17 @@ export async function runCli(argv: string[]): Promise<void> {
     })
 
   await program.parseAsync(argv, { from: "user" })
+}
+
+// M23.P3: allow running the CLI module directly (bun src/cli/index.ts <args>).
+// Without this entry the module only defines runCli, so direct invocation is a
+// silent no-op — a real trap for scripts and verifiers.
+if (import.meta.main) {
+  try {
+    await runCli(process.argv.slice(2))
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.error(`error: ${message}`)
+    process.exitCode = 1
+  }
 }

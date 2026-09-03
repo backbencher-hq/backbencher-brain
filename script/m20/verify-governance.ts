@@ -4,6 +4,7 @@
 // the planned ledger without pretending that planned issues are verified.
 // It also mutates in-memory copies of the ledger to prove closure rules fail.
 
+import { createHash } from "node:crypto"
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
@@ -118,6 +119,10 @@ function sourceFingerprintFor(issue: Issue): string {
   if (issue.tool === "bb_patterns") return patternSourceFingerprint(ROOT)
   if (issue.tool === "bb_security") return securitySourceFingerprint(ROOT)
   if (issue.tool === "bb_doc") return docSourceFingerprint(ROOT)
+  if (issue.tool === "cross-tool") {
+    const joined = [migrationSourceFingerprint(ROOT), patternSourceFingerprint(ROOT), securitySourceFingerprint(ROOT), docSourceFingerprint(ROOT)].join("|")
+    return createHash("sha256").update(joined).digest("hex")
+  }
   return migrationSourceFingerprint(ROOT)
 }
 
@@ -144,7 +149,12 @@ check("C1: evidence freshness rejects production changes after the tested revisi
 check("C1: known gaps and blocked runs cannot be verified by wording", plan.includes("known-gap") && plan.includes("blocked") && plan.includes("never as `verified`"))
 
 let evidenceErrors: string[] = []
-for (const issue of ledger.issues.filter((item) => item.status !== "planned" && item.code !== "C1")) {
+// C1 and C3 are self-writing governance gates: C1 persists its own evidence and
+// C3 re-reads C1's output, so treating either as a static file to diff against
+// the ledger would make the two gates mutually stale on every run (a circular
+// dependency). C3 independently re-audits governance (including C1.json) and
+// itself, so it is excluded here exactly like C1.
+for (const issue of ledger.issues.filter((item) => item.status !== "planned" && item.code !== "C1" && item.code !== "C3")) {
   const evidence = issue.evidence
   const evidencePath = evidence ? path.join(ROOT, "validation/m20/results", evidence.evidenceFile) : ""
   if (!evidence || !existsSync(evidencePath)) {

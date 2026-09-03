@@ -13,3 +13,4 @@ bb.json
 
 # VSIX build artifacts (packaging evidence records the artifact, not the blob)
 *.vsix
+.p3-runner.tmp.ts

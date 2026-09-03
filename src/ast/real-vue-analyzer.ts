@@ -125,17 +125,31 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
     const templateStack: Node[] = [rootNode]
     const seenUsages = new Set<string>()
     let templateDecisions = 0
-    while (templateStack.length > 0) {
-      const n = templateStack.pop()!
+    // V2 (#419): template expressions reference script-side members — collect
+    // the identifiers from {{ interp }} and directive value expressions
+    // (:label="x", @click="y", v-model="z", v-if="w") during the template
+    // walk; the member symbols only exist after the script pass, so the Uses
+    // edges are emitted after the merge (step 3b).
+    //
+    // V4 (#419): template-LOCAL bindings shadow component members — v-for
+    // loop variables (v-for="item in items" binds item) and slot props
+    // (#default="{ row }" binds row). A shadowed name must NOT emit a use
+    // to the same-named member; that is the TS T6 scope-blind bug class.
+    const templateExprNames = new Set<string>()
+    const shadowStack: Array<{ node: Node; shadowed: Set<string> }> = [{ node: rootNode, shadowed: new Set() }]
+    while (shadowStack.length > 0) {
+      const { node: n, shadowed } = shadowStack.pop()!
       const t = n.type
       if (t === "script_element" || t === "style_element") continue
-      if (t === "directive_attribute") {
-        // v-if / v-else-if / v-for / v-show are TEMPLATE DECISION POINTS —
-        // they branch rendering exactly like if/loops in code.
-        const dname = this.findChildByType(n, "directive_name")?.text
-        if (dname === "v-if" || dname === "v-else-if" || dname === "v-for" || dname === "v-show") templateDecisions++
-      }
-      if (t === "element") {
+      // The shadow set for this node's subtree: inherit, then add bindings
+      // declared ON this node (v-for vars, slot props).
+      const childShadowed = new Set(shadowed)
+      if (t === "element" || t === "template_element") {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (!c || c.type !== "start_tag") continue
+          this.collectNodeShadowBindings(c, childShadowed)
+        }
         const tag = this.elementTagName(n)
         if (tag && !HTML_BUILTIN_TAGS.has(tag) && !VUE_BUILTIN_TAGS.has(tag) && !seenUsages.has(tag)) {
           seenUsages.add(tag)
@@ -148,9 +162,40 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
           })
         }
       }
+      if (t === "directive_attribute") {
+        // v-if / v-else-if / v-for / v-show are TEMPLATE DECISION POINTS —
+        // they branch rendering exactly like if/loops in code.
+        const dname = this.findChildByType(n, "directive_name")?.text
+        if (dname === "v-if" || dname === "v-else-if" || dname === "v-for" || dname === "v-show") templateDecisions++
+        // The binding VALUE expression (not the directive name/argument).
+        const value = this.findChildByType(n, "quoted_attribute_value")
+        const attrVal = value ? this.findChildByType(value, "attribute_value") : null
+        if (attrVal) {
+          // v-for="item in items" — the LOOP VARIABLE (item) is bound
+          // locally and shadows any same-named member; only the collection
+          // (items) is a real member use.
+          if (dname === "v-for") {
+            this.collectVForUsage(attrVal.text, templateExprNames, childShadowed)
+          } else if (dname === "#" || dname === "v-slot") {
+            // Slot-prop destructuring ({ row }) declares LOCAL bindings; the
+            // element-level shadow pass already registered them, and the
+            // destructure itself is not a member use — skip.
+          } else {
+            this.collectIdentifiers(attrVal.text, templateExprNames, childShadowed)
+          }
+        }
+      }
+      if (t === "interpolation") {
+        const raw = this.findChildByType(n, "raw_text")
+        if (raw) {
+          // {{ item }} under v-for="item in items" reads the LOCAL item;
+          // skip identifiers bound in this scope.
+          this.collectIdentifiers(raw.text, templateExprNames, childShadowed)
+        }
+      }
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const child = n.namedChild(i)
-        if (child) templateStack.push(child)
+        if (child) shadowStack.push({ node: child, shadowed: childShadowed })
       }
     }
 
@@ -274,7 +319,15 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (fn && (fn.text === "defineProps" || fn.text === "defineEmits")) {
               const args = n.childForFieldName("arguments")
               const firstArg = args?.namedChild(0)
-              const names = this.propNames(firstArg ?? undefined)
+              // V1 (#419): the TYPE-LITERAL generic form defineProps<{ id:
+              // string }>() / defineEmits<{ (e: 'save'): void }>() carries no
+              // runtime argument — the contract lives in the type_arguments
+              // node. Extract it when the runtime form is absent (the standard
+              // Vue 3.3+ shape).
+              let names = this.propNames(firstArg ?? undefined)
+              if (names.length === 0) {
+                names = this.genericMacroNames(n, fn.text === "defineProps" ? "props" : "emits")
+              }
               const kind = fn.text === "defineProps"
                 ? ASTEngine.SymbolKind.Property
                 : ASTEngine.SymbolKind.Event
@@ -305,9 +358,46 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // --- 3c. Template expression uses (V2) ------------------------------------
+    // The template reads the component's own members: {{ count }},
+    // :label="label", @click="onSave", v-model="count", v-if="show" are
+    // Uses of script-side symbols. Emit only for identifiers that resolve to
+    // a member symbol (intrinsics and globals stay silent — no junk edges).
+    if (templateExprNames.size > 0) {
+      const memberNames = new Set(symbols.map((s) => s.name))
+      const seenUses = new Set<string>()
+      for (const name of templateExprNames) {
+        if (!memberNames.has(name)) continue
+        const key = `${moduleName}:${name}`
+        if (seenUses.has(key)) continue
+        seenUses.add(key)
+        relationships.push({
+          source: moduleName,
+          target: name,
+          type: ASTEngine.RelationshipType.Uses,
+          confidence: 0.95,
+          metadata: { isTemplateExpression: true },
+        })
+      }
+    }
+
     // --- 4. contains from ownerName -------------------------------------------
+    // V3 (#419): the JS/TS sub-analyzer ALREADY emits contains for script-side
+    // symbols (class -> method), and this pass re-emitted them — every class
+    // member got a duplicate contains edge. Only vue-owned members (props,
+    // emits, options members with ownerName = the component) need this pass;
+    // skip symbols the sub-analyzer's contains already covered.
+    const existingContains = new Set<string>()
+    for (const r of relationships) {
+      if (r.type === ASTEngine.RelationshipType.Contains && r.source && r.target) {
+        existingContains.add(`${r.source}::${r.target}`)
+      }
+    }
     for (const s of symbols) {
       if (s.ownerName) {
+        const key = `${s.ownerName}::${s.name}`
+        if (existingContains.has(key)) continue
+        existingContains.add(key)
         relationships.push({
           source: s.ownerName,
           target: s.name,
@@ -513,6 +603,153 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
     return out
+  }
+
+  /**
+   * V1 (#419): names from the TYPE-LITERAL generic form of the script-setup
+   * compiler macros — defineProps<{ id: string }>() and
+   * defineEmits<{ (e: 'save'): void }>() — where the public contract lives in
+   * the type_arguments node, not a runtime argument. Probe-verified against
+   * tree-sitter-typescript: props = property_identifier under object_type;
+   * emits = the first string literal of each call_signature's formal
+   * parameters.
+   */
+  private genericMacroNames(callNode: Node, which: "props" | "emits"): string[] {
+    const out: string[] = []
+    const typeArgs = this.findChildByType(callNode, "type_arguments")
+    if (!typeArgs) return out
+    const objectType = this.findChildByType(typeArgs, "object_type")
+    if (!objectType) return out
+    for (let i = 0; i < objectType.namedChildCount; i++) {
+      const member = objectType.namedChild(i)
+      if (!member) continue
+      if (which === "props") {
+        if (member.type === "property_signature") {
+          const pid = this.findChildByType(member, "property_identifier")
+          if (pid?.text) out.push(pid.text)
+        }
+      } else {
+        // emits: each call_signature is one event overload; the event names
+        // are the string literals in its formal parameters ((e: 'save') or a
+        // UNION literal (e: 'save' | 'close') declaring several names — every
+        // union member is an event).
+        if (member.type === "call_signature") {
+          const fp = this.findChildByType(member, "formal_parameters")
+          if (!fp) continue
+          const seen = new Set<string>()
+          for (let j = 0; j < fp.namedChildCount; j++) {
+            const p = fp.namedChild(j)
+            if (!p) continue
+            this.collectUnionStrings(p, seen)
+          }
+          out.push(...seen)
+        }
+      }
+    }
+    return out
+  }
+
+  private findDescendantType(root: Node, type: string): Node | null {
+    const stack: Node[] = [root]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === type) return n
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return null
+  }
+
+  /**
+   * V1b (#419): collect every string-literal event name under a parameter's
+   * type — the type_annotation may be a literal_type ('save') or a union_type
+   * ('save' | 'close'); both declare event names.
+   */
+  private collectUnionStrings(root: Node, out: Set<string>): void {
+    const stack: Node[] = [root]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "string") {
+        const v = unquote(n.text)
+        if (v) out.add(v)
+        continue // a string's children are fragments, not more events
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+  }
+
+  /**
+   * V2 (#419): extract simple identifier tokens from a template expression's
+   * raw text ({{ count }}, :label="label", @click="onSave", v-model="count",
+   * v-if="show"). The vue grammar keeps these as opaque text — no child AST
+   * — so tokenization is by identifier pattern. Member chains (user.name)
+   * yield the root identifier (user); the member-resolution consumer can
+   * recurse. Literals (numbers/strings) and punctuation are dropped.
+   *
+   * V4 (#419): identifiers bound by a template-local construct (v-for loop
+   * var, slot prop) in the current scope are skipped — they shadow any
+   * same-named member.
+   */
+  private collectIdentifiers(text: string, out: Set<string>, shadowed?: Set<string>): void {
+    const re = /[A-Za-z_$][A-Za-z0-9_$]*/g
+    let m: RegExpExecArray | null
+    while ((m = re.exec(text)) !== null) {
+      if (shadowed?.has(m[0])) continue
+      out.add(m[0])
+    }
+  }
+
+  /**
+   * V4 (#419): template-local bindings declared on an element's start tag.
+   * (a) v-for="item in items" / v-for="(item, i) in items" — the loop
+   *     variable(s) are bound locally;
+   * (b) slot props #default="{ row }" / v-slot="{ row, col }" — destructured
+   *     names are bound locally.
+   */
+  private collectNodeShadowBindings(startTag: Node, shadowed: Set<string>): void {
+    for (let i = 0; i < startTag.namedChildCount; i++) {
+      const c = startTag.namedChild(i)
+      if (!c || c.type !== "directive_attribute") continue
+      const dname = this.findChildByType(c, "directive_name")?.text
+      const value = this.findChildByType(c, "quoted_attribute_value")
+      const attrVal = value ? this.findChildByType(value, "attribute_value") : null
+      if (!attrVal) continue
+      if (dname === "v-for") {
+        this.collectVForVars(attrVal.text, shadowed)
+      } else if (dname === "#" || dname === "v-slot") {
+        // { row, col } — the slot-prop destructuring binds locally.
+        const re = /[A-Za-z_$][A-Za-z0-9_$]*/g
+        let m: RegExpExecArray | null
+        while ((m = re.exec(attrVal.text)) !== null) shadowed.add(m[0])
+      }
+    }
+  }
+
+  /**
+   * V4 (#419): the loop-variable part of v-for="item in items" (before
+   * in/of) is bound locally; only the collection part is a member use.
+   */
+  private collectVForUsage(text: string, out: Set<string>, shadowed: Set<string>): void {
+    const m = /^\s*\(?([^)]*?)\)?\s+(?:in|of)\s+(.+)$/.exec(text)
+    const collection = m ? m[2] : text
+    this.collectIdentifiers(collection, out, shadowed)
+  }
+
+  /**
+   * V4 (#419): the loop variables themselves (item, or item + i in the
+   * parenthesized form) are bound locally.
+   */
+  private collectVForVars(text: string, shadowed: Set<string>): void {
+    const m = /^\s*\(?([^)]*?)\)?\s+(?:in|of)\s+/.exec(text)
+    const vars = m ? m[1] : text
+    const re = /[A-Za-z_$][A-Za-z0-9_$]*/g
+    let mm: RegExpExecArray | null
+    while ((mm = re.exec(vars)) !== null) shadowed.add(mm[0])
   }
 
   private isLifecycleHook(key: string): boolean {
