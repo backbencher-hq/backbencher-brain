@@ -96,10 +96,21 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
       } else if (node.type === "import") {
         this.processImport(node, ctx)
       } else if (node.type === "signature") {
-        // Expression-position annotation `(e :: T)` — parens-wrapped — is not
-        // a declaration: skip entirely (HSD9 companion guard).
-        if (node.parent?.type === "parens") continue
-        this.processSignature(node, ctx, currentScope)
+        // HSD17 (probe 2026-09-03, hledger): declaration signatures
+        // (declarations/local_binds/class/instance bodies) are type trees —
+        // processed as declarations and never descended (no calls inside).
+        // Expression-position annotations (`x <- T.pack <$> some c`-style
+        // `e :: T` binds, or the parens form `(fetch x :: IO X)`) host the
+        // annotated EXPRESSION as child 0 — previously skipped wholesale,
+        // dropping every real call beneath them (6/6 hledger residuals).
+        const p = node.parent?.type
+        const isDeclSig = p === "declarations" || p === "local_binds" || p === "class" || p === "instance" || p === "class_declarations" || p === "instance_declarations"
+        if (isDeclSig) {
+          this.processSignature(node, ctx, currentScope)
+          continue
+        }
+        const expr = node.namedChildCount > 0 ? node.namedChild(0) : null
+        if (expr) stack.push({ node: expr })
         continue
       } else if (node.type === "function" || node.type === "bind") {
         // Do-notation bind (`z <- fetch x`): an expression, not a declaration —
@@ -116,6 +127,15 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
           stack.push({ node, isExit: true, restoreFn: ctx.currentFunction })
         } else if (!insideLocalBlock) {
           pushedScope = this.processFunction(node, ctx, currentScope, scopeStack)
+          // HSD19: a module/class-level bind whose head is a PATTERN
+          // (constructor `Right samplejournal2 = ...`, tuple, annotated) is
+          // not a callable — no scope was pushed. Its body executes at module
+          // init within the ENCLOSING attribution context (the oracle keeps
+          // its fn identically), so preserve rather than leak the previous
+          // function's name into this bind's body.
+          if (!pushedScope && !(node.type === "function" && (node.childForFieldName("parameter") || node.childForFieldName("result")))) {
+            stack.push({ node, isExit: true, restoreFn: ctx.currentFunction })
+          }
         } else if (node.type === "function") {
           // Where/let-local FUNCTION: no symbol (locals are not module
           // symbols), but its calls attribute to ITSELF — `go->local` is a
@@ -127,7 +147,17 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (head?.type === "variable") {
             ctx.currentFunction = head.text
           } else if (head && (head.type === "infix" || head.type === "prefix_id")) {
-            ctx.currentFunction = this.findNamedChildByType(head, ["operator"])?.text
+            const op = this.findNamedChildByType(head, ["operator"])?.text
+            if (op) {
+              ctx.currentFunction = op
+            } else {
+              // HSD19: local backtick-operator definition — name is the
+              // infix_id's variable; without this the currentFunction was
+              // wiped to undefined and the body's calls were dropped.
+              const infixId = this.findNamedChildByType(head, ["infix_id"])
+              const tv = infixId ? this.findNamedChildByType(infixId, ["variable"]) : undefined
+              if (tv?.text) ctx.currentFunction = tv.text
+            }
           }
           scopeStack.push({ node, name: "local", kind: ASTEngine.SymbolKind.Namespace })
         } else {
@@ -150,13 +180,54 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
         pushedScope = this.processInstance(node, ctx, scopeStack)
       } else if (node.type === "data_type" || node.type === "newtype") {
         pushedScope = this.processData(node, ctx, scopeStack)
+      } else if (node.type === "deriving_instance") {
+        // HSD12 (probe 2026-09-03, postgrest Routine.hs:65): standalone
+        // `deriving instance Show Foo` parses as deriving_instance → name
+        // (class) + type_patterns → name (target) and previously emitted
+        // NOTHING. Same emission as data-level deriving: implements
+        // target -> class, derived:true. (Parens wrapper
+        // `deriving instance (Show Foo)` handled one level down. Multi-class
+        // parens heads are invalid Haskell — the grammar itself ERRORs.)
+        const grab = (nn: Node) => {
+          let cls: string | undefined
+          let target: string | undefined
+          for (let i = 0; i < nn.namedChildCount; i++) {
+            const c = nn.namedChild(i)
+            if (!c) continue
+            // HSD18 mirror (probe 2026-09-03): the class head is extracted
+            // entry-wise — a bare `name`, a QUALIFIED class head
+            // (`deriving instance Csv.ToNamedRecord Session` — full text),
+            // or an apply head (class application). Previously the qualified
+            // class form emitted NOTHING here even though the data-level
+            // deriving path already handled it.
+            if (c.type === "name" || c.type === "qualified") cls = c.text
+            else if (c.type === "apply") {
+              const h = c.namedChildCount > 0 ? c.namedChild(0) : null
+              if (h?.text) cls = h.text
+            } else if (c.type === "type_patterns") {
+              const t2 = this.findNamedChildByType(c, ["name", "constructor"])
+              target = t2?.text
+            } else if (c.type === "parens") grab(c)
+          }
+          if (cls && target) {
+            this.pushRel(ctx, target, cls, ASTEngine.RelationshipType.Implements, 1.0, {
+              derived: true,
+              isStandaloneDeriving: true,
+            })
+          }
+        }
+        grab(node)
       } else if (node.type === "record") {
         // HSD5: body-position record `U { un = 5 }` is Haskell's other
         // construction idiom — instantiates the constructor. Record UPDATE
         // (`u { un = 6 }`) has a variable head, not a constructor: no edge.
         // Data-DECLARATION records (inside data_constructor) never emit.
         const ctor = this.findNamedChildByType(node, ["constructor"])
-        if (ctor?.text && ctx.currentFunction && !this.isDataDeclarationPosition(node)) {
+        // HSD14-record (probe 2026-09-03): record PATTERNS (`nOf (Person {
+        // userName = n }) = n` in a function head, or in a bind-form pattern
+        // guard) carry a constructor head and previously fabricated
+        // `instantiates` from pattern position. Same gate as apply sites.
+        if (ctor?.text && ctx.currentFunction && !this.isDataDeclarationPosition(node) && !this.isPatternPosition(node)) {
           this.pushRel(ctx, ctx.currentFunction, ctor.text, ASTEngine.RelationshipType.Instantiates, 0.9, {
             haskellSpecific: true,
             isRecordConstruction: true,
@@ -282,25 +353,31 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
         } else if (nameNode && (nameNode.type === "infix" || nameNode.type === "prefix_id")) {
           // Operator definitions: `a +.+ b = ...` (infix head) and
           // `(<!>) f x = ...` (prefix_id head) declare the OPERATOR as the
-          // callable name — probe 2026-09-03.
+          // callable name — probe 2026-09-03. HSD19: backtick-operator
+          // definitions declare the infix_id's variable.
           const op = this.findNamedChildByType(nameNode, ["operator"])
-          if (op?.text) out.add(op.text)
+          const tv = op ? undefined : (() => {
+            const infixId = this.findNamedChildByType(nameNode, ["infix_id"])
+            return infixId ? this.findNamedChildByType(infixId, ["variable"]) : undefined
+          })()
+          const callable = op?.text ?? tv?.text
+          if (callable) out.add(callable)
         }
       }
       // NO early return in any case: nested local_binds (where/let) hold more
       // declared callables — where-locals must resolve as call targets.
     }
     if (node.type === "signature") {
-      // Expression-position signature — `(e :: T)` inline annotation, always
-      // parens-wrapped in expressions — is NOT a declaration. Without this
-      // guard `(fromIntegral :: Integer -> Int64)` fabricates a fromIntegral
-      // call edge (cabal Timestamp.hs). Declaration signatures are direct
-      // children of declarations/local_binds/class/instance bodies.
+      // HSD17 prepass: only DECLARATION signatures declare callables, and
+      // only via their child-0 variable. The parens form `(e :: T)` annotates
+      // an expression; the match-child form (`T m = rhs :: T`) hosts the RHS
+      // expression as child 0 — reading the first variable DESCENDANT there
+      // fabricated a declared-callable entry for the first expression
+      // identifier (e.g. treeFromPaths in hledger Account.hs).
       if (node.parent?.type === "parens") return
-      // Pinned grammar: signature's name child is `variable` (probe 2026-09-03;
-      // `identifier`/`varid` literals do not exist in tree-sitter-haskell).
-      const nameNode = this.findNamedChildByType(node, ["variable"])
-      if (nameNode?.text) out.add(nameNode.text)
+      const first = node.namedChildCount > 0 ? node.namedChild(0) : null
+      if (first?.type !== "variable") return
+      out.add(first.text)
       return
     }
     for (let i = 0; i < node.namedChildCount; i++) {
@@ -498,10 +575,23 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
       // Operator definitions: `a +.+ b = ...` / `(<!>) f x = ...` — the symbol
       // name is the OPERATOR (probe 2026-09-03), not the whole head text.
       const op = this.findNamedChildByType(nameNode, ["operator"])
-      if (op?.text) name = op.text
-    } else if (node.namedChildCount > 0) {
-      name = node.namedChild(0)?.text || ""
+      if (op?.text) {
+        name = op.text
+      } else {
+        // HSD19 backtick-operator definition (hledger BalanceReport):
+        // `(rspec,journal) `gives` r = do ...` — the head is an infix whose
+        // operator child is an infix_id wrapping the backtick name.
+        const infixId = this.findNamedChildByType(nameNode, ["infix_id"])
+        const tv = infixId ? this.findNamedChildByType(infixId, ["variable"]) : undefined
+        if (tv?.text) name = tv.text
+      }
     }
+    // HSD19 (probe 2026-09-03): heads that are NOT nameable callables —
+    // constructor patterns (`Right samplejournal2 = ...`), tuple patterns,
+    // annotated binds (`x :: T = ...`, head is a signature) — declare NO
+    // symbol and NO callable name. The old raw-text branch named symbols
+    // after the whole head text ("Right", the tuple text, the type
+    // annotation) and attributed their bodies to those phantom names.
 
     if (!name || name === "=" || name === "|" || node.parent?.type === "signature" || node.parent?.type === "function") {
       return false
@@ -641,29 +731,36 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    // deriving (Show, Eq) → implements type -> derived class. The derived
-    // names are `name` nodes nested inside deriving → tuple → name.
+    // deriving (Show, Eq) → implements type -> derived class. Entries are
+    // extracted ELEMENT-WISE (HSD18, probe 2026-09-03): a bare `name`, a
+    // qualified class (`Csv.ToNamedRecord` — full text), or a class
+    // APPLICATION (`MonadError SessionError` — head only; the argument is
+    // NOT a class). Previously name-leaves inside qualified/apply entries
+    // were missed (hledger) or argument leaves were mis-collected.
+    // Parenthesized SINGLE entries (`deriving newtype (Show)`) recurse one
+    // level down — regression-guarded by the fixture pin UserId->Show
+    // (2026-09-03: element-wise rewrite dropped the parens recursion and the
+    // fixture caught it).
     const deriving = this.findNamedChildByType(node, ["deriving", "deriving_strategy"])
     if (deriving) {
-      const derived: Node[] = []
-      const tuple = this.findNamedChildByType(deriving, ["tuple"])
-      if (tuple) {
-        for (const n of this.collectNamedChildrenByType(tuple, ["name"])) derived.push(n)
-      }
-      if (derived.length === 0) {
-        for (const n of this.collectNamedChildrenByType(deriving, ["name"])) derived.push(n)
-      }
-      // Parenthesized single-element deriving: `deriving (Show)` parses as
-      // deriving → parens → name (no tuple node) — previously dropped, which
-      // mis-pinned every single-class derived instance (cabal GenSPDX*).
-      if (derived.length === 0) {
-        for (const parens of this.collectNamedChildrenByType(deriving, ["parens"])) {
-          for (const n of this.collectNamedChildrenByType(parens, ["name"])) derived.push(n)
+      const derived: string[] = []
+      const grab = (nn: Node) => {
+        for (let i = 0; i < nn.namedChildCount; i++) {
+          const c = nn.namedChild(i)
+          if (!c) continue
+          if (c.type === "name") derived.push(c.text)
+          else if (c.type === "qualified") derived.push(c.text)
+          else if (c.type === "apply") {
+            const h = c.namedChildCount > 0 ? c.namedChild(0) : null
+            if (h?.text) derived.push(h.text)
+          } else if (c.type === "parens") grab(c)
         }
       }
+      const tuple = this.findNamedChildByType(deriving, ["tuple"])
+      if (tuple) grab(tuple)
+      grab(deriving)
       for (const dc of derived) {
-        if (!dc?.text) continue
-        this.pushRel(ctx, name, dc.text, ASTEngine.RelationshipType.Implements, 1.0, { derived: true })
+        this.pushRel(ctx, name, dc, ASTEngine.RelationshipType.Implements, 1.0, { derived: true })
       }
     }
 
@@ -838,9 +935,24 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Qualified call: M.lookup / Data.Map.size → full qualified target
     // (Erlang gen_server:cast precedent). Pinned grammar: qualified → module
     // + variable (`qconid` is dead; F1 audit 2026-09-03).
+    // HSD16 (probe 2026-09-03, 985 corpus occurrences): a qualified head
+    // wrapping a CONSTRUCTOR (`M.Just 1`, `C.Registry availableDb`) is a
+    // body-position data-constructor application — instantiates, not calls.
+    // Previously only the function form was derived and 564 cabal + 331
+    // postgrest + 87 hledger construction sites were silently dropped.
     if (head.type === "qualified") {
       const mod = this.findNamedChildByType(head, ["module"])
       const modText = mod ? this.stripTrailingDot(mod.text) : ""
+      const ctor = this.findNamedChildByType(head, ["constructor"])
+      if (modText && ctor?.text) {
+        if (!this.isPatternPosition(node)) {
+          this.pushRel(ctx, fn, `${modText}.${ctor.text}`, ASTEngine.RelationshipType.Instantiates, 0.9, {
+            haskellSpecific: true,
+            isQualifiedConstructorApplication: true,
+          })
+        }
+        return
+      }
       const func = this.findNamedChildByType(head, ["variable"])
       if (modText && func?.text) {
         this.pushRel(ctx, fn, `${modText}.${func.text}`, ASTEngine.RelationshipType.Calls, 0.9, {
@@ -866,11 +978,39 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private isPatternPosition(node: Node): boolean {
     let cur: Node | null = node.parent
+    let prev: Node | null = node
     while (cur) {
       if (cur.type === "patterns") return true
-      // Do-notation bind RHS (`z <- fetch x`) and match bodies are not patterns
-      if (cur.type === "match") return false
-      if (cur.type === "function" || cur.type === "bind" || cur.type === "class" || cur.type === "instance") return false
+      // Case-alternative pattern region (HSD14, probe 2026-09-03): the pattern
+      // sits as a DIRECT child of `alternative` (before the `->` arrow); the
+      // branch body lives inside the sibling `match`, which terminates below.
+      // Reaching `alternative` first therefore means pattern territory —
+      // `case s of Circle r -> ...` must NOT claim `instantiates Circle`.
+      if (cur.type === "alternative") return true
+      if (cur.type === "pattern_guard") {
+        // Bind-form pattern guard (`| Just x <- m = x`): only the FIRST child
+        // (the pattern before `<-`) is pattern territory; the scrutinee is an
+        // expression and keeps walking (it may host deeper case patterns).
+        // Boolean-exp guards parse as `boolean`, never as `pattern_guard`.
+        // NOTE: compare node ids — web-tree-sitter hands out a fresh wrapper
+        // object per namedChild() access, so identity (===) never matches.
+        if (prev && prev.id === cur.namedChild(0)?.id) return true
+      } else if (cur.type === "match" || cur.type === "do" || cur.type === "class" || cur.type === "instance") {
+        // Match/do bodies and instance/class bodies are expression territory.
+        return false
+      } else if (cur.type === "function" || cur.type === "bind") {
+        // Function/bind HEAD slot (HSD19, probe 2026-09-03): child 0 hosts the
+        // head — an infix definition (`Tok a == Tok b`, ``(a,b) `gives` r``),
+        // or a constructor/tuple PATTERN (`Right x = ...`, `T m = ...`). Any
+        // constructor apply inside that slot is pattern territory. Everything
+        // else reached through function/bind is expression territory: the
+        // body is the sibling `match`, and a do-bind RHS (`x <- pure (J 1)`)
+        // is a direct child at index >= 1 — must keep emitting.
+        if (prev.type === "match" || prev.type === "patterns") return false
+        if (prev.id === cur.namedChild(0)?.id) return true
+        return false
+      }
+      prev = cur
       cur = cur.parent
     }
     return false
@@ -888,6 +1028,10 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     if (infixId) {
       // Backtick call: the infix_id wraps the called function (variable).
+      // HSD19 companion: an infix DEFINITION head (`(a,b) `gives` r = ...`)
+      // is pattern territory (head slot) — its own infix_id is the name being
+      // defined, never a call. Gated identically to constructor applies.
+      if (this.isPatternPosition(node)) return
       const fn = ctx.currentFunction
       const target = this.findNamedChildByType(infixId, ["variable"])
       if (fn && target?.text && ctx.declaredFunctions.has(target.text)) {
@@ -968,7 +1112,7 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (t === "contains" || t === "exports") { md.evidenceClass = "structural"; continue }
       if (t === "references") { md.evidenceClass = md.isHaskellImport ? "import_based" : "reference_qualified"; continue }
       if (t === "extends" || t === "implements") { md.evidenceClass = "structural"; continue }
-      if (t === "instantiates") { md.evidenceClass = md.isRecordConstruction || md.isConstructorApplication ? "usage_contextual" : "structural"; continue }
+      if (t === "instantiates") { md.evidenceClass = md.isRecordConstruction || md.isConstructorApplication || md.isQualifiedConstructorApplication ? "usage_contextual" : "structural"; continue }
       md.evidenceClass = conf >= 0.85 ? "usage_contextual" : "inferred"
     }
   }

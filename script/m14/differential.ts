@@ -2040,17 +2040,32 @@ export function deriveHaskellEdges(root: any): { label: string; from: string; ta
           if (head?.type === "variable") declared.add(head.text)
           else if (head && (head.type === "infix" || head.type === "prefix_id")) {
             const op = head.namedChildren.find((c: any) => c.type === "operator")
-            if (op?.text) declaredOps.add(op.text)
+            // HSD19 mirror: backtick-operator definitions declare the
+            // infix_id's variable; constructor/tuple-pattern heads declare
+            // nothing (the old fallthrough declared the raw head text).
+            let callable: string | undefined = op?.text
+            if (!callable) {
+              const infixId = head.namedChildren.find((c: any) => c.type === "infix_id")
+              const tv = infixId?.namedChildren.find((c: any) => c.type === "variable")
+              callable = tv?.text
+            }
+            if (callable) declaredOps.add(callable)
           }
         }
       }
       // NO early return: where/let locals hold more callables.
     }
     if (t === "signature" && !inBody) {
-      // Signature names are module-level callables (mirror the analyzer's
-      // prepass — a signature-only function is still a call target).
-      const nameNode = n.namedChildCount > 0 ? n.namedChild(0) : null
-      if (nameNode?.type === "variable") declared.add(nameNode.text)
+      // HSD17 mirror: only DECLARATION signatures declare callables
+      // (declarations/local_binds/class/instance bodies). Expression-position
+      // annotations (`(e :: T)`) declare nothing.
+      const p2 = n.parent?.type
+      // foreign_import: FFI declarations (`foreign import capi ... c_foo :: ...`)
+      // are real in-file callables — mirror the analyzer's prepass.
+      if (p2 === "declarations" || p2 === "local_binds" || p2 === "class" || p2 === "instance" || p2 === "class_declarations" || p2 === "instance_declarations" || p2 === "foreign_import") {
+        const nameNode = n.namedChildCount > 0 ? n.namedChild(0) : null
+        if (nameNode?.type === "variable") declared.add(nameNode.text)
+      }
     }
     if (t === "class") {
       const nameNode = n.namedChildren.find((c: any) => c.type === "name")
@@ -2115,16 +2130,58 @@ export function deriveHaskellEdges(root: any): { label: string; from: string; ta
         // deriving -> implements
         const dv = n.namedChildren.find((c: any) => c.type === "deriving")
         if (dv) {
-          const stackD: any[] = [dv]
-          while (stackD.length > 0) {
-            const x = stackD.pop()!
-            if (x.type === "name") push("implements", dn, x.text)
-            for (let i = 0; i < x.namedChildCount; i++) stackD.push(x.namedChild(i))
+          // HSD18 mirror: entry-wise extraction — bare name, qualified full
+          // text, or class-APPLICATION head. Argument leaves (the SessionError
+          // in `MonadError SessionError`) are NOT classes — the old
+          // descend-all-names pass fabricated Session->SessionError.
+          const entries: string[] = []
+          const grabD = (nn: any) => {
+            for (let i = 0; i < nn.namedChildCount; i++) {
+              const c = nn.namedChild(i)
+              if (!c) continue
+              if (c.type === "name") entries.push(c.text)
+              else if (c.type === "qualified") entries.push(c.text)
+              else if (c.type === "apply") {
+                const h = c.namedChildCount > 0 ? c.namedChild(0) : null
+                if (h?.text) entries.push(h.text)
+              } else if (c.type === "parens") grabD(c)
+            }
           }
+          const tuple = dv.namedChildren.find((c: any) => c.type === "tuple")
+          if (tuple) grabD(tuple)
+          grabD(dv)
+          for (const e2 of entries) push("implements", dn, e2)
         }
       }
       // Do NOT descend into data bodies — constructor references there are
       // declarations, not call sites.
+      continue
+    }
+    if (t === "deriving_instance") {
+      // HSD12 (probe 2026-09-03, postgrest Routine.hs:65): standalone
+      // `deriving instance Show Foo` — same emission as data-level deriving:
+      // implements target -> class. Parens wrapper handled recursively.
+      let cls: string | undefined
+      let target: string | undefined
+      const grab = (nn: any) => {
+        for (let i = 0; i < nn.namedChildCount; i++) {
+          const c = nn.namedChild(i)
+          if (!c) continue
+          // HSD18 mirror: qualified class heads and apply heads are
+          // entry-wise extracted (matches the analyzer's standalone-deriving
+          // handling exactly).
+          if (c.type === "name" || c.type === "qualified") cls = c.text
+          else if (c.type === "apply") {
+            const h = c.namedChildCount > 0 ? c.namedChild(0) : null
+            if (h?.text) cls = h.text
+          } else if (c.type === "type_patterns") {
+            const t2 = c.namedChildren.find((x: any) => x.type === "name" || x.type === "constructor")
+            target = t2?.text
+          } else if (c.type === "parens") grab(c)
+        }
+      }
+      grab(n)
+      if (cls && target) push("implements", target, cls)
       continue
     }
 
@@ -2157,9 +2214,17 @@ export function deriveHaskellEdges(root: any): { label: string; from: string; ta
         if (head?.type === "variable" && declared.has(head.text)) push("calls", fn, head.text)
         else if (head?.type === "qualified") {
           const mod = head.namedChildren.find((c: any) => c.type === "module")
-          const func = head.namedChildren.find((c: any) => c.type === "variable")
           const modText = mod?.text?.replace(/\.$/, "") ?? ""
-          if (modText && func?.text) push("calls", fn, `${modText}.${func.text}`)
+          // HSD16 (probe 2026-09-03, 985 corpus occurrences): qualified
+          // CONSTRUCTOR application in body position (`M.Just 1`) →
+          // instantiates with the pattern gate; the function form stays calls.
+          const ctor = head.namedChildren.find((c: any) => c.type === "constructor")
+          if (modText && ctor?.text) {
+            if (inBody && !isPatternPos(n)) push("instantiates", fn, `${modText}.${ctor.text}`)
+          } else {
+            const func = head.namedChildren.find((c: any) => c.type === "variable")
+            if (modText && func?.text) push("calls", fn, `${modText}.${func.text}`)
+          }
         } else if (head?.type === "constructor" || head?.type === "prefix") {
           // Body-position constructor application → instantiates. Pattern-
           // position applies (inside `patterns`) are excluded — mirror the
@@ -2170,8 +2235,14 @@ export function deriveHaskellEdges(root: any): { label: string; from: string; ta
         const infixId = n.namedChildren.find((c: any) => c.type === "infix_id")
         const opNode = n.namedChildren.find((c: any) => c.type === "operator")
         if (infixId) {
-          const target = infixId.namedChildren.find((c: any) => c.type === "variable")
-          if (target?.text && (declared.has(target.text) || declaredOps.has(target.text))) push("calls", fn, target.text)
+          // HSD19 mirror: infix DEFINITION heads are pattern territory — the
+          // head's own infix_id names the callable being defined, not a call.
+          if (isPatternPos(n)) {
+            // fall through: no call emission from a definition head
+          } else {
+            const target = infixId.namedChildren.find((c: any) => c.type === "variable")
+            if (target?.text && (declared.has(target.text) || declaredOps.has(target.text))) push("calls", fn, target.text)
+          }
         } else if (opNode?.text === "$") {
           for (let i = 0; i < n.namedChildCount; i++) {
             const c = n.namedChild(i)
@@ -2190,7 +2261,9 @@ export function deriveHaskellEdges(root: any): { label: string; from: string; ta
         // Body-position record with a CONSTRUCTOR head = construction; a
         // variable head is an update (no edge). Data-declaration records sit
         // under data_constructor and are excluded via inBody + parent chain:
-        // only descend here from function/bind bodies.
+        // only descend here from function/bind bodies. HSD14-record: record
+        // PATTERNS (function heads, pattern guards) are excluded via
+        // isPatternPos — mirror the analyzer.
         const ctor = n.namedChildren.find((c: any) => c.type === "constructor")
         const inDecl = (() => {
           let cur = n.parent
@@ -2201,8 +2274,22 @@ export function deriveHaskellEdges(root: any): { label: string; from: string; ta
           }
           return false
         })()
-        if (ctor?.text && !inDecl) push("instantiates", fn, ctor.text)
+        if (ctor?.text && !inDecl && !isPatternPos(n)) push("instantiates", fn, ctor.text)
       }
+    }
+    if (t === "signature") {
+      // HSD17 mirror: declaration signatures are TYPE trees — no calls inside,
+      // never descend (the old descent fabricated type-application calls like
+      // `t (t B.ByteString)` from `t :: T (T B.ByteString)` annotations).
+      // Expression-position annotations host the annotated EXPRESSION as
+      // child 0; descend into it only — the sibling type subtree would
+      // fabricate calls the same way.
+      const p2 = n.parent?.type
+      const isDeclSig = p2 === "declarations" || p2 === "local_binds" || p2 === "class" || p2 === "instance" || p2 === "class_declarations" || p2 === "instance_declarations" || p2 === "foreign_import"
+      if (isDeclSig) continue
+      const expr = n.namedChildCount > 0 ? n.namedChild(0) : null
+      if (expr) stack2.push({ n: expr, fn, inBody })
+      continue
     }
     if (t === "function" || t === "bind") {
       const isTypeFn = t === "function" && (n.childForFieldName?.("parameter") || n.childForFieldName?.("result"))
@@ -2213,7 +2300,17 @@ export function deriveHaskellEdges(root: any): { label: string; from: string; ta
         if (head?.type === "variable") nextFn = head.text
         else if (head && (head.type === "infix" || head.type === "prefix_id")) {
           const op = head.namedChildren.find((c: any) => c.type === "operator")
-          if (op?.text) nextFn = op.text
+          if (op?.text) {
+            nextFn = op.text
+          } else {
+            // HSD19 mirror: backtick-operator definition heads name their
+            // infix_id variable; constructor/tuple-pattern heads are NOT
+            // callables — keep the enclosing fn (no reset), mirroring the
+            // analyzer's caller-preservation for the non-callable head slot.
+            const infixId = head.namedChildren.find((c: any) => c.type === "infix_id")
+            const tv = infixId?.namedChildren.find((c: any) => c.type === "variable")
+            if (tv?.text) nextFn = tv.text
+          }
         }
         for (let i = 0; i < n.namedChildCount; i++) {
           const c = n.namedChild(i)
@@ -2233,9 +2330,30 @@ export function deriveHaskellEdges(root: any): { label: string; from: string; ta
 
 function isPatternPos(node: any): boolean {
   let cur = node.parent
+  let prev = node
   while (cur) {
     if (cur.type === "patterns") return true
-    if (cur.type === "match" || cur.type === "function" || cur.type === "bind" || cur.type === "class" || cur.type === "instance") return false
+    // HSD14 (probe 2026-09-03): case-alternative patterns are direct children
+    // of `alternative`; bind-form pattern guards keep only their FIRST child
+    // as pattern territory; an infix head as FIRST child of function/bind is
+    // pattern territory (`Tok a == Tok b = ...`), while do-bind RHS is a
+    // direct child at index >= 1 — expression, stays emitting. Node IDs are
+    // compared (web-tree-sitter hands out fresh wrappers per access).
+    if (cur.type === "alternative") return true
+    if (cur.type === "pattern_guard") {
+      if (prev.id === cur.namedChild(0)?.id) return true
+    } else if (cur.type === "match" || cur.type === "do" || cur.type === "class" || cur.type === "instance") {
+      return false
+    } else if (cur.type === "function" || cur.type === "bind") {
+      // HSD19 mirror: the child-0 head SLOT of function/bind is pattern
+      // territory (infix definitions, constructor/tuple patterns); match and
+      // patterns children are expression territory; do-bind RHS (index >= 1)
+      // stays emitting.
+      if (prev.type === "match" || prev.type === "patterns") return false
+      if (prev.id === cur.namedChild(0)?.id) return true
+      return false
+    }
+    prev = cur
     cur = cur.parent
   }
   return false

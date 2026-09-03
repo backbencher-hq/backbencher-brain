@@ -1408,6 +1408,44 @@ const MUTANTS: Mutant[] = [
       { type: "calls", source: "merged", target: "b", fromSymbol: "merged", toSymbol: "b", confidence: 0.9, metadata: { haskellSpecific: true, context: "local function call" } },
     ] }),
   },
+  {
+    id: "haskell/drop-standalone-deriving",
+    language: "haskell",
+    defectClass: "relationship-loss",
+    description: "drops standalone deriving implements (Ticket->Show/Csv.ToNamedRecord/ToJSON) — HSD12/HSD18 pins (bare, qualified, parens class heads)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).isStandaloneDeriving)) }),
+  },
+  {
+    id: "haskell/qualified-ctor-as-calls",
+    language: "haskell",
+    defectClass: "fabrication",
+    description: "injects the HSD16 regression class: qualified constructor application (M.Just) emitted as calls instead of instantiates — fixture pins instantiates:maybeOne->M.Just",
+    transform: r => ({ ...r, relationships: [
+      ...(r.relationships ?? []).filter((x: any) => !(x.source === "maybeOne" && x.target === "M.Just")),
+      { type: "calls", source: "maybeOne", target: "M.Just", fromSymbol: "maybeOne", toSymbol: "M.Just", confidence: 0.9, metadata: { haskellSpecific: true, isQualifiedCall: true } },
+    ] }),
+  },
+  {
+    id: "haskell/pattern-position-instantiates",
+    language: "haskell",
+    defectClass: "fabrication",
+    description: "injects the HSD14 regression class: case-alternative + record-pattern heads fabricate instantiates — fixture forbids whoIs->Person/Bot/Plain, nOf->Ticket, guardPick->Person",
+    transform: r => ({ ...r, relationships: [
+      ...(r.relationships ?? []),
+      { type: "instantiates", source: "whoIs", target: "Person", fromSymbol: "whoIs", toSymbol: "Person", confidence: 0.9, metadata: { haskellSpecific: true, isConstructorApplication: true } },
+      { type: "instantiates", source: "nOf", target: "Ticket", fromSymbol: "nOf", toSymbol: "Ticket", confidence: 0.9, metadata: { haskellSpecific: true, isRecordConstruction: true } },
+    ] }),
+  },
+  {
+    id: "haskell/head-self-call",
+    language: "haskell",
+    defectClass: "fabrication",
+    description: "injects the HSD19 regression class: backtick infix definition head emits a self-call — fixture forbids calls:combine->combine",
+    transform: r => ({ ...r, relationships: [
+      ...(r.relationships ?? []),
+      { type: "calls", source: "combine", target: "combine", fromSymbol: "combine", toSymbol: "combine", confidence: 0.9, metadata: { haskellSpecific: true } },
+    ] }),
+  },
 ]
 
 async function realAnalyzer(lang: string): Promise<any> {

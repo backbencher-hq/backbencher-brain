@@ -145,3 +145,49 @@ Not modeled (deliberately): TemplateHaskell quasiquotes (grammar limitation),
 imported/Prelude function call sites (unresolvable without a module graph —
 the FP-family rule), where/let-local function bodies (scoped noise), operator
 uses (syntax, not calls), record-field selector calls (field reads).
+
+## 2026-09-03 re-review wave (HSD11–HSD19, corpus-expanded)
+
+Re-review beyond the gates' original coverage, on 3 new corpora (shellcheck
+2,4k LOC parser core; hledger; postgrest — 392 files, 0.5% parse-error rate).
+Key honest lesson: the differential oracle **mirrors** the analyzer's contract,
+so shared holes stay green (shellcheck read 100%/0/0 while 4 defect classes
+were live). Only parse-shape probes on real files exposed them.
+
+Defects found and fixed (each probe-verified on real corpus code, both sides
+of the oracle mirrored):
+
+- **HSD12**: standalone `deriving instance Show Foo` emitted nothing →
+  implements (bare/qualified/parens class heads).
+- **HSD14**: pattern-position constructors fabricated `instantiates` via three
+  ungated paths — case `alternative` patterns, `pattern_guard` bind forms, and
+  record/function-head patterns. Pattern territory = `patterns` nodes +
+  alternative/guard bind heads + function/bind head subtrees.
+- **HSD16**: body-position qualified constructor application (`M.Just 1`,
+  985 corpus occurrences) emitted nothing → instantiates with
+  `isQualifiedConstructorApplication`.
+- **HSD17**: expression-position signature annotations (`(e :: T)`) — the walk
+  skipped `signature` subtrees, dropping every call beneath them. Declaration
+  signatures remain type-trees (no descent).
+- **HSD18**: deriving entries extracted element-wise — bare name, qualified
+  full text, class-application head; argument leaves no longer mis-collected.
+- **HSD19**: unnameable bind/function heads (constructor patterns, tuple
+  patterns, backtick infix heads) left `currentFunction` stale or wiped →
+  fabrications and dropped calls; heads now resolve exactly and
+  definition-head backticks never self-call.
+- **Regression caught by fixture** (same day): the element-wise rewrite
+  dropped the `parens` recursion, so `deriving newtype (Show)` emitted
+  nothing — the new `UserId -> Show` fixture pin caught it immediately.
+- **Evidence-class defect**: qualified-constructor `instantiates` edges were
+  classified `structural`; now `usage_contextual` (all usage-site edges).
+
+Gate hardening: fixture extended with pins + forbids for every fixed class
+(28 expect / 9 forbid relationships); 4 new mutants (185 total, all caught);
+`comment` keys on expectation entries are documentation, not match
+constraints (harness bug found when new forbids silently never fired).
+
+Corpus: cabal + shellcheck + hledger + postgrest all at **100% coverage,
+0 missing, 0 unexplained** (samples 200). Grammar pin: tree-sitter-haskell
+v0.23.1 stays (latest release; M12.25 behavioral identity on full corpus;
+upstream main has an unreleased full rewrite — re-run F1 + wasm-compare when
+it ships).
