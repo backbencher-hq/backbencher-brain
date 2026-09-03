@@ -177,6 +177,14 @@ export interface GraphEdge {
   bridgeMechanism?: string
   callSite: { file: string; line: number } // source-side location of the edge
   depth: number
+  /** brain_relationship row id. Every edge traces to its stored row
+   *  (M26.W2 evidence requirement); an edge without one must never be
+   *  emitted, never rendered. */
+  rowId: string
+  /** Stored edge metadata (parsed from brain_relationship.metadata).
+   *  Only declared fields pass through; the graph renderer derives the
+   *  evidence tier from evidenceClass when present. */
+  metadata?: { evidenceClass?: string }
 }
 
 export interface GraphTraversalOptions {
