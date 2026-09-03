@@ -7,13 +7,13 @@
   "passed": 69,
   "failed": 0,
   "negativeCases": 10,
-  "currentCommit": "d9037d2a7570f0367f2fcb94e7592283f2793dec",
+  "currentCommit": "d536b72ad2284b5cf9b5feac58500aa46f847e18",
   "workingTreeRelevantChanges": [
-    "script/m25/verify-harness-core.ts"
+    "script/m25/verify-governance.ts"
   ],
   "verifierCommand": "npx tsx script/m25/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-03T03:12:36.822Z",
+  "generatedAt": "2026-09-03T03:23:29.905Z",
   "ledger": "validation/m25/results/manifest.json",
   "m24Bar": {
     "ledgerStatus": "closed",
