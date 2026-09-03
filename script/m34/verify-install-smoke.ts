@@ -223,7 +223,10 @@ const mutants: Mutant[] = [
     name: "wasm registry resolves the vendored xml grammar and rejects bogus names",
     probe: () =>
       (async () => {
-        const { ensureWasmRegistry, hasWasmInRegistry } = await import("$HOME/backbencher-brain/src/util/wasm.ts")
+        // Import via ROOT (derived from this file's location) — a hardcoded
+        // personal-machine path would make this probe throw on any other
+        // environment, and a throwing probe is scored as "mutant survived".
+        const { ensureWasmRegistry, hasWasmInRegistry } = await import(path.join(ROOT, "src/util/wasm.ts"))
         await ensureWasmRegistry()
         const xml = hasWasmInRegistry("tree-sitter-xml/tree-sitter-xml.wasm")
         const bogus = hasWasmInRegistry("tree-sitter-xml/tree-sitter-bogus.wasm")
