@@ -1,10 +1,10 @@
 {
   "status": "verified",
-  "currentCommit": "de387f9f1f11fdc107b73d9efdf3c5e5f32fca66",
+  "currentCommit": "d94b22807a3bebb786d191af61807b3159158442",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "bun run script/m31/verify-bb-docs-truth.ts",
   "evidenceFile": "D2.json",
-  "generatedAt": "2026-09-02T16:21:43.158Z",
+  "generatedAt": "2026-09-03T04:09:48.918Z",
   "passed": 57,
   "failed": 0,
   "negativeCases": 1,
