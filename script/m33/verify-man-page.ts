@@ -167,7 +167,20 @@ const mutants: Mutant[] = [
     name: "npm man wiring removed",
     plant: () => {
       return {
-        probe: () => !manWired(pkgText.replace('"man": ["./docs/man/bb.1"],', "")).man,
+        // Mutate semantics, not bytes: parse → delete the man field →
+        // re-serialize. A literal string replace went stale when package.json
+        // was reformatted (multi-line arrays) — the mutation became a no-op
+        // and the mutant "survived" vacuously. JSON-level mutation is
+        // formatting-robust.
+        probe: () => {
+          try {
+            const pkg = JSON.parse(pkgText)
+            delete pkg.man
+            return !manWired(JSON.stringify(pkg)).man
+          } catch {
+            return false
+          }
+        },
         cleanup: () => {},
       }
     },

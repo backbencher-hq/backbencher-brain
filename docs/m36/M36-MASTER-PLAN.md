@@ -39,6 +39,16 @@ M30/M32/M33/M34 milestone gates, explicitly excluding machine-specific legs.
   opencode database path (`$HOME/.local/share/opencode/...`) and
   asserts its row counts, so it fails on any other machine. It stays out of
   CI like the M19 legs. (Its repair is a separate finding, not an M36 issue.)
+- **Runner certification (S2)**: all 21 M30/M32/M33/M34 gates pass under a
+  fresh empty `HOME` (21/22 first pass; two latent verifier defects found
+  and fixed: the M32 smoke harness's fixed input pacing lost a pty race
+  under load — now prompt-aware; M33's governance probe assumed ledger
+  progression — back-ported the M34 fix). The M33 man-page gate needs
+  `groff`/`man-db`, absent from runner images, so the verify job installs
+  them explicitly (never silently skipped). Runner images have no `bun`, so
+  `verify:fast` runs under `npx tsx`. The S2 wiring gate survived a real
+  bug of its own: a regex-based YAML block extractor truncated at the
+  first blank line — replaced with line-based splitting.
 
 ## Non-goals / ownership boundary
 
