@@ -53,7 +53,7 @@
       "code": "W1",
       "githubIssue": 509,
       "tool": "webview-core",
-      "status": "planned",
+      "status": "verified",
       "scope": "Single graph renderer (canvas/SVG) over the node/edge model: nodes (symbol, kind, file, external), edges (type, tier, confidence, call site), truncation state. One renderer reused across IDEs; per-IDE forks banned",
       "acceptanceCriteria": [
         "renders a fixture graph with all evidence tiers visually distinct",
@@ -64,7 +64,18 @@
         "budget evidence recorded per machine",
         "mutation: hidden truncation fails the suite",
         "limitations declared"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see W1.json",
+        "verifierCommand": "npx tsx script/m26/verify-webview-core.ts",
+        "evidenceFile": "W1.json",
+        "passed": 21,
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": 6,
+        "mutantsTotal": 6
+      }
     },
     {
       "code": "W2",

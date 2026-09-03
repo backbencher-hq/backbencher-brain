@@ -1,0 +1,19 @@
+{
+  "issue": "M26.W1",
+  "code": "W1",
+  "milestone": "M26",
+  "status": "verified",
+  "checks": 21,
+  "passed": 21,
+  "failed": 0,
+  "mutantsCaught": 6,
+  "mutantsTotal": 6,
+  "currentCommit": "652c6200caefde7de4012ad78d7d311b86613574",
+  "verifierCommand": "npx tsx script/m26/verify-webview-core.ts",
+  "evidenceFile": "W1.json",
+  "generatedAt": "2026-09-03T20:56:36.937Z",
+  "limitations": [
+    "DOM-port stub is the harness surface; real webview CSS/positioning is verified in-editor by later legs (E5/E6 pattern).",
+    "Render budget (300/1000 ms) is measured by the caller per contract section 3; this suite pins the structural budget only."
+  ]
+}
