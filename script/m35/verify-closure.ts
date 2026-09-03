@@ -89,7 +89,11 @@ async function main() {
     check(`${code}: evidence has a commit stamp`, typeof ev.currentCommit === "string" && ev.currentCommit.length >= 7, String(ev.currentCommit))
     if (typeof ev.currentCommit === "string") stamps.set(code, ev.currentCommit)
   }
-  check("all subordinate evidence shares ONE stamp at closure HEAD", stamps.size === SUBORDINATE.length && new Set(stamps.values()).size === 1 && [...stamps.values()][0] === head, `stamps=${[...new Set(stamps.values())].map((s) => s.slice(0, 7)).join(",")} head=${head.slice(0, 7)}`)
+  // Stamp AGREEMENT (M31 pattern), not HEAD equality: evidence-only commits
+  // after stamping would otherwise invalidate every stamp forever (infinite
+  // regress). Currency is proven by the live content-gate re-runs + corpus
+  // --check below, not by the stamp matching this exact commit.
+  check("all subordinate evidence shares ONE stamp", stamps.size === SUBORDINATE.length && new Set(stamps.values()).size === 1, `stamps=${[...new Set(stamps.values())].map((s) => s.slice(0, 7)).join(",")}`)
 
   // ── 2. content gates re-run green NOW (read-only) ──
   for (const [label, script] of CONTENT_GATES) {
