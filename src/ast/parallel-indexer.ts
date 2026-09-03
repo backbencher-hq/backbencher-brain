@@ -2767,6 +2767,12 @@ export async function reindexFilesParallel(
   projectId: ProjectID,
   projectPath: string,
   changes: FileChange[],
+  // Optional logger forwarded to indexProjectParallel. LSP-safety-critical:
+  // the DEFAULT logger writes progress to process.stdout, which corrupts
+  // JSON-RPC framing on any stdio server embedding the indexer (the editor
+  // client dies with "Header must provide a Content-Length property" —
+  // found live by M25.E5). stdio callers MUST pass a stderr logger.
+  options?: { logger?: { log: (...args: any[]) => void; write: (s: string) => void } },
 ): Promise<{ indexed: number; deleted: number; errors: number }> {
   const result = { indexed: 0, deleted: 0, errors: 0 }
 
@@ -2820,6 +2826,7 @@ export async function reindexFilesParallel(
       const indexResult = await indexProjectParallel(projectId, projectPath, {
         files: toIndex,
         isIncremental: true,
+        ...(options?.logger ? { logger: options.logger } : {}),
       })
       result.indexed = indexResult.successFiles
       result.errors += indexResult.errorFiles
