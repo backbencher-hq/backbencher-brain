@@ -304,6 +304,28 @@ const handlers: Record<string, ToolHandler> = {
     return textResult(JSON.stringify(result, null, 2))
   },
 
+  // M22.E1: agent-fresh. A file reindexes only itself; a dir runs an
+  // incremental index (changed files only) so an agent that just wrote a
+  // function can make it visible immediately without a full reindex.
+  bb_index: async (args, { projectId, projectPath }) => {
+    const raw = String(args.path ?? "")
+    if (!raw) return textResult("bb_index requires path", true)
+    const mode = String(args.mode ?? "auto")
+    const abs = path.isAbsolute(raw) ? raw : path.resolve(projectPath, raw)
+    if (!existsSync(abs)) return textResult(`bb_index: no such path: ${abs}`, true)
+    const isDir = statSync(abs).isDirectory()
+    const effective = mode === "auto" ? (isDir ? "dir" : "file") : mode
+    if (effective === "file" && isDir) return textResult("bb_index mode=file requires a file path", true)
+    if (effective === "dir" && !isDir) return textResult("bb_index mode=dir requires a directory path", true)
+    if (effective === "file") {
+      const r = await reindexFilesParallel(projectId as any, projectPath, [{ path: abs, type: "modified" }])
+      return textResult(JSON.stringify({ mode: "file", path: abs, indexed: r.indexed, deleted: r.deleted, errors: r.errors }, null, 2))
+    }
+    // dir: incremental — parses only changed files, defers heavy post-processing
+    const s = await indexProjectParallel(projectId as any, abs, { isIncremental: true, skipPostProcessing: true })
+    return textResult(JSON.stringify({ mode: "dir", path: abs, candidates: s.totalFiles, processed: s.processedFiles, errors: s.errorFiles }, null, 2))
+  },
+
 }
 
 export function createToolHandlers(): Readonly<Record<string, ToolHandler>> {

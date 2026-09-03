@@ -169,6 +169,21 @@ const descriptors = [
     deprecated: false,
     documentation: { category: "operations", summary: "Unified safe source editing with preview, validation, rollback, and reindex.", defaults: { dryRun: false, format: true, force: false }, examples: [{ mode: "update", symbolName: "helper", newContent: "export function helper() { return 2 }" }, { mode: "insert", targetSymbolName: "main", position: "inside-top", newContent: "const started = true" }, { mode: "write", filePath: "src/new.ts", content: "export const value = 1" }] },
   },
+  {
+    // M22.E1: agent-driven freshness — an agent that just wrote/edited a file
+    // can immediately make it (and only it) visible instead of waiting for a
+    // full reindex. This is the direct fix for "agent created a function,
+    // seconds later it's not in the DB".
+    name: "bb_index",
+    description: "Reindex a file or directory so the index reflects edits immediately (agent-fresh). Accepts a path (file or dir); a file reindexes only that file, a dir runs an incremental index of that dir (changed files only). Returns indexed/deleted/error counts.",
+    inputSchema: { type: "object", properties: { path: { type: "string" }, mode: { type: "string", enum: ["auto", "file", "dir"] } }, required: ["path"] },
+    mutability: "write",
+    requiresIndex: false,
+    modes: ["auto", "file", "dir"],
+    aliases: ["bb_reindex"],
+    deprecated: false,
+    documentation: { category: "operations", summary: "Immediately refresh the index for a just-written/edited file or directory.", defaults: { mode: "auto" }, examples: [{ path: "src/new-file.ts" }, { path: "src", mode: "dir" }] },
+  },
 ] as const satisfies readonly ToolDescriptor[]
 
 export const TOOL_DESCRIPTORS: readonly ToolDescriptor[] = descriptors

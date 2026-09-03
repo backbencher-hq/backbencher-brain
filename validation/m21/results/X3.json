@@ -1,0 +1,251 @@
+{
+  "issue": "M21.X3",
+  "code": "X3",
+  "milestone": "M21",
+  "status": "verified",
+  "checks": 40,
+  "passed": 40,
+  "failed": 0,
+  "negativeCases": 6,
+  "currentCommit": "42904590aeaedb5031dd07f8eecb590668270580",
+  "workingTreeRelevantChanges": [
+    " M docs/data/m10-benchmark-last-run.json",
+    " M script/m14/differential.ts",
+    " M script/m14/mutate-analyzer.ts",
+    " M src/ast/real-go-analyzer.ts",
+    " M validation/m13/results/d1.json",
+    " M validation/m13/results/d2.json",
+    " M validation/m13/results/p2.json",
+    " M validation/m13/results/p3.json",
+    " M validation/m13/results/sec3.json",
+    " M validation/m14/results/M14.0.F3.json",
+    " M validation/m14/results/M14.0.F4.json",
+    " M validation/m14/results/M14.0.F5.json",
+    " M validation/m15/results/d1.json",
+    " M validation/m15/results/d2.json",
+    " M validation/m15/results/d3.json",
+    " M validation/m15/results/d4.json",
+    " M validation/m15/results/d5.json",
+    " M validation/m15/results/d6.json",
+    " M validation/m15/results/d7.json",
+    " M validation/m15/results/d8.json",
+    " M validation/m21/results/manifest.json",
+    "?? .client-tooling/",
+    "?? .probe/",
+    "?? docs/m20/PERFORMANCE-DIAGNOSTIC.md",
+    "?? script/m14/probe-go-edge.ts",
+    "?? script/m14/probe-go-missing.ts",
+    "?? script/m20/benchmark-tool-latency.ts",
+    "?? script/m20/diagnose-index-phases.ts",
+    "?? validation/m14/fixtures/go/implements-params.expectation.json",
+    "?? validation/m14/fixtures/go/implements-params.go",
+    "?? validation/m20/results/PERF-DIAGNOSTIC.json"
+  ],
+  "verifierCommand": "bun run script/m21/verify-x3-closure.ts",
+  "evidenceFile": "X3.json",
+  "generatedAt": "2026-08-28T23:35:45.382Z",
+  "closure": {
+    "issuesTotal": 21,
+    "completedVerified": [
+      "C1",
+      "C2",
+      "C3",
+      "I1",
+      "I2",
+      "I3",
+      "W1",
+      "W2",
+      "W3",
+      "D1",
+      "D3",
+      "E1",
+      "E3",
+      "R1",
+      "R2",
+      "X1",
+      "X2",
+      "X3"
+    ],
+    "knownGaps": [
+      {
+        "code": "D2",
+        "reason": "see evidence"
+      },
+      {
+        "code": "E2",
+        "reason": "see evidence"
+      },
+      {
+        "code": "R3",
+        "reason": "see evidence"
+      }
+    ],
+    "plannedRemaining": [],
+    "evidenceAudit": {
+      "filesChecked": 20,
+      "stale": 0,
+      "mutationGaps": 0
+    },
+    "allEvidenceAtHead": true
+  },
+  "bottleneckClassification": [
+    {
+      "phase": "discovery",
+      "kind": "measured-on-this-machine",
+      "verdict": "disproven",
+      "perRun": [
+        {
+          "id": "intellij-community",
+          "ms": 341,
+          "fractionWall": 0.022
+        },
+        {
+          "id": "aspnetcore",
+          "ms": 486,
+          "fractionWall": 0.031
+        },
+        {
+          "id": "typescript",
+          "ms": 269,
+          "fractionWall": 0.019
+        },
+        {
+          "id": "openclaw",
+          "ms": 210,
+          "fractionWall": 0.006
+        },
+        {
+          "id": "paperclip",
+          "ms": 236,
+          "fractionWall": 0.006
+        }
+      ],
+      "medianFractionOfWall": 0.019,
+      "rule": "median < 0.15 disproven; median >= 0.3 confirmed; else confirmed only if median >= 0.2 with IQR(fraction) < 0.15, otherwise unresolved"
+    },
+    {
+      "phase": "worker startup (fork probe)",
+      "kind": "measured-on-this-machine",
+      "verdict": "disproven",
+      "perRun": [
+        {
+          "id": "intellij-community",
+          "ms": 274,
+          "fractionWall": 0.018
+        },
+        {
+          "id": "aspnetcore",
+          "ms": 336,
+          "fractionWall": 0.021
+        },
+        {
+          "id": "typescript",
+          "ms": 224,
+          "fractionWall": 0.016
+        },
+        {
+          "id": "openclaw",
+          "ms": 174,
+          "fractionWall": 0.005
+        },
+        {
+          "id": "paperclip",
+          "ms": 164,
+          "fractionWall": 0.004
+        }
+      ],
+      "medianFractionOfWall": 0.016,
+      "rule": "median < 0.15 disproven; median >= 0.3 confirmed; else confirmed only if median >= 0.2 with IQR(fraction) < 0.15, otherwise unresolved"
+    },
+    {
+      "phase": "parse",
+      "kind": "measured-on-this-machine",
+      "verdict": "confirmed",
+      "perRun": [
+        {
+          "id": "intellij-community",
+          "ms": 13632,
+          "fractionWall": 0.898
+        },
+        {
+          "id": "aspnetcore",
+          "ms": 13770,
+          "fractionWall": 0.881
+        },
+        {
+          "id": "typescript",
+          "ms": 13503,
+          "fractionWall": 0.954
+        },
+        {
+          "id": "openclaw",
+          "ms": 34956,
+          "fractionWall": 0.962
+        },
+        {
+          "id": "paperclip",
+          "ms": 34181,
+          "fractionWall": 0.936
+        }
+      ],
+      "medianFractionOfWall": 0.936,
+      "rule": "median < 0.15 disproven; median >= 0.3 confirmed; else confirmed only if median >= 0.2 with IQR(fraction) < 0.15, otherwise unresolved"
+    },
+    {
+      "phase": "DB flush",
+      "kind": "measured-on-this-machine",
+      "verdict": "confirmed",
+      "perRun": [
+        {
+          "id": "intellij-community",
+          "ms": 11557,
+          "fractionWall": 0.761
+        },
+        {
+          "id": "aspnetcore",
+          "ms": 9082,
+          "fractionWall": 0.581
+        },
+        {
+          "id": "typescript",
+          "ms": 3940,
+          "fractionWall": 0.278
+        },
+        {
+          "id": "openclaw",
+          "ms": 20062,
+          "fractionWall": 0.552
+        },
+        {
+          "id": "paperclip",
+          "ms": 17316,
+          "fractionWall": 0.474
+        }
+      ],
+      "medianFractionOfWall": 0.552,
+      "rule": "median < 0.15 disproven; median >= 0.3 confirmed; else confirmed only if median >= 0.2 with IQR(fraction) < 0.15, otherwise unresolved"
+    }
+  ],
+  "coldFixturePhasesMs": {
+    "discoveryMs": 609,
+    "workerStartupMs": 377,
+    "parseMs": 953,
+    "dbFlushMs": 37,
+    "finalAccountingMs": 32,
+    "totalWallMs": 1975
+  },
+  "measuredVsGuarantee": {
+    "measured": [
+      "discovery is negligible on this developer machine (measured; not a guarantee on cold caches or exotic layouts)",
+      "the fork/WASM startup probe is a small one-time cost in these cold runs (measured; varies with WASM cache warm state)",
+      "parse and DB flush are the dominant phases in these cold runs (measured on this machine; throughput varies with CPU/memory/disk and is not guaranteed)"
+    ],
+    "policy": "Every classification is labeled measured-on-this-machine; nothing measured here is asserted as a cross-machine or capacity guarantee."
+  },
+  "limitations": [
+    "Bottleneck verdicts are derived from X1 (controlled cold fixture) and X2 (sampled large-repo cold runs) wall-clock phase timings on this machine; they are relative consumption points, not throughput guarantees.",
+    "Discovery/worker-startup are disproven only for these cold sampled runs — cold caches, network filesystems, or very different layouts could change that, so 'disproven' is machine-scoped, not universal.",
+    "Known gaps D2/E2/R3 remain intentionally open (fail-closed); X3 does not retroactively verify them.",
+    "The classification rule uses interquartile-relative thresholds so a single oversized repo cannot tilt the verdict; UNRESOLVED is returned whenever runs disagree too much to support an honest claim."
+  ]
+}

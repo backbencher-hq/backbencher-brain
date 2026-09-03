@@ -85,13 +85,11 @@ relationships use `global`.
 
 ## Unsupported / explicit-unknown constructs
 
-- The 122 corpus `grammarErrorFiles` are genuine hard-system C that the newest
-  available tree-sitter-c grammar (0.24.1) cannot parse — all valid C,
-  recorded honestly in the manifest (precedent: kotlin 51, fsharp 108,
-  typescript 5): GNU `__attribute__`/`__dead2`/`__unused` on declarations,
-  preprocessor conditionals inside array initializers, compiler intrinsics
-  (glibc/musl/mingw/freebsd libc — the corpus's vendored system C is the most
-  battle-tested C in existence, but exercises grammar-edge syntax)
+- The external 400-file corpus probe recorded 122 files with Tree-sitter
+  `ERROR` nodes (0 crashes, 0 timeouts). These are compiler/platform-specific
+  parse-recovery cases, including GNU attributes, conditional preprocessing,
+  and libc/compiler intrinsics; they remain explicit limitations rather than
+  being silently treated as fully parsed C.
 - Cross-file resolution (`Buffer` declared in Module.h used in Module.c) is
   per-file by design — the analyzer signature does not consume the engine's
   companion index (production wiring of the cross-file context tracked by
@@ -141,12 +139,14 @@ O(n) scans.
 
 ## Corpus validation
 
-- Corpus target: `validation/m12/corpus-manifest.json` → `zig@738d2be9`
-  (clean; 2322 tracked `.c` files — wasm2c, musl libc, glibc compat, mingw,
-  freebsd libc: real language-representative C including the most
-  battle-tested system C in existence)
-- Sample: 400 tracked `.c` files (deterministic first-400 sorted slice of 621
-  files ≥ 1KB, reproducible from `git ls-files`)
+- External validation: pinned `jq` (45 C files) and `sqlite` (60 C files)
+  achieved 100% tree-truth coverage with no missing edges; SQLite retained two
+  documented opaque indirect-call residuals. Both floors are enforced in
+  `validation/m14/differential-baseline.json` (`jq:c` 0/0, `sqlite:c` 0 missing
+  / 2 unexplained) so any regression in either corpus fails `audit:differential`.
+  `fmt`'s single C file (16/16, 0/0) is pinned as `fmt:c`. The broader
+  historical 400-file probe had 122 parse-recovery files, 0 crashes, and
+  0 timeouts. `Clyde` had no `.c` files and was not counted as C evidence.
 - Symbols 3692 / relationships 14593 / wall 58.3 s / **0 crashes / 0 timeouts
   / 122 error files** (30.5%) — down from 139/400 (34.8%) with the previous
   grammar; all 122 are genuine hard-system C gaps of the newest available

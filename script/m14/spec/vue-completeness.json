@@ -1,0 +1,118 @@
+{
+  "language": "vue",
+  "grammar": "tree-sitter-vue.wasm",
+  "handled_verified": {
+    "types": [
+      "attribute",
+      "attribute_name",
+      "attribute_value",
+      "comment",
+      "component",
+      "directive_argument",
+      "directive_attribute",
+      "directive_name",
+      "element",
+      "end_tag",
+      "interpolation",
+      "quoted_attribute_value",
+      "raw_text",
+      "script_element",
+      "self_closing_tag",
+      "start_tag",
+      "style_element",
+      "tag_name",
+      "template_element",
+      "text"
+    ]
+  },
+  "internal_silent": {
+    "types": [
+      "directive_dynamic_argument",
+      "directive_dynamic_argument_value",
+      "directive_modifier",
+      "directive_modifiers",
+      "erroneous_end_tag",
+      "erroneous_end_tag_name"
+    ]
+  },
+  "gap": {
+    "_description": "Confirmed missing emissions (probe-verified against the real WASM)",
+    "gaps": [
+      {
+        "id": "V1",
+        "node_type": "directive_attribute (defineProps/defineEmits generic)",
+        "severity": "high",
+        "missing": "script-setup compiler macros in the TYPE-LITERAL generic form — defineProps<{ id: string }>() and defineEmits<{ (e: 'save'): void }>() — emit NO prop/event symbols. Only the runtime object/array form ({ size: Number } / ['change']) is extracted; the standard Vue 3.3+ generic form loses the entire public contract.",
+        "evidence": "probe: defineProps<{ id: string }>() -> no Property symbol for id; defineEmits<{ (e: 'save'): void }>() -> no Event symbol for save (TS tree: type_arguments -> object_type -> property_signature / call_signature)",
+        "status": "CLOSED",
+        "closure": "CLOSED — fixture-gated fix (vue/generic-props-emits) + mutant vue/drop-generic-macro-symbols CAUGHT (2026-08-27). The type-literal generic form defineProps<{ id: string }>() / defineEmits<{ (e: 'save'): void }>() now extracts Property/Event symbols via the type_arguments -> object_type walk (property_identifier for props, first string literal per call_signature for emits). The component's public contract is no longer lost in the standard Vue 3.3+ shape. Extension (same session, post-wave review): union literal emit types now extract EVERY member (V1b, fixture vue/generic-union-emits + mutant vue/drop-union-emit-names CAUGHT)."
+      },
+      {
+        "id": "V2",
+        "node_type": "interpolation,directive_attribute",
+        "severity": "high",
+        "missing": "template expressions emit NO references to the component's own members — {{ count }}, @click=\"onSave\", :label=\"label\", v-model=\"count\", v-if=\"show\" read script-side state but no Uses/references edge is emitted. The template<->script data-flow is entirely silent.",
+        "evidence": "probe: <span>{{ count }}</span> <MyButton :label=\"label\" @click=\"onSave\" v-if=\"show\" /> <input v-model=\"count\" /> -> only instantiates for MyButton; zero edges to count/label/onSave/show",
+        "status": "CLOSED",
+        "closure": "CLOSED — fixture-gated fix (vue/template-member-uses) + mutant vue/drop-template-member-uses CAUGHT (2026-08-27). Template expressions ({{ count }}, :label, @click, v-model, v-if) now emit Uses edges (isTemplateExpression) from the component to its member symbols; identifiers are collected from interpolation raw_text and directive attribute_value, resolved only against known script members (no junk edges to intrinsics). Extension (same session, post-wave review): scope-aware — template-local bindings (v-for loop vars, slot props) shadow same-named members and are suppressed (V4, fixture vue/template-scope-shadow + mutant vue/reemit-shadowed-uses CAUGHT)."
+      },
+      {
+        "id": "V3",
+        "node_type": "contains (vue merge)",
+        "severity": "medium",
+        "missing": "duplicate contains edges — the JS/TS sub-analyzer already emits contains for script-side symbols (class -> method), and the vue analyzer's own contains pass re-emitted them, doubling every class member's containment edge in the analyzer output (the store dedupes at INSERT, but the analyzer result and any consumer of it saw 2x).",
+        "evidence": "probe: <script>class Base { go() {} }</script> -> contains: Base -> go emitted TWICE (once from the sub-analyzer merge, once from the vue pass)",
+        "status": "CLOSED",
+        "closure": "CLOSED — fixture-gated fix (vue/script-relations expectRelationshipCount == 1) + mutant vue/reduplicate-contains CAUGHT (2026-08-27). The vue contains pass now skips (owner, member) pairs the sub-analyzer already covered, so vue-owned members (props/emits/options) still get contains while script-side class members keep exactly one edge. Harness gained expectRelationshipCount (exact-edge pinning) so relationship duplication is a permanent gate class."
+      },
+      {
+        "id": "V4",
+        "node_type": "interpolation,directive_attribute (template scope)",
+        "severity": "medium",
+        "missing": "scope-blind template uses — v-for loop variables (v-for=\"item in items\") and slot props (#default=\"{ row }\") are template-LOCAL bindings, but the V2 collector emitted Uses to them whenever a same-named script member existed. False edges: the template reads the local item/row, not the member. The TS T6 shadowed-local bug class, unguarded in the template surface.",
+        "evidence": "probe: v-for=\"item in items\" + const item = ref(...) -> uses: comp -> item emitted (FALSE); #default=\"{ row }\" + const row = ref(...) -> uses: comp -> row emitted (FALSE)",
+        "status": "CLOSED",
+        "closure": "CLOSED — fixture-gated fix (vue/template-scope-shadow forbid item/row uses) + mutant vue/reemit-shadowed-uses CAUGHT (2026-08-27). The template walk now carries a shadow scope: v-for loop vars and slot-prop destructures are registered per-subtree and suppressed from Uses collection; the v-for collection expression (items) and unshadowed members (index, rowClick) still emit."
+      }
+    ]
+  },
+  "design_decision": {
+    "decisions": [
+      {
+        "id": "D1",
+        "node_type": "style_element",
+        "status": "RULED",
+        "question": "style blocks (CSS) are skipped entirely — no extraction. Recommend: DECLARED LIMITATION (CSS is handled by the dedicated css analyzer; the SFC analyzer owns structure + script).",
+        "resolution": "RULED — DECLARED LIMITATION (2026-08-27): style blocks are skipped entirely; CSS extraction belongs to the dedicated css analyzer, the SFC analyzer owns structure + script. Section A records style_element as handled_verified (structure) with the extraction limitation declared here."
+      },
+      {
+        "id": "D2",
+        "node_type": "directive_modifier,directive_modifiers",
+        "status": "RULED",
+        "question": "v-on modifier tokens (.prevent, .stop) and dynamic directive arguments ([expr]) are structure-only — recommend INTERNAL SILENT.",
+        "resolution": "RULED — INTERNAL SILENT (2026-08-27): v-on modifier tokens (.prevent, .stop) and dynamic directive arguments ([expr]) are syntax structure only; the binding VALUE expressions are covered by V2 uses. Slot-prop destructuring (#default=\"{ row }\") is a LOCAL binding — shadowed per V4, not a member use."
+      },
+      {
+        "id": "D3",
+        "node_type": "erroneous_end_tag,erroneous_end_tag_name",
+        "status": "RULED",
+        "question": "error-recovery end-tag nodes — recommend INTERNAL SILENT (error handling).",
+        "resolution": "RULED — INTERNAL SILENT (2026-08-27): erroneous_end_tag nodes are tree-sitter error-recovery artifacts; the analyzer already reports parse errors, no extraction needed."
+      },
+      {
+        "id": "D4",
+        "node_type": "typeParameters",
+        "status": "RULED",
+        "question": "typeParameters payload: the SFC component itself has no generics; script-side TS generics are handled by the TS sub-analyzer. Recommend: DECLARED N/A at the SFC level.",
+        "resolution": "RULED — DECLARED N/A (2026-08-27): the SFC component itself has no generics; script-side TS generics are handled by the TS sub-analyzer. typeParameters payload row omitted from the vue Matrix (family contract)."
+      },
+      {
+        "id": "D5",
+        "node_type": "apiContract",
+        "status": "RULED",
+        "question": "apiContract payload: Vue has no framework API-contract concept (like groovy/JS) — recommend DECLARED N/A.",
+        "resolution": "RULED — DECLARED N/A (2026-08-27): Vue has no framework API-contract concept (like groovy/JS); the apiContract payload row is omitted from the vue Matrix."
+      }
+    ]
+  }
+}

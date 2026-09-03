@@ -62,6 +62,163 @@ interface LangConfig {
 }
 
 const LANG_CONFIGS: Record<string, LangConfig> = {
+  cpp: {
+    id: "cpp",
+    wasm: "tree-sitter-cpp.wasm",
+    classification: "cpp-completeness.json",
+    fixturesDir: "validation/m14/fixtures/cpp",
+    docs: ["docs/analyzers/real-cpp-analyzer.md"],
+    differentialCheck: "differential-cpp",
+    perfKey: "fmt:cpp",
+    requiredKinds: ["uses", "references", "calls", "instantiates", "extends", "overrides", "imports"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "cpp/payload-and-complexity" },
+      qualified_calls: { key: "expectQualifiedCalls", pin: "cpp/payload-and-complexity" },
+    },
+    title: "cpp systems wave (#419)",
+  },
+  c: {
+    id: "c",
+    wasm: "tree-sitter-c.wasm",
+    classification: "c-completeness.json",
+    fixturesDir: "validation/m14/fixtures/c",
+    docs: ["docs/analyzers/real-c-analyzer.md"],
+    differentialCheck: "differential-c",
+    perfKey: "jq:c",
+    requiredKinds: ["uses", "references", "exports", "imports"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "c/complexity-and-payloads" },
+    },
+    title: "c systems wave (#419)",
+  },
+  rust: {
+    id: "rust",
+    wasm: "tree-sitter-rust.wasm",
+    classification: "rust-completeness.json",
+    fixturesDir: "validation/m14/fixtures/rust",
+    docs: ["docs/analyzers/real-rust-analyzer.md"],
+    differentialCheck: "differential-rust",
+    perfKey: "ripgrep:rust",
+    requiredKinds: ["uses", "references", "exports", "contains", "calls", "extends", "implements", "instantiates"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "rust/payload-parity" },
+      qualified_calls: { key: "expectQualifiedCalls", pin: "rust/payload-parity" },
+    },
+    title: "rust systems wave (#261)",
+  },
+  go: {
+    id: "go",
+    wasm: "tree-sitter-go.wasm",
+    classification: "go-completeness.json",
+    fixturesDir: "validation/m14/fixtures/go",
+    docs: ["docs/analyzers/go.md", "docs/analyzers/real-go-analyzer.md"],
+    differentialCheck: "differential-go",
+    perfKey: "go-tools:go",
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "imports"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "go/complexity-parity" },
+      qualified_calls: { key: "expectQualifiedCalls", pin: "go/qualified-calls-payload" },
+    },
+    title: "go systems wave (#262)",
+  },
+  zig: {
+    id: "zig",
+    wasm: "tree-sitter-zig.wasm",
+    classification: "zig-completeness.json",
+    fixturesDir: "validation/m14/fixtures/zig",
+    docs: ["docs/analyzers/real-zig-analyzer.md"],
+    differentialCheck: "differential-zig",
+    perfKey: "zig:zig",
+    // Zig emits these relationship kinds by design — no inheritance /
+    // interfaces / overrides (zig-completeness.json ZIG.D.1), and no `exports`
+    // GRAPH edge (pub/export facts live in the exports array + visibility
+    // metadata; an `exports -> <symbol>` edge has no resolvable foreign
+    // boundary target and would be a phantom, exactly the class the family
+    // contract forbids). imports is pinned via the references edge whose
+    // meta.isImport is true (c family standard).
+    requiredKinds: ["calls", "uses", "contains", "references", "imports"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "zig/calls-uses-complexity (symbol complexity)" },
+      parameters: { key: "expectParameters", pin: "zig/calls-uses-complexity (parameters payload)" },
+      visibility: { key: "expectVisibility", pin: "zig/calls-uses-complexity (pub visibility)" },
+    },
+    title: "zig systems wave (#262)",
+  },
+  csharp: {
+    id: "csharp",
+    wasm: "tree-sitter-c_sharp.wasm",
+    classification: "csharp-completeness.json",
+    fixturesDir: "validation/m14/fixtures/csharp",
+    docs: ["docs/analyzers/real-csharp-analyzer.md"],
+    differentialCheck: "differential-csharp",
+    perfKey: "powershell:csharp",
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "imports"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "csharp/payload-and-complexity" },
+      parameters: { key: "expectParameters", pin: "csharp/payload-and-complexity" },
+      visibility: { key: "expectVisibility", pin: "csharp/payload-and-complexity" },
+    },
+    title: "csharp managed-OO wave (#264)",
+  },
+  dart: {
+    id: "dart",
+    wasm: "tree-sitter-dart.wasm",
+    classification: "dart-completeness.json",
+    fixturesDir: "validation/m14/fixtures/dart",
+    docs: ["docs/analyzers/real-dart-analyzer.md"],
+    differentialCheck: "differential-dart",
+    perfKey: "proxicall:dart",
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "contains", "overrides", "imports"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "dart/payload-and-complexity" },
+      parameters: { key: "expectParameters", pin: "dart/payload-and-complexity" },
+      visibility: { key: "expectVisibility", pin: "dart/payload-and-complexity" },
+    },
+    title: "dart managed-OO wave (#264)",
+  },
+  swift: {
+    id: "swift",
+    wasm: "tree-sitter-swift.wasm",
+    classification: "swift-completeness.json",
+    fixturesDir: "validation/m14/fixtures/swift",
+    docs: ["docs/analyzers/real-swift-analyzer.md"],
+    differentialCheck: "differential-swift",
+    perfKey: "swift-nio:swift",
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "swift/payload-and-complexity" },
+      visibility: { key: "expectVisibility", pin: "swift/payload-and-complexity" },
+    },
+    title: "swift managed-OO wave (#266)",
+  },
+  php: {
+    id: "php",
+    wasm: "tree-sitter-php.wasm",
+    classification: "php-completeness.json",
+    fixturesDir: "validation/m14/fixtures/php",
+    docs: ["docs/analyzers/real-php-analyzer.md"],
+    differentialCheck: "differential-php",
+    perfKey: "phpunit:php",
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "php/payload-and-complexity" },
+    },
+    title: "php managed-OO wave (#268)",
+  },
+  objc: {
+    id: "objc",
+    wasm: "tree-sitter-objc.wasm",
+    classification: "objc-completeness.json",
+    fixturesDir: "validation/m14/fixtures/objc",
+    docs: ["docs/analyzers/real-objective-c-analyzer.md"],
+    differentialCheck: "differential-objc",
+    perfKey: "Clyde:objc",
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "objc/payload-and-complexity" },
+    },
+    title: "objc managed-OO wave (#267)",
+  },
   java: {
     id: "java",
     wasm: "tree-sitter-java.wasm",
@@ -178,10 +335,48 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     },
     title: "javascript pass (#419)",
   },
+  vue: {
+    id: "vue",
+    wasm: "tree-sitter-vue.wasm",
+    classification: "vue-completeness.json",
+    fixturesDir: "validation/m14/fixtures/vue",
+    docs: ["docs/analyzers/vue.md", "docs/analyzers/real-vue-analyzer.md"],
+    differentialCheck: "differential-vue",
+    perfKey: "vue-core:vue",
+    requiredKinds: ["calls", "extends", "instantiates", "uses", "references", "contains", "overrides", "exports", "imports"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "vue/template-decision-complexity" },
+      parameters: { key: "expectParameters", pin: "vue/script-sub-analyzer parameters" },
+      visibility: { key: "expectVisibility", pin: "vue/component visibility" },
+    },
+    title: "vue pass (#419)",
+  },
+  svelte: {
+    id: "svelte",
+    wasm: "tree-sitter-svelte.wasm",
+    classification: "svelte-completeness.json",
+    fixturesDir: "validation/m14/fixtures/svelte",
+    docs: ["docs/analyzers/svelte.md", "docs/analyzers/real-svelte-analyzer.md"],
+    differentialCheck: "differential-svelte",
+    perfKey: "svelte:svelte",
+    requiredKinds: ["calls", "extends", "instantiates", "uses", "references", "contains", "overrides", "exports", "imports"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "svelte/payload-pins (script complexity)" },
+      parameters: { key: "expectParameters", pin: "svelte/script-sub-analyzer parameters" },
+      visibility: { key: "expectVisibility", pin: "svelte/component visibility" },
+    },
+    title: "svelte pass (#419)",
+  },
 }
 
 // Languages that have reached CONFORMANT and therefore run in npm run verify.
-const GATED_LANGS = ["java", "groovy", "kotlin", "scala", "typescript"]
+// csharp reached it in the #264 wave: the powershell corpus differential floor
+// is pinned at 0 missing / 0 unexplained (completeness sections E/F now pass),
+// fixtures + mutation + F1 all green. Declared residual (300-file sweep):
+// unsafe C# COM-interop vtable-dispatch calls are captured as `uses` rather
+// than `calls` (tree-sitter parses `if(...)` and pointer-slot chaining as
+// degenerate invocation_expression subtrees) — bounded to that corpus corner.
+const GATED_LANGS = ["java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp", "rust", "go", "zig", "csharp", "dart", "swift", "objc", "php"]
 
 async function loadNamedNodeTypes(cfg: LangConfig): Promise<string[]> {
   const wts: any = await import("web-tree-sitter")
@@ -444,6 +639,9 @@ async function main() {
       { description: "classified against pinned wasm grammars; grammar drift re-validates on every run" },
       { description: "java gaps G1-G4 closed fixture-first (2026-08-26); rulings G5/G6/S1 applied; CONFORMANT" },
       { description: "groovy G1-G8 closed fixture-first 2026-08-27 (34/34 fixtures, 41/41 mutants incl. 13 groovy); S1-S5 ruled: gstring Uses declared limitation (grammar emits no interpolation nodes), JPMS never-reachable, exports/apiContractPath NOT EMITTED, parameters GATED; exports + permits declared not-required for groovy" },
+      { description: "c rulings C-D1/D2/D3 (2026-08-28): no class/interface hierarchy grammar constructs; function pointers + macro expansion + preprocessor control flow not always statically resolvable; completeness scope tied to pinned tree-sitter-c grammar. 160/160 types classified A-H 8/8; jq:c differential 1692/1692 0 missing 0 unexplained; 115/115 mutants incl. 3 c" },
+      { description: "cpp rulings CPP-D1/D2/D3 (2026-08-28): GNU asm + extension_expression parsed not modeled; MSVC SEH/declspec/based/call/pointer modifiers parsed not modeled; cross-file resolution + template instantiation across TUs are per-file by contract. 256/256 types classified A-H 8/8; fmt:cpp differential 145/145 0 missing 0 unexplained; 115/115 mutants incl. 3 cpp" },
+      { description: "rust rulings RUST-D1/D2/D3 (2026-08-28): trait supertraits -> extends, impl -> implements, no class-based overrides edge; macro_rules! bodies opaque token trees (invocations call the macro NAME only, no expansion); scope tied to pinned tree-sitter-rust. 185/185 types classified A-H 8/8; ripgrep:rust differential 1948/1948 0 missing 0 unexplained; 122/122 mutants incl. 7 rust; union_item + trait associated_type gaps closed fixture-first; use-list import contract pinned (module/items, alias-aware, wildcards, extern crate)" },
     ],
     data,
   })
