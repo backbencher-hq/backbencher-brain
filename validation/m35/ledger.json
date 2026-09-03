@@ -102,11 +102,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "2fa1ce5e49fe248733543600c052e94c79f630bf",
+      "currentCommit": "bf103b94676c5dfc272e079c60754d600ecd1239",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m35/verify-s1-read-paths.ts",
       "evidenceFile": "S1.json",
-      "generatedAt": "2026-09-03T19:19:06.889Z",
+      "generatedAt": "2026-09-03T20:34:46.584Z",
       "passed": 74,
       "failed": 0,
       "negativeCases": 5
