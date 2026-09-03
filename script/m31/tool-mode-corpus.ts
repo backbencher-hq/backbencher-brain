@@ -254,6 +254,14 @@ async function main() {
 
   const indexStats = await indexProjectParallel(projectId as any, fixture, { skipPostProcessing: false })
   check("fixture indexes without errors", indexStats.errorFiles === 0, `errors=${indexStats.errorFiles}`)
+  // Determinism gate (M35 pre-work): the background embedding queue (M21.E2)
+  // writes embeddings asynchronously. bb_doc.feature's semantic expansion
+  // returns a DIFFERENT evidence set depending on whether those writes landed
+  // before dispatch — an observed run-to-run baseline flip. Drain the queue
+  // deterministically (bounded, never hangs) before any tool runs.
+  const { flushBackgroundEmbeddings } = await import(path.join(ROOT, "src/ast/parallel-indexer"))
+  const flush = await flushBackgroundEmbeddings({ timeoutMs: 30_000 })
+  check("embedding queue drained deterministically", flush.resolved === "drained", JSON.stringify(flush))
 
   /** The REAL dispatch sequence from src/mcp/server.ts — validation inside try/catch. */
   async function dispatch(tool: string, args: Record<string, unknown>): Promise<ToolResult> {
