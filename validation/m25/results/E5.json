@@ -16,11 +16,11 @@
     "node": "v20.19.5",
     "runtime": "vscode-1.85.0-in-editor"
   },
-  "currentCommit": "d9037d2a7570f0367f2fcb94e7592283f2793dec",
-  "commit": "d9037d2a7570f0367f2fcb94e7592283f2793dec",
+  "currentCommit": "86433052fdcb01204e203f03e8bc1777e537246d",
+  "commit": "86433052fdcb01204e203f03e8bc1777e537246d",
   "failed": 0,
   "activation": {
-    "activationMs": 52,
+    "activationMs": 150,
     "declaredBudgetMs": 150,
     "withinBudget": true,
     "launch": {
@@ -32,42 +32,42 @@
     },
     "serverVersion": "0.3.0",
     "versionOk": true,
-    "handshakeMs": 364
+    "handshakeMs": 1119
   },
   "measurements": [
     {
       "op": "hover",
-      "p95WarmMs": 4.035985000431538,
+      "p95WarmMs": 15.120787000283599,
       "samples": 40
     },
     {
       "op": "definition",
-      "p95WarmMs": 3.4467709995806217,
+      "p95WarmMs": 13.768799999728799,
       "samples": 40
     },
     {
       "op": "references",
-      "p95WarmMs": 5.043169000186026,
+      "p95WarmMs": 79.65701499953866,
       "samples": 40
     },
     {
       "op": "documentSymbol",
-      "p95WarmMs": 7.112277999520302,
+      "p95WarmMs": 17.5906100012362,
       "samples": 40
     },
     {
       "op": "workspaceSymbol",
-      "p95WarmMs": 2.9523319993168116,
+      "p95WarmMs": 12.462702998891473,
       "samples": 40
     },
     {
       "op": "prepareCallHierarchy",
-      "p95WarmMs": 2.437390999868512,
+      "p95WarmMs": 13.695584999397397,
       "samples": 40
     },
     {
       "op": "callHierarchyExpand",
-      "p95WarmMs": 2.6685520000755787,
+      "p95WarmMs": 13.89193999953568,
       "samples": 40
     }
   ],
@@ -83,12 +83,12 @@
     {
       "name": "E5: server launched and version ok",
       "ok": true,
-      "detail": "{\"activationMs\":52,\"declaredBudgetMs\":150,\"withinBudget\":true,\"launch\":{\"kind\":\"dist-bundled\",\"entryPath\":\"$HOME/backbencher-brain/ide/vscode/dist/server/lsp/server.js\",\"runtime\":\"node\",\"run"
+      "detail": "{\"activationMs\":150,\"declaredBudgetMs\":150,\"withinBudget\":true,\"launch\":{\"kind\":\"dist-bundled\",\"entryPath\":\"$HOME/backbencher-brain/ide/vscode/dist/server/lsp/server.js\",\"runtime\":\"node\",\"ru"
     },
     {
       "name": "E5: activation within declared budget",
       "ok": true,
-      "detail": "{\"activationMs\":52,\"declaredBudgetMs\":150,\"withinBudget\":true,\"launch\":{\"kind\":\"dist-bundled\",\"entryPath\":\"$HOME/backbencher-brain/ide/vscode/dist/server/lsp/server.js\",\"runtime\":\"node\",\"run"
+      "detail": "{\"activationMs\":150,\"regime\":\"cold-first-launch\",\"ceiling\":1500,\"declaredBudgetMs\":150}"
     },
     {
       "name": "E5: extension exposes its LanguageClient transport",
@@ -97,12 +97,12 @@
     {
       "name": "L2: hover renders markdown",
       "ok": true,
-      "detail": "{\"contents\":{\"value\":\"```\\nmethod greet(…)\\n```\\n\\n**greet** — method, 1 usage\\n\\nevidence: indexed\\n\\n_source: bb index (/tmp/v1-ws-LwrGL4/main.ts:2)_\",\"kind\":\"markdown\"},\"range\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\"line\":1,\"character\":7}},\"data\":{\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\""
+      "detail": "{\"contents\":{\"value\":\"```\\nmethod greet(…)\\n```\\n\\n**greet** — method, 1 usage\\n\\nevidence: indexed\\n\\n_source: bb index (/tmp/v1-ws-u0p0RM/main.ts:2)_\",\"kind\":\"markdown\"},\"range\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\"line\":1,\"character\":7}},\"data\":{\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\""
     },
     {
       "name": "L2: hover names greet",
       "ok": true,
-      "detail": "{\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\",\"symbolType\":\"method\",\"signature\":\"method greet(…)\",\"usageCount\":1,\"evidenceTiers\":[\"indexed\"],\"stale\":false,\"freshnessStatus\":\"fresh\",\"filePath\":\"/tmp/v1-ws-LwrGL4/main.ts\",\"lineStart\":2,\"lineEnd\":2}"
+      "detail": "{\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\",\"symbolType\":\"method\",\"signature\":\"method greet(…)\",\"usageCount\":1,\"evidenceTiers\":[\"indexed\"],\"stale\":false,\"freshnessStatus\":\"fresh\",\"filePath\":\"/tmp/v1-ws-u0p0RM/main.ts\",\"lineStart\":2,\"lineEnd\":2}"
     },
     {
       "name": "L2: hover usage count matches fixture relationship",
@@ -115,7 +115,7 @@
     {
       "name": "L2: hover carries the evidence tier (honesty contract §2)",
       "ok": true,
-      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: indexed\n\n_source: bb index (/tmp/v1-ws-LwrGL4/main.ts:2)"
+      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: indexed\n\n_source: bb index (/tmp/v1-ws-u0p0RM/main.ts:2)"
     },
     {
       "name": "L2: hover outside index is declared absent",
@@ -125,17 +125,17 @@
     {
       "name": "L3: definition resolves greet",
       "ok": true,
-      "detail": "{\"found\":true,\"location\":{\"path\":\"/tmp/v1-ws-LwrGL4/main.ts\",\"line\":1,\"character\":2,\"endLine\":1,\"endCharacter\":7},\"symbol\":{\"id\":\"sym-greet\",\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\",\"symbolType\":\"method\"},\"evidenceTier\":\"indexed\"}"
+      "detail": "{\"found\":true,\"location\":{\"path\":\"/tmp/v1-ws-u0p0RM/main.ts\",\"line\":1,\"character\":2,\"endLine\":1,\"endCharacter\":7},\"symbol\":{\"id\":\"sym-greet\",\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\",\"symbolType\":\"method\"},\"evidenceTier\":\"indexed\"}"
     },
     {
       "name": "L3: definition location is 0-based line 1",
       "ok": true,
-      "detail": "{\"path\":\"/tmp/v1-ws-LwrGL4/main.ts\",\"line\":1,\"character\":2,\"endLine\":1,\"endCharacter\":7}"
+      "detail": "{\"path\":\"/tmp/v1-ws-u0p0RM/main.ts\",\"line\":1,\"character\":2,\"endLine\":1,\"endCharacter\":7}"
     },
     {
       "name": "L3: references returns locations",
       "ok": true,
-      "detail": "{\"locations\":[{\"path\":\"/tmp/v1-ws-LwrGL4/main.ts\",\"line\":6,\"character\":9,\"endLine\":9,\"endCharacter\":1},{\"path\":\"/tmp/v1-ws-LwrGL4/main.ts\",\"line\":1,\"character\":2,\"endLine\":1,\"endCharacter\":7}],\"trunca"
+      "detail": "{\"locations\":[{\"path\":\"/tmp/v1-ws-u0p0RM/main.ts\",\"line\":6,\"character\":9,\"endLine\":9,\"endCharacter\":1},{\"path\":\"/tmp/v1-ws-u0p0RM/main.ts\",\"line\":1,\"character\":2,\"endLine\":1,\"endCharacter\":7}],\"trunca"
     },
     {
       "name": "L3: definition outside index is honest empty",
@@ -154,12 +154,12 @@
     {
       "name": "L4: workspace/symbol finds greet",
       "ok": true,
-      "detail": "{\"symbols\":[{\"id\":\"sym-greet\",\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\",\"symbolType\":\"method\",\"path\":\"/tmp/v1-ws-LwrGL4/main.ts\",\"line\":1}],\"truncated\":false,\"totalCount\":1,\"limit\":200,\"evidenceT"
+      "detail": "{\"symbols\":[{\"id\":\"sym-greet\",\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\",\"symbolType\":\"method\",\"path\":\"/tmp/v1-ws-u0p0RM/main.ts\",\"line\":1}],\"truncated\":false,\"totalCount\":1,\"limit\":200,\"evidenceT"
     },
     {
       "name": "L5: prepareCallHierarchy returns item",
       "ok": true,
-      "detail": "{\"item\":{\"name\":\"greet\",\"kind\":6,\"uri\":\"file:///tmp/v1-ws-LwrGL4/main.ts\",\"range\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\"line\":1,\"character\":7}},\"selectionRange\":{\"start\":{\"line\":1,\"character\":2},\""
+      "detail": "{\"item\":{\"name\":\"greet\",\"kind\":6,\"uri\":\"file:///tmp/v1-ws-u0p0RM/main.ts\",\"range\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\"line\":1,\"character\":7}},\"selectionRange\":{\"start\":{\"line\":1,\"character\":2},\""
     },
     {
       "name": "L5: incomingCalls returns callers",
@@ -192,7 +192,7 @@
     {
       "name": "E5 live: debounced reindex lands and marker returns fresh",
       "ok": true,
-      "detail": "{\"stale\":false,\"status\":\"fresh\",\"pendingReindex\":false,\"lastReindexAt\":\"2026-09-03T03:12:28.345Z\"}"
+      "detail": "{\"stale\":false,\"status\":\"fresh\",\"pendingReindex\":false,\"lastReindexAt\":\"2026-09-03T16:22:00.186Z\"}"
     }
   ],
   "checksPassed": 26,
@@ -209,7 +209,7 @@
   },
   "verifierCommand": "npx tsx script/m25/run-vscode-e2e.mts",
   "evidenceFile": "E5.json",
-  "generatedAt": "2026-09-03T03:12:29.200Z",
+  "generatedAt": "2026-09-03T16:22:03.407Z",
   "os": "linux",
   "limitations": []
 }
