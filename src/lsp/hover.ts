@@ -38,6 +38,7 @@ import {
   type IndexPosition,
   type LspPosition,
 } from "./positions"
+import { storedCrossLanguageRows, factsFromRows, crossLanguageSection } from "./cross_language_hover"
 
 /** The five launch languages (#419-CONFORMANT set). */
 export const LAUNCH_LANGUAGES = ["java", "groovy", "kotlin", "scala", "typescript"] as const
@@ -92,6 +93,10 @@ export interface SymbolHoverData {
   signature: string
   usageCount: number
   evidenceTiers: EvidenceTier[]
+  /** M26.W3: pre-rendered cross-language section — empty string when the
+   *  index stores no cross-language rows for this symbol (the hover then
+   *  renders NO cross-language text at all: absence declared in docs). */
+  crossLanguageSection: string
   stale: boolean
   freshnessStatus: "fresh" | "stale" | "missing"
   filePath: string
@@ -239,6 +244,13 @@ export function formatHoverMarkdown(data: SymbolHoverData): string {
   } else {
     lines.push("evidence: none (no indexed relationships)")
   }
+  // M26.W3: cross-language facts ONLY from stored rows (is_cross_language = 1).
+  // An empty section renders nothing — a pair with no stored rows states
+  // nothing cross-language in the UI; absence is declared in docs, not faked
+  // (issue #511; mutation-gated: a fabricated fact fails the W3 suite).
+  if (data.crossLanguageSection && data.crossLanguageSection.length > 0) {
+    lines.push(data.crossLanguageSection)
+  }
   if (data.stale) {
     lines.push(`⚠️ **stale** — file changed since indexing (${data.freshnessStatus})`)
   }
@@ -307,6 +319,8 @@ export function hover(
 
   const usageCount = countUsages(raw, symbol.id)
   const tiers = evidenceTiersFor(raw, symbol.id)
+  // M26.W3: per-pair cross-language facts from stored rows only.
+  const crossSection = crossLanguageSection(factsFromRows(storedCrossLanguageRows(raw, symbol.id), file.language))
 
   const data: SymbolHoverData = {
     name: symbol.name,
@@ -315,6 +329,7 @@ export function hover(
     signature: buildSignature(symbol),
     usageCount,
     evidenceTiers: tiers,
+    crossLanguageSection: crossSection,
     stale,
     freshnessStatus,
     filePath: file.path,
