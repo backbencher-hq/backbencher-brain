@@ -34,6 +34,7 @@ import { checkFileFreshness } from "../brain/freshness"
 import {
   createPositionMapper,
   PositionError,
+  resolveRowByteColumns,
   type IndexPosition,
   type LspPosition,
 } from "./positions"
@@ -322,16 +323,25 @@ export function hover(
   }
 
   // Range comes from the P1 component only — never inline conversion.
+  // resolveRowByteColumns normalizes the index's dual byte conventions
+  // (per-line declared vs file-absolute stored by the parallel indexer);
+  // an unconvertible row omits the range honestly instead of throwing.
   let range: HoverResult["range"] = null
   if (symbol.line_start !== null && symbol.line_end !== null && symbol.byte_start !== null && symbol.byte_end !== null) {
     try {
       const sourceText = readFileSync(file.path, "utf8")
-      const mapper = createPositionMapper(sourceText)
-      const indexRange = {
-        start: { line: symbol.line_start, column: symbol.byte_start } satisfies IndexPosition,
-        end: { line: symbol.line_end, column: symbol.byte_end } satisfies IndexPosition,
+      const startCol = resolveRowByteColumns(sourceText, symbol.line_start, symbol.byte_start)
+      const endCol = resolveRowByteColumns(sourceText, symbol.line_end, symbol.byte_end)
+      if (startCol === null || endCol === null) {
+        // Impossible coordinates: omit the range, keep the honest content.
+      } else {
+        const mapper = createPositionMapper(sourceText)
+        const indexRange = {
+          start: { line: startCol.line, column: startCol.column } satisfies IndexPosition,
+          end: { line: endCol.line, column: endCol.column } satisfies IndexPosition,
+        }
+        range = mapper.indexRangeToLsp(indexRange)
       }
-      range = mapper.indexRangeToLsp(indexRange)
     } catch (error) {
       if (!(error instanceof PositionError)) throw error
       // Unreadable file or impossible positions: omit the range honestly,

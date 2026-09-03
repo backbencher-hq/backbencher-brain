@@ -20,7 +20,7 @@
 //
 // CLI: npx tsx script/m25/verify-governance.ts   (exit non-zero blocks verify)
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
 
@@ -125,7 +125,20 @@ const ISSUE_RELEVANT_FILES: Record<string, string[]> = {
     "src/lsp/freshness.ts",
     "src/ast/parallel-indexer.ts",
   ],
-  E6: ["script/m25/verify-forks.ts"],
+  E6: [
+    "script/m25/run-fork-e2e.mts",
+    "script/m25/fork-runner.ts",
+    "script/m25/e5-inner.js",
+    "script/m25/feature-assertions.ts",
+    "ide/vscode/src/extension.ts",
+    "ide/vscode/src/auto-index.ts",
+    "src/lsp/server.ts",
+    "src/lsp/positions.ts",
+    "src/lsp/hover.ts",
+    "src/lsp/navigation.ts",
+    "src/lsp/symbols.ts",
+    "src/lsp/call_hierarchy.ts",
+  ],
   E7: ["script/m25/verify-cross-platform.ts"],
   D1: ["ide/vscode/marketplace-listing.md", "docs/m25/INSTALL.md"],
   X1: ["script/m25/verify-closure.ts"],
@@ -259,6 +272,22 @@ function main(): void {
     }
   }
   const currentWorkingTreeRelevantChanges = relevantWorkingTreeChanges()
+
+  /** Read every F-*.json fork evidence record from the results dir. */
+  function recordsFromResultsDir(prefix: string): Array<Record<string, unknown>> {
+    const dir = path.join(ROOT, "validation/m25/results")
+    if (!existsSync(dir)) return []
+    const records: Array<Record<string, unknown>> = []
+    for (const f of readdirSync(dir)) {
+      if (!f.startsWith(prefix) || !f.endsWith(".json")) continue
+      try {
+        records.push(JSON.parse(readFileSync(path.join(dir, f), "utf8")) as Record<string, unknown>)
+      } catch {
+        // unreadable evidence is surfaced by the cross-check above
+      }
+    }
+    return records
+  }
 
   function relevantFilesFor(issueCode: string): Set<string> {
     return new Set([...(ISSUE_RELEVANT_FILES[issueCode] ?? []), ...SHARED_RELEVANT_FILES])
@@ -475,6 +504,50 @@ function main(): void {
     evidenceErrors.length === 0,
     evidenceErrors.join(","),
   )
+
+  // E6 capability-matrix drift gate: the matrix must be DERIVED FROM the
+  // per-fork evidence files — a hand-edited or stale matrix is rejected.
+  // Re-derive here and compare (found necessary when the fork evidence
+  // advanced but the matrix lagged; a claim table that can drift will).
+  const matrixPath = path.join(ROOT, "docs/m25/FORK-CAPABILITY-MATRIX.md")
+  if (existsSync(matrixPath)) {
+    const matrix = readFileSync(matrixPath, "utf8")
+    const forkEvidence = ledger.issues
+      .filter((item) => item.code === "E6")
+      .map((item) => ({ evidence: item.evidence }))
+    const matrixErrors: string[] = []
+    for (const rec of recordsFromResultsDir("F-")) {
+      const forkName = String(rec.fork ?? "?")
+      const row = matrix.split("\n").find((l) => l.startsWith(`| ${forkName} `))
+      if (!row) {
+        matrixErrors.push(`${forkName}:missing-row`)
+        continue
+      }
+      if (rec.status === "verified" && !row.includes("I4 (verified in this fork)")) {
+        matrixErrors.push(`${forkName}:row-underclaims`)
+      }
+      if (rec.status === "blocked" && !row.includes("unset (blocked)")) {
+        matrixErrors.push(`${forkName}:row-claims-without-evidence`)
+      }
+      if (!row.includes(String(rec.evidenceFile ?? ""))) {
+        matrixErrors.push(`${forkName}:row-not-linked-to-evidence`)
+      }
+    }
+    if (forkEvidence.length === 0 && !matrix.includes("Fork | Version")) matrixErrors.push("no-e6-evidence-but-matrix-exists")
+    check(
+      "G1: E6 capability matrix matches its evidence files (no drift, no hand-edited claims)",
+      matrixErrors.length === 0,
+      matrixErrors.join(","),
+    )
+    // Mutation: a forged matrix row (claim without evidence) must be caught.
+    const forged = matrix.replace(/\| windsurf \|[^\n]*/, "| windsurf | 1.0.0 | linux | I4 (verified in this fork) | [F-WINDSURF.json](../../validation/m25/results/F-WINDSURF.json) | verified (26/26) |")
+    const forgedBad = forged.split("\n").some((l) => l.startsWith("| windsurf ") && l.includes("I4 (verified"))
+    negative(
+      "G1: forged fork claim in matrix is detectable",
+      forgedBad,
+      "forged row not applied — windsurf row absent",
+    )
+  }
 
   // Self-audit: the verifier itself must not contain hollow assertion patterns.
   const source = readFileSync(new URL(import.meta.url), "utf8")

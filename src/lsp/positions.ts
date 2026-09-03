@@ -61,6 +61,59 @@ export class PositionError extends Error {
   }
 }
 
+/**
+ * Resolve a symbol row's byte columns into the declared per-line convention
+ * (1-based byte column within `line`), or null when the row cannot be
+ * converted honestly.
+ *
+ * WHY THIS EXISTS (found live by M25.E6): the index carries rows written by
+ * two conventions. The analyzers' declared convention is 1-based byte columns
+ * per line; the parallel indexer (storeResults) binds Tree-sitter's
+ * file-absolute `startIndex`/`endIndex` directly. A file-absolute offset can
+ * exceed a line's byte length (e.g. byte 57 on a 3-byte line), which the
+ * strict converter correctly rejects — as a crash that killed fork sessions.
+ *
+ * Classification (declared, mechanical — never a guess):
+ *   fits  (byte <= lineByteLen + 1)  -> already per-line, use as-is
+ *   shift (byte in (cumStart, cumEnd]) where the line is the one containing
+ *         that absolute byte         -> file-absolute, subtract the line's
+ *         cumulative byte start
+ *   else                              -> not convertible: return null; callers
+ *         must render declared-absence, never invent a position
+ *
+ * The `fits` case is ambiguous in principle (a per-line column can equal a
+ * small absolute offset on line 1); rows on line 1 with byte <= len+1 convert
+ * identically under both readings, so `fits` is safe there too.
+ */
+export function resolveRowByteColumns(
+  sourceText: string,
+  line: number,
+  byte: number,
+): { line: number; column: number } | null {
+  if (!Number.isInteger(line) || line < 1 || !Number.isInteger(byte) || byte < 1) return null
+  const lines = sourceText.split("\n")
+  if (line > lines.length) return null
+  // byte -> 0-based offset within the line (per-line reading)
+  const line0 = line - 1
+  const lineByteLen = Buffer.byteLength(lines[line0]!, "utf8")
+  if (byte <= lineByteLen + 1) return { line, column: byte }
+  // Absolute reading: find the line containing this file-absolute byte.
+  // Absolute offsets are 0-based here (Tree-sitter startIndex); a stored value
+  // v points into the line whose [cumStart, cumEnd) window contains it.
+  let cumStart = 0
+  for (let i = 0; i < lines.length; i++) {
+    const len = Buffer.byteLength(lines[i]!, "utf8") + 1 // +1 for the newline
+    if (byte >= cumStart && byte < cumStart + len) {
+      // Per-line column: 1-based byte column within that line.
+      const col = byte - cumStart + 1
+      if (col <= Buffer.byteLength(lines[i]!, "utf8") + 1) return { line: i + 1, column: col }
+      return null
+    }
+    cumStart += len
+  }
+  return null
+}
+
 export interface PositionConverter {
   /** index (1-based line, 1-based byte col) -> LSP (0-based line, UTF-16 col) */
   indexToLsp(pos: IndexPosition): LspPosition
