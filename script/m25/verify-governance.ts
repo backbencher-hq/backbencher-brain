@@ -141,7 +141,7 @@ const ISSUE_RELEVANT_FILES: Record<string, string[]> = {
   ],
   E7: ["script/m25/verify-cross-platform.ts", "ide/vscode/src/auto-index.ts"],
   D1: ["ide/vscode/README.md", "docs/m25/INSTALL.md", "script/m25/verify-listing.ts", "script/m25/verify-install-docs.ts"],
-  X1: ["script/m25/verify-closure.ts"],
+  X1: ["script/m25/verify-closure.ts", "ide/vscode/src/status-model.ts", "ide/vscode/src/extension.ts"],
 }
 const SHARED_RELEVANT_FILES = [
   "docs/m25/M25-MASTER-PLAN.md",

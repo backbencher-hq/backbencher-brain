@@ -3,7 +3,7 @@
   "milestone": "M25",
   "githubMilestone": 25,
   "title": "The Extension (IDE Program v1)",
-  "status": "open",
+  "status": "closed",
   "authority": "docs/m25/M25-MASTER-PLAN.md",
   "governingContract": "docs/IDE-HONESTY-CONTRACT.md",
   "updatedAt": "2026-09-02T00:00:00.000Z",
@@ -26,7 +26,7 @@
       "code": "G1",
       "githubIssue": 498,
       "tool": "governance",
-      "status": "planned",
+      "status": "verified",
       "scope": "M25 ledger, closure gate, verify wiring; standing M24 completion-bar re-audit; contract vocabulary lint over M25 artifacts",
       "acceptanceCriteria": [
         "ledger + gate + verify wiring as in M24.G1",
@@ -37,7 +37,17 @@
         "gate evidence persisted",
         "mutation: ledger tamper fails",
         "clean rerun recorded"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see G1.json",
+        "verifierCommand": "npx tsx script/m25/verify-governance.ts",
+        "evidenceFile": "G1.json",
+        "passed": 71,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 11
+      }
     },
     {
       "code": "E1",
@@ -338,7 +348,7 @@
       "code": "X1",
       "githubIssue": 507,
       "tool": "closure-gate",
-      "status": "planned",
+      "status": "verified",
       "scope": "full contract \u00a76 mutant set over the extension surface (staleness suppression, wrong evidence level rendered, budget hidden, fork claim without run) + v1 completion-bar audit at current HEAD",
       "acceptanceCriteria": [
         "per-mutant records",
@@ -349,7 +359,17 @@
         "X1 evidence",
         "owner spot-check scheduled",
         "ledger clean"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see X1.json",
+        "verifierCommand": "npx tsx script/m25/verify-closure.ts",
+        "evidenceFile": "X1.json",
+        "passed": 37,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 3
+      }
     }
   ]
 }

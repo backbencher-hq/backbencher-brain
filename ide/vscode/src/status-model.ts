@@ -68,6 +68,10 @@ export interface StatusInput {
     version: string | null
     versionOk: boolean
   }
+  /** §7.3 activation budget facts; null when activation has not completed.
+   * Law-budget (contract §6): a budget miss is SURFACED on the status
+   * surface and degrades the badge — never hidden behind a clean check. */
+  budget?: { activationMs: number; declaredBudgetMs: number; withinBudget: boolean } | null
   index: {
     phase: "idle" | "ready" | "awaiting-consent" | "estimating" | "indexing" | "cancelled" | "failed" | "no-index"
     filesDone?: number
@@ -165,6 +169,16 @@ export function renderStatus(input: StatusInput): StatusView {
     if (input.staleness.stale) staleBadge = STALE_BADGE
   }
 
+  // --- Activation budget (law-budget: a miss is surfaced, never hidden) -----
+  const overBudget = input.budget !== null && input.budget !== undefined && input.budget.withinBudget === false
+  if (input.budget !== null && input.budget !== undefined) {
+    tooltipLines.push(
+      overBudget
+        ? `activation: ${input.budget.activationMs}ms — OVER the declared ${input.budget.declaredBudgetMs}ms budget (contract §7.3); startup was degraded, this is not a silent miss`
+        : `activation: ${input.budget.activationMs}ms (declared budget ${input.budget.declaredBudgetMs}ms)`,
+    )
+  }
+
   // --- Per-language declared levels (law-undeclared) ------------------------
   const perLanguage = LAUNCH_LANGUAGES.filter((l) => CLAIM_LEVELS[l] !== undefined).map((l) => ({
     language: l,
@@ -185,6 +199,7 @@ export function renderStatus(input: StatusInput): StatusView {
   if (!input.server.up) badge = "$(error) bb: server down"
   else if (!input.server.versionOk) badge = "$(error) bb: version"
   else if (staleBadge !== null) badge = `$(warning) bb ${STALE_BADGE}`
+  else if (overBudget) badge = "$(warning) bb: slow start"
   else if (input.index.phase === "indexing") badge = "$(sync~spin) bb: indexing"
   else if (input.index.phase === "no-index" || input.index.phase === "awaiting-consent" || input.index.phase === "estimating") badge = "$(circle-slash) bb: no index"
   else if (input.index.phase === "failed") badge = "$(error) bb: index failed"
