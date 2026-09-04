@@ -4,16 +4,14 @@
   "milestone": "M27",
   "status": "known-gap",
   "checks": 69,
-  "passed": 69,
-  "failed": 0,
+  "passed": 68,
+  "failed": 1,
   "negativeCases": 10,
-  "currentCommit": "b6ee6180c10fb1afbe3d7416a91255d599e317fc",
-  "workingTreeRelevantChanges": [
-    "docs/m27/FORK-CAPABILITY-MATRIX.md"
-  ],
+  "currentCommit": "302495fbdbcf07666bf1d39e90db845e7dceacaf",
+  "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m27/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-04T04:29:05.396Z",
+  "generatedAt": "2026-09-04T04:29:11.668Z",
   "ledger": "validation/m27/results/manifest.json",
   "m26Bar": {
     "ledgerStatus": "closed",
