@@ -1,6 +1,6 @@
 # `bb_security`
 
-Cross-language security scan: SQL injection, XSS, command injection, hardcoded secrets, weak crypto.
+Cross-language security scan: SQL injection, XSS, command injection, hardcoded secrets, weak crypto. Findings whose underlying file changed after indexing carry a staleness marker.
 
 ## Contract
 
@@ -69,5 +69,9 @@ Source is read-only. recordRun writes only analysis-history records in the brain
 ## Evidence Semantics
 
 A finding is supported by indexed source/sink locations and relationship paths; severity does not imply exploitability.
+
+## Staleness
+
+Freshness applies to the tool's read output (no registered per-mode split). Staleness surfaces as: per-finding `[stale]` markers + counts footer naming the remediation; silent when all fresh. When something is stale/missing, the remediation names the registered reindex interfaces: project scope → `run: bb index --changed  (or the bb_index tool with the project path — incremental, changed files only)`; file scope → `run: bb index "<file>"  (or the bb_index tool with that file path)`. Nothing is stale → silence (no remediation text).
 
 This page is generated from the executable registry and curated documentation. Run `npm run docs:generate` to update it.

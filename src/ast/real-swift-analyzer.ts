@@ -213,7 +213,11 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
 
       // ---- pattern / metadata flags (unchanged from M11 behavior) ----
-      if (curr.type === "where_clause") {
+      // M14.0.F6: "where_clause" was a dead literal — the pinned grammar parses
+      // generic where clauses as type_constraints (probe-verified 2026-09); no
+      // Swift source ever produced a where_clause node, so the "Generics with
+      // Where Clauses" flag could never fire. Fixed to match reality.
+      if (curr.type === "type_constraints") {
         patternsObj["Generics with Where Clauses"] = true
       } else if (curr.type === "willset_clause" || curr.type === "didset_clause" || curr.type === "willset_didset_block") {
         patternsObj["Property Observers (willSet/didSet)"] = true
@@ -406,7 +410,10 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     const nameNode = this.findChildByType(node, "type_identifier") || this.firstNamedChild(node)
     if (!nameNode) return parent
 
-    const meta: Record<string, any> = { isProtocol: true, hasGenerics: this.hasChildType(node, "type_parameter_clause") || this.hasChildType(node, "type_parameters") }
+    // M14.0.F6: "type_parameter_clause" was a dead literal (probe-verified:
+    // the pinned grammar parses generics as type_parameters, checked in the
+    // OR below). Removed per the dead-literal audit.
+    const meta: Record<string, any> = { isProtocol: true, hasGenerics: this.hasChildType(node, "type_parameters") }
     if (meta.hasGenerics) patternsObj["Generics"] = true
     const vis = this.getVisibility(node)
     const symbol = this.createSymbol(nameNode.text, ASTEngine.SymbolKind.Interface, nameNode, parent, symbols, meta, vis)
@@ -451,7 +458,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     let rawName = nameNode.type === "user_type" && nameNode.namedChildCount > 0 ? nameNode.namedChild(0)!.text : nameNode.text
 
     const meta: Record<string, any> = {
-      hasGenerics: this.hasChildType(node, "type_parameter_clause") || this.hasChildType(node, "type_parameters"),
+      hasGenerics: this.hasChildType(node, "type_parameters"),
     }
     if (meta.hasGenerics) patternsObj["Generics"] = true
     if (kind === ASTEngine.SymbolKind.Struct) meta.isValueType = true
@@ -523,7 +530,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     const vis = this.getVisibility(node)
     const meta: Record<string, any> = {
-      hasGenerics: this.hasChildType(node, "type_parameter_clause") || this.hasChildType(node, "type_parameters"),
+      hasGenerics: this.hasChildType(node, "type_parameters"),
     }
     const funcAttrs = this.extractAttributes(node)
     if (funcAttrs.length > 0) meta.annotations = funcAttrs
@@ -812,9 +819,9 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       kind,
       range: {
         startLine: node.startPosition.row + 1,
-        startColumn: node.startPosition.column,
+        startColumn: node.startPosition.column + 1,
         endLine: node.endPosition.row + 1,
-        endColumn: node.endPosition.column,
+        endColumn: node.endPosition.column + 1,
         startIndex: node.startIndex,
         endIndex: node.endIndex,
       },
@@ -902,9 +909,9 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
         isExternal: true,
         range: {
           startLine: node.startPosition.row + 1,
-          startColumn: node.startPosition.column,
+          startColumn: node.startPosition.column + 1,
           endLine: node.endPosition.row + 1,
-          endColumn: node.endPosition.column,
+          endColumn: node.endPosition.column + 1,
           startIndex: node.startIndex,
           endIndex: node.endIndex,
         },

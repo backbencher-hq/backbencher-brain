@@ -15,7 +15,7 @@ const BARE_CALL_SKIP_PARENTS = new Set([
   "class", "module", "singleton_class",
 ])
 
-const RUBY_BUILTINS = new Set([
+export const RUBY_BUILTINS = new Set([
   // Kernel / top-level
   "puts", "print", "p", "pp", "p$", "print_flush", "putc",
   "raise", "fail", "exit", "exit!", "abort", "warn",
@@ -64,7 +64,7 @@ const RUBY_BUILTINS = new Set([
 ])
 
 // Rails-specific call targets (emit as property/use edges, not call edges)
-const RAILS_MACRO_METHODS = new Set([
+export const RAILS_MACRO_METHODS = new Set([
   "has_many", "belongs_to", "has_one", "has_and_belongs_to_many",
   "scope", "default_scope",
   "validates", "validate", "validates_with", "validates_each",
@@ -271,6 +271,11 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
           parameters: params,
           visibility: visibility as any,
           isStatic: isSingleton || undefined,
+          // Per-symbol cyclomatic complexity (managed-OO family contract —
+          // csharp #264 wave precedent). Mirrors the file-level counter's
+          // node set (if/unless/while/until/case/rescue/elsif), scoped to
+          // this method's subtree; base 1.
+          complexity: this.calculateNodeComplexity(node),
           metadata: isSingleton ? { isSingleton: true } : {},
         }
         symbols.push(sym)
@@ -331,6 +336,10 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
           parameters: params,
           visibility: visibility as any,
           isStatic: true,
+          // Per-symbol cyclomatic complexity (managed-OO family contract —
+          // csharp #264 wave precedent). Same node set as the file-level
+          // counter, scoped to this method's subtree; base 1.
+          complexity: this.calculateNodeComplexity(node),
           metadata: { isSingleton: true },
         }
         symbols.push(sym)
@@ -356,10 +365,16 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       // --- Calls in top-level/module/class bodies ---
       // Method bodies are consumed by walkBody above, so this handles only
-      // declaration-time calls such as require/include/attr_reader.
+      // declaration-time calls such as require/include/attr_reader. Note the
+      // recursion below: a declaration call's ARGUMENTS may themselves hold
+      // calls (`require File.expand_path(...)`) which must still surface.
       if (type === "call") {
         this.processCall(node, symbols, relationships, imports, metadata,
           owner, undefined, visibilityOverrides)
+        for (let i = node.namedChildCount - 1; i >= 0; i--) {
+          const child = node.namedChild(i)
+          if (child) stack.push({ node: child, owner, ownerKind, visibility, isSingleton: false })
+        }
         continue
       }
 
@@ -391,6 +406,29 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
           // Instance/class/global variables at class level: skip (noise)
         }
+        // Recurse into the RHS so member calls/constructed calls inside
+        // assignments (`x = File.expand_path(foo)`, `X = SomeService.new`)
+        // are still surfaced. The assignment node was not otherwise recursed.
+        for (let i = node.namedChildCount - 1; i >= 0; i--) {
+          const child = node.namedChild(i)
+          if (child) stack.push({ node: child, owner, ownerKind, visibility, isSingleton: false })
+        }
+        continue
+      }
+
+      // --- Fallback: recurse into any other top-level/module/class body
+      // node (command/command_call, arrays, hashes, parenthesized groups,
+      // bare assignments with no owner, etc.) so nested declaration calls
+      // and constants are still visited. Containers above `continue`, so this
+      // only runs for expression/statement nodes whose children may carry
+      // calls or constructed values.
+      {
+        const childFrames: typeof stack = []
+        for (let i = node.namedChildCount - 1; i >= 0; i--) {
+          const child = node.namedChild(i)
+          if (child) childFrames.push({ node: child, owner, ownerKind, visibility, isSingleton: false })
+        }
+        for (const cf of childFrames) stack.push(cf)
       }
     }
 
@@ -451,6 +489,11 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // Evidence-tier classification (managed-OO family contract — swift/dart/
+    // csharp/objc/php precedent; M14 section D requires >=2 distinct
+    // evidenceClass values).
+    this.classifyEvidenceTier(relationships)
+
     return {
       symbols,
       imports,
@@ -502,6 +545,23 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
         }
       }
+      // Nested method declarations (`def @app.mm(*a, &b)` inside a method
+      // body) bind their OWN parameters as locals of that nested scope.
+      // walkBody walks nested defs' bodies (Ruby defines them when the outer
+      // method runs), so without this the params leak as bare calls of the
+      // OUTER method (verified: rake top_level_functions.rb setup leaks
+      // calls:a/calls:b from `def @app.method_missing(*a, &b)`).
+      if (sn.type === "method_parameters") {
+        const inner: Node[] = [sn]
+        while (inner.length > 0) {
+          const q = inner.pop()!
+          if (q.type === "identifier") localNames.add(q.text)
+          for (let j = 0; j < q.namedChildCount; j++) {
+            const d = q.namedChild(j)
+            if (d) inner.push(d)
+          }
+        }
+      }
       // Block/lambda parameters (`|item|`, `->(x)`) are locals of the block
       // body — their names must not be mistaken for method calls.
       if (sn.type === "block_parameters" || sn.type === "lambda_parameters") {
@@ -518,8 +578,71 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
               const d = c.namedChild(j)
               if (d?.type === "identifier") localNames.add(d.text)
             }
+          } else {
+            // Splat/keyword/block parameter forms wrap the bound name in a
+            // container node (`splat_parameter` > identifier, etc.) — recurse
+            // so every bound name inside any form is registered as a local.
+            const inner: Node[] = [c]
+            while (inner.length > 0) {
+              const q = inner.pop()!
+              if (q.type === "identifier") localNames.add(q.text)
+              for (let j = 0; j < q.namedChildCount; j++) {
+                const d = q.namedChild(j)
+                if (d) inner.push(d)
+              }
+            }
           }
         }
+      }
+      // `rescue Exception => ex` binds `ex` as a local of the enclosing
+      // scope — the pinned grammar wraps it in `exception_variable`.
+      if (sn.type === "exception_variable") {
+        for (let i = 0; i < sn.namedChildCount; i++) {
+          const c = sn.namedChild(i)
+          if (c?.type === "identifier") localNames.add(c.text)
+        }
+      }
+      // Ruby 3 pattern matching (RUBYG1): `case v; in [a, b]`, `in {name:}`,
+      // `in Integer => n`, rightward `v => {x:}` — pattern identifiers BIND
+      // locals (same contract as left_assignment_list: a binding is a local,
+      // NEVER a bare-call edge). Before this rule every pattern binding
+      // leaked as a bogus calls edge BOTH in the pattern and in the match
+      // body (verified: `in [a, b]; a + b; end` emitted calls:a + calls:b x2).
+      // Bindings live as identifier children of array/find patterns, the
+      // value position of keyword_pattern (hash destructure), the right side
+      // of as_pattern (`Integer => n`), splat_parameter names (`[*head]`),
+      // and bare identifiers directly under in_clause (`in x`). Guard
+      // expressions (`if x > 0`) and match bodies (`then`) READ these
+      // names — registering them here makes those reads resolve as locals.
+      // `variable_reference_pattern` (`^n`) is deliberately EXCLUDED: it
+      // PINNS an outer local, it does not bind a new one.
+      if (sn.type === "array_pattern" || sn.type === "find_pattern" ||
+          sn.type === "as_pattern") {
+        for (let i = 0; i < sn.namedChildCount; i++) {
+          const c = sn.namedChild(i)
+          if (!c) continue
+          if (c.type === "identifier") {
+            localNames.add(c.text)
+          } else if (c.type === "splat_parameter") {
+            const nm = c.childForFieldName("name") ?? c.namedChild(0)
+            if (nm?.type === "identifier") localNames.add(nm.text)
+          }
+        }
+      } else if (sn.type === "keyword_pattern") {
+        // `{age: x}` binds x; `{name:}` binds name (shorthand — the name is
+        // the hash_key_symbol itself, not an identifier); `{point: [x, y]}`
+        // binds x/y through the nested array_pattern (recursed below).
+        for (let i = 0; i < sn.namedChildCount; i++) {
+          const c = sn.namedChild(i)
+          if (!c) continue
+          if (c.type === "identifier") localNames.add(c.text)
+          else if (c.type === "hash_key_symbol") localNames.add(this.stripSymbolColon(c.text))
+        }
+      } else if (sn.type === "in_clause") {
+        // Bare `in x` — the pattern is a lone identifier (first named child;
+        // the `then` body reads it and must resolve it as a local).
+        const first = sn.namedChild(0)
+        if (first?.type === "identifier") localNames.add(first.text)
       }
       for (let i = sn.namedChildCount - 1; i >= 0; i--) {
         const child = sn.namedChild(i)
@@ -553,13 +676,52 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
 
+      // --- Instance-variable member reads (family contract) ---
+      // `@total`, `@config.host` reads emit `uses` (managed-OO family
+      // contract: csharp/dart/swift/objc). Assignment LHS = write → skip.
+      // Plain `assignment` (@x = v) is a pure write → skip. But
+      // `operator_assignment` (@x += / -= / ||= v) is a READ-MODIFY-WRITE:
+      // the current value of @x is read before the op — emit uses.
+      // Verified against rake corpus (@balance += amount, @options ||= {}):
+      // skipping these leaked NO edge and broke the family contract
+      // (csharp/dart/swift/objc emit uses for compound-assignment LHS).
+      // tree-sitter-ruby node type is `instance_variable`.
+      if (type === "instance_variable") {
+        const parentType = n.parent?.type
+        const isLhsOfAssign = (parentType === "assignment" || parentType === "operator_assignment") &&
+          n.parent?.childForFieldName("left")?.id === n.id
+        const isWrite = isLhsOfAssign && parentType === "assignment"
+        if (!isWrite) {
+          const src = enclosingMethod || owner || "Global"
+          relationships.push({
+            source: src,
+            target: n.text,
+            type: ASTEngine.RelationshipType.Uses,
+            confidence: 0.9,
+            metadata: { memberRead: true },
+          })
+        }
+      }
+
       // --- Complexity counting ---
+      // Postfix modifiers count too (same rationale as calculateNodeComplexity:
+      // `x if cond` is a branch; the pinned grammar emits if_modifier etc.).
       if (type === "if" || type === "unless" || type === "while" ||
           type === "until" || type === "case" || type === "rescue" ||
-          type === "elsif") {
+          type === "elsif" || type === "if_modifier" ||
+          type === "unless_modifier" || type === "while_modifier" ||
+          type === "until_modifier" || type === "rescue_modifier") {
         if (metadata.cyclomaticComplexity !== undefined) {
           metadata.cyclomaticComplexity++
         }
+      }
+
+      // --- Class/global variables: declared limitation (RUBD3) ---
+      // @@class_vars and $globals are file-global/cross-file by nature;
+      // per-file emission would fabricate cross-file semantics. Deliberately
+      // NOT emitting uses for class_variable/global_variable nodes.
+      if (type === "class_variable" || type === "global_variable") {
+        metadata.classAndGlobalVarsSkipped = (metadata.classAndGlobalVarsSkipped ?? 0) + 1
       }
 
       // Recurse into children
@@ -654,7 +816,14 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (args) {
         for (let i = 0; i < args.namedChildCount; i++) {
           const arg = args.namedChild(i)
-          if (arg && (arg.type === "constant" || arg.type === "identifier" || arg.type === "scope_resolution")) {
+          // Only CONSTANT mixin targets are pinned (mirrors the differential
+          // oracle). A lowercase identifier arg (`include(pattern)` where
+          // pattern is a block var, or `extend klass` with a variable) is a
+          // DYNAMIC mixin — the concrete module is unknowable statically, and
+          // pinning it fabricates implements/extends against a local's name
+          // (verified: rake file_list.rb `patterns.each { |pattern| include
+          // (pattern) }` -> bogus implements:pattern).
+          if (arg && (arg.type === "constant" || arg.type === "scope_resolution")) {
             const target = this.leafName(arg.text)
             relationships.push({
               source: owner || "unknown",
@@ -909,7 +1078,11 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         const name = child.childForFieldName("name")
         if (name) result.push({ name: name.text })
       } else if (childType === "block_parameter") {
-        // &block — skip (the pinned grammar has no `block_var` node)
+        // `def foo(&block)` — `block` is a bound local of the body. The
+        // pinned grammar has no `block_var` node; the identifier is a direct
+        // child. Skipping the name leaked it as a bogus bare call.
+        const name = child.childForFieldName("name") ?? child.namedChild(0)
+        if (name && name.type === "identifier") result.push({ name: name.text })
       } else if (childType === "destructured_parameter") {
         // |a, b| — extract sub-identifiers
         for (let j = 0; j < child.namedChildCount; j++) {
@@ -933,6 +1106,64 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (!method || (method.text !== "private" && method.text !== "protected" && method.text !== "public")) return false
     const args = this.findChild(node, "argument_list")
     return !args || args.namedChildCount === 0
+  }
+
+  /** Per-symbol cyclomatic complexity (managed-OO family contract —
+   * csharp #264 wave precedent). Mirrors the file-level counter's node set
+   * (if/unless/while/until/case/rescue/elsif PLUS the postfix *modifier
+   * forms), scoped to one method/function subtree; base 1.
+   *
+   * Postfix conditionals MUST count: `return false if amount <= 0` is a
+   * genuine branch — semantically identical to the block form, and the most
+   * idiomatic Ruby. tree-sitter-ruby emits a DISTINCT node type
+   * (if_modifier/unless_modifier/while_modifier/until_modifier/
+   * rescue_modifier) for postfix forms; before this fix the analyzer counted
+   * only the block forms, under-reporting every modifier-heavy method
+   * (verified: fixture authorize has 2 if_modifier + 1 while = complexity 4,
+   * previously pinned at the wrong value 2). */
+  private calculateNodeComplexity(node: Node): number {
+    if (!node) return 1
+    let complexity = 1
+    const stack: Node[] = [node]
+    let guard = 0
+    while (stack.length > 0 && guard++ < 200000) {
+      const n = stack.pop()!
+      if (n.type === "if" || n.type === "unless" || n.type === "while" ||
+          n.type === "until" || n.type === "case" || n.type === "rescue" ||
+          n.type === "elsif" || n.type === "if_modifier" ||
+          n.type === "unless_modifier" || n.type === "while_modifier" ||
+          n.type === "until_modifier" || n.type === "rescue_modifier") {
+        complexity++
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const child = n.namedChild(i)
+        if (child) stack.push(child)
+      }
+    }
+    return complexity
+  }
+
+  /**
+   * Evidence-tier classification — same rules as the swift/dart/csharp/objc
+   * family (see swift wave #266 for the full rationale).
+   */
+  private classifyEvidenceTier(relationships: ASTEngine.UniversalRelationship[]): void {
+    for (const r of relationships) {
+      const type = r.type ?? r.relationshipType ?? ""
+      const md: any = r.metadata ?? {}
+      if (type === "contains") { md.evidenceClass = "structural"; continue }
+      if (type === "imports" || type === "exports" || type === "references") { md.evidenceClass = "import_based"; continue }
+      if (type === "calls" || type === "uses") {
+        md.evidenceClass = (r.confidence ?? 0) >= 0.85 ? "usage_contextual" : "inferred"
+        continue
+      }
+      if (type === "instantiates" || type === "extends" || type === "implements") {
+        md.evidenceClass = (r.confidence ?? 0) >= 0.9 ? "structural" : "inferred"
+        continue
+      }
+      if (type === "overrides") { md.evidenceClass = "structural"; continue }
+      md.evidenceClass = "usage_contextual"
+    }
   }
 
   private findChild(node: Node, type: string): Node | null {

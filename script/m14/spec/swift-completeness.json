@@ -58,7 +58,6 @@
       "user_type",
       "value_arguments",
       "value_binding_pattern",
-      "where_clause",
       "while_statement",
       "willset_clause",
       "willset_didset_block"
@@ -242,6 +241,13 @@
         "status": "RULED",
         "question": "`self.x` member READS vs `self.method()` CALLS both parse as navigation_expression.",
         "resolution": "A navigation_expression that is the callee of a call_expression is a CALL (calls edge to leaf); otherwise with a self receiver it is a member read (uses edge, source = enclosing type, target = leaf)."
+      },
+      {
+        "id": "SWD2",
+        "node_type": "where_clause",
+        "status": "RULED",
+        "question": "Is where_clause a real, fixture-coverable shape in the pinned grammar?",
+        "resolution": "No. Probe-verified 2026-09-02: generic `where T: Equatable` clauses parse as type_constraints (with where_keyword + type_constraint children); no Swift source produces a where_clause node. The grammar declares it but it is unreachable. Reclassified from handled_verified per the F6 fixture-coverage gate (M14.0.F6)."
       }
     ]
   }

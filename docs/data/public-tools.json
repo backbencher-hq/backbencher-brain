@@ -8,7 +8,7 @@
   "tools": [
     {
       "name": "bb_search",
-      "description": "Unified indexed retrieval for symbol lists, content, exact symbol source, or files. This is retrieval, not natural-language explanation or code analysis.",
+      "description": "Unified indexed retrieval for symbol lists, content, exact symbol source, or files. This is retrieval, not natural-language explanation or code analysis. Symbol/content/file modes carry a freshness block ({ fresh, stale, missing, staleRatio, mode, remediation }) stating whether results reflect the current files; rows may carry stale=true. Remediation names the exact reindex command.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -75,6 +75,11 @@
         "symbols",
         "content",
         "symbol",
+        "file"
+      ],
+      "freshnessModes": [
+        "symbol",
+        "content",
         "file"
       ],
       "aliases": [],
@@ -305,7 +310,7 @@
     },
     {
       "name": "bb_patterns",
-      "description": "Detect orphaned code, framework patterns, and anti-patterns. Use scope=orphaned for dead code; scope=all (default) for the full pattern scan with the optional pattern/confidence filters. Architecture and code-quality analysis are planned, not yet executable.",
+      "description": "Detect orphaned code, framework patterns, and anti-patterns, with staleness markers when a finding's file changed after indexing. Use scope=orphaned for dead code; scope=all (default) for the full pattern scan with the optional pattern/confidence filters. Architecture and code-quality analysis are planned, not yet executable.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -394,7 +399,8 @@
       ],
       "limitations": [
         "Orphan status is static incoming-reference evidence, not proof that code is unused",
-        "Framework and anti-pattern detection is heuristic and confidence-qualified"
+        "Framework and anti-pattern detection is heuristic and confidence-qualified",
+        "Candidates are derived from analyzer-extracted symbols and relationships; the same graph gaps (dynamic/reflection wiring, unresolved cross-file references) that limit the analyzers also constrain these detections"
       ],
       "performance": "The result limit and confidence threshold bound reporting; history access is separately limited.",
       "safety": "Source is read-only. recordRun writes only analysis-history records in the brain database.",
@@ -402,7 +408,7 @@
     },
     {
       "name": "bb_security",
-      "description": "Cross-language security scan: SQL injection, XSS, command injection, hardcoded secrets, weak crypto.",
+      "description": "Cross-language security scan: SQL injection, XSS, command injection, hardcoded secrets, weak crypto. Findings whose underlying file changed after indexing carry a staleness marker.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -471,7 +477,7 @@
     },
     {
       "name": "bb_visualize",
-      "description": "Scoped dependency and architecture visualization over the canonical graph engine, with explicit filters, provenance, truncation, machine-readable JSON, and self-contained HTML.",
+      "description": "Scoped dependency and architecture visualization over the canonical graph engine, with explicit filters, provenance, truncation, machine-readable JSON, and self-contained HTML. Every node and link carries a stale flag (file changed since index); links inherit worst-of-endpoints; a freshness envelope rides the JSON output.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -577,7 +583,7 @@
     },
     {
       "name": "bb_migrate",
-      "description": "Read-only single or batch migration planning with dependency order, explicit effort methodology, library mappings, risks, truncation, and unsupported cases.",
+      "description": "Read-only single or batch migration planning with dependency order, explicit effort methodology, library mappings, risks, truncation, and unsupported cases. Plans whose source file changed since the last index are flagged stale up front — a plan is a claim about current code; JSON output carries the freshness block.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -612,6 +618,9 @@
       "mutability": "read",
       "requiresIndex": true,
       "modes": [
+        "plan"
+      ],
+      "freshnessModes": [
         "plan"
       ],
       "aliases": [],
@@ -650,7 +659,8 @@
       ],
       "limitations": [
         "Plans are estimates, not translated source",
-        "Library mappings are advisory and unsupported routes remain explicit"
+        "Library mappings are advisory and unsupported routes remain explicit",
+        "Dependency ordering and mapping depend on the analyzer-extracted symbol and relationship graph; edge cases that the analyzers cannot resolve (reflection, dynamic dispatch, or cross-file relations the grammar does not model) limit the completeness of the resulting plan"
       ],
       "performance": "Requests are capped at 100 symbols and dependency traversal is bounded.",
       "safety": "Read-only. It does not generate, replace, or compile target-language source.",
@@ -658,7 +668,7 @@
     },
     {
       "name": "bb_analyze",
-      "description": "Unified evidence-backed analysis over graph relationships, dependencies, statistics, complexity, impact, and test intelligence. Select exactly one mode.",
+      "description": "Unified evidence-backed analysis over graph relationships, dependencies, statistics, complexity, impact, and test intelligence. Select exactly one mode. Every read mode carries a freshness block (fresh/stale/missing counts + remediation) resolved against the live working tree; graph nodes and report rows carry a stale flag when their file changed after indexing.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -699,6 +709,19 @@
       "mutability": "read",
       "requiresIndex": true,
       "modes": [
+        "callers",
+        "callees",
+        "trace",
+        "dependencies",
+        "stats",
+        "complexity",
+        "impact",
+        "test_mapping",
+        "test_gaps",
+        "test_impact",
+        "test_quality"
+      ],
+      "freshnessModes": [
         "callers",
         "callees",
         "trace",
@@ -754,7 +777,7 @@
     },
     {
       "name": "bb_doc",
-      "description": "Generate read-only, evidence-backed documentation with resolvable citations. Supports symbol, file, module, feature, API, project, and documentation-coverage modes in Markdown or JSON.",
+      "description": "Generate read-only, evidence-backed documentation with resolvable citations and a freshness block over the cited files. Supports symbol, file, module, feature, API, project, and documentation-coverage modes in Markdown or JSON.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1004,6 +1027,72 @@
       "performance": "Only affected files are written, formatted, validated, and reindexed.",
       "safety": "Write-capable. Uses project-root path checks, atomic writes, snapshots, validation, and rollback; use dryRun before risky edits.",
       "evidence": "Mutation bounds come from indexed AST bytes; validation and reindex state report whether post-edit evidence is current."
+    },
+    {
+      "name": "bb_index",
+      "description": "Reindex a file or directory so the index reflects edits immediately (agent-fresh). Accepts a path (file or dir); a file reindexes only that file, a dir runs an incremental index of that dir (changed files only). Returns indexed/deleted/error counts.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "file",
+              "dir"
+            ]
+          }
+        },
+        "required": [
+          "path"
+        ]
+      },
+      "mutability": "write",
+      "requiresIndex": false,
+      "modes": [
+        "auto",
+        "file",
+        "dir"
+      ],
+      "aliases": [],
+      "deprecated": false,
+      "documentation": {
+        "category": "operations",
+        "summary": "Immediately refresh the index for a just-written/edited file or directory.",
+        "defaults": {
+          "mode": "auto"
+        },
+        "examples": [
+          {
+            "path": "src/new-file.ts"
+          },
+          {
+            "path": "src",
+            "mode": "dir"
+          }
+        ]
+      },
+      "referencePath": "docs/tools/bb_index.md",
+      "returns": [
+        "Indexed, deleted, and error counts for the refreshed path",
+        "Mode actually applied (auto resolved, file, or dir)",
+        "Per-file error names for any file that failed to reindex"
+      ],
+      "errors": [
+        "Missing path",
+        "Path outside the project root",
+        "Parse or store failure for an individual file"
+      ],
+      "limitations": [
+        "A file reindex updates only that file's evidence; cross-file relationships refresh on the next full or incremental dir index",
+        "Dir mode reuses the incremental indexer: unchanged files are skipped by design"
+      ],
+      "performance": "A single file reindex is bounded by that file's parse cost; dir mode is bounded by the changed-file set.",
+      "safety": "Write-capable against index data only. It never modifies source files.",
+      "evidence": "Counts come from the real parse/store pipeline; errors name the file that failed rather than swallowing it."
     }
   ]
 }
