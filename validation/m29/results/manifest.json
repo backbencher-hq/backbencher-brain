@@ -110,7 +110,7 @@
       "code": "R3",
       "githubIssue": 538,
       "tool": "giant-repo-budgets",
-      "status": "planned",
+      "status": "verified",
       "scope": "Hover/navigation latency on M19-scale corpora (intellij-community subsets etc.) through the IDE stack where feasible; results recorded with machine + corpus revision. Any budget miss is a filed defect, not a footnote.",
       "acceptanceCriteria": [
         "Measured percentiles on named corpora + revisions",
@@ -121,7 +121,17 @@
         "Evidence with machine + corpus",
         "Defect issues linked for any miss",
         "Limitations declared"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see R3.json",
+        "verifierCommand": "npx tsx script/m29/verify-giant-repo.ts",
+        "evidenceFile": "R3-verify.json",
+        "passed": 25,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 6
+      }
     },
     {
       "code": "R4",
