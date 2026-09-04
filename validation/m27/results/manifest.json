@@ -3,7 +3,7 @@
   "milestone": "M27",
   "githubMilestone": 38,
   "title": "M27: Everywhere (JetBrains/Zed/Neovim/Helix)",
-  "status": "open",
+  "status": "closed",
   "authority": "docs/m27/M27-MASTER-PLAN.md",
   "governingContract": "docs/IDE-HONESTY-CONTRACT.md",
   "evidencePolicy": {
