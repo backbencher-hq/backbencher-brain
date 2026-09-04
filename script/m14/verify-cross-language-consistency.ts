@@ -74,6 +74,51 @@ const SYSTEMS_EQUIVALENTS: Record<string, { wasm: string; analyzerFile: string; 
   },
 }
 
+// Managed-OO family equivalents (added 2026-08-31, family closure): the same
+// class + method shape expressed in csharp/dart/swift/objc/php/ruby. Asserts
+// 1-based ranges, consistent class/method kinds, and per-symbol complexity
+// presence (the family standard all six emit). This family closure also caught
+// a REAL defect: objc + swift emitted 0-based columns (startColumn: column
+// without +1) while csharp/dart/php/ruby were 1-based — fixed in the same
+// closure (commit follows), and now pinned here so it can never regress.
+const OO_EQUIVALENTS: Record<string, { wasm: string; analyzerFile: string; className: string; ext: string; source: string; methodName: string; classNameLiteral: string }> = {
+  csharp: {
+    wasm: "tree-sitter-c_sharp.wasm", analyzerFile: "real-csharp-analyzer", className: "RealCSharpAnalyzer", ext: "cs",
+    source: `class Widget {\n    private string label;\n    public string Render(string input) {\n        return label + input;\n    }\n}\n`,
+    methodName: "Render", classNameLiteral: "Widget",
+  },
+  dart: {
+    wasm: "tree-sitter-dart.wasm", analyzerFile: "real-dart-analyzer", className: "RealDartAnalyzer", ext: "dart",
+    source: `class Widget {\n  String label = '';\n  String render(String input) {\n    return label + input;\n  }\n}\n`,
+    methodName: "render", classNameLiteral: "Widget",
+  },
+  swift: {
+    wasm: "tree-sitter-swift.wasm", analyzerFile: "real-swift-analyzer", className: "RealSwiftAnalyzer", ext: "swift",
+    source: `class Widget {\n    var label: String = ""\n    func render(input: String) -> String {\n        return label + input\n    }\n}\n`,
+    methodName: "render", classNameLiteral: "Widget",
+  },
+  objc: {
+    wasm: "tree-sitter-objc.wasm", analyzerFile: "real-objective-c-analyzer", className: "RealObjectiveCAnalyzer", ext: "m",
+    source: `@interface Widget : NSObject\n@property (nonatomic, strong) NSString *label;\n- (NSString *)render:(NSString *)input;\n@end\n@implementation Widget\n- (NSString *)render:(NSString *)input {\n    return self.label;\n}\n@end\n`,
+    methodName: "render", classNameLiteral: "Widget",
+  },
+  php: {
+    wasm: "tree-sitter-php.wasm", analyzerFile: "real-php-analyzer", className: "RealPhpAnalyzer", ext: "php",
+    source: `<?php\nclass Widget {\n    private string $label = '';\n    public function render(string $input): string {\n        return $this->label . $input;\n    }\n}\n`,
+    methodName: "render", classNameLiteral: "Widget",
+  },
+  ruby: {
+    wasm: "tree-sitter-ruby.wasm", analyzerFile: "real-ruby-analyzer", className: "RealRubyAnalyzer", ext: "rb",
+    source: `class Widget\n  def initialize\n    @label = ""\n  end\n  def render(input)\n    @label + input\n  end\nend\n`,
+    methodName: "render", classNameLiteral: "Widget",
+  },
+  python: {
+    wasm: "tree-sitter-python.wasm", analyzerFile: "real-python-analyzer", className: "RealPythonAnalyzer", ext: "py",
+    source: `class Widget:\n    def __init__(self):\n        self.label = ""\n\n    def render(self, input):\n        return self.label + input\n`,
+    methodName: "render", classNameLiteral: "Widget",
+  },
+}
+
 async function main() {
   const wts: any = await import("web-tree-sitter")
   const ParserClass = wts.Parser ?? wts.default ?? wts
@@ -164,6 +209,34 @@ async function main() {
     sysSummary[lang] = { structKind: st?.kind, methodKind: method?.kind, complexity: method?.complexity }
   }
 
+  // ── Managed-OO family (csharp/dart/swift/objc/php/ruby) — family closure 2026-08-31 ──
+  const ooFailures: string[] = []
+  const ooSummary: Record<string, any> = {}
+  for (const [lang, cfg] of Object.entries(OO_EQUIVALENTS)) {
+    const grammar = await Language.load(fs.readFileSync(path.join(ROOT, "wasm", cfg.wasm)))
+    const parser = new ParserClass()
+    parser.setLanguage(grammar)
+    const mod: any = await import(`../../src/ast/${cfg.analyzerFile}`)
+    const analyzer = new mod[cfg.className]()
+    const r = await analyzer.analyze(parser.parse(cfg.source).rootNode, cfg.source, `Widget.${cfg.ext}`)
+    const symbols = r.symbols ?? []
+    const cls = symbols.find(s => s.name === cfg.classNameLiteral && /class|interface/.test(String(s.kind).toLowerCase()))
+    const method = symbols.find(s => s.name === cfg.methodName)
+    if (!cls) ooFailures.push(`${lang}: class ${cfg.classNameLiteral} not extracted as class-kind symbol`)
+    if (!method) ooFailures.push(`${lang}: method ${cfg.methodName} not extracted`)
+    for (const s of [...(cls ? [cls] : []), ...(method ? [method] : [])]) {
+      const rng = s.range ?? {}
+      if (!(rng.startColumn >= 1)) ooFailures.push(`${lang}/${s.name}: startColumn=${rng.startColumn} is not 1-based`)
+      if (!(rng.endLine >= (rng.startLine ?? 1))) ooFailures.push(`${lang}/${s.name}: endLine < startLine`)
+      if (rng.endLine === rng.startLine && !(rng.endColumn >= (rng.startColumn ?? 0))) ooFailures.push(`${lang}/${s.name}: endColumn < startColumn on single line`)
+      if (!(rng.startLine >= 1)) ooFailures.push(`${lang}/${s.name}: startLine not 1-based`)
+    }
+    if (cls && !/class|interface/.test(String(cls.kind).toLowerCase())) ooFailures.push(`${lang}: ${cfg.classNameLiteral} kind ${cls.kind} is not class-like`)
+    if (method && !/method|function/.test(String(method.kind).toLowerCase())) ooFailures.push(`${lang}: ${cfg.methodName} kind ${method.kind} unexpected`)
+    if (method && !(typeof method.complexity === "number" && method.complexity >= 1)) ooFailures.push(`${lang}: ${cfg.methodName} missing per-symbol complexity`)
+    ooSummary[lang] = { classKind: cls?.kind, methodKind: method?.kind, complexity: method?.complexity, classStartColumn: cls?.range?.startColumn }
+  }
+
   const { emitEvidence } = await import("./evidence-harness")
   emitEvidence({
     issueId: "M14.CC1",
@@ -177,12 +250,15 @@ async function main() {
       { id: "systems-ranges-1based", description: "1-based ranges across c/cpp/rust/go/zig", status: sysFailures.some(f => f.includes("startColumn") || f.includes("startLine")) ? "fail" : "pass" },
       { id: "systems-kind-consistency", description: "struct/method kinds consistent across c/cpp/rust/go/zig", status: sysFailures.some(f => f.includes("kind")) ? "fail" : "pass" },
       { id: "systems-complexity", description: "per-symbol complexity present in all five systems analyzers", status: sysFailures.some(f => f.includes("complexity")) ? "fail" : "pass" },
+      { id: "oo-ranges-1based", description: "1-based ranges across csharp/dart/swift/objc/php/ruby", status: ooFailures.some(f => f.includes("startColumn") || f.includes("startLine")) ? "fail" : "pass" },
+      { id: "oo-kind-consistency", description: "class/method kinds consistent across csharp/dart/swift/objc/php/ruby", status: ooFailures.some(f => f.includes("kind")) ? "fail" : "pass" },
+      { id: "oo-complexity", description: "per-symbol complexity present in all six OO analyzers", status: ooFailures.some(f => f.includes("complexity")) ? "fail" : "pass" },
     ],
     limitations: [
-      { description: "covers JVM-family + systems-family equivalents; other clusters added with their waves (#384)" },
+      { description: "covers JVM-family + systems-family + managed-OO equivalents; other clusters added with their waves (#384)" },
       { description: "scala qualified_calls absence declared pending under #383" },
     ],
-    data: { failures, summary, systemsFailures: sysFailures, systemsSummary: sysSummary },
+    data: { failures, summary, systemsFailures: sysFailures, systemsSummary: sysSummary, ooFailures, ooSummary },
   })
 
   if (sysFailures.length) {
@@ -191,12 +267,18 @@ async function main() {
     process.exit(9)
   }
 
+  if (ooFailures.length) {
+    console.error("OO CONSISTENCY FAILED:")
+    for (const f of ooFailures) console.error("  -", f)
+    process.exit(9)
+  }
+
   if (failures.length) {
     console.error("CONSISTENCY FAILED:")
     for (const f of failures) console.error("  -", f)
     process.exit(9)
   }
-  console.log("cross-language consistency verified across " + Object.keys(EQUIVALENTS).length + " languages")
+  console.log("cross-language consistency verified across " + Object.keys(EQUIVALENTS).length + " JVM + " + Object.keys(SYSTEMS_EQUIVALENTS).length + " systems + " + Object.keys(OO_EQUIVALENTS).length + " OO languages")
 }
 
 main().catch(e => { console.error(e); process.exit(1) })

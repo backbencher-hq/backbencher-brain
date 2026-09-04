@@ -29,6 +29,13 @@ export interface ToolDescriptor {
   modes: readonly string[]
   /** Modes on the roadmap but NOT executable. Never advertised as available. */
   plannedModes?: readonly string[]
+  /**
+   * M35.E1: modes whose JSON envelope must carry the registered staleness
+   * block ({ fresh, stale, missing, staleRatio, mode, remediation }).
+   * Enforced by script/m35/verify-envelope-contract.ts against the real
+   * handlers: a registered mode that omits the block fails the gate.
+   */
+  freshnessModes?: readonly string[]
   aliases: readonly string[]
   deprecated: boolean
   replacement?: {
@@ -41,7 +48,7 @@ export interface ToolDescriptor {
 const descriptors = [
   {
     name: "bb_search",
-    description: "Unified indexed retrieval for symbol lists, content, exact symbol source, or files. This is retrieval, not natural-language explanation or code analysis.",
+    description: "Unified indexed retrieval for symbol lists, content, exact symbol source, or files. This is retrieval, not natural-language explanation or code analysis. Symbol/content/file modes carry a freshness block ({ fresh, stale, missing, staleRatio, mode, remediation }) stating whether results reflect the current files; rows may carry stale=true. Remediation names the exact reindex command.",
     inputSchema: {
       type: "object",
       properties: {
@@ -63,6 +70,7 @@ const descriptors = [
     mutability: "read",
     requiresIndex: true,
     modes: ["symbols", "content", "symbol", "file"],
+    freshnessModes: ["symbol", "content", "file"],
     aliases: [],
     deprecated: false,
     documentation: { category: "search", summary: "Unified lexical, content, exact-symbol, and file retrieval.", defaults: { mode: "symbols", limit: 15, includeContent: false, exact: false, caseSensitive: false, regex: false, offset: 0 }, examples: [{ mode: "symbols", query: "handleRequest", limit: 5 }, { mode: "symbol", symbolName: "handleRequest" }, { mode: "file", filePath: "src/app.ts" }] },
@@ -92,7 +100,7 @@ const descriptors = [
   },
   {
     name: "bb_patterns",
-    description: "Detect orphaned code, framework patterns, and anti-patterns. Use scope=orphaned for dead code; scope=all (default) for the full pattern scan with the optional pattern/confidence filters. Architecture and code-quality analysis are planned, not yet executable.",
+    description: "Detect orphaned code, framework patterns, and anti-patterns, with staleness markers when a finding's file changed after indexing. Use scope=orphaned for dead code; scope=all (default) for the full pattern scan with the optional pattern/confidence filters. Architecture and code-quality analysis are planned, not yet executable.",
     inputSchema: { type: "object", properties: { scope: { type: "string", enum: ["orphaned", "all"], description: "orphaned only, or all pattern classes (default all)" }, limit: { type: "number", description: "max results (default 20)" }, includeOrphaned: { type: "boolean", description: "include orphaned-code patterns in an all scan (default true)" }, includeFramework: { type: "boolean", description: "include framework patterns (default true)" }, includeAntiPatterns: { type: "boolean", description: "include anti-patterns (default true)" }, confidenceThreshold: { type: "number", description: "minimum confidence 0..1 (default 0.6)" }, history: { type: "boolean", description: "return persisted pattern history" }, recordRun: { type: "boolean", description: "persist this scan as an analysis run" } } },
     mutability: "read",
     requiresIndex: true,
@@ -104,7 +112,7 @@ const descriptors = [
   },
   {
     name: "bb_security",
-    description: "Cross-language security scan: SQL injection, XSS, command injection, hardcoded secrets, weak crypto.",
+    description: "Cross-language security scan: SQL injection, XSS, command injection, hardcoded secrets, weak crypto. Findings whose underlying file changed after indexing carry a staleness marker.",
     inputSchema: { type: "object", properties: { history: { type: "boolean", description: "return persisted security history" }, recordRun: { type: "boolean", description: "persist this scan as an analysis run" }, limit: { type: "number", description: "history run limit (default 20)" } } },
     mutability: "read",
     requiresIndex: true,
@@ -116,7 +124,7 @@ const descriptors = [
   },
   {
     name: "bb_visualize",
-    description: "Scoped dependency and architecture visualization over the canonical graph engine, with explicit filters, provenance, truncation, machine-readable JSON, and self-contained HTML.",
+    description: "Scoped dependency and architecture visualization over the canonical graph engine, with explicit filters, provenance, truncation, machine-readable JSON, and self-contained HTML. Every node and link carries a stale flag (file changed since index); links inherit worst-of-endpoints; a freshness envelope rides the JSON output.",
     inputSchema: { type: "object", properties: { scope: { type: "string", enum: ["project", "file", "module", "symbol", "feature"], description: "graph scope (default project)" }, target: { type: "string", description: "file, module, symbol, or feature target" }, maxNodes: { type: "number", description: "max nodes (default 200)" }, maxLinks: { type: "number", description: "max links (default 5000)" }, relationshipTypes: { type: "array", items: { type: "string" }, description: "relationship type filter" }, languages: { type: "array", items: { type: "string" }, description: "language filter" }, format: { type: "string", enum: ["text", "json", "html"], description: "output format (default text)" } } },
     mutability: "read",
     requiresIndex: true,
@@ -127,29 +135,33 @@ const descriptors = [
   },
   {
     name: "bb_migrate",
-    description: "Read-only single or batch migration planning with dependency order, explicit effort methodology, library mappings, risks, truncation, and unsupported cases.",
+    description: "Read-only single or batch migration planning with dependency order, explicit effort methodology, library mappings, risks, truncation, and unsupported cases. Plans whose source file changed since the last index are flagged stale up front — a plan is a claim about current code; JSON output carries the freshness block.",
     inputSchema: { type: "object", properties: { symbolName: { type: "string", description: "legacy single symbol alias" }, symbolNames: { type: "array", items: { type: "string" }, description: "one or more symbols to migrate" }, targetLanguage: { type: "string", description: "e.g. rust, go, python" }, format: { type: "string", enum: ["text", "json"], description: "output format (default text)" } }, required: ["targetLanguage"] },
     mutability: "read",
     requiresIndex: true,
     modes: ["plan"],
+    freshnessModes: ["plan"],
     aliases: [],
     deprecated: false,
     documentation: { category: "analysis", summary: "Batch cross-language migration plans with ordering, methodology, and unsupported mappings.", defaults: { format: "text" }, examples: [{ symbolName: "handleRequest", targetLanguage: "go" }, { symbolNames: ["parse", "handle"], targetLanguage: "rust", format: "json" }] },
   },
   {
     name: "bb_analyze",
-    description: "Unified evidence-backed analysis over graph relationships, dependencies, statistics, complexity, impact, and test intelligence. Select exactly one mode.",
+    description: "Unified evidence-backed analysis over graph relationships, dependencies, statistics, complexity, impact, and test intelligence. Select exactly one mode. Every read mode carries a freshness block (fresh/stale/missing counts + remediation) resolved against the live working tree; graph nodes and report rows carry a stale flag when their file changed after indexing.",
     inputSchema: { type: "object", properties: { mode: { type: "string", enum: ["callers", "callees", "trace", "dependencies", "stats", "complexity", "impact", "test_mapping", "test_gaps", "test_impact", "test_quality"], description: "analysis mode" }, target: { type: "string", description: "symbol or analysis target" }, filePath: { type: "string", description: "file scope for file-based analysis" }, limit: { type: "number", description: "result limit" } }, required: ["mode"] },
     mutability: "read",
     requiresIndex: true,
     modes: ["callers", "callees", "trace", "dependencies", "stats", "complexity", "impact", "test_mapping", "test_gaps", "test_impact", "test_quality"],
+    // M35.S1: every bb_analyze mode is a read path over the index — all carry
+    // the staleness envelope on their output.
+    freshnessModes: ["callers", "callees", "trace", "dependencies", "stats", "complexity", "impact", "test_mapping", "test_gaps", "test_impact", "test_quality"],
     aliases: [],
     deprecated: false,
     documentation: { category: "analysis", summary: "One typed analysis surface replacing standalone relationship and test intelligence names.", defaults: { limit: 20 }, examples: [{ mode: "callers", target: "handleRequest" }, { mode: "complexity", target: "src/api" }, { mode: "test_quality" }] },
   },
   {
     name: "bb_doc",
-    description: "Generate read-only, evidence-backed documentation with resolvable citations. Supports symbol, file, module, feature, API, project, and documentation-coverage modes in Markdown or JSON.",
+    description: "Generate read-only, evidence-backed documentation with resolvable citations and a freshness block over the cited files. Supports symbol, file, module, feature, API, project, and documentation-coverage modes in Markdown or JSON.",
     inputSchema: { type: "object", properties: { mode: { type: "string", enum: ["symbol", "file", "module", "feature", "api", "project", "coverage"], description: "documentation mode" }, target: { type: "string", description: "symbol, file, module, feature, or API target; optional for project and coverage" }, format: { type: "string", enum: ["markdown", "json"], description: "output format (default markdown)" }, audience: { type: "string", enum: ["developer", "maintainer", "user", "website"], description: "documentation audience" }, detail: { type: "string", enum: ["brief", "standard", "deep"], description: "detail level" }, includeExamples: { type: "boolean", description: "include only source-backed examples" }, includeDiagrams: { type: "boolean", description: "include cited diagrams when available" }, includeTests: { type: "boolean", description: "include indexed test evidence" }, limit: { type: "number", description: "maximum evidence items" }, maxTokens: { type: "number", description: "output token budget" } }, required: ["mode"] },
     mutability: "read",
     requiresIndex: true,
@@ -180,7 +192,7 @@ const descriptors = [
     mutability: "write",
     requiresIndex: false,
     modes: ["auto", "file", "dir"],
-    aliases: ["bb_reindex"],
+    aliases: [],
     deprecated: false,
     documentation: { category: "operations", summary: "Immediately refresh the index for a just-written/edited file or directory.", defaults: { mode: "auto" }, examples: [{ path: "src/new-file.ts" }, { path: "src", mode: "dir" }] },
   },
@@ -208,6 +220,12 @@ export function validateToolDescriptors(items: readonly ToolDescriptor[]): void 
       const modeSet = new Set(item.modes)
       const overlap = item.plannedModes.filter((mode) => modeSet.has(mode))
       if (overlap.length) throw new Error(`${item.name}: planned modes overlap executable modes: ${overlap.join(", ")}`)
+    }
+    if (item.freshnessModes) {
+      if (new Set(item.freshnessModes).size !== item.freshnessModes.length) throw new Error(`${item.name}: duplicate freshness modes`)
+      const modeSet = new Set(item.modes)
+      const unknown = item.freshnessModes.filter((mode) => !modeSet.has(mode))
+      if (unknown.length) throw new Error(`${item.name}: freshness modes not in executable modes: ${unknown.join(", ")}`)
     }
     if (new Set(item.aliases).size !== item.aliases.length) throw new Error(`${item.name}: duplicate aliases`)
     if (item.deprecated && !item.replacement) throw new Error(`${item.name}: deprecated tools require a replacement`)

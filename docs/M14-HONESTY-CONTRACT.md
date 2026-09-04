@@ -163,3 +163,27 @@ A wave or the milestone is done when — and only when:
 - the wave summary quotes evidence file paths, never adjectives.
 
 Done is a property of evidence. Everything else is commentary.
+
+## Dual-lens acceptance regime (2026-09-04, binding)
+
+Gates alone are NOT acceptance for any analyzer. The csharp wave (issue #264)
+proved 10 real defect classes can pass every gate for weeks; only the
+line-by-line read plus corpus census catches what nobody encoded.
+
+Every analyzer claiming "done" from 2026-09-04 onward — including all M14
+languages not yet started (clean, clojure, elixir, erlang, fsharp,
+powershell, bash, lua, r, makefile, sql, graphql, json, yaml, xml, hcl,
+html, css, markdown) — must pass:
+
+1. Line-by-line read of the analyzer source (dead code, unconnected logic,
+   asymmetries noted).
+2. Corpus census + differential on real repositories (F8 + F5; one 200+-file
+   run per family).
+3. Probe-verified fixes only — parse-level evidence both directions.
+4. Fixture pins/forbids authored from re-probed emission + regression mutants.
+5. Full F1–F9 battery + SPEC + CC1 + honesty, all green at HEAD.
+6. Commit with evidence on the language's tracking issue.
+
+Method and ordering: M34 tracking issue #593. Precedents: #264 (csharp),
+#271 (haskell, dart gates). The 18 gated-done analyzers receive this pass
+under M34 before M14's remaining languages begin.

@@ -42,12 +42,16 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   swift: { wasm: "tree-sitter-swift.wasm", analyzerFile: "real-swift-analyzer", className: "RealSwiftAnalyzer", ext: "swift" },
   objc: { wasm: "tree-sitter-objc.wasm", analyzerFile: "real-objective-c-analyzer", className: "RealObjectiveCAnalyzer", ext: "m" },
   php: { wasm: "tree-sitter-php.wasm", analyzerFile: "real-php-analyzer", className: "RealPhpAnalyzer", ext: "php" },
+  ruby: { wasm: "tree-sitter-ruby.wasm", analyzerFile: "real-ruby-analyzer", className: "RealRubyAnalyzer", ext: "rb" },
+  haskell: { wasm: "tree-sitter-haskell.wasm", analyzerFile: "real-haskell-analyzer", className: "RealHaskellAnalyzer", ext: "hs" },
 }
 
 interface Entry { [k: string]: any }
 
 function matchConstraints(actual: Entry, want: Entry): boolean {
   for (const [k, v] of Object.entries(want)) {
+    // Documentation fields on expectation entries are NOT match constraints.
+    if (k === "comment") continue
     if (k === "confidenceMin") {
       if (!(typeof actual.confidence === "number" && actual.confidence >= v)) return false
     } else if (k === "confidenceMax") {

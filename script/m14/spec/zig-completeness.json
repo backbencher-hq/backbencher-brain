@@ -10,7 +10,6 @@
       "error_set_declaration",
       "container_field",
       "function_declaration",
-      "function_signature",
       "call_expression",
       "field_expression"
     ]
@@ -141,7 +140,15 @@
         "status": "RULED",
         "question": "Error-set members (`error{ A, B }`) are identifiers, and @-prefixed builtins are intrinsics, not user symbols.",
         "resolution": "An identifier whose parent is error_set_declaration is emitted as an EnumMember (members cannot collide with the declaring variable's LHS). @builtin_function callees (@import/@intCast/@as) are compile-time intrinsics and emit NO calls edge \u2014 they are never user symbols."
+      },
+      {
+        "id": "ZIGD2",
+        "node_type": "function_signature",
+        "status": "RULED",
+        "question": "Is function_signature a real, fixture-coverable shape in the pinned grammar?",
+        "resolution": "No. Probe-verified 2026-09-02: extern fn parses as function_declaration; comptime fn at container level parses as container_field + ERROR and poisons the rest of the file. The analyzer's function_signature branch is retained as defensive coverage for grammar variants but no valid Zig source produces it. Reclassified from handled_verified per the F6 gate (M14.0.F6)."
       }
-    ]
+    ],
+    "description": "Owner rulings \u2014 never silent absence (ZIGD2 added by F6 fixture-coverage gate)"
   }
 }

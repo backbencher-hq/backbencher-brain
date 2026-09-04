@@ -1,38 +1,146 @@
 {
   "checks": [
     {
-      "description": "real CLI index -> brain.db row-level assertions (symbols/relationships/imports/xlang flags)",
-      "id": "e2e-polyglot",
+      "description": "no no-op ternaries, duplicate if/else bodies, or write-only this-flags in the analyzer source",
+      "findings": 0,
+      "id": "analyzer-hygiene-java",
       "status": "pass"
     },
     {
-      "description": "re-index does not grow rows",
-      "id": "idempotency",
+      "description": "no no-op ternaries, duplicate if/else bodies, or write-only this-flags in the analyzer source",
+      "findings": 0,
+      "id": "analyzer-hygiene-groovy",
+      "status": "pass"
+    },
+    {
+      "description": "no no-op ternaries, duplicate if/else bodies, or write-only this-flags in the analyzer source",
+      "findings": 0,
+      "id": "analyzer-hygiene-kotlin",
+      "status": "pass"
+    },
+    {
+      "description": "no no-op ternaries, duplicate if/else bodies, or write-only this-flags in the analyzer source",
+      "findings": 0,
+      "id": "analyzer-hygiene-scala",
+      "status": "pass"
+    },
+    {
+      "description": "no no-op ternaries, duplicate if/else bodies, or write-only this-flags in the analyzer source",
+      "findings": 0,
+      "id": "analyzer-hygiene-typescript",
+      "status": "pass"
+    },
+    {
+      "description": "no no-op ternaries, duplicate if/else bodies, or write-only this-flags in the analyzer source",
+      "findings": 0,
+      "id": "analyzer-hygiene-javascript",
+      "status": "pass"
+    },
+    {
+      "description": "no no-op ternaries, duplicate if/else bodies, or write-only this-flags in the analyzer source",
+      "findings": 0,
+      "id": "analyzer-hygiene-vue",
+      "status": "pass"
+    },
+    {
+      "description": "no no-op ternaries, duplicate if/else bodies, or write-only this-flags in the analyzer source",
+      "findings": 0,
+      "id": "analyzer-hygiene-svelte",
+      "status": "pass"
+    },
+    {
+      "description": "no no-op ternaries, duplicate if/else bodies, or write-only this-flags in the analyzer source",
+      "findings": 0,
+      "id": "analyzer-hygiene-c",
+      "status": "pass"
+    },
+    {
+      "description": "no no-op ternaries, duplicate if/else bodies, or write-only this-flags in the analyzer source",
+      "findings": 0,
+      "id": "analyzer-hygiene-cpp",
+      "status": "pass"
+    },
+    {
+      "description": "no no-op ternaries, duplicate if/else bodies, or write-only this-flags in the analyzer source",
+      "findings": 0,
+      "id": "analyzer-hygiene-rust",
+      "status": "pass"
+    },
+    {
+      "description": "no no-op ternaries, duplicate if/else bodies, or write-only this-flags in the analyzer source",
+      "findings": 0,
+      "id": "analyzer-hygiene-go",
+      "status": "pass"
+    },
+    {
+      "description": "no no-op ternaries, duplicate if/else bodies, or write-only this-flags in the analyzer source",
+      "findings": 0,
+      "id": "analyzer-hygiene-zig",
+      "status": "pass"
+    },
+    {
+      "description": "no no-op ternaries, duplicate if/else bodies, or write-only this-flags in the analyzer source",
+      "findings": 0,
+      "id": "analyzer-hygiene-csharp",
+      "status": "pass"
+    },
+    {
+      "description": "no no-op ternaries, duplicate if/else bodies, or write-only this-flags in the analyzer source",
+      "findings": 0,
+      "id": "analyzer-hygiene-dart",
+      "status": "pass"
+    },
+    {
+      "description": "no no-op ternaries, duplicate if/else bodies, or write-only this-flags in the analyzer source",
+      "findings": 0,
+      "id": "analyzer-hygiene-swift",
+      "status": "pass"
+    },
+    {
+      "description": "no no-op ternaries, duplicate if/else bodies, or write-only this-flags in the analyzer source",
+      "findings": 0,
+      "id": "analyzer-hygiene-objc",
+      "status": "pass"
+    },
+    {
+      "description": "no no-op ternaries, duplicate if/else bodies, or write-only this-flags in the analyzer source",
+      "findings": 0,
+      "id": "analyzer-hygiene-php",
+      "status": "pass"
+    },
+    {
+      "description": "no no-op ternaries, duplicate if/else bodies, or write-only this-flags in the analyzer source",
+      "findings": 0,
+      "id": "analyzer-hygiene-ruby",
+      "status": "pass"
+    },
+    {
+      "description": "no no-op ternaries, duplicate if/else bodies, or write-only this-flags in the analyzer source",
+      "findings": 0,
+      "id": "analyzer-hygiene-python",
+      "status": "pass"
+    },
+    {
+      "description": "no no-op ternaries, duplicate if/else bodies, or write-only this-flags in the analyzer source",
+      "findings": 0,
+      "id": "analyzer-hygiene-haskell",
       "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "31cf3eb7789e784f13d140fae26d4d92771d8b1e",
-  "committedAt": "2026-08-27T02:02:52+02:00",
-  "data": {
-    "durationMs": 33371,
-    "failures": [],
-    "perfBaselineRef": "docs/M14-COMPLETENESS-LEDGER.md#perf-baselines"
-  },
+  "commit": "d73031116af4ac4ccf5a955f5dcdfb16b91d7e7d",
+  "committedAt": "2026-09-04T02:35:00+02:00",
   "governance": "docs/M14-HONESTY-CONTRACT.md",
   "issueId": "M14.0.F7",
   "layers": [
-    "pipeline-e2e"
+    "hygiene"
   ],
   "limitations": [
     {
-      "description": "assertions cover the seam classes discovered so far; every future seam bug must be added here as a permanent check"
-    },
-    {
-      "description": "duration recorded for F9 trend; hard ceiling intentionally coarse to stay machine-tolerant"
+      "description": "Regex-based detection over TypeScript source: multi-line identical-branch ternaries, alias-heavy this-patterns, and cross-method write-only object props are out of scope (covered by review + F9 probes instead)"
     }
   ],
-  "runtime": "node v22.22.1",
+  "runtime": "node v24.3.0",
   "schemaVersion": 2,
-  "title": "Pipeline end-to-end gate"
+  "title": "Analyzer-hygiene gate: dead code classes mechanically detected (no-op ternaries, duplicate branches, write-only flags)"
 }
