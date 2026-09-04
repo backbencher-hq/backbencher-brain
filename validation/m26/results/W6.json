@@ -8,10 +8,10 @@
   "failed": 0,
   "mutantsCaught": 3,
   "mutantsTotal": 3,
-  "currentCommit": "4579cea4af043a9f964188745b0f64d48b8fde74",
+  "currentCommit": "424efb44e9f4862267ed7f74f37278590fa649e3",
   "verifierCommand": "npx tsx script/m26/verify-content-security.ts",
   "evidenceFile": "W6.json",
-  "generatedAt": "2026-09-03T23:51:24.011Z",
+  "generatedAt": "2026-09-04T00:01:16.402Z",
   "adversarialFixtures": [
     "script tag in symbol name",
     "event handler attribute breakout",
