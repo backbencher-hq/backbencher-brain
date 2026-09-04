@@ -122,14 +122,20 @@ function runAssertionSet(result: DriverResult, assert: (name: string, ok: boolea
 }
 
 async function main(): Promise<void> {
+  let currentCommit = "unknown"
+  try {
+    currentCommit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim()
+  } catch {}
+
   // --- R1: provisioned toolchain ------------------------------------------
   check("N1: portable Neovim is provisioned (.tools/nvim-linux-x86_64)", existsSync(NVIM), NVIM)
   if (!existsSync(NVIM)) {
     const result = {
       issue: "M27.N1", code: "N1", milestone: "M27",
       status: "blocked", blockedReason: "nvim not provisioned in .tools/ (D-7 portable layout)",
-      checks, passed, failed: checks - passed, mutantsCaught, mutantsTotal, mutantRecords,
-      verifierCommand: "npx tsx script/m27/verify-nvim.ts", evidenceFile: "N1.json",
+    checks, passed, failed: checks - passed, mutantsCaught, mutantsTotal, mutantRecords,
+    currentCommit,
+    verifierCommand: "npx tsx script/m27/verify-nvim.ts", evidenceFile: "N1.json",
       generatedAt: new Date().toISOString(),
     }
     mkdirSync(path.join(ROOT, "validation/m27/results"), { recursive: true })
@@ -263,6 +269,7 @@ async function main(): Promise<void> {
     mutantsTotal,
     mutantRecords,
     nvim: version,
+    currentCommit,
     verifierCommand: "npx tsx script/m27/verify-nvim.ts",
     evidenceFile: "N1.json",
     generatedAt: new Date().toISOString(),
