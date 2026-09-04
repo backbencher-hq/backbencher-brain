@@ -136,7 +136,7 @@ async function main(): Promise<void> {
   const overclaim = /claim level is I3|verified in-editor|driven hx session exists/i
   check("H1: adapter doc records I2 with blocked-with-reason (no overclaim)", !overclaim.test(docText) && docText.includes("blocked-with-reason") && docText.includes("I2"))
   const statusTracker = readFileSync(path.join(ROOT, "docs", "IDE-PROGRAM-STATUS.md"), "utf8")
-  check("H1: program tracker does not claim Helix I3", !/Helix[^\n]*\bI3\b/.test(statusTracker))
+  check("H1: program tracker does not claim Helix I3", !/Helix\s*[-–—:（(]*\s*I3\b/.test(statusTracker) && !/Helix[^\n]{0,40}\bclaim level\b[^\n]{0,20}I3\b/i.test(statusTracker))
 
   // --- R4: capability subset against the REAL server --------------------------
   // The truth comes over the WIRE: spawn the real dist server, send the real

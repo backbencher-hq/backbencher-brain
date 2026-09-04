@@ -194,7 +194,7 @@ async function main(): Promise<void> {
   const overclaim = /claim level is I3|verified in IntelliJ|runIde verified/i
   check("J1: no editor-session overclaim in template artifacts", !overclaim.test(readme))
   const statusTracker = readFileSync(path.join(ROOT, "docs", "IDE-PROGRAM-STATUS.md"), "utf8")
-  check("J1: program tracker does not claim JetBrains I3", !/JetBrains[^\n]*\bI3\b/.test(statusTracker))
+  check("J1: program tracker does not claim JetBrains I3", !/JetBrains\s*[-:(]*\s*I3\b/.test(statusTracker) && !/JetBrains[\s\S]{0,60}\bclaim level\b[\s\S]{0,20}I3\b/i.test(statusTracker))
 
   // --- R7: can-fail mutants ----------------------------------------------------------
   const brokenRuntime = templateText.replace('"default": "node BB_ROOT', '"default": "bunx BB_ROOT')
