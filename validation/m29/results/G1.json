@@ -4,21 +4,21 @@
   "milestone": "M29",
   "status": "known-gap",
   "checks": 70,
-  "passed": 69,
-  "failed": 1,
+  "passed": 70,
+  "failed": 0,
   "negativeCases": 10,
-  "currentCommit": "28fbdb6a925c1f783b669fbdee022a1051e80812",
+  "currentCommit": "b603ad399b57dc86fe60bc37db52284025c659fb",
   "workingTreeRelevantChanges": [
     "script/m29/verify-wave-execution.ts",
     "script/m29/verify-wave-protocol.ts"
   ],
   "verifierCommand": "npx tsx script/m29/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-04T18:19:30.514Z",
+  "generatedAt": "2026-09-04T18:20:41.274Z",
   "ledger": "validation/m29/results/manifest.json",
   "m28Bar": {
     "ledgerStatus": "closed",
-    "m28GateExit": 1
+    "m28GateExit": 0
   },
   "limitations": [
     "This gate validates governance metadata, mutation response, and the M28 bar; it does not verify the wave protocol, giant-repo budgets, or the precision ledger.",
