@@ -137,7 +137,7 @@
       "code": "R4",
       "githubIssue": 539,
       "tool": "precision-ledger",
-      "status": "planned",
+      "status": "verified",
       "scope": "Published per-language/per-feature precision table: claim level, evidence path, differential sampling results, heuristic-edge ratios, limitations. Regeneration script + drift gate (hand-edits reopen the gate).",
       "acceptanceCriteria": [
         "Ledger generated from evidence files; drift-gated",
@@ -148,7 +148,17 @@
         "Generator evidence",
         "Drift test byte-identical",
         "Owner review recorded"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see R4-verify.json",
+        "verifierCommand": "npx tsx script/m29/verify-precision-ledger.ts",
+        "evidenceFile": "R4-verify.json",
+        "passed": 16,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 5
+      }
     },
     {
       "code": "R5",
