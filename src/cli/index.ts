@@ -76,6 +76,39 @@ async function cmdIndex(
   const { maybeRunFirstRunSetup } = await import("../setup/setup-wizard")
   await maybeRunFirstRunSetup({ noSetup: opts.noSetup === true })
   const pid = getProjectId(abs)
+  // M40.A5: executable semantics matrix (docs/m40/PLAN.md "bb index flag
+  // semantics matrix"). The legal-combination whitelist is the source of
+  // truth: every listed combo maps to defined behavior, ANY combination not
+  // on the list is rejected pre-run — a future flag can never silently
+  // create an undefined combo. Rejection messages are actionable.
+  {
+    type Flags = { force: boolean; changed: boolean; resume: boolean; post: boolean; skipPost: boolean; file: boolean; imp: boolean }
+    const f: Flags = {
+      force: opts.force === true,
+      changed: opts.changed === true,
+      resume: opts.resume === true,
+      post: opts.post === true,
+      skipPost: opts.skipPostProcessing === true,
+      file: opts.file != null,
+      imp: opts.import != null,
+    }
+    const LEGAL: Array<{ when: (x: Flags) => boolean; behavior: string }> = [
+      { when: (x) => !x.force && !x.changed && !x.resume && !x.post && !x.skipPost && !x.file && !x.imp, behavior: "full index + all post-processing" },
+      { when: (x) => x.changed && !x.force && !x.resume && !x.post && !x.skipPost && !x.file && !x.imp, behavior: "incremental parse + bounded post-pass" },
+      { when: (x) => x.resume && !x.force && !x.changed && !x.post && !x.skipPost && !x.file && !x.imp, behavior: "incremental from checkpoint + bounded post-pass" },
+      { when: (x) => x.post && !x.force && !x.changed && !x.resume && !x.skipPost && !x.file && !x.imp, behavior: "no parse; re-run 5 derived phases only" },
+      { when: (x) => x.skipPost && !x.force && !x.changed && !x.resume && !x.post && !x.file && !x.imp, behavior: "parse+store only; derived data deferred (bb index --post to finish)" },
+      { when: (x) => x.file && !x.force && !x.changed && !x.resume && !x.post && !x.skipPost && !x.imp, behavior: "single-file reindex + scoped post-pass" },
+      { when: (x) => x.imp && !x.force && !x.changed && !x.resume && !x.post && !x.skipPost && !x.file, behavior: "adopt DB, then incremental top-up" },
+      { when: (x) => x.force && !x.changed && !x.resume && !x.post && !x.skipPost && !x.file && !x.imp, behavior: "wipe + full index + full post-processing" },
+    ]
+    if (!LEGAL.some((l) => l.when(f))) {
+      const active = Object.entries(f).filter(([, v]) => v).map(([k]) => `--${k === "skipPost" ? "skip-post-processing" : k === "imp" ? "import" : k}`).join(" ")
+      console.error(`✗ conflicting bb index options: ${active || "(none)"}\n  This combination has no defined behavior. See the semantics matrix: bb index --help, docs/m40/PLAN.md\n  Remediations: --force alone rebuilds everything; --post alone re-runs derived-data phases; --changed/--resume alone run the bounded pass.`)
+      process.exitCode = 1
+      return
+    }
+  }
   // M40.A1: standalone post-processing — re-runs the five heavy phases +
   // integrity check WITHOUT re-parsing. The remediation for stale derived
   // data after --changed/--resume/agent edits (those paths defer it by design).
@@ -153,7 +186,14 @@ async function cmdIndex(
   const t = Date.now()
   const indexOpts: Parameters<typeof indexProjectParallel>[2] = { onProgress: (s) => {} }
   if (opts.skipPostProcessing) indexOpts.skipPostProcessing = true
-  if (opts.file) indexOpts.files = [opts.file]
+  if (opts.file) {
+    indexOpts.files = [opts.file]
+    // M40.A5 (matrix row: "--file <p> → single-file reindex + scoped post-pass"):
+    // incremental mode scopes the derived pass to this file. Unchanged files
+    // still skip (the mtime/size check applies to overrides too) → honest
+    // "skipped-unchanged".
+    indexOpts.isIncremental = true
+  }
   if (opts.changed) indexOpts.isIncremental = true
   // M23.P3: right after adoption the checkout is unchanged relative to the
   // adopted index (the move preserves mtimes), so top up incrementally instead
@@ -440,11 +480,11 @@ export async function runCli(argv: string[]): Promise<void> {
     .argument("[dir]", "project directory (default: current directory)")
     .option("--force", "wipe the existing index and rebuild")
     .option("--no-setup", "skip the first-run embedding setup prompt")
-    .option("--skip-post-processing", "parse + store only; defer relationship resolution/enrichment/gravity/taint/health")
-    .option("--post", "re-run relationship/enrichment/gravity/taint/health phases only — no re-parse (M40.A1 remediation for stale derived data)")
-    .option("--file <path>", "reindex a single file's symbols + relationships")
-    .option("--changed", "reindex only files changed since the last index")
-    .option("--resume", "continue from an interrupted run's checkpoint (incremental: only missing/changed files)")
+    .option("--skip-post-processing", "parse + store only; SKIP relationship resolution/enrichment/gravity/taint/health (derived data goes stale until: bb index --post)")
+    .option("--post", "re-run relationship/enrichment/gravity/taint/health phases only — no re-parse (remediation for stale derived data after --changed/--resume/agent edits)")
+    .option("--file <path>", "reindex a single file's symbols + relationships (runs a scoped derived-data pass for that file)")
+    .option("--changed", "reindex only files changed since the last index (runs the bounded derived-data pass for touched files — relationships stay current)")
+    .option("--resume", "continue from an interrupted run's checkpoint (incremental: only missing/changed files; runs the bounded derived-data pass)")
     .option("--import <db>", "adopt an existing brain.db file (re-home a moved project's index)")
     .addHelpText("after", `
 Examples:

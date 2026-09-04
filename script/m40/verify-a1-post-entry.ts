@@ -96,12 +96,26 @@ try {
 
   // 4. Restoration proof.
   const R1 = countResolved()
+  // M40.A4 lesson: symbol-level targets are 100% resolver-reachable (R0 was
+  // observed to fluctuate 12↔15 run-to-run because store-time inline
+  // resolution is batch-order dependent); `imports`-type rows are FILE-level
+  // dependency edges by design (target `./module:item`, consumed via
+  // target_external by dependencies/orphans tools) and are NOT symbol-
+  // resolvable. The honest, machine-independent invariant: every non-imports
+  // row resolves after --post.
+  const nonImportsTotal = () =>
+    (raw.prepare("SELECT COUNT(*) c FROM brain_relationship WHERE project_id = ? AND relationship_type != 'imports'").get(pid) as any).c
+  const nonImportsResolved = () =>
+    (raw.prepare("SELECT COUNT(*) c FROM brain_relationship WHERE project_id = ? AND relationship_type != 'imports' AND target_symbol_id IS NOT NULL").get(pid) as any).c
   if (MUTATE_NOOP) {
     check("MUTATION: restoration check FAILS when --post is a no-op", R1 === 0, `R1=${R1} (expected 0 — gate must fail)`)
     // Force the gate failure the mutation exists to prove.
     check("A1: relationships restored after --post", false, `mutated run: R1=${R1} vs R0=${R0}`)
   } else {
-    check("A1: relationships restored after --post", R1 >= Math.floor(R0 * 0.9), `R1=${R1} vs R0=${R0}`)
+    const NI = nonImportsTotal()
+    const NIR = nonImportsResolved()
+    check("A1: fixture has symbol-level edges", NI >= 8, `non-imports rows=${NI}`)
+    check("A1: 100% of resolver-reachable rows restored after --post", NIR === NI, `${NIR}/${NI} non-imports rows resolved`)
     check("A1: total relationship rows preserved (no data loss)", countTotal() >= R0, `total=${countTotal()} R0=${R0}`)
   }
 
