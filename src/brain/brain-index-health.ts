@@ -15,6 +15,11 @@
 
 import type { ProjectID } from "../project/schema"
 import { BrainDatabase } from "./database"
+// M40.A4: static imports instead of bare require() — the latter throws
+// "require is not defined" under Node ESM (tsx), breaking the integrity
+// phase on every index. Dual-runtime rule: M21.D2.
+import * as fs from "node:fs"
+import * as crypto from "node:crypto"
 
 // ─── Health Report Types ───────────────────────────────────────────────────
 
@@ -251,8 +256,6 @@ async function checkHashDrift(rawDb: any, projectId: ProjectID): Promise<HealthC
     LIMIT 200
   `).all(projectId) as any[]
 
-  const fs = require("fs")
-  const crypto = require("crypto")
   let driftCount = 0
   const driftSamples: string[] = []
   for (const f of files) {
@@ -297,7 +300,6 @@ async function checkMissingFiles(rawDb: any, projectId: ProjectID): Promise<Heal
     SELECT path FROM brain_file WHERE project_id = ? LIMIT 100
   `).all(projectId) as any[]
 
-  const fs = require("fs")
   let missing = 0
   const missingSamples: string[] = []
   for (const f of files) {
@@ -420,7 +422,6 @@ async function checkWalSize(rawDb: any, projectId: ProjectID): Promise<HealthChe
     const walPath = rawPath + "-wal"
     let walSizeBytes = 0
     try {
-      const fs = require("fs")
       walSizeBytes = fs.statSync(walPath).size
     } catch {
       walSizeBytes = 0
