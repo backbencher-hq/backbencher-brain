@@ -11,6 +11,14 @@ bb.json
 .env.local
 .env*.local
 
+# website/ (absorbed from a nested repo) — mirror its local ignores
+website/.next/
+website/.vercel/
+website/.astro/
+website/*.log
+website/*.tsbuildinfo
+website/.env.vercel
+
 # VSIX build artifacts (packaging evidence records the artifact, not the blob)
 *.vsix
 .p3-runner.tmp.ts
