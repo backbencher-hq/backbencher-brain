@@ -33,3 +33,31 @@ jobs:
 
       - name: Test
         run: npm test
+
+  # M36.S2 — enforcement of the verification discipline on every push/PR.
+  # Runs the runner-certified subset (M30/M32/M33/M34 gates, fresh-HOME
+  # certified; the full `npm run verify` chain includes machine-specific
+  # legs, e.g. M19 benchmarks against a local intellij-community checkout,
+  # and stays a local command). Requires groff/man-db for the man-page gate
+  # (absent from runner images — installed explicitly, never skipped).
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Install man-page tooling (required by M33.S3, not preinstalled)
+        run: sudo apt-get update && sudo apt-get install -y groff man-db
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify (fast, runner-certified subset)
+        run: npm run verify:fast

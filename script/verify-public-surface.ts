@@ -6,11 +6,15 @@ function check(label: string, condition: boolean, detail = ""): void { if (condi
 
 const publicNames = PUBLIC_TOOL_DESCRIPTORS.map((tool) => tool.name)
 const targetNames = deriveToolContracts().map((tool) => tool.name)
-check("exactly ten public descriptors", publicNames.length === 10)
+// M22.E1 grew the surface to 11 tools (bb_index). Per the M13.01 doctrine the
+// executable registry is the single contract authority, so the expected count
+// is derived from it — the invariant is "registry == contracts, non-empty",
+// not a hardcoded historical number that goes stale on every intentional addition.
+check("public descriptor count matches contract authority", publicNames.length === targetNames.length && publicNames.length > 0, String(publicNames.length))
 check("public descriptors match target contracts", JSON.stringify([...publicNames].sort()) === JSON.stringify([...targetNames].sort()), publicNames.join(","))
 check("all public tools have centralized handlers", publicNames.every((name) => Boolean(createToolHandlers()[name])))
 check("registry contains only public tools", TOOL_DESCRIPTORS.length === PUBLIC_TOOL_DESCRIPTORS.length)
-check("public descriptions are distinct", new Set(PUBLIC_TOOL_DESCRIPTORS.map((tool) => tool.description)).size === 10)
+check("public descriptions are distinct", new Set(PUBLIC_TOOL_DESCRIPTORS.map((tool) => tool.description)).size === publicNames.length)
 check("composite modes are unique", PUBLIC_TOOL_DESCRIPTORS.every((tool) => new Set(tool.modes).size === tool.modes.length))
 
 console.log(failures === 0 ? "\nPUBLIC SURFACE: PASS" : `\nPUBLIC SURFACE: ${failures} FAILURES`)
