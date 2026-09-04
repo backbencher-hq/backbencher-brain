@@ -179,8 +179,10 @@ async function testHonesty(): Promise<void> {
   check("G3: not-indexed position has no fabricated data", result.data === null)
   check("G3: provenance explains not indexed", (result.provenance.limitations.join(" ") || "").includes("not indexed"))
 
-  // Unsupported language: declared absence with provenance.
-  const result2 = hover(raw, { filePath: join(dir, "fixture.py"), position: { line: 0, character: 0 } })
+  // Unsupported language: declared absence with provenance. python JOINED the
+  // launch set in the M29 wave — the declared-absence oracle must be a
+  // language that stays outside the set.
+  const result2 = hover(raw, { filePath: join(dir, "fixture.rb"), position: { line: 0, character: 0 } })
   check("G3: unsupported language returns null contents", result2.contents === null)
   check("G3: unsupported language provenance explains launch set", (result2.provenance.limitations.join(" ") || "").includes("launch"))
   cleanupDir(dir)

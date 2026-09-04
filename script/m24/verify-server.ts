@@ -238,7 +238,7 @@ async function testLanguages(): Promise<void> {
 
 // --- Mutation suite (proves the suite CAN FAIL) ------------------------------
 
-type Mutant = { name: string; from: string; to: string }
+type Mutant = { name: string; from: string; to: string; target?: "server" | "launch-languages"; oracle?: (mod: any) => Promise<boolean> }
 
 const MUTANTS: Mutant[] = [
   {
@@ -268,8 +268,13 @@ const MUTANTS: Mutant[] = [
   },
   {
     name: "languages: treat every language as launch language",
+    // M29.R2: isLaunchLanguage lives in the single-owner module now — the
+    // mutant plants there (its own oracle: the break is cobol treated as
+    // launch).
+    target: "launch-languages",
     from: "return language !== null && (LAUNCH_LANGUAGES as readonly string[]).includes(language)",
     to: "return true",
+    oracle: async (mod) => mod.isLaunchLanguage("cobol") === true,
   },
   {
     name: "lifecycle: shutdown does not set state",
@@ -294,6 +299,35 @@ async function runMutants(): Promise<number> {
   let caught = 0
 
   for (const mutant of MUTANTS) {
+    // Mutants targeting the single-owner launch module plant into a COPY of
+    // that module beside the original (imports resolve; the relative import
+    // inside the copy points at the real module).
+    if (mutant.target === "launch-languages") {
+      const ownerSrc = join(ROOT, "src", "lsp", "launch_languages.ts")
+      const ownerSource = readFileSync(ownerSrc, "utf8")
+      if (!ownerSource.includes(mutant.from)) {
+        console.log(`  SKIP (anchor not found): ${mutant.name}`)
+        continue
+      }
+      const mutantCopy = join(ROOT, "src", "lsp", `launch_languages.mutant.${Date.now()}.ts`)
+      writeFileSync(mutantCopy, ownerSource.replace(mutant.from, mutant.to))
+      try {
+        const mod = await import(mutantCopy)
+        const ok = mutant.oracle ? await mutant.oracle(mod) : await mutantOracle(mod)
+        if (ok) {
+          caught++
+          console.log(`  caught: ${mutant.name}`)
+        } else {
+          console.log(`  SURVIVED: ${mutant.name}`)
+        }
+      } catch {
+        caught++
+        console.log(`  caught (load failure): ${mutant.name}`)
+      } finally {
+        try { rmSync(mutantCopy, { force: true }) } catch {}
+      }
+      continue
+    }
     if (!source.includes(mutant.from)) {
       console.log(`  SKIP (anchor not found): ${mutant.name}`)
       continue
