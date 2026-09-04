@@ -627,6 +627,18 @@ const handlers: Record<string, ToolHandler> = {
     const raw = String(args.path ?? "")
     if (!raw) return textResult("bb_index requires path", true)
     const mode = String(args.mode ?? "auto")
+    // M40.A1: mode=post — re-run the heavy derived-data phases (relationships,
+    // enrichment, gravity, taints, health) WITHOUT re-parsing. The remediation
+    // for stale derived data after agent edits or incremental indexing.
+    if (mode === "post") {
+      const { runPostProcessing } = await import("../ast/parallel-indexer")
+      try {
+        const post = await runPostProcessing(projectId as any, { logger: { log: () => {}, write: () => {} } })
+        return textResult(JSON.stringify({ mode: "post", phases: post.phases, totalMs: post.totalMs, integrityHealth: post.integrityHealth }, null, 2))
+      } catch (e: any) {
+        return textResult(`bb_index mode=post failed: ${e?.message}`, true)
+      }
+    }
     const abs = path.isAbsolute(raw) ? raw : path.resolve(projectPath, raw)
     if (!existsSync(abs)) return textResult(`bb_index: no such path: ${abs}`, true)
     const isDir = statSync(abs).isDirectory()
