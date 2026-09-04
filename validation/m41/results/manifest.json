@@ -6,7 +6,7 @@
   "status": "open",
   "authority": "docs/m41/M41-MASTER-PLAN.md",
   "governingContract": "docs/M14-HONESTY-CONTRACT.md",
-  "updatedAt": "2026-09-04T21:28:28.639Z",
+  "updatedAt": "2026-09-04T21:50:23.546Z",
   "evidencePolicy": {
     "verifiedRequires": [
       "currentCommit",
@@ -109,16 +109,16 @@
         "verifierCommand": "npx tsx script/m41/verify-site-truth.ts",
         "evidenceFile": "T2.json",
         "generatedAt": "2026-09-04T21:28:28.638Z",
-        "passed": 28,
+        "passed": 49,
         "failed": 0,
-        "negativeCases": 2
+        "negativeCases": 3
       }
     },
     {
       "code": "T3",
       "githubIssue": 643,
       "tool": "site-truth",
-      "status": "planned",
+      "status": "verified",
       "scope": "new pages: install, FAQ, troubleshooting, contact — truth-checked and SEO-complete from birth; npm-forward-compatible install section",
       "acceptanceCriteria": [
         "4 new routes live, all claims generated/verified",
@@ -129,7 +129,17 @@
       "closureRequirements": [
         "verifier coverage extended to new routes",
         "evidence at current commit with negative cases"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "87d7537e2193814a77d6844da5976db3fed148eb",
+        "verifierCommand": "npx tsx script/m41/verify-site-truth.ts --label T3",
+        "evidenceFile": "T3.json",
+        "generatedAt": "2026-09-04T21:50:23.546Z",
+        "passed": 49,
+        "failed": 0,
+        "negativeCases": 3
+      }
     },
     {
       "code": "S1",
