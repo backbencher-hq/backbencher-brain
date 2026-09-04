@@ -1,0 +1,110 @@
+# M40: Index Lifecycle Integrity — PLAN
+
+## The milestone invariant (verbatim, enforced by G1)
+
+> **Any indexing path that updates symbols must leave derived data (relationships,
+> enrichment, gravity, taints, health) consistent — or visibly say it did not.**
+
+Every acceptance criterion in this milestone traces to this sentence. Per-issue
+gates prove pieces work; the A4 lifecycle corpus proves the system works.
+
+Invariant anchors (checked by G1): the PLAN must contain both the trigger
+clause — *any indexing path that updates symbols must leave derived data* —
+and the honesty clause — *or visibly say it did not*.
+
+## Findings recap (evidence from code, not memory)
+
+Post-processing (the five heavy phases) is invoked from exactly ONE place:
+`src/ast/parallel-indexer.ts:3221` — `} else if (!options.isIncremental && !options.skipPostProcessing) {`.
+Every other path silently skips it, forever:
+
+| Path | Post-processing today |
+|---|---|
+| `bb index` (bare, full) | runs |
+| `bb index --changed` | skipped (isIncremental=true) |
+| `bb index --resume` | skipped (isIncremental=true) |
+| `bb index` after adoption (M23.P3) | skipped (isIncremental=true) |
+| `bb index --skip-post-processing` | skipped (explicitly) |
+| `bb health --refresh` (non-force) | skipped (health-provider.ts:67-68) |
+| `bb edit` (M22.E1 agent-fresh) | skipped (edit-engine.ts:519 → reindexFilesParallel) |
+| LSP didSave reindex | skipped (lsp/server.ts:445-465) |
+| MCP `bb_index` file mode | skipped (reindexFilesParallel) |
+| MCP `bb_index` dir mode | skipped (skipPostProcessing: true, tool-handlers.ts:641) |
+| cancelled run | skipped deliberately (M21.R3 — correct, keep) |
+
+No standalone post-processing entry exists anywhere: once a user indexes with
+`--changed`, the only remediation for stale derived data is a full re-index.
+
+## Issue inventory + attack order
+
+1. **M40.G1 (#630)** — governance first: ledger, evidence dir, closure gate,
+   mutation self-test, stamp agreement. (Do first; everything lands inside it.)
+2. **M40.A1 (#631)** — `runPostProcessing(projectId, opts)` extraction +
+   `bb index --post` + MCP `bb_index` mode=post. The missing remediation command.
+3. **M40.A2 (#632)** — bounded incremental post-pass inside the indexer for
+   incremental runs; provably sub-linear (timing evidence required).
+4. **M40.A3 (#633)** — write-path parity: bb_edit / LSP / MCP file-mode run the
+   A2 scoped pass; deferrals visible, never silent.
+5. **M40.A4 (#634)** — the lifecycle-invariant corpus (6 scenarios), wired into
+   closure + self-test with mutations. The non-negotiable system gate.
+6. **M40.A5 (#635)** — flag semantics matrix + combination guards + honest help.
+7. **M40.A6 (#636)** — health --refresh honesty (derived-data freshness signal).
+8. **M40.A7 (#637)** — CLI/MCP read parity + command-selection table.
+9. **M40.A8 (#638)** — config precedence single-source; test-hook quarantine.
+10. **M40.A9 (#639)** — dead-surface purge: used-or-removed, purge report here.
+
+Order rationale: A1 before A2 (A2 reuses the extracted entry in scoped mode);
+A3 depends on A2; A4 after A1-A3 (it gates their composition); A5-A9 are
+independent of each other once A1-A4 land.
+
+## bb index flag semantics matrix (A5 will enforce this verbatim)
+
+| Combination | Verdict |
+|---|---|
+| (bare) | full index + all post-processing |
+| `--changed` | incremental parse + **bounded post-pass (A2)** |
+| `--resume` | incremental from checkpoint + bounded post-pass |
+| `--post` | **no parse**; re-run 5 phases only (A1) |
+| `--skip-post-processing` | parse+store only; summary must say deferred |
+| `--file <p>` | single-file reindex + scoped post-pass |
+| `--import <db>` | adopt DB, then incremental top-up |
+| `--force` | wipe + full index + full post-processing |
+| `--force --changed` | **REJECT** (wipe then incremental = contradictory) |
+| `--file --changed` | **REJECT** (scope conflict) |
+| `--resume --changed` | **REJECT** (double-incremental) |
+| `--skip-post-processing --post` | **REJECT** (contradictory) |
+| `--force --post` | **REJECT** (nothing to post-process after wipe) |
+| `--import --force` | **REJECT** (adopt then wipe = destroys imported index) |
+
+## Latency budget (A3)
+
+Edit round-trip (bb_edit call → DB queryable with resolved edges) must stay
+interactive: **p95 < 2s on the fixture corpus**. LSP didSave may opt down to a
+recorded deferral; the deferral must be visible in tool output.
+
+## Purge rule (A9, user-directed)
+
+Present-but-useless is **removed**, not verified-and-tolerated. The purge
+report in this file lists every audited surface item with verdict
+used / fixed / removed + proof. No zombie flags, no no-op env vars, no
+exported functions without callers.
+
+## Evidence rules (M35 discipline, inherited)
+
+- Evidence files in `validation/m40/results/*.json` are the ONLY truth;
+  ledger blocks are synced from them by `script/m40/sync-ledger.ts`, never hand-edited.
+- Every gate: real runs, no auto-pass predicates, registered negative cases,
+  mutation proof in the self-test (a gate that cannot fail is not a gate).
+- Stamps: evidence records the commit it was produced at; governance enforces
+  stamp agreement across the chain; closure refuses hand-closing.
+- Control seam: gates spawned by the self-test honor `BB_M40_SELFTEST_CONTROL=1`
+  for checks that are mid-flight by construction (M31/M35 pattern).
+- Co-agent surfaces (M14/M20/M24/M37 analyzer work) are out of scope and
+  untouched; commits carry only M40 files.
+
+## Out of scope (deliberate)
+
+- `bb watch` daemon — real value, own milestone after the lifecycle is coherent.
+- Consolidating status/stats/health/doctor/projects — A7 documents a selection
+  table; no consolidation rewrite.
+- Analyzer internals (co-agent territory), embeddings quality (M30 territory).

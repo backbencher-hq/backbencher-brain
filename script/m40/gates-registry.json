@@ -1,0 +1,17 @@
+{
+  "comment": "M40 gates registry — every verifier must appear here (governance check 3) AND in the npm run verify chain (governance check 4). Mutation names are semantic; gate-selftest maps them to scripts via the script field. Infra gates (governance/gate-selftest/closure) are exempt from mutation requirements (M35 lesson) but listed for completeness.",
+  "gates": [
+    { "code": "G1", "script": "verify-governance.ts", "infra": true },
+    { "code": "ST", "script": "verify-gate-selftest.ts", "infra": true },
+    { "code": "A1", "script": "verify-a1-post-entry.ts", "infra": false },
+    { "code": "A2", "script": "verify-a2-bounded-post.ts", "infra": false },
+    { "code": "A3", "script": "verify-a3-write-parity.ts", "infra": false },
+    { "code": "A4", "script": "lifecycle-corpus.ts", "infra": false, "note": "corpus runs in gate mode via --gate" },
+    { "code": "A5", "script": "verify-a5-flag-semantics.ts", "infra": false },
+    { "code": "A6", "script": "verify-a6-health-refresh.ts", "infra": false },
+    { "code": "A7", "script": "verify-a7-cli-parity.ts", "infra": false },
+    { "code": "A8", "script": "verify-a8-config.ts", "infra": false },
+    { "code": "A9", "script": "verify-a9-purge.ts", "infra": false },
+    { "code": "X1", "script": "verify-closure.ts", "infra": true }
+  ]
+}
