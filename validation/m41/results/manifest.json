@@ -6,7 +6,7 @@
   "status": "open",
   "authority": "docs/m41/M41-MASTER-PLAN.md",
   "governingContract": "docs/M14-HONESTY-CONTRACT.md",
-  "updatedAt": "2026-09-04T22:07:41.243Z",
+  "updatedAt": "2026-09-04T23:05:43.637Z",
   "evidencePolicy": {
     "verifiedRequires": [
       "currentCommit",
@@ -172,7 +172,7 @@
       "code": "S2",
       "githubIssue": 645,
       "tool": "seo-onboarding",
-      "status": "planned",
+      "status": "verified",
       "scope": "guided search-engine onboarding: GSC verification, Bing import, Brave submission, sitemap submits — owner performs dashboard/DNS actions from agent checklists",
       "acceptanceCriteria": [
         "GSC verified + sitemap submitted",
@@ -184,7 +184,18 @@
       "closureRequirements": [
         "owner confirmation recorded in evidence",
         "verification artifacts asserted by verifier"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "329a57074eba308fc3845dc9f2cbc78c8855bee0",
+        "verifierCommand": "npx tsx script/m41/verify-seo-onboarding.ts",
+        "evidenceFile": "S2.json",
+        "ownerConfirmationsFile": "S2-OWNER-CONFIRMATIONS.json",
+        "generatedAt": "2026-09-04T23:05:36.091Z",
+        "passed": 12,
+        "failed": 0,
+        "negativeCases": 3
+      }
     },
     {
       "code": "D1",
