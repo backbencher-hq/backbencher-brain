@@ -97,7 +97,7 @@
       "code": "Z1",
       "githubIssue": 619,
       "tool": "zed-extension",
-      "status": "planned",
+      "status": "verified",
       "scope": "Zed adapter: minimal extension (extension.toml + thin wasm shim owning binary resolution only), shim unit-proven across found/not-found/override paths, extension built via zed CLI, session leg attempted and honestly classified.",
       "acceptanceCriteria": [
         "extension.toml + shim build clean via zed extension CLI",
@@ -107,7 +107,18 @@
       "closureRequirements": [
         "npx tsx script/m27/verify-zed.ts exits 0 at HEAD with clean relevant tree",
         "Evidence persisted at validation/m27/results/Z1.json with commit stamp"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see Z1.json",
+        "verifierCommand": "npx tsx script/m27/verify-zed.ts",
+        "evidenceFile": "Z1.json",
+        "passed": 28,
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": 3,
+        "mutantsTotal": 3
+      }
     },
     {
       "code": "H1",
