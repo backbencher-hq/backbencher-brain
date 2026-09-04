@@ -14,11 +14,11 @@
       "caught": true
     },
     {
-      "name": "A1 mutant: fabricated write is caught by the persisted-count check",
+      "name": "A1 mutant: a write whose claim diverges from storage is caught by the round-trip invariant",
       "caught": true
     },
     {
-      "name": "A1 mutant: silently-truncating reader is caught by the body-equality check",
+      "name": "A1 mutant: silently-truncating reader is caught by the write-claim equality",
       "caught": true
     },
     {
@@ -26,10 +26,10 @@
       "caught": true
     }
   ],
-  "currentCommit": "554f5e2197a6ac799c5de43d333e242c0eba9b86",
+  "currentCommit": "d78b627b6b7cdad0e3b4b57f56c35977579e19e9",
   "verifierCommand": "npx tsx script/m28/verify-annotation-store.ts",
   "evidenceFile": "A1.json",
-  "generatedAt": "2026-09-04T06:12:04.925Z",
+  "generatedAt": "2026-09-04T07:34:13.573Z",
   "claimLevel": "verified — annotation store proven against a real sqlite db (fresh + pre-existing paths), provenance enforced in code, suite can-fail proven",
   "failures": []
 }

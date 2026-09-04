@@ -6,19 +6,27 @@
   "checks": 23,
   "passed": 23,
   "failed": 0,
-  "mutantsCaught": 4,
-  "mutantsTotal": 4,
+  "mutantsCaught": 6,
+  "mutantsTotal": 6,
   "mutantRecords": [
     {
       "name": "A2 mutant: author-label-dropping renderer is caught by the label rule",
       "caught": true
     },
     {
-      "name": "A2 mutant: unescaped body is caught by the escaping rule",
+      "name": "A2 mutant: badge attached to a nameless node is rejected by the pairing rule",
       "caught": true
     },
     {
-      "name": "A2 mutant: badge-on-wrong-node is caught by the pairing rule",
+      "name": "A2 mutant: label/author disagreement is rejected by the pairing rule",
+      "caught": true
+    },
+    {
+      "name": "A2 mutant: escaper-skipping renderer is caught (real escaper transforms, real section contains only the escaped form)",
+      "caught": true
+    },
+    {
+      "name": "A2 mutant: annotation-less model renders NO badge, annotated model renders exactly one author-labeled badge (real DOM rules)",
       "caught": true
     },
     {
@@ -26,10 +34,10 @@
       "caught": true
     }
   ],
-  "currentCommit": "554f5e2197a6ac799c5de43d333e242c0eba9b86",
+  "currentCommit": "d78b627b6b7cdad0e3b4b57f56c35977579e19e9",
   "verifierCommand": "npx tsx script/m28/verify-annotation-ui.ts",
   "evidenceFile": "A2.json",
-  "generatedAt": "2026-09-04T06:12:06.444Z",
+  "generatedAt": "2026-09-04T07:34:15.103Z",
   "claimLevel": "verified — annotations render in the real editor hover (author-labeled) and ride bb/graph; component rules mutation-gated",
   "failures": []
 }
