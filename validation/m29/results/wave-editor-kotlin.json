@@ -1,35 +1,201 @@
 {
   "raw": {
+    "documentSymbol": {
+      "symbols": [
+        {
+          "name": "Greeter",
+          "symbolType": "class",
+          "qualifiedName": "dev.backbencher.wavetest.Greeter",
+          "id": "584dc4c6ad06f59df9a3232b2bbe97bee8634075:main.kt:Greeter:4",
+          "children": [
+            {
+              "name": "constructor",
+              "symbolType": "constructor",
+              "qualifiedName": "dev.backbencher.wavetest.Greeter.constructor",
+              "id": "584dc4c6ad06f59df9a3232b2bbe97bee8634075:main.kt:constructor:4",
+              "children": [],
+              "range": {
+                "endCharacter": 46,
+                "endLine": 3,
+                "character": 13,
+                "line": 3
+              },
+              "selectionRange": {
+                "endCharacter": 46,
+                "endLine": 3,
+                "character": 13,
+                "line": 3
+              }
+            },
+            {
+              "name": "items",
+              "symbolType": "property",
+              "qualifiedName": "dev.backbencher.wavetest.Greeter.items",
+              "id": "584dc4c6ad06f59df9a3232b2bbe97bee8634075:main.kt:items:4",
+              "children": [],
+              "range": {
+                "endCharacter": 45,
+                "endLine": 3,
+                "character": 14,
+                "line": 3
+              },
+              "selectionRange": {
+                "endCharacter": 45,
+                "endLine": 3,
+                "character": 14,
+                "line": 3
+              }
+            },
+            {
+              "name": "greet",
+              "symbolType": "method",
+              "qualifiedName": "dev.backbencher.wavetest.Greeter.greet",
+              "id": "584dc4c6ad06f59df9a3232b2bbe97bee8634075:main.kt:greet:5",
+              "children": [],
+              "range": {
+                "endCharacter": 47,
+                "endLine": 4,
+                "character": 4,
+                "line": 4
+              },
+              "selectionRange": {
+                "endCharacter": 47,
+                "endLine": 4,
+                "character": 4,
+                "line": 4
+              }
+            }
+          ],
+          "range": {
+            "endCharacter": 1,
+            "endLine": 5,
+            "character": 0,
+            "line": 3
+          },
+          "selectionRange": {
+            "endCharacter": 1,
+            "endLine": 5,
+            "character": 0,
+            "line": 3
+          }
+        },
+        {
+          "name": "main",
+          "symbolType": "function",
+          "qualifiedName": "dev.backbencher.wavetest.main",
+          "id": "584dc4c6ad06f59df9a3232b2bbe97bee8634075:main.kt:main:8",
+          "children": [],
+          "range": {
+            "endCharacter": 1,
+            "endLine": 10,
+            "character": 0,
+            "line": 7
+          },
+          "selectionRange": {
+            "endCharacter": 1,
+            "endLine": 10,
+            "character": 0,
+            "line": 7
+          }
+        },
+        {
+          "name": "CONSTANT",
+          "symbolType": "property",
+          "qualifiedName": "dev.backbencher.wavetest.CONSTANT",
+          "id": "584dc4c6ad06f59df9a3232b2bbe97bee8634075:main.kt:CONSTANT:13",
+          "children": [],
+          "range": {
+            "endCharacter": 23,
+            "endLine": 12,
+            "character": 0,
+            "line": 12
+          },
+          "selectionRange": {
+            "endCharacter": 23,
+            "endLine": 12,
+            "character": 0,
+            "line": 12
+          }
+        }
+      ],
+      "evidenceTier": "indexed",
+      "notIndexed": false
+    },
+    "workspaceAbsence": {
+      "truncated": false,
+      "totalCount": 0,
+      "symbols": [],
+      "evidenceTier": "not_indexed",
+      "limit": 200
+    },
     "definition": {
-      "location": {
-        "endCharacter": 47,
-        "path": "$HOME/backbencher-brain/script/m29/wave-fixtures/kotlin/main.kt",
-        "character": 4,
-        "endLine": 4,
-        "line": 4
-      },
       "symbol": {
-        "symbolType": "method",
         "name": "greet",
         "id": "584dc4c6ad06f59df9a3232b2bbe97bee8634075:main.kt:greet:5",
+        "symbolType": "method",
         "qualifiedName": "dev.backbencher.wavetest.Greeter.greet"
+      },
+      "location": {
+        "line": 4,
+        "endCharacter": 47,
+        "endLine": 4,
+        "path": "$HOME/backbencher-brain/script/m29/wave-fixtures/kotlin/main.kt",
+        "character": 4
       },
       "evidenceTier": "indexed",
       "found": true
     },
+    "references": {
+      "truncated": false,
+      "totalCount": 3,
+      "locations": [
+        {
+          "line": 3,
+          "endCharacter": 1,
+          "endLine": 5,
+          "path": "$HOME/backbencher-brain/script/m29/wave-fixtures/kotlin/main.kt",
+          "character": 0
+        },
+        {
+          "line": 7,
+          "endCharacter": 1,
+          "endLine": 10,
+          "path": "$HOME/backbencher-brain/script/m29/wave-fixtures/kotlin/main.kt",
+          "character": 0
+        },
+        {
+          "line": 4,
+          "endCharacter": 47,
+          "endLine": 4,
+          "path": "$HOME/backbencher-brain/script/m29/wave-fixtures/kotlin/main.kt",
+          "character": 4
+        }
+      ],
+      "evidenceTier": "indexed",
+      "limit": 200
+    },
     "hover": {
-      "provenance": {
-        "source": "bb_index",
-        "evidenceClass": "indexed",
-        "engine": "bb_lsp hover@m24.l2",
-        "limitations": [
-          "index-sourced; no compiler-backed types (complement stance)"
+      "data": {
+        "name": "greet",
+        "evidenceTiers": [
+          "indexed",
+          "inferred"
         ],
-        "stale": false
+        "crossLanguageSection": "",
+        "annotationSection": "",
+        "stale": false,
+        "freshnessStatus": "fresh",
+        "filePath": "$HOME/backbencher-brain/script/m29/wave-fixtures/kotlin/main.kt",
+        "lineStart": 5,
+        "qualifiedName": "dev.backbencher.wavetest.Greeter.greet",
+        "usageCount": 3,
+        "symbolType": "method",
+        "signature": "public method greet([]) → String",
+        "lineEnd": 5
       },
       "contents": {
-        "value": "```\npublic method greet([]) → String\n```\n\n**greet** — method, 2 usages\n\nevidence: indexed, inferred\n\n_source: bb index ($HOME/backbencher-brain/script/m29/wave-fixtures/kotlin/main.kt:5)_",
-        "kind": "markdown"
+        "kind": "markdown",
+        "value": "```\npublic method greet([]) → String\n```\n\n**greet** — method, 3 usages\n\nevidence: indexed, inferred\n\n_source: bb index ($HOME/backbencher-brain/script/m29/wave-fixtures/kotlin/main.kt:5)_"
       },
       "range": {
         "end": {
@@ -41,237 +207,71 @@
           "character": 4
         }
       },
-      "data": {
-        "crossLanguageSection": "",
-        "annotationSection": "",
-        "stale": false,
-        "freshnessStatus": "fresh",
-        "filePath": "$HOME/backbencher-brain/script/m29/wave-fixtures/kotlin/main.kt",
-        "lineStart": 5,
-        "qualifiedName": "dev.backbencher.wavetest.Greeter.greet",
-        "symbolType": "method",
-        "signature": "public method greet([]) → String",
-        "usageCount": 2,
-        "name": "greet",
-        "evidenceTiers": [
-          "indexed",
-          "inferred"
+      "provenance": {
+        "limitations": [
+          "index-sourced; no compiler-backed types (complement stance)"
         ],
-        "lineEnd": 5
+        "source": "bb_index",
+        "stale": false,
+        "evidenceClass": "indexed",
+        "engine": "bb_lsp hover@m24.l2"
       }
-    },
-    "workspaceAbsence": {
-      "symbols": [],
-      "limit": 200,
-      "truncated": false,
-      "totalCount": 0,
-      "evidenceTier": "not_indexed"
-    },
-    "references": {
-      "locations": [
-        {
-          "endCharacter": 1,
-          "path": "$HOME/backbencher-brain/script/m29/wave-fixtures/kotlin/main.kt",
-          "character": 0,
-          "endLine": 5,
-          "line": 3
-        },
-        {
-          "endCharacter": 1,
-          "path": "$HOME/backbencher-brain/script/m29/wave-fixtures/kotlin/main.kt",
-          "character": 0,
-          "endLine": 10,
-          "line": 7
-        },
-        {
-          "endCharacter": 47,
-          "path": "$HOME/backbencher-brain/script/m29/wave-fixtures/kotlin/main.kt",
-          "character": 4,
-          "endLine": 4,
-          "line": 4
-        }
-      ],
-      "limit": 200,
-      "truncated": false,
-      "totalCount": 3,
-      "evidenceTier": "indexed"
-    },
-    "documentSymbol": {
-      "symbols": [
-        {
-          "children": [
-            {
-              "children": [],
-              "symbolType": "constructor",
-              "qualifiedName": "dev.backbencher.wavetest.Greeter.constructor",
-              "selectionRange": {
-                "endLine": 3,
-                "endCharacter": 46,
-                "line": 3,
-                "character": 13
-              },
-              "name": "constructor",
-              "id": "584dc4c6ad06f59df9a3232b2bbe97bee8634075:main.kt:constructor:4",
-              "range": {
-                "endLine": 3,
-                "endCharacter": 46,
-                "line": 3,
-                "character": 13
-              }
-            },
-            {
-              "children": [],
-              "symbolType": "property",
-              "qualifiedName": "dev.backbencher.wavetest.Greeter.items",
-              "selectionRange": {
-                "endLine": 3,
-                "endCharacter": 45,
-                "line": 3,
-                "character": 14
-              },
-              "name": "items",
-              "id": "584dc4c6ad06f59df9a3232b2bbe97bee8634075:main.kt:items:4",
-              "range": {
-                "endLine": 3,
-                "endCharacter": 45,
-                "line": 3,
-                "character": 14
-              }
-            },
-            {
-              "children": [],
-              "symbolType": "method",
-              "qualifiedName": "dev.backbencher.wavetest.Greeter.greet",
-              "selectionRange": {
-                "endLine": 4,
-                "endCharacter": 47,
-                "line": 4,
-                "character": 4
-              },
-              "name": "greet",
-              "id": "584dc4c6ad06f59df9a3232b2bbe97bee8634075:main.kt:greet:5",
-              "range": {
-                "endLine": 4,
-                "endCharacter": 47,
-                "line": 4,
-                "character": 4
-              }
-            }
-          ],
-          "symbolType": "class",
-          "qualifiedName": "dev.backbencher.wavetest.Greeter",
-          "selectionRange": {
-            "endLine": 5,
-            "endCharacter": 1,
-            "line": 3,
-            "character": 0
-          },
-          "name": "Greeter",
-          "id": "584dc4c6ad06f59df9a3232b2bbe97bee8634075:main.kt:Greeter:4",
-          "range": {
-            "endLine": 5,
-            "endCharacter": 1,
-            "line": 3,
-            "character": 0
-          }
-        },
-        {
-          "children": [],
-          "symbolType": "function",
-          "qualifiedName": "dev.backbencher.wavetest.main",
-          "selectionRange": {
-            "endLine": 10,
-            "endCharacter": 1,
-            "line": 7,
-            "character": 0
-          },
-          "name": "main",
-          "id": "584dc4c6ad06f59df9a3232b2bbe97bee8634075:main.kt:main:8",
-          "range": {
-            "endLine": 10,
-            "endCharacter": 1,
-            "line": 7,
-            "character": 0
-          }
-        },
-        {
-          "children": [],
-          "symbolType": "property",
-          "qualifiedName": "dev.backbencher.wavetest.CONSTANT",
-          "selectionRange": {
-            "endLine": 12,
-            "endCharacter": 23,
-            "line": 12,
-            "character": 0
-          },
-          "name": "CONSTANT",
-          "id": "584dc4c6ad06f59df9a3232b2bbe97bee8634075:main.kt:CONSTANT:13",
-          "range": {
-            "endLine": 12,
-            "endCharacter": 23,
-            "line": 12,
-            "character": 0
-          }
-        }
-      ],
-      "evidenceTier": "indexed",
-      "notIndexed": false
     }
   },
-  "language": "kotlin",
   "checks": [
     {
-      "detail": "$HOME/backbencher-brain/dist/lsp/server.js",
       "name": "S6: launch order resolves a server",
+      "detail": "$HOME/backbencher-brain/dist/lsp/server.js",
       "ok": true
     },
     {
-      "detail": "1",
       "name": "S6: vim.lsp.start launched bb_lsp",
+      "detail": "1",
       "ok": true
     },
     {
-      "detail": "table: 0x796ddc26fe90",
       "name": "S6: client initialized",
+      "detail": "table: 0x7c8a0b84dfd0",
       "ok": true
     },
     {
-      "detail": "{\n  d = true,\n  h = true,\n  s = true\n}",
       "name": "S6: capabilities advertised",
+      "detail": "{\n  d = true,\n  h = true,\n  s = true\n}",
       "ok": true
     },
     {
-      "detail": "```\npublic method greet([]) → String\n```\n\n**greet** — method, 2 usages\n\nevidence: indexed, inferred\n\n_source: bb ind",
       "name": "S6: hover renders the symbol",
+      "detail": "```\npublic method greet([]) → String\n```\n\n**greet** — method, 3 usages\n\nevidence: indexed, inferred\n\n_source: bb ind",
       "ok": true
     },
     {
-      "detail": "```\npublic method greet([]) → String\n```\n\n**greet** — method, 2 usages\n\nevidence: indexed, inferred\n\n_source: bb ind",
       "name": "S6: hover carries evidence tier (contract §2)",
+      "detail": "```\npublic method greet([]) → String\n```\n\n**greet** — method, 3 usages\n\nevidence: indexed, inferred\n\n_source: bb ind",
       "ok": true
     },
     {
-      "detail": "{\n  evidenceTier = \"indexed\",\n  found = true,\n  location = {\n    character = 4,\n    endCharacter = 47,\n    endLine = 4,\n    line = 4,\n    path = \"/home/ishaq232",
       "name": "S6: definition resolves",
+      "detail": "{\n  evidenceTier = \"indexed\",\n  found = true,\n  location = {\n    character = 4,\n    endCharacter = 47,\n    endLine = 4,\n    line = 4,\n    path = \"/home/ishaq232",
       "ok": true
     },
     {
-      "detail": "3",
       "name": "S6: references returns locations",
+      "detail": "3",
       "ok": true
     },
     {
-      "detail": "{ \"Greeter\", \"main\", \"CONSTANT\" }",
       "name": "S6: documentSymbols include the class",
+      "detail": "{ \"Greeter\", \"main\", \"CONSTANT\" }",
       "ok": true
     },
     {
-      "detail": "{\n  evidenceTier = \"not_indexed\",\n  limit = 200,\n  symbols = {},\n  totalCount = 0,\n  truncated = false\n}",
       "name": "S6: declared absence is honored (no fabricated symbols)",
+      "detail": "{\n  evidenceTier = \"not_indexed\",\n  limit = 200,\n  symbols = {},\n  totalCount = 0,\n  truncated = false\n}",
       "ok": true
     }
   ],
+  "language": "kotlin",
   "session": [],
   "status": "verified",
-  "commit": "beb2b9085f6eb17d97a5e69f03258df17a261664"
+  "commit": "a9fe5e2603d677d5c09d0720f41b7d0f7079cd34"
 }
