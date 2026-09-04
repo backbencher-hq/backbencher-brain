@@ -178,7 +178,7 @@
       "code": "X1",
       "githubIssue": 622,
       "tool": "closure-gate",
-      "status": "planned",
+      "status": "verified",
       "scope": "Closure gate: full-suite audit at HEAD with per-mutant named records, v3 completion-bar audit with negative probes (>=1 I3 leg, subset proofs, matrix drift gate, M26 bar re-audit), byte-identical regeneration check.",
       "acceptanceCriteria": [
         "100% of suite legs green-or-blocked-with-reason at HEAD",
@@ -188,7 +188,17 @@
       "closureRequirements": [
         "npx tsx script/m27/verify-closure.ts exits 0 at HEAD with clean relevant tree",
         "Evidence persisted at validation/m27/results/X1.json with commit stamp"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see X1.json",
+        "verifierCommand": "npx tsx script/m27/verify-closure.ts",
+        "evidenceFile": "X1.json",
+        "passed": 31,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 4
+      }
     }
   ]
 }
