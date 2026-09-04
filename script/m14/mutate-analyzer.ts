@@ -571,6 +571,20 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => x.metadata?.relationshipType !== "instanceof_check") }),
   },
   {
+    id: "javascript/reintroduce-receiver-source",
+    language: "javascript",
+    defectClass: "relationship-garbage",
+    description: "reverts JSD2: member reads source to the receiver variable again (cfg.limit -> cfg, a non-symbol the graph/LSP can never connect; the JAD2 class from the java wave)",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "svc", target: "fetch", confidence: 0.6, metadata: { isFieldAccess: true } }] }),
+  },
+  {
+    id: "javascript/reintroduce-module-write-uses",
+    language: "javascript",
+    defectClass: "relationship-garbage",
+    description: "reverts JSD1: CJS deep-export writes emit uses again (module.exports.tag = 1 -> uses module -> exports/uses module -> tag)",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "module", target: "exports", confidence: 0.6, metadata: { isFieldAccess: true } }, { type: "uses", source: "module", target: "tag", confidence: 0.6, metadata: { isFieldAccess: true } }] }),
+  },
+  {
     id: "python/drop-declared-types",
     language: "python",
     defectClass: "relationship-loss",
@@ -700,6 +714,27 @@ const MUTANTS: Mutant[] = [
     defectClass: "payload-loss",
     description: "drops the typeParameters payload from symbols (section C typeParameters pin)",
     transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, genericParameters: undefined })) }),
+  },
+  {
+    id: "typescript/reintroduce-write-as-read",
+    language: "typescript",
+    defectClass: "relationship-garbage",
+    description: "reverts the TSD1 write gate: assignment-LHS member writes emit uses again (this.count = 0 -> uses count; the JAD1 class from the java wave)",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "write", target: "value", confidence: 0.85, metadata: { isFieldAccess: true } }] }),
+  },
+  {
+    id: "typescript/reintroduce-script-placeholder",
+    language: "typescript",
+    defectClass: "relationship-garbage",
+    description: "reverts TSD4: top-level calls source to the '(script)' placeholder again (no consumer can resolve it; the module leaf is the contract)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => (x.type === "calls" && x.source === "instantiation-refs" && x.target === "wrap") ? { ...x, source: "(script)" } : x) }),
+  },
+  {
+    id: "typescript/reintroduce-qualified-new",
+    language: "typescript",
+    defectClass: "relationship-garbage",
+    description: "reverts TSD3: new ns.Thing() emits the full 'ns.Thing' target instead of the leaf (violates the leaf-identity contract; JS parity reduces to Thing)",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "instantiates", source: "make", target: "ns.Thing", confidence: 1, metadata: {} }] }),
   },
   {
     id: "javascript/reclassify-import-tier",
