@@ -551,12 +551,17 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         // name for READS only: a member_access that is the FIRST child of
         // an assignment_expression is a WRITE (never a read); a
         // member_call_expression receiver is a call target, not a read.
+        // SCD1 family parity (M37 #599 pre-wave follow-up): the pinned
+        // grammar parses compound-assign as a DIFFERENT node —
+        // augmented_assignment_expression ($this->count += $step) — so the
+        // plain-assign gate leaked RMW writes as uses (probe-verified).
+        // Both shapes are gated now.
         // Pure AST (parent node carried in the walk), never source text
         // scanning.
         // Node wrappers are re-created per call in web-tree-sitter, so
         // identity (===) never holds — compare by byte range instead.
         const lhs = parent ? parent.namedChild(0) : null
-        const isWrite = parent && parent.type === "assignment_expression" && lhs && lhs.startIndex === n.startIndex && lhs.endIndex === n.endIndex
+        const isWrite = parent && (parent.type === "assignment_expression" || parent.type === "augmented_assignment_expression") && lhs && lhs.startIndex === n.startIndex && lhs.endIndex === n.endIndex
         const isCallReceiver = parent && (parent.type === "member_call_expression" || parent.type === "nullsafe_member_call_expression")
         if (!isWrite && !isCallReceiver) {
           const nameNode = n.childForFieldName("name")

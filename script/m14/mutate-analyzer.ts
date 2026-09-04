@@ -1600,6 +1600,18 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).isMemberRead && x.type === "uses")) }),
   },
   {
+    id: "php/emit-rmw-write-as-uses",
+    language: "php",
+    defectClass: "relationship-fabrication",
+    description: "SCD1 regression: re-opens the augmented_assignment gate so compound-assign LHS ($this->balance -= / +=) re-emits uses — refund forbid pin catches it",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), {
+        type: "uses", source: "refund", target: "balance", isExternal: true, weight: 1, confidence: 0.9, metadata: { isMemberRead: true },
+      }],
+    }),
+  },
+  {
     id: "php/wrapper-complexity-count",
     language: "php",
     defectClass: "payload-corruption",
