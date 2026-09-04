@@ -142,30 +142,38 @@ if (existsSync(NVIM) && approval) {
     await dist.indexProjectParallel(projectId, canonical, {})
 
     const ws = packDir // drive the real pack in place (read-only assertions)
-    const outPath = path.join(ROOT, "validation/m29/results", `wave-editor-${lang}.json`)
-    if (existsSync(outPath)) rmSync(outPath)
+    // The driver writes raw session output to a temp path; THIS verifier
+    // computes the verdict and writes the final evidence (contract §8.1:
+    // evidence JSON is written by verifier scripts), embedding a top-level
+    // `status` the R1 protocol runner reads for the S6 step.
+    const driverOut = path.join(enrichedDir, "driver-result.json")
     let stderr = ""
     try {
       execFileSync(NVIM, ["--headless", "--clean", "-u", "NONE", "-i", "NONE", "-n", "-l", path.join(ROOT, "script/m29/wave-editor-driver.lua")], {
         cwd: ROOT, encoding: "utf8", timeout: 120_000,
-        env: { ...process.env, BB_DATA_DIR: dataDir, BB29_OUT: outPath, BB29_LANG: lang, BB29_WS: ws, BB29_EXPECT: enrichedPath, BB29_ROOT: ROOT },
+        env: { ...process.env, BB_DATA_DIR: dataDir, BB29_OUT: driverOut, BB29_LANG: lang, BB29_WS: ws, BB29_EXPECT: enrichedPath, BB29_ROOT: ROOT },
         stdio: ["ignore", "pipe", "pipe"],
       })
     } catch (error) {
       // nvim may exit non-zero after qa!; results still count.
       stderr = (error as { stderr?: string; message?: string }).stderr ?? (error as { message?: string }).message ?? ""
     }
-    if (!existsSync(outPath)) {
+    if (!existsSync(driverOut)) {
       rmSync(enrichedDir, { recursive: true, force: true })
       rmSync(dataDir, { recursive: true, force: true })
       check(`R3: ${lang} in-editor session produced results`, false, stderr.slice(0, 160) || "no results written")
       editorSummaries.push({ language: lang, status: "failed", checks: 0, failed: 0 })
       continue
     }
+    const driverResult = JSON.parse(readFileSync(driverOut, "utf8")) as EditorLeg
     rmSync(enrichedDir, { recursive: true, force: true })
     rmSync(dataDir, { recursive: true, force: true })
-    const result = JSON.parse(readFileSync(outPath, "utf8")) as EditorLeg
+    const result = driverResult
     const failedChecks = result.checks.filter((c) => !c.ok)
+    // Final evidence: driver session + verifier-computed status, written by
+    // this script to the path the R1 protocol runner reads.
+    const outPath = path.join(ROOT, "validation/m29/results", `wave-editor-${lang}.json`)
+    writeFileSync(outPath, JSON.stringify({ ...result, status: failedChecks.length === 0 ? "verified" : "failed", commit: gitCommit() }, null, 2) + "\n")
     for (const c of result.checks) {
       check(`R3/${lang}: ${c.name}`, c.ok, c.detail)
     }
