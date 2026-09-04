@@ -59,6 +59,8 @@ export interface LspTransport {
   ready(): Promise<void>
   /** Dispose the transport (stop the client/server). */
   dispose(): Promise<void>
+  /** Last 8KB of server stderr — machine diagnostics for evidence (M29.R3). Optional: only the stdio transport provides it. */
+  stderrTail?(): string
 }
 
 // ---------------------------------------------------------------------------
@@ -81,6 +83,10 @@ export interface FeatureMeasurement {
   op: string
   p95WarmMs: number
   samples: number
+  /** Median of the warm samples (M29.R3 defect localization). */
+  medianWarmMs?: number
+  /** Sorted raw per-sample wall times in ms (M29.R3 defect localization). */
+  rawSamplesMs?: number[]
 }
 
 /** The budget gate: violations list (empty = pass). */
@@ -114,7 +120,16 @@ export async function measureWarmP95(op: string, fn: () => Promise<unknown>, ite
     samples.push(performance.now() - t0)
   }
   samples.sort((a, b) => a - b)
-  return { op, p95WarmMs: samples[Math.floor(samples.length * 0.95)]!, samples: iterations }
+  // Full distribution recorded (M29.R3 defect localization): a p95 alone hides
+  // whether a miss is a fat tail (one slow sample class) or a uniform shift.
+  const round = (ms: number): number => Math.round(ms * 100) / 100
+  return {
+    op,
+    p95WarmMs: samples[Math.floor(samples.length * 0.95)]!,
+    samples: iterations,
+    medianWarmMs: round(samples[Math.floor(samples.length / 2)]!),
+    rawSamplesMs: samples.map(round),
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -273,6 +288,7 @@ export function createStdioTransport(options: { runtime: "node-source" | "node-d
   let command: string
   let args: string[]
   let blockedReason: string | undefined
+  let stderrRing = ""
   if (options.runtime === "node-dist") {
     if (!existsSync(SERVER_DIST)) {
       blockedReason = `dist binary missing: ${SERVER_DIST} (run npm run build)`
@@ -325,6 +341,10 @@ export function createStdioTransport(options: { runtime: "node-source" | "node-d
     get serverBlockedReason() {
       return blockedReason
     },
+    /** Last 8KB of server stderr — machine diagnostics for evidence (M29.R3). */
+    stderrTail(): string {
+      return stderrRing
+    },
     ready(): Promise<void> {
       if (blockedReason !== undefined) return Promise.reject(new Error(blockedReason))
       if (child !== null) return Promise.resolve()
@@ -337,7 +357,11 @@ export function createStdioTransport(options: { runtime: "node-source" | "node-d
         stdio: ["pipe", "pipe", "pipe"],
       })
       child.stdout!.on("data", onData)
-      child.stderr!.on("data", () => {})
+      // stderr is machine diagnostics (not protocol): ring-captured so a
+      // budget miss can name its server-side cause (M29.R3).
+      child.stderr!.on("data", (chunk: Buffer) => {
+        stderrRing = (stderrRing + chunk.toString("utf8")).slice(-8000)
+      })
       return Promise.resolve()
     },
     request(method: string, params: unknown): Promise<any> {
