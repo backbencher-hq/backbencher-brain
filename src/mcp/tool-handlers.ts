@@ -20,6 +20,10 @@ import { generateDocumentation, formatDocumentation, type DocRequest } from "../
 import { visualizeProject, formatVisualization, type VisualizationRequest, type VisualizationScope } from "../intelligence/visualization/visualization-engine"
 import { generateMigrationPlans, formatMigrationPlans } from "../intelligence/migration/migration-engine"
 import { graphTraversal } from "../intelligence/graph/graph-engine"
+// M28.T1 (issue #624): the agent door reuses the EXACT components the IDE
+// door uses — one truth, two doors (M28 decision D-1). No reimplementation.
+import { computeImpact } from "../lsp/impact"
+import { tierForCrossLanguageEdge, factsFromRows, storedCrossLanguageRows } from "../lsp/cross_language_hover"
 import { getProjectStats } from "../intelligence/analysis/project-stats"
 import { getFileDependencies } from "../intelligence/analysis/dependencies"
 import { analyzeComplexity } from "../intelligence/analysis/complexity"
@@ -640,6 +644,112 @@ const handlers: Record<string, ToolHandler> = {
     // dir: incremental — parses only changed files, defers heavy post-processing
     const s = await indexProjectParallel(projectId as any, abs, { isIncremental: true, skipPostProcessing: true })
     return textResult(JSON.stringify({ mode: "dir", path: abs, candidates: s.totalFiles, processed: s.processedFiles, errors: s.errorFiles }, null, 2))
+  },
+
+  // --- M28.T1 (issue #624): the agent door to the graph surface ------------
+  // Decision D-1: these handlers call the same functions the LSP handlers
+  // call. The union differential gate (M28.U1) proves the two doors agree.
+
+  bb_graph: async (args, { projectId }) => {
+    const symbol = String(args.symbol ?? "")
+    if (!symbol) return textResult("bb_graph requires symbol", true)
+    const maxDepth = Number(args.maxDepth ?? 3)
+    if (!Number.isFinite(maxDepth) || maxDepth < 1 || maxDepth > 10) {
+      return textResult("bb_graph maxDepth must be a number between 1 and 10", true)
+    }
+    let result
+    try {
+      result = await graphTraversal(projectId as any, symbol, { maxDepth })
+    } catch (error) {
+      return textResult(`bb_graph: ${error instanceof Error ? error.message : String(error)}`, true)
+    }
+    const tierFor = (e: { relationshipType: string; confidence: number; metadata?: { evidenceClass?: string } }): string => {
+      // Identical tier derivation to the webview core (script/m26/graph-core.ts
+      // tierForEdge) and the hover gloss — M28.U1 drift-gates the copies.
+      const STRUCTURAL = new Set(["calls", "inherits", "implements", "overrides"])
+      const IMPORT = new Set(["imports", "import"])
+      const stored = e.metadata?.evidenceClass
+      if (stored && ["structural", "import_based", "usage_contextual", "reference_qualified", "inferred"].includes(stored)) return stored
+      if (STRUCTURAL.has(e.relationshipType)) return e.confidence >= 0.7 ? "structural" : "inferred"
+      if (IMPORT.has(e.relationshipType)) return "import_based"
+      return "inferred"
+    }
+    const edgesOf = (list: any[], direction: "caller" | "callee") =>
+      list.map((e) => ({
+        direction,
+        from: e.from,
+        to: e.to,
+        relationshipType: e.relationshipType,
+        confidence: e.confidence,
+        tier: tierFor(e),
+        isCrossLanguage: e.isCrossLanguage === true,
+        bridgeMechanism: e.bridge ?? e.bridgeMechanism ?? null,
+        depth: e.depth,
+        callSite: e.callSite ?? null,
+      }))
+    return textResult(JSON.stringify({
+      symbol,
+      root: { id: result.root?.id, name: result.root?.name, filePath: result.root?.filePath ?? null },
+      callers: edgesOf(result.callers as any[], "caller"),
+      callees: edgesOf(result.callees as any[], "callee"),
+      summary: {
+        totalCallers: result.summary?.totalCallers ?? result.callers.length,
+        totalCallees: result.summary?.totalCallees ?? result.callees.length,
+        maxDepthReached: result.summary?.maxDepthReached ?? maxDepth,
+        crossLanguageEdges: result.summary?.crossLanguageEdges ?? 0,
+        truncated: result.summary?.truncated === true,
+        truncationReason: result.summary?.truncationReason ?? null,
+      },
+      provenance: result.provenance ?? null,
+    }, null, 2))
+  },
+
+  bb_impact: async (args, { projectId }) => {
+    const symbol = String(args.symbol ?? "")
+    if (!symbol) return textResult("bb_impact requires symbol", true)
+    const raw = await BrainDatabase.getRawInstance(projectId as any)
+    try {
+      // The SAME component the editor graph panel's impact mode uses
+      // (src/lsp/impact.ts): declared budget, first-class truncation,
+      // declared total. One truth (M28 decision D-1).
+      const impact = await computeImpact(raw, projectId as string, symbol)
+      return textResult(JSON.stringify({
+        symbol,
+        root: impact.root,
+        budget: { maxNodes: 200, maxDepth: 5 },
+        impact: impact.impact,
+        shownCount: impact.shownCount,
+        totalCountIfKnown: impact.totalCountIfKnown,
+        truncated: impact.truncated,
+        truncationReason: impact.truncationReason,
+      }, null, 2))
+    } catch (error) {
+      return textResult(`bb_impact: ${error instanceof Error ? error.message : String(error)}`, true)
+    }
+  },
+
+  bb_cross_language: async (args, { projectId }) => {
+    const symbol = String(args.symbol ?? "")
+    if (!symbol) return textResult("bb_cross_language requires symbol", true)
+    const raw = await BrainDatabase.getRawInstance(projectId as any)
+    // The hover derives language from the FILE row (brain_file.language) —
+    // brain_symbol has no language column. Same source, same semantics (D-1).
+    const row = raw.prepare("SELECT s.id AS id, f.language AS language FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id WHERE s.project_id = ? AND s.name = ?").get(projectId, symbol) as { id: string; language: string | null } | undefined
+    if (!row) {
+      return textResult(`bb_cross_language: symbol '${symbol}' not found — declared error, not an empty set`, true)
+    }
+    // The SAME component the hover section renders from (D-1): stored rows
+    // only, per-pair, declared absence when there are none.
+    const rows = storedCrossLanguageRows(raw, row.id)
+    const facts = factsFromRows(rows, row.language ?? null)
+    return textResult(JSON.stringify({
+      symbol,
+      language: row.language,
+      facts,
+      pairCount: facts.length,
+      declaredAbsent: facts.length === 0,
+      absenceNote: facts.length === 0 ? "no stored cross-language rows for this symbol — absence declared, never guessed" : null,
+    }, null, 2))
   },
 
 }

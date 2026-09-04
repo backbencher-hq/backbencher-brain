@@ -1,0 +1,41 @@
+{
+  "issue": "M28.T1",
+  "code": "T1",
+  "milestone": "M28",
+  "status": "verified",
+  "checks": 25,
+  "passed": 25,
+  "failed": 0,
+  "mutantsCaught": 5,
+  "mutantsTotal": 5,
+  "mutantRecords": [
+    {
+      "name": "M1 silent empty impact set",
+      "caught": true
+    },
+    {
+      "name": "M1 impact reimplementation detected",
+      "caught": true
+    },
+    {
+      "name": "M2 cross-language reimplementation detected",
+      "caught": true
+    },
+    {
+      "name": "M3 tier vocabulary drift detected",
+      "caught": true
+    },
+    {
+      "name": "M4 absence declaration lost detected",
+      "caught": true
+    }
+  ],
+  "currentCommit": "32d2a1df2fce60da2ee816751cf8cd9fdd403ecd",
+  "verifierCommand": "npx tsx script/m28/verify-mcp-tools.ts",
+  "evidenceFile": "T1.json",
+  "generatedAt": "2026-09-04T04:51:57.826Z",
+  "claimLevel": "verified — three MCP read tools over the real indexer's fixture, reusing the IDE components",
+  "limitations": [
+    "Fixture is java+scala (the M26.A1 polyglot pair); cross-language absence asserted on Warehouse (scala-side symbol with no stored incoming rows)."
+  ]
+}
