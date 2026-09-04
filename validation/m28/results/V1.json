@@ -1,0 +1,27 @@
+{
+  "issue": "M28.V1",
+  "code": "V1",
+  "milestone": "M28",
+  "status": "verified",
+  "checks": 13,
+  "passed": 13,
+  "failed": 0,
+  "mutantsCaught": 2,
+  "mutantsTotal": 2,
+  "mutantRecords": [
+    {
+      "name": "V1 mutant: registry missing a tool is caught by the drift gate",
+      "caught": true
+    },
+    {
+      "name": "V1 mutant: flipped mutability is caught by the mutability check",
+      "caught": true
+    }
+  ],
+  "currentCommit": "74ac5b0f1230e491bf008ca019a8cc473c513293",
+  "verifierCommand": "npx tsx script/m28/verify-mcp-surface.ts",
+  "evidenceFile": "V1.json",
+  "generatedAt": "2026-09-04T05:38:11.238Z",
+  "claimLevel": "n/a — this issue produces a generated truth doc, not a claim",
+  "failures": []
+}
