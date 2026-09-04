@@ -152,9 +152,12 @@ separation is corrected.
 |---|---|
 | `bb index <dir>` | Full/incremental project indexing |
 | `bb index <dir> --force` | In-place wipe and full rebuild |
-| `bb search <query> --dir <dir>` | Symbol retrieval with language and limit filters |
+| `bb search <query>` | Symbol retrieval (default mode), language and limit filters |
+| `bb search --mode content <q>` | Content/snippet retrieval (same handler as MCP `bb_search` mode=content) |
+| `bb search --mode symbol <name>` | Exact-symbol source lookup (MCP mode=symbol parity) |
+| `bb search --mode file <path>` | Print an indexed file with freshness status (MCP mode=file parity) |
 | `bb health [dir]` | Unified health/freshness report |
-| `bb health [dir] --refresh` | Refresh then report health |
+| `bb health [dir] --refresh` | Refresh (incremental + bounded derived pass) then report health; output states `derived=` |
 | `bb health [dir] --force` | Force full refresh then report health |
 | `bb health [dir] --complete` | Check all files instead of a freshness sample |
 | `bb health [dir] --integrity` | Run the index integrity checks |
@@ -162,10 +165,17 @@ separation is corrected.
 | `bb tool <name> --args <json>` | Invoke a public tool through shared handlers |
 | `bb --version` | Print package version |
 
-The CLI validates directory arguments for ergonomic commands. `bb tool` uses the public
-registry and shared handlers, but its JSON validation is currently stricter for unknown
-keys than for missing/type-invalid fields. Treat examples as contracts and validate inputs
-at the caller until complete runtime schema validation is added.
+### Which status command when
+
+All five read commands are intentional; they answer different questions.
+
+| Question | Command | Reads |
+|---|---|---|
+| "Is an index running right now? What phase?" | `bb status` | Live run state + last-run phase timings |
+| "How big is the index? How many symbols?" | `bb stats` | Committed DB counts (files/symbols/relationships/embeddings) |
+| "Is the data trustworthy/current?" | `bb health` | Freshness envelope, embeddings coverage, integrity (opt-in) |
+| "Is my setup broken? Can it be auto-repaired?" | `bb doctor` | Permissions, config, first-run checks (`--fix` applies) |
+| "What exists on this machine? Reclaim space?" | `bb projects` | Registry of all indexed projects + `--remove` |
 
 ### CLI and MCP parity
 
@@ -178,8 +188,11 @@ node bin/bb tool bb_analyze --dir . --args '{"mode":"stats"}'
 node bin/bb tool bb_doc --dir . --args '{"mode":"symbol","target":"handleRequest","format":"json"}'
 ```
 
-Ergonomic `index`, `search`, and `health` commands remain thin convenience adapters and
-may expose flags that are translated into the same provider options.
+Ergonomic `index`, `search`, and `health` commands are thin convenience adapters over the
+same provider options. `bb search --mode content|symbol|file` dispatches through the REAL
+`bb_search` MCP handler — identical result sets and freshness envelopes on both surfaces
+(proven e2e by `script/m40/verify-a7-cli-parity.ts`). `bb search --mode symbols` (the
+default) renders the same rows as MCP symbols mode with a stale-count footer.
 
 ## 6. MCP Server Lifecycle
 
