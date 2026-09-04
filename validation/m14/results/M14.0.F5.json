@@ -56,9 +56,9 @@
     },
     {
       "description": "sqlite: tree-truth vs analyzer diff @86a15af2b1",
-      "detail": "60 files, coverage 100%, unexplained 0.1%; regression detected",
+      "detail": "60 files, coverage 100%, unexplained 0%",
       "id": "differential-c",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "ripgrep: tree-truth vs analyzer diff @3fce3b5bb0",
@@ -85,7 +85,7 @@
       "status": "pass"
     },
     {
-      "description": "proxicall: tree-truth vs analyzer diff @70d7fc4561",
+      "description": "proxicall: tree-truth vs analyzer diff @8d3e4b20dd",
       "detail": "60 files, coverage 100%, unexplained 0%",
       "id": "differential-dart",
       "status": "pass"
@@ -128,8 +128,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "cc76e3771b292965b1b8a8855107f2b67a4a624a",
-  "committedAt": "2026-09-04T01:41:28+02:00",
+  "commit": "c95da9bab7d526351cc72db611bdb49313945c25",
+  "committedAt": "2026-09-04T21:32:20+02:00",
   "data": {
     "corpusPins": {
       "Clyde": "8fec41dd6ee03f863643aa958425c8bb4a6673ae",
@@ -142,7 +142,7 @@
       "grails-core": "a83f87480e0c0138caa5a7191a053b1e59a64066",
       "phpunit": "c8d6921fb601b6988854cd84a672f06c1e49f80e",
       "powershell": "91ce9844e2a70e7184a8fcb26848f019eac151b4",
-      "proxicall": "70d7fc45619ba72f945a0718ef315f040c3eafbc",
+      "proxicall": "8d3e4b20dd2277c3e29c090af9c87b7ba9e0f434",
       "rake": "dd5e851d75fd850a730aae4482f6ca59843ac869",
       "ripgrep": "3fce3b5bb0236da2df6d99672afb8a719642eca7",
       "scala3": "18df09c05fa48fbb5bf5cd4b3728e9b7a0b3f6db",
@@ -154,19 +154,19 @@
     },
     "report": {
       "c": {
-        "analyzerEdges": 3985,
+        "analyzerEdges": 3720,
         "coveragePct": 100,
-        "coveredByAnalyzer": 3983,
-        "explainableByTree": 3983,
-        "fabricationPct": 0.1,
+        "coveredByAnalyzer": 3719,
+        "explainableByTree": 3719,
+        "fabricationPct": 0,
         "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 270.3,
+          "avgMsPerFile": 198.9,
           "loadAvgRetried": true,
-          "maxMsPerFile": 11534.1,
-          "samplesTimed": 60
+          "maxMsPerFile": 5263.2,
+          "samplesTimed": 57
         },
         "samples": [
           {
@@ -176,18 +176,10 @@
             "label": "calls",
             "line": 0,
             "target": "(*p->xOp)"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "src/os_win.c",
-            "label": "calls",
-            "line": 0,
-            "target": "((int*(*)(void))aSyscall[57].pCurrent)"
           }
         ],
-        "treeTruthEdges": 3983,
-        "unexplainedInAnalyzer": 2
+        "treeTruthEdges": 3719,
+        "unexplainedInAnalyzer": 1
       },
       "cpp": {
         "analyzerEdges": 108,
@@ -199,9 +191,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 73.7,
+          "avgMsPerFile": 59.7,
           "loadAvgRetried": true,
-          "maxMsPerFile": 2684.4,
+          "maxMsPerFile": 2904.4,
           "samplesTimed": 47
         },
         "samples": [],
@@ -218,9 +210,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 27.9,
+          "avgMsPerFile": 32.8,
           "loadAvgRetried": true,
-          "maxMsPerFile": 1343.2,
+          "maxMsPerFile": 1336.6,
           "samplesTimed": 60
         },
         "samples": [],
@@ -228,22 +220,22 @@
         "unexplainedInAnalyzer": 0
       },
       "dart": {
-        "analyzerEdges": 1514,
+        "analyzerEdges": 1464,
         "coveragePct": 100,
-        "coveredByAnalyzer": 1638,
-        "explainableByTree": 1514,
+        "coveredByAnalyzer": 1567,
+        "explainableByTree": 1464,
         "fabricationPct": 0,
         "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 44.9,
+          "avgMsPerFile": 38.2,
           "loadAvgRetried": true,
-          "maxMsPerFile": 1094,
+          "maxMsPerFile": 1997.7,
           "samplesTimed": 60
         },
         "samples": [],
-        "treeTruthEdges": 1638,
+        "treeTruthEdges": 1567,
         "unexplainedInAnalyzer": 0
       },
       "go": {
@@ -256,9 +248,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 20.2,
+          "avgMsPerFile": 23.1,
           "loadAvgRetried": true,
-          "maxMsPerFile": 378.3,
+          "maxMsPerFile": 246.6,
           "samplesTimed": 60
         },
         "samples": [],
@@ -275,9 +267,9 @@
         "heuristicUnexplained": 27,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 14.7,
+          "avgMsPerFile": 7.4,
           "loadAvgRetried": true,
-          "maxMsPerFile": 149.1,
+          "maxMsPerFile": 41.8,
           "samplesTimed": 60
         },
         "samples": [],
@@ -294,9 +286,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 5.8,
+          "avgMsPerFile": 8.5,
           "loadAvgRetried": true,
-          "maxMsPerFile": 361.6,
+          "maxMsPerFile": 892.6,
           "samplesTimed": 60
         },
         "samples": [],
@@ -313,9 +305,9 @@
         "heuristicUnexplained": 76,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 10.2,
+          "avgMsPerFile": 8.8,
           "loadAvgRetried": true,
-          "maxMsPerFile": 287.6,
+          "maxMsPerFile": 73.4,
           "samplesTimed": 60
         },
         "samples": [],
@@ -332,9 +324,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 2.3,
+          "avgMsPerFile": 13,
           "loadAvgRetried": true,
-          "maxMsPerFile": 52.8,
+          "maxMsPerFile": 356.3,
           "samplesTimed": 52
         },
         "samples": [],
@@ -351,9 +343,9 @@
         "heuristicUnexplained": 57,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 88.3,
+          "avgMsPerFile": 47.6,
           "loadAvgRetried": true,
-          "maxMsPerFile": 740.6,
+          "maxMsPerFile": 681,
           "samplesTimed": 60
         },
         "samples": [],
@@ -370,9 +362,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 3.9,
+          "avgMsPerFile": 10,
           "loadAvgRetried": true,
-          "maxMsPerFile": 18.3,
+          "maxMsPerFile": 88.4,
           "samplesTimed": 4
         },
         "samples": [],
@@ -389,9 +381,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 1.1,
+          "avgMsPerFile": 4.3,
           "loadAvgRetried": true,
-          "maxMsPerFile": 48.5,
+          "maxMsPerFile": 129.2,
           "samplesTimed": 60
         },
         "samples": [],
@@ -408,9 +400,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 29.9,
+          "avgMsPerFile": 68.9,
           "loadAvgRetried": true,
-          "maxMsPerFile": 1085.3,
+          "maxMsPerFile": 1800.8,
           "samplesTimed": 60
         },
         "samples": [],
@@ -418,22 +410,22 @@
         "unexplainedInAnalyzer": 0
       },
       "ruby": {
-        "analyzerEdges": 1174,
+        "analyzerEdges": 1168,
         "coveragePct": 100,
-        "coveredByAnalyzer": 1174,
-        "explainableByTree": 1174,
+        "coveredByAnalyzer": 1168,
+        "explainableByTree": 1168,
         "fabricationPct": 0,
         "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 2.9,
+          "avgMsPerFile": 5.4,
           "loadAvgRetried": true,
-          "maxMsPerFile": 31.4,
+          "maxMsPerFile": 200.2,
           "samplesTimed": 60
         },
         "samples": [],
-        "treeTruthEdges": 1174,
+        "treeTruthEdges": 1168,
         "unexplainedInAnalyzer": 0
       },
       "rust": {
@@ -446,9 +438,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 23.3,
+          "avgMsPerFile": 29.2,
           "loadAvgRetried": true,
-          "maxMsPerFile": 429.3,
+          "maxMsPerFile": 421.2,
           "samplesTimed": 60
         },
         "samples": [],
@@ -465,9 +457,9 @@
         "heuristicUnexplained": 61,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 16,
+          "avgMsPerFile": 9,
           "loadAvgRetried": true,
-          "maxMsPerFile": 342.4,
+          "maxMsPerFile": 837.7,
           "samplesTimed": 60
         },
         "samples": [],
@@ -484,9 +476,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 4.4,
+          "avgMsPerFile": 4.6,
           "loadAvgRetried": true,
-          "maxMsPerFile": 100.7,
+          "maxMsPerFile": 45.8,
           "samplesTimed": 60
         },
         "samples": [],
@@ -494,22 +486,22 @@
         "unexplainedInAnalyzer": 0
       },
       "swift": {
-        "analyzerEdges": 1935,
+        "analyzerEdges": 1890,
         "coveragePct": 100,
-        "coveredByAnalyzer": 1935,
-        "explainableByTree": 1935,
+        "coveredByAnalyzer": 1890,
+        "explainableByTree": 1890,
         "fabricationPct": 0,
         "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 44.1,
+          "avgMsPerFile": 84.9,
           "loadAvgRetried": true,
-          "maxMsPerFile": 927.1,
+          "maxMsPerFile": 1385.2,
           "samplesTimed": 60
         },
         "samples": [],
-        "treeTruthEdges": 1935,
+        "treeTruthEdges": 1890,
         "unexplainedInAnalyzer": 0
       },
       "typescript": {
@@ -522,9 +514,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 47,
+          "avgMsPerFile": 104.6,
           "loadAvgRetried": true,
-          "maxMsPerFile": 600.8,
+          "maxMsPerFile": 4955.9,
           "samplesTimed": 60
         },
         "samples": [],
@@ -541,9 +533,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 54.8,
+          "avgMsPerFile": 14,
           "loadAvgRetried": true,
-          "maxMsPerFile": 341.4,
+          "maxMsPerFile": 157.4,
           "samplesTimed": 60
         },
         "samples": [],
@@ -560,9 +552,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 31.2,
+          "avgMsPerFile": 38.9,
           "loadAvgRetried": true,
-          "maxMsPerFile": 623.9,
+          "maxMsPerFile": 721.1,
           "samplesTimed": 60
         },
         "samples": [],

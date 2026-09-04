@@ -1260,12 +1260,16 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (rt) return rt.text
     const voidType = this.findChildByType(node, "void_type")
     if (voidType) return "void"
-    // first type_identifier BEFORE the name field
+    // first type_identifier BEFORE the name field — span-based stop (KAD2
+    // sweep: `c === nameNode` never matched fresh wrappers, so the scan
+    // ran past the name and could return the return-type... or a type
+    // AFTER the name) — positional stop restores the intended "before the
+    // name" semantics deterministically.
     const nameNode = node.childForFieldName("name")
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
       if (!c) continue
-      if (c === nameNode) break
+      if (nameNode && c.startIndex === nameNode.startIndex && c.endIndex === nameNode.endIndex) break
       if (c.type === "type_identifier" || c.type === "void_type") return c.text
     }
     return undefined

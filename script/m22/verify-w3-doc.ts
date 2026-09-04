@@ -45,8 +45,17 @@ async function run() {
   const unknown = [...mentioned].filter((c) => !known.has(c))
   check("W3 every `bb <subcommand>` mentioned in docs exists", unknown.length === 0, `unknown=${unknown.join(",")}`)
 
-  // no phantom flags
-  negative("W3 doc never tells users to run a nonexistent --post flag", !/--post\b/.test(doc), "doc mentions --post")
+  // M40.A1: --post is now a REAL flag, so the doc MAY mention it — but only
+  // alongside `bb index` (its actual home). A bare phantom mention elsewhere
+  // still fails.
+  {
+    const postMentions = [...doc.matchAll(/--post\b/g)]
+    const allNearIndex = postMentions.every((m) => {
+      const window = doc.slice(Math.max(0, m.index! - 120), m.index! + 120)
+      return /bb index/.test(window)
+    })
+    negative("W3 any --post doc mention sits next to bb index (real flag, right home)", postMentions.length === 0 || allNearIndex, "detached --post mention")
+  }
   // every /tmp mention must be explicitly HISTORICAL (old/previously/replaces);
   // the current diagnostics location must be the discoverable data-dir path
   const tmpMentions = [...doc.matchAll(/\/tmp\/bb-parse-errors\.log/g)]

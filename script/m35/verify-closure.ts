@@ -66,6 +66,15 @@ function runGate(script: string): { exit: number; output: string } {
   }
 }
 
+// Seam (M31 pattern): BB_M35_SELFTEST_CONTROL=1 is set ONLY by the gate
+// self-test when it runs this gate as its own control. G1 is PRODUCED from the
+// self-test's evidence, so during that run G1's evidence is mid-flight by
+// construction — requiring it green there is unsatisfiable (the flaw that made
+// convergence luck-based). Only G1-dependent checks are skipped; every other
+// check (subordinate evidence, content re-runs, corpus, wiring, ledger
+// content-gate blocks, residue) stays enforced. Real chain and closure runs
+// set no seam and enforce everything.
+const SELFTEST_CONTROL = process.env.BB_M35_SELFTEST_CONTROL === "1"
 const SUBORDINATE = ["G1", "F1", "E1", "S1", "S2", "S3", "C1", "D1"]
 const CONTENT_GATES: Array<[string, string]> = [
   ["freshness core", "script/m35/verify-freshness-core.ts"],
@@ -83,6 +92,7 @@ async function main() {
   // ── 1. aggregate subordinate evidence ──
   const stamps = new Map<string, string>()
   for (const code of SUBORDINATE) {
+    if (SELFTEST_CONTROL && code === "G1") continue
     const p = path.join(RESULTS, `${code}.json`)
     check(`${code}: evidence exists`, existsSync(p), p)
     if (!existsSync(p)) continue
@@ -96,7 +106,8 @@ async function main() {
   // after stamping would otherwise invalidate every stamp forever (infinite
   // regress). Currency is proven by the live content-gate re-runs + corpus
   // --check below, not by the stamp matching this exact commit.
-  check("all subordinate evidence shares ONE stamp", stamps.size === SUBORDINATE.length && new Set(stamps.values()).size === 1, `stamps=${[...new Set(stamps.values())].map((s) => s.slice(0, 7)).join(",")}`)
+  const expected = SELFTEST_CONTROL ? SUBORDINATE.length - 1 : SUBORDINATE.length
+  check("all subordinate evidence shares ONE stamp", stamps.size === expected && new Set(stamps.values()).size === 1, `stamps=${[...new Set(stamps.values())].map((s) => s.slice(0, 7)).join(",")}`)
 
   // ── 2. content gates re-run green NOW (read-only) ──
   for (const [label, script] of CONTENT_GATES) {
@@ -125,6 +136,7 @@ async function main() {
   const ledgerPath = path.join(ROOT, "validation/m35/ledger.json")
   const ledger = JSON.parse(readFileSync(ledgerPath, "utf8")) as Array<Record<string, any>>
   for (const code of SUBORDINATE) {
+    if (SELFTEST_CONTROL && code === "G1") continue
     const entry = ledger.find((i) => i.code === code)
     check(`ledger ${code}: verified`, entry?.status === "verified", String(entry?.status))
     const evPath = path.join(RESULTS, `${code}.json`)

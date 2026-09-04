@@ -2,6 +2,13 @@ import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 import { findDeclaringParent } from "./override-context"
 
+/**
+ * SCD1: compound-assignment operators parse as infix_expression; the LHS of
+ * one of THESE ops is a write. `==`/`<=`/`>=` also end in `=` but are
+ * comparisons (reads) — excluded on purpose.
+ */
+const COMPOUND_ASSIGN_OPS = new Set(["+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "<<=", ">>=", ">>>=", "++=", "&&=", "||="])
+
 export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
   public analyze(
     rootNode: Node,
@@ -121,7 +128,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         // function_definition, silently dropping every abstract trait method.
         const fn = this.handleFunction(node, symbols, relationships, exports, patternsObj, parent)
         if (fn) currentParent = fn
-      } else if (node.type === "val_definition" || node.type === "var_definition") {
+      } else if (node.type === "val_definition" || node.type === "var_definition" || node.type === "val_declaration" || node.type === "var_declaration") {
         this.handleVariable(node, symbols, exports, parent)
       } else if (node.type === "type_definition") {
         this.handleTypeAlias(node, symbols, parent)
@@ -149,11 +156,18 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       } else if (node.type === "type_identifier" || node.type === "type") {
         hasTypes = true
       } else if (node.type === "annotation") {
-        const annText = node.text
-        if (annText.includes("main") || annText.includes("Test")) patternsObj["Annotations"] = true
-        if (annText.includes("BeanProperty") || annText.includes("scala.beans")) patternsObj["Java Interop"] = true
-        if (annText.includes("tailrec")) patternsObj["Tail Recursion"] = true
-        if (annText.includes("specialized")) patternsObj["Specialized Generics"] = true
+        // SCD5: annotation-NAME flags only. The previous text.includes checks
+        // fabricated patterns from unrelated identifiers: a string literal
+        // "Testing" triggered "Annotations", a method named mymain triggered
+        // it too, and "@Deprecated" (real scala, common) never set anything
+        // while any identifier containing "tailrec" did. NOTE: node IS the
+        // annotation here — collectAnnotations scans a definition's CHILDREN,
+        // so it must not be called on the annotation itself (always empty).
+        const short = this.annotationShortName(node)
+        if (short === "Test" || short === "main") patternsObj["Annotations"] = true
+        if (short === "BeanProperty") patternsObj["Java Interop"] = true
+        if (short === "tailrec") patternsObj["Tail Recursion"] = true
+        if (short === "specialized") patternsObj["Specialized Generics"] = true
       } else if (node.type === "catch_clause") {
         patternsObj["Error Handling"] = true
       } else if (node.type === "lambda_expression") {
@@ -171,14 +185,31 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       } else if (node.type === "package_object") {
         patternsObj["Package Objects"] = true
       } else if (node.type === "throw_expression" || node.type === "throw") {
+        // SCD4: the throw's target must be a NAMEABLE type. The previous raw
+        // node.text embedded the whole construction with its arguments
+        // (`new IllegalArgumentException("negative: " + x)` became a single
+        // unmatchable References target — garbage in the graph).
+        // throw new IllegalArgumentException(...) -> IllegalArgumentException;
+        // throw ex (bare identifier) -> ex.
         const thrown = node.namedChild(0)
         if (thrown) {
-          relationships.push({
-            source: parent?.name || "global",
-            target: thrown.type === "call_expression" ? (thrown.childForFieldName?.("function")?.text || thrown.text) : thrown.text,
-            type: ASTEngine.RelationshipType.References,
-            metadata: { scalaSpecific: true, isThrow: true },
-          })
+          let target: string | undefined
+          if (thrown.type === "instance_expression") {
+            const typeNode = thrown.namedChild(0)
+            if (typeNode) {
+              target = typeNode.type === "generic_type" ? (typeNode.namedChild(0)?.text ?? typeNode.text) : typeNode.text
+            }
+          } else if (thrown.type === "identifier") {
+            target = thrown.text
+          }
+          if (target) {
+            relationships.push({
+              source: parent?.name || "global",
+              target,
+              type: ASTEngine.RelationshipType.References,
+              metadata: { scalaSpecific: true, isThrow: true, relationshipType: "throw_target" },
+            })
+          }
         }
       } else if (node.type === "opaque_modifier") {
         patternsObj["Opaque Types (Scala 3)"] = true
@@ -204,7 +235,18 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         this.handleInstantiation(node, relationships, parent)
       }
 
-      if (node.type === "if_expression" || node.type === "while_expression" || node.type === "do_while_expression" || node.type === "match_expression" || node.type === "for_expression" || node.type === "try_expression") {
+      if (
+        node.type === "if_expression" || node.type === "while_expression" || node.type === "do_while_expression" || node.type === "for_expression"
+      ) {
+        cyclomaticComplexity++
+      } else if (node.type === "case_clause") {
+        // SCD10 family parity — ARMS are the decisions, wrappers are not:
+        // java counts switch_block_statement_group (arm groups) but not
+        // switch_statement; kotlin counts when_entry but not when_expression.
+        // Scala's match arms (case_clause) and catch arms (case_clause
+        // inside catch_clause) are the decision points; counting the
+        // match/try/catch wrappers too would double-count every arm
+        // (a 3-arm match scored 4 under the naive wrapper count).
         cyclomaticComplexity++
       } else if (node.type === "infix_expression") {
         const op = node.childForFieldName("operator")?.text
@@ -417,6 +459,24 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
+   * SCD5: the short name of ONE annotation node (@Deprecated →
+   * "Deprecated", @org.x.Transactional → "Transactional"). The walk calls
+   * this on the annotation node itself; collectAnnotations (below) reuses it
+   * for every annotation child of a definition.
+   */
+  private annotationShortName(ann: Node): string | null {
+    for (let k = 0; k < ann.namedChildCount; k++) {
+      const nc = ann.namedChild(k)
+      if (nc && (nc.type === "identifier" || nc.type === "type_identifier" || nc.type === "stable_type_identifier")) {
+        const text = nc.text
+        const dot = text.lastIndexOf(".")
+        return dot === -1 ? text : text.slice(dot + 1)
+      }
+    }
+    return null
+  }
+
+  /**
    * Annotation short names from a definition's modifiers (@Deprecated →
    * "Deprecated", @org.x.Transactional → "Transactional"). Previously
    * annotations were consumed only as pattern-flag substrings and symbols
@@ -436,19 +496,8 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         for (let j = 0; j < src.childCount; j++) {
           const ann = container ? src.child(j) : src
           if (!ann || ann.type !== "annotation") continue
-          let nameNode: Node | null = null
-          for (let k = 0; k < ann.namedChildCount; k++) {
-            const nc = ann.namedChild(k)
-            if (nc && (nc.type === "identifier" || nc.type === "type_identifier" || nc.type === "stable_type_identifier")) {
-              nameNode = nc
-              break
-            }
-          }
-          if (nameNode) {
-            const text = nameNode.text
-            const dot = text.lastIndexOf(".")
-            out.push(dot === -1 ? text : text.slice(dot + 1))
-          }
+          const short = this.annotationShortName(ann)
+          if (short) out.push(short)
           if (!container) break // direct annotation child: handled itself
         }
       }
@@ -496,16 +545,23 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
    * approach; previously scala symbols carried NO comments at all.
    */
   private extractScalaDoc(node: Node): string | undefined {
+    // KAD2 twin (M37 #597 sweep): dead `sibling === node` stop leaked the
+    // first ScalaDoc in the file onto every doc-less declaration.
+    // Span-locate + backward scan, strict adjacency (kotlin KAD2 contract).
     const parent = node.parent
     if (!parent) return undefined
+    let selfIdx = -1
     for (let i = 0; i < parent.namedChildCount; i++) {
+      const c = parent.namedChild(i)
+      if (c && c.startIndex === node.startIndex && c.endIndex === node.endIndex) { selfIdx = i; break }
+    }
+    for (let i = selfIdx - 1; i >= 0; i--) {
       const sibling = parent.namedChild(i)
-      if (sibling === node) break
+      if (!sibling) continue
       // scala grammar types doc comments as block_comment (kotlin uses
       // multiline_comment - each grammar names them differently)
-      if (sibling?.type === "block_comment" && sibling.text.startsWith("/**")) {
-        return sibling.text
-      }
+      if (sibling.type === "block_comment" && sibling.text.startsWith("/**")) return sibling.text
+      break
     }
     return undefined
   }
@@ -558,10 +614,15 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         n.type === "if_expression" ||
         n.type === "while_expression" ||
         n.type === "do_while_expression" ||
-        n.type === "match_expression" ||
-        n.type === "for_expression" ||
-        n.type === "try_expression"
+        n.type === "for_expression"
       ) {
+        complexity++
+      } else if (n.type === "case_clause") {
+        // SCD10 family parity: ARMS are the decisions (java counts
+        // switch_block_statement_group not switch_statement; kotlin counts
+        // when_entry not when_expression). Match arms AND catch arms are
+        // case_clause nodes; wrappers (match_expression/try_expression/
+        // catch_clause) are deliberately NOT counted — that double-counts.
         complexity++
       } else if (n.type === "infix_expression") {
         // Short-circuit operators are decision points (family contract).
@@ -613,7 +674,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
           const name = this.findChild(p, "identifier")
           if (name) return name.text
         }
-        if (p.type === "class_definition" || p.type === "object_definition" || p.type === "trait_definition") {
+        if (p.type === "class_definition" || p.type === "object_definition" || p.type === "trait_definition" || p.type === "enum_definition") {
           const name = this.findChild(p, "identifier")
           if (name) return name.text
         }
@@ -645,13 +706,33 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     const walk = (n: Node): void => {
       switch (n.type) {
+        case "given_definition": {
+          // SCD12: `given Ordering[Int] with {}` / `given od: Ordering[Int]` —
+          // the given's type clause references the type it PROVIDES. The
+          // generic_type/type_identifier child IS that clause (the named
+          // identifier child, when present, is the given's own name —
+          // excluded). Previously givens emitted zero type references.
+          const roots: Node[] = []
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (c && (/type$|_type$/.test(c.type) || c.type === "type_identifier" || c.type === "generic_type")) roots.push(c)
+          }
+          if (roots.length) emit(n, roots, "given_definition", "given_type")
+          break
+        }
         case "class_parameter":
         case "parameter": {
           emit(n, [n], n.type)
           break
         }
         case "val_definition":
-        case "var_definition": {
+        case "var_definition":
+        case "val_declaration":
+        case "var_declaration": {
+          // SCD9 joins: abstract val/var declarations now emit symbols, so
+          // their type clauses must emit refs too (trait Service { val name:
+          // String } references String — previously invisible). Same type
+          // child shapes as the definition forms.
           // Type clause = direct type children. The name identifier precedes
           // the type in this grammar, so no positional break; initializers
           // are call_expression/literal children and never match type nodes.
@@ -775,7 +856,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
           // carries them; lowercase receivers (h.value) are Uses (G8, in
           // collectExpressionUses). Package paths (com.foo.bar) start
           // lowercase and never match.
-          const isCallFn = n.parent && n.parent.type === "call_expression" && n.parent.childForFieldName?.("function") === n
+          const isCallFn = n.parent && n.parent.type === "call_expression" && n.parent.childForFieldName?.("function")?.id === n.id
           if (!isCallFn) {
             const recv = this.leftmostIdentifier(n)
             // The receiver is an `identifier` (Foo), NOT a type_identifier,
@@ -842,6 +923,19 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     const emitUse = (n: Node, target: string): void => {
       if (!target) return
+      // SCD1 (JAD1/KAD1 family contract): assignment LHS is a WRITE, not a
+      // read. `h.value = 5` previously emitted uses h. Both write shapes are
+      // gated (probe-verified): `=` parses as assignment_expression (LHS =
+      // first named child); `+=` and friends parse as infix_expression whose
+      // operator_identifier text is the compound-assign op — gated ONLY for
+      // that op set, because infix_expression is also the BINARY node
+      // (`h.value + 1` is a read and must still emit; ==/<= must too).
+      // The read side of `h.value = h.value + 1` still emits (span check
+      // hits only the LHS occurrence).
+      const p = n.parent
+      const isCompoundAssign = p !== null && p.type === "infix_expression" && COMPOUND_ASSIGN_OPS.has(p.childForFieldName?.("operator")?.text ?? p.namedChild(1)?.text ?? "")
+      const lhs = p && (p.type === "assignment_expression" || isCompoundAssign) ? p.namedChild(0) : null
+      if (lhs && lhs.startIndex === n.startIndex && lhs.endIndex === n.endIndex) return
       const source = resolveSource(n.parent)
       const key = `${source}|${target}|uses`
       if (emitted.has(key)) return
@@ -859,7 +953,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         const id = n.namedChild(0)
         if (id && id.type === "identifier") emitUse(n, id.text)
       } else if (n.type === "field_expression") {
-        const isCallFn = n.parent && n.parent.type === "call_expression" && n.parent.childForFieldName?.("function") === n
+        const isCallFn = n.parent && n.parent.type === "call_expression" && n.parent.childForFieldName?.("function")?.id === n.id
         if (!isCallFn) {
           const recv = this.leftmostIdentifier(n)
           // Capitalized receivers are type references (G3) — never Uses.
@@ -1235,6 +1329,43 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       exports.push({ name, kind: ASTEngine.SymbolKind.Enum, range: symbol.range })
     }
 
+    // SCD6b: enum constructor params (class_parameters > class_parameter,
+    // identical shape to handleClass) — mirror handleClass: constructor
+    // symbol + val-param property symbols. `enum Planet(val mass: Double)`
+    // previously emitted NO constructor and NO mass field; every case of
+    // the enum carries that field.
+    const enumParamsNode = this.findChild(node, "class_parameters")
+    if (enumParamsNode) {
+      const ctor = this.createSymbol("constructor", ASTEngine.SymbolKind.Constructor, enumParamsNode, null, {
+        type: "constructor",
+        ownerName: name,
+        ownerKind: ASTEngine.SymbolKind.Enum,
+        scalaSpecific: true,
+      })
+      ctor.ownerName = name
+      symbols.push(ctor)
+
+      for (let i = 0; i < enumParamsNode.namedChildCount; i++) {
+        const cp = enumParamsNode.namedChild(i)
+        if (cp?.type !== "class_parameter") continue
+        const pName = cp.childForFieldName("name")?.text
+        if (!pName) continue
+        const pMods = this.collectModifiers(cp)
+        const isVal = pMods.has("val")
+        const isVar = pMods.has("var")
+        if (isVal || isVar) {
+          const prop = this.createSymbol(pName, ASTEngine.SymbolKind.Property, cp, null, {
+            type: isVar ? "var" : "val",
+            isConstructorProperty: true,
+            ownerName: name,
+            ownerKind: ASTEngine.SymbolKind.Enum,
+          })
+          prop.ownerName = name
+          symbols.push(prop)
+        }
+      }
+    }
+
     // Enum cases: simple_enum_case (`case Red`) and full_enum_case
     // (`case Red extends Color(0xff0000)` / `case B(val x: Int) extends E`).
     const walkEnumBody = (n: Node) => {
@@ -1402,7 +1533,6 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         // extension_definition's parameters, NOT on the function node, and
         // the wrapper never becomes a parent symbol. Detect via ancestors.
         isExtension: !!extensionReceiverType,
-        ...(extensionReceiverType ? {} : {}),
         complexity: this.calculateScalaFunctionComplexity(node),
       },
     )
@@ -1471,6 +1601,13 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       ancestor = ancestor.parent
     }
 
+    // SCD9: ABSTRACT members parse as val_declaration / var_declaration (a
+    // type clause with no initializer) while concrete ones are
+    // val_definition / var_definition. The walk only handled the concrete
+    // forms, so `trait Service { val name: String }` — every abstract
+    // interface member — emitted NOTHING (abstract def was fixed earlier;
+    // this is the same gap for fields). declarations carry the same name
+    // child shape as definitions.
     let patternNode = node.childForFieldName("pattern")
     if (!patternNode) {
       for (let i = 0; i < node.childCount; i++) {
@@ -1484,8 +1621,10 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (!patternNode) return
 
     const name = patternNode.text
-    const kind = node.type === "val_definition" ? ASTEngine.SymbolKind.Constant : ASTEngine.SymbolKind.Variable
-    const symbol = this.createSymbol(name, kind, node, parent, { type: node.type })
+    const kind = node.type === "val_definition" || node.type === "val_declaration"
+      ? ASTEngine.SymbolKind.Constant
+      : ASTEngine.SymbolKind.Variable
+    const symbol = this.createSymbol(name, kind, node, parent, { type: node.type, isAbstract: node.type === "val_declaration" || node.type === "var_declaration" })
     symbols.push(symbol)
 
     if (this.isPublic(node) && !parent) {
@@ -1551,7 +1690,11 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         // Dotted path WITHOUT argument text (family contract with java):
         // raw fnNode.text embedded inner-call arguments on chains
         // (`db.list(user).map` was stored as "db.list(user).map").
-        if (parent) {
+        // SCD7: AFTER the curried-application guard — the push previously
+        // ran BEFORE it, so `self.add(1)(2)` double-pushed "self.add" (once
+        // from the outer wrapper, once from the inner call). The guard
+        // returns for wrapper nodes, so pushing below it is exact.
+        if (parent && fnNode.type !== "call_expression") {
           if (!parent.qualified_calls) parent.qualified_calls = []
           parent.qualified_calls.push(this.buildScalaCallPath(fnNode))
         }
