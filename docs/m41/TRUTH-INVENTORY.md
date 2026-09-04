@@ -68,3 +68,4 @@ Score: site lists 15 tools — 8 phantom, 7 real; 4 real tools absent. Truth: 11
 | C1 | T2 | robots.txt from route list |
 | C2 | T2 | README rewrite (website/, npm) |
 | C3 | T2 | notes regenerated against real tool names |
+| D1 (found during deploy) | S1 | removed legacy `/install → /install.sh` redirect that shadowed the new install page |
