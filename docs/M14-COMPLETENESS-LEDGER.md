@@ -228,6 +228,10 @@ Delegated JVM/web sign-off (2026-08-28): the owner authorized the agent to sign 
 
 Delegated systems sign-off (2026-08-29): the owner authorized the agent to work on the systems-family closure. The tracked record is `docs/M14-SYSTEMS-DELEGATED-SIGNOFF.md` for issues #259–#263 (c/cpp/rust/go/zig). Family gates supporting it: M14.0.F9 systems-cluster e2e, family differential floors (jq/fmt/ripgrep/go-tools/zig all 0/0), completeness A–H 8/8 for all five, CC1 systems consistency. This is delegated verification, not a claim of personal owner execution.
 
+Delegated ManagedOO sign-off (2026-08-31): the owner authorized the agent to work on the ManagedOO-family closure. The tracked record is `docs/M14-OO-DELEGATED-SIGNOFF.md` for issues #264 (csharp + dart), #266 (swift), #267 (objc), #268 (php), and the ruby family tail. Family gates supporting it: six family differential floors (powershell:csharp 1366, proxicall:dart 1620, swift-nio:swift 1935, Clyde:objc 207, phpunit:php 834, rake:ruby 1174 — all 100% covered / 0 missing / 0 unexplained), completeness A–H 8/8 for all six, 38 ManagedOO mutants caught (172/172 total), CC1 OO consistency (ranges/kinds/complexity), F3 fixture evidence restored to full 20-language coverage. The closure deep review found and fixed a REAL family defect: objc + swift emitted 0-based columns (all other gated analyzers are 1-based) — fixed in both analyzers and permanently pinned by the new `oo-ranges-1based` CC1 check. This is delegated verification, not a claim of personal owner execution.
+
+Haskell wave (#271, 2026-09-03): first language of the FP/academic family, one-analyzer-at-a-time per the standing convention. F1 grammar audit: 9 dead literals removed (identifier/varid/qconid/tycon/type_constructor/type_name/class_name/export_list/signature_type — none exist in the pinned tree-sitter-haskell grammar). Analyzer defects fixed and probe-verified on real corpus shapes: HSD1 backtick calls (infix_id) emitted no edge; HSD2 `$` application (Haskell's most common idiom) emitted no call; HSD3 operator definitions symbolized by whole head text; HSD4 parametrized instance targets (`instance Sized [a]` → `[]`) dropped; HSD5 record construction in body position (not update) emitted no instantiates; HSD6 where/let-local nullary binds leaked attribution to the enclosing function; HSD9 do-bind exit wiped currentFunction for 2nd+ binds of the same do-block; HSD10 do-bind-hosted inner-do let-functions pruned from the prepass declared set (cabal ProjectPlanning addPaths class); expression-position `(e :: T)` inline annotations fabricated declarations (fromIntegral). Family contract added: per-symbol complexity + evidence tiers (#419-D). Differential oracle built (extends via superclass context, implements via instance/deriving incl. parens single-element form, constructor-head instantiates with pattern-position gate, backtick/`$`/qualified calls); cabal:haskell floor pinned at 60/lang — 100% covered / 0 missing / 0 unexplained (3097 truth edges at sample 200). Fixtures: payload-and-complexity authored from probed behavior incl. adversarial negatives (record update, data-decl records, pattern-variable leaks). Gates: 5 haskell mutants CAUGHT (181/181 total), F6 haskell 49/49 spec-handled types fixture-covered, 0 dead literals (spec note: `inferred` is the evidenceClass string, not a grammar node), SPEC 253 types A–H 8/8, F3 all 21 languages pass. Evidence: M14.0.F1–F6, M14.0.SPEC, M14.CC1, honesty gate — all regenerated and green.
+
 Svelte review hardening (2026-08-28): two adversarial defects were found after
 the prior CONFORMANT claim. S5 was a real scope-collision leak: each-loop
 bindings were not registered, and `{@const}` bindings were not propagated in
@@ -459,3 +463,117 @@ flagged for investigation under #385-family; budget passes at current margin).
 
 JavaScript (M14.2): 10/10 fixtures GATED; field-access uses collector ADDED (parity gap - analyzer had none); vue-core corpus shared with TS.
 JS update: payload-docs fixture GATED (JSDoc class+method); qualified_calls declared NOT EMITTED (#383); graphql-js differential 100%/0% baselined; 2 JS mutants added (11 total).
+
+Haskell re-review wave (2026-09-03): corpus-expanded re-review (shellcheck,
+hledger, postgrest added to cabal — 392 new files) exposed 8 defect classes
+the gates could not see because the differential oracle mirrors the analyzer
+(HSD11–HSD19: standalone deriving, pattern-position fabrication via
+alternative/guard/record-head paths, qualified-constructor loss, expression
+signature-annotation call loss, element-wise deriving entries, unnameable
+function heads). All fixed with probe-verified parse shapes, mirrored in the
+oracle; fixture extended (pins+forbids per class) and 4 mutants added — a
+same-day regression (deriving parens recursion) was caught by the new fixture
+pins, proving the hardening works. All 4 corpora 100%/0/0; 185 mutants
+caught; F1–F6+SPEC+CC1+honesty green. Grammar pinned at v0.23.1 (upstream
+rewrite unreleased — migration trigger recorded in issue #271).
+
+Csharp re-review wave (2026-09-04): first OO backfill with the dual-lens
+method (corpus census + full analyzer read). Census: 105 unreferenced node
+types in 400 real powershell files. Reading caught what the census could not
+(dead no-op statement, side-variable scope never pushed, mvcPattern flag
+nothing reads); census quantified what reading underestimated (switch
+expression arms, member-binding reads). 10 defect classes fixed (CSD1-CSD10:
+file-scoped FQN desync, switch-arm complexity, operator-name collapse,
+null-conditional reads, accessor events, alias-using capture,
+constructor-initializer calls, primary-base argument leakage, file-scoped
+scope lifetime), each probe-verified, oracle mirrored where compared. Fixture
+pins+forbids per class; 5 new mutants; 190/190 caught; floor re-pinned 100%/0/0.
+Process lesson recorded: pins authored against broken emission "pass" while
+both sides are wrong — pins must be re-authored from re-probed emission after
+every fix (caught CSD10's over-firing guard exactly this way).
+
+Csharp claim-validation wave (2026-09-04, same day): the OWNER read the code
+and surfaced two suspects. Validation verdicts, both probe-tested on real
+parses before any fix: (1) "field target-typed new() silently dropped" —
+REFUTED as stated: the exact quoted shape `private List<int> _items = new();`
+emits correctly (the resolver's variable_declarator branch fires BEFORE the
+field_declaration early return, making that early return unreachable dead
+code — the owner's "intentional early-return never revisited" diagnosis was
+right about the mechanism, wrong about the consequence). The census then
+found the REAL sibling defect (CSD11): ASSIGNMENT-form `_items = new();` in a
+constructor emits nothing (6/400 files; explicit `new List<int>()` in the
+identical position emits — a pure target-typed asymmetry). Fixed via a
+member-type pre-pass map resolved through the assignment LHS; the dead early
+return was removed. Locals declared without initializer remain an honest
+no-edge. (2) "interface-only base lists mislabel index-0 external as
+extends" — CONFIRMED exactly as described (CSD12; 66/400 powershell files
+carry interface-only base lists). F5's corpus-interface companion narrows the
+fabrication to EXTERNAL interfaces (IDisposable, IComparable), still among
+the most common C# shapes. Fixed: unknown external index-0 I-prefixed
+PascalCase names (length > 2, so Icon/IntPtr never match) emit implements;
+structs/record-structs emit implements for EVERY base (C# structs cannot
+inherit — I-naming irrelevant). Oracle mirrored on both; the pre-existing
+fixture pin `extends F6Tank -> IDisposable` had codified the bug and was
+re-authored from re-probed emission. Note: an I-named external CLASS
+(`: IdentityMap`) still follows the first-base rule — a declared,
+documented limitation of the convention heuristic. Fixture extended
+(+4 pins, +2 forbids, assignment-form + struct shapes); 2 new mutants (192
+total, ALL caught); F5 re-verified 100%/0/0 (1386 truth edges); F1/F6 21
+languages green; SPEC 8/8; CC1 pass; honesty green.
+
+## Gate-strengthening wave (F7/F8/F9) + dart heritage regression (2026-09-04)
+
+Wave 1 — three new PERMANENT gates wired into the honesty REQUIRED set:
+- **F7 analyzer-hygiene lint** (`script/m14/verify-analyzer-hygiene.ts`):
+  mechanically detects the php relative_scope `? owner : owner` class of
+  defects — no-op ternaries (both arms identical, nested-ternary and
+  string-literal aware), no-op statements, write-only locals/fields.
+  Positive-control tested against the historical php/csharp bugs. All 21
+  analyzers clean (scala `? start : start` finding was a false positive:
+  nested ternary, gate refined and re-verified).
+- **F8 corpus-census gate** (`script/m14/verify-corpus-census.ts`): parses a
+  real-corpus sample per language and fails on ANY parse-tree node type the
+  spec never classified. First run found 28 blind spots across 8 languages;
+  probe-verified each — most were already classified via `gap.gaps[]`
+  (F8's collector now reads every ruling format), genuinely unclassified
+  ones now carry recorded rulings (haskell lambda_case/multi_way_if =
+  internal_silent by design; type_synomym = design decision).
+- **F9 defect-class probe battery** (`script/m14/verify-probe-battery.ts`):
+  12 probes, each encoding a defect class that ACTUALLY occurred (HSD12-19,
+  CSD1-12, php relative_scope), asserting analyzer AND oracle semantics,
+  with a self-test for F7's own detectors. Authoring it caught an apparent
+  HSD16 regression; bisection proved the battery snippet was the wrong
+  shape (bare qualified REFERENCE vs application) — the coherent boundary
+  (constructor VALUES are silent, applications emit) is now RULED as
+  haskell design decision HS-D2 and asserted as a battery probe.
+
+Wave 2 — the strengthened F5 caught a REAL dart regression (DAD1-DAD3):
+proxicall's mocktail mocks (`class _FakeX_0 extends _i1.SmartFake implements
+_i2.Database`) parse FLAT (two adjacent type_identifiers joined by an
+anonymous `.`; first = import alias). The analyzer named the base after the
+ALIAS (extends -> _i1), leaked aliases into implements targets, and the
+gate's tree-truth oracle demanded generic ARGUMENTS (implements -> T1).
+Provenance: analyzer/oracle code identical since the dart wave — the
+regression surfaced because the USER'S OWN PROJECT EVOLVED (new mocks file
+entered the 60-file sample); the gate did exactly its job. Fixed with the
+resolved-leaf contract (a type name followed by `.` is an alias prefix;
+type_arguments never bases) mirrored across RealDartAnalyzer
+(resolvedHeritageNames) and BOTH oracles; web-tree-sitter returns fresh
+node objects per child() call so sibling lookup is position-based. Fixture
+gains F6MockClient (aliased supertypes) + 3 pins + 3 alias forbids; 2 new
+mutants (194 total, ALL caught). Full sweep: 21 languages 100% coverage /
+0 missing / 0 fabrication; sqlite:c perf outlier (270ms vs 89.7 baseline)
+attributed to load-15 environment (4 concurrent agent sessions, single-file
+11.5s stall — physically impossible at steady-state; 3-attempt min-of-runs
+retry already engaged), no correctness impact. Honesty gate green at
+cc76e37 with F1-F9 + SPEC + CC1 fresh.
+
+> **NEXT MILESTONE: M37 (Dual-Lens Analyzer Backfill, tracking issue #593; renamed from M34 after a numbering collision with the closed "M34: Consumability Hardening" was discovered).**
+> The 18 gated-done analyzers get the csharp/haskell dual-lens pass (line-by-line
+> read + corpus census + probe-verified fixes), one at a time: python -> java ->
+> ts/js -> kotlin/scala/groovy -> zig -> c/cpp/rust/go -> dart/php/swift/objc/ruby
+> confirms. When M37 closes, return HERE to M14 for the not-yet-done analyzers
+> (clean, clojure, elixir, ...) under the F1-F9 + dual-lens regime. Milestone:
+> "M37: Dual-Lens Analyzer Backfill". The milestone formerly carried the
+> number M34 until the collision was found; "M34" in this repo now means
+> Consumability Hardening, not the backfill.

@@ -64,6 +64,11 @@ const TYPE_NODES = new Set([
 // MAIN ANALYZER
 // ============================================================================
 export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
+  // class name -> declared base class (leaf name), populated as class
+  // declarations are encountered; consumed by processObjectCreation to
+  // resolve `new parent()` to the superclass.
+  private baseByClass = new Map<string, string>()
+
   analyze(
     rootNode: Node,
     content: string,
@@ -72,6 +77,9 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
   ): ASTEngine.ParseResult {
     const symbols: ASTEngine.UniversalSymbol[] = []
     const relationships: ASTEngine.UniversalRelationship[] = []
+    // Per-file resolution state: `new parent()` maps to the base declared in
+    // THIS file. Cross-file inheritance is not resolved (honest no-edge).
+    this.baseByClass = new Map()
     const imports: ASTEngine.ImportInfo[] = []
     const exports: ASTEngine.ExportInfo[] = []
     const errors: ASTEngine.ParseError[] = []
@@ -189,6 +197,11 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
             confidence: 1.0,
             metadata: { phpSpecific: true },
           })
+          // For `new parent()` resolution: map class -> declared base class
+          // (leaf name). Registered at declaration time so any `new parent`
+          // inside this class's methods (walked later from the same stack)
+          // resolves to the base, not to the class itself.
+          this.baseByClass.set(className, baseName)
         }
         if (className.endsWith("Controller")) patterns.add("MVC Architecture (Controllers)")
         if (className.endsWith("Service")) patterns.add("Service Layer Pattern")
@@ -641,12 +654,37 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       const child = node.namedChild(i)
       if (!child) continue
       if (child.type === "name" || child.type === "qualified_name") {
-        target = this.leafName(child.text)
+        // Probe-verified 2026-09-01 (pinned grammar): `new self()/parent()/static()`
+        // parses as object_creation_expression > name — relative_scope never
+        // appears for these. PHP semantics:
+        //   self   -> the enclosing class (compile-time class of the method)
+        //   static -> late static binding; statically best-effort = owner
+        //   parent -> the DECLARED base class of owner. Unresolvable (no base,
+        //             or owner is not a class) emits NOTHING — a wrong edge
+        //             is worse than no edge.
+        if (child.text === "self" || child.text === "static" || child.text === "parent") {
+          if (child.text === "parent") {
+            target = owner ? this.baseByClass.get(owner) : undefined
+          } else {
+            target = owner
+          }
+        } else {
+          target = this.leafName(child.text)
+        }
         break
       }
       if (child.type === "relative_scope") {
-        // new self / new static / new parent
-        target = child.text === "parent" ? owner : owner
+        // new self / new static / new parent (PHP semantics):
+        //   self   -> the enclosing class (compile-time class of the method)
+        //   static -> late static binding; statically best-effort = owner
+        //   parent -> the DECLARED base class of owner. Unresolvable (owner
+        //             has no base, or owner is not a class) emits NOTHING —
+        //             a wrong edge is worse than no edge.
+        if (child.text === "parent") {
+          target = owner ? this.baseByClass.get(owner) : undefined
+        } else {
+          target = owner
+        }
         break
       }
     }

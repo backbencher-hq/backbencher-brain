@@ -55,7 +55,7 @@
     },
     {
       "description": "java avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "grails-core:java 7.9 ms/file",
+      "detail": "grails-core:java 6.7 ms/file",
       "id": "section-f-perf-budget",
       "language": "java",
       "status": "pass"
@@ -69,7 +69,7 @@
     },
     {
       "description": "cross-language consistency checks all pass",
-      "detail": "6 checks pass",
+      "detail": "9 checks pass",
       "id": "section-h-cross-language",
       "language": "java",
       "status": "pass"
@@ -129,7 +129,7 @@
     },
     {
       "description": "groovy avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "grails-core:groovy 7.5 ms/file",
+      "detail": "grails-core:groovy 5.1 ms/file",
       "id": "section-f-perf-budget",
       "language": "groovy",
       "status": "pass"
@@ -143,7 +143,7 @@
     },
     {
       "description": "cross-language consistency checks all pass",
-      "detail": "6 checks pass",
+      "detail": "9 checks pass",
       "id": "section-h-cross-language",
       "language": "groovy",
       "status": "pass"
@@ -203,7 +203,7 @@
     },
     {
       "description": "kotlin avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "Exposed:kotlin 25.5 ms/file",
+      "detail": "Exposed:kotlin 36.9 ms/file",
       "id": "section-f-perf-budget",
       "language": "kotlin",
       "status": "pass"
@@ -217,7 +217,7 @@
     },
     {
       "description": "cross-language consistency checks all pass",
-      "detail": "6 checks pass",
+      "detail": "9 checks pass",
       "id": "section-h-cross-language",
       "language": "kotlin",
       "status": "pass"
@@ -235,14 +235,14 @@
       "status": "pass"
     },
     {
-      "description": "scala: 6 ruled, 0 pending owner",
+      "description": "scala: 7 ruled, 0 pending owner",
       "id": "design-decisions-tracked",
       "language": "scala",
       "status": "pass"
     },
     {
       "description": "every named node type classified (scala)",
-      "detail": "189 types, 156 handled, 8 silent, 9 gaps, 6 decisions",
+      "detail": "189 types, 134 handled, 8 silent, 9 gaps, 7 decisions",
       "id": "section-a-structural",
       "language": "scala",
       "status": "pass"
@@ -277,7 +277,7 @@
     },
     {
       "description": "scala avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "scala3:scala 9.2 ms/file",
+      "detail": "scala3:scala 7.1 ms/file",
       "id": "section-f-perf-budget",
       "language": "scala",
       "status": "pass"
@@ -291,7 +291,7 @@
     },
     {
       "description": "cross-language consistency checks all pass",
-      "detail": "6 checks pass",
+      "detail": "9 checks pass",
       "id": "section-h-cross-language",
       "language": "scala",
       "status": "pass"
@@ -351,7 +351,7 @@
     },
     {
       "description": "typescript avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "vue-core:typescript 95 ms/file",
+      "detail": "vue-core:typescript 50.6 ms/file",
       "id": "section-f-perf-budget",
       "language": "typescript",
       "status": "pass"
@@ -365,7 +365,7 @@
     },
     {
       "description": "cross-language consistency checks all pass",
-      "detail": "6 checks pass",
+      "detail": "9 checks pass",
       "id": "section-h-cross-language",
       "language": "typescript",
       "status": "pass"
@@ -439,7 +439,7 @@
     },
     {
       "description": "cross-language consistency checks all pass",
-      "detail": "6 checks pass",
+      "detail": "9 checks pass",
       "id": "section-h-cross-language",
       "language": "javascript",
       "status": "pass"
@@ -513,7 +513,7 @@
     },
     {
       "description": "cross-language consistency checks all pass",
-      "detail": "6 checks pass",
+      "detail": "9 checks pass",
       "id": "section-h-cross-language",
       "language": "vue",
       "status": "pass"
@@ -573,7 +573,7 @@
     },
     {
       "description": "svelte avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "svelte:svelte 19.3 ms/file",
+      "detail": "svelte:svelte 3 ms/file",
       "id": "section-f-perf-budget",
       "language": "svelte",
       "status": "pass"
@@ -587,7 +587,7 @@
     },
     {
       "description": "cross-language consistency checks all pass",
-      "detail": "6 checks pass",
+      "detail": "9 checks pass",
       "id": "section-h-cross-language",
       "language": "svelte",
       "status": "pass"
@@ -661,7 +661,7 @@
     },
     {
       "description": "cross-language consistency checks all pass",
-      "detail": "6 checks pass",
+      "detail": "9 checks pass",
       "id": "section-h-cross-language",
       "language": "c",
       "status": "pass"
@@ -721,7 +721,7 @@
     },
     {
       "description": "cpp avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "fmt:cpp 113.6 ms/file",
+      "detail": "fmt:cpp 35.7 ms/file",
       "id": "section-f-perf-budget",
       "language": "cpp",
       "status": "pass"
@@ -735,7 +735,7 @@
     },
     {
       "description": "cross-language consistency checks all pass",
-      "detail": "6 checks pass",
+      "detail": "9 checks pass",
       "id": "section-h-cross-language",
       "language": "cpp",
       "status": "pass"
@@ -795,7 +795,7 @@
     },
     {
       "description": "rust avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "ripgrep:rust 32.9 ms/file",
+      "detail": "ripgrep:rust 14.7 ms/file",
       "id": "section-f-perf-budget",
       "language": "rust",
       "status": "pass"
@@ -809,7 +809,7 @@
     },
     {
       "description": "cross-language consistency checks all pass",
-      "detail": "6 checks pass",
+      "detail": "9 checks pass",
       "id": "section-h-cross-language",
       "language": "rust",
       "status": "pass"
@@ -869,7 +869,7 @@
     },
     {
       "description": "go avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "go-tools:go 9.3 ms/file",
+      "detail": "go-tools:go 9.1 ms/file",
       "id": "section-f-perf-budget",
       "language": "go",
       "status": "pass"
@@ -883,7 +883,7 @@
     },
     {
       "description": "cross-language consistency checks all pass",
-      "detail": "6 checks pass",
+      "detail": "9 checks pass",
       "id": "section-h-cross-language",
       "language": "go",
       "status": "pass"
@@ -901,14 +901,14 @@
       "status": "pass"
     },
     {
-      "description": "zig: 3 ruled, 0 pending owner",
+      "description": "zig: 4 ruled, 0 pending owner",
       "id": "design-decisions-tracked",
       "language": "zig",
       "status": "pass"
     },
     {
       "description": "every named node type classified (zig)",
-      "detail": "96 types, 10 handled, 83 silent, 2 gaps, 3 decisions",
+      "detail": "96 types, 9 handled, 83 silent, 2 gaps, 4 decisions",
       "id": "section-a-structural",
       "language": "zig",
       "status": "pass"
@@ -943,7 +943,7 @@
     },
     {
       "description": "zig avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "zig:zig 59.3 ms/file",
+      "detail": "zig:zig 18.9 ms/file",
       "id": "section-f-perf-budget",
       "language": "zig",
       "status": "pass"
@@ -957,7 +957,7 @@
     },
     {
       "description": "cross-language consistency checks all pass",
-      "detail": "6 checks pass",
+      "detail": "9 checks pass",
       "id": "section-h-cross-language",
       "language": "zig",
       "status": "pass"
@@ -1017,7 +1017,7 @@
     },
     {
       "description": "csharp avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "powershell:csharp 44.5 ms/file",
+      "detail": "powershell:csharp 16.5 ms/file",
       "id": "section-f-perf-budget",
       "language": "csharp",
       "status": "pass"
@@ -1031,7 +1031,7 @@
     },
     {
       "description": "cross-language consistency checks all pass",
-      "detail": "6 checks pass",
+      "detail": "9 checks pass",
       "id": "section-h-cross-language",
       "language": "csharp",
       "status": "pass"
@@ -1049,14 +1049,14 @@
       "status": "pass"
     },
     {
-      "description": "dart: 5 ruled, 0 pending owner",
+      "description": "dart: 6 ruled, 0 pending owner",
       "id": "design-decisions-tracked",
       "language": "dart",
       "status": "pass"
     },
     {
       "description": "every named node type classified (dart)",
-      "detail": "222 types, 90 handled, 105 silent, 5 gaps, 5 decisions",
+      "detail": "222 types, 86 handled, 105 silent, 5 gaps, 6 decisions",
       "id": "section-a-structural",
       "language": "dart",
       "status": "pass"
@@ -1091,7 +1091,7 @@
     },
     {
       "description": "dart avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "proxicall:dart 106.6 ms/file",
+      "detail": "proxicall:dart 23.8 ms/file",
       "id": "section-f-perf-budget",
       "language": "dart",
       "status": "pass"
@@ -1105,7 +1105,7 @@
     },
     {
       "description": "cross-language consistency checks all pass",
-      "detail": "6 checks pass",
+      "detail": "9 checks pass",
       "id": "section-h-cross-language",
       "language": "dart",
       "status": "pass"
@@ -1123,14 +1123,14 @@
       "status": "pass"
     },
     {
-      "description": "swift: 5 ruled, 0 pending owner",
+      "description": "swift: 6 ruled, 0 pending owner",
       "id": "design-decisions-tracked",
       "language": "swift",
       "status": "pass"
     },
     {
       "description": "every named node type classified (swift)",
-      "detail": "185 types, 59 handled, 118 silent, 3 gaps, 5 decisions",
+      "detail": "185 types, 58 handled, 118 silent, 3 gaps, 6 decisions",
       "id": "section-a-structural",
       "language": "swift",
       "status": "pass"
@@ -1165,7 +1165,7 @@
     },
     {
       "description": "swift avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "swift-nio:swift 96.4 ms/file",
+      "detail": "swift-nio:swift 50.6 ms/file",
       "id": "section-f-perf-budget",
       "language": "swift",
       "status": "pass"
@@ -1179,7 +1179,7 @@
     },
     {
       "description": "cross-language consistency checks all pass",
-      "detail": "6 checks pass",
+      "detail": "9 checks pass",
       "id": "section-h-cross-language",
       "language": "swift",
       "status": "pass"
@@ -1239,7 +1239,7 @@
     },
     {
       "description": "objc avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "Clyde:objc 48.2 ms/file",
+      "detail": "Clyde:objc 13.5 ms/file",
       "id": "section-f-perf-budget",
       "language": "objc",
       "status": "pass"
@@ -1253,7 +1253,7 @@
     },
     {
       "description": "cross-language consistency checks all pass",
-      "detail": "6 checks pass",
+      "detail": "9 checks pass",
       "id": "section-h-cross-language",
       "language": "objc",
       "status": "pass"
@@ -1313,7 +1313,7 @@
     },
     {
       "description": "php avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "phpunit:php 10.8 ms/file",
+      "detail": "phpunit:php 2.9 ms/file",
       "id": "section-f-perf-budget",
       "language": "php",
       "status": "pass"
@@ -1327,15 +1327,237 @@
     },
     {
       "description": "cross-language consistency checks all pass",
-      "detail": "6 checks pass",
+      "detail": "9 checks pass",
       "id": "section-h-cross-language",
       "language": "php",
+      "status": "pass"
+    },
+    {
+      "description": "ruby: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "ruby",
+      "status": "pass"
+    },
+    {
+      "description": "ruby: 0 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "ruby",
+      "status": "pass"
+    },
+    {
+      "description": "ruby: 9 ruled, 0 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "ruby",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (ruby)",
+      "detail": "158 types, 120 handled, 10 silent, 0 gaps, 9 decisions",
+      "id": "section-a-structural",
+      "language": "ruby",
+      "status": "pass"
+    },
+    {
+      "description": "6 relationship kinds pinned by ruby fixtures",
+      "detail": "pinned: calls, contains, extends, implements, instantiates, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "ruby",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for ruby (1)",
+      "detail": "complexity",
+      "id": "section-c-payload-matrix",
+      "language": "ruby",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "2 tier(s) pinned: structural, usage_contextual",
+      "id": "section-d-evidence-tiers",
+      "language": "ruby",
+      "status": "pass"
+    },
+    {
+      "description": "rake:ruby at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor rake:ruby: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "ruby",
+      "status": "pass"
+    },
+    {
+      "description": "ruby avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "rake:ruby 5.3 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "ruby",
+      "status": "pass"
+    },
+    {
+      "description": "ruby analyzer docs present and committed",
+      "detail": "docs/analyzers/real-ruby-analyzer.md",
+      "id": "section-g-docs",
+      "language": "ruby",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "9 checks pass",
+      "id": "section-h-cross-language",
+      "language": "ruby",
+      "status": "pass"
+    },
+    {
+      "description": "python: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "python",
+      "status": "pass"
+    },
+    {
+      "description": "python: 0 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "python",
+      "status": "pass"
+    },
+    {
+      "description": "python: 5 ruled, 0 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "python",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (python)",
+      "detail": "128 types, 60 handled, 63 silent, 0 gaps, 5 decisions",
+      "id": "section-a-structural",
+      "language": "python",
+      "status": "pass"
+    },
+    {
+      "description": "7 relationship kinds pinned by python fixtures",
+      "detail": "pinned: calls, contains, declared_type, extends, imports, instanceof_check, instantiates, references, return_type, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "python",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for python (1)",
+      "detail": "complexity",
+      "id": "section-c-payload-matrix",
+      "language": "python",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "4 tier(s) pinned: import_based, reference_qualified, structural, usage_contextual",
+      "id": "section-d-evidence-tiers",
+      "language": "python",
+      "status": "pass"
+    },
+    {
+      "description": "cython:python at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor cython:python: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "python",
+      "status": "pass"
+    },
+    {
+      "description": "python avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "cython:python 30.6 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "python",
+      "status": "pass"
+    },
+    {
+      "description": "python analyzer docs present and committed",
+      "detail": "docs/analyzers/real-python-analyzer.md",
+      "id": "section-g-docs",
+      "language": "python",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "9 checks pass",
+      "id": "section-h-cross-language",
+      "language": "python",
+      "status": "pass"
+    },
+    {
+      "description": "haskell: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "haskell",
+      "status": "pass"
+    },
+    {
+      "description": "haskell: 9 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "haskell",
+      "status": "pass"
+    },
+    {
+      "description": "haskell: 9 ruled, 0 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "haskell",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (haskell)",
+      "detail": "253 types, 49 handled, 84 silent, 9 gaps, 9 decisions",
+      "id": "section-a-structural",
+      "language": "haskell",
+      "status": "pass"
+    },
+    {
+      "description": "6 relationship kinds pinned by haskell fixtures",
+      "detail": "pinned: calls, contains, extends, implements, instantiates, references",
+      "id": "section-b-relationship-kinds",
+      "language": "haskell",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for haskell (1)",
+      "detail": "complexity",
+      "id": "section-c-payload-matrix",
+      "language": "haskell",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
+      "id": "section-d-evidence-tiers",
+      "language": "haskell",
+      "status": "pass"
+    },
+    {
+      "description": "cabal:haskell at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor cabal:haskell: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "haskell",
+      "status": "pass"
+    },
+    {
+      "description": "haskell avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "cabal:haskell 7.4 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "haskell",
+      "status": "pass"
+    },
+    {
+      "description": "haskell analyzer docs present and committed",
+      "detail": "docs/analyzers/real-haskell-analyzer.md",
+      "id": "section-g-docs",
+      "language": "haskell",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "9 checks pass",
+      "id": "section-h-cross-language",
+      "language": "haskell",
       "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "b4fb17601be1d371329cadddebb1266cd3c9d107",
-  "committedAt": "2026-08-30T05:41:41+02:00",
+  "commit": "cc76e3771b292965b1b8a8855107f2b67a4a624a",
+  "committedAt": "2026-09-04T01:41:28+02:00",
   "data": {
     "languages": {
       "c": {
@@ -1377,7 +1599,7 @@
             "status": "pass"
           },
           "section-h-cross-language": {
-            "detail": "6 checks pass",
+            "detail": "9 checks pass",
             "status": "pass"
           }
         }
@@ -1413,7 +1635,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "fmt:cpp 113.6 ms/file",
+            "detail": "fmt:cpp 35.7 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -1421,7 +1643,7 @@
             "status": "pass"
           },
           "section-h-cross-language": {
-            "detail": "6 checks pass",
+            "detail": "9 checks pass",
             "status": "pass"
           }
         }
@@ -1455,7 +1677,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "powershell:csharp 44.5 ms/file",
+            "detail": "powershell:csharp 16.5 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -1463,7 +1685,7 @@
             "status": "pass"
           },
           "section-h-cross-language": {
-            "detail": "6 checks pass",
+            "detail": "9 checks pass",
             "status": "pass"
           }
         }
@@ -1483,11 +1705,12 @@
           "DARTD2",
           "DARTD3",
           "DARTD4",
-          "DARTD5"
+          "DARTD5",
+          "DARTD2"
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "222 types, 90 handled, 105 silent, 5 gaps, 5 decisions",
+            "detail": "222 types, 86 handled, 105 silent, 5 gaps, 6 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -1507,7 +1730,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "proxicall:dart 106.6 ms/file",
+            "detail": "proxicall:dart 23.8 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -1515,7 +1738,7 @@
             "status": "pass"
           },
           "section-h-cross-language": {
-            "detail": "6 checks pass",
+            "detail": "9 checks pass",
             "status": "pass"
           }
         }
@@ -1551,7 +1774,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "go-tools:go 9.3 ms/file",
+            "detail": "go-tools:go 9.1 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -1559,7 +1782,7 @@
             "status": "pass"
           },
           "section-h-cross-language": {
-            "detail": "6 checks pass",
+            "detail": "9 checks pass",
             "status": "pass"
           }
         }
@@ -1606,7 +1829,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "grails-core:groovy 7.5 ms/file",
+            "detail": "grails-core:groovy 5.1 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -1614,7 +1837,67 @@
             "status": "pass"
           },
           "section-h-cross-language": {
-            "detail": "6 checks pass",
+            "detail": "9 checks pass",
+            "status": "pass"
+          }
+        }
+      },
+      "haskell": {
+        "gaps": [
+          "HS-G1: type aliases (`type Alias = Text`) emit no Type symbol — verified against the fixture probe",
+          "HS-G2: GADT-style data declarations emit no constructors/fields",
+          "HS-G3: type/data family machinery emits no symbols or edges",
+          "HS-G4: FFI declarations emit no function symbols",
+          "HS-G5: Template Haskell splices/quotes: spliced declarations are invisible to the analyzer",
+          "HS-G6: pattern synonyms emit no symbols",
+          "HS-G7: class defaults/fundeps/roles/kind signatures carry no metadata",
+          "HS-G8: anonymous case/if lambdas emit no function symbol; their internal complexity is only counted in the module total",
+          "HS-G9: deriving via strategies are not resolved as implements edges"
+        ],
+        "nodeTypeCount": 253,
+        "pendingDecisions": [],
+        "ruledDecisions": [
+          "HS-D1",
+          "HS-D2",
+          "HS-D3",
+          "HS-D4",
+          "HS-D5",
+          "HS-D6",
+          "HS-D7",
+          "HS-D8",
+          "HS-D2"
+        ],
+        "sections": {
+          "section-a-structural": {
+            "detail": "253 types, 49 handled, 84 silent, 9 gaps, 9 decisions",
+            "status": "pass"
+          },
+          "section-b-relationship-kinds": {
+            "detail": "pinned: calls, contains, extends, implements, instantiates, references",
+            "status": "pass"
+          },
+          "section-c-payload-matrix": {
+            "detail": "complexity",
+            "status": "pass"
+          },
+          "section-d-evidence-tiers": {
+            "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
+            "status": "pass"
+          },
+          "section-e-differential": {
+            "detail": "floor cabal:haskell: missing=0, unexplained=0 (differential-baseline.json)",
+            "status": "pass"
+          },
+          "section-f-perf-budget": {
+            "detail": "cabal:haskell 7.4 ms/file",
+            "status": "pass"
+          },
+          "section-g-docs": {
+            "detail": "docs/analyzers/real-haskell-analyzer.md",
+            "status": "pass"
+          },
+          "section-h-cross-language": {
+            "detail": "9 checks pass",
             "status": "pass"
           }
         }
@@ -1655,7 +1938,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "grails-core:java 7.9 ms/file",
+            "detail": "grails-core:java 6.7 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -1663,7 +1946,7 @@
             "status": "pass"
           },
           "section-h-cross-language": {
-            "detail": "6 checks pass",
+            "detail": "9 checks pass",
             "status": "pass"
           }
         }
@@ -1718,7 +2001,7 @@
             "status": "pass"
           },
           "section-h-cross-language": {
-            "detail": "6 checks pass",
+            "detail": "9 checks pass",
             "status": "pass"
           }
         }
@@ -1766,7 +2049,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "Exposed:kotlin 25.5 ms/file",
+            "detail": "Exposed:kotlin 36.9 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -1774,7 +2057,7 @@
             "status": "pass"
           },
           "section-h-cross-language": {
-            "detail": "6 checks pass",
+            "detail": "9 checks pass",
             "status": "pass"
           }
         }
@@ -1815,7 +2098,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "Clyde:objc 48.2 ms/file",
+            "detail": "Clyde:objc 13.5 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -1823,7 +2106,7 @@
             "status": "pass"
           },
           "section-h-cross-language": {
-            "detail": "6 checks pass",
+            "detail": "9 checks pass",
             "status": "pass"
           }
         }
@@ -1863,7 +2146,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "phpunit:php 10.8 ms/file",
+            "detail": "phpunit:php 2.9 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -1871,7 +2154,103 @@
             "status": "pass"
           },
           "section-h-cross-language": {
-            "detail": "6 checks pass",
+            "detail": "9 checks pass",
+            "status": "pass"
+          }
+        }
+      },
+      "python": {
+        "gaps": [],
+        "nodeTypeCount": 128,
+        "pendingDecisions": [],
+        "ruledDecisions": [
+          "PY-D1",
+          "PY-D2",
+          "PY-D3",
+          "PY-D4",
+          "PY-D5"
+        ],
+        "sections": {
+          "section-a-structural": {
+            "detail": "128 types, 60 handled, 63 silent, 0 gaps, 5 decisions",
+            "status": "pass"
+          },
+          "section-b-relationship-kinds": {
+            "detail": "pinned: calls, contains, declared_type, extends, imports, instanceof_check, instantiates, references, return_type, uses",
+            "status": "pass"
+          },
+          "section-c-payload-matrix": {
+            "detail": "complexity",
+            "status": "pass"
+          },
+          "section-d-evidence-tiers": {
+            "detail": "4 tier(s) pinned: import_based, reference_qualified, structural, usage_contextual",
+            "status": "pass"
+          },
+          "section-e-differential": {
+            "detail": "floor cython:python: missing=0, unexplained=0 (differential-baseline.json)",
+            "status": "pass"
+          },
+          "section-f-perf-budget": {
+            "detail": "cython:python 30.6 ms/file",
+            "status": "pass"
+          },
+          "section-g-docs": {
+            "detail": "docs/analyzers/real-python-analyzer.md",
+            "status": "pass"
+          },
+          "section-h-cross-language": {
+            "detail": "9 checks pass",
+            "status": "pass"
+          }
+        }
+      },
+      "ruby": {
+        "gaps": [],
+        "nodeTypeCount": 158,
+        "pendingDecisions": [],
+        "ruledDecisions": [
+          "RUBD1",
+          "RUBD2",
+          "RUBD3",
+          "RUBD5",
+          "RUBD4",
+          "RUBD6",
+          "RUBD7",
+          "RUBD2",
+          "RUBD3"
+        ],
+        "sections": {
+          "section-a-structural": {
+            "detail": "158 types, 120 handled, 10 silent, 0 gaps, 9 decisions",
+            "status": "pass"
+          },
+          "section-b-relationship-kinds": {
+            "detail": "pinned: calls, contains, extends, implements, instantiates, uses",
+            "status": "pass"
+          },
+          "section-c-payload-matrix": {
+            "detail": "complexity",
+            "status": "pass"
+          },
+          "section-d-evidence-tiers": {
+            "detail": "2 tier(s) pinned: structural, usage_contextual",
+            "status": "pass"
+          },
+          "section-e-differential": {
+            "detail": "floor rake:ruby: missing=0, unexplained=0 (differential-baseline.json)",
+            "status": "pass"
+          },
+          "section-f-perf-budget": {
+            "detail": "rake:ruby 5.3 ms/file",
+            "status": "pass"
+          },
+          "section-g-docs": {
+            "detail": "docs/analyzers/real-ruby-analyzer.md",
+            "status": "pass"
+          },
+          "section-h-cross-language": {
+            "detail": "9 checks pass",
             "status": "pass"
           }
         }
@@ -1907,7 +2286,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "ripgrep:rust 32.9 ms/file",
+            "detail": "ripgrep:rust 14.7 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -1915,7 +2294,7 @@
             "status": "pass"
           },
           "section-h-cross-language": {
-            "detail": "6 checks pass",
+            "detail": "9 checks pass",
             "status": "pass"
           }
         }
@@ -1940,11 +2319,12 @@
           "D3",
           "D4",
           "D5",
-          "D6"
+          "D6",
+          "F6.GI.SCALA"
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "189 types, 156 handled, 8 silent, 9 gaps, 6 decisions",
+            "detail": "189 types, 134 handled, 8 silent, 9 gaps, 7 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -1964,7 +2344,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "scala3:scala 9.2 ms/file",
+            "detail": "scala3:scala 7.1 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -1972,7 +2352,7 @@
             "status": "pass"
           },
           "section-h-cross-language": {
-            "detail": "6 checks pass",
+            "detail": "9 checks pass",
             "status": "pass"
           }
         }
@@ -2016,7 +2396,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "svelte:svelte 19.3 ms/file",
+            "detail": "svelte:svelte 3 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -2024,7 +2404,7 @@
             "status": "pass"
           },
           "section-h-cross-language": {
-            "detail": "6 checks pass",
+            "detail": "9 checks pass",
             "status": "pass"
           }
         }
@@ -2042,11 +2422,12 @@
           "SWIFTD2",
           "SWIFTD3",
           "SWIFTD4",
-          "SWIFTD5"
+          "SWIFTD5",
+          "SWD2"
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "185 types, 59 handled, 118 silent, 3 gaps, 5 decisions",
+            "detail": "185 types, 58 handled, 118 silent, 3 gaps, 6 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -2066,7 +2447,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "swift-nio:swift 96.4 ms/file",
+            "detail": "swift-nio:swift 50.6 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -2074,7 +2455,7 @@
             "status": "pass"
           },
           "section-h-cross-language": {
-            "detail": "6 checks pass",
+            "detail": "9 checks pass",
             "status": "pass"
           }
         }
@@ -2123,7 +2504,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "vue-core:typescript 95 ms/file",
+            "detail": "vue-core:typescript 50.6 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -2131,7 +2512,7 @@
             "status": "pass"
           },
           "section-h-cross-language": {
-            "detail": "6 checks pass",
+            "detail": "9 checks pass",
             "status": "pass"
           }
         }
@@ -2182,7 +2563,7 @@
             "status": "pass"
           },
           "section-h-cross-language": {
-            "detail": "6 checks pass",
+            "detail": "9 checks pass",
             "status": "pass"
           }
         }
@@ -2197,11 +2578,12 @@
         "ruledDecisions": [
           "ZIG.D.1",
           "ZIG.D.2",
-          "ZIG.D.3"
+          "ZIG.D.3",
+          "ZIGD2"
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "96 types, 10 handled, 83 silent, 2 gaps, 3 decisions",
+            "detail": "96 types, 9 handled, 83 silent, 2 gaps, 4 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -2221,7 +2603,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "zig:zig 59.3 ms/file",
+            "detail": "zig:zig 18.9 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -2229,7 +2611,7 @@
             "status": "pass"
           },
           "section-h-cross-language": {
-            "detail": "6 checks pass",
+            "detail": "9 checks pass",
             "status": "pass"
           }
         }

@@ -20,25 +20,25 @@
     "grails-core:java": {
       "missing": 0,
       "unexplained": 0,
-      "heuristic": 80,
+      "heuristic": 76,
       "perf": {
-        "avgMsPerFile": 7.9
+        "avgMsPerFile": 6.7
       }
     },
     "grails-core:groovy": {
       "missing": 0,
       "unexplained": 0,
-      "heuristic": 34,
+      "heuristic": 27,
       "perf": {
-        "avgMsPerFile": 7.5
+        "avgMsPerFile": 5.1
       }
     },
     "Exposed:kotlin": {
       "missing": 0,
       "unexplained": 0,
-      "heuristic": 58,
+      "heuristic": 57,
       "perf": {
-        "avgMsPerFile": 25.5
+        "avgMsPerFile": 36.9
       }
     },
     "Exposed:java": {
@@ -68,9 +68,9 @@
     "scala3:scala": {
       "missing": 0,
       "unexplained": 0,
-      "heuristic": 69,
+      "heuristic": 61,
       "perf": {
-        "avgMsPerFile": 9.2
+        "avgMsPerFile": 7.1
       }
     },
     "scala3:java": {
@@ -110,7 +110,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 95
+        "avgMsPerFile": 50.6
       }
     },
     "vue-core:kotlin": {
@@ -264,7 +264,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 7.6
+        "avgMsPerFile": 3.3
       }
     },
     "grails-core:typescript": {
@@ -392,7 +392,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 42.2
+        "avgMsPerFile": 10.2
       }
     },
     "vue-core:vue": {
@@ -472,7 +472,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 19.3
+        "avgMsPerFile": 3
       }
     },
     "grails-core:svelte": {
@@ -616,7 +616,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 113.6
+        "avgMsPerFile": 35.7
       }
     },
     "jq:javascript": {
@@ -784,7 +784,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 32.9
+        "avgMsPerFile": 14.7
       }
     },
     "sqlite:c": {
@@ -792,7 +792,7 @@
       "unexplained": 2,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 255.8
+        "avgMsPerFile": 89.7
       }
     },
     "fmt:c": {
@@ -896,7 +896,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 9.3
+        "avgMsPerFile": 9.1
       }
     },
     "zig:javascript": {
@@ -1000,7 +1000,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 59.3
+        "avgMsPerFile": 18.9
       }
     },
     "powershell:javascript": {
@@ -1112,7 +1112,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 44.5
+        "avgMsPerFile": 16.5
       }
     },
     "proxicall:dart": {
@@ -1120,7 +1120,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 106.6
+        "avgMsPerFile": 23.8
       }
     },
     "swift-nio:swift": {
@@ -1128,7 +1128,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 96.4
+        "avgMsPerFile": 50.6
       }
     },
     "Clyde:objc": {
@@ -1136,7 +1136,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 48.2
+        "avgMsPerFile": 13.5
       }
     },
     "phpunit:php": {
@@ -1144,7 +1144,55 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 10.8
+        "avgMsPerFile": 2.9
+      }
+    },
+    "rake:c": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 4.7
+      }
+    },
+    "rake:ruby": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 5.3
+      }
+    },
+    "cython:javascript": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 149.1
+      }
+    },
+    "cython:c": {
+      "missing": 0,
+      "unexplained": 16,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 55.8
+      }
+    },
+    "cython:python": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 30.6
+      }
+    },
+    "cabal:haskell": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 7.4
       }
     }
   }

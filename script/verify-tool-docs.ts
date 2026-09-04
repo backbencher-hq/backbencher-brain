@@ -2,6 +2,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { dirname, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { PUBLIC_TOOL_DESCRIPTORS } from "../src/mcp/tool-registry"
+import { FRESHNESS_REMEDIATION } from "../src/brain/freshness"
 
 interface CuratedToolDocumentation {
   returns: readonly string[]
@@ -40,7 +41,7 @@ const curated: Readonly<Record<string, CuratedToolDocumentation>> = {
   bb_patterns: {
     returns: ["Pattern findings with confidence and locations", "Orphan, framework, and anti-pattern classifications", "Optional persisted run history"],
     errors: ["Invalid scope or confidence threshold", "Unavailable index", "Unknown option"],
-    limitations: ["Orphan status is static incoming-reference evidence, not proof that code is unused", "Framework and anti-pattern detection is heuristic and confidence-qualified"],
+    limitations: ["Orphan status is static incoming-reference evidence, not proof that code is unused", "Framework and anti-pattern detection is heuristic and confidence-qualified", "Candidates are derived from analyzer-extracted symbols and relationships; the same graph gaps (dynamic/reflection wiring, unresolved cross-file references) that limit the analyzers also constrain these detections"],
     performance: "The result limit and confidence threshold bound reporting; history access is separately limited.",
     safety: "Source is read-only. recordRun writes only analysis-history records in the brain database.",
     evidence: "Every finding is confidence-qualified and tied to indexed files, symbols, or relationships.",
@@ -72,7 +73,7 @@ const curated: Readonly<Record<string, CuratedToolDocumentation>> = {
   bb_migrate: {
     returns: ["Dependency-ordered migration plans", "Effort methodology, library mappings, and risks", "Explicit unsupported and truncation results"],
     errors: ["Missing targetLanguage", "No symbolName or symbolNames", "Unknown option"],
-    limitations: ["Plans are estimates, not translated source", "Library mappings are advisory and unsupported routes remain explicit"],
+    limitations: ["Plans are estimates, not translated source", "Library mappings are advisory and unsupported routes remain explicit", "Dependency ordering and mapping depend on the analyzer-extracted symbol and relationship graph; edge cases that the analyzers cannot resolve (reflection, dynamic dispatch, or cross-file relations the grammar does not model) limit the completeness of the resulting plan"],
     performance: "Requests are capped at 100 symbols and dependency traversal is bounded.",
     safety: "Read-only. It does not generate, replace, or compile target-language source.",
     evidence: "Dependency ordering comes from indexed relationships; effort and mappings are labeled methodology-driven estimates.",
@@ -84,6 +85,14 @@ const curated: Readonly<Record<string, CuratedToolDocumentation>> = {
     performance: "Only affected files are written, formatted, validated, and reindexed.",
     safety: "Write-capable. Uses project-root path checks, atomic writes, snapshots, validation, and rollback; use dryRun before risky edits.",
     evidence: "Mutation bounds come from indexed AST bytes; validation and reindex state report whether post-edit evidence is current.",
+  },
+  bb_index: {
+    returns: ["Indexed, deleted, and error counts for the refreshed path", "Mode actually applied (auto resolved, file, or dir)", "Per-file error names for any file that failed to reindex"],
+    errors: ["Missing path", "Path outside the project root", "Parse or store failure for an individual file"],
+    limitations: ["A file reindex updates only that file's evidence; cross-file relationships refresh on the next full or incremental dir index", "Dir mode reuses the incremental indexer: unchanged files are skipped by design"],
+    performance: "A single file reindex is bounded by that file's parse cost; dir mode is bounded by the changed-file set.",
+    safety: "Write-capable against index data only. It never modifies source files.",
+    evidence: "Counts come from the real parse/store pipeline; errors name the file that failed rather than swallowing it.",
   },
   bb_health: {
     returns: ["Index, schema, runtime, freshness, and embedding health", "Optional integrity and analysis-history summaries", "Typed warnings and refresh outcome"],
@@ -112,11 +121,32 @@ function artifact(): Record<string, unknown> {
   }
 }
 
+// M35.D1: staleness section rendered from the executable registry + the
+// registered remediation constants — docs CANNOT drift from code because both
+// sides derive from the same source here.
+const FRESHNESS_TOOLS: Record<string, { modes: string[]; surfaces: string }> = {
+  bb_search: { modes: ["symbol", "content", "file"], surfaces: "per-row `stale` flags + `freshness` block (`{ fresh, stale, missing, staleRatio, mode, remediation }`)" },
+  bb_analyze: { modes: ["callers", "callees", "trace", "dependencies", "stats", "complexity", "impact", "test_mapping", "test_gaps", "test_impact", "test_quality"], surfaces: "`freshness` block (`{ fresh, stale, missing, staleRatio, mode, remediation }`); graph nodes and report rows carry `stale` flags (project-wide modes sample or resolve visible rows only — the block names its coverage mode)" },
+  bb_visualize: { modes: [], surfaces: "per-node and per-link `stale` flags (links inherit worst-of-endpoints) + `freshness` envelope (`{ fresh, stale, missing, staleRatio, mode, remediation }`) on JSON; truncation composes with staleness" },
+  bb_migrate: { modes: ["plan"], surfaces: "per-plan `sourceFile` + `stale` flags with an up-front stale-plan notice + `freshness` envelope (`{ fresh, stale, missing, staleRatio, mode, remediation }`) on JSON" },
+  bb_patterns: { modes: [], surfaces: "per-finding `[stale]` markers + counts footer naming the remediation; silent when all fresh" },
+  bb_security: { modes: [], surfaces: "per-finding `[stale]` markers + counts footer naming the remediation; silent when all fresh" },
+  bb_doc: { modes: [], surfaces: "`freshness` envelope (`{ fresh, stale, missing, staleRatio, mode, remediation }`) on JSON + footer naming the remediation; per-citation `(stale)` in Sources; silent when all fresh" },
+}
+function stalenessSection(tool: any): string {
+  const info = FRESHNESS_TOOLS[tool.name]
+  if (!info) {
+    return `This tool does not report index staleness. Output reflects the index as of the last bb index run; run bb index --changed to refresh changed files before acting on results.`
+  }
+  const modePart = info.modes.length ? `Freshness modes (registered as \`freshnessModes\`): ${info.modes.map((m) => `\`${m}\``).join(", ")}.` : "Freshness applies to the tool's read output (no registered per-mode split)."
+  return `${modePart} Staleness surfaces as: ${info.surfaces}. When something is stale/missing, the remediation names the registered reindex interfaces: project scope → \`${FRESHNESS_REMEDIATION.dir}\`; file scope → \`${FRESHNESS_REMEDIATION.file}\`. Nothing is stale → silence (no remediation text).`
+}
+
 function renderReference(tool: any): string {
   const schema = JSON.stringify(tool.inputSchema, null, 2)
   const examples = tool.documentation.examples.map((example: unknown) => `\`${JSON.stringify(example)}\``).join("\n\n")
   const bullets = (items: readonly string[]) => items.map((item) => `- ${item}`).join("\n")
-  return `# \`${tool.name}\`\n\n${tool.description}\n\n## Contract\n\n- Category: \`${tool.documentation.category}\`\n- Mutability: \`${tool.mutability}\`\n- Requires index: \`${tool.requiresIndex}\`\n- Modes: ${tool.modes.map((mode: string) => `\`${mode}\``).join(", ")}\n- Planned modes (roadmap, not executable): ${(tool.plannedModes ?? []).map((mode: string) => `\`${mode}\``).join(", ") || "(none)"}\n- Defaults: \`${JSON.stringify(tool.documentation.defaults)}\`\n\n## Input Schema\n\n\`\`\`json\n${schema}\n\`\`\`\n\n## Returns\n\n${bullets(tool.returns)}\n\n## Examples\n\n${examples}\n\n## Errors\n\n${bullets(tool.errors)}\n\n## Limitations\n\n${bullets(tool.limitations)}\n\n## Performance\n\n${tool.performance}\n\n## Safety\n\n${tool.safety}\n\n## Evidence Semantics\n\n${tool.evidence}\n\nThis page is generated from the executable registry and curated documentation. Run \`npm run docs:generate\` to update it.\n`
+  return `# \`${tool.name}\`\n\n${tool.description}\n\n## Contract\n\n- Category: \`${tool.documentation.category}\`\n- Mutability: \`${tool.mutability}\`\n- Requires index: \`${tool.requiresIndex}\`\n- Modes: ${tool.modes.map((mode: string) => `\`${mode}\``).join(", ")}\n- Planned modes (roadmap, not executable): ${(tool.plannedModes ?? []).map((mode: string) => `\`${mode}\``).join(", ") || "(none)"}\n- Defaults: \`${JSON.stringify(tool.documentation.defaults)}\`\n\n## Input Schema\n\n\`\`\`json\n${schema}\n\`\`\`\n\n## Returns\n\n${bullets(tool.returns)}\n\n## Examples\n\n${examples}\n\n## Errors\n\n${bullets(tool.errors)}\n\n## Limitations\n\n${bullets(tool.limitations)}\n\n## Performance\n\n${tool.performance}\n\n## Safety\n\n${tool.safety}\n\n## Evidence Semantics\n\n${tool.evidence}\n\n## Staleness\n\n${stalenessSection(tool)}\n\nThis page is generated from the executable registry and curated documentation. Run \`npm run docs:generate\` to update it.\n`
 }
 
 function expectedFiles(): Map<string, string> {

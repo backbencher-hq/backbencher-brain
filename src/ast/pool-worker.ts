@@ -558,6 +558,10 @@ export async function parseFile(filePath: string, projectPath: string, context?:
           isStatic: s.isStatic,
           isAsync: s.isAsync,
           isAbstract: s.isAbstract,
+          // M35 pre-work: carry the analyzer-extracted docstring across the
+          // worker boundary. It was dropped here AND never bound in the
+          // brain_symbol INSERT, so brain_symbol.docstring was always NULL.
+          docstring: s.docstring ?? null,
           snippet,
         }
       }),

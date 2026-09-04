@@ -1,6 +1,6 @@
 # `bb_analyze`
 
-Unified evidence-backed analysis over graph relationships, dependencies, statistics, complexity, impact, and test intelligence. Select exactly one mode.
+Unified evidence-backed analysis over graph relationships, dependencies, statistics, complexity, impact, and test intelligence. Select exactly one mode. Every read mode carries a freshness block (fresh/stale/missing counts + remediation) resolved against the live working tree; graph nodes and report rows carry a stale flag when their file changed after indexing.
 
 ## Contract
 
@@ -89,5 +89,9 @@ Read-only. Analysis never creates tests or edits source.
 ## Evidence Semantics
 
 Findings derive from brain_* symbols, files, relationships, complexity, and test-file classifications.
+
+## Staleness
+
+Freshness modes (registered as `freshnessModes`): `callers`, `callees`, `trace`, `dependencies`, `stats`, `complexity`, `impact`, `test_mapping`, `test_gaps`, `test_impact`, `test_quality`. Staleness surfaces as: `freshness` block (`{ fresh, stale, missing, staleRatio, mode, remediation }`); graph nodes and report rows carry `stale` flags (project-wide modes sample or resolve visible rows only — the block names its coverage mode). When something is stale/missing, the remediation names the registered reindex interfaces: project scope → `run: bb index --changed  (or the bb_index tool with the project path — incremental, changed files only)`; file scope → `run: bb index "<file>"  (or the bb_index tool with that file path)`. Nothing is stale → silence (no remediation text).
 
 This page is generated from the executable registry and curated documentation. Run `npm run docs:generate` to update it.

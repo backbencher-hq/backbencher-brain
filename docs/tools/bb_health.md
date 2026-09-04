@@ -108,4 +108,8 @@ Status is read-only. refresh=true explicitly mutates only index data; force=true
 
 Counts and versions come from the brain database; freshness compares indexed metadata with the filesystem.
 
+## Staleness
+
+This tool does not report index staleness. Output reflects the index as of the last bb index run; run bb index --changed to refresh changed files before acting on results.
+
 This page is generated from the executable registry and curated documentation. Run `npm run docs:generate` to update it.

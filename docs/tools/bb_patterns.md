@@ -1,6 +1,6 @@
 # `bb_patterns`
 
-Detect orphaned code, framework patterns, and anti-patterns. Use scope=orphaned for dead code; scope=all (default) for the full pattern scan with the optional pattern/confidence filters. Architecture and code-quality analysis are planned, not yet executable.
+Detect orphaned code, framework patterns, and anti-patterns, with staleness markers when a finding's file changed after indexing. Use scope=orphaned for dead code; scope=all (default) for the full pattern scan with the optional pattern/confidence filters. Architecture and code-quality analysis are planned, not yet executable.
 
 ## Contract
 
@@ -79,9 +79,7 @@ Detect orphaned code, framework patterns, and anti-patterns. Use scope=orphaned 
 
 - Orphan status is static incoming-reference evidence, not proof that code is unused
 - Framework and anti-pattern detection is heuristic and confidence-qualified
-- Candidates are derived from analyzer-extracted symbols and relationships; the
-  same graph gaps (dynamic/reflection wiring, unresolved cross-file references)
-  that limit the analyzers also constrain these detections
+- Candidates are derived from analyzer-extracted symbols and relationships; the same graph gaps (dynamic/reflection wiring, unresolved cross-file references) that limit the analyzers also constrain these detections
 
 ## Performance
 
@@ -94,5 +92,9 @@ Source is read-only. recordRun writes only analysis-history records in the brain
 ## Evidence Semantics
 
 Every finding is confidence-qualified and tied to indexed files, symbols, or relationships.
+
+## Staleness
+
+Freshness applies to the tool's read output (no registered per-mode split). Staleness surfaces as: per-finding `[stale]` markers + counts footer naming the remediation; silent when all fresh. When something is stale/missing, the remediation names the registered reindex interfaces: project scope → `run: bb index --changed  (or the bb_index tool with the project path — incremental, changed files only)`; file scope → `run: bb index "<file>"  (or the bb_index tool with that file path)`. Nothing is stale → silence (no remediation text).
 
 This page is generated from the executable registry and curated documentation. Run `npm run docs:generate` to update it.

@@ -1,6 +1,6 @@
 # `bb_doc`
 
-Generate read-only, evidence-backed documentation with resolvable citations. Supports symbol, file, module, feature, API, project, and documentation-coverage modes in Markdown or JSON.
+Generate read-only, evidence-backed documentation with resolvable citations and a freshness block over the cited files. Supports symbol, file, module, feature, API, project, and documentation-coverage modes in Markdown or JSON.
 
 ## Contract
 
@@ -124,5 +124,9 @@ Read-only. It never refreshes implicitly, writes source, or invokes bb_edit.
 ## Evidence Semantics
 
 Claims are classified as extracted, inferred, generated, or unknown and carry resolvable citations where applicable.
+
+## Staleness
+
+Freshness applies to the tool's read output (no registered per-mode split). Staleness surfaces as: `freshness` envelope (`{ fresh, stale, missing, staleRatio, mode, remediation }`) on JSON + footer naming the remediation; per-citation `(stale)` in Sources; silent when all fresh. When something is stale/missing, the remediation names the registered reindex interfaces: project scope → `run: bb index --changed  (or the bb_index tool with the project path — incremental, changed files only)`; file scope → `run: bb index "<file>"  (or the bb_index tool with that file path)`. Nothing is stale → silence (no remediation text).
 
 This page is generated from the executable registry and curated documentation. Run `npm run docs:generate` to update it.
