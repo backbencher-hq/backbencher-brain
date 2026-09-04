@@ -6,7 +6,7 @@
   "status": "open",
   "authority": "docs/m41/M41-MASTER-PLAN.md",
   "governingContract": "docs/M14-HONESTY-CONTRACT.md",
-  "updatedAt": "2026-09-04T21:50:23.546Z",
+  "updatedAt": "2026-09-04T22:07:41.243Z",
   "evidencePolicy": {
     "verifiedRequires": [
       "currentCommit",
@@ -145,7 +145,7 @@
       "code": "S1",
       "githubIssue": 644,
       "tool": "seo",
-      "status": "planned",
+      "status": "verified",
       "scope": "sitemap from real routes, canonicals, unique titles/descriptions, OG/Twitter cards, JSON-LD SoftwareApplication, keywords in real content only",
       "acceptanceCriteria": [
         "sitemap valid + matches real routes (cross-checked by verifier)",
@@ -156,7 +156,17 @@
       "closureRequirements": [
         "verifier with missing-meta/duplicate-title mutants",
         "evidence at current commit with negative cases"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "f4d5bafc3d48101f895ff82b63cc218c5a4102f9",
+        "verifierCommand": "npx tsx script/m41/verify-seo.ts",
+        "evidenceFile": "S1.json",
+        "generatedAt": "2026-09-04T22:07:41.243Z",
+        "passed": 25,
+        "failed": 0,
+        "negativeCases": 2
+      }
     },
     {
       "code": "S2",
