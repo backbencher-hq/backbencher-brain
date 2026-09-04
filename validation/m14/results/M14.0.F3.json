@@ -1,207 +1,202 @@
 {
   "checks": [
     {
-      "description": "scala adversarial fixtures",
-      "detail": "37/37 fixtures pass",
-      "id": "fixtures-scala",
+      "description": "kotlin adversarial fixtures",
+      "detail": "36/36 fixtures pass",
+      "id": "fixtures-kotlin",
       "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "a4a899632c4d56a94492738a0bf401b604691257",
-  "committedAt": "2026-09-04T06:26:15+02:00",
+  "commit": "6b9a9ac9a0c9afeea3cbb1fe76fd855040e944f8",
+  "committedAt": "2026-09-04T06:56:36+02:00",
   "data": {
     "details": [
       {
-        "fixture": "scala/case-class-fields",
+        "fixture": "kotlin/annotation-only-frameworks",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "scala/class-extends-class-and-trait",
+        "fixture": "kotlin/api-contract-routes",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "scala/companion-object",
+        "fixture": "kotlin/callable-refs",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "scala/complexity-parity",
+        "fixture": "kotlin/calls-and-instantiation",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "scala/contains-explicit",
+        "fixture": "kotlin/class-inheritance",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "scala/decorators",
+        "fixture": "kotlin/companion-object",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "scala/derives-refs",
+        "fixture": "kotlin/complexity-parity",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "scala/dotted-generic-supertype",
+        "fixture": "kotlin/contains-explicit",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "scala/extension-method-flag",
+        "fixture": "kotlin/coroutine-dispatch",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "scala/f6-coverage-wave",
+        "fixture": "kotlin/ctor-delegation",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "scala/field-uses",
+        "fixture": "kotlin/data-class-phantoms",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "scala/generic-parameters-payload",
+        "fixture": "kotlin/data-class",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "scala/generics-bounds",
+        "fixture": "kotlin/enum-and-sealed",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "scala/implements-edges",
+        "fixture": "kotlin/extension-property",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "scala/import-edges",
+        "fixture": "kotlin/fq-annotations",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "scala/instantiation-new",
+        "fixture": "kotlin/generic-parameters",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "scala/interp-uses",
+        "fixture": "kotlin/import-edges",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "scala/lambda-calls",
+        "fixture": "kotlin/indexing-uses",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "scala/method-value-refs",
+        "fixture": "kotlin/init-attribution",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "scala/object-singleton",
+        "fixture": "kotlin/instantiates-edges",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "scala/override-fallback-confidence",
+        "fixture": "kotlin/interface-multi-extends",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "scala/parameters-payload",
+        "fixture": "kotlin/kdoc-extraction",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "scala/pattern-refs",
+        "fixture": "kotlin/object-declaration",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "scala/qualified-call-path",
+        "fixture": "kotlin/object-literal",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "scala/qualified-calls-payload",
+        "fixture": "kotlin/override-fallback-confidence",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "scala/qualified-pascal-calls",
+        "fixture": "kotlin/parameters-payload",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "scala/renamed-import",
+        "fixture": "kotlin/primary-constructor-properties",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "scala/scaladoc-payload",
+        "fixture": "kotlin/property-accessors",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "scala/sealed-hierarchy",
+        "fixture": "kotlin/qualified-call-path",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "scala/self-type-ref",
+        "fixture": "kotlin/qualified-calls-builtin-names",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "scala/self-type",
+        "fixture": "kotlin/safe-nav-chain",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "scala/top-level-calls",
+        "fixture": "kotlin/template-uses",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "scala/trait-and-impl",
+        "fixture": "kotlin/type-alias",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "scala/tuple-refs",
+        "fixture": "kotlin/type-usage-graph",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "scala/type-alias-refs",
+        "fixture": "kotlin/visibility-payload",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "scala/type-usage-graph",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "scala/visibility-payload",
+        "fixture": "kotlin/wildcard-imports",
         "ok": true,
         "problems": []
       }
     ],
     "summary": {
-      "scala": {
+      "kotlin": {
         "fail": 0,
-        "pass": 37
+        "pass": 36
       }
     }
   },

@@ -480,6 +480,45 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => ({ ...s, comments: [] })) }),
   },
   {
+    id: "kotlin/write-as-read-uses",
+    language: "kotlin",
+    defectClass: "relationship-noise",
+    description: "injects the KAD1 regression class: assignment-LHS indexing leaks a uses edge for the receiver (pre-fix `xs[i] = 42` emitted uses; oracle derives no kotlin uses truth so F5 is blind)",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), ...(r.relationships ?? []).filter((x: any) => x.metadata?.relationshipType === "expression_use").map((x: any) => ({ ...x, source: "write" }))] }),
+  },
+  {
+    id: "kotlin/kdoc-contamination",
+    language: "kotlin",
+    defectClass: "docstring-misattribution",
+    description: "injects the KAD2 regression class: the first doc leaks onto every subsequent doc-less declaration (dead `sibling === node` forward scan)",
+    transform: r => {
+      const firstDoc = (r.symbols ?? []).find((s: any) => (s.comments ?? []).length > 0)?.comments?.[0]
+      if (!firstDoc) return r
+      return { ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, comments: [firstDoc] })) }
+    },
+  },
+  {
+    id: "kotlin/accessor-text-fallback",
+    language: "kotlin",
+    defectClass: "payload-fabrication",
+    description: "injects the KAD4 regression class: text-based metadata flags (get()/set(/by substring) fabricate hasCustomGetter/hasCustomSetter/hasDelegate)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => s.kind === "property" ? { ...s, metadata: { ...(s.metadata ?? {}), hasCustomGetter: true, hasCustomSetter: true, hasDelegate: true } } : s) }),
+  },
+  {
+    id: "kotlin/receiver-ref-loss",
+    language: "kotlin",
+    defectClass: "relationship-loss",
+    description: "injects the KAD3 regression class: extension-receiver types emit no reference (the user_type-only walk was dead against receiver_type wrappers)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.source === "shout" && x.target === "String" && x.metadata?.relationshipType === "declared_type")) }),
+  },
+  {
+    id: "kotlin/return-type-global",
+    language: "kotlin",
+    defectClass: "relationship-mislabel",
+    description: "injects the KAD6 regression class: declaration-position references sourced to the Global placeholder (pre-fix top-level return types)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => x.source === "m" && x.metadata?.relationshipType === "return_type" ? { ...x, source: "Global" } : x) }),
+  },
+  {
     id: "groovy/drop-declared-types",
     language: "groovy",
     defectClass: "relationship-loss",
