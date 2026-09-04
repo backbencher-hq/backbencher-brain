@@ -17,8 +17,8 @@
     "node": "v20.19.5",
     "runtime": "fork-run"
   },
-  "currentCommit": "5e9261ea4836de279456b970266381c39efb84f8",
-  "commit": "5e9261ea4836de279456b970266381c39efb84f8",
+  "currentCommit": "6dd95fd62e22177fc027a05a162902c8dde4ca79",
+  "commit": "6dd95fd62e22177fc027a05a162902c8dde4ca79",
   "failed": 0,
   "checks": [
     {
@@ -32,12 +32,12 @@
     {
       "name": "E5: server launched and version ok",
       "ok": true,
-      "detail": "{\"activationMs\":37,\"declaredBudgetMs\":150,\"withinBudget\":true,\"launch\":{\"kind\":\"dist-bundled\",\"entryPath\":\"$HOME/backbencher-brain/ide/vscode/dist/server/lsp/server.js\",\"runtime\":\"node\",\"run"
+      "detail": "{\"activationMs\":127,\"declaredBudgetMs\":150,\"withinBudget\":true,\"launch\":{\"kind\":\"dist-bundled\",\"entryPath\":\"$HOME/backbencher-brain/ide/vscode/dist/server/lsp/server.js\",\"runtime\":\"node\",\"ru"
     },
     {
       "name": "E5: activation within declared budget",
       "ok": true,
-      "detail": "{\"activationMs\":37,\"regime\":\"cold-first-launch\",\"ceiling\":1500,\"declaredBudgetMs\":150}"
+      "detail": "{\"activationMs\":127,\"regime\":\"cold-first-launch\",\"ceiling\":1500,\"declaredBudgetMs\":150}"
     },
     {
       "name": "E5: extension exposes its LanguageClient transport",
@@ -46,12 +46,12 @@
     {
       "name": "L2: hover renders markdown",
       "ok": true,
-      "detail": "{\"contents\":{\"value\":\"```\\nmethod greet(…)\\n```\\n\\n**greet** — method, 1 usage\\n\\nevidence: indexed\\n\\n_source: bb index (/tmp/v1-ws-MLO5WJ/main.ts:2)_\",\"kind\":\"markdown\"},\"range\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\"line\":1,\"character\":7}},\"data\":{\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\""
+      "detail": "{\"contents\":{\"value\":\"```\\nmethod greet(…)\\n```\\n\\n**greet** — method, 1 usage\\n\\nevidence: indexed\\n\\n_source: bb index (/tmp/v1-ws-DLtXyX/main.ts:2)_\",\"kind\":\"markdown\"},\"range\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\"line\":1,\"character\":7}},\"data\":{\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\""
     },
     {
       "name": "L2: hover names greet",
       "ok": true,
-      "detail": "{\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\",\"symbolType\":\"method\",\"signature\":\"method greet(…)\",\"usageCount\":1,\"evidenceTiers\":[\"indexed\"],\"crossLanguageSection\":\"\",\"stale\":false,\"freshnessStatus\":\"fresh\",\"filePath\":\"/tmp/v1-ws-MLO5WJ/main.ts\",\"lineStart\":2,\"lineEnd\":2}"
+      "detail": "{\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\",\"symbolType\":\"method\",\"signature\":\"method greet(…)\",\"usageCount\":1,\"evidenceTiers\":[\"indexed\"],\"crossLanguageSection\":\"\",\"stale\":false,\"freshnessStatus\":\"fresh\",\"filePath\":\"/tmp/v1-ws-DLtXyX/main.ts\",\"lineStart\":2,\"lineEnd\":2}"
     },
     {
       "name": "L2: hover usage count matches fixture relationship",
@@ -64,7 +64,7 @@
     {
       "name": "L2: hover carries the evidence tier (honesty contract §2)",
       "ok": true,
-      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: indexed\n\n_source: bb index (/tmp/v1-ws-MLO5WJ/main.ts:2)"
+      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: indexed\n\n_source: bb index (/tmp/v1-ws-DLtXyX/main.ts:2)"
     },
     {
       "name": "L2: hover outside index is declared absent",
@@ -74,17 +74,17 @@
     {
       "name": "L3: definition resolves greet",
       "ok": true,
-      "detail": "{\"found\":true,\"location\":{\"path\":\"/tmp/v1-ws-MLO5WJ/main.ts\",\"line\":1,\"character\":2,\"endLine\":1,\"endCharacter\":7},\"symbol\":{\"id\":\"sym-greet\",\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\",\"symbolType\":\"method\"},\"evidenceTier\":\"indexed\"}"
+      "detail": "{\"found\":true,\"location\":{\"path\":\"/tmp/v1-ws-DLtXyX/main.ts\",\"line\":1,\"character\":2,\"endLine\":1,\"endCharacter\":7},\"symbol\":{\"id\":\"sym-greet\",\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\",\"symbolType\":\"method\"},\"evidenceTier\":\"indexed\"}"
     },
     {
       "name": "L3: definition location is 0-based line 1",
       "ok": true,
-      "detail": "{\"path\":\"/tmp/v1-ws-MLO5WJ/main.ts\",\"line\":1,\"character\":2,\"endLine\":1,\"endCharacter\":7}"
+      "detail": "{\"path\":\"/tmp/v1-ws-DLtXyX/main.ts\",\"line\":1,\"character\":2,\"endLine\":1,\"endCharacter\":7}"
     },
     {
       "name": "L3: references returns locations",
       "ok": true,
-      "detail": "{\"locations\":[{\"path\":\"/tmp/v1-ws-MLO5WJ/main.ts\",\"line\":6,\"character\":9,\"endLine\":9,\"endCharacter\":1},{\"path\":\"/tmp/v1-ws-MLO5WJ/main.ts\",\"line\":1,\"character\":2,\"endLine\":1,\"endCharacter\":7}],\"trunca"
+      "detail": "{\"locations\":[{\"path\":\"/tmp/v1-ws-DLtXyX/main.ts\",\"line\":6,\"character\":9,\"endLine\":9,\"endCharacter\":1},{\"path\":\"/tmp/v1-ws-DLtXyX/main.ts\",\"line\":1,\"character\":2,\"endLine\":1,\"endCharacter\":7}],\"trunca"
     },
     {
       "name": "L3: definition outside index is honest empty",
@@ -103,12 +103,12 @@
     {
       "name": "L4: workspace/symbol finds greet",
       "ok": true,
-      "detail": "{\"symbols\":[{\"id\":\"sym-greet\",\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\",\"symbolType\":\"method\",\"path\":\"/tmp/v1-ws-MLO5WJ/main.ts\",\"line\":1}],\"truncated\":false,\"totalCount\":1,\"limit\":200,\"evidenceT"
+      "detail": "{\"symbols\":[{\"id\":\"sym-greet\",\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\",\"symbolType\":\"method\",\"path\":\"/tmp/v1-ws-DLtXyX/main.ts\",\"line\":1}],\"truncated\":false,\"totalCount\":1,\"limit\":200,\"evidenceT"
     },
     {
       "name": "L5: prepareCallHierarchy returns item",
       "ok": true,
-      "detail": "{\"item\":{\"name\":\"greet\",\"kind\":6,\"uri\":\"file:///tmp/v1-ws-MLO5WJ/main.ts\",\"range\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\"line\":1,\"character\":7}},\"selectionRange\":{\"start\":{\"line\":1,\"character\":2},\""
+      "detail": "{\"item\":{\"name\":\"greet\",\"kind\":6,\"uri\":\"file:///tmp/v1-ws-DLtXyX/main.ts\",\"range\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\"line\":1,\"character\":7}},\"selectionRange\":{\"start\":{\"line\":1,\"character\":2},\""
     },
     {
       "name": "L5: incomingCalls returns callers",
@@ -156,7 +156,7 @@
   "checksPassed": 28,
   "checksTotal": 28,
   "activation": {
-    "activationMs": 37,
+    "activationMs": 127,
     "declaredBudgetMs": 150,
     "withinBudget": true,
     "launch": {
@@ -168,11 +168,11 @@
     },
     "serverVersion": "0.3.0",
     "versionOk": true,
-    "handshakeMs": 400
+    "handshakeMs": 851
   },
-  "elapsedMs": 20021,
+  "elapsedMs": 32044,
   "verifierCommand": "npx tsx script/m25/run-fork-e2e.mts",
   "evidenceFile": "F-ANTIGRAVITY.json",
-  "generatedAt": "2026-09-04T02:27:45.746Z",
+  "generatedAt": "2026-09-04T02:34:58.571Z",
   "limitations": []
 }
