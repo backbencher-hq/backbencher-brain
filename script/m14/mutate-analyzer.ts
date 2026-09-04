@@ -1116,6 +1116,23 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "instantiates") }),
   },
   {
+    id: "dart/heritage-alias-not-resolved",
+    language: "dart",
+    defectClass: "misattribution",
+    description: "reverts DAD1: emits the import-alias prefix (_iDart) as the extends target instead of the resolved leaf (FakeBase) — fixture pins extends:F6MockClient->FakeBase and forbids extends->_iDart",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => x.type === "extends" && x.target === "FakeBase" ? { ...x, target: "_iDart" } : x) }),
+  },
+  {
+    id: "dart/implements-alias-leak",
+    language: "dart",
+    defectClass: "fabrication",
+    description: "reverts DAD2: leaks the import-alias containers (_iIo/_iAsync) as implements targets alongside the resolved names — fixture forbids implements->_iIo and implements->_iAsync",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).concat([
+      { source: "F6MockClient", target: "_iIo", type: "implements", confidence: 1.0, metadata: { isImplements: true } },
+      { source: "F6MockClient", target: "_iAsync", type: "implements", confidence: 1.0, metadata: { isImplements: true } },
+    ]) }),
+  },
+  {
     id: "swift/drop-implements-edge",
     language: "swift",
     defectClass: "relationship-loss",

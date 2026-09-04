@@ -520,3 +520,50 @@ documented limitation of the convention heuristic. Fixture extended
 (+4 pins, +2 forbids, assignment-form + struct shapes); 2 new mutants (192
 total, ALL caught); F5 re-verified 100%/0/0 (1386 truth edges); F1/F6 21
 languages green; SPEC 8/8; CC1 pass; honesty green.
+
+## Gate-strengthening wave (F7/F8/F9) + dart heritage regression (2026-09-04)
+
+Wave 1 — three new PERMANENT gates wired into the honesty REQUIRED set:
+- **F7 analyzer-hygiene lint** (`script/m14/verify-analyzer-hygiene.ts`):
+  mechanically detects the php relative_scope `? owner : owner` class of
+  defects — no-op ternaries (both arms identical, nested-ternary and
+  string-literal aware), no-op statements, write-only locals/fields.
+  Positive-control tested against the historical php/csharp bugs. All 21
+  analyzers clean (scala `? start : start` finding was a false positive:
+  nested ternary, gate refined and re-verified).
+- **F8 corpus-census gate** (`script/m14/verify-corpus-census.ts`): parses a
+  real-corpus sample per language and fails on ANY parse-tree node type the
+  spec never classified. First run found 28 blind spots across 8 languages;
+  probe-verified each — most were already classified via `gap.gaps[]`
+  (F8's collector now reads every ruling format), genuinely unclassified
+  ones now carry recorded rulings (haskell lambda_case/multi_way_if =
+  internal_silent by design; type_synomym = design decision).
+- **F9 defect-class probe battery** (`script/m14/verify-probe-battery.ts`):
+  12 probes, each encoding a defect class that ACTUALLY occurred (HSD12-19,
+  CSD1-12, php relative_scope), asserting analyzer AND oracle semantics,
+  with a self-test for F7's own detectors. Authoring it caught an apparent
+  HSD16 regression; bisection proved the battery snippet was the wrong
+  shape (bare qualified REFERENCE vs application) — the coherent boundary
+  (constructor VALUES are silent, applications emit) is now RULED as
+  haskell design decision HS-D2 and asserted as a battery probe.
+
+Wave 2 — the strengthened F5 caught a REAL dart regression (DAD1-DAD3):
+proxicall's mocktail mocks (`class _FakeX_0 extends _i1.SmartFake implements
+_i2.Database`) parse FLAT (two adjacent type_identifiers joined by an
+anonymous `.`; first = import alias). The analyzer named the base after the
+ALIAS (extends -> _i1), leaked aliases into implements targets, and the
+gate's tree-truth oracle demanded generic ARGUMENTS (implements -> T1).
+Provenance: analyzer/oracle code identical since the dart wave — the
+regression surfaced because the USER'S OWN PROJECT EVOLVED (new mocks file
+entered the 60-file sample); the gate did exactly its job. Fixed with the
+resolved-leaf contract (a type name followed by `.` is an alias prefix;
+type_arguments never bases) mirrored across RealDartAnalyzer
+(resolvedHeritageNames) and BOTH oracles; web-tree-sitter returns fresh
+node objects per child() call so sibling lookup is position-based. Fixture
+gains F6MockClient (aliased supertypes) + 3 pins + 3 alias forbids; 2 new
+mutants (194 total, ALL caught). Full sweep: 21 languages 100% coverage /
+0 missing / 0 fabrication; sqlite:c perf outlier (270ms vs 89.7 baseline)
+attributed to load-15 environment (4 concurrent agent sessions, single-file
+11.5s stall — physically impossible at steady-state; 3-attempt min-of-runs
+retry already engaged), no correctness impact. Honesty gate green at
+cc76e37 with F1-F9 + SPEC + CC1 fresh.
