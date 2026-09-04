@@ -20,7 +20,7 @@
   "realDbsSkipped": 3,
   "realCrossLanguagePairs": 0,
   "docFile": "docs/m26/GRAPH.md",
-  "currentCommit": "5e9261ea4836de279456b970266381c39efb84f8",
+  "currentCommit": "c12f06b9fdf35d4d6eee9a7a96be84d27236e768",
   "verifierCommand": "npx tsx script/m26/verify-graph-docs.ts",
-  "generatedAt": "2026-09-04T02:30:10.765Z"
+  "generatedAt": "2026-09-04T02:30:50.884Z"
 }
