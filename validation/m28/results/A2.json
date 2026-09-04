@@ -26,10 +26,10 @@
       "caught": true
     }
   ],
-  "currentCommit": "06d87c5328a8b09fb6b1b6b8d363d475eb3beefb",
+  "currentCommit": "b503e439a68c3543bf6020ef10d878646cf8e4b1",
   "verifierCommand": "npx tsx script/m28/verify-annotation-ui.ts",
   "evidenceFile": "A2.json",
-  "generatedAt": "2026-09-04T05:26:26.324Z",
+  "generatedAt": "2026-09-04T05:27:18.069Z",
   "claimLevel": "verified — annotations render in the real editor hover (author-labeled) and ride bb/graph; component rules mutation-gated",
   "failures": []
 }
