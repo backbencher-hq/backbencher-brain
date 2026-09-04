@@ -72,7 +72,7 @@
       "code": "R2",
       "githubIssue": 537,
       "tool": "wave-1-execution",
-      "status": "planned",
+      "status": "verified",
       "scope": "Execute R1 for the next language(s) chosen by the #419 ledger at execution time (candidates: javascript INVENTORY-DONE, vue NOT-STARTED; actual set owner-approved). End-to-end: gates, fixtures, mutants, budgets, claim levels, IDE matrix updated.",
       "acceptanceCriteria": [
         "Wave gate green for the onboarded language(s)",
@@ -83,7 +83,28 @@
         "Per-language evidence",
         "Owner approval of the language set recorded before execution",
         "Owner spot-check scheduled"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see R2.json",
+        "verifierCommand": "npx tsx script/m29/verify-wave-execution.ts",
+        "evidenceFile": "R2.json",
+        "passed": 115,
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": 3,
+        "mutantsTotal": 3,
+        "approvalRecord": "validation/m29/results/wave-1-approval.json",
+        "languages": [
+          "java",
+          "python",
+          "typescript",
+          "javascript",
+          "kotlin",
+          "scala"
+        ],
+        "s6InEditor": "real headless Neovim sessions per language (M27.N1 pattern)"
+      }
     },
     {
       "code": "R3",
