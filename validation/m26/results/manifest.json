@@ -270,6 +270,34 @@
       }
     },
     {
+      "code": "A1",
+      "issue": 615,
+      "title": "Polyglot end-to-end: cross-language write-path proven via real indexing",
+      "status": "verified",
+      "evidence": {
+        "status": "verified",
+        "verifierCommand": "npx tsx script/m26/verify-polyglot-e2e.ts",
+        "evidenceFile": "A1.json",
+        "passed": 11,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 1
+      },
+      "githubIssue": 615,
+      "tool": "polyglot-e2e",
+      "scope": "Committed polyglot fixtures (java+scala insert-time path, ts+js late-resolution path) indexed via the REAL indexer; is_cross_language + bridge_mechanism asserted in the produced dbs; real hover component renders from the real db; normalization defect in resolveRelationships fixed (upgrade-only) and mutation-gated",
+      "acceptanceCriteria": [
+        "fixtures committed under test/fixtures/polyglot and indexed in-process with post-processing ON",
+        "both resolution paths flag rows with bridge name-resolution (java-scala 3, ts-js 2)",
+        "suite proves it CAN FAIL: suppressing the normalization drops ts-js to 0 flagged (mutant caught)"
+      ],
+      "closureRequirements": [
+        "A1.json machine-emitted with per-path counts and bridges",
+        "M26 gate green with A1 in the ledger and governance map",
+        "evidence pinned at closing HEAD"
+      ]
+    },
+    {
       "code": "X1",
       "githubIssue": 516,
       "tool": "closure-gate",

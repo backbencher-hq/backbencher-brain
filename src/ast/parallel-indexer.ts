@@ -2520,6 +2520,44 @@ export async function storeResults(
             AND INSTR(brain_relationship.target_external, '.') > 0
         `)
 
+        // Cross-language normalization (polyglot fixture finding, M26 addendum):
+        // the strategies above recompute is_cross_file but left is_cross_language
+        // and bridge_mechanism stale for rows they resolve — so a TS->JS edge
+        // resolved here stored cross_file=1 but cross_lang=0 with no bridge,
+        // silently hiding it from cross-language hover/graph. One authoritative
+        // pass over every resolved row of the project; UPGRADE-ONLY (a row the
+        // analyzer declared cross-language stays 1; a computed-0 row never
+        // downgrades) and the bridge is filled only when NULL (never overwrites
+        // a declared bridge mechanism).
+        rawDb.run(`
+          UPDATE brain_relationship
+          SET is_cross_language = CASE WHEN EXISTS (
+            SELECT 1 FROM brain_symbol ss
+            LEFT JOIN brain_file sf ON sf.id = ss.file_id
+            JOIN brain_symbol ts ON ts.id = brain_relationship.target_symbol_id
+            LEFT JOIN brain_file tf ON tf.id = ts.file_id
+            WHERE ss.id = brain_relationship.source_symbol_id
+              AND COALESCE(sf.language, '') <> ''
+              AND COALESCE(tf.language, '') <> ''
+              AND lower(sf.language) <> lower(tf.language)
+          ) THEN 1 ELSE brain_relationship.is_cross_language END,
+          bridge_mechanism = COALESCE(
+            brain_relationship.bridge_mechanism,
+            CASE WHEN EXISTS (
+              SELECT 1 FROM brain_symbol ss
+              LEFT JOIN brain_file sf ON sf.id = ss.file_id
+              JOIN brain_symbol ts ON ts.id = brain_relationship.target_symbol_id
+              LEFT JOIN brain_file tf ON tf.id = ts.file_id
+              WHERE ss.id = brain_relationship.source_symbol_id
+                AND COALESCE(sf.language, '') <> ''
+                AND COALESCE(tf.language, '') <> ''
+                AND lower(sf.language) <> lower(tf.language)
+            ) THEN 'name-resolution' ELSE NULL END
+          )
+          WHERE brain_relationship.project_id = '${projectId}'
+            AND brain_relationship.target_symbol_id IS NOT NULL
+        `)
+
         // Cleanup temp tables
         rawDb.run(`DROP TABLE IF EXISTS _res_qname`)
         rawDb.run(`DROP TABLE IF EXISTS _res_name_unique`)
@@ -2626,6 +2664,44 @@ async function resolveRelationships(projectId: ProjectID): Promise<void> {
 
     const resolved = (r1?.changes || 0) + (r2?.changes || 0)
     log.debug("relationship resolution completed", { resolved, unresolved })
+
+    // Cross-language normalization (polyglot fixture finding, M26 addendum):
+    // this pass is the one that resolves forward references in the default
+    // worker-pool flow (batches are stored with skipResolution=true, so a TS
+    // file whose JS target is parsed later resolves HERE) — but the strategies
+    // above only recompute is_cross_file. Without this, late-resolved
+    // cross-language edges store cross_file=1 with cross_lang=0 and no bridge,
+    // silently invisible to cross-language hover/graph. UPGRADE-ONLY: an
+    // analyzer-declared flag is never downgraded; the bridge is filled only
+    // when NULL.
+    rawDb.run(`
+      UPDATE brain_relationship
+      SET is_cross_language = CASE WHEN EXISTS (
+        SELECT 1 FROM brain_symbol ss
+        LEFT JOIN brain_file sf ON sf.id = ss.file_id
+        JOIN brain_symbol ts ON ts.id = brain_relationship.target_symbol_id
+        LEFT JOIN brain_file tf ON tf.id = ts.file_id
+        WHERE ss.id = brain_relationship.source_symbol_id
+          AND COALESCE(sf.language, '') <> ''
+          AND COALESCE(tf.language, '') <> ''
+          AND lower(sf.language) <> lower(tf.language)
+      ) THEN 1 ELSE brain_relationship.is_cross_language END,
+      bridge_mechanism = COALESCE(
+        brain_relationship.bridge_mechanism,
+        CASE WHEN EXISTS (
+          SELECT 1 FROM brain_symbol ss
+          LEFT JOIN brain_file sf ON sf.id = ss.file_id
+          JOIN brain_symbol ts ON ts.id = brain_relationship.target_symbol_id
+          LEFT JOIN brain_file tf ON tf.id = ts.file_id
+          WHERE ss.id = brain_relationship.source_symbol_id
+            AND COALESCE(sf.language, '') <> ''
+            AND COALESCE(tf.language, '') <> ''
+            AND lower(sf.language) <> lower(tf.language)
+        ) THEN 'name-resolution' ELSE NULL END
+      )
+      WHERE brain_relationship.project_id = '${projectId}'
+        AND brain_relationship.target_symbol_id IS NOT NULL
+    `)
 
     // Cleanup
     rawDb.run(`DROP TABLE IF EXISTS _res_qname`)
