@@ -18,11 +18,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "b698e43b2aa9f302cd9fcdf3a0d054fcbac4b755",
+      "currentCommit": "c32642d1c47cab7d36f396c2ab81e264484afdd5",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m35/verify-governance.ts",
       "evidenceFile": "G1.json",
-      "generatedAt": "2026-09-04T01:04:14.917Z",
+      "generatedAt": "2026-09-04T01:34:28.834Z",
       "passed": 52,
       "failed": 0,
       "negativeCases": 2
@@ -46,11 +46,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "b698e43b2aa9f302cd9fcdf3a0d054fcbac4b755",
+      "currentCommit": "c32642d1c47cab7d36f396c2ab81e264484afdd5",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m35/verify-freshness-core.ts",
       "evidenceFile": "F1.json",
-      "generatedAt": "2026-09-04T01:02:10.593Z",
+      "generatedAt": "2026-09-04T01:30:38.801Z",
       "passed": 29,
       "failed": 0,
       "negativeCases": 3
@@ -74,11 +74,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "b698e43b2aa9f302cd9fcdf3a0d054fcbac4b755",
+      "currentCommit": "c32642d1c47cab7d36f396c2ab81e264484afdd5",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m35/verify-envelope-contract.ts",
       "evidenceFile": "E1.json",
-      "generatedAt": "2026-09-04T01:02:11.393Z",
+      "generatedAt": "2026-09-04T01:30:41.753Z",
       "passed": 37,
       "failed": 0,
       "negativeCases": 8
@@ -102,11 +102,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "b698e43b2aa9f302cd9fcdf3a0d054fcbac4b755",
+      "currentCommit": "c32642d1c47cab7d36f396c2ab81e264484afdd5",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m35/verify-s1-read-paths.ts",
       "evidenceFile": "S1.json",
-      "generatedAt": "2026-09-04T01:02:18.930Z",
+      "generatedAt": "2026-09-04T01:31:07.245Z",
       "passed": 74,
       "failed": 0,
       "negativeCases": 5
@@ -130,11 +130,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "b698e43b2aa9f302cd9fcdf3a0d054fcbac4b755",
+      "currentCommit": "c32642d1c47cab7d36f396c2ab81e264484afdd5",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m35/verify-s2-derived.ts",
       "evidenceFile": "S2.json",
-      "generatedAt": "2026-09-04T01:02:19.946Z",
+      "generatedAt": "2026-09-04T01:31:09.180Z",
       "passed": 25,
       "failed": 0,
       "negativeCases": 5
@@ -158,11 +158,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "b698e43b2aa9f302cd9fcdf3a0d054fcbac4b755",
+      "currentCommit": "c32642d1c47cab7d36f396c2ab81e264484afdd5",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m35/verify-s3-graph-migrate.ts",
       "evidenceFile": "S3.json",
-      "generatedAt": "2026-09-04T01:02:20.913Z",
+      "generatedAt": "2026-09-04T01:31:11.045Z",
       "passed": 23,
       "failed": 0,
       "negativeCases": 4
@@ -186,14 +186,14 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "b698e43b2aa9f302cd9fcdf3a0d054fcbac4b755",
+      "currentCommit": "c32642d1c47cab7d36f396c2ab81e264484afdd5",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m35/staleness-corpus.ts --check",
       "evidenceFile": "C1.json",
-      "generatedAt": "2026-09-04T01:00:34.815Z",
-      "passed": 93,
+      "generatedAt": "2026-09-04T01:30:19.459Z",
+      "passed": 99,
       "failed": 0,
-      "negativeCases": 23
+      "negativeCases": 25
     }
   },
   {
@@ -214,11 +214,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "b698e43b2aa9f302cd9fcdf3a0d054fcbac4b755",
+      "currentCommit": "c32642d1c47cab7d36f396c2ab81e264484afdd5",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m35/verify-docs-staleness.ts",
       "evidenceFile": "D1.json",
-      "generatedAt": "2026-09-04T01:02:21.674Z",
+      "generatedAt": "2026-09-04T01:31:11.817Z",
       "passed": 71,
       "failed": 0,
       "negativeCases": 16
