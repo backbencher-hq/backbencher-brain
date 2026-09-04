@@ -19,7 +19,7 @@ import { execSync } from "child_process"
 const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 const M14 = path.join(ROOT, "validation", "m14")
 
-const REQUIRED_EVIDENCE = ["M14.0.F1", "M14.0.F2", "M14.0.F3", "M14.0.F4", "M14.0.F5", "M14.0.F6"]
+const REQUIRED_EVIDENCE = ["M14.0.F1", "M14.0.F2", "M14.0.F3", "M14.0.F4", "M14.0.F5", "M14.0.F6", "M14.0.F7", "M14.0.F8", "M14.0.F9"]
 const REQUIRED_BASELINES = [
   "grammar-audit-baseline.json",
   "fixture-baseline.json",
@@ -88,6 +88,20 @@ pass("evidence presence/schema/mutation-backing for F1-F6")
     else if (!ev.checks?.length) fail("M14.0.F6 carries zero per-language checks — coverage never ran")
     else pass(`fixture-coverage all-green (${ev.checks.length} languages)`)
   }
+}
+
+// 2c. F7/F8/F9 (strengthened-gate set): same all-green deep-check as F6.
+//   F7 analyzer-hygiene: no dead code classes in any gated analyzer
+//   F8 corpus-census: every real-corpus parse-tree type spec-classified
+//   F9 probe battery: historical defect classes asserted on analyzer AND oracle
+for (const id of ["M14.0.F7", "M14.0.F8", "M14.0.F9"]) {
+  const p = path.join(M14, "results", `${id}.json`)
+  if (!fs.existsSync(p)) { fail(`missing evidence file for ${id}`); continue }
+  const ev = JSON.parse(fs.readFileSync(p, "utf8"))
+  const bad = (ev.checks ?? []).filter((c: any) => c.status !== "pass")
+  if (bad.length) fail(`${id} has ${bad.length} non-passing check(s): ${bad.map((c: any) => c.id).join(", ")}`)
+  else if (!ev.checks?.length) fail(`${id} carries zero checks — the gate never ran`)
+  else pass(`${id} all-green (${ev.checks.length} checks)`)
 }
 
 // 4. baselines exist and are non-empty
