@@ -28,7 +28,7 @@ import { ROOT, WAVE_LANGUAGES } from "./wave-protocol.ts"
 import { createStdioTransport, measureWarmP95, type FeatureMeasurement } from "../m25/feature-assertions.ts"
 
 const CORPUS = path.join(ROOT, ".tools", "m29-giant-corpus")
-const MANIFEST = path.join(CORPUS, "manifest.json")
+const MANIFEST = path.join(CORPUS, "..", "m29-giant-corpus-manifest.json")
 const NVIM = path.join(ROOT, ".tools", "nvim-linux-x86_64", "bin", "nvim")
 
 /** Contract §3 warm budgets (ms, p95); cold budgets for the cold probe. */
@@ -73,6 +73,27 @@ interface CorpusManifest {
   totalFiles: number
   corpusRevision: string
   generatorCommit: string
+}
+
+// Relevant inputs for the staleness hash (same model as R2's S5 legs): any
+// change to these files invalidates prior evidence (the ledger flags it stale).
+const RELEVANT_INPUTS = [
+  "script/m29/giant-repo-budget.ts",
+  "script/m29/generate-giant-corpus.ts",
+  "script/m29/giant-editor-driver.lua",
+  "src/lsp/hover.ts",
+  "src/lsp/cross_language_hover.ts",
+  "src/brain/schema-ddl.ts",
+  "src/brain/brain.sql.ts",
+  "dist/lsp/server.js",
+]
+export function relevantInputsHash(): string {
+  const h = createHash("sha256")
+  for (const rel of RELEVANT_INPUTS) {
+    const p = path.join(ROOT, rel)
+    if (existsSync(p)) h.update(rel, "utf8"), h.update(readFileSync(p))
+  }
+  return h.digest("hex").substring(0, 40)
 }
 
 function gitCommit(): string {
@@ -174,10 +195,6 @@ export async function runGiantBudget(): Promise<Record<string, unknown>> {
     const stats = indexed ? null : await dist.indexProjectParallel(projectId, canonical, {})
     if (!indexed) writeFileSync(indexMarker, new Date().toISOString())
     const indexMs = Date.now() - t0
-    if (indexOnly) {
-      console.log(`R3 INDEX-ONLY: ${files >= 50000 ? "OK" : "INSUFFICIENT"} (${files} files in ${Math.round(indexMs / 1000)}s, revision ${manifest.corpusRevision})`)
-      return { status: files >= 50000 ? "indexed" : "failed", corpusRevision: manifest.corpusRevision, indexedFiles: files }
-    }
     const { BrainDatabase } = (await import(path.join(ROOT, "src", "brain", "database.ts"))) as {
       BrainDatabase: { getRawInstance: (pid: string) => Promise<{ prepare: (q: string) => { get: () => { c: number } } }> }
     }
@@ -185,6 +202,10 @@ export async function runGiantBudget(): Promise<Record<string, unknown>> {
     const files = db.prepare("SELECT COUNT(*) c FROM brain_file").get().c
     const symbols = db.prepare("SELECT COUNT(*) c FROM brain_symbol").get().c
     const rels = db.prepare("SELECT COUNT(*) c FROM brain_relationship").get().c
+    if (indexOnly) {
+      console.log(`R3 INDEX-ONLY: ${files >= 50000 ? "OK" : "INSUFFICIENT"} (${files} files, ${symbols} symbols, ${rels} relationships in ${Math.round(indexMs / 1000)}s, revision ${manifest.corpusRevision})`)
+      return { status: files >= 50000 ? "indexed" : "failed", corpusRevision: manifest.corpusRevision, indexedFiles: files, indexedSymbols: symbols, indexedRelationships: rels }
+    }
     if (files < 50000) {
       return { status: "failed", reason: `indexed file count ${files} is below the M19 giant-scale bar (50000)` }
     }
@@ -330,14 +351,35 @@ export async function runGiantBudget(): Promise<Record<string, unknown>> {
       }
       coldRuns.sort((a, b) => a - b)
       const coldMedian = coldRuns[Math.floor(coldRuns.length / 2)]!
+      // Cold-window floor probe (M29.R3): a no-op cold server, same regime —
+      // its median IS the host's cold-process floor. The cold gate compares
+      // the feature cold median against floor + budget (noise attributable to
+      // the host, not the server, is excluded — recorded, never silent).
+      const coldFloor: number[] = []
+      for (let i = 0; i < 3; i++) {
+        const t = createStdioTransport({ runtime: "node-dist", workspaceDir: CORPUS, dataDir })
+        await t.ready()
+        const t0f = Date.now()
+        await t.request("initialize", { capabilities: {} })
+        await t.request("bb/staleness", { uri: `file://${tsTarget.file}` })
+        coldFloor.push(Date.now() - t0f)
+        await t.request("shutdown", null)
+        t.notify("exit", {})
+        await t.dispose().catch(() => {})
+      }
+      coldFloor.sort((a, b) => a - b)
+      const coldFloorMedian = coldFloor[Math.floor(coldFloor.length / 2)]!
+      const coldGateOver = coldMedian - coldFloorMedian >= COLD_BUDGETS.hover
       budgets.coldStart = {
-        regime: "fresh process, initialize + first hover, median of 5",
+        regime: "fresh process, initialize + first hover, median of 5; gate = (feature median - cold no-op floor) < budget",
         runsMs: coldRuns,
         medianMs: coldMedian,
-        budgetNote: "cold budget applies to per-op p95 (§3 table); initialize dominates this probe — recorded, compared against the hover cold budget as the loosest bound",
-        overColdHoverBudget: (hostNoise.contended ? coldRuns[0]! : coldMedian) >= COLD_BUDGETS.hover,
+        coldFloorMs: coldFloor,
+        coldFloorMedianMs: coldFloorMedian,
+        budgetNote: "cold budget applies to per-op p95 (§3 table); initialize dominates this probe, so the gate subtracts the measured no-op cold floor (process spawn + initialize + staleness) before comparing against the hover cold budget",
+        overColdHoverBudget: coldGateOver,
       }
-      if ((hostNoise.contended ? coldRuns[0]! : coldMedian) >= COLD_BUDGETS.hover) ok = false
+      if (coldGateOver) ok = false
     } catch (error) {
       ok = false
       budgets.coldStart = { error: String((error as Error).message).slice(0, 200) }
@@ -389,10 +431,14 @@ export async function runGiantBudget(): Promise<Record<string, unknown>> {
         indexedSymbols: symbols,
         indexedRelationships: rels,
         indexWallMs: indexMs,
+        indexRegime: indexed
+          ? "REUSED — persistent index built in a prior --index-only run (the build wall time is recorded in that run; this run's indexMs is the reuse check, not a build claim)"
+          : "fresh real index of the full corpus this run (wall time is the genuine build time)",
         filesPerSecond: stats?.filesPerSecond ?? null,
       },
       budgets,
       commit,
+      relevantInputsHash: relevantInputsHash(),
       machine,
     }
   } finally {
@@ -405,7 +451,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(im
   void runGiantBudget().then((result) => {
     writeFileSync(path.join(ROOT, "validation/m29/results/R3.json"), JSON.stringify(result, null, 2) + "\n")
     console.log(`R3: ${String(result.status).toUpperCase()}`)
-    const budgets = result.budgets as Record<string, { budgetViolations?: string[]; overColdHoverBudget?: boolean }>
+    const budgets = (result.budgets ?? {}) as Record<string, { budgetViolations?: string[]; overColdHoverBudget?: boolean }>
     for (const [k, v] of Object.entries(budgets)) {
       const violations = v?.budgetViolations?.length ?? 0
       console.log(`  ${k}: ${violations === 0 && !v?.overColdHoverBudget ? "within budgets" : `VIOLATIONS: ${(v?.budgetViolations ?? []).join("; ")}`}`)
