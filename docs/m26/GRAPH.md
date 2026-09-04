@@ -47,7 +47,7 @@ text, no claimed bridge.
 | --- | --- | --- | --- | --- |
 | _(none — no cross-language rows stored anywhere)_ | | | | |
 
-Real project dbs scanned: 17 (skipped/unreadable: 3).
+Real project dbs scanned: 18 (skipped/unreadable: 3).
 
 ## Verification status (generated from the M26 evidence ledger)
 
@@ -62,6 +62,7 @@ Real project dbs scanned: 17 (skipped/unreadable: 3).
 | W6 | verified |
 | V1 | verified |
 | D1 | verified |
+| A1 | verified |
 | X1 | verified |
 
 Claim levels are the ledger's statuses at generation time. `verified`
