@@ -1,0 +1,35 @@
+{
+  "issue": "M28.A2",
+  "code": "A2",
+  "milestone": "M28",
+  "status": "verified",
+  "checks": 23,
+  "passed": 23,
+  "failed": 0,
+  "mutantsCaught": 4,
+  "mutantsTotal": 4,
+  "mutantRecords": [
+    {
+      "name": "A2 mutant: author-label-dropping renderer is caught by the label rule",
+      "caught": true
+    },
+    {
+      "name": "A2 mutant: unescaped body is caught by the escaping rule",
+      "caught": true
+    },
+    {
+      "name": "A2 mutant: badge-on-wrong-node is caught by the pairing rule",
+      "caught": true
+    },
+    {
+      "name": "A2 mutant: lying in-editor driver is caught by the assertion set",
+      "caught": true
+    }
+  ],
+  "currentCommit": "06d87c5328a8b09fb6b1b6b8d363d475eb3beefb",
+  "verifierCommand": "npx tsx script/m28/verify-annotation-ui.ts",
+  "evidenceFile": "A2.json",
+  "generatedAt": "2026-09-04T05:26:26.324Z",
+  "claimLevel": "verified — annotations render in the real editor hover (author-labeled) and ride bb/graph; component rules mutation-gated",
+  "failures": []
+}
