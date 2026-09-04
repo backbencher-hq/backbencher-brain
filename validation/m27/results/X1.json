@@ -1,0 +1,22 @@
+{
+  "issue": "622",
+  "code": "X1",
+  "milestone": "M27",
+  "status": "verified",
+  "checks": 31,
+  "passed": 31,
+  "failed": 0,
+  "failures": 0,
+  "negativeCases": 4,
+  "currentCommit": "2fa663c97050ad71ed501c055b683a4cba44acae",
+  "verifierCommand": "npx tsx script/m27/verify-closure.ts",
+  "barViolations": [],
+  "perMutantRecords": {
+    "N1": [],
+    "J1": [],
+    "Z1": [],
+    "H1": [],
+    "V1": []
+  },
+  "generatedAt": "2026-09-04T04:10:48.163Z"
+}
