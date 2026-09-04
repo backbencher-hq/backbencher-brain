@@ -4,20 +4,20 @@
   "milestone": "M27",
   "status": "known-gap",
   "checks": 69,
-  "passed": 67,
-  "failed": 2,
+  "passed": 69,
+  "failed": 0,
   "negativeCases": 10,
-  "currentCommit": "24205a9760fb662cb2c595cca083f3368956f876",
+  "currentCommit": "971839631d6fb8e90c74aca27fff5d225ddd22bd",
   "workingTreeRelevantChanges": [
     "docs/m27/FORK-CAPABILITY-MATRIX.md"
   ],
   "verifierCommand": "npx tsx script/m27/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-04T04:27:00.467Z",
+  "generatedAt": "2026-09-04T04:28:22.980Z",
   "ledger": "validation/m27/results/manifest.json",
   "m26Bar": {
     "ledgerStatus": "closed",
-    "m26GateExit": 1
+    "m26GateExit": 0
   },
   "limitations": [
     "This gate validates governance metadata, mutation response, and the M26 bar; it does not verify editor adapters.",
