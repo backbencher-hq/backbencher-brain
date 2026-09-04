@@ -1,246 +1,246 @@
 {
-  "session": [],
-  "language": "typescript",
   "checks": [
     {
       "name": "S6: launch order resolves a server",
-      "detail": "$HOME/backbencher-brain/dist/lsp/server.js",
-      "ok": true
+      "ok": true,
+      "detail": "$HOME/backbencher-brain/dist/lsp/server.js"
     },
     {
       "name": "S6: vim.lsp.start launched bb_lsp",
-      "detail": "1",
-      "ok": true
+      "ok": true,
+      "detail": "1"
     },
     {
       "name": "S6: client initialized",
-      "detail": "table: 0x7c70ab9ea5d8",
-      "ok": true
+      "ok": true,
+      "detail": "table: 0x7e52612ff768"
     },
     {
       "name": "S6: capabilities advertised",
-      "detail": "{\n  d = true,\n  h = true,\n  s = true\n}",
-      "ok": true
+      "ok": true,
+      "detail": "{\n  d = true,\n  h = true,\n  s = true\n}"
     },
     {
       "name": "S6: hover renders the symbol",
-      "detail": "```\npublic method greet([]) → string\n```\n\n**greet** — method, 4 usages\n\nevidence: indexed, inferred\n\n_source: bb ind",
-      "ok": true
+      "ok": true,
+      "detail": "```\npublic method greet([]) → string\n```\n\n**greet** — method, 4 usages\n\nevidence: indexed, inferred\n\n_source: bb ind"
     },
     {
       "name": "S6: hover carries evidence tier (contract §2)",
-      "detail": "```\npublic method greet([]) → string\n```\n\n**greet** — method, 4 usages\n\nevidence: indexed, inferred\n\n_source: bb ind",
-      "ok": true
+      "ok": true,
+      "detail": "```\npublic method greet([]) → string\n```\n\n**greet** — method, 4 usages\n\nevidence: indexed, inferred\n\n_source: bb ind"
     },
     {
       "name": "S6: definition resolves",
-      "detail": "{\n  evidenceTier = \"indexed\",\n  found = true,\n  location = {\n    character = 2,\n    endCharacter = 3,\n    endLine = 10,\n    line = 8,\n    path = \"/home/ishaq232",
-      "ok": true
+      "ok": true,
+      "detail": "{\n  evidenceTier = \"indexed\",\n  found = true,\n  location = {\n    character = 2,\n    endCharacter = 3,\n    endLine = 10,\n    line = 8,\n    path = \"/home/ishaq232"
     },
     {
       "name": "S6: references returns locations",
-      "detail": "4",
-      "ok": true
+      "ok": true,
+      "detail": "4"
     },
     {
       "name": "S6: documentSymbols include the class",
-      "detail": "{ \"Greeter\" }",
-      "ok": true
+      "ok": true,
+      "detail": "{ \"Greeter\" }"
     },
     {
       "name": "S6: declared absence is honored (no fabricated symbols)",
-      "detail": "{\n  evidenceTier = \"not_indexed\",\n  limit = 200,\n  symbols = {},\n  totalCount = 0,\n  truncated = false\n}",
-      "ok": true
+      "ok": true,
+      "detail": "{\n  evidenceTier = \"not_indexed\",\n  limit = 200,\n  symbols = {},\n  totalCount = 0,\n  truncated = false\n}"
     }
   ],
   "raw": {
-    "references": {
-      "evidenceTier": "indexed",
-      "truncated": false,
-      "locations": [
-        {
-          "endCharacter": 1,
-          "character": 0,
-          "line": 1,
-          "endLine": 11,
-          "path": "$HOME/backbencher-brain/script/m29/wave-fixtures/typescript/main.ts"
-        },
-        {
-          "endCharacter": 1,
-          "character": 0,
-          "line": 13,
-          "endLine": 17,
-          "path": "$HOME/backbencher-brain/script/m29/wave-fixtures/typescript/main.ts"
-        },
-        {
-          "endCharacter": 30,
-          "character": 2,
-          "line": 2,
-          "endLine": 2,
-          "path": "$HOME/backbencher-brain/script/m29/wave-fixtures/typescript/main.ts"
-        },
-        {
-          "endCharacter": 3,
-          "character": 2,
-          "line": 8,
-          "endLine": 10,
-          "path": "$HOME/backbencher-brain/script/m29/wave-fixtures/typescript/main.ts"
-        }
-      ],
-      "limit": 200,
-      "totalCount": 4
-    },
-    "documentSymbol": {
-      "symbols": [
-        {
-          "name": "Greeter",
-          "symbolType": "class",
-          "range": {
-            "line": 1,
-            "endCharacter": 1,
-            "endLine": 11,
-            "character": 0
-          },
-          "children": [
-            {
-              "name": "items",
-              "symbolType": "property",
-              "range": {
-                "line": 2,
-                "endCharacter": 30,
-                "endLine": 2,
-                "character": 2
-              },
-              "children": [],
-              "qualifiedName": "Greeter.items",
-              "selectionRange": {
-                "line": 2,
-                "endCharacter": 30,
-                "endLine": 2,
-                "character": 2
-              },
-              "id": "4935f6a12442486c4be0fdb92aa8d210b642cdd8:main.ts:items:3"
-            },
-            {
-              "name": "constructor",
-              "symbolType": "constructor",
-              "range": {
-                "line": 4,
-                "endCharacter": 3,
-                "endLine": 6,
-                "character": 2
-              },
-              "children": [],
-              "qualifiedName": "Greeter.constructor",
-              "selectionRange": {
-                "line": 4,
-                "endCharacter": 3,
-                "endLine": 6,
-                "character": 2
-              },
-              "id": "4935f6a12442486c4be0fdb92aa8d210b642cdd8:main.ts:constructor:5"
-            },
-            {
-              "name": "greet",
-              "symbolType": "method",
-              "range": {
-                "line": 8,
-                "endCharacter": 3,
-                "endLine": 10,
-                "character": 2
-              },
-              "children": [],
-              "qualifiedName": "Greeter.greet",
-              "selectionRange": {
-                "line": 8,
-                "endCharacter": 3,
-                "endLine": 10,
-                "character": 2
-              },
-              "id": "4935f6a12442486c4be0fdb92aa8d210b642cdd8:main.ts:greet:9"
-            }
-          ],
-          "qualifiedName": "main.Greeter",
-          "selectionRange": {
-            "line": 1,
-            "endCharacter": 1,
-            "endLine": 11,
-            "character": 0
-          },
-          "id": "4935f6a12442486c4be0fdb92aa8d210b642cdd8:main.ts:Greeter:2"
-        }
-      ],
-      "notIndexed": false,
-      "evidenceTier": "indexed"
-    },
-    "definition": {
-      "found": true,
-      "location": {
-        "endCharacter": 3,
-        "character": 2,
-        "line": 8,
-        "endLine": 10,
-        "path": "$HOME/backbencher-brain/script/m29/wave-fixtures/typescript/main.ts"
-      },
-      "symbol": {
-        "name": "greet",
-        "qualifiedName": "Greeter.greet",
-        "symbolType": "method",
-        "id": "4935f6a12442486c4be0fdb92aa8d210b642cdd8:main.ts:greet:9"
-      },
-      "evidenceTier": "indexed"
-    },
-    "workspaceAbsence": {
-      "evidenceTier": "not_indexed",
-      "truncated": false,
-      "symbols": [],
-      "limit": 200,
-      "totalCount": 0
-    },
     "hover": {
-      "range": {
-        "start": {
-          "line": 8,
-          "character": 2
-        },
-        "end": {
-          "line": 10,
-          "character": 3
-        }
-      },
-      "contents": {
-        "value": "```\npublic method greet([]) → string\n```\n\n**greet** — method, 4 usages\n\nevidence: indexed, inferred\n\n_source: bb index ($HOME/backbencher-brain/script/m29/wave-fixtures/typescript/main.ts:9)_",
-        "kind": "markdown"
-      },
-      "provenance": {
-        "source": "bb_index",
-        "evidenceClass": "indexed",
-        "engine": "bb_lsp hover@m24.l2",
-        "limitations": [
-          "index-sourced; no compiler-backed types (complement stance)"
-        ],
-        "stale": false
-      },
       "data": {
-        "name": "greet",
-        "symbolType": "method",
-        "signature": "public method greet([]) → string",
         "usageCount": 4,
         "evidenceTiers": [
           "indexed",
           "inferred"
         ],
-        "lineEnd": 11,
         "crossLanguageSection": "",
-        "annotationSection": "",
+        "lineEnd": 11,
         "stale": false,
         "freshnessStatus": "fresh",
-        "qualifiedName": "Greeter.greet",
+        "name": "greet",
         "filePath": "$HOME/backbencher-brain/script/m29/wave-fixtures/typescript/main.ts",
-        "lineStart": 9
+        "qualifiedName": "Greeter.greet",
+        "lineStart": 9,
+        "symbolType": "method",
+        "signature": "public method greet([]) → string",
+        "annotationSection": ""
+      },
+      "range": {
+        "end": {
+          "line": 10,
+          "character": 3
+        },
+        "start": {
+          "line": 8,
+          "character": 2
+        }
+      },
+      "provenance": {
+        "evidenceClass": "indexed",
+        "source": "bb_index",
+        "limitations": [
+          "index-sourced; no compiler-backed types (complement stance)"
+        ],
+        "stale": false,
+        "engine": "bb_lsp hover@m24.l2"
+      },
+      "contents": {
+        "value": "```\npublic method greet([]) → string\n```\n\n**greet** — method, 4 usages\n\nevidence: indexed, inferred\n\n_source: bb index ($HOME/backbencher-brain/script/m29/wave-fixtures/typescript/main.ts:9)_",
+        "kind": "markdown"
+      }
+    },
+    "references": {
+      "evidenceTier": "indexed",
+      "truncated": false,
+      "totalCount": 4,
+      "limit": 200,
+      "locations": [
+        {
+          "path": "$HOME/backbencher-brain/script/m29/wave-fixtures/typescript/main.ts",
+          "line": 1,
+          "endCharacter": 1,
+          "endLine": 11,
+          "character": 0
+        },
+        {
+          "path": "$HOME/backbencher-brain/script/m29/wave-fixtures/typescript/main.ts",
+          "line": 13,
+          "endCharacter": 1,
+          "endLine": 17,
+          "character": 0
+        },
+        {
+          "path": "$HOME/backbencher-brain/script/m29/wave-fixtures/typescript/main.ts",
+          "line": 2,
+          "endCharacter": 30,
+          "endLine": 2,
+          "character": 2
+        },
+        {
+          "path": "$HOME/backbencher-brain/script/m29/wave-fixtures/typescript/main.ts",
+          "line": 8,
+          "endCharacter": 3,
+          "endLine": 10,
+          "character": 2
+        }
+      ]
+    },
+    "documentSymbol": {
+      "evidenceTier": "indexed",
+      "notIndexed": false,
+      "symbols": [
+        {
+          "id": "4935f6a12442486c4be0fdb92aa8d210b642cdd8:main.ts:Greeter:2",
+          "name": "Greeter",
+          "children": [
+            {
+              "id": "4935f6a12442486c4be0fdb92aa8d210b642cdd8:main.ts:items:3",
+              "name": "items",
+              "children": [],
+              "qualifiedName": "Greeter.items",
+              "symbolType": "property",
+              "range": {
+                "line": 2,
+                "endLine": 2,
+                "endCharacter": 30,
+                "character": 2
+              },
+              "selectionRange": {
+                "line": 2,
+                "endLine": 2,
+                "endCharacter": 30,
+                "character": 2
+              }
+            },
+            {
+              "id": "4935f6a12442486c4be0fdb92aa8d210b642cdd8:main.ts:constructor:5",
+              "name": "constructor",
+              "children": [],
+              "qualifiedName": "Greeter.constructor",
+              "symbolType": "constructor",
+              "range": {
+                "line": 4,
+                "endLine": 6,
+                "endCharacter": 3,
+                "character": 2
+              },
+              "selectionRange": {
+                "line": 4,
+                "endLine": 6,
+                "endCharacter": 3,
+                "character": 2
+              }
+            },
+            {
+              "id": "4935f6a12442486c4be0fdb92aa8d210b642cdd8:main.ts:greet:9",
+              "name": "greet",
+              "children": [],
+              "qualifiedName": "Greeter.greet",
+              "symbolType": "method",
+              "range": {
+                "line": 8,
+                "endLine": 10,
+                "endCharacter": 3,
+                "character": 2
+              },
+              "selectionRange": {
+                "line": 8,
+                "endLine": 10,
+                "endCharacter": 3,
+                "character": 2
+              }
+            }
+          ],
+          "qualifiedName": "main.Greeter",
+          "symbolType": "class",
+          "range": {
+            "line": 1,
+            "endLine": 11,
+            "endCharacter": 1,
+            "character": 0
+          },
+          "selectionRange": {
+            "line": 1,
+            "endLine": 11,
+            "endCharacter": 1,
+            "character": 0
+          }
+        }
+      ]
+    },
+    "workspaceAbsence": {
+      "evidenceTier": "not_indexed",
+      "truncated": false,
+      "totalCount": 0,
+      "limit": 200,
+      "symbols": []
+    },
+    "definition": {
+      "evidenceTier": "indexed",
+      "location": {
+        "path": "$HOME/backbencher-brain/script/m29/wave-fixtures/typescript/main.ts",
+        "line": 8,
+        "endCharacter": 3,
+        "endLine": 10,
+        "character": 2
+      },
+      "found": true,
+      "symbol": {
+        "id": "4935f6a12442486c4be0fdb92aa8d210b642cdd8:main.ts:greet:9",
+        "name": "greet",
+        "symbolType": "method",
+        "qualifiedName": "Greeter.greet"
       }
     }
   },
+  "session": [],
+  "language": "typescript",
   "status": "verified",
-  "commit": "d36c1dc31c060fd8812cbd43ed98405ff09e844f"
+  "commit": "beb2b9085f6eb17d97a5e69f03258df17a261664"
 }
