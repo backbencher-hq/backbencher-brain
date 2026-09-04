@@ -319,6 +319,39 @@ export async function runGiantBudget(): Promise<Record<string, unknown>> {
       timeIt("evidenceTiersFor", 5, () => evidenceTiersFor(rawDb, symId))
       timeIt("storedCrossLanguageRows", 5, () => storedCrossLanguageRows(rawDb, symId))
       timeIt("fullHover", 5, () => hover(rawDb, req))
+      // M29.R5: the tier-ratio measurement the precision ledger publishes.
+      // Old-vs-new rule replay over every relationship row (grouped), so the
+      // improvement number is computed from the real index, not asserted.
+      const tierRows = db.prepare("SELECT relationship_type t, confidence c, json_extract(metadata, '$.evidenceClass') cls, COUNT(*) n FROM brain_relationship GROUP BY t, c, cls").all() as Array<{ t: string; c: number | null; cls: string | null; n: number }>
+      const LEGACY = new Set(["call", "calls", "import", "imports", "extends", "implements", "override", "reference", "references", "uses"])
+      const STRUCT = new Set(["call", "calls", "extends", "implements", "overrides", "contains", "exports", "instantiates", "inherits"])
+      const CLASSES = ["structural", "import_based", "usage_contextual", "reference_qualified", "inferred"]
+      const oldTier = (t: string, c: number | null): string => (LEGACY.has(t) ? "indexed" : c !== null && c < 0.5 ? "semantic_candidate" : "inferred")
+      const newTier = (t: string, c: number | null, cls: string | null): string => {
+        if (cls !== null && CLASSES.includes(cls)) return cls
+        if (STRUCT.has(t)) return (c ?? 0) >= 0.7 ? "structural" : "inferred"
+        if (LEGACY.has(t)) return "indexed"
+        return c !== null && c < 0.5 ? "semantic_candidate" : "inferred"
+      }
+      const before: Record<string, number> = {}
+      const after: Record<string, number> = {}
+      let totalRels = 0
+      for (const r of tierRows) {
+        totalRels += r.n
+        before[oldTier(r.t, r.c)] = (before[oldTier(r.t, r.c)] ?? 0) + r.n
+        after[newTier(r.t, r.c, r.cls)] = (after[newTier(r.t, r.c, r.cls)] ?? 0) + r.n
+      }
+      const inferredBefore = before["inferred"] ?? 0
+      const inferredAfter = after["inferred"] ?? 0
+      budgets.tierRatio = {
+        regime: "old-vs-new tier rule replay over every brain_relationship row of the giant index (grouped by type/confidence/class)",
+        totalRelationships: totalRels,
+        inferredBefore: inferredBefore,
+        inferredAfter: inferredAfter,
+        inferredRatioBeforePct: Math.round((100 * inferredBefore) / Math.max(1, totalRels) * 10) / 10,
+        inferredRatioAfterPct: Math.round((100 * inferredAfter) / Math.max(1, totalRels) * 10) / 10,
+        distributionAfter: after,
+      }
       budgets.hoverProfile = {
         regime: "median-of-5 direct component calls against the giant index (defect localization)",
         msPerCall: profile,
