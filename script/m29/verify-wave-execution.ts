@@ -99,7 +99,20 @@ for (const lang of approval?.languages ?? []) {
   }
   const leg = JSON.parse(readFileSync(legPath, "utf8")) as WaveLeg
   check(`R2: ${lang} S5 status verified`, leg.status === "verified", leg.status)
-  check(`R2: ${lang} S5 ran at the current commit`, leg.commit === gitCommit() || leg.commit === "unknown", `${leg.commit.slice(0, 12)} vs HEAD`)
+  // Freshness per the ledger model: the leg is stale only if a RELEVANT
+  // input changed since its commit (exact-HEAD equality would stale on
+  // every evidence-only pin, which is output, not input).
+  let legStale = false
+  try {
+    const changed = execFileSync("git", [
+      "diff", "--name-only", leg.commit, "HEAD", "--",
+      "script/m29/wave-execute.ts", "script/m29/wave-fixtures", "src/lsp/launch_languages.ts", "src/lsp/hover.ts", "src/lsp/navigation.ts", "src/lsp/symbols.ts", "src/lsp/server.ts",
+    ], { cwd: ROOT, encoding: "utf8" }).split("\n").filter(Boolean)
+    legStale = changed.length > 0
+  } catch {
+    legStale = true
+  }
+  check(`R2: ${lang} S5 inputs unchanged since its run`, !legStale, `${leg.commit.slice(0, 12)} vs HEAD`)
   check(`R2: ${lang} S5 real index non-empty`, (leg.indexCounts?.files ?? 0) > 0 && (leg.indexCounts?.symbols ?? 0) > 0, JSON.stringify(leg.indexCounts))
   const fails = leg.steps.filter((s) => s.status === "fail")
   check(`R2: ${lang} S5 has no failed steps`, fails.length === 0, fails.map((s) => s.step).join(","))
