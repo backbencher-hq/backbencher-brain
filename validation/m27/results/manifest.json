@@ -151,7 +151,7 @@
       "code": "V1",
       "githubIssue": 621,
       "tool": "capability-matrix",
-      "status": "planned",
+      "status": "verified",
       "scope": "Fork capability matrix v3: docs/m27/FORK-CAPABILITY-MATRIX.md fully GENERATED from the ledger and verifier outputs (byte-identical drift gate), per-editor x per-feature claim levels, graph webview delta declared (VS Code-only in v3).",
       "acceptanceCriteria": [
         "Regeneration is byte-identical; hand edits fail the gate",
@@ -161,7 +161,18 @@
       "closureRequirements": [
         "npx tsx script/m27/verify-matrix.ts exits 0 at HEAD with clean relevant tree",
         "Evidence persisted at validation/m27/results/V1.json with commit stamp"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see V1.json",
+        "verifierCommand": "npx tsx script/m27/verify-matrix.ts",
+        "evidenceFile": "V1.json",
+        "passed": 9,
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": 2,
+        "mutantsTotal": 2
+      }
     },
     {
       "code": "X1",
