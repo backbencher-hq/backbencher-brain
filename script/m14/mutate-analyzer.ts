@@ -269,6 +269,13 @@ const MUTANTS: Mutant[] = [
       }) }),
   },
   {
+    id: "scala/callee-method-value-leak",
+    language: "scala",
+    defectClass: "relationship-noise",
+    description: "injects the M37 TSD6-sweep regression class: a dead call-position skip (n.parent.childForFieldName === n, never true for wrappers) leaks call callees as bogus method_value references — method-value-refs forbid pin must catch it",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), ...(r.relationships ?? []).filter((x: any) => x.type === "calls").map((x: any) => ({ ...x, type: "references", metadata: { ...(x.metadata ?? {}), relationshipType: "method_value" } }))] }),
+  },
+  {
     id: "scala/drop-decorators",
     language: "scala",
     defectClass: "annotation-loss",
@@ -1109,6 +1116,13 @@ const MUTANTS: Mutant[] = [
     defectClass: "relationship-loss",
     description: "drops csharp implements edges (Shape->IShape) — #264 section B implements pin",
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "implements") }),
+  },
+  {
+    id: "csharp/callee-field-access-leak",
+    language: "csharp",
+    defectClass: "relationship-noise",
+    description: "injects the M37 TSD6-sweep regression class: a dead callee-identity skip (fn === node, never true for web-tree-sitter wrappers) leaks call-position member_access as bogus csharp_field_access uses — payload-and-complexity forbid pins must catch it",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), ...(r.relationships ?? []).filter((x: any) => x.type === "calls").map((x: any) => ({ ...x, type: "uses", metadata: { ...(x.metadata ?? {}), relationshipType: "csharp_field_access" } }))] }),
   },
   {
     id: "csharp/ctor-initializer-loss",

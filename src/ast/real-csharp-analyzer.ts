@@ -1156,10 +1156,15 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         const parent = node.parent
         if (parent && parent.type === "invocation_expression") {
           const fn = parent.childForFieldName("function")
-          if (fn === node) isCallee = true
+          // web-tree-sitter returns fresh wrapper objects per node access —
+          // object identity NEVER matches (TSD6 class, M37 hygiene gate).
+          // Compare stable node ids; the old `fn === node` / `gp... === parent`
+          // checks were dead, so `?.M()` (and plain `x.M()`) callee skips
+          // never fired and method names leaked bogus uses edges.
+          if (fn && fn.id === node.id) isCallee = true
         } else if (parent && parent.type === "conditional_access_expression") {
           const gp = parent.parent
-          if (gp && gp.type === "invocation_expression" && gp.childForFieldName("function") === parent) isCallee = true
+          if (gp && gp.type === "invocation_expression" && gp.childForFieldName("function")?.id === parent.id) isCallee = true
         }
         if (!isCallee) {
           const field = node.childForFieldName("name")
