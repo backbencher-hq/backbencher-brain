@@ -4,19 +4,16 @@
   "milestone": "M27",
   "status": "known-gap",
   "checks": 69,
-  "passed": 68,
-  "failed": 1,
+  "passed": 67,
+  "failed": 2,
   "negativeCases": 10,
-  "currentCommit": "7b065d36273e548710b0699350887d4363ca4a5b",
+  "currentCommit": "24205a9760fb662cb2c595cca083f3368956f876",
   "workingTreeRelevantChanges": [
-    "docs/m27/FORK-CAPABILITY-MATRIX.md",
-    "script/m27/verify-helix.ts",
-    "script/m27/verify-lsp4ij.ts",
-    "script/m27/verify-zed.ts"
+    "docs/m27/FORK-CAPABILITY-MATRIX.md"
   ],
   "verifierCommand": "npx tsx script/m27/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-04T04:26:43.995Z",
+  "generatedAt": "2026-09-04T04:27:00.467Z",
   "ledger": "validation/m27/results/manifest.json",
   "m26Bar": {
     "ledgerStatus": "closed",
