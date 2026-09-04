@@ -9,12 +9,12 @@
   "mutantsCaught": 4,
   "mutantsTotal": 4,
   "negativeCases": 4,
-  "currentCommit": "4579cea4af043a9f964188745b0f64d48b8fde74",
+  "currentCommit": "424efb44e9f4862267ed7f74f37278590fa649e3",
   "verifierCommand": "npx tsx script/m25/verify-packaging.ts",
   "evidenceFile": "E4.json",
   "publishRecord": "validation/m25/results/E4-openvsx.json",
   "vsix": "ide/vscode/bb-lsp-vscode-0.1.0.vsix",
-  "generatedAt": "2026-09-03T23:50:15.603Z",
+  "generatedAt": "2026-09-04T00:00:14.609Z",
   "os": "linux",
   "verdict": {
     "realComponentFailures": 0
