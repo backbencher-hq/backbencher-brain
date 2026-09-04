@@ -39,6 +39,7 @@ import {
   type LspPosition,
 } from "./positions"
 import { storedCrossLanguageRows, factsFromRows, crossLanguageSection } from "./cross_language_hover"
+import { annotationHoverSection, type AnnotationRow } from "./annotation_ui"
 
 /** The five launch languages (#419-CONFORMANT set). */
 export const LAUNCH_LANGUAGES = ["java", "groovy", "kotlin", "scala", "typescript"] as const
@@ -97,6 +98,11 @@ export interface SymbolHoverData {
    *  index stores no cross-language rows for this symbol (the hover then
    *  renders NO cross-language text at all: absence declared in docs). */
   crossLanguageSection: string
+  /** M28.A2: pre-rendered annotation section — empty string when the index
+   *  stores no annotations for this symbol (same declared-absence contract
+   *  as the cross-language section above). Author-labeled by the
+   *  annotation_ui owner; an agent note never reads as index fact (D-6). */
+  annotationSection: string
   stale: boolean
   freshnessStatus: "fresh" | "stale" | "missing"
   filePath: string
@@ -251,6 +257,11 @@ export function formatHoverMarkdown(data: SymbolHoverData): string {
   if (data.crossLanguageSection && data.crossLanguageSection.length > 0) {
     lines.push(data.crossLanguageSection)
   }
+  // M28.A2: agent/human annotations, author-labeled. Empty section renders
+  // nothing — declared absence, never a placeholder (same law as W3 above).
+  if (data.annotationSection && data.annotationSection.length > 0) {
+    lines.push(data.annotationSection)
+  }
   if (data.stale) {
     lines.push(`⚠️ **stale** — file changed since indexing (${data.freshnessStatus})`)
   }
@@ -321,6 +332,10 @@ export function hover(
   const tiers = evidenceTiersFor(raw, symbol.id)
   // M26.W3: per-pair cross-language facts from stored rows only.
   const crossSection = crossLanguageSection(factsFromRows(storedCrossLanguageRows(raw, symbol.id), file.language))
+  // M28.A2: annotation rows for this symbol, rendered by the single owner.
+  // Project scoped via the symbol's file row (hover has no projectId param).
+  const annotationRows = raw.prepare("SELECT symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated FROM brain_annotation WHERE project_id = (SELECT project_id FROM brain_file WHERE id = ?) AND symbol_name = ? ORDER BY time_updated DESC").all(file.id, symbol.name) as AnnotationRow[]
+  const annotationSection = annotationHoverSection(annotationRows)
 
   const data: SymbolHoverData = {
     name: symbol.name,
@@ -330,6 +345,7 @@ export function hover(
     usageCount,
     evidenceTiers: tiers,
     crossLanguageSection: crossSection,
+    annotationSection,
     stale,
     freshnessStatus,
     filePath: file.path,
