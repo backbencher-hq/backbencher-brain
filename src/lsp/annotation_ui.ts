@@ -75,9 +75,18 @@ export function annotationBadge(rows: AnnotationRow[]): AnnotationBadge | null {
   }
 }
 
-/** Defensive rule (W4 badge law, applied to annotations): a rendered badge
- *  must carry the same symbol identity as the node it sits on. The webview
- *  provider calls this before attaching; a mismatch is a declared defect. */
-export function badgeMatchesNode(badge: AnnotationBadge, nodeSymbolName: string): boolean {
-  return typeof nodeSymbolName === "string" && nodeSymbolName.length > 0
+/** Defensive rule (W4 badge law, applied to annotations): a badge may only
+ *  attach to a node with a real symbol name — and the badge itself must be a
+ *  well-formed, author-labeled badge. The webview provider calls this before
+ *  attaching; a mismatch is a declared defect (the caller then renders NO
+ *  badge rather than a possibly-misattributed one). */
+export function badgeMatchesNode(badge: AnnotationBadge | null, nodeSymbolName: string): boolean {
+  if (badge === null || typeof badge !== "object") return false
+  if (typeof nodeSymbolName !== "string" || nodeSymbolName.length === 0) return false
+  if (!Array.isArray(badge.authors) || badge.authors.length === 0) return false
+  if (typeof badge.count !== "number" || badge.count < 1) return false
+  if (typeof badge.label !== "string" || badge.label.length === 0) return false
+  // The label must name every author class it claims — a badge whose label
+  // disagrees with its authors is a misattribution defect.
+  return badge.authors.every((a) => badge.label.includes(a))
 }

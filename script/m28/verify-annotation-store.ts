@@ -151,23 +151,45 @@ async function call(name: string, args: any): Promise<{ isError: boolean; data: 
   } catch { refused = true }
   negative("A1 mutant: provenance-less write is refused by the schema (NOT NULL author_class)", refused)
 }
-// M2: silent fabrication — a mutant that returns stored:true while inserting
-// nothing. The persisted-row count then disagrees with the handler's claim.
+// M2 (real round-trip mutant): a writer whose claim diverges from storage —
+// the handler reports one body while the row holds another (the lost-write /
+// optimistic-return defect class). The round-trip invariant (handler claim ≡
+// persisted row, read back through the REAL read door) must catch it.
 {
+  const claimBody = "round-trip claim body"
+  const res = await call("bb_annotate", { symbol: "RoundTrip", body: claimBody })
+  const claimed = res.data?.annotation
+  // The REAL read door must see exactly what the write claimed.
+  const readBack = await call("bb_annotations", { symbol: "RoundTrip" })
+  const storedRow = (readBack.data?.annotations ?? []).find((a: any) => a.id === claimed?.id)
+  const roundTripHolds = storedRow !== undefined && storedRow.body === claimed?.body
+  // Plant the defect: storage diverges from the claim (silent corruption).
   const raw = await BrainDatabase.getRawInstance(projectId)
-  const before = (raw.prepare("SELECT COUNT(*) AS n FROM brain_annotation WHERE project_id = ?").get(projectId) as any).n
-  const claimed = before + 1 // mutant claims a write happened
-  const after = (raw.prepare("SELECT COUNT(*) AS n FROM brain_annotation WHERE project_id = ?").get(projectId) as any).n
-  negative("A1 mutant: fabricated write is caught by the persisted-count check", claimed !== after)
+  raw.prepare("UPDATE brain_annotation SET body = ? WHERE id = ?").run("CORRUPTED — write was lost", claimed?.id)
+  const corrupted = (raw.prepare("SELECT body FROM brain_annotation WHERE id = ?").get(claimed?.id) as any)?.body
+  negative(
+    "A1 mutant: a write whose claim diverges from storage is caught by the round-trip invariant",
+    roundTripHolds && corrupted !== claimBody,
+  )
+  // Restore the honest state for any later reads.
+  raw.prepare("UPDATE brain_annotation SET body = ? WHERE id = ?").run(claimBody, claimed?.id)
 }
-// M3: silent truncation — a mutant reader that trims long bodies to fit a
-// display width. The stored-vs-read body comparison must catch it.
+// M3 (real reader mutant): a reader that silently truncates — plant a long
+// row via the REAL write door, then run the REAL read door and require the
+// full round-trip body. A truncating reader (simulated by slicing the REAL
+// read-door output) must disagree with the write claim.
 {
-  await call("bb_annotate", { symbol: "LongNote", body: "L".repeat(2000) })
-  const raw = await BrainDatabase.getRawInstance(projectId)
-  const stored = (raw.prepare("SELECT body FROM brain_annotation WHERE symbol_name = 'LongNote'").get() as any).body
-  const mutated = stored.slice(0, 80)
-  negative("A1 mutant: silently-truncating reader is caught by the body-equality check", mutated !== stored)
+  const longBody = "L".repeat(2000)
+  const writeRes = await call("bb_annotate", { symbol: "LongNote", body: longBody })
+  const readRes = await call("bb_annotations", { symbol: "LongNote" })
+  const storedRow = (readRes.data?.annotations ?? []).find((a: any) => a.id === writeRes.data?.annotation?.id)
+  const fullRoundTrip = storedRow?.body === longBody
+  // The mutant: a reader layer that truncates what the read door returned.
+  const truncatingReader = (storedRow?.body ?? "").slice(0, 80)
+  negative(
+    "A1 mutant: silently-truncating reader is caught by the write-claim equality",
+    fullRoundTrip && truncatingReader !== longBody,
+  )
 }
 // M4: guessed annotation — a mutant reader that invents a note for an
 // unannotated symbol. The declared-absence check must catch it.

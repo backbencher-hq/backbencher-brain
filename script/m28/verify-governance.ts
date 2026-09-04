@@ -484,7 +484,7 @@ function main(): void {
   check("G1: evidence is persisted and re-readable", persisted.issue === result.issue && persisted.currentCommit === currentCommit)
 
   const finalFailed2 = checks - passed
-  const finalResult = { ...result, failed: finalFailed2, status: finalFailed2 === 0 && currentWorkingTreeRelevantChanges.length === 0 ? "verified" : "known-gap" }
+  const finalResult = { ...result, checks, passed, failed: finalFailed2, status: finalFailed2 === 0 && currentWorkingTreeRelevantChanges.length === 0 ? "verified" : "known-gap" }
   writeFileSync(evidencePath, JSON.stringify(finalResult, null, 2) + "\n")
   console.log(`G1: ${finalResult.status.toUpperCase()} (${passed}/${checks} passed, ${negatives} negative)`)
   process.exit(finalFailed2 === 0 ? 0 : 1)
