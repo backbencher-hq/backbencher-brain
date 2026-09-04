@@ -567,3 +567,11 @@ attributed to load-15 environment (4 concurrent agent sessions, single-file
 11.5s stall — physically impossible at steady-state; 3-attempt min-of-runs
 retry already engaged), no correctness impact. Honesty gate green at
 cc76e37 with F1-F9 + SPEC + CC1 fresh.
+
+> **NEXT MILESTONE: M34 (Dual-Lens Analyzer Backfill, tracking issue #593).**
+> The 18 gated-done analyzers get the csharp/haskell dual-lens pass (line-by-line
+> read + corpus census + probe-verified fixes), one at a time: python -> java ->
+> ts/js -> kotlin/scala/groovy -> zig -> c/cpp/rust/go -> dart/php/swift/objc/ruby
+> confirms. When M34 closes, return HERE to M14 for the not-yet-done analyzers
+> (clean, clojure, elixir, ...) under the F1-F9 + dual-lens regime. Milestone:
+> "M34: Dual-Lens Analyzer Backfill".
