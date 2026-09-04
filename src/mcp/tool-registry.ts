@@ -187,14 +187,14 @@ const descriptors = [
     // full reindex. This is the direct fix for "agent created a function,
     // seconds later it's not in the DB".
     name: "bb_index",
-    description: "Reindex a file or directory so the index reflects edits immediately (agent-fresh). Accepts a path (file or dir); a file reindexes only that file, a dir runs an incremental index of that dir (changed files only). Returns indexed/deleted/error counts.",
-    inputSchema: { type: "object", properties: { path: { type: "string" }, mode: { type: "string", enum: ["auto", "file", "dir"] } }, required: ["path"] },
+    description: "Reindex a file or directory so the index reflects edits immediately (agent-fresh). Accepts a path (file or dir); a file reindexes only that file, a dir runs an incremental index of that dir (changed files only). mode=post re-runs the heavy derived-data phases (relationships/enrichment/gravity/taints/health) WITHOUT re-parsing — the remediation after edits on incremental paths. Returns indexed/deleted/error counts, or the per-phase post-processing report.",
+    inputSchema: { type: "object", properties: { path: { type: "string" }, mode: { type: "string", enum: ["auto", "file", "dir", "post"] } }, required: ["path"] },
     mutability: "write",
     requiresIndex: false,
-    modes: ["auto", "file", "dir"],
+    modes: ["auto", "file", "dir", "post"],
     aliases: [],
     deprecated: false,
-    documentation: { category: "operations", summary: "Immediately refresh the index for a just-written/edited file or directory.", defaults: { mode: "auto" }, examples: [{ path: "src/new-file.ts" }, { path: "src", mode: "dir" }] },
+    documentation: { category: "operations", summary: "Immediately refresh the index for a just-written/edited file or directory; mode=post re-derives relationships/taints/health without re-parsing.", defaults: { mode: "auto" }, examples: [{ path: "src/new-file.ts" }, { path: "src", mode: "dir" }, { path: "post", mode: "post" }] },
   },
 ] as const satisfies readonly ToolDescriptor[]
 

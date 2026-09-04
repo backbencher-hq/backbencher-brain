@@ -3220,116 +3220,33 @@ export async function indexProjectParallel(
       log.info("index cancelled — skipping post-processing (resume to continue)")
     } else if (!options.isIncremental && !options.skipPostProcessing) {
       const postProcessingStart = Date.now()
-      // M21.I2: every phase records its own start/end timing and outcome so a
-      // failed phase stays visible and never silently reports "complete".
-      const postPhases: PostProcessingPhaseTiming[] = []
-      const recordPhase = (name: PostProcessingPhaseTiming["name"], ms: number, outcome: PostProcessingPhaseTiming["outcome"]) => {
-        postPhases.push({ name, ms, outcome })
-      }
-      try {
-        log.debug("running heavy cross-symbol taints and health metrics (full index only)")
+      log.debug("running heavy cross-symbol taints and health metrics (full index only)")
 
-        // FIX: Run relationship resolution ONCE at the end, not after every batch
-        Bus.publishSafe(BrainService.Event.IndexingProgress, {
-          projectId,
-          progress: 99.2,
-          message: "Resolving symbol relationships...",
-          stats: {
-            filesProcessed: stats.processedFiles,
-            symbolsExtracted: stats.symbolsExtracted,
-            relationshipsFound: stats.relationshipsFound,
-            filesPerSecond: 0,
-            skippedFiles: stats.skippedFiles,
-          },
-        })
-        _log.log("  Resolving cross-file relationships...")
-        let _t = Date.now()
-        try {
-          await resolveRelationships(projectId)
-          recordPhase("relationships", Date.now() - _t, "ok")
-          _log.log(`  ✓ resolved in ${Date.now()-_t}ms`)
-        } catch (relErr: any) {
-          recordPhase("relationships", Date.now() - _t, "failed")
-          log.warn("relationship resolution failed", { error: relErr?.message })
-        }
+      // FIX: Run relationship resolution ONCE at the end, not after every batch
+      Bus.publishSafe(BrainService.Event.IndexingProgress, {
+        projectId,
+        progress: 99.2,
+        message: "Resolving symbol relationships...",
+        stats: {
+          filesProcessed: stats.processedFiles,
+          symbolsExtracted: stats.symbolsExtracted,
+          relationshipsFound: stats.relationshipsFound,
+          filesPerSecond: 0,
+          skippedFiles: stats.skippedFiles,
+        },
+      })
 
-        // Enrich relationships with architectural reasoning (Phase 1+2)
-        try {
-          const { enrichRelationships } = await import("../brain/brain-relationship-enrichment")
-          _log.log("  Enriching relationships with architectural context...")
-          _t = Date.now()
-          const enrichResult = await enrichRelationships(projectId, (step: string, pct: number) => {
-            _log.write(`\r  Enriching: ${step} ${pct}%\x1b[K`)
-          })
-          recordPhase("enrichment", Date.now() - _t, "ok")
-          _log.log(`  ✅ Enriched ${enrichResult.enriched.toLocaleString()} relationships (${enrichResult.patternsFound.toLocaleString()} patterns) in ${Date.now()-_t}ms`)
-        } catch (enrichErr) {
-          recordPhase("enrichment", Date.now() - _t, "failed")
-          log.warn("relationship enrichment failed", { error: enrichErr })
-        }
-
-        _log.log("  Computing gravity scores...")
-        _t = Date.now()
-        try {
-          await calculateGravityScores(projectId)
-          recordPhase("gravity", Date.now() - _t, "ok")
-          _log.log(`  ✓ gravity in ${Date.now()-_t}ms`)
-        } catch (gravityErr: any) {
-          recordPhase("gravity", Date.now() - _t, "failed")
-          log.warn("gravity scores failed", { error: gravityErr?.message })
-        }
-
-        // Taint and health are independent phases: each records its own timing
-        // and outcome so a failure in one never mislabels the other.
-        _log.log("  Analyzing taint flows & security...")
-        _t = Date.now()
-        try {
-          await resolveCrossSymbolTaints(projectId)
-          recordPhase("taint", Date.now() - _t, "ok")
-        } catch (postErr: any) {
-          recordPhase("taint", Date.now() - _t, "failed")
-          log.warn("post-indexing taint analysis failed", { error: postErr?.message })
-        }
-        const taintMs = Date.now() - _t
-        _t = Date.now()
-        try {
-          await (await import("./project-health")).computeAndStoreProjectHealth(projectId)
-          recordPhase("health", Date.now() - _t, "ok")
-        } catch (healthErr: any) {
-          recordPhase("health", Date.now() - _t, "failed")
-          log.warn("post-indexing health computation failed", { error: healthErr?.message })
-        }
-        _log.log(`  ✓ taint(${taintMs}ms) + health(${Date.now()-_t}ms)`)
-
-        // Lightweight post-index integrity validation (4 fast checks)
-        try {
-          _t = Date.now()
-          const { runIndexHealthCheck } = await import("../brain/brain-index-health")
-          const health = await runIndexHealthCheck(projectId)
-          recordPhase("integrity", Date.now() - _t, "ok")
-          _log.log(`  ✓ health check in ${Date.now()-_t}ms`)
-          const warnCount = health.checks.filter((c) => c.status !== "ok").length
-          if (warnCount > 0) {
-            _log.log(`  ⚠️  Index health: ${health.overallHealth}% — ${warnCount} warnings (run bb_health(integrity=true) for details)`)
-            for (const c of health.checks.filter((c) => c.status === "error")) {
-              _log.log(`    ❌ ${c.name}: ${c.description}`)
-            }
-          } else {
-            _log.log(`  ✅ Index health: 100% — all checks passed`)
-          }
-        } catch (healthErr) {
-          recordPhase("integrity", Date.now() - _t, "failed")
-          log.warn("post-index health check failed", { error: healthErr })
-        }
-      } catch (err) {
-        log.warn("failed to compute project health or resolve taints", { error: err })
-      }
+      // M40.A1: the five heavy phases + integrity check now live in the ONE
+      // public entry (runPostProcessing below), shared by the full index,
+      // `bb index --post`, and MCP bb_index mode=post. Same phases, same
+      // timing/outcome contract (M21.I2), zero duplicated phase logic.
+      const post = await runPostProcessing(projectId, { logger: _log })
       phases.postProcessingMs = Date.now() - postProcessingStart
-      phases.postProcessingPhases = postPhases
+      phases.postProcessingPhases = post.phases
 
       // M21.I2: a failed post-processing phase must not silently leave the
       // project status as "complete". Persist a visible partial status.
-      if (postPhases.some((p) => p.outcome === "failed")) {
+      if (post.phases.some((p) => p.outcome === "failed")) {
         try {
           await BrainDatabase.updateIndexStatus(projectId, { status: "partial" })
           _log.log("  ⚠ index marked partial: a post-processing phase failed")
@@ -3446,6 +3363,145 @@ export function wipeProjectData(rawDb: any): void {
       rawDb.run(`DELETE FROM ${t}`)
     } catch {}
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// M40.A1: THE post-processing entry.
+//
+// The five heavy phases (relationship resolution, enrichment, gravity, taints,
+// health) plus the lightweight integrity check used to exist only inline in
+// the full-index branch — meaning every incremental path (bb index --changed,
+// --resume, adoption, bb_edit, LSP, MCP bb_index) left derived data stale with
+// no remediation short of a full re-index. This function is now the ONE shared
+// entry: the full index calls it (above), `bb index --post` calls it directly
+// (no re-parse), and MCP bb_index mode=post exposes it to agents.
+//
+// Contract (M21.I2 shape, unchanged):
+//  - every phase records ms + outcome (ok|failed); a failed phase never
+//    silently reports "complete"
+//  - requires a prior index: with zero brain_file rows this throws — callers
+//    surface it as an error, never as a quiet no-op
+//  - parseEvents: --post never parsed anything, so enrichment/history events
+//    carry parseFiles=0 (honest telemetry)
+// ═══════════════════════════════════════════════════════════════════════════
+export interface PostProcessingResult {
+  phases: PostProcessingPhaseTiming[]
+  totalMs: number
+  integrityHealth: number | null
+}
+
+export async function runPostProcessing(
+  projectId: ProjectID,
+  opts: {
+    /** stderr/stdio-safe logger; defaults to console (CLI). LSP/MCP pass a safe logger. */
+    logger?: { log: (...args: any[]) => void; write: (s: string) => void }
+    /** M40.A2 hook: skip specific phases in the bounded incremental pass. */
+    skipPhases?: Array<PostProcessingPhaseTiming["name"]>
+  } = {},
+): Promise<PostProcessingResult> {
+  const _log = opts.logger ?? { log: (...args: any[]) => console.log(...args), write: (s: string) => process.stdout.write(s) }
+  const skip = new Set(opts.skipPhases ?? [])
+
+  // Requires a prior index: zero files means there is nothing to derive from.
+  const rawDb = await BrainDatabase.getRawInstance(projectId)
+  const fileCount = (rawDb.prepare("SELECT COUNT(*) c FROM brain_file WHERE project_id = ?").get(projectId) as any)?.c ?? 0
+  if (fileCount === 0) {
+    throw new Error(`no index for project ${String(projectId).slice(0, 8)} — post-processing derives from indexed symbols; run bb index first`)
+  }
+
+  const start = Date.now()
+  const phases: PostProcessingPhaseTiming[] = []
+  const recordPhase = (name: PostProcessingPhaseTiming["name"], ms: number, outcome: PostProcessingPhaseTiming["outcome"]) => {
+    phases.push({ name, ms, outcome })
+  }
+  let integrityHealth: number | null = null
+
+  try {
+    _log.log("  Resolving cross-file relationships...")
+    let _t = Date.now()
+    try {
+      await resolveRelationships(projectId)
+      recordPhase("relationships", Date.now() - _t, "ok")
+      _log.log(`  ✓ resolved in ${Date.now()-_t}ms`)
+    } catch (relErr: any) {
+      recordPhase("relationships", Date.now() - _t, "failed")
+      log.warn("relationship resolution failed", { error: relErr?.message })
+    }
+
+    // Enrich relationships with architectural reasoning (Phase 1+2)
+    try {
+      const { enrichRelationships } = await import("../brain/brain-relationship-enrichment")
+      _log.log("  Enriching relationships with architectural context...")
+      _t = Date.now()
+      const enrichResult = await enrichRelationships(projectId, (step: string, pct: number) => {
+        _log.write(`\r  Enriching: ${step} ${pct}%\x1b[K`)
+      })
+      recordPhase("enrichment", Date.now() - _t, "ok")
+      _log.log(`  ✅ Enriched ${enrichResult.enriched.toLocaleString()} relationships (${enrichResult.patternsFound.toLocaleString()} patterns) in ${Date.now()-_t}ms`)
+    } catch (enrichErr) {
+      recordPhase("enrichment", Date.now() - _t, "failed")
+      log.warn("relationship enrichment failed", { error: enrichErr })
+    }
+
+    _log.log("  Computing gravity scores...")
+    _t = Date.now()
+    try {
+      await calculateGravityScores(projectId)
+      recordPhase("gravity", Date.now() - _t, "ok")
+      _log.log(`  ✓ gravity in ${Date.now()-_t}ms`)
+    } catch (gravityErr: any) {
+      recordPhase("gravity", Date.now() - _t, "failed")
+      log.warn("gravity scores failed", { error: gravityErr?.message })
+    }
+
+    // Taint and health are independent phases: each records its own timing
+    // and outcome so a failure in one never mislabels the other.
+    _log.log("  Analyzing taint flows & security...")
+    _t = Date.now()
+    try {
+      await resolveCrossSymbolTaints(projectId)
+      recordPhase("taint", Date.now() - _t, "ok")
+    } catch (postErr: any) {
+      recordPhase("taint", Date.now() - _t, "failed")
+      log.warn("post-indexing taint analysis failed", { error: postErr?.message })
+    }
+    const taintMs = Date.now() - _t
+    _t = Date.now()
+    try {
+      await (await import("./project-health")).computeAndStoreProjectHealth(projectId)
+      recordPhase("health", Date.now() - _t, "ok")
+    } catch (healthErr: any) {
+      recordPhase("health", Date.now() - _t, "failed")
+      log.warn("post-indexing health computation failed", { error: healthErr?.message })
+    }
+    _log.log(`  ✓ taint(${taintMs}ms) + health(${Date.now()-_t}ms)`)
+
+    // Lightweight post-index integrity validation (4 fast checks)
+    try {
+      _t = Date.now()
+      const { runIndexHealthCheck } = await import("../brain/brain-index-health")
+      const health = await runIndexHealthCheck(projectId)
+      recordPhase("integrity", Date.now() - _t, "ok")
+      integrityHealth = health.overallHealth
+      _log.log(`  ✓ health check in ${Date.now()-_t}ms`)
+      const warnCount = health.checks.filter((c) => c.status !== "ok").length
+      if (warnCount > 0) {
+        _log.log(`  ⚠️  Index health: ${health.overallHealth}% — ${warnCount} warnings (run bb_health(integrity=true) for details)`)
+        for (const c of health.checks.filter((c) => c.status === "error")) {
+          _log.log(`    ❌ ${c.name}: ${c.description}`)
+        }
+      } else {
+        _log.log(`  ✅ Index health: 100% — all checks passed`)
+      }
+    } catch (healthErr) {
+      recordPhase("integrity", Date.now() - _t, "failed")
+      log.warn("post-index health check failed", { error: healthErr })
+    }
+  } catch (err) {
+    log.warn("failed to compute project health or resolve taints", { error: err })
+  }
+
+  return { phases, totalMs: Date.now() - start, integrityHealth }
 }
 
 export async function reindexFilesParallel(
