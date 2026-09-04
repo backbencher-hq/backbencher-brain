@@ -679,19 +679,22 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       // --- Instance-variable member reads (family contract) ---
       // `@total`, `@config.host` reads emit `uses` (managed-OO family
       // contract: csharp/dart/swift/objc). Assignment LHS = write → skip.
-      // Plain `assignment` (@x = v) is a pure write → skip. But
-      // `operator_assignment` (@x += / -= / ||= v) is a READ-MODIFY-WRITE:
-      // the current value of @x is read before the op — emit uses.
-      // Verified against rake corpus (@balance += amount, @options ||= {}):
-      // skipping these leaked NO edge and broke the family contract
-      // (csharp/dart/swift/objc emit uses for compound-assignment LHS).
+      // SCD1 family parity (M37 #599 pre-wave): `operator_assignment`
+      // (@x += / -= / ||= v) LHS is ALSO a write — java JAD1/kotlin KAD1/
+      // scala SCD1/groovy KAD1 and the pre-wave swift gate all exclude
+      // compound-assignment LHS from uses. The old RMW-emits rationale
+      // claimed csharp/dart/swift/objc support; probe-verified false:
+      // dart emits no member uses at all, swift/objc gate plain-assign
+      // LHS, and csharp's field-access pass has no read/write split
+      // (fixed in the same wave). Writes (including RMW LHS) stay
+      // silent — the READ side of `@x += v` survives via RHS/other
+      // mentions, matching every other family member.
       // tree-sitter-ruby node type is `instance_variable`.
       if (type === "instance_variable") {
         const parentType = n.parent?.type
         const isLhsOfAssign = (parentType === "assignment" || parentType === "operator_assignment") &&
           n.parent?.childForFieldName("left")?.id === n.id
-        const isWrite = isLhsOfAssign && parentType === "assignment"
-        if (!isWrite) {
+        if (!isLhsOfAssign) {
           const src = enclosingMethod || owner || "Global"
           relationships.push({
             source: src,

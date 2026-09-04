@@ -2851,6 +2851,18 @@ class TypeScriptAnalysisRunner {
           // walk recurses into type_arguments either way, so hooking the
           // node itself covers both shapes: the type names inside (Baz) are
           // references, not bindings.
+          // SCD7 (M37 #599 pre-wave): when this type_arguments is embedded
+          // in a type_annotation (`const local: Map<String, Foo>`), the
+          // type_annotation case ALREADY emitted every nested name as
+          // declared_type (the java/kotlin family contract: one
+          // declared_type per type name). Emitting them again as
+          // type_argument double-emitted String/Foo from the same site.
+          // Call-site/instantiation type_arguments keep their edge.
+          let inAnnotation = false
+          for (let a = n.parent; a; a = a.parent) {
+            if (a.type === "type_annotation") { inAnnotation = true; break }
+          }
+          if (inAnnotation) break
           const names: string[] = []
           collectTypeNames(n, names)
           if (names.length > 0) emit(resolveSource(n), [n], "type_argument")
