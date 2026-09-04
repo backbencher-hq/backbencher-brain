@@ -57,10 +57,16 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         const rhsType = rhs?.type || ""
         const rhsText = rhs ? this.nodeText(rhs) : ""
 
-        // @import / @cImport: an import, not a symbol.
-        if (rhsType === "call_expression" || rhsType === "builtin_function") {
-          const builtin = this.anyChild(rhs, (n) => n.type === "builtin_identifier")
-          if (builtin && (builtin.text === "@import" || builtin.text === "@cImport")) {
+        // @import / @cImport: an import, not a symbol. (ZGD4 note: the REAL
+        // usingnamespace form is the declaration `usingnamespace @import(...);`
+        // handled by its own branch below — probe-verified 2026-09-04. An
+        // assignment-RHS usingnamespace is not valid Zig; the grammar
+        // error-recovers it into a call_expression with an ERROR child.)
+        const builtin =
+          rhsType === "call_expression" || rhsType === "builtin_function"
+            ? this.anyChild(rhs, (n) => n.type === "builtin_identifier")
+            : null
+        if (builtin && (builtin.text === "@import" || builtin.text === "@cImport")) {
             const argsNode = this.anyChild(rhs, (n) => n.type === "arguments")
             const strNode = argsNode ? this.anyChild(argsNode, (n) => n.type === "string" || n.type === "string_content") : null
             if (strNode) {
@@ -94,7 +100,6 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
             this.pushChildren(node, walkStack, container, inFunction)
             continue
           }
-        }
 
         // `const` vs `var` (anonymous tokens, probe-verified): a mutable
         // global `var` is a Variable, not a Constant (deep-review finding
@@ -150,6 +155,59 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         // Container members belong to the new container symbol.
         const newContainer = isContainer ? sym : container
         this.pushChildren(node, walkStack, newContainer, inFunction)
+        continue
+      }
+
+      // ─── TEST / COMPTIME BLOCKS: executable bodies, not declaration scope ───
+      // ZGD3 (zig wave, M37 #600): test_declaration and comptime_declaration
+      // contain block bodies whose `var` locals are EXECUTION artifacts. The
+      // walk previously fell through with inFunction=false, so every test
+      // body leaked file-scope Variable symbols (probe: `test "t1" { var
+      // local_counter ... }` emitted variable:local_counter). Reusing the
+      // inFunction flag marks the body as executable scope: no declaration
+      // symbols, while calls/uses emission (analyzeZigCodeRelationships) is
+      // unaffected — it tracks function_declaration only and emits these
+      // sites with source "(global)" (ZIG.D.2 contract).
+      if (type === "test_declaration" || type === "comptime_declaration") {
+        this.pushChildren(node, walkStack, container, true)
+        continue
+      }
+
+      // ─── USINGNAMESPACE DECLARATION (ZGD4, zig wave M37 #600) ───
+      // `usingnamespace @import("x.zig");` is a first-class import fact the
+      // walk previously dropped entirely (probe-verified 2026-09-04: no
+      // import record, no references edge). The @import sits in a
+      // builtin_function child — same shape as the plain-import branch.
+      if (type === "using_namespace_declaration") {
+        const bf = this.anyChild(node, (n) => n.type === "builtin_function")
+        const bi = bf ? this.anyChild(bf, (n) => n.type === "builtin_identifier") : null
+        if (bf && bi && (bi.text === "@import" || bi.text === "@cImport")) {
+          const argsNode = this.anyChild(bf, (n) => n.type === "arguments")
+          const strNode = argsNode ? this.anyChild(argsNode, (n) => n.type === "string" || n.type === "string_content") : null
+          if (strNode) {
+            let importTarget = strNode.text
+            if (
+              (importTarget.startsWith('"') && importTarget.endsWith('"')) ||
+              (importTarget.startsWith("'") && importTarget.endsWith("'"))
+            ) {
+              importTarget = importTarget.substring(1, importTarget.length - 1)
+            }
+            imports.push({
+              module: importTarget,
+              isDefaultImport: false,
+              range: this.nodeRange(node),
+              metadata: { zigImport: true, builtin: bi.text, usingnamespace: true },
+            })
+            relationships.push({
+              source: "(global)",
+              target: importTarget,
+              type: ASTEngine.RelationshipType.References,
+              confidence: 1.0,
+              metadata: { relationshipType: "zig_import", isImport: true },
+            })
+          }
+        }
+        this.pushChildren(node, walkStack, container, inFunction)
         continue
       }
 
@@ -413,7 +471,30 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         const field = this.zigFieldLeaf(n)
         const notBuiltinAccess =
           this.anyChild(n, (c) => c.type === "identifier") !== null
-        if (field && notBuiltinAccess) {
+        // ZGD1 (zig wave, M37 #600 — standing-rule write-gate class): an
+        // assignment LHS is a WRITE, never a read. Zig assignments parse as
+        // variable_declaration (probe-verified: `self.count = 5;` and
+        // `self.count += 1;` are both variable_declaration nodes, LHS = first
+        // named child) — gate only that LHS span, so the RHS of
+        // `self.a = self.b` stays a genuine read.
+        const p = n.parent
+        const isAssignLhs = !!p && p.type === "variable_declaration" && p.namedChild(0)?.id === n.id
+        // ZGD5 (same wave): `.bad` enum literals and `.{...}` init fields
+        // parse as field_expression with a SINGLE named child — no base, so
+        // they are not member accesses. `return .bad` emitted a phantom
+        // `uses f->bad` (probe-verified).
+        const isEnumLiteral = n.namedChildCount < 2
+        // ZGD5b: a qualified TYPE ANNOTATION (`fn f() foo.Bar`, `w: io.Writer`)
+        // is a namespace-qualified type reference — a declared-type fact, not
+        // a runtime member READ. Type positions are direct children of the
+        // declaration nodes (probe-verified); the declared-type graph already
+        // carries the fact. `uses` stays reserved for runtime reads
+        // (`return self.count`).
+        const isTypePosition =
+          p?.type === "parameter" ||
+          p?.type === "container_field" ||
+          p?.type === "function_declaration"
+        if (field && notBuiltinAccess && !isAssignLhs && !isEnumLiteral && !isTypePosition) {
           const source = nextInFn && nextFn ? nextFn : "(global)"
           const k = `${source}->${field}`
           if (!emittedUses.has(k)) {
@@ -442,6 +523,10 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
     const callee = call.namedChildCount > 0 ? call.namedChild(0) : null
     if (!callee) return undefined
     if (callee.type === "identifier") {
+      // ZGD4: `usingnamespace` is a builtin keyword-like import operator, not
+      // a user symbol — `pub const io = usingnamespace @import("io.zig")`
+      // fabricated a `calls -> usingnamespace` edge (probe-verified).
+      if (callee.text === "usingnamespace") return undefined
       // Skip builtin intrinsics (@foo).
       return callee.text
     }
@@ -513,13 +598,20 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (t) push(t)
           }
         }
-        // Return type: look for error_union_type / builtin_type / stdlib type
+        // Return type: error_union_type / nullable_type / pointer_type /
+        // slice_type / builtin_type — AND bare identifier / field_expression
+        // (ZGD2, zig wave M37 #600: `fn make() MyError` and `fn f() foo.Bar`
+        // emitted NO declared-type ref — the collection list lacked both
+        // shapes; a bare identifier is the whole type, a field_expression
+        // like io.Writer is a qualified one). The function-NAME identifier
+        // (first named child) is excluded — it is not a type.
         // NOTE: NO `return_type` literal here — tree-sitter-zig has no such
-        // node (dead literal removed in the zig wave grammar audit). Return
-        // types appear as error_union_type / nullable_type / pointer_type /
-        // slice_type / builtin_type.
-        const ret = this.anyChild(n, (c) => c.type === "error_union_type" || c.type === "nullable_type" || c.type === "pointer_type" || c.type === "slice_type" || c.type === "builtin_type")
-        const retLeaf = ret ? this.zigTypeLeaf(ret) : undefined
+        // node (dead literal removed in the zig wave grammar audit).
+        const kids = this.getAllNamedChildren(n)
+        const retNode = kids
+          .filter((c) => c.type !== "identifier" || kids.indexOf(c) !== 0)
+          .find((c) => c.type === "error_union_type" || c.type === "nullable_type" || c.type === "pointer_type" || c.type === "slice_type" || c.type === "builtin_type" || c.type === "identifier" || c.type === "field_expression")
+        const retLeaf = retNode ? this.zigTypeLeaf(retNode) : undefined
         if (retLeaf) push(retLeaf)
       }
       if (n.type === "container_field") {

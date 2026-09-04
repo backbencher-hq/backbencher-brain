@@ -2467,6 +2467,11 @@ export function deriveZigEdges(root: any): { label: string; from: string; target
   const edges: { label: string; from: string; target: string }[] = []
   const seenCalls = new Set<string>()
   const seenUses = new Set<string>()
+  // ZGD1/ZGD5/ZGD5b oracle mirroring (zig wave M37 #600): F5 previously only
+  // compared calls/uses here, so these facets were gate-invisible on BOTH
+  // sides. Now the oracle is the independent derivation the differential
+  // was always meant to be.
+  const TYPE_POSITIONS = new Set(["parameter", "container_field", "function_declaration"])
   const leafOf = (fe: any): string | undefined => {
     if (!fe) return undefined
     const last = fe.namedChildCount > 0 ? fe.namedChild(fe.namedChildCount - 1) : null
@@ -2481,6 +2486,8 @@ export function deriveZigEdges(root: any): { label: string; from: string; target
       let leaf: string | undefined
       if (callee && callee.type === "identifier") leaf = callee.text
       else if (callee && callee.type === "field_expression") leaf = leafOf(callee)
+      // ZGD4 mirror: usingnamespace is an import operator, not a user symbol.
+      if (leaf === "usingnamespace") leaf = undefined
       if (leaf && !seenCalls.has("call:" + leaf)) {
         seenCalls.add("call:" + leaf)
         edges.push({ label: "calls", from: "(expr)", target: leaf })
@@ -2489,7 +2496,15 @@ export function deriveZigEdges(root: any): { label: string; from: string; target
     if (n.type === "field_expression") {
       const parent = (n as any).parent
       const isCallee = !!parent && parent.type === "call_expression"
-      if (!isCallee) {
+      // ZGD5: single-named-child field_expression is `.bad` enum literal /
+      // `.{...}` init field — no base, not a member read.
+      const isEnumLiteral = n.namedChildCount < 2
+      // ZGD1: zig assignments parse as variable_declaration, LHS = first
+      // named child (probe-verified). An assignment LHS is a WRITE.
+      const isAssignLhs = !!parent && parent.type === "variable_declaration" && parent.namedChild(0)?.id === n.id
+      // ZGD5b: type-annotation positions are declared-type facts, not reads.
+      const isTypePos = !!parent && TYPE_POSITIONS.has(parent.type)
+      if (!isCallee && !isEnumLiteral && !isAssignLhs && !isTypePos) {
         const leaf = leafOf(n)
         if (leaf && !seenUses.has("use:" + leaf)) {
           seenUses.add("use:" + leaf)
