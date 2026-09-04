@@ -112,7 +112,7 @@ const EXPECTED_ISSUE_NUMBERS = [535, 536, 537, 538, 539, 540, 541, 542, 543]
 const ISSUE_RELEVANT_FILES: Record<string, string[]> = {
   R1: ["script/m29/wave-protocol.ts", "script/m29/generate-wave-doc.ts", "script/m29/verify-wave-protocol.ts", "docs/m29/WAVE-PROTOCOL.md", "script/m29/wave-fixtures/java/main.java"],
   R2: ["script/m29/wave-execute.ts", "script/m29/verify-wave-execution.ts", "script/m29/wave-editor-driver.lua", "validation/m29/results/wave-1-approval.json", "src/lsp/launch_languages.ts"],
-  R3: ["script/m29/giant-repo-budget.ts", "script/m29/verify-giant-repo.ts"],
+  R3: ["script/m29/giant-repo-budget.ts", "script/m29/generate-giant-corpus.ts", "script/m29/giant-editor-driver.lua", "script/m29/verify-giant-repo.ts", "src/lsp/hover.ts", "src/lsp/cross_language_hover.ts", "src/brain/schema-ddl.ts", "src/brain/brain.sql.ts"],
   R4: ["script/m29/generate-precision-ledger.ts", "script/m29/verify-precision-ledger.ts", "docs/m29/PRECISION-LEDGER.md"],
   R5: ["script/m29/verify-precision-ledger.ts", "docs/m29/PRECISION-LEDGER.md"],
   V1: ["script/m29/wave-protocol.ts", "script/m29/generate-precision-ledger.ts", "script/m29/verify-wave-harness.ts"],
