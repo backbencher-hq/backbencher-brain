@@ -752,6 +752,55 @@ const handlers: Record<string, ToolHandler> = {
     }, null, 2))
   },
 
+  // M28.A1 (issue #626, decision D-3): the agent's write door. Provenance is
+  // enforced HERE, in code: author_class is always 'agent' for tool writes —
+  // no argument can override it, so an agent note can never masquerade as a
+  // human note. Upsert on (project, symbol, path, author): one note per author
+  // per location, re-annotation updates in place (anti-flood by construction).
+  bb_annotate: async (args, { projectId }) => {
+    const symbol = String(args.symbol ?? "").trim()
+    const body = String(args.body ?? "")
+    const annotationPath = args.path === undefined || args.path === null || String(args.path).trim() === "" ? null : String(args.path)
+    const toolIdentity = String(args.toolIdentity ?? "bb_annotate(mcp)")
+    if (!symbol) return textResult("bb_annotate requires symbol", true)
+    if (!body.trim()) return textResult("bb_annotate requires a non-empty body — an empty note is a refusal, not a silent no-op", true)
+    if (body.length > 2000) return textResult(`bb_annotate: body exceeds the declared limit of 2000 chars (got ${body.length}) — declared refusal, not silent truncation`, true)
+    const now = Date.now()
+    const id = `bbann-${projectId}-${symbol}-${annotationPath ?? ""}-agent`.replace(/[^a-zA-Z0-9-]/g, "_")
+    const raw = await BrainDatabase.getRawInstance(projectId as any)
+    raw.prepare(
+      `INSERT INTO brain_annotation (id, project_id, symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated)
+       VALUES (?, ?, ?, ?, 'agent', ?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET body = excluded.body, tool_identity = excluded.tool_identity, time_updated = excluded.time_updated`,
+    ).run(id, projectId, symbol, annotationPath, toolIdentity, body, now, now)
+    const updated = raw.prepare("SELECT id, symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated FROM brain_annotation WHERE id = ?").get(id) as any
+    return textResult(JSON.stringify({
+      stored: true,
+      annotation: updated,
+      provenance: "author_class is enforced 'agent' for tool writes — recorded, not claimed",
+      surfaces: "this note renders in the editor hover section and graph badge (M28.A2)",
+    }, null, 2))
+  },
+
+  // M28.A1 read door: every row carries its provenance; absence is declared.
+  bb_annotations: async (args, { projectId }) => {
+    const symbol = args.symbol === undefined || args.symbol === null || String(args.symbol).trim() === "" ? null : String(args.symbol).trim()
+    const limitRaw = args.limit === undefined || args.limit === null ? 50 : Number(args.limit)
+    if (Number.isNaN(limitRaw) || limitRaw < 1 || limitRaw > 200) return textResult("bb_annotations: limit must be a number between 1 and 200", true)
+    const raw = await BrainDatabase.getRawInstance(projectId as any)
+    const limit = Math.floor(limitRaw)
+    const rows = symbol
+      ? (raw.prepare("SELECT id, symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated FROM brain_annotation WHERE project_id = ? AND symbol_name = ? ORDER BY time_updated DESC LIMIT ?").all(projectId, symbol, limit) as any[])
+      : (raw.prepare("SELECT id, symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated FROM brain_annotation WHERE project_id = ? ORDER BY time_updated DESC LIMIT ?").all(projectId, limit) as any[])
+    return textResult(JSON.stringify({
+      symbol,
+      annotations: rows,
+      count: rows.length,
+      declaredAbsent: rows.length === 0,
+      absenceNote: rows.length === 0 ? (symbol ? `no annotations stored for '${symbol}' — absence declared, never guessed` : "no annotations stored for this project yet") : null,
+    }, null, 2))
+  },
+
 }
 
 export function createToolHandlers(): Readonly<Record<string, ToolHandler>> {
