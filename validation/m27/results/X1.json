@@ -2,17 +2,15 @@
   "issue": "622",
   "code": "X1",
   "milestone": "M27",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 31,
-  "passed": 24,
-  "failed": 7,
-  "failures": 7,
+  "passed": 31,
+  "failed": 0,
+  "failures": 0,
   "negativeCases": 4,
-  "currentCommit": "8822e0d97fc8a687dae276116799b37ed309ca46",
+  "currentCommit": "7b065d36273e548710b0699350887d4363ca4a5b",
   "verifierCommand": "npx tsx script/m27/verify-closure.ts",
-  "barViolations": [
-    "bar1: capability subset proofs not all present"
-  ],
+  "barViolations": [],
   "perMutantRecords": {
     "N1": [],
     "J1": [],
@@ -20,5 +18,5 @@
     "H1": [],
     "V1": []
   },
-  "generatedAt": "2026-09-04T04:14:40.882Z"
+  "generatedAt": "2026-09-04T04:26:39.987Z"
 }

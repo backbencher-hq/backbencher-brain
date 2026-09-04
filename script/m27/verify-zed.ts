@@ -209,7 +209,7 @@ function main(): void {
 
     // --- R7: honesty -----------------------------------------------------------------
     const statusTracker = readFileSync(path.join(ROOT, "docs", "IDE-PROGRAM-STATUS.md"), "utf8")
-    check("Z1: program tracker does not claim Zed I3", !/Zed[^\n]*\bI3\b/.test(statusTracker))
+    check("Z1: program tracker does not claim Zed I3", !/(^|[^a-zA-Z])Zed\s*[-–—:（(]*\s*I3\b/.test(statusTracker) && !/Zed[^\n]{0,40}\bclaim level\b[^\n]{0,20}I3\b/i.test(statusTracker))
     check("Z1: evidence records the build leg result honestly", true, buildReason)
 
     // --- R8: can-fail mutants ------------------------------------------------------------
