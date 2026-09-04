@@ -1166,7 +1166,21 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           const gp = parent.parent
           if (gp && gp.type === "invocation_expression" && gp.childForFieldName("function")?.id === parent.id) isCallee = true
         }
-        if (!isCallee) {
+        // SCD1 (M37 #599 pre-wave): an assignment LHS is a WRITE, never a
+        // read — `this.count = 0` and `this.count += 1` both emitted a bogus
+        // `uses count`. Gate the LHS by exact span containment: the RHS of
+        // `this.count = this.count + 1` stays a genuine read (java JAD1/
+        // kotlin KAD1/scala SCD1 family contract).
+        let isLhsWrite = false
+        {
+          let a = node.parent
+          while (a && (a.type === "member_access_expression" || a.type === "member_binding_expression")) a = a.parent
+          if (a && a.type === "assignment_expression") {
+            const lhs = a.childForFieldName("left")
+            if (lhs && lhs.startIndex <= node.startIndex && lhs.endIndex >= node.endIndex) isLhsWrite = true
+          }
+        }
+        if (!isCallee && !isLhsWrite) {
           const field = node.childForFieldName("name")
           const expr = node.childForFieldName("expression")
           // CSD4: member_binding_expression (`.Count`) has NO expression field

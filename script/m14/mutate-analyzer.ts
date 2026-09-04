@@ -160,6 +160,13 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => (x.metadata ?? {}).relationshipType !== "go_interface_implementation") }),
   },
   {
+    id: "go/double-count-switch-arms",
+    language: "go",
+    defectClass: "payload-corruption",
+    description: "SCD10 regression: re-adds switch-wrapper double-counting (the pre-fix counter counted expression/type/select wrappers AND arms) — pump pin equals:4 catches it",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => s.name === "pump" ? { ...s, complexity: s.complexity + 1 } : s) }),
+  },
+  {
     id: "go/drop-promoted-struct-implements",
     language: "go",
     defectClass: "relationship-loss",
@@ -758,6 +765,20 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !["declared_type", "return_type"].includes(String(x.metadata?.relationshipType))) }),
   },
   {
+    id: "typescript/double-emit-type-args",
+    language: "typescript",
+    defectClass: "relationship-fabrication",
+    description: "SCD7 regression: removes the type_annotation guard on type_arguments so Map<String, Foo> re-emits String/Foo as type_argument — local->String count equals:1 catches it",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), {
+        type: "references", source: "local", target: "String", isExternal: true, weight: 0.8, confidence: 1.0, metadata: { relationshipType: "type_argument", evidenceClass: "reference_qualified" },
+      }, {
+        type: "references", source: "local", target: "Foo", isExternal: true, weight: 0.8, confidence: 1.0, metadata: { relationshipType: "type_argument", evidenceClass: "reference_qualified" },
+      }],
+    }),
+  },
+  {
     id: "typescript/drop-qualified-calls",
     language: "typescript",
     defectClass: "symbol-payload-loss",
@@ -1256,6 +1277,18 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => (x.metadata ?? {}).relationshipType !== "csharp_field_access") }),
   },
   {
+    id: "csharp/emit-write-as-read",
+    language: "csharp",
+    defectClass: "relationship-fabrication",
+    description: "SCD1 regression: removes the field-access assignment-LHS write gate — re-injects the exact pre-fix edges probe-verified on pure/compound writes to this.Name (Reset->Name uses) — csharp Reset forbid catches it",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), {
+        type: "uses", source: "Reset", target: "Name", isExternal: true, weight: 1, confidence: 0.7, metadata: { relationshipType: "csharp_field_access" },
+      }],
+    }),
+  },
+  {
     id: "csharp/drop-symbol-complexity",
     language: "csharp",
     defectClass: "payload-loss",
@@ -1377,8 +1410,15 @@ const MUTANTS: Mutant[] = [
     id: "swift/drop-self-uses-edge",
     language: "swift",
     defectClass: "relationship-loss",
-    description: "drops swift self. member-read uses edges (OrderStore->state) — swift section B uses pin",
+    description: "drops swift self. member-read uses edges — swift edges-and-patterns uses pin (Calculator->history)",
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).isFieldAccess && x.type === "uses")) }),
+  },
+  {
+    id: "swift/emit-write-as-read",
+    language: "swift",
+    defectClass: "relationship-fabrication",
+    description: "SCD1 regression: removes the assignment-LHS write gate — re-injects the exact pre-fix edges probe-verified on `self.count = 0`/`self.label = \"z\"` (Counter->count, Counter->label uses) — swift/write-gate forbids catch them",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "Counter", target: "count", isExternal: true, weight: 0.8, confidence: 1.0, metadata: { isFieldAccess: true, evidenceClass: "usage_contextual" } }, { type: "uses", source: "Counter", target: "label", isExternal: true, weight: 0.8, confidence: 1.0, metadata: { isFieldAccess: true, evidenceClass: "usage_contextual" } }] }),
   },
   {
     id: "swift/drop-operator-symbol",
@@ -1560,6 +1600,13 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).isMemberRead && x.type === "uses")) }),
   },
   {
+    id: "php/wrapper-complexity-count",
+    language: "php",
+    defectClass: "payload-corruption",
+    description: "SCD10 regression: re-adds switch_statement/try_statement wrapper counting (the pre-fix counter) — f6_global_helper pin equals:10 catches it",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => s.name === "f6_global_helper" ? { ...s, complexity: s.complexity + 2 } : s) }),
+  },
+  {
     id: "php/emit-write-as-uses",
     language: "php",
     defectClass: "relationship-loss",
@@ -1608,6 +1655,18 @@ const MUTANTS: Mutant[] = [
       ...r,
       relationships: [...(r.relationships ?? []), {
         type: "uses", source: "initialize", target: "@gateway", isExternal: true, weight: 1, confidence: 0.9, metadata: { memberRead: true },
+      }],
+    }),
+  },
+  {
+    id: "ruby/emit-rmw-write-as-uses",
+    language: "ruby",
+    defectClass: "relationship-fabrication",
+    description: "SCD1 regression: re-opens the operator_assignment gate so compound-assign LHS (@balance -= / +=) re-emits uses — refund forbid pin + authorize count equals:2 catch it",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), {
+        type: "uses", source: "refund", target: "@balance", isExternal: true, weight: 1, confidence: 0.9, metadata: { memberRead: true },
       }],
     }),
   },
