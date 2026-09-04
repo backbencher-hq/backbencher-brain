@@ -6,7 +6,7 @@
   "status": "open",
   "authority": "docs/m41/M41-MASTER-PLAN.md",
   "governingContract": "docs/M14-HONESTY-CONTRACT.md",
-  "updatedAt": "2026-09-04T20:57:08.409Z",
+  "updatedAt": "2026-09-04T21:28:28.639Z",
   "evidencePolicy": {
     "verifiedRequires": [
       "currentCommit",
@@ -91,7 +91,7 @@
       "code": "T2",
       "githubIssue": 642,
       "tool": "site-truth",
-      "status": "planned",
+      "status": "verified",
       "scope": "rewrite /, /tools, /docs so every claim renders from truth.generated.ts; phantom robots.txt routes removed; stale internal site docs fixed",
       "acceptanceCriteria": [
         "zero hand-typed claims on any page (artifact change -> site output changes)",
@@ -102,7 +102,17 @@
       "closureRequirements": [
         "rendered-output verifier with planted-claim mutants",
         "evidence at current commit with negative cases"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "a07aa8a03cf959cb351ab213fca2bd24206233e7",
+        "verifierCommand": "npx tsx script/m41/verify-site-truth.ts",
+        "evidenceFile": "T2.json",
+        "generatedAt": "2026-09-04T21:28:28.638Z",
+        "passed": 28,
+        "failed": 0,
+        "negativeCases": 2
+      }
     },
     {
       "code": "T3",

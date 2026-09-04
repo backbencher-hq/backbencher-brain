@@ -44,6 +44,7 @@ Score: site lists 15 tools — 8 phantom, 7 real; 4 real tools absent. Truth: 11
 | C1 | `website/public/robots.txt` | `Disallow: /s/` and `/share/` | no `/s/` or `/share/` routes exist in `website/src/app` | **PHANTOM ROUTES** |
 | C2 | `website/README.md` | commands run "from `packages/web`" with `bun` | site lives at `website/`, package scripts are npm (`npm run dev`) | **STALE DOC** |
 | C3 | `website/src/data/brain-tool-notes.ts` | per-tool notes keyed to the phantom names | keys must match the 11 real tools | **DRIFT** (fixed in T2 with brain-tools.ts) |
+| C4 | `src/cli/index.ts:431` (product code) | `bb tool --help` said "the **10** public tools" (real: 11) | counts rot; text made count-free | **FIXED in T2** — documented ownership exception: one-line CLI description fix, verified by tsc + build + M33 help-parity (106/106) |
 
 ## D. What was NOT checked here (honest scope note)
 

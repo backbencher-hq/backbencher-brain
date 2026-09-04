@@ -49,7 +49,13 @@ const version = pkgVersion as string
 // --- public MCP tools -------------------------------------------------------
 
 const toolsRaw = read("docs/data/public-tools.json")
-const toolsJson = JSON.parse(toolsRaw) as { tools?: Array<{ name?: string; description?: string }> }
+const toolsJson = JSON.parse(toolsRaw) as {
+  tools?: Array<{
+    name?: string
+    description?: string
+    inputSchema?: { properties?: Record<string, { type?: string; description?: string }>; required?: string[] }
+  }>
+}
 const toolList = toolsJson.tools ?? []
 if (toolList.length === 0) fail("public-tools.json has no tools")
 for (const t of toolList) {
@@ -57,7 +63,18 @@ for (const t of toolList) {
   if (typeof t.description !== "string" || t.description.length < 10) fail(`bad description for ${t.name}`)
 }
 const tools = toolList
-  .map((t) => ({ name: t.name as string, description: t.description as string }))
+  .map((t) => ({
+    name: t.name as string,
+    description: t.description as string,
+    parameters: Object.entries(t.inputSchema?.properties ?? {})
+      .map(([pname, p]) => ({
+        name: pname,
+        type: p.type ?? "any",
+        required: (t.inputSchema?.required ?? []).includes(pname),
+        description: p.description ?? "",
+      }))
+      .sort((a, b) => Number(b.required) - Number(a.required) || a.name.localeCompare(b.name)),
+  }))
   .sort((a, b) => a.name.localeCompare(b.name))
 
 // Cross-reference: every public tool name must appear in the executable
@@ -100,9 +117,11 @@ if (languageNames.length === 0) fail("SUPPORTED_LANGUAGES parsed to zero languag
 languageNames.sort((a, b) => a.localeCompare(b))
 
 // --- CLI commands ------------------------------------------------------------
-
+// Top-level commands only: every top-level registration follows `program\n    .command(...)`;
+// subcommands (e.g. `bb setup show`) follow their parent command variable
+// (e.g. `setupCmd`), so anchoring on `program` excludes them.
 const cliSrc = read("src/cli/index.ts")
-const cliCommands = [...new Set([...cliSrc.matchAll(/\.command\("([a-z-]+)"\)/g)].map((m) => m[1]))].sort((a, b) =>
+const cliCommands = [...new Set([...cliSrc.matchAll(/program\s*\n\s*\.command\("([a-z-]+)"\)/g)].map((m) => m[1]))].sort((a, b) =>
   a.localeCompare(b),
 )
 if (cliCommands.length === 0) fail("no .command() registrations found in cli/index.ts")
