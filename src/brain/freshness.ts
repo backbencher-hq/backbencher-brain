@@ -27,6 +27,13 @@ export function fileUnchangedSince(path: string, indexedHash: string, indexedSiz
     // means the file is fresh without reopening and hashing source content.
     // Hash remains the authoritative fallback when metadata is unavailable or
     // differs, preserving correctness for edited files.
+    //
+    // KNOWN LIMITATION (accepted trade-off, not a defect): an edit that leaves
+    // BOTH size and mtime unchanged (same-length edit within timestamp
+    // granularity, or mtime deliberately preserved) is reported fresh without
+    // a hash read. Closing this gap would mean hashing every file on every
+    // read, destroying the fast path. Same trade-off as git's index
+    // stat-cache. Hash stays authoritative whenever metadata differs.
     if (indexedSize !== null && indexedSize !== undefined && indexedMtime !== null && indexedMtime !== undefined &&
       stat.size === indexedSize && Math.floor(stat.mtimeMs) === Math.floor(indexedMtime)) return true
     const content = readFileSync(path)
