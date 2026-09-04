@@ -17,7 +17,7 @@
       "code": "G1",
       "githubIssue": 535,
       "tool": "governance",
-      "status": "planned",
+      "status": "verified",
       "scope": "M29 ledger, closure gate, verify wiring; M28 bar re-audit automated (ladder discipline).",
       "acceptanceCriteria": [
         "Ledger + gate + wiring",
@@ -28,14 +28,24 @@
         "Gate evidence",
         "Mutation check",
         "Clean rerun"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see G1.json",
+        "verifierCommand": "npx tsx script/m29/verify-governance.ts",
+        "evidenceFile": "G1.json",
+        "passed": 70,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 10
+      }
     },
     {
       "code": "R1",
       "githubIssue": 536,
       "tool": "wave-protocol",
       "status": "planned",
-      "scope": "Document and mechanize the onboarding protocol: analyzer #419 conformance -> position gate -> freshness gate -> IDE fixtures -> mutants -> latency budget -> claim-level assignment. One command runs the full checklist for a candidate language (contract §9 binding enforced mechanically: IDE claim level <= analyzer evidence level).",
+      "scope": "Document and mechanize the onboarding protocol: analyzer #419 conformance -> position gate -> freshness gate -> IDE fixtures -> mutants -> latency budget -> claim-level assignment. One command runs the full checklist for a candidate language (contract \u00a79 binding enforced mechanically: IDE claim level <= analyzer evidence level).",
       "acceptanceCriteria": [
         "Wave gate runner script; per-step pass/fail output",
         "Binding enforced: claim level capped by #419 state mechanically",
@@ -154,7 +164,7 @@
       "githubIssue": 543,
       "tool": "closure-gate",
       "status": "planned",
-      "scope": "Program-level closure: every version's completion bar (M24-M29) re-verified at current HEAD; every claim level re-checked; every limitation still declared; owner spot-checks recorded. The program is closed only on this evidence — the owner declares the idea achieved, per the spot-check ritual.",
+      "scope": "Program-level closure: every version's completion bar (M24-M29) re-verified at current HEAD; every claim level re-checked; every limitation still declared; owner spot-checks recorded. The program is closed only on this evidence \u2014 the owner declares the idea achieved, per the spot-check ritual.",
       "acceptanceCriteria": [
         "Ladder audit: M24-M29 bars green at current HEAD, machine-checked",
         "All claim levels re-validated against evidence freshness",
