@@ -43,7 +43,7 @@
       "code": "T1",
       "githubIssue": 624,
       "tool": "mcp-read-tools",
-      "status": "planned",
+      "status": "verified",
       "scope": "Three new MCP read tools (bb_graph, bb_impact, bb_cross_language) that reuse the exact IDE-side components (graph engine tier rules, src/lsp/impact.ts, src/lsp/cross_language_hover.ts) \u2014 the agent door shows what the IDE door shows (D-1/D-2).",
       "acceptanceCriteria": [
         "All three tools registered, validated, executable against a real indexed fixture",
@@ -53,7 +53,18 @@
       "closureRequirements": [
         "npx tsx script/m28/verify-mcp-tools.ts exits 0 at HEAD with clean relevant tree",
         "Evidence persisted at validation/m28/results/T1.json with commit stamp"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see T1.json",
+        "verifierCommand": "npx tsx script/m28/verify-mcp-tools.ts",
+        "evidenceFile": "T1.json",
+        "passed": 25,
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": 5,
+        "mutantsTotal": 5
+      }
     },
     {
       "code": "U1",
