@@ -775,7 +775,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
           // carries them; lowercase receivers (h.value) are Uses (G8, in
           // collectExpressionUses). Package paths (com.foo.bar) start
           // lowercase and never match.
-          const isCallFn = n.parent && n.parent.type === "call_expression" && n.parent.childForFieldName?.("function") === n
+          const isCallFn = n.parent && n.parent.type === "call_expression" && n.parent.childForFieldName?.("function")?.id === n.id
           if (!isCallFn) {
             const recv = this.leftmostIdentifier(n)
             // The receiver is an `identifier` (Foo), NOT a type_identifier,
@@ -859,7 +859,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         const id = n.namedChild(0)
         if (id && id.type === "identifier") emitUse(n, id.text)
       } else if (n.type === "field_expression") {
-        const isCallFn = n.parent && n.parent.type === "call_expression" && n.parent.childForFieldName?.("function") === n
+        const isCallFn = n.parent && n.parent.type === "call_expression" && n.parent.childForFieldName?.("function")?.id === n.id
         if (!isCallFn) {
           const recv = this.leftmostIdentifier(n)
           // Capitalized receivers are type references (G3) — never Uses.
