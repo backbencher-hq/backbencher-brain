@@ -102,7 +102,7 @@
     ]
   },
   "gap": {
-    "_description": "Zig declaration surface modeled from the pinched tree-sitter-zig AST (probe-verified 2026-08-29 against the upstream Zig compiler corpus, 2,950 .zig files). opaque_declaration and test_declaration parse cleanly but are NOT emitted as standalone symbols: opaque types have no members to surface (Zig models interfaces via vtables, not class inheritance), and `test` blocks are anonymous scoped bodies without a stable callable name. Their internal call/use edges ARE captured (source '(global)'). differential zig:zig is 0 missing / 0 unexplained at the pinned floor. No analyzer literal references a non-existent grammar node type (dead literals boolean_literal/char_literal/number_literal/type_identifier removed in the zig wave).",
+    "_description": "Zig declaration surface modeled from the pinched tree-sitter-zig AST (probe-verified 2026-08-29 against the upstream Zig compiler corpus, 2,950 .zig files). opaque_declaration and test_declaration parse cleanly but are NOT emitted as standalone symbols: opaque types have no members to surface (Zig models interfaces via vtables, not class inheritance), and `test` blocks are anonymous scoped bodies without a stable callable name. Their internal call/use edges ARE captured (source '(global)'). differential zig:zig is 0 missing / 0 unexplained at the pinned floor. No analyzer literal references a non-existent grammar node type (dead literals boolean_literal/char_literal/number_literal/type_identifier removed in the zig wave). ZGD-wave (M37 #600, 2026-09-04): ZGD1 write gate, ZGD3 test/comptime scope, ZGD4 usingnamespace imports, ZGD2 bare/qualified return-type declared-type refs, ZGD5/5b enum-literal + type-position uses suppression \u2014 all probe-verified, fixture-pinned, mutant-locked (4 new mutants).",
     "gaps": [
       {
         "id": "ZIG.GAP.1",
@@ -147,6 +147,20 @@
         "status": "RULED",
         "question": "Is function_signature a real, fixture-coverable shape in the pinned grammar?",
         "resolution": "No. Probe-verified 2026-09-02: extern fn parses as function_declaration; comptime fn at container level parses as container_field + ERROR and poisons the rest of the file. The analyzer's function_signature branch is retained as defensive coverage for grammar variants but no valid Zig source produces it. Reclassified from handled_verified per the F6 gate (M14.0.F6)."
+      },
+      {
+        "id": "ZIG.D.4",
+        "node_type": "test_declaration, comptime_declaration",
+        "status": "RULED",
+        "question": "test/comptime blocks contain block bodies \u2014 are their locals declaration symbols?",
+        "resolution": "ZGD3: NO \u2014 the walk previously fell through with inFunction=false and every test body leaked file-scope Variable symbols (violating the analyzer's own execution-artifact contract). Both blocks now set the executable-scope flag; their call/use edges still emit with source '(global)' per ZIG.D.2."
+      },
+      {
+        "id": "ZIG.D.5",
+        "node_type": "using_namespace_declaration",
+        "status": "RULED",
+        "question": "Is `usingnamespace @import(\"x.zig\");` an import fact?",
+        "resolution": "ZGD4: YES \u2014 first-class import (imports array + references edge, meta.usingnamespace). The walk previously dropped these declarations entirely. Process lesson recorded: an earlier fix draft targeted an assignment-RHS usingnamespace form that is NOT valid Zig (grammar error-recovers it into call_expression + ERROR child); the pinned grammar + probe exposed the invented form before it shipped. Fixture authored from the probed declaration shape."
       }
     ],
     "description": "Owner rulings \u2014 never silent absence (ZIGD2 added by F6 fixture-coverage gate)"
