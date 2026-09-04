@@ -1744,6 +1744,13 @@ const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "ruby/split-script-sentinel",
+    language: "ruby",
+    defectClass: "payload-corruption",
+    description: "GAD2 twin regression: reverts the require references source to the old hardcoded 'root' sentinel while calls/uses keep 'Global' — ruby payload-and-complexity references Global->rake/tasklib pin catches the split",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((rel: any) => (rel.type === "references" && rel.target === "rake/tasklib" ? { ...rel, source: "root" } : rel)) }),
+  },
+  {
     id: "ruby/emit-rmw-write-as-uses",
     language: "ruby",
     defectClass: "relationship-fabrication",
