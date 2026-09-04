@@ -203,9 +203,13 @@ export function findSymbolAtPosition(
 
 /** Count usages of a symbol from brain_relationship (direct count). */
 export function countUsages(raw: CoreDatabase, symbolId: string): number {
+  // M29.R3 scale fix: the OR form defeats both single-column indexes and
+  // scanned brain_relationship at giant scale (hover p95 902ms on a 59k-file
+  // corpus vs the 50ms budget). The UNION form is two indexed probes with
+  // row-identity dedupe — the exact result multiset of the OR, index-served.
   const row = raw
     .prepare(
-      "SELECT COUNT(*) AS c FROM brain_relationship WHERE target_symbol_id = ? OR source_symbol_id = ?",
+      "SELECT COUNT(*) AS c FROM (SELECT id FROM brain_relationship WHERE target_symbol_id = ? UNION SELECT id FROM brain_relationship WHERE source_symbol_id = ?)",
     )
     .get(symbolId, symbolId) as { c: number }
   return row.c
@@ -213,9 +217,11 @@ export function countUsages(raw: CoreDatabase, symbolId: string): number {
 
 /** Collect evidence tiers across the symbol's relationships. */
 export function evidenceTiersFor(raw: CoreDatabase, symbolId: string): EvidenceTier[] {
+  // M29.R3 scale fix: UNION rewrite (see countUsages) — same tier set, two
+  // indexed probes instead of one full scan.
   const rows = raw
     .prepare(
-      "SELECT relationship_type, confidence FROM brain_relationship WHERE target_symbol_id = ? OR source_symbol_id = ?",
+      "SELECT relationship_type, confidence FROM brain_relationship WHERE target_symbol_id = ? UNION SELECT relationship_type, confidence FROM brain_relationship WHERE source_symbol_id = ?",
     )
     .all(symbolId, symbolId) as Array<{ relationship_type: string; confidence: number | null }>
   const tiers = new Set<EvidenceTier>()
