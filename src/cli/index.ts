@@ -289,13 +289,54 @@ async function cmdIndex(
   }
 }
 
-async function cmdSearch(query: string, opts: { dir?: string; limit?: number; language?: string }) {
+async function cmdSearch(query: string, opts: { dir?: string; limit?: number; language?: string; mode?: string; filePath?: string; symbolName?: string }) {
   const dir = opts.dir ? requireDir(opts.dir) : process.cwd()
   const pid = getProjectId(dir)
   const dbPath = BrainDatabase.getDbPath(pid)
   if (!existsSync(dbPath)) {
     console.error(`✗ no index for ${dir}. Run: bb index "${dir}"`)
     process.exit(1)
+  }
+  // M40.A7: --mode routes through the REAL bb_search MCP handler (same code
+  // path, same freshness envelope) — CLI/MCP parity by construction. Default
+  // mode keeps the original symbols text rendering.
+  const mode = opts.mode === "content" || opts.mode === "symbol" || opts.mode === "file" ? opts.mode : "symbols"
+  if (mode !== "symbols") {
+    const { createToolHandlers } = await import("../mcp/tool-handlers")
+    const handler = createToolHandlers()["bb_search"]
+    const args: any = mode === "file"
+      ? { mode: "file", filePath: opts.filePath ?? query }
+      : mode === "symbol"
+        ? { mode: "symbol", symbolName: opts.symbolName ?? query, filePath: undefined }
+        : { mode: "content", query, limit: opts.limit ?? 15, language: opts.language }
+    const res = await handler(args, { projectId: pid, projectPath: dir })
+    if (res.isError) {
+      console.error(res.content.map((c: any) => c.text).join("\n"))
+      process.exitCode = 1
+      return
+    }
+    const parsed = JSON.parse(res.content[0].text)
+    if (mode === "content") {
+      for (const r of parsed.results ?? []) {
+        const stale = r.stale ? " ⚠stale" : ""
+        console.log(`  ${path.posix.basename(String(r.fileId ?? r.file ?? ""))}:${r.line ?? "?"} — ${String(r.snippet ?? r.text ?? "").split("\n")[0].slice(0, 120)}${stale}`)
+      }
+      const env = parsed.freshness ?? {}
+      console.log(`\n${parsed.total} results${parsed.staleCount ? ` (${parsed.staleCount} stale)` : ""}${env.stale != null ? ` | freshness: ${env.fresh} fresh / ${env.stale} stale / ${env.missing} missing` : ""}${parsed.staleCount ? ` — ${FRESHNESS_REMEDIATION.dir}` : ""}`)
+    } else if (mode === "symbol") {
+      for (const m of parsed.matches ?? []) {
+        const stale = m.stale ? " ⚠stale" : ""
+        console.log(`  ${m.name} [${m.type}] (${m.language ?? ""}, ${m.fileId ?? m.file ?? ""}:${m.line ?? "?"})${stale}`)
+      }
+      const env = parsed.freshness ?? {}
+      if (env.stale != null) console.log(`\nfreshness: ${env.fresh} fresh / ${env.stale} stale / ${env.missing} missing — ${env.remediation ?? ""}`)
+      if ((parsed.matches ?? []).length === 0) console.log(`no results for "${opts.symbolName ?? query}"`)
+    } else {
+      console.log(`${parsed.file} (${parsed.language})${parsed.truncated ? " [truncated]" : ""}${parsed.stale ? " ⚠stale" : ""}\n\n${parsed.content}`)
+      const env = parsed.freshness ?? {}
+      if (env.stale != null) console.log(`\nfreshness: ${env.fresh} fresh / ${env.stale} stale / ${env.missing} missing — ${env.remediation ?? ""}`)
+    }
+    return
   }
   const results: any = await BrainTools.searchCode(pid, query, {
     maxResults: opts.limit ?? 15,
@@ -574,11 +615,15 @@ Examples:
 
   program
     .command("search")
-    .description("search the index")
-    .argument("<query>", "symbol name or fragment")
+    .description("search the index (modes: symbols [default], content, symbol, file — parity with the MCP bb_search tool)")
+    .argument("<query>", "query text; in file mode, the file path to print")
+    .option("--mode <mode>", "retrieval mode: symbols (default), content, symbol, or file")
+    .option("--file-path <path>", "file target for --mode file (overrides the positional query)")
+    .option("--symbol-name <name>", "exact symbol name for --mode symbol (overrides the positional query)")
     .option("--dir <dir>", "project directory (default: cwd)")
     .option("--limit <n>", "max results", "15")
     .option("--language <lang>", "filter by language")
+    .addHelpText("after", `\nExamples:\n  $ bb search handleRequest                 # symbol listing (default)\n  $ bb search --mode content "findUser("    # content matches with snippets\n  $ bb search --mode symbol --symbol-name handleRequest\n  $ bb search --mode file src/app.ts        # print an indexed file's content\n`)
     .action(async (query: string, opts: any) => {
       await cmdSearch(query, { ...opts, limit: parseInt(opts.limit, 10) })
     })
