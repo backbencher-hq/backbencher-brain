@@ -7,11 +7,11 @@
   "passed": 70,
   "failed": 0,
   "negativeCases": 10,
-  "currentCommit": "d78b627b6b7cdad0e3b4b57f56c35977579e19e9",
+  "currentCommit": "6bb4c2f8d686af68be62328674dd9aa33a4adedd",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m28/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-04T07:34:19.472Z",
+  "generatedAt": "2026-09-04T07:34:49.604Z",
   "ledger": "validation/m28/results/manifest.json",
   "m27Bar": {
     "ledgerStatus": "closed",
