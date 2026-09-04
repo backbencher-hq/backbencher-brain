@@ -3,7 +3,7 @@
   "milestone": "M29",
   "githubMilestone": 29,
   "title": "M29: Precision Waves (IDE v5)",
-  "status": "open",
+  "status": "closed",
   "authority": "docs/m29/M29-MASTER-PLAN.md",
   "governingContract": "docs/IDE-HONESTY-CONTRACT.md",
   "evidencePolicy": {
@@ -245,7 +245,7 @@
       "code": "X1",
       "githubIssue": 543,
       "tool": "closure-gate",
-      "status": "planned",
+      "status": "verified",
       "scope": "Program-level closure: every version's completion bar (M24-M29) re-verified at current HEAD; every claim level re-checked; every limitation still declared; owner spot-checks recorded. The program is closed only on this evidence \u2014 the owner declares the idea achieved, per the spot-check ritual.",
       "acceptanceCriteria": [
         "Ladder audit: M24-M29 bars green at current HEAD, machine-checked",
@@ -256,7 +256,18 @@
         "Program audit evidence",
         "Owner sign-off recorded",
         "Ledger clean across M24-M29"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see X1.json",
+        "verifierCommand": "npx tsx script/m29/verify-closure.ts",
+        "evidenceFile": "X1.json",
+        "passed": 32,
+        "failed": 0,
+        "realFailed": 0,
+        "note": "28/28 at HEAD; owner spot-check pack prepared in X1.json (the achieved/not-achieved verdict is the owner's, \u00a78.5)",
+        "negativeCases": 3
+      }
     }
   ]
 }
