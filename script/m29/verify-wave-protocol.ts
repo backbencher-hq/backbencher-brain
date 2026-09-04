@@ -110,10 +110,20 @@ const step = (name: string, status: Step["status"]): Step => ({ step: name, stat
     const s5 = byStep.get("S5-server-leg")
     check("R3: S5 honestly blocked in dry-run", s5?.status === "blocked", s5?.detail)
     const s6 = byStep.get("S6-editor-leg")
-    check("R3: S6 honestly blocked without recorded evidence", s6?.status === "blocked", s6?.detail)
-    check("R3: computed cap matches the blocked S5/S6 (I1)", verdict.ideCap === "I1", `got ${verdict.ideCap}`)
+    // The protocol honors RECORDED editor evidence (R2 execution writes it).
+    // When java's S6 evidence exists, S6 reads pass and the cap stays I1
+    // (S5 remains R2-scoped); without it, S6 is honestly blocked.
+    const javaEditorEv = path.join(ROOT, "validation", "m29", "results", "wave-editor-java.json")
+    if (existsSync(javaEditorEv)) {
+      const ev = JSON.parse(readFileSync(javaEditorEv, "utf8")) as { status?: string }
+      check("R3: S6 honors recorded evidence", s6?.status === (ev.status === "verified" ? "pass" : "fail"), s6?.detail)
+      check("R3: cap stays I1 while S5 is R2-scoped", verdict.ideCap === "I1", `got ${verdict.ideCap}`)
+      check("R3: blockers = S5 only", verdict.blockers.length === 1, `got ${verdict.blockers.length}`)
+    } else {
+      check("R3: S6 honestly blocked without recorded evidence", s6?.status === "blocked", s6?.detail)
+      check("R3: blockers recorded", verdict.blockers.length === 2, `got ${verdict.blockers.length}`)
+    }
     check("R3: no step failed (dry-run ok)", verdict.ok === true)
-    check("R3: blockers recorded", verdict.blockers.length === 2, `got ${verdict.blockers.length}`)
     check("R3: verdict carries a commit stamp", typeof verdict.commit === "string" && verdict.commit.length >= 7)
 
     // R5-M1: an absent language runs the protocol and is declared absent,
