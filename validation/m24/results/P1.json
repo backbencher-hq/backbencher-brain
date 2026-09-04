@@ -49,11 +49,11 @@
       "detail": "caught: lineCount 3 (phantom) (got 2, want 3)"
     }
   ],
-  "currentCommit": "d36c1dc31c060fd8812cbd43ed98405ff09e844f",
+  "currentCommit": "35c9c238ce9c7a1321c2b6fcc4afa0930cc287cc",
   "sourceFingerprint": "a46a5661517d88abc200a4fcd45e2de5eeb9f438054a01ada2f800a2d555e26a",
   "verifierCommand": "npx tsx script/m24/verify-positions.ts",
   "evidenceFile": "P1.json",
-  "generatedAt": "2026-09-04T18:23:38.952Z",
+  "generatedAt": "2026-09-04T23:21:06.366Z",
   "limitations": [
     "Fixture-based; does not exercise real analyzer output end-to-end (covered by the V1 harness).",
     "Tab-width treated as 1 UTF-16 unit (LSP standard); editor tab rendering is a client concern.",
