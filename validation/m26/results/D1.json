@@ -1,7 +1,7 @@
 {
   "issue": "M26.D1",
   "status": "verified",
-  "passed": 28,
+  "passed": 29,
   "failed": 0,
   "negativeCases": 2,
   "mutants": [
@@ -16,11 +16,11 @@
   ],
   "mutantsCaught": 2,
   "mutantsTotal": 2,
-  "realDbsScanned": 17,
+  "realDbsScanned": 18,
   "realDbsSkipped": 3,
   "realCrossLanguagePairs": 0,
   "docFile": "docs/m26/GRAPH.md",
-  "currentCommit": "b4143d4941f89c64ba19194f0dcf7d7d71a59b9a",
+  "currentCommit": "5e9261ea4836de279456b970266381c39efb84f8",
   "verifierCommand": "npx tsx script/m26/verify-graph-docs.ts",
-  "generatedAt": "2026-09-04T01:28:05.065Z"
+  "generatedAt": "2026-09-04T02:30:10.765Z"
 }
