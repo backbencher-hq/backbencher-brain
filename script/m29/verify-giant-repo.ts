@@ -83,7 +83,15 @@ try {
   evidence = JSON.parse(readFileSync(EVIDENCE, "utf8"))
 } catch {}
 check("R2: R3.json exists with verified status", evidence?.status === "verified", evidence?.status)
-check("R2: evidence stamped at the current commit", evidence?.commit === gitCommit(), `${evidence?.commit?.slice(0, 8)} vs ${gitCommit().slice(0, 8)}`)
+// The commit stamp must be an ancestor of HEAD (the evidence was produced on
+// this branch's history); content staleness is carried by the relevant-inputs
+// hash below — evidence-only commits (pinning) must not stale the evidence.
+let commitIsAncestor = false
+try {
+  execFileSync("git", ["merge-base", "--is-ancestor", String(evidence?.commit), gitCommit()], { cwd: ROOT })
+  commitIsAncestor = true
+} catch {}
+check("R2: evidence commit is an ancestor of HEAD", commitIsAncestor, `${evidence?.commit?.slice(0, 8)} vs HEAD ${gitCommit().slice(0, 8)}`)
 check("R2: relevant inputs unchanged since the evidence run", evidence?.relevantInputsHash === relevantInputsHash(), `evidence=${evidence?.relevantInputsHash ?? "none"} vs current=${relevantInputsHash()} — re-run giant-repo-budget.ts --reuse to refresh`)
 // The recorded indexed counts must agree with the manifest.
 check("R2: evidence indexed counts agree with the manifest", evidence?.corpus?.indexedFiles === manifest?.totalFiles, `${evidence?.corpus?.indexedFiles} vs ${manifest?.totalFiles}`)
