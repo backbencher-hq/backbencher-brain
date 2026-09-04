@@ -300,7 +300,15 @@ async function cmdSearch(query: string, opts: { dir?: string; limit?: number; la
   // M40.A7: --mode routes through the REAL bb_search MCP handler (same code
   // path, same freshness envelope) — CLI/MCP parity by construction. Default
   // mode keeps the original symbols text rendering.
-  const mode = opts.mode === "content" || opts.mode === "symbol" || opts.mode === "file" ? opts.mode : "symbols"
+  // M40.A9/A7 negative-case fix: an UNKNOWN --mode value must be rejected
+  // (the MCP schema rejects it too) — silently falling back to the default
+  // listing hid the user's intent and broke CLI/MCP surface parity.
+  const KNOWN_MODES = new Set(["content", "symbol", "file"])
+  if (opts.mode !== undefined && !KNOWN_MODES.has(opts.mode)) {
+    console.error(`✗ unknown search mode "${opts.mode}" (known: content, symbol, file; omit --mode for the symbols listing)`)
+    process.exit(1)
+  }
+  const mode = opts.mode ?? "symbols"
   if (mode !== "symbols") {
     const { createToolHandlers } = await import("../mcp/tool-handlers")
     const handler = createToolHandlers()["bb_search"]
