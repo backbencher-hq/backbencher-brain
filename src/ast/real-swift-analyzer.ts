@@ -711,6 +711,21 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     // is navigation > navigation(self_expression) > suffix) — walk the RECEIVER
     // chain only. NEVER into calls: `self.decode(...)?.buffer` reads `.buffer`
     // off the CALL RESULT, not off self (the receiver chain ends at the call).
+    // SCD1 (M37 #599 pre-wave, swift twin of java JAD1/kotlin KAD1): an
+    // assignment LHS is a WRITE, never a read — `self.count = 0` emitted a
+    // bogus `uses count`. The pinned grammar parses `=` and `+=` alike as
+    // `assignment`, so one gate covers both (probe-verified); the LHS is
+    // wrapped in `directly_assignable_expression`, so walk past it to the
+    // assignment and gate only when this node sits INSIDE the LHS span
+    // (the RHS of `self.count = self.count + 1` stays a genuine read).
+    {
+      let a = node.parent
+      while (a && a.type === "directly_assignable_expression") a = a.parent
+      if (a && a.type === "assignment") {
+        const lhs = a.namedChild(0)
+        if (lhs && lhs.startIndex <= node.startIndex && lhs.endIndex >= node.endIndex) return
+      }
+    }
     const hasSelf = this.hasSelfReceiver(node)
     if (!hasSelf) return
 

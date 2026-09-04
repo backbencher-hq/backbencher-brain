@@ -1022,7 +1022,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
    * Per-symbol cyclomatic complexity (managed-OO family contract — csharp
    * #264 wave precedent). Mirrors the file-level counter's node set exactly,
    * scoped to a single method/function subtree; base 1. Same decision nodes:
-   * if/elseif/for/foreach/while/do/switch/match/try/catch/ternary +
+   * if/elseif/for/foreach/while/switch-arms/match-arms/catch/ternary +
    * short-circuit && || and or.
    */
   private calculateNodeComplexity(node: Node): number {
@@ -1039,10 +1039,10 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "foreach_statement":
         case "while_statement":
         case "do_statement":
-        case "switch_statement":
-        case "match_expression":
+        case "case_statement":
+        case "default_statement":
         case "match_conditional_expression":
-        case "try_statement":
+        case "match_default_expression":
         case "catch_clause":
         case "conditional_expression":
           complexity++
@@ -1081,10 +1081,10 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "foreach_statement":
         case "while_statement":
         case "do_statement":
-        case "switch_statement":
-        case "match_expression":
+        case "case_statement":
+        case "default_statement":
         case "match_conditional_expression":
-        case "try_statement":
+        case "match_default_expression":
         case "catch_clause":
         case "conditional_expression":
           complexity++
