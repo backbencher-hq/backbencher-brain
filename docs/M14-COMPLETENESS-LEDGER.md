@@ -577,3 +577,13 @@ cc76e37 with F1-F9 + SPEC + CC1 fresh.
 > "M37: Dual-Lens Analyzer Backfill". The milestone formerly carried the
 > number M34 until the collision was found; "M34" in this repo now means
 > Consumability Hardening, not the backfill.
+
+## 2026-09-04 — M37 python dual-lens wave (PYD2): #594
+- **PYD3** (analyzer): underscore class-variable visibility hard-coded `"public"` — now `pythonVisibility()` like every other python symbol kind (`_memo` → protected, `__x` → private).
+- **PYD4** (analyzer): enum members with call-valued RHS (`RED = enum.auto()` — the canonical python idiom) were silently dropped; `call` added to the accepted constant-value set.
+- **PYD5** (analyzer + oracle): member reads inside NESTED defs were re-owned by the nested (non-symbol) name while the calls contract attributes those bodies to the ENCLOSING function — two walks, two owners, edges dangling from a non-symbol. Rule now: rebind the owner only when entering a SYMBOL-LEVEL def (`inFn` undefined); nested bodies keep the outer owner. Mirrored in `derivePythonEdges`.
+- **PYD6** (analyzer): dead ternary in the assignment-LHS gate (`namedChild(0) === undefined ? false : …` — condition unfireable; F7-class hygiene). Plain byte-range compare.
+- **Fixture**: Colors(auto()) enum, `_memo` protected pin, Decorated nested-def pins (uses run->base_name, calls run->helper), forbid: no edge may source from `step`.
+- **Mutants**: python/class-var-public-visibility, python/drop-enum-auto-members, python/nested-def-reowner — 197/197 caught.
+- **Note**: corpus F5/census were already 100%/0 — all five defects lived in the gate-blind zone; the line-by-line read found them. This is why M37 exists.
+- Gates: F1 41-lang audit, F2 fresh, F3 fixtures 21/21, F4 197/197, F5 full sweep 21 langs (jvm family unexplained counts pre-existing, baselines unchanged), F6 coverage, F7 hygiene 21 clean, F8 census 0 blind, F9 12/12, CC1, honesty GREEN.

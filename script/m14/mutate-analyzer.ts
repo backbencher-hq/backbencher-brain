@@ -1439,6 +1439,31 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, complexity: undefined })) }),
   },
   {
+    id: "python/class-var-public-visibility",
+    language: "python",
+    defectClass: "payload-loss",
+    description: "regresses PYD3: underscore class variables hard-coded public (the pre-fix asymmetry) — python _memo protected pin",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) =>
+        (s.metadata ?? {}).isClassVariable ? { ...s, visibility: "public" } : s),
+    }),
+  },
+  {
+    id: "python/drop-enum-auto-members",
+    language: "python",
+    defectClass: "symbol-loss",
+    description: "regresses PYD4: auto()-valued enum members dropped (RED = enum.auto() silent) — python Colors/RED pins",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => s.name !== "RED") }),
+  },
+  {
+    id: "python/nested-def-reowner",
+    language: "python",
+    defectClass: "relationship-loss",
+    description: "regresses PYD5: member reads inside nested defs re-owned by the nested (non-symbol) name — run->base_name pin dies",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "uses" && x.source === "run" && x.target === "base_name")) }),
+  },
+  {
     id: "haskell/drop-derived-implements",
     language: "haskell",
     defectClass: "relationship-loss",

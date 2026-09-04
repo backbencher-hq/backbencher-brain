@@ -1808,8 +1808,12 @@ export function derivePythonEdges(root: any): { label: string; from: string; tar
   while (stack.length > 0) {
     const { n, parent, inFn } = stack.pop()!
     const t = n.type
+    // PYD5: rebind the owner ONLY when entering a symbol-level def (inFn is
+    // still undefined). A def inside a def is NOT a symbol — the calls
+    // contract attributes its body to the ENCLOSING function, so its member
+    // reads must keep the outer owner too (mirrors extractMemberUses).
     let nextFn = inFn
-    if (t === "function_definition") {
+    if (t === "function_definition" && !inFn) {
       const nameNode = n.namedChildren.find((c: any) => c.type === "identifier")
       nextFn = nameNode?.text ?? inFn
     }
