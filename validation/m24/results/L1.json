@@ -1,0 +1,27 @@
+{
+  "issue": "490",
+  "code": "L1",
+  "status": "verified",
+  "currentCommit": "86433052fdcb01204e203f03e8bc1777e537246d",
+  "sourceFingerprint": "31642e439be29c6952388a1be9dbc228192957f544bc3db921559a812b853301",
+  "verifierCommand": "npx tsx script/m24/verify-server.ts",
+  "evidenceFile": "L1.json",
+  "generatedAt": "2026-09-03T16:16:07.965Z",
+  "passed": 31,
+  "failed": 0,
+  "failures": [],
+  "negativeCases": 0,
+  "verdict": {
+    "realComponentFailures": 0,
+    "mutantsCaught": 9,
+    "mutantsTotal": 9,
+    "ok": true,
+    "note": "`failed` counts real functional failures only; mutant runs are reported separately via the verdict block."
+  },
+  "limitations": [
+    "single-root workspaces only (multi-root is a filed decision for later waves)",
+    "no completion, diagnostics, or rename (complement stance)",
+    "feature handlers land in L2-L5; capabilities advertise only registered handlers",
+    "stdio framing is byte-stream based with Content-Length parsing"
+  ]
+}

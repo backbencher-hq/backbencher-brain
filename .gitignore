@@ -6,6 +6,12 @@ bb-ts-core.wasm
 .bb-data/
 bb.json
 .bb_backups/
-.p3-runner.tmp.ts
+
+# Local secrets (never commit)
+.env.local
+.env*.local
+
+# VSIX build artifacts (packaging evidence records the artifact, not the blob)
+*.vsix
 .p3-runner.tmp.ts
 tool-mode-corpus.json.fresh

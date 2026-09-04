@@ -26,9 +26,22 @@ bun run src/cli/index.ts search "calculateTotal" --dir ~/my-project
 | `bb search <query> [--dir] [--limit N] [--language LANG]` | Symbol search with freshness flags |
 | `bb health [dir]` | Index stats + file freshness sample |
 | `bb mcp [--dir DIR]` | Start the MCP server over stdio |
+| `bb setup` | Interactive embedding provider setup — key validated before save, config written 0600 |
+| `bb setup show` | Show the effective embedding config — key as last-4 fingerprint only, never the full key |
+| `bb doctor [--dir] [--fix]` | Diagnose embedding setup/index consistency; `--fix` repairs file permissions to 0600 only |
+| `bb -v` / `bb version` | Print the version (same as `bb --version`) |
 
 Indexes live at `~/.bb/projects/<sha1-of-dir>/brain.db` — no opencode, no
 global config required.
+
+### Help and manual
+
+Every command documents itself: `bb --help` lists all commands, and
+`bb <command> --help` (or `bb help <command>`) shows the options of that
+command. `bb -v`, `bb version`, and `bb --version` all print the version.
+A mistyped command suggests the closest real one (`bb docter` suggests
+`doctor`) and points to `bb --help`. After `npm install -g`, the full
+manual is available as `man bb`.
 
 ## MCP server (Claude Code, Cursor, VS Code, opencode, …)
 
@@ -112,8 +125,28 @@ before capabilities can be kept, migrated, improved, quarantined, removed, or de
 
 See [EMBEDDINGS.md](./EMBEDDINGS.md). Real vector embeddings are generated
 when an OpenAI-compatible embeddings API is configured; otherwise a local
-word-vector fallback (50-dim) is used. Both are stored separately and the
-vector search never compares across vector spaces.
+word-vector fallback (`local-word-vectors`) is used — declared weaker, not
+"the same offline". Both are stored separately, labeled by producing model,
+and the vector search never compares across vector spaces.
+
+The easiest first step is `bb setup`: it offers prefilled free providers
+(OpenRouter free, NVIDIA NIM free), hides the key while you type, validates
+it with one live `/embeddings` call before saving (bad keys are never saved),
+and writes `~/.bb/config.json` with mode 0600. The first `bb index` run
+without any key shows a one-line honest notice and proceeds with local word
+vectors; add a real model later and re-embed with `bb index --force`.
+The wizard prompts only once — an explicit skip is remembered.
+
+To inspect what is configured, `bb setup show` prints every precedence tier
+(env / global / project), the winning tier, and the key as a last-4
+fingerprint only — never the full key. To diagnose degraded semantic search,
+`bb doctor` reads real local state (config, permissions, stored embedding
+models) and names the exact fix command for each finding; its exit code is 1
+when a hard finding exists. `bb doctor --fix` mutates exactly one thing —
+config file permissions, repaired to 0600 — printing every change and
+refusing everything else. See EMBEDDINGS.md for details.
+
+For manual configuration:
 
 Google Gemini (OpenAI-compatible endpoint) — the fastest way to turn on
 real embeddings:
@@ -145,10 +178,13 @@ Or put the same keys in `~/.bb/config.json`:
 ```
 
 Note: the free tier is quota-limited (roughly one 100-doc batch before HTTP
-429) — a paid key is needed for real projects. Vectors are labeled by the
-model that produced them (`gemini-embedding-001` vs `local-word-vectors`),
-and `BB_EMBEDDING_BATCH_LIMIT` controls the max symbols per index batch
-(default 50000) before falling back to offline TF-IDF vectors.
+429) — a paid key is needed for real projects. A 429 or provider blip degrades
+one batch to the local fallback with a bounded backoff; it does not silently
+poison the rest of the run. Vectors are labeled by the model that produced
+them (`gemini-embedding-001` vs `local-word-vectors`), and
+`BB_EMBEDDING_BATCH_LIMIT` controls the max symbols per index batch (default
+50000). Changing model or dimension requires `bb index --force`; vectors from
+different spaces are never mixed.
 
 ## Architecture and verification
 

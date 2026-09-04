@@ -159,7 +159,19 @@ export namespace SemanticEngine {
     return []
   }
 
-  let _apiFailed = false  // Module-level: skip API after first failure per process
+  // Q1 rate-limit resilience: NO process-wide latch. A failed API batch
+  // falls back to word vectors for THAT batch only; later batches retry the
+  // API. On 429 we back off until the Retry-After window (bounded, with
+  // jitter) instead of permanently degrading the run.
+  let _apiRetryAt = 0 // epoch ms; API attempts are skipped until this time
+  export const API_BACKOFF_CAP_MS = 30_000 // declared cap for Retry-After
+  export const API_BACKOFF_JITTER_MS = 500 // bounded jitter
+
+  function backoffMs(retryAfterSec?: number): number {
+    const base = retryAfterSec && retryAfterSec > 0 ? retryAfterSec * 1000 : 5_000
+    const capped = Math.min(base, API_BACKOFF_CAP_MS)
+    return capped + Math.floor(Math.random() * API_BACKOFF_JITTER_MS)
+  }
 
   export async function embedMany(texts: string[]): Promise<number[][]> {
     if (_checked && !_embeddingAvailable) return []
@@ -168,12 +180,13 @@ export namespace SemanticEngine {
     // Layer 1: OpenAI-compatible embedding API (Google / NVIDIA NIM / any).
     // Direct fetch-based client — no provider SDK required.
     const config = await loadConfig()
-    if (!_apiFailed && isEmbeddingConfigured(config)) {
+    if (Date.now() >= _apiRetryAt && isEmbeddingConfigured(config)) {
       try {
         const cfg = await getEmbeddingConfig()
         if (cfg) {
           const embeddings = await embedOpenAICompatible(texts, cfg)
           if (embeddings.length > 0) {
+            _apiRetryAt = 0
             _embeddingAvailable = true
             _checked = true
             _lastModel = cfg.model
@@ -181,8 +194,13 @@ export namespace SemanticEngine {
           }
         }
       } catch (e: any) {
-        _apiFailed = true
-        log.debug("API embedding failed, falling back to word vectors", { error: e?.message?.slice(0, 60) })
+        // Per-batch fallback: this batch degrades, the run does not.
+        if (e?.name === "EmbeddingApiError" && e?.status === 429) {
+          _apiRetryAt = Date.now() + backoffMs(e?.retryAfterSec)
+          log.debug("API 429 — backing off before next attempt", { retryAfterSec: e?.retryAfterSec })
+        } else {
+          log.debug("API embedding failed for this batch; next batch retries", { error: e?.message?.slice(0, 60) })
+        }
       }
     }
 

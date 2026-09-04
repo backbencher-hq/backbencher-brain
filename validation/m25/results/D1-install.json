@@ -1,0 +1,19 @@
+{
+  "issue": "506",
+  "code": "D1-install",
+  "milestone": "M25",
+  "status": "verified",
+  "checks": 18,
+  "passed": 18,
+  "failed": 0,
+  "failures": [],
+  "currentCommit": "5aca8fdc61c6dba346ff0425599491c94f52836b",
+  "verifierCommand": "npx tsx script/m25/verify-install-docs.ts",
+  "evidenceFile": "D1-install.json",
+  "generatedAt": "2026-09-03T18:47:57.497Z",
+  "limitations": [
+    "S2/S3 use the pinned test host (same editor core as the documented GUI launch); the GUI variant needs a human at the palette and remains the owner spot-check.",
+    "Artifact identity (VSIX == built bits) is E4's verified gate; this script proves the documented steps execute on a clean profile.",
+    "Runs on this machine's Linux only; macOS/Windows install-doc execution is E7 scope."
+  ]
+}
