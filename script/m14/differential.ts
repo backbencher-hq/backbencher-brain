@@ -675,6 +675,24 @@ export function deriveDartEdges(root: any): { label: string; from: string; targe
     return out
   }
 
+  // DAD1/DAD2 mirror: resolved heritage names from a clause node — keep a
+  // raw type child whose next raw sibling is NOT a `.` token (alias prefix),
+  // skip type_arguments. Same contract as
+  // RealDartAnalyzer.resolvedHeritageNames (probed dart-heritage-shapes.ts).
+  const resolvedRawNames = (n: any): string[] => {
+    const out: string[] = []
+    for (let k = 0; k < n.childCount; k++) {
+      const c = n.child(k)
+      if (!c) continue
+      if (c.type === "type_arguments" || c.type === "mixins") continue
+      if (c.type !== "type_identifier" && c.type !== "identifier") continue
+      const next = n.child(k + 1)
+      if (next && next.type === ".") continue // alias prefix: `A.B` keeps B
+      out.push(c.text)
+    }
+    return out
+  }
+
   const stack: any[] = [root]
   while (stack.length > 0) {
     const n = stack.pop()!
@@ -684,16 +702,12 @@ export function deriveDartEdges(root: any): { label: string; from: string; targe
       if (nm) {
         const sup = n.namedChildren.find((c: any) => c.type === "superclass")
         if (sup) {
-          // first type_identifier directly under superclass (base class),
-          // EXCLUDING the mixins (with-clause) child.
-          for (let k = 0; k < sup.namedChildCount; k++) {
-            const c = sup.namedChild(k)
-            if (c && c.type === "mixins") continue
-            if (c && (c.type === "type_identifier" || c.type === "generic_type")) {
-              const ti = c.type === "generic_type" ? (c.namedChildren.find((x: any) => x.type === "type_identifier") ?? c) : c
-              if (ti?.text) push("extends", ti.text)
-              break
-            }
+          // DAD1 mirror: resolved base = first raw name NOT followed by `.`
+          // (alias prefix). `extends _i1.SmartFake` resolves to SmartFake,
+          // not the alias. Mixins (with-clause) handled below as uses.
+          for (const base of resolvedRawNames(sup)) {
+            push("extends", base)
+            break
           }
           // mixins under superclass (extends A with M)
           const mx = sup.namedChildren.find((c: any) => c.type === "mixins")
@@ -702,9 +716,10 @@ export function deriveDartEdges(root: any): { label: string; from: string; targe
         // mixins directly on the class (class A with M implements C)
         const mxDirect = n.namedChildren.find((c: any) => c.type === "mixins")
         if (mxDirect) for (const m of typeLeaves(mxDirect)) push("uses", m)
-        // interfaces
+        // interfaces — DAD2 mirror: resolved names only (alias prefixes
+        // dropped, generic args excluded).
         const ifc = n.namedChildren.find((c: any) => c.type === "interfaces")
-        if (ifc) for (const m of typeLeaves(ifc)) push("implements", m)
+        if (ifc) for (const m of resolvedRawNames(ifc)) push("implements", m)
       }
     }
     if (t === "constructor_invocation" || t === "new_expression" || t === "const_object_expression") {
@@ -2605,6 +2620,37 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
   const TYPE = /type_identifier|scoped_type_identifier|generic_type|^identifier$/
   const collect = (x: any, label: string, clsName: string) => {
     if (!x) return
+    // DAD3 fix (dart): the flat dart parse (`_i1.SmartFake` -> two adjacent
+    // type_identifiers joined by an anonymous `.`) made blanket descent emit
+    // the import-ALIAS as a base (extends -> _i1) and generic ARGUMENTS as
+    // implemented interfaces (implements -> T1). Dart heritage must emit
+    // resolved leaves only: skip type_arguments entirely, and skip a type
+    // name whose next raw sibling is a `.` token (alias prefix). Mirrors
+    // RealDartAnalyzer.resolvedHeritageNames exactly (probed shapes:
+    // dart-heritage-shapes.ts 2026-09-03).
+    if (lang === "dart") {
+      if (x.type === "type_arguments") return
+      if (x.type === "type_identifier" || x.type === "identifier") {
+        // NOTE: web-tree-sitter returns FRESH node objects per child() call,
+        // so indexOf-style reference identity never matches. Find the sibling
+        // by source position instead (startIndex/endIndex are exact).
+        let next: any = null
+        if (x.parent) {
+          for (let k = 0; k < x.parent.childCount; k++) {
+            const s = x.parent.child(k)
+            if (s && s.startIndex === x.startIndex && s.endIndex === x.endIndex) {
+              next = x.parent.child(k + 1)
+              break
+            }
+          }
+        }
+        if (next && next.type === ".") return // alias prefix
+        edges.push({ label, from: clsName, target: x.text })
+        return
+      }
+      for (let k = 0; k < x.childCount; k++) collect(x.child(k), label, clsName)
+      return
+    }
     if (TYPE.test(x.type)) edges.push({ label, from: clsName, target: x.text })
     else for (let k = 0; k < x.namedChildCount; k++) collect(x.namedChild(k), label, clsName)
   }

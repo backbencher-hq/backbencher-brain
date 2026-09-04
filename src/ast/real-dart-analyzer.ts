@@ -936,11 +936,11 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (mixinAppCls) {
       const app = this.findChildByType(mixinAppCls, "mixin_application")
       if (app) {
-        const base = this.firstTypeIdentifier(app, /*excludeMixins*/ true)
+        const base = this.resolvedHeritageNames(app)[0] ?? null
         if (base) {
           relationships.push({
             source: className,
-            target: base.text,
+            target: base,
             type: ASTEngine.RelationshipType.Extends,
             confidence: 1.0,
             metadata: {},
@@ -962,28 +962,30 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    // superclass: `extends X with M1, M2` — first type_identifier is the base,
-    // the `mixins` child carries the with-clause.
+    // superclass: `extends X with M1, M2` — the resolved base is the first
+    // RESOLVED heritage name (DAD1: the first raw type_identifier is often an
+    // import-alias prefix); the `mixins` child carries the with-clause.
     const superclass = this.findChildByType(node, "superclass")
     if (superclass) {
-      const base = this.firstTypeIdentifier(superclass, /*excludeMixins*/ true)
+      const base = this.resolvedHeritageNames(superclass)[0] ?? null
       if (base) {
         relationships.push({
           source: className,
-          target: base.text,
+          target: base,
           type: ASTEngine.RelationshipType.Extends,
           confidence: 1.0,
           metadata: {},
         })
       }
     }
-    // interfaces: `implements A, B<C>`
+    // interfaces: `implements A, B<C>` — resolved names only (DAD2: alias
+    // prefixes `_i2.Database` must not emit `_i2` as an interface target).
     const interfaces = this.findChildByType(node, "interfaces")
     if (interfaces) {
-      for (const ti of this.allTypeIdentifiers(interfaces)) {
+      for (const ti of this.resolvedHeritageNames(interfaces)) {
         relationships.push({
           source: className,
-          target: ti.text,
+          target: ti,
           type: ASTEngine.RelationshipType.Implements,
           confidence: 1.0,
           metadata: { isImplements: true },
@@ -1407,6 +1409,44 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (c.type === "identifier") return c
     }
     return null
+  }
+
+  /**
+   * Resolved heritage names (DAD1/DAD2 contract): the real class names from a
+   * heritage clause, with import-alias prefixes dropped and generic arguments
+   * excluded.
+   *
+   * tree-sitter-dart parses a qualified supertype FLAT: `extends _i1.SmartFake`
+   * is superclass > [_i1, `.`, SmartFake] — adjacent type_identifiers joined by
+   * an anonymous `.` token where the FIRST is the import-alias container, not a
+   * class name (the mocktail shape: `class _FakeX_0 extends _i1.SmartFake
+   * implements _i2.Database`). Taking the first raw identifier named the base
+   * after the alias (DAD1); enumerating all type_identifiers leaked the alias
+   * into implements targets (DAD2).
+   *
+   * Rule over RAW children (anonymous tokens carry the disambiguation):
+   * keep type_identifier/identifier nodes whose next raw sibling is NOT a `.`
+   * token — a `.` means this name is an alias prefix; `,` or end-of-clause or
+   * type_arguments means it is a real name. type_arguments are generic
+   * arguments, never bases; mixins are handled separately as `uses`.
+   * Probed shapes (dart-heritage-shapes.ts, 2026-09-03):
+   *   `_i1.SmartFake`            -> [SmartFake]
+   *   `Alpha, Beta`              -> [Alpha, Beta]
+   *   `_i2.Database, _i3.Future` -> [Database, Future]
+   *   `generics.Map<String, int>`-> [Map]
+   */
+  private resolvedHeritageNames(node: Node): string[] {
+    const out: string[] = []
+    for (let i = 0; i < node.childCount; i++) {
+      const c = node.child(i)
+      if (!c) continue
+      if (c.type === "type_arguments" || c.type === "mixins") continue
+      if (c.type !== "type_identifier" && c.type !== "identifier") continue
+      const next = node.child(i + 1)
+      if (next && next.type === ".") continue // alias prefix: `A.B` keeps B
+      out.push(c.text)
+    }
+    return out
   }
 
   private allTypeIdentifiers(node: Node): Node[] {
