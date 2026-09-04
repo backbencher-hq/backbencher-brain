@@ -4,6 +4,7 @@ import { checkResultsFreshness } from "../../brain/freshness"
 import { runIndexHealthCheck, type IndexHealthReport } from "../../brain/brain-index-health"
 import { indexProjectParallel, wipeProjectData } from "../../ast/parallel-indexer"
 import { getAnalysisHistory } from "../analysis/run-history"
+import { Config } from "../../config/config"
 
 export interface HealthWarning { code: string; message: string; severity: "warning" | "error" }
 export interface UnifiedHealthOptions {
@@ -33,6 +34,8 @@ export interface UnifiedHealthReport {
   integrity: IndexHealthReport | null
   analysisRuns: { runs: number; findings: number; byState: Record<string, number> } | null
   refresh: { requested: boolean; force: boolean; wait: boolean; completed: boolean; durationMs: number | null; processedFiles: number | null; derived: string | null }
+  /** M40.A8: effective embedding config + per-field source, per the single documented precedence. */
+  effectiveConfig: { baseURL: string; model: string; configured: boolean; sources: { baseURL: string; model: string; apiKey: string } } | null
   /** Per-language file+symbol counts; always collected, printed only when verbose. */
   languages: Array<{ language: string; files: number; symbols: number }>
   /** Mirrors the request; the formatter prints the verbose sections only when true. */
@@ -136,6 +139,18 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
   const schema = raw.prepare("SELECT version, migration_name FROM brain_schema_version ORDER BY version DESC LIMIT 1").get() as any
   const tableCount = (raw.prepare("SELECT COUNT(*) c FROM sqlite_master WHERE type='table' AND name LIKE 'brain_%'").get() as any)?.c ?? 0
 
+  // M40.A8: effective embedding config surfaced in verbose mode — with the
+  // source of each field, per the single documented precedence (env > file >
+  // default). API key value is never printed, only its source.
+  let effectiveConfig: UnifiedHealthReport["effectiveConfig"] = null
+  if (options.verbose === true) {
+    try {
+      const { resolveEmbeddingConfig } = await import("../../config/config")
+      const fileCfg = await Config.get()
+      const effFull = resolveEmbeddingConfig(fileCfg)
+      effectiveConfig = { baseURL: effFull.baseURL, model: effFull.model, configured: effFull.configured, sources: effFull.sources }
+    } catch { effectiveConfig = null }
+  }
   let integrity: IndexHealthReport | null = null
   if (options.integrity === true) {
     try { integrity = await runIndexHealthCheck(projectId as any) }
@@ -169,6 +184,7 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
     schema: { version: schema?.version ?? null, migration: schema?.migration_name ?? null, tables: tableCount },
     runtime: { runtime: typeof Bun !== "undefined" ? "bun" : "node", version: process.version, database: (raw as any).driver ?? "sqlite", parserStatus: "unknown" },
     integrity, analysisRuns, refresh,
+    effectiveConfig,
     languages: languageRows,
     verbose: options.verbose === true,
     warnings,
@@ -196,6 +212,12 @@ export function formatUnifiedHealth(report: UnifiedHealthReport): string {
   }
   if (report.analysisRuns) lines.push(`analysis: ${report.analysisRuns.runs} runs / ${report.analysisRuns.findings} findings`)
   if (report.integrity) lines.push(`integrity: ${report.integrity.overallHealth}% (${report.integrity.summary.warn} warnings, ${report.integrity.summary.error} errors)`)
+  // M40.A8: effective embedding config with per-field source (verbose only).
+  if (report.verbose && report.effectiveConfig) {
+    const ec = report.effectiveConfig
+    lines.push(`embedding config: ${ec.configured ? "remote provider" : "not configured (local/tfidf fallback)"} — base-url=${ec.baseURL} (source: ${ec.sources.baseURL}), model=${ec.model} (source: ${ec.sources.model}), api-key source: ${ec.sources.apiKey}${ec.configured ? "" : ""}`)
+    lines.push(`embedding precedence: env BB_EMBEDDING_* > config file (BB_CONFIG_FILE > bb.json > config.json) > default`)
+  }
   // Verbose sections: per-language breakdown and stale/missing file names — the
   // advertised verbose contract. Omitted entirely unless verbose=true.
   if (report.verbose) {

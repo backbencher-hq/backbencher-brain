@@ -1,26 +1,26 @@
 {
   "status": "verified",
-  "currentCommit": "4aa2191f5c009f61081f9c357078a6baf84c65c7",
+  "currentCommit": "83ea44a963185df6e30b312a29ee60dc3505316d",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "bun run script/m40/verify-a2-bounded-post.ts",
-  "generatedAt": "2026-09-04T21:26:55.616Z",
+  "generatedAt": "2026-09-04T22:04:10.038Z",
   "passed": 22,
   "failed": 0,
   "negativeCases": 0,
   "timing": {
-    "boundedMs": 126,
-    "fullMs": 1788,
+    "boundedMs": 171,
+    "fullMs": 2687,
     "refreshedRows": 1,
     "totalEdges0": 39986,
     "boundedSamples": [
-      126,
-      129,
-      185
+      417,
+      570,
+      171
     ],
     "fullSamples": [
-      1788,
-      1841,
-      1820
+      10265,
+      10217,
+      2687
     ]
   },
   "mutation": "not-run (control)",
