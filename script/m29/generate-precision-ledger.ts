@@ -169,6 +169,16 @@ export function buildLedger(): { json: string; md: string; inputsHash: string } 
         hoverP95Ms: Math.round((r3.budgets.serverLevel.measurements.find((m: any) => m.op === "hover")?.p95WarmMs ?? 0) * 100) / 100,
         inEditorHoverP95Ms: Math.round((r3.budgets.inEditor.measurements?.find((m: any) => m.op === "hover")?.p95WarmMs ?? 0) * 100) / 100,
         coldMedianMs: r3.budgets.coldStart.medianMs,
+        // M29.R5: the evidence-tier precision improvement, measured on the
+        // same index (F7: fixture-first fix, permanent mutant in the gate).
+        tierRatio: r3.budgets.tierRatio
+          ? {
+              totalRelationships: r3.budgets.tierRatio.totalRelationships,
+              inferredRatioBeforePct: r3.budgets.tierRatio.inferredRatioBeforePct,
+              inferredRatioAfterPct: r3.budgets.tierRatio.inferredRatioAfterPct,
+              fix: "hover honors stored metadata.evidenceClass + structural set at the W4 0.7 floor (script/m29/r5-tier-fixture.ts, mutant-gated)",
+            }
+          : null,
         evidence: "validation/m29/results/R3.json",
       }
     } else {
@@ -229,7 +239,7 @@ export function buildLedger(): { json: string; md: string; inputsHash: string } 
     md.push(`| ${r.language} | ${r.claim} | ${r.conformance?.conformant ? "pass" : "FAIL"} | ${cell(f.hover)} | ${cell(f.evidenceTier)} | ${cell(f.definition)} | ${cell(f.references)} | ${cell(f.documentSymbols)} | ${cell(f.workspaceSymbol)} | ${cell(f.declaredAbsence)} | ${cell(f.callHierarchy)} | ${cell(f.latencyBudget)} | ${ap.differentialMissing ?? "?"}/${ap.differentialUnexplained ?? "?"} | ${ap.msPerFile ?? "?"} | ${ap.evidenceTiersPinned ?? "?"} |`)
   }
   md.push("")
-  md.push(`**Giant scale (R3):** ${giant.present ? `hover p95 ${(giant as any).hoverP95Ms}ms over ${(giant as any).corpus.files} files (revision ${(giant as any).corpus.revision}); in-editor ${(giant as any).inEditorHoverP95Ms}ms; cold median ${(giant as any).coldMedianMs}ms` : String((giant as any).note)}. Evidence: validation/m29/results/R3.json.`)
+  md.push(`**Giant scale (R3):** ${giant.present ? `hover p95 ${(giant as any).hoverP95Ms}ms over ${(giant as any).corpus.files} files (revision ${(giant as any).corpus.revision}); in-editor ${(giant as any).inEditorHoverP95Ms}ms; cold median ${(giant as any).coldMedianMs}ms${(giant as any).tierRatio ? `; evidence-tier inferred ratio ${(giant as any).tierRatio.inferredRatioBeforePct}% -> ${(giant as any).tierRatio.inferredRatioAfterPct}% (R5 fix, mutant-gated)` : ""}` : String((giant as any).note)}. Evidence: validation/m29/results/R3.json.`)
   md.push("")
   md.push("## Limitations (declared)\n")
   for (const l of doc.limitations) md.push(`- ${l}`)

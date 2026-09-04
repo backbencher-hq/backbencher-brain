@@ -2,7 +2,7 @@
   "milestone": "M29.R4",
   "issue": 539,
   "generatedBy": "npx tsx script/m29/generate-precision-ledger.ts --write",
-  "inputsHash": "b781f6690cd32934fe63e0f3b15214ae191401c0",
+  "inputsHash": "6ea9ed891a13d4f7f301e04b86584a68809715bd",
   "inputs": [
     "validation/m29/results/wave-java.json",
     "validation/m29/results/wave-python.json",
@@ -349,9 +349,15 @@
       "revision": "f7572f6229314400",
       "files": 59000
     },
-    "hoverP95Ms": 3.86,
-    "inEditorHoverP95Ms": 3.55,
-    "coldMedianMs": 267,
+    "hoverP95Ms": 3.42,
+    "inEditorHoverP95Ms": 2.7,
+    "coldMedianMs": 192,
+    "tierRatio": {
+      "totalRelationships": 777954,
+      "inferredRatioBeforePct": 42.5,
+      "inferredRatioAfterPct": 0,
+      "fix": "hover honors stored metadata.evidenceClass + structural set at the W4 0.7 floor (script/m29/r5-tier-fixture.ts, mutant-gated)"
+    },
     "evidence": "validation/m29/results/R3.json"
   },
   "stalenessPolicy": "This ledger is machine-regenerated. Any change to the input evidence (hash above) makes the artifacts stale; the drift gate (script/m29/verify-precision-ledger.ts) fails until regeneration. Hand edits fail byte-identical regeneration. Claim levels are computed by the R1 binding (computeCap) from recorded evidence — they cannot be edited up.",
