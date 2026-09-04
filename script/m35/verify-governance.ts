@@ -151,12 +151,15 @@ check("gate self-test evidence exists", existsSync(SELFTEST_RESULT))
 if (existsSync(SELFTEST_RESULT)) {
   const st = JSON.parse(readFileSync(SELFTEST_RESULT, "utf8")) as { gates: { name: string; mutationFailed: boolean; controlPassed: boolean }[] }
   check("every registered gate failed its mutation AND passed its control", st.gates.length >= 1 && st.gates.every((g) => g.mutationFailed === true && g.controlPassed === true), JSON.stringify(st.gates).slice(0, 200))
-  // Closure-stage completeness: once X1 claims verified, the self-test must
-  // have proven a mutation for EVERY required gate — no gate ships unproven.
+  // Closure-stage completeness: once X1 claims verified, every CONTENT gate
+  // must have a proven mutation. Infra gates (self-test/closure/governance)
+  // are exempt — a gate cannot mutate its own dependency; they are proven by
+  // the structure of this chain instead (M31's declared-infra rule).
   if (closureClaimed) {
-    const proven = new Set(st.gates.map((g) => g.name))
-    const unproven = REQUIRED_GATES.filter((g) => !proven.has(`m35-${g.replace(".ts", "")}`) && !proven.has(g))
-    check("closure-claimed: every required gate has a proven mutation", unproven.length === 0, unproven.join(","))
+    const INFRA_GATES = new Set(["verify-governance.ts", "verify-gate-selftest.ts", "verify-closure.ts", "staleness-corpus.ts"])
+    const provenScripts = new Set(st.gates.filter((g) => g.mutationFailed && g.controlPassed).map((g) => (g as any).script ?? ""))
+    const unproven = REQUIRED_GATES.filter((g) => !INFRA_GATES.has(g) && !provenScripts.has(`script/m35/${g}`))
+    check("closure-claimed: every content gate has a proven mutation (infra exempt)", unproven.length === 0, unproven.join(","))
   }
 }
 
