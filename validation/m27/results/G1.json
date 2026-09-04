@@ -4,20 +4,18 @@
   "milestone": "M27",
   "status": "known-gap",
   "checks": 69,
-  "passed": 69,
-  "failed": 0,
+  "passed": 67,
+  "failed": 2,
   "negativeCases": 10,
-  "currentCommit": "28710899e5dcadd9bbda17ff5b61abfa5db25a87",
-  "workingTreeRelevantChanges": [
-    "docs/IDE-PROGRAM-STATUS.md"
-  ],
+  "currentCommit": "8822e0d97fc8a687dae276116799b37ed309ca46",
+  "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m27/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-04T04:13:59.982Z",
+  "generatedAt": "2026-09-04T04:14:20.476Z",
   "ledger": "validation/m27/results/manifest.json",
   "m26Bar": {
     "ledgerStatus": "closed",
-    "m26GateExit": 0
+    "m26GateExit": 1
   },
   "limitations": [
     "This gate validates governance metadata, mutation response, and the M26 bar; it does not verify editor adapters.",
