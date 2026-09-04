@@ -37,8 +37,8 @@ const MUTATIONS: Record<string, string> = {
   A5: "BB_M40_MUTATE_A5_COMBO_ALLOWED=1",   // illegal combo accepted → A5 gate must fail
   A6: "BB_M40_MUTATE_A6_STALE_OK=1",        // stale derived reported current → A6 gate must fail
   A7: "BB_M40_MUTATE_A7_MODE_DROP=1",       // CLI mode silently ignored → A7 gate must fail
-  A8: "BB_M40_MUTATE_A8_PRECEDENCE_FLIP=1", // precedence inverted → A8 gate must fail
-  A9: "BB_M40_MUTATE_A9_ZOMBIE=1",          // zombie surface accepted → A9 gate must fail
+  A8: "BB_M40_MUTATE_A8_HOOK_UNGATED=1",    // hooks fire without opt-in → A8 gate must fail
+  A9: "BB_M40_MUTATE_A9_RESURRECT=1",       // phantom surface accepted → A9 gate must fail
 }
 
 type GateResult = { code: string; script: string; controlPassed: boolean; mutationBit: boolean | null; error?: string }

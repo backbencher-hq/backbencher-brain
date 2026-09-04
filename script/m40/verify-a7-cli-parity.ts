@@ -103,6 +103,22 @@ try {
     check("A7: default symbols mode still works", cli.code === 0 && /libFn \[/.test(cli.out), cli.out.slice(0, 140))
   }
 
+  // ── 4b. negative observations (M40 closure contract: negatives > 0) ──
+  // Rejections and absences that prove the surface is honest, not just present.
+  {
+    const badMode = runCli(["search", "--mode", "semantic", "libFn", "--dir", proj], proj)
+    check("A7: unknown --mode value rejected by the CLI", badMode.code !== 0 || /unknown|invalid|error/i.test(badMode.out), `code=${badMode.code} out=${badMode.out.slice(0, 120)}`, true)
+    const mNoSym = await mcp("bb_search", { mode: "symbol", symbolName: "a7_definitely_not_a_symbol_xyz" })
+    const mNoSymParsed = (() => { try { return JSON.parse(mNoSym.text) } catch { return null } })()
+    check("A7: MCP symbol mode honestly reports zero matches", mNoSymParsed && (mNoSymParsed.matches ?? []).length === 0, mNoSym.text.slice(0, 120), true)
+    const cliNoSym = runCli(["search", "--mode", "symbol", "a7_definitely_not_a_symbol_xyz", "--dir", proj], proj)
+    check("A7: CLI symbol mode honestly reports zero matches", cliNoSym.code !== 0 || /no (matches|results|symbols)|0 (matches|results)/i.test(cliNoSym.out), `out=${cliNoSym.out.slice(0, 120)}`, true)
+    const mNoFile = await mcp("bb_search", { mode: "file", filePath: "src/a7_no_such_file.ts" })
+    check("A7: MCP file mode rejects a nonexistent path", mNoFile.isError || /no such|not found|error/i.test(mNoFile.text), mNoFile.text.slice(0, 120), true)
+    const helpContent = runCli(["search", "--help"], proj)
+    check("A7: help does not advertise a semantic mode (bb_ask owns it)", !/--mode\s+semantic/.test(helpContent.out), helpContent.out.slice(0, 200), true)
+  }
+
   // ── 5. help/docs honesty ──
   {
     const help = runCli(["search", "--help"], proj)
