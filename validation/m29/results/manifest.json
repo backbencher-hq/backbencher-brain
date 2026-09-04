@@ -191,7 +191,7 @@
       "code": "V1",
       "githubIssue": 541,
       "tool": "verifier-harness",
-      "status": "planned",
+      "status": "verified",
       "scope": "The R1 runner and R4 generator as permanent, wired, fail-able tools.",
       "acceptanceCriteria": [
         "Runner + generator wired into verify",
@@ -202,7 +202,17 @@
         "Evidence",
         "Wiring proof",
         "Limitations declared"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see V1-verify.json",
+        "verifierCommand": "npx tsx script/m29/verify-wave-harness.ts",
+        "evidenceFile": "V1-verify.json",
+        "passed": 14,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 3
+      }
     },
     {
       "code": "D1",
