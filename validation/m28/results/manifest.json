@@ -3,7 +3,7 @@
   "milestone": "M28",
   "githubMilestone": 39,
   "title": "M28: The Union (MCP + agent)",
-  "status": "open",
+  "status": "closed",
   "authority": "docs/m28/M28-MASTER-PLAN.md",
   "governingContract": "docs/IDE-HONESTY-CONTRACT.md",
   "evidencePolicy": {
@@ -171,7 +171,7 @@
       "code": "X1",
       "githubIssue": 629,
       "tool": "closure-gate",
-      "status": "planned",
+      "status": "verified",
       "scope": "Closure gate: full-suite audit at HEAD with per-mutant named records, v4 completion-bar audit with negative probes (differential equality, provenance enforcement, no silent legs, M27 bar re-audit), byte-identical regeneration check.",
       "acceptanceCriteria": [
         "100% of suite legs green-or-blocked-with-reason at HEAD",
@@ -181,7 +181,15 @@
       "closureRequirements": [
         "npx tsx script/m28/verify-closure.ts exits 0 at HEAD with clean relevant tree",
         "Evidence persisted at validation/m28/results/X1.json with commit stamp"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "verifierCommand": "npx tsx script/m28/verify-closure.ts",
+        "evidenceFile": "X1.json",
+        "passed": 31,
+        "failed": 0,
+        "negativeCases": 4
+      }
     }
   ]
 }

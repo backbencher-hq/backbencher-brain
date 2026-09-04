@@ -18,10 +18,10 @@
       "caught": true
     }
   ],
-  "currentCommit": "57a626b2fccd7a08dca3f36131bfb174f456b219",
+  "currentCommit": "61e6c9da37c6b482121f58f0f0ebfd728625faae",
   "verifierCommand": "npx tsx script/m28/verify-mcp-surface.ts",
   "evidenceFile": "V1.json",
-  "generatedAt": "2026-09-04T05:38:46.597Z",
+  "generatedAt": "2026-09-04T05:42:45.680Z",
   "claimLevel": "n/a — this issue produces a generated truth doc, not a claim",
   "failures": []
 }
