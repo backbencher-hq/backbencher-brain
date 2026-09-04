@@ -101,8 +101,8 @@ function isClosable(issue: Issue): boolean {
   )
 }
 
-const EXPECTED_CODES = ["G1", "W1", "W2", "W3", "W4", "W5", "W6", "V1", "D1", "X1"]
-const EXPECTED_ISSUE_NUMBERS = [508, 509, 510, 511, 512, 513, 547, 514, 515, 516]
+const EXPECTED_CODES = ["G1", "W1", "W2", "W3", "W4", "W5", "W6", "V1", "D1", "X1", "A1"]
+const EXPECTED_ISSUE_NUMBERS = [508, 509, 510, 511, 512, 513, 547, 514, 515, 516, 615]
 
 /** Per-issue relevant files (planned paths; consulted only once evidence
  *  exists). Evidence stays fresh while no relevant file changed since its
@@ -117,6 +117,7 @@ const ISSUE_RELEVANT_FILES: Record<string, string[]> = {
   V1: ["script/m26/webview-harness.ts", "script/m26/verify-webview-harness.ts", "script/m26/graph-core.ts"],
   D1: ["docs/m26/GRAPH.md", "script/m26/verify-graph-docs.ts"],
   X1: ["script/m26/verify-closure.ts"],
+  A1: ["test/fixtures/polyglot/java-scala/src/main/java/com/demo/Inventory.java", "test/fixtures/polyglot/java-scala/src/main/scala/com/demo/Warehouse.scala", "test/fixtures/polyglot/ts-js/src/pricing.js", "test/fixtures/polyglot/ts-js/src/checkout.ts", "src/ast/parallel-indexer.ts", "script/m26/verify-polyglot-e2e.ts"],
 }
 const SHARED_RELEVANT_FILES = [
   "docs/m26/M26-MASTER-PLAN.md",
