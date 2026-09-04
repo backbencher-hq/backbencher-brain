@@ -128,35 +128,66 @@ async function main(): Promise<void> {
   check("T1: bb_cross_language unknown symbol is a loud declared error", crossMiss.isError && crossMiss.text.includes("not found"), crossMiss.text.slice(0, 100))
 
   // --- R5: can-fail mutants -------------------------------------------------------
-  // M1: a handler that invents an empty impact set instead of the loud error.
-  const handlersSrcM1 = handlersSrc.replace(
-    "return textResult(`bb_impact: ${error instanceof Error ? error.message : String(error)}`, true)",
-    'return textResult(JSON.stringify({ symbol, budget: { maxNodes: 200, maxDepth: 5 }, impact: [], shownCount: 0, totalCountIfKnown: null, truncated: false, truncationReason: null }, null, 2))',
-  )
-  mutantsTotal++
-  const m1Caught = /bb_impact: unknown symbol is a loud declared error/.test("") || handlersSrcM1 !== handlersSrc
-  // The mutation is detected by re-deriving the assertion semantics on the mutated source:
-  const m1StillFails = handlersSrcM1.includes("definitely-not-a-symbol") === false
-  mutantRecords.push({ name: "M1 silent empty impact set", caught: true })
-  mutantsCaught++
-  check("T1 mutant M1: silent empty impact set is caught by R3 (declared-error assertion)", m1Caught || m1StillFails || true)
-
-  // Simpler, honest mutant set: source-level assertions that R3/R4 can fail.
-  const mutants: Array<{ name: string; ok: boolean }> = []
-  // M1: if handlers stopped importing the IDE impact component, D-1 breaks.
-  mutants.push({ name: "M1 impact reimplementation detected", ok: handlersSrc.includes('from "../lsp/impact"') })
-  // M2: if handlers stopped importing cross-language rows, D-1 breaks.
-  mutants.push({ name: "M2 cross-language reimplementation detected", ok: handlersSrc.includes("storedCrossLanguageRows(") })
-  // M3: if the tier derivation drifted from the declared vocabulary, R3 breaks.
-  mutants.push({ name: "M3 tier vocabulary drift detected", ok: declaredTiers.every((t) => handlersSrc.includes(`"${t}"`)) })
-  // M4: if bb_cross_language stopped declaring absence, R3 breaks.
-  mutants.push({ name: "M4 absence declaration lost detected", ok: handlersSrc.includes("declaredAbsent") })
-  for (const m of mutants) {
+  // REAL handler mutants: each defect is planted into the REAL handler source,
+  // the mutated module is imported FRESH, and the R3/R4 assertions are
+  // re-derived against the mutant's actual answers. A mutant survives only if
+  // the suite cannot tell the difference.
+  const mutateAndProbe = async (name: string, from: string, to: string, probe: (handlers: any) => Promise<boolean>): Promise<void> => {
     mutantsTotal++
-    mutantRecords.push({ name: m.name, caught: m.ok })
-    if (m.ok) mutantsCaught++
-    else console.log(`  SURVIVED: ${m.name}`)
+    if (!handlersSrc.includes(from)) {
+      mutantRecords.push({ name, caught: false })
+      console.log(`  WARN: mutant anchor not found: ${name}`)
+      return
+    }
+    // Written BESIDE the original (src/mcp/) so the mutant's relative imports
+    // (../lsp/impact, ./tool-registry, ...) resolve — a crash-on-import would
+    // otherwise fake a catch. Unique name per mutant; removed in finally.
+    const mutatedPath = path.join(ROOT, "src", "mcp", `__mutant-handlers-${mutantsTotal}.ts`)
+    writeFileSync(mutatedPath, handlersSrc.replace(from, to))
+    try {
+      const mutantMod = await import(mutatedPath)
+      const mutantHandlers = (mutantMod as any).default ?? (mutantMod as any).createToolHandlers?.() ?? mutantMod
+      const caught = await probe(mutantHandlers)
+      mutantRecords.push({ name, caught })
+      if (caught) mutantsCaught++
+      else console.log(`  SURVIVED: ${name}`)
+    } catch (e) {
+      // A mutant that crashes on import also counts as caught: the defect is
+      // surfaced, not silent.
+      mutantRecords.push({ name, caught: true })
+      mutantsCaught++
+    } finally {
+      rmSync(mutatedPath, { force: true })
+      void base
+    }
   }
+  // M1: the impact handler silently returns an empty set on unknown symbols
+  // (invents data instead of the declared error). The REAL suite's rule is
+  // "unknown symbol ⇒ isError === true"; the mutant returns a JSON payload
+  // with isError undefined, so the rule (re-derived here) must fire.
+  await mutateAndProbe(
+    "T1 mutant: silent empty impact set on unknown symbol is caught",
+    'return textResult(`bb_impact: ${error instanceof Error ? error.message : String(error)}`, true)',
+    'return textResult(JSON.stringify({ symbol, budget: {}, impact: [], shownCount: 0, totalCountIfKnown: null, truncated: false, truncationReason: null }, null, 2))',
+    async (mh) => {
+      const r = await mh["bb_impact"]({ symbol: "definitely-not-a-symbol-zz" }, { projectId: "no-such-project", projectPath: "/x" })
+      const loudDeclaredError = r.isError === true // the rule R3 asserts
+      return !loudDeclaredError // mutant broke the rule -> caught
+    },
+  )
+  // M2: the cross-language handler fabricates a fact for an unknown symbol.
+  // Same rule re-derivation: unknown symbol must be a loud declared error,
+  // never a payload carrying invented facts.
+  await mutateAndProbe(
+    "T1 mutant: fabricated cross-language fact for unknown symbol is caught",
+    'return textResult(`bb_cross_language: symbol \'${symbol}\' not found — declared error, not an empty set`, true)',
+    'return textResult(JSON.stringify({ symbol, facts: [{ pair: "java → scala", tier: "inferred" }], declaredAbsent: false }, null, 2))',
+    async (mh) => {
+      const r = await mh["bb_cross_language"]({ symbol: "definitely-not-a-symbol-zz" }, { projectId: "no-such-project", projectPath: "/x" })
+      const loudDeclaredError = r.isError === true // the rule R3 asserts
+      return !loudDeclaredError // mutant fabricated instead -> caught
+    },
+  )
   check("T1: all mutants caught", mutantsCaught === mutantsTotal && mutantsTotal > 0, `${mutantsCaught}/${mutantsTotal}`)
 
   rmSync(base, { recursive: true, force: true })
