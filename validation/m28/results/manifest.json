@@ -17,24 +17,34 @@
       "code": "G1",
       "githubIssue": 623,
       "tool": "governance",
-      "status": "planned",
+      "status": "verified",
       "scope": "Ledger, governance map, closure gate with mutation-proof rules, and the version-ladder audit: the M27 completion bar re-verified inside this gate before any M28 issue may close.",
       "acceptanceCriteria": [
-        "Gate rejects planned-closure, missing evidence, stale-commit, mutant-survival, and forged evidence — each rejection proven by mutation",
+        "Gate rejects planned-closure, missing evidence, stale-commit, mutant-survival, and forged evidence \u2014 each rejection proven by mutation",
         "M27 bar audit runs inside the gate (spawned, exit-code checked)",
         "All existing milestone gates remain VERIFIED after wiring"
       ],
       "closureRequirements": [
         "npx tsx script/m28/verify-governance.ts exits 0 with clean relevant tree",
         "Evidence persisted at validation/m28/results/G1.json with commit stamp"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see G1.json",
+        "verifierCommand": "npx tsx script/m28/verify-governance.ts",
+        "evidenceFile": "G1.json",
+        "passed": 70,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 10
+      }
     },
     {
       "code": "T1",
       "githubIssue": 624,
       "tool": "mcp-read-tools",
       "status": "planned",
-      "scope": "Three new MCP read tools (bb_graph, bb_impact, bb_cross_language) that reuse the exact IDE-side components (graph engine tier rules, src/lsp/impact.ts, src/lsp/cross_language_hover.ts) — the agent door shows what the IDE door shows (D-1/D-2).",
+      "scope": "Three new MCP read tools (bb_graph, bb_impact, bb_cross_language) that reuse the exact IDE-side components (graph engine tier rules, src/lsp/impact.ts, src/lsp/cross_language_hover.ts) \u2014 the agent door shows what the IDE door shows (D-1/D-2).",
       "acceptanceCriteria": [
         "All three tools registered, validated, executable against a real indexed fixture",
         "Tiers/truncation/absence semantics identical to the IDE surfaces (shared code, not shared prose)",
@@ -50,7 +60,7 @@
       "githubIssue": 625,
       "tool": "union-differential",
       "status": "planned",
-      "scope": "The union differential gate (D-5): one fixture workspace, two doors — MCP tool handlers vs the LSP/IDE components directly; equality asserted on counts, tiers, truncation declarations, and cross-language facts including declared absence.",
+      "scope": "The union differential gate (D-5): one fixture workspace, two doors \u2014 MCP tool handlers vs the LSP/IDE components directly; equality asserted on counts, tiers, truncation declarations, and cross-language facts including declared absence.",
       "acceptanceCriteria": [
         "Every differential assertion passes on the shared fixture",
         ">= 3 mutants (agent-side drift, IDE-side drift) all caught",
@@ -82,7 +92,7 @@
       "githubIssue": 627,
       "tool": "annotations-in-ide",
       "status": "planned",
-      "scope": "Agent annotations surface where the human works: an author-labeled hover section and a graph-webview annotation badge — an agent note never reads as index-derived fact (D-6); in-editor verification via the E5 pattern.",
+      "scope": "Agent annotations surface where the human works: an author-labeled hover section and a graph-webview annotation badge \u2014 an agent note never reads as index-derived fact (D-6); in-editor verification via the E5 pattern.",
       "acceptanceCriteria": [
         "Annotation provenance visible in both surfaces (agent note never reads as index fact)",
         "Real editor session asserts the rendered output (I3)",
