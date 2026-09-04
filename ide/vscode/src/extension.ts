@@ -129,6 +129,7 @@ async function startClient(context: ExtensionContext, report: ActivationReport):
       { scheme: "file", language: "scala" },
       { scheme: "file", language: "typescript" },
       { scheme: "file", language: "javascript" },
+      { scheme: "file", language: "python" },
     ],
     initializationOptions: {},
     // Crash evidence, never silence: record WHY the connection closed before

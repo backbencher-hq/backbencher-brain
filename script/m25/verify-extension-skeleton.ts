@@ -160,8 +160,8 @@ try {
 
   // --- G4: thin client — complement stance (source lint) --------------------
   check(
-    "G4: documentSelector covers the five launch languages + javascript",
-    ["java", "groovy", "kotlin", "scala", "typescript"].every((lang) => extSource.includes(`language: "${lang}"`)) && extSource.includes("javascript"),
+    "G4: documentSelector covers the launch languages (M29 wave-1 set)",
+    ["java", "groovy", "kotlin", "scala", "typescript", "javascript", "python"].every((lang) => extSource.includes(`language: "${lang}"`)),
   )
   const bannedProviderPatterns: Array<[RegExp, string]> = [
     [/registerCompletion/, "completion provider (contract §7.1 bans it)"],

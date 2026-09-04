@@ -20,6 +20,8 @@ Every feature carries its declared claim level — the UI shows the same table
 | kotlin    | I1    | I1         | I1         | I1      | I1             |
 | scala     | I1    | I1         | I1         | I1      | I1             |
 | typescript| I1    | I1         | I1         | I1      | I1             |
+| javascript| I1    | I1         | I1         | I1      | I1             |
+| python    | I1    | I1         | I1         | I1      | I1             |
 
 I1 = protocol-passed (see the honesty contract in the repository: `docs/IDE-HONESTY-CONTRACT.md`).
 The claim table shipped in this extension is drift-gated against the
