@@ -102,7 +102,7 @@
       "code": "H1",
       "githubIssue": 620,
       "tool": "helix-config",
-      "status": "planned",
+      "status": "verified",
       "scope": "Helix adapter: languages.toml fragment with drift-gated launch command, TOML validity machine-checked, claim level honest (I2 unless a driven hx session exists; D-7: deeper leg blocked-with-reason).",
       "acceptanceCriteria": [
         "Fragment parses (TOML validity machine-checked)",
@@ -112,7 +112,18 @@
       "closureRequirements": [
         "npx tsx script/m27/verify-helix.ts exits 0 at HEAD with clean relevant tree",
         "Evidence persisted at validation/m27/results/H1.json with commit stamp"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see H1.json",
+        "verifierCommand": "npx tsx script/m27/verify-helix.ts",
+        "evidenceFile": "H1.json",
+        "passed": 21,
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": 4,
+        "mutantsTotal": 4
+      }
     },
     {
       "code": "V1",

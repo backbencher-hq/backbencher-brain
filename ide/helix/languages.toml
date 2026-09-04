@@ -1,0 +1,22 @@
+# bb_lsp — Backbencher Brain language server (M27.H1)
+# Edit BB_ROOT to your backbencher-brain checkout (compiled dist required).
+
+[[language]]
+name = "typescript"
+language-servers = [ { name = "bb-lsp" } ]
+
+[[language]]
+name = "javascript"
+language-servers = [ { name = "bb-lsp" } ]
+
+[[language]]
+name = "java"
+language-servers = [ { name = "bb-lsp" } ]
+
+[[language]]
+name = "scala"
+language-servers = [ { name = "bb-lsp" } ]
+
+[language-server.bb-lsp]
+command = "node"
+args = [ "/opt/backbencher-brain/dist/lsp/server.js" ]
