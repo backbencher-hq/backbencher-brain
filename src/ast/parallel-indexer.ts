@@ -3830,32 +3830,38 @@ export async function runBoundedPostProcessing(
           const placeholders = chunk.map(() => "?").join(",")
           rawDb.prepare(`INSERT OR IGNORE INTO _m40_touched (id, name, qualified_name) SELECT id, name, qualified_name FROM brain_symbol WHERE project_id = ? AND file_id IN (${placeholders})`).run(projectId, ...chunk)
         }
-        // M40.A4 portable match-and-update: SQLite <3.53 (Node's bundled
-        // version) rejects references to the UPDATE target's columns inside
-        // the SET subquery — the single-statement form worked only under
-        // bun's 3.53.0 and failed under Node with "no such column:
-        // brain_relationship.target_external". Correlated SELECTs + bounded
-        // per-row UPDATEs are supported by every SQLite in use (M21.D2
-        // dual-runtime policy).
-        const unresolved = rawDb.prepare(`
-          SELECT id, target_external FROM brain_relationship
-          WHERE project_id = ?
-            AND target_symbol_id IS NULL AND target_external IS NOT NULL AND target_external != ''
-            AND id LIKE '%:m40'
-        `).all(projectId) as Array<{ id: string; target_external: string }>
-        if (unresolved.length > 0) {
-          const upd = rawDb.prepare(`UPDATE brain_relationship SET target_symbol_id = ?, time_updated = strftime('%s','now') * 1000 WHERE id = ?`)
-          const match = rawDb.prepare(`
-            SELECT id FROM _m40_touched
-            WHERE qualified_name = ? OR name = ?
-            ORDER BY CASE WHEN qualified_name = ? THEN 0 ELSE 1 END, id
+        // M40.A4 portable + set-based: SQLite <3.53 (Node's bundled version)
+        // rejects references to the UPDATE target's columns inside the SET
+        // subquery, and per-row JS loops cost ~4ms/row at 12K rows. Two
+        // statements, both portable: (1) correlated INSERT..SELECT into a
+        // match table (correlated subqueries over OTHER tables are allowed in
+        // INSERT..SELECT on every SQLite), (2) UPDATE..FROM join (SQLite
+        // >=3.33; Node 3.49 / bun 3.53 both qualify). O(rows) inside SQLite,
+        // zero JS round-trips.
+        rawDb.run(`CREATE TEMP TABLE IF NOT EXISTS _m40_match (rel_id TEXT PRIMARY KEY, symbol_id TEXT)`)
+        rawDb.run(`DELETE FROM _m40_match`)
+        rawDb.prepare(`
+          INSERT INTO _m40_match (rel_id, symbol_id)
+          SELECT r.id, (
+            SELECT t.id FROM _m40_touched t
+            WHERE t.qualified_name = r.target_external OR t.name = r.target_external
+            ORDER BY CASE WHEN t.qualified_name = r.target_external THEN 0 ELSE 1 END, t.id
             LIMIT 1
-          `)
-          for (const row of unresolved) {
-            const hit = match.get(row.target_external, row.target_external, row.target_external) as any
-            if (hit?.id) upd.run(hit.id, row.id)
-          }
-        }
+          )
+          FROM brain_relationship r
+          WHERE r.project_id = ?
+            AND r.target_symbol_id IS NULL AND r.target_external IS NOT NULL AND r.target_external != ''
+            AND r.id LIKE '%:m40'
+        `).run(projectId)
+        rawDb.prepare(`
+          UPDATE brain_relationship
+          SET target_symbol_id = m.symbol_id,
+              time_updated = strftime('%s','now') * 1000
+          FROM _m40_match m
+          WHERE brain_relationship.id = m.rel_id
+            AND brain_relationship.project_id = ?
+            AND m.symbol_id IS NOT NULL
+        `).run(projectId)
       }
       recordPhase("relationships", Date.now() - _t, "ok")
     } catch (e: any) {
