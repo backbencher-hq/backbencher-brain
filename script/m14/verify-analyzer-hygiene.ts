@@ -158,6 +158,52 @@ export function findWriteOnlyFlags(src: string, lang: string, findings: Finding[
   }
 }
 
+export function findNodeIdentityComparisons(src: string, lang: string, findings: Finding[]) {
+  // M37 #596 (TSD2/TSD6 class): web-tree-sitter returns FRESH wrapper objects
+  // per node access, so `x.childForFieldName("f") === n` NEVER matches even
+  // for the same underlying node. The stable identity handles are node.id /
+  // startIndex-endIndex spans (both analyzers now document this). Flag any
+  // comparison where at least one operand ends in a fresh-node accessor
+  // (childForFieldName / namedChild / child / parent / siblings / namedChildren)
+  // and neither operand reduces to a stable primitive (.id, .type, .text,
+  // .startIndex, ...). `=== null`/`undefined` absence checks are excluded
+  // (comparing a fresh wrapper to null is legitimate). The TSD6 defect
+  // (`n.parent.childForFieldName("function") === n` in the TS analyzer) fired
+  // exactly this shape; the TSD2 defect (`nameField === n`) is a variable-to-
+  // variable comparison NOT mechanically visible without dataflow — documented
+  // in limitations, caught by review + probes instead.
+  const operand = String.raw`[\w$?.\[\]]+(?:\([^()]*\))?[\w$?.\[\]]*`
+  const re = new RegExp(String.raw`(${operand})\s*(===|!==)\s*(${operand})`, "g")
+  const FRESH = /\.(childForFieldName|namedChild|child)\s*\(|\.(parent|previousSibling|nextSibling|namedChildren)\b/
+  const PRIMITIVE_TAIL = /\.(id|type|text|name|startIndex|endIndex|startPosition|endPosition|length|row|column|isNamed|isMissing|hasError)\s*$/
+  let m: RegExpExecArray | null
+  while ((m = re.exec(src))) {
+    const [full, left, , right] = m
+    // Absence checks are fine: a fresh wrapper compared to null/undefined.
+    if (/^(null|undefined)\b/.test(right) || /^(null|undefined)\b/.test(left)) continue
+    // String literals / numeric literals on one side: value comparison, clean.
+    if (/^(["'`])/.test(right) || /^(["'`])/.test(left)) continue
+    if (/^\d/.test(right) || /^\d/.test(left)) continue
+    // Either side ending in a stable primitive property (id/span/text) is a
+    // legitimate identity/value comparison — node.id is stable within a tree.
+    if (PRIMITIVE_TAIL.test(left) || PRIMITIVE_TAIL.test(right)) continue
+    // At least one side must be an unmistakable fresh-node expression.
+    if (!FRESH.test(left) && !FRESH.test(right)) continue
+    const line = src.slice(0, m.index).split("\n").length
+    // Skip string-literal contexts (quote parity guard, same as ternaries).
+    const before = src.slice(0, m.index)
+    const quotes = (before.match(/(?<!\\)"/g) || []).length + (before.match(/(?<!\\)`/g) || []).length
+    if (quotes % 2 === 1) continue
+    findings.push({
+      lang,
+      kind: "node-identity-comparison",
+      line,
+      snippet: full.slice(0, 120),
+      note: "web-tree-sitter nodes are fresh wrappers per access — object identity never matches; compare .id or startIndex/endIndex spans (TSD2/TSD6 class)",
+    })
+  }
+}
+
 export function main() {
   const only = process.argv.includes("--lang") ? process.argv[process.argv.indexOf("--lang") + 1] : undefined
   const langs = only ? [only] : Object.keys(GATED_ANALYZERS)
@@ -178,6 +224,7 @@ export function main() {
     findNoopTernaries(src, lang, allFindings)
     findDuplicateIfElse(src, lang, allFindings)
     findWriteOnlyFlags(src, lang, allFindings)
+    findNodeIdentityComparisons(src, lang, allFindings)
   }
 
   for (const f of allFindings) {
@@ -189,7 +236,7 @@ export function main() {
   for (const f of allFindings) perLang.set(f.lang, (perLang.get(f.lang) || 0) + 1)
   const checks = langs.map((lang) => ({
     id: `analyzer-hygiene-${lang}`,
-    description: "no no-op ternaries, duplicate if/else bodies, or write-only this-flags in the analyzer source",
+    description: "no no-op ternaries, duplicate if/else bodies, write-only this-flags, or fresh-node identity comparisons in the analyzer source",
     status: (perLang.get(lang) || 0) === 0 ? "pass" : "fail",
     findings: perLang.get(lang) || 0,
   }))
@@ -201,7 +248,7 @@ export function main() {
     checks,
     limitations: [
       {
-        description: "Regex-based detection over TypeScript source: multi-line identical-branch ternaries, alias-heavy this-patterns, and cross-method write-only object props are out of scope (covered by review + F9 probes instead)",
+        description: "Regex-based detection over TypeScript source: multi-line identical-branch ternaries, alias-heavy this-patterns, cross-method write-only object props, and variable-to-variable node comparisons (dataflow needed — the TSD2 `nameField === n` shape) are out of scope (covered by review + F9 probes instead)",
       },
     ],
   })
