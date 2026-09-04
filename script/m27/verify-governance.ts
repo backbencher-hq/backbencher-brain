@@ -108,7 +108,7 @@ const EXPECTED_ISSUE_NUMBERS = [616, 617, 618, 619, 620, 621, 622]
  *  exists). Evidence stays fresh while no relevant file changed since its
  *  commit. The gate script itself is excluded everywhere (consumer rule). */
 const ISSUE_RELEVANT_FILES: Record<string, string[]> = {
-  N1: ["script/m27/nvim-adapter.lua", "script/m27/nvim-driver.lua", "script/m27/verify-nvim.ts"],
+  N1: ["script/m27/nvim-adapter.md", "script/m27/nvim-driver.lua", "script/m27/verify-nvim.ts"],
   J1: ["ide/lsp4ij/bb-lsp.json", "script/m27/verify-lsp4ij.ts"],
   Z1: ["ide/zed/bb-lsp/", "script/m27/verify-zed.ts"],
   H1: ["ide/helix/languages.toml", "script/m27/verify-helix.ts"],
