@@ -55,7 +55,7 @@ export interface GraphRequestParams {
 
 /** Minimal db surface this module needs (structural, so tests can stub). */
 export interface GraphRequestDb {
-  prepare(sql: string): { get(...params: unknown[]): unknown }
+  prepare(sql: string): { get(...params: unknown[]): unknown; all(...params: unknown[]): unknown[] }
 }
 
 /** An indexed workspace is one with at least one symbol row for the project.
@@ -131,6 +131,15 @@ export async function handleGraphRequest(
     if (typeof edge.rowId !== "string" || edge.rowId.length === 0) {
       throw new GraphRequestError(`bb/graph: internal consistency failure — edge ${edge.from} -> ${edge.to} has no brain_relationship row id (refusing to serve untraceable data)`)
     }
+  }
+  // M28.A2 (D-6): the root's annotations ride along, author-labeled — the
+  // human sees the agent's notes where the graph renders. Read from the same
+  // store bb_annotations serves; empty array = no badge rendered.
+  try {
+    const annRows = db.prepare("SELECT author_class, tool_identity, body, time_updated FROM brain_annotation WHERE project_id = ? AND symbol_name = ? ORDER BY time_updated DESC").all(projectId, (result.root as { name?: string }).name ?? "") as Array<{ author_class: string; tool_identity: string; body: string; time_updated: number }>
+    ;(result as { annotations?: typeof annRows }).annotations = annRows
+  } catch {
+    ;(result as { annotations?: never[] }).annotations = []
   }
   return result
 }

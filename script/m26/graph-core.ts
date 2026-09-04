@@ -79,6 +79,10 @@ export interface GraphResultLike {
     truncationReason?: string
     crossLanguageEdges: number
   }
+  /** M28.A2 (D-6): the root symbol's agent/human annotations, author-labeled.
+   *  Optional for backward compatibility; when present and non-empty, the
+   *  renderer attaches the annotation badge to the root node element. */
+  annotations?: Array<{ author_class: string; tool_identity: string; body: string; time_updated: number }>
 }
 
 /** The DOM port: the minimal surface the renderer needs. The webview adapts
@@ -226,6 +230,43 @@ function truncationMarker(kind: string, shown: number, total: number, dom: Graph
   return el
 }
 
+/** M28.A2 (D-6): the annotation badge for the root node. Author-labeled so
+ *  an agent note never reads as index-derived fact; escaper-owned text.
+ *  null when there are no annotations — no badge is rendered at all. */
+export function renderAnnotationBadge(
+  annotations: NonNullable<GraphResultLike["annotations"]>,
+  rootSymbolName: string,
+  dom: GraphDom,
+): GraphDomElement | null {
+  if (!Array.isArray(annotations) || annotations.length === 0) return null
+  const badge = dom.create("div")
+  badge.addClass("bb-annotation-badge")
+  badge.setAttribute("data-annotation-count", String(annotations.length))
+  const authors = [...new Set(annotations.map((a) => a.author_class))].sort()
+  badge.setAttribute("data-annotation-authors", authors.join(","))
+  // The badge names the node it belongs to — the defensive pairing rule.
+  badge.setAttribute("data-node-symbol", rootSymbolName)
+  const label = dom.create("span")
+  label.addClass("bb-annotation-label")
+  label.textContent = `${annotations.length} note${annotations.length === 1 ? "" : "s"} (${authors.join(",")})`
+  badge.appendChild(label)
+  for (const a of annotations) {
+    const item = dom.create("div")
+    item.addClass("bb-annotation-item")
+    item.setAttribute("data-author-class", a.author_class)
+    const who = dom.create("span")
+    who.addClass("bb-annotation-meta")
+    who.textContent = `${a.author_class} note by ${a.tool_identity}`
+    const body = dom.create("span")
+    body.addClass("bb-annotation-body")
+    body.textContent = a.body
+    item.appendChild(who)
+    item.appendChild(body)
+    badge.appendChild(item)
+  }
+  return badge
+}
+
 /** Render a graph result into the injected DOM. Deterministic; throws on a
  *  malformed result rather than rendering a guess. */
 export function renderGraph(result: GraphResultLike, dom: GraphDom): RenderStats {
@@ -247,6 +288,7 @@ export function renderGraph(result: GraphResultLike, dom: GraphDom): RenderStats
   // Deterministic node render order: root first, then callers, then callees,
   // each in edge order — the same input always yields the same DOM.
   const renderedIds = new Set<string>()
+  const renderedRoots = new Map<string, GraphDomElement>()
   let nodesRendered = 0
   let nodesTruncated = false
 
@@ -256,12 +298,22 @@ export function renderGraph(result: GraphResultLike, dom: GraphDom): RenderStats
       nodesTruncated = true
       return
     }
-    nodesEl.appendChild(nodeElement(node, dom, role))
+    const el = nodeElement(node, dom, role)
+    nodesEl.appendChild(el)
+    renderedRoots.set(node.id, el)
     renderedIds.add(node.id)
     nodesRendered++
   }
 
   put(result.root, "root")
+  // M28.A2: the root's annotation badge rides ON the root node element —
+  // a badge that could disagree with its node is a declared defect, so it
+  // is attached to the node itself (W4 badge law, annotations flavor).
+  const rootEl = renderedRoots.get(result.root.id)
+  if (rootEl) {
+    const badge = renderAnnotationBadge(result.annotations ?? [], result.root.name, dom)
+    if (badge) rootEl.appendChild(badge)
+  }
   for (const edge of result.callers) {
     const n = result.nodes[edge.from]
     if (n) put(n, "caller")

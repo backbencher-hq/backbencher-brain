@@ -112,7 +112,7 @@ const ISSUE_RELEVANT_FILES: Record<string, string[]> = {
   U1: ["src/mcp/tool-handlers.ts", "script/m28/verify-union.ts"],
   A1: ["src/brain/schema-ddl.ts", "src/brain/database.ts", "src/mcp/tool-registry.ts", "src/mcp/tool-handlers.ts", "script/m28/verify-annotation-store.ts"],
   A1: ["src/brain/schema-ddl.ts", "src/mcp/tool-registry.ts", "src/mcp/tool-handlers.ts", "script/m28/verify-annotations.ts"],
-  A2: ["src/lsp/hover.ts", "src/lsp/cross_language_hover.ts", "script/m26/graph-core.ts", "script/m28/verify-annotation-ui.ts"],
+  A2: ["src/lsp/annotation_ui.ts", "src/lsp/hover.ts", "src/lsp/cross_language_hover.ts", "src/lsp/graph_request.ts", "src/intelligence/contracts.ts", "script/m26/graph-core.ts", "script/m28/annotation-driver.lua", "script/m28/verify-annotation-ui.ts"],
   V1: ["docs/m28/MCP-SURFACE.md", "script/m28/verify-mcp-docs.ts", "src/mcp/tool-registry.ts"],
   X1: ["script/m28/verify-closure.ts"],
 }

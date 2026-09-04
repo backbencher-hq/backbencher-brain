@@ -120,7 +120,7 @@
       "code": "A2",
       "githubIssue": 627,
       "tool": "annotations-in-ide",
-      "status": "planned",
+      "status": "verified",
       "scope": "Agent annotations surface where the human works: an author-labeled hover section and a graph-webview annotation badge \u2014 an agent note never reads as index-derived fact (D-6); in-editor verification via the E5 pattern.",
       "acceptanceCriteria": [
         "Annotation provenance visible in both surfaces (agent note never reads as index fact)",
@@ -130,7 +130,17 @@
       "closureRequirements": [
         "npx tsx script/m28/verify-annotation-ui.ts exits 0 at HEAD with clean relevant tree",
         "Evidence persisted at validation/m28/results/A2.json with commit stamp"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "verifierCommand": "npx tsx script/m28/verify-annotation-ui.ts",
+        "evidenceFile": "A2.json",
+        "passed": 23,
+        "failed": 0,
+        "mutantsCaught": 4,
+        "mutantsTotal": 4,
+        "inEditorLeg": "headless Neovim (N1 pattern) asserted author-labeled hover + bb/graph payload"
+      }
     },
     {
       "code": "V1",
