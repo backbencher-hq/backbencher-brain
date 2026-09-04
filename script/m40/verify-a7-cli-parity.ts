@@ -13,7 +13,7 @@
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
-import { spawnSync } from "node:child_process"
+import { spawnSync, execFileSync } from "node:child_process"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const RESULTS_DIR = path.join(ROOT, "validation/m40/results")
