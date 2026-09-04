@@ -102,6 +102,27 @@ exported functions without callers.
 - Co-agent surfaces (M14/M20/M24/M37 analyzer work) are out of scope and
   untouched; commits carry only M40 files.
 
+## M40.A8: embedding config precedence (user-facing)
+
+One function owns the order — `resolveEmbeddingConfig()` in `src/config/config.ts`.
+Engine and openai-embed consume it; none re-implements it. Per field, highest first:
+
+1. **Environment** — `BB_EMBEDDING_BASE_URL`, `BB_EMBEDDING_MODEL`, `BB_EMBEDDING_API_KEY`
+2. **Config files** — `BB_CONFIG_FILE` > `./bb.json` > `<data-dir>/config.json`
+3. **Built-in default** — `https://api.openai.com/v1` + `text-embedding-3-small`
+
+`configured` is true only when BOTH base-url and model resolve to env or file
+(an api key alone or a model alone does not configure a remote provider).
+Inspect the resolved truth with `bb health --verbose-config` (or MCP `bb_health`
+`verbose=true`): every field is shown with its `env:<VAR>` / `file:<key>` /
+`default` source; the API-key value is never printed, only its source.
+
+Test-only worker fixtures (`BB_WORKER_CRASH_ON_BATCH`, `BB_WORKER_DELAY_PARSE_MS`,
+`BB_WORKER_DELAY_READY_MS`) are quarantined behind `BB_TEST_HOOKS=1`: without the
+explicit opt-in they are no-ops in every process, so a stray env var can never
+crash or stall a production index. `BB_FILE_TIMEOUT_MS` is NOT quarantined — it
+has a safe production default (45s) and is a legitimate operations knob.
+
 ## Out of scope (deliberate)
 
 - `bb watch` daemon — real value, own milestone after the lifecycle is coherent.

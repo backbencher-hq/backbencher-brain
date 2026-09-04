@@ -10,6 +10,7 @@ import { isEmbeddingConfigured, getEmbeddingConfig, embedOpenAICompatible } from
 
 
 const log = Log.create({ service: "brain-semantic-engine" })
+import { resolveEmbeddingConfig } from "../../config/config"
 
 function loadConfigWorkerFallback(): Record<string, unknown> {
   try {
@@ -105,15 +106,16 @@ export namespace SemanticEngine {
     // Try bb.json first (project-level config)
     const bbJson = loadConfigWorkerFallback()
     if (bbJson && (bbJson.embedding_model || bbJson.provider)) {
-      // Keep the compiled-worker fallback, but preserve the same precedence as
-      // Config.get(): explicit BB_* environment variables must override a
-      // repository bb.json. Without this merge, tests and MCP hosts pointing
-      // at a local OpenAI-compatible endpoint silently fall back to local
-      // vectors from the configured remote provider.
+      // M40.A8: precedence (env BB_EMBEDDING_* > config file > default) lives
+      // in ONE function — src/config/config.ts resolveEmbeddingConfig(). The
+      // old hand-rolled merge here duplicated it and could drift.
+      const eff = resolveEmbeddingConfig(bbJson)
       const merged = { ...bbJson }
-      if (process.env.BB_EMBEDDING_MODEL) merged.embedding_model = process.env.BB_EMBEDDING_MODEL
-      if (process.env.BB_EMBEDDING_BASE_URL) merged.embedding_base_url = process.env.BB_EMBEDDING_BASE_URL
-      if (process.env.BB_EMBEDDING_API_KEY) merged.embedding_api_key = process.env.BB_EMBEDDING_API_KEY
+      if (eff.configured) {
+        merged.embedding_base_url = eff.baseURL
+        merged.embedding_model = eff.model
+        merged.embedding_api_key = eff.apiKey
+      }
       return merged
     }
     // Fall back to global Config
