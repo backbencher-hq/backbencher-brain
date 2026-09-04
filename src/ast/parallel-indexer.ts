@@ -1436,6 +1436,9 @@ function withTimeout<T>(p: Promise<T> | T, ms: number, msg: string): Promise<T> 
 }
 
 export const backgroundEmbedMetrics = {
+  // M40.A9: verifier-only observability for the background queue (read by
+  // script/m21 gates). Product code consumes queue state via DB rows, not
+  // this counter object. Keep exported; do not call from product paths.
   /** Items accepted into the queue (cap-permitting). */
   queued: 0,
   /** Items dropped because the queue cap or batch limit was hit. */
@@ -1461,6 +1464,10 @@ export const backgroundEmbedMetrics = {
  * verify-semantic).
  */
 export async function flushBackgroundEmbeddings(opts: { timeoutMs?: number } = {}): Promise<{ resolved: "drained" | "timeout"; pendingItems: number }> {
+  // M40.A9: no production caller BY DESIGN — the background queue drains
+  // itself on its own loop; this is the deterministic-drain seam for
+  // verifier/e2e harnesses (script/m18, script/m21) that must await
+  // embedding durability. Keep exported; do not call from product paths.
   const deadline = opts.timeoutMs && opts.timeoutMs > 0 ? Date.now() + opts.timeoutMs : undefined
   while (backgroundEmbedActive || backgroundEmbedJobs.length > 0) {
     if (deadline !== undefined && Date.now() >= deadline) {
@@ -2749,6 +2756,10 @@ export async function indexProjectParallel(
   options: {
     onProgress?: (stats: ParallelIndexingStats) => void
     files?: string[]
+    // M40.A9: plumbed through to discoverAndFilterFiles but no in-tree caller
+    // passes it today — the discovery default (gitignore + extension filter)
+    // is the contract. Reserved for future external/MCP consumers; marked
+    // internal until one exists.
     excludePatterns?: string[]
     isIncremental?: boolean
     skipPostProcessing?: boolean // M19: defer heavy resolution/enrichment for bounded slice timing

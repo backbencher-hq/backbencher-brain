@@ -8,14 +8,10 @@ export function create(tags?: Record<string, any>) {
   return createLogger(service)
 }
 
-export function setQuiet(q: boolean) {
-  if (q) {
-    process.env.BB_QUIET = "1"
-  } else {
-    delete process.env.BB_QUIET
-  }
-}
+// M40.A9 purge: setQuiet() removed — zero callers; BB_QUIET was written here
+// but never read anywhere (a phantom env var). Quiet is BB_LOG_LEVEL=warn
+// via the CLI --quiet flag (M22.W1), which workers inherit.
 
 export function setTuiActive(_active: boolean) {}
 
-export default { create, setQuiet, setTuiActive }
+export default { create, setTuiActive }

@@ -123,6 +123,70 @@ explicit opt-in they are no-ops in every process, so a stray env var can never
 crash or stall a production index. `BB_FILE_TIMEOUT_MS` is NOT quarantined — it
 has a safe production default (45s) and is a legitimate operations knob.
 
+## M40.A9: dead-surface purge report
+
+Rule: present-but-useless is REMOVED, not verified. Every surface item below
+carries a verdict and its proof. The A9 gate re-enumerates this surface and
+fails if any item loses its proof.
+
+### bb index CLI flags (8)
+
+| flag | verdict | proof |
+|---|---|---|
+| `--force` | used | cmdIndex wipe+full path; A5 matrix row; health --force (A6) |
+| `--no-setup` | used | cmdIndex → maybeRunFirstRunSetup({noSetup}) (M30.S2) |
+| `--skip-post-processing` | used | parse+store only; remediation documented in --post help |
+| `--post` | used (was M22-phantom, made real by A1) | A1 gate; M22 C2 updated to prove reality |
+| `--file <path>` | used | scoped reindex + bounded pass; A5 matrix row |
+| `--changed` | used | A2 bounded pass; A5 matrix row |
+| `--resume` | used | checkpoint resume (M21.R3); A5 truthful no-checkpoint message |
+| `--import <db>` | used | M23.P3 adoption; dual-runtime fix in A5 |
+
+### MCP bb_index modes (4)
+
+`auto` / `file` / `dir` / `post` — all four branch in tool-handlers.ts; file
+carries A3 derived telemetry, post carries the A1 phase report. No phantom
+mode values in the registry enum.
+
+### BB_* env vars (production read surface)
+
+| var | verdict | proof |
+|---|---|---|
+| BB_LOG_LEVEL, BB_QUIET | BB_LOG_LEVEL used; **BB_QUIET removed** | M22.W1 quiet path; BB_QUIET was written but never read anywhere (phantom) |
+| BB_DATA_DIR, BB_CONFIG_FILE | used | data-dir resolution; explicit config (M22/M23) |
+| BB_EMBEDDING_BASE_URL / _MODEL / _API_KEY | used | A8 single-source precedence |
+| BB_PROVIDER | used | provider override (config.ts) |
+| BB_FILE_TIMEOUT_MS | used (NOT a test hook) | safe 45s default; ops knob |
+| BB_WORKER_CRASH_ON_BATCH, BB_WORKER_DELAY_* | used, **quarantined (A8)** | inert without BB_TEST_HOOKS=1 |
+| BB_WORKER_STARTUP_TIMEOUT_MS, BB_POOL_WORKER, BB_POOL_WORKER_PATH | used | pool lifecycle; compiled-binary worker path |
+| BB_VECTOR_SCAN_CAP | used | semantic search scan cap (perf knob) |
+| BB_EMBEDDING_QUEUE_LIMIT, BB_EMBEDDING_BATCH_LIMIT, BB_EMBEDDING_CALL_TIMEOUT_MS | used | background embed queue knobs with defaults |
+| BB_LSP_STDERR_LOG | used | LSP stderr trace (M25.E5) |
+| BB_TEST_HOOKS | used | A8 quarantine opt-in |
+| BB_M35_SKIP_FRESHNESS | test seam, **now quarantined (A9)** | M35 S1 gate measures with/without; requires BB_TEST_HOOKS=1 |
+| BB_TEST_QUALITY, BB_SECURITY, BB_PATTERNS, BB_MIGRATE, BB_DOC | doc paths (strings), not env vars | evidence.ts doc references |
+
+### Exported lifecycle functions (parallel-indexer.ts)
+
+| export | verdict | proof |
+|---|---|---|
+| indexProjectParallel | used | CLI/MCP/health/LSP callers |
+| reindexFilesParallel | used | edit-engine, MCP file mode, LSP reindex |
+| runPostProcessing | used | CLI --post, MCP mode=post (A1) |
+| wipeProjectData | used | --force, health refresh, registry wipe |
+| storeResults | used | indexer store path; M21 gates |
+| calculateGravityScores, resolveCrossSymbolTaints | used | post-processing phases + M21 gate |
+| processWithWorkerPool | used | indexer internal |
+| shouldSkipCli, hasValidExtension | used | discovery filter + tests |
+| ParallelIndexerConfig | used | pool tuning + M21 fixtures |
+| flushBackgroundEmbeddings | verifier seam (marked internal) | drains the self-draining queue deterministically for m18/m21 gates |
+| backgroundEmbedMetrics | verifier seam (marked internal) | m21 observability; product reads DB rows |
+| excludePatterns (option) | marked internal | plumbed through, no in-tree caller yet |
+| setQuiet (util/log + tool/brain-log) | **REMOVED** | zero callers; quiet lives in BB_LOG_LEVEL |
+
+Removals compile (`tsc --noEmit` clean) and the full chain is re-run green at
+the A9 commit.
+
 ## Out of scope (deliberate)
 
 - `bb watch` daemon — real value, own milestone after the lifecycle is coherent.

@@ -236,7 +236,9 @@ const handlers: Record<string, ToolHandler> = {
       // Measurement seam for the S1 latency-budget gate (BB_M35_SKIP_FRESHNESS=1
       // runs the handler WITHOUT freshness work). Not part of the public
       // contract; the gate measures with/without and asserts the delta < 5%.
-      if (process.env.BB_M35_SKIP_FRESHNESS === "1") return textResult(JSON.stringify(data, null, 2))
+      // M40.A9: quarantined behind BB_TEST_HOOKS=1 — like the worker fixtures,
+      // a stray env var must not silently degrade a production read path.
+      if (process.env.BB_TEST_HOOKS === "1" && process.env.BB_M35_SKIP_FRESHNESS === "1") return textResult(JSON.stringify(data, null, 2))
       let resolved = rows
       let mode: "sampled" | "complete" = "complete"
       const cap = opts.sample
