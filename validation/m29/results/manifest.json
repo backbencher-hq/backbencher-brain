@@ -164,7 +164,7 @@
       "code": "R5",
       "githubIssue": 540,
       "tool": "precision-improvements",
-      "status": "planned",
+      "status": "verified",
       "scope": "Evidence-driven precision work surfaced by R4 (e.g. heuristic-edge reduction feeding the inferred-tier ratio). Each fix lands fixture-first with a permanent mutant (F7 rule).",
       "acceptanceCriteria": [
         "Each improvement: fixture authored before fix, mutant added, gate green",
@@ -175,7 +175,17 @@
         "Per-fix evidence",
         "Ledger drift-gate green",
         "Owner spot-check scheduled"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see R5-verify.json",
+        "verifierCommand": "npx tsx script/m29/verify-precision-improvements.ts",
+        "evidenceFile": "R5-verify.json",
+        "passed": 18,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 4
+      }
     },
     {
       "code": "V1",
