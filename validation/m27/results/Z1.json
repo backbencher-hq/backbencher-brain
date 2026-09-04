@@ -2,10 +2,10 @@
   "issue": "M27.Z1",
   "code": "Z1",
   "milestone": "M27",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 28,
-  "passed": 28,
-  "failed": 0,
+  "passed": 27,
+  "failed": 1,
   "mutantsCaught": 3,
   "mutantsTotal": 3,
   "mutantRecords": [
@@ -22,7 +22,7 @@
       "caught": true
     }
   ],
-  "currentCommit": "bfd4f0a202701b1bac01c630e9537e36aa17c68d",
+  "currentCommit": "8822e0d97fc8a687dae276116799b37ed309ca46",
   "build": {
     "ran": false,
     "ok": false,
@@ -30,7 +30,7 @@
   },
   "verifierCommand": "npx tsx script/m27/verify-zed.ts",
   "evidenceFile": "Z1.json",
-  "generatedAt": "2026-09-04T04:12:31.579Z",
+  "generatedAt": "2026-09-04T04:14:37.481Z",
   "claimLevel": "I2 — extension + shim unit-proven against the real server's wire capabilities; wasm build blocked-with-reason (toolchain boundary per D-7); no editor session driven",
   "blockedLegs": [
     {
