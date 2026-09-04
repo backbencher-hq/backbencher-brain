@@ -25,6 +25,7 @@ import os from "node:os"
 import path from "node:path"
 import { parse as parseToml } from "smol-toml"
 import { runHarness } from "../m24/lsp_harness.ts"
+import { fetchServerCapabilities } from "./server-caps.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const FRAGMENT = path.join(ROOT, "ide", "helix", "languages.toml")
@@ -210,44 +211,6 @@ async function main(): Promise<void> {
   writeFileSync(path.join(evidenceDir, result.evidenceFile), JSON.stringify(result, null, 2) + "\n")
   console.log(`H1: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutantsCaught}/${mutantsTotal} mutants)`)
   process.exit(failed === 0 && mutantsCaught === mutantsTotal ? 0 : 1)
-}
-
-/** Spawn the REAL dist server over stdio and read its advertised
- *  capabilities from the actual initialize response (wire truth, no stubs). */
-function fetchServerCapabilities(): Promise<Record<string, unknown> | null> {
-  return new Promise((resolve) => {
-    const child = spawn("node", [path.join(ROOT, "dist", "lsp", "server.js"), "--dir", ROOT], {
-      stdio: ["pipe", "pipe", "ignore"],
-    })
-    let buffer = ""
-    const timer = setTimeout(() => {
-      child.kill()
-      resolve(null)
-    }, 30_000)
-    child.stdout.on("data", (chunk: Buffer) => {
-      buffer += chunk.toString("utf8")
-      const match = /Content-Length:\s*(\d+)\r?\n\r\n/.exec(buffer)
-      if (match) {
-        const bodyStart = match.index + match[0].length
-        const body = buffer.slice(bodyStart, bodyStart + Number(match[1]))
-        try {
-          const msg = JSON.parse(body)
-          const caps = msg?.result?.capabilities
-          clearTimeout(timer)
-          child.kill()
-          resolve(caps && typeof caps === "object" ? (caps as Record<string, unknown>) : null)
-        } catch {
-          // wait for more data
-        }
-      }
-    })
-    child.on("error", () => {
-      clearTimeout(timer)
-      resolve(null)
-    })
-    const init = JSON.stringify({ jsonrpc: "2.0", id: 1, method: "initialize", params: { capabilities: {} } })
-    child.stdin.write(`Content-Length: ${Buffer.byteLength(init)}\r\n\r\n${init}`)
-  })
 }
 
 main().catch((error) => {

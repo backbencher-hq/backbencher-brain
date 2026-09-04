@@ -70,7 +70,7 @@
       "code": "J1",
       "githubIssue": 618,
       "tool": "lsp4ij-template",
-      "status": "planned",
+      "status": "verified",
       "scope": "JetBrains/LSP4IJ adapter: user-defined server template (JSON, no Kotlin plugin), method-set subset proof against bb_lsp declared capabilities, byte-stable template export, runIde leg attempted and honestly classified (D-7: blocked-with-reason, no IDE download on this machine).",
       "acceptanceCriteria": [
         "Template valid per LSP4IJ user-defined schema",
@@ -80,7 +80,18 @@
       "closureRequirements": [
         "npx tsx script/m27/verify-lsp4ij.ts exits 0 at HEAD with clean relevant tree",
         "Evidence persisted at validation/m27/results/J1.json with commit stamp"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see J1.json",
+        "verifierCommand": "npx tsx script/m27/verify-lsp4ij.ts",
+        "evidenceFile": "J1.json",
+        "passed": 22,
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": 4,
+        "mutantsTotal": 4
+      }
     },
     {
       "code": "Z1",
