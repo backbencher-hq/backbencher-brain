@@ -1,0 +1,111 @@
+{
+  "language": "python",
+  "status": "verified",
+  "steps": [
+    {
+      "step": "S4-real-index",
+      "status": "pass",
+      "detail": "files=2 symbols=24 rels=28"
+    },
+    {
+      "step": "L1: capabilities advertised",
+      "status": "pass",
+      "detail": "{\"hoverProvider\":true,\"definitionProvider\":true,\"referencesProvider\":true,\"documentSymbolProvider\":true,\"workspaceSymbolProvider\":true,\"callHierarchyP"
+    },
+    {
+      "step": "fixture: hover position derivable",
+      "status": "pass",
+      "detail": "symbol greet not on line 11"
+    },
+    {
+      "step": "L2: hover renders the symbol",
+      "status": "pass",
+      "detail": "```\npublic method greet([{\"name\":\"self\"}]) → str\n```\n\n**greet** — method, 3 usages\n\nevidence: indexed, inferred\n\n_source"
+    },
+    {
+      "step": "L2: hover carries the evidence tier",
+      "status": "pass",
+      "detail": "```\npublic method greet([{\"name\":\"self\"}]) → str\n```\n\n**greet** — method, 3 usages\n\nevidence: indexed, inferred\n\n_source"
+    },
+    {
+      "step": "L3: definition resolves",
+      "status": "pass",
+      "detail": "{\"found\":true,\"location\":{\"path\":\"$HOME/backbencher-brain/script/m29/wave-fixtures/python/main.py\",\"line\":10,\"character\":4,\"endLine\":11,\"end"
+    },
+    {
+      "step": "L3: references non-empty",
+      "status": "pass",
+      "detail": "got 4"
+    },
+    {
+      "step": "L4: documentSymbols include the class",
+      "status": "pass",
+      "detail": "[\"Greeter\"]"
+    },
+    {
+      "step": "L4: workspace symbol finds it",
+      "status": "pass",
+      "detail": "[\"greet\"]"
+    },
+    {
+      "step": "L4: absence is declared (empty, not fabricated)",
+      "status": "pass",
+      "detail": "[]"
+    },
+    {
+      "step": "L5: call hierarchy prepares",
+      "status": "pass",
+      "detail": "{\"item\":{\"name\":\"greet\",\"kind\":6,\"uri\":\"file://$HOME/backbencher-brain/script/m29/wave-fixtures/python/main.py\",\"range\":{\"start\":{\"line\":10,"
+    },
+    {
+      "step": "§3: warm p95 within budgets",
+      "status": "pass",
+      "detail": ""
+    }
+  ],
+  "indexCounts": {
+    "files": 2,
+    "symbols": 24,
+    "relationships": 28
+  },
+  "measurements": [
+    {
+      "op": "hover",
+      "p95WarmMs": 1.4572849999999562,
+      "samples": 40
+    },
+    {
+      "op": "definition",
+      "p95WarmMs": 0.6958490000001802,
+      "samples": 40
+    },
+    {
+      "op": "references",
+      "p95WarmMs": 0.9749849999998332,
+      "samples": 40
+    },
+    {
+      "op": "documentSymbol",
+      "p95WarmMs": 2.3727969999999914,
+      "samples": 40
+    },
+    {
+      "op": "workspaceSymbol",
+      "p95WarmMs": 1.4542169999999714,
+      "samples": 40
+    },
+    {
+      "op": "prepareCallHierarchy",
+      "p95WarmMs": 1.035319999999956,
+      "samples": 40
+    }
+  ],
+  "budgetViolations": [],
+  "commit": "bec36c00415a88f38816f3467dda2658fe123f29",
+  "machine": {
+    "node": "v20.19.5",
+    "platform": "linux",
+    "arch": "x64"
+  },
+  "generatedAt": "2026-09-04T17:35:01.696Z"
+}

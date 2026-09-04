@@ -35,9 +35,11 @@ import { realpathSync, appendFileSync } from "node:fs"
 import { getProjectId } from "../cli/index"
 import { BACKBENCHER_BRAIN_VERSION } from "../version"
 
-/** The five launch languages (#419-CONFORMANT set). Everything else is
- *  declared absent — a documented limitation, never a crash. */
-export const LAUNCH_LANGUAGES = ["java", "groovy", "kotlin", "scala", "typescript"] as const
+/** The launch set, its membership test, and the path→language map live in
+ *  the single-owner module (M29.R2: one owner; the set was duplicated here
+ *  and in hover.ts — a drift hazard the wave found). */
+import { LAUNCH_LANGUAGES, isLaunchLanguage, languageForPath } from "./launch_languages"
+export { LAUNCH_LANGUAGES, isLaunchLanguage, languageForPath }
 
 /** LSP method names this server implements. The capabilities advertisement is
  *  derived from this table so the two can never drift apart. Features land in
@@ -89,29 +91,6 @@ function isNotification(msg: { id?: unknown; method?: unknown }): boolean {
 
 function isResponse(msg: { id?: unknown; method?: unknown }): boolean {
   return msg.method === undefined && msg.id !== undefined
-}
-
-/** Language for a file path (extension-based; L1 scope is extension-level). */
-export function languageForPath(filePath: string): string | null {
-  const ext = path.extname(filePath).toLowerCase()
-  const map: Record<string, string> = {
-    ".java": "java",
-    ".groovy": "groovy",
-    ".gradle": "groovy",
-    ".kt": "kotlin",
-    ".kts": "kotlin",
-    ".scala": "scala",
-    ".sc": "scala",
-    ".ts": "typescript",
-    ".tsx": "typescript",
-  }
-  return map[ext] ?? null
-}
-
-/** True when the language is in the launch set; anything else is declared
- *  absent — a documented limitation, never a crash. */
-export function isLaunchLanguage(language: string | null): boolean {
-  return language !== null && (LAUNCH_LANGUAGES as readonly string[]).includes(language)
 }
 
 /**

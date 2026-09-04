@@ -129,8 +129,8 @@ try {
   // --- G2: drift gate vs the generated tool doc -----------------------------
   {
     const doc = readFileSync(TOOL_DOC, "utf8")
-    const rows = [...doc.matchAll(/^\| (java|groovy|kotlin|scala|typescript) \|(.*)$/gm)]
-    check("G2: tool doc has a claim row for all five launch languages", rows.length === 5, `${rows.length}`)
+    const rows = [...doc.matchAll(/^\| (java|groovy|kotlin|scala|typescript|javascript|python) \|(.*)$/gm)]
+    check("G2: tool doc has a claim row for every launch language (M29 wave-1 set)", rows.length === LAUNCH_LANGUAGES.length, `${rows.length}`)
     let drift = 0
     for (const row of rows) {
       const lang = row[1]

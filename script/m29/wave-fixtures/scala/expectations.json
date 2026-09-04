@@ -1,0 +1,27 @@
+{
+  "language": "scala",
+  "hover": {
+    "symbol": "greet",
+    "contains": [
+      "greet"
+    ],
+    "evidenceClassRequired": true
+  },
+  "definition": {
+    "symbol": "Greeter",
+    "minLocations": 1
+  },
+  "references": {
+    "symbol": "greet",
+    "minCount": 1
+  },
+  "documentSymbols": [
+    "Greeter"
+  ],
+  "declaredAbsence": {
+    "symbol": "nonexistent_symbol_xyz",
+    "note": "absence must be declared, never fabricated"
+  },
+  "hoverLine": 6,
+  "definitionLine": 5
+}

@@ -41,28 +41,11 @@ import {
 import { storedCrossLanguageRows, factsFromRows, crossLanguageSection } from "./cross_language_hover"
 import { annotationHoverSection, type AnnotationRow } from "./annotation_ui"
 
-/** The five launch languages (#419-CONFORMANT set). */
-export const LAUNCH_LANGUAGES = ["java", "groovy", "kotlin", "scala", "typescript"] as const
-
-export function isLaunchLanguage(language: string | null): boolean {
-  return language !== null && (LAUNCH_LANGUAGES as readonly string[]).includes(language)
-}
-
-export function languageForPath(filePath: string): string | null {
-  const ext = filePath.slice(filePath.lastIndexOf(".")).toLowerCase()
-  const map: Record<string, string> = {
-    ".java": "java",
-    ".groovy": "groovy",
-    ".gradle": "groovy",
-    ".kt": "kotlin",
-    ".kts": "kotlin",
-    ".scala": "scala",
-    ".sc": "scala",
-    ".ts": "typescript",
-    ".tsx": "typescript",
-  }
-  return map[ext] ?? null
-}
+/** The launch set, its membership test, and the path→language map live in
+ *  the single-owner module (M29.R2: one owner; the set was duplicated here
+ *  and in server.ts — a drift hazard the wave found). */
+import { LAUNCH_LANGUAGES, isLaunchLanguage, languageForPath } from "./launch_languages"
+export { LAUNCH_LANGUAGES, isLaunchLanguage, languageForPath }
 
 /** Evidence tiers for relationship data, per the evidence class vocabulary. */
 export type EvidenceTier = "indexed" | "inferred" | "semantic_candidate" | "unknown"
