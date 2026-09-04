@@ -798,7 +798,12 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
               metadata: { requireMethod: methodName },
             })
             relationships.push({
-              source: "root",
+              // GAD2 twin (groovy wave, standing rule): the require edge's
+              // source used a hardcoded "root" while calls/uses/instan-
+              // tiates at the same top level use "Global" — two sentinels
+              // for one role in one file. Unified on "Global" (the pinned
+              // convention; no fixture ever pinned "root").
+              source: "Global",
               target: cleanText,
               type: ASTEngine.RelationshipType.References,
               confidence: 0.9,
