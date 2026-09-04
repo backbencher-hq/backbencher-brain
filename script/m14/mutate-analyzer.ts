@@ -55,6 +55,18 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => ({ ...s, complexity: undefined })) }),
   },
   {
+    id: "c/emit-write-as-read",
+    language: "c",
+    defectClass: "relationship-fabrication",
+    description: "SCD1 regression: removes the field_expression assignment-LHS write gate — re-injects the pre-fix edge probe-verified on q->value = v / q->value += 1 (set_value->value uses) — c set_value forbid catches it",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), {
+        type: "uses", source: "set_value", target: "value", isExternal: true, weight: 1, confidence: 0.9, metadata: { relationshipType: "field_access", accessedFrom: "q" },
+      }],
+    }),
+  },
+  {
     id: "cpp/drop-virtual-overrides",
     language: "cpp",
     defectClass: "relationship-loss",

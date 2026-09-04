@@ -1,27 +1,42 @@
 {
   "checks": [
     {
-      "description": "php adversarial fixtures",
-      "detail": "1/1 fixtures pass",
-      "id": "fixtures-php",
+      "description": "c adversarial fixtures",
+      "detail": "4/4 fixtures pass",
+      "id": "fixtures-c",
       "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "2807164eaf9e7314c9dcf0f3a01f6fd78f1ba550",
-  "committedAt": "2026-09-04T18:46:55+02:00",
+  "commit": "644d75fada0f9895a7c34d9649810ed281dbc29b",
+  "committedAt": "2026-09-04T18:57:22+02:00",
   "data": {
     "details": [
       {
-        "fixture": "php/payload-and-complexity",
+        "fixture": "c/c-completeness",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "c/complexity-and-payloads",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "c/dispatch-table-filter",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "c/malloc-instantiates-noise",
         "ok": true,
         "problems": []
       }
     ],
     "summary": {
-      "php": {
+      "c": {
         "fail": 0,
-        "pass": 1
+        "pass": 4
       }
     }
   },
