@@ -437,7 +437,7 @@ async function cmdStatus(dir: string | undefined) {
   console.log(`  db: ${BrainDatabase.getDbPath(pid)}`)
 }
 
-async function cmdHealth(dir: string | undefined, opts: { refresh?: boolean; force?: boolean; wait?: boolean; complete?: boolean; integrity?: boolean; sampleSize?: number }) {
+async function cmdHealth(dir: string | undefined, opts: { refresh?: boolean; force?: boolean; wait?: boolean; complete?: boolean; integrity?: boolean; sampleSize?: number; verboseConfig?: boolean }) {
   const abs = dir ? requireDir(dir) : process.cwd()
   const pid = getProjectId(abs)
   const dbPath = BrainDatabase.getDbPath(pid)
@@ -452,6 +452,7 @@ async function cmdHealth(dir: string | undefined, opts: { refresh?: boolean; for
     freshness: opts.complete === true ? "complete" : "sampled",
     sampleSize: opts.sampleSize,
     integrity: opts.integrity === true,
+    verbose: opts.verboseConfig === true,
   })
   console.log(formatUnifiedHealth(report))
   if (report.warnings.some((w) => w.severity === "error")) process.exitCode = 1
@@ -638,6 +639,7 @@ Examples:
     .option("--complete", "check freshness for all files (not just a sample)")
     .option("--integrity", "run the 12-point index integrity check")
     .option("--sample-size <n>", "freshness sample size (default: 200)", "200")
+    .option("--verbose-config", "show effective embedding config + per-field source (M40.A8)")
     .action(async (dir: string | undefined, opts: any) => {
       await cmdHealth(dir, { ...opts, sampleSize: parseInt(opts.sampleSize, 10) })
     })
