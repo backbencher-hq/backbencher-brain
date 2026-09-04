@@ -26,10 +26,10 @@
       "caught": true
     }
   ],
-  "currentCommit": "14415f530d731cbea1b116360f48db863c7c4b9a",
+  "currentCommit": "c36cc71eee011926bcf9faa4f4e19ce7a40349f9",
   "verifierCommand": "npx tsx script/m27/verify-helix.ts",
   "evidenceFile": "H1.json",
-  "generatedAt": "2026-09-04T03:47:39.636Z",
+  "generatedAt": "2026-09-04T03:51:22.049Z",
   "claimLevel": "I2 — configuration verified against the real server's advertised capabilities; no driven hx session on this machine (D-7)",
   "blockedLegs": [
     {
