@@ -204,6 +204,54 @@ export function findNodeIdentityComparisons(src: string, lang: string, findings:
   }
 }
 
+// M37 #597 (KAD2 class, follow-up): variable-to-variable node identity
+// comparisons are invisible to the accessor rule above when BOTH sides are
+// bare identifiers (`sibling === node`, the TSD2 `nameField === n` shape).
+// Mini dataflow: resolve each side backward to its initializer or a
+// `: Node` type annotation. web-tree-sitter has NO legitimate object-
+// identity use, so ANY bare node-vs-node comparison is suspect.
+export function findBareNodeIdentityComparisons(src: string, lang: string, findings: Finding[]) {
+  const FRESH = /\.(childForFieldName|namedChild|child)\s*\(|\.(parent|previousSibling|nextSibling|namedChildren|parent)\b/
+  const PRIMITIVE = /\.(id|text|type|startIndex|endIndex|startPosition|endPosition|length|row|column|isNamed|isMissing|hasError|name|kind|visibility|module)\b/
+  // A bare identifier is node-ish when (a) its nearest initializer uses a
+  // fresh accessor, or (b) it is declared/parameterized as a Node.
+  const declaredNode = new Map<string, boolean>()
+  const initializerHasFresh = (ident: string, uptoIdx: number): boolean => {
+    const re = new RegExp(`\\b(?:const|let|var)\\s+${ident}\\s*=\\s*([^;\\n]+)`, "g")
+    let m: RegExpExecArray | null
+    let found = false
+    while ((m = re.exec(src)) && m.index < uptoIdx) {
+      if (FRESH.test(m[1])) found = true
+    }
+    return found
+  }
+  const isNodeIsh = (ident: string, lineIdx: number): boolean => {
+    if (!(ident in declaredNode)) {
+      declaredNode.set(ident, new RegExp(`\\b${ident}\\s*\\??\\s*:\\s*Node\\b`).test(src))
+    }
+    if (declaredNode.get(ident)) return true
+    return initializerHasFresh(ident, lineIdx)
+  }
+  const lines = src.split("\n")
+  let offset = 0
+  for (const line of lines) {
+    const cmp = line.match(/([A-Za-z_][\w?]*)\s*(===|!==)\s*([A-Za-z_][\w?]*)/)
+    if (cmp && !PRIMITIVE.test(line) && !/["'`]/.test(line) && !/\bnull\b|\bundefined\b|\d/.test(line)) {
+      const [, left, , right] = cmp
+      if (isNodeIsh(left, offset) && isNodeIsh(right, offset)) {
+        findings.push({
+          lang,
+          kind: "bare-node-identity-comparison",
+          line: src.slice(0, offset).split("\n").length,
+          snippet: line.trim().slice(0, 120),
+          note: "both sides resolve to web-tree-sitter Nodes — object identity never matches (fresh wrappers); compare .id or spans (KAD2/TSD2 class)",
+        })
+      }
+    }
+    offset += line.length + 1
+  }
+}
+
 export function main() {
   const only = process.argv.includes("--lang") ? process.argv[process.argv.indexOf("--lang") + 1] : undefined
   const langs = only ? [only] : Object.keys(GATED_ANALYZERS)
@@ -225,6 +273,7 @@ export function main() {
     findDuplicateIfElse(src, lang, allFindings)
     findWriteOnlyFlags(src, lang, allFindings)
     findNodeIdentityComparisons(src, lang, allFindings)
+    findBareNodeIdentityComparisons(src, lang, allFindings)
   }
 
   for (const f of allFindings) {

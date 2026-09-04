@@ -941,7 +941,11 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     const stack: Node[] = [node]
     while (stack.length > 0) {
       const n = stack.pop()!
-      if (n !== node && predicate(n)) return n
+      // KAD2 sweep: `n !== node` never matched fresh wrappers — but the
+      // predicate keys on node TYPE while the root is a container, so no
+      // false-positive ever materialized. Span-based exclusion keeps the
+      // guard real for root nodes whose type could match.
+      if (!(n.startIndex === node.startIndex && n.endIndex === node.endIndex) && predicate(n)) return n
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const c = n.namedChild(i)
         if (c) stack.push(c)

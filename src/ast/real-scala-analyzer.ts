@@ -496,16 +496,23 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
    * approach; previously scala symbols carried NO comments at all.
    */
   private extractScalaDoc(node: Node): string | undefined {
+    // KAD2 twin (M37 #597 sweep): dead `sibling === node` stop leaked the
+    // first ScalaDoc in the file onto every doc-less declaration.
+    // Span-locate + backward scan, strict adjacency (kotlin KAD2 contract).
     const parent = node.parent
     if (!parent) return undefined
+    let selfIdx = -1
     for (let i = 0; i < parent.namedChildCount; i++) {
+      const c = parent.namedChild(i)
+      if (c && c.startIndex === node.startIndex && c.endIndex === node.endIndex) { selfIdx = i; break }
+    }
+    for (let i = selfIdx - 1; i >= 0; i--) {
       const sibling = parent.namedChild(i)
-      if (sibling === node) break
+      if (!sibling) continue
       // scala grammar types doc comments as block_comment (kotlin uses
       // multiline_comment - each grammar names them differently)
-      if (sibling?.type === "block_comment" && sibling.text.startsWith("/**")) {
-        return sibling.text
-      }
+      if (sibling.type === "block_comment" && sibling.text.startsWith("/**")) return sibling.text
+      break
     }
     return undefined
   }

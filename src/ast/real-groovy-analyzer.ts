@@ -760,7 +760,15 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     const resolveSource = (start: Node): string => {
-      let p: Node | null = start.parent
+      // KAD6 sweep (M37 #597): include the start node when it IS the
+      // declaration. The method_declaration case emits its own return type
+      // through this resolver, which seeded at `.parent` — so `String
+      // greet()` inside `class Foo` attributed String to Foo (or Global at
+      // top level) instead of greet. Same bug kotlin's KAD6.
+      let p: Node | null =
+        /^(method_declaration|constructor_declaration|function_definition|class_declaration|trait_declaration|enum_declaration)$/.test(start.type)
+          ? start
+          : start.parent
       while (p) {
         if (p.type === "method_declaration" || p.type === "constructor_declaration" || p.type === "function_definition") {
           const name = this.findChild(p, (c) => c.type === "identifier")
@@ -884,7 +892,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (c.type.endsWith("_type") || c.type === "type_identifier") roots.push(c)
             else break
           }
-          if (roots.length) emit(n, roots, "return_type")
+          if (roots.length) emit(n, roots, "return_type", "return_type")
           break
         }
       }
@@ -928,8 +936,17 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (parts.length >= 2) {
           const first = parts[0]
           const source = first === "this" || first === "super" ? (owner ?? first) : first
+          // KAD1 sweep (M37 #597): assignment-LHS span is a WRITE — the
+          // exact-LHS gate (java JAD1/TS TSD1/JSD1 contract); chained-write
+          // inner segments stay reads.
+          const pType = node.parent?.type
+          let isWrite = false
+          if (pType === "assignment_expression") {
+            const lhs = node.parent!.namedChild(0)
+            isWrite = !!lhs && lhs.startIndex === node.startIndex && lhs.endIndex === node.endIndex
+          }
           const key = `${source}.${parts[parts.length - 1]}`
-          if (!seen.has(key)) {
+          if (!isWrite && !seen.has(key)) {
             seen.add(key)
             relationships.push({
               source,
@@ -943,11 +960,18 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
 
       if (node.type === "array_access") {
-        // xs[i] reads/writes are Uses on the array expression (G1). The
-        // array is the first named child; for bare identifiers that is the
-        // referenced array name.
+        // KAD1 sweep (M37 #597): READS are uses of the array expression
+        // (G1); the assignment-LHS span (`xs[0] = 5`, `xs[1] += 2` — both
+        // parse as assignment_expression with the LHS as first named child,
+        // probe-verified) is a WRITE and must NOT emit (java JAD1 / kotlin
+        // KAD1 contract — the pre-fix "reads/writes are uses" ruling
+        // predated the write-gate family contract and this fixture pinned
+        // it; the pin is re-authored to the corrected contract).
+        const parent = node.parent
+        const lhs = parent && parent.type === "assignment_expression" ? parent.namedChild(0) : null
+        const isWrite = !!lhs && lhs.startIndex === node.startIndex && lhs.endIndex === node.endIndex
         const first = node.namedChild(0)
-        if (first && first.type === "identifier") {
+        if (!isWrite && first && first.type === "identifier") {
           const source = owner ?? first.text
           const key = `arr:${source}.${first.text}`
           if (!seen.has(key)) {
@@ -1048,14 +1072,21 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private extractGroovyDoc(node: Node): string | undefined {
+    // KAD2 twin (M37 #597 sweep): dead `sibling === node` stop leaked the
+    // first GroovyDoc in the file onto every doc-less declaration.
+    // Span-locate + backward scan, strict adjacency (kotlin KAD2 contract).
     const parent = node.parent
     if (!parent) return undefined
+    let selfIdx = -1
     for (let i = 0; i < parent.namedChildCount; i++) {
+      const c = parent.namedChild(i)
+      if (c && c.startIndex === node.startIndex && c.endIndex === node.endIndex) { selfIdx = i; break }
+    }
+    for (let i = selfIdx - 1; i >= 0; i--) {
       const sibling = parent.namedChild(i)
-      if (sibling === node) break
-      if (sibling?.type === "block_comment" && sibling.text.startsWith("/**")) {
-        return sibling.text
-      }
+      if (!sibling) continue
+      if (sibling.type === "block_comment" && sibling.text.startsWith("/**")) return sibling.text
+      break
     }
     return undefined
   }

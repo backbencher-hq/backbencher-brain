@@ -519,6 +519,53 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => x.source === "m" && x.metadata?.relationshipType === "return_type" ? { ...x, source: "Global" } : x) }),
   },
   {
+    id: "java/javadoc-leak",
+    language: "java",
+    defectClass: "docstring-misattribution",
+    description: "injects the KAD2-sweep regression class: the first javadoc leaks onto every subsequent declaration (dead `sibling === node` forward scan)",
+    transform: r => {
+      const firstDoc = (r.symbols ?? []).find((s: any) => (s.comments ?? []).length > 0)?.comments?.[0]
+      if (!firstDoc) return r
+      return { ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, comments: [firstDoc] })) }
+    },
+  },
+  {
+    id: "groovy/groovydoc-leak",
+    language: "groovy",
+    defectClass: "docstring-misattribution",
+    description: "injects the KAD2-sweep regression class: first-GroovyDoc leak onto doc-less declarations",
+    transform: r => {
+      const firstDoc = (r.symbols ?? []).find((s: any) => (s.comments ?? []).length > 0)?.comments?.[0]
+      if (!firstDoc) return r
+      return { ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, comments: [firstDoc] })) }
+    },
+  },
+  {
+    id: "scala/scaladoc-leak",
+    language: "scala",
+    defectClass: "docstring-misattribution",
+    description: "injects the KAD2-sweep regression class: first-ScalaDoc leak onto doc-less declarations",
+    transform: r => {
+      const firstDoc = (r.symbols ?? []).find((s: any) => (s.comments ?? []).length > 0)?.comments?.[0]
+      if (!firstDoc) return r
+      return { ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, comments: [firstDoc] })) }
+    },
+  },
+  {
+    id: "groovy/array-write-uses",
+    language: "groovy",
+    defectClass: "relationship-noise",
+    description: "injects the KAD1-sweep regression class: assignment-LHS array_access leaks a uses edge (the pre-fix emission the old fixture pinned as Groovy semantics)",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), ...(r.relationships ?? []).filter((x: any) => x.metadata?.isArrayAccess).map((x: any) => ({ ...x, source: "store" }))] }),
+  },
+  {
+    id: "groovy/return-type-mislabel",
+    language: "groovy",
+    defectClass: "relationship-mislabel",
+    description: "injects the KAD6-sweep regression class: return-type refs revert to declared_type and re-source to the enclosing class",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => x.metadata?.relationshipType === "return_type" ? { ...x, source: "TypeGraph", metadata: { ...x.metadata, relationshipType: "declared_type" } } : x) }),
+  },
+  {
     id: "groovy/drop-declared-types",
     language: "groovy",
     defectClass: "relationship-loss",
