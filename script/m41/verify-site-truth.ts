@@ -15,7 +15,10 @@ import path from "node:path"
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const SITE = path.join(ROOT, "website")
 const RESULTS = path.join(ROOT, "validation/m41/results")
-const EVIDENCE_PATH = path.join(RESULTS, "T2.json")
+// T3 evidence mode: `--label T3` emits T3.json (same checks, T3 attribution).
+const LABEL = process.argv.includes("--label") ? (process.argv[process.argv.indexOf("--label") + 1] ?? "T2") : "T2"
+const EVIDENCE_FILE = `${LABEL}.json`
+const EVIDENCE_PATH = path.join(RESULTS, EVIDENCE_FILE)
 
 let checks = 0
 let passed = 0
@@ -106,6 +109,38 @@ check("T2: docs quotes real remediation commands", docsPage.includes("bb index -
 check("T2: docs tool table lists all tools", uniqueTools.every((t) => docsPage.includes(t)))
 check("T2: docs honesty note about upgrade channel present", docsPage.includes("upgrade") && docsPage.includes("Backbencher releases"))
 
+// --- 3b. T3 pages: install, faq, troubleshooting, contact ------------------------
+
+const EXPECTED_ROUTES = ["index", "docs", "tools", "install", "faq", "troubleshooting", "contact"]
+for (const route of EXPECTED_ROUTES) {
+  check(`T3: route rendered (${route}.html exists in build output)`, buildOk && read(`website/.next/server/app/${route}.html`).length > 0)
+}
+
+const installHtml = buildOk ? normalize(read("website/.next/server/app/install.html")) : ""
+const faqHtml = buildOk ? normalize(read("website/.next/server/app/faq.html")) : ""
+const troubleshootHtml = buildOk ? normalize(read("website/.next/server/app/troubleshooting.html")) : ""
+const contactHtml = buildOk ? normalize(read("website/.next/server/app/contact.html")) : ""
+
+const installVersion = read("website/src/data/truth.generated.ts").match(/install: \{[\s\S]*?version: "([^"]+)"/)?.[1] ?? ""
+const installRepo = read("website/src/data/truth.generated.ts").match(/repo: "([^"]+)"/)?.[1] ?? ""
+check("T3: install page states the REAL installer version from truth", installVersion !== "" && installHtml.includes(installVersion), installVersion)
+check("T3: install page states the REAL installer release repo from truth", installRepo !== "" && installHtml.includes(installRepo), installRepo)
+check("T3: install page quotes both real installer commands", installHtml.includes("https://backbencher.cc/install.sh | bash") && installHtml.includes("https://backbencher.cc/install.ps1 | iex"))
+check("T3: install page distinguishes installer channel from engine version", installHtml.includes(`(installer)` ) && installHtml.includes(`engine ${version}`), `engine ${version}`)
+
+check("T3: FAQ renders generated tool count", faqHtml.includes(`${uniqueTools.length} agent tools`))
+check("T3: FAQ renders generated language counts", faqHtml.includes(`${langCount}`) && faqHtml.includes(`${dedicated}`))
+check("T3: FAQ quotes real setup command", faqHtml.includes("bb setup"))
+check("T3: FAQ answers the open-source question honestly", faqHtml.includes("Not right now"))
+
+check("T3: troubleshooting quotes real remediation commands", ["bb index --changed", "bb index --post", "bb index --force", "bb index --resume", "bb setup show", "bb doctor", "bb health"].every((c) => troubleshootHtml.includes(c)), ["bb index --changed", "bb index --post", "bb index --force", "bb index --resume", "bb setup show", "bb doctor", "bb health"].filter((c) => !troubleshootHtml.includes(c)).join(","))
+check("T3: contact offers only the real support channel", contactHtml.includes("support@backbencher.cc"))
+check("T3: shared footer renders on all T3 pages", [installHtml, faqHtml, troubleshootHtml, contactHtml].every((h) => h.includes("independent, local-first code intelligence engine")))
+
+const navSrc = read("website/src/components/Navigation.tsx")
+check("T3: navigation links every route", EXPECTED_ROUTES.every((r) => r === "index" || navSrc.includes(`href: '/${r}'`)), EXPECTED_ROUTES.filter((r) => r !== "index" && !navSrc.includes(`href: '/${r}'`)).join(","))
+check("T3: no phantom command renders on any T3 page", PHANTOMS.every((p) => ![installHtml, faqHtml, troubleshootHtml, contactHtml].some((h) => h.includes(p))))
+
 // --- 4. language display coverage (source-level) --------------------------------
 
 const showcaseSrc = read("website/src/components/LanguageShowcase.tsx")
@@ -189,6 +224,15 @@ if (buildOk) {
   }
 }
 
+// N3 (cheap, rendered-output predicate): inject a phantom command into a copy
+// of a built page's HTML and prove the phantom-render predicate detects it —
+// the detector must be sensitive to exactly the lie class T2/T3 guard against.
+{
+  const synthetic = installHtml.length > 0 ? installHtml + " bb_refresh --wait" : "bb_refresh --wait"
+  const allPages = [installHtml, faqHtml, troubleshootHtml, contactHtml, toolsPage, docsPage, home]
+  negative("T3: phantom-in-rendered-HTML detector is sensitive", PHANTOMS.some((p) => synthetic.includes(p)) && PHANTOMS.every((p) => !allPages.some((h) => h.includes(p))))
+}
+
 // --- verdict + evidence ------------------------------------------------------------
 
 let headCommit = "unknown"
@@ -207,8 +251,8 @@ console.log("VERDICT: PASS")
 
 mkdirSync(RESULTS, { recursive: true })
 const evidence = {
-  issue: "M41.T2",
-  code: "T2",
+  issue: `M41.${LABEL}`,
+  code: LABEL,
   milestone: "M41",
   status: "verified",
   checks,
@@ -217,12 +261,13 @@ const evidence = {
   negativeCases: negatives,
   currentCommit: headCommit,
   verifierCommand: "npx tsx script/m41/verify-site-truth.ts",
-  evidenceFile: "T2.json",
+  evidenceFile: EVIDENCE_FILE,
   generatedAt: new Date().toISOString(),
   rendered: { version, tools: uniqueTools.length, tables, languages: langCount, dedicatedParsers: dedicated, cliCommands: cliCommands.length },
   limitations: [
-    "Gate covers the three prerendered routes; new T3 routes must be added here in the same commit that adds them.",
+    "Gate covers the seven prerendered routes; adding a route requires updating EXPECTED_ROUTES in the same commit.",
     "N2 mutates the hero source and rebuilds twice; a failing site build aborts the mutant proof (build success is checked first).",
+    "N3 proves detector sensitivity on synthetic HTML; a full rebuild mutant (N2) covers the end-to-end path.",
     "Editorial fields (features, examples, longDescription) are reviewed against docs/tools/*.md but not machine-diffed; the registry-owned fields are machine-enforced.",
   ],
 }

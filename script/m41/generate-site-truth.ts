@@ -124,6 +124,18 @@ const cliSrc = read("src/cli/index.ts")
 const cliCommands = [...new Set([...cliSrc.matchAll(/program\s*\n\s*\.command\("([a-z-]+)"\)/g)].map((m) => m[1]))].sort((a, b) =>
   a.localeCompare(b),
 )
+
+// --- installer facts (what the install scripts ACTUALLY serve) -----------------
+// Parsed from the shipped install.sh so the install page states reality.
+const installSh = read("website/public/install.sh")
+const installerVersion = installSh.match(/VERSION="\$\{VERSION:-([0-9][0-9.]*)\}"/)?.[1]
+const installerRepo = installSh.match(/REPO="([^"]+)"/)?.[1]
+if (!installerVersion || !/^[0-9]+\.[0-9]+\.[0-9]+$/.test(installerVersion)) {
+  fail(`install.sh default VERSION missing or malformed: ${String(installerVersion)}`)
+}
+if (!installerRepo || !/^[A-Za-z0-9-]+\/[A-Za-z0-9_.-]+$/.test(installerRepo)) {
+  fail(`install.sh REPO missing or malformed: ${String(installerRepo)}`)
+}
 if (cliCommands.length === 0) fail("no .command() registrations found in cli/index.ts")
 
 // --- emit --------------------------------------------------------------------
@@ -148,6 +160,10 @@ export const TRUTH = {
     names: ${JSON.stringify(languageNames)},
   },
   cliCommands: ${JSON.stringify(cliCommands)},
+  install: {
+    version: ${JSON.stringify(installerVersion)},
+    repo: ${JSON.stringify(installerRepo)},
+  },
   tools: ${JSON.stringify(tools, null, 2).split("\n").join("\n  ")},
 } as const
 
