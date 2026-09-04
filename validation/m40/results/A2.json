@@ -1,0 +1,18 @@
+{
+  "status": "verified",
+  "currentCommit": "474e0b27c73c152caa82e9b123e9941380c4dbfa",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m40/verify-a2-bounded-post.ts",
+  "generatedAt": "2026-09-04T19:06:41.697Z",
+  "passed": 22,
+  "failed": 0,
+  "negativeCases": 0,
+  "timing": {
+    "boundedMs": 2380,
+    "fullMs": 5356,
+    "refreshedRows": 1,
+    "totalEdges0": 39986
+  },
+  "mutation": "not-run (control)",
+  "failures": []
+}
