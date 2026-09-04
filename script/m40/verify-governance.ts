@@ -77,8 +77,12 @@ if (ledgerOk) {
     check(`ledger ${issue.code}: has closureRequirements`, issue.closureRequirements?.length > 0)
   }
   // Evidence blocks must agree with on-disk evidence files (no hand-editing).
+  // G1 self-exempts: governance rewrites its own evidence every run, so a
+  // ledger-vs-disk comparison of the G1 block is mid-flight by construction
+  // (same class as closure's G1 control seam). G1's status/stamp are still
+  // enforced independently by the X1 closure gate.
   for (const issue of ledger) {
-    if (!issue.evidence) continue
+    if (!issue.evidence || issue.code === "G1") continue
     const file = path.join(RESULTS_DIR, `${issue.code}.json`)
     if (!existsSync(file)) { check(`ledger ${issue.code}: evidence file exists`, false, `${issue.code}.json missing`); continue }
     const ev = JSON.parse(readFileSync(file, "utf8")) as Record<string, unknown>
