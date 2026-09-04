@@ -9,11 +9,11 @@
   "mutantsCaught": 4,
   "mutantsTotal": 4,
   "negativeCases": 4,
-  "currentCommit": "facff88361c9673e823a776f9c8dc3a908452e66",
+  "currentCommit": "28fbdb6a925c1f783b669fbdee022a1051e80812",
   "verifierCommand": "npx tsx script/m25/verify-status-surface.ts",
   "evidenceFile": "E3.json",
   "renderCapture": "validation/m25/results/E3-render-capture.txt",
-  "generatedAt": "2026-09-04T18:02:58.497Z",
+  "generatedAt": "2026-09-04T18:17:53.536Z",
   "os": "linux",
   "verdict": {
     "realComponentFailures": 0
