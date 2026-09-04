@@ -134,6 +134,31 @@ check("S1: keywords present in real content: MCP", /MCP/i.test(homeHtml))
 check("S1: keywords present in real content: SQLite", /SQLite/i.test(homeHtml))
 check("S1: keywords present in real content: ishaq2321 (JSON-LD author)", homeHtml.includes("ishaq2321"))
 
+// --- analytics (GoatCounter) ---------------------------------------------------------
+
+const GC_ENDPOINT = "https://bbstats.goatcounter.com/count"
+const homeFull = buildOk ? read("website/.next/server/app/index.html") : ""
+// next/script with afterInteractive renders an SSR <link rel=preload> for the
+// script and injects the real <script data-goatcounter> client-side; the
+// endpoint constant lands in the JS bundle. Check both emitted artifacts.
+check("S1: GoatCounter preloads on the homepage (SSR)", homeFull.includes('<link rel="preload" href="https://gc.zgo.at/count.js" as="script"/>'), "preload link not found in rendered HTML")
+{
+  let bundleHit = false
+  const { readdirSync, statSync } = await import("node:fs")
+  const walk = (dir: string): void => {
+    if (bundleHit) return
+    for (const f of readdirSync(dir)) {
+      const fp = path.join(dir, f)
+      const st = statSync(fp)
+      if (st.isDirectory()) walk(fp)
+      else if (f.endsWith(".js") && read(path.relative(ROOT, fp)).includes("bbstats.goatcounter.com/count")) bundleHit = true
+    }
+  }
+  if (buildOk) walk(path.join(SITE, ".next/static"))
+  check("S1: GoatCounter endpoint present in the client bundle", bundleHit, "bbstats.goatcounter.com/count not found in .next/static")
+}
+check("S1: analytics applies to the whole app (mounted in root layout)", read("website/src/app/layout.tsx").includes("<GoatCounter />"))
+
 // --- negatives ----------------------------------------------------------------------
 
 // N1 (rebuild mutant): remove the canonical from the install page and rebuild —
@@ -168,6 +193,8 @@ negative("S1: duplicate-title detector is sensitive", (() => {
   const fake = ["a", "a", "b"]
   return new Set(fake).size !== fake.length
 })())
+// N3 (cheap): analytics detector must reject a wrong endpoint on synthetic HTML.
+negative("S1: analytics endpoint check is sensitive", !`${GC_ENDPOINT.replace("bbstats", "WRONGCODE")}`.includes(GC_ENDPOINT) && !("<html></html>".includes(`data-goatcounter="${GC_ENDPOINT}"`)))
 
 // Restore proof: committed sources must render complete heads again.
 check("S1: restore-proof — committed sources render canonicals again", Object.values(H).every((h) => (h.match(/<link rel="canonical" href="([^"]+)"/)?.[1] ?? "").startsWith("https://backbencher.cc")))
