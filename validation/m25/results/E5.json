@@ -16,11 +16,11 @@
     "node": "v20.19.5",
     "runtime": "vscode-1.85.0-in-editor"
   },
-  "currentCommit": "28fbdb6a925c1f783b669fbdee022a1051e80812",
-  "commit": "28fbdb6a925c1f783b669fbdee022a1051e80812",
+  "currentCommit": "a9fe5e2603d677d5c09d0720f41b7d0f7079cd34",
+  "commit": "a9fe5e2603d677d5c09d0720f41b7d0f7079cd34",
   "failed": 0,
   "activation": {
-    "activationMs": 15,
+    "activationMs": 39,
     "declaredBudgetMs": 150,
     "withinBudget": true,
     "launch": {
@@ -32,43 +32,344 @@
     },
     "serverVersion": "0.3.0",
     "versionOk": true,
-    "handshakeMs": 312
+    "handshakeMs": 342
   },
   "measurements": [
     {
       "op": "hover",
-      "p95WarmMs": 2.374813999980688,
-      "samples": 40
+      "p95WarmMs": 3.4636339999269694,
+      "samples": 40,
+      "medianWarmMs": 1.71,
+      "rawSamplesMs": [
+        1.18,
+        1.23,
+        1.33,
+        1.34,
+        1.42,
+        1.53,
+        1.54,
+        1.55,
+        1.55,
+        1.55,
+        1.57,
+        1.59,
+        1.64,
+        1.64,
+        1.67,
+        1.67,
+        1.68,
+        1.68,
+        1.69,
+        1.7,
+        1.71,
+        1.73,
+        1.85,
+        1.92,
+        1.92,
+        1.95,
+        1.97,
+        2.06,
+        2.13,
+        2.21,
+        2.21,
+        2.26,
+        2.31,
+        2.41,
+        3.07,
+        3.24,
+        3.3,
+        3.33,
+        3.46,
+        3.58
+      ]
     },
     {
       "op": "definition",
-      "p95WarmMs": 1.2097120005637407,
-      "samples": 40
+      "p95WarmMs": 3.357622000039555,
+      "samples": 40,
+      "medianWarmMs": 1.42,
+      "rawSamplesMs": [
+        1.08,
+        1.13,
+        1.14,
+        1.14,
+        1.16,
+        1.18,
+        1.23,
+        1.23,
+        1.24,
+        1.25,
+        1.26,
+        1.32,
+        1.32,
+        1.32,
+        1.32,
+        1.33,
+        1.34,
+        1.35,
+        1.36,
+        1.4,
+        1.42,
+        1.44,
+        1.5,
+        1.52,
+        1.54,
+        1.57,
+        1.61,
+        1.62,
+        1.62,
+        1.7,
+        1.71,
+        1.99,
+        2.05,
+        2.3,
+        2.53,
+        3.08,
+        3.3,
+        3.36,
+        3.36,
+        4.11
+      ]
     },
     {
       "op": "references",
-      "p95WarmMs": 1.5133800003677607,
-      "samples": 40
+      "p95WarmMs": 5.4271500000031665,
+      "samples": 40,
+      "medianWarmMs": 3.06,
+      "rawSamplesMs": [
+        1.97,
+        2,
+        2.04,
+        2.07,
+        2.16,
+        2.22,
+        2.25,
+        2.31,
+        2.38,
+        2.39,
+        2.4,
+        2.46,
+        2.5,
+        2.53,
+        2.54,
+        2.57,
+        2.65,
+        2.7,
+        2.95,
+        3.04,
+        3.06,
+        3.1,
+        3.21,
+        3.28,
+        3.3,
+        3.46,
+        3.52,
+        3.59,
+        3.82,
+        4.07,
+        4.1,
+        4.1,
+        4.12,
+        4.2,
+        4.3,
+        4.33,
+        4.4,
+        4.98,
+        5.43,
+        8.81
+      ]
     },
     {
       "op": "documentSymbol",
-      "p95WarmMs": 2.297391999512911,
-      "samples": 40
+      "p95WarmMs": 4.283498000004329,
+      "samples": 40,
+      "medianWarmMs": 2,
+      "rawSamplesMs": [
+        1.3,
+        1.32,
+        1.41,
+        1.42,
+        1.44,
+        1.47,
+        1.5,
+        1.5,
+        1.54,
+        1.62,
+        1.63,
+        1.65,
+        1.65,
+        1.66,
+        1.69,
+        1.72,
+        1.74,
+        1.8,
+        1.95,
+        1.97,
+        2,
+        2,
+        2,
+        2.05,
+        2.05,
+        2.24,
+        2.24,
+        2.32,
+        2.4,
+        2.4,
+        2.48,
+        2.54,
+        2.54,
+        2.86,
+        2.9,
+        3.36,
+        3.43,
+        3.58,
+        4.28,
+        5.22
+      ]
     },
     {
       "op": "workspaceSymbol",
-      "p95WarmMs": 1.2960639987140894,
-      "samples": 40
+      "p95WarmMs": 3.33689899998717,
+      "samples": 40,
+      "medianWarmMs": 1.59,
+      "rawSamplesMs": [
+        1.24,
+        1.26,
+        1.29,
+        1.3,
+        1.32,
+        1.33,
+        1.35,
+        1.37,
+        1.38,
+        1.39,
+        1.39,
+        1.45,
+        1.46,
+        1.47,
+        1.47,
+        1.48,
+        1.48,
+        1.49,
+        1.53,
+        1.54,
+        1.59,
+        1.6,
+        1.69,
+        1.71,
+        1.84,
+        1.85,
+        1.87,
+        1.9,
+        1.95,
+        1.95,
+        2.04,
+        2.44,
+        2.53,
+        2.77,
+        2.84,
+        2.87,
+        2.89,
+        3.14,
+        3.34,
+        4.04
+      ]
     },
     {
       "op": "prepareCallHierarchy",
-      "p95WarmMs": 1.0191299989819527,
-      "samples": 40
+      "p95WarmMs": 6.975396000081673,
+      "samples": 40,
+      "medianWarmMs": 1.62,
+      "rawSamplesMs": [
+        1.21,
+        1.22,
+        1.23,
+        1.23,
+        1.27,
+        1.29,
+        1.3,
+        1.31,
+        1.31,
+        1.32,
+        1.32,
+        1.34,
+        1.36,
+        1.42,
+        1.43,
+        1.43,
+        1.43,
+        1.48,
+        1.52,
+        1.53,
+        1.62,
+        1.75,
+        1.8,
+        1.82,
+        1.86,
+        1.94,
+        1.94,
+        2.11,
+        2.16,
+        2.16,
+        2.35,
+        2.43,
+        2.62,
+        2.95,
+        3.32,
+        3.38,
+        3.75,
+        3.95,
+        6.98,
+        7.36
+      ]
     },
     {
       "op": "callHierarchyExpand",
-      "p95WarmMs": 1.851936001330614,
-      "samples": 40
+      "p95WarmMs": 4.322750999941491,
+      "samples": 40,
+      "medianWarmMs": 1.97,
+      "rawSamplesMs": [
+        1.52,
+        1.57,
+        1.58,
+        1.58,
+        1.61,
+        1.64,
+        1.66,
+        1.67,
+        1.72,
+        1.72,
+        1.82,
+        1.82,
+        1.82,
+        1.83,
+        1.85,
+        1.91,
+        1.93,
+        1.93,
+        1.95,
+        1.96,
+        1.97,
+        1.99,
+        2.09,
+        2.25,
+        2.3,
+        2.32,
+        2.35,
+        2.47,
+        2.49,
+        2.56,
+        2.69,
+        2.76,
+        2.85,
+        2.9,
+        3.06,
+        3.73,
+        4.11,
+        4.28,
+        4.32,
+        6.51
+      ]
     }
   ],
   "checks": [
@@ -83,12 +384,12 @@
     {
       "name": "E5: server launched and version ok",
       "ok": true,
-      "detail": "{\"activationMs\":15,\"declaredBudgetMs\":150,\"withinBudget\":true,\"launch\":{\"kind\":\"dist-bundled\",\"entryPath\":\"$HOME/backbencher-brain/ide/vscode/dist/server/lsp/server.js\",\"runtime\":\"node\",\"run"
+      "detail": "{\"activationMs\":39,\"declaredBudgetMs\":150,\"withinBudget\":true,\"launch\":{\"kind\":\"dist-bundled\",\"entryPath\":\"$HOME/backbencher-brain/ide/vscode/dist/server/lsp/server.js\",\"runtime\":\"node\",\"run"
     },
     {
       "name": "E5: activation within declared budget",
       "ok": true,
-      "detail": "{\"activationMs\":15,\"regime\":\"cold-first-launch\",\"ceiling\":1500,\"declaredBudgetMs\":150}"
+      "detail": "{\"activationMs\":39,\"regime\":\"cold-first-launch\",\"ceiling\":1500,\"declaredBudgetMs\":150}"
     },
     {
       "name": "E5: extension exposes its LanguageClient transport",
@@ -97,12 +398,12 @@
     {
       "name": "L2: hover renders markdown",
       "ok": true,
-      "detail": "{\"contents\":{\"value\":\"```\\nmethod greet(…)\\n```\\n\\n**greet** — method, 1 usage\\n\\nevidence: indexed\\n\\n_source: bb index (/tmp/v1-ws-Ie68pn/main.ts:2)_\",\"kind\":\"markdown\"},\"range\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\"line\":1,\"character\":7}},\"data\":{\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\""
+      "detail": "{\"contents\":{\"value\":\"```\\nmethod greet(…)\\n```\\n\\n**greet** — method, 1 usage\\n\\nevidence: indexed\\n\\n_source: bb index (/tmp/v1-ws-8Qauqo/main.ts:2)_\",\"kind\":\"markdown\"},\"range\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\"line\":1,\"character\":7}},\"data\":{\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\""
     },
     {
       "name": "L2: hover names greet",
       "ok": true,
-      "detail": "{\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\",\"symbolType\":\"method\",\"signature\":\"method greet(…)\",\"usageCount\":1,\"evidenceTiers\":[\"indexed\"],\"crossLanguageSection\":\"\",\"annotationSection\":\"\",\"stale\":false,\"freshnessStatus\":\"fresh\",\"filePath\":\"/tmp/v1-ws-Ie68pn/main.ts\",\"lineStart\":2,\"lineEnd\":2}"
+      "detail": "{\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\",\"symbolType\":\"method\",\"signature\":\"method greet(…)\",\"usageCount\":1,\"evidenceTiers\":[\"indexed\"],\"crossLanguageSection\":\"\",\"annotationSection\":\"\",\"stale\":false,\"freshnessStatus\":\"fresh\",\"filePath\":\"/tmp/v1-ws-8Qauqo/main.ts\",\"lineStart\":2,\"lineEnd\":2}"
     },
     {
       "name": "L2: hover usage count matches fixture relationship",
@@ -115,7 +416,7 @@
     {
       "name": "L2: hover carries the evidence tier (honesty contract §2)",
       "ok": true,
-      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: indexed\n\n_source: bb index (/tmp/v1-ws-Ie68pn/main.ts:2)"
+      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: indexed\n\n_source: bb index (/tmp/v1-ws-8Qauqo/main.ts:2)"
     },
     {
       "name": "L2: hover outside index is declared absent",
@@ -125,17 +426,17 @@
     {
       "name": "L3: definition resolves greet",
       "ok": true,
-      "detail": "{\"found\":true,\"location\":{\"path\":\"/tmp/v1-ws-Ie68pn/main.ts\",\"line\":1,\"character\":2,\"endLine\":1,\"endCharacter\":7},\"symbol\":{\"id\":\"sym-greet\",\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\",\"symbolType\":\"method\"},\"evidenceTier\":\"indexed\"}"
+      "detail": "{\"found\":true,\"location\":{\"path\":\"/tmp/v1-ws-8Qauqo/main.ts\",\"line\":1,\"character\":2,\"endLine\":1,\"endCharacter\":7},\"symbol\":{\"id\":\"sym-greet\",\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\",\"symbolType\":\"method\"},\"evidenceTier\":\"indexed\"}"
     },
     {
       "name": "L3: definition location is 0-based line 1",
       "ok": true,
-      "detail": "{\"path\":\"/tmp/v1-ws-Ie68pn/main.ts\",\"line\":1,\"character\":2,\"endLine\":1,\"endCharacter\":7}"
+      "detail": "{\"path\":\"/tmp/v1-ws-8Qauqo/main.ts\",\"line\":1,\"character\":2,\"endLine\":1,\"endCharacter\":7}"
     },
     {
       "name": "L3: references returns locations",
       "ok": true,
-      "detail": "{\"locations\":[{\"path\":\"/tmp/v1-ws-Ie68pn/main.ts\",\"line\":6,\"character\":9,\"endLine\":9,\"endCharacter\":1},{\"path\":\"/tmp/v1-ws-Ie68pn/main.ts\",\"line\":1,\"character\":2,\"endLine\":1,\"endCharacter\":7}],\"trunca"
+      "detail": "{\"locations\":[{\"path\":\"/tmp/v1-ws-8Qauqo/main.ts\",\"line\":6,\"character\":9,\"endLine\":9,\"endCharacter\":1},{\"path\":\"/tmp/v1-ws-8Qauqo/main.ts\",\"line\":1,\"character\":2,\"endLine\":1,\"endCharacter\":7}],\"trunca"
     },
     {
       "name": "L3: definition outside index is honest empty",
@@ -154,12 +455,12 @@
     {
       "name": "L4: workspace/symbol finds greet",
       "ok": true,
-      "detail": "{\"symbols\":[{\"id\":\"sym-greet\",\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\",\"symbolType\":\"method\",\"path\":\"/tmp/v1-ws-Ie68pn/main.ts\",\"line\":1}],\"truncated\":false,\"totalCount\":1,\"limit\":200,\"evidenceT"
+      "detail": "{\"symbols\":[{\"id\":\"sym-greet\",\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\",\"symbolType\":\"method\",\"path\":\"/tmp/v1-ws-8Qauqo/main.ts\",\"line\":1}],\"truncated\":false,\"totalCount\":1,\"limit\":200,\"evidenceT"
     },
     {
       "name": "L5: prepareCallHierarchy returns item",
       "ok": true,
-      "detail": "{\"item\":{\"name\":\"greet\",\"kind\":6,\"uri\":\"file:///tmp/v1-ws-Ie68pn/main.ts\",\"range\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\"line\":1,\"character\":7}},\"selectionRange\":{\"start\":{\"line\":1,\"character\":2},\""
+      "detail": "{\"item\":{\"name\":\"greet\",\"kind\":6,\"uri\":\"file:///tmp/v1-ws-8Qauqo/main.ts\",\"range\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\"line\":1,\"character\":7}},\"selectionRange\":{\"start\":{\"line\":1,\"character\":2},\""
     },
     {
       "name": "L5: incomingCalls returns callers",
@@ -206,7 +507,7 @@
     {
       "name": "E5 live: debounced reindex lands and marker returns fresh",
       "ok": true,
-      "detail": "{\"stale\":false,\"status\":\"fresh\",\"pendingReindex\":false,\"lastReindexAt\":\"2026-09-04T18:16:54.263Z\"}"
+      "detail": "{\"stale\":false,\"status\":\"fresh\",\"pendingReindex\":false,\"lastReindexAt\":\"2026-09-04T20:20:48.092Z\"}"
     }
   ],
   "checksPassed": 29,
@@ -223,7 +524,7 @@
   },
   "verifierCommand": "npx tsx script/m25/run-vscode-e2e.mts",
   "evidenceFile": "E5.json",
-  "generatedAt": "2026-09-04T18:16:57.579Z",
+  "generatedAt": "2026-09-04T20:20:51.162Z",
   "os": "linux",
   "limitations": []
 }
