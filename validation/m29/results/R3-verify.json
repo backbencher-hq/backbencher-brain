@@ -1,14 +1,14 @@
 {
   "status": "verified",
-  "passed": 25,
+  "passed": 24,
   "failed": 0,
   "negatives": {
     "planned": 6
   },
-  "currentCommit": "24e609e7b51661769cede60b76e27fe85e901c0e",
+  "currentCommit": "a7759260feec88075caf049b1d6aa2c9810f8c86",
   "relevantInputsHash": "4b3e24123c1e71b830a08aa81221fd0eccc154c4",
   "verifierCommand": "npx tsx script/m29/verify-giant-repo.ts",
   "evidenceFile": "R3-verify.json",
-  "generatedAt": "2026-09-04T21:06:03.654Z",
+  "generatedAt": "2026-09-04T21:12:08.883Z",
   "details": []
 }
