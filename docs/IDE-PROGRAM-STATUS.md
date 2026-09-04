@@ -46,8 +46,11 @@ reused everywhere — never per-IDE forks.
 - **Bounded impact mode** (200 nodes / depth 5) with in-UI "Showing X of Y"
   truncation and an independent declared total — never silent.
 - **Cross-language hover, per-pair**: facts from stored `is_cross_language` rows
-  only; pairs without rows are declared absent (17 real dbs scanned, zero real
-  cross-language pairs — stated, not aspirational).
+  only; pairs without rows are declared absent. **Proven end-to-end from real
+  indexing (M26.A1)**: the indexer's cross-language flag now fires in both
+  resolution paths (insert-time java→scala 3/3; late-resolution ts→js 2/2 — a
+  real write-path defect found and fixed), with `name-resolution` bridges and
+  honest inferred-tier rendering.
 - **Webview hardening (W6)**: strict nonce-bound CSP, canonical HTML shell,
   adversarial fixtures rendered inert, three security mutant classes caught.
 - **Generated docs**: `docs/m26/GRAPH.md` regenerated from live code + the ledger;
