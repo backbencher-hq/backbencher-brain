@@ -110,6 +110,7 @@ const EXPECTED_ISSUE_NUMBERS = [623, 624, 625, 626, 627, 628, 629]
 const ISSUE_RELEVANT_FILES: Record<string, string[]> = {
   T1: ["src/mcp/tool-registry.ts", "src/mcp/tool-validation.ts", "src/mcp/tool-handlers.ts", "script/m28/verify-mcp-tools.ts"],
   U1: ["src/mcp/tool-handlers.ts", "script/m28/verify-union.ts"],
+  A1: ["src/brain/schema-ddl.ts", "src/brain/database.ts", "src/mcp/tool-registry.ts", "src/mcp/tool-handlers.ts", "script/m28/verify-annotation-store.ts"],
   A1: ["src/brain/schema-ddl.ts", "src/mcp/tool-registry.ts", "src/mcp/tool-handlers.ts", "script/m28/verify-annotations.ts"],
   A2: ["src/lsp/hover.ts", "src/lsp/cross_language_hover.ts", "script/m26/graph-core.ts", "script/m28/verify-annotation-ui.ts"],
   V1: ["docs/m28/MCP-SURFACE.md", "script/m28/verify-mcp-docs.ts", "src/mcp/tool-registry.ts"],

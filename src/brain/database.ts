@@ -7,7 +7,7 @@ import type { CoreDatabase } from "#db"
 import path from "path"
 import { mkdirSync, existsSync } from "fs"
 import * as BrainSchema from "./brain.sql"
-import { ensureSchema, migrateSchemaColumns } from "./schema-ddl"
+import { ensureSchema, migrateSchemaColumns, ensureAnnotationTable } from "./schema-ddl"
 import { bbProjectsDir } from "../util/bb-data-dir"
 
 export type { CoreDatabase, CoreStatement } from "#db"
@@ -71,6 +71,9 @@ async function buildDrizzle(raw: CoreDatabase): Promise<any> {
       // brain_index_status.status) or a legacy DB can crash the indexer's
       // status write with "no column named status".
       migrateSchemaColumns(raw)
+      // M28.A1: the annotation store must exist on pre-existing DBs too
+      // (additive, idempotent) — bb_annotate writes where every editor reads.
+      ensureAnnotationTable(raw)
     }
   }
 
