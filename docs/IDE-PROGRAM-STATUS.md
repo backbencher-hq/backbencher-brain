@@ -19,7 +19,7 @@ Contract: [IDE-HONESTY-CONTRACT.md](./IDE-HONESTY-CONTRACT.md)
 | --- | --- | --- | --- | --- | --- |
 | v0 | M24 | The Server | **CLOSED** (shipped at I1) | I1 (all five languages, all six features) | [m24/M24-FINAL-AUDIT.md](./m24/M24-FINAL-AUDIT.md) |
 | v1 | M25 | The Extension | **CLOSED** (11/11 verified) | I3 (editor-verified, VS Code); I4 on Cursor 3.18.9 + Antigravity 1.107.0 — Windsurf declared blocked | [m25 ledger](../validation/m25/results/manifest.json) |
-| v2 | M26 | The Graph | **CLOSED** (11/11 verified) | I3 (graph panel live in VS Code, in-editor verified); cross-language per-pair with declared absence; 40 mutants caught across 8 suites | [m26 ledger](../validation/m26/results/manifest.json) |
+| v2 | M26 | The Graph | **CLOSED** (11/11 verified) | I3 (graph panel live in VS Code, in-editor verified); cross-language per-pair with declared absence; 36 mutants caught across 8 suites | [m26 ledger](../validation/m26/results/manifest.json) |
 | v3 | M27 | Everywhere (JetBrains/Zed/Neovim/Helix) | not started | — | — |
 | v4 | M28 | The Union (MCP + agent) | not started | — | — |
 | v5 | M29 | Precision Waves | not started | — | — |
@@ -131,7 +131,7 @@ Standalone LSP 3.18 binary over stdio (`bb lsp`, entry in
 | --- | --- | --- |
 | 2026-09-02 | M24 closed: 11/11 issues verified, closure gate 60/60 + 6 negatives, full-suite re-run green at closing commit | [m24/M24-FINAL-AUDIT.md](./m24/M24-FINAL-AUDIT.md) |
 | 2026-09-03 | M25 closed: 11/11 issues verified at HEAD `e6125bb` — governance 72/72, E5 in-editor 26/26 (VS Code 1.85.0), E6 forks 26/26 ×2 (Cursor, Antigravity) + Windsurf blocked, E7 Linux 39/39 with darwin/win32 blocked records, X1 closure gate 37/37 incl. budget-violation-hidden mutant | [m25 ledger](../validation/m25/results/manifest.json), [X1](../validation/m25/results/X1.json) |
-| 2026-09-04 | M26 closed: 11/11 issues verified at HEAD `5153034` — graph panel live in VS Code (E5 29/29 in-editor), bb/graph transport v1 over real stdio, five-tier evidence badges + legend, bounded impact mode with in-UI truncation, W6 webview hardening, generated per-pair docs from 17 real dbs, X1 closure gate 50/50 with per-mutant records; 40 mutants caught across 8 suites | [m26 ledger](../validation/m26/results/manifest.json), [X1](../validation/m26/results/X1.json) |
+| 2026-09-04 | M26 closed: 11/11 issues verified at HEAD `5153034` — graph panel live in VS Code (E5 29/29 in-editor), bb/graph transport v1 over real stdio, five-tier evidence badges + legend, bounded impact mode with in-UI truncation, W6 webview hardening, generated per-pair docs from 17 real dbs, X1 closure gate 50/50 with per-mutant records; 36 mutants caught across 8 suites (W1 6, W2 5, W3 5, W4 5, W5 5, W6 3, V1 5, D1 2) | [m26 ledger](../validation/m26/results/manifest.json), [X1](../validation/m26/results/X1.json) |
 
 ## Next up
 
