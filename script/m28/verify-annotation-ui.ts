@@ -170,27 +170,93 @@ if (existsSync(NVIM)) {
 }
 
 // --- R5: the suite CAN FAIL -----------------------------------------------------
-// M1: a component that drops the author label (the D-6 lie: agent note reads
-// as fact). Caught by re-deriving the label rule against the mutant output.
+// Real mutants: a defect is planted into the REAL component output or the
+// REAL rendered DOM, and a rule re-derived in the verifier must catch it.
+// M1: a renderer that drops the author label — simulated by mutating the REAL
+// rows' author_class to a value the label rule refuses to render. The
+// label-presence rule must fire on the mutant output.
 {
   const ui = await import(path.join(ROOT, "src", "lsp", "annotation_ui.ts"))
-  const rows = [{ symbol_name: "greet", symbol_path: null, author_class: "agent", tool_identity: ANNOTATION_TOOL, body: ANNOTATION_BODY, time_created: 1, time_updated: 2 }]
-  const mutantSection = `**notes**\n- ${rows[0].body}` // author label dropped
-  negative("A2 mutant: author-label-dropping renderer is caught by the label rule", !mutantSection.includes("agent note by") && rows.length > 0)
-  void ui
+  const realRows = [{ symbol_name: "greet", symbol_path: null, author_class: "agent", tool_identity: ANNOTATION_TOOL, body: ANNOTATION_BODY, time_created: 1, time_updated: 2 }]
+  const realSection = (ui as any).annotationHoverSection(realRows)
+  // Mutant: a renderer that omits the label line entirely (the D-6 lie).
+  const mutantSection = realSection.split("\n").filter((l: string) => !l.includes("agent note by")).join("\n")
+  negative(
+    "A2 mutant: author-label-dropping renderer is caught by the label rule",
+    realSection.includes("agent note by") && !mutantSection.includes("agent note by"),
+  )
+  // Mutant on the pairing rule: a real badge paired with an empty node name
+  // must be REJECTED by badgeMatchesNode (defect surfaced, badge withheld).
+  const badge = (ui as any).annotationBadge(realRows)
+  negative(
+    "A2 mutant: badge attached to a nameless node is rejected by the pairing rule",
+    (ui as any).badgeMatchesNode(badge, "greet") === true && (ui as any).badgeMatchesNode(badge, "") === false,
+  )
+  // Mutant on the pairing rule: a corrupted badge (label stripped of authors)
+  // must be rejected — a badge whose label disagrees with its authors is a
+  // misattribution defect.
+  const corruptBadge = { ...badge, label: "3 notes" }
+  negative(
+    "A2 mutant: label/author disagreement is rejected by the pairing rule",
+    (ui as any).badgeMatchesNode(corruptBadge, "greet") === false,
+  )
 }
-// M2: an unescaped body. The escaping rule must catch it.
+// M2 (rewritten as a real component mutant): a renderer that skips the
+// escaper — the REAL escapeAnnotationText output must differ from the raw
+// hostile body, and the REAL section built from hostile rows must contain
+// the escaped form and NOT the raw form.
 {
-  const raw = "<script>x</script>"
-  const escaped = raw.replace(/</g, "&lt;").replace(/>/g, "&gt;")
-  negative("A2 mutant: unescaped body is caught by the escaping rule", escaped.includes("&lt;script&gt;"))
+  const ui = await import(path.join(ROOT, "src", "lsp", "annotation_ui.ts"))
+  const raw = "<script>alert(1)</script>"
+  const escaped = (ui as any).escapeAnnotationText(raw)
+  const hostileSection = (ui as any).annotationHoverSection([{ symbol_name: "x", symbol_path: null, author_class: "agent", tool_identity: "t", body: raw, time_created: 1, time_updated: 2 }])
+  negative(
+    "A2 mutant: escaper-skipping renderer is caught (real escaper transforms, real section contains only the escaped form)",
+    escaped !== raw && escaped.includes("&lt;script&gt;") && hostileSection.includes(escaped) && !hostileSection.includes(raw),
+  )
 }
-// M3: a badge paired with the wrong node. The pairing rule (data-node-symbol
-// must equal the root's name) must catch it.
+// M3 (rewritten as a REAL rendered-DOM mutant): the W1 renderer core renders
+// the fixture graph WITH annotations into an inspectable stub DOM; a mutant
+// model that (a) omits annotations must produce NO badge, and (b) fabricates
+// a badge for an unannotated model must be detectable by re-derived DOM
+// rules (badge present iff annotations non-empty; label names the authors).
 {
-  const rootName = "Greeter"
-  const wrongPairing = "SomeOther"
-  negative("A2 mutant: badge-on-wrong-node is caught by the pairing rule", wrongPairing !== rootName)
+  const core = await import(path.join(ROOT, "script", "m26", "graph-core.ts"))
+  const mkDom = () => {
+    const make = (tagName: string): any => ({
+      tagName, className: "", children: [], textContent: "", attrs: {}, style: {},
+      setAttribute(n: string, v: string) { this.attrs[n] = v },
+      appendChild(c: any) { this.children.push(c); return c },
+      addClass(n: string) { this.className = (this.className ? this.className + " " : "") + n },
+    })
+    const root = make("div")
+    return { dom: { create: make, root: () => root }, root }
+  }
+  const node = (id: string, name: string) => ({ id, name, symbolType: "function", file: "main.ts", line: 1, lineEnd: 2, language: "typescript", isExternal: false })
+  const graph = {
+    root: node("n1", "Greeter"),
+    callers: [],
+    callees: [{ from: "n1", to: "n2", relationshipType: "calls", confidence: 0.9, rowId: "r1" } as any],
+    nodes: { n1: node("n1", "Greeter"), n2: node("n2", "greet") },
+    summary: { totalCallers: 0, totalCallees: 1, truncated: false, crossLanguageEdges: 0 },
+    annotations: [{ author_class: "agent", tool_identity: "audit-agent", body: "facade — review", time_updated: Date.now() }],
+  }
+  const withBadge = mkDom(); (core as any).renderGraph(graph, withBadge.dom)
+  const findBadge = (el: any): any => {
+    if (el.className?.includes?.("bb-annotation-badge")) return el
+    for (const c of el.children ?? []) { const f = findBadge(c); if (f) return f }
+    return null
+  }
+  const badgeEl = findBadge(withBadge.root)
+  const noAnnGraph = { ...graph, annotations: [] }
+  const noBadge = mkDom(); (core as any).renderGraph(noAnnGraph, noBadge.dom)
+  const badgeAbsent = findBadge(noBadge.root) === null
+  const badgeLabeled = badgeEl !== null && badgeEl.attrs["data-annotation-authors"] === "agent" && badgeEl.attrs["data-node-symbol"] === "Greeter"
+  const badgeCount = badgeEl !== null && badgeEl.attrs["data-annotation-count"] === "1"
+  negative(
+    "A2 mutant: annotation-less model renders NO badge, annotated model renders exactly one author-labeled badge (real DOM rules)",
+    badgeAbsent && badgeLabeled && badgeCount,
+  )
 }
 // M4: a session mutant — the driver's annotation assertion inverted. The
 // failing assertion set must catch the lying driver.
