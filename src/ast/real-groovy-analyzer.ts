@@ -124,9 +124,11 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
             metadata: { isWildcard: node.text.indexOf(".*") !== -1, isStatic },
           })
           // DependsOn for imports — source rewritten to the file's primary
-          // type after the walk (imports precede type declarations).
+          // type after the walk (imports precede type declarations). GAD2:
+          // script files with no class keep the "(script)" sentinel (the old
+          // "root" was a third phantom node).
           relationships.push({
-            source: currentPackage || "root",
+            source: currentPackage || "(script)",
             target: moduleName,
             type: ASTEngine.RelationshipType.References,
             confidence: 0.9,
@@ -466,7 +468,12 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         // these silently loses real dependency edges.
         const typeNode = this.findChild(node, (n) => n.type === "type_identifier" || n.type === "generic_type" || n.type === "scoped_type_identifier" || n.type === "identifier")
         if (typeNode) {
-          const source = parentContext?.name || parentContext?.symbolRef?.name || "global"
+          // GAD2 (M37 #599): script-level files used THREE different
+          // sentinels — calls "(script)", instantiates "global", import refs
+          // "root". One graph node per file is the contract (M14.1's
+          // "(script)" design decision); unified here and in resolveSource
+          // below. Class-level files are unaffected (parentContext set).
+          const source = parentContext?.name || parentContext?.symbolRef?.name || "(script)"
           relationships.push({
             source,
             target: this.baseTypeName(typeNode),
@@ -503,7 +510,9 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
     })
     if (primaryType) {
       for (const rel of relationships) {
-        if (rel.type === ASTEngine.RelationshipType.References && (rel.source === currentPackage || rel.source === "root")) {
+        // GAD2: the emit-side sentinel is "(script)" now; "root" kept so
+        // pre-existing callers of this rewrite path stay covered.
+        if (rel.type === ASTEngine.RelationshipType.References && (rel.source === currentPackage || rel.source === "(script)" || rel.source === "root")) {
           rel.source = primaryType.name
         }
       }
@@ -760,7 +769,15 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     const resolveSource = (start: Node): string => {
-      let p: Node | null = start.parent
+      // KAD6 sweep (M37 #597): include the start node when it IS the
+      // declaration. The method_declaration case emits its own return type
+      // through this resolver, which seeded at `.parent` — so `String
+      // greet()` inside `class Foo` attributed String to Foo (or Global at
+      // top level) instead of greet. Same bug kotlin's KAD6.
+      let p: Node | null =
+        /^(method_declaration|constructor_declaration|function_definition|class_declaration|trait_declaration|enum_declaration)$/.test(start.type)
+          ? start
+          : start.parent
       while (p) {
         if (p.type === "method_declaration" || p.type === "constructor_declaration" || p.type === "function_definition") {
           const name = this.findChild(p, (c) => c.type === "identifier")
@@ -772,7 +789,9 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         p = p.parent
       }
-      return "global"
+      // GAD2: "(script)" — the same sentinel the calls walk uses; the old
+      // "global" split one script file's graph across two phantom nodes.
+      return "(script)"
     }
 
     const emit = (decl: Node, roots: Node[], kind: string, relType = "declared_type"): void => {
@@ -876,15 +895,20 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "method_declaration": {
           // Return type: leading type children before the name identifier;
           // `def` return type is correctly skipped by collectTypeNames.
+          // GAD5 (M37 #599): `modifiers` (public/static/annotations) precedes
+          // the type — the old `else break` stopped there, so `public String
+          // greet()` / `static void main` lost their return-type ref (probe-
+          // verified). Non-type, non-modifier children still terminate.
           const roots: Node[] = []
           for (let i = 0; i < n.namedChildCount; i++) {
             const c = n.namedChild(i)
             if (!c) continue
             if (c.type === "identifier") break
+            if (c.type === "modifiers") continue
             if (c.type.endsWith("_type") || c.type === "type_identifier") roots.push(c)
             else break
           }
-          if (roots.length) emit(n, roots, "return_type")
+          if (roots.length) emit(n, roots, "return_type", "return_type")
           break
         }
       }
@@ -901,11 +925,18 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
     relationships: ASTEngine.UniversalRelationship[],
     symbols: ASTEngine.UniversalSymbol[],
   ) {
-    const stack: { node: Node; owner: string | null }[] = [{ node: rootNode, owner: null }]
+    // GAD1 (M37 #599, JAD2 contract): reads must attribute to the enclosing
+    // METHOD like the calls walk does — the pre-fix walk had three owners in
+    // one body (field read -> receiver variable, array read -> class, call
+    // -> method). this/super keep the TYPE owner (self-read precedent);
+    // any other receiver resolves method-first.
+    const stack: { node: Node; owner: string | null; method: string | null }[] = [
+      { node: rootNode, owner: null, method: null },
+    ]
     const seen = new Set<string>()
     while (stack.length > 0) {
       const item = stack.pop()!
-      const { node, owner } = item
+      const { node, owner, method } = item
 
       if (
         node.type === "class_declaration" ||
@@ -917,9 +948,20 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         const nextOwner = nameNode ? nameNode.text : owner
         for (let i = node.namedChildCount - 1; i >= 0; i--) {
           const child = node.namedChild(i)
-          if (child) stack.push({ node: child, owner: nextOwner })
+          if (child) stack.push({ node: child, owner: nextOwner, method })
         }
         continue
+      }
+      // GAD1: method/constructor bodies rebind the read-owner (constructor
+      // bodies attribute to the "constructor" symbol, java family parity).
+      let nextMethod = method
+      if (
+        node.type === "method_declaration" ||
+        node.type === "constructor_declaration" ||
+        node.type === "function_definition"
+      ) {
+        const nameNode = this.findChild(node, (n) => n.type === "identifier")
+        nextMethod = node.type === "constructor_declaration" ? "constructor" : nameNode?.text ?? method
       }
 
       if (node.type === "field_access") {
@@ -927,9 +969,21 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         const parts = node.text.split(".").map((p) => (p.endsWith("?") || p.endsWith("*")) ? p.slice(0, -1) : p)
         if (parts.length >= 2) {
           const first = parts[0]
-          const source = first === "this" || first === "super" ? (owner ?? first) : first
+          // GAD1 (JAD2): non-this receivers attribute to the enclosing
+          // method; this/super keep the type owner.
+          const readOwner = method ?? owner
+          const source = first === "this" || first === "super" ? (owner ?? first) : readOwner ?? first
+          // KAD1 sweep (M37 #597): assignment-LHS span is a WRITE — the
+          // exact-LHS gate (java JAD1/TS TSD1/JSD1 contract); chained-write
+          // inner segments stay reads.
+          const pType = node.parent?.type
+          let isWrite = false
+          if (pType === "assignment_expression") {
+            const lhs = node.parent!.namedChild(0)
+            isWrite = !!lhs && lhs.startIndex === node.startIndex && lhs.endIndex === node.endIndex
+          }
           const key = `${source}.${parts[parts.length - 1]}`
-          if (!seen.has(key)) {
+          if (!isWrite && !seen.has(key)) {
             seen.add(key)
             relationships.push({
               source,
@@ -943,12 +997,20 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
 
       if (node.type === "array_access") {
-        // xs[i] reads/writes are Uses on the array expression (G1). The
-        // array is the first named child; for bare identifiers that is the
-        // referenced array name.
+        // KAD1 sweep (M37 #597): READS are uses of the array expression
+        // (G1); the assignment-LHS span (`xs[0] = 5`, `xs[1] += 2` — both
+        // parse as assignment_expression with the LHS as first named child,
+        // probe-verified) is a WRITE and must NOT emit (java JAD1 / kotlin
+        // KAD1 contract — the pre-fix "reads/writes are uses" ruling
+        // predated the write-gate family contract and this fixture pinned
+        // it; the pin is re-authored to the corrected contract).
+        const parent = node.parent
+        const lhs = parent && parent.type === "assignment_expression" ? parent.namedChild(0) : null
+        const isWrite = !!lhs && lhs.startIndex === node.startIndex && lhs.endIndex === node.endIndex
         const first = node.namedChild(0)
-        if (first && first.type === "identifier") {
-          const source = owner ?? first.text
+        if (!isWrite && first && first.type === "identifier") {
+          // GAD1 (JAD2): method ?? owner, matching the field-read owner.
+          const source = method ?? owner ?? first.text
           const key = `arr:${source}.${first.text}`
           if (!seen.has(key)) {
             seen.add(key)
@@ -964,7 +1026,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       for (let i = node.namedChildCount - 1; i >= 0; i--) {
         const child = node.namedChild(i)
-        if (child) stack.push({ node: child, owner })
+        if (child) stack.push({ node: child, owner, method: nextMethod })
       }
     }
   }
@@ -1048,14 +1110,21 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private extractGroovyDoc(node: Node): string | undefined {
+    // KAD2 twin (M37 #597 sweep): dead `sibling === node` stop leaked the
+    // first GroovyDoc in the file onto every doc-less declaration.
+    // Span-locate + backward scan, strict adjacency (kotlin KAD2 contract).
     const parent = node.parent
     if (!parent) return undefined
+    let selfIdx = -1
     for (let i = 0; i < parent.namedChildCount; i++) {
+      const c = parent.namedChild(i)
+      if (c && c.startIndex === node.startIndex && c.endIndex === node.endIndex) { selfIdx = i; break }
+    }
+    for (let i = selfIdx - 1; i >= 0; i--) {
       const sibling = parent.namedChild(i)
-      if (sibling === node) break
-      if (sibling?.type === "block_comment" && sibling.text.startsWith("/**")) {
-        return sibling.text
-      }
+      if (!sibling) continue
+      if (sibling.type === "block_comment" && sibling.text.startsWith("/**")) return sibling.text
+      break
     }
     return undefined
   }
@@ -1133,9 +1202,22 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
     const mods: string[] = []
     const modifiers = this.findChild(node, (n) => n.type === "modifiers")
     if (modifiers) {
-      for (let i = 0; i < modifiers.namedChildCount; i++) {
-        const c = modifiers.namedChild(i)
-        if (c && (c.type === "identifier" || c.isNamed)) mods.push(c.text)
+      // GAD6 (M37 #599): modifier KEYWORDS (private/static/final/public…)
+      // are ANONYMOUS children of the modifiers node (probe-verified:
+      // child type IS the keyword). The old named-children-only loop
+      // returned [] for every keyword-only declaration, breaking
+      // isStatic/isConstant/visibility — which is what pushed visibility
+      // extraction onto the raw-text hack (GAD3) in the first place.
+      // Annotations stay named children and are handled by
+      // extractAnnotations, so they are not re-collected here.
+      for (let i = 0; i < modifiers.childCount; i++) {
+        const c = modifiers.child(i)
+        if (!c || !c.isNamed) {
+          if (c) mods.push(c.text)
+          continue
+        }
+        if (c.type === "annotation" || c.type === "marker_annotation") continue
+        mods.push(c.text)
       }
     }
     return mods
@@ -1169,18 +1251,15 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private extractVisibility(node: Node): "public" | "private" | "protected" | undefined {
-    // Check the declaration's own text for visibility keywords — groovy
-    // grammar sometimes puts them as anonymous tokens not captured by
-    // extractModifiers' named-children iteration.
-    const text = node.text
-    if (/^(\s*)(private|static private|protected)\b/.test(text) || /\bprivate\b/.test(text.split("\n")[0] ?? "")) {
-      // fall through to modifiers check below, but also check raw text
-    }
+    // GAD3 (M37 #599, KAD4 class): visibility was ALSO read from raw
+    // node.text substrings — `def leak() { return "this is private data" }
+    // (zero modifiers) fabricated `private` from the string literal, and
+    // the leading `if (/^(\s*)(private...)/)` branch was a dead no-op.
+    // AST-only now: the grammar's modifiers child carries the keywords
+    // (probe-verified both shapes). Groovy default visibility is public.
     const mods = this.extractModifiers(node)
     if (mods.indexOf("private") !== -1) return "private"
     if (mods.indexOf("protected") !== -1) return "protected"
-    if (/\bprivate\b/.test(node.text.split("\n")[0] ?? "")) return "private"
-    if (/\bprotected\b/.test(node.text.split("\n")[0] ?? "")) return "protected"
     return "public"
   }
 

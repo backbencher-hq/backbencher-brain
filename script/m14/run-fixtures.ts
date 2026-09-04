@@ -185,6 +185,16 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
           problems.push(`expected ${want.symbol}.qualified_calls to include "${inc}"; got: ${JSON.stringify(qc)}`)
         }
       }
+      // SCD7 payload-noise pin: countMatches catches DUPLICATED paths (curried
+      // wrappers double-pushed "self.add") — an includes-only check passes on
+      // a doubled array.
+      if (want.countEquals !== undefined) {
+        const inc = want.countEquals.path
+        const n = qc.filter((c: string) => c === inc || c.endsWith("." + inc)).length
+        if (n !== want.countEquals.count) {
+          problems.push(`expected ${want.symbol}.qualified_calls to contain "${inc}" exactly ${want.countEquals.count} time(s); got ${n}: ${JSON.stringify(qc)}`)
+        }
+      }
     }
     for (const want of exp.expectTypeParameters ?? []) {
       const sym = symbols.find((s: any) => s.name === want.symbol)
@@ -299,6 +309,19 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
       } else if (want.max !== undefined && !(typeof cx === "number" && cx <= want.max)) {
         problems.push(`expected ${want.symbol} complexity <= ${want.max}; got ${cx}`)
       }
+    }
+    for (const want of exp.expectPatterns ?? []) {
+      // string[] against metadata.patterns — pins the scala SCD5 contract
+      // (annotation-NAME pattern flags, not text.includes substrings).
+      const actual: string[] = (result.metadata as any)?.patterns ?? []
+      if (!actual.includes(want)) problems.push(`expected pattern "${want}" not detected; got: ${JSON.stringify(actual)}`)
+    }
+    for (const want of exp.forbidPatterns ?? []) {
+      // SCD5 fabrication guard: a pattern that no honest annotation in this
+      // fixture could set must NEVER appear (the text.includes regression
+      // class fabricated flags from unrelated identifiers).
+      const actual: string[] = (result.metadata as any)?.patterns ?? []
+      if (actual.includes(want)) problems.push(`forbidden pattern present: "${want}" (patterns: ${JSON.stringify(actual)})`)
     }
     for (const want of exp.expectComments ?? []) {
       // { symbol, contains?, notContains? } — pins leading-comment capture

@@ -101,7 +101,7 @@
     },
     {
       "description": "9 relationship kinds pinned by groovy fixtures",
-      "detail": "pinned: calls, case_pattern, cast_type, constructor_invocation, contains, declared_type, extends, implements, imports, instanceof_expression, instantiates, method_reference, overrides, references, throws_type, uses",
+      "detail": "pinned: calls, case_pattern, cast_type, constructor_invocation, contains, declared_type, extends, implements, imports, instanceof_expression, instantiates, method_reference, overrides, references, return_type, throws_type, uses",
       "id": "section-b-relationship-kinds",
       "language": "groovy",
       "status": "pass"
@@ -249,7 +249,7 @@
     },
     {
       "description": "9 relationship kinds pinned by scala fixtures",
-      "detail": "pinned: calls, cast_target, contains, declared_type, derives_type, extends, implements, imports, instanceof_check, instantiates, method_value, overrides, pattern_type, references, return_type, self_type, throws_type, type_alias, uses",
+      "detail": "pinned: calls, cast_target, contains, declared_type, derives_type, extends, given_type, implements, imports, instanceof_check, instantiates, method_value, overrides, pattern_type, references, return_type, self_type, throw_target, throws_type, type_alias, uses",
       "id": "section-b-relationship-kinds",
       "language": "scala",
       "status": "pass"
@@ -1359,7 +1359,7 @@
     },
     {
       "description": "6 relationship kinds pinned by ruby fixtures",
-      "detail": "pinned: calls, contains, extends, implements, instantiates, uses",
+      "detail": "pinned: calls, contains, extends, implements, instantiates, references, uses",
       "id": "section-b-relationship-kinds",
       "language": "ruby",
       "status": "pass"
@@ -1556,8 +1556,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "cc76e3771b292965b1b8a8855107f2b67a4a624a",
-  "committedAt": "2026-09-04T01:41:28+02:00",
+  "commit": "474e0b27c73c152caa82e9b123e9941380c4dbfa",
+  "committedAt": "2026-09-04T20:55:24+02:00",
   "data": {
     "languages": {
       "c": {
@@ -1813,7 +1813,7 @@
             "status": "pass"
           },
           "section-b-relationship-kinds": {
-            "detail": "pinned: calls, case_pattern, cast_type, constructor_invocation, contains, declared_type, extends, implements, imports, instanceof_expression, instantiates, method_reference, overrides, references, throws_type, uses",
+            "detail": "pinned: calls, case_pattern, cast_type, constructor_invocation, contains, declared_type, extends, implements, imports, instanceof_expression, instantiates, method_reference, overrides, references, return_type, throws_type, uses",
             "status": "pass"
           },
           "section-c-payload-matrix": {
@@ -2226,7 +2226,7 @@
             "status": "pass"
           },
           "section-b-relationship-kinds": {
-            "detail": "pinned: calls, contains, extends, implements, instantiates, uses",
+            "detail": "pinned: calls, contains, extends, implements, instantiates, references, uses",
             "status": "pass"
           },
           "section-c-payload-matrix": {
@@ -2328,7 +2328,7 @@
             "status": "pass"
           },
           "section-b-relationship-kinds": {
-            "detail": "pinned: calls, cast_target, contains, declared_type, derives_type, extends, implements, imports, instanceof_check, instantiates, method_value, overrides, pattern_type, references, return_type, self_type, throws_type, type_alias, uses",
+            "detail": "pinned: calls, cast_target, contains, declared_type, derives_type, extends, given_type, implements, imports, instanceof_check, instantiates, method_value, overrides, pattern_type, references, return_type, self_type, throw_target, throws_type, type_alias, uses",
             "status": "pass"
           },
           "section-c-payload-matrix": {

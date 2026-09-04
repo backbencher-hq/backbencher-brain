@@ -372,10 +372,16 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
           const left = assign.namedChild(0)
           const right = assign.namedChild(assign.namedChildCount - 1)
           if (!left || left.type !== "identifier") continue
-          // Only constant-value members (not function-valued or tuple forms).
+          // Constant-value members. PYD4: `call` is included — `RED =
+          // enum.auto()` is the canonical python Enum idiom (functional API:
+          // `Color = Enum("Color", ["RED"])` aside, auto() members are in
+          // every stdlib enum), and its member NAME is real vocabulary even
+          // when the VALUE is a runtime call. Function-valued (`f = some_fn`)
+          // is already covered by `identifier`; excluded remain only the
+          // multi-target tuple forms.
           if (right && (right.type === "string" || right.type === "integer" ||
               right.type === "float" || right.type === "true" || right.type === "false" ||
-              right.type === "none" || right.type === "identifier")) {
+              right.type === "none" || right.type === "identifier" || right.type === "call")) {
             ctx.symbols.push({
               name: left.text,
               kind: ASTEngine.SymbolKind.EnumMember,
@@ -637,7 +643,12 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         range: this.nodeToRange(left),
         ownerName: ctx.currentClass,
         ownerKind: ASTEngine.SymbolKind.Class,
-        visibility: "public",
+        // PYD3: underscore-prefix visibility is a PYTHON semantic, not a
+        // class-body-only one — `_cache` at class scope is exactly as
+        // protected as `_cache` at module scope (both now pythonVisibility()).
+        // The old hard-coded "public" made class variables the ONE symbol
+        // kind where the convention silently didn't apply.
+        visibility: this.pythonVisibility(name),
         metadata: { pythonSpecific: true, isClassVariable: true },
       })
       return
@@ -733,8 +744,14 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
   private extractMemberUses(rootNode: Node, ctx: PythonContext): void {
     const walk = (n: Node, inFn: string | undefined, parent: Node | null): void => {
       const t = n.type
+      // PYD5: rebind the owner ONLY when entering a symbol-level def (inFn is
+      // still undefined). A def inside a def is NOT a symbol — the calls
+      // contract attributes its body to the ENCLOSING function
+      // (`if (ctx.currentFunction) break` in the main walk), so its member
+      // reads must keep the outer owner too (two walks, one owner; php
+      // mirror: inFunction never rebinds for nested bodies).
       let nextFn = inFn
-      if (t === "function_definition") {
+      if (t === "function_definition" && !inFn) {
         const nameNode = this.findChildByType(n, "identifier")
         nextFn = nameNode?.text
       }
@@ -744,11 +761,13 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         // (identifier), not another nested attribute node.
         if (leaf && leaf.type !== "attribute") {
           // Parent-based gates (byte-range compare — web-tree-sitter wrappers
-          // are per-access, identity never holds).
+          // are per-access, identity never holds). PYD6: the old form was a
+          // dead ternary — `namedChild(0) === undefined ? false : ...` where
+          // the assignment's first named child IS the LHS by grammar, so the
+          // condition could never fire true. Plain range compare, php-style.
           const gp = parent.parent
-          const isAssignLhs = parent.type === "assignment" && parent.namedChild(0) === undefined
-            ? false
-            : parent.type === "assignment" && parent.namedChild(0)?.startIndex === n.startIndex && parent.namedChild(0)?.endIndex === n.endIndex
+          const isAssignLhs = parent.type === "assignment" &&
+            parent.namedChild(0)?.startIndex === n.startIndex && parent.namedChild(0)?.endIndex === n.endIndex
           const gpIsAssign = gp?.type === "assignment"
           const gpLhs = gpIsAssign ? gp!.namedChild(0) : undefined
           const isGpAssignLhs = gpLhs && gpLhs.startIndex === n.startIndex && gpLhs.endIndex === n.endIndex

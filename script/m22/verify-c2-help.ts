@@ -59,9 +59,13 @@ async function run() {
 
   // 4. negatives
   {
-    // 4a. phantom --post must NOT silently succeed — commander rejects unknown options
+    // 4a. M40.A1: --post is now a REAL flag (standalone post-processing entry).
+    // It must be ACCEPTED — on a fresh fixture it exits non-zero with the
+    // "no index" error, which is itself the honest behavior (never silently
+    // succeed on an unindexed project). A still-phantom flag would fail with
+    // "unknown option" instead.
     const r = await runArgs(["index", proj, "--post"])
-    negative("C2 the phantom --post flag is rejected (never silently accepted)", r.code !== 0 || /RUNNER_ERR|unknown option/.test(r.err + r.out), `code=${r.code} err=${(r.err + r.out).slice(0, 120)}`)
+    negative("C2 --post is real: rejected only as no-index (never as unknown option)", !/unknown option|RUNNER_ERR/.test(r.err + r.out), `code=${r.code} err=${(r.err + r.out).slice(0, 120)}`)
     // 4b. an unknown option errors rather than being ignored
     const r2 = await runArgs(["index", proj, "--definitely-not-a-flag"])
     negative("C2 an unknown option is rejected, not ignored", r2.code !== 0 || /RUNNER_ERR|unknown option/.test(r2.err + r2.out), `code=${r2.code}`)

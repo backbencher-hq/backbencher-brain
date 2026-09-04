@@ -151,6 +151,11 @@ async function runSuite(): Promise<{ summary: Record<string, unknown> }> {
       { key: "search.file.fresh", tool: "bb_search", args: { mode: "file", filePath: "src/util.ts" }, extract: (t) => { const p = JSON.parse(t); return { staleFiles: p.stale === true ? ["src/util.ts"] : [], envelope: envOf(p) } } },
       { key: "search.file.edited", tool: "bb_search", args: { mode: "file", filePath: "src/user-service.ts" }, extract: (t) => { const p = JSON.parse(t); return { staleFiles: p.stale === true ? [EDITED] : [], envelope: envOf(p) } } },
       { key: "search.symbol.deleted", tool: "bb_search", args: { mode: "symbol", symbolName: "orphanHelper" }, extract: (t) => { const p = JSON.parse(t); return { staleFiles: flagsOf(p.matches ?? [], "fileId"), envelope: envOf(p) } } },
+      // bb_ask: pre-M35 per-result [STALE] surface (quick-answer pipeline).
+      // stale-signal queries a symbol in the EDITED file; fresh-signal queries
+      // the untouched python symbol — a silence control.
+      { key: "ask.stale-signal", tool: "bb_ask", args: { query: "findUser" }, extract: askSummary },
+      { key: "ask.fresh-signal", tool: "bb_ask", args: { query: "fetch_user" }, extract: askSummary },
       { key: "analyze.callers", tool: "bb_analyze", args: { mode: "callers", target: "handleRequest" }, extract: (t) => { const p = JSON.parse(t); const f = envOf(p); return { staleFiles: flaggedNodeFiles(p), envelope: f && typeof f === "object" ? f : undefined } } },
       { key: "analyze.callees", tool: "bb_analyze", args: { mode: "callees", target: "handleRequest" }, extract: (t) => { const p = JSON.parse(t); const f = envOf(p); return { staleFiles: flaggedNodeFiles(p), envelope: f && typeof f === "object" ? f : undefined } } },
       { key: "analyze.trace", tool: "bb_analyze", args: { mode: "trace", target: "handleRequest" }, extract: (t) => { const p = JSON.parse(t); const f = envOf(p); return { staleFiles: flaggedNodeFiles(p), envelope: f && typeof f === "object" ? f : undefined } } },
@@ -179,6 +184,18 @@ async function runSuite(): Promise<{ summary: Record<string, unknown> }> {
       const files = [...text.matchAll(/(?:@ |— )?(src\/[\w./-]+):\d+[^\n]*\[stale\]/g)].map((m) => m[1])
       const footer = text.match(/(\d+) stale, (\d+) missing of \d+/)
       return { staleFiles: [...new Set(files)], ...(footer ? { envelope: { stale: Number(footer[1]), missing: Number(footer[2]) } } : {}) }
+    }
+    // bb_ask text format: numbered sources "N. <file>:<line>" whose context
+    // line carries " (STALE)" when the underlying result row is stale
+    // (quick-answer.ts pre-M35 mechanism). Extract flagged source files.
+    function askSummary(text: string): { staleFiles: string[] } {
+      const lines = text.split("\n")
+      const files: string[] = []
+      for (let i = 0; i < lines.length; i++) {
+        const m = lines[i].match(/^\d+\. (src\/[\w./-]+):\d+$/)
+        if (m && /\(STALE\)/.test(lines[i + 1] ?? "")) files.push(m[1])
+      }
+      return { staleFiles: [...new Set(files)] }
     }
 
     const collect = async (phase: "pristine" | "mutated") => {
@@ -214,7 +231,7 @@ async function runSuite(): Promise<{ summary: Record<string, unknown> }> {
       // sampled/project modes where the fixture is below sampling thresholds
       // (stats, test_mapping), text modes without structured rows (patterns,
       // security), and test_quality (fixture has no test files — zero rows).
-      const NO_RECALL = new Set(["analyze.stats", "analyze.test_mapping", "analyze.test_quality", "doc.file", "patterns.all", "security.live", "search.file.fresh"])
+      const NO_RECALL = new Set(["analyze.stats", "analyze.test_mapping", "analyze.test_quality", "doc.file", "patterns.all", "security.live", "search.file.fresh", "ask.fresh-signal"])
       if (!NO_RECALL.has(inv.key)) {
         check(`mutated ${inv.key}: affected rows flagged (recall)`, r.staleFiles.length >= 1, JSON.stringify(r))
       }
@@ -235,6 +252,10 @@ async function runSuite(): Promise<{ summary: Record<string, unknown> }> {
     negative("multi-language precision: python file never flagged", !allFlagged.includes("src/service.py"), [...new Set(allFlagged)].join(","))
     negative("multi-language precision: java file never flagged", !allFlagged.includes("src/UserService.java"), "")
     negative("precision: untouched util.ts never flagged", !allFlagged.includes("src/util.ts"), "")
+    // bb_ask cross-check: the stale-signal ask flags the edited file AND the
+    // fresh-signal ask stays silent — proven above via recall+precision;
+    // explicit cross-tool consistency row:
+    check("cross-tool consistency: bb_ask flags edited file like search", rec["mutated:ask.stale-signal"].staleFiles.includes(EDITED), JSON.stringify(rec["mutated:ask.stale-signal"]))
     // link composition: every stale link has at least one affected endpoint
     const linkComp = (rec["mutated:visualize.project"] as any).linkComposition as boolean[] | undefined
     check("mutated visualize: stale links each have an affected endpoint (worst-of)", Array.isArray(linkComp) && linkComp.length >= 1 && linkComp.every(Boolean), JSON.stringify(linkComp))

@@ -65,7 +65,7 @@ function formatETA(s: { processedFiles: number; totalFiles: number; elapsedSecon
 
 async function cmdIndex(
   dir: string | undefined,
-  opts: { force?: boolean; skipPostProcessing?: boolean; file?: string; changed?: boolean; resume?: boolean; import?: string; noSetup?: boolean },
+  opts: { force?: boolean; skipPostProcessing?: boolean; post?: boolean; file?: string; changed?: boolean; resume?: boolean; import?: string; noSetup?: boolean },
 ) {
   // M22.C1: default `<dir>` to the current directory like every other command
   // (search/health/mcp all fall back to process.cwd()); `cd proj && bb index`
@@ -76,6 +76,28 @@ async function cmdIndex(
   const { maybeRunFirstRunSetup } = await import("../setup/setup-wizard")
   await maybeRunFirstRunSetup({ noSetup: opts.noSetup === true })
   const pid = getProjectId(abs)
+  // M40.A1: standalone post-processing — re-runs the five heavy phases +
+  // integrity check WITHOUT re-parsing. The remediation for stale derived
+  // data after --changed/--resume/agent edits (those paths defer it by design).
+  if (opts.post) {
+    const { runPostProcessing } = await import("../ast/parallel-indexer")
+    try {
+      const post = await runPostProcessing(pid)
+      console.log(`✓ post-processing complete in ${(post.totalMs / 1000).toFixed(1)}s`)
+      for (const p of post.phases) {
+        console.log(`  ${p.outcome === "ok" ? "✓" : p.outcome === "failed" ? "✗" : "-"} ${p.name.padEnd(14)} ${p.ms}ms`)
+      }
+      const failedPhases = post.phases.filter((p) => p.outcome === "failed")
+      if (failedPhases.length > 0) {
+        console.error(`✗ ${failedPhases.length} post-processing phase(s) failed (${failedPhases.map((p) => p.name).join(",")}) — index marked partial`)
+        process.exitCode = 1
+      }
+    } catch (e: any) {
+      console.error(`✗ post-processing failed: ${e?.message}`)
+      process.exitCode = 1
+    }
+    return
+  }
   // M23.P3: `bb index --import <db>` re-homes an existing brain.db (from a
   // moved project or another machine) onto this checkout's project id.
   if (opts.import != null) {
@@ -206,6 +228,24 @@ async function cmdIndex(
   if (stats.summary) {
     const s = stats.summary
     console.log(`  breakdown: ${s.newlyParsed} newly parsed | ${s.unchanged} unchanged | ${s.skipped} skipped | ${s.symbolLoss} symbol-loss (parsed 0 symbols) | ${s.errors} errors | ${s.timeouts} timeouts${s.cancelled ? ` | ${s.cancelled} cancelled` : ""}`)
+    // M40.A2: honest derived-data reporting — never let a run imply its
+    // relationships/enrichment/gravity/taints/health are current when they
+    // were deferred.
+    const derived = s.derivedPass ?? "deferred"
+    const derivedNote: Record<string, string> = {
+      full: "derived data fully re-processed",
+      bounded: "derived data re-processed for touched files (bounded pass)",
+      deferred: "derived data deferred — run: bb index --post",
+      "skipped-unchanged": "no files changed — derived data untouched and consistent",
+    }
+    console.log(`  derived: ${derived} (${derivedNote[derived] ?? derived})`)
+    if (stats.m40Bounded) {
+      const b = stats.m40Bounded
+      const parts = [`${b.touchedSymbols} symbols touched`]
+      if (b.repairedInEdges > 0) parts.push(`${b.repairedInEdges} cross-file edges restored`)
+      if (b.purgedDeletedFiles > 0) parts.push(`${b.purgedDeletedFiles} deleted files purged`)
+      console.log(`  bounded: ${parts.join(" | ")}`)
+    }
   }
 }
 
@@ -401,6 +441,7 @@ export async function runCli(argv: string[]): Promise<void> {
     .option("--force", "wipe the existing index and rebuild")
     .option("--no-setup", "skip the first-run embedding setup prompt")
     .option("--skip-post-processing", "parse + store only; defer relationship resolution/enrichment/gravity/taint/health")
+    .option("--post", "re-run relationship/enrichment/gravity/taint/health phases only — no re-parse (M40.A1 remediation for stale derived data)")
     .option("--file <path>", "reindex a single file's symbols + relationships")
     .option("--changed", "reindex only files changed since the last index")
     .option("--resume", "continue from an interrupted run's checkpoint (incremental: only missing/changed files)")

@@ -803,7 +803,20 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
     let guard = 0
     while (cur && guard++ < 64) {
       if (cur.type === "self_expression") return true
-      const next = cur.namedChildren.find((c: any) => c.type === "navigation_expression" || c.type === "self_expression")
+      let next: any = cur.namedChildren.find((c: any) => c.type === "navigation_expression" || c.type === "self_expression")
+      // Glued grammar shapes — mirror the analyzer's hasSelfReceiver
+      // (probe-verified 2026-09, swift-nio corpus): the receiver spine may
+      // be wrapped one level deeper. additive (`buf.readerIndex +
+      // self.count` — suffix binds to the RIGHT self spine) and prefix
+      // (`&self.ctx` inout — the & wraps the base; passing by reference is
+      // a genuine use).
+      if (!next && cur.type === "navigation_expression") {
+        const spine = cur.namedChildren[0]
+        if (spine && (spine.type === "additive_expression" || spine.type === "prefix_expression")) {
+          if (spine.namedChildren.some((c: any) => c.type === "self_expression")) return true
+          next = spine
+        }
+      }
       if (!next) return false
       cur = next
     }
@@ -907,6 +920,18 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
       // self must be on the RECEIVER chain (navigation > navigation > self),
       // never inside a call: `self.decode(...)?.buffer` reads .buffer off the
       // CALL RESULT, not off self (mirrors the analyzer's hasSelfReceiver).
+      // SCD1 write gate — mirrors the analyzer: an assignment LHS is a
+      // WRITE, never a read. The pinned grammar wraps the LHS in
+      // directly_assignable_expression; gate only when this node sits
+      // INSIDE the LHS span (the RHS of `self.x = self.y` stays a read).
+      {
+        let a: any = n.parent
+        while (a && a.type === "directly_assignable_expression") a = a.parent
+        if (a && a.type === "assignment") {
+          const lhs = a.namedChild(0)
+          if (lhs && lhs.startIndex <= n.startIndex && lhs.endIndex >= n.endIndex) continue
+        }
+      }
       const hasSelf = hasSelfReceiver(n)
       if (hasSelf && parentType !== "call_expression") {
         const leaf = navLeaf(n)
@@ -1540,14 +1565,16 @@ export function deriveRubyEdges(root: any): { label: string; from: string; targe
       }
     }
     if (t === "instance_variable") {
-      // READS only (mirrors RUBD1 + RUBD5): plain `assignment` (@x = v) LHS is
-      // a pure WRITE. But `operator_assignment` (@x += / -= / ||= v) is a
-      // READ-MODIFY-WRITE — the current value is read before the op — so it
-      // emits a use. Verified against rake corpus (@options ||= ...).
+      // READS only (mirrors RUBD1 + RUBD5 + SCD1): BOTH `assignment` (@x = v)
+      // and `operator_assignment` (@x += / -= / ||= v) LHS are WRITES — the
+      // family contract (JAD1/KAD1/SCD1/CSD1 sweep, commit 2807164) gates
+      // compound-assign LHS too, and the ruby fixture re-authoring removed
+      // the refund `@balance += amount` pin accordingly. The old "RMW emits a
+      // use" behavior predated that sweep (its rake `@options ||=` witness
+      // then matched an analyzer that leaked the same write) — stale, removed.
       const lhs = parent ? parent.childForFieldName?.("left") : null
-      const isLhs = parent && (parent.type === "assignment" || parent.type === "operator_assignment") &&
+      const isWrite = parent && (parent.type === "assignment" || parent.type === "operator_assignment") &&
         lhs && lhs.startIndex === n.startIndex && lhs.endIndex === n.endIndex
-      const isWrite = isLhs && parent.type === "assignment"
       if (!isWrite) push("uses", n.text)
     }
     // Track nearest enclosing class/module for receiverless-new resolution.
@@ -1808,8 +1835,12 @@ export function derivePythonEdges(root: any): { label: string; from: string; tar
   while (stack.length > 0) {
     const { n, parent, inFn } = stack.pop()!
     const t = n.type
+    // PYD5: rebind the owner ONLY when entering a symbol-level def (inFn is
+    // still undefined). A def inside a def is NOT a symbol — the calls
+    // contract attributes its body to the ENCLOSING function, so its member
+    // reads must keep the outer owner too (mirrors extractMemberUses).
     let nextFn = inFn
-    if (t === "function_definition") {
+    if (t === "function_definition" && !inFn) {
       const nameNode = n.namedChildren.find((c: any) => c.type === "identifier")
       nextFn = nameNode?.text ?? inFn
     }
