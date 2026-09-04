@@ -3,28 +3,12 @@ function stringIncludes(str: string, val: string): boolean {
   return str.indexOf(val) !== -1
 }
 
-function inArray(arr: any[], val: any): boolean {
-  if (!arr) return false
-  for (let i = 0; i < arr.length; i++) {
-    if (arr[i] === val) return true
-  }
-  return false
-}
-
 function someSymbol(arr: any[], predicate: (s: any) => boolean): boolean {
   if (!arr) return false
   for (let i = 0; i < arr.length; i++) {
     if (predicate(arr[i])) return true
   }
   return false
-}
-
-function findSymbol(arr: any[], predicate: (s: any) => boolean): any | undefined {
-  if (!arr) return undefined
-  for (let i = 0; i < arr.length; i++) {
-    if (predicate(arr[i])) return arr[i]
-  }
-  return undefined
 }
 
 // Real Kotlin Intelligence Engine
@@ -39,8 +23,10 @@ export interface KotlinContext {
   currentFile: string
   packageStack: string[]
   classStack: string[]
-  importAliases: Map<string, string>
-  annotations: Map<string, string[]>
+  // KAD5 (M37 kotlin wave): importAliases and annotations were WRITE-ONLY —
+  // extractImport/extractAnnotation populated them, nothing ever read them
+  // (annotation values reach consumers through symbol metadata instead).
+  // Removed dead state; kept currentFile/packageStack/classStack (read).
 }
 
 export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
@@ -62,8 +48,6 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       currentFile: filePath,
       packageStack: [],
       classStack: [],
-      importAliases: new Map(),
-      annotations: new Map(),
     }
 
     const symbols: ASTEngine.UniversalSymbol[] = []
@@ -1421,41 +1405,17 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
    * Kotlin Import Extraction
    */
   private extractImport(node: Node, ctx: KotlinContext): void {
-    const importPathNode = this.findChildByType(node, ["identifier"])
-    if (!importPathNode) return
-
-    const importPath = importPathNode.text
-    const aliasNode = this.findChildByType(node, ["import_alias"])
-    if (aliasNode) {
-      // Handle import aliasing: import com.example.Foo as Bar
-      ctx.importAliases.set(aliasNode.text, importPath)
-    } else {
-      // Extract class name from import path
-      const parts = importPath.split(".")
-      const className = parts[parts.length - 1]
-      if (className) {
-        ctx.importAliases.set(className, importPath)
-      }
-    }
+    // KAD5: alias registration was write-only dead state (removed).
+    void ctx
   }
   /**
    * Kotlin Annotation Extraction
    */
   private extractAnnotation(node: Node, symbols: ASTEngine.UniversalSymbol[], ctx: KotlinContext): void {
-    const annotationName = this.getKotlinAnnotationName(node)
-    if (!annotationName) return
-
-    const annotationArgs = this.extractKotlinAnnotationArguments(node)
-    const target = this.extractKotlinAnnotationTarget(node)
-
-    // Store annotation for current context
-    const currentClassOrFunction = ctx.classStack[ctx.classStack.length - 1]
-    if (currentClassOrFunction) {
-      if (!ctx.annotations.has(currentClassOrFunction)) {
-        ctx.annotations.set(currentClassOrFunction, [])
-      }
-      ctx.annotations.get(currentClassOrFunction)?.push(annotationName)
-    }
+    // KAD5: ctx.annotations was write-only dead state (removed) — annotation
+    // values reach consumers through symbol metadata/decorators instead.
+    void symbols
+    void ctx
   }
 
   /**
@@ -1580,23 +1540,40 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
    * Kotlin KDoc Comment Extraction
    */
   private extractKDocComment(node: Node, ctx: KotlinContext): string | undefined {
-    // Look for KDoc comment before the node
+    // KDoc is the /** ... */ comment immediately BEFORE the declaration
+    // (Kotlin docs: KDoc precedes its item). Scan BACKWARDS from the
+    // declaration and stop at the first non-comment sibling — exactly one
+    // doc, the adjacent one, can ever attach.
+    //
+    // KAD2 (M37 kotlin wave, TSD6-class): the original forward scan broke
+    // on `sibling === node` — a dead comparison (web-tree-sitter returns
+    // fresh wrapper objects per access, so identity never matched, the F7
+    // node-identity rule). The scan therefore ran PAST the declaration and
+    // returned the FIRST KDoc in the file: in a probe, `second` and `third`
+    // both inherited `first`'s doc. Positional (id/startIndex) comparison
+    // fixes the stop; the backward direction keeps only the adjacent doc.
     const parent = node.parent
     if (!parent) return undefined
 
+    // Span-based self-detection (id comparisons across separately-obtained
+    // wrappers are also unsafe; spans are stable). Scan BACKWARDS from the
+    // declaration; stop at the first non-comment sibling so exactly the
+    // adjacent doc can attach — never one from further up.
+    let selfIdx = -1
     for (let i = 0; i < parent.namedChildCount; i++) {
+      const c = parent.namedChild(i)
+      if (c && c.startIndex === node.startIndex && c.endIndex === node.endIndex) { selfIdx = i; break }
+    }
+    for (let i = selfIdx - 1; i >= 0; i--) {
       const sibling = parent.namedChild(i)
-      if (sibling === node) break
-
-      // KDoc is a multiline_comment in tree-sitter-kotlin (not "comment" —
-      // that node type does not exist in this grammar; docstrings were
-      // silently never extracted before M14.1).
+      if (!sibling) continue
       if (
-        (sibling?.type === "multiline_comment" || sibling?.type === "line_comment") &&
+        (sibling.type === "multiline_comment" || sibling.type === "line_comment") &&
         sibling.text.startsWith("/**")
       ) {
         return sibling.text
       }
+      break
     }
 
     return undefined
@@ -1856,6 +1833,11 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
    * Kotlin Val Property Detection
    */
   private isValProperty(node: Node): boolean {
+    // KAD4 (M37 kotlin wave): AST-based, not text-based — `val x = "var y"`
+    // made text matching report BOTH val and var for one property. The
+    // binding_pattern_kind child carries the binding keyword verbatim.
+    const binding = this.findChildByType(node, ["binding_pattern_kind"])
+    if (binding) return binding.text === "val"
     return stringIncludes(node.text, "val ") && !stringIncludes(node.text, "var ")
   }
 
@@ -1863,6 +1845,8 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
    * Kotlin Var Property Detection
    */
   private isVarProperty(node: Node): boolean {
+    const binding = this.findChildByType(node, ["binding_pattern_kind"])
+    if (binding) return binding.text === "var"
     return stringIncludes(node.text, "var ")
   }
 
@@ -1870,21 +1854,53 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
    * Kotlin Property Delegation Detection
    */
   private hasDelegate(node: Node): boolean {
-    return stringIncludes(node.text, " by ")
+    // KAD4: the grammar emits a dedicated property_delegate child. Text
+    // matching (" by ") fabricated delegation for `"powered by Acme"` —
+    // the AST node is probe-verified, no text fallback.
+    return !!this.findChildByType(node, ["property_delegate"])
   }
 
   /**
    * Kotlin Custom Getter Detection
    */
   private hasCustomGetter(node: Node): boolean {
-    return stringIncludes(node.text, "get()") || stringIncludes(node.text, "get() =")
+    return this.hasPropertyAccessor(node, "getter")
+  }
+
+  /**
+   * Kotlin accessor run: the pinned grammar emits accessors as SIBLINGS of
+   * property_declaration (class_body > [property_declaration, getter,
+   * setter]) — probe-verified, and the run is CONTIGUOUS (a setter follows
+   * the getter, not the declaration). Text matching fabricated both ("get()")
+   * hit `val t = m.get()` (a plain call named get); "set("+"value") hit
+   * `val u = s.set(1, value)`). Span-locate the declaration among its
+   * parent's children, then walk the contiguous accessor run that follows.
+   */
+  private hasPropertyAccessor(node: Node, accessorType: string): boolean {
+    const parent = node.parent
+    if (!parent) return false
+    for (let i = 0; i < parent.namedChildCount; i++) {
+      const c = parent.namedChild(i)
+      if (c && c.startIndex === node.startIndex && c.endIndex === node.endIndex) {
+        for (let j = i + 1; j < parent.namedChildCount; j++) {
+          const sib = parent.namedChild(j)
+          if (sib?.type === "getter" || sib?.type === "setter") {
+            if (sib.type === accessorType) return true
+            continue
+          }
+          break
+        }
+        return false
+      }
+    }
+    return false
   }
 
   /**
    * Kotlin Custom Setter Detection
    */
   private hasCustomSetter(node: Node): boolean {
-    return stringIncludes(node.text, "set(") && stringIncludes(node.text, "value")
+    return this.hasPropertyAccessor(node, "setter")
   }
   // ======================== ADDITIONAL KOTLIN HELPER METHODS ========================
 
@@ -1907,7 +1923,14 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
     const resolveSource = (start: Node): string => {
-      let p: Node | null = start.parent
+      // KAD6 (M37 kotlin wave): start at the declaration ITSELF. Starting at
+      // parent attributed a top-level function's return type to "Global"
+      // while its parameters (emitted at the parameter node, whose parent
+      // chain reaches the function) sourced to the function — one
+      // declaration, two owners. Walking from `start` keeps every nested
+      // emit site's attribution identical (their first enclosing declaration
+      // is unchanged) and fixes the top-level return/receiver case.
+      let p: Node | null = start
       while (p) {
         if (p.type === "function_declaration" || p.type === "class_declaration" || p.type === "object_declaration") {
           const name = this.findChildByType(p, ["simple_identifier", "type_identifier"])
@@ -2016,7 +2039,13 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
               }
               continue
             }
-            if ((c.type === "user_type" || c.type === "nullable_type" || c.type === "function_type")) {
+            // KAD3 (M37 kotlin wave): the pinned grammar wraps the extension
+            // receiver in a dedicated receiver_type node (fun String.shout
+            // → receiver_type > user_type > type_identifier) — user_type
+            // alone never matched, so receiver types never emitted a
+            // declared_type reference. collectTypeNames descends into the
+            // wrapper, so passing it is exact.
+            if ((c.type === "receiver_type" || c.type === "user_type" || c.type === "nullable_type" || c.type === "function_type")) {
               if (!sawName && !sawParams) {
                 emit(n, [c], "receiver_type")
                 sawName = true
@@ -2089,7 +2118,15 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
         for (let i = 0; i < n.namedChildCount; i++) {
           if (n.namedChild(i)?.type === "indexing_suffix") { hasIndexing = true; break }
         }
-        if (recv && hasIndexing) emitUse(n, recv.text)
+        // KAD1 (M37 kotlin wave, JAD1-class): assignment LHS is a WRITE, not
+        // a read — `xs[0] = 5` / `xs[1] += 2` emitted a bogus uses edge for
+        // the receiver (java gates array writes by span; kotlin had no
+        // gate). Both `=` and `op=` parse as `assignment` whose FIRST named
+        // child is the LHS expression — gate by span, never by text.
+        const parent = n.parent
+        const lhs = parent && parent.type === "assignment" ? parent.namedChild(0) : null
+        const isWrite = !!lhs && lhs.startIndex === n.startIndex && lhs.endIndex === n.endIndex
+        if (recv && hasIndexing && !isWrite) emitUse(n, recv.text)
       } else if (n.type === "interpolated_identifier") {
         emitUse(n, n.text)
       }
