@@ -70,7 +70,7 @@
       "code": "U1",
       "githubIssue": 625,
       "tool": "union-differential",
-      "status": "planned",
+      "status": "verified",
       "scope": "The union differential gate (D-5): one fixture workspace, two doors \u2014 MCP tool handlers vs the LSP/IDE components directly; equality asserted on counts, tiers, truncation declarations, and cross-language facts including declared absence.",
       "acceptanceCriteria": [
         "Every differential assertion passes on the shared fixture",
@@ -80,7 +80,16 @@
       "closureRequirements": [
         "npx tsx script/m28/verify-union.ts exits 0 at HEAD with clean relevant tree",
         "Evidence persisted at validation/m28/results/U1.json with commit stamp"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "verifierCommand": "npx tsx script/m28/verify-union.ts",
+        "evidenceFile": "U1.json",
+        "passed": 16,
+        "failed": 0,
+        "mutantsCaught": 4,
+        "mutantsTotal": 4
+      }
     },
     {
       "code": "A1",
