@@ -218,7 +218,7 @@
       "code": "D1",
       "githubIssue": 542,
       "tool": "docs",
-      "status": "planned",
+      "status": "verified",
       "scope": "The published precision ledger (docs + listing) and the wave protocol documentation.",
       "acceptanceCriteria": [
         "Both artifacts generated from evidence, drift-gated",
@@ -229,7 +229,17 @@
         "Drift tests",
         "Evidence",
         "Limitations declared"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see D1-verify.json",
+        "verifierCommand": "npx tsx script/m29/verify-m29-docs.ts",
+        "evidenceFile": "D1-verify.json",
+        "passed": 13,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 3
+      }
     },
     {
       "code": "X1",
