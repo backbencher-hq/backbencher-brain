@@ -95,7 +95,7 @@
       "code": "A1",
       "githubIssue": 626,
       "tool": "annotation-store",
-      "status": "planned",
+      "status": "verified",
       "scope": "Additive versioned schema migration (brain_annotation: target, body, author_class agent|human, tool identity, created_at) plus bb_annotate (write) and bb_annotations (read) MCP tools with provenance enforced on every row (D-3/D-4).",
       "acceptanceCriteria": [
         "Migration additive-only, recorded in brain_schema_version",
@@ -105,7 +105,16 @@
       "closureRequirements": [
         "npx tsx script/m28/verify-annotations.ts exits 0 at HEAD with clean relevant tree",
         "Evidence persisted at validation/m28/results/A1.json with commit stamp"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "verifierCommand": "npx tsx script/m28/verify-annotation-store.ts",
+        "evidenceFile": "A1.json",
+        "passed": 22,
+        "failed": 0,
+        "mutantsCaught": 4,
+        "mutantsTotal": 4
+      }
     },
     {
       "code": "A2",
