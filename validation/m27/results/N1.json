@@ -29,7 +29,7 @@
   "nvim": "NVIM v0.12.5",
   "verifierCommand": "npx tsx script/m27/verify-nvim.ts",
   "evidenceFile": "N1.json",
-  "generatedAt": "2026-09-04T03:32:58.944Z",
+  "generatedAt": "2026-09-04T03:33:57.339Z",
   "claimLevel": "I3 — real editor session, machine-driven, real server over stdio",
   "limitations": [
     "Fixture seeded with the shared-core convention (real hash + stat) — the same shape M25.E5 uses.",
