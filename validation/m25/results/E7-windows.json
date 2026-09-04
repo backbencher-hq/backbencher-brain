@@ -6,8 +6,8 @@
   "status": "blocked",
   "blockedReason": "No Windows hardware or runner on this machine; CI OS-matrix runners are the declared place for scheduled Windows runs (path-separator and BB_DATA_DIR % variables are the expected first finds). Not executable here (process.platform is linux); recorded blocked, never claimed.",
   "runnableInstead": "npx tsx script/m25/verify-cross-platform.ts (on the target OS runner)",
-  "currentCommit": "554f5e2197a6ac799c5de43d333e242c0eba9b86",
+  "currentCommit": "28fbdb6a925c1f783b669fbdee022a1051e80812",
   "verifierCommand": "npx tsx script/m25/verify-cross-platform.ts",
   "evidenceFile": "E7-windows.json",
-  "generatedAt": "2026-09-04T06:14:45.051Z"
+  "generatedAt": "2026-09-04T18:18:17.015Z"
 }
