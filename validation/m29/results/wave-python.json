@@ -71,41 +71,41 @@
   "measurements": [
     {
       "op": "hover",
-      "p95WarmMs": 1.4572849999999562,
+      "p95WarmMs": 1.2742949999997109,
       "samples": 40
     },
     {
       "op": "definition",
-      "p95WarmMs": 0.6958490000001802,
+      "p95WarmMs": 0.7143290000003617,
       "samples": 40
     },
     {
       "op": "references",
-      "p95WarmMs": 0.9749849999998332,
+      "p95WarmMs": 1.059175000000323,
       "samples": 40
     },
     {
       "op": "documentSymbol",
-      "p95WarmMs": 2.3727969999999914,
+      "p95WarmMs": 1.378881999999976,
       "samples": 40
     },
     {
       "op": "workspaceSymbol",
-      "p95WarmMs": 1.4542169999999714,
+      "p95WarmMs": 2.544578999999885,
       "samples": 40
     },
     {
       "op": "prepareCallHierarchy",
-      "p95WarmMs": 1.035319999999956,
+      "p95WarmMs": 0.7802790000000641,
       "samples": 40
     }
   ],
   "budgetViolations": [],
-  "commit": "bec36c00415a88f38816f3467dda2658fe123f29",
+  "commit": "28fbdb6a925c1f783b669fbdee022a1051e80812",
   "machine": {
     "node": "v20.19.5",
     "platform": "linux",
     "arch": "x64"
   },
-  "generatedAt": "2026-09-04T17:35:01.696Z"
+  "generatedAt": "2026-09-04T18:05:41.116Z"
 }

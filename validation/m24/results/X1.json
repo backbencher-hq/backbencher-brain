@@ -3,14 +3,14 @@
   "code": "X1",
   "milestone": "M24",
   "status": "verified",
-  "checks": 60,
-  "passed": 60,
+  "checks": 62,
+  "passed": 62,
   "failed": 0,
   "negativeCases": 6,
-  "currentCommit": "1689d19a326af2021d34e465b7c2a401f86d4986",
+  "currentCommit": "28fbdb6a925c1f783b669fbdee022a1051e80812",
   "verifierCommand": "npx tsx script/m24/verify-closure.ts",
   "evidenceFile": "X1.json",
-  "generatedAt": "2026-09-02T03:16:50.106Z",
+  "generatedAt": "2026-09-04T18:15:31.771Z",
   "suite": [
     {
       "code": "P1",
