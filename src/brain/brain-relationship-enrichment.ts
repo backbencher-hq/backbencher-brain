@@ -44,6 +44,10 @@ export interface RelationshipEnrichment {
 export async function enrichRelationships(
   projectId: ProjectID,
   onProgress?: (step: string, pct: number) => void,
+  // M40.A2: scoped mode — enrich only relationships whose SOURCE symbol is in
+  // the given id set (bounded incremental pass). In-degree counts stay GLOBAL
+  // so criticality/frequency of affected targets match full-run values.
+  opts: { sourceSymbolIds?: string[] } = {},
 ): Promise<{
   enriched: number
   patternsFound: number
@@ -74,9 +78,6 @@ export async function enrichRelationships(
   // For 467K rows this is ~50MB — fits comfortably in memory.
   // Use streaming/batching: read in chunks, enrich, write back.
   const BATCH = 20000
-  let offset = 0
-  let enriched = 0
-  let patternsFound = 0
 
   // Pre-compute in-degree for criticality + frequency (single pass)
   report("counting", 0)
@@ -93,28 +94,21 @@ export async function enrichRelationships(
 
   report("enriching", 5)
 
-  // Process in batches
-  while (true) {
-    const batch = rawDb.prepare(`
-      SELECT r.id, r.relationship_type, r.source_symbol_id, r.target_symbol_id,
-             s.layer as source_layer, s.symbol_type as source_type, s.name as source_name,
-             t.layer as target_layer, t.symbol_type as target_type, t.name as target_name,
-             sf.relative_path as source_file
-      FROM brain_relationship r
-      JOIN brain_symbol s ON s.id = r.source_symbol_id AND s.project_id = r.project_id
-      LEFT JOIN brain_symbol t ON t.id = r.target_symbol_id AND t.project_id = r.project_id
-      LEFT JOIN brain_file sf ON sf.id = s.file_id
-      WHERE r.project_id = ?
-      LIMIT ${BATCH} OFFSET ${offset}
-    `).all(projectId) as any[]
+  // M40.A2: scoped mode (sourceSymbolIds) enriches only relationships whose
+  // SOURCE symbol is in the set — bounded by touched-symbol count, not project
+  // size. In-degree counts stay GLOBAL (computed above over all rows) so
+  // criticality/frequency match what a full run would compute.
+  const scopeIds = opts.sourceSymbolIds
 
-    if (batch.length === 0) break
-
-    // Compute enrichment for this batch in JS (fast string ops, no SQL)
-    const updateStmt = rawDb.prepare(`
-      UPDATE brain_relationship SET metadata = ? WHERE id = ? AND project_id = ?
-    `)
-
+  // Shared per-batch processor: full and scoped modes use the identical
+  // enrichment logic — only the row selection differs.
+  const updateStmt = rawDb.prepare(`
+    UPDATE brain_relationship SET metadata = ? WHERE id = ? AND project_id = ?
+  `)
+  let enriched = 0
+  let patternsFound = 0
+  const processBatch = (batch: any[]) => {
+    if (batch.length === 0) return false
     const tx = rawDb.transaction((rows: any[]) => {
       for (const row of rows) {
         const layerFlow = `${row.source_layer || "core"}→${row.target_layer || "core"}`
@@ -162,10 +156,51 @@ export async function enrichRelationships(
     })
 
     try { tx(batch) } catch {}
+    return true
+  }
 
-    offset += BATCH
-    const pct = Math.min(95, 5 + Math.round((offset / totalRels) * 90))
-    report("enriching", pct)
+  if (scopeIds?.length) {
+    // Scoped: iterate id-chunks of the touched symbol set. Cost scales with
+    // |scopeIds|, never with total relationship count.
+    const CHUNK = 500
+    for (let i = 0; i < scopeIds.length; i += CHUNK) {
+      const chunk = scopeIds.slice(i, i + CHUNK)
+      const placeholders = chunk.map(() => "?").join(",")
+      const batch = rawDb.prepare(`
+      SELECT r.id, r.relationship_type, r.source_symbol_id, r.target_symbol_id,
+             s.layer as source_layer, s.symbol_type as source_type, s.name as source_name,
+             t.layer as target_layer, t.symbol_type as target_type, t.name as target_name,
+             sf.relative_path as source_file
+      FROM brain_relationship r
+      JOIN brain_symbol s ON s.id = r.source_symbol_id AND s.project_id = r.project_id
+      LEFT JOIN brain_symbol t ON t.id = r.target_symbol_id AND t.project_id = r.project_id
+      LEFT JOIN brain_file sf ON sf.id = s.file_id
+      WHERE r.project_id = ? AND r.source_symbol_id IN (${placeholders})
+    `).all(projectId, ...chunk) as any[]
+      processBatch(batch)
+    }
+  } else {
+    // Full mode: original offset window over all relationships.
+    let offset = 0
+    while (true) {
+      const batch = rawDb.prepare(`
+      SELECT r.id, r.relationship_type, r.source_symbol_id, r.target_symbol_id,
+             s.layer as source_layer, s.symbol_type as source_type, s.name as source_name,
+             t.layer as target_layer, t.symbol_type as target_type, t.name as target_name,
+             sf.relative_path as source_file
+      FROM brain_relationship r
+      JOIN brain_symbol s ON s.id = r.source_symbol_id AND s.project_id = r.project_id
+      LEFT JOIN brain_symbol t ON t.id = r.target_symbol_id AND t.project_id = r.project_id
+      LEFT JOIN brain_file sf ON sf.id = s.file_id
+      WHERE r.project_id = ?
+      LIMIT ${BATCH} OFFSET ${offset}
+    `).all(projectId) as any[]
+      if (batch.length === 0) break
+      processBatch(batch)
+      offset += BATCH
+      const pct = Math.min(95, 5 + Math.round((offset / totalRels) * 90))
+      report("enriching", pct)
+    }
   }
 
   report("done", 100)

@@ -26,25 +26,49 @@ const log = Log.create({ service: "parallel-indexer" })
 // PILLAR 3: LAYER-AWARE PAGERANK
 // ============================================================================
 
-export async function calculateGravityScores(projectId: ProjectID) {
+export async function calculateGravityScores(
+  projectId: ProjectID,
+  // M40.A2: scoped mode — recompute gravity only for the given symbols.
+  // Bounded incremental runs pass exactly the touched symbols (+ their direct
+  // callers, whose in-degree PageRank boost changes). Each UPDATE below is
+  // identical to the full pass except for the id-chunked scope, so scoped and
+  // full runs can never diverge in formula.
+  opts: { symbolIds?: string[] } = {},
+) {
   const { BrainDatabase } = await import("../brain/database")
   const rawDb = await BrainDatabase.getRawInstance(projectId)
+  const scopeIds = opts.symbolIds
+  // M40.A2 guard: an EXPLICIT but empty scope is a no-op, never a full pass
+  // (the bounded caller passes [] when nothing was touched).
+  if (scopeIds != null && scopeIds.length === 0) return
+  const CHUNK = 500
+  const chunks: string[][] = scopeIds?.length
+    ? Array.from({ length: Math.ceil(scopeIds.length / CHUNK) }, (_, i) => scopeIds.slice(i * CHUNK, (i + 1) * CHUNK))
+    : []
+  // In scoped mode each UPDATE runs per id-chunk with `AND id IN (...)`;
+  // in full mode it runs once over the whole table (identical formula).
+  const runScoped = (sql: string, params: any[] = []) => {
+    if (!chunks.length) {
+      rawDb.prepare(sql).run(...params)
+      return
+    }
+    for (const chunk of chunks) {
+      const placeholders = chunk.map(() => "?").join(",")
+      rawDb.prepare(`${sql} AND brain_symbol.id IN (${placeholders})`).run(...params, ...chunk)
+    }
+  }
 
   // 1. Reset gravity scores to base complexity + visibility (fallback if needed)
-  rawDb
-    .prepare(
-      `
+  // (WHERE 1=1 gives scoped mode a valid anchor for its id filter)
+  runScoped(`
      UPDATE brain_symbol
      SET gravity_score = (complexity * (CASE WHEN visibility = 'public' THEN 1.5 ELSE 1.0 END))
-  `,
-    )
-    .run()
+     WHERE 1=1
+  `)
 
   // 2. PageRank increment (In-degree calculation)
   // Give highly-referenced symbols massive gravity boosts
-  rawDb
-    .prepare(
-      `
+  runScoped(`
      UPDATE brain_symbol
      SET gravity_score = gravity_score + (
         SELECT COUNT(*) * 5.0 
@@ -54,41 +78,28 @@ export async function calculateGravityScores(projectId: ProjectID) {
      WHERE EXISTS (
         SELECT 1 FROM brain_relationship r WHERE r.target_symbol_id = brain_symbol.id
      )
-  `,
-    )
-    .run()
+  `)
 
   // 3. Architectural Weighting (Layers)
-  rawDb
-    .prepare(
-      `
+  runScoped(`
      UPDATE brain_symbol
      SET gravity_score = gravity_score * 2.0
      WHERE layer = 'core'
-  `,
-    )
-    .run()
+  `)
 
-  rawDb
-    .prepare(
-      `
+  // 3b. Service/db weighting (same formula, scoped id-chunk)
+  runScoped(`
      UPDATE brain_symbol
      SET gravity_score = gravity_score * 1.5
      WHERE layer = 'service' OR layer = 'db'
-  `,
-    )
-    .run()
+  `)
 
   // 4. Test intelligence weighting (Tests themselves are lower gravity, but tested code is higher)
-  rawDb
-    .prepare(
-      `
+  runScoped(`
      UPDATE brain_symbol
      SET gravity_score = gravity_score * 0.5
      WHERE layer = 'test'
-  `,
-    )
-    .run()
+  `)
 }
 
 // ============================================================================
@@ -338,8 +349,19 @@ export interface ParallelIndexingStats {
   elapsedSeconds?: number
   /** M22.V1: execution mode of the parse phase (worker-pool | in-process). */
   phase?: string
-  /** M21.R3: true when the run ended because options.signal was aborted. */
+  /**
+   * M21.R3: true when the run ended because options.signal was aborted.
+   */
   cancelled?: boolean
+  /**
+   * M40.A2: bounded-pass telemetry for incremental runs — what the scoped
+   * derived-data pass actually did. Absent on full runs and deferred runs.
+   */
+  m40Bounded?: {
+    repairedInEdges: number
+    purgedDeletedFiles: number
+    touchedSymbols: number
+  }
   /**
    * M22.V5: honest per-bucket run summary. Every input file lands in exactly
    * one bucket so a run that "succeeds" but silently loses files is visible.
@@ -356,6 +378,14 @@ export interface ParallelIndexingStats {
     timeouts: number
     /** M21.R3: files dropped because the run was cancelled (not errors). */
     cancelled: number
+    /**
+     * M40.A2: what this run did about derived data (relationships/enrichment/
+     * gravity/taints/health). "full" = complete pass; "bounded" = scoped pass
+     * over touched symbols/edges; "deferred" = skipped by request or cancel;
+     * "skipped-unchanged" = nothing parsed, derived data untouched and still
+     * consistent. Absent on legacy persisted runs.
+     */
+    derivedPass?: "full" | "bounded" | "deferred" | "skipped-unchanged"
   }
 }
 
@@ -2779,6 +2809,20 @@ export async function indexProjectParallel(
       : await discoverAndFilterFiles(projectId, projectPath, stats, options.files, options.excludePatterns)
     phases.discoveryMs = Date.now() - discoveryStart
 
+    // M40.A2: on incremental runs, capture cross-file edges INTO the files
+    // about to re-parse — storeResults deletes them, the bounded pass restores
+    // them. Snapshot time folds into discoveryMs (same pre-parse window) so
+    // M21.I1 phase reconciliation stays exact.
+    const m40Bounded = options.isIncremental && !options.skipPostProcessing
+    let inEdgeSnapshot: InEdgeSnapshotRow[] = []
+    if (m40Bounded && files.length > 0) {
+      const snapStart = Date.now()
+      const touchedFileIds = files.map((f) => `${projectId}:${path.relative(projectPath, f)}`)
+      inEdgeSnapshot = await snapshotInEdges(projectId, touchedFileIds)
+      if (inEdgeSnapshot.length > 0) log.debug("m40 bounded: captured in-edges", { count: inEdgeSnapshot.length })
+      phases.discoveryMs += Date.now() - snapStart
+    }
+
     // const files = await discoverAndFilterFiles(projectId, projectPath, stats, options.files)
     stats.totalFiles = files.length + stats.skippedFiles
     phases.parsedFiles = files.length
@@ -2808,6 +2852,23 @@ export async function indexProjectParallel(
         errors: 0,
         timeouts: 0,
         cancelled: 0,
+        derivedPass: "skipped-unchanged",
+      }
+
+      // M40.A2: an incremental noop run can still observe DELETIONS —
+      // discovery only walks files present on disk, so a removed file leaves
+      // ghost rows unless purged. Bounded by the brain_file row count.
+      if (options.isIncremental) {
+        try {
+          const purged = await purgeDeletedFiles(projectId, projectPath)
+          if (purged > 0) {
+            stats.m40Bounded = { repairedInEdges: 0, purgedDeletedFiles: purged, touchedSymbols: 0 }
+            stats.summary.derivedPass = "bounded"
+            _log.log(`  bounded: purged ${purged} deleted file(s) from the index`)
+          }
+        } catch (e: any) {
+          log.warn("noop-run deleted-purge failed", { error: e?.message })
+        }
       }
 
       // M21.R3: if this noop run was a resume that finished a cancelled
@@ -3054,6 +3115,7 @@ export async function indexProjectParallel(
       errors: stats.errorFiles,
       timeouts: stats.timeoutFiles,
       cancelled: cancelledCount,
+      derivedPass: "deferred", // set to full/bounded below when a pass actually runs
     }
 
     // Post-processing fallback: re-process files that may have been lost
@@ -3255,11 +3317,42 @@ export async function indexProjectParallel(
         }
       }
       phases.totalWallMs = Date.now() - stats.startTime
+      if (stats.summary) stats.summary.derivedPass = "full"
+    } else if (options.isIncremental && !options.skipPostProcessing && !stats.cancelled) {
+      // M40.A2: bounded incremental post-pass — derived data stays consistent
+      // at write-cost proportional to what THIS run touched, never O(project).
+      const postProcessingStart = Date.now()
+      const bounded = await runBoundedPostProcessing(projectId, {
+        projectPath,
+        touchedFiles: files,
+        snapshot: inEdgeSnapshot,
+        logger: _log,
+      })
+      phases.postProcessingMs = Date.now() - postProcessingStart
+      phases.postProcessingPhases = bounded.phases
+      stats.m40Bounded = {
+        repairedInEdges: bounded.repairedInEdges,
+        purgedDeletedFiles: bounded.purgedDeletedFiles,
+        touchedSymbols: bounded.touchedSymbols,
+      }
+      if (bounded.phases.some((p) => p.outcome === "failed")) {
+        try {
+          await BrainDatabase.updateIndexStatus(projectId, { status: "partial" })
+          _log.log("  ⚠ index marked partial: a bounded post-processing phase failed")
+        } catch (statusErr) {
+          log.warn("failed to persist partial bounded post-processing status", { error: statusErr })
+        }
+      }
+      phases.totalWallMs = Date.now() - stats.startTime
+      if (stats.summary) stats.summary.derivedPass = "bounded"
     } else {
       phases.totalWallMs = Date.now() - stats.startTime
+      if (stats.summary) stats.summary.derivedPass = stats.cancelled ? "deferred" : "deferred"
       log.debug(options.skipPostProcessing
         ? "skipping heavy post-processing because the caller requested deferred finalization"
-        : "skipping heavy cross-symbol taints and health metrics for incremental run")
+        : stats.cancelled
+          ? "post-processing deferred: run cancelled (resume to continue)"
+          : "post-processing deferred (full-index-only path)")
     }
 
     Bus.publishSafe(BrainService.Event.IndexingCompleted, {
@@ -3502,6 +3595,325 @@ export async function runPostProcessing(
   }
 
   return { phases, totalMs: Date.now() - start, integrityHealth }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// M40.A2: BOUNDED post-processing for incremental runs.
+//
+// The full post-pass rewrites every relationship/symbol row — O(project) —
+// which is why incremental runs skipped it and left derived data stale
+// (or worse: INSERT OR REPLACE resets re-parsed symbols' gravity_score, and
+// storeResults deletes cross-file edges TARGETING re-parsed files without a
+// way to rebuild them). This pass fixes exactly what the incremental run
+// touched, and nothing else:
+//
+//   1. in-edge repair   — edges from OTHER files into re-parsed files were
+//                         deleted by storeResults; restore them from the
+//                         pre-parse snapshot and re-resolve their targets.
+//   2. relationships    — resolve only rows still unresolved (re-parsed +
+//                         repaired rows). Full-scan temp tables, targeted updates.
+//   3. enrichment       — scoped: only relationships SOURCING from touched
+//                         symbols. Global in-degree stays exact.
+//   4. gravity          — scoped: touched symbols (INSERT OR REPLACE reset
+//                         their scores) + edge targets whose in-degree changed.
+//   5. taint            — unresolved flows only (full query, targeted updates).
+//   6. health           — SQL aggregates (no row rewrites); measured, documented.
+//   7. deleted purge    — DB rows for files no longer on disk (incremental
+//                         discovery never learns about deletions otherwise).
+//
+// Boundedness: the WRITE cost (the dominant O(project) term of the full pass)
+// scales with touched symbols/edges, not project size. Read-only aggregates
+// are measured and reported per-phase so the gate can verify the claim.
+// ═══════════════════════════════════════════════════════════════════════════
+
+/** One cross-file edge INTO a to-be-re-parsed file, captured before storeResults deletes it. */
+export interface InEdgeSnapshotRow {
+  source_symbol_id: string
+  target_name: string
+  relationship_type: string
+  confidence: number
+  context: string | null
+  line_number: number | null
+  /** Pre-computed enrichment (layerFlow/criticality/pattern/...). Global in-degree is preserved by the scoped pass, so restoring verbatim is exact. */
+  metadata: string | null
+}
+
+/**
+ * Capture every relationship whose TARGET lives in one of the given files
+ * (source is in a different file — those edges die when the file re-parses).
+ * Must run BEFORE parsing: storeResults deletes them.
+ */
+export async function snapshotInEdges(projectId: ProjectID, fileIds: string[]): Promise<InEdgeSnapshotRow[]> {
+  if (fileIds.length === 0) return []
+  const rawDb = await BrainDatabase.getRawInstance(projectId)
+  const rows: InEdgeSnapshotRow[] = []
+  const CHUNK = 500
+  for (let i = 0; i < fileIds.length; i += CHUNK) {
+    const chunk = fileIds.slice(i, i + CHUNK)
+    const placeholders = chunk.map(() => "?").join(",")
+    const part = rawDb.prepare(`
+      SELECT r.source_symbol_id, r.target_external AS target_name, r.relationship_type,
+             r.confidence, r.context, r.line_number, r.metadata
+      FROM brain_relationship r
+      JOIN brain_symbol t ON t.id = r.target_symbol_id
+      WHERE r.project_id = ?
+        AND t.file_id IN (${placeholders})
+        AND r.source_symbol_id NOT IN (SELECT id FROM brain_symbol WHERE file_id IN (${placeholders}))
+        AND r.target_external IS NOT NULL AND r.target_external != ''
+    `).all(projectId, ...chunk, ...chunk) as any[]
+    for (const r of part) {
+      rows.push({
+        source_symbol_id: r.source_symbol_id,
+        target_name: r.target_name,
+        relationship_type: r.relationship_type,
+        confidence: typeof r.confidence === "number" ? r.confidence : 0.5,
+        context: r.context ?? null,
+        line_number: r.line_number ?? null,
+        metadata: typeof r.metadata === "string" ? r.metadata : null,
+      })
+    }
+  }
+  return rows
+}
+
+/**
+ * Restore snapshot edges as unresolved rows (target_external set, target NULL)
+ * so the resolution phase re-resolves them against the fresh symbol table.
+ * Deterministic ids make re-runs idempotent (INSERT OR IGNORE).
+ */
+async function repairInEdges(projectId: ProjectID, snapshot: InEdgeSnapshotRow[]): Promise<number> {
+  if (snapshot.length === 0) return 0
+  const rawDb = await BrainDatabase.getRawInstance(projectId)
+  const now = Date.now()
+  const insert = rawDb.prepare(`
+    INSERT OR IGNORE INTO brain_relationship
+    (id, project_id, source_symbol_id, target_symbol_id, source_external, target_external, relationship_type, confidence, context, line_number, is_cross_file, is_cross_language, bridge_mechanism, metadata, time_created, time_updated)
+    VALUES (?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, 1, 0, NULL, ?, ?, ?)
+  `)
+  let repaired = 0
+  const tx = rawDb.transaction((rows: InEdgeSnapshotRow[]) => {
+    // Batched multi-row INSERT (50 rows/statement): the per-run() overhead of
+    // single-row binds measured ~700ms for 12K rows on the A2 fixture — this
+    // pass sits on bb_edit/LSP's interactive path, so bind overhead matters.
+    for (let i = 0; i < rows.length; i += 50) {
+      const batch = rows.slice(i, i + 50)
+      const valuesSql = batch.map(() => "(?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, 1, 0, NULL, ?, ?, ?)").join(",")
+      const params: any[] = []
+      for (const r of batch) {
+        const id = `${r.source_symbol_id}:${r.relationship_type}:${r.target_name}:${r.line_number ?? 0}:m40`
+        // Idempotency: deterministic id + INSERT OR IGNORE (PK dedup).
+        params.push(id, projectId, r.source_symbol_id, r.target_name, r.relationship_type, r.confidence, r.context, r.line_number, r.metadata, now, now)
+      }
+      rawDb.prepare(`
+        INSERT OR IGNORE INTO brain_relationship
+        (id, project_id, source_symbol_id, target_symbol_id, source_external, target_external, relationship_type, confidence, context, line_number, is_cross_file, is_cross_language, bridge_mechanism, metadata, time_created, time_updated)
+        VALUES ${valuesSql}
+      `).run(...params)
+      repaired += batch.length
+    }
+  })
+  tx(snapshot)
+  return repaired
+}
+
+/**
+ * Purge DB rows for files that no longer exist on disk. Incremental discovery
+ * only sees files present on disk — a deleted file's rows would otherwise
+ * linger forever as orphans (symbols/relationships/taints pointing nowhere).
+ * Returns the number of files purged.
+ */
+export async function purgeDeletedFiles(projectId: ProjectID, projectPath: string): Promise<number> {
+  const rawDb = await BrainDatabase.getRawInstance(projectId)
+  const rows = rawDb.prepare(`SELECT id, path FROM brain_file WHERE project_id = ?`).all(projectId) as any[]
+  const { existsSync } = await import("fs")
+  const deadIds: string[] = []
+  for (const r of rows) {
+    // brain_file.path stores the absolute path at index time.
+    if (typeof r.path === "string" && !existsSync(r.path)) deadIds.push(r.id)
+  }
+  if (deadIds.length === 0) return 0
+  const deleteRelBySource = rawDb.prepare(`DELETE FROM brain_relationship WHERE source_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id = ?)`)
+  const deleteRelByTarget = rawDb.prepare(`DELETE FROM brain_relationship WHERE target_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id = ?)`)
+  const deleteTaints = rawDb.prepare(`DELETE FROM brain_taint_flow WHERE source_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id = ?) OR sink_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id = ?)`)
+  const deleteSymbols = rawDb.prepare(`DELETE FROM brain_symbol WHERE file_id = ?`)
+  const deleteImports = rawDb.prepare(`DELETE FROM brain_import WHERE file_id = ?`)
+  const deleteFile = rawDb.prepare(`DELETE FROM brain_file WHERE id = ?`)
+  const tx = rawDb.transaction((ids: string[]) => {
+    for (const id of ids) {
+      deleteRelBySource.run(id)
+      deleteRelByTarget.run(id)
+      deleteTaints.run(id, id)
+      deleteSymbols.run(id)
+      deleteImports.run(id)
+      deleteFile.run(id)
+    }
+  })
+  tx(deadIds)
+  return deadIds.length
+}
+
+export interface BoundedPostProcessingResult {
+  phases: PostProcessingPhaseTiming[]
+  totalMs: number
+  repairedInEdges: number
+  purgedDeletedFiles: number
+  touchedSymbols: number
+}
+
+/**
+ * The bounded incremental post-pass. `snapshot` must come from snapshotInEdges
+ * taken BEFORE the parse; `touchedFiles` are the absolute paths re-parsed this run.
+ */
+export async function runBoundedPostProcessing(
+  projectId: ProjectID,
+  opts: {
+    projectPath: string
+    touchedFiles: string[]
+    snapshot: InEdgeSnapshotRow[]
+    logger?: { log: (...args: any[]) => void; write: (s: string) => void }
+  },
+): Promise<BoundedPostProcessingResult> {
+  const _log = opts.logger ?? { log: (...args: any[]) => console.log(...args), write: (s: string) => process.stdout.write(s) }
+  const start = Date.now()
+  const phases: PostProcessingPhaseTiming[] = []
+  const recordPhase = (name: PostProcessingPhaseTiming["name"], ms: number, outcome: PostProcessingPhaseTiming["outcome"]) => {
+    phases.push({ name, ms, outcome })
+  }
+
+  const touchedFileIds = opts.touchedFiles.map((f) => `${projectId}:${path.relative(opts.projectPath, f)}`)
+  const rawDb = await BrainDatabase.getRawInstance(projectId)
+
+  // Touched symbol ids (post-parse, deterministic) + edge targets whose
+  // in-degree changed (gravity scope must include them).
+  let touchedSymbols: string[] = []
+  for (let i = 0; i < touchedFileIds.length; i += 500) {
+    const chunk = touchedFileIds.slice(i, i + 500)
+    const placeholders = chunk.map(() => "?").join(",")
+    const rows = rawDb.prepare(`SELECT id FROM brain_symbol WHERE project_id = ? AND file_id IN (${placeholders})`).all(projectId, ...chunk) as any[]
+    touchedSymbols.push(...rows.map((r) => r.id))
+  }
+  const targets: string[] = []
+  for (let i = 0; i < touchedSymbols.length; i += 500) {
+    const chunk = touchedSymbols.slice(i, i + 500)
+    const placeholders = chunk.map(() => "?").join(",")
+    const rows = rawDb.prepare(`SELECT DISTINCT target_symbol_id AS t FROM brain_relationship WHERE project_id = ? AND source_symbol_id IN (${placeholders}) AND target_symbol_id IS NOT NULL`).all(projectId, ...chunk) as any[]
+    targets.push(...rows.map((r) => r.t))
+  }
+  const gravityScope = Array.from(new Set([...touchedSymbols, ...targets]))
+
+  // 1. in-edge repair
+  let repairedInEdges = 0
+  {
+    const _t = Date.now()
+    try {
+      repairedInEdges = await repairInEdges(projectId, opts.snapshot)
+      recordPhase("relationships", Date.now() - _t, "ok")
+      if (repairedInEdges > 0) _log.log(`  bounded: restored ${repairedInEdges} cross-file edge(s) into re-parsed files`)
+    } catch (e: any) {
+      recordPhase("relationships", Date.now() - _t, "failed")
+      log.warn("bounded in-edge repair failed", { error: e?.message })
+    }
+  }
+
+  // 2. relationship resolution — SCOPED: repaired in-edges target symbols in
+  // touched files by construction, so a temp table of just those symbols
+  // resolves them in O(touched). storeResults' final flush already resolved
+  // the re-parsed file's own new edges (skipResolution=false on the last batch).
+  {
+    const _t = Date.now()
+    try {
+      if (touchedFileIds.length > 0) {
+        rawDb.run(`CREATE TEMP TABLE IF NOT EXISTS _m40_touched (id TEXT PRIMARY KEY, name TEXT, qualified_name TEXT)`)
+        rawDb.run(`DELETE FROM _m40_touched`)
+        for (let i = 0; i < touchedFileIds.length; i += 500) {
+          const chunk = touchedFileIds.slice(i, i + 500)
+          const placeholders = chunk.map(() => "?").join(",")
+          rawDb.prepare(`INSERT OR IGNORE INTO _m40_touched (id, name, qualified_name) SELECT id, name, qualified_name FROM brain_symbol WHERE project_id = ? AND file_id IN (${placeholders})`).run(projectId, ...chunk)
+        }
+        rawDb.prepare(`
+          UPDATE brain_relationship
+          SET target_symbol_id = (
+            SELECT t.id FROM _m40_touched t
+            WHERE t.qualified_name = brain_relationship.target_external OR t.name = brain_relationship.target_external
+            ORDER BY CASE WHEN t.qualified_name = brain_relationship.target_external THEN 0 ELSE 1 END, t.id
+            LIMIT 1
+          )
+          WHERE project_id = ?
+            AND target_symbol_id IS NULL AND target_external IS NOT NULL AND target_external != ''
+            AND id LIKE '%:m40'
+        `).run(projectId)
+      }
+      recordPhase("relationships", Date.now() - _t, "ok")
+    } catch (e: any) {
+      recordPhase("relationships", Date.now() - _t, "failed")
+      log.warn("bounded relationship resolution failed", { error: e?.message })
+    }
+  }
+
+  // 3. enrichment — scoped to touched sources
+  {
+    const _t = Date.now()
+    try {
+      const { enrichRelationships } = await import("../brain/brain-relationship-enrichment")
+      await enrichRelationships(projectId, undefined, { sourceSymbolIds: touchedSymbols })
+      recordPhase("enrichment", Date.now() - _t, "ok")
+    } catch (e: any) {
+      recordPhase("enrichment", Date.now() - _t, "failed")
+      log.warn("bounded enrichment failed", { error: e?.message })
+    }
+  }
+
+  // 4. gravity — scoped to touched symbols + changed in-degree targets
+  {
+    const _t = Date.now()
+    try {
+      await calculateGravityScores(projectId, { symbolIds: gravityScope })
+      recordPhase("gravity", Date.now() - _t, "ok")
+    } catch (e: any) {
+      recordPhase("gravity", Date.now() - _t, "failed")
+      log.warn("bounded gravity failed", { error: e?.message })
+    }
+  }
+
+  // 5. taint — resolution processes only unresolved flows
+  {
+    const _t = Date.now()
+    try {
+      await resolveCrossSymbolTaints(projectId)
+      recordPhase("taint", Date.now() - _t, "ok")
+    } catch (e: any) {
+      recordPhase("taint", Date.now() - _t, "failed")
+      log.warn("bounded taint resolution failed", { error: e?.message })
+    }
+  }
+
+  // 6. health — SQL aggregates, no per-row rewrites (measured, not assumed)
+  {
+    const _t = Date.now()
+    try {
+      await (await import("./project-health")).computeAndStoreProjectHealth(projectId)
+      recordPhase("health", Date.now() - _t, "ok")
+    } catch (e: any) {
+      recordPhase("health", Date.now() - _t, "failed")
+      log.warn("bounded health computation failed", { error: e?.message })
+    }
+  }
+
+  // 7. deleted-file purge
+  let purgedDeletedFiles = 0
+  {
+    const _t = Date.now()
+    try {
+      purgedDeletedFiles = await purgeDeletedFiles(projectId, opts.projectPath)
+      recordPhase("integrity", Date.now() - _t, "ok")
+      if (purgedDeletedFiles > 0) _log.log(`  bounded: purged ${purgedDeletedFiles} deleted file(s) from the index`)
+    } catch (e: any) {
+      recordPhase("integrity", Date.now() - _t, "failed")
+      log.warn("bounded deleted-purge failed", { error: e?.message })
+    }
+  }
+
+  return { phases, totalMs: Date.now() - start, repairedInEdges, purgedDeletedFiles, touchedSymbols: touchedSymbols.length }
 }
 
 export async function reindexFilesParallel(
