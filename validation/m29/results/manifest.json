@@ -44,7 +44,7 @@
       "code": "R1",
       "githubIssue": 536,
       "tool": "wave-protocol",
-      "status": "planned",
+      "status": "verified",
       "scope": "Document and mechanize the onboarding protocol: analyzer #419 conformance -> position gate -> freshness gate -> IDE fixtures -> mutants -> latency budget -> claim-level assignment. One command runs the full checklist for a candidate language (contract \u00a79 binding enforced mechanically: IDE claim level <= analyzer evidence level).",
       "acceptanceCriteria": [
         "Wave gate runner script; per-step pass/fail output",
@@ -55,7 +55,18 @@
         "Runner evidence on a dry-run language",
         "Gate wired into verify",
         "Limitations declared"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see R1.json",
+        "verifierCommand": "npx tsx script/m29/verify-wave-protocol.ts",
+        "evidenceFile": "R1.json",
+        "passed": 32,
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": 4,
+        "mutantsTotal": 4
+      }
     },
     {
       "code": "R2",

@@ -19,6 +19,7 @@
 // Evidence: validation/m29/results/R1.json (machine-emitted)
 
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs"
+import { execFileSync } from "node:child_process"
 import path from "node:path"
 import {
   ROOT,
@@ -197,7 +198,6 @@ process.exit(finalFailed === 0 && mutantsCaught === mutantsTotal ? 0 : 1)
 
 function execCommit(): string {
   try {
-    const { execFileSync } = require("node:child_process") as typeof import("node:child_process")
     return execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim()
   } catch {
     return "unknown"
