@@ -260,6 +260,12 @@ CREATE INDEX IF NOT EXISTS brain_rel_proj_source_idx ON brain_relationship(proje
 CREATE INDEX IF NOT EXISTS brain_rel_proj_type_idx ON brain_relationship(project_id, relationship_type);
 CREATE INDEX IF NOT EXISTS brain_rel_target_type_idx ON brain_relationship(target_symbol_id, relationship_type);
 CREATE INDEX IF NOT EXISTS brain_rel_cross_lang_idx ON brain_relationship(is_cross_language);
+-- M29.R3 (giant-repo, 59k files): hover's cross-language probes filter on
+-- is_cross_language = 1 AND target/source_symbol_id = ?. The single-column
+-- indexes leave SQLite scanning; the composite (symbol_id, is_cross_language)
+-- form answers both probes from the index (measured 477ms -> <1ms at scale).
+CREATE INDEX IF NOT EXISTS brain_rel_target_cross_idx ON brain_relationship(target_symbol_id, is_cross_language);
+CREATE INDEX IF NOT EXISTS brain_rel_source_cross_idx ON brain_relationship(source_symbol_id, is_cross_language);
 
 CREATE INDEX IF NOT EXISTS brain_import_name_idx ON brain_import(imported_name);
 CREATE INDEX IF NOT EXISTS brain_import_external_idx ON brain_import(is_external);
