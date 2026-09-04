@@ -251,8 +251,10 @@ async function runSuite(): Promise<void> {
         // noise-dominated (negative deltas impossible for added work).
         // Interleaving cancels machine drift; medians kill spikes.
         const timeOnce = async (mode: string, args: any, skip: boolean): Promise<number> => {
-          if (skip) process.env.BB_M35_SKIP_FRESHNESS = "1"
-          else delete process.env.BB_M35_SKIP_FRESHNESS
+          // M40.A9: the M35 measurement seam is quarantined behind
+          // BB_TEST_HOOKS=1, so this gate opts in explicitly.
+          if (skip) { process.env.BB_TEST_HOOKS = "1"; process.env.BB_M35_SKIP_FRESHNESS = "1" }
+          else { delete process.env.BB_TEST_HOOKS; delete process.env.BB_M35_SKIP_FRESHNESS }
           const t0 = performance.now()
           await cHandlers.bb_analyze({ mode, ...args }, cCtx)
           delete process.env.BB_M35_SKIP_FRESHNESS

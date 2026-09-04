@@ -46,9 +46,8 @@ export function setVerbose(verbose: boolean): void {
   globalLevel = verbose ? LogLevel.DEBUG : LogLevel.INFO
 }
 
-export function setQuiet(quiet: boolean): void {
-  globalLevel = quiet ? LogLevel.WARN : LogLevel.INFO
-}
+// M40.A9 purge: setQuiet() removed — zero callers in src/ or script/; the
+// quiet path lives in BB_LOG_LEVEL (CLI --quiet, M22.W1).
 
 export interface Logger {
   trace: (msg: string, context?: Record<string, any>) => void
