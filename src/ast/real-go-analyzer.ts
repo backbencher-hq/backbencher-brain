@@ -2442,14 +2442,20 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
   private calculateCyclomaticComplexity(node: Node): number {
     let complexity = 1 // Base complexity
 
+    // SCD10 family parity (M37 #599 pre-wave): ARMS are the decisions,
+    // wrappers are not — java counts switch_block_statement_group but not
+    // switch_statement; kotlin counts when_entry but not when_expression.
+    // The previous counter counted BOTH the wrapper (expression/type/
+    // select switch) AND its arms, double-counting every switch, and
+    // missed type_case (type-switch arms) entirely. Probe-verified arm
+    // node names on the pinned grammar: expression_case, type_case,
+    // communication_case, default_case.
     const traverse = (n: Node) => {
       switch (n.type) {
         case "if_statement":
         case "for_statement":
-        case "expression_switch_statement":
-        case "type_switch_statement":
-        case "select_statement":
         case "expression_case":
+        case "type_case":
         case "communication_case":
         case "default_case":
           complexity++

@@ -533,6 +533,14 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           const hasBody = !!this.findChildByType(node, "block")
           const isAbstract = modifiers.indexOf("abstract") !== -1 || !!(parentContext?.isInterface && !hasBody && modifiers.indexOf("default") === -1)
 
+          // JAD3 (M37 java wave): interface members are implicitly public
+          // (JLS 9.4 methods, 9.3 constants). An unmodified interface method
+          // had visibility undefined, which excluded it from exports — the
+          // most intentional API surface in Java silently missing from the
+          // export list. Modifiers still win (a private method in an
+          // interface body, JLS 9.4.1.3, stays private).
+          const effectiveVisibility = visibility ?? (parentContext?.isInterface ? "public" : undefined)
+
           if (annotations.indexOf("@Override") !== -1 && parentContext) {
              overrideTasks.push({
                fqn,
@@ -549,7 +557,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
             range: this.nodeToRange(node),
             comments: methodDoc ? [methodDoc] : [],
             complexity: this.calculateJavaMethodComplexity(node),
-            visibility,
+            visibility: effectiveVisibility,
             parameters,
             returnType,
             qualified_calls: [],
@@ -573,7 +581,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
             kind: ASTEngine.SymbolKind.Method,
             fqn,
             symbolRef: sym,
-            visibility,
+            visibility: effectiveVisibility,
             isAbstract,
             isInterface: false,
             isRecord: false,
@@ -1060,7 +1068,12 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     for (let i = 0; i < symbols.length; i++) {
       const s = symbols[i]
-      if (!s.metadata?.isPhantom && s.visibility === "public" && (!s.ownerName || s.ownerKind === ASTEngine.SymbolKind.Class)) {
+      // JAD3: interface methods ARE public API — an interface declares no
+      // access modifiers (JLS 9.4 implicitly public), so ownerKind Interface
+      // must count as exported exactly like Class. The pre-fix filter
+      // exported only Class-owned methods, silently excluding the most
+      // intentional API surface in Java.
+      if (!s.metadata?.isPhantom && s.visibility === "public" && (!s.ownerName || s.ownerKind === ASTEngine.SymbolKind.Class || s.ownerKind === ASTEngine.SymbolKind.Interface)) {
         exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility })
       }
     }
@@ -1404,14 +1417,23 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private extractJavadocComment(node: Node): string | undefined {
+    // KAD2 twin (M37 #597 sweep): the forward scan's `sibling === node`
+    // stop was dead (fresh wrappers), so the scan ran past this declaration
+    // and returned the FIRST javadoc in the file — doc contamination.
+    // Span-locate the declaration, scan BACKWARD, stop at the first
+    // non-doc sibling (strict adjacency — the kotlin KAD2 contract).
     const parent = node.parent
     if (!parent) return undefined
+    let selfIdx = -1
     for (let i = 0; i < parent.namedChildCount; i++) {
+      const c = parent.namedChild(i)
+      if (c && c.startIndex === node.startIndex && c.endIndex === node.endIndex) { selfIdx = i; break }
+    }
+    for (let i = selfIdx - 1; i >= 0; i--) {
       const sibling = parent.namedChild(i)
-      if (sibling === node) break
-      if ((sibling?.type === "block_comment" || sibling?.type === "line_comment") && sibling.text.startsWith("/**")) {
-        return sibling.text
-      }
+      if (!sibling) continue
+      if (sibling.type === "block_comment" && sibling.text.startsWith("/**")) return sibling.text
+      break
     }
     return undefined
   }
@@ -1483,12 +1505,21 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
     symbols: ASTEngine.UniversalSymbol[],
   ) {
     // Walk with an enclosing-type scope so `this`/`super` receivers resolve to
-    // the containing class/interface/enum instead of the literal keyword.
-    const stack: { node: Node; owner: string | null }[] = [{ node: rootNode, owner: null }]
+    // the containing class/interface/enum instead of the literal keyword, and
+    // an enclosing-METHOD scope for member-read attribution. JAD2 (M37 java
+    // wave): reads sourced to the receiver variable (`cfg.limit` -> cfg) or the
+    // type put edges from non-symbol nodes into the graph — the calls walk
+    // attributes `cfg.helper()` to the enclosing METHOD, so the uses walk must
+    // agree (two walks, one owner; php/objc/python family rule). this/super
+    // keep the TYPE owner (a self-read is a read of the type's member — the
+    // swift precedent), but any other receiver resolves to the method.
+    const stack: { node: Node; owner: string | null; method: string | null }[] = [
+      { node: rootNode, owner: null, method: null },
+    ]
     const seen = new Set<string>()
     while (stack.length > 0) {
       const item = stack.pop()!
-      const { node, owner } = item
+      const { node, owner, method } = item
 
       if (
         node.type === "class_declaration" ||
@@ -1500,18 +1531,45 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
         const nextOwner = nameNode ? nameNode.text : owner
         for (let i = node.namedChildCount - 1; i >= 0; i--) {
           const child = node.namedChild(i)
-          if (child) stack.push({ node: child, owner: nextOwner })
+          if (child) stack.push({ node: child, owner: nextOwner, method: null })
         }
         continue
+      }
+
+      // JAD2: method/constructor bodies rebind the read-owner. Nested/local
+      // classes re-enter the type branch above; their bodies keep their own
+      // methods. A body-less method (interface) has no reads to attribute.
+      let nextMethod = method
+      if (
+        node.type === "method_declaration" ||
+        node.type === "constructor_declaration" ||
+        node.type === "compact_constructor_declaration"
+      ) {
+        const nameNode = node.childForFieldName("name") || this.findChildByType(node, "identifier")
+        nextMethod =
+          node.type === "constructor_declaration" || node.type === "compact_constructor_declaration"
+            ? "constructor"
+            : nameNode?.text ?? method
       }
 
       if (node.type === "field_access") {
         const parts = node.text.split(".")
         if (parts.length >= 2) {
           const first = parts[0]
-          const source = first === "this" || first === "super" ? (owner ?? first) : first
+          const readOwner = method ?? owner
+          const source = first === "this" || first === "super" ? (owner ?? first) : readOwner ?? first
+          // JAD1 (M37 java wave): assignment LHS is a WRITE, not a read —
+          // `this.x = v` emitted a bogus uses edge for x (every other
+          // managed-OO analyzer gates this: php/python/csharp/dart). The
+          // array_access write below shares the same parent gate.
+          const parent = node.parent
+          // F1 audit 2026-09-04: the pinned java grammar emits
+          // assignment_expression (not `assignment` — that was a dead literal,
+          // though the || with the real type kept the gate working).
+          const lhs = parent && parent.type === "assignment_expression" ? parent.namedChild(0) : null
+          const isWrite = !!lhs && lhs.startIndex === node.startIndex && lhs.endIndex === node.endIndex
           const key = `${source}.${parts[parts.length - 1]}`
-          if (!seen.has(key)) {
+          if (!isWrite && !seen.has(key)) {
             seen.add(key)
             relationships.push({
               source,
@@ -1534,21 +1592,29 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (node.type === "array_access") {
         const arrayNode = node.childForFieldName("array")
         if (arrayNode) {
+          // JAD1: array-assignment LHS (xs[0] = v) is a WRITE — the pre-fix
+          // code emitted uses for it.
+          const parent = node.parent
+          // F1 audit: assignment_expression is the real node type.
+          const lhs = parent && parent.type === "assignment_expression" ? parent.namedChild(0) : null
+          const isWrite = !!lhs && lhs.startIndex === node.startIndex && lhs.endIndex === node.endIndex
           const at = arrayNode.type
           let source: string | null = null
           let target: string | null = null
           if (at === "identifier") {
-            source = owner ?? arrayNode.text
+            const readOwner = method ?? owner
+            source = readOwner ?? arrayNode.text
             target = arrayNode.text
           } else if (at === "field_access" || at === "scoped_identifier") {
             const parts = arrayNode.text.split(".")
             if (parts.length >= 2) {
               const first = parts[0]
-              source = first === "this" || first === "super" ? (owner ?? first) : first
+              const readOwner = method ?? owner
+              source = first === "this" || first === "super" ? (owner ?? first) : readOwner ?? first
               target = parts[parts.length - 1]
             }
           }
-          if (source && target) {
+          if (source && target && !isWrite) {
             const key = `${source}.${target}`
             if (!seen.has(key)) {
               seen.add(key)
@@ -1565,7 +1631,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       for (let i = node.namedChildCount - 1; i >= 0; i--) {
         const child = node.namedChild(i)
-        if (child) stack.push({ node: child, owner })
+        if (child) stack.push({ node: child, owner, method: nextMethod })
       }
     }
   }

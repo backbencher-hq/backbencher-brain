@@ -1156,12 +1156,31 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         const parent = node.parent
         if (parent && parent.type === "invocation_expression") {
           const fn = parent.childForFieldName("function")
-          if (fn === node) isCallee = true
+          // web-tree-sitter returns fresh wrapper objects per node access —
+          // object identity NEVER matches (TSD6 class, M37 hygiene gate).
+          // Compare stable node ids; the old `fn === node` / `gp... === parent`
+          // checks were dead, so `?.M()` (and plain `x.M()`) callee skips
+          // never fired and method names leaked bogus uses edges.
+          if (fn && fn.id === node.id) isCallee = true
         } else if (parent && parent.type === "conditional_access_expression") {
           const gp = parent.parent
-          if (gp && gp.type === "invocation_expression" && gp.childForFieldName("function") === parent) isCallee = true
+          if (gp && gp.type === "invocation_expression" && gp.childForFieldName("function")?.id === parent.id) isCallee = true
         }
-        if (!isCallee) {
+        // SCD1 (M37 #599 pre-wave): an assignment LHS is a WRITE, never a
+        // read — `this.count = 0` and `this.count += 1` both emitted a bogus
+        // `uses count`. Gate the LHS by exact span containment: the RHS of
+        // `this.count = this.count + 1` stays a genuine read (java JAD1/
+        // kotlin KAD1/scala SCD1 family contract).
+        let isLhsWrite = false
+        {
+          let a = node.parent
+          while (a && (a.type === "member_access_expression" || a.type === "member_binding_expression")) a = a.parent
+          if (a && a.type === "assignment_expression") {
+            const lhs = a.childForFieldName("left")
+            if (lhs && lhs.startIndex <= node.startIndex && lhs.endIndex >= node.endIndex) isLhsWrite = true
+          }
+        }
+        if (!isCallee && !isLhsWrite) {
           const field = node.childForFieldName("name")
           const expr = node.childForFieldName("expression")
           // CSD4: member_binding_expression (`.Count`) has NO expression field

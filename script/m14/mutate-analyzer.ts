@@ -55,6 +55,18 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => ({ ...s, complexity: undefined })) }),
   },
   {
+    id: "c/emit-write-as-read",
+    language: "c",
+    defectClass: "relationship-fabrication",
+    description: "SCD1 regression: removes the field_expression assignment-LHS write gate — re-injects the pre-fix edge probe-verified on q->value = v / q->value += 1 (set_value->value uses) — c set_value forbid catches it",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), {
+        type: "uses", source: "set_value", target: "value", isExternal: true, weight: 1, confidence: 0.9, metadata: { relationshipType: "field_access", accessedFrom: "q" },
+      }],
+    }),
+  },
+  {
     id: "cpp/drop-virtual-overrides",
     language: "cpp",
     defectClass: "relationship-loss",
@@ -160,6 +172,13 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => (x.metadata ?? {}).relationshipType !== "go_interface_implementation") }),
   },
   {
+    id: "go/double-count-switch-arms",
+    language: "go",
+    defectClass: "payload-corruption",
+    description: "SCD10 regression: re-adds switch-wrapper double-counting (the pre-fix counter counted expression/type/select wrappers AND arms) — pump pin equals:4 catches it",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => s.name === "pump" ? { ...s, complexity: s.complexity + 1 } : s) }),
+  },
+  {
     id: "go/drop-promoted-struct-implements",
     language: "go",
     defectClass: "relationship-loss",
@@ -258,6 +277,72 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => ({ ...s, comments: [] })) }),
   },
   {
+    id: "scala/write-as-read-leak",
+    language: "scala",
+    defectClass: "relationship-noise",
+    description: "injects the SCD1 regression class: assignment LHS leaks as a uses edge (field-uses forbid pin: bump's pure += write must emit nothing)",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { source: "bump", target: "h", type: "uses", confidence: 0.9, metadata: { relationshipType: "expression_use", evidenceClass: "usage_contextual" } }] }),
+  },
+  {
+    id: "scala/throw-target-garbage",
+    language: "scala",
+    defectClass: "relationship-noise",
+    description: "injects the SCD4 regression class: throw references embed raw construction text with the message argument (throw-targets forbid pin)",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { source: "load", target: "new IllegalArgumentException(\"negative: \" + x)", type: "references", confidence: 0.9, metadata: { isThrow: true } }] }),
+  },
+  {
+    id: "scala/abstract-members-loss",
+    language: "scala",
+    defectClass: "symbol-loss",
+    description: "injects the SCD9 regression class: abstract trait fields (val_declaration/var_declaration) silently dropped — abstract-members expect pins must catch it",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => !(s.metadata?.isAbstract && (s.kind === "constant" || s.kind === "variable"))) }),
+  },
+  {
+    id: "scala/enum-params-loss",
+    language: "scala",
+    defectClass: "symbol-loss",
+    description: "injects the SCD6 regression class: enum constructor/property symbols dropped (enum-params expect pins)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => !(s.kind === "constructor" && s.ownerName === "Planet")) }),
+  },
+  {
+    id: "scala/enum-param-type-root-attribution",
+    language: "scala",
+    defectClass: "relationship-noise",
+    description: "injects the SCD6 KAD6-twin: enum param type refs attributed to the root placeholder instead of the enum (enum-params forbid pin)",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { source: "root", target: "Double", type: "references", confidence: 0.95, metadata: { relationshipType: "declared_type", declaredOn: "class_parameter" } }] }),
+  },
+  {
+    id: "scala/drop-given-refs",
+    language: "scala",
+    defectClass: "relationship-loss",
+    description: "injects the SCD12 regression class: given definitions emit no type references (given_type edges dropped)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => x.metadata?.relationshipType !== "given_type") }),
+  },
+  {
+    id: "scala/text-substring-pattern-fabrication",
+    language: "scala",
+    defectClass: "metadata-fabrication",
+    description: "injects the SCD5 regression class: text.includes substring pattern flags fabricated from unrelated identifiers (annotation-flags expectPatterns must catch the leak of the trap shape)",
+    transform: r => {
+      const md: any = { ...(r.metadata ?? {}), patterns: [...((r.metadata as any)?.patterns ?? []), "Annotations"] }
+      return { ...r, metadata: md }
+    },
+  },
+  {
+    id: "scala/complexity-arm-double-count",
+    language: "scala",
+    defectClass: "metric-drift",
+    description: "injects the SCD10 wrapper-double-count regression class: match/try/catch wrappers counted on top of arms (complexity-parity + f6-coverage-wave pins)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => (s.name === "f" || s.name === "raise" ? { ...s, complexity: (s.complexity ?? 1) + 1 } : s)) }),
+  },
+  {
+    id: "scala/curried-qualified-calls-dup",
+    language: "scala",
+    defectClass: "payload-noise",
+    description: "injects the SCD7 regression class: curried application wrappers double-push the qualified_calls path (SCD7 probe showed List.fill/self.add doubled pre-fix)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => ((s as any).qualified_calls ? { ...s, qualified_calls: [...(s as any).qualified_calls, ...(s as any).qualified_calls] } : s)) }),
+  },
+  {
     id: "scala/drop-typeParameters",
     language: "scala",
     defectClass: "symbol-payload-loss",
@@ -267,6 +352,13 @@ const MUTANTS: Mutant[] = [
         if (clean.metadata) { delete clean.metadata.typeParameters }
         return clean
       }) }),
+  },
+  {
+    id: "scala/callee-method-value-leak",
+    language: "scala",
+    defectClass: "relationship-noise",
+    description: "injects the M37 TSD6-sweep regression class: a dead call-position skip (n.parent.childForFieldName === n, never true for wrappers) leaks call callees as bogus method_value references — method-value-refs forbid pin must catch it",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), ...(r.relationships ?? []).filter((x: any) => x.type === "calls").map((x: any) => ({ ...x, type: "references", metadata: { ...(x.metadata ?? {}), relationshipType: "method_value" } }))] }),
   },
   {
     id: "scala/drop-decorators",
@@ -316,6 +408,39 @@ const MUTANTS: Mutant[] = [
     defectClass: "relationship-loss",
     description: "drops References edges for record patterns (#419 G3 bug class)",
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => (x.metadata ?? {}).relationshipType !== "record_pattern") }),
+  },
+  {
+    id: "java/emit-write-as-read",
+    language: "java",
+    defectClass: "fabrication",
+    description: "regresses JAD1: assignment-LHS field/array writes emit uses edges (this.x = v -> uses x) — the write-as-read bug class",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), {
+        type: "uses", source: "ArrayAccessUses", target: "xs", fromSymbol: "ArrayAccessUses", toSymbol: "xs", confidence: 0.6, metadata: { isFieldAccess: true },
+      }],
+    }),
+  },
+  {
+    id: "java/type-sourced-member-reads",
+    language: "java",
+    defectClass: "relationship-loss",
+    description: "regresses JAD2: member reads re-owned by the enclosing TYPE instead of the method (two walks, two owners) — f->xs pin dies",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map(x =>
+        (x.metadata ?? {}).isArrayAccess && x.source === "f" ? { ...x, source: "ArrayAccessUses" } : x),
+    }),
+  },
+  {
+    id: "java/interface-methods-unexported",
+    language: "java",
+    defectClass: "symbol-loss",
+    description: "regresses JAD3: implicit-public interface members excluded from exports (pre-fix visibility=undefined) — fetch must stay exported",
+    transform: r => ({
+      ...r,
+      exports: (r.exports ?? []).filter((e: any) => !(e.name === "fetch" && e.kind === "method")),
+    }),
   },
   {
     id: "java/drop-import-edges",
@@ -440,6 +565,146 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => ({ ...s, comments: [] })) }),
   },
   {
+    id: "kotlin/write-as-read-uses",
+    language: "kotlin",
+    defectClass: "relationship-noise",
+    description: "injects the KAD1 regression class: assignment-LHS indexing leaks a uses edge for the receiver (pre-fix `xs[i] = 42` emitted uses; oracle derives no kotlin uses truth so F5 is blind)",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), ...(r.relationships ?? []).filter((x: any) => x.metadata?.relationshipType === "expression_use").map((x: any) => ({ ...x, source: "write" }))] }),
+  },
+  {
+    id: "kotlin/kdoc-contamination",
+    language: "kotlin",
+    defectClass: "docstring-misattribution",
+    description: "injects the KAD2 regression class: the first doc leaks onto every subsequent doc-less declaration (dead `sibling === node` forward scan)",
+    transform: r => {
+      const firstDoc = (r.symbols ?? []).find((s: any) => (s.comments ?? []).length > 0)?.comments?.[0]
+      if (!firstDoc) return r
+      return { ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, comments: [firstDoc] })) }
+    },
+  },
+  {
+    id: "kotlin/accessor-text-fallback",
+    language: "kotlin",
+    defectClass: "payload-fabrication",
+    description: "injects the KAD4 regression class: text-based metadata flags (get()/set(/by substring) fabricate hasCustomGetter/hasCustomSetter/hasDelegate)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => s.kind === "property" ? { ...s, metadata: { ...(s.metadata ?? {}), hasCustomGetter: true, hasCustomSetter: true, hasDelegate: true } } : s) }),
+  },
+  {
+    id: "kotlin/receiver-ref-loss",
+    language: "kotlin",
+    defectClass: "relationship-loss",
+    description: "injects the KAD3 regression class: extension-receiver types emit no reference (the user_type-only walk was dead against receiver_type wrappers)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.source === "shout" && x.target === "String" && x.metadata?.relationshipType === "declared_type")) }),
+  },
+  {
+    id: "kotlin/return-type-global",
+    language: "kotlin",
+    defectClass: "relationship-mislabel",
+    description: "injects the KAD6 regression class: declaration-position references sourced to the Global placeholder (pre-fix top-level return types)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => x.source === "m" && x.metadata?.relationshipType === "return_type" ? { ...x, source: "Global" } : x) }),
+  },
+  {
+    id: "java/javadoc-leak",
+    language: "java",
+    defectClass: "docstring-misattribution",
+    description: "injects the KAD2-sweep regression class: the first javadoc leaks onto every subsequent declaration (dead `sibling === node` forward scan)",
+    transform: r => {
+      const firstDoc = (r.symbols ?? []).find((s: any) => (s.comments ?? []).length > 0)?.comments?.[0]
+      if (!firstDoc) return r
+      return { ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, comments: [firstDoc] })) }
+    },
+  },
+  {
+    id: "groovy/groovydoc-leak",
+    language: "groovy",
+    defectClass: "docstring-misattribution",
+    description: "injects the KAD2-sweep regression class: first-GroovyDoc leak onto doc-less declarations",
+    transform: r => {
+      const firstDoc = (r.symbols ?? []).find((s: any) => (s.comments ?? []).length > 0)?.comments?.[0]
+      if (!firstDoc) return r
+      return { ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, comments: [firstDoc] })) }
+    },
+  },
+  {
+    id: "scala/scaladoc-leak",
+    language: "scala",
+    defectClass: "docstring-misattribution",
+    description: "injects the KAD2-sweep regression class: first-ScalaDoc leak onto doc-less declarations",
+    transform: r => {
+      const firstDoc = (r.symbols ?? []).find((s: any) => (s.comments ?? []).length > 0)?.comments?.[0]
+      if (!firstDoc) return r
+      return { ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, comments: [firstDoc] })) }
+    },
+  },
+  {
+    id: "groovy/read-attribution-to-receiver",
+    language: "groovy",
+    defectClass: "attribution-corruption",
+    description: "GAD1 regression: reverts JAD2 method-scope attribution — field reads source to the receiver variable (cfg.limit -> uses cfg) — groovy field-read attribution pins catch it",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), {
+        type: "uses", source: "cfg", target: "limit", isExternal: true, weight: 1, confidence: 0.6, metadata: { isFieldAccess: true },
+      }],
+    }),
+  },
+  {
+    id: "groovy/script-sentinel-split",
+    language: "groovy",
+    defectClass: "attribution-corruption",
+    description: "GAD2 regression: re-splits script sentinels — instantiates under global/ root instead of (script) — script-methods pins catch it",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), {
+        type: "instantiates", source: "global", target: "Deployer", isExternal: true, weight: 1, confidence: 0.95, metadata: { relationshipType: "instantiates", isNew: true },
+      }],
+    }),
+  },
+  {
+    id: "groovy/text-visibility-fabrication",
+    language: "groovy",
+    defectClass: "payload-corruption",
+    description: "GAD3 regression: re-adds raw-text substring visibility (leak() fabricates private from a string literal) — visibility pin catches it",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map(s => s.name === "leak" ? { ...s, visibility: "private" } : s),
+    }),
+  },
+  {
+    id: "groovy/keyword-modifiers-blind",
+    language: "groovy",
+    defectClass: "payload-loss",
+    description: "GAD6 regression: modifiers node iterates named children only — keyword-only declarations lose isStatic/isConstant/private (hidden() flips public) — visibility pins catch it",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map(s => s.name === "hidden" ? { ...s, visibility: "public" } : s),
+    }),
+  },
+  {
+    id: "groovy/modifier-return-type-loss",
+    language: "groovy",
+    defectClass: "relationship-loss",
+    description: "GAD5 regression: return-type collection breaks on modifiers — public String greet() loses its return_type ref — script-methods/type-usage pin catches it",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(x => !((x.metadata ?? {}).relationshipType === "return_type" && x.source === "greet")),
+    }),
+  },
+  {
+    id: "groovy/array-write-uses",
+    language: "groovy",
+    defectClass: "relationship-noise",
+    description: "injects the KAD1-sweep regression class: assignment-LHS array_access leaks a uses edge (the pre-fix emission the old fixture pinned as Groovy semantics)",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), ...(r.relationships ?? []).filter((x: any) => x.metadata?.isArrayAccess).map((x: any) => ({ ...x, source: "store" }))] }),
+  },
+  {
+    id: "groovy/return-type-mislabel",
+    language: "groovy",
+    defectClass: "relationship-mislabel",
+    description: "injects the KAD6-sweep regression class: return-type refs revert to declared_type and re-source to the enclosing class",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => x.metadata?.relationshipType === "return_type" ? { ...x, source: "TypeGraph", metadata: { ...x.metadata, relationshipType: "declared_type" } } : x) }),
+  },
+  {
     id: "groovy/drop-declared-types",
     language: "groovy",
     defectClass: "relationship-loss",
@@ -538,6 +803,20 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => x.metadata?.relationshipType !== "instanceof_check") }),
   },
   {
+    id: "javascript/reintroduce-receiver-source",
+    language: "javascript",
+    defectClass: "relationship-garbage",
+    description: "reverts JSD2: member reads source to the receiver variable again (cfg.limit -> cfg, a non-symbol the graph/LSP can never connect; the JAD2 class from the java wave)",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "svc", target: "fetch", confidence: 0.6, metadata: { isFieldAccess: true } }] }),
+  },
+  {
+    id: "javascript/reintroduce-module-write-uses",
+    language: "javascript",
+    defectClass: "relationship-garbage",
+    description: "reverts JSD1: CJS deep-export writes emit uses again (module.exports.tag = 1 -> uses module -> exports/uses module -> tag)",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "module", target: "exports", confidence: 0.6, metadata: { isFieldAccess: true } }, { type: "uses", source: "module", target: "tag", confidence: 0.6, metadata: { isFieldAccess: true } }] }),
+  },
+  {
     id: "python/drop-declared-types",
     language: "python",
     defectClass: "relationship-loss",
@@ -550,6 +829,20 @@ const MUTANTS: Mutant[] = [
     defectClass: "relationship-loss",
     description: "drops declared_type/return_type references (silent type-usage-graph bug class)",
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !["declared_type", "return_type"].includes(String(x.metadata?.relationshipType))) }),
+  },
+  {
+    id: "typescript/double-emit-type-args",
+    language: "typescript",
+    defectClass: "relationship-fabrication",
+    description: "SCD7 regression: removes the type_annotation guard on type_arguments so Map<String, Foo> re-emits String/Foo as type_argument — local->String count equals:1 catches it",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), {
+        type: "references", source: "local", target: "String", isExternal: true, weight: 0.8, confidence: 1.0, metadata: { relationshipType: "type_argument", evidenceClass: "reference_qualified" },
+      }, {
+        type: "references", source: "local", target: "Foo", isExternal: true, weight: 0.8, confidence: 1.0, metadata: { relationshipType: "type_argument", evidenceClass: "reference_qualified" },
+      }],
+    }),
   },
   {
     id: "typescript/drop-qualified-calls",
@@ -667,6 +960,27 @@ const MUTANTS: Mutant[] = [
     defectClass: "payload-loss",
     description: "drops the typeParameters payload from symbols (section C typeParameters pin)",
     transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, genericParameters: undefined })) }),
+  },
+  {
+    id: "typescript/reintroduce-write-as-read",
+    language: "typescript",
+    defectClass: "relationship-garbage",
+    description: "reverts the TSD1 write gate: assignment-LHS member writes emit uses again (this.count = 0 -> uses count; the JAD1 class from the java wave)",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "write", target: "value", confidence: 0.85, metadata: { isFieldAccess: true } }] }),
+  },
+  {
+    id: "typescript/reintroduce-script-placeholder",
+    language: "typescript",
+    defectClass: "relationship-garbage",
+    description: "reverts TSD4: top-level calls source to the '(script)' placeholder again (no consumer can resolve it; the module leaf is the contract)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => (x.type === "calls" && x.source === "instantiation-refs" && x.target === "wrap") ? { ...x, source: "(script)" } : x) }),
+  },
+  {
+    id: "typescript/reintroduce-qualified-new",
+    language: "typescript",
+    defectClass: "relationship-garbage",
+    description: "reverts TSD3: new ns.Thing() emits the full 'ns.Thing' target instead of the leaf (violates the leaf-identity contract; JS parity reduces to Thing)",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "instantiates", source: "make", target: "ns.Thing", confidence: 1, metadata: {} }] }),
   },
   {
     id: "javascript/reclassify-import-tier",
@@ -1029,6 +1343,18 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => (x.metadata ?? {}).relationshipType !== "csharp_field_access") }),
   },
   {
+    id: "csharp/emit-write-as-read",
+    language: "csharp",
+    defectClass: "relationship-fabrication",
+    description: "SCD1 regression: removes the field-access assignment-LHS write gate — re-injects the exact pre-fix edges probe-verified on pure/compound writes to this.Name (Reset->Name uses) — csharp Reset forbid catches it",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), {
+        type: "uses", source: "Reset", target: "Name", isExternal: true, weight: 1, confidence: 0.7, metadata: { relationshipType: "csharp_field_access" },
+      }],
+    }),
+  },
+  {
     id: "csharp/drop-symbol-complexity",
     language: "csharp",
     defectClass: "payload-loss",
@@ -1041,6 +1367,13 @@ const MUTANTS: Mutant[] = [
     defectClass: "relationship-loss",
     description: "drops csharp implements edges (Shape->IShape) — #264 section B implements pin",
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "implements") }),
+  },
+  {
+    id: "csharp/callee-field-access-leak",
+    language: "csharp",
+    defectClass: "relationship-noise",
+    description: "injects the M37 TSD6-sweep regression class: a dead callee-identity skip (fn === node, never true for web-tree-sitter wrappers) leaks call-position member_access as bogus csharp_field_access uses — payload-and-complexity forbid pins must catch it",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), ...(r.relationships ?? []).filter((x: any) => x.type === "calls").map((x: any) => ({ ...x, type: "uses", metadata: { ...(x.metadata ?? {}), relationshipType: "csharp_field_access" } }))] }),
   },
   {
     id: "csharp/ctor-initializer-loss",
@@ -1143,8 +1476,22 @@ const MUTANTS: Mutant[] = [
     id: "swift/drop-self-uses-edge",
     language: "swift",
     defectClass: "relationship-loss",
-    description: "drops swift self. member-read uses edges (OrderStore->state) — swift section B uses pin",
+    description: "drops swift self. member-read uses edges — swift edges-and-patterns uses pin (Calculator->history)",
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).isFieldAccess && x.type === "uses")) }),
+  },
+  {
+    id: "swift/emit-write-as-read",
+    language: "swift",
+    defectClass: "relationship-fabrication",
+    description: "SCD1 regression: removes the assignment-LHS write gate — re-injects the exact pre-fix edges probe-verified on `self.count = 0`/`self.label = \"z\"` (Counter->count, Counter->label uses) — swift/write-gate forbids catch them",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "Counter", target: "count", isExternal: true, weight: 0.8, confidence: 1.0, metadata: { isFieldAccess: true, evidenceClass: "usage_contextual" } }, { type: "uses", source: "Counter", target: "label", isExternal: true, weight: 0.8, confidence: 1.0, metadata: { isFieldAccess: true, evidenceClass: "usage_contextual" } }] }),
+  },
+  {
+    id: "swift/drop-glued-receiver-reads",
+    language: "swift",
+    defectClass: "relationship-loss",
+    description: "SWD1 regression: reverts hasSelfReceiver to the pre-fix receiver chain, dropping glued-shape reads (inout `&self.ctx`, additive `base + self.count`) — swift/write-gate expectUses Counter->ctx pin fails when the edge vanishes",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((rel: any) => !(rel.type === "uses" && rel.source === "Counter" && rel.target === "ctx")) }),
   },
   {
     id: "swift/drop-operator-symbol",
@@ -1326,6 +1673,25 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).isMemberRead && x.type === "uses")) }),
   },
   {
+    id: "php/emit-rmw-write-as-uses",
+    language: "php",
+    defectClass: "relationship-fabrication",
+    description: "SCD1 regression: re-opens the augmented_assignment gate so compound-assign LHS ($this->balance -= / +=) re-emits uses — refund forbid pin catches it",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), {
+        type: "uses", source: "refund", target: "balance", isExternal: true, weight: 1, confidence: 0.9, metadata: { isMemberRead: true },
+      }],
+    }),
+  },
+  {
+    id: "php/wrapper-complexity-count",
+    language: "php",
+    defectClass: "payload-corruption",
+    description: "SCD10 regression: re-adds switch_statement/try_statement wrapper counting (the pre-fix counter) — f6_global_helper pin equals:10 catches it",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => s.name === "f6_global_helper" ? { ...s, complexity: s.complexity + 2 } : s) }),
+  },
+  {
     id: "php/emit-write-as-uses",
     language: "php",
     defectClass: "relationship-loss",
@@ -1374,6 +1740,25 @@ const MUTANTS: Mutant[] = [
       ...r,
       relationships: [...(r.relationships ?? []), {
         type: "uses", source: "initialize", target: "@gateway", isExternal: true, weight: 1, confidence: 0.9, metadata: { memberRead: true },
+      }],
+    }),
+  },
+  {
+    id: "ruby/split-script-sentinel",
+    language: "ruby",
+    defectClass: "payload-corruption",
+    description: "GAD2 twin regression: reverts the require references source to the old hardcoded 'root' sentinel while calls/uses keep 'Global' — ruby payload-and-complexity references Global->rake/tasklib pin catches the split",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((rel: any) => (rel.type === "references" && rel.target === "rake/tasklib" ? { ...rel, source: "root" } : rel)) }),
+  },
+  {
+    id: "ruby/emit-rmw-write-as-uses",
+    language: "ruby",
+    defectClass: "relationship-fabrication",
+    description: "SCD1 regression: re-opens the operator_assignment gate so compound-assign LHS (@balance -= / +=) re-emits uses — refund forbid pin + authorize count equals:2 catch it",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), {
+        type: "uses", source: "refund", target: "@balance", isExternal: true, weight: 1, confidence: 0.9, metadata: { memberRead: true },
       }],
     }),
   },
@@ -1437,6 +1822,31 @@ const MUTANTS: Mutant[] = [
     defectClass: "payload-loss",
     description: "drops python per-symbol complexity (total_for for/if/while count) — python section C complexity pin",
     transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, complexity: undefined })) }),
+  },
+  {
+    id: "python/class-var-public-visibility",
+    language: "python",
+    defectClass: "payload-loss",
+    description: "regresses PYD3: underscore class variables hard-coded public (the pre-fix asymmetry) — python _memo protected pin",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) =>
+        (s.metadata ?? {}).isClassVariable ? { ...s, visibility: "public" } : s),
+    }),
+  },
+  {
+    id: "python/drop-enum-auto-members",
+    language: "python",
+    defectClass: "symbol-loss",
+    description: "regresses PYD4: auto()-valued enum members dropped (RED = enum.auto() silent) — python Colors/RED pins",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => s.name !== "RED") }),
+  },
+  {
+    id: "python/nested-def-reowner",
+    language: "python",
+    defectClass: "relationship-loss",
+    description: "regresses PYD5: member reads inside nested defs re-owned by the nested (non-symbol) name — run->base_name pin dies",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "uses" && x.source === "run" && x.target === "base_name")) }),
   },
   {
     id: "haskell/drop-derived-implements",

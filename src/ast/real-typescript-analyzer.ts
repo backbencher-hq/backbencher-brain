@@ -2851,6 +2851,18 @@ class TypeScriptAnalysisRunner {
           // walk recurses into type_arguments either way, so hooking the
           // node itself covers both shapes: the type names inside (Baz) are
           // references, not bindings.
+          // SCD7 (M37 #599 pre-wave): when this type_arguments is embedded
+          // in a type_annotation (`const local: Map<String, Foo>`), the
+          // type_annotation case ALREADY emitted every nested name as
+          // declared_type (the java/kotlin family contract: one
+          // declared_type per type name). Emitting them again as
+          // type_argument double-emitted String/Foo from the same site.
+          // Call-site/instantiation type_arguments keep their edge.
+          let inAnnotation = false
+          for (let a = n.parent; a; a = a.parent) {
+            if (a.type === "type_annotation") { inAnnotation = true; break }
+          }
+          if (inAnnotation) break
           const names: string[] = []
           collectTypeNames(n, names)
           if (names.length > 0) emit(resolveSource(n), [n], "type_argument")
@@ -3327,8 +3339,10 @@ class TypeScriptAnalysisRunner {
       currentSymbol = this.resolveRelationshipSymbol(n, symbols, currentSymbol)
 
       // Extract call expressions and JSX component usages
-      // Fallback: when at top level (no enclosing function), attribute calls to the file module
-      const callSource = currentSymbol || { name: "(script)", scope: undefined, kind: "module" as any, range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 }, metadata: {} as any }
+      // TSD4 (JAD2-class): the top-level fallback is the file's module LEAF
+      // name — the same source imports/exports use — never a "(script)"
+      // placeholder no consumer can resolve (JS parity: moduleName).
+      const callSource = currentSymbol || { name: this.moduleLeafName(), scope: undefined, kind: "module" as any, range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 }, metadata: {} as any }
       if (
         (n.type === "call_expression" || n.type === "jsx_self_closing_element" || n.type === "jsx_element")
       ) {
@@ -3430,40 +3444,62 @@ class TypeScriptAnalysisRunner {
     for (const s of symbols) symbolNames[s.name] = true
     const processed: Record<string, boolean> = {}
 
-    // M14 #419 T6: destructured locals shadow same-named properties. The
-    // binding names are collected on first descent; an identifier reference
-    // to a shadowed name is a local usage, never a cross-symbol reference
-    // (const { name } = u in main must not emit main --references--> the
-    // User.name property).
-    const shadowedLocals = new Set<string>()
-    const collectPatternNames = (pat: Node): void => {
-      for (let i = 0; i < pat.namedChildCount; i++) {
-        const c = pat.namedChild(i)
-        if (!c) continue
-        if (c.type === "identifier" || c.type === "shorthand_property_identifier" || c.type === "shorthand_property_identifier_pattern" || c.type === "property_identifier") {
-          shadowedLocals.add(c.text)
-        } else if (c.type === "object_pattern" || c.type === "array_pattern" || c.type === "pair_pattern" || c.type === "assignment_pattern" || c.type === "rest_pattern" || c.type === "object" || c.type === "array") {
-          collectPatternNames(c)
+    // M14 #419 T6 / M37 TSD2: function-local bindings shadow same-named
+    // symbols. The binding names are collected per enclosing function (a
+    // fresh set on function/method entry, so sibling functions never
+    // suppress each other); an identifier reference to a shadowed name is a
+    // local usage, never a cross-symbol reference (const { name } = u in
+    // main must not emit main --references--> the User.name property, and a
+    // plain `const name = ...` must not either — pre-fix the declaration-skip
+    // compared web-tree-sitter node OBJECTS (fresh per access), never
+    // matched, and the template pass read the local as a symbol usage).
+    const collectPatternNames = (pat: Node): string[] => {
+      const out: string[] = []
+      const walk = (p: Node): void => {
+        for (let i = 0; i < p.namedChildCount; i++) {
+          const c = p.namedChild(i)
+          if (!c) continue
+          if (c.type === "identifier" || c.type === "shorthand_property_identifier" || c.type === "shorthand_property_identifier_pattern" || c.type === "property_identifier") {
+            out.push(c.text)
+          } else if (c.type === "object_pattern" || c.type === "array_pattern" || c.type === "pair_pattern" || c.type === "assignment_pattern" || c.type === "rest_pattern" || c.type === "object" || c.type === "array") {
+            walk(c)
+          }
         }
       }
+      walk(pat)
+      return out
     }
-    const isShadowedLocal = (n: Node): boolean => {
-      // Only names bound in a destructuring pattern are shadowed locals here
-      // (plain declarations are handled by the declaration-skip below).
-      return shadowedLocals.has(n.text)
-    }
-
-    const processNode = (n: Node, currentSymbol: ASTEngine.UniversalSymbol | null): void => {
+    const processNode = (n: Node, currentSymbol: ASTEngine.UniversalSymbol | null, locals: Set<string>): void => {
+      const prevSymbol = currentSymbol
       currentSymbol = this.resolveRelationshipSymbol(n, symbols, currentSymbol)
+      // TSD2: fresh locals set per function/method scope. resolveRelationship
+      // Symbol rebinds ONLY on function-like nodes, so a symbol change here
+      // means we just entered one; siblings restore their own set via the
+      // parameter (automatic on recursion return).
+      if (currentSymbol && currentSymbol !== prevSymbol && (currentSymbol.kind === ASTEngine.SymbolKind.Function || currentSymbol.kind === ASTEngine.SymbolKind.Method)) {
+        locals = new Set()
+      }
 
       // M14 #419 T6: record destructuring bindings (object_pattern /
       // array_pattern / rest_pattern in variable_declarator name position)
-      // so later identifier usages of the same name resolve as locals — but
-      // ONLY inside a function body. Module/class-level destructuring
-      // produces real symbols (extractDestructuringPattern), and references
-      // to those from elsewhere must keep resolving to the symbol.
+      // so later identifier usages of the same name resolve as locals.
       if ((n.type === "object_pattern" || n.type === "array_pattern" || n.type === "rest_pattern") && currentSymbol && (currentSymbol.kind === ASTEngine.SymbolKind.Function || currentSymbol.kind === ASTEngine.SymbolKind.Method)) {
-        collectPatternNames(n)
+        // ONLY inside a function body. Module/class-level destructuring
+        // produces real symbols (extractDestructuringPattern), and references
+        // to those from elsewhere must keep resolving to the symbol.
+        for (const b of collectPatternNames(n)) locals.add(b)
+      }
+      // `const name = ...` inside a function must not resolve later reads to
+      // a same-named module symbol. Only inside function/method scope:
+      // module/class-level declarators ARE symbols.
+      if (n.type === "variable_declarator" && currentSymbol && (currentSymbol.kind === ASTEngine.SymbolKind.Function || currentSymbol.kind === ASTEngine.SymbolKind.Method)) {
+        const nameNode = n.childForFieldName("name")
+        if (nameNode) {
+          if (nameNode.type === "identifier") locals.add(nameNode.text)
+          else {
+            for (const b of collectPatternNames(nameNode)) locals.add(b)
+          }
+        }
       }
 
       // JSX component usage detection
@@ -3501,7 +3537,10 @@ class TypeScriptAnalysisRunner {
       if (n.type === "identifier" && currentSymbol) {
         const name = n.text
 
-        // Skip if this is a declaration, not a usage
+        // Skip if this is a declaration, not a usage. web-tree-sitter hands
+        // out FRESH wrapper objects per access — compare by id, never by
+        // reference (the JS J4 quirk; the old `nameField === n` never
+        // matched, so declarations leaked through as references).
         const parent = n.parent
         if (
           parent &&
@@ -3511,21 +3550,33 @@ class TypeScriptAnalysisRunner {
             parent.type === "method_definition")
         ) {
           const nameField = parent.childForFieldName("name")
-          if (nameField === n) {
+          if (nameField && nameField.id === n.id) {
             // This is a declaration, not a usage
             for (let i = 0; i < n.namedChildCount; i++) {
               const child = n.namedChild(i)
-              if (child) processNode(child, currentSymbol)
+              if (child) processNode(child, currentSymbol, locals)
             }
             return
           }
         }
 
-        // M14 #419 T6: a name bound by a function-local destructuring
-        // pattern is a local — the identifier usage refers to the local,
-        // never to a same-named module/class symbol (const { name } = u in
-        // main must not emit main --references--> User.name).
-        if (isShadowedLocal(n)) {
+        // M14 #419 T6 / M37 TSD2: a name bound by a function-local pattern
+        // or plain declarator is a local — the identifier usage refers to
+        // the local, never to a same-named module/class symbol.
+        // TSD5: an identifier in instanceof-RHS position is a TYPE check —
+        // extractDeclaredTypeRefs emits the instanceof_check reference, so
+        // a second plain references edge here is double-emission.
+        const rhsOfTypeCheck =
+          n.parent?.type === "binary_expression" &&
+          (() => {
+            const p2 = n.parent!
+            for (let i = 0; i < p2.childCount; i++) {
+              const c = p2.child(i)
+              if (c && !c.isNamed && c.text === "instanceof") return true
+            }
+            return false
+          })()
+        if (locals.has(name) || rhsOfTypeCheck) {
           // still recurse into children (e.g. nested member paths)
         } else if (!!symbolNames[name] && name !== currentSymbol.name) {
           const key = `${currentSymbol.name}:${name}`
@@ -3571,13 +3622,16 @@ class TypeScriptAnalysisRunner {
       // M14 #419 T3: template_literal interpolation — `hi ${name} x${n + 1}`
       // reads name and n inside the enclosing function. The substituted
       // identifiers are expression usages, so emit Uses on each identifier
-      // child of template_substitution.
+      // child of template_substitution — UNLESS the name is bound by a
+      // function-local declarator/pattern (TSD2: the interpolation reads the
+      // local, not a same-named module symbol).
       if (n.type === "template_substitution" && currentSymbol) {
-        const sub = (n: Node): void => {
-          for (let i = 0; i < n.namedChildCount; i++) {
-            const c = n.namedChild(i)
+        const sub = (nn: Node): void => {
+          for (let i = 0; i < nn.namedChildCount; i++) {
+            const c = nn.namedChild(i)
             if (!c) continue
             if (c.type === "identifier" && c.text !== currentSymbol!.name) {
+              if (locals.has(c.text)) continue
               const key = `${currentSymbol!.name}:${c.text}:template`
               if (!processed[key]) {
                 processed[key] = true
@@ -3600,15 +3654,24 @@ class TypeScriptAnalysisRunner {
         sub(n)
       }
 
-      // M14 #419 T4: field-access Uses — this.value reads/writes (and any
-      // member access) are usages of the accessed member. Skip the member
-      // when it is the callee of a call (calls edges cover that), and skip
-      // JSX element tags (JSX uses/instantiates cover those).
+      // M14 #419 T4: field-access Uses — member reads are usages of the
+      // accessed member. Skip the member when it is the callee of a call
+      // (calls edges cover that — TSD6: the old `=== n` object comparison
+      // never matched web-tree-sitter's fresh wrappers, so every method call
+      // double-emitted calls + uses), skip JSX element tags, and skip the
+      // ASSIGNMENT-LHS span (TSD1, JAD1-class: `this.count = 0` is a write,
+      // not a read; augmented `+=` shares the left field).
       if ((n.type === "member_expression" || n.type === "subscript_expression") && currentSymbol) {
         const isCallCallee =
-          n.parent?.type === "call_expression" && n.parent.childForFieldName("function") === n
+          n.parent?.type === "call_expression" && n.parent.childForFieldName("function")?.id === n.id
         const isOptionalChainRoot = n.parent?.type === "optional_chain"
-        if (!isCallCallee && !isOptionalChainRoot) {
+        const pType = n.parent?.type
+        let isWrite = false
+        if (pType === "assignment_expression" || pType === "augmented_assignment_expression") {
+          const lhs = n.parent!.childForFieldName("left") ?? n.parent!.namedChild(0)
+          isWrite = !!lhs && lhs.startIndex === n.startIndex && lhs.endIndex === n.endIndex
+        }
+        if (!isCallCallee && !isOptionalChainRoot && !isWrite) {
           const prop = n.childForFieldName("property") ?? (n.namedChildCount > 0 ? n.namedChild(n.namedChildCount - 1) : null)
           if (prop) {
             const name = prop.text
@@ -3636,12 +3699,12 @@ class TypeScriptAnalysisRunner {
       for (let i = 0; i < n.namedChildCount; i++) {
         const child = n.namedChild(i)
         if (child) {
-          processNode(child, currentSymbol)
+          processNode(child, currentSymbol, locals)
         }
       }
     }
 
-    processNode(node, null)
+    processNode(node, null, new Set())
   }
 
   private extractInstantiationRelationships(
@@ -3652,8 +3715,9 @@ class TypeScriptAnalysisRunner {
     const processNode = (n: Node, currentSymbol: ASTEngine.UniversalSymbol | null): void => {
       currentSymbol = this.resolveRelationshipSymbol(n, symbols, currentSymbol)
 
-      // Extract new expressions — fallback to module when at top level
-      const instSource = currentSymbol || { name: "(script)", scope: undefined, kind: "module" as any, range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 }, metadata: {} as any }
+      // Extract new expressions — TSD4: top-level fallback is the module LEAF
+      // name (same source as imports/exports), never the "(script)" placeholder.
+      const instSource = currentSymbol || { name: this.moduleLeafName(), scope: undefined, kind: "module" as any, range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 }, metadata: {} as any }
       if (n.type === "new_expression") {
         const constructor = n.namedChild(0)
         if (constructor) {
@@ -3666,6 +3730,15 @@ class TypeScriptAnalysisRunner {
               className = typeName.text
             }
           }
+          // TSD3 (leaf identity contract): qualified `new ns.Thing()` —
+          // target is the LEAF (Thing), matching the JS analyzer and TS's
+          // own member-call reduction; emitting "ns.Thing" fabricated
+          // targets no symbol index could join (the import alias is not a
+          // type). Also strip generic arguments from member ctors.
+          const dot = className.lastIndexOf(".")
+          if (dot !== -1 && dot < className.length - 1) className = className.slice(dot + 1)
+          const lt = className.indexOf("<")
+          if (lt !== -1) className = className.slice(0, lt)
 
           // Global constructor intrinsics/DOM APIs: `new Promise()` is
           // construction of the RUNTIME, not of a project type — same

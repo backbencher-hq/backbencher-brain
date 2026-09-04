@@ -711,6 +711,21 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     // is navigation > navigation(self_expression) > suffix) — walk the RECEIVER
     // chain only. NEVER into calls: `self.decode(...)?.buffer` reads `.buffer`
     // off the CALL RESULT, not off self (the receiver chain ends at the call).
+    // SCD1 (M37 #599 pre-wave, swift twin of java JAD1/kotlin KAD1): an
+    // assignment LHS is a WRITE, never a read — `self.count = 0` emitted a
+    // bogus `uses count`. The pinned grammar parses `=` and `+=` alike as
+    // `assignment`, so one gate covers both (probe-verified); the LHS is
+    // wrapped in `directly_assignable_expression`, so walk past it to the
+    // assignment and gate only when this node sits INSIDE the LHS span
+    // (the RHS of `self.count = self.count + 1` stays a genuine read).
+    {
+      let a = node.parent
+      while (a && a.type === "directly_assignable_expression") a = a.parent
+      if (a && a.type === "assignment") {
+        const lhs = a.namedChild(0)
+        if (lhs && lhs.startIndex <= node.startIndex && lhs.endIndex >= node.endIndex) return
+      }
+    }
     const hasSelf = this.hasSelfReceiver(node)
     if (!hasSelf) return
 
@@ -1029,6 +1044,33 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
         const c = cur.namedChild(i)
         if (!c) continue
         if (c.type === "navigation_expression" || c.type === "self_expression") { next = c; break }
+      }
+      if (!next && cur.type === "navigation_expression") {
+        // Glued grammar shapes (probe-verified 2026-09, swift-nio corpus)
+        // where self is the TRUE base of this navigation's suffix but sits
+        // one wrapper deeper than the receiver chain followed. The wrapper
+        // is the nav's FIRST child (the receiver spine):
+        //   - `buf.readerIndex + self.count` parses as
+        //     navigation > additive_expression(nav, self) > suffix(.count) —
+        //     the suffix binds to the additive's RIGHT spine (self), and the
+        //     left operand is an independent read walked separately.
+        //   - `c_loop(&self.ctx, ...)` parses as
+        //     navigation > prefix_expression(& self) > suffix(.ctx) — the
+        //     inout `&` wraps the base; passing by reference is a genuine
+        //     use (C-interop pattern, LinuxUring/SHA1).
+        const spine = cur.namedChild(0)
+        if (spine && (spine.type === "additive_expression" || spine.type === "prefix_expression")) {
+          // The spine's direct self_expression IS the base (additive right
+          // spine / inout prefix operand); otherwise continue the chain
+          // through it (`&self.x.y` nests a nav inside the prefix).
+          let selfChild: Node | null = null
+          for (let i = 0; i < spine.namedChildCount; i++) {
+            const c = spine.namedChild(i)
+            if (c?.type === "self_expression") { selfChild = c; break }
+          }
+          if (selfChild) return true
+          next = spine
+        }
       }
       if (!next) return false
       cur = next

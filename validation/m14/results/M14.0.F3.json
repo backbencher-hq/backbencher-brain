@@ -32,19 +32,19 @@
     },
     {
       "description": "groovy adversarial fixtures",
-      "detail": "34/34 fixtures pass",
+      "detail": "36/36 fixtures pass",
       "id": "fixtures-groovy",
       "status": "pass"
     },
     {
       "description": "kotlin adversarial fixtures",
-      "detail": "35/35 fixtures pass",
+      "detail": "36/36 fixtures pass",
       "id": "fixtures-kotlin",
       "status": "pass"
     },
     {
       "description": "scala adversarial fixtures",
-      "detail": "37/37 fixtures pass",
+      "detail": "42/42 fixtures pass",
       "id": "fixtures-scala",
       "status": "pass"
     },
@@ -98,7 +98,7 @@
     },
     {
       "description": "swift adversarial fixtures",
-      "detail": "2/2 fixtures pass",
+      "detail": "3/3 fixtures pass",
       "id": "fixtures-swift",
       "status": "pass"
     },
@@ -128,8 +128,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "cc76e3771b292965b1b8a8855107f2b67a4a624a",
-  "committedAt": "2026-09-04T01:41:28+02:00",
+  "commit": "474e0b27c73c152caa82e9b123e9941380c4dbfa",
+  "committedAt": "2026-09-04T20:55:24+02:00",
   "data": {
     "details": [
       {
@@ -868,6 +868,11 @@
         "problems": []
       },
       {
+        "fixture": "groovy/attribution-visibility",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "groovy/cast-types",
         "ok": true,
         "problems": []
@@ -954,6 +959,11 @@
       },
       {
         "fixture": "groovy/import-edges",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/indexing-write-gate",
         "ok": true,
         "problems": []
       },
@@ -1163,6 +1173,11 @@
         "problems": []
       },
       {
+        "fixture": "kotlin/property-accessors",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "kotlin/qualified-call-path",
         "ok": true,
         "problems": []
@@ -1199,6 +1214,16 @@
       },
       {
         "fixture": "kotlin/wildcard-imports",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/abstract-members",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/annotation-flags",
         "ok": true,
         "problems": []
       },
@@ -1243,6 +1268,11 @@
         "problems": []
       },
       {
+        "fixture": "scala/enum-params",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "scala/extension-method-flag",
         "ok": true,
         "problems": []
@@ -1264,6 +1294,11 @@
       },
       {
         "fixture": "scala/generics-bounds",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/given-refs",
         "ok": true,
         "problems": []
       },
@@ -1354,6 +1389,11 @@
       },
       {
         "fixture": "scala/self-type",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/throw-targets",
         "ok": true,
         "problems": []
       },
@@ -1528,6 +1568,11 @@
         "problems": []
       },
       {
+        "fixture": "swift/write-gate",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "objc/edges-and-patterns",
         "ok": true,
         "problems": []
@@ -1576,7 +1621,7 @@
       },
       "groovy": {
         "fail": 0,
-        "pass": 34
+        "pass": 36
       },
       "haskell": {
         "fail": 0,
@@ -1592,7 +1637,7 @@
       },
       "kotlin": {
         "fail": 0,
-        "pass": 35
+        "pass": 36
       },
       "objc": {
         "fail": 0,
@@ -1616,7 +1661,7 @@
       },
       "scala": {
         "fail": 0,
-        "pass": 37
+        "pass": 42
       },
       "svelte": {
         "fail": 0,
@@ -1624,7 +1669,7 @@
       },
       "swift": {
         "fail": 0,
-        "pass": 2
+        "pass": 3
       },
       "typescript": {
         "fail": 0,

@@ -222,7 +222,12 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
         }
         case "compound_statement":
-          if (scopeManager.currentScope().node !== node.parent) {
+          // KAD2 sweep: comparing a STORED wrapper (scope entry) to a fresh
+          // `node.parent` never matched — the guard was dead and nested
+          // blocks always pushed a new scope. Span comparison restores the
+          // merge behavior for consecutive same-scope compounds.
+          if (scopeManager.currentScope().node.startIndex !== node.parent?.startIndex ||
+              scopeManager.currentScope().node.endIndex !== node.parent?.endIndex) {
             scopeManager.pushScope(ScopeKind.Block, `block_${node.startIndex}`, node)
             willPushScope = true
           }
@@ -477,9 +482,18 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       } else if (node.type === "field_expression") {
         // struct->field or struct.field access → References + field_access metadata
+        // SCD1 (M37 #599 pre-wave addendum 2): an assignment LHS is a
+        // WRITE, never a read — `c->count = 0` and `c->count += 1` both
+        // leaked a bogus `uses count` (the dedup key merged the two
+        // writes into one edge, hiding the leak). Gate by exact LHS span:
+        // assignment_expression (the pinned grammar folds compound-assign
+        // into it), RHS reads stay genuine (java JAD1 family contract).
+        const parent = node.parent
+        const lhs = parent ? parent.namedChild(0) : null
+        const isWrite = parent && parent.type === "assignment_expression" && lhs && lhs.startIndex === node.startIndex && lhs.endIndex >= node.endIndex
         const field = node.childForFieldName("field")
         const obj = node.childForFieldName("argument") || node.namedChild(0)
-        if (field && field.text.trim()) {
+        if (field && field.text.trim() && !isWrite) {
           const sourceScope = scopeManager.getRelationshipSource()
           const relKey = `${sourceScope}::uses::${field.text}`
           if (!emittedUseRelationships.has(relKey)) {
