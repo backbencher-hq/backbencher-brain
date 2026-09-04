@@ -43,7 +43,7 @@
       "code": "N1",
       "githubIssue": 617,
       "tool": "nvim-adapter",
-      "status": "planned",
+      "status": "verified",
       "scope": "Neovim adapter (I3): nvim-lspconfig-style config, headless driver opening the shared fixture workspace, real LSP session assertions (tiered hover, staleness marker, definition, references, document symbols), mutation-gated.",
       "acceptanceCriteria": [
         "Real nvim --headless session drives bb_lsp over stdio (no mock transport)",
@@ -53,7 +53,18 @@
       "closureRequirements": [
         "npx tsx script/m27/verify-nvim.ts exits 0 at HEAD with clean relevant tree",
         "Evidence persisted at validation/m27/results/N1.json with commit stamp"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see N1.json",
+        "verifierCommand": "npx tsx script/m27/verify-nvim.ts",
+        "evidenceFile": "N1.json",
+        "passed": 31,
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": 4,
+        "mutantsTotal": 4
+      }
     },
     {
       "code": "J1",
