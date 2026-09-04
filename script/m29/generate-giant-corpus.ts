@@ -279,7 +279,10 @@ function main(): void {
     .digest("hex")
     .slice(0, 16)
   const final = { ...manifest, corpusRevision: revision }
-  writeFileSync(path.join(OUT, "manifest.json"), JSON.stringify(final, null, 2) + "\n")
+  // OUTSIDE the corpus dir (sibling file): a manifest inside the corpus would
+  // be counted by the indexer (a real 59001-vs-59000 drift the R3 verifier
+  // caught) and would pollute the indexed file set.
+  writeFileSync(path.join(OUT, "..", "m29-giant-corpus-manifest.json"), JSON.stringify(final, null, 2) + "\n")
   console.log(`total: ${total} files — corpus revision ${revision}`)
 }
 
