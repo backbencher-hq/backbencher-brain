@@ -6,7 +6,7 @@
   "status": "open",
   "authority": "docs/m41/M41-MASTER-PLAN.md",
   "governingContract": "docs/M14-HONESTY-CONTRACT.md",
-  "updatedAt": "2026-09-04T00:00:00.000Z",
+  "updatedAt": "2026-09-04T20:54:31.953Z",
   "evidencePolicy": {
     "verifiedRequires": [
       "currentCommit",
@@ -54,7 +54,7 @@
       "code": "T1",
       "githubIssue": 641,
       "tool": "truth-pipeline",
-      "status": "planned",
+      "status": "verified",
       "scope": "generate-site-truth.ts from pinned artifacts -> website/src/data/truth.generated.ts; side-by-side inventory of every rendered claim",
       "acceptanceCriteria": [
         "truth.generated.ts emits version, tool names+descriptions, table count, language count, CLI commands from artifacts only",
@@ -65,7 +65,17 @@
       "closureRequirements": [
         "verifier with artifact-drift negative checks",
         "evidence at current commit with negative cases"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "c5f5fcd9a365ab45afebcd97f0a96e92cca58242",
+        "verifierCommand": "npx tsx script/m41/verify-truth-pipeline.ts",
+        "evidenceFile": "T1.json",
+        "generatedAt": "2026-09-04T20:54:31.953Z",
+        "passed": 21,
+        "failed": 0,
+        "negativeCases": 4
+      }
     },
     {
       "code": "T2",
