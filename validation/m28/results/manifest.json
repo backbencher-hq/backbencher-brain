@@ -146,7 +146,7 @@
       "code": "V1",
       "githubIssue": 628,
       "tool": "mcp-surface-doc",
-      "status": "planned",
+      "status": "verified",
       "scope": "docs/m28/MCP-SURFACE.md fully GENERATED from src/mcp/tool-registry.ts descriptors + the evidence ledger (byte-identical drift gate, D1 pattern).",
       "acceptanceCriteria": [
         "Regeneration byte-identical; hand edits fail the gate",
@@ -156,7 +156,16 @@
       "closureRequirements": [
         "npx tsx script/m28/verify-mcp-docs.ts exits 0 at HEAD with clean relevant tree",
         "Evidence persisted at validation/m28/results/V1.json with commit stamp"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "verifierCommand": "npx tsx script/m28/verify-mcp-surface.ts",
+        "evidenceFile": "V1.json",
+        "passed": 13,
+        "failed": 0,
+        "mutantsCaught": 2,
+        "mutantsTotal": 2
+      }
     },
     {
       "code": "X1",
