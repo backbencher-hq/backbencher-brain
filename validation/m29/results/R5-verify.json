@@ -5,9 +5,9 @@
   "negatives": {
     "planned": 4
   },
-  "currentCommit": "7d449be4e415be200cae4c877e7b44ac169eb8ed",
+  "currentCommit": "f4d5bafc3d48101f895ff82b63cc218c5a4102f9",
   "verifierCommand": "npx tsx script/m29/verify-precision-improvements.ts",
   "evidenceFile": "R5-verify.json",
-  "generatedAt": "2026-09-04T21:54:54.052Z",
+  "generatedAt": "2026-09-04T22:04:24.844Z",
   "details": []
 }
