@@ -96,11 +96,12 @@ try {
     check("law-unknown: unknown renders UNKNOWN (never fresh)", unknown.tooltipLines.some((l) => l.includes("UNKNOWN")), unknown.tooltipLines.join(" | "))
     check("law-unknown: unknown still shows the stale badge (treated as stale)", unknown.staleBadge !== null)
 
-    // law-undeclared
-    const undeclared = renderStatus({ ...baseInput, language: "python" })
+    // law-undeclared — ruby is OUTSIDE the launch set (wave-1 approval does
+    // not name it), so the extension must not invent a level for it.
+    const undeclared = renderStatus({ ...baseInput, language: "ruby" })
     check("law-undeclared: undeclared language says no declared level", undeclared.tooltipLines.some((l) => l.includes("no declared claim level")), undeclared.tooltipLines.join(" | "))
-    check("law-undeclared: no invented I-level for python", !undeclared.tooltipLines.some((l) => l.startsWith("this file (python)") && /I\d/.test(l)))
-    check("law-undeclared: python absent from the per-language table", !undeclared.perLanguage.some((p) => p.language === "python"))
+    check("law-undeclared: no invented I-level for ruby", !undeclared.tooltipLines.some((l) => l.startsWith("this file (ruby)") && /I\d/.test(l)))
+    check("law-undeclared: ruby absent from the per-language table", !undeclared.perLanguage.some((p) => p.language === "ruby"))
 
     // law-failure
     const down = renderStatus({ ...baseInput, server: { up: false, version: null, versionOk: false } })
@@ -168,7 +169,7 @@ try {
       ["no index", { ...baseInput, index: { phase: "no-index" } }],
       ["cancelled", { ...baseInput, index: { phase: "cancelled" } }],
       ["failed", { ...baseInput, index: { phase: "failed" } }],
-      ["undeclared language", { ...baseInput, language: "python" }],
+      ["undeclared language", { ...baseInput, language: "ruby" }],
     ]
     const lines: string[] = ["# E3 render capture — canonical rendered states (log evidence)", `# generated: ${new Date().toISOString()}`, ""]
     for (const [name, input] of states) {
@@ -233,9 +234,9 @@ try {
       from: /: `this file \(\$\{input\.language\}\): no declared claim level — features not offered`,/,
       to: ": `this file (${input.language}): I1 — protocol-passed`,",
       probe: `async (mod) => {
-      const v = mod.renderStatus({ ...baseInput, language: "python" })
-      // Caught when python gets an invented I-level.
-      return v.tooltipLines.some((l) => l.startsWith("this file (python)") && /I\\d/.test(l))
+      const v = mod.renderStatus({ ...baseInput, language: "ruby" })
+      // Caught when the undeclared language (ruby) gets an invented I-level.
+      return v.tooltipLines.some((l) => l.startsWith("this file (ruby)") && /I\\d/.test(l))
     }`,
     },
     {
@@ -258,7 +259,11 @@ try {
       check(`G3: mutant anchors matched — ${mutant.name}`, false, "anchor not found")
       continue
     }
-    const mutantPath = path.join(tmp, `status-model.mutant.${mutantsTotal}.ts`)
+    // Mutant copies are written BESIDE the original so status-model.ts's
+    // relative import (../../../src/lsp/launch_languages, the M29.R2
+    // single-owner module) still resolves — a tmp-dir copy breaks imports
+    // and fakes a catch via a load crash.
+    const mutantPath = path.join(EXT_ROOT, "src", `status-model.mutant.${mutantsTotal}.ts`)
     writeFileSync(mutantPath, mutated)
     const probeScript = path.join(tmp, `probe.${mutantsTotal}.mts`)
     writeFileSync(
@@ -275,6 +280,7 @@ try {
     } catch {
       out = "CAUGHT" // a crashing mutant is a caught mutant
     }
+    try { rmSync(mutantPath, { force: true }) } catch {}
     const caught = out.includes("CAUGHT")
     if (caught) mutantsCaught++
     check(`G3: mutant caught — ${mutant.name}`, caught, out.includes("SURVIVED") ? "SURVIVED" : out.slice(0, 60))
