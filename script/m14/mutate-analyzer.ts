@@ -637,6 +637,60 @@ const MUTANTS: Mutant[] = [
     },
   },
   {
+    id: "groovy/read-attribution-to-receiver",
+    language: "groovy",
+    defectClass: "attribution-corruption",
+    description: "GAD1 regression: reverts JAD2 method-scope attribution — field reads source to the receiver variable (cfg.limit -> uses cfg) — groovy field-read attribution pins catch it",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), {
+        type: "uses", source: "cfg", target: "limit", isExternal: true, weight: 1, confidence: 0.6, metadata: { isFieldAccess: true },
+      }],
+    }),
+  },
+  {
+    id: "groovy/script-sentinel-split",
+    language: "groovy",
+    defectClass: "attribution-corruption",
+    description: "GAD2 regression: re-splits script sentinels — instantiates under global/ root instead of (script) — script-methods pins catch it",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), {
+        type: "instantiates", source: "global", target: "Deployer", isExternal: true, weight: 1, confidence: 0.95, metadata: { relationshipType: "instantiates", isNew: true },
+      }],
+    }),
+  },
+  {
+    id: "groovy/text-visibility-fabrication",
+    language: "groovy",
+    defectClass: "payload-corruption",
+    description: "GAD3 regression: re-adds raw-text substring visibility (leak() fabricates private from a string literal) — visibility pin catches it",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map(s => s.name === "leak" ? { ...s, visibility: "private" } : s),
+    }),
+  },
+  {
+    id: "groovy/keyword-modifiers-blind",
+    language: "groovy",
+    defectClass: "payload-loss",
+    description: "GAD6 regression: modifiers node iterates named children only — keyword-only declarations lose isStatic/isConstant/private (hidden() flips public) — visibility pins catch it",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map(s => s.name === "hidden" ? { ...s, visibility: "public" } : s),
+    }),
+  },
+  {
+    id: "groovy/modifier-return-type-loss",
+    language: "groovy",
+    defectClass: "relationship-loss",
+    description: "GAD5 regression: return-type collection breaks on modifiers — public String greet() loses its return_type ref — script-methods/type-usage pin catches it",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(x => !((x.metadata ?? {}).relationshipType === "return_type" && x.source === "greet")),
+    }),
+  },
+  {
     id: "groovy/array-write-uses",
     language: "groovy",
     defectClass: "relationship-noise",
@@ -1431,6 +1485,13 @@ const MUTANTS: Mutant[] = [
     defectClass: "relationship-fabrication",
     description: "SCD1 regression: removes the assignment-LHS write gate — re-injects the exact pre-fix edges probe-verified on `self.count = 0`/`self.label = \"z\"` (Counter->count, Counter->label uses) — swift/write-gate forbids catch them",
     transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "Counter", target: "count", isExternal: true, weight: 0.8, confidence: 1.0, metadata: { isFieldAccess: true, evidenceClass: "usage_contextual" } }, { type: "uses", source: "Counter", target: "label", isExternal: true, weight: 0.8, confidence: 1.0, metadata: { isFieldAccess: true, evidenceClass: "usage_contextual" } }] }),
+  },
+  {
+    id: "swift/drop-glued-receiver-reads",
+    language: "swift",
+    defectClass: "relationship-loss",
+    description: "SWD1 regression: reverts hasSelfReceiver to the pre-fix receiver chain, dropping glued-shape reads (inout `&self.ctx`, additive `base + self.count`) — swift/write-gate expectUses Counter->ctx pin fails when the edge vanishes",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((rel: any) => !(rel.type === "uses" && rel.source === "Counter" && rel.target === "ctx")) }),
   },
   {
     id: "swift/drop-operator-symbol",
