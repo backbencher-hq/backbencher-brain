@@ -728,7 +728,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     }))
 
     // Field-access uses (parity with java/groovy/kotlin collectors).
-    this.collectFieldAccessUses(rootNode, relationships)
+    this.collectFieldAccessUses(rootNode, relationships, moduleName)
 
     // Declared/checked type references (M14): JavaScript has no type
     // annotations, but instanceof checks reference a type by name — the one
@@ -1333,32 +1333,74 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
   private collectFieldAccessUses(
     rootNode: Node,
     relationships: ASTEngine.UniversalRelationship[],
+    moduleName: string,
   ) {
-    const stack: { node: Node; owner: string | null }[] = [{ node: rootNode, owner: null }]
+    // Walk with an enclosing-class scope (this/super receivers) and an
+    // enclosing-FUNCTION scope for member-read attribution. M37 JSD2 (JAD2
+    // class, java wave): reads sourced to the receiver VARIABLE (`cfg.limit`
+    // -> cfg) put edges from non-symbol nodes into the graph — the calls
+    // walk attributes `cfg.helper()` to the enclosing FUNCTION, so the uses
+    // walk must agree (two walks, one owner; java/php/python family rule).
+    // this/super keep the TYPE owner (a self-read is a read of the type's
+    // member — the swift/java precedent), any other receiver resolves to
+    // the enclosing function; at top level, the module leaf name.
+    const stack: { node: Node; owner: string | null; method: string | null; module: string }[] = [
+      { node: rootNode, owner: null, method: null, module: moduleName },
+    ]
     const seen = new Set<string>()
     while (stack.length > 0) {
       const item = stack.pop()!
       const node: Node = item.node
       const owner = item.owner
+      const method = item.method
 
       if (
         node.type === "class_declaration" ||
-        node.type === "class" ||
-        node.type === "function_declaration" ||
-        // M14 #419: method_definition is an owner too — template
-        // substitutions and field accesses inside methods attribute to the
-        // METHOD, not the enclosing class (family parity; the J3/J4
-        // fixtures pin method-level sources).
-        node.type === "method_definition"
+        node.type === "class"
       ) {
         const nameNode =
           node.childForFieldName?.("name") ?? node.namedChildren.find((c: any) => c.type === "identifier")
         const nextOwner = nameNode ? nameNode.text : owner
+        // Class bodies clear the method scope (java JAD2 frame model:
+        // owner = enclosing TYPE for this/super reads; method = enclosing
+        // FUNCTION for everything else).
         for (let i = node.namedChildCount - 1; i >= 0; i--) {
           const child = node.namedChild(i)
-          if (child) stack.push({ node: child, owner: nextOwner })
+          if (child) stack.push({ node: child, owner: nextOwner, method: null, module: moduleName })
         }
         continue
+      }
+
+      // JSD2: function-like nodes rebind the METHOD read-owner but keep the
+      // TYPE owner (this.items in a method still reads Cart's member).
+      let nextMethod = method
+      let nextOwner = owner
+      if (
+        node.type === "function_declaration" ||
+        node.type === "generator_function_declaration" ||
+        node.type === "method_definition"
+      ) {
+        const nameNode = node.childForFieldName?.("name")
+        if (nameNode) nextMethod = nameNode.text
+      } else if (node.type === "variable_declarator") {
+        // Module/any-scope `const h = () => {...}` — reads inside source to
+        // h (the calls-walk variable_declarator rule).
+        const v = node.childForFieldName("value")
+        const nm = node.childForFieldName("name")?.text
+        if (v && nm && (v.type === "arrow_function" || v.type === "function_expression")) nextMethod = nm
+      } else if (node.type === "arrow_function" || node.type === "function_expression") {
+        // X.prototype.m = function () {} — reads inside source to m
+        // (mirrors the calls walk's assignment_expression rule).
+        const parent = node.parent
+        if (parent?.type === "assignment_expression") {
+          const left = parent.childForFieldName("left")
+          const obj = left?.childForFieldName("object")
+          const prop = left?.childForFieldName("property")
+          if (obj?.type === "member_expression" && obj.childForFieldName("property")?.text === "prototype" && prop) {
+            nextMethod = prop.text
+            nextOwner = obj.childForFieldName("object")?.text ?? owner
+          }
+        }
       }
 
       if (node.type === "member_expression") {
@@ -1381,8 +1423,27 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
           const head = cur ? cur.text : ""
           if (head && parts.length >= 1) {
+            // JSD1 (JAD1 class, java wave): the assignment-LHS span is a
+            // WRITE, not a read — `store.count = 0` emitted a bogus uses
+            // edge for count, and `module.exports.tag = 1` emitted
+            // uses module -> exports/uses module -> tag (CJS deep exports
+            // are the same write). Gated by exact LHS span match, so the
+            // inner segments of a chained write (obj.a.b = v -> read of a)
+            // stay reads (java chained-write precedent).
+            const pType = node.parent?.type
+            let isWrite = false
+            if (pType === "assignment_expression" || pType === "augmented_assignment_expression") {
+              const lhs = node.parent!.childForFieldName("left") ?? node.parent!.namedChild(0)
+              isWrite = !!lhs && lhs.startIndex === node.startIndex && lhs.endIndex === node.endIndex
+            }
+            if (isWrite) continue
             for (const seg of parts) {
-              const source = head === "this" || head === "super" ? owner ?? head : head
+              // JSD2: this/super read the TYPE's member (swift/java JAD2
+              // precedent). Outside a class there IS no type — a bare
+              // function's this is dynamic; pre-M37 the edge leaked with the
+              // literal keyword as source (uses this -> value). Fall back to
+              // the enclosing function (the only static owner that exists).
+              const source = head === "this" || head === "super" ? owner ?? method ?? moduleName : method ?? owner ?? moduleName
               const key = `${source}.${seg}`
               if (!seen.has(key)) {
                 seen.add(key)
@@ -1408,11 +1469,14 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             const c = n.namedChild(i)
             if (!c) continue
             if (c.type === "identifier") {
-              const key = `${owner ?? "global"}.${c.text}`
+              // JSD2: template reads attribute to the enclosing function
+              // (the calls-walk owner), never the receiver/type placeholder.
+              const src2 = method ?? owner ?? moduleName
+              const key = `${src2}.${c.text}`
               if (!seen.has(key)) {
                 seen.add(key)
                 relationships.push({
-                  source: owner ?? "global",
+                  source: src2,
                   target: c.text,
                   type: ASTEngine.RelationshipType.Uses,
                   confidence: 0.85,
@@ -1428,7 +1492,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       for (let i = node.namedChildCount - 1; i >= 0; i--) {
         const child = node.namedChild(i)
-        if (child) stack.push({ node: child, owner })
+        if (child) stack.push({ node: child, owner: nextOwner, method: nextMethod, module: moduleName })
       }
     }
   }
