@@ -568,10 +568,12 @@ attributed to load-15 environment (4 concurrent agent sessions, single-file
 retry already engaged), no correctness impact. Honesty gate green at
 cc76e37 with F1-F9 + SPEC + CC1 fresh.
 
-> **NEXT MILESTONE: M34 (Dual-Lens Analyzer Backfill, tracking issue #593).**
+> **NEXT MILESTONE: M37 (Dual-Lens Analyzer Backfill, tracking issue #593; renamed from M34 after a numbering collision with the closed "M34: Consumability Hardening" was discovered).**
 > The 18 gated-done analyzers get the csharp/haskell dual-lens pass (line-by-line
 > read + corpus census + probe-verified fixes), one at a time: python -> java ->
 > ts/js -> kotlin/scala/groovy -> zig -> c/cpp/rust/go -> dart/php/swift/objc/ruby
-> confirms. When M34 closes, return HERE to M14 for the not-yet-done analyzers
+> confirms. When M37 closes, return HERE to M14 for the not-yet-done analyzers
 > (clean, clojure, elixir, ...) under the F1-F9 + dual-lens regime. Milestone:
-> "M34: Dual-Lens Analyzer Backfill".
+> "M37: Dual-Lens Analyzer Backfill". The milestone formerly carried the
+> number M34 until the collision was found; "M34" in this repo now means
+> Consumability Hardening, not the backfill.
