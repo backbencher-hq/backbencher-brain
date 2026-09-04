@@ -23,7 +23,7 @@
 
 /** The launch set — single owner is src/lsp/launch_languages.ts (M29.R2:
  *  wave-1 adds javascript and python; this copy was a drift hazard). */
-import { LAUNCH_LANGUAGES, type LaunchLanguage } from "../../src/lsp/launch_languages"
+import { LAUNCH_LANGUAGES, type LaunchLanguage } from "../../../src/lsp/launch_languages"
 export { LAUNCH_LANGUAGES }
 export type { LaunchLanguage }
 
