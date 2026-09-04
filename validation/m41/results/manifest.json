@@ -6,7 +6,7 @@
   "status": "open",
   "authority": "docs/m41/M41-MASTER-PLAN.md",
   "governingContract": "docs/M14-HONESTY-CONTRACT.md",
-  "updatedAt": "2026-09-04T20:54:31.953Z",
+  "updatedAt": "2026-09-04T20:57:08.409Z",
   "evidencePolicy": {
     "verifiedRequires": [
       "currentCommit",
@@ -35,7 +35,7 @@
       "code": "G1",
       "githubIssue": 640,
       "tool": "governance",
-      "status": "planned",
+      "status": "verified",
       "scope": "master plan, ledger, gates registry, deploy-gate contract, npm run verify wiring",
       "acceptanceCriteria": [
         "master plan with explicit authority, non-goals, and strict issue order",
@@ -48,7 +48,17 @@
         "persist current gate evidence",
         "negative checks pass",
         "document limitations"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "de52fb6ecb10fc81877e98a1d2b2dc818cc5230e",
+        "verifierCommand": "npx tsx script/m41/verify-governance.ts",
+        "evidenceFile": "G1.json",
+        "generatedAt": "2026-09-04T20:57:08.409Z",
+        "passed": 27,
+        "failed": 0,
+        "negativeCases": 8
+      }
     },
     {
       "code": "T1",
