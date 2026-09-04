@@ -228,6 +228,24 @@ async function cmdIndex(
   if (stats.summary) {
     const s = stats.summary
     console.log(`  breakdown: ${s.newlyParsed} newly parsed | ${s.unchanged} unchanged | ${s.skipped} skipped | ${s.symbolLoss} symbol-loss (parsed 0 symbols) | ${s.errors} errors | ${s.timeouts} timeouts${s.cancelled ? ` | ${s.cancelled} cancelled` : ""}`)
+    // M40.A2: honest derived-data reporting — never let a run imply its
+    // relationships/enrichment/gravity/taints/health are current when they
+    // were deferred.
+    const derived = s.derivedPass ?? "deferred"
+    const derivedNote: Record<string, string> = {
+      full: "derived data fully re-processed",
+      bounded: "derived data re-processed for touched files (bounded pass)",
+      deferred: "derived data deferred — run: bb index --post",
+      "skipped-unchanged": "no files changed — derived data untouched and consistent",
+    }
+    console.log(`  derived: ${derived} (${derivedNote[derived] ?? derived})`)
+    if (stats.m40Bounded) {
+      const b = stats.m40Bounded
+      const parts = [`${b.touchedSymbols} symbols touched`]
+      if (b.repairedInEdges > 0) parts.push(`${b.repairedInEdges} cross-file edges restored`)
+      if (b.purgedDeletedFiles > 0) parts.push(`${b.purgedDeletedFiles} deleted files purged`)
+      console.log(`  bounded: ${parts.join(" | ")}`)
+    }
   }
 }
 
