@@ -1,0 +1,18 @@
+{
+  "status": "verified",
+  "passed": 13,
+  "failed": 0,
+  "negatives": {
+    "planned": 3
+  },
+  "currentCommit": "b2dc66d583c38f6be66458aa0b8cb4395a966715",
+  "verifierCommand": "npx tsx script/m29/verify-m29-docs.ts",
+  "evidenceFile": "D1-verify.json",
+  "generatedAt": "2026-09-04T22:31:04.578Z",
+  "limitations": [
+    "The listing's shipped claim table is intentionally at the conservative I1 floor (M25's drift gate owns it); D1 checks it never rises above the machine ledger, not that it equals it.",
+    "Vocabulary lint is pattern-based; novel overclaim phrasings are caught by review and the owner spot-check, not by this lint.",
+    "The wave doc's registry list is generated from WAVE_LANGUAGES; adding a language to the registry regenerates the doc (drift gate enforces regeneration)."
+  ],
+  "details": []
+}
