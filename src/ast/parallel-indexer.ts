@@ -3906,18 +3906,32 @@ export async function runBoundedPostProcessing(
           const placeholders = chunk.map(() => "?").join(",")
           rawDb.prepare(`INSERT OR IGNORE INTO _m40_touched (id, name, qualified_name) SELECT id, name, qualified_name FROM brain_symbol WHERE project_id = ? AND file_id IN (${placeholders})`).run(projectId, ...chunk)
         }
-        rawDb.prepare(`
-          UPDATE brain_relationship
-          SET target_symbol_id = (
-            SELECT t.id FROM _m40_touched t
-            WHERE t.qualified_name = brain_relationship.target_external OR t.name = brain_relationship.target_external
-            ORDER BY CASE WHEN t.qualified_name = brain_relationship.target_external THEN 0 ELSE 1 END, t.id
-            LIMIT 1
-          )
+        // M40.A4 portable match-and-update: SQLite <3.53 (Node's bundled
+        // version) rejects references to the UPDATE target's columns inside
+        // the SET subquery — the single-statement form worked only under
+        // bun's 3.53.0 and failed under Node with "no such column:
+        // brain_relationship.target_external". Correlated SELECTs + bounded
+        // per-row UPDATEs are supported by every SQLite in use (M21.D2
+        // dual-runtime policy).
+        const unresolved = rawDb.prepare(`
+          SELECT id, target_external FROM brain_relationship
           WHERE project_id = ?
             AND target_symbol_id IS NULL AND target_external IS NOT NULL AND target_external != ''
             AND id LIKE '%:m40'
-        `).run(projectId)
+        `).all(projectId) as Array<{ id: string; target_external: string }>
+        if (unresolved.length > 0) {
+          const upd = rawDb.prepare(`UPDATE brain_relationship SET target_symbol_id = ?, time_updated = strftime('%s','now') * 1000 WHERE id = ?`)
+          const match = rawDb.prepare(`
+            SELECT id FROM _m40_touched
+            WHERE qualified_name = ? OR name = ?
+            ORDER BY CASE WHEN qualified_name = ? THEN 0 ELSE 1 END, id
+            LIMIT 1
+          `)
+          for (const row of unresolved) {
+            const hit = match.get(row.target_external, row.target_external, row.target_external) as any
+            if (hit?.id) upd.run(hit.id, row.id)
+          }
+        }
       }
       recordPhase("relationships", Date.now() - _t, "ok")
     } catch (e: any) {
