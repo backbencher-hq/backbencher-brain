@@ -32,7 +32,7 @@ export interface UnifiedHealthReport {
   runtime: { runtime: "bun" | "node"; version: string; database: string; parserStatus: "available" | "unknown" }
   integrity: IndexHealthReport | null
   analysisRuns: { runs: number; findings: number; byState: Record<string, number> } | null
-  refresh: { requested: boolean; force: boolean; wait: boolean; completed: boolean; durationMs: number | null; processedFiles: number | null } 
+  refresh: { requested: boolean; force: boolean; wait: boolean; completed: boolean; durationMs: number | null; processedFiles: number | null; derived: string | null }
   /** Per-language file+symbol counts; always collected, printed only when verbose. */
   languages: Array<{ language: string; files: number; symbols: number }>
   /** Mirrors the request; the formatter prints the verbose sections only when true. */
@@ -59,13 +59,14 @@ function queueRefresh(
     const database = await BrainDatabase.getRawInstance(projectId)
     if (force) wipeProjectData(database)
     // M22.D2: a non-force refresh must NOT be as expensive as a first index.
-    // Incremental skips unchanged files (mtime/size) and defers the heavy
-    // post-processing phases (relationship resolution/enrichment/gravity/taint/
-    // health) — an unchanged repo refresh is a near-no-op. A forced refresh
-    // still wipes and does the full run.
+    // Incremental skips unchanged files (mtime/size). M40.A6: the heavy
+    // post-processing is NO LONGER force-only — incremental runs carry the
+    // A2 bounded pass, so a user who asked to refresh never gets health
+    // computed from never-rebuilt derived data. An unchanged repo stays a
+    // near-no-op (derivedPass "skipped-unchanged"); a forced refresh still
+    // wipes and does the full run.
     return indexProjectParallel(projectId as any, projectPath, {
       isIncremental: !force,
-      skipPostProcessing: !force,
       ...(logger ? { logger } : {}),
     })
   })
@@ -79,7 +80,7 @@ function queueRefresh(
 
 export async function getUnifiedHealth(projectId: string, projectPath: string, options: UnifiedHealthOptions = {}): Promise<UnifiedHealthReport> {
   const warnings: HealthWarning[] = []
-  const refresh = { requested: options.refresh === true || options.force === true, force: options.force === true, wait: options.wait !== false, completed: false, durationMs: null as number | null, processedFiles: null as number | null }
+  const refresh = { requested: options.refresh === true || options.force === true, force: options.force === true, wait: options.wait !== false, completed: false, durationMs: null as number | null, processedFiles: null as number | null, derived: null as string | null }
   let raw = await BrainDatabase.getRawInstance(projectId)
   if (options.refresh === true || options.force === true) {
     const started = Date.now()
@@ -94,6 +95,9 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
         refresh.completed = true
         refresh.durationMs = Date.now() - started
         refresh.processedFiles = stats.processedFiles ?? stats.totalFiles ?? 0
+        // M40.A6: honest derived-data signal from the refresh run itself —
+        // never imply derived data is current when the pass did not run.
+        refresh.derived = typeof stats?.summary?.derivedPass === "string" ? stats.summary.derivedPass : "unknown"
         raw = await BrainDatabase.getRawInstance(projectId)
       } catch (error) {
         warnings.push({ code: "REFRESH_FAILED", message: error instanceof Error ? error.message : String(error), severity: "error" })
@@ -185,7 +189,11 @@ export function formatUnifiedHealth(report: UnifiedHealthReport): string {
     `perf: schemaVersion=${report.performanceStats.schemaVersion ?? "none"} runs=${report.performanceStats.runs.length} latestWallMs=${report.performanceStats.latestRun?.phases?.totalWallMs ?? "n/a"}`,
     `runtime: ${report.runtime.runtime} ${report.runtime.version} / ${report.runtime.database}`,
   ]
-  if (report.refresh.requested) lines.push(`refresh: ${report.refresh.completed ? "completed" : report.refresh.wait ? "failed" : "started (pending)"} force=${report.refresh.force} wait=${report.refresh.wait} durationMs=${report.refresh.durationMs}`)
+  if (report.refresh.requested) {
+    const d = report.refresh.derived
+    const dNote = d === "deferred" ? " — derived data DEFERRED; run: bb index --post" : d === "bounded" ? " (bounded pass)" : d === "full" ? " (full pass)" : d === "skipped-unchanged" ? " (unchanged — derived data still consistent)" : ""
+    lines.push(`refresh: ${report.refresh.completed ? "completed" : report.refresh.wait ? "failed" : "started (pending)"} force=${report.refresh.force} wait=${report.refresh.wait} durationMs=${report.refresh.durationMs} derived=${d ?? "n/a (pending/failed)"}${dNote}`)
+  }
   if (report.analysisRuns) lines.push(`analysis: ${report.analysisRuns.runs} runs / ${report.analysisRuns.findings} findings`)
   if (report.integrity) lines.push(`integrity: ${report.integrity.overallHealth}% (${report.integrity.summary.warn} warnings, ${report.integrity.summary.error} errors)`)
   // Verbose sections: per-language breakdown and stale/missing file names — the
