@@ -2,16 +2,18 @@
   "issue": "M28.G1",
   "code": "G1",
   "milestone": "M28",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 69,
   "passed": 69,
   "failed": 0,
   "negativeCases": 10,
-  "currentCommit": "e2a688d0ce2ebee812d70a535219ce378234f37f",
-  "workingTreeRelevantChanges": [],
+  "currentCommit": "61e6c9da37c6b482121f58f0f0ebfd728625faae",
+  "workingTreeRelevantChanges": [
+    "script/m28/verify-closure.ts"
+  ],
   "verifierCommand": "npx tsx script/m28/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-04T05:38:53.791Z",
+  "generatedAt": "2026-09-04T05:43:19.598Z",
   "ledger": "validation/m28/results/manifest.json",
   "m27Bar": {
     "ledgerStatus": "closed",
