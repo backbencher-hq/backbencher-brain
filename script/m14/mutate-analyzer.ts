@@ -258,6 +258,72 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => ({ ...s, comments: [] })) }),
   },
   {
+    id: "scala/write-as-read-leak",
+    language: "scala",
+    defectClass: "relationship-noise",
+    description: "injects the SCD1 regression class: assignment LHS leaks as a uses edge (field-uses forbid pin: bump's pure += write must emit nothing)",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { source: "bump", target: "h", type: "uses", confidence: 0.9, metadata: { relationshipType: "expression_use", evidenceClass: "usage_contextual" } }] }),
+  },
+  {
+    id: "scala/throw-target-garbage",
+    language: "scala",
+    defectClass: "relationship-noise",
+    description: "injects the SCD4 regression class: throw references embed raw construction text with the message argument (throw-targets forbid pin)",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { source: "load", target: "new IllegalArgumentException(\"negative: \" + x)", type: "references", confidence: 0.9, metadata: { isThrow: true } }] }),
+  },
+  {
+    id: "scala/abstract-members-loss",
+    language: "scala",
+    defectClass: "symbol-loss",
+    description: "injects the SCD9 regression class: abstract trait fields (val_declaration/var_declaration) silently dropped — abstract-members expect pins must catch it",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => !(s.metadata?.isAbstract && (s.kind === "constant" || s.kind === "variable"))) }),
+  },
+  {
+    id: "scala/enum-params-loss",
+    language: "scala",
+    defectClass: "symbol-loss",
+    description: "injects the SCD6 regression class: enum constructor/property symbols dropped (enum-params expect pins)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => !(s.kind === "constructor" && s.ownerName === "Planet")) }),
+  },
+  {
+    id: "scala/enum-param-type-root-attribution",
+    language: "scala",
+    defectClass: "relationship-noise",
+    description: "injects the SCD6 KAD6-twin: enum param type refs attributed to the root placeholder instead of the enum (enum-params forbid pin)",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { source: "root", target: "Double", type: "references", confidence: 0.95, metadata: { relationshipType: "declared_type", declaredOn: "class_parameter" } }] }),
+  },
+  {
+    id: "scala/drop-given-refs",
+    language: "scala",
+    defectClass: "relationship-loss",
+    description: "injects the SCD12 regression class: given definitions emit no type references (given_type edges dropped)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => x.metadata?.relationshipType !== "given_type") }),
+  },
+  {
+    id: "scala/text-substring-pattern-fabrication",
+    language: "scala",
+    defectClass: "metadata-fabrication",
+    description: "injects the SCD5 regression class: text.includes substring pattern flags fabricated from unrelated identifiers (annotation-flags expectPatterns must catch the leak of the trap shape)",
+    transform: r => {
+      const md: any = { ...(r.metadata ?? {}), patterns: [...((r.metadata as any)?.patterns ?? []), "Annotations"] }
+      return { ...r, metadata: md }
+    },
+  },
+  {
+    id: "scala/complexity-arm-double-count",
+    language: "scala",
+    defectClass: "metric-drift",
+    description: "injects the SCD10 wrapper-double-count regression class: match/try/catch wrappers counted on top of arms (complexity-parity + f6-coverage-wave pins)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => (s.name === "f" || s.name === "raise" ? { ...s, complexity: (s.complexity ?? 1) + 1 } : s)) }),
+  },
+  {
+    id: "scala/curried-qualified-calls-dup",
+    language: "scala",
+    defectClass: "payload-noise",
+    description: "injects the SCD7 regression class: curried application wrappers double-push the qualified_calls path (SCD7 probe showed List.fill/self.add doubled pre-fix)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => ((s as any).qualified_calls ? { ...s, qualified_calls: [...(s as any).qualified_calls, ...(s as any).qualified_calls] } : s)) }),
+  },
+  {
     id: "scala/drop-typeParameters",
     language: "scala",
     defectClass: "symbol-payload-loss",
