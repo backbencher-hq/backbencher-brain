@@ -256,11 +256,11 @@ function gateFailureDetail(output: string): string {
   return failLines || output.slice(-200)
 }
 
-const gateResults: { name: string; mutationFailed: boolean; controlPassed: boolean }[] = []
+const gateResults: { name: string; script: string; mutationFailed: boolean; controlPassed: boolean }[] = []
 for (const gate of GATES) {
   check(`${gate.name}: gate script exists`, existsSync(path.join(ROOT, gate.script)), gate.script)
   if (!existsSync(path.join(ROOT, gate.script))) {
-    gateResults.push({ name: gate.name, mutationFailed: false, controlPassed: false })
+    gateResults.push({ name: gate.name, script: gate.script, mutationFailed: false, controlPassed: false })
     continue
   }
 
@@ -277,7 +277,7 @@ for (const gate of GATES) {
       writeFileSync(evPath, backup.replace(gate.mutateEvidence.from, gate.mutateEvidence.to))
       const mutated = runGate(gate.script, gate.name === "m35-c1-baseline-tamper" ? { BB_M35_CORPUS_CHECK_ONLY: "1" } : {})
       check(`${gate.name}: mutation — corrupted evidence FAILS the gate`, mutated.exit !== 0, gateFailureDetail(mutated.output))
-      gateResults.push({ name: gate.name, mutationFailed: mutated.exit !== 0, controlPassed: control.exit === 0 })
+      gateResults.push({ name: gate.name, script: gate.script, mutationFailed: mutated.exit !== 0, controlPassed: control.exit === 0 })
     } finally {
       writeFileSync(evPath, backup)
     }
@@ -316,7 +316,10 @@ for (const gate of GATES) {
     })
     const stPath = path.join(evDir, "gate-selftest.json")
     const REQUIRED_GATES = ["verify-governance.ts", "verify-gate-selftest.ts", "verify-freshness-core.ts", "verify-envelope-contract.ts", "verify-s1-read-paths.ts", "verify-s2-derived.ts", "verify-s3-graph-migrate.ts", "staleness-corpus.ts", "verify-docs-staleness.ts", "verify-closure.ts"]
-    const gatesAllProven = REQUIRED_GATES.map((g) => ({ name: `m35-${g.replace(".ts", "")}`, mutationFailed: true, controlPassed: true }))
+    // Conforming-world selftest evidence uses the CURRENT entry shape: each
+    // gate carries its script path so governance's closure-claimed check can
+    // match proven mutations by script (infra gates are exempt there).
+    const gatesAllProven = REQUIRED_GATES.map((g) => ({ name: `m35-${g.replace(".ts", "")}`, script: `script/m35/${g}`, mutationFailed: true, controlPassed: true }))
     writeFileSync(stPath, JSON.stringify({
       status: "verified", currentCommit: worldStamp, workingTreeRelevantChanges: [],
       verifierCommand: "bun run script/m35/verify-gate-selftest.ts", evidenceFile: "gate-selftest.json",
@@ -338,7 +341,7 @@ for (const gate of GATES) {
     gate.mutate(sandbox)
     const mutated = runGate(gate.script, { BB_M35_ROOT: sandbox })
     check(`${gate.name}: mutation — corrupted surface FAILS the gate`, mutated.exit !== 0, gateFailureDetail(mutated.output))
-    gateResults.push({ name: gate.name, mutationFailed: mutated.exit !== 0, controlPassed: control.exit === 0 })
+    gateResults.push({ name: gate.name, script: gate.script, mutationFailed: mutated.exit !== 0, controlPassed: control.exit === 0 })
   } finally {
     rmSync(sandbox, { recursive: true, force: true })
   }
