@@ -153,6 +153,35 @@ const spotCheckOk =
 check("X1: spot-check pack present (ledger, protocol, contract)", spotCheckOk)
 check("X1: spot-check pack declared for the owner", typeof spotCheck.command === "string" && spotCheck.whatToTry.length >= 4)
 
+// Pass 3b: the closure gate's own can-fail proof. A closure audit that cannot
+// fail is not evidence (contract §6). This is a PURE audit over the ledger
+// snapshot — negatives mutate an in-memory copy only; the on-disk ledger is
+// never touched (no evidence-regress).
+console.log("\npass 3b: closure-audit can-fail proof (in-memory negatives)")
+function closurePreconditionViolations(
+  snapshot: Array<{ code: string; status: string; evidence?: { status?: string } }>,
+  packPresent: boolean,
+): string[] {
+  const v: string[] = []
+  for (const item of snapshot) {
+    if (item.code === "X1") continue
+    if ((item.evidence?.status ?? item.status) !== "verified") v.push(`pre1:${item.code} not evidence-verified`)
+  }
+  if (!packPresent) v.push("pre2:spot-check pack incomplete")
+  const x1 = snapshot.find((i) => i.code === "X1")
+  if (!x1) v.push("pre3:closure gate missing from the ledger")
+  return v
+}
+const ledgerSnapshot = ledger.issues.map((i) => ({ ...i }))
+check("X1: closure preconditions audited — zero violations", closurePreconditionViolations(ledgerSnapshot, spotCheckOk).length === 0, closurePreconditionViolations(ledgerSnapshot, spotCheckOk).join("; "))
+{
+  const forged = ledgerSnapshot.map((i) => ({ ...i, evidence: { status: i.code === "R5" ? "planned" : (i.evidence?.status ?? i.status) } }))
+  negative("X1: negative — the audit fires when an item's evidence regresses to planned", closurePreconditionViolations(forged, spotCheckOk).some((x) => x.startsWith("pre1:R5")))
+  negative("X1: negative — the audit fires when the spot-check pack disappears", closurePreconditionViolations(ledgerSnapshot, false).some((x) => x.startsWith("pre2:")))
+  const noX1 = ledgerSnapshot.filter((i) => i.code !== "X1")
+  negative("X1: negative — the audit fires when the closure gate itself is missing", closurePreconditionViolations(noX1, spotCheckOk).some((x) => x.startsWith("pre3:")))
+}
+
 // --- Pass 4: published artifacts regenerate byte-identically at HEAD -----------------
 console.log("\npass 4: published-artifact regeneration (deterministic legs)")
 const ARTIFACTS: Array<{ name: string; generator: string; files: string[] }> = [
