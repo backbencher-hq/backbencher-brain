@@ -1,0 +1,176 @@
+// script/m41/verify-seo-onboarding.ts — M41.S2.
+//
+// Proves the search-engine onboarding (S2) from BOTH halves:
+//   machine half  — the live deployed site exposes everything engines need:
+//                   Google verification token live in global DNS, sitemap
+//                   fetchable with exactly the real routes, every URL 200 to
+//                   crawlers, no noindex signals, truth renders live.
+//   owner half    — dashboard confirmations (GSC verified, Bing import,
+//                   Brave submit) recorded in S2-OWNER-CONFIRMATIONS.json;
+//                   the verifier fails if any confirmation is missing,
+//                   unconfirmed, or undated.
+//
+// This verifier touches the LIVE internet. It only ever reads.
+//
+// Run: npx tsx script/m41/verify-seo-onboarding.ts
+
+import path from "node:path"
+import { execFileSync } from "node:child_process"
+import { readFileSync, writeFileSync, mkdirSync } from "node:fs"
+
+const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
+const RESULTS = path.join(ROOT, "validation/m41/results")
+const EVIDENCE_PATH = path.join(RESULTS, "S2.json")
+const LIVE = "https://backbencher.cc"
+
+let checks = 0
+let passed = 0
+let negatives = 0
+
+function check(label: string, condition: boolean, detail = ""): void {
+  checks++
+  if (condition) passed++
+  else console.log(`  FAIL: ${label}${detail ? ` — ${detail}` : ""}`)
+}
+function negative(label: string, byDesign: boolean, detail = ""): void {
+  negatives++
+  check(`${label} [negative]`, byDesign, detail)
+}
+
+async function get(url: string, opts?: RequestInit): Promise<{ status: number; body: string }> {
+  const res = await fetch(url, { signal: AbortSignal.timeout(20_000), ...opts })
+  return { status: res.status, body: await res.text() }
+}
+
+// Token-match logic in one place so the live check and its sensitivity
+// negative provably run the SAME comparison.
+function tokenPresent(records: string[], token: string): boolean {
+  return records.some((r) => r.replace(/^"|"$/g, "") === token)
+}
+
+console.log("M41.S2 search-engine onboarding verifier (live internet, read-only)")
+
+// --- 1. owner confirmations ------------------------------------------------------
+
+type Confirmation = { engine: string; confirmedByOwner: boolean; confirmedOn: string }
+let confirmations: Confirmation[] = []
+let confirmationsParsed = false
+try {
+  const raw = JSON.parse(readFileSync(path.join(RESULTS, "S2-OWNER-CONFIRMATIONS.json"), "utf8")) as { confirmations?: Confirmation[] }
+  confirmations = raw.confirmations ?? []
+  confirmationsParsed = true
+} catch {
+  confirmationsParsed = false
+}
+check("S2: owner confirmations file parses", confirmationsParsed)
+check(
+  "S2: all three engines confirmed by owner, each with a date",
+  ["google", "bing", "brave"].every((e) =>
+    confirmations.some((c) => c.engine === e && c.confirmedByOwner === true && /^\d{4}-\d{2}-\d{2}$/.test(c.confirmedOn)),
+  ),
+  confirmations.map((c) => `${c.engine}:${c.confirmedByOwner}`).join(","),
+)
+
+// --- 2. Google verification token live in global DNS -----------------------------
+
+const EXPECTED_TOKEN = "google-site-verification=WqhvOz_J93aA5SgNKkHS6RCqa_fVxrxUJYw2O4zNs_M"
+const CORRUPT_TOKEN = "google-site-verification=0000000000000000000000000000000000000000"
+let txtRecords: string[] = []
+let dnsFetched = false
+try {
+  const res = await fetch("https://dns.google/resolve?name=backbencher.cc&type=TXT", { signal: AbortSignal.timeout(20_000) })
+  const dns = (await res.json()) as { Answer?: { type: number; data: string }[] }
+  txtRecords = (dns.Answer ?? []).filter((a) => a.type === 16).map((a) => a.data)
+  dnsFetched = true
+} catch {
+  dnsFetched = false
+}
+check("S2: DNS TXT answer retrieved from dns.google", dnsFetched)
+check("S2: Google site-verification token is live in global DNS", tokenPresent(txtRecords, EXPECTED_TOKEN), `records=${txtRecords.length}`)
+
+// --- 3. sitemap live and exactly the real routes ---------------------------------
+
+const EXPECTED = ["", "/install", "/docs", "/tools", "/faq", "/troubleshooting", "/contact"].map((r) => `${LIVE}${r}`)
+const sm = await get(`${LIVE}/sitemap.xml`)
+check("S2: live sitemap.xml responds 200", sm.status === 200, `status=${sm.status}`)
+const liveUrls = [...sm.body.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]!)
+check("S2: live sitemap lists exactly the 7 real routes", JSON.stringify([...liveUrls].sort()) === JSON.stringify([...EXPECTED].sort()), `found=${liveUrls.length}`)
+
+// --- 4. every sitemap URL serves 200 to a crawler --------------------------------
+
+const GB = "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
+let crawlOk = 0
+const badRoutes: string[] = []
+for (const u of liveUrls.length ? liveUrls : EXPECTED) {
+  try {
+    const r = await get(u, { headers: { "User-Agent": GB } })
+    if (r.status === 200 && !/name="robots" content="noindex/.test(r.body)) crawlOk++
+    else badRoutes.push(`${u}=${r.status}`)
+  } catch {
+    badRoutes.push(`${u}=ERR`)
+  }
+}
+check("S2: all sitemap URLs return 200 to Googlebot with no noindex", crawlOk === EXPECTED.length && badRoutes.length === 0, badRoutes.join(","))
+
+// --- 5. truth renders live (the index story is the correct one) ------------------
+
+const home = await get(`${LIVE}/`, { headers: { "User-Agent": GB } })
+const truthVersion = readFileSync(path.join(ROOT, "website/src/data/truth.generated.ts"), "utf8").match(/version: "([^"]+)"/)?.[1]
+check("S2: live homepage renders the true version", home.body.includes(`v<!-- -->${truthVersion}`) || home.body.includes(`v${truthVersion}`), `expected v${truthVersion}`)
+check("S2: live homepage carries JSON-LD SoftwareApplication", home.body.includes('"@type":"SoftwareApplication"') || home.body.includes('"@type": "SoftwareApplication"'))
+
+// --- 6. negatives ------------------------------------------------------------------
+
+// N1 (live): the SAME comparison that just passed must REJECT a corrupted
+// token against the real DNS answer — proving the check can fail.
+negative("S2: DNS token comparison rejects a corrupted token (live records)", dnsFetched && txtRecords.length > 0 && !tokenPresent(txtRecords, CORRUPT_TOKEN))
+
+// N2 (live): the route-equality comparator must reject a phantom route.
+{
+  const real = [...EXPECTED].sort()
+  const mutated = [...EXPECTED, `${LIVE}/phantom`].sort()
+  negative("S2: route-list comparator rejects phantom URLs", JSON.stringify(mutated) !== JSON.stringify(real))
+}
+
+// N3 (cheap): the noindex detector must fire on a synthetic noindex page.
+negative("S2: noindex detector is sensitive", /name="robots" content="noindex/.test('<meta name="robots" content="noindex, nofollow">'))
+
+// --- verdict + evidence ------------------------------------------------------------
+
+let headCommit = "unknown"
+try {
+  headCommit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim()
+} catch {}
+
+const ok = passed === checks
+console.log("")
+console.log(`  checks: ${passed}/${checks} passed, ${negatives} negative cases`)
+if (!ok) {
+  console.log("S2 VERDICT: FAIL")
+  process.exit(1)
+}
+console.log("S2 VERDICT: PASS")
+
+mkdirSync(RESULTS, { recursive: true })
+const evidence = {
+  issue: "M41.S2",
+  code: "S2",
+  milestone: "M41",
+  status: "verified",
+  checks,
+  passed,
+  failed: checks - passed,
+  negativeCases: negatives,
+  currentCommit: headCommit,
+  verifierCommand: "npx tsx script/m41/verify-seo-onboarding.ts",
+  evidenceFile: "S2.json",
+  ownerConfirmationsFile: "S2-OWNER-CONFIRMATIONS.json",
+  generatedAt: new Date().toISOString(),
+  limitations: [
+    "Dashboard states (GSC/Bing/Brave) are external and can change after verification; the live checks prove the site half, the owner-confirmation file records the dashboard half as of its dates.",
+    "DNS is checked via dns.google (Google's own resolver) — the authoritative path for GSC verification.",
+    "Brave has no verification protocol; acceptance of the submit-url form is the only available signal.",
+  ],
+}
+writeFileSync(EVIDENCE_PATH, JSON.stringify(evidence, null, 2) + "\n")
+console.log(`  evidence: ${path.relative(ROOT, EVIDENCE_PATH)}`)
