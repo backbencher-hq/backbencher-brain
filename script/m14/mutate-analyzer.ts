@@ -318,6 +318,39 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => (x.metadata ?? {}).relationshipType !== "record_pattern") }),
   },
   {
+    id: "java/emit-write-as-read",
+    language: "java",
+    defectClass: "fabrication",
+    description: "regresses JAD1: assignment-LHS field/array writes emit uses edges (this.x = v -> uses x) — the write-as-read bug class",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), {
+        type: "uses", source: "ArrayAccessUses", target: "xs", fromSymbol: "ArrayAccessUses", toSymbol: "xs", confidence: 0.6, metadata: { isFieldAccess: true },
+      }],
+    }),
+  },
+  {
+    id: "java/type-sourced-member-reads",
+    language: "java",
+    defectClass: "relationship-loss",
+    description: "regresses JAD2: member reads re-owned by the enclosing TYPE instead of the method (two walks, two owners) — f->xs pin dies",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map(x =>
+        (x.metadata ?? {}).isArrayAccess && x.source === "f" ? { ...x, source: "ArrayAccessUses" } : x),
+    }),
+  },
+  {
+    id: "java/interface-methods-unexported",
+    language: "java",
+    defectClass: "symbol-loss",
+    description: "regresses JAD3: implicit-public interface members excluded from exports (pre-fix visibility=undefined) — fetch must stay exported",
+    transform: r => ({
+      ...r,
+      exports: (r.exports ?? []).filter((e: any) => !(e.name === "fetch" && e.kind === "method")),
+    }),
+  },
+  {
     id: "java/drop-import-edges",
     language: "java",
     defectClass: "relationship-loss",
