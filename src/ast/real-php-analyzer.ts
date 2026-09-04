@@ -822,9 +822,15 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private findDefaultValue(paramNode: Node, varNode: Node): string | undefined {
+    // KAD2 sweep: `child === varNode` never matched fresh wrappers. The
+    // type-based skips masked it, so this is hygiene over semantics — but
+    // the guard must still WORK: span-based self-skip restores the intent
+    // (e.g. a simple `= $x` shape would otherwise return the variable
+    // itself as its own default).
     for (let i = 0; i < paramNode.namedChildCount; i++) {
       const child = paramNode.namedChild(i)
-      if (!child || child === varNode) continue
+      if (!child) continue
+      if (child.startIndex === varNode.startIndex && child.endIndex === varNode.endIndex) continue
       if (TYPE_NODES.has(child.type) || child.type === "variable_name" || child.type === "name") continue
       return child.text
     }

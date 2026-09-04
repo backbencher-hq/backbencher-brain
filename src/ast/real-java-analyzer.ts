@@ -1417,14 +1417,23 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private extractJavadocComment(node: Node): string | undefined {
+    // KAD2 twin (M37 #597 sweep): the forward scan's `sibling === node`
+    // stop was dead (fresh wrappers), so the scan ran past this declaration
+    // and returned the FIRST javadoc in the file — doc contamination.
+    // Span-locate the declaration, scan BACKWARD, stop at the first
+    // non-doc sibling (strict adjacency — the kotlin KAD2 contract).
     const parent = node.parent
     if (!parent) return undefined
+    let selfIdx = -1
     for (let i = 0; i < parent.namedChildCount; i++) {
+      const c = parent.namedChild(i)
+      if (c && c.startIndex === node.startIndex && c.endIndex === node.endIndex) { selfIdx = i; break }
+    }
+    for (let i = selfIdx - 1; i >= 0; i--) {
       const sibling = parent.namedChild(i)
-      if (sibling === node) break
-      if ((sibling?.type === "block_comment" || sibling?.type === "line_comment") && sibling.text.startsWith("/**")) {
-        return sibling.text
-      }
+      if (!sibling) continue
+      if (sibling.type === "block_comment" && sibling.text.startsWith("/**")) return sibling.text
+      break
     }
     return undefined
   }

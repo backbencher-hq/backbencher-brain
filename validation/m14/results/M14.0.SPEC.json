@@ -101,7 +101,7 @@
     },
     {
       "description": "9 relationship kinds pinned by groovy fixtures",
-      "detail": "pinned: calls, case_pattern, cast_type, constructor_invocation, contains, declared_type, extends, implements, imports, instanceof_expression, instantiates, method_reference, overrides, references, throws_type, uses",
+      "detail": "pinned: calls, case_pattern, cast_type, constructor_invocation, contains, declared_type, extends, implements, imports, instanceof_expression, instantiates, method_reference, overrides, references, return_type, throws_type, uses",
       "id": "section-b-relationship-kinds",
       "language": "groovy",
       "status": "pass"
@@ -1556,8 +1556,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "6b9a9ac9a0c9afeea3cbb1fe76fd855040e944f8",
-  "committedAt": "2026-09-04T06:56:36+02:00",
+  "commit": "a42b9a0b27719758c0e5a8d7013655795f0f3c2c",
+  "committedAt": "2026-09-04T07:40:54+02:00",
   "data": {
     "languages": {
       "c": {
@@ -1813,7 +1813,7 @@
             "status": "pass"
           },
           "section-b-relationship-kinds": {
-            "detail": "pinned: calls, case_pattern, cast_type, constructor_invocation, contains, declared_type, extends, implements, imports, instanceof_expression, instantiates, method_reference, overrides, references, throws_type, uses",
+            "detail": "pinned: calls, case_pattern, cast_type, constructor_invocation, contains, declared_type, extends, implements, imports, instanceof_expression, instantiates, method_reference, overrides, references, return_type, throws_type, uses",
             "status": "pass"
           },
           "section-c-payload-matrix": {

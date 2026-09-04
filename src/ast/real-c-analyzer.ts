@@ -222,7 +222,12 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
         }
         case "compound_statement":
-          if (scopeManager.currentScope().node !== node.parent) {
+          // KAD2 sweep: comparing a STORED wrapper (scope entry) to a fresh
+          // `node.parent` never matched — the guard was dead and nested
+          // blocks always pushed a new scope. Span comparison restores the
+          // merge behavior for consecutive same-scope compounds.
+          if (scopeManager.currentScope().node.startIndex !== node.parent?.startIndex ||
+              scopeManager.currentScope().node.endIndex !== node.parent?.endIndex) {
             scopeManager.pushScope(ScopeKind.Block, `block_${node.startIndex}`, node)
             willPushScope = true
           }
