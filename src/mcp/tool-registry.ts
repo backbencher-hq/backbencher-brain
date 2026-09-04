@@ -14,7 +14,7 @@ export interface ToolInputSchema {
 }
 
 export interface ToolDocumentation {
-  category: "search" | "analysis" | "operations" | "lifecycle"
+  category: "search" | "analysis" | "operations" | "lifecycle" | "graph"
   summary: string
   defaults: Readonly<Record<string, string | number | boolean>>
   examples: readonly Readonly<Record<string, unknown>>[]
@@ -195,6 +195,63 @@ const descriptors = [
     aliases: [],
     deprecated: false,
     documentation: { category: "operations", summary: "Immediately refresh the index for a just-written/edited file or directory.", defaults: { mode: "auto" }, examples: [{ path: "src/new-file.ts" }, { path: "src", mode: "dir" }] },
+  },
+  {
+    // M28.T1 (issue #624): the agent door to the graph the IDE shows. The
+    // handler reuses the same graph engine the LSP bb/graph handler uses —
+    // one truth, two doors (M28 decision D-1/D-2).
+    name: "bb_graph",
+    description: "Per-symbol dependency graph over the canonical graph engine: callers, callees, per-edge evidence tier (structural/import_based/usage_contextual/reference_qualified/inferred), confidence, and cross-language edge count. Same engine and tier rules the editor graph panel uses; truncated traversals are declared with a reason, never silent.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        symbol: { type: "string", description: "symbol name to root the graph at" },
+        maxDepth: { type: "number", description: "traversal depth bound (default 3)" },
+      },
+      required: ["symbol"],
+    },
+    mutability: "read",
+    requiresIndex: true,
+    modes: ["graph"],
+    aliases: [],
+    deprecated: false,
+    documentation: { category: "graph", summary: "Per-symbol graph with per-edge evidence tiers — the agent view of the editor's graph panel.", defaults: { maxDepth: 3 }, examples: [{ symbol: "handleRequest" }, { symbol: "handleRequest", maxDepth: 5 }] },
+  },
+  {
+    // M28.T1 (issue #624): the agent door to bounded impact. Reuses
+    // src/lsp/impact.ts (the component the editor graph panel's impact mode
+    // uses) so agent and developer see identical totals and truncation.
+    name: "bb_impact",
+    description: "Bounded reverse-dependency impact for one symbol via the same component the editor graph panel uses: declared node budget (200) and depth (5), truncation as a first-class field with reason, and an independently declared total when computable. Unknown symbols are loud declared errors — an empty impact set is never invented.",
+    inputSchema: {
+      type: "object",
+      properties: { symbol: { type: "string", description: "symbol name to compute impact for" } },
+      required: ["symbol"],
+    },
+    mutability: "read",
+    requiresIndex: true,
+    modes: ["impact"],
+    aliases: [],
+    deprecated: false,
+    documentation: { category: "graph", summary: "Bounded impact with declared truncation — identical numbers to the editor's impact mode.", defaults: {}, examples: [{ symbol: "handleRequest" }] },
+  },
+  {
+    // M28.T1 (issue #624): the agent door to cross-language facts. Reuses
+    // src/lsp/cross_language_hover.ts (stored rows only, per-pair, declared
+    // absence) — the agent reads the same facts the human's hover renders.
+    name: "bb_cross_language",
+    description: "Cross-language facts for one symbol from stored brain_relationship rows only (is_cross_language = 1), per-pair with bridge mechanism and evidence tier. Pairs with no stored rows are declared absent — this tool never infers, guesses, or aspires. Identical semantics to the editor's cross-language hover section.",
+    inputSchema: {
+      type: "object",
+      properties: { symbol: { type: "string", description: "symbol name to fetch cross-language facts for" } },
+      required: ["symbol"],
+    },
+    mutability: "read",
+    requiresIndex: true,
+    modes: ["cross-language"],
+    aliases: [],
+    deprecated: false,
+    documentation: { category: "graph", summary: "Stored cross-language pairs with declared absence — the agent view of the hover section.", defaults: {}, examples: [{ symbol: "Warehouse" }] },
   },
 ] as const satisfies readonly ToolDescriptor[]
 
