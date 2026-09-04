@@ -587,3 +587,13 @@ cc76e37 with F1-F9 + SPEC + CC1 fresh.
 - **Mutants**: python/class-var-public-visibility, python/drop-enum-auto-members, python/nested-def-reowner — 197/197 caught.
 - **Note**: corpus F5/census were already 100%/0 — all five defects lived in the gate-blind zone; the line-by-line read found them. This is why M37 exists.
 - Gates: F1 41-lang audit, F2 fresh, F3 fixtures 21/21, F4 197/197, F5 full sweep 21 langs (jvm family unexplained counts pre-existing, baselines unchanged), F6 coverage, F7 hygiene 21 clean, F8 census 0 blind, F9 12/12, CC1, honesty GREEN.
+
+## 2026-09-04 — M37 java dual-lens wave (JAD): #595
+- **Cross-analyzer expansion sweeps first** (the new standing rule): PYD3/PYD4/PYD5 defect classes swept across all 21 analyzers — python was the only instance of each (verified php/ruby/java/dart/swift/objc/csharp/kotlin/scala/groovy semantics). No new defects.
+- **JAD1** (analyzer): assignment-LHS field/array WRITES emitted `uses` edges (`this.x = 5` -> uses x) — the only managed-OO analyzer without the write gate. Parent-type gate added (assignment_expression, probed).
+- **JAD2** (analyzer): member reads sourced to the receiver variable (`cfg.limit` -> cfg) or the enclosing TYPE — edges from non-symbol locals the graph can never connect. The uses walk now tracks method/constructor scopes: non-this reads source to the method, this/super reads keep the type owner (swift precedent), array reads included.
+- **JAD3** (analyzer): implicit-public interface members had visibility=undefined and were excluded from EXPORTS — the most intentional API surface in Java silently missing (JLS 9.4). effectiveVisibility fallback when parentContext.isInterface; modifiers still win (private interface methods stay private).
+- **Dead literals** (F1 audit): `assignment` never exists in the pinned java grammar (assignment_expression) — 2 comparisons cleaned; the F1 gate caught this immediately after the JAD1 edit introduced it.
+- **Fixture updates**: array-access-uses pin re-authored to the corrected contract (reads -> method, writes gated, forbid type-sourced reads); multi-interface-extends pins fetch as an EXPORT.
+- **Mutants**: java/emit-write-as-read, java/type-sourced-member-reads, java/interface-methods-unexported — 200/200 caught.
+- Gates: F1 (35/41 pass, java clean), F2 fresh, F3 31/31 java fixtures, F4 200/200, F5 full sweep (java 100%/0 missing, JVM-family unexplained counts pre-existing baselines), F6, F7, F8, F9 12/12, CC1, honesty GREEN.
