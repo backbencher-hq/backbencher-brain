@@ -1045,6 +1045,33 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (!c) continue
         if (c.type === "navigation_expression" || c.type === "self_expression") { next = c; break }
       }
+      if (!next && cur.type === "navigation_expression") {
+        // Glued grammar shapes (probe-verified 2026-09, swift-nio corpus)
+        // where self is the TRUE base of this navigation's suffix but sits
+        // one wrapper deeper than the receiver chain followed. The wrapper
+        // is the nav's FIRST child (the receiver spine):
+        //   - `buf.readerIndex + self.count` parses as
+        //     navigation > additive_expression(nav, self) > suffix(.count) —
+        //     the suffix binds to the additive's RIGHT spine (self), and the
+        //     left operand is an independent read walked separately.
+        //   - `c_loop(&self.ctx, ...)` parses as
+        //     navigation > prefix_expression(& self) > suffix(.ctx) — the
+        //     inout `&` wraps the base; passing by reference is a genuine
+        //     use (C-interop pattern, LinuxUring/SHA1).
+        const spine = cur.namedChild(0)
+        if (spine && (spine.type === "additive_expression" || spine.type === "prefix_expression")) {
+          // The spine's direct self_expression IS the base (additive right
+          // spine / inout prefix operand); otherwise continue the chain
+          // through it (`&self.x.y` nests a nav inside the prefix).
+          let selfChild: Node | null = null
+          for (let i = 0; i < spine.namedChildCount; i++) {
+            const c = spine.namedChild(i)
+            if (c?.type === "self_expression") { selfChild = c; break }
+          }
+          if (selfChild) return true
+          next = spine
+        }
+      }
       if (!next) return false
       cur = next
     }
