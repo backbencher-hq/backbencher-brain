@@ -144,7 +144,7 @@ async function main(): Promise<void> {
     check("P1: component returns exactly the stored cross-language rows", rows.length === 1 && rows[0]!.direction === "caller" && rows[0]!.other_language === "kotlin" && rows[0]!.evidence_class === "usage_contextual")
 
     // --- P4: coverage scan + generated doc ---------------------------------
-    const fixtureCoverage = cl.projectPairCoverage(fx.raw, fx.projectId, ["java", "groovy", "kotlin", "scala", "typescript"])
+    const fixtureCoverage = cl.projectPairCoverage(fx.raw, fx.projectId, ["java", "groovy", "kotlin", "scala", "typescript", "javascript", "python"])
     check("P4: coverage scan sees the stored pair", fixtureCoverage.some((p) => p.source === "kotlin" && p.target === "typescript" && p.edgeCount === 1))
     // Real project dbs scan (read-only; absent/unreadable recorded honestly).
     const realPairs: Array<{ source: string; target: string; edgeCount: number; sampleBridge: string | null }> = []
@@ -194,7 +194,8 @@ async function main(): Promise<void> {
       "",
       "## Declared absence",
       "",
-      "Launch languages: java, groovy, kotlin, scala, typescript. Any pair among",
+      "Launch languages: java, groovy, kotlin, scala, typescript, javascript, python",
+      "(M29 wave-1 extension). Any pair among",
       "them not in the table above is **declared absent**: no stored rows exist,",
       "the UI renders no cross-language text for it, and no bridge is claimed.",
       `Real project dbs scanned: ${realDbsScanned}.`,
