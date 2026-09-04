@@ -118,7 +118,9 @@ if (ldMatch) {
     const truthVersion = read("website/src/data/truth.generated.ts").match(/version: "([^"]+)"/)?.[1]
     check("S1: JSON-LD softwareVersion is registry-derived", ld.softwareVersion === truthVersion, `${ld.softwareVersion} vs ${truthVersion}`)
     const registryTools = (read("docs/data/public-tools.json").match(/"name": "(bb_[a-z_]+)"/g) ?? []).map((s) => s.match(/bb_[a-z_]+/)![0]).sort()
-    check("S1: JSON-LD featureList matches the registry exactly", JSON.stringify([...ld.featureList].sort()) === JSON.stringify(registryTools), `${(ld.featureList as string[]).length} features`)
+    const ldFeatures = (ld.featureList as string[]).map((f) => f.split(":")[0]).sort()
+    check("S1: JSON-LD featureList tool names match the registry exactly", JSON.stringify(ldFeatures) === JSON.stringify(registryTools), `${ldFeatures.length} features`)
+    check("S1: JSON-LD featureList entries carry registry descriptions", (ld.featureList as string[]).every((f) => f.includes(": ") && f.length > 20))
     check("S1: JSON-LD names the author (ishaq2321)", JSON.stringify(ld).includes("ishaq2321"))
   } catch (e) {
     check("S1: JSON-LD parses", false, String(e).slice(0, 80))
@@ -131,6 +133,14 @@ const homeHtml = homeHtmlFull
 check("S1: keywords present in real content: tree-sitter", /tree-sitter/i.test(homeHtml))
 check("S1: keywords present in real content: AST", /AST/i.test(homeHtml))
 check("S1: keywords present in real content: MCP", /MCP/i.test(homeHtml))
+// Brand short-form + feature terms (D1-era keyword pass). Must appear in real
+// rendered content, never stuffed: each maps to a shipped feature.
+check("S1: keywords present in real content: bb (brand short-form)", /\bbb\b/.test(homeHtml))
+check("S1: keywords present in real content: code search", /code search/i.test(homeHtml))
+check("S1: keywords present in real content: call graph", /call.?graph/i.test(homeHtml))
+check("S1: keywords present in real content: symbol extraction", /symbol extraction/i.test(homeHtml))
+check("S1: keywords present in real content: relationship mapping", /relationship mapping/i.test(homeHtml))
+check("S1: keywords present in real content: bb tools in JSON-LD featureList", /bb_search: |bb_analyze: |bb_ask: /.test(homeHtml))
 check("S1: keywords present in real content: SQLite", /SQLite/i.test(homeHtml))
 check("S1: keywords present in real content: ishaq2321 (JSON-LD author)", homeHtml.includes("ishaq2321"))
 
