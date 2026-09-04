@@ -12,10 +12,10 @@
     "node": "v20.19.5",
     "runtime": "fork-run"
   },
-  "currentCommit": "b503e439a68c3543bf6020ef10d878646cf8e4b1",
+  "currentCommit": "554f5e2197a6ac799c5de43d333e242c0eba9b86",
   "verifierCommand": "npx tsx script/m25/run-fork-e2e.mts",
   "evidenceFile": "F-WINDSURF.json",
-  "generatedAt": "2026-09-04T05:30:50.083Z",
+  "generatedAt": "2026-09-04T06:13:41.874Z",
   "limitations": [
     "fork unavailable on this machine — claim level stays unset; no inheritance from other forks"
   ]
