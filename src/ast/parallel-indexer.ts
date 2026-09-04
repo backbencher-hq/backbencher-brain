@@ -3926,8 +3926,8 @@ export async function reindexFilesParallel(
   // client dies with "Header must provide a Content-Length property" —
   // found live by M25.E5). stdio callers MUST pass a stderr logger.
   options?: { logger?: { log: (...args: any[]) => void; write: (s: string) => void } },
-): Promise<{ indexed: number; deleted: number; errors: number }> {
-  const result = { indexed: 0, deleted: 0, errors: 0 }
+): Promise<{ indexed: number; deleted: number; errors: number; derived?: { pass: string; phases: PostProcessingPhaseTiming[]; repairedInEdges: number; touchedSymbols: number } }> {
+  const result: { indexed: number; deleted: number; errors: number; derived?: { pass: string; phases: PostProcessingPhaseTiming[]; repairedInEdges: number; touchedSymbols: number } } = { indexed: 0, deleted: 0, errors: 0 }
 
   const deleted = changes.filter((c) => c?.type === "deleted")
   if (deleted.length > 0) {
@@ -3976,13 +3976,31 @@ export async function reindexFilesParallel(
     try {
       const rawDb = await BrainDatabase.getRawInstance(projectId)
       rawDb.prepare(`DELETE FROM brain_query_cache WHERE project_id = ?`).run(projectId)
+      // M40.A3: capture in-edges BEFORE parsing (storeResults deletes them),
+      // then the incremental run inside applies the bounded post-pass — so
+      // bb_edit / LSP / MCP file-mode leave derived data consistent, not just
+      // re-parsed. Snapshot cost folds into this call (pre-parse window).
+      const touchedFileIds = toIndex.map((f) => `${projectId}:${path.relative(projectPath, f)}`)
+      const snapshot = await snapshotInEdges(projectId, touchedFileIds)
       const indexResult = await indexProjectParallel(projectId, projectPath, {
         files: toIndex,
         isIncremental: true,
+        skipDiscovery: true,
         ...(options?.logger ? { logger: options.logger } : {}),
       })
       result.indexed = indexResult.successFiles
       result.errors += indexResult.errorFiles
+      // Bounded-pass telemetry (surfaced to tool callers; never silent).
+      result.derived = {
+        pass: indexResult.summary?.derivedPass ?? "deferred",
+        phases: indexResult.phases?.postProcessingPhases ?? [],
+        repairedInEdges: indexResult.m40Bounded?.repairedInEdges ?? 0,
+        touchedSymbols: indexResult.m40Bounded?.touchedSymbols ?? 0,
+      }
+      if (result.derived.pass === "deferred") {
+        // Empty-file-set or all-skipped runs defer honestly rather than lie.
+        result.errors += 0
+      }
     } catch (error) {
       log.error("failed to reindex files", { error })
       result.errors++

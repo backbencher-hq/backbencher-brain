@@ -37,6 +37,13 @@ export interface EditResult {
   formatted: boolean
   validated: boolean
   reindexed: boolean
+  /**
+   * M40.A3: derived-data outcome of the post-edit reindex — pass used
+   * (full/bounded/deferred), per-phase timings, repaired caller edges.
+   * Visible in tool output so "queryable with resolved relationships" is a
+   * claim the caller can verify, not a silent assumption.
+   */
+  derived?: { pass: string; phases: Array<{ name: string; ms: number; outcome: string }>; repairedInEdges: number; touchedSymbols: number }
   /** Human-owned audit trail: leftover references on forced delete, shadowed
    *  sites on refactor, stale-index surprises. Never silent — surfaced to CLI/MCP. */
   warnings?: string[]
@@ -516,7 +523,10 @@ export async function executeEdit(projectPath: string, projectId: string, reques
     }
     if (request.format !== false) for (const change of changes) await BrainSurgicalPatcher.tryAutoFormat(change.path)
     for (const change of changes) await validateFile(change.path, readFileSync(change.path, "utf8"))
-    await reindexFilesParallel(projectId as any, realpathSync(projectPath), changes.map((change) => ({ path: change.path, type: snapshots.get(change.path)!.existed ? "modified" as const : "added" as const })))
+    // M40.A3: the reindex call now applies the bounded post-pass internally
+    // (snapshot + repair + scoped enrichment/gravity), so "AI edits a function
+    // → seconds later the DB has it with resolved relationships" holds here.
+    const reindexResult = await reindexFilesParallel(projectId as any, realpathSync(projectPath), changes.map((change) => ({ path: change.path, type: snapshots.get(change.path)!.existed ? "modified" as const : "added" as const })))
     return {
       mode: request.mode,
       dryRun: false,
@@ -524,6 +534,8 @@ export async function executeEdit(projectPath: string, projectId: string, reques
       formatted: request.format !== false,
       validated: true,
       reindexed: true,
+      // M40.A3: visible derived-data outcome — never a silent deferral.
+      derived: reindexResult.derived ?? { pass: "deferred", phases: [], repairedInEdges: 0, touchedSymbols: 0 },
       warnings: warnings.length > 0 ? warnings : undefined,
       summary,
     }

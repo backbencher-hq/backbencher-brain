@@ -647,7 +647,10 @@ const handlers: Record<string, ToolHandler> = {
     if (effective === "dir" && !isDir) return textResult("bb_index mode=dir requires a directory path", true)
     if (effective === "file") {
       const r = await reindexFilesParallel(projectId as any, projectPath, [{ path: abs, type: "modified" }])
-      return textResult(JSON.stringify({ mode: "file", path: abs, indexed: r.indexed, deleted: r.deleted, errors: r.errors }, null, 2))
+      // M40.A3: derived-data telemetry surfaced — an agent can see whether
+      // relationships/gravity were re-derived for the touched file, and how
+      // many caller edges were repaired, without inspecting logs.
+      return textResult(JSON.stringify({ mode: "file", path: abs, indexed: r.indexed, deleted: r.deleted, errors: r.errors, derived: r.derived ?? { pass: "deferred", phases: [], repairedInEdges: 0, touchedSymbols: 0 } }, null, 2))
     }
     // dir: incremental — parses only changed files, defers heavy post-processing
     const s = await indexProjectParallel(projectId as any, abs, { isIncremental: true, skipPostProcessing: true })
