@@ -5,6 +5,7 @@ export default defineConfig({
     index: "src/index.ts",
     "cli/index": "src/cli/index.ts",
     "mcp/server": "src/mcp/server.ts",
+    "lsp/server": "src/lsp/server.ts",
     // Stable worker entry for the parallel indexer pool. Forked directly by
     // the compiled dist: node dist/pool-worker.js (self-executing worker).
     "pool-worker": "src/ast/pool-worker.ts",

@@ -1,0 +1,230 @@
+# IDE Honesty Contract — Vocabulary, Claim Levels, and Lie Catchers
+
+Status: **RATIFIED — this document governs all Backbencher IDE program work
+(milestones M24–M29). Every IDE issue, evidence file, commit message, and
+summary MUST comply with it. No exception without a written amendment in this
+file.**
+
+Sibling of `docs/M14-HONESTY-CONTRACT.md` (analyzer layer). Where M14 governs
+what the index claims, this contract governs what the **user-facing IDE
+surface** claims. It is stricter, because a hover is read by humans who cannot
+see the evidence file behind it.
+
+## 0. Why this exists
+
+An IDE integration makes promises at keystroke time: "this symbol has 14
+callers", "this function is called from the Kotlin service", "this edge is
+inferred". Each of those is a claim. If the index is stale, if a position is
+off by one, if an edge is a heuristic guess rendered as fact — the user is
+being lied to in the most intimate place software has: their editor.
+
+The M13/M14 lesson applies with more force here: the same agent writes the
+feature, the test, the evidence, and then reports the verdict. This contract
+makes honesty a property of the pipeline. Only a harness that can fail may
+emit a verdict, and every user-visible claim must trace to machine-emitted
+evidence.
+
+Scope: `src/lsp/`, `ide/` (extension hosts, webviews), LSP protocol surface,
+`script/m24/` … `script/m29/`, `validation/m24/` … `validation/m29/`, and all
+IDE program docs.
+
+## 1. Vocabulary rules for IDE claims
+
+The M14 banned list applies (perfect/perfection, complete/completed,
+production-ready, bulletproof, rock-solid, battle-tested, extensively tested,
+thoroughly reviewed, should work, expected to pass, unscoped "green", unscoped
+"100%"). Additional IDE-specific rules:
+
+| Banned pattern | Why | Required instead |
+| --- | --- | --- |
+| "works in Cursor/Windsurf/…" (without a pinned run) | A fork claim is a measured fact, not a hope | "verified in <editor> <version>, evidence <path>" |
+| "IDE-grade", "IntelliJ-like" | Comparative marketing, not measurement | Name the feature and its claim level |
+| "real-time" | Unmeasured timing promise | State the measured budget and staleness policy |
+| "seamless" | Hides the failure modes | Declare the failure modes |
+| "all languages" (for an IDE feature) | Hides the per-language denominator | "verified for <list>; declared for <list>" |
+
+Note: the v5 milestone is named **Precision Waves**, not "Perfection Waves" —
+renamed at planning time because "perfection" is banned vocabulary. The
+ambition is unchanged; the word was the problem.
+
+## 2. Claim levels for the IDE surface
+
+Every user-visible IDE capability carries exactly one machine-checked level.
+Higher levels require all lower ones.
+
+### I0 — UNVERIFIED
+Default. May be developed; may not ship behind any trust label.
+
+### I1 — PROTOCOL-PASSED
+The capability passes an LSP-level verifier: a reference client harness issues
+real protocol requests against `bb lsp` and asserts response shape and
+content on fixtures. Precondition: harness exists under `script/mXX/`, has at
+least one positive and one negative case, and can fail.
+
+### I2 — INDEX-CONFORMANT
+I1, and the backing analyzer is #419-CONFORMANT (or its evidence level is
+declared next to the result), and the position-mapping gate and freshness
+gate pass for the language. Precondition: `script/mXX/verify-positions.ts`
+and freshness gate green at current commit.
+
+### I3 — EDITOR-VERIFIED
+I2, and the capability is exercised end-to-end in a named editor at a pinned
+version (VS Code first), with the run recorded in evidence: editor version,
+OS, workspace fixture, assertions, timestamp.
+
+### I4 — FORK-VERIFIED
+I3 for a named fork: Cursor, Windsurf, Antigravity, or any other VS Code
+fork, each **separately** claimed with its own pinned version and run. A
+claim for one fork never implies another. Unavailable fork = `blocked`, with
+the reason recorded — never silently omitted, never assumed.
+
+### I5 — SCOPED-VERIFIED ← highest attainable
+I2 ∧ I3 (primary editor) ∧ latency budget met ∧ limitations declared
+non-empty-or-justified ∧ evidence fresh at current commit. Stated always with
+scope: "I5-verified for hover in java/groovy/kotlin/scala/typescript, editors:
+VS Code <version>, budget p95 < 50 ms warm, limitations: <list>".
+
+There is no level above I5. Fork claims (I4) are orthogonal badges a
+capability may also carry; they never upgrade I5.
+
+Every evidence record for an I3+ claim also records the operating system
+(kernel/distro or macOS/Windows version). A claim is scoped to the OS it was
+measured on; cross-OS claims require per-OS runs (see §11).
+
+## 3. Latency budgets are gates
+
+User-facing latency is a correctness property. Budgets (measured, not
+aspirational, on named hardware, evidence JSON per run):
+
+| Operation | Warm budget (p95) | Cold budget (p95) |
+| --- | --- | --- |
+| hover | 50 ms | 250 ms |
+| definition / references | 50 ms | 250 ms |
+| document symbols | 50 ms | 250 ms |
+| workspace symbols | 150 ms | 500 ms |
+| call hierarchy prepare/expand | 100 ms | 400 ms |
+| graph webview first render | 300 ms | 1000 ms |
+
+A budget miss is a failed gate, not a footnote. Every measured number records
+machine (kernel, CPU, RAM), repo, file/symbol counts, and commit. Ranges or
+medians when runs vary — never a single optimistic sample (M19 rule).
+
+Definitions: **warm** = server process already running, index open, page cache
+warm (at least one prior request served). **cold** = fresh server process,
+first request after startup. Every budget evidence file states which regime
+was measured.
+
+## 4. Freshness honesty
+
+1. The server reads a persisted index; the user edits files. Every response
+   must either reflect current disk state or carry a machine-readable stale
+   marker that the UI renders visibly (badge, dimming, or text — never
+   silence).
+2. File-watch → incremental reindex is the primary mechanism; its guarantees
+   (debounce window, max catch-up latency, event-loss recovery) are declared
+   and gated.
+3. A stale result shown without a stale marker is a defect of the same
+   severity as a wrong result. The UI mutation suite must prove the marker
+   renders.
+4. Deliberately deferred work (e.g. indexing paused on battery) is reported
+   in the status surface, with the reason.
+
+## 5. Position honesty
+
+LSP positions are 0-based lines and UTF-16 code units. The index stores
+1-based lines and byte ranges (the CC1 bug class). A dedicated position
+mapping component owns all conversion. Rules:
+
+1. No feature code converts positions inline; all conversion goes through the
+   mapping component.
+2. The mapping component carries its own mutation suite (off-by-one,
+   multi-byte, astral-plane, CRLF, tab-width cases) that must fail on planted
+   defects.
+3. Any language whose analyzer emits ambiguous ranges is excluded from
+   position-gated features until pinned, and the exclusion is declared.
+
+## 6. UI mutation gates
+
+Planted defects must fail verifiers. Minimum mutant set per capability:
+wrong edge (fabricated caller), dropped edge (missing caller), wrong
+position (±1 line, ±1 column), wrong count (usage count off), missing stale
+marker, wrong confidence label (inferred shown as structural), budget
+violation hidden. If a mutant survives, the suite fails — not the mutant.
+
+## 7. Complement stance (coexistence rules)
+
+The IDE layer complements language servers (gopls, rust-analyzer, tsserver,
+jdtls, …) and never competes with them:
+
+1. No completion, no diagnostics, no rename — graph, navigation,
+   cross-language, and evidence only.
+2. Where a first-party language server exists for a language, our hover
+   content is additive and labeled as coming from the bb index; where none
+   exists, we declare that we are the primary provider for that language.
+3. Client activation must not degrade first-party language-server startup
+   (activation budget gate).
+4. Any conflict observed with a first-party server is a filed defect with a
+   reproduction, not a setting to hide behind.
+
+## 8. Evidence rules (inherited from M14, restated)
+
+1. Evidence JSON in `validation/mXX/results/` is written only by verifier
+   scripts. Agents edit code and fixtures, never results.
+2. Evidence must regenerate byte-identical (modulo timestamps declared as
+   such) from the current commit.
+3. Silence is guilt: no skip/todo/pending in harnesses. Skipped = failed.
+   Missing editor/fork = `blocked` with reason, recorded.
+4. Every claim field carries: currentCommit, sourceFingerprint,
+   verifierCommand, evidenceFile, generatedAt, passed/failed counts,
+   negativeCases, limitations.
+5. Owner spot-checks (M14 §5.6 ritual) are the closure authority for every
+   issue. Agents never self-close.
+6. Separation of duties: where feasible, the author of a fix is not the
+   author of the only check covering it; cross-review is logged in evidence
+   `reviewers` fields.
+7. Red-team duty per wave: adversarial review of our own gates (the
+   tautological check, the fixture that cannot fail, the oracle sharing a bug
+   with the implementation). Findings are filed as issues.
+
+## 9. The extension rule (language growth)
+
+The five launch languages (java, groovy, kotlin, scala, typescript — chosen
+because they are #419-CONFORMANT) are the opening set, never the ceiling. A
+new language joins the IDE surface when, and only when:
+
+1. its analyzer reaches #419 CONFORMANT (or its lower evidence level is
+   declared in every IDE result for that language),
+2. position and freshness gates pass for it,
+3. its IDE fixtures and mutants exist,
+4. its latency budget is measured.
+
+Adding language N+1 must be a routine gated wave (M29 protocol), never a
+redesign. If any gate forces a redesign, that is a filed defect against the
+architecture, not a waiver.
+
+## 10. Cross-platform honesty
+
+Budgets and claim levels are OS-scoped. Rules:
+
+1. An evidence record without an OS field is invalid for I3+ claims.
+2. Platform scope is declared per claim: "verified on <OS list>"; other OSes
+   are declared-absent, never assumed.
+3. Cross-OS verification (macOS, Windows, Linux) is a required part of the
+   M25 extension gate — this repository's own failure history (home-dir
+   nondeterminism, path-separator bugs) is the standing justification.
+
+## 11. Standing rules
+
+1. Every bug class found anywhere becomes a permanent gate before its fix
+   counts as landed (F7 rule, inherited).
+2. PENDING cells are work items; silent gaps are violations.
+3. Closure requires no PENDING cell in the dependency path.
+4. Owner spot-checks remain the final closure authority.
+5. No commit in this program carries AI co-author trailers.
+6. Workspace scope: v0 declares **single-root workspaces only** as a declared
+   limitation, stated in every v0 claim. Multi-root support is a filed
+   decision for a later wave, never an assumption.
+7. Unsupported languages: for any file outside the launch-language set, the
+   server responds with declared-absent semantics (no capabilities for that
+   language), and the absence is verifiable by a negative test. Silent
+   empty results that look like "no references found" are a violation.

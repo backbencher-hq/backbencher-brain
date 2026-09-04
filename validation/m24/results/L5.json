@@ -1,0 +1,27 @@
+{
+  "issue": "494",
+  "code": "L5",
+  "status": "verified",
+  "currentCommit": "86433052fdcb01204e203f03e8bc1777e537246d",
+  "sourceFingerprint": "30cad45e27c3c9a962c2d17affccf6c5e49757649222be82cd0ecfdc9a9434be",
+  "verifierCommand": "npx tsx script/m24/verify-call-hierarchy.ts",
+  "evidenceFile": "L5.json",
+  "generatedAt": "2026-09-03T16:16:37.727Z",
+  "passed": 18,
+  "failed": 0,
+  "failures": [],
+  "negativeCases": 0,
+  "verdict": {
+    "realComponentFailures": 0,
+    "mutantsCaught": 4,
+    "mutantsTotal": 4,
+    "ok": true,
+    "note": "`failed` counts real functional failures only; mutant runs are reported separately via the verdict block."
+  },
+  "limitations": [
+    "adapter proven against a fixture double reproducing the engine contract; the engine itself is M14-verified and exercised end-to-end by the V1 harness",
+    "heuristic edges from the engine are included; their ratio is declared by the engine's provenance",
+    "ranges for engine nodes use line-level precision when the engine lacks byte columns",
+    "latency measured on this machine only; cross-platform budgets are M25 scope"
+  ]
+}

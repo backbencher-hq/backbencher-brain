@@ -8,6 +8,111 @@ brain-core ships two embedding layers:
 2. **Local word vectors** (offline fallback) — always available, no API key.
    Quality is keyword-level, not true semantics.
 
+## Interactive setup: `bb setup` (recommended first run)
+
+`bb setup` walks you through provider choice with prefilled base URL and model
+so you only paste the API key (input is hidden). It validates the key with one
+live `/embeddings` call before saving, writes `~/.bb/config.json` with mode
+0600 (owner-only), and never stores the key anywhere else. The built-in free
+options are:
+
+| Provider | base_url (prefilled) | model (prefilled) |
+|---|---|---|
+| OpenRouter free | `https://openrouter.ai/api/v1` | `liquid/lfm-2.5-embedding-350m:free` |
+| NVIDIA NIM free | `https://integrate.api.nvidia.com/v1` | `nvidia/nemotron-3-embed-1b` |
+| Custom / paid | you supply both | you supply both |
+
+If you skip setup or have no key, `bb index` shows exactly this notice (one
+line, non-interactive environments never block on it):
+
+```
+note: no embedding key — semantic search will use local vectors (weaker). Setup: bb setup
+```
+
+The wizard runs **once**: an explicit skip is remembered (a `setup_skipped`
+marker in the 0600 config), so `bb index` never re-prompts after you chose to
+skip. Entering a key later via `bb setup` replaces the skip automatically.
+
+### What a failed key validation means (pre-save, `bb setup`)
+
+A key is validated before it is saved. The exact messages users see:
+
+- `Key rejected (401). Check the key and provider — copy-paste may have dropped or added characters.`
+- `Rate limit (429). The key looks valid; free-tier limit. It can be saved — indexing backs off and retries.`
+- `Provider error (503). The key may be valid; the provider is temporarily failing. It can be saved — indexing retries automatically.`
+- `Model not found (404). Check the model name: the provider's /embeddings endpoint does not recognize it.`
+- `Provider did not respond (timeout). Check your internet connection and the base URL.`
+- `Could not reach the provider: <error>. Check the base URL.`
+- `Provider returned invalid JSON. The base URL must be a /v1 endpoint.`
+- `Provider returned no embedding. Check the base URL and model name.`
+
+429 and 5xx are treated as "key shape accepted" (rate/provider side issue) and
+saved; index-time resilience (per-batch fallback + 429 backoff) retries them.
+A 401/403/404 or malformed response is a hard error: the key is NOT saved.
+
+## Inspecting and diagnosing: `bb setup show` and `bb doctor` (M32)
+
+`bb setup show` prints the effective embedding configuration without ever
+displaying the full key — the key appears only as its last four characters:
+
+```
+bb — embedding configuration
+Precedence: env > ~/.bb/config.json > bb.json
+
+env    : — (not set)
+global : ✓ https://g.example/v1 · g-model · key: ••••2345 · mode: 600
+project: — (not set)
+
+Winner: global
+```
+
+It names the winning precedence tier, shows incomplete tiers with what is
+missing (an incomplete tier can never win), warns when a config file's mode is
+not 0600, and exits 1 when nothing is configured (scripts can branch on it).
+A corrupt config file is treated as an absent tier — it never crashes.
+
+`bb doctor` diagnoses degradation from real local state (config file, file
+permissions, and the embedding models actually stored in the project index —
+read-only, no network). Every finding names the exact fix command:
+
+```
+bb doctor — diagnostics
+
+✗ No embedding configuration.
+  Fix: bb setup
+! global config file has mode 644 — the key may be world-readable.
+  Fix: bb doctor --fix
+· No stored vectors for this project (no index or empty). Config model: g-model.
+  Fix: bb index .
+```
+
+A model mismatch (config says one model, the index was built with another) is
+reported as a hard failure with `Fix: bb index --force` — stored vectors
+from different models are never compared. `bb doctor` exits 1 when a fail-level
+finding exists.
+
+### `bb doctor --fix`: the only mutating arm
+
+`bb doctor --fix` repairs **only file permissions** of embedding config files
+to 0600. It prints every change it makes; config content, keys, and the index
+are never modified by `--fix`. Everything else remains advice naming the exact
+command — diagnosis never auto-mutates, and `--fix` never touches anything
+beyond permissions:
+
+```
+bb doctor --fix — applied
+
+✓ /root/.bb/config.json: mode 644 -> 600 (applied)
+```
+
+## Discovering these commands
+
+Every command documents itself: `bb --help` lists all commands,
+`bb <command> --help` shows that command's options, and `bb -v`,
+`bb version`, and `bb --version` all print the version. A mistyped command
+suggests the closest real one (`bb docter` suggests `doctor`). The full
+manual ships with npm installs and is available as `man bb`.
+
 ## Quick start (3 environment variables)
 
 ```bash
@@ -88,6 +193,26 @@ Dropped batches are recoverable: run `bb index --force <project>` (or re-run
 `bb_refresh(force)`) to generate vectors for the whole project at once. For
 measurement harnesses that must not touch the embedding API at all (e.g. the
 M11 corpus benchmarks), set `BB_EMBEDDING_BATCH_LIMIT=0` in the harness scope.
+
+## The no-key trade-off, in plain terms
+
+Without any embedding key, semantic search uses **local word vectors
+(`local-word-vectors`, keyword-level matching)**. That is a real, declared
+quality cost — not "the same, just offline". It is the honest default: nothing
+is silently degraded, and the notice above says so. Adding a real model later
+**requires `bb index --force <project>`** to re-embed the whole index; old
+vectors are never reused or mixed with new ones.
+
+## Vector-space mixing rule
+
+Vectors produced by different models live in **different vector spaces** and
+are **never compared or mixed**. Every stored vector records the model that
+produced it (`embedding_model`); the search only compares vectors with the
+same label, and the query vector's producing model
+(`SemanticEngine.getLastEmbeddingModel()`) is authoritative. Changing model or
+dimension therefore requires a forced reindex (`bb index --force`), and a rate
+limit or provider blip degrades one batch to the local fallback — never a
+silent cross-space comparison.
 
 ## Tool evidence semantics
 

@@ -1,0 +1,27 @@
+{
+  "issue": "491",
+  "code": "L2",
+  "status": "verified",
+  "currentCommit": "86433052fdcb01204e203f03e8bc1777e537246d",
+  "sourceFingerprint": "4906cd5f5a2a04fe766b7830d489b1eadea1921afadd509211be514b15666e3e",
+  "verifierCommand": "npx tsx script/m24/verify-hover.ts",
+  "evidenceFile": "L2.json",
+  "generatedAt": "2026-09-03T16:16:27.166Z",
+  "passed": 20,
+  "failed": 0,
+  "failures": [],
+  "negativeCases": 0,
+  "verdict": {
+    "realComponentFailures": 0,
+    "mutantsCaught": 4,
+    "mutantsTotal": 4,
+    "ok": true,
+    "note": "`failed` counts real functional failures only; mutant runs are reported separately via the verdict block."
+  },
+  "limitations": [
+    "index-sourced only; no compiler-backed types (complement stance)",
+    "evidence tiers describe relationship data quality, not symbol truth",
+    "fixture-backed double for the DB layer; live brain.db path covered by upstream freshness verifiers and the V1 harness",
+    "latency measured on this machine only; cross-platform budgets are M25 scope"
+  ]
+}

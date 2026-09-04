@@ -65,12 +65,16 @@ function formatETA(s: { processedFiles: number; totalFiles: number; elapsedSecon
 
 async function cmdIndex(
   dir: string | undefined,
-  opts: { force?: boolean; skipPostProcessing?: boolean; file?: string; changed?: boolean; resume?: boolean; import?: string },
+  opts: { force?: boolean; skipPostProcessing?: boolean; file?: string; changed?: boolean; resume?: boolean; import?: string; noSetup?: boolean },
 ) {
   // M22.C1: default `<dir>` to the current directory like every other command
   // (search/health/mcp all fall back to process.cwd()); `cd proj && bb index`
   // must index the project you are standing in.
   const abs = dir ? requireDir(dir) : process.cwd()
+  // M30.S2: first-run embedding setup. Interactive ONLY on a TTY with no
+  // config anywhere; non-TTY never hangs. --no-setup skips entirely.
+  const { maybeRunFirstRunSetup } = await import("../setup/setup-wizard")
+  await maybeRunFirstRunSetup({ noSetup: opts.noSetup === true })
   const pid = getProjectId(abs)
   // M23.P3: `bb index --import <db>` re-homes an existing brain.db (from a
   // moved project or another machine) onto this checkout's project id.
@@ -356,7 +360,8 @@ export async function runCli(argv: string[]): Promise<void> {
   program
     .name("bb")
     .description("Backbencher Brain — universal code intelligence (40+ languages)")
-    .version(BACKBENCHER_BRAIN_VERSION)
+    // M33.S1: parity across all three version forms (-V was the only form before).
+    .version(BACKBENCHER_BRAIN_VERSION, "-v, --version", "output the version number")
     // M22.W1: one logging story. Workers inherit BB_LOG_LEVEL from the parent
     // (pool-worker.ts only defaults to "error" when the parent sets nothing).
     .option("--verbose", "show diagnostics (debug logs, per-file worker/WASM lines)")
@@ -376,14 +381,10 @@ export async function runCli(argv: string[]): Promise<void> {
       }
     })
 
-  // M22 e2e: the header docs (and users) expect `bb version` as a command,
-  // not only the --version flag.
-  program
-    .command("version")
-    .description("print the bb version")
-    .action(() => {
-      console.log(BACKBENCHER_BRAIN_VERSION)
-    })
+  // M33.S2: unknown commands and options get did-you-mean suggestions (commander
+  // default) plus an explicit pointer to the help surface instead of a dead end.
+  program.showSuggestionAfterError(true)
+  program.showHelpAfterError("(run 'bb --help' for a list of commands)")
 
   program
     .command("tool")
@@ -398,6 +399,7 @@ export async function runCli(argv: string[]): Promise<void> {
     .description("index a project (default: current directory)")
     .argument("[dir]", "project directory (default: current directory)")
     .option("--force", "wipe the existing index and rebuild")
+    .option("--no-setup", "skip the first-run embedding setup prompt")
     .option("--skip-post-processing", "parse + store only; defer relationship resolution/enrichment/gravity/taint/health")
     .option("--file <path>", "reindex a single file's symbols + relationships")
     .option("--changed", "reindex only files changed since the last index")
@@ -414,6 +416,47 @@ Examples:
 `)
     .action(async (dir: string | undefined, opts: any) => {
       await cmdIndex(dir, opts)
+    })
+
+  const setupCmd = program
+    .command("setup")
+    .description("embedding provider setup (API key, model)")
+  setupCmd
+    .action(async () => {
+      const { runSetupWizard } = await import("../setup/setup-wizard")
+      if (!process.stdin.isTTY) {
+        console.error("✗ bb setup requires an interactive terminal.")
+        process.exit(1)
+      }
+      await runSetupWizard()
+    })
+  setupCmd
+    .command("show")
+    .description("show the embedding configuration (key as fingerprint only)")
+    .action(async () => {
+      const { describeEmbeddingConfig, renderSetupShow } = await import("../setup/setup-show")
+      const state = describeEmbeddingConfig()
+      console.log(renderSetupShow(state))
+      if (!state.configured) process.exitCode = 1
+    })
+
+  program
+    .command("doctor")
+    .description("diagnose embedding setup and index consistency (read-only)")
+    .option("--dir <dir>", "project directory (default: cwd)")
+    .option("--fix", "repair permission problems (0600 only; this IS the explicit apply — without it doctor is read-only)")
+    .action(async (opts: any) => {
+      const { runDoctorChecks, renderDoctorReport, applyDoctorFixes, renderFixPlan } = await import("../setup/doctor")
+      const cwd = opts.dir ? requireDir(opts.dir) : process.cwd()
+      if (opts.fix) {
+        const { plan, applied } = applyDoctorFixes({ cwd, apply: true })
+        console.log(renderFixPlan(plan, applied))
+        if (plan.refusals.length > 0) process.exitCode = 1
+        return
+      }
+      const report = runDoctorChecks({ cwd, projectId: getProjectId(cwd) })
+      console.log(renderDoctorReport(report))
+      if (!report.healthy) process.exitCode = 1
     })
 
   program
@@ -480,6 +523,15 @@ Examples:
     .action(async (opts: any) => {
       const { startMcpServer } = await import("../mcp/server")
       await startMcpServer(opts.dir ? requireDir(opts.dir) : process.cwd())
+    })
+
+  // M33.S1: `bb version` subcommand — the documented form (see header comment)
+  // that did not exist until now.
+  program
+    .command("version")
+    .description("print the bb version")
+    .action(() => {
+      console.log(BACKBENCHER_BRAIN_VERSION)
     })
 
   await program.parseAsync(argv, { from: "user" })
