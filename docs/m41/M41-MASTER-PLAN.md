@@ -1,10 +1,11 @@
 # M41 — Website Truth, SEO & Design — Master Plan
 
-> **STATUS: DRAFT v2 — for owner review. Not filed on GitHub.**
-> On approval: file GitHub milestone M41 + the 8 issues below, create
-> `validation/m41/ledger.json` + gates registry, then begin G1.
+> **STATUS: FILED — GitHub milestone 41.**
+> GitHub issue numbers (enforced exactly by the governance gate):
+> G1=#640, T1=#641, T2=#642, T3=#643, S1=#644, S2=#645, D1=#646, X1=#647.
+> Ledger: `validation/m41/results/manifest.json`.
 
-Milestone: M41 (number confirmed free; M37–M40 belong to co-agents) · Status: draft
+Milestone: M41 · Status: open
 Authority: this document · Governing contract: `docs/M14-HONESTY-CONTRACT.md`
 
 ## Purpose
@@ -94,7 +95,7 @@ verifier green; issue closed only when the owner confirms dashboards.
 Deliverables: hero/tools/docs/new-pages redesigned to a premium terminal-native
 aesthetic: dark, precise, monospace accents, **real bb output verbatim** (actual
 `bb --help`, actual doctor transcript) instead of generic template art. Framer
-Motion used sparingly. Mobile-perfect. Accessibility pass.
+Motion used sparingly. Fully responsive on mobile. Accessibility pass.
 **Truth invariance constraint**: design may not change any claim — T2/T3/S1
 verifiers re-run unchanged after D1; a redesign that regresses truth fails CI
 before deploy.
@@ -127,6 +128,8 @@ separate deploy pipeline is created; the existing one becomes trustworthy.
 
 ## Honesty notes
 
+- Issues close as verified, known-gap, or blocked — a known-gap or blocked state is
+  never silently skipped and never worded as verified.
 - Counts that cannot be derived from an artifact today are either derived from the
   registry or omitted — never estimated.
 - SEO work describes only what bb verifiably does; no manufactured claims.
