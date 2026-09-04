@@ -43,7 +43,11 @@ function check(name: string, ok: boolean, detail?: string): void {
   console.log(`  ${ok ? "PASS" : "FAIL"}: ${name}${detail ? ` — ${detail}` : ""}`)
   if (!ok && detail) details.push(`${name}: ${detail}`)
 }
+const mutants = { caught: 0, total: 0 }
 function negative(name: string, caught: boolean, detail?: string): void {
+  mutants.total++
+  if (caught)
+    mutants.caught++
   if (caught) passed++
   else failed++
   console.log(`  ${caught ? "CAUGHT" : "ESCAPED"}: ${name}${detail ? ` — ${detail}` : ""}`)
@@ -168,6 +172,7 @@ const result = {
   passed,
   failed,
   negatives: { planned: 4 },
+  verdict: { realComponentFailures: failed, mutantsCaught: mutants.caught, mutantsTotal: mutants.total, ok: mutants.caught === mutants.total },
   currentCommit: gitCommit(),
   verifierCommand: "npx tsx script/m29/verify-precision-improvements.ts",
   evidenceFile: "R5-verify.json",

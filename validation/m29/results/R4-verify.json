@@ -5,9 +5,15 @@
   "negatives": {
     "planned": 5
   },
-  "currentCommit": "b2dc66d583c38f6be66458aa0b8cb4395a966715",
+  "verdict": {
+    "realComponentFailures": 0,
+    "mutantsCaught": 6,
+    "mutantsTotal": 6,
+    "ok": true
+  },
+  "currentCommit": "35c9c238ce9c7a1321c2b6fcc4afa0930cc287cc",
   "verifierCommand": "npx tsx script/m29/verify-precision-ledger.ts",
   "evidenceFile": "R4-verify.json",
-  "generatedAt": "2026-09-04T22:28:02.710Z",
+  "generatedAt": "2026-09-04T23:20:39.139Z",
   "details": []
 }
