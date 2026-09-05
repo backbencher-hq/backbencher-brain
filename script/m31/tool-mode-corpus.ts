@@ -188,6 +188,14 @@ const NEGATIVES: Invocation[] = [
   { tool: "bb_edit", mode: "path-escape", args: { mode: "write", filePath: "../outside.ts", content: "x" } },
   { tool: "bb_index", mode: "missing-path", args: {} },
   { tool: "bb_index", mode: "missing-file", args: { path: "no/such.ts" } },
+  { tool: "bb_graph", mode: "missing-symbol", args: {} },
+  { tool: "bb_graph", mode: "bad-depth", args: { symbol: "handleRequest", maxDepth: 99 } },
+  { tool: "bb_impact", mode: "missing-symbol", args: {} },
+  { tool: "bb_cross_language", mode: "missing-symbol", args: {} },
+  { tool: "bb_annotate", mode: "missing-symbol", args: { body: "note" } },
+  { tool: "bb_annotate", mode: "empty-body", args: { symbol: "handleRequest", body: "" } },
+  { tool: "bb_annotate", mode: "over-limit-body", args: { symbol: "handleRequest", body: "x".repeat(2001) } },
+  { tool: "bb_annotations", mode: "bad-limit", args: { limit: 500 } },
 ]
 
 function redact(value: unknown): unknown {
@@ -277,7 +285,10 @@ async function main() {
   }
 
   const toolNames = PUBLIC_TOOL_DESCRIPTORS.map((t) => t.name)
-  check("all 11 tools have handlers", toolNames.length === 11 && toolNames.every((n) => typeof handlers[n] === "function"), toolNames.join(","))
+  // Derive the expected count from the live registry, not a literal: the tool
+  // surface grows (M31 wave-2 lesson — the 11 literal went stale at 16).
+  const expectedToolCount = PUBLIC_TOOL_DESCRIPTORS.length
+  check(`all ${expectedToolCount} tools have handlers`, toolNames.length === expectedToolCount && toolNames.every((n) => typeof handlers[n] === "function"), toolNames.join(","))
 
   const corpus: Record<string, unknown> = {}
   const missingHandlers: string[] = []
