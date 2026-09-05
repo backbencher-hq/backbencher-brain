@@ -117,8 +117,19 @@ function resolveSafeReadPath(projectPath: string, requested: string): { absolute
 const handlers: Record<string, ToolHandler> = {
   bb_search: async (args, { projectId, projectPath }) => {
     const mode = args.mode === "content" ? "content" : args.mode === "symbol" || args.mode === "file" ? args.mode : "symbols"
+    // M40.A7 negative-case fix: invalid input must return an MCP error
+    // envelope, not throw out of the handler — a thrown error crashes the
+    // whole tool call on hosts that do not wrap handlers in try/catch.
+    if (args.mode !== undefined && !"content symbol file".split(" ").includes(String(args.mode))) {
+      return textResult(`bb_search: unknown mode "${args.mode}" (known: content, symbol, file; omit mode for the symbols listing)`, true)
+    }
     if (mode === "file") {
-      const target = resolveSafeReadPath(projectPath, String(args.filePath))
+      let target: { absolute: string; relative: string }
+      try {
+        target = resolveSafeReadPath(projectPath, String(args.filePath))
+      } catch (e: any) {
+        return textResult(`bb_search mode=file: ${e?.message ?? "invalid path"}`, true)
+      }
       const raw = await BrainDatabase.getRawInstance(projectId as any)
       const row = raw.prepare("SELECT id, language, file_hash FROM brain_file WHERE project_id=? AND path=?").get(projectId, target.absolute) as { id: string; language: string; file_hash: string } | undefined
       if (!row) throw new Error(`file is not indexed: ${target.relative}`)
@@ -240,7 +251,9 @@ const handlers: Record<string, ToolHandler> = {
       // Measurement seam for the S1 latency-budget gate (BB_M35_SKIP_FRESHNESS=1
       // runs the handler WITHOUT freshness work). Not part of the public
       // contract; the gate measures with/without and asserts the delta < 5%.
-      if (process.env.BB_M35_SKIP_FRESHNESS === "1") return textResult(JSON.stringify(data, null, 2))
+      // M40.A9: quarantined behind BB_TEST_HOOKS=1 — like the worker fixtures,
+      // a stray env var must not silently degrade a production read path.
+      if (process.env.BB_TEST_HOOKS === "1" && process.env.BB_M35_SKIP_FRESHNESS === "1") return textResult(JSON.stringify(data, null, 2))
       let resolved = rows
       let mode: "sampled" | "complete" = "complete"
       const cap = opts.sample

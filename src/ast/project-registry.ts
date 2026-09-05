@@ -2,7 +2,14 @@
 // Registry of every indexed project under the bb data dir: list with DB path,
 // DB size, counts, last-indexed time, and a human path (longest common prefix
 // of indexed file paths); plus safe removal.
-import { readdirSync, statSync, existsSync, rmSync } from "node:fs"
+import { readdirSync, statSync, existsSync, rmSync, copyFileSync, mkdirSync } from "node:fs"
+import { createRequire } from "node:module"
+// M40.A5: fingerprint helpers were require()'d lazily; bare require throws
+// under Node ESM (M21.D2 dual-runtime). createRequire is the sanctioned
+// pattern (parallel-indexer.ts does the same). No cycle: fingerprint.ts
+// never imports project-registry.ts.
+import { computeDbFingerprint, readStoredFingerprint } from "./fingerprint"
+const require = createRequire(import.meta.url)
 import path from "node:path"
 import { bbProjectsDir } from "../util/bb-data-dir"
 import { BrainDatabase } from "../brain/database"
@@ -142,7 +149,7 @@ export interface AdoptionCandidate {
  * no recoverable fingerprint.
  */
 export function findAdoptableDb(checkoutFingerprint: string): AdoptionCandidate | null {
-  const { computeDbFingerprint, readStoredFingerprint } = require("./fingerprint")
+  // computeDbFingerprint/readStoredFingerprint come from the static import above.
   const dir = bbProjectsDir()
   if (!existsSync(dir)) return null
   for (const id of readdirSync(dir)) {
@@ -206,7 +213,6 @@ export function adoptProject(fromId: string, toId: string, newPath: string): Ado
  */
 export function importDbFile(dbFilePath: string, toId: string, newPath: string,
                              opts: { fromId?: string; dropSource?: boolean } = {}): AdoptResult {
-  const { copyFileSync, mkdirSync } = require("node:fs")
   if (!/^[0-9a-f]{40}$/.test(toId)) {
     return { adopted: false, toId, reason: "invalid project id" }
   }

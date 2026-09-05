@@ -57,6 +57,39 @@ async function cmdIndex(
   const { maybeRunFirstRunSetup } = await import("../setup/setup-wizard")
   await maybeRunFirstRunSetup({ noSetup: opts.noSetup === true })
   const pid = getProjectId(abs)
+  // M40.A5: executable semantics matrix (docs/m40/PLAN.md "bb index flag
+  // semantics matrix"). The legal-combination whitelist is the source of
+  // truth: every listed combo maps to defined behavior, ANY combination not
+  // on the list is rejected pre-run — a future flag can never silently
+  // create an undefined combo. Rejection messages are actionable.
+  {
+    type Flags = { force: boolean; changed: boolean; resume: boolean; post: boolean; skipPost: boolean; file: boolean; imp: boolean }
+    const f: Flags = {
+      force: opts.force === true,
+      changed: opts.changed === true,
+      resume: opts.resume === true,
+      post: opts.post === true,
+      skipPost: opts.skipPostProcessing === true,
+      file: opts.file != null,
+      imp: opts.import != null,
+    }
+    const LEGAL: Array<{ when: (x: Flags) => boolean; behavior: string }> = [
+      { when: (x) => !x.force && !x.changed && !x.resume && !x.post && !x.skipPost && !x.file && !x.imp, behavior: "full index + all post-processing" },
+      { when: (x) => x.changed && !x.force && !x.resume && !x.post && !x.skipPost && !x.file && !x.imp, behavior: "incremental parse + bounded post-pass" },
+      { when: (x) => x.resume && !x.force && !x.changed && !x.post && !x.skipPost && !x.file && !x.imp, behavior: "incremental from checkpoint + bounded post-pass" },
+      { when: (x) => x.post && !x.force && !x.changed && !x.resume && !x.skipPost && !x.file && !x.imp, behavior: "no parse; re-run 5 derived phases only" },
+      { when: (x) => x.skipPost && !x.force && !x.changed && !x.resume && !x.post && !x.file && !x.imp, behavior: "parse+store only; derived data deferred (bb index --post to finish)" },
+      { when: (x) => x.file && !x.force && !x.changed && !x.resume && !x.post && !x.skipPost && !x.imp, behavior: "single-file reindex + scoped post-pass" },
+      { when: (x) => x.imp && !x.force && !x.changed && !x.resume && !x.post && !x.skipPost && !x.file, behavior: "adopt DB, then incremental top-up" },
+      { when: (x) => x.force && !x.changed && !x.resume && !x.post && !x.skipPost && !x.file && !x.imp, behavior: "wipe + full index + full post-processing" },
+    ]
+    if (!LEGAL.some((l) => l.when(f))) {
+      const active = Object.entries(f).filter(([, v]) => v).map(([k]) => `--${k === "skipPost" ? "skip-post-processing" : k === "imp" ? "import" : k}`).join(" ")
+      console.error(`✗ conflicting bb index options: ${active || "(none)"}\n  This combination has no defined behavior. See the semantics matrix: bb index --help, docs/m40/PLAN.md\n  Remediations: --force alone rebuilds everything; --post alone re-runs derived-data phases; --changed/--resume alone run the bounded pass.`)
+      process.exitCode = 1
+      return
+    }
+  }
   // M40.A1: standalone post-processing — re-runs the five heavy phases +
   // integrity check WITHOUT re-parsing. The remediation for stale derived
   // data after --changed/--resume/agent edits (those paths defer it by design).
@@ -134,7 +167,14 @@ async function cmdIndex(
   const t = Date.now()
   const indexOpts: Parameters<typeof indexProjectParallel>[2] = { onProgress: (s) => {} }
   if (opts.skipPostProcessing) indexOpts.skipPostProcessing = true
-  if (opts.file) indexOpts.files = [opts.file]
+  if (opts.file) {
+    indexOpts.files = [opts.file]
+    // M40.A5 (matrix row: "--file <p> → single-file reindex + scoped post-pass"):
+    // incremental mode scopes the derived pass to this file. Unchanged files
+    // still skip (the mtime/size check applies to overrides too) → honest
+    // "skipped-unchanged".
+    indexOpts.isIncremental = true
+  }
   if (opts.changed) indexOpts.isIncremental = true
   // M23.P3: right after adoption the checkout is unchanged relative to the
   // adopted index (the move preserves mtimes), so top up incrementally instead
@@ -230,13 +270,62 @@ async function cmdIndex(
   }
 }
 
-async function cmdSearch(query: string, opts: { dir?: string; limit?: number; language?: string }) {
+async function cmdSearch(query: string, opts: { dir?: string; limit?: number; language?: string; mode?: string; filePath?: string; symbolName?: string }) {
   const dir = opts.dir ? requireDir(opts.dir) : process.cwd()
   const pid = getProjectId(dir)
   const dbPath = BrainDatabase.getDbPath(pid)
   if (!existsSync(dbPath)) {
     console.error(`✗ no index for ${dir}. Run: bb index "${dir}"`)
     process.exit(1)
+  }
+  // M40.A7: --mode routes through the REAL bb_search MCP handler (same code
+  // path, same freshness envelope) — CLI/MCP parity by construction. Default
+  // mode keeps the original symbols text rendering.
+  // M40.A9/A7 negative-case fix: an UNKNOWN --mode value must be rejected
+  // (the MCP schema rejects it too) — silently falling back to the default
+  // listing hid the user's intent and broke CLI/MCP surface parity.
+  const KNOWN_MODES = new Set(["content", "symbol", "file"])
+  if (opts.mode !== undefined && !KNOWN_MODES.has(opts.mode)) {
+    console.error(`✗ unknown search mode "${opts.mode}" (known: content, symbol, file; omit --mode for the symbols listing)`)
+    process.exit(1)
+  }
+  const mode = opts.mode ?? "symbols"
+  if (mode !== "symbols") {
+    const { createToolHandlers } = await import("../mcp/tool-handlers")
+    const handler = createToolHandlers()["bb_search"]
+    const args: any = mode === "file"
+      ? { mode: "file", filePath: opts.filePath ?? query }
+      : mode === "symbol"
+        ? { mode: "symbol", symbolName: opts.symbolName ?? query, filePath: undefined }
+        : { mode: "content", query, limit: opts.limit ?? 15, language: opts.language }
+    const res = await handler(args, { projectId: pid, projectPath: dir })
+    if (res.isError) {
+      console.error(res.content.map((c: any) => c.text).join("\n"))
+      process.exitCode = 1
+      return
+    }
+    const parsed = JSON.parse(res.content[0].text)
+    if (mode === "content") {
+      for (const r of parsed.results ?? []) {
+        const stale = r.stale ? " ⚠stale" : ""
+        console.log(`  ${path.posix.basename(String(r.fileId ?? r.file ?? ""))}:${r.line ?? "?"} — ${String(r.snippet ?? r.text ?? "").split("\n")[0].slice(0, 120)}${stale}`)
+      }
+      const env = parsed.freshness ?? {}
+      console.log(`\n${parsed.total} results${parsed.staleCount ? ` (${parsed.staleCount} stale)` : ""}${env.stale != null ? ` | freshness: ${env.fresh} fresh / ${env.stale} stale / ${env.missing} missing` : ""}${parsed.staleCount ? ` — ${FRESHNESS_REMEDIATION.dir}` : ""}`)
+    } else if (mode === "symbol") {
+      for (const m of parsed.matches ?? []) {
+        const stale = m.stale ? " ⚠stale" : ""
+        console.log(`  ${m.name} [${m.type}] (${m.language ?? ""}, ${m.fileId ?? m.file ?? ""}:${m.line ?? "?"})${stale}`)
+      }
+      const env = parsed.freshness ?? {}
+      if (env.stale != null) console.log(`\nfreshness: ${env.fresh} fresh / ${env.stale} stale / ${env.missing} missing — ${env.remediation ?? ""}`)
+      if ((parsed.matches ?? []).length === 0) console.log(`no results for "${opts.symbolName ?? query}"`)
+    } else {
+      console.log(`${parsed.file} (${parsed.language})${parsed.truncated ? " [truncated]" : ""}${parsed.stale ? " ⚠stale" : ""}\n\n${parsed.content}`)
+      const env = parsed.freshness ?? {}
+      if (env.stale != null) console.log(`\nfreshness: ${env.fresh} fresh / ${env.stale} stale / ${env.missing} missing — ${env.remediation ?? ""}`)
+    }
+    return
   }
   const results: any = await BrainTools.searchCode(pid, query, {
     maxResults: opts.limit ?? 15,
@@ -337,7 +426,7 @@ async function cmdStatus(dir: string | undefined) {
   console.log(`  db: ${BrainDatabase.getDbPath(pid)}`)
 }
 
-async function cmdHealth(dir: string | undefined, opts: { refresh?: boolean; force?: boolean; wait?: boolean; complete?: boolean; integrity?: boolean; sampleSize?: number }) {
+async function cmdHealth(dir: string | undefined, opts: { refresh?: boolean; force?: boolean; wait?: boolean; complete?: boolean; integrity?: boolean; sampleSize?: number; verboseConfig?: boolean }) {
   const abs = dir ? requireDir(dir) : process.cwd()
   const pid = getProjectId(abs)
   const dbPath = BrainDatabase.getDbPath(pid)
@@ -352,6 +441,7 @@ async function cmdHealth(dir: string | undefined, opts: { refresh?: boolean; for
     freshness: opts.complete === true ? "complete" : "sampled",
     sampleSize: opts.sampleSize,
     integrity: opts.integrity === true,
+    verbose: opts.verboseConfig === true,
   })
   console.log(formatUnifiedHealth(report))
   if (report.warnings.some((w) => w.severity === "error")) process.exitCode = 1
@@ -421,11 +511,11 @@ export async function runCli(argv: string[]): Promise<void> {
     .argument("[dir]", "project directory (default: current directory)")
     .option("--force", "wipe the existing index and rebuild")
     .option("--no-setup", "skip the first-run embedding setup prompt")
-    .option("--skip-post-processing", "parse + store only; defer relationship resolution/enrichment/gravity/taint/health")
-    .option("--post", "re-run relationship/enrichment/gravity/taint/health phases only — no re-parse (M40.A1 remediation for stale derived data)")
-    .option("--file <path>", "reindex a single file's symbols + relationships")
-    .option("--changed", "reindex only files changed since the last index")
-    .option("--resume", "continue from an interrupted run's checkpoint (incremental: only missing/changed files)")
+    .option("--skip-post-processing", "parse + store only; SKIP relationship resolution/enrichment/gravity/taint/health (derived data goes stale until: bb index --post)")
+    .option("--post", "re-run relationship/enrichment/gravity/taint/health phases only — no re-parse (remediation for stale derived data after --changed/--resume/agent edits)")
+    .option("--file <path>", "reindex a single file's symbols + relationships (runs a scoped derived-data pass for that file)")
+    .option("--changed", "reindex only files changed since the last index (runs the bounded derived-data pass for touched files — relationships stay current)")
+    .option("--resume", "continue from an interrupted run's checkpoint (incremental: only missing/changed files; runs the bounded derived-data pass)")
     .option("--import <db>", "adopt an existing brain.db file (re-home a moved project's index)")
     .addHelpText("after", `
 Examples:
@@ -515,11 +605,15 @@ Examples:
 
   program
     .command("search")
-    .description("search the index")
-    .argument("<query>", "symbol name or fragment")
+    .description("search the index (modes: symbols [default], content, symbol, file — parity with the MCP bb_search tool)")
+    .argument("<query>", "query text; in file mode, the file path to print")
+    .option("--mode <mode>", "retrieval mode: symbols (default), content, symbol, or file")
+    .option("--file-path <path>", "file target for --mode file (overrides the positional query)")
+    .option("--symbol-name <name>", "exact symbol name for --mode symbol (overrides the positional query)")
     .option("--dir <dir>", "project directory (default: cwd)")
     .option("--limit <n>", "max results", "15")
     .option("--language <lang>", "filter by language")
+    .addHelpText("after", `\nExamples:\n  $ bb search handleRequest                 # symbol listing (default)\n  $ bb search --mode content "findUser("    # content matches with snippets\n  $ bb search --mode symbol --symbol-name handleRequest\n  $ bb search --mode file src/app.ts        # print an indexed file's content\n`)
     .action(async (query: string, opts: any) => {
       await cmdSearch(query, { ...opts, limit: parseInt(opts.limit, 10) })
     })
@@ -534,6 +628,7 @@ Examples:
     .option("--complete", "check freshness for all files (not just a sample)")
     .option("--integrity", "run the 12-point index integrity check")
     .option("--sample-size <n>", "freshness sample size (default: 200)", "200")
+    .option("--verbose-config", "show effective embedding config + per-field source (M40.A8)")
     .action(async (dir: string | undefined, opts: any) => {
       await cmdHealth(dir, { ...opts, sampleSize: parseInt(opts.sampleSize, 10) })
     })
