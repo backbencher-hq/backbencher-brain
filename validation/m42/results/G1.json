@@ -1,0 +1,32 @@
+{
+  "issue": "M42.G1",
+  "code": "G1",
+  "milestone": "M42",
+  "status": "known-gap",
+  "checks": 25,
+  "passed": 25,
+  "failed": 0,
+  "negativeCases": 7,
+  "currentCommit": "7f4cd46818e152222dea881dd548e9e9b03d8223",
+  "workingTreeRelevantChanges": [
+    "docs/IDE-HONESTY-CONTRACT.md",
+    "script/m42/verify-governance.ts"
+  ],
+  "verifierCommand": "npx tsx script/m42/verify-governance.ts",
+  "evidenceFile": "G1.json",
+  "generatedAt": "2026-09-05T02:30:31.775Z",
+  "ledger": "validation/m42/results/manifest.json",
+  "interactionBudgets": {
+    "documentHighlightP95Ms": 25,
+    "enrichmentReadOverheadP95Ms": 5,
+    "hoverP95Ms": 50,
+    "hubOpenP95Ms": 300
+  },
+  "m29Bar": {
+    "gateExit": 0
+  },
+  "limitations": [
+    "This gate validates governance metadata, mutation response, and the M29 bar; it does not verify the hover features themselves (H1–H6 own those).",
+    "A run with relevant uncommitted M42 files is recorded as known-gap; verified status requires a clean relevant tree."
+  ]
+}

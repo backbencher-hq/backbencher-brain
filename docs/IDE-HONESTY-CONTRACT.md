@@ -1,9 +1,9 @@
 # IDE Honesty Contract — Vocabulary, Claim Levels, and Lie Catchers
 
 Status: **RATIFIED — this document governs all Backbencher IDE program work
-(milestones M24–M29). Every IDE issue, evidence file, commit message, and
-summary MUST comply with it. No exception without a written amendment in this
-file.**
+(milestones M24–M29, amended for M42+ by §12). Every IDE issue, evidence file,
+commit message, and summary MUST comply with it. No exception without a
+written amendment in this file.**
 
 Sibling of `docs/M14-HONESTY-CONTRACT.md` (analyzer layer). Where M14 governs
 what the index claims, this contract governs what the **user-facing IDE
@@ -25,8 +25,8 @@ emit a verdict, and every user-visible claim must trace to machine-emitted
 evidence.
 
 Scope: `src/lsp/`, `ide/` (extension hosts, webviews), LSP protocol surface,
-`script/m24/` … `script/m29/`, `validation/m24/` … `validation/m29/`, and all
-IDE program docs.
+`script/m24/` … `script/m29/`, `script/m42/`, `validation/m24/` …
+`validation/m29/`, `validation/m42/`, and all IDE program docs.
 
 ## 1. Vocabulary rules for IDE claims
 
@@ -213,8 +213,42 @@ Budgets and claim levels are OS-scoped. Rules:
    M25 extension gate — this repository's own failure history (home-dir
    nondeterminism, path-separator bugs) is the standing justification.
 
+## 12. Hover Interaction Rules (M42 amendment, ratified 2026-09-05)
+
+M42 makes the hover interactive. Interaction multiplies the ways a surface
+can lie, so these rules are contract, gated from M42.G1 onward. Scope:
+`src/lsp/`, `ide/vscode/src/`, `script/m42/`, `validation/m42/`.
+
+1. **Nothing unclickable.** A hover, hub, or graph element that names a
+   symbol, file, or usage without a working navigation target to it is a
+   defect, not a limitation. Every navigation target must equal an
+   index-stored location (differential-checked); a guessed link is a lie.
+2. **Stale is visible everywhere.** Every interactive surface (highlights,
+   hover body sections, hub, postMessage reveals) carries the staleness
+   marker with its claim level. A stale render labeled stale is honest; a
+   stale render that looks fresh is a violation.
+3. **Enrichment is labeled as enrichment.** Role, pattern, layerFlow,
+   criticality, frequency are inference-layer annotations from
+   `brain_relationship.metadata` (M40 lane's enrichment pass). They render
+   with their inference origin and never at parser-fact tier. Absence
+   (un-enriched rows) is declared, never fabricated, never upgraded.
+4. **The complement stance holds.** No completion, no diagnostics, no rename
+   (§7 unchanged). Interaction adds understanding, not another linter.
+5. **The hub is generated, not hand-drawn.** Hub list/tree rendering extends
+   the ONE renderer core (§6 UI mutation gates apply to it); per-IDE forks
+   of the hub renderer are banned.
+6. **Every editor leg tests the wake-up path.** The M25 lesson (an extension
+   that never activated passed every activated-path test): an M42 editor leg
+   that does not begin from a freshly-activated extension is invalid
+   evidence.
+7. **Declared interaction budgets** (gated like §3): document highlight p95
+   ≤ 25 ms; enrichment read adds ≤ 5 ms to hover p95 (hover stays ≤ 50 ms);
+   hub open (query + render) p95 ≤ 300 ms on wave-1 fixture scale.
+
 ## 11. Standing rules
 
+0. Section numbering note: §12 was ratified after §11; the numbering is
+   append-only history, not reading order.
 1. Every bug class found anywhere becomes a permanent gate before its fix
    counts as landed (F7 rule, inherited).
 2. PENDING cells are work items; silent gaps are violations.
