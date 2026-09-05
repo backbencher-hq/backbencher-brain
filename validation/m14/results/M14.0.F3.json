@@ -74,7 +74,7 @@
     },
     {
       "description": "go adversarial fixtures",
-      "detail": "3/3 fixtures pass",
+      "detail": "4/4 fixtures pass",
       "id": "fixtures-go",
       "status": "pass"
     },
@@ -128,8 +128,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "65bc4d7c8f19eea8f3fde24652437dd93f43e348",
-  "committedAt": "2026-09-05T23:31:03+02:00",
+  "commit": "7d3f986e73c9207b5abf7c566e77770171ad6b3d",
+  "committedAt": "2026-09-06T00:45:24+02:00",
   "data": {
     "details": [
       {
@@ -1543,6 +1543,11 @@
         "problems": []
       },
       {
+        "fixture": "go/framework-detection",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "go/implements-params",
         "ok": true,
         "problems": []
@@ -1637,7 +1642,7 @@
       },
       "go": {
         "fail": 0,
-        "pass": 3
+        "pass": 4
       },
       "groovy": {
         "fail": 0,

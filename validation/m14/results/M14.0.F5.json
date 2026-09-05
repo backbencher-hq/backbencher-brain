@@ -128,8 +128,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "65bc4d7c8f19eea8f3fde24652437dd93f43e348",
-  "committedAt": "2026-09-05T23:31:03+02:00",
+  "commit": "7d3f986e73c9207b5abf7c566e77770171ad6b3d",
+  "committedAt": "2026-09-06T00:45:24+02:00",
   "data": {
     "corpusPins": {
       "Clyde": "8fec41dd6ee03f863643aa958425c8bb4a6673ae",
@@ -163,9 +163,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 9,
         "perf": {
-          "avgMsPerFile": 121,
+          "avgMsPerFile": 99.3,
           "loadAvgRetried": true,
-          "maxMsPerFile": 4250.7,
+          "maxMsPerFile": 3237.5,
           "samplesTimed": 60
         },
         "samples": [
@@ -1086,9 +1086,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 54.2,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 697.3,
+          "avgMsPerFile": 55.1,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 579.2,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1105,9 +1105,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 17.4,
+          "avgMsPerFile": 14,
           "loadAvgRetried": true,
-          "maxMsPerFile": 209.8,
+          "maxMsPerFile": 216,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1124,9 +1124,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 24.7,
+          "avgMsPerFile": 20.8,
           "loadAvgRetried": true,
-          "maxMsPerFile": 1151.5,
+          "maxMsPerFile": 779.9,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1134,22 +1134,22 @@
         "unexplainedInAnalyzer": 0
       },
       "go": {
-        "analyzerEdges": 815,
+        "analyzerEdges": 896,
         "coveragePct": 100,
-        "coveredByAnalyzer": 822,
-        "explainableByTree": 815,
+        "coveredByAnalyzer": 904,
+        "explainableByTree": 896,
         "fabricationPct": 0,
         "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 11.9,
+          "avgMsPerFile": 12,
           "loadAvgRetried": true,
-          "maxMsPerFile": 82.8,
+          "maxMsPerFile": 100.5,
           "samplesTimed": 60
         },
         "samples": [],
-        "treeTruthEdges": 822,
+        "treeTruthEdges": 904,
         "unexplainedInAnalyzer": 0
       },
       "groovy": {
@@ -1162,9 +1162,9 @@
         "heuristicUnexplained": 27,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 4.2,
+          "avgMsPerFile": 2.8,
           "loadAvgRetried": true,
-          "maxMsPerFile": 26.3,
+          "maxMsPerFile": 21,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1181,9 +1181,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 8.5,
-          "loadAvgRetried": false,
-          "maxMsPerFile": 202.2,
+          "avgMsPerFile": 5,
+          "loadAvgRetried": true,
+          "maxMsPerFile": 227.3,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1200,9 +1200,9 @@
         "heuristicUnexplained": 76,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 3.5,
+          "avgMsPerFile": 2.2,
           "loadAvgRetried": true,
-          "maxMsPerFile": 35.2,
+          "maxMsPerFile": 25.3,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1219,9 +1219,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 2.9,
+          "avgMsPerFile": 1.9,
           "loadAvgRetried": true,
-          "maxMsPerFile": 40.2,
+          "maxMsPerFile": 34.2,
           "samplesTimed": 52
         },
         "samples": [],
@@ -1238,9 +1238,9 @@
         "heuristicUnexplained": 57,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 29.8,
+          "avgMsPerFile": 17.8,
           "loadAvgRetried": true,
-          "maxMsPerFile": 210.3,
+          "maxMsPerFile": 135.9,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1257,9 +1257,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 4.4,
+          "avgMsPerFile": 3.6,
           "loadAvgRetried": true,
-          "maxMsPerFile": 12.6,
+          "maxMsPerFile": 15.2,
           "samplesTimed": 4
         },
         "samples": [],
@@ -1276,9 +1276,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 3,
-          "loadAvgRetried": false,
-          "maxMsPerFile": 70,
+          "avgMsPerFile": 1.2,
+          "loadAvgRetried": true,
+          "maxMsPerFile": 54.4,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1295,9 +1295,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 28.2,
+          "avgMsPerFile": 22.6,
           "loadAvgRetried": true,
-          "maxMsPerFile": 865.9,
+          "maxMsPerFile": 677.9,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1314,9 +1314,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 6,
-          "loadAvgRetried": false,
-          "maxMsPerFile": 51,
+          "avgMsPerFile": 2.5,
+          "loadAvgRetried": true,
+          "maxMsPerFile": 38,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1333,9 +1333,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 9.4,
+          "avgMsPerFile": 9.5,
           "loadAvgRetried": true,
-          "maxMsPerFile": 191.2,
+          "maxMsPerFile": 170.9,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1352,9 +1352,9 @@
         "heuristicUnexplained": 61,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 5.5,
+          "avgMsPerFile": 3.4,
           "loadAvgRetried": true,
-          "maxMsPerFile": 144.2,
+          "maxMsPerFile": 199.1,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1371,9 +1371,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 2.9,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 20.3,
+          "avgMsPerFile": 7,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 252.7,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1390,9 +1390,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 33.8,
+          "avgMsPerFile": 33.6,
           "loadAvgRetried": true,
-          "maxMsPerFile": 637.5,
+          "maxMsPerFile": 574.8,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1409,9 +1409,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 46,
+          "avgMsPerFile": 30.8,
           "loadAvgRetried": true,
-          "maxMsPerFile": 488,
+          "maxMsPerFile": 370.2,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1428,9 +1428,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 9.4,
+          "avgMsPerFile": 5.2,
           "loadAvgRetried": true,
-          "maxMsPerFile": 74.2,
+          "maxMsPerFile": 260.3,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1447,9 +1447,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 28.9,
-          "loadAvgRetried": false,
-          "maxMsPerFile": 478.4,
+          "avgMsPerFile": 14.6,
+          "loadAvgRetried": true,
+          "maxMsPerFile": 301.9,
           "samplesTimed": 60
         },
         "samples": [],
