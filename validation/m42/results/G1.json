@@ -2,19 +2,16 @@
   "issue": "M42.G1",
   "code": "G1",
   "milestone": "M42",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 25,
   "passed": 25,
   "failed": 0,
   "negativeCases": 7,
-  "currentCommit": "7f4cd46818e152222dea881dd548e9e9b03d8223",
-  "workingTreeRelevantChanges": [
-    "docs/IDE-HONESTY-CONTRACT.md",
-    "script/m42/verify-governance.ts"
-  ],
+  "currentCommit": "0b14b7d0fdcda02f85caf16b4432ca9d9ed877a1",
+  "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m42/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-05T02:30:31.775Z",
+  "generatedAt": "2026-09-05T03:10:53.459Z",
   "ledger": "validation/m42/results/manifest.json",
   "interactionBudgets": {
     "documentHighlightP95Ms": 25,
