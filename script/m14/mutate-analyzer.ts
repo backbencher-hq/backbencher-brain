@@ -443,6 +443,13 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => ({ ...s, complexity: undefined })) }),
   },
   {
+    id: "go/drop-framework-detection",
+    language: "go",
+    defectClass: "payload-loss",
+    description: "GOD7 regression: empties detectedFrameworks (framework truth is differential-invisible — deriveGoEdges derives no framework truth, so ONLY the fixture can catch it; rust wave-6 RSD7 learned this exact lesson) — framework-detection fixture's expectFrameworks [gin, net_http, gorilla_mux, grpc] pin catches it",
+    transform: r => ({ ...r, metadata: { ...(r.metadata ?? {}), detectedFrameworks: [] } }),
+  },
+  {
     id: "zig/drop-calls",
     language: "zig",
     defectClass: "relationship-loss",

@@ -159,6 +159,13 @@
         "status": "FIXED",
         "question": "M37 #604: Go's primary construction syntax `Foo{...}` / `&Foo{...}` / `pkg.Foo{...}` emitted NO instantiates \u2014 only NewXxx calls did (65,843 composite literals across go-tools+terraform with zero construction edges). Rust emits instantiates for struct literals, csharp for `new Foo()` \u2014 family parity gap.",
         "resolution": "New analyzeGoCompositeLiteralConstruction emits instantiates (go_composite_literal_construction) sourced to the containing fn/method (\"global\" at package scope) with the literal's type LEAF as target; slice/map/array literals (wrapper type child) and elided element literals (no type child) are skipped. Stored package-scope closures are NOT descended (template, not run at init \u2014 mirrors the package-scope call contract); local closures inside bodies keep the enclosing fn. Oracle mirrored; pinned by relationship-and-payloads (NewShape->Shape, work->Worker composite pins)."
+      },
+      {
+        "id": "GOD7",
+        "status": "FIXED",
+        "node_type": "framework detection (import-path based)",
+        "question": "M37 #604 wave-2 (RSD7 lesson carried from rust wave-6): framework truth is differential-invisible \u2014 deriveGoEdges derives no framework truth \u2014 and NO go fixture pinned detectedFrameworks, so dropping detection could never fail a gate. The go analyzer detects frameworks from canonical import paths only (gin/echo/fiber/net_http/gorilla_mux/grpc/testify \u2014 deterministic, zero code string-matching). Verified on go-tools+terraform (3,924 files): net_http 86, grpc 50, zero false positives. Now fixture-gated: framework-detection.go asserts the EXACT set [gin, net_http, gorilla_mux, grpc] plus constructor-call/composite-literal pins, and mutant go/drop-framework-detection dies.",
+        "ruling": "FIXED \u2014 import-path framework detection is genuine (net_http/grpc hits verified against real imports in go-tools); no false positives on either corpus. Fixture framework-detection.go + 272nd mutant now gate it permanently."
       }
     ]
   }
