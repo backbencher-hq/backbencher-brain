@@ -18,7 +18,15 @@
     "Programming Languages",
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onLanguage:java",
+    "onLanguage:groovy",
+    "onLanguage:kotlin",
+    "onLanguage:scala",
+    "onLanguage:typescript",
+    "onLanguage:javascript",
+    "onLanguage:python"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "configuration": {
