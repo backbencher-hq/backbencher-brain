@@ -596,7 +596,11 @@ const isMain =
   typeof (globalThis as any).Bun !== "undefined"
     ? (import.meta as any).main === true
     : process.argv[1] !== undefined &&
-      (process.argv[1].endsWith("lsp/server.js") || process.argv[1].endsWith("lsp/server.ts"))
+      // Windows argv[1] uses backslashes (…\dist\lsp\server.js) — normalize
+      // so the entry check is separator-independent (found by the E7 win32
+      // CI leg: the server silently exited 0 without starting, 2026-09-05).
+      (process.argv[1].replace(/\\/g, "/").endsWith("lsp/server.js") ||
+        process.argv[1].replace(/\\/g, "/").endsWith("lsp/server.ts"))
 
 if (isMain) {
   const dirIdx = process.argv.indexOf("--dir")
