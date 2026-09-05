@@ -239,6 +239,22 @@ export async function runFeatureAssertions(ctx: AssertionContext, assert: Assert
   assert("L2: hover usage count matches fixture relationship", hover?.data?.usageCount === 1 || hoverText.includes("1 usage"))
   assert("L2: hover provenance labels bb index source", (hover?.provenance?.source ?? "") === "bb_index" || hoverText.includes("_source: bb index"))
   assert("L2: hover carries the evidence tier (honesty contract §2)", hover?.data?.tier !== undefined || hoverText.includes("evidence:"), hoverText.slice(0, 120))
+
+  // --- Rich hover (M42.H2): connected summary + clickable links ---
+  // Derived from FIXTURE_MAIN text — the fixture's one seeded edge is
+  // rel-1: main -> greet, so greeting `greet` must render "called by main"
+  // and an index-backed link to main's declaration (site label = file:line,
+  // 1-based human line).
+  const _fLines = FIXTURE_MAIN.split("\n")
+  const _fMainDeclLine = _fLines.findIndex((l) => l.includes("function main")) + 1 // 1-based display
+  assert("H2: rich hover renders the connected summary (called by main)", hoverText.includes("**connected**: called by"), hoverText.slice(0, 220))
+  assert(
+    "H2: usage link is clickable with an index-backed file:line target",
+    hoverText.includes(`[main — main.ts:${_fMainDeclLine}](command:bb.openUsage?`),
+    hoverText.slice(0, 300),
+  )
+  assert("H2: definition footnote is a link (bb.openDefinition)", hoverText.includes("bb.openDefinition?"), hoverText.slice(0, 200))
+  assert("H2: no show-all-usages link for a single-usage symbol", !hoverText.includes("bb.showAllUsages"), "single usage needs no N-more escape hatch")
   const hoverMiss = unwrap(await transport.request("textDocument/hover", { textDocument: { uri: mainUri }, position: { line: 20, character: 0 } }))
   const missOk = hoverMiss == null || hoverMiss?.contents === null || hoverMiss?.contents?.value === "" || hoverMiss?.contents?.value === undefined
   assert("L2: hover outside index is declared absent", missOk, JSON.stringify(hoverMiss ?? null).slice(0, 200))

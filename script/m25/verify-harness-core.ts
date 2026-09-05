@@ -200,6 +200,37 @@ try {
       }`,
     },
     {
+      // M42.H2 weakened assertion: the connected-summary check replaced by a
+      // constant true — a fixture whose hover carries no connected section
+      // (no relationship rows) then passes the mutated suite where the honest
+      // one fails. Probe mirrors the hover-name mutant: a wrong fixture whose
+      // hover resolves nothing.
+      name: "H2 assertion weakened: connected-summary check removed",
+      from: /assert\("H2: rich hover renders the connected summary \(called by main\)", hoverText\.includes\("\*\*connected\*\*: called by"\), hoverText\.slice\(0, 220\)\)/,
+      to: `assert("H2: rich hover renders the connected summary (called by main)", true)`,
+      probe: `async (mod) => {
+        const { mkdtempSync, writeFileSync } = await import("node:fs")
+        const { tmpdir } = await import("node:os")
+        const path = await import("node:path")
+        const ws = mkdtempSync(path.join(tmpdir(), "mut-h2-ws-"))
+        const data = mkdtempSync(path.join(tmpdir(), "mut-h2-data-"))
+        // WRONG fixture text (no Greeter.greet): the hover resolves nothing,
+        // so an honest connected-summary assertion must fail.
+        writeFileSync(path.join(ws, "main.ts"), "class NotGreeter {}\\n")
+        const t = mod.createStdioTransport({ runtime: "node-source", workspaceDir: ws, dataDir: data })
+        const results = []
+        try {
+          await mod.runFeatureAssertions({ transport: t, workspaceDir: ws }, (n, ok) => results.push({ n, ok }))
+        } catch {
+          await t.dispose().catch(() => {})
+          return false
+        }
+        await t.dispose().catch(() => {})
+        const r = results.find((x) => x.n === "H2: rich hover renders the connected summary (called by main)")
+        return r !== undefined && r.ok === true
+      }`,
+    },
+    {
       // Raised budget: with hover's budget mutated to 5000, a real-world
       // violating sample (400 ms) passes silently — the probe proves the
       // mutated gate reports NO violations where the honest gate reports one.
@@ -263,7 +294,7 @@ try {
   }
   check("G4: all mutants caught", mutantsCaught === mutantsTotal && mutantsTotal > 0, `${mutantsCaught}/${mutantsTotal}`)
 } finally {
-  for (const f of [".mutant-core.1.ts", ".mutant-core.2.ts", ".mutant-core.3.ts", ".probe-core.1.mts", ".probe-core.2.mts", ".probe-core.3.mts"]) {
+  for (const f of [".mutant-core.1.ts", ".mutant-core.2.ts", ".mutant-core.3.ts", ".mutant-core.4.ts", ".probe-core.1.mts", ".probe-core.2.mts", ".probe-core.3.mts", ".probe-core.4.mts"]) {
     try {
       rmSync(path.join(ROOT, "script/m25", f), { force: true })
     } catch {}
