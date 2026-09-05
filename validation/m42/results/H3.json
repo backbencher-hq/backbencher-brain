@@ -1,0 +1,36 @@
+{
+  "issue": "651",
+  "code": "H3",
+  "milestone": "M42",
+  "status": "verified",
+  "checks": 29,
+  "passed": 29,
+  "failed": 0,
+  "failures": [],
+  "verdict": {
+    "realComponentFailures": 0,
+    "mutantsCaught": 5,
+    "mutantsTotal": 5,
+    "ok": true
+  },
+  "negatives": {
+    "planned": 5
+  },
+  "fixture": {
+    "root": "$HOME/backbencher-brain/.tools/m42-h2-fixture",
+    "file": "src/main/java/com/demo/App.java"
+  },
+  "budgets": {
+    "enrichmentReadOverheadP95Ms": 5,
+    "hoverP95Ms": 55
+  },
+  "currentCommit": "8a41ee28c4721a8819e13950d494daf93c18a4a5",
+  "verifierCommand": "npx tsx script/m42/verify-enrichment-surface.ts",
+  "evidenceFile": "H3.json",
+  "generatedAt": "2026-09-05T17:09:13.654Z",
+  "limitations": [
+    "Enrichment presence depends on the index enrichment pass running (bb index runs it); an index built with enrichment disabled would show honest absence.",
+    "Multi-site verb groups render no per-site hover annotation by design (bounded hover); per-edge enrichment always surfaces on graph edges.",
+    "Overhead budget is a pure-layer proxy (2000 cycles); the in-editor 50ms hover budget with an enriched fixture is asserted in the E5 session."
+  ]
+}

@@ -21,6 +21,7 @@
 
 import type { CoreDatabase } from "../brain/database"
 import { edgeLocation } from "./navigation"
+import { enrichmentIsStale, hasDisplayableEnrichment, describeEnrichment, parseEnrichment, type Enrichment } from "./enrichment"
 
 /** A resolved usage site: the OTHER end of an edge touching the hovered
  *  symbol, with the index-stored location (LSP coordinates via P1). */
@@ -40,6 +41,11 @@ export interface RichSite {
   reversed: boolean
   /** confidence as stored (ordering only; tiers render globally) */
   confidence: number | null
+  /** M42.H3: stored enrichment of the relationship row — null when the row
+   *  is un-enriched (declared absence); parsed only, never inferred here. */
+  enrichment: Enrichment | null
+  /** M42.H3: enrichment is stale when computed before the row last changed. */
+  enrichmentStale: boolean
 }
 
 export const MAX_USAGE_LINKS = 3
@@ -112,7 +118,7 @@ export function siteLabel(site: { name: string; path: string; line: number }): s
 export function richSitesForSymbol(raw: CoreDatabase, symbolId: string): RichSite[] {
   const rows = raw
     .prepare(
-      `SELECT r.id, r.relationship_type, r.confidence,
+      `SELECT r.id, r.relationship_type, r.confidence, r.metadata, r.time_updated,
               r.source_symbol_id, r.target_symbol_id,
               ss.name AS src_name, ss.symbol_type AS src_type,
               ss.byte_start AS src_bs, ss.byte_end AS src_be,
@@ -148,6 +154,8 @@ export function richSitesForSymbol(raw: CoreDatabase, symbolId: string): RichSit
     tgt_ls: number | null
     tgt_le: number | null
     tgt_path: string | null
+    metadata: string | null
+    time_updated: number | null
   }>
 
   const sites: RichSite[] = []
@@ -171,6 +179,7 @@ export function richSitesForSymbol(raw: CoreDatabase, symbolId: string): RichSit
     const key = `${loc.path}:${loc.line}:${loc.character}`
     if (seen.has(key)) continue
     seen.add(key)
+    const enrichment = parseEnrichment(row.metadata)
     sites.push({
       name: other.name,
       symbolType: other.type,
@@ -182,6 +191,8 @@ export function richSitesForSymbol(raw: CoreDatabase, symbolId: string): RichSit
       relationshipType: row.relationship_type,
       reversed: incoming,
       confidence: row.confidence,
+      enrichment,
+      enrichmentStale: enrichment === null ? false : enrichmentIsStale(enrichment, row.time_updated),
     })
   }
   return sites
@@ -229,7 +240,18 @@ export function connectedSummarySection(groups: ConnectedGroup[]): string {
       return `[${label}](${openUsageUri(s)})`
     })
     if (overflow > 0) links.push(`+${overflow}`)
-    parts.push(`${group.verb} ${links.join(", ")}`)
+    let groupText = `${group.verb} ${links.join(", ")}`
+    // M42.H3: a single-site verb group whose row carries enrichment annotates
+    // the connection with the stored facts, labeled as index-inferred — never
+    // at parser-fact tier (§12.3). Multi-site groups skip per-site annotations
+    // (bounded hover); the graph/webview surface carries per-edge enrichment.
+    if (group.sites.length === 1 && hasDisplayableEnrichment(group.sites[0]!.enrichment)) {
+      const s = group.sites[0]!
+      const desc = describeEnrichment(s.enrichment!)
+      const staleNote = s.enrichmentStale ? ", stale — row changed after enrichment" : ""
+      groupText += ` · _${desc} (enriched by index${staleNote})_`
+    }
+    parts.push(groupText)
   }
   return `**connected**: ${parts.join("; ")}`
 }

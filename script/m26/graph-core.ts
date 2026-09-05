@@ -189,6 +189,29 @@ function edgeElement(edge: GraphEdgeLike, index: number, dom: GraphDom): GraphDo
   badge.setAttribute("data-badge-confidence", String(edge.confidence))
   badge.textContent = `${tier} · ${edge.confidence}`
   el.appendChild(badge)
+  // M42.H3: enrichment annotation — a distinct chip, never a tier change.
+  // The tier badge above is UNTOUCHED (enrichment is an annotation, not an
+  // evidence class, §12.3). Raw stored fields ride as data attributes; the
+  // chip text is a compact renderer-side read of the same fields.
+  const enr = edge.metadata?.enrichment
+  if (enr && enr.inferredAt !== undefined) {
+    el.addClass("bb-edge-enriched")
+    el.setAttribute("data-enriched", "1")
+    if (enr.role) el.setAttribute("data-enrich-role", enr.role)
+    if (enr.pattern) el.setAttribute("data-enrich-pattern", enr.pattern)
+    if (enr.layerFlow) el.setAttribute("data-enrich-layer", enr.layerFlow)
+    if (enr.criticality) el.setAttribute("data-enrich-criticality", enr.criticality)
+    if (enr.frequency) el.setAttribute("data-enrich-frequency", enr.frequency)
+    const chip = dom.create("span")
+    chip.addClass("bb-edge-enrichment")
+    const bits: string[] = []
+    if (enr.role) bits.push(`role ${enr.role}`)
+    if (enr.layerFlow) bits.push(enr.layerFlow)
+    if (enr.criticality) bits.push(`${enr.criticality} criticality`)
+    if (enr.frequency) bits.push(enr.frequency)
+    chip.textContent = `⌾ ${bits.join(" · ")}`
+    el.appendChild(chip)
+  }
   return el
 }
 
@@ -217,6 +240,22 @@ export function renderLegend(dom: GraphDom): GraphDomElement {
     item.appendChild(meaning)
     legend.appendChild(item)
   }
+  // M42.H3: the enrichment annotation legend — vocabulary EXTENDED, tiers
+  // unchanged. Enrichment chips (⌾) are index-inferred annotations; they are
+  // never an evidence class and never change the tier badge.
+  const enrTitle = dom.create("span")
+  enrTitle.addClass("bb-legend-title")
+  enrTitle.textContent = "Enrichment annotations:"
+  legend.appendChild(enrTitle)
+  const enrItem = dom.create("div")
+  enrItem.addClass("bb-legend-item")
+  enrItem.addClass("bb-legend-enriched")
+  enrItem.setAttribute("data-legend-enrichment", "1")
+  const enrMeaning = dom.create("span")
+  enrMeaning.addClass("bb-legend-meaning")
+  enrMeaning.textContent = "⌾ role/pattern/layer/criticality — inferred by the index enrichment pass (M40); an annotation, never an evidence tier."
+  enrItem.appendChild(enrMeaning)
+  legend.appendChild(enrItem)
   return legend
 }
 

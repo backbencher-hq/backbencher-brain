@@ -139,10 +139,19 @@ async function main(): Promise<void> {
   // --- P3: legend complete with documented meanings ---------------------------
   const legend = dom.el.find("bb-legend")
   check("P3: legend ships with every graph", legend !== null)
-  const legendTiers = legend ? legend.findAll("bb-legend-item").map((i) => i.find("bb-legend-swatch")?.attrs["data-legend-tier"]) : []
+  // M42.H3 vocabulary extension: tier rows (the ones with a swatch) are still
+  // exactly the five tiers — the enrichment annotation row is a SEPARATE
+  // legend item (data-legend-enrichment) and never a tier.
+  const legendItems = legend ? legend.findAll("bb-legend-item") : []
+  const legendTiers = legendItems.map((i) => i.find("bb-legend-swatch")?.attrs["data-legend-tier"]).filter(Boolean)
   check("P3: legend lists all five tiers", JSON.stringify([...(legendTiers as string[])].sort()) === JSON.stringify([...(core.EDGE_TIERS as readonly string[])].sort()))
-  const meanings = legend ? legend.findAll("bb-legend-meaning").map((m) => m.textContent) : []
-  check("P3: legend meanings are the documented UI terms", meanings.length === 5 && meanings.every((m) => Object.values(core.TIER_MEANINGS as Record<string, string>).some((v) => m.endsWith(v))))
+  const meanings = legendItems.flatMap((i) => {
+    const m = i.find("bb-legend-meaning")?.textContent
+    return m ? [m] : []
+  })
+  const tierMeanings = meanings.filter((m) => Object.values(core.TIER_MEANINGS as Record<string, string>).some((v) => m.endsWith(v)))
+  check("P3: legend meanings are the documented UI terms", tierMeanings.length === 5 && tierMeanings.length === (legendItems.length - 1))
+  check("P3: enrichment annotation row present and distinct (M42.H3)", legendItems.length === 6 && legendItems.some((i) => i.attrs["data-legend-enrichment"] === "1"))
 
   // --- P4: hover gloss applies the same rule (threshold drift gate) ------------
   const glossSource = readFileSync(HOVER_GLOSS, "utf8")
@@ -230,7 +239,13 @@ async function main(): Promise<void> {
           })
           break
         case mutant.name.startsWith("M3"):
-          detected = legendItems.length === 4 // a tier missing from the legend
+          // A tier missing from the legend: with the M42.H3 enrichment row the
+          // legend has 6 items — dropping a tier leaves 5 (4 tier swatches +
+          // the enrichment row). Detect by tier-swatch count, never by total.
+          // NOTE: find() returns null for the swatch-less enrichment row — a
+          // `!== undefined` filter would count it (null !== undefined is true),
+          // so the filter must be truthiness-based.
+          detected = legendItems.filter((i) => i.find("bb-legend-swatch") !== null).length === 4
           break
         case mutant.name.startsWith("M4"):
           detected = (m.tierForEdge as (e: any) => string)({ relationshipType: "calls", confidence: 0.5, metadata: undefined }) === "structural"
