@@ -51,8 +51,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
     // unrelated files.
     const usesSeen = new Set<string>()
     let fileDecisions = 0
-    const qcBySource = new Map<string, string[]>()
-    const classVirtuals = new Map<string, Map<string, string>>()
+    const classVirtuals = new Map<string, Map<string, string[]>>()
     const pendingOverrides: Array<{ cls: string; method: string; params: string }> = []
     const classBases = new Map<string, string[]>()
 
@@ -134,14 +133,46 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
 
       if (type === "using_declaration") {
-        const name = this.childText(node, "identifier") || node.text.replace("using", "").replace(";", "").trim()
-        if (name && name !== "namespace") {
-          imports.push({
-            source: name,
-            imported: [],
-            range: this.nodeToRange(node),
-            isTypeOnly: false,
-          })
+        // CPPD12 (deep review 2026-09-05): using-declarations emitted the
+        // LEGACY {source, imported} import shape — the exact defect class the
+        // C wave fixed for #include ("the persister reads imp.module and
+        // DROPS imports with none"). `using namespace std;` and `using
+        // std::vector;` were therefore NEVER persisted to brain_import.
+        // Aligned to the family {module, items} contract (rust use:
+        // module = qualified path, items = imported names; namespace form =
+        // wildcard). Only FILE/NAMESPACE-scope usings are module imports — a
+        // class-body `using B::f;` is a member RE-EXPORT (brings an inherited
+        // member into the derived scope), not a module dependency, and stays
+        // silent (no fabricated import edge).
+        const inClass =
+          parentContext &&
+          (parentContext.kind === ASTEngine.SymbolKind.Class ||
+            parentContext.kind === ASTEngine.SymbolKind.Struct ||
+            parentContext.kind === ASTEngine.SymbolKind.Method ||
+            parentContext.kind === ASTEngine.SymbolKind.Function ||
+            parentContext.kind === ASTEngine.SymbolKind.Constructor)
+        if (!inClass) {
+          const targetNode = this.findChild(node, "qualified_identifier") || this.findChild(node, "identifier")
+          const raw = targetNode?.text ?? ""
+          const isNamespaceForm = node.text.indexOf("using namespace") !== -1
+          if (raw) {
+            const segs = raw.split("::").filter(Boolean)
+            imports.push({
+              module: raw,
+              items: isNamespaceForm ? ["*"] : segs.length > 1 ? [segs[segs.length - 1]] : [raw],
+              range: this.nodeToRange(node),
+              metadata: { isImport: true, isUsingDeclaration: true, isNamespaceImport: isNamespaceForm },
+            })
+            relationships.push({
+              // File-level dependency statement → source "global" (same
+              // convention as the #include references edge above).
+              source: "global",
+              target: raw,
+              type: ASTEngine.RelationshipType.References,
+              confidence: 0.9,
+              metadata: { isUsingDeclaration: true, isImport: true, relationshipType: "using_dependency" },
+            })
+          }
         }
       } else if (type === "alias_declaration") {
         // `using Point = std::pair<double, double>;` — the modern typedef.
@@ -511,7 +542,15 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
             const paramsNode = decl2?.childForFieldName("parameters") ?? null
             const normParams = this.buildParamSig(paramsNode)
             const sigs = classVirtuals.get(parentContext.name) ?? new Map()
-            sigs.set(funcName, normParams)
+            // CPPD11 (deep review 2026-09-05): overloaded virtuals — a base
+            // declaring BOTH `virtual void f(int)` and `virtual void f(double)`
+            // only ever matched the LAST-registered signature, so the other
+            // overload's override was silently dropped (probe: Derived
+            // overriding f(int) AND f(double) emitted one edge). Registry is
+            // now per-name signature LIST.
+            const prev = sigs.get(funcName) ?? []
+            if (!prev.includes(normParams)) sigs.set(funcName, [...prev, normParams])
+            else sigs.set(funcName, prev)
             classVirtuals.set(parentContext.name, sigs)
             if ((classBases.get(parentContext.name)?.length ?? 0) > 0) {
               pendingOverrides.push({ cls: parentContext.name, method: funcName, params: normParams })
@@ -523,7 +562,16 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (type === "function_definition") {
             newContext = {
               node,
-              name: funcName,
+              // CPPD9 (deep review 2026-09-05): the scope NAME must match the
+              // emitted symbol name. Constructors were pushed as the raw
+              // class name (`Engine`) while their symbol was normalized to
+              // "constructor" — so ctor-body calls emitted source=Engine (the
+              // Class symbol) instead of the Constructor symbol, and the
+              // qualified_calls payload never reached the constructor. The
+              // family contract (groovy/java/csharp) scopes ctors under the
+              // normalized "constructor" name. Class-scope (non-ctor) funcs
+              // keep funcName == symName already.
+              name: symName,
               kind,
               visibility: "public",
               isTemplate: false,
@@ -652,29 +700,95 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           let targetName = funcNode.text
           let qualifiedName = targetName
 
+          // CPPD13 (deep review 2026-09-05, fmt corpus: 855 -> 214 leaky
+          // targets): the CALLEE LEAF is the bare name — template args
+          // (m<int>), nested `::` chains (`std::numeric_limits<X>::lowest`),
+          // and defense-parentheses (`(X)()` — the Windows min/max idiom)
+          // must all unwrap to the innermost identifier. Recursive descent:
+          //  template_function/method  -> first named child (bare name)
+          //  qualified_identifier      -> last named child (repeat for
+          //                              nested chains)
+          //  parenthesized_expression  -> inner expression (then unwrap)
+          //  field_expression          -> field member (leaf or template)
+          // Stops at identifier / field_identifier / type_identifier /
+          // operator_name / destructor_name. The FULL qualified path stays in
+          // qualifiedName (qc payload) — only the edge target is the leaf.
+          const calleeLeaf = (n: any): string => {
+            let cur = n
+            let guard = 0
+            while (cur && guard++ < 8) {
+              const t = cur.type
+              if (t === "field_expression") {
+                const f = cur.childForFieldName("field") ?? cur.namedChild(cur.namedChildCount - 1)
+                if (!f) return cur.text
+                cur = f
+                continue
+              }
+              if (t === "template_function" || t === "template_method") {
+                const base = cur.namedChild(0)
+                if (!base) return cur.text
+                cur = base
+                continue
+              }
+              // `loc.template get<T>()` / `u.template m<int>()` — the
+              // `template` disambiguator keyword makes the member a
+              // dependent_name wrapping the real template_method.
+              if (t === "dependent_name" && cur.namedChildCount >= 1) {
+                const inner = cur.namedChild(0)
+                if (inner && (inner.type === "template_method" || inner.type === "template_function" || inner.type === "identifier" || inner.type === "field_identifier")) {
+                  cur = inner
+                  continue
+                }
+                return cur.text
+              }
+              if (t === "qualified_identifier" && cur.namedChildCount >= 1) {
+                cur = cur.namedChild(cur.namedChildCount - 1)
+                continue
+              }
+              if (t === "parenthesized_expression" && cur.namedChildCount >= 1) {
+                cur = cur.namedChild(0)
+                continue
+              }
+              if (t === "identifier" || t === "field_identifier" || t === "type_identifier" ||
+                  t === "operator_name" || t === "destructor_name" || t === "namespace_identifier") {
+                return cur.text
+              }
+              return cur.text
+            }
+            return cur?.text ?? ""
+          }
           if (funcNode.type === "field_expression") {
             // obj.method() or ptr->method()
             const field = funcNode.childForFieldName("field")
             const obj = funcNode.childForFieldName("argument") || funcNode.namedChild(0)
             if (field) {
-              targetName = field.text
+              targetName = calleeLeaf(field)
               qualifiedName = obj ? `${obj.text}.${field.text}` : field.text
             }
-          } else if (funcNode.type === "qualified_identifier") {
-            // ns::func() or Class::method()
-            const nameNode = funcNode.namedChild(funcNode.namedChildCount - 1)
-            if (nameNode) targetName = nameNode.text
+          } else {
+            targetName = calleeLeaf(funcNode)
             qualifiedName = funcNode.text
-          } else if (funcNode.type === "template_function") {
-            // func<T>()
-            const baseNode = funcNode.namedChild(0)
-            if (baseNode) targetName = baseNode.text
-            qualifiedName = targetName
           }
 
           const source = parentContext?.name || "global"
 
-          if (!targetName.startsWith("operator")) {
+          // CPPD13 (deep review 2026-09-05, fmt): a call whose CALLEE is
+          // itself a call_expression is a functor-temporary invocation
+          // (`std::forward<F>(f)(args)`, `Op<int>()(a, b)`) — the effective
+          // callee is the anonymous temporary's operator(), which has no
+          // named target (the CPP-D9 operator-call ruling; the inner
+          // construction call is emitted separately at its own node). The
+          // pre-fix code emitted the raw callee text (`std::forward<F>(f)`)
+          // as a junk target. Pointer-to-member recovery (`->*` in decltype
+          // soup) is the same shape: no named callee.
+          const calleeIsTempCall = funcNode.type === "call_expression"
+          // CPPD13 tail (gmock.h L1872): `(std::declval<Class*>()->*pmf)()` —
+          // a pointer-to-MEMBER invocation. The callee is only knowable at
+          // runtime (like C function pointers), and the pinned grammar
+          // ERROR-recovers the shape (fn.hasError). A mangled callee has no
+          // trustworthy leaf — emit nothing.
+          const calleeIsError = !!funcNode.hasError
+          if (!targetName.startsWith("operator") && !calleeIsTempCall && !calleeIsError) {
             relationships.push({
               source,
               target: targetName,
@@ -684,12 +798,20 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
               metadata: { line: node.startPosition.row, qualified: qualifiedName },
             })
             // #383 payload: qualified path WITHOUT argument text (C++ keeps
-            // :: separators), attributed to the enclosing function/method.
-            // Previously absent - JS/TS/JVM family all carry this payload.
-            if (source !== "global") {
-              const list = qcBySource.get(source) ?? []
-              list.push(qualifiedName)
-              qcBySource.set(source, list)
+            // :: separators), attributed to the enclosing function/method
+            // symbol DIRECTLY (family contract — groovy/java push onto
+            // parentContext.symbolRef at the call site). CPPD10 (deep review
+            // 2026-09-05): the old post-loop merge keyed payloads by bare
+            // method NAME, so two same-named methods in different classes
+            // (Alpha.run / Beta.run) shared one bucket and BOTH symbols
+            // carried BOTH classes' call lists (probe: 192 names / 640 excess
+            // owners across fmt). Direct symbolRef attach is exact — and it
+            // also fixes CPPD9's lost ctor payload (the ctor scope now has
+            // name "constructor" == its symbol name).
+            const caller = parentContext?.symbolRef
+            if (caller && (caller.kind === ASTEngine.SymbolKind.Method || caller.kind === ASTEngine.SymbolKind.Function || caller.kind === ASTEngine.SymbolKind.Constructor)) {
+              if (!caller.qualified_calls) caller.qualified_calls = []
+              caller.qualified_calls.push(qualifiedName)
             }
           }
         }
@@ -803,15 +925,24 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (base === startCls) continue
             const baseSigs = classVirtuals.get(base)
             // SIGNATURE-AWARE: a same-name DIFFERENT-parameter overload is
-            // C++ name-hiding, not virtual dispatch.
-            if (baseSigs && baseSigs.get(method) === params) found.push(base)
+            // C++ name-hiding, not virtual dispatch. CPPD11: the registry is
+            // now a per-name LIST of signatures — any matching signature is a
+            // real virtual override.
+            if (baseSigs && (baseSigs.get(method) ?? []).includes(params)) found.push(base)
             queue.push(base)
           }
         }
         return found
       }
+      // CPPD11: overloads whose sigs all override the same base collapse to
+      // the same (cls.method, base.method) pair under the no-arity edge model
+      // — emit each pair once.
+      const seenOv = new Set<string>()
       for (const pend of pendingOverrides) {
         for (const base of resolves(pend.cls, pend.method, pend.params)) {
+          const k = `${pend.cls}.${pend.method}|${base}.${pend.method}`
+          if (seenOv.has(k)) continue
+          seenOv.add(k)
           relationships.push({
             source: `${pend.cls}.${pend.method}`,
             target: `${base}.${pend.method}`,
@@ -837,10 +968,14 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    // #383 payload attach: qualified_calls per enclosing function/method.
+
+
+    // Dedupe direct-attached qualified_calls per symbol (a method calling the
+    // same target twice must list it once — the old Set-merge did this).
     for (const sym of symbols) {
-      const qc = qcBySource.get(sym.name)
-      if (qc && qc.length > 0) sym.qualified_calls = [...new Set(qc)]
+      if (Array.isArray(sym.qualified_calls) && sym.qualified_calls.length > 1) {
+        sym.qualified_calls = [...new Set(sym.qualified_calls)]
+      }
     }
 
     // #419-D evidence tiers on EVERY edge (family classifier).

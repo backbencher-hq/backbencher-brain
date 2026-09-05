@@ -137,6 +137,69 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(x.type === "instantiates" && typeof x.toSymbol === "string" && x.toSymbol.startsWith("::"))) }),
   },
   {
+    id: "cpp/ctor-calls-to-class-name",
+    language: "cpp",
+    defectClass: "payload-corruption",
+    description: "CPPD9 regression: re-attributes constructor-body calls to the raw CLASS name (source=Engine) instead of the normalized constructor symbol, and moves the qc payload onto the class symbol — the pre-fix state where the call graph pointed at the Class and constructor.qualified_calls stayed empty",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? [])
+        .filter(x => !(x.type === "calls" && x.source === "constructor" && (x.target === "start" || x.target === "warm")))
+        .concat([
+          { source: "Engine", target: "start", type: "calls", fromSymbol: "Engine", toSymbol: "start" },
+          { source: "Engine", target: "warm", type: "calls", fromSymbol: "Engine", toSymbol: "warm" },
+        ]),
+      symbols: (r.symbols ?? []).map(s => s.name === "Engine" ? { ...s, qualified_calls: ["start", "warm"] } : s),
+    }),
+  },
+  {
+    id: "cpp/qc-cross-class-pollution",
+    language: "cpp",
+    defectClass: "payload-corruption",
+    description: "CPPD10 regression: merges qualified_calls by bare method name so Alpha.run and Beta.run both carry [aFn, bFn] (the pre-fix post-loop name-keyed merge)",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map(s => (s.name === "run" ? { ...s, qualified_calls: ["aFn", "bFn"] } : s)),
+    }),
+  },
+  {
+    id: "cpp/last-sig-wins-overrides",
+    language: "cpp",
+    defectClass: "relationship-loss",
+    description: "CPPD11 regression: virtual registry keeps one signature per method name (last-declared wins), so an override of the FIRST-declared base overload f(int) is silently dropped when the base also declares f(double)",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(x => !(x.type === "overrides" && (x as any).metadata?.reasonCode === "signature-match" && String(x.source).startsWith("Derived.f"))),
+    }),
+  },
+  {
+    id: "cpp/legacy-using-import-shape",
+    language: "cpp",
+    defectClass: "payload-corruption",
+    description: "CPPD12 regression: converts using-declaration imports back to the legacy {source, imported} shape with no module — the pre-fix state where `using namespace std` / `using std::pair` were silently DROPPED by the persister (same class as the C #include fix)",
+    transform: r => ({
+      ...r,
+      imports: (r.imports ?? [])
+        .filter((i: any) => !((i.metadata ?? {}).isUsingDeclaration))
+        .concat((r.imports ?? []).filter((i: any) => (i.metadata ?? {}).isUsingDeclaration).map((i: any) => ({ source: i.module, imported: [], isTypeOnly: false }))),
+    }),
+  },
+  {
+    id: "cpp/template-arg-call-targets",
+    language: "cpp",
+    defectClass: "payload-corruption",
+    description: "CPPD13 regression: re-adds template arguments to call targets (`func<int>`, `apply<double>` — the pre-fix state where callee leaves leaked template args, 855 across fmt), and restores functor-temp/ptr-to-member junk callee text as targets",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? [])
+        .filter(x => !(x.type === "calls" && (x.target === "func" || x.target === "apply")))
+        .concat([
+          { source: "drive", target: "func<int>", type: "calls", fromSymbol: "drive", toSymbol: "ns::func<int>" },
+          { source: "drive", target: "apply<double>", type: "calls", fromSymbol: "drive", toSymbol: "g.apply<double>" },
+        ]),
+    }),
+  },
+  {
     id: "rust/drop-scoped-struct-literal-leaf",
     language: "rust",
     defectClass: "relationship-loss",
