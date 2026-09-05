@@ -205,3 +205,191 @@ export function runHarness(model: HarnessModel, doc: HarnessNode, opts: { render
   if (opts.render) findings.push(assertDeterministic(opts.render))
   return findings
 }
+
+// --- M42.H5 hub laws (issue #653): the harness extends over the hub DOM. --
+// The hub renders USAGE ROWS (list by file / list by caller / call tree)
+// from the same model class as the graph: every row is model-traceable
+// (data-row-id), badged with the same tier resolution, enrichment-labeled,
+// truncation declared, empty honesty enforced. A hub renderer that lies —
+// fabricates a row, drops a row, misgroups, unbadges, hides truncation —
+// FAILS these assertions (negative list: no second renderer, no unbadged
+// edge, no silent truncation).
+
+export interface HubHarnessRow {
+  rowId: string
+  dir: "caller" | "callee"
+  name: string
+  file: string
+  line: number
+  depth: number
+  expectedTier: string
+  enriched: boolean
+}
+
+export interface HubHarnessModel {
+  rows: HubHarnessRow[]
+  truncated: boolean
+  shownCount?: number
+  totalIfKnown?: number | null
+}
+
+function rowKey(r: HubHarnessRow): string {
+  return `${r.rowId}:${r.dir}:${r.name}:${r.file}:${r.line}`
+}
+
+/** Collect rendered rows under a section root (e.g. the .bb-hub-list section
+ *  with data-group=file) as {key, tier, enriched} plus the section. */
+export interface HubRowCollected {
+  key: string
+  tier: string
+  enriched: boolean
+  groupName: string | null
+  /** The row's DOM node (for badge/enrichment subtree checks). */
+  node: HarnessNode
+}
+
+function collectHub(doc: HarnessNode, sectionClass: string, group?: string): { section: HarnessNode | null; rows: HubRowCollected[] } {
+  const sections = findAll(doc, sectionClass)
+  const section = group === undefined ? sections[0] ?? null : sections.find((s) => s.attrs["data-group"] === group) ?? null
+  if (section === null) return { section: null, rows: [] }
+  const rows: HubRowCollected[] = []
+  for (const row of findAll(section, "bb-hub-row")) {
+    const metaEl = find(row, "bb-hub-row-meta")
+    const nameEl = find(row, "bb-hub-row-name")
+    const meta = metaEl ? metaEl.textContent : ""
+    const name = nameEl ? nameEl.textContent : ""
+    const key = `${row.attrs["data-row-id"] ?? ""}:${row.attrs["data-dir"] ?? ""}:${name}:${meta}`
+    const tier = row.attrs["data-tier"] ?? ""
+    const enriched = row.attrs["data-enriched"] === "1" && find(row, "bb-hub-enrichment") !== null
+    // the group the row sits in (walk one level up only: rows are direct
+    // children of their group in the list view; tree rows have none)
+    const parent = section.children.find((c) => c.children.includes(row) && c.className.split(" ").includes("bb-hub-group"))
+    rows.push({ key, tier, enriched, groupName: parent ? parent.attrs["data-group-name"] ?? null : null, node: row })
+  }
+  return { section, rows }
+}
+
+/** AH1 rows == model usages (no fabricated, no dropped when complete; drops
+ *  allowed only under declared truncation, with real counts). */
+export function assertHubRows(doc: HarnessNode, model: HubHarnessModel, sectionClass: string, group?: string): Finding {
+  const { section, rows } = collectHub(doc, sectionClass, group)
+  if (section === null) return { assertion: `AH1 rows == model (${sectionClass})`, ok: false, detail: "section missing" }
+  const expected = model.rows.map(rowKey)
+  const rendered = rows.map((r) => r.key)
+  const missing = expected.filter((k) => !rendered.includes(k))
+  const extra = rendered.filter((k, i) => rendered.indexOf(k) === i && !expected.includes(k))
+  const dupes = rendered.filter((k, i) => rendered.indexOf(k) !== i)
+  if (!model.truncated) {
+    const ok = missing.length === 0 && extra.length === 0 && dupes.length === 0
+    return { assertion: `AH1 rows == model usages (${sectionClass})`, ok, detail: `missing=[${missing}] extra=[${extra}] dupes=[${dupes}]` }
+  }
+  // Declared truncation: rendered rows must be a subset with a real marker.
+  const shown = rendered.length
+  const marker = find(doc, "bb-truncation-marker")
+  const declaredShown = marker ? Number(marker.attrs["data-shown"] ?? -1) : -1
+  const ok = extra.length === 0 && marker !== null && declaredShown === shown && shown < expected.length
+  return { assertion: `AH1 truncated subset declared (${sectionClass})`, ok, detail: `shown=${shown} markerShown=${declaredShown} expected=${expected.length}` }
+}
+
+/** AH2 grouping integrity: in the list-by-file section every group is named
+ *  by its rows' file; in list-by-caller every group is named by its rows'
+ *  endpoint name; every row sits in exactly one group. */
+export function assertHubGrouping(doc: HarnessNode, model: HubHarnessModel, group: "file" | "caller"): Finding {
+  const sectionClass = "bb-hub-list"
+  const { section, rows } = collectHub(doc, sectionClass, group)
+  if (section === null) return { assertion: `AH2 grouping by ${group}`, ok: false, detail: "section missing" }
+  const groups = findAll(section, "bb-hub-group")
+  const problems: string[] = []
+  for (const g of groups) {
+    const key = g.attrs["data-group-name"] ?? ""
+    for (const row of findAll(g, "bb-hub-row")) {
+      const metaEl = find(row, "bb-hub-row-meta")
+      const nameEl = find(row, "bb-hub-row-name")
+      const file = metaEl && metaEl.textContent !== "(external)" ? metaEl.textContent.split(":").slice(0, -1).join(":") : "(external)"
+      const name = nameEl ? nameEl.textContent : ""
+      const expectKey = group === "file" ? file : name
+      if (expectKey !== key) problems.push(`row ${row.attrs["data-row-id"]} in group "${key}" but its ${group} is "${expectKey}"`)
+    }
+  }
+  // every rendered row must sit under a group in this section
+  const ungrouped = findAll(section, "bb-hub-row").filter((r) => !groups.some((g) => g.children.includes(r)))
+  if (ungrouped.length > 0) problems.push(`${ungrouped.length} rows outside any group`)
+  return { assertion: `AH2 grouping by ${group}`, ok: problems.length === 0, detail: problems.join("; ") }
+}
+
+/** AH3 badges: every rendered row carries a BADGE ELEMENT whose tier equals
+ *  the model tier for that row-id, and the badge never disagrees with its
+ *  row (W4 law on the hub: a badge that could disagree with the row it sits
+ *  on is a declared defect). The badge element itself is required — a row
+ *  that only carries a data-tier attribute but no bb-hub-badge is unbadged
+ *  and FAILS (M42.H5 M1 catches a renderer that drops the badge call). */
+export function assertHubBadges(doc: HarnessNode, model: HubHarnessModel, sectionClass: string, group?: string): Finding {
+  const byId = new Map(model.rows.map((r) => [r.rowId, r.expectedTier]))
+  const { section, rows } = collectHub(doc, sectionClass, group)
+  if (section === null) return { assertion: `AH3 hub badges == model tiers (${sectionClass})`, ok: false, detail: "section missing" }
+  const problems: string[] = []
+  for (const r of rows) {
+    const rowId = r.key.split(":")[0]!
+    const expect = byId.get(rowId)
+    if (expect === undefined) continue // fabricated rows are AH1's finding
+    const badges = r.node ? findAll(r.node, "bb-hub-badge") : []
+    const badgeTier = badges[0]?.attrs["data-badge-tier"]
+    if (badges.length === 0) problems.push(`row ${rowId} has NO badge element`)
+    else if (badgeTier !== expect) problems.push(`row ${rowId} badgeTier=${badgeTier} expected=${expect}`)
+    else if (badgeTier !== r.tier) problems.push(`row ${rowId} badgeTier=${badgeTier} disagrees with row tier=${r.tier}`)
+  }
+  return { assertion: `AH3 hub badges == model tiers (${sectionClass})`, ok: problems.length === 0, detail: problems.join("; ") }
+}
+
+/** AH4 enrichment: enriched model rows render data-enriched + chip; others
+ *  render none. */
+export function assertHubEnrichment(doc: HarnessNode, model: HubHarnessModel, sectionClass: string, group?: string): Finding {
+  const byId = new Map(model.rows.map((r) => [r.rowId, r.enriched]))
+  const { rows } = collectHub(doc, sectionClass, group)
+  const problems: string[] = []
+  for (const r of rows) {
+    const rowId = r.key.split(":")[0]!
+    const expect = byId.get(rowId)
+    if (expect === undefined) continue
+    if (expect && !r.enriched) problems.push(`row ${rowId}: enriched in model but rendered without the enrichment annotation`)
+    if (!expect && r.enriched) problems.push(`row ${rowId}: un-enriched in model but rendered with an enrichment annotation`)
+  }
+  return { assertion: `AH4 enrichment labeled per model (${sectionClass})`, ok: problems.length === 0, detail: problems.join("; ") }
+}
+
+/** AH5 truncation + empty honesty: complete non-empty -> NO marker; truncated
+ *  -> marker with real counts; empty model -> declared bb-hub-empty text. */
+export function assertHubTruncationEmpty(doc: HarnessNode, model: HubHarnessModel, sectionClass: string, group?: string): Finding {
+  const { section } = collectHub(doc, sectionClass, group)
+  if (section === null) return { assertion: `AH5 truncation/empty (${sectionClass})`, ok: false, detail: "section missing" }
+  const marker = find(section, "bb-truncation-marker")
+  const empty = find(section, "bb-hub-empty")
+  const expectEmpty = model.rows.length === 0 && !model.truncated
+  if (expectEmpty) {
+    const ok = empty !== null && marker === null && findAll(section, "bb-hub-row").length === 0
+    return { assertion: `AH5 empty honesty (${sectionClass})`, ok, detail: ok ? "declared empty" : `empty=${empty !== null} marker=${marker !== null}` }
+  }
+  if (model.truncated) {
+    const ok = marker !== null && marker.attrs["data-truncated"] === "hub" && marker.attrs["data-shown"] === String(model.shownCount) && marker.attrs["data-total-if-known"] === String(model.totalIfKnown)
+    return { assertion: `AH5 truncation declared (${sectionClass})`, ok, detail: ok ? "declared" : `marker=${marker !== null}` }
+  }
+  const ok = marker === null && empty === null
+  return { assertion: `AH5 complete renders no marker (${sectionClass})`, ok, detail: ok ? "clean" : "phantom marker or empty on a complete set" }
+}
+
+/** Run the full hub assertion set over one section. */
+export function runHubHarness(
+  model: HubHarnessModel,
+  doc: HarnessNode,
+  opts: { sectionClass: string; group?: string; assertGrouping?: boolean },
+): Finding[] {
+  const findings: Finding[] = []
+  findings.push(assertHubRows(doc, model, opts.sectionClass, opts.group))
+  findings.push(assertHubBadges(doc, model, opts.sectionClass, opts.group))
+  findings.push(assertHubEnrichment(doc, model, opts.sectionClass, opts.group))
+  findings.push(assertHubTruncationEmpty(doc, model, opts.sectionClass, opts.group))
+  if (opts.assertGrouping && opts.group !== undefined) {
+    findings.push(assertHubGrouping(doc, model, opts.group))
+  }
+  return findings
+}
