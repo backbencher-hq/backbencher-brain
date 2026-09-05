@@ -67,7 +67,7 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   groovy: { wasm: "tree-sitter-groovy.wasm", analyzerFile: "real-groovy-analyzer", className: "RealGroovyAnalyzer", ext: "groovy" },
   vue: { wasm: "tree-sitter-vue.wasm", analyzerFile: "real-vue-analyzer", className: "RealVueAnalyzer", ext: "vue" },
   svelte: { wasm: "tree-sitter-svelte.wasm", analyzerFile: "real-svelte-analyzer", className: "RealSvelteAnalyzer", ext: "svelte" },
-  cpp: { wasm: "tree-sitter-cpp.wasm", analyzerFile: "real-cpp-analyzer", className: "RealCppAnalyzer", ext: "cc" },
+  cpp: { wasm: "tree-sitter-cpp.wasm", analyzerFile: "real-cpp-analyzer", className: "RealCppAnalyzer", ext: "cc,h" },
   c: { wasm: "tree-sitter-c.wasm", analyzerFile: "real-c-analyzer", className: "RealCAnalyzer", ext: "c" },
   rust: { wasm: "tree-sitter-rust.wasm", analyzerFile: "real-rust-analyzer", className: "RealRustAnalyzer", ext: "rs" },
   go: { wasm: "tree-sitter-go.wasm", analyzerFile: "real-go-analyzer", className: "RealGoAnalyzer", ext: "go" },
@@ -194,6 +194,83 @@ async function deriveEmbeddedScriptTrees(root: any, content: string, lang: strin
 
 // C call-truth: a call_expression with an IDENTIFIER callee is an
 // independently derivable call edge (function pointers excluded - opaque).
+// M37.9 cpp oracle: independently re-derive the analyzer's CALLS and member-
+// read USES truth so the fmt differential actually audits the surface the
+// analyzer emits (11.8k calls on .cc alone were previously never compared —
+// cpp sat outside the calls/uses compared-label sets). Contracts mirror
+// RealCppAnalyzer exactly:
+//   calls:     EVERY call_expression's callable leaf, except operator
+//              targets (the analyzer drops operator-starting callees; infix/
+//              explicit operator calls are additionally pinned-grammar
+//              ERROR-recovered, ruled in the cpp spec). field_expression ->
+//              field leaf; qualified_identifier -> last segment; identifier /
+//              template_function -> base leaf. No resolvability gate (the
+//              analyzer emits external/std leaves unconditionally, like C).
+//   uses:      field_expression member READS (obj.field, obj->field) that are
+//              not the callee of a call — assignment-LHS fields are writes
+//              (no edge; mirrors the analyzer's call_expression callee guard
+//              + SCD1-family write gate).
+// Both sides walk the SAME pinned parse, so leaf-attribution disagreements
+// surface as MISSING/UNEXPLAINED pairs for manual ruling.
+export function deriveCppEdges(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const lastNamed = (n: any): any => n.namedChild(n.namedChildCount - 1)
+  // CPPD2 (probe): field LHS of an assignment is a write designator.
+  const isAssignLhsField = (n: any): boolean => {
+    const p = n.parent
+    if (!p) return false
+    const isWriteParent =
+      p.type === "assignment_expression" || p.type === "compound_assignment_expression"
+    if (!isWriteParent) return false
+    const lhs = p.namedChild(0)
+    return !!lhs && lhs.startIndex === n.startIndex && lhs.endIndex === n.endIndex
+  }
+  const stack: any[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()!
+    if (n.type === "call_expression") {
+      const fn = n.childForFieldName?.("function") ?? n.namedChild(0)
+      let target = ""
+      if (fn) {
+        if (fn.type === "field_expression") {
+          const f = fn.childForFieldName?.("field") ?? lastNamed(fn)
+          target = f?.text ?? ""
+        } else if (fn.type === "qualified_identifier") {
+          const leaf = lastNamed(fn)
+          target = leaf?.text ?? ""
+        } else if (fn.type === "template_function") {
+          const base = fn.namedChild(0)
+          target = base?.text ?? ""
+        } else if (fn.type === "identifier" || fn.type === "field_identifier" || fn.type === "operator_name" || fn.type === "destructor_name") {
+          target = fn.text
+        } else {
+          target = fn.text
+        }
+      }
+      if (target && !target.startsWith("operator")) {
+        const k = "calls|" + target
+        if (!seen.has(k)) { seen.add(k); edges.push({ label: "calls", from: "(expr)", target }) }
+      }
+    } else if (n.type === "field_expression") {
+      // member READ unless this field_expression is a call callee or a write
+      // LHS (analyzer: uses on obj.field only when not the call function).
+      const p = n.parent
+      const isCallee = !!p && p.type === "call_expression"
+      const f = n.childForFieldName?.("field") ?? lastNamed(n)
+      if (f && !isCallee && !isAssignLhsField(n)) {
+        const k = "uses|" + f.text
+        if (!seen.has(k)) { seen.add(k); edges.push({ label: "uses", from: "(expr)", target: f.text }) }
+      }
+    }
+    for (let i = n.namedChildCount - 1; i >= 0; i--) {
+      const c = n.namedChild(i)
+      if (c) stack.push(c)
+    }
+  }
+  return edges
+}
+
 export function deriveCCalls(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -3438,6 +3515,15 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
   walk(root)
   // dedupe identical edges (oracle double-push guard)
   // overrides truth: same-name methods across in-file inheritance chains.
+  // CPPD-R1 (M37.9): cpp overrides are NOT independently derivable — same-
+  // name across a base chain conflates C++ NAME-HIDING with virtual override
+  // (chrono.h: null_chrono_spec_handler.on_24_hour(numeric_system) vs
+  // chrono_format_checker.on_24_hour(numeric_system, pad_type) — different
+  // arity hides, it does not override; the analyzer's type-only signature
+  // check is correct). Signature-aware override truth would just mirror the
+  // analyzer's own virtual-registry contract (shared blind spot), so cpp
+  // overrides are excluded here and stay pinned by the analyzer fixtures
+  // (cpp/override-signature-aware, cpp/virtual-override-resolution).
   // Only declarations related by extends/implements within THIS file count -
   // cross-file override resolution is the analyzer's job, not the oracle's.
   const decls: Record<string, { parents: string[]; methods: Set<string> }> = {}
@@ -3446,7 +3532,17 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
     const t2 = n.type
     if (/^(class|interface|record|trait|object)_declaration$|^class_definition$|^trait_definition$|^object_definition$|^(class|struct|union)_specifier$/.test(t2)) {
       const nameNode = n.childForFieldName?.("name") ?? n.namedChildren.find((c: any) => c.type === "identifier" || c.type === "type_identifier")
-      const nm = nameNode?.text
+      // M37.9 cpp: class names are CLEANED like the analyzer's — template
+      // class declarations/partial specs carry their args in the name node
+      // text (`IteratorImpl<IndexSequence<I...>>`); the class is
+      // IteratorImpl. Without the strip, truth emitted override pairs the
+      // analyzer (leaf-named) could never match.
+      let nm = nameNode?.text
+      if (nm) {
+        const lt = nm.indexOf("<")
+        if (lt !== -1) nm = nm.slice(0, lt).trim()
+        nm = lastSegment(nm)
+      }
       if (nm && !decls[nm]) {
         decls[nm] = { parents: [], methods: new Set() }
         // cpp classes use field_declaration_list (no 'body' substring)
@@ -3507,12 +3603,31 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
     }
   }
   for (const rel of declParents) {
+    if (lang === "cpp") break // CPPD-R1: no cpp overrides truth (see above)
     const childDecl = decls[rel.child]
-    const parentDecl = decls[rel.parent]
-    if (!childDecl || !parentDecl) continue
+    if (!childDecl) continue
+    // M37.9 cpp: overrides resolve TRANSITIVELY (A->B->C: a method defined
+    // only in A and C still overrides through B) with a depth cap — mirrors
+    // the analyzer's classBases BFS. The old code checked DIRECT parents
+    // only, so every transitive override the analyzer emitted surfaced as
+    // unexplained fabrication.
     for (const m of childDecl.methods) {
-      if (parentDecl.methods.has(m)) {
-        edges.push({ label: "overrides", from: `${rel.child}.${m}`, target: `${rel.parent}.${m}` })
+      const seenBase = new Set<string>()
+      const queue = [rel.child]
+      let depth = 0
+      while (queue.length && depth < 10) {
+        depth++
+        const cls = queue.shift()!
+        if (seenBase.has(cls)) continue
+        seenBase.add(cls)
+        for (const b of declParents.filter((r2) => r2.child === cls)) {
+          if (b.parent === rel.child) continue // self-collision guard
+          const parentDecl = decls[b.parent]
+          if (parentDecl?.methods.has(m) && !seenBase.has(b.parent)) {
+            edges.push({ label: "overrides", from: `${rel.child}.${m}`, target: `${b.parent}.${m}` })
+          }
+          if (decls[b.parent]) queue.push(b.parent)
+        }
       }
     }
   }
@@ -3623,7 +3738,7 @@ async function main() {
       for (const e of entries) {
         const p = path.join(d, e.name)
         if (e.isDirectory()) { if (!/^(\.|node_modules|build|target)/.test(e.name)) scan(p) }
-        else if (e.name.endsWith("." + cfg.ext)) files.push(p)
+        else if (cfg.ext.split(",").some((x: string) => e.name.endsWith("." + x))) files.push(p)
       }
     }
     scan(repoDir)
@@ -3777,6 +3892,14 @@ async function main() {
           ;(truth as any[]).push(e)
         }
       }
+      if (lang === "cpp") {
+        // M37.9: dedicated cpp oracle — calls + member-read uses truth so the
+        // fmt differential audits the analyzer's real surface (previously
+        // neither label was compared for cpp).
+        for (const e of deriveCppEdges(root)) {
+          ;(truth as any[]).push(e)
+        }
+      }
       if (lang === "rust") {
         for (const e of deriveRustEdges(root)) {
           ;(truth as any[]).push(e)
@@ -3866,7 +3989,7 @@ async function main() {
       // call truth, so including calls there would flag every real call edge
       // as unexplained. CGD (M37 #601): c's oracle now derives member/bare
       // USES truth as well (write-gated), so c joins the uses-audited set.
-      })).filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" ? ["overrides"] : []), ...(lang === "c" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" ? ["calls"] : []), ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" ? ["calls", "uses"] : []), ...(lang === "c" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" ? ["uses"] : []), ...(lang === "csharp" ? ["calls"] : []), ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" ? ["references"] : [])].includes(r.label))
+      })).filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" ? ["overrides"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" ? ["calls"] : []), ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" ? ["calls", "uses"] : []), ...(lang === "c" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" ? ["uses"] : []), ...(lang === "csharp" ? ["calls"] : []), ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" ? ["references"] : [])].includes(r.label))
         // The tree-truth oracles already emit UNIQUE (label,target) edges per
         // file (each oracle keeps a `seen` set keyed by label+target). The
         // analyzer, by contrast, emits one edge per source SEARCH HIT, so a

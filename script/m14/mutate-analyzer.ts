@@ -130,6 +130,13 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => ({ ...s, qualified_calls: undefined })) }),
   },
   {
+    id: "cpp/drop-global-scope-new",
+    language: "cpp",
+    defectClass: "relationship-loss",
+    description: "CPPD8 regression: drops instantiates whose constructed type has a leading global-scope `::` (the pre-fix leaf extraction unwrapped only one qualified_identifier level, so `new ::std::stringstream` died on the clean-leaf regex while `new ::Foo` worked)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(x.type === "instantiates" && typeof x.toSymbol === "string" && x.toSymbol.startsWith("::"))) }),
+  },
+  {
     id: "rust/drop-scoped-struct-literal-leaf",
     language: "rust",
     defectClass: "relationship-loss",
