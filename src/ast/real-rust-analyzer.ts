@@ -387,10 +387,36 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private handleAttribute(node: Node, ctx: RustContext): void {
     const text = node.text
-    if (text.startsWith("#[get") || text.startsWith("#[post") || text.startsWith("#[put") || text.startsWith("#[delete") || text.startsWith("#[head") || text.startsWith("#[patch")) {
-      if (!ctx.metadata.detectedFrameworks?.includes("actix_web")) {
-        ctx.metadata.detectedFrameworks = [...(ctx.metadata.detectedFrameworks || []), "actix_web"]
+    // Attribute-based framework detection (family contract: python/cpp
+    // populate detectedFrameworks from code signals; rust previously only
+    // caught actix route macros). Name-scoped — std derives (Debug, Clone)
+    // never imply a framework; only ecosystem-specific markers do.
+    const detectFw = (name: string): void => {
+      if (!ctx.metadata.detectedFrameworks?.includes(name)) {
+        ctx.metadata.detectedFrameworks = [...(ctx.metadata.detectedFrameworks || []), name]
       }
+    }
+    if (text.startsWith("#[")) {
+      // derive-name bodies never contain further brackets, so a scan between
+      // `derive(` and `)]` is exact for the marker names.
+      const dStart = text.indexOf("derive(")
+      if (dStart >= 0) {
+        const body = text.slice(dStart + 7)
+        if (/\b(Serialize|Deserialize)\b/.test(body)) detectFw("serde")
+        if (/\b(Parser|Subcommand|Args|ValueEnum)\b/.test(body)) detectFw("clap")
+        // thiserror is signalled by `#[derive(thiserror::Error)]` or the
+        // crate-qualified path — bare `Error` is ambiguous with std-style
+        // customs and must NOT imply a framework.
+        if (text.includes("thiserror")) detectFw("thiserror")
+      }
+      if (text.includes("tokio::main") || text.includes("tokio::test") || text.includes("tokio::flavor")) detectFw("tokio")
+      if (text.includes("axum::")) detectFw("axum")
+      if (text.includes("rocket::")) detectFw("rocket")
+      if (text.includes("tracing::instrument")) detectFw("tracing")
+      if (text.includes("derive(Parser")) detectFw("clap") // keep both spellings honest
+    }
+    if (text.startsWith("#[get") || text.startsWith("#[post") || text.startsWith("#[put") || text.startsWith("#[delete") || text.startsWith("#[head") || text.startsWith("#[patch")) {
+      detectFw("actix_web")
       let existing: any = undefined
       if (ctx.metadata.frameworkPatterns) {
         for (let i = 0; i < ctx.metadata.frameworkPatterns.length; i++) {

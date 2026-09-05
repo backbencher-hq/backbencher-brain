@@ -327,6 +327,17 @@ const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "rust/drop-attr-framework-detection",
+    language: "rust",
+    defectClass: "framework-loss",
+    description: "RSD7 regression: clears serde/tokio/thiserror/tracing/clap/axum/rocket from detectedFrameworks, keeping only actix route macros (pre-fix: handleAttribute caught only #[get]/#[post] — serde derives and tokio::main on a real file yielded detectedFrameworks=[]) — relationship-kinds fixture's expectFrameworks [serde, tokio] pins catch it",
+    transform: r => {
+      const fw: string[] = r.metadata?.detectedFrameworks ?? []
+      const kept = fw.filter((f: string) => f === "actix_web")
+      return { ...r, metadata: { ...(r.metadata ?? {}), detectedFrameworks: kept } }
+    },
+  },
+  {
     id: "go/whole-text-stdlib-callee",
     language: "go",
     defectClass: "relationship-loss",
