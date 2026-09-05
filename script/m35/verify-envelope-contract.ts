@@ -49,6 +49,13 @@ function negative(label: string, ok: boolean, detail = "") {
 const REGISTERED_KEYS = ["fresh", "stale", "missing", "staleRatio", "mode", "remediation"]
 
 async function runSuite(): Promise<void> {
+  // M43.A1 (#657): the search-family handlers now AUTO-REFRESH stale files
+  // within budget and DECLARE it — that is their new contract (tested by the
+  // M43.A1 gate). This gate verifies the M35 staleness-detection/reporting
+  // machinery, so the automatic repair is disabled here to keep
+  // stale-after-edit observable deterministically. BB_NO_AUTO_REFRESH is read
+  // at decision time, so setting it after imports is sufficient.
+  process.env.BB_NO_AUTO_REFRESH = "1"
   const { PUBLIC_TOOL_DESCRIPTORS, validateToolDescriptors } = await import(path.join(ROOT, "src/mcp/tool-registry"))
   const { buildStalenessEnvelope, FRESHNESS_REMEDIATION } = await import(path.join(ROOT, "src/brain/freshness"))
 
