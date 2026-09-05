@@ -237,10 +237,7 @@ function symbolLocation(symbol: SymbolRow): NavigationLocation | null {
 }
 
 /** Build a location from an edge endpoint symbol join. */
-// Exported for M42.H2: the rich hover resolves its usage-link targets through
-// this SAME builder, so hover links and the references surface share one
-// location owner (a second implementation would be a drift hazard).
-export function edgeLocation(
+function edgeLocation(
   path: string | null,
   byteStart: number | null,
   byteEnd: number | null,

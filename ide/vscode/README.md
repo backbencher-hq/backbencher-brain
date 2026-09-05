@@ -133,22 +133,6 @@ re-asking. The editor is never blocked during activation or indexing.
 - `Backbencher: Show status (evidence levels, staleness)`
 - `Backbencher: Index this workspace now`
 
-### Hover actions (M42.H4)
-
-Every rich hover carries an **actions** row — one click to each deep surface:
-
-- `bb.openGraph` — **Open in graph**: the connections webview for the hovered
-  symbol (callers/callees, evidence-badged edges).
-- `bb.openImpact` — **Impact analysis**: the bounded reverse-dependency set
-  (declared truncation: it always shows the real count or an honest
-  "unknown", never a silent cut).
-- `bb.showCallHierarchy` — **Call hierarchy**: the editor's native call
-  hierarchy view, opened on the symbol.
-
-The action targets are resolved by the server (the symbol under the hover,
-index-stored); an un-indexed workspace or unknown symbol surfaces a declared
-error with remediation — never a silent no-op.
-
 ## Install and verify
 
 ```bash

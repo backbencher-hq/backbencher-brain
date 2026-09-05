@@ -183,25 +183,8 @@ export interface GraphEdge {
   rowId: string
   /** Stored edge metadata (parsed from brain_relationship.metadata).
    *  Only declared fields pass through; the graph renderer derives the
-   *  evidence tier from evidenceClass when present. Enrichment fields
-   *  (M42.H3) ride under `enrichment` when the index enriched the row —
-   *  present only with the `inferredAt` marker the pass writes, and always
-   *  annotated as enrichment (never an evidence class). */
-  metadata?: {
-    evidenceClass?: string
-    enrichment?: {
-      role?: string
-      pattern?: string
-      layerFlow?: string
-      criticality?: string
-      frequency?: string
-      isTestCode?: boolean
-      isGeneratedCode?: boolean
-      isFrameworkContract?: boolean
-      isDependencyInjection?: boolean
-      inferredAt: number
-    }
-  }
+   *  evidence tier from evidenceClass when present. */
+  metadata?: { evidenceClass?: string }
 }
 
 export interface GraphTraversalOptions {
