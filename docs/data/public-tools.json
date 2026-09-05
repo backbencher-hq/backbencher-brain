@@ -1030,7 +1030,7 @@
     },
     {
       "name": "bb_index",
-      "description": "Reindex a file or directory so the index reflects edits immediately (agent-fresh). Accepts a path (file or dir); a file reindexes only that file, a dir runs an incremental index of that dir (changed files only). Returns indexed/deleted/error counts.",
+      "description": "Reindex a file or directory so the index reflects edits immediately (agent-fresh). Accepts a path (file or dir); a file reindexes only that file, a dir runs an incremental index of that dir (changed files only). mode=post re-runs the heavy derived-data phases (relationships/enrichment/gravity/taints/health) WITHOUT re-parsing — the remediation after edits on incremental paths. Returns indexed/deleted/error counts, or the per-phase post-processing report.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1042,7 +1042,8 @@
             "enum": [
               "auto",
               "file",
-              "dir"
+              "dir",
+              "post"
             ]
           }
         },
@@ -1055,13 +1056,14 @@
       "modes": [
         "auto",
         "file",
-        "dir"
+        "dir",
+        "post"
       ],
       "aliases": [],
       "deprecated": false,
       "documentation": {
         "category": "operations",
-        "summary": "Immediately refresh the index for a just-written/edited file or directory.",
+        "summary": "Immediately refresh the index for a just-written/edited file or directory; mode=post re-derives relationships/taints/health without re-parsing.",
         "defaults": {
           "mode": "auto"
         },
@@ -1072,6 +1074,10 @@
           {
             "path": "src",
             "mode": "dir"
+          },
+          {
+            "path": "post",
+            "mode": "post"
           }
         ]
       },
@@ -1093,6 +1099,284 @@
       "performance": "A single file reindex is bounded by that file's parse cost; dir mode is bounded by the changed-file set.",
       "safety": "Write-capable against index data only. It never modifies source files.",
       "evidence": "Counts come from the real parse/store pipeline; errors name the file that failed rather than swallowing it."
+    },
+    {
+      "name": "bb_graph",
+      "description": "Per-symbol dependency graph over the canonical graph engine: callers, callees, per-edge evidence tier (structural/import_based/usage_contextual/reference_qualified/inferred), confidence, and cross-language edge count. Same engine and tier rules the editor graph panel uses; truncated traversals are declared with a reason, never silent.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "symbol": {
+            "type": "string",
+            "description": "symbol name to root the graph at"
+          },
+          "maxDepth": {
+            "type": "number",
+            "description": "traversal depth bound (default 3)"
+          }
+        },
+        "required": [
+          "symbol"
+        ]
+      },
+      "mutability": "read",
+      "requiresIndex": true,
+      "modes": [
+        "graph"
+      ],
+      "aliases": [],
+      "deprecated": false,
+      "documentation": {
+        "category": "graph",
+        "summary": "Per-symbol graph with per-edge evidence tiers — the agent view of the editor's graph panel.",
+        "defaults": {
+          "maxDepth": 3
+        },
+        "examples": [
+          {
+            "symbol": "handleRequest"
+          },
+          {
+            "symbol": "handleRequest",
+            "maxDepth": 5
+          }
+        ]
+      },
+      "referencePath": "docs/tools/bb_graph.md",
+      "returns": [
+        "Per-symbol dependency graph: callers and callees",
+        "Per-edge evidence tier (structural/import_based/usage_contextual/reference_qualified/inferred) with confidence",
+        "Declared truncation with a reason when the traversal is bounded"
+      ],
+      "errors": [
+        "Missing symbol",
+        "maxDepth outside the declared 1-10 range",
+        "Symbol not found in the index"
+      ],
+      "limitations": [
+        "Edges reflect indexed static evidence with declared tiers; inferred edges are labeled, not proven",
+        "The graph reflects the index as of the last index run"
+      ],
+      "performance": "maxDepth (default 3, max 10) bounds traversal; per-edge evidence resolution is bounded by the returned subgraph.",
+      "safety": "Read-only. It does not modify source files or index data.",
+      "evidence": "Nodes and edges come from the canonical graph engine over brain_symbol and brain_relationship rows; each edge carries its evidence tier and confidence."
+    },
+    {
+      "name": "bb_impact",
+      "description": "Bounded reverse-dependency impact for one symbol via the same component the editor graph panel uses: declared node budget (200) and depth (5), truncation as a first-class field with reason, and an independently declared total when computable. Unknown symbols are loud declared errors — an empty impact set is never invented.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "symbol": {
+            "type": "string",
+            "description": "symbol name to compute impact for"
+          }
+        },
+        "required": [
+          "symbol"
+        ]
+      },
+      "mutability": "read",
+      "requiresIndex": true,
+      "modes": [
+        "impact"
+      ],
+      "aliases": [],
+      "deprecated": false,
+      "documentation": {
+        "category": "graph",
+        "summary": "Bounded impact with declared truncation — identical numbers to the editor's impact mode.",
+        "defaults": {},
+        "examples": [
+          {
+            "symbol": "handleRequest"
+          }
+        ]
+      },
+      "referencePath": "docs/tools/bb_impact.md",
+      "returns": [
+        "Downstream dependents of the symbol with per-edge evidence tiers and confidence",
+        "Declared-absent result when the symbol is unknown — never an empty guess"
+      ],
+      "errors": [
+        "Missing symbol",
+        "Symbol not found in the index"
+      ],
+      "limitations": [
+        "Static impact analysis cannot establish runtime behavior",
+        "Reflects the index as of the last index run"
+      ],
+      "performance": "Traversal bounds match the canonical graph engine limits; output scales with the dependents subgraph.",
+      "safety": "Read-only. It does not modify source files or index data.",
+      "evidence": "Impact derives from brain_relationship rows via the same engine the editor impact panel uses."
+    },
+    {
+      "name": "bb_cross_language",
+      "description": "Cross-language facts for one symbol from stored brain_relationship rows only (is_cross_language = 1), per-pair with bridge mechanism and evidence tier. Pairs with no stored rows are declared absent — this tool never infers, guesses, or aspires. Identical semantics to the editor's cross-language hover section.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "symbol": {
+            "type": "string",
+            "description": "symbol name to fetch cross-language facts for"
+          }
+        },
+        "required": [
+          "symbol"
+        ]
+      },
+      "mutability": "read",
+      "requiresIndex": true,
+      "modes": [
+        "cross-language"
+      ],
+      "aliases": [],
+      "deprecated": false,
+      "documentation": {
+        "category": "graph",
+        "summary": "Stored cross-language pairs with declared absence — the agent view of the hover section.",
+        "defaults": {},
+        "examples": [
+          {
+            "symbol": "Warehouse"
+          }
+        ]
+      },
+      "referencePath": "docs/tools/bb_cross_language.md",
+      "returns": [
+        "Cross-language relationship pairs for the symbol with bridge mechanism and evidence tier",
+        "Declared-absent result when no stored cross-language rows exist"
+      ],
+      "errors": [
+        "Missing symbol",
+        "Symbol not found in the index (declared, not an empty set)"
+      ],
+      "limitations": [
+        "Reads stored is_cross_language=1 relationship rows only; never infers cross-language facts",
+        "Coverage depends on the analyzers that produced cross-language rows"
+      ],
+      "performance": "Bounded by the stored cross-language rows for the symbol; no graph traversal.",
+      "safety": "Read-only. It does not modify source files or index data.",
+      "evidence": "Only brain_relationship rows with is_cross_language=1; identical semantics to the editor cross-language hover section."
+    },
+    {
+      "name": "bb_annotate",
+      "description": "Attach an agent-authored annotation to a symbol in the shared index. Provenance is enforced: the row records author class 'agent' (never spoofable), the calling tool identity, and timestamps. Re-annotating the same symbol+path updates the note in place — one note per author per location. Annotations are opinions layered on evidence, never index facts, and surface in the editor where the human reads (hover + graph).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "symbol": {
+            "type": "string",
+            "description": "symbol name to annotate"
+          },
+          "body": {
+            "type": "string",
+            "description": "annotation text (max 2000 chars)"
+          },
+          "path": {
+            "type": "string",
+            "description": "optional file path to disambiguate same-named symbols"
+          },
+          "toolIdentity": {
+            "type": "string",
+            "description": "optional name of the calling agent/tool (recorded verbatim)"
+          }
+        },
+        "required": [
+          "symbol",
+          "body"
+        ]
+      },
+      "mutability": "write",
+      "requiresIndex": false,
+      "modes": [
+        "annotate"
+      ],
+      "aliases": [],
+      "deprecated": false,
+      "documentation": {
+        "category": "graph",
+        "summary": "Agent note with enforced provenance, stored where the human reads.",
+        "defaults": {},
+        "examples": [
+          {
+            "symbol": "handleRequest",
+            "body": "Legacy auth path — scheduled for removal in Q3."
+          }
+        ]
+      },
+      "referencePath": "docs/tools/bb_annotate.md",
+      "returns": [
+        "Stored annotation id and provenance (tool identity, timestamp)",
+        "Declared refusals for missing symbol, empty body, or over-limit body"
+      ],
+      "errors": [
+        "Missing or unknown symbol",
+        "Empty body (a refusal, not a silent no-op)",
+        "Body exceeds the declared 2000-char limit"
+      ],
+      "limitations": [
+        "Annotations are opinions layered on index evidence, never index truth",
+        "Annotation store semantics are owned by the M28 workstream"
+      ],
+      "performance": "Constant-time store write bounded by the 2000-char body limit.",
+      "safety": "Write-capable against the annotation store only. It never modifies source files.",
+      "evidence": "Annotations carry provenance (toolIdentity, time) and are stored in brain_annotation."
+    },
+    {
+      "name": "bb_annotations",
+      "description": "Read annotations for a symbol (or all annotations up to the declared limit) with full provenance on every row: author class, tool identity, and timestamps. No annotations is a declared absence, never an error.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "symbol": {
+            "type": "string",
+            "description": "symbol name (omit to list all annotations)"
+          },
+          "limit": {
+            "type": "number",
+            "description": "max rows returned (default 50, cap 200)"
+          }
+        },
+        "required": []
+      },
+      "mutability": "read",
+      "requiresIndex": false,
+      "modes": [
+        "annotate"
+      ],
+      "aliases": [],
+      "deprecated": false,
+      "documentation": {
+        "category": "graph",
+        "summary": "Annotations with full provenance; absence declared.",
+        "defaults": {
+          "limit": 50
+        },
+        "examples": [
+          {
+            "symbol": "handleRequest"
+          },
+          {
+            "limit": 100
+          }
+        ]
+      },
+      "referencePath": "docs/tools/bb_annotations.md",
+      "returns": [
+        "Typed annotations for a symbol or the whole project, with full provenance (author class, tool identity, timestamps)",
+        "Declared-absent result when none exist — absence is never an error"
+      ],
+      "errors": [
+        "limit outside the declared 1-200 range"
+      ],
+      "limitations": [
+        "Reads only stored annotations; absence is declared, not inferred",
+        "Annotation store semantics are owned by the M28 workstream"
+      ],
+      "performance": "Indexed lookup by project and symbol (brain_annotation_project_symbol_idx).",
+      "safety": "Read-only. It does not modify source files, index data, or annotations.",
+      "evidence": "Rows come from brain_annotation with provenance fields preserved."
     }
   ]
 }

@@ -405,6 +405,54 @@ Refreshes are serialized per project so concurrent callers cannot overlap a wipe
 {"freshness":"complete","integrity":true,"includeAnalysisRuns":true}
 ```
 
+### `bb_graph`
+
+Per-symbol dependency graph: callers, callees, per-edge evidence tier and confidence.
+`maxDepth` defaults to 3 (max 10); truncated traversals are declared with a reason.
+Read-only; same engine and tier rules as the editor graph panel.
+
+```json
+{"symbol":"handleRequest","maxDepth":3}
+```
+
+### `bb_impact`
+
+Downstream dependents of one symbol with per-edge evidence tiers, from the same engine as
+`bb_analyze` impact. Unknown symbols are declared absent, never guessed. Read-only.
+
+```json
+{"symbol":"handleRequest"}
+```
+
+### `bb_cross_language`
+
+Cross-language facts for one symbol from stored `is_cross_language = 1` relationship rows
+only: per-pair bridge mechanism and evidence tier. Pairs with no stored rows are declared
+absent — it never infers. Read-only.
+
+```json
+{"symbol":"handleRequest"}
+```
+
+### `bb_annotate`
+
+Write a typed, provenance-carrying agent annotation onto a symbol. Empty or over-limit
+(2000 chars) bodies are declared refusals, not silent no-ops. Writes annotation-store data
+only; never source files. Store semantics are owned by the M28 workstream.
+
+```json
+{"symbol":"handleRequest","body":"auth entry point"}
+```
+
+### `bb_annotations`
+
+Read annotations for a symbol (or all, up to `limit`, cap 200) with full provenance.
+Absence is declared, never an error. Read-only.
+
+```json
+{"symbol":"handleRequest"}
+```
+
 ## 9. Evidence Semantics
 
 The database is an evidence cache, not a runtime execution trace. Source paths, line ranges,
