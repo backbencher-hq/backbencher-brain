@@ -406,6 +406,7 @@ export function createStdioTransport(options: { runtime: "node-source" | "node-d
   }
 
   let child: ReturnType<typeof spawn> | null = null
+  let exitedCode: number | null = null
   let buffer = Buffer.alloc(0)
   const pending = new Map<number, { resolve: (msg: any) => void; reject: (e: Error) => void }>()
   let nextId = 1
@@ -464,6 +465,9 @@ export function createStdioTransport(options: { runtime: "node-source" | "node-d
       child.stderr!.on("data", (chunk: Buffer) => {
         stderrRing = (stderrRing + chunk.toString("utf8")).slice(-8000)
       })
+      child.on("exit", (code) => {
+        exitedCode = code
+      })
       return Promise.resolve()
     },
     request(method: string, params: unknown): Promise<any> {
@@ -474,7 +478,9 @@ export function createStdioTransport(options: { runtime: "node-source" | "node-d
       return new Promise((resolve, reject) => {
         const timer = setTimeout(() => {
           pending.delete(id)
-          reject(new Error(`timeout waiting for ${method} response`))
+          const stderr = stderrRing.replace(/\s+$/g, "").slice(-500)
+          const exitNote = exitedCode === null ? "" : ` (server exited code ${exitedCode})`
+          reject(new Error(`timeout waiting for ${method} response${exitNote}; server stderr: ${stderr || "(empty)"}`))
         }, 15_000)
         pending.set(id, {
           resolve: (msg) => {

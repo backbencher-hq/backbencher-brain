@@ -129,13 +129,12 @@ if (!existsSync(distServer)) {
   try {
     budgets = await core.runFeatureAssertions({ transport, workspaceDir: fx.workspaceDir }, (name, ok, detail) => {
       assertionResults.push({ name, ok, detail })
-    })
-  } catch (err) {
-    legStatus = "failed"
-    legReason = String(err).slice(0, 300)
-  } finally {
-    await transport.dispose().catch(() => {})
-  }
+    })    } catch (err) {
+      legStatus = "failed"
+      legReason = String(err).slice(0, 900) // keep the server-stderr tail visible
+    } finally {
+      await transport.dispose().catch(() => {})
+    }
   const failedAssertions = assertionResults.filter((r) => !r.ok)
   if (legStatus === "verified" && failedAssertions.length > 0) {
     legStatus = "failed"
