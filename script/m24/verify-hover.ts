@@ -146,7 +146,7 @@ async function testContent(): Promise<void> {
   const { hover } = await import(COMPONENT)
 
   // Position inside greet() (0-based line 8 → 1-based line 9).
-  const result = hover(raw, { filePath: join(dir, FILE_PATH_REL), position: { line: 8, character: 2 } })
+  const result = await hover(raw, { filePath: join(dir, FILE_PATH_REL), position: { line: 8, character: 2 } })
   check("G1: hover returns symbol name", result.data?.name === "greet", JSON.stringify(result.data))
   check("G1: hover returns signature containing name", (result.data?.signature ?? "").includes("greet"), result.data?.signature)
   check("G1: hover returns usage count 4", result.data?.usageCount === 4, String(result.data?.usageCount))
@@ -161,7 +161,7 @@ async function testConsistency(): Promise<void> {
   const raw = makeFixture(dir)
   const { hover } = await import(COMPONENT)
 
-  const result = hover(raw, { filePath: join(dir, FILE_PATH_REL), position: { line: 8, character: 2 } })
+  const result = await hover(raw, { filePath: join(dir, FILE_PATH_REL), position: { line: 8, character: 2 } })
   const sid = result.data ? (result.data.name === "greet" ? "sym-greet" : null) : null
   const direct = FIXTURE_RELS.filter((r) => r.source_symbol_id === sid || r.target_symbol_id === sid).length
   check("G2: usage count agrees with direct relationship count", sid !== null && result.data?.usageCount === direct, `${result.data?.usageCount} vs ${direct}`)
@@ -174,7 +174,7 @@ async function testHonesty(): Promise<void> {
   const { hover } = await import(COMPONENT)
 
   // Position outside every indexed symbol (0-based line 13 = after the class).
-  const result = hover(raw, { filePath: join(dir, FILE_PATH_REL), position: { line: 13, character: 0 } })
+  const result = await hover(raw, { filePath: join(dir, FILE_PATH_REL), position: { line: 13, character: 0 } })
   check("G3: not-indexed position returns null contents", result.contents === null)
   check("G3: not-indexed position has no fabricated data", result.data === null)
   check("G3: provenance explains not indexed", (result.provenance.limitations.join(" ") || "").includes("not indexed"))
@@ -182,7 +182,7 @@ async function testHonesty(): Promise<void> {
   // Unsupported language: declared absence with provenance. python JOINED the
   // launch set in the M29 wave — the declared-absence oracle must be a
   // language that stays outside the set.
-  const result2 = hover(raw, { filePath: join(dir, "fixture.rb"), position: { line: 0, character: 0 } })
+  const result2 = await hover(raw, { filePath: join(dir, "fixture.rb"), position: { line: 0, character: 0 } })
   check("G3: unsupported language returns null contents", result2.contents === null)
   check("G3: unsupported language provenance explains launch set", (result2.provenance.limitations.join(" ") || "").includes("launch"))
   cleanupDir(dir)
@@ -195,7 +195,7 @@ async function testPositions(): Promise<void> {
 
   // greet() spans index lines 9-11 (1-based); a position on 0-based line 8
   // inside it must resolve to greet via the P1 component.
-  const result = hover(raw, { filePath: join(dir, FILE_PATH_REL), position: { line: 8, character: 2 } })
+  const result = await hover(raw, { filePath: join(dir, FILE_PATH_REL), position: { line: 8, character: 2 } })
   check("G4: position inside symbol range resolves to the symbol", result.data?.name === "greet", JSON.stringify(result.data))
 
   // Range conversion must come from P1: greet() spans index lines 8-10
@@ -217,13 +217,13 @@ async function testFreshness(): Promise<void> {
   const { hover } = await import(COMPONENT)
 
   // Fresh file: no stale marker.
-  const fresh = hover(raw, { filePath: join(dir, FILE_PATH_REL), position: { line: 8, character: 2 } })
+  const fresh = await hover(raw, { filePath: join(dir, FILE_PATH_REL), position: { line: 8, character: 2 } })
   check("G5: fresh file → stale=false", fresh.data?.stale === false, JSON.stringify(fresh.data))
   check("G5: fresh hover provenance not marked stale", fresh.provenance.stale === false)
 
   // Stale file: edit the fixture on disk; hash now differs from the index.
   writeFileSync(join(dir, FILE_PATH_REL), FIXTURE_SOURCE + "\n// edited after indexing\n")
-  const stale = hover(raw, { filePath: join(dir, FILE_PATH_REL), position: { line: 8, character: 2 } })
+  const stale = await hover(raw, { filePath: join(dir, FILE_PATH_REL), position: { line: 8, character: 2 } })
   check("G5: edited file → stale=true", stale.data?.stale === true, JSON.stringify(stale.data))
   check("G5: stale hover includes stale marker in content", (stale.contents?.value ?? "").includes("stale"))
   check("G5: stale hover provenance carries evidenceClass stale", stale.provenance.evidenceClass === "stale")
@@ -237,12 +237,12 @@ async function testLatency(): Promise<void> {
 
   // Warm the path first.
   for (let i = 0; i < 10; i++) {
-    hover(raw, { filePath: join(dir, FILE_PATH_REL), position: { line: 8, character: 2 } })
+    await hover(raw, { filePath: join(dir, FILE_PATH_REL), position: { line: 8, character: 2 } })
   }
   const samples: number[] = []
   for (let i = 0; i < 100; i++) {
     const t0 = performance.now()
-    hover(raw, { filePath: join(dir, FILE_PATH_REL), position: { line: 8, character: 2 } })
+    await hover(raw, { filePath: join(dir, FILE_PATH_REL), position: { line: 8, character: 2 } })
     samples.push(performance.now() - t0)
   }
   samples.sort((a, b) => a - b)
@@ -294,10 +294,18 @@ async function runHoverMutants(): Promise<number> {
     const mutantPath = join(ROOT, "validation", "m24", `hover.mutant.${Date.now()}.ts`)
     // The mutant is written outside src/, so its relative imports would break.
     // Rewrite them to absolute file:// paths against the real sources.
-    const absImport = mutantSource
-      .replace(/from "\.\.\/brain\/database"/g, `from "file://${join(ROOT, "src", "brain", "database.ts").replace(/\\/g, "/")}"`)
-      .replace(/from "\.\.\/brain\/freshness"/g, `from "file://${join(ROOT, "src", "brain", "freshness.ts").replace(/\\/g, "/")}"`)
-      .replace(/from "\.\/positions"/g, `from "file://${join(ROOT, "src", "lsp", "positions.ts").replace(/\\/g, "/")}"`)
+    // Rewrite EVERY relative import of the component copy to absolute file://
+    // URLs against the real sources (../brain/* -> src/brain, ../ast/* ->
+    // src/ast, ./x -> src/lsp) — a missed specifier would make the mutant
+    // fail to LOAD, which the harness would hollowly count as "caught".
+    const absImport = mutantSource.replace(/from "(\.\.\/(?:brain|ast)\/[a-z0-9_-]+|\.\/[a-z0-9_-]+)"/g, (_m, spec: string) => {
+      const rel = spec.startsWith("../ast/")
+        ? `src/ast/${spec.slice(7)}.ts`
+        : spec.startsWith("../brain/")
+          ? `src/brain/${spec.slice(9)}.ts`
+          : `src/lsp/${spec.slice(2)}.ts`
+      return `from "file://${join(ROOT, rel).replace(/\\/g, "/")}"`
+    })
     writeFileSync(mutantPath, absImport)
     try {
       const mod = await import(mutantPath)
@@ -327,7 +335,7 @@ async function hoverMutantOracle(mod: any): Promise<boolean> {
     const { hover } = mod
 
     // Content oracle: usage count must match the fixture truth (4 for greet).
-    const result = hover(raw, { filePath: join(dir, FILE_PATH_REL), position: { line: 8, character: 2 } })
+    const result = await hover(raw, { filePath: join(dir, FILE_PATH_REL), position: { line: 8, character: 2 } })
     if (result.data?.usageCount !== 4) return true
     if (!(result.data?.evidenceTiers ?? []).includes("indexed")) return true
     // Tier honesty: greet's rel-5 has confidence 0.3 and type "return", which
@@ -337,12 +345,12 @@ async function hoverMutantOracle(mod: any): Promise<boolean> {
     if (!result.contents?.value) return true
 
     // Honesty oracle: not-indexed position must not fabricate.
-    const notFound = hover(raw, { filePath: join(dir, FILE_PATH_REL), position: { line: 13, character: 0 } })
+    const notFound = await hover(raw, { filePath: join(dir, FILE_PATH_REL), position: { line: 13, character: 0 } })
     if (notFound.contents !== null || notFound.data !== null) return true
 
     // Freshness oracle: an edited file must produce a stale marker.
     writeFileSync(join(dir, FILE_PATH_REL), FIXTURE_SOURCE + "\n// edited\n")
-    const stale = hover(raw, { filePath: join(dir, FILE_PATH_REL), position: { line: 8, character: 2 } })
+    const stale = await hover(raw, { filePath: join(dir, FILE_PATH_REL), position: { line: 8, character: 2 } })
     if (stale.data?.stale !== true) return true
     if (stale.provenance.evidenceClass !== "stale") return true
 
