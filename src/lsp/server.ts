@@ -33,6 +33,7 @@
 import path from "node:path"
 import { realpathSync, appendFileSync } from "node:fs"
 import { getProjectId } from "../util/project-id"
+import { documentHighlight } from "./document_highlight"
 import { BACKBENCHER_BRAIN_VERSION } from "../version"
 
 /** The launch set, its membership test, and the path→language map live in
@@ -137,6 +138,7 @@ export class BbLspServer {
     if (this.handlers.has("textDocument/hover")) caps.hoverProvider = true
     if (this.handlers.has("textDocument/definition")) caps.definitionProvider = true
     if (this.handlers.has("textDocument/references")) caps.referencesProvider = true
+    if (this.handlers.has("textDocument/documentHighlight")) caps.documentHighlightProvider = true
     if (this.handlers.has("textDocument/documentSymbol")) caps.documentSymbolProvider = true
     if (this.handlers.has("workspace/symbol")) caps.workspaceSymbolProvider = true
     if (
@@ -499,6 +501,15 @@ export function wireFeatures(server: BbLspServer): void {
   server.register("textDocument/definition", async (params: any) => {
     const raw = await BrainDatabase.getRawInstance(projectId)
     return resolveDefinition(raw, {
+      filePath: uriToPath(params?.textDocument?.uri ?? ""),
+      line: params?.position?.line ?? 0,
+      character: params?.position?.character ?? 0,
+    })
+  })
+
+  server.register("textDocument/documentHighlight", async (params: any) => {
+    const raw = await BrainDatabase.getRawInstance(projectId)
+    return documentHighlight(raw, {
       filePath: uriToPath(params?.textDocument?.uri ?? ""),
       line: params?.position?.line ?? 0,
       character: params?.position?.character ?? 0,
