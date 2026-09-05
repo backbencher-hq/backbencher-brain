@@ -18,6 +18,8 @@ import { bbProjectsDir } from "../util/bb-data-dir"
 import { LogLevel, setLogLevel } from "../util/log"
 import { computeCheckoutFingerprint, readStoredFingerprint } from "../ast/fingerprint"
 import { FRESHNESS_REMEDIATION } from "../brain/freshness"
+import { collectStaleFiles, maybeAutoRefresh, autoRefreshLine } from "../ast/auto-refresh"
+import { resolveRowsFreshnessDetailed } from "../brain/freshness"
 
 export function getProjectId(projectPath: string): string {
   const resolved = path.resolve(projectPath)
@@ -323,7 +325,7 @@ async function cmdIndex(
   if (heldLock) await heldLock.release().catch(() => {})
 }
 
-async function cmdSearch(query: string, opts: { dir?: string; limit?: number; language?: string; mode?: string; filePath?: string; symbolName?: string }) {
+async function cmdSearch(query: string, opts: { dir?: string; limit?: number; language?: string; mode?: string; filePath?: string; symbolName?: string; noAutoRefresh?: boolean }) {
   const dir = opts.dir ? requireDir(opts.dir) : process.cwd()
   const pid = getProjectId(dir)
   const dbPath = BrainDatabase.getDbPath(pid)
@@ -346,11 +348,14 @@ async function cmdSearch(query: string, opts: { dir?: string; limit?: number; la
   if (mode !== "symbols") {
     const { createToolHandlers } = await import("../mcp/tool-handlers")
     const handler = createToolHandlers()["bb_search"]
+    // M43.A2 (#658): content/symbol modes route through the bb_search MCP
+    // handler (M40.A7 parity), which since A1 auto-refreshes stale files
+    // within budget — --no-auto-refresh maps to the handler's refresh=false.
     const args: any = mode === "file"
       ? { mode: "file", filePath: opts.filePath ?? query }
       : mode === "symbol"
-        ? { mode: "symbol", symbolName: opts.symbolName ?? query, filePath: undefined }
-        : { mode: "content", query, limit: opts.limit ?? 15, language: opts.language }
+        ? { mode: "symbol", symbolName: opts.symbolName ?? query, filePath: undefined, ...(opts.noAutoRefresh ? { refresh: false } : {}) }
+        : { mode: "content", query, limit: opts.limit ?? 15, language: opts.language, ...(opts.noAutoRefresh ? { refresh: false } : {}) }
     const res = await handler(args, { projectId: pid, projectPath: dir })
     if (res.isError) {
       console.error(res.content.map((c: any) => c.text).join("\n"))
@@ -378,22 +383,62 @@ async function cmdSearch(query: string, opts: { dir?: string; limit?: number; la
       const env = parsed.freshness ?? {}
       if (env.stale != null) console.log(`\nfreshness: ${env.fresh} fresh / ${env.stale} stale / ${env.missing} missing — ${env.remediation ?? ""}`)
     }
+    // M43.A1/A2: the handler declares its inline repair decision on the
+    // answer — surface it ("auto-refreshed N files in Xms" or the honest
+    // decline with its reason).
+    if (typeof parsed.autoRefresh === "string" && parsed.autoRefresh.length) console.log(parsed.autoRefresh)
     return
   }
-  const results: any = await BrainTools.searchCode(pid, query, {
-    maxResults: opts.limit ?? 15,
-    languages: opts.language ? [opts.language] : undefined,
-  })
-  if (results.length === 0) {
+  // M43.A2 (#658): rerunnable pass sharing the A1 core — when the first pass
+  // finds stale files within budget the CLI repairs exactly those files and
+  // runs the search AGAIN so the answer reflects the repair, declaring it.
+  // Fresh pass ⇒ one pass, zero added cost, byte-identical output.
+  const runPass = async () => {
+    const results: any = await BrainTools.searchCode(pid, query, {
+      maxResults: opts.limit ?? 15,
+      languages: opts.language ? [opts.language] : undefined,
+    })
+    const lines: string[] = []
+    for (const r of results) {
+      const stale = r.stale ? " ⚠stale" : ""
+      lines.push(`  ${r.symbolName} [${r.symbolType}] (${r.language}, ${r.file}:${r.line})${stale}`)
+    }
+    return { results, lines }
+  }
+  const pass1 = await runPass()
+  if (pass1.results.length === 0) {
     console.log(`no results for "${query}"`)
     return
   }
-  const raw = await BrainDatabase.getRawInstance(pid)
-  for (const r of results) {
-    const stale = r.stale ? " ⚠stale" : ""
-    console.log(`  ${r.symbolName} [${r.symbolType}] (${r.language}, ${r.file}:${r.line})${stale}`)
+  let footer = `\n${pass1.results.length} results${pass1.results.staleCount ? ` (${pass1.results.staleCount} stale — ${FRESHNESS_REMEDIATION.dir})` : ""}`
+  let decision: string | null = null
+  // searchSymbols already resolved staleness internally — only when it found
+  // staleness do we resolve the row map ourselves (no extra stat cost on the
+  // fresh path) to build the repair set.
+  if ((pass1.results.staleCount ?? 0) > 0 && !opts.noAutoRefresh) {
+    const raw = await BrainDatabase.getRawInstance(pid)
+    const rows = pass1.results.map((r: any) => ({ fileId: r.fileId }))
+    const detail = resolveRowsFreshnessDetailed(raw, pid, rows)
+    const staleFiles = collectStaleFiles(raw, rows, detail.statuses)
+    if (staleFiles.length > 0) {
+      const d = await maybeAutoRefresh(pid, dir, staleFiles, { perCallOptOut: false })
+      if (d.action === "refreshed") {
+        const pass2 = await runPass()
+        decision = autoRefreshLine(d)
+        for (const line of pass2.lines) console.log(line)
+        if (pass2.results.length === 0) console.log(`no results for "${query}"`)
+        else console.log(`\n${pass2.results.length} results`)
+        console.log(decision)
+        return
+      }
+      if (d.action === "declined") decision = autoRefreshLine(d)
+    }
   }
-  console.log(`\n${results.length} results${results.staleCount ? ` (${results.staleCount} stale — ${FRESHNESS_REMEDIATION.dir})` : ""}`)
+  for (const line of pass1.lines) console.log(line)
+  console.log(footer)
+  // M43.A2: the honest decline (budget / disabled / indexer-active) is
+  // printed with the stale answer — never silently stale.
+  if (decision && !footer.includes(decision)) console.log(decision)
 }
 
 async function cmdStats(dir: string | undefined) {
@@ -666,9 +711,15 @@ Examples:
     .option("--dir <dir>", "project directory (default: cwd)")
     .option("--limit <n>", "max results", "15")
     .option("--language <lang>", "filter by language")
-    .addHelpText("after", `\nExamples:\n  $ bb search handleRequest                 # symbol listing (default)\n  $ bb search --mode content "findUser("    # content matches with snippets\n  $ bb search --mode symbol --symbol-name handleRequest\n  $ bb search --mode file src/app.ts        # print an indexed file's content\n`)
+    // M43.A2 (#658): the CLI read path auto-refreshes stale files within
+    // budget before answering (same decision as the MCP bb_search tool);
+    // --no-auto-refresh answers from existing data with the staleness footer.
+    .option("--no-auto-refresh", "answer from the existing index with the staleness footer instead of auto-refreshing stale files within budget")
+    .addHelpText("after", `\nExamples:\n  $ bb search handleRequest                 # symbol listing (default)\n  $ bb search --mode content "findUser("    # content matches with snippets\n  $ bb search --mode symbol --symbol-name handleRequest\n  $ bb search --mode file src/app.ts        # print an indexed file's content\n  $ bb search --no-auto-refresh query      # never auto-refresh on read\n`)
     .action(async (query: string, opts: any) => {
-      await cmdSearch(query, { ...opts, limit: parseInt(opts.limit, 10) })
+      // Commander negation: `--no-auto-refresh` sets opts.autoRefresh = false
+      // (default true); translate to the option cmdSearch reads.
+      await cmdSearch(query, { ...opts, noAutoRefresh: opts.autoRefresh === false, limit: parseInt(opts.limit, 10) })
     })
 
   program
