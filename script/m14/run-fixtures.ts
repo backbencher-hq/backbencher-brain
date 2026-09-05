@@ -177,6 +177,19 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
         problems.push(`expected symbol not found: ${JSON.stringify(want)}; got: ${symbols.map((s: any) => s.name + ":" + s.kind).slice(0, 20).join(", ")}`)
       }
     }
+    // RSD3-style pin (2026-09-05): multiple declarations that share a
+    // (owner,name) identity — rust `struct Foo` + several `impl Foo` blocks,
+    // or a field plus a same-named accessor — must still get DISTINCT symbol
+    // ids. Duplicate ids silently drop nodes from id-keyed graph consumers
+    // and conflate distinct declarations. Each entry names a symbol to check
+    // (name required; ownerName/kind optional filters).
+    for (const want of exp.expectUniqueIds ?? []) {
+      const hits = symbols.filter(s => matchConstraints(s, want))
+      const ids = hits.map(s => s.id)
+      if (new Set(ids).size !== ids.length) {
+        problems.push(`expected unique ids among ${JSON.stringify(want)}; got: ${JSON.stringify(ids)}`)
+      }
+    }
     for (const want of exp.expectQualifiedCalls ?? []) {
       // ownerName-aware lookup (mirrors expectSymbols/expectParameters):
       // same-named methods across classes (Alpha.run / Beta.run) or repeated
@@ -356,10 +369,14 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
       if (!actual.includes(want)) problems.push(`expected framework "${want}" not detected; got: ${JSON.stringify(actual)}`)
     }
     for (const want of exp.expectErrors ?? []) {
-      const hit = (result.errors ?? []).find((e: any) =>
+      // analyzers place parse errors at result.errors (older contract) or in
+      // metadata.errors (rust/others) — search BOTH (unified 2026-09-05 by
+      // the rust RSD2 error-file-payload fixture).
+      const errList: any[] = [...(result.errors ?? []), ...(result.metadata?.errors ?? [])]
+      const hit = errList.find((e: any) =>
         Object.entries(want).every(([k, v]) => (e.range?.[k] ?? e[k]) === v),
       )
-      if (!hit) problems.push(`expected error not found: ${JSON.stringify(want)}; got: ${JSON.stringify((result.errors ?? []).slice(0, 5).map((e: any) => e.range))}`)
+      if (!hit) problems.push(`expected error not found: ${JSON.stringify(want)}; got: ${JSON.stringify(errList.slice(0, 5).map((e: any) => e.range))}`)
     }
     for (const want of exp.forbidSymbols ?? []) {
       const hit = symbols.find(s => matchConstraints(s, want))

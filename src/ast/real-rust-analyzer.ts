@@ -27,7 +27,6 @@ interface RustContext {
   exports: ASTEngine.ExportInfo[]
   metadata: Partial<ASTEngine.FileMetadata>
   emittedUses: Set<string>
-  qcByFunction: Map<string, string[]>
   pendingInstantiations: Array<{ source: string; target: string; qualified: string }>
   // startIndex of call_expression / macro_invocation nodes that sit directly
   // inside an await_expression (`.await`). The DFS visits the inner call node
@@ -38,6 +37,12 @@ interface RustContext {
 }
 
 export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
+  // RSD3: per-file set of symbol ids already handed out, so impl blocks and
+  // other same-(owner,name) declarations never share an id (struct Foo + two
+  // `impl Foo` blocks previously produced THREE symbols all id "Foo"; 2,852
+  // duplicates across cargo+ripgrep). Reset per analyze() call.
+  private usedIds = new Set<string>()
+
   public analyze(
     rootNode: Node,
     content: string,
@@ -57,10 +62,10 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         frameworkPatterns: [],
       },
       emittedUses: new Set<string>(),
-      qcByFunction: new Map<string, string[]>(),
       pendingInstantiations: [],
       awaitedCalls: new Set<number>(),
     }
+    this.usedIds = new Set<string>()
 
     if (rootNode.hasError) {
       const errStack: Node[] = [rootNode]
@@ -293,10 +298,15 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       const _owner = s.ownerName || s.scope; if (_owner) ctx.relationships.push({ source: _owner, target: s.name, type: ASTEngine.RelationshipType.Contains, confidence: 1.0, metadata: {} })
     }
 
-    // #383 payload attach: calls per enclosing function.
+    // #383 payload attach: qualified_calls were attached DIRECTLY to the
+    // enclosing symbol during the walk (RSD1/RSD2 fix: the old name-keyed
+    // qcByFunction map merged every same-named function/method across types
+    // and modules into ONE payload, and a whole-file `!metadata.errors` guard
+    // wiped payloads from every function in files with ANY parse error).
     for (const sym of ctx.symbols) {
-      const qc = ctx.qcByFunction.get(sym.name)
-      if (qc && qc.length > 0) sym.qualified_calls = [...new Set(qc)]
+      if (sym.qualified_calls && sym.qualified_calls.length > 0) {
+        sym.qualified_calls = [...new Set(sym.qualified_calls)]
+      }
     }
 
     // Deferred instantiation resolution: emit only constructions whose TYPE
@@ -471,7 +481,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       ownerKind = ASTEngine.SymbolKind.Interface
     }
 
-    return {
+    const symbol: ASTEngine.UniversalSymbol = {
       name,
       kind,
       // Rust default visibility is private - never leave it undefined.
@@ -491,6 +501,21 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       ownerKind,
       metadata: { ...extraMetadata },
     }
+    symbol.id = this.uniqueId(symbol.id)
+    return symbol
+  }
+
+  /** Hand out a per-file-unique id: first claim wins plain, later claims get
+   *  a deterministic numeric suffix (`Foo`, `Foo#2`, …). RSD3. */
+  private uniqueId(base: string): string {
+    let id = base
+    let n = 2
+    while (this.usedIds.has(id)) {
+      id = `${base}#${n}`
+      n++
+    }
+    this.usedIds.add(id)
+    return id
   }
 
   private handleStruct(
@@ -1038,12 +1063,19 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       metadata,
     })
 
-    // #383 payload: calls per enclosing function.
-    const qcFn = parent?.name
-    if (qcFn && !ctx.metadata.errors) {
-      const list = ctx.qcByFunction.get(qcFn) ?? []
-      list.push(qualified)
-      ctx.qcByFunction.set(qcFn, list)
+    // #383 payload: calls per enclosing function — attached DIRECTLY to the
+    // enclosing fn/method symbol (RSD1: the old name-keyed qcByFunction map
+    // merged same-named methods across types and impls — 410 buckets / 749
+    // excess entries in cargo+ripgrep). Attach is unconditional (RSD2: a
+    // whole-file `!metadata.errors` guard previously wiped payloads from all
+    // 4,620 functions across 519 error files; single-token ERROR recovery is
+    // precise enough that the symbolRef attach never misattributes).
+    const qcOwner = parent &&
+      (parent.kind === ASTEngine.SymbolKind.Function || parent.kind === ASTEngine.SymbolKind.Method)
+    if (qcOwner) {
+      const arr = parent.qualified_calls ?? []
+      arr.push(qualified)
+      parent.qualified_calls = arr
     }
 
     // Rust construction:
@@ -1133,6 +1165,17 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       type: ASTEngine.RelationshipType.Calls,
       metadata,
     })
+
+    // #383 payload parity with calls edges: macro invocations are real call
+    // sites, so a function whose body only invokes macros must still carry a
+    // qualified_calls payload (toSymbol-style `macro:name` entries).
+    const qcOwner = parent &&
+      (parent.kind === ASTEngine.SymbolKind.Function || parent.kind === ASTEngine.SymbolKind.Method)
+    if (qcOwner) {
+      const arr = parent.qualified_calls ?? []
+      arr.push(`macro:${macroName}`)
+      parent.qualified_calls = arr
+    }
 
     if (["panic", "todo", "unimplemented", "unreachable"].includes(macroName)) {
       if (!ctx.metadata.patterns) ctx.metadata.patterns = []
