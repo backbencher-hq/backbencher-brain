@@ -32,7 +32,8 @@
 
 import path from "node:path"
 import { realpathSync, appendFileSync } from "node:fs"
-import { getProjectId } from "../cli/index"
+import { getProjectId } from "../util/project-id"
+import { documentHighlight } from "./document_highlight"
 import { BACKBENCHER_BRAIN_VERSION } from "../version"
 
 /** The launch set, its membership test, and the path→language map live in
@@ -137,6 +138,7 @@ export class BbLspServer {
     if (this.handlers.has("textDocument/hover")) caps.hoverProvider = true
     if (this.handlers.has("textDocument/definition")) caps.definitionProvider = true
     if (this.handlers.has("textDocument/references")) caps.referencesProvider = true
+    if (this.handlers.has("textDocument/documentHighlight")) caps.documentHighlightProvider = true
     if (this.handlers.has("textDocument/documentSymbol")) caps.documentSymbolProvider = true
     if (this.handlers.has("workspace/symbol")) caps.workspaceSymbolProvider = true
     if (
@@ -487,6 +489,20 @@ export function wireFeatures(server: BbLspServer): void {
     return handleGraphRequest(raw, projectId, params)
   })
 
+  // Impact transport (M42.H4): the declared, versioned custom request that
+  // feeds the hover's "Impact analysis" action. Same law as bb/graph: schema
+  // mismatch, unindexed workspace, and unknown symbol are LOUD declared
+  // errors (`bb/impact:` prefix) — never an empty set that would read as
+  // "nothing depends on this". Symbol resolution is server-side only.
+  server.register("bb/impact", async (params: any) => {
+    const { handleImpactRequest } = await import("./impact_request")
+    let raw: Awaited<ReturnType<typeof BrainDatabase.getRawInstance>> | null = null
+    try {
+      raw = await BrainDatabase.getRawInstance(projectId)
+    } catch {}
+    return handleImpactRequest(raw, projectId, params)
+  })
+
 
   server.register("textDocument/hover", async (params: any) => {
     const raw = await BrainDatabase.getRawInstance(projectId)
@@ -503,6 +519,26 @@ export function wireFeatures(server: BbLspServer): void {
       line: params?.position?.line ?? 0,
       character: params?.position?.character ?? 0,
     })
+  })
+
+  server.register("textDocument/documentHighlight", async (params: any) => {
+    const raw = await BrainDatabase.getRawInstance(projectId)
+    const r = await documentHighlight(raw, {
+      filePath: uriToPath(params?.textDocument?.uri ?? ""),
+      line: params?.position?.line ?? 0,
+      character: params?.position?.character ?? 0,
+    })
+    // Wire law (LSP 3.18): the result is DocumentHighlight[] | null — never
+    // a wrapper object (a typed editor client would drop it). The component's
+    // declared metadata (evidence tier + staleness, §12.2) rides on each
+    // item's `data`: a client that ignores data still renders ranges/kinds;
+    // ours reads it to label the highlight render. Absence is wire `null`.
+    if (r.highlights.length === 0) return null
+    return r.highlights.map((h) => ({
+      range: { start: h.start, end: h.end },
+      kind: h.kind,
+      data: { evidenceTier: r.evidenceTier, staleness: r.staleness, symbol: r.symbol },
+    }))
   })
 
   server.register("textDocument/references", async (params: any) => {
@@ -560,7 +596,11 @@ const isMain =
   typeof (globalThis as any).Bun !== "undefined"
     ? (import.meta as any).main === true
     : process.argv[1] !== undefined &&
-      (process.argv[1].endsWith("lsp/server.js") || process.argv[1].endsWith("lsp/server.ts"))
+      // Windows argv[1] uses backslashes (…\dist\lsp\server.js) — normalize
+      // so the entry check is separator-independent (found by the E7 win32
+      // CI leg: the server silently exited 0 without starting, 2026-09-05).
+      (process.argv[1].replace(/\\/g, "/").endsWith("lsp/server.js") ||
+        process.argv[1].replace(/\\/g, "/").endsWith("lsp/server.ts"))
 
 if (isMain) {
   const dirIdx = process.argv.indexOf("--dir")
