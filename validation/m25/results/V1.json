@@ -3,13 +3,13 @@
   "code": "V1",
   "milestone": "M25",
   "status": "verified",
-  "checks": 24,
-  "passed": 24,
+  "checks": 25,
+  "passed": 25,
   "failed": 0,
-  "mutantsCaught": 3,
-  "mutantsTotal": 3,
+  "mutantsCaught": 4,
+  "mutantsTotal": 4,
   "negativeCases": 3,
-  "currentCommit": "c40e728fcdb42c62cd1f2716f1a1122580bd749c",
+  "currentCommit": "4c548dc84b6c52a2d078019ba89462bb42ac9d47",
   "machine": {
     "kernel": "Linux 7.1.1-76070101-generic",
     "cpu": "Intel(R) Core(TM) i5-8365U CPU @ 1.60GHz",
@@ -29,7 +29,7 @@
   },
   "verifierCommand": "npx tsx script/m25/verify-harness-core.ts",
   "evidenceFile": "V1.json",
-  "generatedAt": "2026-09-05T05:14:08.108Z",
+  "generatedAt": "2026-09-05T16:08:33.197Z",
   "os": "linux",
   "verdict": {
     "realComponentFailures": 0
