@@ -1,257 +1,263 @@
 {
-  "checks": [
-    {
-      "name": "S6: launch order resolves a server",
-      "ok": true,
-      "detail": "$HOME/backbencher-brain/dist/lsp/server.js"
-    },
-    {
-      "name": "S6: vim.lsp.start launched bb_lsp",
-      "ok": true,
-      "detail": "1"
-    },
-    {
-      "name": "S6: client initialized",
-      "ok": true,
-      "detail": "table: 0x7fa7395e7288"
-    },
-    {
-      "name": "S6: capabilities advertised",
-      "ok": true,
-      "detail": "{\n  d = true,\n  h = true,\n  s = true\n}"
-    },
-    {
-      "name": "S6: hover renders the symbol",
-      "ok": true,
-      "detail": "```\npublic method greet([])\n```\n\n**greet** — method, 2 usages\n\nevidence: structural\n\n_source: bb index (/home/ishaq232"
-    },
-    {
-      "name": "S6: hover carries evidence tier (contract §2)",
-      "ok": true,
-      "detail": "```\npublic method greet([])\n```\n\n**greet** — method, 2 usages\n\nevidence: structural\n\n_source: bb index (/home/ishaq232"
-    },
-    {
-      "name": "S6: definition resolves",
-      "ok": true,
-      "detail": "{\n  evidenceTier = \"indexed\",\n  found = true,\n  location = {\n    character = 2,\n    endCharacter = 3,\n    endLine = 8,\n    line = 6,\n    path = \"$HOME"
-    },
-    {
-      "name": "S6: references returns locations",
-      "ok": true,
-      "detail": "3"
-    },
-    {
-      "name": "S6: documentSymbols include the class",
-      "ok": true,
-      "detail": "{ \"Greeter\", \"CONSTANT\" }"
-    },
-    {
-      "name": "S6: declared absence is honored (no fabricated symbols)",
-      "ok": true,
-      "detail": "{\n  evidenceTier = \"not_indexed\",\n  limit = 200,\n  symbols = {},\n  totalCount = 0,\n  truncated = false\n}"
-    }
-  ],
-  "language": "javascript",
   "session": [],
   "raw": {
-    "definition": {
-      "found": true,
-      "symbol": {
-        "qualifiedName": "Greeter.greet",
-        "name": "greet",
-        "id": "b0604b763817b1b3fcb1ff317436a207a675d23b:main.js:greet:7",
-        "symbolType": "method"
-      },
-      "location": {
-        "path": "$HOME/backbencher-brain/script/m29/wave-fixtures/javascript/main.js",
-        "endCharacter": 3,
-        "character": 2,
-        "endLine": 8,
-        "line": 6
-      },
-      "evidenceTier": "indexed"
-    },
-    "references": {
-      "locations": [
-        {
-          "path": "$HOME/backbencher-brain/script/m29/wave-fixtures/javascript/main.js",
-          "endCharacter": 1,
-          "character": 7,
-          "endLine": 9,
-          "line": 1
-        },
-        {
-          "path": "$HOME/backbencher-brain/script/m29/wave-fixtures/javascript/main.js",
-          "endCharacter": 1,
-          "character": 7,
-          "endLine": 15,
-          "line": 11
-        },
-        {
-          "path": "$HOME/backbencher-brain/script/m29/wave-fixtures/javascript/main.js",
-          "endCharacter": 3,
-          "character": 2,
-          "endLine": 8,
-          "line": 6
-        }
-      ],
-      "evidenceTier": "indexed",
-      "totalCount": 3,
-      "limit": 200,
-      "truncated": false
-    },
     "hover": {
-      "contents": {
-        "kind": "markdown",
-        "value": "```\npublic method greet([])\n```\n\n**greet** — method, 2 usages\n\nevidence: structural\n\n_source: bb index ($HOME/backbencher-brain/script/m29/wave-fixtures/javascript/main.js:7)_"
-      },
-      "range": {
-        "start": {
-          "character": 2,
-          "line": 6
-        },
-        "end": {
-          "character": 3,
-          "line": 8
-        }
-      },
-      "provenance": {
-        "limitations": [
-          "index-sourced; no compiler-backed types (complement stance)"
-        ],
-        "stale": false,
-        "source": "bb_index",
-        "evidenceClass": "structural",
-        "engine": "bb_lsp hover@m24.l2"
-      },
       "data": {
-        "usageCount": 2,
-        "evidenceTiers": [
-          "structural"
-        ],
+        "signature": "public method greet([])",
         "crossLanguageSection": "",
         "annotationSection": "",
         "stale": false,
         "freshnessStatus": "fresh",
-        "filePath": "$HOME/backbencher-brain/script/m29/wave-fixtures/javascript/main.js",
-        "lineStart": 7,
-        "lineEnd": 9,
         "qualifiedName": "Greeter.greet",
-        "name": "greet",
+        "filePath": "$HOME/backbencher-brain/script/m29/wave-fixtures/javascript/main.js",
         "symbolType": "method",
-        "signature": "public method greet([])"
-      }
-    },
-    "documentSymbol": {
-      "symbols": [
-        {
-          "name": "Greeter",
-          "id": "b0604b763817b1b3fcb1ff317436a207a675d23b:main.js:Greeter:2",
-          "range": {
-            "endCharacter": 1,
-            "line": 1,
-            "character": 7,
-            "endLine": 9
-          },
-          "qualifiedName": "Greeter",
-          "children": [
-            {
-              "name": "constructor",
-              "id": "b0604b763817b1b3fcb1ff317436a207a675d23b:main.js:constructor:3",
-              "range": {
-                "endCharacter": 3,
-                "line": 2,
-                "character": 2,
-                "endLine": 4
-              },
-              "qualifiedName": "Greeter.constructor",
-              "children": [],
-              "symbolType": "constructor",
-              "selectionRange": {
-                "endCharacter": 3,
-                "line": 2,
-                "character": 2,
-                "endLine": 4
-              }
-            },
-            {
-              "name": "greet",
-              "id": "b0604b763817b1b3fcb1ff317436a207a675d23b:main.js:greet:7",
-              "range": {
-                "endCharacter": 3,
-                "line": 6,
-                "character": 2,
-                "endLine": 8
-              },
-              "qualifiedName": "Greeter.greet",
-              "children": [],
-              "symbolType": "method",
-              "selectionRange": {
-                "endCharacter": 3,
-                "line": 6,
-                "character": 2,
-                "endLine": 8
-              }
-            },
-            {
-              "name": "main",
-              "id": "b0604b763817b1b3fcb1ff317436a207a675d23b:main.js:main:12",
-              "range": {
-                "endCharacter": 1,
-                "line": 11,
-                "character": 7,
-                "endLine": 15
-              },
-              "qualifiedName": "main",
-              "children": [],
-              "symbolType": "function",
-              "selectionRange": {
-                "endCharacter": 1,
-                "line": 11,
-                "character": 7,
-                "endLine": 15
-              }
-            }
-          ],
-          "symbolType": "class",
-          "selectionRange": {
-            "endCharacter": 1,
-            "line": 1,
-            "character": 7,
-            "endLine": 9
-          }
+        "lineEnd": 9,
+        "lineStart": 7,
+        "usageCount": 2,
+        "evidenceTiers": [
+          "structural"
+        ],
+        "connectedSection": "**connected**: called by [main](command:bb.openUsage?%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjavascript%2Fmain.js%22%2C%22line%22%3A11%2C%22character%22%3A7%7D)",
+        "name": "greet",
+        "definition": {
+          "line": 6,
+          "character": 2
         },
-        {
-          "name": "CONSTANT",
-          "id": "b0604b763817b1b3fcb1ff317436a207a675d23b:main.js:CONSTANT:18",
-          "range": {
-            "endCharacter": 26,
-            "line": 17,
-            "character": 13,
-            "endLine": 17
-          },
-          "qualifiedName": "CONSTANT",
-          "children": [],
-          "symbolType": "constant",
-          "selectionRange": {
-            "endCharacter": 26,
-            "line": 17,
-            "character": 13,
-            "endLine": 17
-          }
+        "usagesSection": "**usages**\n1. [Greeter — main.js:2](command:bb.openUsage?%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjavascript%2Fmain.js%22%2C%22line%22%3A1%2C%22character%22%3A7%7D)\n2. [main — main.js:12](command:bb.openUsage?%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjavascript%2Fmain.js%22%2C%22line%22%3A11%2C%22character%22%3A7%7D)"
+      },
+      "range": {
+        "end": {
+          "line": 8,
+          "character": 3
+        },
+        "start": {
+          "line": 6,
+          "character": 2
         }
-      ],
-      "notIndexed": false,
-      "evidenceTier": "indexed"
+      },
+      "contents": {
+        "value": "```\npublic method greet([])\n```\n\n**greet** — method, 2 usages\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjavascript%2Fmain.js%22%2C%22line%22%3A11%2C%22character%22%3A7%7D)\n\n**usages**\n1. [Greeter — main.js:2](command:bb.openUsage?%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjavascript%2Fmain.js%22%2C%22line%22%3A1%2C%22character%22%3A7%7D)\n2. [main — main.js:12](command:bb.openUsage?%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjavascript%2Fmain.js%22%2C%22line%22%3A11%2C%22character%22%3A7%7D)\n\n_source: bb index ([$HOME/backbencher-brain/script/m29/wave-fixtures/javascript/main.js:7](command:bb.openDefinition?%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjavascript%2Fmain.js%22%2C%22line%22%3A6%2C%22character%22%3A2%7D))_",
+        "kind": "markdown"
+      },
+      "provenance": {
+        "stale": false,
+        "engine": "bb_lsp hover@m24.l2",
+        "evidenceClass": "structural",
+        "limitations": [
+          "index-sourced; no compiler-backed types (complement stance)"
+        ],
+        "source": "bb_index"
+      }
     },
     "workspaceAbsence": {
       "symbols": [],
       "evidenceTier": "not_indexed",
-      "totalCount": 0,
       "limit": 200,
-      "truncated": false
+      "truncated": false,
+      "totalCount": 0
+    },
+    "references": {
+      "locations": [
+        {
+          "character": 7,
+          "endCharacter": 1,
+          "line": 1,
+          "endLine": 9,
+          "path": "$HOME/backbencher-brain/script/m29/wave-fixtures/javascript/main.js"
+        },
+        {
+          "character": 7,
+          "endCharacter": 1,
+          "line": 11,
+          "endLine": 15,
+          "path": "$HOME/backbencher-brain/script/m29/wave-fixtures/javascript/main.js"
+        },
+        {
+          "character": 2,
+          "endCharacter": 3,
+          "line": 6,
+          "endLine": 8,
+          "path": "$HOME/backbencher-brain/script/m29/wave-fixtures/javascript/main.js"
+        }
+      ],
+      "evidenceTier": "indexed",
+      "limit": 200,
+      "truncated": false,
+      "totalCount": 3
+    },
+    "definition": {
+      "found": true,
+      "location": {
+        "character": 2,
+        "endCharacter": 3,
+        "line": 6,
+        "endLine": 8,
+        "path": "$HOME/backbencher-brain/script/m29/wave-fixtures/javascript/main.js"
+      },
+      "symbol": {
+        "id": "b0604b763817b1b3fcb1ff317436a207a675d23b:main.js:greet:7",
+        "name": "greet",
+        "qualifiedName": "Greeter.greet",
+        "symbolType": "method"
+      },
+      "evidenceTier": "indexed"
+    },
+    "documentSymbol": {
+      "notIndexed": false,
+      "symbols": [
+        {
+          "selectionRange": {
+            "character": 7,
+            "endCharacter": 1,
+            "line": 1,
+            "endLine": 9
+          },
+          "children": [
+            {
+              "selectionRange": {
+                "character": 2,
+                "endCharacter": 3,
+                "line": 2,
+                "endLine": 4
+              },
+              "children": [],
+              "name": "constructor",
+              "id": "b0604b763817b1b3fcb1ff317436a207a675d23b:main.js:constructor:3",
+              "range": {
+                "character": 2,
+                "endCharacter": 3,
+                "line": 2,
+                "endLine": 4
+              },
+              "qualifiedName": "Greeter.constructor",
+              "symbolType": "constructor"
+            },
+            {
+              "selectionRange": {
+                "character": 2,
+                "endCharacter": 3,
+                "line": 6,
+                "endLine": 8
+              },
+              "children": [],
+              "name": "greet",
+              "id": "b0604b763817b1b3fcb1ff317436a207a675d23b:main.js:greet:7",
+              "range": {
+                "character": 2,
+                "endCharacter": 3,
+                "line": 6,
+                "endLine": 8
+              },
+              "qualifiedName": "Greeter.greet",
+              "symbolType": "method"
+            },
+            {
+              "selectionRange": {
+                "character": 7,
+                "endCharacter": 1,
+                "line": 11,
+                "endLine": 15
+              },
+              "children": [],
+              "name": "main",
+              "id": "b0604b763817b1b3fcb1ff317436a207a675d23b:main.js:main:12",
+              "range": {
+                "character": 7,
+                "endCharacter": 1,
+                "line": 11,
+                "endLine": 15
+              },
+              "qualifiedName": "main",
+              "symbolType": "function"
+            }
+          ],
+          "name": "Greeter",
+          "id": "b0604b763817b1b3fcb1ff317436a207a675d23b:main.js:Greeter:2",
+          "range": {
+            "character": 7,
+            "endCharacter": 1,
+            "line": 1,
+            "endLine": 9
+          },
+          "qualifiedName": "Greeter",
+          "symbolType": "class"
+        },
+        {
+          "selectionRange": {
+            "character": 13,
+            "endCharacter": 26,
+            "line": 17,
+            "endLine": 17
+          },
+          "children": [],
+          "name": "CONSTANT",
+          "id": "b0604b763817b1b3fcb1ff317436a207a675d23b:main.js:CONSTANT:18",
+          "range": {
+            "character": 13,
+            "endCharacter": 26,
+            "line": 17,
+            "endLine": 17
+          },
+          "qualifiedName": "CONSTANT",
+          "symbolType": "constant"
+        }
+      ],
+      "evidenceTier": "indexed"
     }
   },
+  "checks": [
+    {
+      "ok": true,
+      "name": "S6: launch order resolves a server",
+      "detail": "$HOME/backbencher-brain/dist/lsp/server.js"
+    },
+    {
+      "ok": true,
+      "name": "S6: vim.lsp.start launched bb_lsp",
+      "detail": "1"
+    },
+    {
+      "ok": true,
+      "name": "S6: client initialized",
+      "detail": "table: 0x7078bbce1740"
+    },
+    {
+      "ok": true,
+      "name": "S6: capabilities advertised",
+      "detail": "{\n  d = true,\n  h = true,\n  s = true\n}"
+    },
+    {
+      "ok": true,
+      "name": "S6: hover renders the symbol",
+      "detail": "```\npublic method greet([])\n```\n\n**greet** — method, 2 usages\n\nevidence: structural\n\n**connected**: called by [main](c"
+    },
+    {
+      "ok": true,
+      "name": "S6: hover carries evidence tier (contract §2)",
+      "detail": "```\npublic method greet([])\n```\n\n**greet** — method, 2 usages\n\nevidence: structural\n\n**connected**: called by [main](c"
+    },
+    {
+      "ok": true,
+      "name": "S6: definition resolves",
+      "detail": "{\n  evidenceTier = \"indexed\",\n  found = true,\n  location = {\n    character = 2,\n    endCharacter = 3,\n    endLine = 8,\n    line = 6,\n    path = \"$HOME"
+    },
+    {
+      "ok": true,
+      "name": "S6: references returns locations",
+      "detail": "3"
+    },
+    {
+      "ok": true,
+      "name": "S6: documentSymbols include the class",
+      "detail": "{ \"Greeter\", \"CONSTANT\" }"
+    },
+    {
+      "ok": true,
+      "name": "S6: declared absence is honored (no fabricated symbols)",
+      "detail": "{\n  evidenceTier = \"not_indexed\",\n  limit = 200,\n  symbols = {},\n  totalCount = 0,\n  truncated = false\n}"
+    }
+  ],
+  "language": "javascript",
   "status": "verified",
-  "commit": "94b9f79e4227ff07e410e3fbac81baa011e9e685"
+  "commit": "37c462c58b1b8bbd1eb60e5b0e22a67db1bd2731"
 }

@@ -17,8 +17,8 @@
     "node": "v20.19.5",
     "runtime": "fork-run"
   },
-  "currentCommit": "4c548dc84b6c52a2d078019ba89462bb42ac9d47",
-  "commit": "4c548dc84b6c52a2d078019ba89462bb42ac9d47",
+  "currentCommit": "37c462c58b1b8bbd1eb60e5b0e22a67db1bd2731",
+  "commit": "37c462c58b1b8bbd1eb60e5b0e22a67db1bd2731",
   "failed": 0,
   "checks": [
     {
@@ -32,12 +32,12 @@
     {
       "name": "E5: server launched and version ok",
       "ok": true,
-      "detail": "{\"activationMs\":43,\"declaredBudgetMs\":150,\"withinBudget\":true,\"launch\":{\"kind\":\"dist-bundled\",\"entryPath\":\"$HOME/backbencher-brain/ide/vscode/dist/server/lsp/server.js\",\"runtime\":\"node\",\"run"
+      "detail": "{\"activationMs\":28,\"declaredBudgetMs\":150,\"withinBudget\":true,\"launch\":{\"kind\":\"dist-bundled\",\"entryPath\":\"$HOME/backbencher-brain/ide/vscode/dist/server/lsp/server.js\",\"runtime\":\"node\",\"run"
     },
     {
       "name": "E5: activation within declared budget",
       "ok": true,
-      "detail": "{\"activationMs\":43,\"regime\":\"cold-first-launch\",\"ceiling\":1500,\"declaredBudgetMs\":150}"
+      "detail": "{\"activationMs\":28,\"regime\":\"cold-first-launch\",\"ceiling\":1500,\"declaredBudgetMs\":150}"
     },
     {
       "name": "E5: extension exposes its LanguageClient transport",
@@ -46,12 +46,12 @@
     {
       "name": "L2: hover renders markdown",
       "ok": true,
-      "detail": "{\"contents\":{\"value\":\"```\\nmethod greet(…)\\n```\\n\\n**greet** — method, 1 usage\\n\\nevidence: structural\\n\\n**connected**: called by [main](command:bb.openUsage?%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-tOdKXh%2Fmain.ts%22%2C%22line%22%3A6%2C%22character%22%3A9%7D)\\n\\n**usages**\\n1. [main — main.ts:7](command"
+      "detail": "{\"contents\":{\"value\":\"```\\nmethod greet(…)\\n```\\n\\n**greet** — method, 1 usage\\n\\nevidence: structural\\n\\n**connected**: called by [main](command:bb.openUsage?%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-3q1Yfj%2Fmain.ts%22%2C%22line%22%3A6%2C%22character%22%3A9%7D)\\n\\n**usages**\\n1. [main — main.ts:7](command"
     },
     {
       "name": "L2: hover names greet",
       "ok": true,
-      "detail": "{\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\",\"symbolType\":\"method\",\"signature\":\"method greet(…)\",\"usageCount\":1,\"evidenceTiers\":[\"structural\"],\"connectedSection\":\"**connected**: called by [main](command:bb.openUsage?%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-tOdKXh%2Fmain.ts%22%2C%22line%22%3A6%2C%22character%22%3A9%7D)\",\"usagesSection\":\"**usages**\\n1. [main — main.ts:7](command:bb.openUsage?%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-tOdKXh%2Fmain.ts%22%2C%22line%22%3A6%2C%22character%22%3A9%7D)\",\"definition\":{\"line\":1,\"character\":2},\"crossLanguageSection\":\"\",\"annotationSection\":\"\",\"stale\":false,\"freshnessStatus\":\"fresh\",\"filePath\":\"/tmp/v1-ws-tOdKXh/main.ts\",\"lineStart\":2,\"lineEnd\":2}"
+      "detail": "{\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\",\"symbolType\":\"method\",\"signature\":\"method greet(…)\",\"usageCount\":1,\"evidenceTiers\":[\"structural\"],\"connectedSection\":\"**connected**: called by [main](command:bb.openUsage?%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-3q1Yfj%2Fmain.ts%22%2C%22line%22%3A6%2C%22character%22%3A9%7D)\",\"usagesSection\":\"**usages**\\n1. [main — main.ts:7](command:bb.openUsage?%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-3q1Yfj%2Fmain.ts%22%2C%22line%22%3A6%2C%22character%22%3A9%7D)\",\"definition\":{\"line\":1,\"character\":2},\"crossLanguageSection\":\"\",\"annotationSection\":\"\",\"stale\":false,\"freshnessStatus\":\"fresh\",\"filePath\":\"/tmp/v1-ws-3q1Yfj/main.ts\",\"lineStart\":2,\"lineEnd\":2}"
     },
     {
       "name": "L2: hover usage count matches fixture relationship",
@@ -69,17 +69,17 @@
     {
       "name": "H2: rich hover renders the connected summary (called by main)",
       "ok": true,
-      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-tOdKXh%2Fmain.ts%22%2C%22line%22%3A6%2C%22character%22%3A"
+      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-3q1Yfj%2Fmain.ts%22%2C%22line%22%3A6%2C%22character%22%3A"
     },
     {
       "name": "H2: usage link is clickable with an index-backed file:line target",
       "ok": true,
-      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-tOdKXh%2Fmain.ts%22%2C%22line%22%3A6%2C%22character%22%3A9%7D)\n\n**usages**\n1. [main — main.ts:7](command:bb.openUsage?%7B%22file%22%3A%22"
+      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-3q1Yfj%2Fmain.ts%22%2C%22line%22%3A6%2C%22character%22%3A9%7D)\n\n**usages**\n1. [main — main.ts:7](command:bb.openUsage?%7B%22file%22%3A%22"
     },
     {
       "name": "H2: definition footnote is a link (bb.openDefinition)",
       "ok": true,
-      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-tOdKXh%2Fmain.ts%22%2C%22line%22%3A6%"
+      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-3q1Yfj%2Fmain.ts%22%2C%22line%22%3A6%"
     },
     {
       "name": "H2: no show-all-usages link for a single-usage symbol",
@@ -94,17 +94,17 @@
     {
       "name": "L3: definition resolves greet",
       "ok": true,
-      "detail": "{\"found\":true,\"location\":{\"path\":\"/tmp/v1-ws-tOdKXh/main.ts\",\"line\":1,\"character\":2,\"endLine\":1,\"endCharacter\":7},\"symbol\":{\"id\":\"sym-greet\",\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\",\"symbolType\":\"method\"},\"evidenceTier\":\"indexed\"}"
+      "detail": "{\"found\":true,\"location\":{\"path\":\"/tmp/v1-ws-3q1Yfj/main.ts\",\"line\":1,\"character\":2,\"endLine\":1,\"endCharacter\":7},\"symbol\":{\"id\":\"sym-greet\",\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\",\"symbolType\":\"method\"},\"evidenceTier\":\"indexed\"}"
     },
     {
       "name": "L3: definition location is 0-based line 1",
       "ok": true,
-      "detail": "{\"path\":\"/tmp/v1-ws-tOdKXh/main.ts\",\"line\":1,\"character\":2,\"endLine\":1,\"endCharacter\":7}"
+      "detail": "{\"path\":\"/tmp/v1-ws-3q1Yfj/main.ts\",\"line\":1,\"character\":2,\"endLine\":1,\"endCharacter\":7}"
     },
     {
       "name": "L3: references returns locations",
       "ok": true,
-      "detail": "{\"locations\":[{\"path\":\"/tmp/v1-ws-tOdKXh/main.ts\",\"line\":6,\"character\":9,\"endLine\":9,\"endCharacter\":1},{\"path\":\"/tmp/v1-ws-tOdKXh/main.ts\",\"line\":1,\"character\":2,\"endLine\":1,\"endCharacter\":7}],\"trunca"
+      "detail": "{\"locations\":[{\"path\":\"/tmp/v1-ws-3q1Yfj/main.ts\",\"line\":6,\"character\":9,\"endLine\":9,\"endCharacter\":1},{\"path\":\"/tmp/v1-ws-3q1Yfj/main.ts\",\"line\":1,\"character\":2,\"endLine\":1,\"endCharacter\":7}],\"trunca"
     },
     {
       "name": "L3: definition outside index is honest empty",
@@ -123,12 +123,12 @@
     {
       "name": "L4: workspace/symbol finds greet",
       "ok": true,
-      "detail": "{\"symbols\":[{\"id\":\"sym-greet\",\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\",\"symbolType\":\"method\",\"path\":\"/tmp/v1-ws-tOdKXh/main.ts\",\"line\":1}],\"truncated\":false,\"totalCount\":1,\"limit\":200,\"evidenceT"
+      "detail": "{\"symbols\":[{\"id\":\"sym-greet\",\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\",\"symbolType\":\"method\",\"path\":\"/tmp/v1-ws-3q1Yfj/main.ts\",\"line\":1}],\"truncated\":false,\"totalCount\":1,\"limit\":200,\"evidenceT"
     },
     {
       "name": "L5: prepareCallHierarchy returns item",
       "ok": true,
-      "detail": "{\"item\":{\"name\":\"greet\",\"kind\":6,\"uri\":\"file:///tmp/v1-ws-tOdKXh/main.ts\",\"range\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\"line\":1,\"character\":7}},\"selectionRange\":{\"start\":{\"line\":1,\"character\":2},\""
+      "detail": "{\"item\":{\"name\":\"greet\",\"kind\":6,\"uri\":\"file:///tmp/v1-ws-3q1Yfj/main.ts\",\"range\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\"line\":1,\"character\":7}},\"selectionRange\":{\"start\":{\"line\":1,\"character\":2},\""
     },
     {
       "name": "L5: incomingCalls returns callers",
@@ -159,74 +159,12 @@
       "name": "H1: highlight outside index is declared absent (wire null)",
       "ok": true,
       "detail": "null"
-    },
-    {
-      "name": "E5-H2: real client hover carries the connected summary",
-      "ok": true,
-      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%7B%22file%22%3A%22%2Ftmp%2Fv1-"
-    },
-    {
-      "name": "E5-H2: hover embeds a bb.openUsage link",
-      "ok": true,
-      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-tOdKXh%2Fmain.ts%22%2C%22line%22%3A6%2C%22character%22%3A9%7D)\n\n**usages**\n1. [main — main.ts:7](command:bb.openUsage?%7B%22file%22%3A%22"
-    },
-    {
-      "name": "E5-H2: clicking bb.openUsage reveals the index-stored target",
-      "ok": true,
-      "detail": "{\"before\":-1,\"args\":{\"file\":\"/tmp/v1-ws-tOdKXh/main.ts\",\"line\":6,\"character\":9},\"line\":6}"
-    },
-    {
-      "name": "E5-H2: hover embeds a bb.openDefinition link",
-      "ok": true,
-      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-tOdKXh%2Fmain.ts%22%2C%22line%22%3A6%"
-    },
-    {
-      "name": "E5-H2: clicking bb.openDefinition reveals the declaration",
-      "ok": true,
-      "detail": "{\"args\":{\"file\":\"/tmp/v1-ws-tOdKXh/main.ts\",\"line\":1,\"character\":2},\"line\":1}"
-    },
-    {
-      "name": "E5-H2: all three hover-link commands are registered",
-      "ok": true,
-      "detail": "[\"bb.openUsage\",\"bb.openDefinition\",\"bb.showAllUsages\"]"
-    },
-    {
-      "name": "E5: stale marker rendered in-editor",
-      "ok": true,
-      "detail": "⚠ stale"
-    },
-    {
-      "name": "E5: graph panel renders the fixture root graph",
-      "ok": true,
-      "detail": "<div class=\"bb-graph\"><div class=\"bb-nodes\"><div class=\"bb-node bb-node-root\" data-id=\"sym-greeter\" data-kind=\"class\" da"
-    },
-    {
-      "name": "E5: graph panel shell carries the W6 CSP",
-      "ok": true
-    },
-    {
-      "name": "E5: graph panel unknown-symbol failure is loud and declared",
-      "ok": true,
-      "detail": "bb/graph request failed: Symbol 'definitely-not-a-symbol-xyz' not found"
-    },
-    {
-      "name": "E5: fresh marker clears the badge",
-      "ok": true
-    },
-    {
-      "name": "E5 live: marker starts fresh after index",
-      "ok": true,
-      "detail": "{\"stale\":false,\"status\":\"fresh\",\"pendingReindex\":false}"
-    },
-    {
-      "name": "E5 live: edit turns the marker stale",
-      "ok": true
     }
   ],
-  "checksPassed": 42,
-  "checksTotal": 42,
+  "checksPassed": 29,
+  "checksTotal": 29,
   "activation": {
-    "activationMs": 43,
+    "activationMs": 28,
     "declaredBudgetMs": 150,
     "withinBudget": true,
     "launch": {
@@ -238,11 +176,11 @@
     },
     "serverVersion": "0.3.0",
     "versionOk": true,
-    "handshakeMs": 398
+    "handshakeMs": 253
   },
-  "elapsedMs": 30035,
+  "elapsedMs": 20019,
   "verifierCommand": "npx tsx script/m25/run-fork-e2e.mts",
   "evidenceFile": "F-ANTIGRAVITY.json",
-  "generatedAt": "2026-09-05T16:04:39.091Z",
+  "generatedAt": "2026-09-05T16:37:05.045Z",
   "limitations": []
 }
