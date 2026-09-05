@@ -166,6 +166,20 @@
         "node_type": "framework detection (import-path based)",
         "question": "M37 #604 wave-2 (RSD7 lesson carried from rust wave-6): framework truth is differential-invisible \u2014 deriveGoEdges derives no framework truth \u2014 and NO go fixture pinned detectedFrameworks, so dropping detection could never fail a gate. The go analyzer detects frameworks from canonical import paths only (gin/echo/fiber/net_http/gorilla_mux/grpc/testify \u2014 deterministic, zero code string-matching). Verified on go-tools+terraform (3,924 files): net_http 86, grpc 50, zero false positives. Now fixture-gated: framework-detection.go asserts the EXACT set [gin, net_http, gorilla_mux, grpc] plus constructor-call/composite-literal pins, and mutant go/drop-framework-detection dies.",
         "ruling": "FIXED \u2014 import-path framework detection is genuine (net_http/grpc hits verified against real imports in go-tools); no false positives on either corpus. Fixture framework-detection.go + 272nd mutant now gate it permanently."
+      },
+      {
+        "id": "GOD8",
+        "status": "FIXED",
+        "node_type": "channel send/receive/select uses (go_channel_operation)",
+        "question": "M37 #604 wave-3 (full read of analyzeGoSpecificPatterns + extractGoChannelVariable): channel-op uses were differential-INVISIBLE (uses is NOT in go's compared-label set; deriveGoEdges derives no uses truth) and pinned nowhere, so two defects ran uncaught: (a) NO dedup \u2014 every send site pushed a row, 79 duplicate (fn,channel,direction) rows across go-tools+terraform; (b) RAW OPERAND TEXT targets \u2014 member channels as dotted `h.jobs`, method-result channels as `ctx.Done()` (a call!), bare locals/params as `c` (LocalsAreNotSymbols), 327 garbage/non-leaf targets. Family contract: uses targets = declared leaf names only. Ruling: channel ops emit ONE deduped uses row per (fn, channel-leaf, direction) ONLY when the operand resolves to a declared channel \u2014 bare package-scope var/const (27/160 bare identifiers measured) or a member selector (leaf + send/receive direction, owned by the channel pass; the selector pass skips channel operands so members get one row not two). Bare locals/params, anonymous channels, and call results emit NOTHING. Parse shapes probe-verified: communication_case wraps receive_statement > unary_expression, so send/receive/unary branches cover select cases (no separate case branch \u2014 pre-fix double-counted).",
+        "ruling": "FIXED \u2014 corpus: 79 dup rows -> 0, 327 garbage targets -> 0, 109 files with channel uses -> 50. type-usage-graph fixture pins worker->jobs(send+receive)/doneAll(receive) channel ops + forbids pump->ch/done locals and dotted h.jobs; 273rd mutant go/reemit-dotted-channel-uses dies. 4/4 go fixtures, differential go-tools @60 100%/0/0."
+      },
+      {
+        "id": "GOD9",
+        "status": "FIXED",
+        "node_type": "qualified_calls payload dedup",
+        "question": "M37 #604 wave-3 (payload audit of qualified_calls on go-tools+terraform): findGoFunctionCalls pushed one entry per CALL SITE with no dedup \u2014 a function calling the same callee N times carried N identical entries (29,463 excess rows on 4,719 symbols; total 103,339 -> 73,876 entries after fix). The rust #383 lesson: qualified_calls is a UNIQUE set of callee paths per function symbol (rust dedupes at attach with [...new Set()]). Chain-call forms like `time.Now().Format` and `exec.Command(...).CombinedOutput` are NOT junk \u2014 rust parity keeps full chain paths (`String::from(\"x\").trim().to_uppercase`); only the duplicate multiplicity was wrong.",
+        "ruling": "FIXED \u2014 findGoFunctionCalls dedupes via a seen set; corpus 4,719 dup symbols -> 0, 29,463 excess rows removed. relationship-and-payloads fixture pins startWork countEquals s.startWork:1 (two self-call sites: go + defer); 274th mutant go/duplicate-qualified-calls dies. Fixtures 4/4 go, differential go-tools @60 100%/0/0."
       }
     ]
   }

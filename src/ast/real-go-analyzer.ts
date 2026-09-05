@@ -940,6 +940,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private findGoFunctionCalls(functionNode: Node): string[] {
     const calls: string[] = []
+    const seen = new Set<string>()
 
     const bodyNode = functionNode.childForFieldName("body")
     if (bodyNode) {
@@ -950,7 +951,13 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
           const funcNode = node.childForFieldName("function")
           if (funcNode) {
             const callExpression = this.buildGoCallExpression(funcNode)
-            if (callExpression && !this.isGoBuiltin(callExpression)) {
+            // Dedupe per symbol (M37 #604 wave-3, GOD9): the #383 rust lesson
+            // — qualified_calls is a UNIQUE set of callee paths per function;
+            // the pre-fix list pushed one row per CALL SITE, so a function
+            // calling fmt.Println at 5 sites carried 5 identical entries
+            // (29,463 excess rows across go-tools+terraform, 4,719 symbols).
+            if (callExpression && !this.isGoBuiltin(callExpression) && !seen.has(callExpression)) {
+              seen.add(callExpression)
               calls.push(callExpression)
             }
           }
@@ -1746,6 +1753,8 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         emittedCalls.add(`${r.source}->${r.target}`)
       }
     }
+    // Channel-op dedup (GOD8): one row per (fn, channel, direction).
+    const emittedChannelUses = new Set<string>()
 
     const stack = [rootNode]
     while (stack.length > 0) {
@@ -1774,39 +1783,48 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
 
+      // Channel send/receive/select ops (M37 #604 wave-3 ruling GOD8): emit
+      // a DEDUPED uses edge to the channel target with send/receive
+      // direction, and ONLY when the operand resolves to a DECLARED channel:
+      // a bare package-scope var/const OR a member selector (leaf = field
+      // name). The pre-fix handler pushed the raw operand text with no
+      // dedup, fabricating 79 duplicate rows and garbage targets at corpus
+      // scale: member channels (`h.jobs <- v`) as dotted `h.jobs`, method-
+      // result channels (`<-ctx.Done()`) as `ctx.Done()`, and bare
+      // LOCAL/param channels (`c <- v`) as `c` — LocalsAreNotSymbols, so a
+      // local name is not a valid relationship target (same resolvability
+      // gate the goroutine/defer branches apply via
+      // isGoResolvableCallTarget). Measured go-tools+terraform 3,924 files:
+      // 156 selector / 160 bare / 169 call operands, of which only 27 bare
+      // identifiers name a package-scope var.
+      //
+      // Parse shapes (probe-verified 2026-09): a select/communication_case
+      // WRAPS its inner send_statement/receive_statement (case <-c: is
+      // communication_case > receive_statement > unary_expression), so
+      // handling send_statement/receive_statement/unary-receive alone covers
+      // select cases — no separate communication_case branch (the pre-fix
+      // double-counted via both). Dedup per (fn, channel, direction) so two
+      // sends on one channel collapse to one row.
       if (node.type === "send_statement" || node.type === "receive_statement" || this.isGoReceiveExpression(node)) {
         const channelVar = this.extractGoChannelVariable(node)
         const containingFunction = this.findContainingGoFunction(node)
-        if (channelVar && containingFunction) {
-          relationships.push({
-            source: containingFunction,
-            target: channelVar,
-            type: ASTEngine.RelationshipType.Uses,
-            confidence: 0.8,
-            metadata: {
-              relationshipType: "go_channel_operation",
-              operationType: node.type === "send_statement" ? "send" : "receive",
-              pattern: "channel_communication",
-            },
-          })
-        }
-      }
-
-      if (node.type === "select_statement" || node.type === "communication_case") {
-        const channelVar = this.extractGoChannelVariable(node)
-        const containingFunction = this.findContainingGoFunction(node)
-        if (channelVar && containingFunction) {
-          relationships.push({
-            source: containingFunction,
-            target: channelVar,
-            type: ASTEngine.RelationshipType.Uses,
-            confidence: 0.85,
-            metadata: {
-              relationshipType: "go_select_channel",
-              operationType: node.type === "select_statement" ? "select" : "select_case",
-              pattern: "select_statement",
-            },
-          })
+        if (channelVar && containingFunction && (channelVar.member || this.isGoDeclaredPackageVar(channelVar.name, symbols))) {
+          const isSend = node.type === "send_statement"
+          const key = `${containingFunction}->${channelVar.name}->${isSend ? "send" : "receive"}`
+          if (!emittedChannelUses.has(key)) {
+            emittedChannelUses.add(key)
+            relationships.push({
+              source: containingFunction,
+              target: channelVar.name,
+              type: ASTEngine.RelationshipType.Uses,
+              confidence: 0.8,
+              metadata: {
+                relationshipType: "go_channel_operation",
+                operationType: isSend ? "send" : "receive",
+                pattern: "channel_communication",
+              },
+            })
+          }
         }
       }
 
@@ -1880,7 +1898,16 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
           (node.parent?.type === "expression_list" &&
             node.parent.parent?.type === "assignment_statement" &&
             node.parent.parent?.namedChild(0)?.id === node.parent.id)
-        if (operand && field && node.parent?.type !== "call_expression" && !isWritePos) {
+        // GOD8: a selector that is a channel SEND/RECEIVE operand
+        // (`h.jobs <- v`, `<-h.jobs`) is owned by the channel-op pass in
+        // analyzeGoSpecificPatterns (leaf + send/receive direction); the
+        // selector pass skips it so member channels get ONE row, not two.
+        const isChannelOperand =
+          node.parent?.type === "send_statement" ||
+          node.parent?.type === "communication_case" ||
+          (node.parent?.type === "unary_expression" && node.parent.child(0)?.type === "<-") ||
+          (node.parent?.type === "receive_statement" && node.parent.parent?.type === "communication_case")
+        if (operand && field && node.parent?.type !== "call_expression" && !isWritePos && !isChannelOperand) {
           const src = this.findContainingGoFunction(node) || "global"
           const tgt = field.text
           const key = `${src}.${tgt}`
@@ -2921,24 +2948,59 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
   /**
    * Extract channel variable from channel operation
    */
-  private extractGoChannelVariable(node: Node): string | undefined {
-    if (node.type === "send_statement") {
-      const channelNode = node.childForFieldName("channel")
-      return channelNode?.text
+  // GOD8 (M37 #604 wave-3): channel-op target resolution. Returns the
+  // channel's declared-name LEAF for (a) a bare identifier naming a
+  // PACKAGE-scope var/const (caller gates via isGoDeclaredPackageVar) and
+  // (b) a member selector (leaf = field name — the channel-op pass owns
+  // member channel edges with send/receive direction, so the selector pass
+  // skips channel operands). Call results (`<-ctx.Done()`) and bare
+  // LOCAL/param channels (`c <- v`) have no declared channel symbol and
+  // return undefined (LocalsAreNotSymbols — same resolvability gate the
+  // goroutine/defer branches apply via isGoResolvableCallTarget).
+  private extractGoChannelVariable(node: Node): { name: string; member: boolean } | undefined {
+    const operandNode = (n: Node): Node | undefined => {
+      if (n.type === "send_statement") {
+        const c = n.childForFieldName("channel")
+        return c?.type === "identifier" || c?.type === "selector_expression" ? c : undefined
+      }
+      // receive_statement wraps a unary `<-` expression; both carry the
+      // operand.
+      const direct = n.childForFieldName("operand") || (n.namedChildCount > 0 ? n.namedChild(0) : undefined)
+      const unwrapped =
+        direct && (direct.type === "unary_expression" || direct.type === "receive_statement")
+          ? (direct.namedChildCount > 0 ? direct.namedChild(0) : undefined)
+          : direct
+      return unwrapped?.type === "identifier" || unwrapped?.type === "selector_expression" ? unwrapped : undefined
     }
-    if (node.type === "receive_statement") {
-      const channelNode = node.childForFieldName("operand")
-      return channelNode?.text
-    }
-    if (this.isGoReceiveExpression(node)) {
-      const channelNode = node.childForFieldName("operand") || node.namedChild(0)
-      return channelNode?.text
+    if (node.type === "send_statement" || node.type === "receive_statement" || this.isGoReceiveExpression(node)) {
+      const op = operandNode(node)
+      if (!op) return undefined
+      if (op.type === "identifier") return { name: op.text, member: false }
+      if (op.type === "selector_expression") {
+        const f = op.childForFieldName("field")
+        return f ? { name: f.text, member: true } : undefined
+      }
     }
     return undefined
   }
 
   private isGoReceiveExpression(node: Node): boolean {
     return node.type === "unary_expression" && node.child(0)?.type === "<-"
+  }
+
+  // GOD8: a bare identifier is a valid channel-op target only when it names a
+  // declared PACKAGE-scope var/const (LocalsAreNotSymbols — locals/params
+  // never qualify; the same resolvability gate the goroutine/defer branches
+  // apply via isGoResolvableCallTarget). Member selectors (member=true) are
+  // always valid — the field is a declared member.
+  private isGoDeclaredPackageVar(name: string, symbols: ASTEngine.UniversalSymbol[]): boolean {
+    return someSymbol(
+      symbols,
+      (s) =>
+        s.name === name &&
+        (s.kind === ASTEngine.SymbolKind.Variable || s.kind === ASTEngine.SymbolKind.Constant) &&
+        !s.ownerName,
+    )
   }
 
   /**
