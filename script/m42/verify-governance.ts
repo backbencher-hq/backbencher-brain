@@ -200,7 +200,7 @@ check("G1: all 8 issue entries are unique and structurally sound", (() => {
 // --- Evidence-at-current-commit --------------------------------------------------------
 const ISSUE_RELEVANT_FILES: Record<string, string[]> = {
   H1: ["src/lsp/document_highlight.ts", "src/lsp/server.ts", "script/m42/h1-fixture.ts", "script/m42/verify-highlight.ts", "script/m25/feature-assertions.ts"],
-  H2: ["src/lsp/hover.ts", "script/m42/verify-rich-hover.ts"],
+  H2: ["src/lsp/hover.ts", "src/lsp/rich_hover.ts", "src/lsp/navigation.ts", "script/m42/h2-fixture.ts", "script/m42/verify-rich-hover.ts", "script/m25/feature-assertions.ts", "script/m25/verify-harness-core.ts", "script/m25/e5-inner.js", "ide/vscode/src/hover-commands.ts", "ide/vscode/src/extension.ts"],
   H3: ["src/lsp/enrichment.ts", "src/lsp/hover.ts", "script/m42/verify-enrichment-surface.ts", "src/lsp/graph_request.ts"],
   H4: ["src/lsp/hover.ts", "ide/vscode/src/extension.ts", "script/m42/verify-hover-actions.ts"],
   H5: ["script/m26/graph-core.ts", "src/lsp/graph_request.ts", "script/m42/verify-hub.ts"],

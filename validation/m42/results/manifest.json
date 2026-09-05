@@ -66,7 +66,7 @@
       "code": "H2",
       "githubIssue": 650,
       "tool": "lsp-hover-composition",
-      "status": "planned",
+      "status": "verified",
       "scope": "Connected-summary + clickable top usages + definition link in the hover markdown; composes with tiers/staleness/cross-language",
       "acceptanceCriteria": [
         "fixture-first: expected markdown authored before the change (RED then GREEN)",
@@ -78,7 +78,18 @@
         "H2 evidence (verified, current HEAD)",
         "no fabricated links (differential gate green)",
         "editor leg evidence"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see H2.json",
+        "verifierCommand": "npx tsx script/m42/verify-rich-hover.ts",
+        "evidenceFile": "H2.json",
+        "passed": 29,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 6,
+        "editorLeg": "E5 43/43 (shared H2 assertions + bb.openUsage/openDefinition clicks in real VS Code)"
+      }
     },
     {
       "code": "H3",
