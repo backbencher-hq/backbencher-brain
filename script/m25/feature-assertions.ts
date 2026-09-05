@@ -255,6 +255,15 @@ export async function runFeatureAssertions(ctx: AssertionContext, assert: Assert
   )
   assert("H2: definition footnote is a link (bb.openDefinition)", hoverText.includes("bb.openDefinition?"), hoverText.slice(0, 200))
   assert("H2: no show-all-usages link for a single-usage symbol", !hoverText.includes("bb.showAllUsages"), "single usage needs no N-more escape hatch")
+
+  // --- Enrichment on hover (M42.H3, issue #651) ---
+  // The seeded rel-1 carries a REAL enrichment record (see buildFixtureWorkspace):
+  // role consumer · layer core→core · low criticality · 1 referring row. The
+  // connected summary must annotate its single usage with these stored facts,
+  // labeled as index-inferred — never at an evidence tier (§12.3).
+  assert("H3: stored enrichment surfaces on hover (role/layer/frequency)", hoverText.includes("role consumer") && hoverText.includes("layer core→core") && hoverText.includes("1 referring row"), hoverText.slice(0, 400))
+  assert("H3: enrichment is labeled index-inferred, never parser-fact tier", hoverText.includes("(enriched by index)"), hoverText.slice(0, 400))
+  assert("H3: enrichment annotation never upgrades the evidence tier", !/^\s*evidence:.*role consumer/m.test(hoverText) && (hover?.data?.evidenceTiers ?? []).every((t: string) => t !== "role"), JSON.stringify(hover?.data?.evidenceTiers ?? null))
   const hoverMiss = unwrap(await transport.request("textDocument/hover", { textDocument: { uri: mainUri }, position: { line: 20, character: 0 } }))
   const missOk = hoverMiss == null || hoverMiss?.contents === null || hoverMiss?.contents?.value === "" || hoverMiss?.contents?.value === undefined
   assert("L2: hover outside index is declared absent", missOk, JSON.stringify(hoverMiss ?? null).slice(0, 200))
@@ -527,13 +536,29 @@ export async function buildFixtureWorkspace(baseDir: string): Promise<{ workspac
   symStmt.run("sym-greet", projectId, fileId, FIXTURE_SYMBOLS.method, "Greeter.greet", "method", 2, 2, 3, 8, "sym-greeter", 7)
   symStmt.run("sym-main", projectId, fileId, FIXTURE_SYMBOLS.fn, null, "function", 7, 10, 10, 2, null, 5)
 
-  raw.prepare(`INSERT INTO brain_relationship (id, project_id, source_symbol_id, target_symbol_id, relationship_type, confidence) VALUES (?,?,?,?,?,?)`).run(
+  // rel-1 models an ANALYZER + ENRICHMENT row: analyzer evidence fields
+  // (evidenceClass in metadata, M24 era) plus the enrichment pass's stored
+  // facts (role/layerFlow/criticality/frequency/inferredAt — shape observed
+  // on REAL freshly-indexed rows; enrichment runs in the CLI after analysis).
+  // inferredAt is stamped AFTER the insert (time_updated default = insert
+  // wall-clock ms), so the row is FRESH — never the stale path in this
+  // fixture. M42.H3 surfaces these facts on hover in-editor (E5 leg).
+  const relMeta = JSON.stringify({
+    evidenceClass: "structural",
+    role: "consumer",
+    layerFlow: "core→core",
+    criticality: "low",
+    frequency: "one_of_1",
+    inferredAt: Date.now(),
+  })
+  raw.prepare(`INSERT INTO brain_relationship (id, project_id, source_symbol_id, target_symbol_id, relationship_type, confidence, metadata) VALUES (?,?,?,?,?,?,?)`).run(
     "rel-1",
     projectId,
     "sym-main",
     "sym-greet",
     "call",
     1.0,
+    relMeta,
   )
 
   return { workspaceDir, dataDir, stats: { files: 1, symbols: 3, relationships: 1 } }

@@ -95,7 +95,7 @@
       "code": "H3",
       "githubIssue": 651,
       "tool": "lsp-enrichment-surface",
-      "status": "planned",
+      "status": "verified",
       "scope": "Single owner for enrichment reads (src/lsp/enrichment.ts); hover + graph render stored role/pattern/layerFlow/criticality/frequency, labeled as enrichment; presence-gated",
       "acceptanceCriteria": [
         "fixture-first: enriched + un-enriched rows, expected output authored before the code (RED then GREEN)",
@@ -107,7 +107,18 @@
         "H3 evidence (verified, current HEAD)",
         "no schema change (metadata column only)",
         "graph badge vocabulary extended without tier semantic change"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see H3.json",
+        "verifierCommand": "npx tsx script/m42/verify-enrichment-surface.ts",
+        "evidenceFile": "H3.json",
+        "passed": 29,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 5,
+        "editorLeg": "E5 46/46 (shared H3 assertions over the enriched fixture in real VS Code); W4 19/19, V1 26/26 (5/5 mutants)"
+      }
     },
     {
       "code": "H4",
