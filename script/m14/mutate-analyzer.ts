@@ -450,6 +450,20 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, metadata: { ...(r.metadata ?? {}), detectedFrameworks: [] } }),
   },
   {
+    id: "go/duplicate-qualified-calls",
+    language: "go",
+    defectClass: "payload-corruption",
+    description: "GOD9 regression: re-adds per-call-site qualified_calls (the pre-fix findGoFunctionCalls had no dedup — a function calling fmt.Println at 5 sites pushed 5 identical entries; 29,463 excess rows across go-tools+terraform on 4,719 symbols). The rust #383 lesson: qualified_calls is a UNIQUE set of callee paths per symbol. relationship-and-payloads fixture's startWork countEquals s.startWork:1 pin catches it",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => s.name === "startWork" ? { ...s, qualified_calls: [...(s.qualified_calls ?? []), ...(s.qualified_calls ?? []).filter((c: string) => c === "s.startWork")] } : s) }),
+  },
+  {
+    id: "go/reemit-dotted-channel-uses",
+    language: "go",
+    defectClass: "relationship-noise",
+    description: "GOD8 regression: re-emits channel-op uses with the RAW operand text and no dedup (the pre-fix analyzeGoSpecificPatterns pushed `h.jobs <- v` as dotted `h.jobs`, `<-ctx.Done()` as `ctx.Done()`, bare locals as their name — 327 garbage targets + 79 duplicate rows across go-tools+terraform; uses is NOT in go's differential-compared label set, so ONLY the fixture catches it) — type-usage-graph fixture's worker->jobs/doneAll channel pins + pump->ch/done/h.jobs forbids catch it",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { source: "worker", target: "h.jobs", type: "uses", confidence: 0.8, metadata: { relationshipType: "go_channel_operation", operationType: "send", pattern: "channel_communication" } }] }),
+  },
+  {
     id: "zig/drop-calls",
     language: "zig",
     defectClass: "relationship-loss",
