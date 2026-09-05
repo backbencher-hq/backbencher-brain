@@ -135,23 +135,39 @@ if (existsSync(serverDist)) {
   // Runtime WASM assets: the parser stack resolves grammars by STRING-CONSTRUCTED
   // paths relative to the module dir (src/util/bb-data-dir.ts bbWasmCandidates:
   // moduleDir/../wasm/<basename> for the compiled flat layout). No import walk
-  // can see these — they are data, not code. Stage the DECLARED v0 language set
-  // only (docs/m24/TOOL-DOC.md "Launch languages": java, groovy, kotlin, scala,
-  // typescript). Everything else stays absent — the server's declared-absence
+  // can see these — they are data, not code. The list is DERIVED from
+  // src/lsp/launch_languages.ts (the single owner of the launch set) at build
+  // time, so a wave adding language N+1 cannot ship a server whose grammars
+  // are missing — the exact drift found live: the wave-1 languages (javascript,
+  // python) were missing here and the bundled server could not parse their
+  // files. Everything else stays absent — the server's declared-absence
   // contract covers it honestly, and the VSIX stays small (not the full 97 MB
-  // registry).
+  // registry). verify-packaging.ts (E4) asserts the staged set equals this
+  // same derived set.
   // Found live by E5's staleness leg: the parallel-indexer pool workers died
   // (exit 1) on first reindex because tree-sitter core was unresolvable from
   // the staged layout, so reindex completed with indexed: 0 and files stayed
   // stale forever.
+  const launchSrc = readFileSync(path.join(repoRoot, "src/lsp/launch_languages.ts"), "utf8")
+  const launchMatch = /LAUNCH_LANGUAGES = \[([\s\S]*?)\]/.exec(launchSrc)
+  const launchLanguages = launchMatch ? [...launchMatch[1].matchAll(/"([a-z]+)"/g)].map((x) => x[1]) : []
+  if (launchLanguages.length === 0) throw new Error("could not derive LAUNCH_LANGUAGES from src/lsp/launch_languages.ts — keep the derivation in sync")
+  const GRAMMAR_BY_LANGUAGE = {
+    typescript: ["tree-sitter-typescript.wasm", "tree-sitter-tsx.wasm"], // tsx shares the typescript package (engine.ts case "tsx")
+    javascript: ["tree-sitter-javascript.wasm"],
+    java: ["tree-sitter-java.wasm"],
+    kotlin: ["tree-sitter-kotlin.wasm"],
+    scala: ["tree-sitter-scala.wasm"],
+    python: ["tree-sitter-python.wasm"],
+    groovy: ["tree-sitter-groovy.wasm"],
+  }
   const LAUNCH_LANGUAGE_WASM = [
     "tree-sitter.wasm", // parser core
-    "tree-sitter-java.wasm",
-    "tree-sitter-groovy.wasm",
-    "tree-sitter-kotlin.wasm",
-    "tree-sitter-scala.wasm",
-    "tree-sitter-typescript.wasm", // engine resolves "tree-sitter-typescript/<name>" → basename lookup
-    "tree-sitter-tsx.wasm", // tsx shares the typescript package (engine.ts case "tsx")
+    ...launchLanguages.flatMap((lang) => {
+      const files = GRAMMAR_BY_LANGUAGE[lang]
+      if (!files) throw new Error(`launch language "${lang}" has no grammar mapping in esbuild-extension.mjs GRAMMAR_BY_LANGUAGE — add it`)
+      return files
+    }),
   ]
   const wasmDestDir = path.join(here, "dist/wasm")
   mkdirSync(wasmDestDir, { recursive: true })

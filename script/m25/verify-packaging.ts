@@ -28,7 +28,7 @@
 // Evidence: validation/m25/results/E4.json (machine-emitted)
 
 import { execFileSync, spawnSync } from "node:child_process"
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs"
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
@@ -95,6 +95,63 @@ function driftCheck(matrix: Record<string, string>, serverVersion: string): stri
   return violations
 }
 
+// --- G1d helpers: isolated bundled-server probe ----------------------------
+//
+// A tiny fixture workspace, indexed for real (the same cli the extension's
+// auto-index runs), then raw JSON-RPC bytes the probe speaks: initialize,
+// hover on the greet identifier, documentHighlight at the same position.
+// documentHighlight is the parse-stack canary — hover can answer from the
+// index alone, highlight cannot.
+async function buildIsolatedWorkspace(baseDir: string): Promise<string> {
+  const ws = path.join(baseDir, "bundled-ws")
+  mkdirSync(path.join(ws, "src"), { recursive: true })
+  writeFileSync(path.join(ws, "src", "greeter.ts"), `export class Greeter {
+  greet(): string {
+    return "hello"
+  }
+}
+`)
+  writeFileSync(path.join(ws, "src", "main.ts"), `import { Greeter } from "./greeter"
+const g = new Greeter()
+console.log(g.greet())
+`)
+  // Index with the real CLI — bin/bb (the same entry the extension's
+  // auto-index spawns). dist/index.js is the LIBRARY entry: running it as a
+  // script silently no-ops (exit 0, no output) — found live when the first
+  // version of this probe saw an empty index for exactly that reason.
+  const isoData = path.join(baseDir, "bundled-data")
+  mkdirSync(isoData, { recursive: true })
+  execFileSync("node", [path.join(ROOT, "bin", "bb"), "index", ws, "--no-setup"], {
+    cwd: ROOT,
+    encoding: "utf8",
+    timeout: 300_000,
+    env: { ...process.env, BB_DATA_DIR: isoData },
+    stdio: ["ignore", "pipe", "pipe"],
+  })
+  return ws
+}
+
+/** Raw stdin bytes for the probe. Positions: line 1 (0-based) = `greet():`,
+ *  character 2 = ON the `greet` identifier. The response parse is framing-
+ *  exact (Content-Length honored), so multi-byte UTF-8 in the rich hover
+ *  markdown cannot corrupt the stream (string-decoding chunks faked a hang
+ *  while reproducing the owner demo, 2026-09-05). */
+function buildIsolatedProbeInput(workspace: string): Buffer {
+  const uri = "file://" + path.join(workspace, "src", "greeter.ts")
+  const messages = [
+    { jsonrpc: "2.0", id: 1, method: "initialize", params: { processId: null, rootUri: "file://" + workspace, capabilities: {} } },
+    { jsonrpc: "2.0", method: "initialized", params: {} },
+    { jsonrpc: "2.0", id: 2, method: "textDocument/hover", params: { textDocument: { uri }, position: { line: 1, character: 2 } } },
+    { jsonrpc: "2.0", id: 3, method: "textDocument/documentHighlight", params: { textDocument: { uri }, position: { line: 1, character: 2 } } },
+  ]
+  const out: Buffer[] = []
+  for (const msg of messages) {
+    const body = Buffer.from(JSON.stringify(msg), "utf8")
+    out.push(Buffer.from(`Content-Length: ${body.length}\r\n\r\n`, "ascii"), body)
+  }
+  return Buffer.concat(out)
+}
+
 const manifest = JSON.parse(readFileSync(path.join(EXT_ROOT, "package.json"), "utf8")) as {
   version: string
   publisher: string
@@ -130,9 +187,80 @@ try {
   }
   const buildScript = (JSON.parse(readFileSync(path.join(EXT_ROOT, "package.json"), "utf8")) as { scripts?: Record<string, string> }).scripts?.build ?? ""
   check("G1b: extension build script runs collect-server-deps.mjs", buildScript.includes("collect-server-deps.mjs"), "dep staging is a manual step — will rot")
+  // G1c: grammar wasms must cover the ENTIRE launch set. The list is derived
+  // here from src/lsp/launch_languages.ts — the same derivation esbuild runs —
+  // so a wave adding language N+1 without a grammar mapping fails HERE, not
+  // in a user's editor (found live: wave-1 javascript/python grammars were
+  // missing from the VSIX and the bundled server could not parse them).
+  const launchSrc = readFileSync(path.join(ROOT, "src", "lsp", "launch_languages.ts"), "utf8")
+  const launchMatch = /LAUNCH_LANGUAGES = \[([\s\S]*?)\]/.exec(launchSrc)
+  const launchLanguages = launchMatch ? [...launchMatch[1].matchAll(/"([a-z]+)"/g)].map((x) => x[1]) : []
+  check("G1c: launch languages derived from the single owner", launchLanguages.length >= 5, launchLanguages.join(","))
+  const GRAMMAR_BY_LANGUAGE: Record<string, string[]> = {
+    typescript: ["tree-sitter-typescript.wasm", "tree-sitter-tsx.wasm"],
+    javascript: ["tree-sitter-javascript.wasm"],
+    java: ["tree-sitter-java.wasm"],
+    kotlin: ["tree-sitter-kotlin.wasm"],
+    scala: ["tree-sitter-scala.wasm"],
+    python: ["tree-sitter-python.wasm"],
+    groovy: ["tree-sitter-groovy.wasm"],
+  }
+  const expectedWasms = ["tree-sitter.wasm", ...launchLanguages.flatMap((l) => {
+    const f = GRAMMAR_BY_LANGUAGE[l]
+    if (!f) { check(`G1c: grammar mapping exists for launch language "${l}"`, false, "add it to verify-packaging GRAMMAR_BY_LANGUAGE and esbuild-extension GRAMMAR_BY_LANGUAGE") ; return [] }
+    return f
+  })]
+  for (const wasm of expectedWasms) {
+    check(`G1c: staged grammar wasm present: ${wasm}`, existsSync(path.join(EXT_ROOT, "dist/wasm", wasm)), "missing — the bundled server cannot parse this launch language")
+  }
+  check("G1b: staged server dep present: web-tree-sitter", existsSync(path.join(stagedNodeModules, "web-tree-sitter")), "missing — the bundled server dies on the first parse request (ERR_MODULE_NOT_FOUND; owner demo, 2026-09-05)")
   const repoBytes = statSync(serverDist).size
   const stagedBytes = statSync(stagedServer).size
   check("G1: staged server is byte-identical to the compiled server", repoBytes === stagedBytes && repoBytes > 0, `${stagedBytes} vs ${repoBytes}`)
+
+  // --- G1d: the bundled server must WORK in isolation (the real-world case) --
+  // E5 never catches this class: its workspace IS the repo, so resolution (b)
+  // (workspace dist + repo node_modules) always wins. A user's workspace falls
+  // to (c) the bundled copy — which must boot AND parse with only what ships
+  // in the VSIX. Copy server + staged node_modules + wasms to an isolated dir
+  // outside the repo and drive initialize → hover → documentHighlight over
+  // stdio. documentHighlight is the canary: it is the first op that REQUIRES
+  // the tree-sitter parse stack (hover alone can answer from the index). The
+  // byte-accurate framing (Buffer, decode only complete frames) matters —
+  // string-decoding raw chunks corrupts multi-byte UTF-8 split across chunks
+  // and fakes a hang (found while reproducing the owner demo, 2026-09-05).
+  mutantsTotal++
+  const iso = path.join(tmp, "bundled-iso")
+  rmSync(iso, { recursive: true, force: true })
+  mkdirSync(path.join(iso, "wasm"), { recursive: true })
+  cpSync(path.join(EXT_ROOT, "dist/server"), path.join(iso, "server"), { recursive: true })
+  cpSync(path.join(EXT_ROOT, "dist/wasm"), path.join(iso, "wasm"), { recursive: true })
+  const isoWs = await buildIsolatedWorkspace(tmp)
+  const isoData = path.join(tmp, "bundled-data")
+  const isoProjects = path.join(isoData, "projects")
+  let dbFiles = 0
+  if (existsSync(isoProjects)) {
+    for (const p of readdirSync(isoProjects)) {
+      if (existsSync(path.join(isoProjects, p, "brain.db"))) dbFiles++
+    }
+  }
+  check("G1d: isolated fixture indexed (real CLI wrote brain.db)", dbFiles >= 1, `${dbFiles} db(s) in ${isoProjects}`)
+  const isoServer = path.join(iso, "server", "lsp", "server.js")
+  const isoProbe = spawnSync(process.execPath, [isoServer, "--dir", isoWs], {
+    cwd: iso,
+    encoding: "buffer",
+    timeout: 90_000,
+    input: buildIsolatedProbeInput(isoWs),
+    env: { ...process.env, BB_DATA_DIR: isoData },
+  })
+  const isoOut = isoProbe.stdout ? isoProbe.stdout.toString("utf8") : ""
+  const initOk = /"id":1/.test(isoOut) && !/"error"/.test(isoOut.slice(isoOut.indexOf("\"id\":1"), isoOut.indexOf("\"id\":1") + 400))
+  const hoverOk = /"id":2/.test(isoOut) && isoOut.slice(isoOut.indexOf("\"id\":2")).includes("greet")
+  const hlOk = /"id":3/.test(isoOut) && /"id":3,"result":\[\{/.test(isoOut)
+  check("G1d: isolated bundled server answers initialize", initOk, isoProbe.error ? String(isoProbe.error) : isoOut.slice(0, 200))
+  check("G1d: isolated bundled server hover resolves the fixture symbol", hoverOk, hoverOk ? "" : isoOut.slice(isoOut.indexOf("\"id\":2")).slice(0, 240))
+  check("G1d: isolated bundled server documentHighlight parses (tree-sitter stack ships)", hlOk, hlOk ? "" : `exit=${isoProbe.status} err=${isoProbe.stderr?.toString().slice(-200)}`)
+  if (initOk && hoverOk && hlOk) mutantsCaught++
 
   // Remove any stale VSIX, then package for real.
   const vsixName = `${manifest.name}-${manifest.version}.vsix`
