@@ -119,7 +119,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "c2b32755aac359b7e3ea3b210291b62fc77088ed",
+        "currentCommit": "see L1.json",
         "verifierCommand": "npx tsx script/m24/verify-server.ts",
         "evidenceFile": "L1.json",
         "passed": 31,
