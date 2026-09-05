@@ -5,15 +5,15 @@
   "title": "The Interactive Hover (IDE v6)",
   "status": "open",
   "authority": "docs/m42/M42-MASTER-PLAN.md (Issues / Issue groups table)",
-  "governingContract": "docs/IDE-HONESTY-CONTRACT.md (§12 Hover Interaction Rules, M42 amendment)",
-  "prerequisite": "M29 completion bar met — verified 9/9, X1 32/32 at HEAD (re-audited by G1 on every run)",
+  "governingContract": "docs/IDE-HONESTY-CONTRACT.md (\u00a712 Hover Interaction Rules, M42 amendment)",
+  "prerequisite": "M29 completion bar met \u2014 verified 9/9, X1 32/32 at HEAD (re-audited by G1 on every run)",
   "issues": [
     {
       "code": "G1",
       "githubIssue": 648,
       "tool": "governance-gate",
-      "status": "planned",
-      "scope": "Ledger + closure gate + M29 completion-bar re-audit + Hover Interaction Rules machine-gated (contract §12)",
+      "status": "verified",
+      "scope": "Ledger + closure gate + M29 completion-bar re-audit + Hover Interaction Rules machine-gated (contract \u00a712)",
       "acceptanceCriteria": [
         "ledger structurally sound, dependency order enforced, X1 last",
         "gate proves it CAN fail: hollow-verified, missing evidence, forged M29 bar each rejected",
@@ -23,7 +23,17 @@
         "G1 evidence (verified, current HEAD)",
         "verify chain wired with the m42 gate",
         "master plan lint-clean (banned vocabulary = zero)"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see G1.json",
+        "verifierCommand": "npx tsx script/m42/verify-governance.ts",
+        "evidenceFile": "G1.json",
+        "passed": 25,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 7
+      }
     },
     {
       "code": "H1",
