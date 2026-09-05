@@ -120,7 +120,7 @@ try {
   // timeout→kill→retry path (NOT the poison path). Files requeued past the
   // 3-attempt cap fail as "Max retries exceeded". Deterministic trace with 6
   // files / batchSize 10 / one worker: f1..f4 timeout, f5..f6 max-retries.
-  const timeout = runFixture({ BB_FILE_TIMEOUT_MS: "800", BB_WORKER_DELAY_PARSE_MS: "2500" }, 6)
+  const timeout = runFixture({ BB_FILE_TIMEOUT_MS: "800", BB_WORKER_DELAY_PARSE_MS: "2500", BB_TEST_HOOKS: "1" }, 6)
   check("W1 timeout fixture completes (no hang, bounded execution)", timeout.ok, timeout.error ?? "")
   if (timeout.ok) {
     const d = timeout.data
@@ -137,7 +137,7 @@ try {
   // BB_WORKER_CRASH_ON_BATCH=1 makes every worker exit(1) on parse_batch
   // before reporting file_start → poison-pill path. The parent must survive
   // (not terminate silently), count the pills, bound the retries, and finish.
-  const poison = runFixture({ BB_WORKER_CRASH_ON_BATCH: "1" }, 6)
+  const poison = runFixture({ BB_WORKER_CRASH_ON_BATCH: "1", BB_TEST_HOOKS: "1" }, 6)
   check("W1 poison fixture completes (parent survived, no silent termination)", poison.ok, poison.error ?? "")
   if (poison.ok) {
     const d = poison.data
@@ -154,7 +154,7 @@ try {
   // watchdog → startup failure, distinct from parser failure. The restart cap
   // bounds replacement attempts, then the queue fails visibly instead of
   // hanging. (The fork probe itself also delays ~5s, then succeeds.)
-  const startup = runFixture({ BB_WORKER_DELAY_READY_MS: "5000", BB_WORKER_STARTUP_TIMEOUT_MS: "700" }, 6)
+  const startup = runFixture({ BB_WORKER_DELAY_READY_MS: "5000", BB_WORKER_STARTUP_TIMEOUT_MS: "700", BB_TEST_HOOKS: "1" }, 6)
   check("W1 startup fixture completes (no infinite restart loop)", startup.ok, startup.error ?? "")
   if (startup.ok) {
     const d = startup.data
@@ -227,6 +227,7 @@ try {
     } : null,
     limitations: [
       "Fixture timings are wall-clock and depend on worker startup (WASM registry load) plus the fork probe; they prove lifecycle accounting and boundedness, not throughput.",
+      "M40.A8: the fixture hooks (BB_WORKER_CRASH_ON_BATCH, BB_WORKER_DELAY_*) are quarantined behind BB_TEST_HOOKS=1; this gate sets the opt-in explicitly for each hook-using fixture so a stray env var cannot crash a production index.",
       "The timeout fixture relies on BB_FILE_TIMEOUT_MS + BB_WORKER_DELAY_PARSE_MS debug hooks (env-gated, zero default effect) to make the master-side timeout deterministic.",
       "The startup fixture relies on BB_WORKER_STARTUP_TIMEOUT_MS + BB_WORKER_DELAY_READY_MS debug hooks; the 700ms watchdog value is fixture-only, the production default is 30s.",
       "Poison accounting counts batches dropped when a worker dies before file_start; a worker that dies mid-file is accounted as a timeout, not a poison pill.",

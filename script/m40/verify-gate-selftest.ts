@@ -37,8 +37,8 @@ const MUTATIONS: Record<string, string> = {
   A5: "BB_M40_MUTATE_A5_COMBO_ALLOWED=1",   // illegal combo accepted → A5 gate must fail
   A6: "BB_M40_MUTATE_A6_STALE_OK=1",        // stale derived reported current → A6 gate must fail
   A7: "BB_M40_MUTATE_A7_MODE_DROP=1",       // CLI mode silently ignored → A7 gate must fail
-  A8: "BB_M40_MUTATE_A8_PRECEDENCE_FLIP=1", // precedence inverted → A8 gate must fail
-  A9: "BB_M40_MUTATE_A9_ZOMBIE=1",          // zombie surface accepted → A9 gate must fail
+  A8: "BB_M40_MUTATE_A8_HOOK_UNGATED=1",    // hooks fire without opt-in → A8 gate must fail
+  A9: "BB_M40_MUTATE_A9_RESURRECT=1",       // phantom surface accepted → A9 gate must fail
 }
 
 type GateResult = { code: string; script: string; controlPassed: boolean; mutationBit: boolean | null; error?: string }
@@ -52,10 +52,15 @@ for (const g of GATES) {
     hardFailures++
     continue
   }
-  // Control: clean world.
+  // Control: clean world. Children must NOT inherit BB_M40_EVIDENCE — a
+  // control/mutation run is a probe, not a real chain run; if it stamped
+  // evidence, mutation-world output would overwrite the real evidence files
+  // (found by X1: A1/A2/A3 evidence was "blocked" from mutation runs).
+  const childEnv = { ...process.env, BB_M40_SELFTEST_CONTROL: "1" } as Record<string, string | undefined>
+  delete childEnv.BB_M40_EVIDENCE
   const ctrl = spawnSync("bun", ["run", `script/m40/${g.script}`], {
     cwd: ROOT, encoding: "utf8", timeout: 900_000,
-    env: { ...process.env, BB_M40_SELFTEST_CONTROL: "1" },
+    env: childEnv,
   })
   const controlPassed = ctrl.status === 0
   if (!controlPassed) {
@@ -72,7 +77,7 @@ for (const g of GATES) {
   }
   const mut = spawnSync("bun", ["run", `script/m40/${g.script}`], {
     cwd: ROOT, encoding: "utf8", timeout: 900_000,
-    env: { ...process.env, BB_M40_SELFTEST_CONTROL: "1", [mutationEnv.split("=")[0]]: mutationEnv.split("=")[1] },
+    env: { ...childEnv, [mutationEnv.split("=")[0]]: mutationEnv.split("=")[1] },
   })
   const mutationBit = mut.status !== 0
   if (!mutationBit) hardFailures++

@@ -117,19 +117,34 @@ check("verify chain wires the M40 gates",
   onDiskVerifiers.filter((v) => !verifyScript.includes(`script/m40/${v}`)).join(",") || "none-on-disk-yet")
 
 // ── 5. Stamp agreement across evidence files ──
+// M31 pattern: CONTENT-gate evidence forms the stamp consensus. Infra
+// evidence (X1 closure) is re-stamped per closure run — necessarily at a
+// commit at-or-after the content consensus — so it is checked for currency
+// (ancestor of HEAD), not folded into the content consensus set.
+const INFRA_EVIDENCE = new Set(["X1.json", "G1.json"])
 const stamps = new Set<string>()
 let stampCount = 0
+const infraStamps: Array<{ file: string; commit: string }> = []
 if (existsSync(RESULTS_DIR)) {
   for (const f of readdirSync(RESULTS_DIR).filter((f) => f.endsWith(".json") && f !== "gate-selftest.json")) {
     const ev = JSON.parse(readFileSync(path.join(RESULTS_DIR, f), "utf8")) as Record<string, unknown>
     if (typeof ev.currentCommit === "string" && ev.currentCommit.length === 40) {
-      stamps.add(ev.currentCommit)
-      stampCount++
+      if (INFRA_EVIDENCE.has(f)) infraStamps.push({ file: f, commit: ev.currentCommit as string })
+      else { stamps.add(ev.currentCommit as string); stampCount++ }
     }
   }
 }
-check("evidence stamp agreement (all evidence at one commit)", stamps.size <= 1,
+check("evidence stamp agreement (content evidence at one commit)", stamps.size <= 1,
   stamps.size > 1 ? `divergent stamps: ${[...stamps].map((s) => s.slice(0, 7)).join(",")}` : "")
+// Infra stamps must be HEAD or an ancestor of HEAD (never a future/foreign commit).
+if (infraStamps.length > 0) {
+  const HEAD2 = (() => { try { return execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim() } catch { return "" } })()
+  const badInfra = infraStamps.filter((s) => {
+    if (s.commit === HEAD2) return false
+    try { execFileSync("git", ["merge-base", "--is-ancestor", s.commit, HEAD2], { cwd: ROOT }); return false } catch { return true }
+  })
+  check("infra evidence stamped at HEAD or ancestor", badInfra.length === 0, badInfra.map((s) => `${s.file}@${s.commit.slice(0, 7)}`).join(","))
+}
 
 // ── 6. Evidence currency: no governed source newer than its evidence ──
 // Governed sources = script/m40 + docs/m40 + the ledger. If any file's mtime
