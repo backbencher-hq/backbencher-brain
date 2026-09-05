@@ -104,7 +104,11 @@ async function run() {
       let h2m = null
       while ((h2m = h2re.exec(h2text)) !== null) {
         try {
-          h2links.push({ cmd: h2m[1], args: JSON.parse(decodeURIComponent(h2m[2])) })
+          const _dec = JSON.parse(decodeURIComponent(h2m[2]))
+          // VS Code click delivery spreads the encoded JSON array into
+          // executeCommand(cmd, ...args); unwrap so the handler receives the
+          // same object a real click delivers (and .args.line stays valid).
+          h2links.push({ cmd: h2m[1], args: Array.isArray(_dec) ? _dec[0] : _dec })
         } catch (e) {}
       }
       const usage = h2links.find((l) => l.cmd === "bb.openUsage")
@@ -137,7 +141,8 @@ async function run() {
       let h4m = null
       while ((h4m = h4re.exec(h2text)) !== null) {
         try {
-          h4links.push({ cmd: h4m[1], args: JSON.parse(decodeURIComponent(h4m[2])) })
+          const _dec = JSON.parse(decodeURIComponent(h4m[2]))
+          h4links.push({ cmd: h4m[1], args: Array.isArray(_dec) ? _dec[0] : _dec })
         } catch (e) {}
       }
       assert("E5-H4: hover embeds all three action links", h4links.length === 3 && new Set(h4links.map((l) => l.cmd)).size === 3, JSON.stringify(h4links.map((l) => l.cmd)))

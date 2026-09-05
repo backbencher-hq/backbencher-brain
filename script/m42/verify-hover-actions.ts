@@ -129,7 +129,9 @@ function commandLinks(markdown: string): Array<{ command: string; args: Record<s
   let m: RegExpExecArray | null
   while ((m = re.exec(markdown)) !== null) {
     try {
-      out.push({ command: m[1], args: JSON.parse(decodeURIComponent(m[2])) as Record<string, unknown> })
+      const _dec = JSON.parse(decodeURIComponent(m[2]))
+      const _args = (Array.isArray(_dec) ? _dec[0] : _dec) as Record<string, unknown>
+      out.push({ command: m[1], args: _args })
     } catch {
       out.push({ command: m[1], args: {} }) // unparseable — the integrity check fails
     }
@@ -366,14 +368,15 @@ const mutants: Array<{ name: string; file: string; from: string; to: string; pro
   {
     name: "M2 action args drop the symbol (client would have to guess)",
     file: RICH_HOVER,
-    from: "JSON.stringify({ symbol, file: path, line, character } satisfies HoverActionArgs)",
-    to: "JSON.stringify({ file: path, line, character } satisfies HoverActionArgs)",
+    from: "JSON.stringify([{ symbol, file: path, line, character } satisfies HoverActionArgs])",
+    to: "JSON.stringify([{ file: path, line, character } satisfies HoverActionArgs])",
     rewrite: true,
     probe: (m) => {
       const uri = m.actionsSection("render", "/w/App.java", 4, 0)
       const mm = /\]\(command:(bb\.[a-zA-Z]+)\?([^)]+)\)/.exec(uri)
       if (!mm) return false
-      const args = JSON.parse(decodeURIComponent(mm[2])) as Record<string, unknown>
+      const _dec = JSON.parse(decodeURIComponent(mm[2]))
+      const args = (Array.isArray(_dec) ? _dec[0] : _dec) as Record<string, unknown>
       return args.symbol === undefined // symbol dropped => client would have to guess the target
     },
   },
