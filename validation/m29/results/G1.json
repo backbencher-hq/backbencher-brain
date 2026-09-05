@@ -7,13 +7,13 @@
   "passed": 70,
   "failed": 0,
   "negativeCases": 10,
-  "currentCommit": "f892be3273ff639645d0003674cc6a97e4a60b1e",
+  "currentCommit": "1b09e4cd29268f5a2987e2577c58a3069125e1a4",
   "workingTreeRelevantChanges": [
     "docs/m29/PRECISION-LEDGER.md"
   ],
   "verifierCommand": "npx tsx script/m29/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-05T16:54:57.584Z",
+  "generatedAt": "2026-09-05T16:58:36.564Z",
   "ledger": "validation/m29/results/manifest.json",
   "m28Bar": {
     "ledgerStatus": "closed",
