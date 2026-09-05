@@ -27,7 +27,9 @@
       "The exact M43 code path is reused (single helper); M43 gate set stays green",
       "bb_ask returns fresh sources after an external edit",
       "Budget/decline counters and remediation text unchanged (M35 envelope + M43 A3 gates green)",
-      "No read blocks longer than the documented bound (measured in W4)"
+      "No read blocks longer than the documented bound (measured in W4)",
+      "Per-read repair overhead measured (W4): prefers a lightweight single-file/small-set path where honest; repeated per-read repairs must not thrash worker startup",
+      "bb_ask honest two-layer guarantee: after repair, symbol/content retrieval finds the file; embedding-ranked answers may lag the background queue and coverage is stated (never silent)"
     ],
     "closureRequirements": [
       "Evidence file + ledger sync + evidence comment on close"
@@ -60,7 +62,9 @@
       "New-file repair runs the bounded derived pass (M40.A3)",
       "Gitignore/untracked semantics respected",
       "Probe cost bounded per read and measured (W4)",
-      "Decline vocabulary extended and documented (W1.2 shape)"
+      "Decline vocabulary extended and documented (W1.2 shape)",
+      "Repair enqueues embedding coverage for new rows (M21.E2 queue) OR declares partial semantic coverage honestly; 'answer includes it' claimed only for the lexical path + post-queue semantic path",
+      "Cross-file callers of a brand-new symbol appear after caller files are refreshed (touched-file scope) - expectation explicit, no over-claim"
     ],
     "closureRequirements": [
       "Evidence file + ledger sync + evidence comment on close"
@@ -94,7 +98,8 @@
       "P1 lock respected; never corrupts a concurrent run",
       "Crash/stop safety: restart runs the startup full scan before serving",
       "Parity tests vs the LSP loop on the same edit sequence (LSP files untouched)",
-      "Event storms debounced + bounded; measured in W4"
+      "Event storms debounced + bounded; measured in W4",
+      "Watcher root semantics pinned: nested .git subtrees excluded exactly as discovery excludes them (M43.A4); no silent claims about submodules/nested repos"
     ],
     "closureRequirements": [
       "Evidence file + ledger sync + evidence comment on close"
@@ -128,7 +133,10 @@
       "Watcher-on and watcher-off converge to the same fresh answer within bounds",
       "Time bounds recorded and asserted; probes not O(project) wall-time",
       "Deterministic runs with stamped evidence (pass/fail/negative counts)",
-      "M43 A4 + M35 staleness-corpus gates stay green"
+      "M43 A4 + M35 staleness-corpus gates stay green",
+      "Scenarios: repaired-new-file-then-bb_ask (lexical immediate + coverage-declared semantic), new-file-then-analyze(callers) with touched-file expectation stated, watcher-vs-bb_index concurrency",
+      "Measurement: per-read repair overhead (worker startup vs lightweight path) recorded and asserted below the documented bound",
+      "Limitation pinned: over-budget burst on one-shot CLI (no watcher) answers with honest decline - agent-facing repair trigger is a documented follow-up"
     ],
     "closureRequirements": [
       "Evidence file + ledger sync + evidence comment on close"

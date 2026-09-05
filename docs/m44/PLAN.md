@@ -72,3 +72,30 @@ W3.2 (real-time window) → W4 (corpus + bounds) → X1.
 - Non-git new-file detection without the probe declares unavailability —
   never silence.
 - Real-repo corpus runs on copies only; temp dirs deleted after the run.
+
+## Design-review addendum (accepted before build)
+
+1. **bb_ask is two-layer, and repair must not over-promise.** quickAnswer
+   ranks via `brain_semantic_embedding` (`semanticVectorSearch`) with a
+   symbol-search fallback; the bounded derived pass (`runPostProcessing`:
+   relationships → enrichment → gravity → …) has **no embedding phase**.
+   Guarantee therefore: after repair the new file's symbols are retrievable
+   (lexical/symbol path) AND the repair enqueues embedding coverage for the
+   new rows (M21.E2 queue), OR the answer declares partial semantic coverage
+   honestly. W2.1/W4 pin both layers; no "answer includes it" claim without
+   the lexical guarantee + post-queue semantic path.
+2. **Repair cost mechanics matter.** Each lazy repair uses the parallel
+   reindex machinery; W1.1 measures per-read repair overhead on real repos
+   and prefers a lightweight single-file/small-set path where honest, so
+   repeated per-read repairs cannot thrash worker startup (W4 measurement).
+3. **Cross-file expectations are touched-file scoped.** Callers of a brand-new
+   symbol appear only after caller files are refreshed; W4 states this
+   explicitly — no over-claim.
+4. **Watcher root semantics.** Merged/nested-git roots follow discovery
+   (M43.A4: nested .git subtrees excluded); submodules/nested repos never
+   silently claimed. Watcher + MCP `bb_index` share the P1 lock:
+   serialize / decline-and-retry, pinned in W3.1 tests and a W4 concurrency
+   scenario.
+5. **Documented limitation.** Over-budget burst on a one-shot CLI session
+   (no watcher) answers with the honest decline; the agent-facing repair
+   trigger is a documented follow-up, not silent auto-fix here.
