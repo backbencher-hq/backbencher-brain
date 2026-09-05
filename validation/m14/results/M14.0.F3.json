@@ -62,7 +62,7 @@
     },
     {
       "description": "rust adversarial fixtures",
-      "detail": "8/8 fixtures pass",
+      "detail": "10/10 fixtures pass",
       "id": "fixtures-rust",
       "status": "pass"
     },
@@ -128,8 +128,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "93792b51a3c9e8e1745b81d273a070a6f168a2ea",
-  "committedAt": "2026-09-05T21:04:46+02:00",
+  "commit": "46f3a9c5c5ee8a25aecd2dbc39347e0cc509aae9",
+  "committedAt": "2026-09-05T22:26:21+02:00",
   "data": {
     "details": [
       {
@@ -1488,12 +1488,22 @@
         "problems": []
       },
       {
+        "fixture": "rust/error-file-payload",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "rust/new-instantiates-target",
         "ok": true,
         "problems": []
       },
       {
         "fixture": "rust/payload-parity",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "rust/qualified-calls-ownership",
         "ok": true,
         "problems": []
       },
@@ -1667,7 +1677,7 @@
       },
       "rust": {
         "fail": 0,
-        "pass": 8
+        "pass": 10
       },
       "scala": {
         "fail": 0,

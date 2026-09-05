@@ -198,6 +198,34 @@
         "status": "RULED",
         "question": "Rust completeness scope is tied to the pinned tree-sitter-rust grammar.",
         "resolution": "The inventory is exhaustive for the pinned grammar; future grammar drift requires a new inventory review."
+      },
+      {
+        "id": "RUST-D4",
+        "node_type": "qualified_calls payload ownership",
+        "status": "FIXED",
+        "question": "RSD1 (cargo+ripgrep census, 2026-09-05): qualified_calls were accumulated in a map keyed by BARE method name, so same-named methods on different types (Alpha.run / Beta.run; 21 deserialize methods in one file) shared one union payload \u2014 410 buckets / 1,313 symbols / 749 excess entries.",
+        "resolution": "Payloads attach DIRECTLY to the enclosing fn/method symbol at call time (java/groovy/cpp family contract). Payload now equals exactly the symbol's own call set; cross-type pollution structurally impossible. Pinned by rust/qualified-calls-ownership (per-owner notIncludes)."
+      },
+      {
+        "id": "RUST-D5",
+        "node_type": "parse-error payload suppression",
+        "status": "FIXED",
+        "question": "RSD2: the attach guard `!ctx.metadata.errors` wiped qualified_calls from EVERY function in any file with a parse error \u2014 519 error files / 4,620 functions silently lost payloads (cargo's own frontmatter.rs: 40 fns from 18 single-token str![[r# raw-string grammar limits).",
+        "resolution": "Whole-file suppression removed; per-symbol direct attach is precise under ERROR recovery (recovered code keeps the real enclosing symbol). Error files keep their functions' payloads. Pinned by rust/error-file-payload (fixture with a deliberate error)."
+      },
+      {
+        "id": "RUST-D6",
+        "node_type": "symbol id uniqueness",
+        "status": "FIXED",
+        "question": "RSD3: `struct Foo` + every `impl Foo` block created a symbol named Foo with the SAME id 'Foo' (also field vs same-named accessor) \u2014 2,852 duplicate ids across 271 files. Id-keyed graph consumers dedupe silently, dropping distinct declarations.",
+        "resolution": "Per-file usedIds set in createSymbol: first claim keeps the plain id, later same-(owner,name) declarations get deterministic '#N' suffixes (Alpha, Alpha#2, Alpha#3). Ids are in-memory only (not persisted); ownerName stays the type anchor for graph edges. Pinned by rust/qualified-calls-ownership expectUniqueIds + id pins."
+      },
+      {
+        "id": "RUST-D7",
+        "node_type": "macro invocations in payload",
+        "status": "FIXED",
+        "question": "RSD4: macro invocations emit calls edges (toSymbol macro:name) but never reached qualified_calls \u2014 a function whose body only invokes macros (format!/println!) had an empty payload despite real call sites.",
+        "resolution": "Macro invocations attach `macro:name` payload entries (same vocabulary as their toSymbol), so payload == emitted call set per function. Pinned by rust/qualified-calls-ownership (second / macro:format)."
       }
     ]
   }

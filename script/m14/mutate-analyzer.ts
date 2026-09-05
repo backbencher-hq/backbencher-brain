@@ -249,6 +249,60 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, imports: (r.imports ?? []).map((i: any) => (i.module === "std::io" ? { ...i, module: "std::io::{Read, Write as W}", items: ["std::io::{Read", "Write as W}"] } : i)) }),
   },
   {
+    id: "rust/merge-qc-by-bare-name",
+    language: "rust",
+    defectClass: "payload-pollution",
+    description: "RSD1 regression: re-keys qualified_calls by BARE method name (the pre-fix qcByFunction map) so same-named methods across types share one union payload — qualified-calls-ownership fixture's per-owner notIncludes pins catch it (Alpha.run must not carry beta_only)",
+    transform: r => {
+      const byName = new Map<string, string[]>()
+      for (const s of r.symbols ?? []) {
+        if (!(s.kind === "function" || s.kind === "method") || !s.qualified_calls?.length) continue
+        const cur = byName.get(s.name) ?? []
+        byName.set(s.name, [...cur, ...s.qualified_calls])
+      }
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).map((s: any) => {
+          if ((s.kind === "function" || s.kind === "method") && byName.has(s.name)) {
+            return { ...s, qualified_calls: [...new Set(byName.get(s.name)!)] }
+          }
+          return s
+        }),
+      }
+    },
+  },
+  {
+    id: "rust/wipe-qc-on-error-files",
+    language: "rust",
+    defectClass: "payload-loss",
+    description: "RSD2 regression: clears every function's qualified_calls when the file contains ANY parse error (the pre-fix whole-file `!metadata.errors` guard) — error-file-payload fixture's clean_caller pin catches it",
+    transform: r => (r.metadata?.errors?.length ? {
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (s.kind === "function" || s.kind === "method") return { ...s, qualified_calls: undefined }
+        return s
+      }),
+    } : r),
+  },
+  {
+    id: "rust/duplicate-impl-ids",
+    language: "rust",
+    defectClass: "symbol-identity",
+    description: "RSD3 regression: strips the uniqueId '#N' suffix so `struct Alpha` and both `impl Alpha` blocks collapse to the SAME symbol id 'Alpha' (pre-fix state, 2,852 duplicate ids in the corpus) — qualified-calls-ownership fixture's expectUniqueIds + expectSymbols id pins catch it",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, id: (s.id ?? "").replace(/#[0-9]+$/, "") })) }),
+  },
+  {
+    id: "rust/drop-macro-payload",
+    language: "rust",
+    defectClass: "payload-loss",
+    description: "RSD4 regression: strips macro: entries from qualified_calls (pre-fix: handleMacroInvocation never attached a payload, so format!()-only methods were invisible) — qualified-calls-ownership fixture's second/macro:format pin catches it",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => {
+      if (!s.qualified_calls?.length) return s
+      const qc = s.qualified_calls.filter((c: string) => !c.startsWith("macro:"))
+      return qc.length === s.qualified_calls.length ? s : { ...s, qualified_calls: qc }
+    }) }),
+  },
+  {
     id: "go/whole-text-stdlib-callee",
     language: "go",
     defectClass: "relationship-loss",
