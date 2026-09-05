@@ -107,6 +107,23 @@ try {
     check("A6: MCP bb_health --refresh carries derived signal", typeof parsed?.refresh?.derived === "string", JSON.stringify(parsed?.refresh))
     check("A6: MCP refresh signal honest", parsed?.refresh?.derived === "skipped-unchanged" || parsed?.refresh?.derived === "bounded", String(parsed?.refresh?.derived))
   }
+
+  // ── 6. negative observations (closure contract: negatives > 0) ──
+  // Absence/rejection proofs on the honesty signal itself.
+  {
+    // (a) A non-refreshed health report must NOT print a refresh line —
+    // absence of the signal when no refresh happened is the honest shape.
+    const noRefresh = await getUnifiedHealth(pid, proj, {})
+    check("A6: no refresh line when no refresh requested", noRefresh.refresh.requested === false, JSON.stringify(noRefresh.refresh).slice(0, 120), true)
+    // (b) The formatter never claims "full" or "bounded" without a real pass:
+    // text for the unchanged case must not contain those tokens.
+    const text2 = formatUnifiedHealth(r3)
+    check("A6: skipped-unchanged never claims full/bounded", !/\(full pass\)|\(bounded pass\)/.test(text2), text2.split("\n").filter((l) => /refresh/.test(l)).join(" | ").slice(0, 160), true)
+    // (c) Unknown/missing derived can never render as a parenthesized claim.
+    const fake = { ...r3, refresh: { ...r3.refresh, derived: "some-future-value" } } as typeof r3
+    const textFake = formatUnifiedHealth(fake)
+    check("A6: unknown derived value renders without a pass claim", !/\(full pass\)|\(bounded pass\)|\(unchanged/.test(textFake), textFake.split("\n").filter((l) => /refresh/.test(l)).join(" | ").slice(0, 160), true)
+  }
 } finally {
   rmSync(root, { recursive: true, force: true })
   try { rmSync(process.env.BB_DATA_DIR!, { recursive: true, force: true }) } catch { /* best-effort */ }

@@ -52,10 +52,15 @@ for (const g of GATES) {
     hardFailures++
     continue
   }
-  // Control: clean world.
+  // Control: clean world. Children must NOT inherit BB_M40_EVIDENCE — a
+  // control/mutation run is a probe, not a real chain run; if it stamped
+  // evidence, mutation-world output would overwrite the real evidence files
+  // (found by X1: A1/A2/A3 evidence was "blocked" from mutation runs).
+  const childEnv = { ...process.env, BB_M40_SELFTEST_CONTROL: "1" } as Record<string, string | undefined>
+  delete childEnv.BB_M40_EVIDENCE
   const ctrl = spawnSync("bun", ["run", `script/m40/${g.script}`], {
     cwd: ROOT, encoding: "utf8", timeout: 900_000,
-    env: { ...process.env, BB_M40_SELFTEST_CONTROL: "1" },
+    env: childEnv,
   })
   const controlPassed = ctrl.status === 0
   if (!controlPassed) {
@@ -72,7 +77,7 @@ for (const g of GATES) {
   }
   const mut = spawnSync("bun", ["run", `script/m40/${g.script}`], {
     cwd: ROOT, encoding: "utf8", timeout: 900_000,
-    env: { ...process.env, BB_M40_SELFTEST_CONTROL: "1", [mutationEnv.split("=")[0]]: mutationEnv.split("=")[1] },
+    env: { ...childEnv, [mutationEnv.split("=")[0]]: mutationEnv.split("=")[1] },
   })
   const mutationBit = mut.status !== 0
   if (!mutationBit) hardFailures++

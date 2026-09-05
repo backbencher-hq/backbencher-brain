@@ -157,6 +157,30 @@ try {
     }
     check("A3: LSP-path reindex reports indexed>=1", r.indexed >= 1, String(r.indexed))
   }
+
+  // ── 5. negative observations (closure contract: negatives > 0) ──
+  // Honest rejections on the write path: bad input must fail loudly, and
+  // deleted content must actually disappear from the index.
+  {
+    // A nonexistent edit target is rejected by executeEdit (not silently "0 changes").
+    let rejected = false
+    try {
+      await executeEdit(proj, pid as any, {
+        mode: "update" as any,
+        path: path.join(proj, "src", "a3_no_such_file.ts"),
+        content: "export function ghost(): number { return 1 }\n",
+      } as any)
+    } catch { rejected = true }
+    check("A3: edit of a nonexistent file is rejected", rejected, "executeEdit accepted a ghost path", true)
+
+    // Deleting a file through the write path removes its symbols AND edges.
+    rmSync(path.join(proj, "src", "caller.ts"))
+    const del = await reindexFilesParallel(pid, proj, [{ path: path.join(proj, "src", "caller.ts"), type: "deleted" }], { logger: { log: () => {}, write: () => {} } })
+    const ghostSyms = (raw.prepare(`SELECT COUNT(*) c FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id WHERE f.relative_path = 'src/caller.ts'`).get(pid) as any).c
+    check("A3: deleted file's symbols are purged", del.deleted >= 1 && ghostSyms === 0, `deleted=${del.deleted} ghostSyms=${ghostSyms}`, true)
+    const ghostEdges = (raw.prepare(`SELECT COUNT(*) c FROM brain_relationship WHERE project_id = ? AND source_symbol_id NOT IN (SELECT id FROM brain_symbol) `).get(pid) as any).c
+    check("A3: no orphan edges survive the delete", ghostEdges === 0, String(ghostEdges), true)
+  }
 } finally {
   rmSync(root, { recursive: true, force: true })
 }
