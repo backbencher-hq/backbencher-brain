@@ -34,6 +34,65 @@ jobs:
       - name: Test
         run: npm test
 
+  # M41.X1 — site-truth/SEO/design gates, enforced when the site or its
+  # content sources change (website/, docs/data/, the M41 verifiers, or the
+  # root lockfile). Next builds dominate the cost, so untouched pushes stay
+  # fast; a design or content regression fails before Vercel can deploy it.
+  verify-site:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect site-path changes
+        id: sitechanged
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            BASE="${{ github.event.before }}"
+            if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+              BASE="HEAD~1"
+            fi
+            CHANGED=$(git diff --name-only "$BASE" "HEAD" || true)
+          else
+            BASE=$(git merge-base HEAD "origin/main" 2>/dev/null || echo "origin/main")
+            CHANGED=$(git diff --name-only "$BASE"...HEAD || true)
+          fi
+          if echo "$CHANGED" | grep -qE '^(website/|docs/data/|script/m41/|package-lock.json)'; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Install root dependencies
+        if: steps.sitechanged.outputs.changed == 'true'
+        run: npm ci
+
+      - name: Install website dependencies
+        if: steps.sitechanged.outputs.changed == 'true'
+        working-directory: website
+        run: npm ci
+
+      - name: Verify site truth, SEO, and design (M41 chain)
+        if: steps.sitechanged.outputs.changed == 'true'
+        run: |
+          npx tsx script/m41/generate-site-truth.ts --check && \
+          npx tsx script/m41/verify-truth-pipeline.ts && \
+          npx tsx script/m41/verify-design.ts && \
+          npx tsx script/m41/verify-site-truth.ts && \
+          npx tsx script/m41/verify-site-truth.ts --label T3 && \
+          npx tsx script/m41/verify-seo.ts && \
+          npx tsx script/m41/verify-governance.ts && \
+          npx tsx script/m41/verify-seo-onboarding.ts
+
   # M36.S2 — enforcement of the verification discipline on every push/PR.
   # Runs the runner-certified subset (M30/M32/M33/M34 gates, fresh-HOME
   # certified; the full `npm run verify` chain includes machine-specific
