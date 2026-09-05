@@ -4,21 +4,18 @@
   "milestone": "M26",
   "status": "known-gap",
   "checks": 70,
-  "passed": 70,
-  "failed": 0,
+  "passed": 69,
+  "failed": 1,
   "negativeCases": 10,
-  "currentCommit": "d4f9f5af0ad6c30b99861b0352e53f42f6c1a1ff",
-  "workingTreeRelevantChanges": [
-    "ide/vscode/collect-server-deps.mjs",
-    "ide/vscode/esbuild-extension.mjs"
-  ],
+  "currentCommit": "7b8b04e0c6c7035985469ac9a913d98d33864ceb",
+  "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m26/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-05T23:47:02.679Z",
+  "generatedAt": "2026-09-05T23:48:41.427Z",
   "ledger": "validation/m26/results/manifest.json",
   "m25Bar": {
     "ledgerStatus": "closed",
-    "m25GateExit": 0
+    "m25GateExit": 1
   },
   "limitations": [
     "This gate validates governance metadata, mutation response, and the M25 bar; it does not verify graph features.",
