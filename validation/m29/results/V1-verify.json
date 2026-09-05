@@ -1,27 +1,24 @@
 {
-  "status": "known-gap",
-  "passed": 12,
-  "failed": 2,
+  "status": "verified",
+  "passed": 14,
+  "failed": 0,
   "negatives": {
     "planned": 3
   },
   "verdict": {
-    "realComponentFailures": 2,
+    "realComponentFailures": 0,
     "mutantsCaught": 5,
     "mutantsTotal": 5,
     "ok": true
   },
-  "currentCommit": "9186d785496627b40a087881ed30ed0221754233",
+  "currentCommit": "5debb087a5e584532874473343cd7d9f6740bab3",
   "verifierCommand": "npx tsx script/m29/verify-wave-harness.ts",
   "evidenceFile": "V1-verify.json",
-  "generatedAt": "2026-09-05T22:24:02.076Z",
+  "generatedAt": "2026-09-05T22:42:34.445Z",
   "limitations": [
     "W2/W3 execute the runner and drift gates only; the nvim-dependent editor legs (S6) and giant-index legs (R3) are covered by their own verifiers and are out of scope here.",
     "Tamper proofs restore artifacts from a temp backup; a crash mid-tamper could leave a tampered artifact — the drift gate itself would then fail loudly until regenerated.",
     "The wiring proof reads package.json at run time; a chain edit that renames the script keys ('verify', 'verify:fast') would need this gate updated."
   ],
-  "details": [
-    "W2: R4 ledger drift gate exits 0 (green): exit=1 s regeneration\n  CAUGHT: M3: stale inputsHash is detected\n  CAUGHT: M4: evidence-existence gate fires on a bogus path\nR4: KNOWN-GAP (13/16 passed, 5 negatives)\n",
-    "W3: restored ledger makes the drift gate green again: exit=1"
-  ]
+  "details": []
 }
