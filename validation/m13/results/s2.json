@@ -23,12 +23,12 @@
     {
       "name": "CLI symbol mode returns findSymbol matches",
       "pass": true,
-      "detail": "{\n  \"matches\": [\n    {\n      \"id\": \"4b5543e29c96c04b13308818c84f8658f8feb925:src/app.ts:duplicateName:2\",\n      \"fileId\": \"/tmp/bb-search-e2e-Ex37XE/src/app.ts\""
+      "detail": "{\n  \"matches\": [\n    {\n      \"id\": \"a53eb767851216b3fd5bdffc25106fb68555825c:src/app.ts:duplicateName:2\",\n      \"fileId\": \"/tmp/bb-search-e2e-hk0c1j/src/app.ts\""
     },
     {
       "name": "CLI file mode returns source envelope",
       "pass": true,
-      "detail": "{\n  \"searchMode\": \"file\",\n  \"file\": \"src/app.ts\",\n  \"fileId\": \"4b5543e29c96c04b13308818c84f8658f8feb925:src/app.ts\",\n  \"language\": \"typescript\",\n  \"content\": \"e"
+      "detail": "{\n  \"searchMode\": \"file\",\n  \"file\": \"src/app.ts\",\n  \"fileId\": \"a53eb767851216b3fd5bdffc25106fb68555825c:src/app.ts\",\n  \"language\": \"typescript\",\n  \"content\": \"e"
     },
     {
       "name": "CLI rejects empty query [negative]",
@@ -68,17 +68,17 @@
     {
       "name": "MCP content mode returns JSON with searchMode=content",
       "pass": true,
-      "detail": "{\n  \"searchMode\": \"content\",\n  \"query\": \"handleRequest\",\n  \"total\": 1,\n  \"staleCount\": 0,\n  \"freshCount\": 1,\n  \"truncated\": false,\n  \"results\": [\n    {\n      \"f"
+      "detail": "{\n  \"searchMode\": \"content\",\n  \"query\": \"handleRequest\",\n  \"total\": 1,\n  \"staleCount\": 0,\n  \"freshCount\": 1,\n  \"truncated\": false,\n  \"freshness\": {\n    \"fresh\":"
     },
     {
       "name": "MCP symbol mode returns findSymbol matches",
       "pass": true,
-      "detail": "{\n  \"matches\": [\n    {\n      \"id\": \"4b5543e29c96c04b13308818c84f8658f8feb925:src/app.ts:duplicateName:2\",\n      \"fileId\": \"/tmp/bb-search-e2e-Ex37XE/src/app.ts\""
+      "detail": "{\n  \"matches\": [\n    {\n      \"id\": \"a53eb767851216b3fd5bdffc25106fb68555825c:src/app.ts:duplicateName:2\",\n      \"fileId\": \"/tmp/bb-search-e2e-hk0c1j/src/app.ts\""
     },
     {
       "name": "MCP file mode returns source envelope",
       "pass": true,
-      "detail": "{\n  \"searchMode\": \"file\",\n  \"file\": \"src/app.ts\",\n  \"fileId\": \"4b5543e29c96c04b13308818c84f8658f8feb925:src/app.ts\",\n  \"language\": \"typescript\",\n  \"content\": \"e"
+      "detail": "{\n  \"searchMode\": \"file\",\n  \"file\": \"src/app.ts\",\n  \"fileId\": \"a53eb767851216b3fd5bdffc25106fb68555825c:src/app.ts\",\n  \"language\": \"typescript\",\n  \"content\": \"e"
     },
     {
       "name": "MCP rejects empty query [negative]",
@@ -102,7 +102,7 @@
       "name": "MCP rejects path escape [negative]",
       "pass": true,
       "negative": true,
-      "detail": "error: path escapes project root: /tmp/escape.ts"
+      "detail": "bb_search mode=file: path escapes project root: /tmp/escape.ts"
     },
     {
       "name": "MCP rejects non-string query [negative]",
@@ -126,5 +126,5 @@
     "The CLI transport reads the prebuilt bin/bb; run `npm run build` before this verifier.",
     "MCP stdio under Bun executes src/mcp/server.ts directly (no build needed for that path)."
   ],
-  "generatedAt": "2026-08-23T02:57:10.122Z"
+  "generatedAt": "2026-09-05T20:56:15.896Z"
 }
