@@ -938,6 +938,26 @@ export function deriveGoEdges(root: any): { label: string; from: string; target:
         seen.add("inst:" + name)
         edges.push({ label: "instantiates", from: "(expr)", target: name })
       }
+    } else if (n.type === "composite_literal") {
+      // Composite-literal construction (`Foo{...}`, `&Foo{...}`,
+      // `pkg.Foo{...}`) -> instantiates of the type leaf. Mirror of the
+      // analyzer's analyzeGoCompositeLiteralConstruction (M37 #604): only
+      // type_identifier / qualified_type children name a type; slice/map/
+      // array literals carry wrapper type children and elided element
+      // literals have none, so both fall through to no edge. Builtin guard
+      // matches the analyzer.
+      const typeN = n.childForFieldName?.("type") ?? (n.namedChildCount > 0 ? n.namedChild(0) : undefined)
+      let ctorTarget: string | undefined
+      if (typeN && typeN.type === "type_identifier") {
+        ctorTarget = typeN.text
+      } else if (typeN && typeN.type === "qualified_type") {
+        const raw = typeN.text
+        ctorTarget = lastSegment(raw)
+      }
+      if (ctorTarget && !GOBUILTINS.has(ctorTarget) && !seen.has("inst-lit:" + ctorTarget)) {
+        seen.add("inst-lit:" + ctorTarget)
+        edges.push({ label: "instantiates", from: "(expr)", target: ctorTarget })
+      }
     } else if (n.type === "type_declaration") {
       for (let i = 0; i < n.namedChildCount; i++) {
         const ts = n.namedChild(i)
@@ -961,6 +981,27 @@ export function deriveGoEdges(root: any): { label: string; from: string; target:
                   edges.push({ label: "extends", from: nm.text, target: t })
                 }
               }
+            }
+          }
+        }
+        // Interface embedding (`interface { Reader; io.Closer }`) = Go
+        // interface inheritance -> extends, mirror of the analyzer's
+        // go_interface_embedding (GOD4/M37 #604). Target is the LEAF so it
+        // matches the analyzer byte-for-byte for both local (Reader) and
+        // external (io.Closer -> Closer) embeds.
+        const ifaceN = ts.namedChildren.find((c: any) => c.type === "interface_type")
+        if (nm && ifaceN) {
+          for (let j = 0; j < ifaceN.namedChildCount; j++) {
+            const elem = ifaceN.namedChild(j)
+            if (!elem || elem.type !== "constraint_elem") continue
+            const inner = elem.namedChildCount > 0 ? elem.namedChild(0) : undefined
+            if (!inner) continue
+            const raw = inner.text
+            const leaf = raw.lastIndexOf(".") !== -1 ? raw.slice(raw.lastIndexOf(".") + 1) : raw
+            const key = "ext:" + nm.text + "->" + leaf
+            if (leaf && !seen.has(key)) {
+              seen.add(key)
+              edges.push({ label: "extends", from: nm.text, target: leaf })
             }
           }
         }
@@ -2247,6 +2288,10 @@ export function deriveGoImplements(root: any): { label: string; from: string; ta
   const structEmbedded: Record<string, Set<string>> = {}
   // receiverType -> Set<methodName> (value AND pointer receivers merged)
   const structMethods: Record<string, Set<string>> = {}
+  // Generic type names (type_spec with type_parameter_list): implements
+  // satisfaction across generic instantiations needs type UNIFICATION, so
+  // BOTH sides refuse (M37 #604, mirrors the analyzer's hasGenerics skip).
+  const genericNames = new Set<string>()
   const stack: any[] = [root]
   while (stack.length > 0) {
     const n = stack.pop()!
@@ -2255,6 +2300,11 @@ export function deriveGoImplements(root: any): { label: string; from: string; ta
         const ts = n.namedChild(i)
         if (!ts || ts.type !== "type_spec") continue
         const nm = ts.childForFieldName?.("name")?.text
+        // Generic type_spec (`MapLattice[Key comparable, ...]`): satisfaction
+        // needs unification — record for the pair-level skip below.
+        if (nm && (ts.namedChildren ?? []).some((c: any) => c.type === "type_parameter_list")) {
+          genericNames.add(nm)
+        }
         const structN = ts.namedChildren.find((c: any) => c.type === "struct_type")
         if (nm && structN) {
           // Anonymous (embedded) fields: field_declaration with NO name child —
@@ -2329,7 +2379,10 @@ export function deriveGoImplements(root: any): { label: string; from: string; ta
           const p = c.namedChild(0)
           if (p && (p.type === "parameter_declaration" || p.type === "receiver")) {
             const tn = p.childForFieldName?.("type")
-            if (tn) receiverType = lastSegment(tn.text.replace(/^\*/, "").replace(/<.*$/, ""))
+            // Strip pointer AND generic brackets — Go generics use `[...]`,
+            // not `<...>` (M37 #604: MapLattice[Key, Elem, L] receivers were
+            // never matched to the declared MapLattice).
+            if (tn) receiverType = lastSegment(tn.text.replace(/^\*/, "").replace(/[\[<].*$/, ""))
           }
         }
       }
@@ -2337,6 +2390,16 @@ export function deriveGoImplements(root: any): { label: string; from: string; ta
         if (!structMethods[receiverType]) structMethods[receiverType] = new Set()
         structMethods[receiverType].add(nm)
       }
+    }
+    // Package-scope-only mirror (LocalsAreNotSymbols contract): function-,
+    // method- and func-literal-local type/method declarations are not
+    // symbols in the analyzer, so no implements edge may be derived from
+    // them. All needed info is processed at the declaration node itself —
+    // their subtrees carry nothing relevant, so skip descending entirely
+    // (M37 #604 go-tools: function-local `interface hasCommands` in
+    // gopls/internal/cmd/subcommands.go was over-derived).
+    if (n.type === "function_declaration" || n.type === "method_declaration" || n.type === "func_literal") {
+      continue
     }
     for (let k = 0; k < n.namedChildCount; k++) stack.push(n.namedChild(k))
   }
@@ -2379,8 +2442,11 @@ export function deriveGoImplements(root: any): { label: string; from: string; ta
   for (const name of Object.keys(structMethods)) foldStruct(name, new Set())
   for (const [iface, ifaceMethods] of Object.entries(interfaces)) {
     if (ifaceMethods.size === 0) continue
+    // Generic pairs skipped on BOTH sides (mirrors the analyzer).
+    if (genericNames.has(iface)) continue
     for (const [structName, methods] of Object.entries(structMethods)) {
       if (structName === iface) continue
+      if (genericNames.has(structName)) continue
       let ok = true
       for (const m of ifaceMethods) {
         if (!methods.has(m)) { ok = false; break }

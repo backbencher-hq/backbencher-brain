@@ -806,7 +806,15 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     const typeName = receiverType.text
     const isPointer = typeName.startsWith("*")
-    const actualTypeName = isPointer ? typeName.substring(1) : typeName
+    let actualTypeName = isPointer ? typeName.substring(1) : typeName
+    // Generic receivers (`func (m MapLattice[Key, Elem, L]) Ident() ...`)
+    // carry their type ARGUMENTS — strip them so the method owner resolves to
+    // the declared type name (`MapLattice`), or the receiverType never matches
+    // the type_spec name and generic types can never be interface-checked
+    // (M37 #604: go-tools MapLattice methods were orphaned). The oracle's
+    // deriveGoImplements strips `<.*$` the same way.
+    const lt = actualTypeName.indexOf("[")
+    if (lt > 0) actualTypeName = actualTypeName.slice(0, lt)
 
     return {
       name: receiverName?.text || "",
@@ -866,6 +874,32 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
   private extractGoReturnType(node: Node): string | undefined {
     const resultNode = node.childForFieldName("result")
     if (resultNode) {
+      // Named-result parameter_list (`(result any, err error)`) must reduce
+      // to its TYPES, or an interface method that names its results
+      // (`Handle(...) (result any, err error)`) can never textually match an
+      // implementation that does not (`Handle(...) (any, error)`) — silently
+      // dropping real implements edges (M37 #604 go-tools: defaultHandler,
+      // jsonrpc2 Handler/Preempter). Canonical form: `T` for a single
+      // result, `(T1, T2)` for several.
+      if (resultNode.type === "parameter_list") {
+        const types: string[] = []
+        for (let i = 0; i < resultNode.namedChildCount; i++) {
+          const p = resultNode.namedChild(i)
+          if (!p || p.type !== "parameter_declaration") continue
+          const t = p.childForFieldName("type")
+          if (!t) continue
+          // `a, b int` is ONE declaration naming TWO results of type int.
+          let names = 0
+          for (let j = 0; j < p.namedChildCount; j++) {
+            const c = p.namedChild(j)
+            if (c && c.type === "identifier") names++
+          }
+          for (let k = 0; k < Math.max(1, names); k++) types.push(t.text)
+        }
+        if (types.length === 1) return types[0]
+        if (types.length > 1) return `(${types.join(", ")})`
+        return resultNode.text
+      }
       return resultNode.text
     }
 
@@ -1095,8 +1129,13 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    if (someSymbol(symbols, (s) => s.metadata?.isInterface)) if (!inArray(patterns, "$1")) patterns.push("interfaces")
-    if (someSymbol(symbols, (s) => s.metadata?.isStruct)) if (!inArray(patterns, "$1")) patterns.push("structs")
+    // The pre-fix guards tested `!inArray(patterns, "$1")` — a template
+    // leftover literal that never matched, making the dedupe dead code. The
+    // pushes were safe only because detectGoPatterns runs once per file; the
+    // guards now test the actual pattern name (M37 #604 hygiene).
+    if (someSymbol(symbols, (s) => s.metadata?.isInterface)) if (!inArray(patterns, "interfaces")) patterns.push("interfaces")
+    if (someSymbol(symbols, (s) => s.metadata?.isStruct)) if (!inArray(patterns, "structs")) patterns.push("structs")
+
 
     return patterns
   }
@@ -1126,6 +1165,16 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     // captures — a genuine analyzer gap (Go wave 2026-08-28: newexpr.go,
     // session.go NewString, semtok.go MustCompile all leaked as MISSING).
     this.analyzeGoPackageScopeCalls(rootNode, relationships, symbols)
+
+    // 3.6. Composite-literal construction (`Foo{...}`, `&Foo{...}`,
+    // `pkg.Foo{...}`) — Go's primary construction syntax, which emits NO
+    // instantiates today (M37 #604: 65,843 composite literals across
+    // go-tools+terraform with zero construction edges; rust emits
+    // instantiates for `Foo { ... }` struct literals, csharp for `new Foo()`
+    // — family parity). Source = containing fn/method ("global" at package
+    // scope), target = the literal's type leaf. Slice/map/array literals and
+    // elided element types (no type child) are skipped.
+    this.analyzeGoCompositeLiteralConstruction(rootNode, relationships)
 
     // 4. Analyze Go-specific patterns (channels, goroutines, defer)
     this.analyzeGoSpecificPatterns(rootNode, relationships, symbols)
@@ -1166,31 +1215,65 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (node.type === "type_declaration") {
         const typeSpecs = this.findChildrenByType(node, "type_spec")
         for (const typeSpec of typeSpecs) {
+          const nameNode = typeSpec.childForFieldName("name")
+          const typeName = nameNode?.text
+          if (!typeName) continue
+          // (a) Struct embedding = anonymous-field composition with method
+          // promotion — family contract (Java/C++/Swift/ObjC): ONE extends
+          // edge, no contains twin. The embedded type is a member via the
+          // ownerName contains pass below, and field-type dependency edges
+          // are NOT emitted (Rust M12.18 contract — fields get contains
+          // only, no dangling type-text targets).
           const structSpec = this.findChildByType(typeSpec, "struct_type")
           if (structSpec) {
-            const nameNode = typeSpec.childForFieldName("name")
-            const structName = nameNode?.text
-            if (structName) {
-              // Go embedding = anonymous-field composition with method
-              // promotion — family contract (Java/C++/Swift/ObjC): ONE extends
-              // edge, no contains twin. The embedded type is a member via the
-              // ownerName contains pass below, and field-type dependency edges
-              // are NOT emitted (Rust M12.18 contract — fields get contains
-              // only, no dangling type-text targets).
-              const embeddedTypes = this.extractGoEmbeddedTypes(structSpec)
-              forEachSymbol(embeddedTypes, (embeddedType) => {
-                relationships.push({
-                  source: structName,
-                  target: embeddedType,
-                  type: ASTEngine.RelationshipType.Extends,
-                  confidence: 0.8,
-                  metadata: {
-                    relationshipType: "go_struct_embedding",
-                    isEmbedding: true,
-                    isAnonymous: true,
-                    embedType: "struct_composition_extends",
-                  },
-                })
+            const embeddedTypes = this.extractGoEmbeddedTypes(structSpec)
+            forEachSymbol(embeddedTypes, (embeddedType) => {
+              relationships.push({
+                source: typeName,
+                target: embeddedType,
+                type: ASTEngine.RelationshipType.Extends,
+                confidence: 0.8,
+                metadata: {
+                  relationshipType: "go_struct_embedding",
+                  isEmbedding: true,
+                  isAnonymous: true,
+                  embedType: "struct_composition_extends",
+                },
+              })
+            })
+          }
+          // (b) Interface embedding (`interface { Reader; io.Closer }`) is
+          // Go's interface inheritance — the family contract (java interface
+          // extends interface, rust trait supertrait) gives an EXTENDS edge,
+          // exactly like struct embedding. GOD4/M37 #604: the pre-fix analyzer
+          // emitted only a member-symbol contains for embedded interfaces, so
+          // the embedding relationship never appeared as extends (measured
+          // 156 embedding sites across go-tools+terraform). Target is the
+          // LEAF (`Reader`, `Closer`) so a local declaration resolves; an
+          // external `io.Closer` keeps its leaf as a dangling-but-real target
+          // (rust pins external supertrait leaves the same way).
+          const interfaceSpec = this.findChildByType(typeSpec, "interface_type")
+          if (interfaceSpec) {
+            for (let j = 0; j < interfaceSpec.namedChildCount; j++) {
+              const elem = interfaceSpec.namedChild(j)
+              if (!elem || elem.type !== "constraint_elem") continue
+              const inner = elem.namedChildCount > 0 ? elem.namedChild(0) : undefined
+              if (!inner) continue
+              const raw = inner.text
+              const leaf = raw.lastIndexOf(".") !== -1 ? raw.slice(raw.lastIndexOf(".") + 1) : raw
+              if (!leaf) continue
+              relationships.push({
+                source: typeName,
+                target: leaf,
+                type: ASTEngine.RelationshipType.Extends,
+                confidence: 0.8,
+                metadata: {
+                  relationshipType: "go_interface_embedding",
+                  isEmbedding: true,
+                  isAnonymous: true,
+                  embedType: "interface_inheritance_extends",
+                  embeddedInterface: raw,
+                },
               })
             }
           }
@@ -1212,9 +1295,21 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     relationships: ASTEngine.UniversalRelationship[],
     symbols: ASTEngine.UniversalSymbol[],
   ) {
-    // Get all interfaces and their methods
+    // Get all interfaces and their methods. Implementor candidates are ALL
+    // declared non-interface types with receivers — structs AND named
+    // non-struct types (`type HandlerFunc func(...)`, `type subcommands
+    // []command`) can carry methods in Go and therefore satisfy interfaces
+    // (M37 #604 go-tools: HandlerFunc/PreempterFunc/subcommands implements
+    // were silently missed because only isStruct symbols were checked). The
+    // method sets below filter by receiverType anyway, so extra candidates
+    // with no methods contribute nothing.
     const interfaces = filterSymbols(symbols, (s) => s.metadata?.isInterface)
-    const structs = filterSymbols(symbols, (s) => s.metadata?.isStruct)
+    const structs = filterSymbols(
+      symbols,
+      (s) =>
+        (s.kind === ASTEngine.SymbolKind.Struct || s.kind === ASTEngine.SymbolKind.Type) &&
+        !s.metadata?.isInterface,
+    )
     const methods = filterSymbols(symbols, (s) => s.kind === ASTEngine.SymbolKind.Method)
 
     // Embedded-struct method promotion: `type Worker struct { *Shape }`
@@ -1240,9 +1335,17 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     forEachSymbol(interfaces, (interfaceSymbol) => {
+      // Generic-instantiation guard (M37 #604): neither a generic interface
+      // (`Semilattice[Elem]`) nor a generic implementor (`MapLattice[K, E,
+      // L]`) can be verified textually — satisfaction requires type
+      // UNIFICATION over instantiations (Elem := map[Key]Elem), which no
+      // signature comparison can decide. Both this analyzer and the oracle
+      // refuse rather than guess (the differential stays symmetric).
+      if (interfaceSymbol.metadata?.hasGenerics) return
       const interfaceMethods = this.getGoInterfaceMethods(interfaceSymbol, symbols)
 
       forEachSymbol(structs, (structSymbol) => {
+        if (structSymbol.metadata?.hasGenerics) return
         const structName = structSymbol.name
         // Promoted methods: direct + transitive embedding closure (Go
         // method promotion — an embedded type's methods are elements of the
@@ -1555,6 +1658,80 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
    * Go-Specific Pattern Analysis
    * Analyzes goroutines, channels, defer statements, and Go idioms
    */
+  /**
+   * Go composite-literal construction analysis. `Foo{...}`, `&Foo{...}` and
+   * `pkg.Foo{...}` are Go's primary construction syntax — but before M37
+   * #604 instantiates fired ONLY for NewXxx constructor calls, so struct
+   * construction by literal was invisible to the graph (65,843 composite
+   * literals across go-tools+terraform with zero construction edges). Rust
+   * emits instantiates for struct literals (`Foo { ... }`), csharp for
+   * `new Foo()` — this is family parity, not a new edge kind. Target is the
+   * literal's type LEAF (dotted pkg.Foo -> Foo, matching the calls leaf
+   * contract); source is the containing fn/method or "global" at package
+   * scope. Slice/map/array literals carry a wrapper type child (not a named
+   * type) and elided element literals have no type child — both are skipped
+   * naturally by the type-child gate below.
+   */
+  private analyzeGoCompositeLiteralConstruction(rootNode: Node, relationships: ASTEngine.UniversalRelationship[]) {
+    const stack: Node[] = [rootNode]
+    const seen = new Set<string>()
+    while (stack.length > 0) {
+      const node = stack.pop()!
+      // Package-scope stored-closure contract (mirrors
+      // analyzeGoPackageScopeCalls and the oracle): a func_literal that is
+      // NOT immediately invoked AND has no enclosing function/method is a
+      // stored package template (`var factory = func(){ &Result{} }`) that
+      // does not statically run at init — composite literals inside it are
+      // not statically construction. Local closures inside bodies keep the
+      // enclosing fn as source (findContainingGoFunction succeeds).
+      if (
+        node.type === "func_literal" &&
+        node.parent?.type !== "call_expression" &&
+        !this.findContainingGoFunction(node)
+      ) {
+        continue
+      }
+      if (node.type === "composite_literal") {
+        const typeNode = node.childForFieldName("type") ?? (node.namedChildCount > 0 ? node.namedChild(0) : undefined)
+        let target: string | undefined
+        if (typeNode) {
+          if (typeNode.type === "type_identifier") {
+            target = typeNode.text
+          } else if (typeNode.type === "qualified_type") {
+            const raw = typeNode.text
+            const dot = raw.lastIndexOf(".")
+            target = dot !== -1 ? raw.slice(dot + 1) : raw
+          }
+        }
+        // Elided element literal (`[]Foo{{...}}`) and wrapper-type literals
+        // (map/slice/array/function) yield no named target. Builtin-guard:
+        // composite literals cannot target builtins directly.
+        if (target && !this.isGoBuiltin(target)) {
+          const src = this.findContainingGoFunction(node) || "global"
+          const key = `${src}.${target}`
+          if (!seen.has(key)) {
+            seen.add(key)
+            relationships.push({
+              source: src,
+              target,
+              type: ASTEngine.RelationshipType.Instantiates,
+              confidence: 0.8,
+              metadata: { relationshipType: "go_composite_literal_construction", isConstructor: true },
+            })
+          }
+        }
+      }
+      for (let i = node.namedChildCount - 1; i >= 0; i--) {
+        const child = node.namedChild(i)
+        if (child) stack.push(child)
+      }
+    }
+  }
+
+  /**
+   * Go-Specific Pattern Analysis
+   * Analyzes goroutines, channels, defer statements, and Go idioms
+   */
   private analyzeGoSpecificPatterns(
     rootNode: Node,
     relationships: ASTEngine.UniversalRelationship[],
@@ -1685,7 +1862,25 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         // Skip selectors that are the callee of a call — the calls analysis
         // emits the leaf-target calls edge (Rust: field_expression inside a
         // call_expression is skipped for uses).
-        if (operand && field && node.parent?.type !== "call_expression") {
+        // S1 write-gate (GOD4-class, M37 #604): assignment-LHS and inc/dec
+        // operands are WRITES, never read-uses — the family write-gate that
+        // cpp/c/php/ruby/python/groovy/objc/ts all enforce and go was missing
+        // (measured 204 pure-write selector sites across go-tools+terraform
+        // 3,924 files, e.g. `r.cfg = newCfg` emitting `uses apply -> cfg`).
+        // tree-sitter-go wraps the LHS in the FIRST expression_list child of
+        // an assignment_statement (`=` AND `+=` — the operator is an
+        // anonymous token, both are writes per SCD1 family parity); a
+        // chained operand selector (`r.cfg` inside `r.cfg.V = v`) is a
+        // GENUINE read (fetch the struct to reach V) and keeps its edge.
+        // inc_statement/dec_statement operands (`r.cfg.V++`) are writes.
+        // Node identity is compared by .id — two wrapper objects for the
+        // same tree node are not === (web-tree-sitter wraps per retrieval).
+        const isWritePos =
+          (node.parent?.type === "inc_statement" || node.parent?.type === "dec_statement") ||
+          (node.parent?.type === "expression_list" &&
+            node.parent.parent?.type === "assignment_statement" &&
+            node.parent.parent?.namedChild(0)?.id === node.parent.id)
+        if (operand && field && node.parent?.type !== "call_expression" && !isWritePos) {
           const src = this.findContainingGoFunction(node) || "global"
           const tgt = field.text
           const key = `${src}.${tgt}`
@@ -2799,7 +2994,30 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private extractGoMethodSpecReturnType(node: Node): string | undefined {
     const resultNode = node.childForFieldName("result")
-    if (resultNode) return resultNode.text
+    if (resultNode) {
+      // Same named-result reduction as extractGoReturnType (M37 #604):
+      // interface `Ident() Elem` vs generic-impl canonical types must compare
+      // by TYPE only.
+      if (resultNode.type === "parameter_list") {
+        const types: string[] = []
+        for (let i = 0; i < resultNode.namedChildCount; i++) {
+          const p = resultNode.namedChild(i)
+          if (!p || p.type !== "parameter_declaration") continue
+          const t = p.childForFieldName("type")
+          if (!t) continue
+          let names = 0
+          for (let j = 0; j < p.namedChildCount; j++) {
+            const c = p.namedChild(j)
+            if (c && c.type === "identifier") names++
+          }
+          for (let k = 0; k < Math.max(1, names); k++) types.push(t.text)
+        }
+        if (types.length === 1) return types[0]
+        if (types.length > 1) return `(${types.join(", ")})`
+        return resultNode.text
+      }
+      return resultNode.text
+    }
 
     // Same guard as extractGoReturnType: parameter_list is NOT a return type
     // here. method_spec children are [name, parameter_list(parameters)] and
