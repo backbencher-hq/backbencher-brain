@@ -123,20 +123,20 @@ async function main(): Promise<void> {
   try {
     const { hover } = await import(HOVER)
     // Hover main (ts): stored caller row from kotlin with bridge + class.
-    const h1 = hover(fx.raw, { filePath: join(fx.ws, "main.ts"), position: { line: 0, character: 7 } })
+    const h1 = await hover(fx.raw, { filePath: join(fx.ws, "main.ts"), position: { line: 0, character: 7 } })
     const text1 = h1.contents?.value ?? ""
     check("R1: real db — stored cross-language pair renders", text1.includes("**cross-language**") && text1.includes("called from kotlin via kotlin-ts interop"), text1.slice(0, 400))
     check("R1: real db — stored evidenceClass renders as the tier", text1.includes("usage_contextual"))
     check("R1: real db — confidence rendered with the tier", text1.includes("0.92"))
     // Hover localCaller (ts): cross-language callee at 0.5 (sub-floor → inferred),
     // plus a same-language row that must not appear as cross-language.
-    const h2 = hover(fx.raw, { filePath: join(fx.ws, "main.ts"), position: { line: 1, character: 7 } })
+    const h2 = await hover(fx.raw, { filePath: join(fx.ws, "main.ts"), position: { line: 1, character: 7 } })
     const text2 = h2.contents?.value ?? ""
     check("R1: sub-floor cross-language callee renders inferred", text2.includes("calls into kotlin") && text2.includes("inferred (confidence 0.5)"), text2.slice(0, 400))
     // A symbol with NO cross-language rows: seed one.
     fx.raw.prepare(`INSERT INTO brain_symbol (id, project_id, file_id, name, symbol_type, line_start, line_end, byte_start, byte_end, gravity_score) VALUES (?,?,?,?,?,?,?,?,?,?)`).run("sym-quiet", fx.projectId, "file-ts", "quietFn", "function", 3, 3, 9, 12, 1)
     fx.raw.prepare(`INSERT INTO brain_relationship (id, project_id, source_symbol_id, target_symbol_id, relationship_type, confidence, is_cross_language, bridge_mechanism, metadata) VALUES (?,?,?,?,?,?,?,?,?)`).run("rel-same-2", fx.projectId, "sym-quiet", "sym-main", "calls", 0.95, 0, null, null)
-    const h3 = hover(fx.raw, { filePath: join(fx.ws, "main.ts"), position: { line: 2, character: 7 } })
+    const h3 = await hover(fx.raw, { filePath: join(fx.ws, "main.ts"), position: { line: 2, character: 7 } })
     const text3 = h3.contents?.value ?? ""
     check("P2: real db — no cross-language text when no stored rows", !text3.includes("cross-language"), text3.slice(0, 300))
     // P4 evidence: stored pair rows via the component directly.

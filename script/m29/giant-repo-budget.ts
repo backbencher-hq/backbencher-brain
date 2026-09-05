@@ -306,19 +306,22 @@ export async function runGiantBudget(): Promise<Record<string, unknown>> {
       }
       const rawDb = (await BrainDatabase.getRawInstance(projectId)) as unknown
       const profile: Record<string, number> = {}
-      const timeIt = (name: string, n: number, fn: () => void): void => {
+      // hover() became async (occurrence-first parse, 2026-09-05); the timer
+      // must await or fullHover would measure Promise creation (~0ms) and
+      // pass every budget by construction — dishonest measurement.
+      const timeIt = async (name: string, n: number, fn: () => unknown | Promise<unknown>): Promise<void> => {
         const t = Date.now()
-        for (let i = 0; i < n; i++) fn()
+        for (let i = 0; i < n; i++) await fn()
         profile[name] = (Date.now() - t) / n
       }
       const req = { filePath: tsTarget.file, position: { line: tsTarget.hoverLine, character: tsTarget.hoverChar } }
-      timeIt("findSymbolAtPosition", 5, () => findSymbolAtPosition(rawDb, req.filePath, req.position))
+      await timeIt("findSymbolAtPosition", 5, () => findSymbolAtPosition(rawDb, req.filePath, req.position))
       const foundSym = findSymbolAtPosition(rawDb, req.filePath, req.position)
       const symId = foundSym?.symbol.id ?? ""
-      timeIt("countUsages", 5, () => countUsages(rawDb, symId))
-      timeIt("evidenceTiersFor", 5, () => evidenceTiersFor(rawDb, symId))
-      timeIt("storedCrossLanguageRows", 5, () => storedCrossLanguageRows(rawDb, symId))
-      timeIt("fullHover", 5, () => hover(rawDb, req))
+      await timeIt("countUsages", 5, () => countUsages(rawDb, symId))
+      await timeIt("evidenceTiersFor", 5, () => evidenceTiersFor(rawDb, symId))
+      await timeIt("storedCrossLanguageRows", 5, () => storedCrossLanguageRows(rawDb, symId))
+      await timeIt("fullHover", 5, () => hover(rawDb, req))
       // M29.R5: the tier-ratio measurement the precision ledger publishes.
       // Old-vs-new rule replay over every relationship row (grouped), so the
       // improvement number is computed from the real index, not asserted.

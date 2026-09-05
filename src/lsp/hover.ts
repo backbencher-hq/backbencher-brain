@@ -276,7 +276,14 @@ export async function resolveOccurrenceSymbol(
     if (e instanceof PositionError) return null
     throw e
   }
-  const safety = await parseForSafety(filePath, content)
+  let safety: Awaited<ReturnType<typeof parseForSafety>>
+  try {
+    safety = await parseForSafety(filePath, content)
+  } catch {
+    // Unparseable/unsupported file: honest degradation to the enclosing-
+    // symbol model — hover must never reject over a parse failure.
+    return null
+  }
   const cursorOcc = safety.occurrences.find(
     (o) => o.startLine === indexPos.line && o.startColumn <= indexPos.column && indexPos.column < o.endColumn,
   )
