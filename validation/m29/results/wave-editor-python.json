@@ -1,78 +1,82 @@
 {
+  "language": "python",
   "checks": [
     {
-      "detail": "$HOME/backbencher-brain/dist/lsp/server.js",
+      "name": "S6: launch order resolves a server",
       "ok": true,
-      "name": "S6: launch order resolves a server"
+      "detail": "$HOME/backbencher-brain/dist/lsp/server.js"
     },
     {
-      "detail": "1",
+      "name": "S6: vim.lsp.start launched bb_lsp",
       "ok": true,
-      "name": "S6: vim.lsp.start launched bb_lsp"
+      "detail": "1"
     },
     {
-      "detail": "table: 0x6ffff70b7000",
+      "name": "S6: client initialized",
       "ok": true,
-      "name": "S6: client initialized"
+      "detail": "table: 0x782f4895cb00"
     },
     {
-      "detail": "{\n  d = true,\n  h = true,\n  s = true\n}",
+      "name": "S6: capabilities advertised",
       "ok": true,
-      "name": "S6: capabilities advertised"
+      "detail": "{\n  d = true,\n  h = true,\n  s = true\n}"
     },
     {
-      "detail": "```\npublic method greet([{\"name\":\"self\"}]) → str\n```\n\n**greet** — method, 3 usages\n\nevidence: indexed, structural\n\n_",
+      "name": "S6: hover renders the symbol",
       "ok": true,
-      "name": "S6: hover renders the symbol"
+      "detail": "```\npublic method greet([{\"name\":\"self\"}]) → str\n```\n\n**greet** — method, 3 usages\n\nevidence: indexed, structural\n\n*"
     },
     {
-      "detail": "```\npublic method greet([{\"name\":\"self\"}]) → str\n```\n\n**greet** — method, 3 usages\n\nevidence: indexed, structural\n\n_",
+      "name": "S6: hover carries evidence tier (contract §2)",
       "ok": true,
-      "name": "S6: hover carries evidence tier (contract §2)"
+      "detail": "```\npublic method greet([{\"name\":\"self\"}]) → str\n```\n\n**greet** — method, 3 usages\n\nevidence: indexed, structural\n\n*"
     },
     {
-      "detail": "{\n  evidenceTier = \"indexed\",\n  found = true,\n  location = {\n    character = 4,\n    endCharacter = 41,\n    endLine = 11,\n    line = 10,\n    path = \"/home/ishaq2",
+      "name": "S6: definition resolves",
       "ok": true,
-      "name": "S6: definition resolves"
+      "detail": "{\n  evidenceTier = \"indexed\",\n  found = true,\n  location = {\n    character = 4,\n    endCharacter = 41,\n    endLine = 11,\n    line = 10,\n    path = \"/home/ishaq2"
     },
     {
-      "detail": "4",
+      "name": "S6: references returns locations",
       "ok": true,
-      "name": "S6: references returns locations"
+      "detail": "4"
     },
     {
-      "detail": "{ \"Greeter\" }",
+      "name": "S6: documentSymbols include the class",
       "ok": true,
-      "name": "S6: documentSymbols include the class"
+      "detail": "{ \"Greeter\" }"
     },
     {
-      "detail": "{\n  evidenceTier = \"not_indexed\",\n  limit = 200,\n  symbols = {},\n  totalCount = 0,\n  truncated = false\n}",
+      "name": "S6: declared absence is honored (no fabricated symbols)",
       "ok": true,
-      "name": "S6: declared absence is honored (no fabricated symbols)"
+      "detail": "{\n  evidenceTier = \"not_indexed\",\n  limit = 200,\n  symbols = {},\n  totalCount = 0,\n  truncated = false\n}"
     }
   ],
   "session": [],
-  "language": "python",
   "raw": {
+    "definition": {
+      "found": true,
+      "location": {
+        "endLine": 11,
+        "path": "$HOME/backbencher-brain/script/m29/wave-fixtures/python/main.py",
+        "endCharacter": 41,
+        "character": 4,
+        "line": 10
+      },
+      "symbol": {
+        "name": "greet",
+        "id": "1abd90d83403ff12b318773f0a8fc8c5d0835b28:main.py:greet:11",
+        "symbolType": "method",
+        "qualifiedName": "greet"
+      },
+      "evidenceTier": "indexed"
+    },
     "hover": {
       "contents": {
-        "value": "```\npublic method greet([{\"name\":\"self\"}]) → str\n```\n\n**greet** — method, 3 usages\n\nevidence: indexed, structural\n\n_source: bb index ($HOME/backbencher-brain/script/m29/wave-fixtures/python/main.py:11)_",
+        "value": "```\npublic method greet([{\"name\":\"self\"}]) → str\n```\n\n**greet** — method, 3 usages\n\nevidence: indexed, structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fpython%2Fmain.py%22%2C%22line%22%3A14%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_\n\n**usages**\n1. [Greeter — main.py:5](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fpython%2Fmain.py%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D)\n2. [items — main.py:9](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fpython%2Fmain.py%22%2C%22line%22%3A8%2C%22character%22%3A13%7D%5D)\n3. [main — main.py:15](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fpython%2Fmain.py%22%2C%22line%22%3A14%2C%22character%22%3A0%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fpython%2Fmain.py%22%2C%22line%22%3A10%2C%22character%22%3A4%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fpython%2Fmain.py%22%2C%22line%22%3A10%2C%22character%22%3A4%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fpython%2Fmain.py%22%2C%22line%22%3A10%2C%22character%22%3A4%7D%5D)\n\n_source: bb index ([$HOME/backbencher-brain/script/m29/wave-fixtures/python/main.py:11](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fpython%2Fmain.py%22%2C%22line%22%3A10%2C%22character%22%3A4%7D%5D))_",
         "kind": "markdown"
       },
-      "range": {
-        "start": {
-          "line": 10,
-          "character": 4
-        },
-        "end": {
-          "line": 11,
-          "character": 41
-        }
-      },
       "data": {
-        "filePath": "$HOME/backbencher-brain/script/m29/wave-fixtures/python/main.py",
-        "lineStart": 11,
-        "lineEnd": 12,
         "qualifiedName": "greet",
         "symbolType": "method",
         "signature": "public method greet([{\"name\":\"self\"}]) → str",
@@ -81,204 +85,207 @@
           "indexed",
           "structural"
         ],
+        "connectedSection": "**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fpython%2Fmain.py%22%2C%22line%22%3A14%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_",
+        "usagesSection": "**usages**\n1. [Greeter — main.py:5](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fpython%2Fmain.py%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D)\n2. [items — main.py:9](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fpython%2Fmain.py%22%2C%22line%22%3A8%2C%22character%22%3A13%7D%5D)\n3. [main — main.py:15](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fpython%2Fmain.py%22%2C%22line%22%3A14%2C%22character%22%3A0%7D%5D)",
+        "actionsSection": "**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fpython%2Fmain.py%22%2C%22line%22%3A10%2C%22character%22%3A4%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fpython%2Fmain.py%22%2C%22line%22%3A10%2C%22character%22%3A4%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fpython%2Fmain.py%22%2C%22line%22%3A10%2C%22character%22%3A4%7D%5D)",
         "crossLanguageSection": "",
         "annotationSection": "",
         "stale": false,
         "freshnessStatus": "fresh",
+        "filePath": "$HOME/backbencher-brain/script/m29/wave-fixtures/python/main.py",
+        "lineStart": 11,
+        "lineEnd": 12,
+        "definition": {
+          "line": 10,
+          "character": 4
+        },
         "name": "greet"
       },
+      "range": {
+        "end": {
+          "line": 11,
+          "character": 41
+        },
+        "start": {
+          "line": 10,
+          "character": 4
+        }
+      },
       "provenance": {
+        "engine": "bb_lsp hover@m24.l2",
         "limitations": [
           "index-sourced; no compiler-backed types (complement stance)"
         ],
-        "source": "bb_index",
         "evidenceClass": "indexed",
-        "engine": "bb_lsp hover@m24.l2",
+        "source": "bb_index",
         "stale": false
       }
     },
     "references": {
+      "locations": [
+        {
+          "endLine": 11,
+          "path": "$HOME/backbencher-brain/script/m29/wave-fixtures/python/main.py",
+          "endCharacter": 41,
+          "character": 0,
+          "line": 4
+        },
+        {
+          "endLine": 8,
+          "path": "$HOME/backbencher-brain/script/m29/wave-fixtures/python/main.py",
+          "endCharacter": 18,
+          "character": 13,
+          "line": 8
+        },
+        {
+          "endLine": 17,
+          "path": "$HOME/backbencher-brain/script/m29/wave-fixtures/python/main.py",
+          "endCharacter": 23,
+          "character": 0,
+          "line": 14
+        },
+        {
+          "endLine": 11,
+          "path": "$HOME/backbencher-brain/script/m29/wave-fixtures/python/main.py",
+          "endCharacter": 41,
+          "character": 4,
+          "line": 10
+        }
+      ],
       "truncated": false,
       "totalCount": 4,
       "limit": 200,
-      "evidenceTier": "indexed",
-      "locations": [
-        {
-          "line": 4,
-          "endCharacter": 41,
-          "path": "$HOME/backbencher-brain/script/m29/wave-fixtures/python/main.py",
-          "character": 0,
-          "endLine": 11
-        },
-        {
-          "line": 8,
-          "endCharacter": 18,
-          "path": "$HOME/backbencher-brain/script/m29/wave-fixtures/python/main.py",
-          "character": 13,
-          "endLine": 8
-        },
-        {
-          "line": 14,
-          "endCharacter": 23,
-          "path": "$HOME/backbencher-brain/script/m29/wave-fixtures/python/main.py",
-          "character": 0,
-          "endLine": 17
-        },
-        {
-          "line": 10,
-          "endCharacter": 41,
-          "path": "$HOME/backbencher-brain/script/m29/wave-fixtures/python/main.py",
-          "character": 4,
-          "endLine": 11
-        }
-      ]
+      "evidenceTier": "indexed"
     },
     "documentSymbol": {
-      "evidenceTier": "indexed",
-      "notIndexed": false,
       "symbols": [
         {
           "name": "Greeter",
-          "symbolType": "class",
-          "qualifiedName": "Greeter",
-          "selectionRange": {
-            "line": 4,
-            "endLine": 11,
-            "character": 0,
-            "endCharacter": 41
-          },
-          "range": {
-            "line": 4,
-            "endLine": 11,
-            "character": 0,
-            "endCharacter": 41
-          },
-          "id": "1abd90d83403ff12b318773f0a8fc8c5d0835b28:main.py:Greeter:5",
           "children": [
             {
               "name": "__init__",
-              "symbolType": "method",
-              "qualifiedName": "__init__",
-              "selectionRange": {
-                "line": 7,
-                "endLine": 8,
-                "character": 4,
-                "endCharacter": 26
-              },
+              "children": [],
+              "id": "1abd90d83403ff12b318773f0a8fc8c5d0835b28:main.py:__init__:8",
               "range": {
                 "line": 7,
-                "endLine": 8,
+                "endCharacter": 26,
                 "character": 4,
-                "endCharacter": 26
+                "endLine": 8
               },
-              "id": "1abd90d83403ff12b318773f0a8fc8c5d0835b28:main.py:__init__:8",
-              "children": []
+              "selectionRange": {
+                "line": 7,
+                "endCharacter": 26,
+                "character": 4,
+                "endLine": 8
+              },
+              "symbolType": "method",
+              "qualifiedName": "__init__"
             },
             {
               "name": "items",
-              "symbolType": "property",
-              "qualifiedName": "items",
-              "selectionRange": {
-                "line": 8,
-                "endLine": 8,
-                "character": 13,
-                "endCharacter": 18
-              },
+              "children": [],
+              "id": "1abd90d83403ff12b318773f0a8fc8c5d0835b28:main.py:items:9",
               "range": {
                 "line": 8,
-                "endLine": 8,
+                "endCharacter": 18,
                 "character": 13,
-                "endCharacter": 18
+                "endLine": 8
               },
-              "id": "1abd90d83403ff12b318773f0a8fc8c5d0835b28:main.py:items:9",
-              "children": []
+              "selectionRange": {
+                "line": 8,
+                "endCharacter": 18,
+                "character": 13,
+                "endLine": 8
+              },
+              "symbolType": "property",
+              "qualifiedName": "items"
             },
             {
               "name": "greet",
-              "symbolType": "method",
-              "qualifiedName": "greet",
-              "selectionRange": {
-                "line": 10,
-                "endLine": 11,
-                "character": 4,
-                "endCharacter": 41
-              },
+              "children": [],
+              "id": "1abd90d83403ff12b318773f0a8fc8c5d0835b28:main.py:greet:11",
               "range": {
                 "line": 10,
-                "endLine": 11,
+                "endCharacter": 41,
                 "character": 4,
-                "endCharacter": 41
+                "endLine": 11
               },
-              "id": "1abd90d83403ff12b318773f0a8fc8c5d0835b28:main.py:greet:11",
-              "children": []
+              "selectionRange": {
+                "line": 10,
+                "endCharacter": 41,
+                "character": 4,
+                "endLine": 11
+              },
+              "symbolType": "method",
+              "qualifiedName": "greet"
             },
             {
               "name": "main",
-              "symbolType": "function",
-              "qualifiedName": "main",
-              "selectionRange": {
-                "line": 14,
-                "endLine": 17,
-                "character": 0,
-                "endCharacter": 23
-              },
+              "children": [],
+              "id": "1abd90d83403ff12b318773f0a8fc8c5d0835b28:main.py:main:15",
               "range": {
                 "line": 14,
-                "endLine": 17,
+                "endCharacter": 23,
                 "character": 0,
-                "endCharacter": 23
+                "endLine": 17
               },
-              "id": "1abd90d83403ff12b318773f0a8fc8c5d0835b28:main.py:main:15",
-              "children": []
+              "selectionRange": {
+                "line": 14,
+                "endCharacter": 23,
+                "character": 0,
+                "endLine": 17
+              },
+              "symbolType": "function",
+              "qualifiedName": "main"
             },
             {
               "name": "CONSTANT",
-              "symbolType": "variable",
-              "qualifiedName": "CONSTANT",
-              "selectionRange": {
-                "line": 20,
-                "endLine": 20,
-                "character": 0,
-                "endCharacter": 8
-              },
+              "children": [],
+              "id": "1abd90d83403ff12b318773f0a8fc8c5d0835b28:main.py:CONSTANT:21",
               "range": {
                 "line": 20,
-                "endLine": 20,
+                "endCharacter": 8,
                 "character": 0,
-                "endCharacter": 8
+                "endLine": 20
               },
-              "id": "1abd90d83403ff12b318773f0a8fc8c5d0835b28:main.py:CONSTANT:21",
-              "children": []
+              "selectionRange": {
+                "line": 20,
+                "endCharacter": 8,
+                "character": 0,
+                "endLine": 20
+              },
+              "symbolType": "variable",
+              "qualifiedName": "CONSTANT"
             }
-          ]
+          ],
+          "id": "1abd90d83403ff12b318773f0a8fc8c5d0835b28:main.py:Greeter:5",
+          "range": {
+            "line": 4,
+            "endCharacter": 41,
+            "character": 0,
+            "endLine": 11
+          },
+          "selectionRange": {
+            "line": 4,
+            "endCharacter": 41,
+            "character": 0,
+            "endLine": 11
+          },
+          "symbolType": "class",
+          "qualifiedName": "Greeter"
         }
-      ]
+      ],
+      "notIndexed": false,
+      "evidenceTier": "indexed"
     },
     "workspaceAbsence": {
+      "symbols": [],
       "truncated": false,
       "totalCount": 0,
       "limit": 200,
-      "evidenceTier": "not_indexed",
-      "symbols": []
-    },
-    "definition": {
-      "evidenceTier": "indexed",
-      "location": {
-        "line": 10,
-        "endCharacter": 41,
-        "path": "$HOME/backbencher-brain/script/m29/wave-fixtures/python/main.py",
-        "character": 4,
-        "endLine": 11
-      },
-      "found": true,
-      "symbol": {
-        "id": "1abd90d83403ff12b318773f0a8fc8c5d0835b28:main.py:greet:11",
-        "name": "greet",
-        "symbolType": "method",
-        "qualifiedName": "greet"
-      }
+      "evidenceTier": "not_indexed"
     }
   },
   "status": "verified",
-  "commit": "527252e933fcfd6c0d4a0cdbdb222b8daf644fb5"
+  "commit": "9186d785496627b40a087881ed30ed0221754233"
 }

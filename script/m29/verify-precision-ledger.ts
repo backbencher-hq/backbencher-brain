@@ -161,9 +161,12 @@ check("G4: giant-scale row cites R3 evidence", recorded?.giantScale?.present ===
 const tamperedJson = onDiskJson.replace('"claim": "I3"', '"claim": "I4"')
 negative("M1: hand-edited claim (I3 -> I4) breaks regeneration", tamperedJson !== onDiskJson && tamperedJson !== fresh.json)
 
-// M2: a hand-edited precision number fails regeneration.
-const tamperedMd = onDiskMd.replace("6.7", "0.1")
-negative("M2: hand-edited precision number breaks regeneration", tamperedMd !== onDiskMd && tamperedMd !== fresh.md)
+// M2: a hand-edited precision number fails regeneration. The needle is
+// derived from the fresh build (a hardcoded literal goes stale whenever the
+// generated numbers legitimately change — that escape happened once).
+const m2needle = /\d+\.\d+/.exec(fresh.md)?.[0] ?? ""
+const tamperedMd = m2needle ? onDiskMd.replace(m2needle, "0.1") : onDiskMd
+negative("M2: hand-edited precision number breaks regeneration", m2needle !== "" && tamperedMd !== onDiskMd && tamperedMd !== fresh.md)
 
 // M3: a stale inputs hash fails the staleness gate.
 negative("M3: stale inputsHash is detected", "0".repeat(40) !== fresh.inputsHash)

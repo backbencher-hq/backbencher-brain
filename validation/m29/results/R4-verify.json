@@ -1,19 +1,23 @@
 {
-  "status": "verified",
-  "passed": 16,
-  "failed": 0,
+  "status": "known-gap",
+  "passed": 13,
+  "failed": 3,
   "negatives": {
     "planned": 5
   },
   "verdict": {
-    "realComponentFailures": 0,
+    "realComponentFailures": 3,
     "mutantsCaught": 6,
     "mutantsTotal": 6,
     "ok": true
   },
-  "currentCommit": "b24c391742a93b0cabcef73c71bbc31bb41dc84a",
+  "currentCommit": "9186d785496627b40a087881ed30ed0221754233",
   "verifierCommand": "npx tsx script/m29/verify-precision-ledger.ts",
   "evidenceFile": "R4-verify.json",
-  "generatedAt": "2026-09-04T23:37:23.930Z",
-  "details": []
+  "generatedAt": "2026-09-05T22:23:09.171Z",
+  "details": [
+    "G1: PRECISION-LEDGER.json regenerates byte-identically: on-disk JSON differs from a fresh build — regenerate with --write",
+    "G1: PRECISION-LEDGER.md regenerates byte-identically: on-disk MD differs from a fresh build — regenerate with --write",
+    "G2: recorded inputsHash equals a fresh hash over the declared inputs: recorded=9654abfda3b3470beb806425731852207eba6c1b fresh=ae3f6c636991e9f6d9706eef756ed465486bc2af"
+  ]
 }
