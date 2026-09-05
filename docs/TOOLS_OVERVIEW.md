@@ -87,7 +87,27 @@ Unified safe source editing: write, update, insert, delete, refactor with previe
 
 ### bb_index
 
-Agent-facing fresh indexing: reindex a single file or run an incremental directory index so newly written code is visible to tools immediately. **Category:** operations. **Mutability:** write. **Requires index:** no (it can create one). **Modes:** `auto`, `file`, `dir`. `mode=file` re-indexes exactly one file; `mode=dir` parses only changed files; `mode=auto` picks by path kind. This is the MCP twin of the CLI `bb index` command.
+Agent-facing fresh indexing: reindex a single file or run an incremental directory index so newly written code is visible to tools immediately. **Category:** operations. **Mutability:** write. **Requires index:** no (it can create one). **Modes:** `auto`, `file`, `dir`, `post`. `mode=file` re-indexes exactly one file; `mode=dir` parses only changed files; `mode=auto` picks by path kind; `mode=post` re-runs the heavy derived-data phases (relationships, enrichment, gravity, taints, health) without re-parsing — the agent-facing twin of the CLI `bb index --post`.
+
+### bb_graph
+
+Per-symbol dependency graph over the canonical graph engine: callers, callees, per-edge evidence tier (structural/import_based/usage_contextual/reference_qualified/inferred), confidence, and cross-language edge count. Same engine and tier rules the editor graph panel uses. **Category:** graph. **Mutability:** read. **Requires index:** yes. **Modes:** `graph`. Truncated traversals are declared with a reason, never silent. Read-only.
+
+### bb_impact
+
+Impact analysis for one symbol over the same canonical graph engine `bb_analyze` traverses: downstream dependents with per-edge evidence tiers and confidence. **Category:** graph. **Mutability:** read. **Requires index:** yes. **Modes:** `impact`. Declared-absent results (symbol not found) are stated, never inferred. Read-only.
+
+### bb_cross_language
+
+Cross-language facts for one symbol from stored `brain_relationship` rows only (`is_cross_language = 1`), per-pair with bridge mechanism and evidence tier — identical semantics to the editor's cross-language hover section. **Category:** graph. **Mutability:** read. **Requires index:** yes. **Modes:** `cross-language`. Pairs with no stored rows are declared absent — this tool never infers, guesses, or aspires. Read-only.
+
+### bb_annotate
+
+Write a typed, provenance-carrying agent annotation onto a symbol (body limit 2000 chars; empty body is a declared refusal, not a silent no-op). Non-mutating over source files: annotations live in the typed annotation store, never in index truth. **Category:** graph. **Mutability:** write. **Requires index:** no. **Modes:** `annotate`. The annotation store is owned by the M28 workstream; what is stable today is the MCP write path with declared refusals.
+
+### bb_annotations
+
+Read back typed agent annotations for a symbol from the annotation store, with provenance (tool identity, time). **Category:** graph. **Mutability:** read. **Requires index:** no. **Modes:** `annotate`. Read-only over the annotation store; absent annotations are declared absent. The store itself is owned by the M28 workstream.
 
 ## How the tools relate
 
@@ -97,6 +117,9 @@ Agent-facing fresh indexing: reindex a single file or run an incremental directo
 - **security → patterns**: both produce findings with the same persisted shape (`brain_analysis_finding` rows from `recordRun: true` runs), so history retrieval is uniform across the two.
 - **doc → ask**: both read the same indexed evidence. `bb_doc` returns cited documentation; `bb_ask` returns interpreted answers. `bb_doc` cites; `bb_ask` explains.
 - **migrate → analyze**: the migration plan's dependency ordering derives from the same graph model `bb_analyze` exposes.
+- **graph → analyze/visualize**: `bb_graph`, `bb_impact`, and `bb_visualize` all traverse the same canonical dependency graph engine, with per-edge evidence tiers; `bb_analyze` exposes it as structured analysis modes, `bb_visualize` as scoped renderings, `bb_graph`/`bb_impact` as the agent-facing editor-panel view.
+- **cross_language → graph**: `bb_cross_language` reads the cross-language subset of the same stored relationship rows `bb_graph` traverses, filtered to `is_cross_language = 1`.
+- **annotate → annotations**: `bb_annotate` writes typed annotations to the annotation store; `bb_annotations` reads them back with provenance. The store is owned by the M28 workstream and is never index truth.
 
 ## Evidence semantics (shared across tools)
 
@@ -131,6 +154,11 @@ Machine-readable: the overview gate parses this table and checks every row again
 | bb_doc | brain_symbol, brain_relationship, brain_file | — | bb_ask |
 | bb_edit | brain_file, brain_symbol (bounds) | brain_file, brain_symbol, brain_relationship (reindex) | bb_health |
 | bb_index | — (discovers from disk) | brain_file, brain_symbol, brain_relationship | bb_health |
+| bb_graph | brain_symbol, brain_relationship | — | bb_analyze |
+| bb_impact | brain_symbol, brain_relationship | — | bb_analyze |
+| bb_cross_language | brain_relationship (cross-language subset) | — | bb_graph |
+| bb_annotate | brain_symbol (target check) | brain_annotation | bb_annotations |
+| bb_annotations | brain_annotation | — | bb_annotate |
 
 ## Honesty notes
 
