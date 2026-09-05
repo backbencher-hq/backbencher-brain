@@ -226,6 +226,27 @@
         "status": "FIXED",
         "question": "RSD4: macro invocations emit calls edges (toSymbol macro:name) but never reached qualified_calls \u2014 a function whose body only invokes macros (format!/println!) had an empty payload despite real call sites.",
         "resolution": "Macro invocations attach `macro:name` payload entries (same vocabulary as their toSymbol), so payload == emitted call set per function. Pinned by rust/qualified-calls-ownership (second / macro:format)."
+      },
+      {
+        "id": "RUST-D8",
+        "node_type": "field-access uses: assignment LHS writes",
+        "status": "FIXED",
+        "question": "RSD5 (cargo census, 2026-09-05): `self.x = v` (assignment_expression) and `self.x += v` (compound_assignment_expr) field expressions on the LEFT are WRITES, but the field_expression branch emitted uses unconditionally \u2014 1,076 bogus edges across cargo+ripgrep. The oracle derives no uses truth, so no differential could catch it (cpp/ruby waves fixed the same class; rust never got the gate).",
+        "resolution": "Span-compare gate (fresh-wrapper safe): a field_expression that is namedChild(0) of assignment_expression/compound_assignment_expr emits nothing; read-modify-write keeps its edge via the RHS occurrence. Pure reads unchanged. Pinned by rust/qualified-calls-ownership forbidRelationships (set_name/bump_count)."
+      },
+      {
+        "id": "RUST-D9",
+        "node_type": "use-declaration nested groups",
+        "status": "FIXED",
+        "question": "RSD6a (2026-09-05): `use std::{env, io, path::{Path, PathBuf}}` binds Path/PathBuf, but the inner scoped_use_list child fell through collect() and its leaves were silently DROPPED \u2014 65 declarations across cargo+ripgrep (7,367 use-decls audited).",
+        "resolution": "The use_list collector now recurses into nested scoped_use_list children and appends their leaf bindings (the submodule name is never bound unless listed). Pinned by rust/use-list-imports (module std, items env/io/Path/PathBuf)."
+      },
+      {
+        "id": "RUST-D10",
+        "node_type": "use-declaration top-level groups",
+        "status": "FIXED",
+        "question": "RSD6b (2026-09-05): `use {std::sync::Arc, std::time::Duration};` has no shared module prefix, but the single-row aggregation fabricated module 'Arc, Duration' (items joined) \u2014 28 declarations across cargo+ripgrep.",
+        "resolution": "Top-level group imports now emit ONE import row per binding, each with its full module path (std::sync::Arc / std::time::Duration). Same-prefix rows still merge into one. Pinned by rust/use-list-imports per-binding rows + forbidImports 'Read, File'."
       }
     ]
   }

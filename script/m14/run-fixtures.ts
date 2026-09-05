@@ -297,9 +297,12 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
       if (!hit) problems.push(`expected export not found: ${JSON.stringify(want)}; got: ${JSON.stringify((result.exports ?? []).map((e: any) => e.name))}`)
     }
     for (const want of exp.expectImports ?? []) {
-      // Each constraint field must match >=1 import (unspecified fields are wildcards).
+      // Each constraint field must match >=1 import (unspecified fields are
+      // wildcards; `comment` is documentation, never a constraint — mirrors
+      // matchConstraints, unified 2026-09-05 by the rust RSD6 fixture).
       const hit = (result.imports ?? []).find((imp: any) =>
         Object.entries(want).every(([k, v]) => {
+          if (k === "comment") return true
           if (k.startsWith("meta.")) return ((imp.metadata ?? {})[k.slice(5)] ?? imp[k.slice(5)]) === v
           if (Array.isArray(v)) return JSON.stringify([...(imp[k] ?? [])].sort()) === JSON.stringify([...v].sort())
           return imp[k] === v

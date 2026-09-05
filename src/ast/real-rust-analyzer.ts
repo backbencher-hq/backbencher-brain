@@ -132,10 +132,24 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         // branch already emits the `calls` edge — one edge per pair).
         const field = node.childForFieldName("field")
         const value = node.childForFieldName("value")
+        // RSD5 write-gate (2026-09-05, cargo census): a field on the LEFT of
+        // `self.x = v` (assignment_expression) or `self.x += v`
+        // (compound_assignment_expr) is a WRITE, not a read — the family
+        // contract (csharp/ruby/cpp waves) emits `uses` only for reads.
+        // Pure writes leaked bogus uses; read-modify-write keeps its edge via
+        // the RHS occurrence. (web-tree-sitter returns fresh wrappers, so
+        // compare by exact source span, never object identity.)
+        const par = node.parent
+        let isAssignLhs = false
+        if (par && (par.type === "assignment_expression" || par.type === "compound_assignment_expr")) {
+          const left = par.namedChild(0)
+          if (left && left.startIndex === node.startIndex && left.endIndex === node.endIndex) isAssignLhs = true
+        }
         // field_identifier only — tuple indexing (`tuple.0`) parses as a
         // field_expression with an integer_literal field; numeric indices are
         // not symbols and must not produce uses edges.
         if (
+          !isAssignLhs &&
           field &&
           field.type === "field_identifier" &&
           field.text.trim() &&
@@ -910,6 +924,14 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
             } else if (c.type === "scoped_identifier") {
               const leaf = c.namedChild(c.namedChildCount - 1)
               if (leaf) items.push(leaf.text)
+            } else if (c.type === "scoped_use_list") {
+              // RSD6a: `use std::{env, path::{Path, PathBuf}}` — a nested
+              // group binds the INNER leaves (Path, PathBuf), never the
+              // submodule name unless listed. These were silently DROPPED
+              // (65 declarations across cargo+ripgrep; 7,367 use-decls, no
+              // import truth in the differential — fixture is the guard).
+              const inner = collect(c)
+              for (const it of inner.items) items.push(it)
             }
           }
         }
@@ -946,32 +968,53 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       return { path: n.text, items: [n.text] }
     }
 
-    let modulePath = ""
-    let items: string[] = []
+    // Aggregate one import row per distinct module prefix. A TOP-LEVEL GROUP
+    // import (`use {a::X, b::Y};`) has its use_list as a direct child with NO
+    // shared prefix — each binding becomes its own row with its own full
+    // module path (RSD6b: the pre-fix code fabricated module 'Read, File' by
+    // joining items; 28 such declarations across cargo+ripgrep).
+    const rows: { path: string; items: string[] }[] = []
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
       if (!c || c.type === "visibility_modifier" || c.type === "use" || c.type === "crate") continue
+      if (c.type === "use_list") {
+        for (let j = 0; j < c.namedChildCount; j++) {
+          const sub = c.namedChild(j)
+          if (!sub || sub.type === ",") continue
+          const r = collect(sub)
+          if (r.items.length) rows.push(r)
+        }
+        continue
+      }
       const r = collect(c)
-      if (!modulePath) modulePath = r.path
-      if (r.items.length) items = items.concat(r.items)
+      if (r.items.length) rows.push(r)
     }
-    if (!items.length && modulePath) items = [modulePath.split("::").filter(Boolean).pop() || modulePath]
+    if (rows.length === 0) return
+    // Merge rows sharing the same module (a multi-item `use std::io::{A, B}`
+    // stays ONE row; wildcards never merge into item lists).
+    const mergedRows: { path: string; items: string[] }[] = []
+    for (const r of rows) {
+      const ex = mergedRows.find((m) => m.path === r.path && m.items[0] !== "*" && r.items[0] !== "*")
+      if (ex) ex.items.push(...r.items)
+      else mergedRows.push({ path: r.path, items: [...r.items] })
+    }
 
-    if (!modulePath && !items.length) return
+    const modulePath = mergedRows[0].path
+    for (const row of mergedRows) {
+      ctx.imports.push({
+        module: row.path,
+        source: row.path,
+        items: row.items,
+        range: {
+          startLine: node.startPosition.row + 1, startColumn: node.startPosition.column + 1,
+          endLine: node.endPosition.row + 1, endColumn: node.endPosition.column + 1,
+          startIndex: node.startIndex, endIndex: node.endIndex,
+        },
+        metadata: { rustSpecific: true, isPublic },
+      })
+    }
 
-    ctx.imports.push({
-      module: modulePath || items.join(", "),
-      source: modulePath || items.join(", "),
-      items,
-      range: {
-        startLine: node.startPosition.row + 1, startColumn: node.startPosition.column + 1,
-        endLine: node.endPosition.row + 1, endColumn: node.endPosition.column + 1,
-        startIndex: node.startIndex, endIndex: node.endIndex,
-      },
-      metadata: { rustSpecific: true, isPublic },
-    })
-
-    if (isPublic) {
+    if (isPublic && modulePath) {
       ctx.exports.push({
         name: modulePath,
         type: ASTEngine.SymbolKind.Module,
