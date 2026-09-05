@@ -1,26 +1,26 @@
 {
   "status": "blocked",
-  "currentCommit": "1faec6e317d531c9b003dff6a267d7c0492a26da",
+  "currentCommit": "88129008ae4548655e66b20e9655f0de9b827fdf",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "bun run script/m40/verify-a2-bounded-post.ts",
-  "generatedAt": "2026-09-05T00:06:30.310Z",
+  "generatedAt": "2026-09-05T00:40:46.190Z",
   "passed": 21,
   "failed": 1,
   "negativeCases": 1,
   "timing": {
-    "boundedMs": 182,
-    "fullMs": 1984,
+    "boundedMs": 140,
+    "fullMs": 1810,
     "refreshedRows": 1,
     "totalEdges0": 39986,
     "boundedSamples": [
-      204,
-      208,
-      182
+      165,
+      140,
+      167
     ],
     "fullSamples": [
-      2347,
-      3636,
-      1984
+      1810,
+      2086,
+      2642
     ]
   },
   "mutation": "A2_UNBOUNDED (gate-fail proof run)",
