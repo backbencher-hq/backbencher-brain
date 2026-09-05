@@ -48,7 +48,7 @@ export interface ToolDescriptor {
 const descriptors = [
   {
     name: "bb_search",
-    description: "Unified indexed retrieval for symbol lists, content, exact symbol source, or files. This is retrieval, not natural-language explanation or code analysis. Symbol/content/file modes carry a freshness block ({ fresh, stale, missing, staleRatio, mode, remediation }) stating whether results reflect the current files; rows may carry stale=true. Remediation names the exact reindex command.",
+    description: "Unified indexed retrieval for symbol lists, content, exact symbol source, or files. This is retrieval, not natural-language explanation or code analysis. Symbol/content/file modes carry a freshness block ({ fresh, stale, missing, staleRatio, mode, remediation }) stating whether results reflect the current files; rows may carry stale=true. Remediation names the exact reindex command. When a read finds stale/missing files within budget, the handler auto-refreshes exactly those files (reindexFilesParallel) before answering and declares it in an autoRefresh field; refresh=false opts out and answers from existing data with the staleness block.",
     inputSchema: {
       type: "object",
       properties: {
@@ -64,6 +64,7 @@ const descriptors = [
         caseSensitive: { type: "boolean", description: "case-sensitive matching (default false)" },
         regex: { type: "boolean", description: "treat query as a regex against symbol names (default false)" },
         offset: { type: "number", description: "pagination offset (default 0)" },
+        refresh: { type: "boolean", description: "false opts out of the inline auto-refresh of stale files (default: auto-refresh within budget before answering)" },
       },
       required: [],
     },

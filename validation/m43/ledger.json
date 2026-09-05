@@ -32,7 +32,7 @@
     "code": "A1",
     "githubIssue": 657,
     "tool": "mcp-tool-handlers",
-    "status": "open",
+    "status": "verified",
     "scope": "MCP read-path auto-refresh: inline bounded reindex when stale within budget, honest decline with reason otherwise, opt-out, P1 lock non-blocking",
     "acceptanceCriteria": [
       "edit outside bb_edit then read: answer reflects the edit with the auto-refresh declaration",
@@ -44,7 +44,18 @@
     "closureRequirements": [
       "evidence file + ledger sync + evidence comment",
       "FRESHNESS_REMEDIATION strings name the automatic behavior"
-    ]
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "14bc667923c4c2dfcb3962aeb98ddaa67a109fb8",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m43/verify-a1-mcp-auto-refresh.ts",
+      "evidenceFile": "A1.json",
+      "generatedAt": "2026-09-05T21:02:50.392Z",
+      "passed": 25,
+      "failed": 0,
+      "negativeCases": 4
+    }
   },
   {
     "code": "A2",
@@ -109,14 +120,14 @@
       "evidence file + ledger sync + evidence comment"
     ],
     "evidence": {
-      "status": "verified",
-      "currentCommit": "8324f8f25f65c41fbaf6c9f4492e77da49034ccf",
+      "status": "blocked",
+      "currentCommit": "14bc667923c4c2dfcb3962aeb98ddaa67a109fb8",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m43/verify-governance.ts",
       "evidenceFile": "G1.json",
-      "generatedAt": "2026-09-05T20:41:59.713Z",
-      "passed": 40,
-      "failed": 0,
+      "generatedAt": "2026-09-05T21:04:07.197Z",
+      "passed": 44,
+      "failed": 1,
       "negativeCases": 2
     }
   },

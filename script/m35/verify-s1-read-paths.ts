@@ -35,6 +35,12 @@ const RESULT = path.join(ROOT, "validation/m35/results/S1.json")
 delete process.env.BB_EMBEDDING_BASE_URL
 delete process.env.BB_EMBEDDING_API_KEY
 delete process.env.BB_EMBEDDING_MODEL
+// M43.A1 (#657): read handlers now AUTO-REFRESH stale files within budget
+// (declared). This gate verifies the M35 staleness REPORTING machinery, so
+// the automatic repair is disabled to keep stale-after-edit observable
+// deterministically; the M43.A1 gate covers the auto-refresh behavior itself.
+// Read at decision time — set after imports.
+process.env.BB_NO_AUTO_REFRESH = "1"
 
 let checks = 0
 let passed = 0
