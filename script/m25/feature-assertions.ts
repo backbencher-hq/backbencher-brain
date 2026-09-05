@@ -18,9 +18,9 @@
 //               op is a violation, a miss fails the gate
 //   can-fail:   weakened assertions and raised budgets are caught
 import { spawn } from "node:child_process"
-import { execFileSync } from "node:child_process"
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
+import * as os from "node:os"
 import { createHash } from "node:crypto"
 import { realpathSync } from "node:fs"
 import path from "node:path"
@@ -589,13 +589,14 @@ export async function buildFixtureWorkspace(baseDir: string): Promise<{ workspac
   return { workspaceDir, dataDir, stats: { files: 1, symbols: 3, relationships: 1 } }
 }
 
-/** Machine record (contract §3: every number records its machine). */
+/**
+ * Machine record (contract §3: every number records its machine).
+ * Portable: node:os only — no uname//proc/shell, so the record is
+ * machine-emittable on linux, darwin AND win32 (the E7 OS-matrix legs).
+ */
 export function machineInfo(runtime: string): { kernel: string; cpu: string; ramGb: number; node: string; runtime: string } {
-  const kernel = execFileSync("uname", ["-sr"], { encoding: "utf8" }).trim()
-  let cpu = "unknown"
-  try {
-    cpu = execFileSync("sh", ["-c", "grep -m1 'model name' /proc/cpuinfo | cut -d: -f2 | xargs"], { encoding: "utf8" }).trim()
-  } catch {}
-  const ramGb = Math.round((Number(execFileSync("sh", ["-c", "grep MemTotal /proc/meminfo | awk '{print $2}'"], { encoding: "utf8" }).trim()) / 1e6) * 10) / 10
+  const kernel = `${os.type()} ${os.release()}`
+  const cpu = (os.cpus()[0]?.model ?? "unknown").trim()
+  const ramGb = Math.round((os.totalmem() / 1e9) * 10) / 10
   return { kernel, cpu, ramGb, node: process.version, runtime }
 }
