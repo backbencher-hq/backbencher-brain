@@ -262,6 +262,37 @@ try {
       }`,
     },
     {
+      // M42.H4 weakened assertion: the actions-row check replaced by a
+      // constant true. A fixture whose hover carries no actions row (no
+      // resolvable symbol identity) then passes the mutated suite where the
+      // honest one fails on declared absence.
+      name: "H4 assertion weakened: actions-row check removed",
+      from: /assert\("H4: hover embeds the actions row", hoverText\.includes\("\*\*actions\*\*: \[Open in graph\]\(command:bb\.openGraph\?"\) && hoverText\.includes\("\[Impact analysis\]\(command:bb\.openImpact\?"\) && hoverText\.includes\("\[Call hierarchy\]\(command:bb\.showCallHierarchy\?"\), hoverText\.slice\(0, 500\)\)/,
+      to: `assert("H4: hover embeds the actions row", true)`,
+      probe: `async (mod) => {
+        const { mkdtempSync, writeFileSync } = await import("node:fs")
+        const { tmpdir } = await import("node:os")
+        const path = await import("node:path")
+        const ws = mkdtempSync(path.join(tmpdir(), "mut-h4-ws-"))
+        const data = mkdtempSync(path.join(tmpdir(), "mut-h4-data-"))
+        // WRONG fixture text (no Greeter.greet): the hover resolves nothing,
+        // so no actions row can render — an honest actions-row assertion
+        // must fail on this declared absence.
+        writeFileSync(path.join(ws, "main.ts"), "class NotGreeter {}\\n")
+        const t = mod.createStdioTransport({ runtime: "node-source", workspaceDir: ws, dataDir: data })
+        const results = []
+        try {
+          await mod.runFeatureAssertions({ transport: t, workspaceDir: ws }, (n, ok) => results.push({ n, ok }))
+        } catch {
+          await t.dispose().catch(() => {})
+          return false
+        }
+        await t.dispose().catch(() => {})
+        const r = results.find((x) => x.n === "H4: hover embeds the actions row")
+        return r !== undefined && r.ok === true
+      }`,
+    },
+    {
       // Raised budget: with hover's budget mutated to 5000, a real-world
       // violating sample (400 ms) passes silently — the probe proves the
       // mutated gate reports NO violations where the honest gate reports one.
@@ -325,7 +356,7 @@ try {
   }
   check("G4: all mutants caught", mutantsCaught === mutantsTotal && mutantsTotal > 0, `${mutantsCaught}/${mutantsTotal}`)
 } finally {
-  for (const f of [".mutant-core.1.ts", ".mutant-core.2.ts", ".mutant-core.3.ts", ".mutant-core.4.ts", ".mutant-core.5.ts", ".probe-core.1.mts", ".probe-core.2.mts", ".probe-core.3.mts", ".probe-core.4.mts", ".probe-core.5.mts"]) {
+  for (const f of [".mutant-core.1.ts", ".mutant-core.2.ts", ".mutant-core.3.ts", ".mutant-core.4.ts", ".mutant-core.5.ts", ".mutant-core.6.ts", ".probe-core.1.mts", ".probe-core.2.mts", ".probe-core.3.mts", ".probe-core.4.mts", ".probe-core.5.mts", ".probe-core.6.mts"]) {
     try {
       rmSync(path.join(ROOT, "script/m25", f), { force: true })
     } catch {}

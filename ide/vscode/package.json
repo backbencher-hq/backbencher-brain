@@ -1,7 +1,7 @@
 {
   "name": "bb-lsp-vscode",
   "displayName": "Backbencher Brain (bb_lsp)",
-  "description": "Honest code navigation from the Backbencher index: hover with evidence tier and staleness, definition, references, symbols, call hierarchy. A complement to your editor's own language servers — graph, navigation, and evidence only.",
+  "description": "Honest code navigation from the Backbencher index: hover with evidence tier and staleness, definition, references, symbols, call hierarchy. A complement to your editor's own language servers \u2014 graph, navigation, and evidence only.",
   "version": "0.1.0",
   "publisher": "backbencher",
   "license": "MIT",
@@ -50,12 +50,12 @@
         "bbLsp.minServerVersion": {
           "type": "string",
           "default": "0.3.0",
-          "description": "Minimum bb_lsp server version this extension accepts (version-compatibility matrix, contract §2 honesty)."
+          "description": "Minimum bb_lsp server version this extension accepts (version-compatibility matrix, contract \u00a72 honesty)."
         },
         "bbLsp.activationBudgetMs": {
           "type": "number",
           "default": 150,
-          "description": "Declared activation budget in milliseconds (contract §7.3). Measured activate()-to-ready time is recorded; a budget miss is a failed gate."
+          "description": "Declared activation budget in milliseconds (contract \u00a77.3). Measured activate()-to-ready time is recorded; a budget miss is a failed gate."
         },
         "bbLsp.autoIndexMode": {
           "type": "string",
@@ -106,6 +106,21 @@
       {
         "command": "bbLsp.showServerStatus",
         "title": "Backbencher: Show server status",
+        "category": "Backbencher"
+      },
+      {
+        "command": "bb.openGraph",
+        "title": "Backbencher: Open in Graph (hover action)",
+        "category": "Backbencher"
+      },
+      {
+        "command": "bb.openImpact",
+        "title": "Backbencher: Impact Analysis (hover action)",
+        "category": "Backbencher"
+      },
+      {
+        "command": "bb.showCallHierarchy",
+        "title": "Backbencher: Show Call Hierarchy (hover action)",
         "category": "Backbencher"
       }
     ]
