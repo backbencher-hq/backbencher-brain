@@ -167,6 +167,20 @@ try {
   // and asserted only as a generous secondary bound.
   refreshedRows = (raw.prepare(`SELECT COUNT(*) c FROM brain_relationship WHERE project_id = ? AND metadata IS NOT NULL AND json_extract(metadata, '$.inferredAt') >= ?`).get(pid, tInc) as any).c
   check("A2: STRUCTURAL boundedness — bounded pass re-enriches <10% of graph", refreshedRows <= Math.max(1000, Math.floor(totalEdges0 * 0.1)), `refreshed=${refreshedRows} of ${totalEdges0}`)
+  // Negative observations (closure contract: negatives > 0) — absences that
+  // prove the bounded pass stays bounded, not just fast.
+  {
+    // (a) Untouched hub1's edges were NOT re-enriched by the bounded pass:
+    // zero inferredAt stamps from the incremental window on hub1's in-edges.
+    const hub1Touched = (raw.prepare(`SELECT COUNT(*) c FROM brain_relationship r JOIN brain_symbol t ON t.id = r.target_symbol_id WHERE r.project_id = ? AND t.name = 'hub1' AND r.metadata IS NOT NULL AND json_extract(r.metadata, '$.inferredAt') >= ?`).get(pid, tInc) as any).c
+    check("A2: bounded pass did NOT touch untouched hub1 edges (scope honesty)", hub1Touched === 0, String(hub1Touched), true)
+    // (b) The deleted victim leaves zero symbols behind (absence proof).
+    const victimSyms = (raw.prepare(`SELECT COUNT(*) c FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id WHERE s.project_id = ? AND f.path LIKE ?`).get(pid, `%leaf1199.ts`) as any).c
+    check("A2: deleted file leaves zero symbols (absence proof)", victimSyms === 0, String(victimSyms), true)
+    // (c) The telemetry reports touched symbols only for the edited file —
+    // a full-project touch count would betray an unbounded pass.
+    check("A2: bounded telemetry touches only the edited file's symbols (≤ fixture file symbol count)", !!s1.m40Bounded && s1.m40Bounded.touchedSymbols < 100, `touched=${s1.m40Bounded?.touchedSymbols}`, true)
+  }
   // Wall-clock, noise-honest: min-of-3 INTERLEAVED samples of each pass.
   //   bounded cost = an incremental index's postProcessingMs (1 file touched)
   //   full cost    = runPostProcessing (A1 entry: the same five phases over
