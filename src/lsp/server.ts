@@ -509,11 +509,22 @@ export function wireFeatures(server: BbLspServer): void {
 
   server.register("textDocument/documentHighlight", async (params: any) => {
     const raw = await BrainDatabase.getRawInstance(projectId)
-    return documentHighlight(raw, {
+    const r = await documentHighlight(raw, {
       filePath: uriToPath(params?.textDocument?.uri ?? ""),
       line: params?.position?.line ?? 0,
       character: params?.position?.character ?? 0,
     })
+    // Wire law (LSP 3.18): the result is DocumentHighlight[] | null — never
+    // a wrapper object (a typed editor client would drop it). The component's
+    // declared metadata (evidence tier + staleness, §12.2) rides on each
+    // item's `data`: a client that ignores data still renders ranges/kinds;
+    // ours reads it to label the highlight render. Absence is wire `null`.
+    if (r.highlights.length === 0) return null
+    return r.highlights.map((h) => ({
+      range: { start: h.start, end: h.end },
+      kind: h.kind,
+      data: { evidenceTier: r.evidenceTier, staleness: r.staleness, symbol: r.symbol },
+    }))
   })
 
   server.register("textDocument/references", async (params: any) => {
