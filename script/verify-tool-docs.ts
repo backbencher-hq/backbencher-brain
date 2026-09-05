@@ -102,6 +102,46 @@ const curated: Readonly<Record<string, CuratedToolDocumentation>> = {
     safety: "Status is read-only. refresh=true explicitly mutates only index data; force=true performs a full in-place reindex.",
     evidence: "Counts and versions come from the brain database; freshness compares indexed metadata with the filesystem.",
   },
+  bb_graph: {
+    returns: ["Per-symbol dependency graph: callers and callees", "Per-edge evidence tier (structural/import_based/usage_contextual/reference_qualified/inferred) with confidence", "Declared truncation with a reason when the traversal is bounded"],
+    errors: ["Missing symbol", "maxDepth outside the declared 1-10 range", "Symbol not found in the index"],
+    limitations: ["Edges reflect indexed static evidence with declared tiers; inferred edges are labeled, not proven", "The graph reflects the index as of the last index run"],
+    performance: "maxDepth (default 3, max 10) bounds traversal; per-edge evidence resolution is bounded by the returned subgraph.",
+    safety: "Read-only. It does not modify source files or index data.",
+    evidence: "Nodes and edges come from the canonical graph engine over brain_symbol and brain_relationship rows; each edge carries its evidence tier and confidence.",
+  },
+  bb_impact: {
+    returns: ["Downstream dependents of the symbol with per-edge evidence tiers and confidence", "Declared-absent result when the symbol is unknown — never an empty guess"],
+    errors: ["Missing symbol", "Symbol not found in the index"],
+    limitations: ["Static impact analysis cannot establish runtime behavior", "Reflects the index as of the last index run"],
+    performance: "Traversal bounds match the canonical graph engine limits; output scales with the dependents subgraph.",
+    safety: "Read-only. It does not modify source files or index data.",
+    evidence: "Impact derives from brain_relationship rows via the same engine the editor impact panel uses.",
+  },
+  bb_cross_language: {
+    returns: ["Cross-language relationship pairs for the symbol with bridge mechanism and evidence tier", "Declared-absent result when no stored cross-language rows exist"],
+    errors: ["Missing symbol", "Symbol not found in the index (declared, not an empty set)"],
+    limitations: ["Reads stored is_cross_language=1 relationship rows only; never infers cross-language facts", "Coverage depends on the analyzers that produced cross-language rows"],
+    performance: "Bounded by the stored cross-language rows for the symbol; no graph traversal.",
+    safety: "Read-only. It does not modify source files or index data.",
+    evidence: "Only brain_relationship rows with is_cross_language=1; identical semantics to the editor cross-language hover section.",
+  },
+  bb_annotate: {
+    returns: ["Stored annotation id and provenance (tool identity, timestamp)", "Declared refusals for missing symbol, empty body, or over-limit body"],
+    errors: ["Missing or unknown symbol", "Empty body (a refusal, not a silent no-op)", "Body exceeds the declared 2000-char limit"],
+    limitations: ["Annotations are opinions layered on index evidence, never index truth", "Annotation store semantics are owned by the M28 workstream"],
+    performance: "Constant-time store write bounded by the 2000-char body limit.",
+    safety: "Write-capable against the annotation store only. It never modifies source files.",
+    evidence: "Annotations carry provenance (toolIdentity, time) and are stored in brain_annotation.",
+  },
+  bb_annotations: {
+    returns: ["Typed annotations for a symbol or the whole project, with full provenance (author class, tool identity, timestamps)", "Declared-absent result when none exist — absence is never an error"],
+    errors: ["limit outside the declared 1-200 range"],
+    limitations: ["Reads only stored annotations; absence is declared, not inferred", "Annotation store semantics are owned by the M28 workstream"],
+    performance: "Indexed lookup by project and symbol (brain_annotation_project_symbol_idx).",
+    safety: "Read-only. It does not modify source files, index data, or annotations.",
+    evidence: "Rows come from brain_annotation with provenance fields preserved.",
+  },
 }
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..")
