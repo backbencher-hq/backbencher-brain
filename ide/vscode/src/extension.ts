@@ -263,10 +263,12 @@ export async function activate(context: ExtensionContext): Promise<unknown> {
   // E3 status surface commands (declared in the manifest).
   commands.registerCommand("bbLsp.showStatusPanel", () => void showStatusPanel())
   commands.registerCommand("bbLsp.indexNow", () => void indexNow())
-  // M42.H2: hover link actions (bb.openUsage / bb.openDefinition /
-  // bb.showAllUsages) — the clickable targets of the rich hover body.
+  // M42.H2 + H4: hover link actions (bb.openUsage / bb.openDefinition /
+  // bb.showAllUsages / bb.openGraph / bb.openImpact / bb.showCallHierarchy) —
+  // the clickable targets of the rich hover body. The webview actions get the
+  // REAL client so panels resolve symbols server-side (never client-guessed).
   const { registerHoverCommands } = await import("./hover-commands")
-  registerHoverCommands(context)
+  registerHoverCommands(context, { client, cspSource: "" })
   // Staleness follows the active editor; status renders after every change.
   context.subscriptions.push(
     window.onDidChangeActiveTextEditor(() => {

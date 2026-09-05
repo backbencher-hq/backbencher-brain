@@ -126,6 +126,57 @@ async function run() {
       }
       const cmds = await vscode.commands.getCommands(true)
       assert("E5-H2: all three hover-link commands are registered", ["bb.openUsage", "bb.openDefinition", "bb.showAllUsages"].every((c) => cmds.includes(c)), JSON.stringify(cmds.filter((c) => c.startsWith("bb."))))
+
+      // 2c. M42.H4: hover actions CLICK through the real editor (issue #652).
+      // The three action commands (bb.openGraph / bb.openImpact /
+      // bb.showCallHierarchy) execute against the server-resolved identity
+      // from the hover; the impact pure-core leg below proves the panel data
+      // path over the extension's real client.
+      const h4links = []
+      const h4re = /\]\(command:(bb\.openGraph|bb\.openImpact|bb\.showCallHierarchy)\?([^)]+)\)/g
+      let h4m = null
+      while ((h4m = h4re.exec(h2text)) !== null) {
+        try {
+          h4links.push({ cmd: h4m[1], args: JSON.parse(decodeURIComponent(h4m[2])) })
+        } catch (e) {}
+      }
+      assert("E5-H4: hover embeds all three action links", h4links.length === 3 && new Set(h4links.map((l) => l.cmd)).size === 3, JSON.stringify(h4links.map((l) => l.cmd)))
+      const h4cmds = await vscode.commands.getCommands(true)
+      assert("E5-H4: all three hover-action commands are registered", ["bb.openGraph", "bb.openImpact", "bb.showCallHierarchy"].every((c) => h4cmds.includes(c)), JSON.stringify(h4cmds.filter((c) => c.startsWith("bb."))))
+      const g = h4links.find((l) => l.cmd === "bb.openGraph")
+      if (g !== undefined) {
+        const r = await vscode.commands.executeCommand("bb.openGraph", g.args)
+        assert("E5-H4: clicking bb.openGraph opens the graph surface", r && r.ok === true && r.surface === "graph" && r.symbol === "greet", JSON.stringify(r).slice(0, 160))
+      }
+      const im = h4links.find((l) => l.cmd === "bb.openImpact")
+      if (im !== undefined) {
+        const r = await vscode.commands.executeCommand("bb.openImpact", im.args)
+        assert("E5-H4: clicking bb.openImpact opens the impact surface", r && r.ok === true && r.surface === "impact" && r.symbol === "greet", JSON.stringify(r).slice(0, 160))
+      }
+      const ch = h4links.find((l) => l.cmd === "bb.showCallHierarchy")
+      if (ch !== undefined) {
+        const r = await vscode.commands.executeCommand("bb.showCallHierarchy", ch.args)
+        assert("E5-H4: clicking bb.showCallHierarchy reveals the declaration", r && r.ok === true && r.surface === "callHierarchy" && r.line === ch.args.line, JSON.stringify(r).slice(0, 160))
+      }
+      const bad = await vscode.commands.executeCommand("bb.openGraph", { symbol: "" })
+      assert("E5-H4: a malformed action is a declared error, never a no-op", bad && bad.ok === false, JSON.stringify(bad).slice(0, 120))
+    }
+
+    // 2d. M42.H4 impact panel pure core over the extension's REAL client
+    // (bb/impact + the ONE core's renderImpact — the panel's data path).
+    try {
+      const IP = require(path.join(ext.extensionPath, "dist", "test", "impact-panel.js"))
+      const clientLike = { sendRequest: (m, p) => transportFromExt.request(m, p) }
+      const impResult = await IP.renderImpactForPanel({ symbol: "greet" }, { client: clientLike, cspSource: "" })
+      if (impResult && impResult.ok) {
+        assert("E5-H4: impact panel renders the impact set markup", impResult.markup.includes("bb-impact"), impResult.markup.slice(0, 120))
+      } else {
+        assert("E5-H4: impact panel failure is declared (bb/impact prefix or not-indexed)", impResult && !impResult.ok && typeof impResult.error === "string" && (impResult.error.includes("bb/impact") || impResult.error.toLowerCase().includes("not indexed")), impResult && impResult.error)
+      }
+      const errImp = await IP.renderImpactForPanel({ symbol: "definitely-not-a-symbol-xyz" }, { client: clientLike, cspSource: "" })
+      assert("E5-H4: impact panel unknown-symbol failure is loud and declared", errImp && !errImp.ok && typeof errImp.error === "string" && errImp.error.startsWith("bb/impact:"), errImp && errImp.error)
+    } catch (e) {
+      assert("E5-H4: impact panel leg ran", false, String(e && e.message).slice(0, 200))
     }
 
     // 3. Staleness render checks (contract §4.3, in-editor).

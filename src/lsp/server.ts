@@ -489,6 +489,20 @@ export function wireFeatures(server: BbLspServer): void {
     return handleGraphRequest(raw, projectId, params)
   })
 
+  // Impact transport (M42.H4): the declared, versioned custom request that
+  // feeds the hover's "Impact analysis" action. Same law as bb/graph: schema
+  // mismatch, unindexed workspace, and unknown symbol are LOUD declared
+  // errors (`bb/impact:` prefix) — never an empty set that would read as
+  // "nothing depends on this". Symbol resolution is server-side only.
+  server.register("bb/impact", async (params: any) => {
+    const { handleImpactRequest } = await import("./impact_request")
+    let raw: Awaited<ReturnType<typeof BrainDatabase.getRawInstance>> | null = null
+    try {
+      raw = await BrainDatabase.getRawInstance(projectId)
+    } catch {}
+    return handleImpactRequest(raw, projectId, params)
+  })
+
 
   server.register("textDocument/hover", async (params: any) => {
     const raw = await BrainDatabase.getRawInstance(projectId)

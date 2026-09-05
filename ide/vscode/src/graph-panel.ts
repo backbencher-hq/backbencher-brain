@@ -19,8 +19,10 @@ import type { LanguageClient } from "vscode-languageclient/node"
 // renderer rule structural: a per-IDE fork would have to bypass the bundle.
 import { renderGraph } from "../../../script/m26/graph-core"
 
-/** Escaping DOM port over strings (browser Element API, no vscode import). */
-class StringElement {
+/** Escaping DOM port over strings (browser Element API, no vscode import).
+ *  Exported (M42.H4) so the impact panel shares the SAME port + serializer —
+ *  one escaping implementation across webview surfaces. */
+export class StringElement {
   tagName: string
   className = ""
   attrs: Record<string, string> = {}
@@ -41,11 +43,11 @@ class StringElement {
   }
 }
 
-function escapeHtmlValue(v: string): string {
+export function escapeHtmlValue(v: string): string {
   return v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;")
 }
 
-function serialize(el: StringElement): string {
+export function serialize(el: StringElement): string {
   const attrs = Object.entries(el.attrs)
     .map(([k, v]) => ` ${k}="${escapeHtmlValue(v)}"`)
     .join("")
