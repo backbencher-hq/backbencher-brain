@@ -89,6 +89,45 @@ async function run() {
       write()
     }
 
+    // 2b. M42.H2: hover links CLICK through the real editor (contract §12.1:
+    //     nothing unclickable). Parse the rich hover's command URIs from the
+    //     extension's own client markdown, then execute each command exactly
+    //     as a click would and assert the editor reveals the index target.
+    if (transportFromExt !== null && CORE.FIXTURE_HOVER_POS) {
+      const h2MainUri = "file://" + path.join(wsDir, "main.ts")
+      const h2Unwrap = (r) => (r && typeof r === "object" && "result" in r && ("id" in r || "jsonrpc" in r) ? r.result : r)
+      const h2hover = h2Unwrap(await withTimeout(transportFromExt.request("textDocument/hover", { textDocument: { uri: h2MainUri }, position: CORE.FIXTURE_HOVER_POS }), 15000, "hover"))
+      const h2text = h2hover && h2hover.contents ? (typeof h2hover.contents === "string" ? h2hover.contents : h2hover.contents.value || "") : ""
+      assert("E5-H2: real client hover carries the connected summary", h2text.includes("**connected**: called by"), h2text.slice(0, 160))
+      const h2links = []
+      const h2re = /\]\(command:(bb\.[a-zA-Z]+)\?([^)]+)\)/g
+      let h2m = null
+      while ((h2m = h2re.exec(h2text)) !== null) {
+        try {
+          h2links.push({ cmd: h2m[1], args: JSON.parse(decodeURIComponent(h2m[2])) })
+        } catch (e) {}
+      }
+      const usage = h2links.find((l) => l.cmd === "bb.openUsage")
+      assert("E5-H2: hover embeds a bb.openUsage link", usage !== undefined, h2text.slice(0, 300))
+      if (usage !== undefined) {
+        const before = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.selection.active.line : -1
+        await vscode.commands.executeCommand("bb.openUsage", usage.args)
+        const ed = vscode.window.activeTextEditor
+        const landed = ed !== undefined && String(ed.document.uri.fsPath).endsWith("main.ts") && ed.selection.active.line === usage.args.line
+        assert("E5-H2: clicking bb.openUsage reveals the index-stored target", landed, JSON.stringify({ before, args: usage.args, line: ed && ed.selection.active.line }))
+      }
+      const def = h2links.find((l) => l.cmd === "bb.openDefinition")
+      assert("E5-H2: hover embeds a bb.openDefinition link", def !== undefined, h2text.slice(0, 200))
+      if (def !== undefined) {
+        await vscode.commands.executeCommand("bb.openDefinition", def.args)
+        const ed = vscode.window.activeTextEditor
+        const landed = ed !== undefined && ed.selection.active.line === def.args.line
+        assert("E5-H2: clicking bb.openDefinition reveals the declaration", landed, JSON.stringify({ args: def.args, line: ed && ed.selection.active.line }))
+      }
+      const cmds = await vscode.commands.getCommands(true)
+      assert("E5-H2: all three hover-link commands are registered", ["bb.openUsage", "bb.openDefinition", "bb.showAllUsages"].every((c) => cmds.includes(c)), JSON.stringify(cmds.filter((c) => c.startsWith("bb."))))
+    }
+
     // 3. Staleness render checks (contract §4.3, in-editor).
     const staleView = STATUS.renderStatus({
       server: { up: true, version: report ? report.serverVersion : null, versionOk: true },
