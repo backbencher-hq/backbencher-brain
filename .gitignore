@@ -23,3 +23,10 @@ website/.env.vercel
 *.vsix
 .p3-runner.tmp.ts
 tool-mode-corpus.json.fresh
+.tools/
+
+# @vscode/test-electron download cache (R3/M25 e2e artifacts)
+.vscode-test/
+
+# client-tooling client runtime dir
+.client-tooling/

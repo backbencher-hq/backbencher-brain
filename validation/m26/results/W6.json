@@ -1,0 +1,27 @@
+{
+  "issue": "M26.W6",
+  "code": "W6",
+  "milestone": "M26",
+  "status": "verified",
+  "checks": 18,
+  "passed": 18,
+  "failed": 0,
+  "mutantsCaught": 3,
+  "mutantsTotal": 3,
+  "currentCommit": "28fbdb6a925c1f783b669fbdee022a1051e80812",
+  "verifierCommand": "npx tsx script/m26/verify-content-security.ts",
+  "evidenceFile": "W6.json",
+  "generatedAt": "2026-09-04T18:18:47.226Z",
+  "adversarialFixtures": [
+    "script tag in symbol name",
+    "event handler attribute breakout",
+    "svg onload payload",
+    "quote edge case (attribute escape, JSON-embedded)",
+    "unicode lookalike tags",
+    "ampersand entity smuggling"
+  ],
+  "limitations": [
+    "CSP is enforced by the host webview at render time; this suite proves the emitted document's policy and escaping, not browser behavior.",
+    "The future webview provider must consume buildWebviewHtml(); a provider that hand-rolls its own HTML is a governance violation (single-owner rule)."
+  ]
+}

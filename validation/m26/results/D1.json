@@ -1,0 +1,26 @@
+{
+  "issue": "M26.D1",
+  "status": "verified",
+  "passed": 29,
+  "failed": 0,
+  "negativeCases": 2,
+  "mutants": [
+    {
+      "name": "M1 doctored embedded fact",
+      "caught": true
+    },
+    {
+      "name": "M2 fabricated pair count",
+      "caught": true
+    }
+  ],
+  "mutantsCaught": 2,
+  "mutantsTotal": 2,
+  "realDbsScanned": 25,
+  "realDbsSkipped": 3,
+  "realCrossLanguagePairs": 0,
+  "docFile": "docs/m26/GRAPH.md",
+  "currentCommit": "beb2b9085f6eb17d97a5e69f03258df17a261664",
+  "verifierCommand": "npx tsx script/m26/verify-graph-docs.ts",
+  "generatedAt": "2026-09-04T18:26:26.555Z"
+}

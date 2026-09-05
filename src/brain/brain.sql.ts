@@ -151,6 +151,10 @@ export const BrainRelationshipTable = sqliteTable(
     index("brain_rel_proj_type_idx").on(table.project_id, table.relationship_type),
     // Tool query: find callers/callees by target symbol + relationship type
     index("brain_rel_target_type_idx").on(table.target_symbol_id, table.relationship_type),
+    // M29.R3: hover's cross-language probes (is_cross_language = 1 AND
+    // target/source_symbol_id = ?) need the composite form — see schema-ddl.ts.
+    index("brain_rel_target_cross_idx").on(table.target_symbol_id, table.is_cross_language),
+    index("brain_rel_source_cross_idx").on(table.source_symbol_id, table.is_cross_language),
   ],
 )
 

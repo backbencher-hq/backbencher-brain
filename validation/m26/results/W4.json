@@ -1,0 +1,19 @@
+{
+  "issue": "M26.W4",
+  "code": "W4",
+  "milestone": "M26",
+  "status": "verified",
+  "checks": 18,
+  "passed": 18,
+  "failed": 0,
+  "mutantsCaught": 5,
+  "mutantsTotal": 5,
+  "currentCommit": "28fbdb6a925c1f783b669fbdee022a1051e80812",
+  "verifierCommand": "npx tsx script/m26/verify-evidence-badges.ts",
+  "evidenceFile": "W4.json",
+  "generatedAt": "2026-09-04T18:18:45.498Z",
+  "limitations": [
+    "Badge styling (colors/shape) is per-editor CSS; the verified honesty surface is the class + data-attribute contract.",
+    "Legend meanings are English UI terms; localization is not declared."
+  ]
+}

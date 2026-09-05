@@ -1,0 +1,19 @@
+{
+  "status": "verified",
+  "passed": 16,
+  "failed": 0,
+  "negatives": {
+    "planned": 5
+  },
+  "verdict": {
+    "realComponentFailures": 0,
+    "mutantsCaught": 6,
+    "mutantsTotal": 6,
+    "ok": true
+  },
+  "currentCommit": "b24c391742a93b0cabcef73c71bbc31bb41dc84a",
+  "verifierCommand": "npx tsx script/m29/verify-precision-ledger.ts",
+  "evidenceFile": "R4-verify.json",
+  "generatedAt": "2026-09-04T23:37:23.930Z",
+  "details": []
+}

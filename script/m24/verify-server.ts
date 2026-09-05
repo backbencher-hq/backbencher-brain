@@ -224,19 +224,21 @@ async function testLanguages(): Promise<void> {
   console.log("G5: declared-absent languages")
   check("G5: java is a launch language", isLaunchLanguage("java"))
   check("G5: typescript is a launch language", isLaunchLanguage("typescript"))
-  check("G5: python is NOT a launch language", !isLaunchLanguage("python"))
+  check("G5: wave-1 languages joined (M29 approval record)", isLaunchLanguage("javascript") && isLaunchLanguage("python"))
+  check("G5: cobol is NOT a launch language (declared absence keeps an oracle)", !isLaunchLanguage("cobol"))
   check("G5: null is not a launch language", !isLaunchLanguage(null))
   check("G5: languageForPath maps .kt to kotlin", languageForPath("src/Main.kt") === "kotlin")
-  check("G5: languageForPath maps .py to null", languageForPath("src/main.py") === null)
+  check("G5: languageForPath maps .py to python (M29 wave 1)", languageForPath("src/main.py") === "python")
+  check("G5: languageForPath maps .js to javascript (M29 wave 1)", languageForPath("src/main.js") === "javascript")
   check(
-    "G5: launch set is exactly the five conformant languages",
-    JSON.stringify([...LAUNCH_LANGUAGES].sort()) === JSON.stringify(["groovy", "java", "kotlin", "scala", "typescript"]),
+    "G5: launch set matches the owner-approved wave record exactly",
+    JSON.stringify([...LAUNCH_LANGUAGES].sort()) === JSON.stringify(["groovy", "java", "javascript", "kotlin", "python", "scala", "typescript"]),
   )
 }
 
 // --- Mutation suite (proves the suite CAN FAIL) ------------------------------
 
-type Mutant = { name: string; from: string; to: string }
+type Mutant = { name: string; from: string; to: string; target?: "server" | "launch-languages"; oracle?: (mod: any) => Promise<boolean> }
 
 const MUTANTS: Mutant[] = [
   {
@@ -266,8 +268,13 @@ const MUTANTS: Mutant[] = [
   },
   {
     name: "languages: treat every language as launch language",
+    // M29.R2: isLaunchLanguage lives in the single-owner module now — the
+    // mutant plants there (its own oracle: the break is cobol treated as
+    // launch).
+    target: "launch-languages",
     from: "return language !== null && (LAUNCH_LANGUAGES as readonly string[]).includes(language)",
     to: "return true",
+    oracle: async (mod) => mod.isLaunchLanguage("cobol") === true,
   },
   {
     name: "lifecycle: shutdown does not set state",
@@ -292,6 +299,35 @@ async function runMutants(): Promise<number> {
   let caught = 0
 
   for (const mutant of MUTANTS) {
+    // Mutants targeting the single-owner launch module plant into a COPY of
+    // that module beside the original (imports resolve; the relative import
+    // inside the copy points at the real module).
+    if (mutant.target === "launch-languages") {
+      const ownerSrc = join(ROOT, "src", "lsp", "launch_languages.ts")
+      const ownerSource = readFileSync(ownerSrc, "utf8")
+      if (!ownerSource.includes(mutant.from)) {
+        console.log(`  SKIP (anchor not found): ${mutant.name}`)
+        continue
+      }
+      const mutantCopy = join(ROOT, "src", "lsp", `launch_languages.mutant.${Date.now()}.ts`)
+      writeFileSync(mutantCopy, ownerSource.replace(mutant.from, mutant.to))
+      try {
+        const mod = await import(mutantCopy)
+        const ok = mutant.oracle ? await mutant.oracle(mod) : await mutantOracle(mod)
+        if (ok) {
+          caught++
+          console.log(`  caught: ${mutant.name}`)
+        } else {
+          console.log(`  SURVIVED: ${mutant.name}`)
+        }
+      } catch {
+        caught++
+        console.log(`  caught (load failure): ${mutant.name}`)
+      } finally {
+        try { rmSync(mutantCopy, { force: true }) } catch {}
+      }
+      continue
+    }
     if (!source.includes(mutant.from)) {
       console.log(`  SKIP (anchor not found): ${mutant.name}`)
       continue
@@ -344,8 +380,13 @@ async function mutantOracle(mod: any): Promise<boolean> {
     // Project resolution oracle.
     if (server.context.projectId !== createHash("sha1").update(ws).digest("hex").substring(0, 40)) return true
 
-    // Language oracle.
-    if (mod.isLaunchLanguage("python")) return true
+    // G5: non-launch languages declared absent, never a crash. python and
+    // javascript JOINED the launch set via the M29 wave (owner-approved,
+    // validation/m29/results/wave-1-approval.json); cobol never will until a
+    // wave onboards it — the declared-absence oracle keeps a language that
+    // stays outside the set.
+    if (mod.isLaunchLanguage("cobol")) return true
+    if (!mod.isLaunchLanguage("python")) return true
 
     // Transport oracle: framing must use CRLFCRLF.
     const clientOut = new PassThrough()
