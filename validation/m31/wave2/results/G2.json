@@ -1,0 +1,13 @@
+{
+  "status": "verified",
+  "currentCommit": "fa17d2feec024a01cecbb8494f73b2de75cf1b37",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m31/wave2/verify-g2-doc-surface.ts",
+  "evidenceFile": "G2.json",
+  "generatedAt": "2026-09-05T23:05:26.258Z",
+  "passed": 130,
+  "failed": 0,
+  "negativeCases": 3,
+  "documentedTools": 16,
+  "registryTools": 16
+}
