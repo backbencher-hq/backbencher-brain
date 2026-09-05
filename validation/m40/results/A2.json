@@ -1,30 +1,28 @@
 {
-  "status": "blocked",
-  "currentCommit": "88129008ae4548655e66b20e9655f0de9b827fdf",
+  "status": "verified",
+  "currentCommit": "1caa95a9f8a0282708c9b607a57d28b6b0481490",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "bun run script/m40/verify-a2-bounded-post.ts",
-  "generatedAt": "2026-09-05T00:40:46.190Z",
-  "passed": 21,
-  "failed": 1,
-  "negativeCases": 1,
+  "generatedAt": "2026-09-05T01:23:51.798Z",
+  "passed": 25,
+  "failed": 0,
+  "negativeCases": 3,
   "timing": {
-    "boundedMs": 140,
-    "fullMs": 1810,
+    "boundedMs": 118,
+    "fullMs": 1493,
     "refreshedRows": 1,
     "totalEdges0": 39986,
     "boundedSamples": [
-      165,
-      140,
-      167
+      136,
+      120,
+      118
     ],
     "fullSamples": [
-      1810,
-      2086,
-      2642
+      1590,
+      1888,
+      1493
     ]
   },
-  "mutation": "A2_UNBOUNDED (gate-fail proof run)",
-  "failures": [
-    "A2: caller edges into edited file RESTORED — E1=0 vs E0=11996"
-  ]
+  "mutation": "not-run (control)",
+  "failures": []
 }
