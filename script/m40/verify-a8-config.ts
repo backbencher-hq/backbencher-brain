@@ -206,7 +206,7 @@ const configSrc = readFileSync(path.join(ROOT, "src/config/config.ts"), "utf8")
 }
 
 console.log(`A8 config: ${passed} passed, ${failed} failed, ${negatives} negatives${MUTATE ? " [MUTATION RUN]" : ""}`)
-if (failed === 0 && !MUTATE && !CONTROL) {
+if (failed === 0 && !MUTATE && !CONTROL && process.env.BB_M40_READ_ONLY !== "1") {
   const { mkdirSync: mkd, writeFileSync: wfs } = await import("node:fs")
   mkd(RESULTS_DIR, { recursive: true })
   wfs(path.join(RESULTS_DIR, "A8.json"), JSON.stringify({
