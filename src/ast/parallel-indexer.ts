@@ -19,6 +19,7 @@ import { computeAndStoreProjectHealth } from "./project-health"
 import { CrossLanguageIntelligencePersister } from "./cross-language-intelligence-persister"
 import { detectLanguageFromPath } from "./language-detection"
 import { writeLiveStatus } from "./index-status"
+import { acquireIndexLock, type IndexLockHandle } from "./index-lock"
 
 const log = Log.create({ service: "parallel-indexer" })
 
@@ -2846,6 +2847,10 @@ export async function indexProjectParallel(
     // consistent and `bb index --resume` can continue from what was stored.
     signal?: AbortSignal
     logger?: { log: (...args: any[]) => void; write: (s: string) => void }
+    // M43.P1 (#656): pass a lock the CALLER already holds (reindexFilesParallel,
+    // CLI --force) so this run shares that scope instead of re-acquiring. The
+    // caller remains responsible for releasing it.
+    lock?: IndexLockHandle
   } = {},
 ): Promise<ParallelIndexingStats> {
   const _log = options.logger ?? { log: (...args: any[]) => console.log(...args), write: (s: string) => process.stdout.write(s) }
@@ -2873,6 +2878,11 @@ export async function indexProjectParallel(
   })
 
   Bus.publishSafe(BrainService.Event.IndexingStarted, { projectId })
+
+  // M43.P1 (#656): single-flight per project — a second PROCESS is refused
+  // with the holder named; same-process callers serialize on the module queue.
+  const externalLock = options.lock ?? null
+  const lock = externalLock ?? await acquireIndexLock(projectId, { kind: "index" })
 
   const phases: IndexPhaseTimings = {
     discoveryMs: 0,
@@ -3389,7 +3399,9 @@ export async function indexProjectParallel(
       // public entry (runPostProcessing below), shared by the full index,
       // `bb index --post`, and MCP bb_index mode=post. Same phases, same
       // timing/outcome contract (M21.I2), zero duplicated phase logic.
-      const post = await runPostProcessing(projectId, { logger: _log })
+      // M43.P1: this call is inside an indexProjectParallel run that already
+      // holds the project lock — lockHeld=true prevents a self-deadlock.
+      const post = await runPostProcessing(projectId, { logger: _log, lockHeld: true })
       phases.postProcessingMs = Date.now() - postProcessingStart
       phases.postProcessingPhases = post.phases
 
@@ -3500,6 +3512,10 @@ export async function indexProjectParallel(
     })
 
     throw error
+  } finally {
+    // Every exit path (both returns + the rethrow above) releases the lock.
+    // Externally-held locks belong to the caller — never released here.
+    if (!externalLock) await lock.release().catch(() => {})
   }
 }
 
@@ -3577,6 +3593,9 @@ export async function runPostProcessing(
     logger?: { log: (...args: any[]) => void; write: (s: string) => void }
     /** M40.A2 hook: skip specific phases in the bounded incremental pass. */
     skipPhases?: Array<PostProcessingPhaseTiming["name"]>
+    /** M43.P1 (#656): true when the CALLER already holds the project lock
+     * (indexProjectParallel's internal bounded/full pass). No re-acquire. */
+    lockHeld?: boolean
   } = {},
 ): Promise<PostProcessingResult> {
   const _log = opts.logger ?? { log: (...args: any[]) => console.log(...args), write: (s: string) => process.stdout.write(s) }
@@ -3589,6 +3608,12 @@ export async function runPostProcessing(
     throw new Error(`no index for project ${String(projectId).slice(0, 8)} — post-processing derives from indexed symbols; run bb index first`)
   }
 
+  // M43.P1: post-processing mutates derived data, so it takes the same
+  // single-flight lock. Standalone entry points (CLI `bb index --post`, MCP
+  // bb_index mode=post) acquire here; internal callers pass lockHeld=true.
+  const lock = opts.lockHeld === true ? null : await acquireIndexLock(projectId, { kind: "post" })
+
+  try {
   const start = Date.now()
   const phases: PostProcessingPhaseTiming[] = []
   const recordPhase = (name: PostProcessingPhaseTiming["name"], ms: number, outcome: PostProcessingPhaseTiming["outcome"]) => {
@@ -3682,6 +3707,9 @@ export async function runPostProcessing(
   }
 
   return { phases, totalMs: Date.now() - start, integrityHealth }
+  } finally {
+    if (lock) await lock.release().catch(() => {})
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -4036,6 +4064,12 @@ export async function reindexFilesParallel(
 ): Promise<{ indexed: number; deleted: number; errors: number; derived?: { pass: string; phases: PostProcessingPhaseTiming[]; repairedInEdges: number; touchedSymbols: number } }> {
   const result: { indexed: number; deleted: number; errors: number; derived?: { pass: string; phases: PostProcessingPhaseTiming[]; repairedInEdges: number; touchedSymbols: number } } = { indexed: 0, deleted: 0, errors: 0 }
 
+  // M43.P1 (#656): deletion writes AND the delegated parse+post run are ONE
+  // lock scope — a concurrent indexer must never interleave between our
+  // deletes and the re-parse. indexProjectParallel gets the handle so it does
+  // not re-acquire (no deadlock); we release in the finally below.
+  const lock = await acquireIndexLock(projectId, { kind: "reindex" })
+  try {
   const deleted = changes.filter((c) => c?.type === "deleted")
   if (deleted.length > 0) {
     try {
@@ -4093,6 +4127,7 @@ export async function reindexFilesParallel(
         files: toIndex,
         isIncremental: true,
         skipDiscovery: true,
+        lock,
         ...(options?.logger ? { logger: options.logger } : {}),
       })
       result.indexed = indexResult.successFiles
@@ -4112,6 +4147,9 @@ export async function reindexFilesParallel(
       log.error("failed to reindex files", { error })
       result.errors++
     }
+  }
+  } finally {
+    await lock.release().catch(() => {})
   }
 
   return result

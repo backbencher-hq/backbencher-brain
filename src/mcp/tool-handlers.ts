@@ -663,15 +663,25 @@ const handlers: Record<string, ToolHandler> = {
     if (effective === "file" && isDir) return textResult("bb_index mode=file requires a file path", true)
     if (effective === "dir" && !isDir) return textResult("bb_index mode=dir requires a directory path", true)
     if (effective === "file") {
-      const r = await reindexFilesParallel(projectId as any, projectPath, [{ path: abs, type: "modified" }])
-      // M40.A3: derived-data telemetry surfaced — an agent can see whether
-      // relationships/gravity were re-derived for the touched file, and how
-      // many caller edges were repaired, without inspecting logs.
-      return textResult(JSON.stringify({ mode: "file", path: abs, indexed: r.indexed, deleted: r.deleted, errors: r.errors, derived: r.derived ?? { pass: "deferred", phases: [], repairedInEdges: 0, touchedSymbols: 0 } }, null, 2))
+      try {
+        const r = await reindexFilesParallel(projectId as any, projectPath, [{ path: abs, type: "modified" }])
+        // M40.A3: derived-data telemetry surfaced — an agent can see whether
+        // relationships/gravity were re-derived for the touched file, and how
+        // many caller edges were repaired, without inspecting logs.
+        return textResult(JSON.stringify({ mode: "file", path: abs, indexed: r.indexed, deleted: r.deleted, errors: r.errors, derived: r.derived ?? { pass: "deferred", phases: [], repairedInEdges: 0, touchedSymbols: 0 } }, null, 2))
+      } catch (e: any) {
+        // M43.P1: another indexer holds the project lock — declared refusal,
+        // never a thrown handler crash.
+        return textResult(`bb_index mode=file refused: ${e?.message}`, true)
+      }
     }
     // dir: incremental — parses only changed files, defers heavy post-processing
-    const s = await indexProjectParallel(projectId as any, abs, { isIncremental: true, skipPostProcessing: true })
-    return textResult(JSON.stringify({ mode: "dir", path: abs, candidates: s.totalFiles, processed: s.processedFiles, errors: s.errorFiles }, null, 2))
+    try {
+      const s = await indexProjectParallel(projectId as any, abs, { isIncremental: true, skipPostProcessing: true })
+      return textResult(JSON.stringify({ mode: "dir", path: abs, candidates: s.totalFiles, processed: s.processedFiles, errors: s.errorFiles }, null, 2))
+    } catch (e: any) {
+      return textResult(`bb_index mode=dir refused: ${e?.message}`, true)
+    }
   },
 
   // --- M28.T1 (issue #624): the agent door to the graph surface ------------

@@ -5,10 +5,12 @@
 //   bb mcp [--dir DIR]
 //   bb version
 import { Command } from "commander"
-import { existsSync, statSync } from "fs"
+import { createHash } from "crypto"
+import { existsSync, mkdirSync, realpathSync, renameSync, statSync } from "fs"
 import path from "path"
 import { BrainDatabase } from "../brain/database"
 import { indexProjectParallel } from "../ast/parallel-indexer"
+import { acquireIndexLock, IndexLockHeldError, type IndexLockHandle } from "../ast/index-lock"
 import { BrainTools } from "../ast/tools"
 import { BACKBENCHER_BRAIN_VERSION } from "../version"
 import { getUnifiedHealth, formatUnifiedHealth } from "../intelligence/health/health-provider"
@@ -17,8 +19,26 @@ import { LogLevel, setLogLevel } from "../util/log"
 import { computeCheckoutFingerprint, readStoredFingerprint } from "../ast/fingerprint"
 import { FRESHNESS_REMEDIATION } from "../brain/freshness"
 
-import { getProjectId } from "../util/project-id"
-export { getProjectId }
+export function getProjectId(projectPath: string): string {
+  const resolved = path.resolve(projectPath)
+  let canonical = resolved
+  try {
+    canonical = realpathSync.native(resolved)
+  } catch {
+    // Nonexistent paths retain deterministic lexical identity for validation.
+  }
+  const canonicalId = createHash("sha1").update(canonical).digest("hex").substring(0, 40)
+  if (canonical !== resolved) {
+    const legacyId = createHash("sha1").update(resolved).digest("hex").substring(0, 40)
+    const legacyDir = path.join(bbProjectsDir(), legacyId)
+    const canonicalDir = path.join(bbProjectsDir(), canonicalId)
+    if (existsSync(legacyDir) && !existsSync(canonicalDir)) {
+      mkdirSync(bbProjectsDir(), { recursive: true })
+      try { renameSync(legacyDir, canonicalDir) } catch {}
+    }
+  }
+  return canonicalId
+}
 
 function requireDir(p: string): string {
   const abs = path.resolve(p)
@@ -149,7 +169,22 @@ async function cmdIndex(
       }
     }
   }
+  // M43.P1: a --force wipe+index is ONE lock scope — acquire before the wipe
+  // so a concurrent indexer can never slip between the wipe and the run.
+  // Non-force paths acquire inside indexProjectParallel/runPostProcessing.
+  let heldLock: IndexLockHandle | null = null
   if (opts.force) {
+    try {
+      heldLock = await acquireIndexLock(pid, { kind: "wipe+index" })
+    } catch (e: any) {
+      if (e instanceof IndexLockHeldError) {
+        console.error(`✗ ${e.message}`)
+      } else {
+        console.error(`✗ could not acquire the index lock: ${e?.message}`)
+      }
+      process.exitCode = 1
+      return
+    }
     // In-place wipe (never delete the DB file): deleting + recreating the file
     // orphans any running MCP server's open handle into a stale view. An
     // in-place wipe keeps the same file, so live connections see the fresh
@@ -227,10 +262,27 @@ async function cmdIndex(
     abort.abort()
     console.log(`\n${sig} received — cancelling index (draining in-flight files; resume with: bb index --resume)...`)
   }
-  process.once("SIGINT", () => onSignal("SIGINT"))
-  process.once("SIGTERM", () => onSignal("SIGTERM"))
-  indexOpts.signal = abort.signal
-  const stats = await indexProjectParallel(pid, abs, indexOpts)
+  if (heldLock) indexOpts.lock = heldLock
+  let stats
+  try {
+    process.once("SIGINT", () => onSignal("SIGINT"))
+    process.once("SIGTERM", () => onSignal("SIGTERM"))
+    indexOpts.signal = abort.signal
+    stats = await indexProjectParallel(pid, abs, indexOpts)
+  } catch (e: any) {
+    process.removeAllListeners("SIGINT")
+    process.removeAllListeners("SIGTERM")
+    if (heldLock) await heldLock.release().catch(() => {})
+    if (e instanceof IndexLockHeldError) {
+      // M43.P1: another live process holds this project's index lock — refuse
+      // loudly with the holder named, never interleave writes.
+      console.error(`✗ ${e.message}`)
+    } else {
+      throw e
+    }
+    process.exitCode = 1
+    return
+  }
   process.removeAllListeners("SIGINT")
   process.removeAllListeners("SIGTERM")
   if (process.stderr.isTTY) process.stderr.write("\r\x1b[K")
@@ -268,6 +320,7 @@ async function cmdIndex(
       console.log(`  bounded: ${parts.join(" | ")}`)
     }
   }
+  if (heldLock) await heldLock.release().catch(() => {})
 }
 
 async function cmdSearch(query: string, opts: { dir?: string; limit?: number; language?: string; mode?: string; filePath?: string; symbolName?: string }) {

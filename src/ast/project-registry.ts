@@ -14,6 +14,7 @@ import path from "node:path"
 import { bbProjectsDir } from "../util/bb-data-dir"
 import { BrainDatabase } from "../brain/database"
 import { readLiveStatus, writeLiveStatus, clearStatus } from "./index-status"
+import { liveIndexLockHolder } from "./index-lock"
 
 export interface ProjectEntry {
   id: string
@@ -101,8 +102,15 @@ export function removeProject(id: string, force: boolean): RemoveResult {
   }
   const live = readLiveStatus(id)
   const inFlight = !!live && live.phase === "indexing" && Date.now() - live.updatedAt < 3_600_000
-  if (inFlight && !force) {
-    return { id, removed: false, reason: `project is being indexed (in-flight); use --force to remove anyway` }
+  // M43.P1 (#656): the real single-flight lock is authoritative — a live lock
+  // holder means a second process is writing RIGHT NOW (the soft live-status
+  // heuristic only catches in-process runs). Refuse unless force.
+  const lockHolder = liveIndexLockHolder(id)
+  if ((inFlight || lockHolder) && !force) {
+    const reason = lockHolder
+      ? `project is being indexed by pid ${lockHolder.pid} (index lock held); use --force to remove anyway`
+      : `project is being indexed (in-flight); use --force to remove anyway`
+    return { id, removed: false, reason }
   }
   try {
     // Prefer in-place wipe semantics for the DB file, then remove the dir.
