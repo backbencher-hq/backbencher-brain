@@ -1,0 +1,14 @@
+{
+  "comment": "M44 gates registry — every on-disk wave verifier must appear here (governance check). Infra gates (governance/sync/closure) are exempt from mutation requirements but listed. Content gates join npm run verify in the same change that lands them.",
+  "gates": [
+    { "code": "G1", "script": "verify-governance.ts", "infra": true },
+    { "code": "W1.1", "script": "verify-w11-universal-repair.ts", "infra": false },
+    { "code": "W1.2", "script": "verify-w12-decline-honesty.ts", "infra": false },
+    { "code": "W2.1", "script": "verify-w21-git-probe.ts", "infra": false },
+    { "code": "W2.2", "script": "verify-w22-snapshot-probe.ts", "infra": false },
+    { "code": "W3.1", "script": "verify-w31-watcher.ts", "infra": false },
+    { "code": "W3.2", "script": "verify-w32-bb-watch.ts", "infra": false },
+    { "code": "W4", "script": "verify-w4-corpus.ts", "infra": false },
+    { "code": "X1", "script": "verify-closure.ts", "infra": true }
+  ]
+}

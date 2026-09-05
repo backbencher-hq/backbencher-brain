@@ -1,0 +1,153 @@
+[
+  {
+    "code": "G1",
+    "githubIssue": 668,
+    "tool": "governance",
+    "status": "planned",
+    "scope": "Ledger, gates registry, governance gate, mutation seams, sync-ledger",
+    "acceptanceCriteria": [
+      "Governance gate green on the scaffolded world (all codes planned, zero fabricated evidence)",
+      "Ledger entries carry acceptance criteria + closure requirements; statuses from the allowed vocabulary",
+      "Every on-disk script/m44 verifier is registered; content gates join the verify chain in the same change that lands them",
+      "No auto-pass predicates in any M44 verifier (audited by governance)",
+      "Wave-1..43 gates already in the chain stay green (no regression to sealed evidence)"
+    ],
+    "closureRequirements": [
+      "Evidence file + ledger sync + evidence comment on close"
+    ]
+  },
+  {
+    "code": "W1.1",
+    "githubIssue": 669,
+    "tool": "read-path repair",
+    "status": "planned",
+    "scope": "Universal lazy repair: extend the M43 maybeAutoRefresh path to every row-resolving read tool via ONE shared helper",
+    "acceptanceCriteria": [
+      "Per-tool behavioral test: external edit -> tool call -> declares auto-refreshed N files OR explicit decline with reason; never silent stale",
+      "The exact M43 code path is reused (single helper); M43 gate set stays green",
+      "bb_ask returns fresh sources after an external edit",
+      "Budget/decline counters and remediation text unchanged (M35 envelope + M43 A3 gates green)",
+      "No read blocks longer than the documented bound (measured in W4)"
+    ],
+    "closureRequirements": [
+      "Evidence file + ledger sync + evidence comment on close"
+    ]
+  },
+  {
+    "code": "W1.2",
+    "githubIssue": 670,
+    "tool": "decline honesty",
+    "status": "planned",
+    "scope": "Unified machine-readable decline/envelope shape + counters across CLI and MCP for every read tool",
+    "acceptanceCriteria": [
+      "Every decline path returns the shared machine-readable reason + human text naming the manual repair interface",
+      "A gate walks every read tool and asserts the shared decline/envelope shape (no per-tool drift)",
+      "FRESHNESS_REMEDIATION constants remain byte-identical (M35 envelope gate green)",
+      "Docs updated to the unified shape; D5/G2 doc-truth gates stay green"
+    ],
+    "closureRequirements": [
+      "Evidence file + ledger sync + evidence comment on close"
+    ]
+  },
+  {
+    "code": "W2.1",
+    "githubIssue": 671,
+    "tool": "new-file probe (git)",
+    "status": "planned",
+    "scope": "Added-file probe (git status --porcelain): files present with no brain_file row join the repair set; decline names them otherwise",
+    "acceptanceCriteria": [
+      "New file externally in a git worktree -> bb_ask includes it (auto-refreshed) or explicitly names it as unindexed",
+      "New-file repair runs the bounded derived pass (M40.A3)",
+      "Gitignore/untracked semantics respected",
+      "Probe cost bounded per read and measured (W4)",
+      "Decline vocabulary extended and documented (W1.2 shape)"
+    ],
+    "closureRequirements": [
+      "Evidence file + ledger sync + evidence comment on close"
+    ]
+  },
+  {
+    "code": "W2.2",
+    "githubIssue": 672,
+    "tool": "new-file probe (non-git)",
+    "status": "planned",
+    "scope": "Bounded snapshot-walk probe for non-git trees; explicit unavailability otherwise",
+    "acceptanceCriteria": [
+      "Behavioral parity with W2.1 on a non-git fixture",
+      "No read performs an unbounded scan; cost scales with changed directories, never total file count (W4 evidence)",
+      "Aggregate manifest transactionally consistent with brain_file commits",
+      "Both probe layers share one interface + one decline vocabulary (W1.2)"
+    ],
+    "closureRequirements": [
+      "Evidence file + ledger sync + evidence comment on close"
+    ]
+  },
+  {
+    "code": "W3.1",
+    "githubIssue": 673,
+    "tool": "resident watcher",
+    "status": "planned",
+    "scope": "src/ast/file-watcher.ts (mirrors M24 semantics; LSP module untouched) + watch-intent record + MCP auto-start",
+    "acceptanceCriteria": [
+      "External edit to a watched project -> fresh within debounce + reindex bound WITHOUT the read repairing",
+      "Watch-intent recorded at index time, honored by the next resident session",
+      "P1 lock respected; never corrupts a concurrent run",
+      "Crash/stop safety: restart runs the startup full scan before serving",
+      "Parity tests vs the LSP loop on the same edit sequence (LSP files untouched)",
+      "Event storms debounced + bounded; measured in W4"
+    ],
+    "closureRequirements": [
+      "Evidence file + ledger sync + evidence comment on close"
+    ]
+  },
+  {
+    "code": "W3.2",
+    "githubIssue": 674,
+    "tool": "bb watch CLI",
+    "status": "planned",
+    "scope": "bb watch [dir] / --stop / --status over the shared watcher + intent lifecycle",
+    "acceptanceCriteria": [
+      "bb watch [dir] starts the watcher; status shows intent",
+      "Double start idempotent (no duplicates, no lock corruption)",
+      "Stop clean: no orphan, status reflects stopped, restart re-runs startup scan",
+      "CLI guide + per-command docs updated; doc-truth gates green",
+      "Behavior identical to MCP auto-start (same module, one test, both entry points)"
+    ],
+    "closureRequirements": [
+      "Evidence file + ledger sync + evidence comment on close"
+    ]
+  },
+  {
+    "code": "W4",
+    "githubIssue": 675,
+    "tool": "changed-files corpus",
+    "status": "planned",
+    "scope": "Corpus over fixtures real repos + larger checkout: new-file-ask, edit-analyze, bursts, bb_edit ref, watcher on/off, W2 parity, time bounds",
+    "acceptanceCriteria": [
+      "Every scenario declares repaired OR explicit staleness/new-file naming; never silent",
+      "Watcher-on and watcher-off converge to the same fresh answer within bounds",
+      "Time bounds recorded and asserted; probes not O(project) wall-time",
+      "Deterministic runs with stamped evidence (pass/fail/negative counts)",
+      "M43 A4 + M35 staleness-corpus gates stay green"
+    ],
+    "closureRequirements": [
+      "Evidence file + ledger sync + evidence comment on close"
+    ]
+  },
+  {
+    "code": "X1",
+    "githubIssue": 676,
+    "tool": "closure",
+    "status": "planned",
+    "scope": "Closure gate: one stamp, all evidence conforming, content gates re-run read-only, mutation sweep, ledger verified",
+    "acceptanceCriteria": [
+      "Closure gate 0-exit only when every subordinate issue is verified with conforming evidence at one stamp",
+      "Content gates re-run read-only inside the gate",
+      "Mutation sweep: each content gate fails under its registered seam",
+      "Ledger all-verified via sync-ledger; milestone closes with evidence comments"
+    ],
+    "closureRequirements": [
+      "Evidence file + ledger sync + evidence comment; milestone 44 closed when 0 open"
+    ]
+  }
+]
