@@ -23,6 +23,7 @@ import { tmpdir } from "node:os"
 import * as os from "node:os"
 import { createHash } from "node:crypto"
 import { realpathSync } from "node:fs"
+import { pathToFileURL } from "node:url"
 import path from "node:path"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
@@ -525,7 +526,9 @@ export async function buildFixtureWorkspace(baseDir: string): Promise<{ workspac
   mkdirSync(dbDir, { recursive: true })
   process.env.BB_DATA_DIR = dataDir
 
-  const { BrainDatabase } = await import(path.join(ROOT, "src", "brain", "database.ts"))
+  // Windows ESM loader rejects raw drive-letter paths in dynamic import() —
+  // file:// URLs are portable (found by the E7 win32 CI leg, 2026-09-05).
+  const { BrainDatabase } = await import(pathToFileURL(path.join(ROOT, "src", "brain", "database.ts")).href)
   const raw = await BrainDatabase.getRawInstance(projectId)
   const fpath = path.join(workspaceDir, "main.ts")
 
@@ -534,7 +537,7 @@ export async function buildFixtureWorkspace(baseDir: string): Promise<{ workspac
   // lands on the same row it watches). The seeded row records the REAL hash
   // + stat metadata of the file on disk — a fixture that starts stale would
   // make the E5 live loop's first marker dishonest (found live by E5).
-  const { hashFileContent } = await import(path.join(ROOT, "src", "brain", "freshness.ts"))
+  const { hashFileContent } = await import(pathToFileURL(path.join(ROOT, "src", "brain", "freshness.ts")).href)
   const fileStat = statSync(fpath)
   const fileId = `${projectId}:main.ts`
   raw.prepare(`INSERT INTO brain_file (id, project_id, path, relative_path, language, file_hash, size_bytes, last_modified) VALUES (?,?,?,?,?,?,?,?)`).run(
