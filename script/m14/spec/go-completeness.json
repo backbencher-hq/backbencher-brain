@@ -113,7 +113,7 @@
     ]
   },
   "gap": {
-    "_description": "Go declared-type reference graph is fixture-pinned (go/type-usage-graph). Remaining declaration-ish nodes — type_parameter_list (generics bounds), function_type (callback types) — are parsed but not emitted as standalone symbols; they are structural, not declaration sites. differential go-tools:go is 0 missing / 0 unexplained at the pinned floor. analyzer literals that are structural-internal (func_type/function_type, string_literal/interpreted_string_literal) are internal_silent by contract.",
+    "_description": "Go declared-type reference graph is fixture-pinned (go/type-usage-graph). Remaining declaration-ish nodes \u2014 type_parameter_list (generics bounds), function_type (callback types) \u2014 are parsed but not emitted as standalone symbols; they are structural, not declaration sites. differential go-tools:go is 0 missing / 0 unexplained at the pinned floor. analyzer literals that are structural-internal (func_type/function_type, string_literal/interpreted_string_literal) are internal_silent by contract.",
     "gaps": []
   },
   "design_decision": {
@@ -138,6 +138,27 @@
         "status": "RULED",
         "question": "Anonymous func_literal bodies and goroutine/defer closures have no static callable name.",
         "resolution": "func_literal in call position emits NO calls target (no static name, same class as Rust's (self.0)); goroutine/defer handler emits only named leaf callees that resolve to a declared function/method. Scope tied to the pinned tree-sitter-go grammar."
+      },
+      {
+        "id": "GOD4",
+        "node_type": "selector field uses: assignment-LHS writes; interface embedding extends",
+        "status": "FIXED",
+        "question": "M37 #604 dual-lens (go-tools + terraform, 3,924 files): (a) analyzeGoSelectorUses emitted `uses` for assignment-LHS field WRITES and inc/dec operands \u2014 5,202 write-only (fn, field) bogus edges; the family write-gate (cpp/c/php/ruby/python/groovy/objc/ts) was missing in go. (b) `interface { Reader; io.Closer }` emitted only a member-symbol contains, never an inheritance edge \u2014 156 embedding sites; struct embedding already gave extends, java/rust give superinterfaces extends.",
+        "resolution": "(a) write-gate: a selector whose parent is the FIRST expression_list child of an assignment_statement (`=` AND `+=` \u2014 both writes per SCD1 family parity) or an inc/dec_statement operand emits no uses; chained operand reads (`r.cfg` inside `r.cfg.V = v`) stay genuine reads. (b) interface embedding emits extends to the type LEAF (Reader, Closer) with relationshipType go_interface_embedding, mirroring go_struct_embedding and the rust trait-supertrait/java interface-extends contract. Both mirrored in the oracle; pinned by relationship-and-payloads (persist->writeOnly forbid) and implements-params (ReadCloser->Reader go_interface_embedding)."
+      },
+      {
+        "id": "GOD5",
+        "node_type": "implements: non-struct method-bearing types, named-result signatures, generics",
+        "status": "FIXED",
+        "question": "M37 #604 dual-lens implements gaps on go-tools @200 (6 MISSING): (a) only isStruct symbols were checked as implementors, so `type HandlerFunc func(...)` / `type subcommands []command` with methods never satisfied interfaces (jsonrpc2 HandlerFunc/PreempterFunc, gopls subcommands); (b) the raw-text result signature compare treated named results `(result any, err error)` as different from unnamed `(any, error)` (defaultHandler vs Handler/Preempter); (c) generic receivers `MapLattice[Key, Elem, L]` never matched the declared name; and the name-only oracle over-claimed function-local (`interface hasCommands` in a func body) and generic-instantiation (MapLattice -> Semilattice[map[Key]Elem]) pairs.",
+        "resolution": "Analyzer: implementor candidates now include all non-interface declared types (Struct + Type); result extraction reduces named-result parameter_lists to canonical TYPE text (`T` / `(T1, T2)`); receivers strip generic brackets `[`. Oracle mirrors: receiver strip `[`/`<`, no descent into function/method/func_literal bodies (LocalsAreNotSymbols), and generic type_spec pairs are skipped on BOTH sides (satisfaction needs type unification \u2014 refusal over fabrication). Pinned by implements-params (RunnerFn->Runner2, HandlerImpl->NamedResulter, Box->GenericIface forbid). go-tools @200 and terraform @120 both 100%/0/0."
+      },
+      {
+        "id": "GOD6",
+        "node_type": "composite-literal construction instantiates",
+        "status": "FIXED",
+        "question": "M37 #604: Go's primary construction syntax `Foo{...}` / `&Foo{...}` / `pkg.Foo{...}` emitted NO instantiates \u2014 only NewXxx calls did (65,843 composite literals across go-tools+terraform with zero construction edges). Rust emits instantiates for struct literals, csharp for `new Foo()` \u2014 family parity gap.",
+        "resolution": "New analyzeGoCompositeLiteralConstruction emits instantiates (go_composite_literal_construction) sourced to the containing fn/method (\"global\" at package scope) with the literal's type LEAF as target; slice/map/array literals (wrapper type child) and elided element literals (no type child) are skipped. Stored package-scope closures are NOT descended (template, not run at init \u2014 mirrors the package-scope call contract); local closures inside bodies keep the enclosing fn. Oracle mirrored; pinned by relationship-and-payloads (NewShape->Shape, work->Worker composite pins)."
       }
     ]
   }
