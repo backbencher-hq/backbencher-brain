@@ -490,6 +490,9 @@ export interface HubUsageRow {
   line: number
   depth: number
   edge: GraphEdgeLike
+  /** The usage's OTHER END symbol id (index-resolved click identity — the
+   *  M42.H6 bridge sends it as navigate.target.symbolId, never a guess). */
+  endpointId?: string
 }
 
 /** The deterministic usage row set: callers (as traversed) then callees.
@@ -506,6 +509,7 @@ export function hubUsages(result: GraphResultLike): HubUsageRow[] {
       line: node?.line ?? 0,
       depth: edge.depth,
       edge,
+      endpointId: node?.id,
     })
   }
   for (const edge of result.callees) {
@@ -517,6 +521,7 @@ export function hubUsages(result: GraphResultLike): HubUsageRow[] {
       line: node?.line ?? 0,
       depth: edge.depth,
       edge,
+      endpointId: node?.id,
     })
   }
   return rows
@@ -553,6 +558,12 @@ function hubRowElement(row: HubUsageRow, dom: GraphDom): GraphDomElement {
   el.setAttribute("data-dir", row.dir)
   el.setAttribute("data-depth", String(row.depth))
   if (row.edge.rowId) el.setAttribute("data-row-id", row.edge.rowId)
+  // M42.H6 machine click targets: index-resolved file/line/symbol of the
+  // usage's other end — the bridge navigates from these attrs, never from
+  // the display text (no client-side position guessing, issue #654).
+  if (row.file.length > 0) el.setAttribute("data-file", row.file)
+  el.setAttribute("data-line", String(row.line))
+  if (row.endpointId) el.setAttribute("data-symbol-id", row.endpointId)
   const name = dom.create("span")
   name.addClass("bb-hub-row-name")
   name.textContent = row.name
