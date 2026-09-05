@@ -71,7 +71,7 @@ Write-capable against the annotation store only. It never modifies source files.
 
 ## Evidence Semantics
 
-Annotations carry provenance (toolIdentity, time) and are stored in brain_annotation.
+Annotations carry provenance (toolIdentity, time) and are stored in brain_annotation. Stable today: row provenance (author class, tool identity, timestamps), one note per author per location, in-place update on re-annotate, and declared absence on reads. Store semantics beyond this surface are owned by the M28 workstream.
 
 ## Staleness
 

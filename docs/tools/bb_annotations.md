@@ -60,7 +60,7 @@ Read-only. It does not modify source files, index data, or annotations.
 
 ## Evidence Semantics
 
-Rows come from brain_annotation with provenance fields preserved.
+Rows come from brain_annotation with provenance fields preserved. Stable today: typed reads per symbol or whole project with full provenance on every row and declared absence when none exist. Store semantics beyond this surface are owned by the M28 workstream.
 
 ## Staleness
 

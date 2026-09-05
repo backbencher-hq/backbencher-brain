@@ -132,7 +132,7 @@ const curated: Readonly<Record<string, CuratedToolDocumentation>> = {
     limitations: ["Annotations are opinions layered on index evidence, never index truth", "Annotation store semantics are owned by the M28 workstream"],
     performance: "Constant-time store write bounded by the 2000-char body limit.",
     safety: "Write-capable against the annotation store only. It never modifies source files.",
-    evidence: "Annotations carry provenance (toolIdentity, time) and are stored in brain_annotation.",
+    evidence: "Annotations carry provenance (toolIdentity, time) and are stored in brain_annotation. Stable today: row provenance (author class, tool identity, timestamps), one note per author per location, in-place update on re-annotate, and declared absence on reads. Store semantics beyond this surface are owned by the M28 workstream.",
   },
   bb_annotations: {
     returns: ["Typed annotations for a symbol or the whole project, with full provenance (author class, tool identity, timestamps)", "Declared-absent result when none exist — absence is never an error"],
@@ -140,7 +140,7 @@ const curated: Readonly<Record<string, CuratedToolDocumentation>> = {
     limitations: ["Reads only stored annotations; absence is declared, not inferred", "Annotation store semantics are owned by the M28 workstream"],
     performance: "Indexed lookup by project and symbol (brain_annotation_project_symbol_idx).",
     safety: "Read-only. It does not modify source files, index data, or annotations.",
-    evidence: "Rows come from brain_annotation with provenance fields preserved.",
+    evidence: "Rows come from brain_annotation with provenance fields preserved. Stable today: typed reads per symbol or whole project with full provenance on every row and declared absence when none exist. Store semantics beyond this surface are owned by the M28 workstream.",
   },
 }
 
@@ -163,9 +163,12 @@ function artifact(): Record<string, unknown> {
 
 // M35.D1: staleness section rendered from the executable registry + the
 // registered remediation constants — docs CANNOT drift from code because both
-// sides derive from the same source here.
-const FRESHNESS_TOOLS: Record<string, { modes: string[]; surfaces: string }> = {
-  bb_search: { modes: ["symbol", "content", "file"], surfaces: "per-row `stale` flags + `freshness` block (`{ fresh, stale, missing, staleRatio, mode, remediation }`)" },
+// sides derive from the same source here. M31.D5: bb_health reports index
+// freshness (stale/missing counts + names) yet is not an envelope tool, so it
+// gets a custom truthful section; bb_search alone auto-refreshes within budget
+// (M43), so its section appends the auto-refresh knobs with defaults/opt-outs.
+const FRESHNESS_TOOLS: Record<string, { modes: string[]; surfaces: string; knobs?: boolean }> = {
+  bb_search: { modes: ["symbol", "content", "file"], surfaces: "per-row `stale` flags + `freshness` block (`{ fresh, stale, missing, staleRatio, mode, remediation }`)", knobs: true },
   bb_analyze: { modes: ["callers", "callees", "trace", "dependencies", "stats", "complexity", "impact", "test_mapping", "test_gaps", "test_impact", "test_quality"], surfaces: "`freshness` block (`{ fresh, stale, missing, staleRatio, mode, remediation }`); graph nodes and report rows carry `stale` flags (project-wide modes sample or resolve visible rows only — the block names its coverage mode)" },
   bb_visualize: { modes: [], surfaces: "per-node and per-link `stale` flags (links inherit worst-of-endpoints) + `freshness` envelope (`{ fresh, stale, missing, staleRatio, mode, remediation }`) on JSON; truncation composes with staleness" },
   bb_migrate: { modes: ["plan"], surfaces: "per-plan `sourceFile` + `stale` flags with an up-front stale-plan notice + `freshness` envelope (`{ fresh, stale, missing, staleRatio, mode, remediation }`) on JSON" },
@@ -173,13 +176,25 @@ const FRESHNESS_TOOLS: Record<string, { modes: string[]; surfaces: string }> = {
   bb_security: { modes: [], surfaces: "per-finding `[stale]` markers + counts footer naming the remediation; silent when all fresh" },
   bb_doc: { modes: [], surfaces: "`freshness` envelope (`{ fresh, stale, missing, staleRatio, mode, remediation }`) on JSON + footer naming the remediation; per-citation `(stale)` in Sources; silent when all fresh" },
 }
+// Custom staleness sections: bb_health reports index-vs-filesystem freshness
+// (sampled/complete counts + stale/missing file names) as its health block but
+// never auto-refreshes — refresh/force are explicit reindex params. The
+// generic "does not report index staleness" text and the envelope template
+// both lie for it, so it gets its own verbatim section (mirrored in
+// script/m35/verify-docs-staleness.ts so the gate cannot drift).
 function stalenessSection(tool: any): string {
   const info = FRESHNESS_TOOLS[tool.name]
+  if (tool.name === "bb_health") {
+    return `Reports index-vs-filesystem freshness on demand as its health block (sampled by default, complete with freshness=\"complete\"): fresh/stale/missing counts, plus stale and missing file names when verbose=true. It never reindexes silently: refresh=true runs an incremental index with a bounded derived pass and force=true a full rebuild, both BEFORE reporting; otherwise the report describes the stored index. When stale/missing files are found the registered remediation text applies: project scope → \`${FRESHNESS_REMEDIATION.dir}\`; file scope → \`${FRESHNESS_REMEDIATION.file}\`. For this tool the explicit refresh/force parameters are the reindex path; read tools (bb_search and CLI bb search) additionally auto-refresh stale files within budget when enabled, which this health report never does on its own. Detection uses a mtime+size fast path with a content-hash fallback: an edit that leaves both size and mtime unchanged is reported fresh without hashing (same trade-off as git's index stat-cache; accepted, documented in \`src/brain/freshness.ts\`).`
+  }
   if (!info) {
     return `This tool does not report index staleness. Output reflects the index as of the last bb index run; run bb index --changed to refresh changed files before acting on results.`
   }
   const modePart = info.modes.length ? `Freshness modes (registered as \`freshnessModes\`): ${info.modes.map((m) => `\`${m}\``).join(", ")}.` : "Freshness applies to the tool's read output (no registered per-mode split)."
-  return `${modePart} Staleness surfaces as: ${info.surfaces}. When something is stale/missing, the remediation names the registered reindex interfaces: project scope → \`${FRESHNESS_REMEDIATION.dir}\`; file scope → \`${FRESHNESS_REMEDIATION.file}\`. Nothing is stale → silence (no remediation text). Detection uses a mtime+size fast path with a content-hash fallback: an edit that leaves both size and mtime unchanged is reported fresh without hashing (same trade-off as git's index stat-cache; accepted, documented in \`src/brain/freshness.ts\`).`
+  const knobsPart = info.knobs
+    ? ` Inline auto-refresh is bounded by the environment knobs \`BB_AUTO_REFRESH_MAX_FILES\` (default 25 stale+missing files) and \`BB_AUTO_REFRESH_MAX_BYTES\` (default 2 MiB of modified-file bytes); disable it entirely with \`BB_NO_AUTO_REFRESH=1\` (any other value leaves it enabled) or per call with refresh=false (MCP) / --no-auto-refresh (CLI). Out of budget, disabled, or while another indexer holds the single-flight index lock, the read answers from existing data with the staleness block and an honest decline.`
+    : ""
+  return `${modePart} Staleness surfaces as: ${info.surfaces}. When something is stale/missing, the remediation names the registered reindex interfaces: project scope → \`${FRESHNESS_REMEDIATION.dir}\`; file scope → \`${FRESHNESS_REMEDIATION.file}\`. Nothing is stale → silence (no remediation text).${knobsPart} Detection uses a mtime+size fast path with a content-hash fallback: an edit that leaves both size and mtime unchanged is reported fresh without hashing (same trade-off as git's index stat-cache; accepted, documented in \`src/brain/freshness.ts\`).`
 }
 
 function renderReference(tool: any): string {

@@ -1,0 +1,34 @@
+{
+  "issue": "M31.X1-wave2",
+  "gate": "verify-closure.ts",
+  "status": "verified",
+  "passed": 22,
+  "failed": 0,
+  "checks": 22,
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m31/wave2/verify-closure.ts",
+  "evidenceFile": "X1.json",
+  "generatedAt": "2026-09-05T23:05:29.798Z",
+  "closureStamp": "fa17d2feec024a01cecbb8494f73b2de75cf1b37",
+  "mutationSweep": {
+    "D4": {
+      "control": 0,
+      "mutation": 1
+    },
+    "G2": {
+      "control": 0,
+      "mutation": 1
+    },
+    "F1": {
+      "control": 0,
+      "mutation": 1
+    },
+    "D5": {
+      "control": 0,
+      "mutation": 1
+    }
+  },
+  "negativeCases": 4,
+  "negativeCasesDescription": "per-gate mutation seams: every content gate must fail under its registered corruption",
+  "currentCommit": "fa17d2feec024a01cecbb8494f73b2de75cf1b37"
+}
