@@ -99,6 +99,10 @@ function waitForLockfile(projectId: string, timeoutMs: number): boolean {
 }
 
 async function main() {
+  // Mutation seam (gate-selftest): under BB_M43_MUTATE_A4_SKIP_S5 the S5
+  // adoption scenario never runs — the missing-scenario assertion above must
+  // then FAIL the gate. Read AFTER the env deletions at module top.
+  const MUTATE_SKIP_S5 = process.env.BB_M43_MUTATE_A4_SKIP_S5 === "1"
   const { getProjectId } = await import(path.join(ROOT, "src/cli/index"))
   if (!existsSync(RAKE_REPO)) throw new Error(`rake corpus repo not found at ${RAKE_REPO} (fixtures not cloned on this machine?)`)
 
@@ -251,7 +255,10 @@ try {
 
   // ── S5: adoption integrity — live siblings never steal; genuine moves
   //    re-home with zero duplicate rows (M43.A4 regression pair). ──
-  beginScenario("S5-adoption-integrity")
+  // Mutation seam (gate-selftest): under BB_M43_MUTATE_A4_SKIP_S5 the S5
+  // scenario is recorded under a DIFFERENT name — the missing-scenario
+  // assertion in the summary then fails, flipping this gate.
+  beginScenario(MUTATE_SKIP_S5 ? "S5-adoption-integrity-skipped-by-mutation" : "S5-adoption-integrity")
   {
     const { createHash } = await import("node:crypto")
     const cloneA = copyRepo("s5a")
@@ -321,7 +328,17 @@ finally:
   const totalPassed = scenarios.reduce((a, s) => a + s.passed, 0)
   console.log(`A4 real-repo corpus: ${scenarios.map((s) => `${s.name}=${s.passed}/${s.passed + s.failed}`).join(" ")}`)
   const ok = totalFailed === 0
-  if (ok) {
+  // M43.X1/selftest: the corpus is only complete when EVERY registered
+  // scenario actually ran — a regression that silently skips one (e.g. the
+  // gate-selftest's A4 mutation) must fail the gate, not shrink the summary.
+  const EXPECTED_SCENARIOS = ["S1-edit-reflect", "S2-budget-decline", "S3a-lock-refusal", "S3b-real-index-race", "S4-post-race-integrity", "S5-adoption-integrity"]
+  const ranNames = new Set(scenarios.map((s) => s.name))
+  const missingScenarios = EXPECTED_SCENARIOS.filter((n) => !ranNames.has(n))
+  if (missingScenarios.length > 0) {
+    console.log(`FAIL: A4 corpus missing expected scenario(s): ${missingScenarios.join(",")}`)
+    process.exit(1)
+  }
+  if (ok && process.env.BB_M43_READ_ONLY !== "1") {
     mkdirSync(RESULTS_DIR, { recursive: true })
     const head = (() => { try { return execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim() } catch { return "unknown" } })()
     writeFileSync(path.join(RESULTS_DIR, "A4.json"), JSON.stringify({
