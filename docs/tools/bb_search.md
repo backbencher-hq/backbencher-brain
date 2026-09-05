@@ -1,6 +1,6 @@
 # `bb_search`
 
-Unified indexed retrieval for symbol lists, content, exact symbol source, or files. This is retrieval, not natural-language explanation or code analysis. Symbol/content/file modes carry a freshness block ({ fresh, stale, missing, staleRatio, mode, remediation }) stating whether results reflect the current files; rows may carry stale=true. Remediation names the exact reindex command.
+Unified indexed retrieval for symbol lists, content, exact symbol source, or files. This is retrieval, not natural-language explanation or code analysis. Symbol/content/file modes carry a freshness block ({ fresh, stale, missing, staleRatio, mode, remediation }) stating whether results reflect the current files; rows may carry stale=true. Remediation names the exact reindex command. When a read finds stale/missing files within budget, the handler auto-refreshes exactly those files (reindexFilesParallel) before answering and declares it in an autoRefresh field; refresh=false opts out and answers from existing data with the staleness block.
 
 ## Contract
 
@@ -70,6 +70,10 @@ Unified indexed retrieval for symbol lists, content, exact symbol source, or fil
     "offset": {
       "type": "number",
       "description": "pagination offset (default 0)"
+    },
+    "refresh": {
+      "type": "boolean",
+      "description": "false opts out of the inline auto-refresh of stale files (default: auto-refresh within budget before answering)"
     }
   },
   "required": []
@@ -115,6 +119,6 @@ Paths, line ranges, symbol kinds, and source snippets are indexed evidence; stal
 
 ## Staleness
 
-Freshness modes (registered as `freshnessModes`): `symbol`, `content`, `file`. Staleness surfaces as: per-row `stale` flags + `freshness` block (`{ fresh, stale, missing, staleRatio, mode, remediation }`). When something is stale/missing, the remediation names the registered reindex interfaces: project scope → `run: bb index --changed  (or the bb_index tool with the project path — incremental, changed files only)`; file scope → `run: bb index "<file>"  (or the bb_index tool with that file path)`. Nothing is stale → silence (no remediation text). Detection uses a mtime+size fast path with a content-hash fallback: an edit that leaves both size and mtime unchanged is reported fresh without hashing (same trade-off as git's index stat-cache; accepted, documented in `src/brain/freshness.ts`).
+Freshness modes (registered as `freshnessModes`): `symbol`, `content`, `file`. Staleness surfaces as: per-row `stale` flags + `freshness` block (`{ fresh, stale, missing, staleRatio, mode, remediation }`). When something is stale/missing, the remediation names the registered reindex interfaces: project scope → `reads auto-refresh stale files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)`; file scope → `reads auto-refresh this file within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index "<file>" (or the bb_index tool with that file path)`. Nothing is stale → silence (no remediation text). Detection uses a mtime+size fast path with a content-hash fallback: an edit that leaves both size and mtime unchanged is reported fresh without hashing (same trade-off as git's index stat-cache; accepted, documented in `src/brain/freshness.ts`).
 
 This page is generated from the executable registry and curated documentation. Run `npm run docs:generate` to update it.

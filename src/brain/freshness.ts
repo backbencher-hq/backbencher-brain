@@ -302,8 +302,13 @@ export function resolveRowsFreshness(
 //   MCP tool: bb_index { path } (file path reindexes that file; a dir runs
 //             incremental changed-only indexing)
 export const FRESHNESS_REMEDIATION = {
-  dir: 'run: bb index --changed  (or the bb_index tool with the project path — incremental, changed files only)',
-  file: 'run: bb index "<file>"  (or the bb_index tool with that file path)',
+  // M43.A1/A2: read tools now AUTO-refresh stale files within budget before
+  // answering and declare it; the strings name that automatic behavior and
+  // keep the manual interface for opt-out/over-budget cases. Substring
+  // contract (asserted by the M35 envelope gate): dir names "bb index
+  // --changed" and "bb_index"; file matches /bb index "/ and names bb_index.
+  dir: 'reads auto-refresh stale files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)',
+  file: 'reads auto-refresh this file within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index "<file>" (or the bb_index tool with that file path)',
 } as const
 
 /**

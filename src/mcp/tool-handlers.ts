@@ -11,6 +11,7 @@ import { DependencyGraphVisualizer } from "../ast/dependency-graph-visualizer"
 import { CrossLanguageIntelligence } from "../ast/cross-language-intelligence"
 import { CrossLanguageMigrationAssistant } from "../ast/cross-language-migration-assistant"
 import { indexProjectParallel, reindexFilesParallel, wipeProjectData } from "../ast/parallel-indexer"
+import { collectStaleFiles, maybeAutoRefresh, autoRefreshLine } from "../ast/auto-refresh"
 import { TOOL_DESCRIPTORS } from "./tool-registry"
 import { testQuality } from "../intelligence/testing/quality"
 import { executeEdit, type EditRequest } from "../intelligence/edit/edit-engine"
@@ -158,51 +159,131 @@ const handlers: Record<string, ToolHandler> = {
       // JSON.stringify of an array drops those properties, so the wire response must
       // wrap the results in an explicit envelope — otherwise the mode and freshness
       // metadata silently vanish for every MCP/CLI consumer.
-      const results = await searchContent(projectId as any, String(args.query ?? ""), { maxResults: Number(args.limit ?? 15), languages: args.language ? [String(args.language)] : undefined, symbolKind: args.symbolKind ? String(args.symbolKind) : undefined })
-      // M35.E1: freshness block from the shared resolver (rows carry fileId;
-      // per-row stale flags are set by searchContent itself).
       const raw = await BrainDatabase.getRawInstance(projectId as any)
-      const detail = resolveRowsFreshnessDetailed(raw, projectId as any, results.map((r: any) => ({ fileId: r.fileId })))
-      return textResult(JSON.stringify({
-        searchMode: "content",
-        query: String(args.query ?? ""),
-        total: results.length,
-        staleCount: results.staleCount ?? 0,
-        freshCount: results.freshCount ?? 0,
-        truncated: results.truncated ?? false,
-        freshness: buildStalenessEnvelope(detail.summary, { kind: "dir" }),
-        results,
-      }, null, 2))
+      // M43.A1 (#657): the pass is rerunnable — when the first pass finds stale
+      // files within budget we repair them inline and run AGAIN so the answer
+      // reflects the repair, with the decision declared on the answer.
+      const runPass = async () => {
+        const results = await searchContent(projectId as any, String(args.query ?? ""), { maxResults: Number(args.limit ?? 15), languages: args.language ? [String(args.language)] : undefined, symbolKind: args.symbolKind ? String(args.symbolKind) : undefined })
+        // M35.E1: freshness block from the shared resolver (rows carry fileId;
+        // per-row stale flags are set by searchContent itself).
+        const detail = resolveRowsFreshnessDetailed(raw, projectId as any, results.map((r: any) => ({ fileId: r.fileId })))
+        return {
+          answer: {
+            searchMode: "content",
+            query: String(args.query ?? ""),
+            total: results.length,
+            staleCount: results.staleCount ?? 0,
+            freshCount: results.freshCount ?? 0,
+            truncated: results.truncated ?? false,
+            freshness: buildStalenessEnvelope(detail.summary, { kind: "dir" }),
+            results,
+          },
+          rows: results.map((r: any) => ({ fileId: r.fileId })),
+          statuses: detail.statuses,
+        }
+      }
+      const pass1 = await runPass()
+      const staleFiles = collectStaleFiles(raw, pass1.rows, pass1.statuses)
+      if (staleFiles.length > 0) {
+        const decision = await maybeAutoRefresh(projectId, projectPath, staleFiles, { perCallOptOut: args.refresh === false })
+        if (decision.action === "refreshed") {
+          const pass2 = await runPass()
+          return textResult(JSON.stringify({ ...pass2.answer, autoRefresh: autoRefreshLine(decision) }, null, 2))
+        }
+        if (decision.action === "declined") {
+          // Honest decline: answer from existing data with the envelope, and
+          // declare why the automatic repair did not run.
+          return textResult(JSON.stringify({ ...pass1.answer, autoRefresh: autoRefreshLine(decision) }, null, 2))
+        }
+      }
+      return textResult(JSON.stringify(pass1.answer, null, 2))
     }
     if (mode === "symbol") {
-      const found = await ASTEngine.findSymbol(projectId, String(args.symbolName ?? args.query ?? ""), args.filePath ? String(args.filePath) : undefined)
-      // M35.E1: per-match stale flag + envelope block. findSymbol rows alias
-      // fileId to the file PATH, so the resolver gets filePath rows.
       const raw = await BrainDatabase.getRawInstance(projectId as any)
-      const matches = (found as { matches: any[] }).matches ?? []
-      const detail = resolveRowsFreshnessDetailed(raw, projectId as any, matches.map((m: any) => ({ filePath: m.fileId })))
-      for (const m of matches) m.stale = detail.statuses.get(m.fileId) !== "fresh"
-      return textResult(JSON.stringify({ ...found, freshness: buildStalenessEnvelope(detail.summary, { kind: "dir" }) }, null, 2))
+      // M43.A1 (#657): rerunnable pass — repair stale files inline within
+      // budget, then answer from the SECOND pass so the answer reflects the
+      // repair (declared).
+      const runPass = async () => {
+        const found = await ASTEngine.findSymbol(projectId, String(args.symbolName ?? args.query ?? ""), args.filePath ? String(args.filePath) : undefined)
+        // M35.E1: per-match stale flag + envelope block. findSymbol rows alias
+        // fileId to the file PATH, so the resolver gets filePath rows.
+        const matches = (found as { matches: any[] }).matches ?? []
+        const detail = resolveRowsFreshnessDetailed(raw, projectId as any, matches.map((m: any) => ({ filePath: m.fileId })))
+        for (const m of matches) m.stale = detail.statuses.get(m.fileId) !== "fresh"
+        return {
+          answer: { ...found, freshness: buildStalenessEnvelope(detail.summary, { kind: "dir" }) },
+          rows: matches.map((m: any) => ({ filePath: m.fileId })),
+          statuses: detail.statuses,
+        }
+      }
+      const pass1 = await runPass()
+      const staleFiles = collectStaleFiles(raw, pass1.rows, pass1.statuses)
+      if (staleFiles.length > 0) {
+        const decision = await maybeAutoRefresh(projectId, projectPath, staleFiles, { perCallOptOut: args.refresh === false })
+        if (decision.action === "refreshed") {
+          const pass2 = await runPass()
+          return textResult(JSON.stringify({ ...pass2.answer, autoRefresh: autoRefreshLine(decision) }, null, 2))
+        }
+        if (decision.action === "declined") {
+          return textResult(JSON.stringify({ ...pass1.answer, autoRefresh: autoRefreshLine(decision) }, null, 2))
+        }
+      }
+      return textResult(JSON.stringify(pass1.answer, null, 2))
     }
     const query = String(args.query ?? "")
-    const results: any = await BrainTools.searchCode(projectId, query, {
-      maxResults: Number(args.limit ?? 15),
-      languages: args.language ? [String(args.language)] : undefined,
-      symbolKind: args.symbolKind ? String(args.symbolKind) : undefined,
-      includeContent: args.includeContent === true,
-      exact: args.exact === true,
-      caseSensitive: args.caseSensitive === true,
-      regex: args.regex === true,
-      offset: Number(args.offset ?? 0),
-    })
-    const lines = results.map((result: any) => {
-      const stale = result.stale ? " [STALE]" : ""
-      const snippet = result.snippet && result.snippet !== result.symbolName
-        ? `\n    ${String(result.snippet).split("\n").slice(0, 8).join("\n    ")}`
-        : ""
-      return `${result.symbolName} [${result.symbolType}] ${result.file}:${result.line} (${result.language})${stale}${snippet}`
-    })
-    return textResult(lines.length ? lines.join("\n") : `no results for "${query}"`)
+    // M43.A1 (#657): rerunnable pass — the pass answers from the SECOND run
+    // after an inline repair, with the decision declared on a trailing line.
+    // No staleness (searchCode's own resolution found none) ⇒ one pass, zero
+    // added cost, byte-identical output with the pre-A1 behavior.
+    const runPass = async () => {
+      const results: any = await BrainTools.searchCode(projectId, query, {
+        maxResults: Number(args.limit ?? 15),
+        languages: args.language ? [String(args.language)] : undefined,
+        symbolKind: args.symbolKind ? String(args.symbolKind) : undefined,
+        includeContent: args.includeContent === true,
+        exact: args.exact === true,
+        caseSensitive: args.caseSensitive === true,
+        regex: args.regex === true,
+        offset: Number(args.offset ?? 0),
+      })
+      const lines = results.map((result: any) => {
+        const stale = result.stale ? " [STALE]" : ""
+        const snippet = result.snippet && result.snippet !== result.symbolName
+          ? `\n    ${String(result.snippet).split("\n").slice(0, 8).join("\n    ")}`
+          : ""
+        return `${result.symbolName} [${result.symbolType}] ${result.file}:${result.line} (${result.language})${stale}${snippet}`
+      })
+      return {
+        text: lines.length ? lines.join("\n") : `no results for "${query}"`,
+        results,
+        lines,
+        rows: results.map((r: any) => ({ fileId: r.fileId })),
+      }
+    }
+    const pass1 = await runPass()
+    // searchSymbols already resolved staleness internally (result.stale +
+    // staleCount) — only when it found staleness do we resolve the row map
+    // ourselves (no added stat cost on the fresh path) to build the repair set.
+    if ((pass1.results.staleCount ?? 0) > 0) {
+      const raw = await BrainDatabase.getRawInstance(projectId as any)
+      const detail = resolveRowsFreshnessDetailed(raw, projectId as any, pass1.rows)
+      const staleFiles = collectStaleFiles(raw, pass1.rows, detail.statuses)
+      if (staleFiles.length > 0) {
+        const decision = await maybeAutoRefresh(projectId, projectPath, staleFiles, { perCallOptOut: args.refresh === false })
+        if (decision.action === "refreshed") {
+          const pass2 = await runPass()
+          // pass2.text already carries the honest "no results for …" when the
+          // edit removed every match — always keep it, then declare.
+          return textResult(`${pass2.text}\n${autoRefreshLine(decision)}`)
+        }
+        if (decision.action === "declined") {
+          // Honest decline appended to the stale answer — never silently stale.
+          return textResult(`${pass1.text}\n${autoRefreshLine(decision)}`)
+        }
+      }
+    }
+    return textResult(pass1.text)
   },
 
   bb_ask: async (args, { projectId }) => {
