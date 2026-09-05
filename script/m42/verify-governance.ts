@@ -231,8 +231,12 @@ function commitDiffTouchesRelevant(issueCode: string, fromCommit: string, toComm
 }
 
 const evidenceErrors: string[] = []
+// Cross-check: every non-planned M42 ledger issue must reference a persisted
+// evidence JSON whose status matches. G1 is excluded: its evidence records
+// the outcome of this very check (self-referential) — the same rule M29's
+// governance gate established for the same reason.
 for (const issue of ledger.issues) {
-  if (issue.status === "planned") continue
+  if (issue.status === "planned" || issue.code === "G1") continue
   const evidenceFile = issue.evidence?.evidenceFile
   if (!evidenceFile) {
     evidenceErrors.push(`${issue.code}:no-evidence-file`)
