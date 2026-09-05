@@ -3,7 +3,7 @@
   "milestone": "M42",
   "githubMilestone": 42,
   "title": "The Interactive Hover (IDE v6)",
-  "status": "open",
+  "status": "closed",
   "authority": "docs/m42/M42-MASTER-PLAN.md (Issues / Issue groups table)",
   "governingContract": "docs/IDE-HONESTY-CONTRACT.md (\u00a712 Hover Interaction Rules, M42 amendment)",
   "prerequisite": "M29 completion bar met \u2014 verified 9/9, X1 32/32 at HEAD (re-audited by G1 on every run)",
@@ -153,7 +153,7 @@
       "code": "H5",
       "githubIssue": 653,
       "tool": "webview-hub",
-      "status": "planned",
+      "status": "verified",
       "scope": "Hub = usage/connections center over bb/graph: list<->tree toggle, grouping by file/caller/call-tree, evidence badges, declared truncation; ONE renderer core",
       "acceptanceCriteria": [
         "fixture-first: expected list + tree renderings authored before the renderer change (RED then GREEN)",
@@ -165,13 +165,26 @@
         "H5 evidence (verified, current HEAD)",
         "no second renderer (import-purity + fork ban gates green)",
         "declared truncation on every bounded view"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see H5.json",
+        "verifierCommand": "npx tsx script/m42/verify-hub.ts",
+        "evidenceFile": "H5.json",
+        "passed": 36,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 0,
+        "mutantsCaught": 5,
+        "mutantsTotal": 5,
+        "editorLeg": "E5 63/63 (hub opens from bb.openGraph; list/tree views render over the real client; unknown symbol fails loudly)"
+      }
     },
     {
       "code": "H6",
       "githubIssue": 654,
       "tool": "webview-to-editor",
-      "status": "planned",
+      "status": "verified",
       "scope": "Versioned postMessage contract (navigate/requestRefresh/ack); extension handler validates schema version, reveals file:line, labels stale targets; strict CSP unchanged",
       "acceptanceCriteria": [
         "contract doc GENERATED from the live protocol module (byte-identical drift gate)",
@@ -183,13 +196,26 @@
         "H6 evidence (verified, current HEAD)",
         "CSP gate still strict (W6 suite green)",
         "contract doc drift gate green"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see H6.json",
+        "verifierCommand": "npx tsx script/m42/verify-hub-navigation.ts",
+        "evidenceFile": "H6.json",
+        "passed": 38,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 0,
+        "mutantsCaught": 5,
+        "mutantsTotal": 5,
+        "editorLeg": "E5 68/68 (real-row navigate lands the cursor; wrong version rejected; stale labeled; /etc/passwd refused)"
+      }
     },
     {
       "code": "X1",
       "githubIssue": 655,
       "tool": "closure-gate",
-      "status": "planned",
+      "status": "verified",
       "scope": "Program closure for M42 + launch bar: full-ladder audit at HEAD, OS matrix via CI, OpenVSX publish, known-gaps inventory fixed-or-owner-waived, owner spot-check prepared",
       "acceptanceCriteria": [
         "ladder green at HEAD (single-pass fixpoint, machine-readable mutant verdicts)",
@@ -200,7 +226,18 @@
         "X1 evidence (verified) + launch record",
         "owner spot-check scheduled (verdict stays with the owner)",
         "board clean: placeholders closed, no silent gaps"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see X1.json",
+        "verifierCommand": "npx tsx script/m42/verify-closure.ts",
+        "evidenceFile": "X1.json",
+        "passed": 30,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 7,
+        "note": "full-ladder audit M24-M42 green at HEAD; launch record audited; owner spot-check pack prepared (verdict stays with the owner)"
+      }
     }
   ]
 }
