@@ -47,14 +47,14 @@ is a portal. M42 makes ours a portal — **built on data no other tool has**:
 
 | Code | Issue | Deliverable |
 |------|-------|-------------|
-| G1 | Governance + v5-bar check | ledger; closure gate; M29 bar still green; Hover Interaction Rules added to the contract doc and machine-gated |
-| H1 | Hoverable affordance | semantic DocumentHighlight on cursor rest (every real in-file usage lights up — not lexical token matching); evidence: fixture-first, editor leg, mutant "highlights a non-reference" |
-| H2 | Rich hover body | signature; connected-summary (calls X, called by Y, implements Z — relationship facts, cross-language section kept); top-3 usages as clickable file:line links; "N more" → native references tree; definition link; tier + staleness (existing) |
-| H3 | LSP consumes enrichment | hover connected-section and graph edges surface stored role/pattern/layerFlow/criticality/frequency from `brain_relationship.metadata`; presence-gated (un-enriched rows declare absence, never fabricate); no schema change |
-| H4 | Hover actions | one-click command URIs: open in graph, impact analysis, call hierarchy; each command is an existing M26/M24 surface — this issue is the wiring + the honest error surface when an input is un-indexed |
-| H5 | The hub | webview becomes the usage/connections center over `bb/graph`: list↔tree toggle; grouping by file / by caller / call-tree; evidence-badged edges (W4 tiers); impact view (W5 budgets) — ONE renderer core, fork-banned |
-| H6 | Hub → editor | versioned postMessage contract (schema + error prefixes, drift-gated like `bb/graph`): click any node/usage row → editor reveals that file:line; CSP stays strict (W6); a click on a stale node is labeled stale in the reveal |
-| X1 | Gate + launch bar | M42 closure gate (full-ladder audit at HEAD, M24–M42); launch bar executed: OS matrix via CI runners (linux + darwin + win legs of E7), OpenVSX publish with owner token (E3's blocked record resolved), every known gap fixed or owner-waived with a recorded reason |
+| G1 | [#648](https://github.com/backbencher-hq/backbencher-brain/issues/648) Governance + v5-bar check | ledger; closure gate; M29 bar still green; Hover Interaction Rules added to the contract doc and machine-gated |
+| H1 | [#649](https://github.com/backbencher-hq/backbencher-brain/issues/649) Hoverable affordance | semantic DocumentHighlight on cursor rest; evidence: fixture-first, editor leg, mutant "highlights a non-reference" |
+| H2 | [#650](https://github.com/backbencher-hq/backbencher-brain/issues/650) Rich hover body | connected-summary, top-3 usages as clickable file:line links, "N more" → native references tree, definition link |
+| H3 | [#651](https://github.com/backbencher-hq/backbencher-brain/issues/651) LSP consumes enrichment | role/pattern/layerFlow/criticality/frequency surfaced in hover + graph edges; presence-gated; no schema change |
+| H4 | [#652](https://github.com/backbencher-hq/backbencher-brain/issues/652) Hover actions | open-in-graph, impact, call hierarchy as command URIs; honest error surface when un-indexed |
+| H5 | [#653](https://github.com/backbencher-hq/backbencher-brain/issues/653) The hub | webview list↔tree toggle, grouping by file/caller/call-tree over bb/graph; ONE renderer core, fork-banned |
+| H6 | [#654](https://github.com/backbencher-hq/backbencher-brain/issues/654) Hub → editor | versioned postMessage contract, click-to-reveal; strict CSP unchanged |
+| X1 | [#655](https://github.com/backbencher-hq/backbencher-brain/issues/655) Gate + launch bar | M42 closure gate (full-ladder audit at HEAD); launch bar executed: OS matrix via CI, OpenVSX publish, every known gap fixed or owner-waived |
 
 Parallel tracks (not M42 issues, riding alongside):
 - **Wave 2 (zig)**: analyzer already indexes zig (probed live: functions
