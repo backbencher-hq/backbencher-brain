@@ -140,7 +140,7 @@ Every rich hover carries an **actions** row — one click to each deep surface:
 - `bb.openGraph` — **Open in graph**: the connections webview for the hovered
   symbol (callers/callees, evidence-badged edges).
 - `bb.openImpact` — **Impact analysis**: the bounded reverse-dependency set
-  (declared truncation: it always shows the real count or an honest
+  (declared truncation: it shows the real count or an honest
   "unknown", never a silent cut).
 - `bb.showCallHierarchy` — **Call hierarchy**: the editor's native call
   hierarchy view, opened on the symbol.
