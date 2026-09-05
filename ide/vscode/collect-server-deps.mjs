@@ -61,4 +61,23 @@ const drizzleDir = resolvePkgDir("drizzle-orm")
 cpSync(drizzleDir, path.join(staging, "node_modules/drizzle-orm"), { recursive: true })
 console.log("  + drizzle-orm")
 console.log("  + better-sqlite3")
+
+// web-tree-sitter: dynamic import in src/util/wasm.ts. NOT bundled by esbuild
+// and NOT under better-sqlite3's subtree, so nothing above ships it — the
+// owner's demo hit exactly this: the bundled server booted, served db-backed
+// hover/hub, then died on the first parse request (documentHighlight, call
+// hierarchy, occurrence-first hover) with ERR_MODULE_NOT_FOUND. NODE_PATH
+// cannot fix it: Node ignores NODE_PATH for ESM imports, so the staged
+// node_modules next to the server entry is the only reliable location.
+// (Grammar wasms are NOT staged here — esbuild-extension.mjs derives the
+// launch-set grammar list from src/lsp/launch_languages.ts and stages
+// dist/wasm; one owner per concern.)
+try {
+  const wtsDir = resolvePkgDir("web-tree-sitter")
+  cpSync(wtsDir, path.join(staging, "node_modules/web-tree-sitter"), { recursive: true })
+  console.log("  + web-tree-sitter")
+} catch (e) {
+  console.log(`  ERROR staging web-tree-sitter: ${e.message}`)
+  process.exitCode = 1
+}
 console.log(`server runtime deps staged into ${path.join(here, "dist/server/node_modules")}`)
