@@ -9,7 +9,7 @@ Tool count: 16 (11 pre-existing + 5 added by M28).
 
 | Tool | Mutability | Params | What it shares with the IDE | Evidence |
 | --- | --- | --- | --- | --- |
-| bb_search | read | mode?, query?, symbolName?, filePath?, limit?, language?, symbolKind?, includeContent?, exact?, caseSensitive?, regex?, offset? | pre-existing tool (v3 surface) | — |
+| bb_search | read | mode?, query?, symbolName?, filePath?, limit?, language?, symbolKind?, includeContent?, exact?, caseSensitive?, regex?, offset?, refresh? | pre-existing tool (v3 surface) | — |
 | bb_ask | read | query, limit? | pre-existing tool (v3 surface) | — |
 | bb_health | read | verbose?, history?, limit?, refresh?, force?, wait?, freshness?, sampleSize?, integrity?, includeAnalysisRuns? | pre-existing tool (v3 surface) | — |
 | bb_patterns | read | scope?, limit?, includeOrphaned?, includeFramework?, includeAntiPatterns?, confidenceThreshold?, history?, recordRun? | pre-existing tool (v3 surface) | — |
