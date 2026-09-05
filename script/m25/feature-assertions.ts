@@ -46,6 +46,28 @@ export const FIXTURE_HOVER_POS = { line: 1, character: 2 } as const
 /** Fixture symbol names the assertions require. */
 export const FIXTURE_SYMBOLS = { className: "Greeter", method: "greet", fn: "main" } as const
 
+/**
+ * H1 highlight expectations over the shared fixture (M42 issue #649).
+ * FULLY DERIVED from FIXTURE_MAIN text — every line number is found by
+ * content, never hand-picked (a hand-picked line once pointed at a line
+ * where the symbol does not occur; the derived -1 exposed it instantly).
+ *
+ * Target: `greet` — the ONLY fixture symbol whose occurrences are
+ * edge-connected per the seeded graph (rel-1: main -> greet): the
+ * declaration (inside sym-greet itself) and the `g.greet()` call site
+ * (inside sym-main). `Greeter` has NO stored edge from main — under the
+ * semantic-containment law its call site honestly does NOT highlight.
+ */
+const _hlLines = FIXTURE_MAIN.split("\n")
+const _hlDeclLine = _hlLines.findIndex((l) => l.includes("greet():"))
+const _hlCallLine = _hlLines.findIndex((l) => l.includes("g.greet()"))
+export const FIXTURE_HIGHLIGHT = {
+  symbolName: "greet",
+  queryLine: _hlCallLine,
+  queryCharacter: (_hlLines[_hlCallLine] ?? "").indexOf("greet"),
+  expectedLines: [_hlDeclLine, _hlCallLine], // declaration + the call site
+} as const
+
 // ---------------------------------------------------------------------------
 // Transport contract — the ONLY thing a per-editor runner implements.
 // ---------------------------------------------------------------------------
@@ -77,6 +99,7 @@ export const IN_EDITOR_WARM_BUDGETS: Record<string, number> = {
   workspaceSymbol: 150,
   prepareCallHierarchy: 100,
   callHierarchyExpand: 100,
+  documentHighlight: 25, // M42 §12.7: highlight is a cursor-rest op — the tightest budget
 }
 
 export interface FeatureMeasurement {
@@ -265,6 +288,38 @@ export async function runFeatureAssertions(ctx: AssertionContext, assert: Assert
   if (item) {
     results.push(await measureWarmP95("callHierarchyExpand", () => transport.request("callHierarchy/incomingCalls", { item })))
   }
+
+  // --- Document highlights (H1, M42): semantic, staleness-labeled, absent-honest ---
+  const hl = unwrap(
+    await transport.request("textDocument/documentHighlight", {
+      textDocument: { uri: mainUri },
+      position: { line: FIXTURE_HIGHLIGHT.queryLine, character: FIXTURE_HIGHLIGHT.queryCharacter },
+    }),
+  )
+  const hlItems: any[] = Array.isArray(hl) ? hl : []
+  assert("H1: documentHighlight returns wire items", hlItems.length > 0, JSON.stringify(hl ?? null).slice(0, 200))
+  const hlLines = new Set(hlItems.map((it) => it?.range?.start?.line))
+  assert(
+    "H1: declaration + call site highlight (semantic set)",
+    FIXTURE_HIGHLIGHT.expectedLines.every((l) => hlLines.has(l)),
+    `expected ${FIXTURE_HIGHLIGHT.expectedLines}, got ${[...hlLines]}`,
+  )
+  assert("H1: items carry staleness metadata in data (\u00a712.2)", hlItems.every((it) => it?.data?.staleness !== undefined && typeof it?.data?.staleness?.stale === "boolean"), JSON.stringify(hlItems[0]?.data ?? null))
+  const hlMiss = unwrap(
+    await transport.request("textDocument/documentHighlight", {
+      textDocument: { uri: mainUri },
+      position: { line: 20, character: 0 }, // past EOF — not an identifier position
+    }),
+  )
+  assert("H1: highlight outside index is declared absent (wire null)", hlMiss === null, JSON.stringify(hlMiss ?? null).slice(0, 150))
+  results.push(
+    await measureWarmP95("documentHighlight", () =>
+      transport.request("textDocument/documentHighlight", {
+        textDocument: { uri: mainUri },
+        position: { line: FIXTURE_HIGHLIGHT.queryLine, character: FIXTURE_HIGHLIGHT.queryCharacter },
+      }),
+    ),
+  )
 
   // --- Shutdown lifecycle (stdio legs only; the host owns it otherwise) ---
   if (ctx.skipLifecycle !== true) {
