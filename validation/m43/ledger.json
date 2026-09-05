@@ -3,7 +3,7 @@
     "code": "P1",
     "githubIssue": 656,
     "tool": "parallel-indexer",
-    "status": "open",
+    "status": "verified",
     "scope": "Single-flight index lock per project: refuse-or-wait semantics, stale-lock recovery, declared CLI/MCP error, cancel-safe release",
     "acceptanceCriteria": [
       "two concurrent indexProjectParallel calls on one project: exactly one wins, loser gets the declared holder error",
@@ -15,7 +15,18 @@
       "evidence file with pass/fail/negative counts and commit stamp",
       "ledger synced via sync-ledger.ts",
       "issue closed with the evidence comment"
-    ]
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "8324f8f25f65c41fbaf6c9f4492e77da49034ccf",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m43/verify-p1-index-lock.ts",
+      "evidenceFile": "P1.json",
+      "generatedAt": "2026-09-05T20:40:53.106Z",
+      "passed": 17,
+      "failed": 0,
+      "negativeCases": 1
+    }
   },
   {
     "code": "A1",
@@ -96,7 +107,18 @@
     ],
     "closureRequirements": [
       "evidence file + ledger sync + evidence comment"
-    ]
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "8324f8f25f65c41fbaf6c9f4492e77da49034ccf",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m43/verify-governance.ts",
+      "evidenceFile": "G1.json",
+      "generatedAt": "2026-09-05T20:41:59.713Z",
+      "passed": 40,
+      "failed": 0,
+      "negativeCases": 2
+    }
   },
   {
     "code": "X1",
