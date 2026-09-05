@@ -199,7 +199,10 @@ Object.assign(evidence, {
   failures,
 })
 mkd(RESULTS_DIR, { recursive: true })
-wfs(path.join(RESULTS_DIR, "A3.json"), JSON.stringify(evidence, null, 2) + "\n")
+// M40 lesson (caught by X1): evidence is stamped ONLY by a real, green,
+// non-seam run. Control/mutation probes must never overwrite real evidence —
+// a mutation world's "blocked" output is not the gate's verdict.
+if (failed === 0 && !MUTATE && process.env.BB_M40_SELFTEST_CONTROL !== "1") wfs(path.join(RESULTS_DIR, "A3.json"), JSON.stringify(evidence, null, 2) + "\n")
 
 console.log(`A3 write-parity: ${passed} passed, ${failed} failed, ${negatives} negatives${MUTATE ? " [MUTATION RUN]" : ""}`)
 if (failures.length) for (const f of failures) console.log(`  FAIL: ${f}`)
