@@ -205,6 +205,48 @@ async function run() {
       assert("E5-H5: hub panel leg ran", false, String(e && e.message).slice(0, 200))
     }
 
+    // 2f. M42.H6: hub → editor navigation in a REAL session (issue #654).
+    // The SAME executeHubMessage the webview's onDidReceiveMessage dispatches
+    // to is driven here with the REAL vscode bindings: a navigate built from
+    // a REAL hub row's machine attrs reveals the target (cursor lands on the
+    // stored line); a wrong-version message is LOUDLY rejected and never
+    // moves the cursor; a stale click labels; a fabricated path is refused.
+    try {
+      const HN = require(path.join(ext.extensionPath, "dist", "test", "hub-navigation.js"))
+      const HP6 = require(path.join(ext.extensionPath, "dist", "test", "hub-panel.js"))
+      const clientLike = { sendRequest: (m, p) => transportFromExt.request(m, p) }
+      const hpRes = await HP6.renderHubForPanel({ symbol: "greet" }, { client: clientLike, cspSource: "" })
+      assert("E5-H6: hub markup carries machine row targets", hpRes && hpRes.ok && /data-file="[^"]+" data-line="\d+"/.test(hpRes.markup), hpRes && hpRes.ok ? hpRes.markup.slice(0, 160) : String(hpRes && hpRes.error))
+      const rowM = /data-file="([^"]+)" data-line="(\d+)"/.exec(hpRes && hpRes.ok ? hpRes.markup : "")
+      const targetFile = rowM ? rowM[1] : ""
+      const targetLine = rowM ? parseInt(rowM[2], 10) : -1
+      const realDeps = HN.vscodeDeps()
+      const navOut = await HN.executeHubMessage(
+        { schemaVersion: 1, type: "navigate", target: { file: targetFile, line: targetLine, symbolId: "sym:main" } },
+        realDeps,
+        undefined,
+      )
+      const activeEd = vscode.window.activeTextEditor
+      assert(
+        "E5-H6: click-to-reveal lands the cursor on the index-stored line",
+        navOut && navOut.ack && navOut.ack.ok === true && navOut.revealed && navOut.revealed.line === targetLine && activeEd !== undefined && String(activeEd.document.uri.fsPath).endsWith("main.ts") && activeEd.selection.active.line === targetLine,
+        JSON.stringify({ ack: navOut && navOut.ack, revealed: navOut && navOut.revealed, active: activeEd && activeEd.document.uri.fsPath, line: activeEd && activeEd.selection.active.line, targetFile, targetLine }),
+      )
+      // wrong version: LOUD declared rejection; the cursor must NOT move.
+      const lineBefore = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.selection.active.line : -1
+      const badV = await HN.executeHubMessage({ schemaVersion: 99, type: "navigate", target: { file: targetFile, line: targetLine + 1 } }, realDeps, undefined)
+      const lineAfter = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.selection.active.line : -1
+      assert("E5-H6: wrong-version message LOUDLY rejected, cursor untouched", badV && !badV.ack.ok && String(badV.ack.error).startsWith("bb/webview:") && lineAfter === lineBefore, JSON.stringify({ ack: badV && badV.ack, lineBefore, lineAfter }))
+      // stale click: reveal happens AND the label path runs.
+      const staleOut = await HN.executeHubMessage({ schemaVersion: 1, type: "navigate", target: { file: targetFile, line: targetLine }, staleness: { stale: true, status: "stale" } }, realDeps, undefined)
+      assert("E5-H6: stale click reveals and labels (never blocks, never silent)", staleOut && staleOut.ack.ok === true && staleOut.staleLabeled === true && staleOut.revealed && staleOut.revealed.line === targetLine, JSON.stringify(staleOut))
+      // fabricated path: outside every open workspace → declared refusal.
+      const fab = await HN.executeHubMessage({ schemaVersion: 1, type: "navigate", target: { file: "/etc/passwd", line: 1 } }, realDeps, undefined)
+      assert("E5-H6: fabricated path refused with a declared error", fab && !fab.ack.ok && String(fab.ack.error).includes("does not resolve inside any open workspace"), JSON.stringify(fab && fab.ack))
+    } catch (e) {
+      assert("E5-H6: hub navigation leg ran", false, String(e && e.message).slice(0, 200))
+    }
+
     // 3. Staleness render checks (contract §4.3, in-editor).
     const staleView = STATUS.renderStatus({
       server: { up: true, version: report ? report.serverVersion : null, versionOk: true },

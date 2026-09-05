@@ -83,6 +83,23 @@ await build({
   logLevel: "silent",
 })
 
+// M42.H6 test bridge: the webview→editor navigation handler (pure core +
+// real vscode bindings) bundled CJS so the in-editor leg drives the SAME
+// executeHubMessage the webview messages dispatch to — one code path, two
+// doors (headless verifier + real editor).
+await build({
+  entryPoints: [path.join(here, "src/hub-navigation.ts")],
+  bundle: true,
+  outfile: path.join(here, "dist/test/hub-navigation.js"),
+  external: ["vscode", "vscode-languageclient/node"],
+  format: "cjs",
+  platform: "node",
+  target: "node20",
+  sourcemap: false,
+  minify: false,
+  logLevel: "silent",
+})
+
 // Bundle the compiled server alongside (bundled-dist resolution leg). The
 // dist server must exist first: run `npm run build` at the repo root.
 // The tsup dist is CHUNKED (server.js imports shared chunk-*.js files), so we
