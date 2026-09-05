@@ -47,8 +47,12 @@ export const MAX_USAGE_LINKS = 3
 // Display verbs for CONNECTION facts only. Purely structural kinds
 // (contains, exports, references, uses) intentionally have no entry: they
 // stay usages but are never connection claims.
+// Both stored conventions are covered: the M24-era fixtures write `call`, the
+// real analyzers write `calls` — same fact, two spellings (one of them must
+// never render as a plain usage while the other gets a verb).
 const OUT_VERB: Record<string, string> = {
   calls: "calls",
+  call: "calls",
   instantiates: "instantiates",
   implements: "implements",
   overrides: "overrides",
@@ -57,6 +61,7 @@ const OUT_VERB: Record<string, string> = {
 }
 const IN_VERB: Record<string, string> = {
   calls: "called by",
+  call: "called by",
   instantiates: "instantiated by",
   implements: "implemented by",
   overrides: "overridden by",
