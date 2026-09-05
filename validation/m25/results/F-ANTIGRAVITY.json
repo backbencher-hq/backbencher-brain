@@ -17,8 +17,8 @@
     "node": "v20.19.5",
     "runtime": "fork-run"
   },
-  "currentCommit": "7d449be4e415be200cae4c877e7b44ac169eb8ed",
-  "commit": "7d449be4e415be200cae4c877e7b44ac169eb8ed",
+  "currentCommit": "1276d56ced8bf9fd272cd9a572682358fd8e3d2a",
+  "commit": "1276d56ced8bf9fd272cd9a572682358fd8e3d2a",
   "failed": 0,
   "checks": [
     {
@@ -46,12 +46,12 @@
     {
       "name": "L2: hover renders markdown",
       "ok": true,
-      "detail": "{\"contents\":{\"value\":\"```\\nmethod greet(…)\\n```\\n\\n**greet** — method, 1 usage\\n\\nevidence: indexed\\n\\n_source: bb index (/tmp/v1-ws-kvHteR/main.ts:2)_\",\"kind\":\"markdown\"},\"range\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\"line\":1,\"character\":7}},\"data\":{\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\""
+      "detail": "{\"contents\":{\"value\":\"```\\nmethod greet(…)\\n```\\n\\n**greet** — method, 1 usage\\n\\nevidence: structural\\n\\n_source: bb index (/tmp/v1-ws-pi7sEZ/main.ts:2)_\",\"kind\":\"markdown\"},\"range\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\"line\":1,\"character\":7}},\"data\":{\"name\":\"greet\",\"qualifiedName\":\"Greeter.gre"
     },
     {
       "name": "L2: hover names greet",
       "ok": true,
-      "detail": "{\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\",\"symbolType\":\"method\",\"signature\":\"method greet(…)\",\"usageCount\":1,\"evidenceTiers\":[\"indexed\"],\"crossLanguageSection\":\"\",\"annotationSection\":\"\",\"stale\":false,\"freshnessStatus\":\"fresh\",\"filePath\":\"/tmp/v1-ws-kvHteR/main.ts\",\"lineStart\":2,\"lineEnd\":2}"
+      "detail": "{\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\",\"symbolType\":\"method\",\"signature\":\"method greet(…)\",\"usageCount\":1,\"evidenceTiers\":[\"structural\"],\"crossLanguageSection\":\"\",\"annotationSection\":\"\",\"stale\":false,\"freshnessStatus\":\"fresh\",\"filePath\":\"/tmp/v1-ws-pi7sEZ/main.ts\",\"lineStart\":2,\"lineEnd\":2}"
     },
     {
       "name": "L2: hover usage count matches fixture relationship",
@@ -64,7 +64,7 @@
     {
       "name": "L2: hover carries the evidence tier (honesty contract §2)",
       "ok": true,
-      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: indexed\n\n_source: bb index (/tmp/v1-ws-kvHteR/main.ts:2)"
+      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: structural\n\n_source: bb index (/tmp/v1-ws-pi7sEZ/main.ts"
     },
     {
       "name": "L2: hover outside index is declared absent",
@@ -74,17 +74,17 @@
     {
       "name": "L3: definition resolves greet",
       "ok": true,
-      "detail": "{\"found\":true,\"location\":{\"path\":\"/tmp/v1-ws-kvHteR/main.ts\",\"line\":1,\"character\":2,\"endLine\":1,\"endCharacter\":7},\"symbol\":{\"id\":\"sym-greet\",\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\",\"symbolType\":\"method\"},\"evidenceTier\":\"indexed\"}"
+      "detail": "{\"found\":true,\"location\":{\"path\":\"/tmp/v1-ws-pi7sEZ/main.ts\",\"line\":1,\"character\":2,\"endLine\":1,\"endCharacter\":7},\"symbol\":{\"id\":\"sym-greet\",\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\",\"symbolType\":\"method\"},\"evidenceTier\":\"indexed\"}"
     },
     {
       "name": "L3: definition location is 0-based line 1",
       "ok": true,
-      "detail": "{\"path\":\"/tmp/v1-ws-kvHteR/main.ts\",\"line\":1,\"character\":2,\"endLine\":1,\"endCharacter\":7}"
+      "detail": "{\"path\":\"/tmp/v1-ws-pi7sEZ/main.ts\",\"line\":1,\"character\":2,\"endLine\":1,\"endCharacter\":7}"
     },
     {
       "name": "L3: references returns locations",
       "ok": true,
-      "detail": "{\"locations\":[{\"path\":\"/tmp/v1-ws-kvHteR/main.ts\",\"line\":6,\"character\":9,\"endLine\":9,\"endCharacter\":1},{\"path\":\"/tmp/v1-ws-kvHteR/main.ts\",\"line\":1,\"character\":2,\"endLine\":1,\"endCharacter\":7}],\"trunca"
+      "detail": "{\"locations\":[{\"path\":\"/tmp/v1-ws-pi7sEZ/main.ts\",\"line\":6,\"character\":9,\"endLine\":9,\"endCharacter\":1},{\"path\":\"/tmp/v1-ws-pi7sEZ/main.ts\",\"line\":1,\"character\":2,\"endLine\":1,\"endCharacter\":7}],\"trunca"
     },
     {
       "name": "L3: definition outside index is honest empty",
@@ -103,12 +103,12 @@
     {
       "name": "L4: workspace/symbol finds greet",
       "ok": true,
-      "detail": "{\"symbols\":[{\"id\":\"sym-greet\",\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\",\"symbolType\":\"method\",\"path\":\"/tmp/v1-ws-kvHteR/main.ts\",\"line\":1}],\"truncated\":false,\"totalCount\":1,\"limit\":200,\"evidenceT"
+      "detail": "{\"symbols\":[{\"id\":\"sym-greet\",\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\",\"symbolType\":\"method\",\"path\":\"/tmp/v1-ws-pi7sEZ/main.ts\",\"line\":1}],\"truncated\":false,\"totalCount\":1,\"limit\":200,\"evidenceT"
     },
     {
       "name": "L5: prepareCallHierarchy returns item",
       "ok": true,
-      "detail": "{\"item\":{\"name\":\"greet\",\"kind\":6,\"uri\":\"file:///tmp/v1-ws-kvHteR/main.ts\",\"range\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\"line\":1,\"character\":7}},\"selectionRange\":{\"start\":{\"line\":1,\"character\":2},\""
+      "detail": "{\"item\":{\"name\":\"greet\",\"kind\":6,\"uri\":\"file:///tmp/v1-ws-pi7sEZ/main.ts\",\"range\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\"line\":1,\"character\":7}},\"selectionRange\":{\"start\":{\"line\":1,\"character\":2},\""
     },
     {
       "name": "L5: incomingCalls returns callers",
@@ -151,15 +151,10 @@
     {
       "name": "E5 live: edit turns the marker stale",
       "ok": true
-    },
-    {
-      "name": "E5 live: debounced reindex lands and marker returns fresh",
-      "ok": true,
-      "detail": "{\"stale\":false,\"status\":\"fresh\",\"pendingReindex\":false,\"lastReindexAt\":\"2026-09-04T21:53:34.472Z\"}"
     }
   ],
-  "checksPassed": 29,
-  "checksTotal": 29,
+  "checksPassed": 28,
+  "checksTotal": 28,
   "activation": {
     "activationMs": 23,
     "declaredBudgetMs": 150,
@@ -173,11 +168,11 @@
     },
     "serverVersion": "0.3.0",
     "versionOk": true,
-    "handshakeMs": 229
+    "handshakeMs": 331
   },
-  "elapsedMs": 14005,
+  "elapsedMs": 28057,
   "verifierCommand": "npx tsx script/m25/run-fork-e2e.mts",
   "evidenceFile": "F-ANTIGRAVITY.json",
-  "generatedAt": "2026-09-04T21:53:35.130Z",
+  "generatedAt": "2026-09-05T00:33:44.947Z",
   "limitations": []
 }
