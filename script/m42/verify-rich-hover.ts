@@ -137,7 +137,8 @@ function commandLinks(markdown: string): Array<{ command: string; args: { file: 
   let m: RegExpExecArray | null
   while ((m = re.exec(markdown)) !== null) {
     try {
-      const args = JSON.parse(decodeURIComponent(m[2]))
+      const _dec = JSON.parse(decodeURIComponent(m[2]))
+      const args = (Array.isArray(_dec) ? _dec[0] : _dec) as { file: string; line: number; character: number }
       if (typeof args?.file === "string" && typeof args?.line === "number") out.push({ command: m[1], args })
     } catch {
       // unparseable link = link integrity failure (asserted by the caller)

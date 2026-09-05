@@ -5,10 +5,10 @@
   "negatives": {
     "planned": 6
   },
-  "currentCommit": "527252e933fcfd6c0d4a0cdbdb222b8daf644fb5",
-  "relevantInputsHash": "18da85a964bbb241477125342f3cbea4ca83a385",
+  "currentCommit": "534de8a38175796e3adb5232b58d29d5ea48c074",
+  "relevantInputsHash": "17947006bcfd98068030c775354c9e3174189ed2",
   "verifierCommand": "npx tsx script/m29/verify-giant-repo.ts",
   "evidenceFile": "R3-verify.json",
-  "generatedAt": "2026-09-04T23:33:24.248Z",
+  "generatedAt": "2026-09-05T21:33:59.135Z",
   "details": []
 }

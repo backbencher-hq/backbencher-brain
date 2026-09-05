@@ -1,0 +1,51 @@
+{
+  "issue": "649",
+  "code": "H1",
+  "milestone": "M42",
+  "status": "verified",
+  "checks": 15,
+  "passed": 15,
+  "failed": 0,
+  "failures": [],
+  "verdict": {
+    "realComponentFailures": 0,
+    "mutantsCaught": 4,
+    "mutantsTotal": 4,
+    "ok": true
+  },
+  "negatives": {
+    "planned": 4
+  },
+  "fixture": {
+    "root": "$HOME/backbencher-brain/.tools/m42-h1-fixture",
+    "file": "src/main/java/com/demo/Highlight.java",
+    "expectations": {
+      "declarationLine": 5,
+      "declarationText": "public int total()",
+      "referenceLines": [
+        10,
+        12
+      ],
+      "decoyLines": [
+        2,
+        11,
+        13
+      ],
+      "queryLine": 12,
+      "queryText": "int b = total();",
+      "queryCharacter": 16,
+      "symbolName": "total"
+    }
+  },
+  "budgets": {
+    "highlightP95Ms": 25
+  },
+  "currentCommit": "534de8a38175796e3adb5232b58d29d5ea48c074",
+  "verifierCommand": "npx tsx script/m42/verify-highlight.ts",
+  "evidenceFile": "H1.json",
+  "generatedAt": "2026-09-05T21:48:10.726Z",
+  "limitations": [
+    "Warm-budget check uses mean-over-40 as a p95 proxy; the full E5 editor leg re-measures with the shared harness.",
+    "Editor-leg (DocumentHighlight rendering + wake-up path) is asserted in the E5-pattern session at H1 acceptance; this file proves the server surface."
+  ]
+}

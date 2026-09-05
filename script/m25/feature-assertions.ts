@@ -277,7 +277,9 @@ export async function runFeatureAssertions(ctx: AssertionContext, assert: Assert
   let _h4m: RegExpExecArray | null
   while ((_h4m = _h4re.exec(hoverText)) !== null) {
     try {
-      _h4actions.push({ cmd: _h4m[1], args: JSON.parse(decodeURIComponent(_h4m[2])) as Record<string, unknown> })
+      const _dec = JSON.parse(decodeURIComponent(_h4m[2]))
+      const _args = (Array.isArray(_dec) ? _dec[0] : _dec) as Record<string, unknown>
+      _h4actions.push({ cmd: _h4m[1], args: _args })
     } catch {}
   }
   assert("H4: exactly the three action commands embed parseable args", _h4actions.length === 3 && new Set(_h4actions.map((a) => a.cmd)).size === 3, JSON.stringify(_h4actions.map((a) => a.cmd)))

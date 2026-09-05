@@ -39,11 +39,27 @@ export interface HoverLinkArgs {
   character: number
 }
 
-/** Parse the args the hover markdown embeds. Strict: rejects any payload
+/** Normalize whatever VS Code delivers for a command-URI click into the args
+ *  object: an object (modern delivery), a JSON string, or the first element
+ *  of an args array (array delivery). Strict afterwards: rejects any payload
  *  that is not an object with a string file and integer line/character. */
+export function normalizeArgs(raw: unknown): Record<string, unknown> | null {
+  let a: unknown = raw
+  if (typeof a === "string") {
+    try {
+      a = JSON.parse(a)
+    } catch {
+      return null
+    }
+  }
+  if (Array.isArray(a)) a = a[0]
+  if (typeof a !== "object" || a === null) return null
+  return a as Record<string, unknown>
+}
+
 export function parseHoverLinkArgs(raw: unknown): HoverLinkArgs | null {
-  if (typeof raw !== "object" || raw === null) return null
-  const a = raw as Record<string, unknown>
+  const a = normalizeArgs(raw)
+  if (a === null) return null
   if (typeof a.file !== "string" || a.file.length === 0) return null
   if (typeof a.line !== "number" || !Number.isInteger(a.line) || a.line < 0) return null
   if (typeof a.character !== "number" || !Number.isInteger(a.character) || a.character < 0) return null
@@ -60,8 +76,8 @@ export interface HoverActionArgs {
 }
 
 export function parseHoverActionArgs(raw: unknown): HoverActionArgs | null {
-  if (typeof raw !== "object" || raw === null) return null
-  const a = raw as Record<string, unknown>
+  const a = normalizeArgs(raw)
+  if (a === null) return null
   if (typeof a.symbol !== "string" || a.symbol.length === 0) return null
   if (typeof a.file !== "string" || a.file.length === 0) return null
   if (typeof a.line !== "number" || !Number.isInteger(a.line) || a.line < 0) return null
