@@ -40,6 +40,7 @@ import {
 } from "./positions"
 import { storedCrossLanguageRows, factsFromRows, crossLanguageSection } from "./cross_language_hover"
 import { annotationHoverSection, type AnnotationRow } from "./annotation_ui"
+import { connectedGroups, connectedSummarySection, definitionLink, richSitesForSymbol, usagesSection } from "./rich_hover"
 
 /** The launch set, its membership test, and the path→language map live in
  *  the single-owner module (M29.R2: one owner; the set was duplicated here
@@ -120,6 +121,15 @@ export interface SymbolHoverData {
   filePath: string
   lineStart: number | null
   lineEnd: number | null
+  /** M42.H2: LSP location of the declaration (definition link); null when
+   *  the range is not resolvable — the footnote then stays plain text. */
+  definition: { line: number; character: number } | null
+  /** M42.H2: pre-rendered connected-summary line — empty string when no
+   *  connection facts exist (declared absence, never a placeholder). */
+  connectedSection: string
+  /** M42.H2: pre-rendered usages section — empty string when no usage
+   *  sites exist (declared absence). */
+  usagesSection: string
 }
 
 export interface HoverRequest {
@@ -279,6 +289,14 @@ export function formatHoverMarkdown(data: SymbolHoverData): string {
   } else {
     lines.push("evidence: none (no indexed relationships)")
   }
+  // M42.H2: the rich sections. Empty strings render nothing — declared
+  // absence (no connection facts / no usage sites) is never fabricated.
+  if (data.connectedSection && data.connectedSection.length > 0) {
+    lines.push(data.connectedSection)
+  }
+  if (data.usagesSection && data.usagesSection.length > 0) {
+    lines.push(data.usagesSection)
+  }
   // M26.W3: cross-language facts ONLY from stored rows (is_cross_language = 1).
   // An empty section renders nothing — a pair with no stored rows states
   // nothing cross-language in the UI; absence is declared in docs, not faked
@@ -294,7 +312,13 @@ export function formatHoverMarkdown(data: SymbolHoverData): string {
   if (data.stale) {
     lines.push(`⚠️ **stale** — file changed since indexing (${data.freshnessStatus})`)
   }
-  lines.push(`_source: bb index (${data.filePath}:${data.lineStart ?? "?"})_`)
+  // M42.H2: the source footnote is the definition link — its target is the
+  // hovered symbol's own indexed location (nothing unclickable, §12.1).
+  if (data.definition !== null) {
+    lines.push(definitionLink(data.filePath, data.definition.line, data.definition.character))
+  } else {
+    lines.push(`_source: bb index (${data.filePath}:${data.lineStart ?? "?"})_`)
+  }
   return lines.join("\n\n")
 }
 
@@ -359,6 +383,10 @@ export function hover(
 
   const usageCount = countUsages(raw, symbol.id)
   const tiers = evidenceTiersFor(raw, symbol.id)
+  // M42.H2: usage sites = the L3 references row set, resolved through the
+  // navigation location owner. Used for BOTH the connected summary and the
+  // top-3 usage links (one collection, two renderings).
+  const sites = richSitesForSymbol(raw, symbol.id)
   // M26.W3: per-pair cross-language facts from stored rows only.
   const crossSection = crossLanguageSection(factsFromRows(storedCrossLanguageRows(raw, symbol.id), file.language))
   // M28.A2: annotation rows for this symbol, rendered by the single owner.
@@ -366,26 +394,10 @@ export function hover(
   const annotationRows = raw.prepare("SELECT symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated FROM brain_annotation WHERE project_id = (SELECT project_id FROM brain_file WHERE id = ?) AND symbol_name = ? ORDER BY time_updated DESC").all(file.id, symbol.name) as AnnotationRow[]
   const annotationSection = annotationHoverSection(annotationRows)
 
-  const data: SymbolHoverData = {
-    name: symbol.name,
-    qualifiedName: symbol.qualified_name,
-    symbolType: symbol.symbol_type,
-    signature: buildSignature(symbol),
-    usageCount,
-    evidenceTiers: tiers,
-    crossLanguageSection: crossSection,
-    annotationSection,
-    stale,
-    freshnessStatus,
-    filePath: file.path,
-    lineStart: symbol.line_start,
-    lineEnd: symbol.line_end,
-  }
-
-  // Range comes from the P1 component only — never inline conversion.
-  // resolveRowByteColumns normalizes the index's dual byte conventions
-  // (per-line declared vs file-absolute stored by the parallel indexer);
-  // an unconvertible row omits the range honestly instead of throwing.
+  // The definition location (declaration of the hovered symbol) is the hover
+  // response RANGE, resolved through the P1 component below; it is computed
+  // BEFORE the data object so the footnote can carry it as the definition
+  // link (M42.H2 §12.1: the source footnote must navigate).
   let range: HoverResult["range"] = null
   if (symbol.line_start !== null && symbol.line_end !== null && symbol.byte_start !== null && symbol.byte_end !== null) {
     try {
@@ -407,6 +419,28 @@ export function hover(
       // Unreadable file or impossible positions: omit the range honestly,
       // keep the hover content.
     }
+  }
+
+  const data: SymbolHoverData = {
+    name: symbol.name,
+    qualifiedName: symbol.qualified_name,
+    symbolType: symbol.symbol_type,
+    signature: buildSignature(symbol),
+    usageCount,
+    evidenceTiers: tiers,
+    // M42.H2: rich sections composed from stored relationship rows.
+    connectedSection: connectedSummarySection(connectedGroups(sites)),
+    usagesSection: usagesSection(sites, sites.length, file.path, request.position.line, request.position.character),
+    // LSP definition location (range.start) when resolvable; null otherwise
+    // (the footnote then renders the plain location — still honest).
+    definition: range === null ? null : { line: range.start.line, character: range.start.character },
+    crossLanguageSection: crossSection,
+    annotationSection,
+    stale,
+    freshnessStatus,
+    filePath: file.path,
+    lineStart: symbol.line_start,
+    lineEnd: symbol.line_end,
   }
 
   const elapsed = (deps.now ?? Date.now)() - startedAt
