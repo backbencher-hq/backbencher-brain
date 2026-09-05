@@ -1,10 +1,10 @@
 {
   "status": "verified",
-  "currentCommit": "fa17d2feec024a01cecbb8494f73b2de75cf1b37",
+  "currentCommit": "92d74392c6a21f87ed726f9bb8bac9de43d42821",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "bun run script/m31/wave2/verify-d4-new-tool-docs.ts",
   "evidenceFile": "D4.json",
-  "generatedAt": "2026-09-05T23:05:25.892Z",
+  "generatedAt": "2026-09-05T23:06:03.918Z",
   "passed": 166,
   "failed": 0,
   "negativeCases": 3,
