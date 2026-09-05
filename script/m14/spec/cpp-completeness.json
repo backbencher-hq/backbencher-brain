@@ -254,6 +254,36 @@
         "node_type": "operator calls, ADL, override independence",
         "status": "RULED",
         "question": "M37.9 beyond-gates probes: (1) explicit operator calls (unqualified/qualified/member forms) are ERROR-recovered by the pinned grammar -- no call edge is representable; operator DEFINITIONS parse and symbolize correctly. (2) Unqualified calls cannot be ADL-resolved statically (family contract). (3) cpp overrides require virtual-semantics reconstruction and are not independently derivable -- the analyzer's type-only signature resolution is fixture-pinned (override-signature-aware, virtual-override-resolution); overrides are excluded from the differential compared-label set (like csharp/dart/swift) and the truth's same-name heuristic no longer fabricates them."
+      },
+      {
+        "id": "CPP-D10",
+        "node_type": "constructor-body call attribution + qualified_calls payload (deep review 2026-09-05)",
+        "status": "FIXED",
+        "question": "CPPD9: constructor scopes were pushed under the raw CLASS name while the symbol was normalized to 'constructor', so ctor-body calls emitted source=Engine (the Class symbol) and the qualified_calls payload never reached the constructor symbol. Measured on fmt: 532 ctor-body calls mis-sourced to the Class, 272 class symbols wrongly carrying qc payload. Fix: ctor scope name = normalized symbol name; payload now attaches DIRECTLY to the caller symbolRef (family contract -- groovy/java push at the call site). Verified: 532->203 class-sourced calls (remaining 203 = genuine class-scope initializer/template-deduction call sites, java-family rule: edge from type scope, no symbol payload), class-symbol qc 272->0."
+      },
+      {
+        "id": "CPP-D11",
+        "node_type": "cross-class qualified_calls pollution (deep review 2026-09-05)",
+        "status": "FIXED",
+        "question": "CPPD10: the post-loop #383 payload merge keyed qualified_calls by bare method NAME, so two same-named methods in different classes (Alpha.run / Beta.run) shared one bucket and BOTH symbols carried BOTH classes' call lists. Measured on fmt: 192 method names / 640 excess owners polluted. Fix: direct symbolRef attach at the call site (exact owner) + per-symbol dedupe; runner gained ownerName-aware expectQualifiedCalls and notIncludes assertions so the pollution is pinned both ways."
+      },
+      {
+        "id": "CPP-D12",
+        "node_type": "overloaded-virtual override resolution (deep review 2026-09-05)",
+        "status": "FIXED",
+        "question": "CPPD11: the virtual registry stored one signature per method name (last-declared wins), so a Derived overriding the FIRST-declared base overload f(int) was silently dropped when Base also declared f(double) -- probe: Derived overriding f(int) AND f(double) emitted one edge. Fix: per-name signature LIST; any matching overload resolves; duplicate (cls.method, base.method) pairs collapse under the no-arity edge model. Discriminating probes pass: override-first-overload, override-second-only, extra-derived-overload-hides."
+      },
+      {
+        "id": "CPP-D13",
+        "node_type": "using-declaration import shape (deep review 2026-09-05)", 
+        "status": "FIXED",
+        "question": "CPPD12: `using namespace std;` / `using std::vector;` emitted imports in the legacy {source, imported} shape -- the EXACT defect class the C wave fixed for #include (persister reads imp.module, drops module-less imports), so C++ using-imports were never persisted to brain_import. Aligned to the family {module, items} contract (rust use: module = qualified path, items = imported names; namespace form = [*]) + a using_dependency references edge. Class-body `using B::f;` (member re-export) emits nothing -- it is not a module dependency. Pinned in cpp/system-completeness + mutant cpp/legacy-using-import-shape."
+      },
+      {
+        "id": "CPP-D14",
+        "node_type": "template-arg call-callee leakage (deep review 2026-09-05)", 
+        "status": "FIXED",
+        "question": "CPPD13: call targets leaked template arguments -- `ns::func<int>()`, `s.m<int>()`, `S::m<int>()` emitted targets func<int>/m<int> (855 across fmt). The callee leaf is a template_function/template_method whose text carries the args; the bare name is its first named child. Nested `::` chains (std::numeric_limits<X>::lowest), the `template` disambiguator (dependent_name), defense-parentheses ((X)() -- Windows min/max), functor-temporary invocations (std::forward<F>(f)(args) / Op<int>()(a,b) -- anonymous operator(), CPP-D9) and pointer-to-member recovery ((obj->*pmf)() -- ERROR-recovered, runtime-only callee) all unwrap or suppress to the bare callee. Measured 855 -> 0 leaky/junk targets; full qualified path preserved in the qualified_calls payload. Pinned in cpp/ctor-and-overload-regressions + mutant cpp/template-arg-call-targets."
       }
     ]
   }
