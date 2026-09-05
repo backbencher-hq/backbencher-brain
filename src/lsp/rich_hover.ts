@@ -89,7 +89,10 @@ export const SHOW_CALL_HIERARCHY_COMMAND = "bb.showCallHierarchy"
 /** Wire args for bb.openUsage / bb.openDefinition: the index-stored LSP
  *  location. Encoded once here — every hover link shares this encoding. */
 export function encodeLocationArgs(path: string, line: number, character: number): string {
-  return encodeURIComponent(JSON.stringify({ file: path, line, character }))
+  // Command-URI args are a JSON ARRAY (one element per handler argument); a
+  // bare object is off-spec and delivered inconsistently across VS Code
+  // versions (owner test, 2026-09-05: hover links did nothing in 1.136.1).
+  return encodeURIComponent(JSON.stringify([{ file: path, line, character }]))
 }
 
 export function openUsageUri(site: { path: string; line: number; character: number }): string {
@@ -117,7 +120,7 @@ export interface HoverActionArgs {
 }
 
 export function encodeActionArgs(symbol: string, path: string, line: number, character: number): string {
-  return encodeURIComponent(JSON.stringify({ symbol, file: path, line, character } satisfies HoverActionArgs))
+  return encodeURIComponent(JSON.stringify([{ symbol, file: path, line, character } satisfies HoverActionArgs]))
 }
 
 export function openGraphUri(a: HoverActionArgs): string {
