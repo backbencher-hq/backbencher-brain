@@ -49,7 +49,7 @@ import type { CoreDatabase } from "../brain/database"
 import { evidenceTiersFor } from "./hover"
 import { checkFileFreshness } from "../brain/freshness"
 import { parseForSafety } from "../ast/safety-primitives"
-import { PositionMapper, resolveRowByteColumns } from "./positions"
+import { PositionMapper, resolveRowByteColumns, PositionError } from "./positions"
 
 export interface HighlightRequest {
   filePath: string
@@ -101,12 +101,27 @@ export async function documentHighlight(
   }
 
   const mapper = new PositionMapper(content)
+  const absence = (tier: string): HighlightResult => ({
+    highlights: [],
+    evidenceTier: tier,
+    staleness: null,
+    symbol: null,
+  })
 
   // Layer 1: AST-identity occurrences (comments/strings already excluded).
   const safety = await parseForSafety(request.filePath, content)
 
   // --- Occurrence-first cursor resolution (the H1 law) ----------------------
-  const indexPos = mapper.lspToIndex({ line: request.line, character: request.character })
+  // An impossible cursor (past EOF, etc.) is declared absence, not an
+  // exception: the P1 mapper throws PositionError for out-of-range lines and
+  // the H1 contract (declared absence, never an error) governs here.
+  let indexPos
+  try {
+    indexPos = mapper.lspToIndex({ line: request.line, character: request.character })
+  } catch (e) {
+    if (e instanceof PositionError) return absence("not_indexed")
+    throw e
+  }
   const cursorOcc = safety.occurrences.find(
     (o) =>
       o.startLine === indexPos.line &&
@@ -114,12 +129,6 @@ export async function documentHighlight(
       indexPos.column < o.endColumn,
   )
   const DECL_COLS = `s.id, s.name, s.line_start, s.line_end, s.byte_start, s.byte_end, s.file_id`
-  const absence = (tier: string): HighlightResult => ({
-    highlights: [],
-    evidenceTier: tier,
-    staleness: null,
-    symbol: null,
-  })
   if (!cursorOcc) return absence("not_indexed")
 
   // Resolve the queried symbol from the occurrence's name: unique same-file
