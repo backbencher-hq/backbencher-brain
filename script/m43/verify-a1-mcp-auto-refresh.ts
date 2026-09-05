@@ -239,7 +239,8 @@ async function main() {
 
   const ok = failed === 0
   console.log(`A1 MCP auto-refresh: ${passed} passed, ${failed} failed, ${negativeCases} negatives`)
-  if (ok) {
+  // M43.X1: children of the gate-selftest / closure probe never stamp evidence.
+  if (ok && process.env.BB_M43_READ_ONLY !== "1") {
     mkdirSync(RESULTS_DIR, { recursive: true })
     const head = (() => { try { return execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim() } catch { return "unknown" } })()
     writeFileSync(path.join(RESULTS_DIR, "A1.json"), JSON.stringify({
