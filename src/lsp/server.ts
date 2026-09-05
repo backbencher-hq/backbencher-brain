@@ -32,7 +32,7 @@
 
 import path from "node:path"
 import { realpathSync, appendFileSync } from "node:fs"
-import { getProjectId } from "../cli/index"
+import { getProjectId } from "../util/project-id"
 import { BACKBENCHER_BRAIN_VERSION } from "../version"
 
 /** The launch set, its membership test, and the path→language map live in
