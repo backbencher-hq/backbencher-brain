@@ -4,10 +4,10 @@
   "milestone": "M25",
   "os": "darwin",
   "status": "blocked",
-  "blockedReason": "No macOS hardware or runner on this machine; CI OS-matrix runners are the declared place for scheduled macOS runs. Not executable here (process.platform is linux); recorded blocked, never claimed.",
+  "blockedReason": "No macOS hardware or runner on this machine (process.platform is linux); the OS-matrix workflow (.github/workflows/os-matrix.yml) executes the macOS native leg on its GitHub-hosted runner and uploads the E7-darwin.json artifact for the owner to persist. Recorded blocked locally, never claimed.",
   "runnableInstead": "npx tsx script/m25/verify-cross-platform.ts (on the target OS runner)",
-  "currentCommit": "e7a30242713d8c728bbf7ab65a7e0535c7782e9d",
+  "currentCommit": "2a923fb22c19b7d81448b431c01b0f6ee23b874b",
   "verifierCommand": "npx tsx script/m25/verify-cross-platform.ts",
   "evidenceFile": "E7-darwin.json",
-  "generatedAt": "2026-09-05T20:01:21.837Z"
+  "generatedAt": "2026-09-05T20:25:28.390Z"
 }
