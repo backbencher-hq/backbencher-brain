@@ -37,3 +37,10 @@ jobs:
 
       - name: Run the E7 cross-platform leg for ${{ matrix.os }}
         run: npx tsx script/m25/verify-cross-platform.ts
+
+      - name: Upload E7 evidence artifacts for ${{ matrix.os }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: e7-evidence-${{ matrix.os }}
+          path: validation/m25/results/E7-*.json
+          if-no-files-found: error
