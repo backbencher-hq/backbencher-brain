@@ -218,6 +218,42 @@
         "node_type": "cross-file resolution",
         "status": "RULED",
         "question": "The analyzer contract is per-file; project-level resolution and template instantiation across TUs are separate concerns."
+      },
+      {
+        "id": "CPP-D4",
+        "node_type": "partial/explicit class template specializations (template <typename T> class Box<T*>; template <> class Box<int>)",
+        "status": "FIXED",
+        "question": "M37.9 fmt probe (CPPD1): a specialization's name sits in a template_type child, so the analyzer fabricated an 'anonymous' class symbol for every specialization -- 255 across fmt. Fixed to read the template_type base name (a specialization IS the class Box). Verified 255 -> 9; the remaining 9 read in source as genuinely nameless struct functors."
+      },
+      {
+        "id": "CPP-D5",
+        "node_type": "member writes (tm.tm_year = 116;) and member reads on call temporaries (parse_arg_id(\"42:\").res)",
+        "status": "FIXED",
+        "question": "M37.9 differential after the deriveCppEdges oracle (CPPD2/CPPD3): member WRITES emitted uses (only the call-callee position was write-gated, not assignment LHS) and member reads on call temporaries were dropped (the obj.type === call_expression guard wrongly treated them as method calls). Aligned to the family member-read contract; fixture stateless-analyzer re-authored to pin the corrected write/read contract."
+      },
+      {
+        "id": "CPP-D6",
+        "node_type": "signature-normalized virtual overrides (gtest 'void OnTestStart(const TestInfo& /*test_info*/)')",
+        "status": "FIXED",
+        "question": "M37.9 (CPPD5): a comment inside the parameter list broke the signature-exact override match -- all 22 fmt override pairs were missed. Root defect: the analyzer compared full parameter TEXT including parameter names, but names are not part of C++ signatures and a commented-out name disappears entirely. Fixed to a structural TYPE-ONLY signature. Verified 45 -> 56 overrides on gtest.h (Empty's full set now resolves)."
+      },
+      {
+        "id": "CPP-D7",
+        "node_type": "macro-mangled new_expression recovery (gtest.h/gmock.h: '(static_cast', 'typename Derived::template gmock_Impl', '(&locale_)')",
+        "status": "FIXED",
+        "question": "M37.9 (CPPD6): recovery-mangled new_expression targets fabricated garbage instantiates edges. A real constructed type is a clean identifier (optionally namespace-qualified); anything else is a recovery artifact and emits no edge (the C-wave CGD19 class)."
+      },
+      {
+        "id": "CPP-D8",
+        "node_type": "leading global-scope '::' on new_expression (new ::std::stringstream)",
+        "status": "FIXED",
+        "question": "M37.9 fmt gtest Message ctor (CPPD8): a leading '::' nests an extra qualified_identifier level, so one unwrap left 'std::stringstream' still qualified and the clean-leaf regex dropped the whole edge, while 'new ::Foo' (single unwrap reaches the leaf) worked. Fixed: descend to the innermost name. Differential MISSING 3 -> 0 (5,074-truth floor with headers + calls/uses/instantiates audited); pinned in fixture system-completeness + mutant cpp/drop-global-scope-new."
+      },
+      {
+        "id": "CPP-D9",
+        "node_type": "operator calls, ADL, override independence",
+        "status": "RULED",
+        "question": "M37.9 beyond-gates probes: (1) explicit operator calls (unqualified/qualified/member forms) are ERROR-recovered by the pinned grammar -- no call edge is representable; operator DEFINITIONS parse and symbolize correctly. (2) Unqualified calls cannot be ADL-resolved statically (family contract). (3) cpp overrides require virtual-semantics reconstruction and are not independently derivable -- the analyzer's type-only signature resolution is fixture-pinned (override-signature-aware, virtual-override-resolution); overrides are excluded from the differential compared-label set (like csharp/dart/swift) and the truth's same-name heuristic no longer fabricates them."
       }
     ]
   }
