@@ -18,12 +18,11 @@
 //               op is a violation, a miss fails the gate
 //   can-fail:   weakened assertions and raised budgets are caught
 import { spawn } from "node:child_process"
+import { execFileSync } from "node:child_process"
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
-import * as os from "node:os"
 import { createHash } from "node:crypto"
 import { realpathSync } from "node:fs"
-import { pathToFileURL } from "node:url"
 import path from "node:path"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
@@ -46,28 +45,6 @@ export const FIXTURE_HOVER_POS = { line: 1, character: 2 } as const
 
 /** Fixture symbol names the assertions require. */
 export const FIXTURE_SYMBOLS = { className: "Greeter", method: "greet", fn: "main" } as const
-
-/**
- * H1 highlight expectations over the shared fixture (M42 issue #649).
- * FULLY DERIVED from FIXTURE_MAIN text — every line number is found by
- * content, never hand-picked (a hand-picked line once pointed at a line
- * where the symbol does not occur; the derived -1 exposed it instantly).
- *
- * Target: `greet` — the ONLY fixture symbol whose occurrences are
- * edge-connected per the seeded graph (rel-1: main -> greet): the
- * declaration (inside sym-greet itself) and the `g.greet()` call site
- * (inside sym-main). `Greeter` has NO stored edge from main — under the
- * semantic-containment law its call site honestly does NOT highlight.
- */
-const _hlLines = FIXTURE_MAIN.split("\n")
-const _hlDeclLine = _hlLines.findIndex((l) => l.includes("greet():"))
-const _hlCallLine = _hlLines.findIndex((l) => l.includes("g.greet()"))
-export const FIXTURE_HIGHLIGHT = {
-  symbolName: "greet",
-  queryLine: _hlCallLine,
-  queryCharacter: (_hlLines[_hlCallLine] ?? "").indexOf("greet"),
-  expectedLines: [_hlDeclLine, _hlCallLine], // declaration + the call site
-} as const
 
 // ---------------------------------------------------------------------------
 // Transport contract — the ONLY thing a per-editor runner implements.
@@ -100,7 +77,6 @@ export const IN_EDITOR_WARM_BUDGETS: Record<string, number> = {
   workspaceSymbol: 150,
   prepareCallHierarchy: 100,
   callHierarchyExpand: 100,
-  documentHighlight: 25, // M42 §12.7: highlight is a cursor-rest op — the tightest budget
 }
 
 export interface FeatureMeasurement {
@@ -240,52 +216,6 @@ export async function runFeatureAssertions(ctx: AssertionContext, assert: Assert
   assert("L2: hover usage count matches fixture relationship", hover?.data?.usageCount === 1 || hoverText.includes("1 usage"))
   assert("L2: hover provenance labels bb index source", (hover?.provenance?.source ?? "") === "bb_index" || hoverText.includes("_source: bb index"))
   assert("L2: hover carries the evidence tier (honesty contract §2)", hover?.data?.tier !== undefined || hoverText.includes("evidence:"), hoverText.slice(0, 120))
-
-  // --- Rich hover (M42.H2): connected summary + clickable links ---
-  // Derived from FIXTURE_MAIN text — the fixture's one seeded edge is
-  // rel-1: main -> greet, so greeting `greet` must render "called by main"
-  // and an index-backed link to main's declaration (site label = file:line,
-  // 1-based human line).
-  const _fLines = FIXTURE_MAIN.split("\n")
-  const _fMainDeclLine = _fLines.findIndex((l) => l.includes("function main")) + 1 // 1-based display
-  assert("H2: rich hover renders the connected summary (called by main)", hoverText.includes("**connected**: called by"), hoverText.slice(0, 220))
-  assert(
-    "H2: usage link is clickable with an index-backed file:line target",
-    hoverText.includes(`[main — main.ts:${_fMainDeclLine}](command:bb.openUsage?`),
-    hoverText.slice(0, 300),
-  )
-  assert("H2: definition footnote is a link (bb.openDefinition)", hoverText.includes("bb.openDefinition?"), hoverText.slice(0, 200))
-  assert("H2: no show-all-usages link for a single-usage symbol", !hoverText.includes("bb.showAllUsages"), "single usage needs no N-more escape hatch")
-
-  // --- Enrichment on hover (M42.H3, issue #651) ---
-  // The seeded rel-1 carries a REAL enrichment record (see buildFixtureWorkspace):
-  // role consumer · layer core→core · low criticality · 1 referring row. The
-  // connected summary must annotate its single usage with these stored facts,
-  // labeled as index-inferred — never at an evidence tier (§12.3).
-  assert("H3: stored enrichment surfaces on hover (role/layer/frequency)", hoverText.includes("role consumer") && hoverText.includes("layer core→core") && hoverText.includes("1 referring row"), hoverText.slice(0, 400))
-  assert("H3: enrichment is labeled index-inferred, never parser-fact tier", hoverText.includes("(enriched by index)"), hoverText.slice(0, 400))
-  assert("H3: enrichment annotation never upgrades the evidence tier", !/^\s*evidence:.*role consumer/m.test(hoverText) && (hover?.data?.evidenceTiers ?? []).every((t: string) => t !== "role"), JSON.stringify(hover?.data?.evidenceTiers ?? null))
-
-  // --- Hover actions (M42.H4, issue #652) ---
-  // The actions row is the hover's door to the deep surfaces. Its args are
-  // the SERVER-RESOLVED identity of the hovered symbol (greet): name + the
-  // index-stored declaration location. Assert presence + parseability + the
-  // symbol identity — the click behavior is proven in the E5 leg.
-  assert("H4: hover embeds the actions row", hoverText.includes("**actions**: [Open in graph](command:bb.openGraph?") && hoverText.includes("[Impact analysis](command:bb.openImpact?") && hoverText.includes("[Call hierarchy](command:bb.showCallHierarchy?"), hoverText.slice(0, 500))
-  const _h4re = /\]\(command:(bb\.openGraph|bb\.openImpact|bb\.showCallHierarchy)\?([^)]+)\)/g
-  const _h4actions: Array<{ cmd: string; args: Record<string, unknown> }> = []
-  let _h4m: RegExpExecArray | null
-  while ((_h4m = _h4re.exec(hoverText)) !== null) {
-    try {
-      _h4actions.push({ cmd: _h4m[1], args: JSON.parse(decodeURIComponent(_h4m[2])) as Record<string, unknown> })
-    } catch {}
-  }
-  assert("H4: exactly the three action commands embed parseable args", _h4actions.length === 3 && new Set(_h4actions.map((a) => a.cmd)).size === 3, JSON.stringify(_h4actions.map((a) => a.cmd)))
-  assert(
-    "H4: action args are the server-resolved symbol identity (greet)",
-    _h4actions.length === 3 && _h4actions.every((a) => a.args.symbol === FIXTURE_SYMBOLS.method && typeof a.args.file === "string" && String(a.args.file).endsWith("main.ts") && typeof a.args.line === "number" && typeof a.args.character === "number"),
-    JSON.stringify(_h4actions[0]?.args ?? null),
-  )
   const hoverMiss = unwrap(await transport.request("textDocument/hover", { textDocument: { uri: mainUri }, position: { line: 20, character: 0 } }))
   const missOk = hoverMiss == null || hoverMiss?.contents === null || hoverMiss?.contents?.value === "" || hoverMiss?.contents?.value === undefined
   assert("L2: hover outside index is declared absent", missOk, JSON.stringify(hoverMiss ?? null).slice(0, 200))
@@ -336,38 +266,6 @@ export async function runFeatureAssertions(ctx: AssertionContext, assert: Assert
     results.push(await measureWarmP95("callHierarchyExpand", () => transport.request("callHierarchy/incomingCalls", { item })))
   }
 
-  // --- Document highlights (H1, M42): semantic, staleness-labeled, absent-honest ---
-  const hl = unwrap(
-    await transport.request("textDocument/documentHighlight", {
-      textDocument: { uri: mainUri },
-      position: { line: FIXTURE_HIGHLIGHT.queryLine, character: FIXTURE_HIGHLIGHT.queryCharacter },
-    }),
-  )
-  const hlItems: any[] = Array.isArray(hl) ? hl : []
-  assert("H1: documentHighlight returns wire items", hlItems.length > 0, JSON.stringify(hl ?? null).slice(0, 200))
-  const hlLines = new Set(hlItems.map((it) => it?.range?.start?.line))
-  assert(
-    "H1: declaration + call site highlight (semantic set)",
-    FIXTURE_HIGHLIGHT.expectedLines.every((l) => hlLines.has(l)),
-    `expected ${FIXTURE_HIGHLIGHT.expectedLines}, got ${[...hlLines]}`,
-  )
-  assert("H1: items carry staleness metadata in data (\u00a712.2)", hlItems.every((it) => it?.data?.staleness !== undefined && typeof it?.data?.staleness?.stale === "boolean"), JSON.stringify(hlItems[0]?.data ?? null))
-  const hlMiss = unwrap(
-    await transport.request("textDocument/documentHighlight", {
-      textDocument: { uri: mainUri },
-      position: { line: 20, character: 0 }, // past EOF — not an identifier position
-    }),
-  )
-  assert("H1: highlight outside index is declared absent (wire null)", hlMiss === null, JSON.stringify(hlMiss ?? null).slice(0, 150))
-  results.push(
-    await measureWarmP95("documentHighlight", () =>
-      transport.request("textDocument/documentHighlight", {
-        textDocument: { uri: mainUri },
-        position: { line: FIXTURE_HIGHLIGHT.queryLine, character: FIXTURE_HIGHLIGHT.queryCharacter },
-      }),
-    ),
-  )
-
   // --- Shutdown lifecycle (stdio legs only; the host owns it otherwise) ---
   if (ctx.skipLifecycle !== true) {
     const shutdown = unwrap(await transport.request("shutdown", null))
@@ -406,7 +304,6 @@ export function createStdioTransport(options: { runtime: "node-source" | "node-d
   }
 
   let child: ReturnType<typeof spawn> | null = null
-  let exitedCode: number | null = null
   let buffer = Buffer.alloc(0)
   const pending = new Map<number, { resolve: (msg: any) => void; reject: (e: Error) => void }>()
   let nextId = 1
@@ -465,9 +362,6 @@ export function createStdioTransport(options: { runtime: "node-source" | "node-d
       child.stderr!.on("data", (chunk: Buffer) => {
         stderrRing = (stderrRing + chunk.toString("utf8")).slice(-8000)
       })
-      child.on("exit", (code) => {
-        exitedCode = code
-      })
       return Promise.resolve()
     },
     request(method: string, params: unknown): Promise<any> {
@@ -478,9 +372,7 @@ export function createStdioTransport(options: { runtime: "node-source" | "node-d
       return new Promise((resolve, reject) => {
         const timer = setTimeout(() => {
           pending.delete(id)
-          const stderr = stderrRing.replace(/\s+$/g, "").slice(-500)
-          const exitNote = exitedCode === null ? "" : ` (server exited code ${exitedCode})`
-          reject(new Error(`timeout waiting for ${method} response${exitNote}; server stderr: ${stderr || "(empty)"}`))
+          reject(new Error(`timeout waiting for ${method} response`))
         }, 15_000)
         pending.set(id, {
           resolve: (msg) => {
@@ -532,9 +424,7 @@ export async function buildFixtureWorkspace(baseDir: string): Promise<{ workspac
   mkdirSync(dbDir, { recursive: true })
   process.env.BB_DATA_DIR = dataDir
 
-  // Windows ESM loader rejects raw drive-letter paths in dynamic import() —
-  // file:// URLs are portable (found by the E7 win32 CI leg, 2026-09-05).
-  const { BrainDatabase } = await import(pathToFileURL(path.join(ROOT, "src", "brain", "database.ts")).href)
+  const { BrainDatabase } = await import(path.join(ROOT, "src", "brain", "database.ts"))
   const raw = await BrainDatabase.getRawInstance(projectId)
   const fpath = path.join(workspaceDir, "main.ts")
 
@@ -543,7 +433,7 @@ export async function buildFixtureWorkspace(baseDir: string): Promise<{ workspac
   // lands on the same row it watches). The seeded row records the REAL hash
   // + stat metadata of the file on disk — a fixture that starts stale would
   // make the E5 live loop's first marker dishonest (found live by E5).
-  const { hashFileContent } = await import(pathToFileURL(path.join(ROOT, "src", "brain", "freshness.ts")).href)
+  const { hashFileContent } = await import(path.join(ROOT, "src", "brain", "freshness.ts"))
   const fileStat = statSync(fpath)
   const fileId = `${projectId}:main.ts`
   raw.prepare(`INSERT INTO brain_file (id, project_id, path, relative_path, language, file_hash, size_bytes, last_modified) VALUES (?,?,?,?,?,?,?,?)`).run(
@@ -566,46 +456,25 @@ export async function buildFixtureWorkspace(baseDir: string): Promise<{ workspac
   symStmt.run("sym-greet", projectId, fileId, FIXTURE_SYMBOLS.method, "Greeter.greet", "method", 2, 2, 3, 8, "sym-greeter", 7)
   symStmt.run("sym-main", projectId, fileId, FIXTURE_SYMBOLS.fn, null, "function", 7, 10, 10, 2, null, 5)
 
-  // rel-1 models an ANALYZER + ENRICHMENT row: analyzer evidence fields
-  // (evidenceClass in metadata, M24 era) plus the enrichment pass's stored
-  // facts (role/layerFlow/criticality/frequency/inferredAt — shape observed
-  // on REAL freshly-indexed rows; enrichment runs in the CLI after analysis).
-  // inferredAt is stamped AFTER the insert (time_updated default = insert
-  // wall-clock ms), so the row is FRESH — never the stale path in this
-  // fixture. M42.H3 surfaces these facts on hover in-editor (E5 leg).
-  // relationship_type is "calls" (the REAL analyzer vocabulary, plural —
-  // M42.H5's bb/graph usages traversal filters on the graph engine's
-  // DEFAULT_REL_TYPES; the M24-era singular "call" was invisible to it, a
-  // fixture convention the E5 hub leg exposed).
-  const relMeta = JSON.stringify({
-    evidenceClass: "structural",
-    role: "consumer",
-    layerFlow: "core→core",
-    criticality: "low",
-    frequency: "one_of_1",
-    inferredAt: Date.now(),
-  })
-  raw.prepare(`INSERT INTO brain_relationship (id, project_id, source_symbol_id, target_symbol_id, relationship_type, confidence, metadata) VALUES (?,?,?,?,?,?,?)`).run(
+  raw.prepare(`INSERT INTO brain_relationship (id, project_id, source_symbol_id, target_symbol_id, relationship_type, confidence) VALUES (?,?,?,?,?,?)`).run(
     "rel-1",
     projectId,
     "sym-main",
     "sym-greet",
-    "calls",
+    "call",
     1.0,
-    relMeta,
   )
 
   return { workspaceDir, dataDir, stats: { files: 1, symbols: 3, relationships: 1 } }
 }
 
-/**
- * Machine record (contract §3: every number records its machine).
- * Portable: node:os only — no uname//proc/shell, so the record is
- * machine-emittable on linux, darwin AND win32 (the E7 OS-matrix legs).
- */
+/** Machine record (contract §3: every number records its machine). */
 export function machineInfo(runtime: string): { kernel: string; cpu: string; ramGb: number; node: string; runtime: string } {
-  const kernel = `${os.type()} ${os.release()}`
-  const cpu = (os.cpus()[0]?.model ?? "unknown").trim()
-  const ramGb = Math.round((os.totalmem() / 1e9) * 10) / 10
+  const kernel = execFileSync("uname", ["-sr"], { encoding: "utf8" }).trim()
+  let cpu = "unknown"
+  try {
+    cpu = execFileSync("sh", ["-c", "grep -m1 'model name' /proc/cpuinfo | cut -d: -f2 | xargs"], { encoding: "utf8" }).trim()
+  } catch {}
+  const ramGb = Math.round((Number(execFileSync("sh", ["-c", "grep MemTotal /proc/meminfo | awk '{print $2}'"], { encoding: "utf8" }).trim()) / 1e6) * 10) / 10
   return { kernel, cpu, ramGb, node: process.version, runtime }
 }

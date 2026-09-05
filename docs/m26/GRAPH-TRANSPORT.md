@@ -26,7 +26,6 @@ Request params (all keys except `schemaVersion` and `symbol` optional):
 | `symbol` | string | non-empty; symbol name to root the graph at |
 | `direction` | string | `"callers"` \| `"callees"` \| `"both"` |
 | `maxDepth` | integer | 1–10 (server clamps traversal to 10 regardless) |
-| `mode` | string | `"graph"` (default) \| `"usages"` — M42.H5: the hub's declared profile (direction defaults to `"both"`, maxDepth to the W5 cap of 5; see docs/m42/HUB.md) |
 | `relationshipTypes` | string[] | non-empty strings; defaults to the engine set |
 | `includeCrossLanguage` | boolean | |
 

@@ -34,13 +34,6 @@ import type { GraphTraversalResult } from "../intelligence/contracts"
 
 export const GRAPH_REQUEST_METHOD = "bb/graph"
 export const GRAPH_SCHEMA_VERSION = 1
-// M42.H5 (issue #653): the hub's declared query profile. `mode: "usages"`
-// pins the hub's bounds server-side — direction both, depth capped at the
-// W5 impact cap — so every fork asks for the same declared profile and the
-// panel cannot silently drift to an unbounded query. (docs/m42/HUB.md)
-export const GRAPH_MODE_GRAPH = "graph"
-export const GRAPH_MODE_USAGES = "usages"
-export const HUB_USAGES_MAX_DEPTH = 5
 
 /** Declared graph-request failure. The `bb/graph:` prefix is the machine
  *  contract: clients match on it to distinguish declared errors from bugs. */
@@ -58,8 +51,6 @@ export interface GraphRequestParams {
   maxDepth?: unknown
   relationshipTypes?: unknown
   includeCrossLanguage?: unknown
-  /** M42.H5: "graph" (default) | "usages" (the hub's declared profile). */
-  mode?: unknown
 }
 
 /** Minimal db surface this module needs (structural, so tests can stub). */
@@ -103,17 +94,9 @@ export async function handleGraphRequest(
   if (typeof params.symbol !== "string" || params.symbol.length === 0) {
     throw new GraphRequestError("bb/graph: params.symbol (non-empty string) is required")
   }
-  if (params.mode !== undefined && params.mode !== GRAPH_MODE_GRAPH && params.mode !== GRAPH_MODE_USAGES) {
-    throw new GraphRequestError('bb/graph: params.mode must be "graph" or "usages"')
-  }
   if (params.direction !== undefined && (params.direction !== "callers" && params.direction !== "callees" && params.direction !== "both")) {
     throw new GraphRequestError('bb/graph: params.direction must be "callers", "callees", or "both"')
   }
-  // Usages mode pins the hub profile: direction both (the full usage set)
-  // unless the caller overrides, depth capped at the W5 impact cap. The cap
-  // is enforced below, never trusted to the caller.
-  const effectiveDirection = (params.direction as "callers" | "callees" | "both" | undefined) ?? (params.mode === GRAPH_MODE_USAGES ? "both" : undefined)
-  const requestedDepth = params.maxDepth === undefined && params.mode === GRAPH_MODE_USAGES ? HUB_USAGES_MAX_DEPTH : (params.maxDepth as number | undefined)
   if (
     params.maxDepth !== undefined &&
     (typeof params.maxDepth !== "number" || !Number.isInteger(params.maxDepth) || params.maxDepth < 1 || params.maxDepth > 10)
@@ -136,8 +119,8 @@ export async function handleGraphRequest(
   }
 
   const result = await deps.traverse(projectId, params.symbol as string, {
-    direction: effectiveDirection,
-    maxDepth: requestedDepth,
+    direction: params.direction as "callers" | "callees" | "both" | undefined,
+    maxDepth: params.maxDepth as number | undefined,
     relationshipTypes: params.relationshipTypes as string[] | undefined,
     includeCrossLanguage: params.includeCrossLanguage as boolean | undefined,
   })

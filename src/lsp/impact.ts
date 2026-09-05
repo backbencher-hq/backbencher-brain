@@ -21,17 +21,14 @@
 //                cascade; flat references count direct edges only).
 //   rendered:    budget exhaustion renders a visible in-UI marker with the
 //                declared counts (W1 renderer law: truncation never silent).
-//                Since M42.H4 the renderer lives in the ONE core
-//                (script/m26/graph-core.ts renderImpact) — this component
-//                owns the DATA; the core owns the DOM. Same law, one home.
 //
 // Declared guarantees (gated by script/m26/verify-impact-mode.ts):
 //   G1 bounded:    result size <= declared budget; depth <= declared max
 //   G2 declared:   truncated == true ⟺ a declared reason exists; counts real
 //   G3 consistent: impact count agrees with L3 references on flat fixtures
 //                  (differential, sampling stated in the verifier)
-//   G4 rendered:   the ONE core's renderImpact() emits a visible marker with
-//                  counts when truncated, nothing when complete
+//   G4 rendered:   renderImpact() emits a visible marker with counts when
+//                  truncated, nothing when complete
 
 import { graphTraversal } from "../intelligence/graph/graph-engine"
 import type { GraphNode } from "../intelligence/contracts"
@@ -150,4 +147,39 @@ export async function computeImpact(
     truncated,
     truncationReason,
   }
+}
+
+/** Render the impact set into the W1 DOM port. Truncation renders a visible
+ *  marker with declared counts (shown vs total-if-known or "unknown") —
+ *  silent truncation is impossible by construction here. */
+export function renderImpact(result: ImpactResult, dom: {
+  create(tag: string): { tagName: string; className: string; children: any[]; textContent: string; attrs: Record<string, string>; setAttribute(n: string, v: string): void; appendChild(c: any): any; addClass(n: string): void }
+  root(): { tagName: string; className: string; children: any[]; textContent: string; attrs: Record<string, string>; setAttribute(n: string, v: string): void; appendChild(c: any): any; addClass(n: string): void }
+}): { nodesRendered: number; marker: unknown } {
+  const layer = dom.root()
+  layer.addClass("bb-impact")
+  layer.setAttribute("data-impact-root", result.root.id)
+  for (const dep of result.impact) {
+    const el = dom.create("div")
+    el.addClass("bb-impact-node")
+    el.setAttribute("data-id", dep.id)
+    el.setAttribute("data-depth", String(dep.depth))
+    el.textContent = `${dep.name} (${dep.file || "external"})`
+    layer.appendChild(el)
+  }
+  let marker: unknown = null
+  if (result.truncated) {
+    marker = dom.create("div")
+    const m = marker as { tagName: string; className: string; textContent: string; attrs: Record<string, string>; setAttribute(n: string, v: string): void; addClass(n: string): void }
+    m.addClass("bb-impact-truncation-marker")
+    m.setAttribute("data-truncated", "impact")
+    m.setAttribute("data-shown", String(result.shownCount))
+    m.setAttribute("data-total-if-known", result.totalCountIfKnown === null ? "unknown" : String(result.totalCountIfKnown))
+    m.textContent =
+      result.totalCountIfKnown === null
+        ? `Showing ${result.shownCount} reverse dependencies (more exist — total unknown; render budget exhausted)`
+        : `Showing ${result.shownCount} of ${result.totalCountIfKnown} reverse dependencies (render budget exhausted)`
+    layer.appendChild(marker)
+  }
+  return { nodesRendered: result.impact.length, marker }
 }
