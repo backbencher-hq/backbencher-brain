@@ -175,7 +175,12 @@ const evidence = {
   failures,
 }
 mkdirSync(RESULTS_DIR, { recursive: true })
-writeFileSync(path.join(RESULTS_DIR, "A1.json"), JSON.stringify(evidence, null, 2) + "\n")
+// Evidence is stamped ONLY by a green, non-mutation, non-control,
+// non-read-only run (X1 lesson: closure's read-only probes must never
+// overwrite real evidence).
+if (failed === 0 && !MUTATE_NOOP && process.env.BB_M40_SELFTEST_CONTROL !== "1" && process.env.BB_M40_READ_ONLY !== "1") {
+  writeFileSync(path.join(RESULTS_DIR, "A1.json"), JSON.stringify(evidence, null, 2) + "\n")
+}
 
 console.log(`A1 post-entry: ${passed} passed, ${failed} failed, ${negatives} negatives${MUTATE_NOOP ? " [MUTATION RUN]" : ""}`)
 if (failures.length) for (const f of failures) console.log(`  FAIL: ${f}`)

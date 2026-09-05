@@ -162,7 +162,7 @@ function writeRunner(p: string) {
 }
 
 console.log(`A9 purge: ${passed} passed, ${failed} failed, ${negatives} negatives${MUTATE ? " [MUTATION RUN]" : ""}`)
-if (failed === 0 && !MUTATE && !CONTROL) {
+if (failed === 0 && !MUTATE && !CONTROL && process.env.BB_M40_READ_ONLY !== "1") {
   const { mkdirSync: mkd, writeFileSync: wfs } = await import("node:fs")
   mkd(RESULTS_DIR, { recursive: true })
   wfs(path.join(RESULTS_DIR, "A9.json"), JSON.stringify({

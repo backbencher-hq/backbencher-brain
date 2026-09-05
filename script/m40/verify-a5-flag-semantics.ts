@@ -209,7 +209,7 @@ try { rmSync(root, { recursive: true, force: true }) } catch { /* best-effort */
 
 // ── evidence ────────────────────────────────────────────────────────────────
 console.log(`A5 flag-semantics: ${passed} passed, ${failed} failed, ${negatives} negatives`)
-if (failed === 0 && !MUTATE && !CONTROL) {
+if (failed === 0 && !MUTATE && !CONTROL && process.env.BB_M40_READ_ONLY !== "1") {
   const { mkdirSync: mkd, writeFileSync: wfs } = await import("node:fs")
   const { execFileSync } = await import("node:child_process")
   mkd(RESULTS_DIR, { recursive: true })

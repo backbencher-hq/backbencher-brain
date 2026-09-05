@@ -220,7 +220,12 @@ const evidence = {
   failures,
 }
 mkd(RESULTS_DIR, { recursive: true })
-wfs(path.join(RESULTS_DIR, "A2.json"), JSON.stringify(evidence, null, 2) + "\n")
+// Evidence is stamped ONLY by a green, non-mutation, non-control,
+// non-read-only run (X1 lesson: closure's read-only probes must never
+// overwrite real evidence).
+if (failed === 0 && !MUTATE && process.env.BB_M40_SELFTEST_CONTROL !== "1" && process.env.BB_M40_READ_ONLY !== "1") {
+  wfs(path.join(RESULTS_DIR, "A2.json"), JSON.stringify(evidence, null, 2) + "\n")
+}
 
 console.log(`A2 bounded-post: ${passed} passed, ${failed} failed, ${negatives} negatives (bounded=${boundedMs}ms full=${fullMs}ms)${MUTATE ? " [MUTATION RUN]" : ""}`)
 if (failures.length) for (const f of failures) console.log(`  FAIL: ${f}`)
