@@ -827,21 +827,21 @@
       "status": "pass"
     },
     {
-      "description": "go: 3 ruled, 4 pending owner",
+      "description": "go: 3 ruled, 6 pending owner",
       "id": "design-decisions-tracked",
       "language": "go",
       "status": "pass"
     },
     {
       "description": "every named node type classified (go)",
-      "detail": "107 types, 36 handled, 67 silent, 0 gaps, 7 decisions",
+      "detail": "107 types, 36 handled, 67 silent, 0 gaps, 9 decisions",
       "id": "section-a-structural",
       "language": "go",
       "status": "pass"
     },
     {
       "description": "8 relationship kinds pinned by go fixtures",
-      "detail": "pinned: calls, contains, declared_type, extends, go_composite_literal_construction, go_function_call, go_instantiation, go_interface_embedding, go_interface_implementation, go_package_scope_call, go_selector_use, go_struct_embedding, implements, imports, instantiates, references, return_type, uses",
+      "detail": "pinned: calls, contains, declared_type, extends, go_channel_operation, go_composite_literal_construction, go_function_call, go_instantiation, go_interface_embedding, go_interface_implementation, go_package_scope_call, go_selector_use, go_struct_embedding, implements, imports, instantiates, references, return_type, uses",
       "id": "section-b-relationship-kinds",
       "language": "go",
       "status": "pass"
@@ -1556,8 +1556,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "7d3f986e73c9207b5abf7c566e77770171ad6b3d",
-  "committedAt": "2026-09-06T00:45:24+02:00",
+  "commit": "69d6f62b14b634917e0d0112d42d51cc60cc221c",
+  "committedAt": "2026-09-06T01:19:26+02:00",
   "data": {
     "languages": {
       "c": {
@@ -1763,7 +1763,9 @@
           "GOD4",
           "GOD5",
           "GOD6",
-          "GOD7"
+          "GOD7",
+          "GOD8",
+          "GOD9"
         ],
         "ruledDecisions": [
           "GOD1",
@@ -1772,11 +1774,11 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "107 types, 36 handled, 67 silent, 0 gaps, 7 decisions",
+            "detail": "107 types, 36 handled, 67 silent, 0 gaps, 9 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
-            "detail": "pinned: calls, contains, declared_type, extends, go_composite_literal_construction, go_function_call, go_instantiation, go_interface_embedding, go_interface_implementation, go_package_scope_call, go_selector_use, go_struct_embedding, implements, imports, instantiates, references, return_type, uses",
+            "detail": "pinned: calls, contains, declared_type, extends, go_channel_operation, go_composite_literal_construction, go_function_call, go_instantiation, go_interface_embedding, go_interface_implementation, go_package_scope_call, go_selector_use, go_struct_embedding, implements, imports, instantiates, references, return_type, uses",
             "status": "pass"
           },
           "section-c-payload-matrix": {
