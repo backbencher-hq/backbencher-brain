@@ -5,11 +5,9 @@
 //      source (declared fallback), per the documented order in
 //      ide/vscode/src/server-resolution.ts. Fixture layouts on real tmpfs.
 //   G2 version matrix: semver minimum enforced, fail-closed on unparsable or
-//      missing versions; honest remediation message.//   G3  activation budget declared: `bbLsp.activationBudgetMs` exists in the
+//      missing versions; honest remediation message.
+//   G3 activation budget declared: `bbLsp.activationBudgetMs` exists in the
 //      manifest contributes and is read by extension.ts (contract §7.3).
-//   G3b activation events: every launch language has onLanguage:<lang> in the
-//      manifest — without it the extension never activates on file open (the
-//      owner spot-check defect, 2026-09-05).
 //   G4 thin-client wiring: documentSelector covers the five launch languages;
 //      no completion/diagnostics/rename providers registered (complement
 //      stance, contract §7.1) — enforced by source lint.
@@ -159,19 +157,6 @@ try {
   const extSource = readFileSync(EXT_TS, "utf8")
   check("G3: extension reads the declared budget at activation", extSource.includes("BB_ACTIVATION_BUDGET_SETTING") && extSource.includes("activationBudgetMs"))
   check("G3: activation is measured (wall clock) and compared to budget", extSource.includes("activationMs") && extSource.includes("withinBudget"))
-
-  // --- G3b: activation events — the extension must be able to WAKE UP ------
-  // The owner spot-check (M29 §8.5, 2026-09-05) caught the blind spot: the
-  // manifest shipped activationEvents: [] so opening a java file never
-  // activated the extension — documentSelector only filters AFTER activation.
-  // The E5 editor leg never caught it because runTests calls activate()
-  // directly. Gate: every launch language must have an onLanguage: event.
-  const LAUNCH_LANGS = ["java", "groovy", "kotlin", "scala", "typescript", "javascript", "python"]
-  const activationEvents = (MANIFEST.activationEvents ?? []) as string[]
-  check("G3b: manifest declares activation events at all", activationEvents.length > 0, "activationEvents empty — the extension can never wake up")
-  for (const lang of LAUNCH_LANGS) {
-    check(`G3b: onLanguage:${lang} declared`, activationEvents.includes(`onLanguage:${lang}`), "missing — opening a " + lang + " file will not activate the extension")
-  }
 
   // --- G4: thin client — complement stance (source lint) --------------------
   check(

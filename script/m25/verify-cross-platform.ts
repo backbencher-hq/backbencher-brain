@@ -9,17 +9,15 @@
 //   G1 cross-record:  every persisted editor-leg evidence file (E5*, F-*.json)
 //                     carries a non-empty OS field — the whole M25 evidence
 //                     set is §10-valid, not just E7's own records.
-//   G2 native leg:   the shared assertion core (one-library rule) runs
+//   G2 Linux leg:     the shared assertion core (one-library rule) runs
 //                     end-to-end against the SHIPPED server (node-dist) on an
 //                     OS-representative fixture; budgets re-measured and
-//                     gated on THIS OS; evidence emitted as E7-<os>.json
+//                     gated on THIS OS; evidence emitted as E7-linux.json
 //                     with kernel + cpu + node version per contract §3/§10.
-//                     Every OS runs its OWN native leg: a linux dev box runs
-//                     the linux leg; the CI OS-matrix jobs (M42.X1 launch
-//                     bar) run the darwin/win32 legs on their runners.
-//   G3 blocked:       the OTHER two OSes are machine-emitted as blocked
+//   G3 blocked:       macOS and Windows are machine-emitted as blocked
 //                     records with specific reasons — never omitted, never
-//                     claimed (the completion bar's declared-blocked branch).
+//                     claimed (the completion bar's declared-blocked branch;
+//                     the two-OS acceptance gap stays visible for X1/owner).
 //   G4 platform mutants: the two historical bug classes get dedicated
 //                     mutation cases on ide/vscode/src/auto-index.ts —
 //                     path-identity under separator heterogeneity and
@@ -97,7 +95,7 @@ for (const rec of editorLegRecords) {
   check(`G1: OS-scoped — ${name} ran on ${String(rec["os"])}`, rec["os"] === runningOs || typeof rec["os"] === "string")
 }
 
-// --- G2: the native leg for THIS OS ------------------------------------------
+// --- G2: the Linux leg (or honest blocked record if this isn't Linux) ----------
 console.log(`\nG2 — the ${runningOs} leg: shared assertion core over the shipped server`)
 
 const coreUrl = pathToFileURL(join(ROOT, "script/m25/feature-assertions.ts")).href
@@ -118,37 +116,45 @@ let budgets: Array<{ op: string; p95WarmMs: number; samples: number }> = []
 let machine: ReturnType<typeof core.machineInfo> | null = null
 let fixtureStats = { files: 0, symbols: 0, relationships: 0 }
 
-const distServer = join(ROOT, "dist/lsp/server.js")
-if (!existsSync(distServer)) {
+if (runningOs !== "linux") {
+  // This machine is not the Linux dev machine — the Linux leg is blocked here
+  // with a specific reason (never claimed by assumption).
   legStatus = "blocked"
-  legReason = "dist binary missing (run npm run build)"
+  legReason = `Linux runs require Linux hardware/runners; this machine is ${runningOs}. CI OS-matrix runners are the declared place for scheduled cross-OS runs.`
 } else {
-  const fx = await core.buildFixtureWorkspace()
-  fixtureStats = fx.stats
-  const transport = core.createStdioTransport({ runtime: "node-dist", workspaceDir: fx.workspaceDir, dataDir: fx.dataDir })
-  try {
-    budgets = await core.runFeatureAssertions({ transport, workspaceDir: fx.workspaceDir }, (name, ok, detail) => {
-      assertionResults.push({ name, ok, detail })
-    })    } catch (err) {
+  const distServer = join(ROOT, "dist/lsp/server.js")
+  if (!existsSync(distServer)) {
+    legStatus = "blocked"
+    legReason = "dist binary missing (run npm run build)"
+  } else {
+    const fx = await core.buildFixtureWorkspace()
+    fixtureStats = fx.stats
+    const transport = core.createStdioTransport({ runtime: "node-dist", workspaceDir: fx.workspaceDir, dataDir: fx.dataDir })
+    try {
+      budgets = await core.runFeatureAssertions({ transport, workspaceDir: fx.workspaceDir }, (name, ok, detail) => {
+        assertionResults.push({ name, ok, detail })
+      })
+    } catch (err) {
       legStatus = "failed"
-      legReason = String(err).slice(0, 900) // keep the server-stderr tail visible
+      legReason = String(err).slice(0, 300)
     } finally {
       await transport.dispose().catch(() => {})
     }
-  const failedAssertions = assertionResults.filter((r) => !r.ok)
-  if (legStatus === "verified" && failedAssertions.length > 0) {
-    legStatus = "failed"
-    legReason = `${failedAssertions.length} assertion(s) failed: ${failedAssertions.map((f) => f.name).join("; ").slice(0, 250)}`
-  }
-  if (legStatus === "verified") {
-    const budgetViolations = core.budgetViolations(budgets)
-    check("G2: warm p95 budgets met on this OS", budgetViolations.length === 0, budgetViolations.join("; "))
-    if (budgetViolations.length > 0) {
+    const failedAssertions = assertionResults.filter((r) => !r.ok)
+    if (legStatus === "verified" && failedAssertions.length > 0) {
       legStatus = "failed"
-      legReason = budgetViolations.join("; ").slice(0, 250)
+      legReason = `${failedAssertions.length} assertion(s) failed: ${failedAssertions.map((f) => f.name).join("; ").slice(0, 250)}`
     }
+    if (legStatus === "verified") {
+      const budgetViolations = core.budgetViolations(budgets)
+      check("G2: warm p95 budgets met on this OS", budgetViolations.length === 0, budgetViolations.join("; "))
+      if (budgetViolations.length > 0) {
+        legStatus = "failed"
+        legReason = budgetViolations.join("; ").slice(0, 250)
+      }
+    }
+    machine = core.machineInfo("node-dist-stdio")
   }
-  machine = core.machineInfo("node-dist-stdio")
 }
 for (const a of assertionResults) check(`G2: ${a.name}`, a.ok, a.detail)
 check(`G2: ${runningOs} leg completed`, legStatus === "verified", legReason ?? "")
@@ -162,7 +168,10 @@ const OS_MATRIX: Array<{ os: "linux" | "darwin" | "win32"; file: string; label: 
 ]
 for (const entry of OS_MATRIX) {
   if (entry.os === runningOs) continue
-  const reason = `No ${entry.label} hardware or runner on this machine (process.platform is ${runningOs}); the OS-matrix workflow (.github/workflows/os-matrix.yml) executes the ${entry.label} native leg on its GitHub-hosted runner and uploads the E7-${entry.os}.json artifact for the owner to persist. Recorded blocked locally, never claimed.`
+  const reason =
+    entry.os === "darwin"
+      ? "No macOS hardware or runner on this machine; CI OS-matrix runners are the declared place for scheduled macOS runs. Not executable here (process.platform is linux); recorded blocked, never claimed."
+      : "No Windows hardware or runner on this machine; CI OS-matrix runners are the declared place for scheduled Windows runs (path-separator and BB_DATA_DIR % variables are the expected first finds). Not executable here (process.platform is linux); recorded blocked, never claimed."
   const blocked = {
     issue: "544",
     code: `E7-${entry.os === "darwin" ? "darwin" : "windows"}`,
@@ -216,7 +225,6 @@ const MUTANTS: Array<{ name: string; from: string; to: string; probe: string }> 
   },
 ]
 
-const NPM = runningOs === "win32" ? "npx.cmd" : "npx"
 const tmp = mkdtempSync(join(tmpdir(), "e7-mutants-"))
 let mutantsCaught = 0
 try {
@@ -240,7 +248,7 @@ try {
     )
     let out = ""
     try {
-      out = execFileSync(NPM, ["tsx", probeScript], { cwd: ROOT, encoding: "utf8", timeout: 60_000, stdio: ["ignore", "pipe", "ignore"] })
+      out = execFileSync("npx", ["tsx", probeScript], { cwd: ROOT, encoding: "utf8", timeout: 60_000, stdio: ["ignore", "pipe", "ignore"] })
     } catch {
       out = "CAUGHT" // a crashing mutant is a caught mutant
     }
@@ -255,13 +263,9 @@ check("G4: all platform mutants caught", mutantsCaught === MUTANTS.length, `${mu
 
 // --- Evidence -------------------------------------------------------------------
 const failed = checks - passed
-const evidenceCode = runningOs === "darwin" ? "E7-darwin" : runningOs === "win32" ? "E7-windows" : "E7-linux"
-const evidenceFile = `E7-${runningOs}.json`
-const nativeLabel = runningOs === "darwin" ? "macOS" : runningOs === "win32" ? "Windows" : "Linux"
-const otherOses = OS_MATRIX.filter((e) => e.os !== runningOs).map((e) => e.file)
-const thisResult = {
+const linuxResult = {
   issue: "544",
-  code: evidenceCode,
+  code: "E7-linux",
   milestone: "M25",
   status: legStatus === "verified" && failed === 0 ? "verified" : legStatus === "blocked" ? "blocked" : "known-gap",
   os: runningOs,
@@ -281,15 +285,15 @@ const thisResult = {
   machine,
   currentCommit,
   verifierCommand: "npx tsx script/m25/verify-cross-platform.ts",
-  evidenceFile,
+  evidenceFile: "E7-linux.json",
   generatedAt: new Date().toISOString(),
   limitations: [
-    `Native ${nativeLabel} leg executed on this machine (${runningOs}); the other two OSes are machine-emitted blocked records (${otherOses.join(", ")}) — the OS-matrix workflow (.github/workflows/os-matrix.yml) runs each OS's native leg on its GitHub-hosted runner and uploads the evidence artifact for the owner to persist.`,
-    `The platform mutants prove the identity/data-dir/path cases FAIL LOUDLY; the native ${nativeLabel} leg itself exercises ${runningOs} semantics (drive letters, % variables on win32).`,
+    "One OS is executable on this machine (linux). macOS and Windows are machine-emitted blocked records (E7-darwin.json, E7-windows.json); the issue's two-OS acceptance stays an open, visible gap for the X1 completion-bar audit and the owner's waiver-or-runners decision.",
+    "The platform mutants prove the identity/data-dir/path cases FAIL LOUDLY on POSIX; full win32 semantics (drive letters, % variables) require a Windows runner.",
   ],
 }
-writeFileSync(join(RESULTS_DIR, evidenceFile), JSON.stringify(thisResult, null, 2) + "\n")
+writeFileSync(join(RESULTS_DIR, "E7-linux.json"), JSON.stringify(linuxResult, null, 2) + "\n")
 
-console.log(`\nE7(${runningOs}): ${thisResult.status.toUpperCase()} (${passed}/${checks} passed, ${mutantsCaught}/${MUTANTS.length} mutants caught)`)
-console.log(`Evidence: ${join(RESULTS_DIR, evidenceFile)}`)
+console.log(`\nE7(${runningOs}): ${linuxResult.status.toUpperCase()} (${passed}/${checks} passed, ${mutantsCaught}/${MUTANTS.length} mutants caught)`)
+console.log(`Evidence: ${join(RESULTS_DIR, "E7-linux.json")}`)
 if (failed > 0) process.exitCode = 1
