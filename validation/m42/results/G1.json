@@ -2,16 +2,18 @@
   "issue": "M42.G1",
   "code": "G1",
   "milestone": "M42",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 25,
   "passed": 25,
   "failed": 0,
   "negativeCases": 7,
-  "currentCommit": "0de9a354061e263d4f51840969613177a18e4c6c",
-  "workingTreeRelevantChanges": [],
+  "currentCommit": "7445762053032fedd9eb1cd0a04c094f1791a918",
+  "workingTreeRelevantChanges": [
+    "script/m42/verify-governance.ts"
+  ],
   "verifierCommand": "npx tsx script/m42/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-05T17:21:03.383Z",
+  "generatedAt": "2026-09-05T17:51:52.129Z",
   "ledger": "validation/m42/results/manifest.json",
   "interactionBudgets": {
     "documentHighlightP95Ms": 25,
