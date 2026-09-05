@@ -152,7 +152,8 @@ separation is corrected.
 |---|---|
 | `bb index <dir>` | Full/incremental project indexing |
 | `bb index <dir> --force` | In-place wipe and full rebuild |
-| `bb search <query>` | Symbol retrieval (default mode), language and limit filters |
+| `bb search <query>` | Symbol retrieval (default listing; omit `--mode` — explicit `--mode symbols` is rejected), language and limit filters; auto-refreshes stale files within budget before answering and declares it |
+| `bb search --no-auto-refresh <q>` | Answer from the existing index with the staleness footer instead of auto-refreshing (same decision as MCP `refresh=false`) |
 | `bb search --mode content <q>` | Content/snippet retrieval (same handler as MCP `bb_search` mode=content) |
 | `bb search --mode symbol <name>` | Exact-symbol source lookup (MCP mode=symbol parity) |
 | `bb search --mode file <path>` | Print an indexed file with freshness status (MCP mode=file parity) |
@@ -183,7 +184,7 @@ All five read commands are intentional; they answer different questions.
 preferred parity path:
 
 ```bash
-node bin/bb tool bb_search --dir . --args '{"mode":"symbols","query":"handleRequest"}'
+node bin/bb tool bb_search --dir . --args '{"query":"handleRequest"}'
 node bin/bb tool bb_analyze --dir . --args '{"mode":"stats"}'
 node bin/bb tool bb_doc --dir . --args '{"mode":"symbol","target":"handleRequest","format":"json"}'
 ```
@@ -191,8 +192,21 @@ node bin/bb tool bb_doc --dir . --args '{"mode":"symbol","target":"handleRequest
 Ergonomic `index`, `search`, and `health` commands are thin convenience adapters over the
 same provider options. `bb search --mode content|symbol|file` dispatches through the REAL
 `bb_search` MCP handler — identical result sets and freshness envelopes on both surfaces
-(proven e2e by `script/m40/verify-a7-cli-parity.ts`). `bb search --mode symbols` (the
-default) renders the same rows as MCP symbols mode with a stale-count footer.
+(proven e2e by `script/m40/verify-a7-cli-parity.ts`). `bb search` with `--mode` omitted (the
+default symbols listing) renders the same rows as MCP symbols mode with a stale-count footer.
+
+### Freshness automation knobs (M43)
+
+Read paths auto-refresh stale files within budget before answering and declare it
+(`auto-refreshed N files in Xms` on MCP answers, a trailing line on CLI answers). The
+budget applies to the files each read actually touched: at most
+`BB_AUTO_REFRESH_MAX_FILES` files (default 25) and `BB_AUTO_REFRESH_MAX_BYTES` bytes of
+modified content (default 2 MiB). Out of budget, disabled, or while another indexer holds
+the single-flight index lock, the read answers from existing data with the staleness block
+and an honest decline. Disable entirely with `BB_NO_AUTO_REFRESH=1` or per call with MCP
+`refresh=false` / CLI `--no-auto-refresh`. Only `BB_NO_AUTO_REFRESH=1` disables; other
+values leave auto-refresh enabled. Test-only hooks (`BB_TEST_INDEX_LOCK_OFF`, …) do
+nothing unless `BB_TEST_HOOKS=1` is set.
 
 ## 6. MCP Server Lifecycle
 
@@ -304,7 +318,7 @@ or file results. Read-only. Use `query` for lexical retrieval, `symbolName` for 
 and `filePath` for file targeting. Results may carry stale evidence.
 
 ```json
-{"mode":"symbols","query":"handleRequest","limit":10}
+{"query":"handleRequest","limit":10}
 ```
 
 ### `bb_ask`
