@@ -41,6 +41,23 @@ function commonRoot(paths: string[]): string | null {
   return prefix
 }
 
+/**
+ * M43.A4: infer the checkout root a DB was indexed from — longest common
+ * prefix of its stored absolute brain_file.path rows (same inference as
+ * rewriteBrainFilePaths). Null when the rows carry no absolute paths.
+ */
+function dbIndexedRoot(raw: any): string | null {
+  try {
+    const rows = raw.prepare("SELECT path FROM brain_file").all() as Array<{ path: unknown }>
+    const abs = rows.map((r) => String(r.path)).filter((p) => p.startsWith("/"))
+    if (abs.length === 0) return null
+    const root = commonRoot(abs)
+    return root && root !== "/" ? root : null
+  } catch {
+    return null
+  }
+}
+
 export function listProjects(): ProjectEntry[] {
   const dir = bbProjectsDir()
   if (!existsSync(dir)) return []
@@ -179,6 +196,17 @@ export function findAdoptableDb(checkoutFingerprint: string): AdoptionCandidate 
         try { fp = computeDbFingerprint(raw, git) } catch { continue }
       }
       if (fp && fp === checkoutFingerprint) {
+        // M43.A4 (#660): never adopt a LIVE sibling. Two simultaneous
+        // checkouts of the same codebase (two clones, a fork + its upstream,
+        // an editor working copy + a CI clone) have identical fingerprints —
+        // adoption is for a MOVED project, i.e. its original checkout is GONE.
+        // When the candidate's own recorded root still exists on disk it is
+        // still in use; adopting it would steal (and dropSource-delete) the
+        // other checkout's index and duplicate every row under a second id
+        // prefix. Verified against live copies: clone B's index adopted and
+        // deleted clone A's DB, leaving 114 rows under two prefixes.
+        const live = dbIndexedRoot(raw)
+        if (live && existsSync(live)) continue
         const files = Number((raw.prepare("SELECT COUNT(*) c FROM brain_file").get() as any)?.c ?? 0)
         return { id, dbPath, fingerprint: fp, git, files }
       }
@@ -258,12 +286,32 @@ export function importDbFile(dbFilePath: string, toId: string, newPath: string,
     copyFileSync(src, dstDb)
     const raw = BrainDatabase.openByPath(dstDb)
     if (fromId && fromId !== toId) {
-      for (const table of ["brain_file", "brain_symbol", "brain_relationship", "brain_import",
-                           "brain_query_cache", "brain_project_health", "brain_taint_flow",
-                           "brain_semantic_embedding", "brain_analysis_run", "brain_analysis_finding",
-                           "brain_analysis_occurrence", "brain_index_status"] as const) {
+      // M43.A4: run the re-key with FK enforcement OFF on this fresh copy.
+      // The composite ids are rewritten child-before-parent regardless (see
+      // rekeyEmbeddedIds), but the PRAGMA guarantees a partial re-key can
+      // never abort on a transient FK window — the whole rewrite is one
+      // coherent move. The handle closes below; the next open re-enables.
+      try { raw.prepare("PRAGMA foreign_keys = OFF").run() } catch {}
+      const projectScoped = ["brain_file", "brain_symbol", "brain_relationship", "brain_import",
+                             "brain_query_cache", "brain_project_health", "brain_taint_flow",
+                             "brain_semantic_embedding", "brain_analysis_run", "brain_analysis_finding",
+                             "brain_analysis_occurrence", "brain_index_status", "brain_annotation"]
+      for (const table of projectScoped) {
         try { raw.prepare(`UPDATE ${table} SET project_id = ? WHERE project_id = ?`).run(toId, fromId) } catch {}
       }
+      // M43.A4 (#660): the project_id COLUMN rewrite above is not enough —
+      // every composite id VALUE embeds the old project id (brain_file.id =
+      // "<pid>:<relpath>", brain_symbol.id / file_id / owner_symbol_id =
+      // "<pid>:<relpath>:<name>:<line>", relationship/taint/import refs point
+      // at those ids). Without re-keying them, the next incremental top-up at
+      // the moved path INSERTs rows under the NEW prefix alongside the stale
+      // foreign-prefixed ones (INSERT OR REPLACE cannot collide on a
+      // different PK) — every re-parsed file duplicated under two prefixes.
+      // Rewrite the leading "<fromId>:" prefix to "<toId>:" in every
+      // id-shaped column of every project-scoped table; the LIKE guard makes
+      // this a no-op for values that never embed the project id (bare 40-hex
+      // project_id values, plain uuids, external refs).
+      rekeyEmbeddedIds(raw, fromId, toId, projectScoped)
     }
     rewriteBrainFilePaths(raw, newPath)
     raw.close()
@@ -282,6 +330,44 @@ export function importDbFile(dbFilePath: string, toId: string, newPath: string,
   } catch (e: any) {
     try { rmSync(dstDir, { recursive: true, force: true }) } catch {}
     return { adopted: false, toId, reason: e?.message ?? String(e) }
+  }
+}
+
+/**
+ * M43.A4 (#660): re-key every composite id that embeds `fromId` as its
+ * leading "<fromId>:" prefix across all project-scoped tables, so a
+ * re-homed DB carries ids consistent with its new project id. Tables missing
+ * from an older DB are tolerated (per-table try/catch). Child-before-parent
+ * ordering keeps the rewrite correct even without the FK-off PRAGMA:
+ * relationship/taint refs (→ brain_symbol) and import/symbol file_id refs
+ * (→ brain_file) are re-keyed before the parent keys they reference move.
+ */
+function rekeyEmbeddedIds(raw: any, fromId: string, toId: string, tables: string[]): void {
+  // id-shaped column names that embed "<pid>:..." values. project_id is
+  // excluded: it holds the bare 40-hex (already rewritten to toId) and must
+  // never be treated as a composite id.
+  const isIdColumn = (name: string): boolean =>
+    name !== "project_id" && (name === "id" || name === "entity_id" || name.endsWith("_id"))
+  for (const table of tables) {
+    try {
+      const cols = (raw.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>)
+        .map((c) => c.name)
+        .filter(isIdColumn)
+      for (const col of cols) {
+        try {
+          // Update each row whose value starts with exactly "<fromId>:".
+          // LIKE '%' cannot appear in a 40-hex id, but ESCAPE is declared so
+          // future id formats containing _ or % still match literally.
+          raw.prepare(
+            `UPDATE ${table} SET ${col} = ? || substr(${col}, length(?) + 1) WHERE ${col} LIKE ? ESCAPE '\\'`,
+          ).run(toId, fromId, `${fromId}:%`)
+        } catch {
+          // Column present but not rewritable — leave untouched rather than abort.
+        }
+      }
+    } catch {
+      // Table absent on an older DB — nothing to re-key.
+    }
   }
 }
 
