@@ -14,7 +14,7 @@ export interface ToolInputSchema {
 }
 
 export interface ToolDocumentation {
-  category: "search" | "analysis" | "operations" | "lifecycle"
+  category: "search" | "analysis" | "operations" | "lifecycle" | "graph"
   summary: string
   defaults: Readonly<Record<string, string | number | boolean>>
   examples: readonly Readonly<Record<string, unknown>>[]
@@ -195,6 +195,109 @@ const descriptors = [
     aliases: [],
     deprecated: false,
     documentation: { category: "operations", summary: "Immediately refresh the index for a just-written/edited file or directory; mode=post re-derives relationships/taints/health without re-parsing.", defaults: { mode: "auto" }, examples: [{ path: "src/new-file.ts" }, { path: "src", mode: "dir" }, { path: "post", mode: "post" }] },
+  },
+  {
+    // M28.T1 (issue #624): the agent door to the graph the IDE shows. The
+    // handler reuses the same graph engine the LSP bb/graph handler uses —
+    // one truth, two doors (M28 decision D-1/D-2).
+    name: "bb_graph",
+    description: "Per-symbol dependency graph over the canonical graph engine: callers, callees, per-edge evidence tier (structural/import_based/usage_contextual/reference_qualified/inferred), confidence, and cross-language edge count. Same engine and tier rules the editor graph panel uses; truncated traversals are declared with a reason, never silent.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        symbol: { type: "string", description: "symbol name to root the graph at" },
+        maxDepth: { type: "number", description: "traversal depth bound (default 3)" },
+      },
+      required: ["symbol"],
+    },
+    mutability: "read",
+    requiresIndex: true,
+    modes: ["graph"],
+    aliases: [],
+    deprecated: false,
+    documentation: { category: "graph", summary: "Per-symbol graph with per-edge evidence tiers — the agent view of the editor's graph panel.", defaults: { maxDepth: 3 }, examples: [{ symbol: "handleRequest" }, { symbol: "handleRequest", maxDepth: 5 }] },
+  },
+  {
+    // M28.T1 (issue #624): the agent door to bounded impact. Reuses
+    // src/lsp/impact.ts (the component the editor graph panel's impact mode
+    // uses) so agent and developer see identical totals and truncation.
+    name: "bb_impact",
+    description: "Bounded reverse-dependency impact for one symbol via the same component the editor graph panel uses: declared node budget (200) and depth (5), truncation as a first-class field with reason, and an independently declared total when computable. Unknown symbols are loud declared errors — an empty impact set is never invented.",
+    inputSchema: {
+      type: "object",
+      properties: { symbol: { type: "string", description: "symbol name to compute impact for" } },
+      required: ["symbol"],
+    },
+    mutability: "read",
+    requiresIndex: true,
+    modes: ["impact"],
+    aliases: [],
+    deprecated: false,
+    documentation: { category: "graph", summary: "Bounded impact with declared truncation — identical numbers to the editor's impact mode.", defaults: {}, examples: [{ symbol: "handleRequest" }] },
+  },
+  {
+    // M28.T1 (issue #624): the agent door to cross-language facts. Reuses
+    // src/lsp/cross_language_hover.ts (stored rows only, per-pair, declared
+    // absence) — the agent reads the same facts the human's hover renders.
+    name: "bb_cross_language",
+    description: "Cross-language facts for one symbol from stored brain_relationship rows only (is_cross_language = 1), per-pair with bridge mechanism and evidence tier. Pairs with no stored rows are declared absent — this tool never infers, guesses, or aspires. Identical semantics to the editor's cross-language hover section.",
+    inputSchema: {
+      type: "object",
+      properties: { symbol: { type: "string", description: "symbol name to fetch cross-language facts for" } },
+      required: ["symbol"],
+    },
+    mutability: "read",
+    requiresIndex: true,
+    modes: ["cross-language"],
+    aliases: [],
+    deprecated: false,
+    documentation: { category: "graph", summary: "Stored cross-language pairs with declared absence — the agent view of the hover section.", defaults: {}, examples: [{ symbol: "Warehouse" }] },
+  },
+  {
+    // M28.A1 (issue #626, decision D-3): the agent's write door. Provenance is
+    // ENFORCED, not delegated: author_class is hardcoded 'agent' here — a tool
+    // call can never masquerade as a human note. Upsert keyed on
+    // (project, symbol, path, author) so re-annotation updates instead of
+    // flooding; body length is bounded by a declared limit.
+    name: "bb_annotate",
+    description: "Attach an agent-authored annotation to a symbol in the shared index. Provenance is enforced: the row records author class 'agent' (never spoofable), the calling tool identity, and timestamps. Re-annotating the same symbol+path updates the note in place — one note per author per location. Annotations are opinions layered on evidence, never index facts, and surface in the editor where the human reads (hover + graph).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        symbol: { type: "string", description: "symbol name to annotate" },
+        body: { type: "string", description: "annotation text (max 2000 chars)" },
+        path: { type: "string", description: "optional file path to disambiguate same-named symbols" },
+        toolIdentity: { type: "string", description: "optional name of the calling agent/tool (recorded verbatim)" },
+      },
+      required: ["symbol", "body"],
+    },
+    mutability: "write",
+    requiresIndex: false,
+    modes: ["annotate"],
+    aliases: [],
+    deprecated: false,
+    documentation: { category: "graph", summary: "Agent note with enforced provenance, stored where the human reads.", defaults: {}, examples: [{ symbol: "handleRequest", body: "Legacy auth path — scheduled for removal in Q3." }] },
+  },
+  {
+    // M28.A1 (issue #626, decision D-3): the read door. Provenance fields are
+    // always returned — a reader can always tell an agent note from a human
+    // note. Declared absence when there are none; bounded by a declared limit.
+    name: "bb_annotations",
+    description: "Read annotations for a symbol (or all annotations up to the declared limit) with full provenance on every row: author class, tool identity, and timestamps. No annotations is a declared absence, never an error.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        symbol: { type: "string", description: "symbol name (omit to list all annotations)" },
+        limit: { type: "number", description: "max rows returned (default 50, cap 200)" },
+      },
+      required: [],
+    },
+    mutability: "read",
+    requiresIndex: false,
+    modes: ["annotate"],
+    aliases: [],
+    deprecated: false,
+    documentation: { category: "graph", summary: "Annotations with full provenance; absence declared.", defaults: { limit: 50 }, examples: [{ symbol: "handleRequest" }, { limit: 100 }] },
   },
 ] as const satisfies readonly ToolDescriptor[]
 

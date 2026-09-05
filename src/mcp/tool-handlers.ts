@@ -20,6 +20,10 @@ import { generateDocumentation, formatDocumentation, type DocRequest } from "../
 import { visualizeProject, formatVisualization, type VisualizationRequest, type VisualizationScope } from "../intelligence/visualization/visualization-engine"
 import { generateMigrationPlans, formatMigrationPlans } from "../intelligence/migration/migration-engine"
 import { graphTraversal } from "../intelligence/graph/graph-engine"
+// M28.T1 (issue #624): the agent door reuses the EXACT components the IDE
+// door uses — one truth, two doors (M28 decision D-1). No reimplementation.
+import { computeImpact } from "../lsp/impact"
+import { tierForCrossLanguageEdge, factsFromRows, storedCrossLanguageRows } from "../lsp/cross_language_hover"
 import { getProjectStats } from "../intelligence/analysis/project-stats"
 import { getFileDependencies } from "../intelligence/analysis/dependencies"
 import { analyzeComplexity } from "../intelligence/analysis/complexity"
@@ -668,6 +672,161 @@ const handlers: Record<string, ToolHandler> = {
     // dir: incremental — parses only changed files, defers heavy post-processing
     const s = await indexProjectParallel(projectId as any, abs, { isIncremental: true, skipPostProcessing: true })
     return textResult(JSON.stringify({ mode: "dir", path: abs, candidates: s.totalFiles, processed: s.processedFiles, errors: s.errorFiles }, null, 2))
+  },
+
+  // --- M28.T1 (issue #624): the agent door to the graph surface ------------
+  // Decision D-1: these handlers call the same functions the LSP handlers
+  // call. The union differential gate (M28.U1) proves the two doors agree.
+
+  bb_graph: async (args, { projectId }) => {
+    const symbol = String(args.symbol ?? "")
+    if (!symbol) return textResult("bb_graph requires symbol", true)
+    const maxDepth = Number(args.maxDepth ?? 3)
+    if (!Number.isFinite(maxDepth) || maxDepth < 1 || maxDepth > 10) {
+      return textResult("bb_graph maxDepth must be a number between 1 and 10", true)
+    }
+    let result
+    try {
+      result = await graphTraversal(projectId as any, symbol, { maxDepth })
+    } catch (error) {
+      return textResult(`bb_graph: ${error instanceof Error ? error.message : String(error)}`, true)
+    }
+    const tierFor = (e: { relationshipType: string; confidence: number; metadata?: { evidenceClass?: string } }): string => {
+      // Identical tier derivation to the webview core (script/m26/graph-core.ts
+      // tierForEdge) and the hover gloss — M28.U1 drift-gates the copies.
+      const STRUCTURAL = new Set(["calls", "inherits", "implements", "overrides"])
+      const IMPORT = new Set(["imports", "import"])
+      const stored = e.metadata?.evidenceClass
+      if (stored && ["structural", "import_based", "usage_contextual", "reference_qualified", "inferred"].includes(stored)) return stored
+      if (STRUCTURAL.has(e.relationshipType)) return e.confidence >= 0.7 ? "structural" : "inferred"
+      if (IMPORT.has(e.relationshipType)) return "import_based"
+      return "inferred"
+    }
+    const edgesOf = (list: any[], direction: "caller" | "callee") =>
+      list.map((e) => ({
+        direction,
+        from: e.from,
+        to: e.to,
+        relationshipType: e.relationshipType,
+        confidence: e.confidence,
+        tier: tierFor(e),
+        isCrossLanguage: e.isCrossLanguage === true,
+        bridgeMechanism: e.bridge ?? e.bridgeMechanism ?? null,
+        depth: e.depth,
+        callSite: e.callSite ?? null,
+      }))
+    return textResult(JSON.stringify({
+      symbol,
+      root: { id: result.root?.id, name: result.root?.name, filePath: result.root?.filePath ?? null },
+      callers: edgesOf(result.callers as any[], "caller"),
+      callees: edgesOf(result.callees as any[], "callee"),
+      summary: {
+        totalCallers: result.summary?.totalCallers ?? result.callers.length,
+        totalCallees: result.summary?.totalCallees ?? result.callees.length,
+        maxDepthReached: result.summary?.maxDepthReached ?? maxDepth,
+        crossLanguageEdges: result.summary?.crossLanguageEdges ?? 0,
+        truncated: result.summary?.truncated === true,
+        truncationReason: result.summary?.truncationReason ?? null,
+      },
+      provenance: result.provenance ?? null,
+    }, null, 2))
+  },
+
+  bb_impact: async (args, { projectId }) => {
+    const symbol = String(args.symbol ?? "")
+    if (!symbol) return textResult("bb_impact requires symbol", true)
+    const raw = await BrainDatabase.getRawInstance(projectId as any)
+    try {
+      // The SAME component the editor graph panel's impact mode uses
+      // (src/lsp/impact.ts): declared budget, first-class truncation,
+      // declared total. One truth (M28 decision D-1).
+      const impact = await computeImpact(raw, projectId as string, symbol)
+      return textResult(JSON.stringify({
+        symbol,
+        root: impact.root,
+        budget: { maxNodes: 200, maxDepth: 5 },
+        impact: impact.impact,
+        shownCount: impact.shownCount,
+        totalCountIfKnown: impact.totalCountIfKnown,
+        truncated: impact.truncated,
+        truncationReason: impact.truncationReason,
+      }, null, 2))
+    } catch (error) {
+      return textResult(`bb_impact: ${error instanceof Error ? error.message : String(error)}`, true)
+    }
+  },
+
+  bb_cross_language: async (args, { projectId }) => {
+    const symbol = String(args.symbol ?? "")
+    if (!symbol) return textResult("bb_cross_language requires symbol", true)
+    const raw = await BrainDatabase.getRawInstance(projectId as any)
+    // The hover derives language from the FILE row (brain_file.language) —
+    // brain_symbol has no language column. Same source, same semantics (D-1).
+    const row = raw.prepare("SELECT s.id AS id, f.language AS language FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id WHERE s.project_id = ? AND s.name = ?").get(projectId, symbol) as { id: string; language: string | null } | undefined
+    if (!row) {
+      return textResult(`bb_cross_language: symbol '${symbol}' not found — declared error, not an empty set`, true)
+    }
+    // The SAME component the hover section renders from (D-1): stored rows
+    // only, per-pair, declared absence when there are none.
+    const rows = storedCrossLanguageRows(raw, row.id)
+    const facts = factsFromRows(rows, row.language ?? null)
+    return textResult(JSON.stringify({
+      symbol,
+      language: row.language,
+      facts,
+      pairCount: facts.length,
+      declaredAbsent: facts.length === 0,
+      absenceNote: facts.length === 0 ? "no stored cross-language rows for this symbol — absence declared, never guessed" : null,
+    }, null, 2))
+  },
+
+  // M28.A1 (issue #626, decision D-3): the agent's write door. Provenance is
+  // enforced HERE, in code: author_class is always 'agent' for tool writes —
+  // no argument can override it, so an agent note can never masquerade as a
+  // human note. Upsert on (project, symbol, path, author): one note per author
+  // per location, re-annotation updates in place (anti-flood by construction).
+  bb_annotate: async (args, { projectId }) => {
+    const symbol = String(args.symbol ?? "").trim()
+    const body = String(args.body ?? "")
+    const annotationPath = args.path === undefined || args.path === null || String(args.path).trim() === "" ? null : String(args.path)
+    const toolIdentity = String(args.toolIdentity ?? "bb_annotate(mcp)")
+    if (!symbol) return textResult("bb_annotate requires symbol", true)
+    if (!body.trim()) return textResult("bb_annotate requires a non-empty body — an empty note is a refusal, not a silent no-op", true)
+    if (body.length > 2000) return textResult(`bb_annotate: body exceeds the declared limit of 2000 chars (got ${body.length}) — declared refusal, not silent truncation`, true)
+    const now = Date.now()
+    const id = `bbann-${projectId}-${symbol}-${annotationPath ?? ""}-agent`.replace(/[^a-zA-Z0-9-]/g, "_")
+    const raw = await BrainDatabase.getRawInstance(projectId as any)
+    raw.prepare(
+      `INSERT INTO brain_annotation (id, project_id, symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated)
+       VALUES (?, ?, ?, ?, 'agent', ?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET body = excluded.body, tool_identity = excluded.tool_identity, time_updated = excluded.time_updated`,
+    ).run(id, projectId, symbol, annotationPath, toolIdentity, body, now, now)
+    const updated = raw.prepare("SELECT id, symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated FROM brain_annotation WHERE id = ?").get(id) as any
+    return textResult(JSON.stringify({
+      stored: true,
+      annotation: updated,
+      provenance: "author_class is enforced 'agent' for tool writes — recorded, not claimed",
+      surfaces: "this note renders in the editor hover section and graph badge (M28.A2)",
+    }, null, 2))
+  },
+
+  // M28.A1 read door: every row carries its provenance; absence is declared.
+  bb_annotations: async (args, { projectId }) => {
+    const symbol = args.symbol === undefined || args.symbol === null || String(args.symbol).trim() === "" ? null : String(args.symbol).trim()
+    const limitRaw = args.limit === undefined || args.limit === null ? 50 : Number(args.limit)
+    if (Number.isNaN(limitRaw) || limitRaw < 1 || limitRaw > 200) return textResult("bb_annotations: limit must be a number between 1 and 200", true)
+    const raw = await BrainDatabase.getRawInstance(projectId as any)
+    const limit = Math.floor(limitRaw)
+    const rows = symbol
+      ? (raw.prepare("SELECT id, symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated FROM brain_annotation WHERE project_id = ? AND symbol_name = ? ORDER BY time_updated DESC LIMIT ?").all(projectId, symbol, limit) as any[])
+      : (raw.prepare("SELECT id, symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated FROM brain_annotation WHERE project_id = ? ORDER BY time_updated DESC LIMIT ?").all(projectId, limit) as any[])
+    return textResult(JSON.stringify({
+      symbol,
+      annotations: rows,
+      count: rows.length,
+      declaredAbsent: rows.length === 0,
+      absenceNote: rows.length === 0 ? (symbol ? `no annotations stored for '${symbol}' — absence declared, never guessed` : "no annotations stored for this project yet") : null,
+    }, null, 2))
   },
 
 }

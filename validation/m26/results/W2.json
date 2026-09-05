@@ -1,0 +1,21 @@
+{
+  "issue": "M26.W2",
+  "code": "W2",
+  "milestone": "M26",
+  "status": "verified",
+  "checks": 24,
+  "passed": 24,
+  "failed": 0,
+  "mutantsCaught": 5,
+  "mutantsTotal": 5,
+  "currentCommit": "a9fe5e2603d677d5c09d0720f41b7d0f7079cd34",
+  "verifierCommand": "npx tsx script/m26/verify-graph-transport.ts",
+  "evidenceFile": "W2.json",
+  "generatedAt": "2026-09-04T20:21:50.073Z",
+  "schemaVersion": 1,
+  "method": "bb/graph",
+  "limitations": [
+    "Real-server leg covers node-source runtime; dist/bun legs are exercised by the standing M24 harness suite.",
+    "Legacy callers (no schemaVersion) are rejected by design; advertisement is the discovery mechanism."
+  ]
+}

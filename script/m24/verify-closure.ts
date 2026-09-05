@@ -61,7 +61,9 @@ const SECTION6_CATEGORIES: Array<{
   { category: "budget violation hidden", code: "V1", mutantName: "G4" },
 ]
 
-const LAUNCH_LANGUAGES = ["java", "groovy", "kotlin", "scala", "typescript"]
+// Launch set (M29 wave-1 extension; single owner src/lsp/launch_languages.ts,
+// drift-gated against the approval record by script/m29/verify-governance.ts).
+import { LAUNCH_LANGUAGES } from "../../src/lsp/launch_languages"
 const SIX_FEATURES = ["hover", "definition", "references", "documentSymbol", "workspaceSymbol", "callHierarchy"]
 
 let checks = 0

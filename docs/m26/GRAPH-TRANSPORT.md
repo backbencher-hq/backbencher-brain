@@ -1,0 +1,67 @@
+# bb/graph — the graph transport (M26.W2)
+
+The declared, versioned custom LSP request that carries graph queries between
+`bb_lsp` and the webview. Owner: `src/lsp/graph_request.ts`. This document is
+drift-gated by `script/m26/verify-graph-transport.ts` (method name, schema
+version, error prefixes, and provider advertisement are asserted against the
+code).
+
+## Method
+
+`bb/graph` — a custom request in the `bb/` namespace (same convention as
+`bb/staleness`, the private honesty plumbing). Advertised in `initialize`
+capabilities as:
+
+```json
+"graphProvider": { "schemaVersion": 1 }
+```
+
+## Schema version 1
+
+Request params (all keys except `schemaVersion` and `symbol` optional):
+
+| param | type | constraint |
+|---|---|---|
+| `schemaVersion` | integer | must be exactly `1` |
+| `symbol` | string | non-empty; symbol name to root the graph at |
+| `direction` | string | `"callers"` \| `"callees"` \| `"both"` |
+| `maxDepth` | integer | 1–10 (server clamps traversal to 10 regardless) |
+| `relationshipTypes` | string[] | non-empty strings; defaults to the engine set |
+| `includeCrossLanguage` | boolean | |
+
+Response: the `GraphTraversalResult` model (src/intelligence/contracts.ts) —
+`root`, `callers`, `callees`, `nodes`, `provenance`, `summary`. Every edge in
+`callers`/`callees` carries:
+
+- `rowId` — the `brain_relationship` row id. **Traceability rule:** every
+  rendered edge must trace to a stored row; the response is gated at the
+  boundary and an edge without a row id fails the request rather than ship.
+- `metadata.evidenceClass` — the stored evidence tier when the indexer wrote
+  one; the webview renders tiers from this field (W4), never from guesswork.
+
+## Declared errors (loud, machine-parseable)
+
+Every failure throws with the `bb/graph:` prefix; the server wraps it into a
+JSON-RPC error response with the message intact. Clients match the prefix to
+distinguish declared errors from bugs.
+
+| condition | message shape |
+|---|---|
+| params not an object | `bb/graph: params must be an object carrying schemaVersion and symbol` |
+| missing/mismatched version | `bb/graph: schema version mismatch — request carries …, server implements 1 …` |
+| missing/empty symbol | `bb/graph: params.symbol (non-empty string) is required` |
+| bad direction/maxDepth/… | `bb/graph: params.<field> must be …` |
+| **unindexed workspace** | `bb/graph: workspace is not indexed — run `bb index` first …` |
+| unknown symbol | `Symbol '<name>' not found` (from the engine; surfaced as-is) |
+| untraceable edge (internal) | `bb/graph: internal consistency failure — edge … has no brain_relationship row id` |
+
+Note: a client that never sends `schemaVersion` (a legacy caller) gets the
+loud version error **by design** — that is the versioning mechanism. Honest
+clients read `capabilities.graphProvider.schemaVersion` before calling.
+
+## What is NOT declared
+
+- No batching, no subscriptions, no streaming. One request, one result.
+- No server-side render payload — the webview renders from the model
+  (one-renderer rule, M26.W1).
+- Other languages are declared absent, never "coming soon".

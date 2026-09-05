@@ -1,61 +1,95 @@
-# M27: Everywhere (IDE Program v3)
+# M27 — Everywhere (JetBrains / Zed / Neovim / Helix) — Master Plan
 
-Status: `open`
-GitHub milestone: `27` (IDE program v3 — "Everywhere")
-Parent program: [IDE Program Decision Record](../IDE-PROGRAM-DECISIONS.md)
-Governing contract: [IDE Honesty Contract](../IDE-HONESTY-CONTRACT.md)
-Prerequisite: M26 completion bar met (verified by G1).
+> **STATUS: DRAFT — awaiting owner review.**
+> Nothing below is a verified claim. Every claim becomes one only when an
+> issue's ledger cell pins a verifier, a run, and a machine (contract §2).
+
+Program: [IDE Program Decision Record](../IDE-PROGRAM-DECISIONS.md) (v3 —
+"One index, every IDE"). Governing contract:
+[IDE Honesty Contract](../IDE-HONESTY-CONTRACT.md). Parent status:
+[IDE Program Status](../IDE-PROGRAM-STATUS.md).
 
 ## Purpose
 
-One index, every IDE. JetBrains via LSP4IJ first (configuration, not native
-plugin code — the native plugin is gated behind LSP4IJ evidence per the
-decision record), then the LSP-native editors: Zed, Neovim, Helix. Each
-editor is a separate claim level with its own pinned run; the graph webview
-ships where the editor has a webview equivalent, and is declared absent where
-it does not.
+v0 put the server up (M24), v1 put it in VS Code and its forks (M25), v2 put
+the graph in the editor (M26). v3 removes the "VS Code-only" asterisk: the
+same `bb_lsp` binary, the same `brain.db` index, the same honesty surface —
+hover with evidence tiers, staleness markers, symbols — reachable from the
+other major editor families.
 
-## Issue groups
+**The one-sentence rule of this milestone:** an editor earns a claim level by
+*running the real server*, never by intending to. Where an editor cannot be
+driven headlessly on this machine, the record says so with a reason — it is
+declared, not discovered missing later.
 
-| Code | Issue | Deliverable |
-|------|-------|-------------|
-| G1 | Governance + v2-bar check | ledger; closure gate; M26 bar still green |
-| J1 | LSP4IJ configuration | server definition (launch `bb lsp`), capability mapping, documented install path |
-| J2 | JetBrains verification | pinned IntelliJ IDEA version, scripted workspace run, per-feature assertions (I3-equivalent for JetBrains) |
-| J3 | Native-plugin decision gate | evidence review: does LSP4IJ meet the claim levels we need? Written disposition (proceed native / stay LSP4IJ) recorded with reasons |
-| Z1 | Zed verification | extension or external-server config; pinned Zed version; per-feature assertions |
-| N1 | Neovim + Helix verification | reference configs; scripted headless assertions via a driver (e.g. nvim --headless); pinned versions |
-| W1 | Graph parity decision | where a webview equivalent exists (Zed?), ship it; where not, declare absence per editor in docs and evidence |
-| V1 | Verifier harness | per-editor runners with a shared assertion core (one feature-assertion library, many runners) |
-| D1 | Docs | per-editor install/verification matrix; every editor's capability table states measured levels |
-| X1 | Gate | closure gate |
+## The core architectural bet
 
-## Protocol
+All four adapters are **clients of the same binary**. No per-editor indexing,
+no per-editor intelligence, no per-editor renderer. Every adapter ships:
 
-Same as prior milestones, plus:
+1. a **launch configuration** (how the editor starts `bb_lsp`),
+2. a **capability declaration** (which bb_lsp methods that editor surfaces),
+3. a **verification leg** at the deepest level the editor permits:
+   - `I3` — real editor, real server, real assertions, machine-driven,
+   - `I2` — configuration + server verified against each other, editor launch
+     not machine-driven here (reason recorded),
+   - `blocked` — with the reason, per the standing rule.
 
-1. One shared feature-assertion core; per-editor runners adapt transport only.
-   Divergent assertions per editor are a filed defect against the harness.
-2. Editor availability is machine-dependent (JetBrains toolboxes, Zed
-   channels) — unavailable editors are `blocked` with reason, recorded.
-3. LSP4IJ limitations discovered are filed against our docs first (declared),
-   and upstream only where they are upstream bugs.
+The fork-capability matrix (v3) carries the honest per-editor feature delta.
+Known going in, declared up front: **the graph webview is I3-VS Code only.**
+LSP4IJ/Zed/Neovim/Helix get hover/definition/references/symbols/staleness —
+the graph panel has no cross-editor story in v3, and the matrix will not
+pretend otherwise.
 
-## Completion bar for v3 (M28 may not start until ALL are true)
+## Decisions
 
-1. JetBrains (via LSP4IJ), Zed, Neovim verified at pinned versions for the
-   core feature set, or honestly `blocked` with reasons recorded in the
-   ledger — no silent omissions.
-2. J3 disposition written and owner-reviewed (native plugin: proceed or not).
-3. Per-editor capability matrix published; every cell is a claim level or
-   `blocked`/`absent`, never blank.
-4. Latency budgets re-measured per editor platform where the runner allows.
-5. Closure gate green; ledger clean.
+| # | Decision | Rationale |
+|---|---|---|
+| D-1 | JetBrains via **LSP4IJ user-defined server template** (configuration, not a Kotlin plugin) | Zero plugin code to maintain; LSP4IJ templates are the declared transport. A custom IntelliJ plugin is a *later, separate* decision — not v3. |
+| D-2 | Zed via a **minimal extension** (`extension.toml` + thin wasm shim that resolves the `bb_lsp` binary from settings) | Zed requires an extension to attach a language server; the shim owns binary resolution only — no logic. |
+| D-3 | Neovim via **nvim-lspconfig-style config** and verified **headless**: `nvim --headless` drives the real LSP client against the fixture workspace | Neovim is fully scriptable headless — it is the strongest v3 evidence leg (I3) and goes first among the four. |
+| D-4 | Helix via **`languages.toml`**; verified at configuration level against bb_lsp's declared capabilities; any deeper claim requires a driven session — recorded honestly if not achievable here | Helix has no headless assertion path on this machine class; honesty over aspiration. |
+| D-5 | One **fixture workspace + one assertion vocabulary** shared by all four legs (the M25 fixture pattern, reused) | Differential honesty: the same questions asked of every editor, so the matrix compares like with like. |
+| D-6 | The graph webview ships **VS Code-only in v3**; the matrix records the delta per editor | Declared scope, not a silent gap. |
+| D-7 | Toolchain provisioning (owner decision, 2026-09-04): **Neovim + Helix + Zed** as portable binaries in git-ignored `.tools/`; **JetBrains is not downloaded** — its runIde leg is attempted only as a declared blocked-with-reason record, and J1 verifies at configuration level (I2) | Strongest I3 leg funded without a 1.2 GB IDE download; the bar's "≥1 I3 leg" is met by Neovim; honesty carried by the blocked record. |
 
-## Negative list
+## Issues (planned order)
 
-- No native JetBrains plugin inside this milestone (J3 only decides *whether*
-  one is ever built).
-- No editor claimed without a pinned run on this machine or a recorded
-  blocked state.
-- No graph-webview claims for editors without a webview equivalent.
+| Code | Issue | Deliverable | Acceptance criteria (abridged) |
+|---|---|---|---|
+| G1 | [#616](https://github.com/backbencher-hq/backbencher-brain/issues/616) | Governance | Ledger, governance map, gate, ladder check (re-audits the M26 bar) |
+| N1 | [#617](https://github.com/backbencher-hq/backbencher-brain/issues/617) | Neovim (I3) | init.lua adapter + headless driver + verifier |
+| J1 | [#618](https://github.com/backbencher-hq/backbencher-brain/issues/618) | JetBrains / LSP4IJ (I2, stretch I3) | LSP4IJ user-defined template (JSON) + verifier |
+| Z1 | [#619](https://github.com/backbencher-hq/backbencher-brain/issues/619) | Zed (I2) | Extension (`extension.toml` + wasm shim) + verifier |
+| H1 | [#620](https://github.com/backbencher-hq/backbencher-brain/issues/620) | Helix (I2) | `languages.toml` fragment + verifier |
+| V1 | [#621](https://github.com/backbencher-hq/backbencher-brain/issues/621) | Fork capability matrix v3 | `docs/m27/FORK-CAPABILITY-MATRIX.md` |
+| X1 | [#622](https://github.com/backbencher-hq/backbencher-brain/issues/622) | Closure gate | Full-suite audit + v3 completion bar + regeneration |
+
+## v3 completion bar (X1 audits this)
+
+1. Every one of the four adapters has a committed launch configuration whose
+   method set is proven a subset of bb_lsp's declared capabilities.
+2. At least one adapter is **I3** (real editor session, machine-driven) — N1's
+   slot; if it fails, the milestone does not close on I2s alone.
+3. The capability matrix v3 exists, is drift-gated, and declares the graph
+   delta per editor.
+4. The M26 completion bar re-audit passes inside M27's gate (ladder).
+5. Every unresolved leg carries a `blocked` record with a reason — none are
+   silent.
+
+## Non-goals (v3)
+
+- No JetBrains-native plugin (Kotlin) — LSP4IJ config only (D-1).
+- No graph rendering outside VS Code (D-6).
+- No MCP/agent work (v4), no precision waves (v5).
+- No changes to bb_lsp's surface. If an editor demands a server change, that
+  is a new decision record — not a silent scope creep.
+
+## Risks
+
+- **runIde (J1 stretch)** may be infeasible on this machine (display, RAM,
+  download size). Fallback: I2 with the attempt recorded — never a silent skip.
+- **Zed shim API drift**: zed_extension_api moves; the shim is kept minimal so
+  the surface is tiny.
+- **Helix headlessness**: if `hx` cannot be driven here, H1 stays I2 and says
+  why — the bar (item 2) does not depend on it.

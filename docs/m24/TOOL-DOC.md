@@ -14,8 +14,9 @@ every response states where its truth comes from (contract §2 claim levels).
 
 ## Launch languages
 
-Verified for: java, groovy, kotlin, scala, typescript.
-Anything else (Python, Go, Rust, …) is **declared absent** — the server
+Verified for: java, groovy, kotlin, scala, typescript, javascript, python.
+Anything else (Go, Rust, Ruby, … — every language outside the launch set
+above) is **declared absent** — the server
 replies with an honest not-indexed/not-launch response, never a guess.
 
 ## Claim levels (contract §2)
@@ -27,6 +28,8 @@ replies with an honest not-indexed/not-launch response, never a guess.
 | kotlin | I1 ✓ | I1 ✓ | I1 ✓ | I1 ✓ |
 | scala | I1 ✓ | I1 ✓ | I1 ✓ | I1 ✓ |
 | typescript | I1 ✓ | I1 ✓ | I1 ✓ | I1 ✓ |
+| javascript | I1 ✓ | I1 ✓ | I1 ✓ | I1 ✓ |
+| python | I1 ✓ | I1 ✓ | I1 ✓ | I1 ✓ |
 
 - **I1 (protocol-passed)**: the feature passes the reference LSP client
   harness (`script/m24/lsp_harness.ts`, wired into `npm run verify`) with

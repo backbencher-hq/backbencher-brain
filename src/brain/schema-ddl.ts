@@ -260,6 +260,12 @@ CREATE INDEX IF NOT EXISTS brain_rel_proj_source_idx ON brain_relationship(proje
 CREATE INDEX IF NOT EXISTS brain_rel_proj_type_idx ON brain_relationship(project_id, relationship_type);
 CREATE INDEX IF NOT EXISTS brain_rel_target_type_idx ON brain_relationship(target_symbol_id, relationship_type);
 CREATE INDEX IF NOT EXISTS brain_rel_cross_lang_idx ON brain_relationship(is_cross_language);
+-- M29.R3 (giant-repo, 59k files): hover's cross-language probes filter on
+-- is_cross_language = 1 AND target/source_symbol_id = ?. The single-column
+-- indexes leave SQLite scanning; the composite (symbol_id, is_cross_language)
+-- form answers both probes from the index (measured 477ms -> <1ms at scale).
+CREATE INDEX IF NOT EXISTS brain_rel_target_cross_idx ON brain_relationship(target_symbol_id, is_cross_language);
+CREATE INDEX IF NOT EXISTS brain_rel_source_cross_idx ON brain_relationship(source_symbol_id, is_cross_language);
 
 CREATE INDEX IF NOT EXISTS brain_import_name_idx ON brain_import(imported_name);
 CREATE INDEX IF NOT EXISTS brain_import_external_idx ON brain_import(is_external);
@@ -295,6 +301,40 @@ CREATE INDEX IF NOT EXISTS brain_embed_hash_idx ON brain_semantic_embedding(cont
 /** Current schema version — every freshly ensured brain database records this row. */
 export const SCHEMA_VERSION = 1
 export const SCHEMA_MIGRATION_NAME = "m13-universal-brain"
+
+/**
+ * M28.A1 (issue #626, decision D-3/D-4): agent-authored annotations.
+ *
+ * An annotation is an OPINION layered on index evidence, never an index fact:
+ * every row carries its author class ('agent' | 'human'), the tool identity
+ * that wrote it, and a timestamp — provenance is the honesty boundary. The
+ * migration is ADDITIVE-ONLY (D-4) and idempotent, and — like the M22.W2
+ * column migrations — must run on EVERY open, not just fresh schema creation,
+ * because ensureSchemaIfNew skips full DDL for pre-existing databases (the
+ * same db every editor and verifier reads).
+ */
+export const ANNOTATION_DDL = `
+    CREATE TABLE IF NOT EXISTS brain_annotation (
+      id TEXT PRIMARY KEY NOT NULL,
+      project_id TEXT NOT NULL,
+      symbol_name TEXT NOT NULL,
+      symbol_path TEXT,
+      author_class TEXT NOT NULL,
+      tool_identity TEXT NOT NULL,
+      body TEXT NOT NULL,
+      time_created INTEGER NOT NULL,
+      time_updated INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS brain_annotation_project_symbol_idx ON brain_annotation(project_id, symbol_name);
+    CREATE INDEX IF NOT EXISTS brain_annotation_project_idx ON brain_annotation(project_id);
+  `
+
+/** Idempotent, additive-only annotation migration. Safe to call repeatedly. */
+export function ensureAnnotationTable(raw: any): void {
+  try {
+    raw.exec(ANNOTATION_DDL)
+  } catch {}
+}
 
 /**
  * M22.W2: idempotent column migrations that must run on EVERY open, not just
@@ -340,6 +380,8 @@ export function ensureSchema(raw: any): void {
   } catch {}
   // Column migrations run for freshly-created databases too (idempotent).
   migrateSchemaColumns(raw)
+  // M28.A1: annotation store is additive + idempotent, every open.
+  ensureAnnotationTable(raw)
   raw.exec(`
     CREATE TABLE IF NOT EXISTS brain_analysis_run (
       id TEXT PRIMARY KEY NOT NULL, project_id TEXT NOT NULL, kind TEXT NOT NULL,

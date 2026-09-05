@@ -21,9 +21,11 @@
 // Rendering happens as data (StatusView). The extension layer maps it onto
 // the status bar; E5 captures the in-editor renders as screenshots.
 
-/** The five launch languages (contract §3 scope). */
-export const LAUNCH_LANGUAGES = ["java", "groovy", "kotlin", "scala", "typescript"] as const
-export type LaunchLanguage = (typeof LAUNCH_LANGUAGES)[number]
+/** The launch set — single owner is src/lsp/launch_languages.ts (M29.R2:
+ *  wave-1 adds javascript and python; this copy was a drift hazard). */
+import { LAUNCH_LANGUAGES, type LaunchLanguage } from "../../../src/lsp/launch_languages"
+export { LAUNCH_LANGUAGES }
+export type { LaunchLanguage }
 
 /**
  * Declared per-language claim levels, shipped with the extension.
@@ -38,6 +40,8 @@ export const CLAIM_LEVELS: Record<LaunchLanguage, string> = {
   kotlin: "I1",
   scala: "I1",
   typescript: "I1",
+  javascript: "I1",
+  python: "I1",
 }
 
 /** Human-readable expansion of a claim level (contract §2 ladder). */

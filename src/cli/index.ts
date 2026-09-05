@@ -518,7 +518,7 @@ export async function runCli(argv: string[]): Promise<void> {
 
   program
     .command("tool")
-    .description("run one of the 10 public tools with JSON arguments")
+    .description("run one of the public tools with JSON arguments")
     .argument("<name>", "public tool name, e.g. bb_search or bb_doc")
     .option("--dir <dir>", "project directory (default: cwd)")
     .option("--args <json>", "tool arguments as a JSON object", "{}")

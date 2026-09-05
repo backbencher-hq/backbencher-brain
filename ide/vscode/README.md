@@ -20,11 +20,19 @@ Every feature carries its declared claim level — the UI shows the same table
 | kotlin    | I1    | I1         | I1         | I1      | I1             |
 | scala     | I1    | I1         | I1         | I1      | I1             |
 | typescript| I1    | I1         | I1         | I1      | I1             |
+| javascript| I1    | I1         | I1         | I1      | I1             |
+| python    | I1    | I1         | I1         | I1      | I1             |
 
 I1 = protocol-passed (see the honesty contract in the repository: `docs/IDE-HONESTY-CONTRACT.md`).
 The claim table shipped in this extension is drift-gated against the
 machine-generated tool document at verify time — the UI can never claim more
 than the evidence chain recorded.
+
+**Measured precision** (per-language, per-feature, machine-regenerated,
+drift-gated): [`docs/m29/PRECISION-LEDGER.md`](../../docs/m29/PRECISION-LEDGER.md) —
+the published ledger carries the evidence-derived claim levels (I3 across the
+wave-1 languages), warm-latency percentiles, and the analyzer differential
+floors behind this table.
 
 **Claim-level legend** (contract §2 — higher levels require all lower ones):
 

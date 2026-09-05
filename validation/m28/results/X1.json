@@ -1,0 +1,22 @@
+{
+  "issue": "629",
+  "code": "X1",
+  "milestone": "M28",
+  "status": "verified",
+  "checks": 31,
+  "passed": 31,
+  "failed": 0,
+  "failures": [],
+  "negativeCases": 4,
+  "currentCommit": "b603ad399b57dc86fe60bc37db52284025c659fb",
+  "verifierCommand": "npx tsx script/m28/verify-closure.ts",
+  "barViolations": [],
+  "perMutantRecords": {
+    "T1": [],
+    "U1": [],
+    "A1": [],
+    "A2": [],
+    "V1": []
+  },
+  "generatedAt": "2026-09-04T18:20:24.411Z"
+}

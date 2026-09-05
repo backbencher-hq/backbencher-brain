@@ -1,0 +1,21 @@
+{
+  "status": "verified",
+  "checkedPairs": [
+    {
+      "source": "kotlin",
+      "target": "typescript",
+      "edgeCount": 1,
+      "sampleBridge": "kotlin-ts interop",
+      "origin": "fixture (W3 suite, seeded)"
+    },
+    {
+      "source": "typescript",
+      "target": "kotlin",
+      "edgeCount": 1,
+      "sampleBridge": null,
+      "origin": "fixture (W3 suite, seeded)"
+    }
+  ],
+  "realDbsScanned": 25,
+  "generatedAt": "2026-09-04T21:54:18.949Z"
+}
