@@ -827,14 +827,14 @@
       "status": "pass"
     },
     {
-      "description": "go: 3 ruled, 3 pending owner",
+      "description": "go: 3 ruled, 4 pending owner",
       "id": "design-decisions-tracked",
       "language": "go",
       "status": "pass"
     },
     {
       "description": "every named node type classified (go)",
-      "detail": "107 types, 36 handled, 67 silent, 0 gaps, 6 decisions",
+      "detail": "107 types, 36 handled, 67 silent, 0 gaps, 7 decisions",
       "id": "section-a-structural",
       "language": "go",
       "status": "pass"
@@ -1556,8 +1556,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "5b9e657c0ff92917109e7c9d63dbaf3ea562058e",
-  "committedAt": "2026-09-05T23:42:27+02:00",
+  "commit": "7d3f986e73c9207b5abf7c566e77770171ad6b3d",
+  "committedAt": "2026-09-06T00:45:24+02:00",
   "data": {
     "languages": {
       "c": {
@@ -1762,7 +1762,8 @@
         "pendingDecisions": [
           "GOD4",
           "GOD5",
-          "GOD6"
+          "GOD6",
+          "GOD7"
         ],
         "ruledDecisions": [
           "GOD1",
@@ -1771,7 +1772,7 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "107 types, 36 handled, 67 silent, 0 gaps, 6 decisions",
+            "detail": "107 types, 36 handled, 67 silent, 0 gaps, 7 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
