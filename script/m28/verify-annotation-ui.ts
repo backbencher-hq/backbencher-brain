@@ -117,11 +117,11 @@ const projectId = await seedFixture(process.env.BB_DATA_DIR!)
   const { BrainDatabase } = await import(path.join(ROOT, "src", "brain", "database.ts"))
   const { hover } = await import(path.join(ROOT, "src", "lsp", "hover.ts"))
   const raw = await BrainDatabase.getRawInstance(projectId)
-  const res = hover(raw, { filePath: path.join(workspaceDir, "main.ts"), position: { line: 1, character: 2 } })
+  const res = await hover(raw, { filePath: path.join(workspaceDir, "main.ts"), position: { line: 1, character: 2 } })
   const text = res.contents?.value ?? ""
   check("A2: real hover renders the annotation section", text.includes("**notes**") && text.includes(ANNOTATION_BODY), text.slice(0, 220))
   check("A2: real hover labels the author class + tool", text.includes("agent note by") && text.includes(ANNOTATION_TOOL), text.slice(0, 220))
-  const mainRes = hover(raw, { filePath: path.join(workspaceDir, "main.ts"), position: { line: 7, character: 2 } })
+  const mainRes = await hover(raw, { filePath: path.join(workspaceDir, "main.ts"), position: { line: 7, character: 2 } })
   const mainText = mainRes.contents?.value ?? ""
   check("A2: unannotated symbol renders NO annotation section", mainRes.contents !== null && !mainText.includes("**notes**"), mainText.slice(0, 200))
 }
