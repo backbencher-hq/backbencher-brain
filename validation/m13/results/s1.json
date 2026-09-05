@@ -5,7 +5,7 @@
   "code": "S1",
   "tool": "bb_search",
   "title": "bb_search: mode negatives + freshness on all modes",
-  "verifiedState": "verified",
+  "verifiedState": "known-gap",
   "layers": [
     "unit",
     "integration"
@@ -141,9 +141,9 @@
     },
     {
       "name": "public file mode rejects path escape [negative: escapes project root]",
-      "pass": true,
+      "pass": false,
       "negative": true,
-      "detail": ""
+      "detail": "did not throw"
     },
     {
       "name": "symbol search flags stale rows after modification",
@@ -169,8 +169,8 @@
   "negativeCases": 4,
   "summary": {
     "total": 30,
-    "passed": 30,
-    "failed": 0
+    "passed": 29,
+    "failed": 1
   },
   "decisions": {
     "fileModeContract": "mode=file returns a typed file envelope (path, content, language, freshness), not filtered symbol rows",
@@ -181,5 +181,5 @@
     "This evidence does not establish analyzer completeness or semantic-answer quality.",
     "S2 (e2e) and S3 (real-repo corpus) are separate M13 issues."
   ],
-  "generatedAt": "2026-08-25T21:49:53.560Z"
+  "generatedAt": "2026-09-05T20:57:58.730Z"
 }
