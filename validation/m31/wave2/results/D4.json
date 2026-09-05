@@ -1,0 +1,20 @@
+{
+  "status": "verified",
+  "currentCommit": "fa17d2feec024a01cecbb8494f73b2de75cf1b37",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m31/wave2/verify-d4-new-tool-docs.ts",
+  "evidenceFile": "D4.json",
+  "generatedAt": "2026-09-05T23:05:25.892Z",
+  "passed": 166,
+  "failed": 0,
+  "negativeCases": 3,
+  "documentedTools": 16,
+  "registryTools": 16,
+  "postMergeToolsCovered": [
+    "bb_graph",
+    "bb_impact",
+    "bb_cross_language",
+    "bb_annotate",
+    "bb_annotations"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "status": "verified",
+  "currentCommit": "fa17d2feec024a01cecbb8494f73b2de75cf1b37",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m31/wave2/verify-f1-truth-feed.ts",
+  "evidenceFile": "F1.json",
+  "generatedAt": "2026-09-05T23:05:25.972Z",
+  "passed": 85,
+  "failed": 0,
+  "negativeCases": 4,
+  "coveredTools": 16,
+  "driftNames": []
+}

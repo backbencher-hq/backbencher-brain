@@ -1,0 +1,17 @@
+{
+  "status": "verified",
+  "currentCommit": "fa17d2feec024a01cecbb8494f73b2de75cf1b37",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m31/wave2/verify-d5-freshness-docs.ts",
+  "evidenceFile": "D5.json",
+  "generatedAt": "2026-09-05T23:05:26.396Z",
+  "passed": 27,
+  "failed": 0,
+  "negativeCases": 5,
+  "knobsDocumented": [
+    "BB_NO_AUTO_REFRESH",
+    "BB_AUTO_REFRESH_MAX_FILES",
+    "BB_AUTO_REFRESH_MAX_BYTES"
+  ],
+  "bbHealthTruthful": true
+}

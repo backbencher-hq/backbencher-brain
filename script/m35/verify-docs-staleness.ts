@@ -58,6 +58,11 @@ async function main() {
     bb_migrate: { modes: ["plan"], hasEnvelope: true },
     bb_patterns: { modes: [], hasEnvelope: false },
     bb_security: { modes: [], hasEnvelope: false },
+    // M31.D5: bb_health reports freshness as its health block (counts + stale
+    // file names) but has no registered freshnessModes and no envelope/remediation
+    // field of its own — it claims staleness reporting without the envelope
+    // contract, so it must still name both registered remediation constants.
+    bb_health: { modes: [], hasEnvelope: false },
     bb_doc: { modes: [], hasEnvelope: true },
   }
 

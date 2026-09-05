@@ -151,6 +151,7 @@ separation is corrected.
 | Command | Purpose |
 |---|---|
 | `bb index <dir>` | Full/incremental project indexing |
+| `bb index <dir> --changed` | Reindex only files changed since the last index (bounded derived pass; the repair the staleness remediation names) |
 | `bb index <dir> --force` | In-place wipe and full rebuild |
 | `bb search <query>` | Symbol retrieval (default listing; omit `--mode` — explicit `--mode symbols` is rejected), language and limit filters; auto-refreshes stale files within budget before answering and declares it |
 | `bb search --no-auto-refresh <q>` | Answer from the existing index with the staleness footer instead of auto-refreshing (same decision as MCP `refresh=false`) |
