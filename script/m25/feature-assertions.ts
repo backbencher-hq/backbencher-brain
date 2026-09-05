@@ -264,6 +264,27 @@ export async function runFeatureAssertions(ctx: AssertionContext, assert: Assert
   assert("H3: stored enrichment surfaces on hover (role/layer/frequency)", hoverText.includes("role consumer") && hoverText.includes("layer core→core") && hoverText.includes("1 referring row"), hoverText.slice(0, 400))
   assert("H3: enrichment is labeled index-inferred, never parser-fact tier", hoverText.includes("(enriched by index)"), hoverText.slice(0, 400))
   assert("H3: enrichment annotation never upgrades the evidence tier", !/^\s*evidence:.*role consumer/m.test(hoverText) && (hover?.data?.evidenceTiers ?? []).every((t: string) => t !== "role"), JSON.stringify(hover?.data?.evidenceTiers ?? null))
+
+  // --- Hover actions (M42.H4, issue #652) ---
+  // The actions row is the hover's door to the deep surfaces. Its args are
+  // the SERVER-RESOLVED identity of the hovered symbol (greet): name + the
+  // index-stored declaration location. Assert presence + parseability + the
+  // symbol identity — the click behavior is proven in the E5 leg.
+  assert("H4: hover embeds the actions row", hoverText.includes("**actions**: [Open in graph](command:bb.openGraph?") && hoverText.includes("[Impact analysis](command:bb.openImpact?") && hoverText.includes("[Call hierarchy](command:bb.showCallHierarchy?"), hoverText.slice(0, 500))
+  const _h4re = /\]\(command:(bb\.openGraph|bb\.openImpact|bb\.showCallHierarchy)\?([^)]+)\)/g
+  const _h4actions: Array<{ cmd: string; args: Record<string, unknown> }> = []
+  let _h4m: RegExpExecArray | null
+  while ((_h4m = _h4re.exec(hoverText)) !== null) {
+    try {
+      _h4actions.push({ cmd: _h4m[1], args: JSON.parse(decodeURIComponent(_h4m[2])) as Record<string, unknown> })
+    } catch {}
+  }
+  assert("H4: exactly the three action commands embed parseable args", _h4actions.length === 3 && new Set(_h4actions.map((a) => a.cmd)).size === 3, JSON.stringify(_h4actions.map((a) => a.cmd)))
+  assert(
+    "H4: action args are the server-resolved symbol identity (greet)",
+    _h4actions.length === 3 && _h4actions.every((a) => a.args.symbol === FIXTURE_SYMBOLS.method && typeof a.args.file === "string" && String(a.args.file).endsWith("main.ts") && typeof a.args.line === "number" && typeof a.args.character === "number"),
+    JSON.stringify(_h4actions[0]?.args ?? null),
+  )
   const hoverMiss = unwrap(await transport.request("textDocument/hover", { textDocument: { uri: mainUri }, position: { line: 20, character: 0 } }))
   const missOk = hoverMiss == null || hoverMiss?.contents === null || hoverMiss?.contents?.value === "" || hoverMiss?.contents?.value === undefined
   assert("L2: hover outside index is declared absent", missOk, JSON.stringify(hoverMiss ?? null).slice(0, 200))

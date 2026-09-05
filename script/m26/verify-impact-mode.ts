@@ -41,6 +41,10 @@ import { fileURLToPath } from "node:url"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const IMPACT = join(ROOT, "src", "lsp", "impact.ts")
+// M42.H4: renderImpact moved into the ONE renderer core (webviews render
+// through script/m26/graph-core.ts, never a second server-side renderer).
+// The W5 render laws are unchanged; only the home moved.
+const CORE = join(ROOT, "script", "m26", "graph-core.ts")
 
 let checks = 0
 let passed = 0
@@ -148,11 +152,13 @@ async function main(): Promise<void> {
   const mod = await import(IMPACT)
   const impact = mod as {
     computeImpact: (db: any, projectId: string, name: string, deps?: any) => Promise<any>
-    renderImpact: (r: any, dom: any) => any
     totalImpactCountIfKnown: (db: any, id: string) => number | null
     IMPACT_BUDGET: { maxNodes: number; maxDepth: number }
   }
+  const coreMod = await import(CORE)
+  const core = coreMod as { renderImpact: (r: any, dom: any) => any }
   const source = readFileSync(IMPACT, "utf8")
+  const coreSource = readFileSync(CORE, "utf8")
 
   const fx = await makeFixture()
   try {
@@ -186,20 +192,22 @@ async function main(): Promise<void> {
     check("G2: independent COUNT agrees with traversal total", total === 4, `count=${total}`)
 
     // --- G4: in-UI rendering with declared counts --------------------------------
+    // The renderer under law is the ONE core (M42.H4 home); the DOM contract
+    // is the W5-born one, verbatim.
     const dom = makeDom()
-    const rendered = impact.renderImpact(result, dom as never)
+    const rendered = core.renderImpact(result, dom as never)
     check("G4: complete set renders all nodes and NO truncation marker", rendered.nodesRendered === 4 && dom.el.find("bb-impact-truncation-marker") === null)
 
     // Over-budget: run the traversal then slice through a budget-limited render.
     const big = { ...result, impact: result.impact.slice(0, 2), shownCount: 2, totalCountIfKnown: 4, truncated: true, truncationReason: "impact-node-budget-exhausted" }
     const domT = makeDom()
-    const renderedT = impact.renderImpact(big, domT as never)
+    const renderedT = core.renderImpact(big, domT as never)
     const marker = domT.el.find("bb-impact-truncation-marker") as El | null
     check("G4: truncated set renders a visible marker", renderedT.nodesRendered === 2 && marker !== null)
     check("G4: marker declares shown vs total-if-known counts", marker !== null && marker!.attrs["data-shown"] === "2" && marker!.attrs["data-total-if-known"] === "4" && marker!.textContent.includes("2 of 4"))
     // Unknown total renders honestly as unknown.
     const domU = makeDom()
-    impact.renderImpact({ ...big, totalCountIfKnown: null }, domU as never)
+    core.renderImpact({ ...big, totalCountIfKnown: null }, domU as never)
     const markerU = domU.el.find("bb-impact-truncation-marker") as El | null
     check("G4: unknown total renders 'unknown', never a fabricated number", markerU !== null && markerU!.attrs["data-total-if-known"] === "unknown" && markerU!.textContent.includes("total unknown"))
 
@@ -215,9 +223,12 @@ async function main(): Promise<void> {
     check("P: warm p95 impact computation within the 300 ms render budget", p95 < 300, `p95=${p95.toFixed(2)}ms`)
 
     // --- Mutants -------------------------------------------------------------------
-    const mutants: Array<{ name: string; from: string; to: string; probe: (m: any) => Promise<boolean> | boolean }> = [
+    // M1/M2 render in the ONE core (their home after M42.H4); M3–M5 stay in
+    // the compute component. Each mutant is planted into its own home.
+    const mutants: Array<{ name: string; home: "core" | "component"; from: string; to: string; probe: (m: any) => Promise<boolean> | boolean }> = [
       {
         name: "M1 silent truncation",
+        home: "core",
         from: "if (result.truncated) {",
         to: "if (false) {",
         probe: (m) => {
@@ -228,6 +239,7 @@ async function main(): Promise<void> {
       },
       {
         name: "M2 fabricated total",
+        home: "core",
         from: 'result.totalCountIfKnown === null ? "unknown"',
         to: 'String(result.shownCount + 1)',
         probe: (m) => {
@@ -239,6 +251,7 @@ async function main(): Promise<void> {
       },
       {
         name: "M3 unbounded impact",
+        home: "component",
         from: "if (impact.length >= IMPACT_BUDGET.maxNodes) {",
         to: "if (impact.length >= Number.MAX_SAFE_INTEGER) {",
         probe: async (m) => {
@@ -266,12 +279,14 @@ async function main(): Promise<void> {
       },
       {
         name: "M4 differential break (containment dropped from total)",
+        home: "component",
         from: "OR (r.target_symbol_id IN (\n              SELECT m.id FROM brain_symbol m\n              WHERE m.owner_symbol_id >= ? AND m.owner_symbol_id < ?\n            ) AND r.target_symbol_id IS NOT NULL)",
         to: "AND r.target_symbol_id IS NOT NULL AND 1=0",
         probe: (m) => m.totalImpactCountIfKnown(fx.raw, "sym:root") !== 4 // cascade branch gone => count diverges from the honest 4
       },
       {
         name: "M5 truncation state lost",
+        home: "component",
         from: "truncated = true\n      truncationReason = \"impact-node-budget-exhausted\"",
         to: "truncated = false\n      truncationReason = null",
         probe: async (m) => {
@@ -294,14 +309,19 @@ async function main(): Promise<void> {
     let caught = 0
     let mutantsTotal = 0
     for (const mutant of mutants) {
-      if (!source.includes(mutant.from)) {
+      // Render mutants plant into the ONE core (their home); compute mutants
+      // plant into the impact component. The anchor must exist in the home.
+      const base = mutant.home === "core" ? coreSource : source
+      if (!base.includes(mutant.from)) {
         console.log(`  SKIP (anchor not found): ${mutant.name}`)
         continue
       }
       mutantsTotal++
-      const mutantPath = join(ROOT, "validation/m26", `impact.mutant.${Date.now()}.${mutantsTotal}.ts`)
-      let mutantSource = source.replace(mutant.from, mutant.to)
-      mutantSource = mutantSource.replace(/from "\.\.\/intelligence\/graph\/graph-engine"/g, `from "file://${join(ROOT, "src", "intelligence", "graph", "graph-engine.ts").replace(/\\/g, "/")}"`).replace(/from "\.\.\/intelligence\/contracts"/g, `from "file://${join(ROOT, "src", "intelligence", "contracts.ts").replace(/\\/g, "/")}"`)
+      const mutantPath = join(ROOT, "validation/m26", `${mutant.home === "core" ? "core" : "impact"}.mutant.${Date.now()}.${mutantsTotal}.ts`)
+      let mutantSource = base.replace(mutant.from, mutant.to)
+      if (mutant.home !== "core") {
+        mutantSource = mutantSource.replace(/from "\.\.\/intelligence\/graph\/graph-engine"/g, `from "file://${join(ROOT, "src", "intelligence", "graph", "graph-engine.ts").replace(/\\/g, "/")}"`).replace(/from "\.\.\/intelligence\/contracts"/g, `from "file://${join(ROOT, "src", "intelligence", "contracts.ts").replace(/\\/g, "/")}"`)
+      }
       writeFileSync(mutantPath, mutantSource)
       let detected = false
       try {

@@ -79,6 +79,12 @@ const IN_VERB: Record<string, string> = {
 export const USAGE_COMMAND = "bb.openUsage"
 export const DEFINITION_COMMAND = "bb.openDefinition"
 export const SHOW_ALL_USAGES_COMMAND = "bb.showAllUsages"
+// M42.H4 (issue #652): the hover action commands. One constant set — the
+// hover markdown embeds these exact ids, the extension registers them, and
+// the drift gate asserts both sides agree.
+export const OPEN_GRAPH_COMMAND = "bb.openGraph"
+export const OPEN_IMPACT_COMMAND = "bb.openImpact"
+export const SHOW_CALL_HIERARCHY_COMMAND = "bb.showCallHierarchy"
 
 /** Wire args for bb.openUsage / bb.openDefinition: the index-stored LSP
  *  location. Encoded once here — every hover link shares this encoding. */
@@ -92,6 +98,48 @@ export function openUsageUri(site: { path: string; line: number; character: numb
 
 export function openDefinitionUri(path: string, line: number, character: number): string {
   return `command:${DEFINITION_COMMAND}?${encodeLocationArgs(path, line, character)}`
+}
+
+// --- M42.H4: hover action URIs -------------------------------------------------
+// The action args carry the SERVER-RESOLVED symbol identity: the name and
+// the index-stored declaration location of the hovered symbol (the same
+// location the definition link uses). The client never guesses the symbol
+// from its own cursor — it executes what the index resolved (issue #652
+// negative list: no client-side position guessing).
+export interface HoverActionArgs {
+  /** name of the hovered symbol, resolved server-side from the index row */
+  symbol: string
+  /** absolute path of the declaration file (index-stored) */
+  file: string
+  /** LSP 0-based declaration position (index-stored) */
+  line: number
+  character: number
+}
+
+export function encodeActionArgs(symbol: string, path: string, line: number, character: number): string {
+  return encodeURIComponent(JSON.stringify({ symbol, file: path, line, character } satisfies HoverActionArgs))
+}
+
+export function openGraphUri(a: HoverActionArgs): string {
+  return `command:${OPEN_GRAPH_COMMAND}?${encodeActionArgs(a.symbol, a.file, a.line, a.character)}`
+}
+
+export function openImpactUri(a: HoverActionArgs): string {
+  return `command:${OPEN_IMPACT_COMMAND}?${encodeActionArgs(a.symbol, a.file, a.line, a.character)}`
+}
+
+export function showCallHierarchyUri(a: HoverActionArgs): string {
+  return `command:${SHOW_CALL_HIERARCHY_COMMAND}?${encodeActionArgs(a.symbol, a.file, a.line, a.character)}`
+}
+
+/** The hover actions row: graph, impact, and call hierarchy one click away
+ *  from the hover. Composed ONLY when the symbol identity is complete (a
+ *  symbol without a resolvable declaration line renders no actions row —
+ *  declared absence; an unclickable action would violate §12.1). */
+export function actionsSection(symbol: string, filePath: string, line: number, character: number): string {
+  if (symbol.length === 0 || filePath.length === 0 || line < 0 || character < 0) return ""
+  const a: HoverActionArgs = { symbol, file: filePath, line, character }
+  return `**actions**: [Open in graph](${openGraphUri(a)}) · [Impact analysis](${openImpactUri(a)}) · [Call hierarchy](${showCallHierarchyUri(a)})`
 }
 
 export function showAllUsagesUri(file: string, line: number, character: number): string {

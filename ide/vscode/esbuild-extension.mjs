@@ -52,6 +52,21 @@ await build({
   logLevel: "silent",
 })
 
+// M42.H4 test bridge: the impact panel's pure core (bb/impact + render
+// through the ONE core's renderImpact) bundled CJS for the in-editor leg.
+await build({
+  entryPoints: [path.join(here, "src/impact-panel.ts")],
+  bundle: true,
+  outfile: path.join(here, "dist/test/impact-panel.js"),
+  external: ["vscode", "vscode-languageclient/node"],
+  format: "cjs",
+  platform: "node",
+  target: "node20",
+  sourcemap: false,
+  minify: false,
+  logLevel: "silent",
+})
+
 // Bundle the compiled server alongside (bundled-dist resolution leg). The
 // dist server must exist first: run `npm run build` at the repo root.
 // The tsup dist is CHUNKED (server.js imports shared chunk-*.js files), so we

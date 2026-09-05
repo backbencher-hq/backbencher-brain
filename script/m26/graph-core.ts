@@ -64,7 +64,20 @@ export interface GraphEdgeLike {
   callSite: { file: string; line: number }
   depth: number
   rowId?: string
-  metadata?: { evidenceClass?: string }
+  /** Stored metadata: the analyzer's evidenceClass PLUS (M42.H3) the
+   *  enrichment pass's fields. Structural so the import-pure core can read
+   *  them without importing the server's Enrichment type. */
+  metadata?: {
+    evidenceClass?: string
+    enrichment?: {
+      inferredAt?: number
+      role?: string
+      pattern?: string
+      layerFlow?: string
+      criticality?: string
+      frequency?: string
+    }
+  }
 }
 
 export interface GraphResultLike {
@@ -392,4 +405,55 @@ export function renderGraph(result: GraphResultLike, dom: GraphDom): RenderStats
   }
 
   return { nodesRendered, nodesTotal, edgesRendered, edgesTotal, nodesTruncated, edgesTruncated }
+}
+
+// --- M42.H4 (issue #652): impact rendering in the ONE core -------------------
+// The hover's "Impact analysis" action opens the impact webview; rendering it
+// belongs HERE (the one renderer core, import-pure) — not in a second
+// server-side renderer that webviews could fork. The DOM contract was born in
+// src/lsp/impact.ts's W5 law checks and is preserved verbatim (same classes,
+// attributes, and marker text) so the W5 render laws still hold; only the
+// home moved.
+
+/** Structural model: the W5 ImpactResult (src/lsp/impact.ts). Declared
+ *  locally so this core keeps its zero-import law. */
+export interface ImpactResultLike {
+  root: { id: string; name: string; file: string }
+  impact: Array<{ id: string; name: string; file: string; depth: number; relationshipType: string; confidence: number }>
+  shownCount: number
+  /** null = the honest "unknown" total (never a fabricated number) */
+  totalCountIfKnown: number | null
+  truncated: boolean
+  truncationReason: string | null
+}
+
+/** Render the impact set into the DOM port. Truncation renders a visible
+ *  marker with declared counts (shown vs total-if-known, or "unknown") —
+ *  silent truncation is impossible by construction here. */
+export function renderImpact(result: ImpactResultLike, dom: GraphDom): { nodesRendered: number; marker: GraphDomElement | null } {
+  const layer = dom.root()
+  layer.addClass("bb-impact")
+  layer.setAttribute("data-impact-root", result.root.id)
+  for (const dep of result.impact) {
+    const el = dom.create("div")
+    el.addClass("bb-impact-node")
+    el.setAttribute("data-id", dep.id)
+    el.setAttribute("data-depth", String(dep.depth))
+    el.textContent = `${dep.name} (${dep.file || "external"})`
+    layer.appendChild(el)
+  }
+  let marker: GraphDomElement | null = null
+  if (result.truncated) {
+    marker = dom.create("div")
+    marker.addClass("bb-impact-truncation-marker")
+    marker.setAttribute("data-truncated", "impact")
+    marker.setAttribute("data-shown", String(result.shownCount))
+    marker.setAttribute("data-total-if-known", result.totalCountIfKnown === null ? "unknown" : String(result.totalCountIfKnown))
+    marker.textContent =
+      result.totalCountIfKnown === null
+        ? `Showing ${result.shownCount} reverse dependencies (more exist — total unknown; render budget exhausted)`
+        : `Showing ${result.shownCount} of ${result.totalCountIfKnown} reverse dependencies (render budget exhausted)`
+    layer.appendChild(marker)
+  }
+  return { nodesRendered: result.impact.length, marker }
 }

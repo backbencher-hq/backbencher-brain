@@ -40,7 +40,7 @@ import {
 } from "./positions"
 import { storedCrossLanguageRows, factsFromRows, crossLanguageSection } from "./cross_language_hover"
 import { annotationHoverSection, type AnnotationRow } from "./annotation_ui"
-import { connectedGroups, connectedSummarySection, definitionLink, richSitesForSymbol, usagesSection } from "./rich_hover"
+import { actionsSection, connectedGroups, connectedSummarySection, definitionLink, richSitesForSymbol, usagesSection } from "./rich_hover"
 
 /** The launch set, its membership test, and the path→language map live in
  *  the single-owner module (M29.R2: one owner; the set was duplicated here
@@ -130,6 +130,11 @@ export interface SymbolHoverData {
   /** M42.H2: pre-rendered usages section — empty string when no usage
    *  sites exist (declared absence). */
   usagesSection: string
+  /** M42.H4: pre-rendered hover-actions row (open in graph / impact /
+   *  call hierarchy) — empty string when the symbol identity (declaration
+   *  location) is not resolvable: no actions without a clickable target
+   *  (§12.1 nothing unclickable). */
+  actionsSection: string
 }
 
 export interface HoverRequest {
@@ -297,6 +302,12 @@ export function formatHoverMarkdown(data: SymbolHoverData): string {
   if (data.usagesSection && data.usagesSection.length > 0) {
     lines.push(data.usagesSection)
   }
+  // M42.H4: the actions row — the hover is the entry point to the deep
+  // surfaces (graph, impact, call hierarchy). Empty row renders nothing
+  // (declared absence: no symbol identity, no actions to offer).
+  if (data.actionsSection && data.actionsSection.length > 0) {
+    lines.push(data.actionsSection)
+  }
   // M26.W3: cross-language facts ONLY from stored rows (is_cross_language = 1).
   // An empty section renders nothing — a pair with no stored rows states
   // nothing cross-language in the UI; absence is declared in docs, not faked
@@ -434,6 +445,10 @@ export function hover(
     // LSP definition location (range.start) when resolvable; null otherwise
     // (the footnote then renders the plain location — still honest).
     definition: range === null ? null : { line: range.start.line, character: range.start.character },
+    // M42.H4: the actions row targets the same resolved declaration (the
+    // actions carry the server-resolved symbol identity — issue #652).
+    actionsSection:
+      range === null ? "" : actionsSection(symbol.name, file.path, range.start.line, range.start.character),
     crossLanguageSection: crossSection,
     annotationSection,
     stale,
