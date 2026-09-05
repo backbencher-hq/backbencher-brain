@@ -91,7 +91,7 @@ async function main() {
     // 1. Modes: doc == live registry
     const contract = section(md, "Contract")
     const modesLine = contract.split("\n").find((l) => l.startsWith("- Modes:"))
-    const docModes = modesLine ? [...modesLine.matchAll(/`([a-z_]+)`/g)].map((m) => m[1]) : []
+    const docModes = modesLine ? [...modesLine.matchAll(/`([a-z_-]+)`/g)].map((m) => m[1]) : []
     check(`${name}: doc modes match live registry executable modes`, JSON.stringify(docModes) === JSON.stringify([...descriptor.modes]), `doc=[${docModes}] registry=[${descriptor.modes}]`)
 
     // 2. Planned modes disjoint from executable modes

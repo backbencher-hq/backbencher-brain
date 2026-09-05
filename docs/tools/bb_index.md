@@ -1,13 +1,13 @@
 # `bb_index`
 
-Reindex a file or directory so the index reflects edits immediately (agent-fresh). Accepts a path (file or dir); a file reindexes only that file, a dir runs an incremental index of that dir (changed files only). Returns indexed/deleted/error counts.
+Reindex a file or directory so the index reflects edits immediately (agent-fresh). Accepts a path (file or dir); a file reindexes only that file, a dir runs an incremental index of that dir (changed files only). mode=post re-runs the heavy derived-data phases (relationships/enrichment/gravity/taints/health) WITHOUT re-parsing — the remediation after edits on incremental paths. Returns indexed/deleted/error counts, or the per-phase post-processing report.
 
 ## Contract
 
 - Category: `operations`
 - Mutability: `write`
 - Requires index: `false`
-- Modes: `auto`, `file`, `dir`
+- Modes: `auto`, `file`, `dir`, `post`
 - Planned modes (roadmap, not executable): (none)
 - Defaults: `{"mode":"auto"}`
 
@@ -25,7 +25,8 @@ Reindex a file or directory so the index reflects edits immediately (agent-fresh
       "enum": [
         "auto",
         "file",
-        "dir"
+        "dir",
+        "post"
       ]
     }
   },
@@ -46,6 +47,8 @@ Reindex a file or directory so the index reflects edits immediately (agent-fresh
 `{"path":"src/new-file.ts"}`
 
 `{"path":"src","mode":"dir"}`
+
+`{"path":"post","mode":"post"}`
 
 ## Errors
 
