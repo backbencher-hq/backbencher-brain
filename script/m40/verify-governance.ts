@@ -121,7 +121,7 @@ check("verify chain wires the M40 gates",
 // evidence (X1 closure) is re-stamped per closure run — necessarily at a
 // commit at-or-after the content consensus — so it is checked for currency
 // (ancestor of HEAD), not folded into the content consensus set.
-const INFRA_EVIDENCE = new Set(["X1.json"])
+const INFRA_EVIDENCE = new Set(["X1.json", "G1.json"])
 const stamps = new Set<string>()
 let stampCount = 0
 const infraStamps: Array<{ file: string; commit: string }> = []

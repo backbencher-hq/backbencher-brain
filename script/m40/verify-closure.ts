@@ -57,9 +57,15 @@ for (const code of SUBORDINATES) {
 }
 
 // ── 2. Stamp agreement across all subordinate evidence ──
+// M31 pattern: CONTENT-gate evidence forms the consensus. Infra evidence
+// (G1/selftest) is re-stamped per verification run — necessarily at a commit
+// at-or-after the content consensus — so it is excluded here (its currency is
+// checked separately below via the ancestor rule).
 {
   const stamps = new Set<string>()
+  const INFRA = new Set(["G1"])
   for (const code of SUBORDINATES) {
+    if (INFRA.has(code)) continue
     const evFile = path.join(RESULTS_DIR, `${code}.json`)
     if (!existsSync(evFile)) continue
     const ev = JSON.parse(readFileSync(evFile, "utf8")) as Record<string, any>
