@@ -1,10 +1,10 @@
 {
   "status": "verified",
-  "currentCommit": "92d74392c6a21f87ed726f9bb8bac9de43d42821",
+  "currentCommit": "9e3cbecec719d05cb8f96ae55dcfb81a97130235",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "bun run script/m31/wave2/verify-f1-truth-feed.ts",
   "evidenceFile": "F1.json",
-  "generatedAt": "2026-09-05T23:06:03.989Z",
+  "generatedAt": "2026-09-05T23:12:34.262Z",
   "passed": 85,
   "failed": 0,
   "negativeCases": 4,

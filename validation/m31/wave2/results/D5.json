@@ -1,10 +1,10 @@
 {
   "status": "verified",
-  "currentCommit": "92d74392c6a21f87ed726f9bb8bac9de43d42821",
+  "currentCommit": "9e3cbecec719d05cb8f96ae55dcfb81a97130235",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "bun run script/m31/wave2/verify-d5-freshness-docs.ts",
   "evidenceFile": "D5.json",
-  "generatedAt": "2026-09-05T23:06:04.400Z",
+  "generatedAt": "2026-09-05T23:12:34.624Z",
   "passed": 27,
   "failed": 0,
   "negativeCases": 5,
