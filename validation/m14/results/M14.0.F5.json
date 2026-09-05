@@ -56,7 +56,7 @@
     },
     {
       "description": "sqlite: tree-truth vs analyzer diff @86a15af2b1",
-      "detail": "60 files, coverage 100%, unexplained 0%",
+      "detail": "60 files, coverage 99.9%, unexplained 1.4%",
       "id": "differential-c",
       "status": "pass"
     },
@@ -85,7 +85,7 @@
       "status": "pass"
     },
     {
-      "description": "proxicall: tree-truth vs analyzer diff @b42fb116ce",
+      "description": "proxicall: tree-truth vs analyzer diff @fac431f44b",
       "detail": "60 files, coverage 100%, unexplained 0%",
       "id": "differential-dart",
       "status": "pass"
@@ -128,8 +128,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "9155d992cda2db1caf70753d47efbc5a5dc10245",
-  "committedAt": "2026-09-04T22:15:43+02:00",
+  "commit": "40c6d2074a818d26d816fdb7c946026550d15f39",
+  "committedAt": "2026-09-05T05:48:06+02:00",
   "data": {
     "corpusPins": {
       "Clyde": "8fec41dd6ee03f863643aa958425c8bb4a6673ae",
@@ -142,7 +142,7 @@
       "grails-core": "a83f87480e0c0138caa5a7191a053b1e59a64066",
       "phpunit": "c8d6921fb601b6988854cd84a672f06c1e49f80e",
       "powershell": "91ce9844e2a70e7184a8fcb26848f019eac151b4",
-      "proxicall": "b42fb116ce746d266ba79fa3a6cfa993227e0cbf",
+      "proxicall": "fac431f44b910b3fe8c5cefacea2cdc9bdfcaae2",
       "rake": "dd5e851d75fd850a730aae4482f6ca59843ac869",
       "ripgrep": "3fce3b5bb0236da2df6d99672afb8a719642eca7",
       "scala3": "18df09c05fa48fbb5bf5cd4b3728e9b7a0b3f6db",
@@ -154,32 +154,927 @@
     },
     "report": {
       "c": {
-        "analyzerEdges": 3720,
-        "coveragePct": 100,
-        "coveredByAnalyzer": 3719,
-        "explainableByTree": 3719,
-        "fabricationPct": 0,
+        "analyzerEdges": 7748,
+        "coveragePct": 99.9,
+        "coveredByAnalyzer": 7643,
+        "explainableByTree": 7643,
+        "fabricationPct": 1.4,
         "filesSampled": 60,
         "heuristicUnexplained": 0,
-        "missingInAnalyzer": 0,
+        "missingInAnalyzer": 9,
         "perf": {
-          "avgMsPerFile": 196.9,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 6741.5,
-          "samplesTimed": 57
+          "avgMsPerFile": 154.9,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 3682.7,
+          "samplesTimed": 60
         },
         "samples": [
           {
             "confidence": 1,
             "dir": "UNEXPLAINED",
-            "file": "src/test4.c",
-            "label": "calls",
+            "file": "src/loadext.c",
+            "label": "uses",
             "line": 0,
-            "target": "(*p->xOp)"
+            "target": "sqlite3_auto_extension"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "src/loadext.c",
+            "label": "uses",
+            "line": 0,
+            "target": "sqlite3_cancel_auto_extension"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "src/loadext.c",
+            "label": "uses",
+            "line": 0,
+            "target": "sqlite3_reset_auto_extension"
+          },
+          {
+            "dir": "MISSING",
+            "file": "autosetup/jimsh0.c",
+            "from": "(expr)",
+            "label": "uses",
+            "target": "JIM_COMPAT"
+          },
+          {
+            "dir": "MISSING",
+            "file": "autosetup/jimsh0.c",
+            "from": "(expr)",
+            "label": "uses",
+            "target": "HAVE_LINK"
+          },
+          {
+            "dir": "MISSING",
+            "file": "autosetup/jimsh0.c",
+            "from": "(expr)",
+            "label": "uses",
+            "target": "jim_ext_file"
+          },
+          {
+            "dir": "MISSING",
+            "file": "autosetup/jimsh0.c",
+            "from": "(expr)",
+            "label": "uses",
+            "target": "JIM_SIGNAL_H"
+          },
+          {
+            "dir": "MISSING",
+            "file": "autosetup/jimsh0.c",
+            "from": "(expr)",
+            "label": "uses",
+            "target": "JIMREGEXP_H"
+          },
+          {
+            "dir": "MISSING",
+            "file": "autosetup/jimsh0.c",
+            "from": "(expr)",
+            "label": "uses",
+            "target": "JIM_SUBCMD_H"
+          },
+          {
+            "dir": "MISSING",
+            "file": "autosetup/jimsh0.c",
+            "from": "(expr)",
+            "label": "uses",
+            "target": "__JIM__H"
+          },
+          {
+            "dir": "MISSING",
+            "file": "autosetup/jimsh0.c",
+            "from": "(expr)",
+            "label": "uses",
+            "target": "UTF8_UTIL_H"
+          },
+          {
+            "dir": "MISSING",
+            "file": "autosetup/jimsh0.c",
+            "from": "(expr)",
+            "label": "uses",
+            "target": "JIM_WIN32COMPAT_H"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "Jim_Interp"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "Jim_Obj"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "Jim_HashEntry"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "Jim_HashTableIterator"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "strObjPtr"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "firstObjPtr"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "cmdNamePtr"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "WBUF_OPT_NONE"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "WBUF_OPT_LINE"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "WBUF_OPT_FULL"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "REG_BADPAT"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "REG_NOMATCH"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "jim_wide"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_LSORT_ASCII"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_LSORT_NOCASE"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_LSORT_INTEGER"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_LSORT_REAL"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_LSORT_COMMAND"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_LSORT_DICT"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "DICT_HASH_FIND"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "DICT_HASH_REMOVE"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "DICT_HASH_ADD"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_FUNC_INT"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_FUNC_WIDE"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_FUNC_ROUND"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_UNARYPLUS"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_FUNC_DOUBLE"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_FUNC_ABS"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_UNARYMINUS"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_NOT"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_BITNOT"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_FUNC_SRAND"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_FUNC_RAND"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_FUNC_SIN"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_FUNC_COS"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_FUNC_TAN"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_FUNC_ASIN"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_FUNC_ACOS"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_FUNC_ATAN"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_FUNC_SINH"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_FUNC_COSH"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_FUNC_TANH"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_FUNC_CEIL"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_FUNC_FLOOR"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_FUNC_EXP"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_FUNC_LOG"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_FUNC_LOG10"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_FUNC_SQRT"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_LSHIFT"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_RSHIFT"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_BITAND"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_BITXOR"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_BITOR"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_MOD"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_ROTL"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_ROTR"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_POW"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_FUNC_POW"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_ADD"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_SUB"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_MUL"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_DIV"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_LT"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_GT"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_LTE"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_GTE"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_NUMEQ"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_NUMNE"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_FUNC_ATAN2"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_FUNC_HYPOT"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_FUNC_FMOD"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_STREQ"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_STRNE"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_STRLT"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_STRGT"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_STRLE"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_STRGE"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_STRIN"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_STRNI"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_STRGLOB"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_STRRE"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "OP_RIGHT_ASSOC"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "OP_FUNC"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_COLON"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "JIM_EXPROP_TERNARY"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "REG_ERR_NULL_ARGUMENT"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "REG_ERR_NOMEM"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "REG_ERR_TOO_BIG"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "REG_ERR_UNMATCHED_PAREN"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "REG_ERR_JUNK_ON_END"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "REG_ERR_OPERAND_COULD_BE_EMPTY"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "REG_ERR_BAD_COUNT"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "REG_ERR_UNMATCHED_BRACES"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "REG_ERR_NESTED_COUNT"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "REG_ERR_UNMATCHED_BRACKET"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "REG_ERR_NULL_CHAR"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "REG_ERR_INVALID_ESCAPE"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "REG_ERR_INTERNAL"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "REG_ERR_COUNT_FOLLOWS_NOTHING"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "REG_ERR_CORRUPTED"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "REG_NOERROR"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "autosetup/jimsh0.c",
+            "label": "uses",
+            "line": 0,
+            "target": "REG_ERR_NUM"
           }
         ],
-        "treeTruthEdges": 3719,
-        "unexplainedInAnalyzer": 1
+        "treeTruthEdges": 7652,
+        "unexplainedInAnalyzer": 105
       },
       "cpp": {
         "analyzerEdges": 108,
@@ -191,9 +1086,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 74,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 1533,
+          "avgMsPerFile": 43.8,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 713.1,
           "samplesTimed": 47
         },
         "samples": [],
@@ -210,9 +1105,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 21.9,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 523.7,
+          "avgMsPerFile": 24.7,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 180.1,
           "samplesTimed": 60
         },
         "samples": [],
@@ -220,22 +1115,22 @@
         "unexplainedInAnalyzer": 0
       },
       "dart": {
-        "analyzerEdges": 1464,
+        "analyzerEdges": 1634,
         "coveragePct": 100,
-        "coveredByAnalyzer": 1567,
-        "explainableByTree": 1464,
+        "coveredByAnalyzer": 1741,
+        "explainableByTree": 1634,
         "fabricationPct": 0,
         "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 70.4,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 4061.2,
+          "avgMsPerFile": 29.6,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 754,
           "samplesTimed": 60
         },
         "samples": [],
-        "treeTruthEdges": 1567,
+        "treeTruthEdges": 1741,
         "unexplainedInAnalyzer": 0
       },
       "go": {
@@ -248,9 +1143,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 20.7,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 191.2,
+          "avgMsPerFile": 10.8,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 76,
           "samplesTimed": 60
         },
         "samples": [],
@@ -267,9 +1162,9 @@
         "heuristicUnexplained": 27,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 21.3,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 153.9,
+          "avgMsPerFile": 5.6,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 50.3,
           "samplesTimed": 60
         },
         "samples": [],
@@ -286,9 +1181,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 7.7,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 416.3,
+          "avgMsPerFile": 10.3,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 231.8,
           "samplesTimed": 60
         },
         "samples": [],
@@ -305,9 +1200,9 @@
         "heuristicUnexplained": 76,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 13,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 187.4,
+          "avgMsPerFile": 8.3,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 69,
           "samplesTimed": 60
         },
         "samples": [],
@@ -324,9 +1219,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 2.4,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 55.9,
+          "avgMsPerFile": 3.9,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 35.5,
           "samplesTimed": 52
         },
         "samples": [],
@@ -343,9 +1238,9 @@
         "heuristicUnexplained": 57,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 98,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 1137.3,
+          "avgMsPerFile": 43.9,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 244.9,
           "samplesTimed": 60
         },
         "samples": [],
@@ -362,9 +1257,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 12.3,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 63.8,
+          "avgMsPerFile": 9.1,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 16.8,
           "samplesTimed": 4
         },
         "samples": [],
@@ -381,9 +1276,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 3.5,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 98.8,
+          "avgMsPerFile": 2.7,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 56.9,
           "samplesTimed": 60
         },
         "samples": [],
@@ -400,9 +1295,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 73.6,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 1508.6,
+          "avgMsPerFile": 28.1,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 783.4,
           "samplesTimed": 60
         },
         "samples": [],
@@ -420,8 +1315,8 @@
         "missingInAnalyzer": 0,
         "perf": {
           "avgMsPerFile": 4.9,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 145,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 51.2,
           "samplesTimed": 60
         },
         "samples": [],
@@ -438,9 +1333,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 39.5,
+          "avgMsPerFile": 8.8,
           "loadAvgRetried": true,
-          "maxMsPerFile": 767.8,
+          "maxMsPerFile": 123.6,
           "samplesTimed": 60
         },
         "samples": [],
@@ -457,9 +1352,9 @@
         "heuristicUnexplained": 61,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 23.2,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 483.7,
+          "avgMsPerFile": 14.5,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 276.2,
           "samplesTimed": 60
         },
         "samples": [],
@@ -476,9 +1371,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 7.5,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 42.2,
+          "avgMsPerFile": 3.2,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 17.6,
           "samplesTimed": 60
         },
         "samples": [],
@@ -495,9 +1390,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 70.5,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 2420.1,
+          "avgMsPerFile": 50.8,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 442.4,
           "samplesTimed": 60
         },
         "samples": [],
@@ -514,9 +1409,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 124.5,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 8069.4,
+          "avgMsPerFile": 45.4,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 305.9,
           "samplesTimed": 60
         },
         "samples": [],
@@ -533,9 +1428,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 19.3,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 261,
+          "avgMsPerFile": 9.2,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 60.3,
           "samplesTimed": 60
         },
         "samples": [],
@@ -552,9 +1447,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 30.9,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 628.3,
+          "avgMsPerFile": 21.3,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 440.2,
           "samplesTimed": 60
         },
         "samples": [],
