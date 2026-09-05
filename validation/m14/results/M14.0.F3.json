@@ -56,7 +56,7 @@
     },
     {
       "description": "cpp adversarial fixtures",
-      "detail": "5/5 fixtures pass",
+      "detail": "6/6 fixtures pass",
       "id": "fixtures-cpp",
       "status": "pass"
     },
@@ -128,8 +128,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "95728c38dcb4fedb01e922ff68afcf6ea1a14d21",
-  "committedAt": "2026-09-05T19:27:41+02:00",
+  "commit": "93792b51a3c9e8e1745b81d273a070a6f168a2ea",
+  "committedAt": "2026-09-05T21:04:46+02:00",
   "data": {
     "details": [
       {
@@ -1453,6 +1453,11 @@
         "problems": []
       },
       {
+        "fixture": "cpp/ctor-and-overload-regressions",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "cpp/override-signature-aware",
         "ok": true,
         "problems": []
@@ -1610,7 +1615,7 @@
       },
       "cpp": {
         "fail": 0,
-        "pass": 5
+        "pass": 6
       },
       "csharp": {
         "fail": 0,

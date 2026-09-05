@@ -230,29 +230,73 @@ export function deriveCppEdges(root: any): { label: string; from: string; target
   while (stack.length > 0) {
     const n = stack.pop()!
     if (n.type === "call_expression") {
-      const fn = n.childForFieldName?.("function") ?? n.namedChild(0)
-      let target = ""
-      if (fn) {
-        if (fn.type === "field_expression") {
-          const f = fn.childForFieldName?.("field") ?? lastNamed(fn)
-          target = f?.text ?? ""
-        } else if (fn.type === "qualified_identifier") {
-          const leaf = lastNamed(fn)
-          target = leaf?.text ?? ""
-        } else if (fn.type === "template_function") {
-          const base = fn.namedChild(0)
-          target = base?.text ?? ""
-        } else if (fn.type === "identifier" || fn.type === "field_identifier" || fn.type === "operator_name" || fn.type === "destructor_name") {
-          target = fn.text
-        } else {
-          target = fn.text
+        const fn = n.childForFieldName?.("function") ?? n.namedChild(0)
+        let target = ""
+        if (fn) {
+          // CPPD13 mirror: the CALLEE LEAF is the bare name — template args
+          // (m<int>), nested `::` chains (std::numeric_limits<X>::lowest),
+          // and defense-parentheses ((X)() — Windows min/max) must all
+          // unwrap to the innermost identifier. Mirrors the analyzer's
+          // calleeLeaf exactly so leaf attribution stays one contract.
+          const calleeLeaf = (x: any): string => {
+            let cur = x
+            let guard = 0
+            while (cur && guard++ < 8) {
+              const t = cur.type
+              if (t === "field_expression") {
+                const f = cur.childForFieldName?.("field") ?? cur.namedChild(cur.namedChildCount - 1)
+                if (!f) return cur.text
+                cur = f
+                continue
+              }
+              if (t === "template_function" || t === "template_method") {
+                const base = cur.namedChild(0)
+                if (!base) return cur.text
+                cur = base
+                continue
+              }
+              // `loc.template get<T>()` — the `template` disambiguator makes
+              // the member a dependent_name wrapping the template_method.
+              if (t === "dependent_name" && cur.namedChildCount >= 1) {
+                const inner = cur.namedChild(0)
+                if (inner && (inner.type === "template_method" || inner.type === "template_function" || inner.type === "identifier" || inner.type === "field_identifier")) {
+                  cur = inner
+                  continue
+                }
+                return cur.text
+              }
+              if (t === "qualified_identifier" && cur.namedChildCount >= 1) {
+                cur = cur.namedChild(cur.namedChildCount - 1)
+                continue
+              }
+              if (t === "parenthesized_expression" && cur.namedChildCount >= 1) {
+                cur = cur.namedChild(0)
+                continue
+              }
+              if (t === "identifier" || t === "field_identifier" || t === "type_identifier" ||
+                  t === "operator_name" || t === "destructor_name" || t === "namespace_identifier") {
+                return cur.text
+              }
+              return cur.text
+            }
+            return cur?.text ?? ""
+          }
+          if (fn) target = calleeLeaf(fn)
+          // CPPD13 mirror: functor-temporary invocation — the callee is itself
+          // a call_expression (std::forward<F>(f)(args), Op<int>()(a,b)) whose
+          // effective target is an anonymous operator(). No named callee
+          // (CPP-D9 ruling); the inner construction call emits separately.
+          if (fn && fn.type === "call_expression") target = ""
+          // Pointer-to-member invocation ((declval<Class*>()->*pmf)()) —
+          // ERROR-recovered by the pinned grammar, callee only knowable at
+          // runtime (C fn-pointer class). No trustworthy leaf.
+          if (fn && fn.hasError) target = ""
         }
-      }
-      if (target && !target.startsWith("operator")) {
-        const k = "calls|" + target
-        if (!seen.has(k)) { seen.add(k); edges.push({ label: "calls", from: "(expr)", target }) }
-      }
-    } else if (n.type === "field_expression") {
+        if (target && !target.startsWith("operator")) {
+          const k = "calls|" + target
+          if (!seen.has(k)) { seen.add(k); edges.push({ label: "calls", from: "(expr)", target }) }
+        }
+      } else if (n.type === "field_expression") {
       // member READ unless this field_expression is a call callee or a write
       // LHS (analyzer: uses on obj.field only when not the call function).
       const p = n.parent

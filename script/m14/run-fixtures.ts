@@ -178,11 +178,26 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
       }
     }
     for (const want of exp.expectQualifiedCalls ?? []) {
-      const sym = symbols.find((s: any) => s.name === want.symbol)
+      // ownerName-aware lookup (mirrors expectSymbols/expectParameters):
+      // same-named methods across classes (Alpha.run / Beta.run) or repeated
+      // normalized names (constructor) need the owning scope to disambiguate.
+      // Added 2026-09-05 with the cpp CPPD10 pin — the previous bare-name
+      // lookup silently checked whichever class came first.
+      const sym = symbols.find((s: any) =>
+        s.name === want.symbol &&
+        (want.ownerName === undefined || s.ownerName === want.ownerName))
       const qc: string[] = sym?.qualified_calls ?? []
       for (const inc of want.includes ?? []) {
         if (!qc.some((c: string) => c === inc || c.endsWith("." + inc))) {
           problems.push(`expected ${want.symbol}.qualified_calls to include "${inc}"; got: ${JSON.stringify(qc)}`)
+        }
+      }
+      // CPPD10 pin (2026-09-05): cross-class payload pollution can only be
+      // caught by asserting ABSENCE — an includes-only check passes on a
+      // polluted list ([aFn,bFn] still includes aFn).
+      for (const notInc of want.notIncludes ?? []) {
+        if (qc.some((c: string) => c === notInc || c.endsWith("." + notInc))) {
+          problems.push(`expected ${want.symbol}.qualified_calls NOT to include "${notInc}"; got: ${JSON.stringify(qc)}`)
         }
       }
       // SCD7 payload-noise pin: countMatches catches DUPLICATED paths (curried

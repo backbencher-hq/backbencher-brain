@@ -679,21 +679,21 @@
       "status": "pass"
     },
     {
-      "description": "cpp: 4 ruled, 5 pending owner",
+      "description": "cpp: 4 ruled, 10 pending owner",
       "id": "design-decisions-tracked",
       "language": "cpp",
       "status": "pass"
     },
     {
       "description": "every named node type classified (cpp)",
-      "detail": "256 types, 42 handled, 144 silent, 0 gaps, 9 decisions",
+      "detail": "256 types, 42 handled, 144 silent, 0 gaps, 14 decisions",
       "id": "section-a-structural",
       "language": "cpp",
       "status": "pass"
     },
     {
       "description": "7 relationship kinds pinned by cpp fixtures",
-      "detail": "pinned: calls, extends, imports, include_dependency, instantiates, overrides, references, uses",
+      "detail": "pinned: calls, extends, imports, include_dependency, instantiates, overrides, references, uses, using_dependency",
       "id": "section-b-relationship-kinds",
       "language": "cpp",
       "status": "pass"
@@ -1556,8 +1556,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "95728c38dcb4fedb01e922ff68afcf6ea1a14d21",
-  "committedAt": "2026-09-05T19:27:41+02:00",
+  "commit": "93792b51a3c9e8e1745b81d273a070a6f168a2ea",
+  "committedAt": "2026-09-05T21:04:46+02:00",
   "data": {
     "languages": {
       "c": {
@@ -1613,7 +1613,12 @@
           "CPP-D5",
           "CPP-D6",
           "CPP-D7",
-          "CPP-D8"
+          "CPP-D8",
+          "CPP-D10",
+          "CPP-D11",
+          "CPP-D12",
+          "CPP-D13",
+          "CPP-D14"
         ],
         "ruledDecisions": [
           "CPP-D1",
@@ -1623,11 +1628,11 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "256 types, 42 handled, 144 silent, 0 gaps, 9 decisions",
+            "detail": "256 types, 42 handled, 144 silent, 0 gaps, 14 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
-            "detail": "pinned: calls, extends, imports, include_dependency, instantiates, overrides, references, uses",
+            "detail": "pinned: calls, extends, imports, include_dependency, instantiates, overrides, references, uses, using_dependency",
             "status": "pass"
           },
           "section-c-payload-matrix": {
