@@ -134,9 +134,13 @@ function register(ctx: vscode.ExtensionContext, deps: HoverActionDeps): void {
         void vscode.window.showErrorMessage("bb_lsp: malformed bb.openGraph link (no symbol target).")
         return { ok: false as const, reason: "malformed args" }
       }
-      const { showGraphPanel } = await import("./graph-panel")
+      // M42.H5: the graph action opens THE HUB (usages list/tree) — the M26
+      // webview evolved into the usage/connections center (docs/m42/HUB.md).
+      // The args' file (the symbol's declaration) feeds the whole-panel
+      // staleness marker; the symbol name feeds the usages query.
+      const { showHubPanel } = await import("./hub-panel")
       try {
-        await showGraphPanel(args.symbol, { client: deps.client, cspSource: deps.cspSource }, ctx)
+        await showHubPanel({ symbol: args.symbol, file: args.file }, { client: deps.client, cspSource: deps.cspSource }, ctx)
         return { ok: true as const, surface: "graph", symbol: args.symbol }
       } catch (e) {
         const reason = e instanceof Error ? e.message : String(e)

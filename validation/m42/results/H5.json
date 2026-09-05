@@ -1,0 +1,34 @@
+{
+  "issue": "M42.H5",
+  "code": "H5",
+  "milestone": "M42",
+  "status": "verified",
+  "checks": 36,
+  "passed": 36,
+  "failed": 0,
+  "mutantsCaught": 5,
+  "mutantsTotal": 5,
+  "currentCommit": "66ccf726b5db668b6684f130d3cc21be185b19ea",
+  "verifierCommand": "npx tsx script/m42/verify-hub.ts",
+  "evidenceFile": "H5.json",
+  "generatedAt": "2026-09-05T19:06:03.655Z",
+  "fixture": {
+    "root": "$HOME/backbencher-brain/.tools/m42-h2-fixture",
+    "files": [
+      "src/main/java/com/demo/App.java",
+      "src/main/java/com/demo/Main2.java"
+    ],
+    "symbol": "render",
+    "callerFiles": [
+      "src/main/java/com/demo/App.java",
+      "src/main/java/com/demo/Main2.java"
+    ]
+  },
+  "budgetDeclared": {
+    "hubOpenWarmP95Ms": 300
+  },
+  "limitations": [
+    "DOM assertions cover structure/classes/data attributes over a stub DOM; CSS/paint and the webview toggle script's runtime are per-editor presentation (the E5 leg covers the real editor).",
+    "The usages fixture is single-file-language (java); cross-language usages reuse the M26.W3 surface, not re-tested here."
+  ]
+}

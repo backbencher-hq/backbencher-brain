@@ -69,6 +69,8 @@ interface GraphRequestModule {
   handleGraphRequest: (db: any, projectId: string, params: any, deps?: any) => Promise<any>
   GRAPH_REQUEST_METHOD: string
   GRAPH_SCHEMA_VERSION: number
+  GRAPH_MODE_USAGES: string
+  HUB_USAGES_MAX_DEPTH: number
 }
 
 // --- Seeded fixture db (real sqlite via BrainDatabase) ----------------------
@@ -104,7 +106,7 @@ async function makeFixture(): Promise<{ projectId: string; db: any; dataDir: str
 
 async function main(): Promise<void> {
   const mod = await import(COMPONENT)
-  const { handleGraphRequest, GRAPH_REQUEST_METHOD, GRAPH_SCHEMA_VERSION } = mod as GraphRequestModule
+  const { handleGraphRequest, GRAPH_REQUEST_METHOD, GRAPH_SCHEMA_VERSION, GRAPH_MODE_USAGES, HUB_USAGES_MAX_DEPTH } = mod as GraphRequestModule
   const source = readFileSync(COMPONENT, "utf8")
 
   // --- P1: version gate -----------------------------------------------------
@@ -125,6 +127,9 @@ async function main(): Promise<void> {
   check("P2: empty symbol rejected", await expectGraphError(handleGraphRequest({} as any, "p", { schemaVersion: 1, symbol: "" }), "params.symbol"))
   check("P2: bad direction rejected", await expectGraphError(handleGraphRequest({} as any, "p", { schemaVersion: 1, symbol: "x", direction: "up" }), "params.direction"))
   check("P2: bad maxDepth rejected", await expectGraphError(handleGraphRequest({} as any, "p", { schemaVersion: 1, symbol: "x", maxDepth: 99 }), "params.maxDepth"))
+  // M42.H5: the usages-mode profile is pinned and validated.
+  check("P2: bad mode rejected", await expectGraphError(handleGraphRequest({} as any, "p", { schemaVersion: 1, symbol: "x", mode: "sideways" }), "params.mode"))
+  check("P2: usages-mode depth cap is the W5 cap (5)", HUB_USAGES_MAX_DEPTH === 5 && GRAPH_MODE_USAGES === "usages")
   check("P2: bad relationshipTypes rejected", await expectGraphError(handleGraphRequest({} as any, "p", { schemaVersion: 1, symbol: "x", relationshipTypes: [42] }), "params.relationshipTypes"))
 
   // --- P3: unindexed workspace ---------------------------------------------

@@ -179,6 +179,32 @@ async function run() {
       assert("E5-H4: impact panel leg ran", false, String(e && e.message).slice(0, 200))
     }
 
+    // 2e. M42.H5: the hub panel pure core over the extension's REAL client
+    // (issue #653: usages-mode bb/graph + the ONE core's three hub views —
+    // list by file, list by caller, call tree — with W4 badges, enrichment
+    // chips, declared truncation). The bb.openGraph action (H4) opens THIS
+    // hub surface in a real session, so the click leg above + this data leg
+    // together prove "hub opens from a real hover action".
+    try {
+      const HP = require(path.join(ext.extensionPath, "dist", "test", "hub-panel.js"))
+      const clientLike = { sendRequest: (m, p) => transportFromExt.request(m, p) }
+      const hubResult = await HP.renderHubForPanel({ symbol: "greet" }, { client: clientLike, cspSource: "" })
+      if (hubResult && hubResult.ok) {
+        const m = hubResult.markup
+        assert("E5-H5: hub renders all three views (list-by-file, list-by-caller, tree)", m.includes("bb-hub-view") && m.includes("bb-hub-list") && m.includes("bb-hub-tree"), m.slice(0, 140))
+        assert("E5-H5: hub lists the seeded caller row (main) with a W4 badge", m.includes("main") && m.includes("bb-hub-badge") && m.includes("data-row-id"), m.slice(0, 200))
+        assert("E5-H5: hub counts match the seeded graph (1 caller, 0 callees)", hubResult.counts && hubResult.counts.callers === 1 && hubResult.counts.callees === 0, JSON.stringify(hubResult.counts))
+        assert("E5-H5: complete usage set renders no truncation marker", !m.includes("bb-truncation-marker"), "")
+        assert("E5-H5: enriched rel-1 renders its labeled chip in the hub", m.includes("data-enriched=\"1\"") && m.includes("bb-hub-enrichment"), m.slice(0, 240))
+      } else {
+        assert("E5-H5: hub failure is declared (bb/graph prefix or not-indexed)", hubResult && !hubResult.ok && typeof hubResult.error === "string" && (hubResult.error.includes("bb/graph") || hubResult.error.toLowerCase().includes("not indexed")), hubResult && hubResult.error)
+      }
+      const errHub = await HP.renderHubForPanel({ symbol: "definitely-not-a-symbol-xyz" }, { client: clientLike, cspSource: "" })
+      assert("E5-H5: hub unknown-symbol failure is loud and declared", errHub && !errHub.ok && typeof errHub.error === "string" && errHub.error.length > 0, errHub && errHub.error)
+    } catch (e) {
+      assert("E5-H5: hub panel leg ran", false, String(e && e.message).slice(0, 200))
+    }
+
     // 3. Staleness render checks (contract §4.3, in-editor).
     const staleView = STATUS.renderStatus({
       server: { up: true, version: report ? report.serverVersion : null, versionOk: true },
