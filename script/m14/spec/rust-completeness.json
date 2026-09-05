@@ -247,6 +247,13 @@
         "status": "FIXED",
         "question": "RSD6b (2026-09-05): `use {std::sync::Arc, std::time::Duration};` has no shared module prefix, but the single-row aggregation fabricated module 'Arc, Duration' (items joined) \u2014 28 declarations across cargo+ripgrep.",
         "resolution": "Top-level group imports now emit ONE import row per binding, each with its full module path (std::sync::Arc / std::time::Duration). Same-prefix rows still merge into one. Pinned by rust/use-list-imports per-binding rows + forbidImports 'Read, File'."
+      },
+      {
+        "id": "RUST-D11",
+        "node_type": "attribute-based framework detection (serde/clap/tokio/axum/rocket/tracing/thiserror)",
+        "status": "FIXED",
+        "question": "RSD7 (2026-09-05 post-close re-review, framework-family gap): detectedFrameworks only fired on actix route macros (#[get]/#[post]/...) \u2014 a real file using #[derive(Serialize, Deserialize)] + #[tokio::main] yielded detectedFrameworks=[]. The cpp/python family contract populates detectedFrameworks from code signals; rust never got the non-actix attribute paths.",
+        "resolution": "handleAttribute now detects serde (derive body regex \\b(Serialize|Deserialize)\\b), clap (derive Parser/Subcommand/Args/ValueEnum), thiserror (crate-qualified marker only \u2014 bare Error never implies it), tokio (#[tokio::main|test], flavor), axum/rocket (crate:: path in the attribute), tracing (::instrument). Name-scoped, so std-only derives (Debug/Clone) cannot false-positive. Corpus sanity: cargo+ripgrep 1,481 files -> serde 55 / thiserror 10 / tracing 29, zero garbage names; zero clap/tokio is honest (both repos hand-roll CLI and sync). Pinned by rust/relationship-kinds expectFrameworks [actix_web, serde, tokio]."
       }
     ]
   }
