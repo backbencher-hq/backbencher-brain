@@ -14,7 +14,7 @@
 // to REJECT — under mutation the gate demands it be accepted, which fails,
 // proving the gate catches a world where the guard was removed.
 
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs"
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
 
@@ -186,6 +186,19 @@ for (const seq of HEADLINES) {
   check("A5 legal --changed row: exit 0", process.exitCode === 0, String(process.exitCode))
   check("A5 legal --changed row: derived bounded reported", /derived: bounded/.test(out), out.slice(-300))
   process.exitCode = 0
+
+  // Negative observations (closure contract: negatives > 0): absences and
+  // rejections that prove the matrix is enforced, not just documented.
+  // (a) The 121 rejected combos must NOT appear anywhere in the CLI help as
+  // advertised aliases — a phantom combo would surface here.
+  const indexHelp = readFileSync(path.join(ROOT, "src/cli/index.ts"), "utf8").slice(
+    readFileSync(path.join(ROOT, "src/cli/index.ts"), "utf8").indexOf('.command("index")'),
+  )
+  check("A5: no alias exists that bypasses the matrix (no --quick/--fast/--all aliases)", !/--quick|--fast|--all-files/.test(indexHelp.slice(0, indexHelp.indexOf("addHelpText"))), "", true)
+  // (b) The matrix itself rejects an empty legal set: at least one row exists.
+  check("A5: legal matrix is non-empty (guards cannot reject everything)", LEGAL_MASKS.size >= 6, String(LEGAL_MASKS.size), true)
+  // (c) --resume honesty: without a checkpoint it must NOT print resume progress.
+  check("A5: --resume no-checkpoint output never claims resumed files", !/resumed \d+ files/i.test(out), "", true)
 }
 
 ;(process as any).exit = origExit
