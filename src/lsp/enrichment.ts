@@ -118,8 +118,10 @@ export function describeEnrichment(e: Enrichment): string {
   return parts.join(" · ")
 }
 
-/** True when the record carries at least one displayable field. */
-export function hasDisplayableEnrichment(e: Enrichment | null): boolean {
-  if (e === null) return false
+/** True when the record carries at least one displayable field. Absence is
+ *  declared for null AND undefined — a row that was never enriched, or a
+ *  caller that omitted the field, must never crash the render path. */
+export function hasDisplayableEnrichment(e: Enrichment | null | undefined): boolean {
+  if (!e) return false
   return describeEnrichment(e).length > 0
 }

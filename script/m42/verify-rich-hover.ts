@@ -255,6 +255,8 @@ const containsOnly: RichSite = {
   relationshipType: "contains",
   reversed: true,
   confidence: 1,
+  enrichment: null, // un-enriched row — declared absence (M42.H3 shape)
+  enrichmentStale: false,
 }
 check("H2/R6: contains rows never render as connection facts", connectedSummarySection(connectedGroups([containsOnly])) === "", connectedSummarySection(connectedGroups([containsOnly])))
 const callSite: RichSite = { ...containsOnly, relationshipType: "calls", reversed: true, name: "main", line: 9, character: 4, endLine: 9, endCharacter: 4 }
