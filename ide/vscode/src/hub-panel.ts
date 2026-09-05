@@ -1,0 +1,195 @@
+// ide/vscode/src/hub-panel.ts — M42.H5 (issue #653): the hub webview panel —
+// the surface behind the hover's "Open in graph" action (H4).
+//
+// THIN CLIENT, same law as graph-panel / impact-panel:
+//   1. ONE bb/graph request in the declared usages mode (schemaVersion 1,
+//      mode "usages" — the hub profile, docs/m42/HUB.md),
+//   2. THREE pre-rendered sections from that single result through the ONE
+//      renderer core (graph-core renderHubList/renderHubTree): list by file,
+//      list by caller, call tree,
+//   3. the W6 shell with a tiny nonce-bound LOCAL script that toggles
+//      between the sections (CSP unchanged; no postMessage — the webview→
+//      editor contract is H6's issue),
+//   4. a whole-panel staleness marker from bb/staleness for the root file
+//      (rule §12.2: a stale render is labeled stale).
+// Loud declared failures (not indexed, unknown symbol, schema mismatch)
+// render as content — never a silent empty hub.
+import { window, ViewColumn, type ExtensionContext, type WebviewPanel } from "vscode"
+import type { LanguageClient } from "vscode-languageclient/node"
+
+// Bundled at build time from script/m26/graph-core.ts (the ONE renderer).
+import { renderHubList, renderHubTree } from "../../../script/m26/graph-core"
+import { serialize, StringElement } from "./graph-panel"
+import { buildWebviewHtml } from "../../../script/m26/webview-html"
+
+const GRAPH_METHOD = "bb/graph"
+const STALENESS_METHOD = "bb/staleness"
+
+export interface HubPanelDeps {
+  client: LanguageClient | null
+  cspSource: string
+}
+
+export type HubRenderOutcome =
+  | {
+      ok: true
+      markup: string
+      stateJson: string
+      staleMarkup: string
+      counts: { callers: number; callees: number }
+    }
+  | { ok: false; error: string }
+
+/** Pure, testable core: run the usages query + staleness, render all three
+ *  sections through the ONE core, return the shell inputs. Declared failures
+ *  come back as { error } with the server's reason verbatim. */
+export async function renderHubForPanel(
+  params: { symbol: string; file?: string },
+  deps: HubPanelDeps,
+): Promise<HubRenderOutcome> {
+  if (deps.client === null) {
+    return { ok: false, error: "bb_lsp is not running — restart the server (command: Backbencher: Restart server)." }
+  }
+  let raw: unknown
+  try {
+    raw = await deps.client.sendRequest(GRAPH_METHOD, {
+      schemaVersion: 1,
+      symbol: params.symbol,
+      mode: "usages",
+    })
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e)
+    return { ok: false, error: message.startsWith("bb/graph:") ? message : `bb/graph request failed: ${message}` }
+  }
+  if (raw === null || typeof raw !== "object") {
+    return { ok: false, error: "bb/graph returned a malformed result (not an object)" }
+  }
+  const result = raw as Parameters<typeof renderHubList>[0]
+  const rootName = (result.root as { name?: string } | undefined)?.name ?? params.symbol
+
+  // Whole-panel staleness (§12.2): ask the server for the root symbol's file
+  // marker. Any failure degrades to a declared unknown — never a fresh lie.
+  let stale = false
+  let staleStatus = "unknown"
+  if (typeof params.file === "string" && params.file.length > 0) {
+    try {
+      const marker = (await deps.client.sendRequest(STALENESS_METHOD, { uri: `file://${params.file}` })) as
+        | { stale: boolean; status: string }
+        | null
+        | undefined
+      stale = Boolean(marker?.stale)
+      staleStatus = marker?.status ?? "unknown"
+    } catch {
+      staleStatus = "unknown"
+    }
+  }
+
+  const render = (fn: (r: typeof result, d: never) => { nodesRendered: number }, extraClass: string, attr: Record<string, string>): { markup: string } | { error: string } => {
+    const root = new StringElement("div")
+    const dom = { create: (t: string) => new StringElement(t), root: () => root }
+    try {
+      fn(result, dom as never)
+    } catch (e) {
+      return { error: `bb/graph result failed hub renderer validation: ${e instanceof Error ? e.message : String(e)}` }
+    }
+    for (const [k, v] of Object.entries(attr)) root.setAttribute(k, v)
+    root.addClass(extraClass)
+    return { markup: serialize(root) }
+  }
+  const byFile = render((r, d) => renderHubList(r, d, "file"), "bb-hub-view", { "data-view": "list", "data-group": "file" })
+  if ("error" in byFile) return { ok: false, error: byFile.error }
+  const byCaller = render((r, d) => renderHubList(r, d, "caller"), "bb-hub-view", { "data-view": "list", "data-group": "caller" })
+  if ("error" in byCaller) return { ok: false, error: byCaller.error }
+  const tree = render((r, d) => renderHubTree(r, d), "bb-hub-view", { "data-view": "tree" })
+  if ("error" in tree) return { ok: false, error: tree.error }
+
+  const markup = `${byFile.markup}${byCaller.markup}${tree.markup}`
+  const counts = {
+    callers: Number(((result.callers as unknown[]) ?? []).length),
+    callees: Number(((result.callees as unknown[]) ?? []).length),
+  }
+  const staleMarkup = stale
+    ? `<div class="bb-stale-marker" data-stale="true" data-status="${serializeAttr(staleStatus)}">⚠️ stale — file changed since indexing (${serializeAttr(staleStatus)})</div>`
+    : ""
+  const stateJson = JSON.stringify({
+    renderedBy: "bb_lsp graph core renderHub* (one-library rule)",
+    schemaVersion: 1,
+    mode: "usages",
+    symbol: params.symbol,
+    rootName,
+    counts,
+    stale,
+    staleStatus,
+  })
+  return { ok: true, markup, stateJson, staleMarkup, counts }
+}
+
+function serializeAttr(v: string): string {
+  return v.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+}
+
+/** Open (or reuse) the hub panel for a symbol. */
+export async function showHubPanel(
+  params: { symbol: string; file?: string },
+  deps: HubPanelDeps,
+  context: ExtensionContext,
+): Promise<WebviewPanel> {
+  const panel = window.createWebviewPanel("bbHub", `Backbencher Hub — ${params.symbol}`, ViewColumn.Beside, {
+    // The toggle needs a script; the W6 shell ships nonce-bound and CSP-locked
+    // (default-src 'none'): enableScripts only makes the nonce-bound local
+    // toggle possible — no remote code can run (H6 adds postMessage on top).
+    enableScripts: true,
+    localResourceRoots: [],
+  })
+  context.subscriptions.push(panel)
+  const outcome = await renderHubForPanel(params, deps)
+  panel.webview.html = buildHubHtml(outcome, deps.cspSource)
+  return panel
+}
+
+/** Toggle script (local only): switches the active hub section. Nonce-bound
+ *  inline — allowed by the strict CSP (script-src 'nonce-…'); no postMessage,
+ *  no remote code. */
+const TOGGLE_SCRIPT = `
+(function () {
+  var views = Array.prototype.slice.call(document.querySelectorAll(".bb-hub-view"))
+  var show = function (view, group) {
+    views.forEach(function (v) {
+      var dataView = v.getAttribute("data-view")
+      var dataGroup = v.getAttribute("data-group")
+      var match = dataView === view && (group === undefined || dataGroup === group)
+      v.style.display = match ? "block" : "none"
+      if (match) v.setAttribute("data-active", "1")
+      else v.removeAttribute("data-active")
+    })
+  }
+  window.__bbHubShow = show
+  show("list", "file")
+  var buttons = Array.prototype.slice.call(document.querySelectorAll("[data-hub-target]"))
+  buttons.forEach(function (b) {
+    b.addEventListener("click", function () {
+      var t = b.getAttribute("data-hub-target").split(":")
+      show(t[0], t[1] === "none" ? undefined : t[1])
+    })
+  })
+})()
+`
+
+function buildHubHtml(outcome: HubRenderOutcome, cspSource: string): string {
+  if (outcome.ok) {
+    const shell = buildWebviewHtml({ cspSource, stateJson: outcome.stateJson, bodyMarkup: outcome.markup })
+    const controls =
+      '<div class="bb-hub-controls">' +
+      '<button type="button" data-hub-target="list:file">List (by file)</button>' +
+      '<button type="button" data-hub-target="list:caller">List (by caller)</button>' +
+      '<button type="button" data-hub-target="tree:none">Call tree</button>' +
+      "</div>" +
+      outcome.staleMarkup
+    const withControls = shell.html.replace('<div id="bb-graph-root">', `<div id="bb-graph-root">${controls}`)
+    return withControls.replace("</body>", `<script nonce="${shell.nonce}">${TOGGLE_SCRIPT}</script></body>`)
+  }
+  // Loud declared failure: the reason is rendered as content.
+  const shell = buildWebviewHtml({ cspSource, stateJson: JSON.stringify({ error: outcome.error }), bodyMarkup: "" })
+  const safe = outcome.error.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+  return shell.html.replace('<div id="bb-graph-root"></div>', `<div id="bb-graph-root" class="bb-graph-error"><p>${safe}</p></div>`)
+}

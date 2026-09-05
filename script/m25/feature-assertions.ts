@@ -564,6 +564,10 @@ export async function buildFixtureWorkspace(baseDir: string): Promise<{ workspac
   // inferredAt is stamped AFTER the insert (time_updated default = insert
   // wall-clock ms), so the row is FRESH — never the stale path in this
   // fixture. M42.H3 surfaces these facts on hover in-editor (E5 leg).
+  // relationship_type is "calls" (the REAL analyzer vocabulary, plural —
+  // M42.H5's bb/graph usages traversal filters on the graph engine's
+  // DEFAULT_REL_TYPES; the M24-era singular "call" was invisible to it, a
+  // fixture convention the E5 hub leg exposed).
   const relMeta = JSON.stringify({
     evidenceClass: "structural",
     role: "consumer",
@@ -577,7 +581,7 @@ export async function buildFixtureWorkspace(baseDir: string): Promise<{ workspac
     projectId,
     "sym-main",
     "sym-greet",
-    "call",
+    "calls",
     1.0,
     relMeta,
   )
