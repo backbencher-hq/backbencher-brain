@@ -150,7 +150,7 @@ try {
   // Cold call includes one-time WASM parser init; the budget governs the
   // steady state, measured warm (40 calls) below (contract §3: warm p95).
   check("H1/R5: warm p95 budget <= 25ms (cold excludes one-time WASM init)", coldMs < 2000, `cold ${coldMs.toFixed(1)}ms`)
-  const highs: Array<{ start: { line: number }; end: { line: number }; kind?: number }> = res?.highlights ?? []
+  const highs: Array<{ start: { line: number }; end: { line: number }; kind?: number }> = Array.isArray(res) ? res.map((it: any) => ({ start: it?.range?.start, end: it?.range?.end, kind: it?.kind })) : []
   const highLines = new Set(highs.map((h) => h.start.line))
   const allExpected = new Set([H1_EXPECT.declarationLine, ...H1_EXPECT.referenceLines])
   let semanticOk = allExpected.size > 0
@@ -166,15 +166,17 @@ try {
   const warmMs = (performance.now() - t1) / 40
   check("H1/R5: warm p95 budget <= 25ms (mean over 40 steady-state calls)", warmMs < 25, `${warmMs.toFixed(2)}ms/call`)
 
-  // --- R3: declared tier + staleness ----------------------------------------
-  console.log("\nR3: declared absence + staleness fields")
-  check("H1/R3: response carries evidenceTier", typeof res?.evidenceTier === "string", JSON.stringify(res?.evidenceTier))
-  check("H1/R3: response carries staleness marker", res?.staleness !== undefined && typeof res?.staleness?.stale === "boolean", JSON.stringify(res?.staleness))
+  // --- R3: declared tier + staleness (wire law: metadata rides each item's data) ---
+  console.log("\nR3: declared absence + staleness fields (wire law)")
+  const wireItems: any[] = Array.isArray(res) ? res : []
+  check("H1/R3: wire result is DocumentHighlight[] (not a wrapper)", Array.isArray(res), JSON.stringify(res).slice(0, 120))
+  check("H1/R3: every item carries the evidence tier in data", wireItems.every((it) => typeof it?.data?.evidenceTier === "string"), JSON.stringify(wireItems[0]?.data ?? null))
+  check("H1/R3: every item carries the staleness marker in data", wireItems.every((it) => it?.data?.staleness !== null && typeof it?.data?.staleness?.stale === "boolean"), JSON.stringify(wireItems[0]?.data ?? null))
   const absent = await lsp.request("textDocument/documentHighlight", {
     textDocument: { uri: fileUri },
-    position: { line: 0, character: 0 }, // inside `package com.demo;` — not a symbol position
+    position: { line: 0, character: 0 }, // inside `package com.demo;` — not an identifier position
   })
-  check("H1/R3: unindexed position declares absence (tier not_indexed)", absent?.evidenceTier === "not_indexed" && (absent?.highlights ?? []).length === 0, JSON.stringify(absent).slice(0, 120))
+  check("H1/R3: unindexed position declares absence (wire null)", absent === null, JSON.stringify(absent).slice(0, 120))
 
   // --- Mutants: the suite CAN fail ------------------------------------------
   console.log("\nM: mutants")
@@ -185,10 +187,10 @@ try {
     return src[l]?.includes(H1_EXPECT.symbolName)
   })
   mutant("M1: lexical matcher would highlight decoys (probe distinguishes)", decoysContainToken)
-  // M2: dropping the staleness field from the response is caught.
-  mutant("M2: staleness field present in response (dropping it fails this suite)", res?.staleness !== undefined && "stale" in (res.staleness ?? {}))
+  // M2: dropping the staleness field from the wire items is caught.
+  mutant("M2: staleness field present on wire items (dropping it fails this suite)", wireItems.every((it) => it?.data?.staleness !== undefined && "stale" in (it.data.staleness ?? {})))
   // M3: declared absence is a checked contract, not an accident.
-  mutant("M3: declared-absence tier value is exact (not an empty success)", absent?.evidenceTier === "not_indexed")
+  mutant("M3: declared absence is wire null (never a silent empty array)", absent === null)
   // M4: a fabricated highlight (a multi-line whole-file range) cannot pass
   // the byte-precision rule — highlights are single-identifier spans.
   const fabricated = { start: { line: 0, character: 0 }, end: { line: 18, character: 0 }, kind: 2 }
