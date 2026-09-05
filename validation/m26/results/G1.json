@@ -2,16 +2,18 @@
   "issue": "M26.G1",
   "code": "G1",
   "milestone": "M26",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 70,
   "passed": 70,
   "failed": 0,
   "negativeCases": 10,
-  "currentCommit": "773e425e858dade6d42b1e240410743a70fea2e3",
-  "workingTreeRelevantChanges": [],
+  "currentCommit": "4c548dc84b6c52a2d078019ba89462bb42ac9d47",
+  "workingTreeRelevantChanges": [
+    "docs/m26/CROSS-LANGUAGE.md"
+  ],
   "verifierCommand": "npx tsx script/m26/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-05T15:35:23.400Z",
+  "generatedAt": "2026-09-05T16:25:14.858Z",
   "ledger": "validation/m26/results/manifest.json",
   "m25Bar": {
     "ledgerStatus": "closed",
