@@ -124,7 +124,7 @@
       "code": "H4",
       "githubIssue": 652,
       "tool": "lsp-hover-actions",
-      "status": "planned",
+      "status": "verified",
       "scope": "Command URIs (open in graph, impact, call hierarchy) in the hover; server-side symbol resolution; honest error surface",
       "acceptanceCriteria": [
         "fixture-first: exact command + argument contract authored before implementation (RED then GREEN)",
@@ -136,7 +136,18 @@
         "H4 evidence (verified, current HEAD)",
         "editor leg evidence",
         "docs drift gate green"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see H4.json",
+        "verifierCommand": "npx tsx script/m42/verify-hover-actions.ts",
+        "evidenceFile": "H4.json",
+        "passed": 31,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 5,
+        "editorLeg": "E5 57/57 (actions row + real clicks through bb.openGraph/openImpact/showCallHierarchy in VS Code; impact panel over the real client)"
+      }
     },
     {
       "code": "H5",
