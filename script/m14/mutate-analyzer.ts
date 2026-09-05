@@ -303,6 +303,30 @@ const MUTANTS: Mutant[] = [
     }) }),
   },
   {
+    id: "rust/reemit-write-field-uses",
+    language: "rust",
+    defectClass: "relationship-noise",
+    description: "RSD5 regression: re-emits `uses` for assignment-LHS field WRITES (the pre-fix field_expression branch had no write-gate — 1,076 bogus uses across cargo+ripgrep; the oracle derives no uses truth so only fixtures catch it) — qualified-calls-ownership fixture's set_name/bump_count forbid pins catch it",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { source: "set_name", target: "name", type: "uses", confidence: 0.9, metadata: { relationshipType: "field_access", accessedFrom: "self" } }, { source: "bump_count", target: "count", type: "uses", confidence: 0.9, metadata: { relationshipType: "field_access", accessedFrom: "self" } }] }),
+  },
+  {
+    id: "rust/drop-nested-group-import-items",
+    language: "rust",
+    defectClass: "import-loss",
+    description: "RSD6a regression: drops nested-group leaves from import items (pre-fix `use std::{env, io, path::{Path, PathBuf}}` bound only env/io — Path/PathBuf silently lost, 65 declarations across cargo+ripgrep) — use-list-imports fixture's std-row pin catches it",
+    transform: r => ({ ...r, imports: (r.imports ?? []).map((i: any) => (i.module === "std" ? { ...i, items: (i.items ?? []).filter((x: string) => x !== "Path" && x !== "PathBuf") } : i)) }),
+  },
+  {
+    id: "rust/join-top-group-imports",
+    language: "rust",
+    defectClass: "import-contract",
+    description: "RSD6b regression: collapses a top-level group import into ONE row whose module is the joined item names (pre-fix `use {std::sync::Arc, ...}` fabricated module 'Arc, Duration'; 28 declarations across cargo+ripgrep) — use-list-imports fixture's per-binding row pins catch it",
+    transform: r => ({
+      ...r,
+      imports: [...(r.imports ?? []).filter((i: any) => i.module !== "std::sync::Arc" && i.module !== "std::time::Duration"), { module: "Arc, Duration", items: ["Arc", "Duration"], metadata: { rustSpecific: true, isPublic: false } }],
+    }),
+  },
+  {
     id: "go/whole-text-stdlib-callee",
     language: "go",
     defectClass: "relationship-loss",
