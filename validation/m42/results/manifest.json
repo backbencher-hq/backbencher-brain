@@ -39,7 +39,7 @@
       "code": "H1",
       "githubIssue": 649,
       "tool": "lsp-document-highlight",
-      "status": "planned",
+      "status": "verified",
       "scope": "Semantic in-file DocumentHighlight from the index; staleness-labeled; lexical matching banned",
       "acceptanceCriteria": [
         "fixture-first: comment/string tokens must NOT highlight, real references must (RED then GREEN)",
@@ -50,7 +50,17 @@
         "H1 evidence (verified, current HEAD)",
         "highlight p95 <= 25ms recorded",
         "editor leg evidence with wake-up path"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see H1.json",
+        "verifierCommand": "npx tsx script/m42/verify-highlight.ts",
+        "evidenceFile": "H1.json",
+        "passed": 15,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 4
+      }
     },
     {
       "code": "H2",
