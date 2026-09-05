@@ -46,6 +46,14 @@ export type AutoRefreshDecision =
 /** Documented defaults — the honest small bounds for an inline repair. */
 export const AUTO_REFRESH_DEFAULTS = { maxFiles: 25, maxBytes: 2 * 1024 * 1024 }
 
+/**
+ * M43.A3 (#659) whitelist: every environment variable this module reads.
+ * The A3 gate parses the module's actual process.env reads and asserts they
+ * equal this allowlist — a new env knob cannot land without being declared
+ * (and documented) here.
+ */
+export const AUTO_REFRESH_ENV_ALLOWLIST = ["BB_NO_AUTO_REFRESH", "BB_AUTO_REFRESH_MAX_FILES", "BB_AUTO_REFRESH_MAX_BYTES"] as const
+
 export function autoRefreshEnabled(perCallOptOut: boolean | undefined): boolean {
   if (perCallOptOut === true) return false
   if (process.env.BB_NO_AUTO_REFRESH === "1") return false

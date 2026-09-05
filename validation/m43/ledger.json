@@ -89,7 +89,7 @@
     "code": "A3",
     "githubIssue": 659,
     "tool": "config-freshness",
-    "status": "open",
+    "status": "verified",
     "scope": "Flag/config semantics: new flags/env enter the whitelist matrix, test hooks quarantined behind BB_TEST_HOOKS, remediation strings updated, docs byte-truth",
     "acceptanceCriteria": [
       "whitelist matrix declares or rejects every combination with the new flags",
@@ -99,7 +99,18 @@
     ],
     "closureRequirements": [
       "evidence file + ledger sync + evidence comment"
-    ]
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "624afd6c0c8377129397779e882a29f836455603",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m43/verify-a3-flag-semantics.ts",
+      "evidenceFile": "A3.json",
+      "generatedAt": "2026-09-05T21:35:30.221Z",
+      "passed": 32,
+      "failed": 0,
+      "negativeCases": 2
+    }
   },
   {
     "code": "A4",
@@ -131,14 +142,14 @@
       "evidence file + ledger sync + evidence comment"
     ],
     "evidence": {
-      "status": "blocked",
+      "status": "verified",
       "currentCommit": "4b41588b3ea0749667f6420568b9d54047995de1",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m43/verify-governance.ts",
       "evidenceFile": "G1.json",
-      "generatedAt": "2026-09-05T21:30:52.644Z",
-      "passed": 52,
-      "failed": 3,
+      "generatedAt": "2026-09-05T21:30:58.223Z",
+      "passed": 55,
+      "failed": 0,
       "negativeCases": 2
     }
   },
