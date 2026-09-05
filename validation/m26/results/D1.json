@@ -16,11 +16,11 @@
   ],
   "mutantsCaught": 2,
   "mutantsTotal": 2,
-  "realDbsScanned": 30,
+  "realDbsScanned": 32,
   "realDbsSkipped": 3,
   "realCrossLanguagePairs": 0,
   "docFile": "docs/m26/GRAPH.md",
-  "currentCommit": "4f0bf0c43fd06ebe7ce56163e10744e7ac08d8e7",
+  "currentCommit": "7de38f7202cb0a025f6192c6c30c155624cfafb7",
   "verifierCommand": "npx tsx script/m26/verify-graph-docs.ts",
-  "generatedAt": "2026-09-05T02:56:23.038Z"
+  "generatedAt": "2026-09-05T04:40:40.300Z"
 }
