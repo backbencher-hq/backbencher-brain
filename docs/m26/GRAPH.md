@@ -47,7 +47,7 @@ text, no claimed bridge.
 | --- | --- | --- | --- | --- |
 | _(none — no cross-language rows stored anywhere)_ | | | | |
 
-Real project dbs scanned: 30 (skipped/unreadable: 3).
+Real project dbs scanned: 32 (skipped/unreadable: 3).
 
 ## Verification status (generated from the M26 evidence ledger)
 
