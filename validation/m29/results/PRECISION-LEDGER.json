@@ -2,7 +2,7 @@
   "milestone": "M29.R4",
   "issue": 539,
   "generatedBy": "npx tsx script/m29/generate-precision-ledger.ts --write",
-  "inputsHash": "3f62155e5c1ea6c3bc49675d5d93a7340466e5b6",
+  "inputsHash": "9654abfda3b3470beb806425731852207eba6c1b",
   "inputs": [
     "validation/m29/results/wave-java.json",
     "validation/m29/results/wave-python.json",
@@ -57,7 +57,7 @@
         "differentialFloor": "grails-core",
         "differentialMissing": 0,
         "differentialUnexplained": 0,
-        "msPerFile": 6.7,
+        "msPerFile": 2.6,
         "evidenceTiersPinned": 2,
         "source": "validation/m14/results/M14.0.SPEC.json (sections e/f/d — M14's evidence, published here)"
       },
@@ -70,7 +70,7 @@
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-java.json",
-          "commit": "527252e933fcfd6c0d4a0cdbdb222b8daf644fb5",
+          "commit": "9186d785496627b40a087881ed30ed0221754233",
           "status": "verified"
         }
       },
@@ -110,7 +110,7 @@
         "differentialFloor": "cython",
         "differentialMissing": 0,
         "differentialUnexplained": 0,
-        "msPerFile": 30.6,
+        "msPerFile": 40.7,
         "evidenceTiersPinned": 4,
         "source": "validation/m14/results/M14.0.SPEC.json (sections e/f/d — M14's evidence, published here)"
       },
@@ -123,7 +123,7 @@
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-python.json",
-          "commit": "527252e933fcfd6c0d4a0cdbdb222b8daf644fb5",
+          "commit": "9186d785496627b40a087881ed30ed0221754233",
           "status": "verified"
         }
       },
@@ -163,7 +163,7 @@
         "differentialFloor": "vue-core",
         "differentialMissing": 0,
         "differentialUnexplained": 0,
-        "msPerFile": 50.6,
+        "msPerFile": 46.9,
         "evidenceTiersPinned": 3,
         "source": "validation/m14/results/M14.0.SPEC.json (sections e/f/d — M14's evidence, published here)"
       },
@@ -176,7 +176,7 @@
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-typescript.json",
-          "commit": "527252e933fcfd6c0d4a0cdbdb222b8daf644fb5",
+          "commit": "9186d785496627b40a087881ed30ed0221754233",
           "status": "verified"
         }
       },
@@ -229,7 +229,7 @@
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-javascript.json",
-          "commit": "527252e933fcfd6c0d4a0cdbdb222b8daf644fb5",
+          "commit": "9186d785496627b40a087881ed30ed0221754233",
           "status": "verified"
         }
       },
@@ -269,7 +269,7 @@
         "differentialFloor": "Exposed",
         "differentialMissing": 0,
         "differentialUnexplained": 0,
-        "msPerFile": 36.9,
+        "msPerFile": 39.3,
         "evidenceTiersPinned": 3,
         "source": "validation/m14/results/M14.0.SPEC.json (sections e/f/d — M14's evidence, published here)"
       },
@@ -282,7 +282,7 @@
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-kotlin.json",
-          "commit": "527252e933fcfd6c0d4a0cdbdb222b8daf644fb5",
+          "commit": "9186d785496627b40a087881ed30ed0221754233",
           "status": "verified"
         }
       },
@@ -322,7 +322,7 @@
         "differentialFloor": "scala3",
         "differentialMissing": 0,
         "differentialUnexplained": 0,
-        "msPerFile": 7.1,
+        "msPerFile": 12.8,
         "evidenceTiersPinned": 3,
         "source": "validation/m14/results/M14.0.SPEC.json (sections e/f/d — M14's evidence, published here)"
       },
@@ -335,7 +335,7 @@
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-scala.json",
-          "commit": "527252e933fcfd6c0d4a0cdbdb222b8daf644fb5",
+          "commit": "9186d785496627b40a087881ed30ed0221754233",
           "status": "verified"
         }
       },
@@ -349,9 +349,9 @@
       "revision": "f7572f6229314400",
       "files": 59000
     },
-    "hoverP95Ms": 3.42,
-    "inEditorHoverP95Ms": 2.7,
-    "coldMedianMs": 192,
+    "hoverP95Ms": 9.1,
+    "inEditorHoverP95Ms": 12.86,
+    "coldMedianMs": 490,
     "tierRatio": {
       "totalRelationships": 777954,
       "inferredRatioBeforePct": 42.5,

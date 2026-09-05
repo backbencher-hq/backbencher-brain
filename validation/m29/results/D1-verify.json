@@ -1,24 +1,28 @@
 {
-  "status": "verified",
-  "passed": 13,
-  "failed": 0,
+  "status": "known-gap",
+  "passed": 10,
+  "failed": 3,
   "negatives": {
     "planned": 3
   },
   "verdict": {
-    "realComponentFailures": 0,
+    "realComponentFailures": 3,
     "mutantsCaught": 3,
     "mutantsTotal": 3,
     "ok": true
   },
-  "currentCommit": "b24c391742a93b0cabcef73c71bbc31bb41dc84a",
+  "currentCommit": "9186d785496627b40a087881ed30ed0221754233",
   "verifierCommand": "npx tsx script/m29/verify-m29-docs.ts",
   "evidenceFile": "D1-verify.json",
-  "generatedAt": "2026-09-04T23:37:28.790Z",
+  "generatedAt": "2026-09-05T22:24:03.758Z",
   "limitations": [
     "The listing's shipped claim table is intentionally at the conservative I1 floor (M25's drift gate owns it); D1 checks it never rises above the machine ledger, not that it equals it.",
     "Vocabulary lint is pattern-based; novel overclaim phrasings are caught by review and the owner spot-check, not by this lint.",
     "The wave doc's registry list is generated from WAVE_LANGUAGES; adding a language to the registry regenerates the doc (drift gate enforces regeneration)."
   ],
-  "details": []
+  "details": [
+    "D1: PRECISION-LEDGER.md regenerates byte-identically: hand edit or evidence change — regenerate with --write",
+    "D1: PRECISION-LEDGER.json regenerates byte-identically: hand edit — regenerate with --write",
+    "D2: no banned vocabulary in listing README: always"
+  ]
 }
