@@ -149,7 +149,9 @@ export function showAllUsagesUri(file: string, line: number, character: number):
 /** Human label: `main — App.java:12` (file base name, 1-based human line).
  *  The LINK target stays the 0-based LSP coordinate; the label is display. */
 export function siteLabel(site: { name: string; path: string; line: number }): string {
-  const base = site.path.split("/").pop() ?? site.path
+  // Separator-independent base name: win32 paths use backslashes, POSIX
+  // forward slashes (found by the E7 win32 CI leg, 2026-09-05).
+  const base = site.path.split(/[\\/]/).pop() ?? site.path
   return `${site.name} — ${base}:${site.line + 1}`
 }
 
