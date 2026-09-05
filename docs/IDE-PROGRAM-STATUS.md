@@ -18,14 +18,63 @@ Contract: [IDE-HONESTY-CONTRACT.md](./IDE-HONESTY-CONTRACT.md)
 | Version | Milestone | Name | State | Claim level | Status doc |
 | --- | --- | --- | --- | --- | --- |
 | v0 | M24 | The Server | **CLOSED** (shipped at I1) | I1 (all five languages, all six features) | [m24/M24-FINAL-AUDIT.md](./m24/M24-FINAL-AUDIT.md) |
-| v1 | M25 | The Extension | not started | I3/I4 target — **not claimed** | — |
-| v2 | M26 | The Graph | not started | — | — |
-| v3 | M27 | Everywhere (JetBrains/Zed/Neovim/Helix) | not started | — | — |
-| v4 | M28 | The Union (MCP + agent) | not started | — | — |
+| v1 | M25 | The Extension | **CLOSED** (11/11 verified) | I3 (editor-verified, VS Code); I4 on Cursor 3.18.9 + Antigravity 1.107.0 — Windsurf declared blocked | [m25 ledger](../validation/m25/results/manifest.json) |
+| v2 | M26 | The Graph | **CLOSED** (11/11 verified) | I3 (graph panel live in VS Code, in-editor verified); cross-language per-pair with declared absence; 36 mutants caught across 8 suites | [m26 ledger](../validation/m26/results/manifest.json) |
+| v3 | M27 | Everywhere (JetBrains/Zed/Neovim/Helix) | **CLOSED** (7/7 verified) | N1 I3 (Neovim headless, machine-driven); J1/Z1/H1 I2 (config + wire capabilities, blocked legs recorded); 17 mutants caught across 5 suites | [m27 ledger](../validation/m27/results/manifest.json), [matrix](./m27/FORK-CAPABILITY-MATRIX.md) |
+| v4 | M28 | The Union (MCP + agent) | **CLOSED** (7/7 verified) | U1 I3-equivalent (MCP answers machine-proven identical to IDE answers on the shared fixture); annotations schema-enforced provenance + real headless-editor leg; 17 mutants caught across 5 suites | [m28 ledger](../validation/m28/results/manifest.json), [surface](./m28/MCP-SURFACE.md) |
 | v5 | M29 | Precision Waves | not started | — | — |
 
-Nothing on this page is a fork- or editor-verified claim until M25 pins a
-version, a run, and a machine (I3/I4 definitions, contract §2).
+Nothing on this page is a fork- or editor-verified claim until a milestone's
+ledger pins a version, a run, and a machine per claim (I3/I4 definitions,
+contract §2). v1's claims are pinned in `validation/m25/results/*.json` and
+the per-fork capability matrix
+([m25/FORK-CAPABILITY-MATRIX.md](./m25/FORK-CAPABILITY-MATRIX.md)).
+
+## v2 — The Graph (M26): shipped capabilities
+
+The differentiator, shipped honest: one HTML/renderer core (`script/m26/graph-core.ts`)
+reused everywhere — never per-IDE forks.
+
+- **Graph panel live in VS Code** (`bbLsp.showGraph` → `ide/vscode/src/graph-panel.ts`):
+  `bb/graph` over the real LanguageClient, rendered through the ONE core via an
+  escaping DOM port, emitted through the canonical W6 shell. In-editor proof: E5 29/29.
+- **Versioned transport** (`bb/graph`, schema v1): loud declared errors on version
+  mismatch, unknown symbol, and unindexed workspace — never a silent empty graph.
+  Every edge traces to its `brain_relationship` row id.
+- **Five-tier evidence badges + legend** on every edge and every graph; the 0.7
+  inheritance floor is one rule across webview and hover (drift-gated).
+- **Bounded impact mode** (200 nodes / depth 5) with in-UI "Showing X of Y"
+  truncation and an independent declared total — never silent.
+- **Cross-language hover, per-pair**: facts from stored `is_cross_language` rows
+  only; pairs without rows are declared absent. **Proven end-to-end from real
+  indexing (M26.A1)**: the indexer's cross-language flag now fires in both
+  resolution paths (insert-time java→scala 3/3; late-resolution ts→js 2/2 — a
+  real write-path defect found and fixed), with `name-resolution` bridges and
+  honest inferred-tier rendering.
+- **Webview hardening (W6)**: strict nonce-bound CSP, canonical HTML shell,
+  adversarial fixtures rendered inert, three security mutant classes caught.
+- **Generated docs**: `docs/m26/GRAPH.md` regenerated from live code + the ledger;
+  byte-identical drift gate. Claim levels match the ledger by construction.
+
+## v1 — The Extension (M25): shipped capabilities
+
+Thin VS Code-family client (`ide/vscode`) over `bb_lsp` — all intelligence
+stays in the server; the client owns launch, consent, and the status surface:
+
+| Capability | Level | Evidence |
+| --- | --- | --- |
+| Server resolution order (explicit path → workspace dist → source fallback), version-gated | I1 | `validation/m25/results/E1.json` |
+| Auto-index consent machine with declared modes, BB_DATA_DIR provenance | I1 | `validation/m25/results/E2.json` |
+| Status surface: staleness markers, claim tiers, activation budget law | I1 | `validation/m25/results/E3.json` |
+| Marketplace listing truthfulness (drift-gated claims, per-editor install doc) | I1 | `validation/m25/results/D1.json` |
+| In-editor verification (pinned VS Code 1.85.0, shared assertion core) | I3 | `validation/m25/results/E5.json` |
+| Fork verification: Cursor 3.18.9 + Antigravity 1.107.0 verified; Windsurf blocked-with-reason | I4 | `validation/m25/results/F-CURSOR.json`, `F-ANTIGRAVITY.json`, `F-WINDSURF.json` |
+| Cross-platform honesty: Linux verified; macOS/Windows recorded blocked (no runner — owner decision open) | §10 | `validation/m25/results/E7-linux.json`, `E7-darwin.json`, `E7-windows.json` |
+
+Honest gaps carried forward: macOS/Windows OS-matrix runners (or waiver) are
+an owner decision; OpenVSX live publish awaits `OVSX_PAT` (E4 declares the
+package verified, the listing not yet live); owner spot-check passes are
+scheduled in the issue-closure comments.
 
 ## v0 — The Server (M24): shipped capabilities
 
@@ -71,12 +120,12 @@ Standalone LSP 3.18 binary over stdio (`bb lsp`, entry in
 
 | Limitation | Retires in |
 | --- | --- |
-| Fixtures are TypeScript; per-language fixture evidence for java/groovy/kotlin/scala | M25 |
-| I3 (editor-verified) / I4 (fork-verified) levels unclaimed | M25 |
-| Latency budgets measured on one machine (recorded per evidence file) | M25.E7 cross-platform wave |
+| Fixtures are TypeScript; per-language fixture evidence for java/groovy/kotlin/scala | M26+ (unchanged by v1 — extension scope) |
+| ~~I3 (editor-verified) / I4 (fork-verified) levels unclaimed~~ — **retired by M25** (E5/E6 evidence) | M25 ✅ |
+| Latency budgets measured on one machine (recorded per evidence file) | partially retired by M25.E7: Linux verified; macOS/Windows blocked pending owner runner-or-waiver decision |
 | bun harness leg `blocked` where bun is absent — recorded with reason | standing rule |
 | Single-root workspaces only | M25+ |
-| No graph UI, no cross-language hover | M26 |
+| No graph UI, no cross-language hover | ~~M26~~ retired at M26 closure (graph panel live in VS Code; cross-language hover per stored pair, absence declared) |
 | Event storms >1000/s unverified | M29/R3 |
 
 ## Verdict history
@@ -84,10 +133,14 @@ Standalone LSP 3.18 binary over stdio (`bb lsp`, entry in
 | Date | Event | Evidence |
 | --- | --- | --- |
 | 2026-09-02 | M24 closed: 11/11 issues verified, closure gate 60/60 + 6 negatives, full-suite re-run green at closing commit | [m24/M24-FINAL-AUDIT.md](./m24/M24-FINAL-AUDIT.md) |
+| 2026-09-03 | M25 closed: 11/11 issues verified at HEAD `e6125bb` — governance 72/72, E5 in-editor 26/26 (VS Code 1.85.0), E6 forks 26/26 ×2 (Cursor, Antigravity) + Windsurf blocked, E7 Linux 39/39 with darwin/win32 blocked records, X1 closure gate 37/37 incl. budget-violation-hidden mutant | [m25 ledger](../validation/m25/results/manifest.json), [X1](../validation/m25/results/X1.json) |
+| 2026-09-04 | M26 closed: 11/11 issues verified at HEAD `5153034` — graph panel live in VS Code (E5 29/29 in-editor), bb/graph transport v1 over real stdio, five-tier evidence badges + legend, bounded impact mode with in-UI truncation, W6 webview hardening, generated per-pair docs from 17 real dbs, X1 closure gate 50/50 with per-mutant records; 36 mutants caught across 8 suites (W1 6, W2 5, W3 5, W4 5, W5 5, W6 3, V1 5, D1 2) | [m26 ledger](../validation/m26/results/manifest.json), [X1](../validation/m26/results/X1.json) |
+| 2026-09-04 | M26.A1 addendum closed: cross-language write path proven end-to-end from REAL indexing — a real indexer defect found and fixed (late-resolved relationships never got the cross-language flag/bridge; fix is upgrade-only in both resolution flows); fixtures java→scala 3/3, ts→js 2/2 flagged with `name-resolution` bridges; verifier 11/11 + 1/1 mutant | [A1](../validation/m26/results/A1.json), [issue #615](https://github.com/backbencher-hq/backbencher-brain/issues/615) |
+| 2026-09-04 | M27 closed: 7/7 issues verified — one binary reaches five editor families. Neovim I3 (real headless session, 31/31); LSP4IJ/Zed/Helix I2 with wire-level capability subsets and blocked legs recorded (runIde / wasm build, in-editor Zed session, driven hx); generated capability matrix v3 with the graph delta declared per editor; X1 closure gate 31/31 + 4 negative probes; 17 mutants caught across 5 suites (N1 4, J1 4, Z1 3, H1 4, V1 2) | [m27 ledger](../validation/m27/results/manifest.json), [X1](../validation/m27/results/X1.json), [matrix](./m27/FORK-CAPABILITY-MATRIX.md) |
+| 2026-09-04 | M28 closed: 7/7 issues verified — the agent and the developer share one truth. Union differential gate U1 proves MCP answers ≡ IDE answers on the shared fixture (edge multisets with tiers, impact sets with declared truncation, cross-language facts with declared absence); annotations land in the shared index with SCHEMA-enforced provenance (`author_class` NOT NULL — a provenance-less write is refused by the storage layer itself) and render where the human reads (author-labeled hover section + graph badge, asserted by a real headless Neovim session); MCP surface doc fully generated from the live registry; X1 closure gate 31/31 + 4 negative probes; 17 mutants caught across 5 suites (T1 5, U1 4, A1 4, A2 4, V1 2) | [m28 ledger](../validation/m28/results/manifest.json), [X1](../validation/m28/results/X1.json), [surface](./m28/MCP-SURFACE.md) |
 
 ## Next up
 
-M25 — The Extension (VS Code thin client + forks via OpenVSX), per the
-decision record. May start: the v0 completion bar is fully satisfied and
-audited. Extension work must keep every standing gate green; a client change
-that breaks the harness fails `npm run verify` like any server regression.
+M29 — Precision Waves (v5), per the decision record. The v4 bar is
+closed: the M28 governance gate re-audited the M27 bar, and M29's gate
+will re-audit the v4 bar the same way (ladder discipline).

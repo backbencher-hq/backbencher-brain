@@ -81,6 +81,11 @@
         "category": "Backbencher"
       },
       {
+        "command": "bbLsp.showGraph",
+        "title": "Backbencher: Show graph for symbol",
+        "category": "Backbencher"
+      },
+      {
         "command": "bbLsp.showStatusPanel",
         "title": "Backbencher: Show status (evidence levels, staleness)",
         "category": "Backbencher"

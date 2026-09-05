@@ -20,8 +20,10 @@ const RESULTS = join(ROOT, "validation", "m24", "results")
 const DOC_PATH = join(ROOT, "docs", "m24", "TOOL-DOC.md")
 const PLAN = join(ROOT, "docs", "m24", "M24-MASTER-PLAN.md")
 
-/** The five launch languages (#419-CONFORMANT set), matching the server. */
-export const LAUNCH_LANGUAGES = ["java", "groovy", "kotlin", "scala", "typescript"] as const
+/** The launch set — single owner is src/lsp/launch_languages.ts (M29.R2:
+ *  the duplicated copy here was a drift hazard; the wave-1 extension flows
+ *  through the owner module). */
+import { LAUNCH_LANGUAGES } from "../../src/lsp/launch_languages"
 
 /** Feature -> { evidence file, claim level } mapping, all derived from
  *  machine evidence. A feature is listed only when its evidence says
@@ -96,7 +98,8 @@ every response states where its truth comes from (contract §2 claim levels).
 ## Launch languages
 
 Verified for: ${LAUNCH_LANGUAGES.join(", ")}.
-Anything else (Python, Go, Rust, …) is **declared absent** — the server
+Anything else (Go, Rust, Ruby, … — every language outside the launch set
+above) is **declared absent** — the server
 replies with an honest not-indexed/not-launch response, never a guess.
 
 ## Claim levels (contract §2)

@@ -1,0 +1,29 @@
+{
+  "issue": "M28.T1",
+  "code": "T1",
+  "milestone": "M28",
+  "status": "verified",
+  "checks": 24,
+  "passed": 24,
+  "failed": 0,
+  "mutantsCaught": 2,
+  "mutantsTotal": 2,
+  "mutantRecords": [
+    {
+      "name": "T1 mutant: silent empty impact set on unknown symbol is caught",
+      "caught": true
+    },
+    {
+      "name": "T1 mutant: fabricated cross-language fact for unknown symbol is caught",
+      "caught": true
+    }
+  ],
+  "currentCommit": "a9fe5e2603d677d5c09d0720f41b7d0f7079cd34",
+  "verifierCommand": "npx tsx script/m28/verify-mcp-tools.ts",
+  "evidenceFile": "T1.json",
+  "generatedAt": "2026-09-04T20:23:19.167Z",
+  "claimLevel": "verified — three MCP read tools over the real indexer's fixture, reusing the IDE components",
+  "limitations": [
+    "Fixture is java+scala (the M26.A1 polyglot pair); cross-language absence asserted on Warehouse (scala-side symbol with no stored incoming rows)."
+  ]
+}

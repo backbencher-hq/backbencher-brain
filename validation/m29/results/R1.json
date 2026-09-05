@@ -1,0 +1,20 @@
+{
+  "issue": "M29.R1",
+  "code": "R1",
+  "milestone": "M29",
+  "status": "verified",
+  "checks": 32,
+  "passed": 32,
+  "failed": 0,
+  "mutantsCaught": 4,
+  "mutantsTotal": 4,
+  "currentCommit": "527252e933fcfd6c0d4a0cdbdb222b8daf644fb5",
+  "verifierCommand": "npx tsx script/m29/verify-wave-protocol.ts",
+  "evidenceFile": "R1.json",
+  "generatedAt": "2026-09-04T23:35:42.311Z",
+  "limitations": [
+    "S5 (per-language server leg) and S6 (in-editor leg) are R2 execution work; in the dry-run they are declared blockers that cap at I1.",
+    "The SPEC conformance read is machine-read from the committed ledger; re-running the SPEC itself is M14's wave machinery, not R1's.",
+    "Dry-run observation recorded honestly: the real indexer logs a post-index health-check warning (index marked partial) in the temp data dir; file/symbol/relationship counts are real and non-empty, and the S4 pass rests on the counts, not the health score."
+  ]
+}

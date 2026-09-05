@@ -38,32 +38,27 @@ import {
   type IndexPosition,
   type LspPosition,
 } from "./positions"
+import { storedCrossLanguageRows, factsFromRows, crossLanguageSection } from "./cross_language_hover"
+import { annotationHoverSection, type AnnotationRow } from "./annotation_ui"
 
-/** The five launch languages (#419-CONFORMANT set). */
-export const LAUNCH_LANGUAGES = ["java", "groovy", "kotlin", "scala", "typescript"] as const
+/** The launch set, its membership test, and the path→language map live in
+ *  the single-owner module (M29.R2: one owner; the set was duplicated here
+ *  and in server.ts — a drift hazard the wave found). */
+import { LAUNCH_LANGUAGES, isLaunchLanguage, languageForPath } from "./launch_languages"
+export { LAUNCH_LANGUAGES, isLaunchLanguage, languageForPath }
 
-export function isLaunchLanguage(language: string | null): boolean {
-  return language !== null && (LAUNCH_LANGUAGES as readonly string[]).includes(language)
-}
-
-export function languageForPath(filePath: string): string | null {
-  const ext = filePath.slice(filePath.lastIndexOf(".")).toLowerCase()
-  const map: Record<string, string> = {
-    ".java": "java",
-    ".groovy": "groovy",
-    ".gradle": "groovy",
-    ".kt": "kotlin",
-    ".kts": "kotlin",
-    ".scala": "scala",
-    ".sc": "scala",
-    ".ts": "typescript",
-    ".tsx": "typescript",
-  }
-  return map[ext] ?? null
-}
-
-/** Evidence tiers for relationship data, per the evidence class vocabulary. */
-export type EvidenceTier = "indexed" | "inferred" | "semantic_candidate" | "unknown"
+/** Evidence tiers for relationship data, per the evidence class vocabulary.
+ *  M29.R5: the hover tier is the five-class vocabulary (structural,
+ *  import_based, usage_contextual, reference_qualified, inferred) plus the
+ *  coarse "indexed" legacy bucket mapped through tierForRelationship below.
+ *  Rationale (F7 fixture script/m29/r5-tier-fixture.ts): the pre-R5 map had
+ *  10 entries and dumped parser-deterministic facts (contains, instantiates,
+ *  exports) into "inferred" — measured 42.5% of giant-corpus relationships
+ *  downgraded. The structural set and the 0.7 floor mirror the W4 decision
+ *  (script/m26/graph-core.ts TIER_MEANINGS; drift-gated by
+ *  script/m26/verify-evidence-badges.ts P4 and
+ *  script/m29/verify-precision-improvements.ts). */
+export type EvidenceTier = "structural" | "import_based" | "usage_contextual" | "reference_qualified" | "indexed" | "inferred" | "semantic_candidate" | "unknown"
 
 const RELATIONSHIP_TIER: Record<string, EvidenceTier> = {
   call: "indexed",
@@ -78,9 +73,28 @@ const RELATIONSHIP_TIER: Record<string, EvidenceTier> = {
   uses: "indexed",
 }
 
-function tierForRelationship(relType: string, confidence: number | null): EvidenceTier {
-  const t = RELATIONSHIP_TIER[relType.toLowerCase()]
-  if (t) return t
+/** Structural relationship types: parser-deterministic facts. Same set as the
+ *  W4 badge owner (script/m26/graph-core.ts STRUCTURAL_TYPES) plus the
+ *  containment/exports/instantiates facts the analyzers stamp structural. */
+const STRUCTURAL_RELATIONSHIPS = new Set(["call", "calls", "extends", "implements", "overrides", "contains", "exports", "instantiates", "inherits"])
+
+/** Tier for one relationship row (M29.R5 rule):
+ *  1. a STORED metadata.evidenceClass wins (the analyzer's own
+ *     classification — same "stored wins" rule as tierForCrossLanguageEdge
+ *     and the W4 webview badge);
+ *  2. else a structural relationship type at confidence >= 0.7 is structural
+ *     (the W4 floor — below it the edge is a guess and must read inferred);
+ *  3. else the legacy coarse map (indexed vocabulary);
+ *  4. else sub-0.5 confidence is a semantic candidate; everything else is
+ *     honestly inferred. */
+function tierForRelationship(relType: string, confidence: number | null, evidenceClass: string | null): EvidenceTier {
+  if (evidenceClass === "structural" || evidenceClass === "import_based" || evidenceClass === "usage_contextual" || evidenceClass === "reference_qualified" || evidenceClass === "inferred") {
+    return evidenceClass
+  }
+  const t = relType.toLowerCase()
+  if (STRUCTURAL_RELATIONSHIPS.has(t)) return (confidence ?? 0) >= 0.7 ? "structural" : "inferred"
+  const coarse = RELATIONSHIP_TIER[t]
+  if (coarse) return coarse
   if (confidence !== null && confidence < 0.5) return "semantic_candidate"
   return "inferred"
 }
@@ -92,6 +106,15 @@ export interface SymbolHoverData {
   signature: string
   usageCount: number
   evidenceTiers: EvidenceTier[]
+  /** M26.W3: pre-rendered cross-language section — empty string when the
+   *  index stores no cross-language rows for this symbol (the hover then
+   *  renders NO cross-language text at all: absence declared in docs). */
+  crossLanguageSection: string
+  /** M28.A2: pre-rendered annotation section — empty string when the index
+   *  stores no annotations for this symbol (same declared-absence contract
+   *  as the cross-language section above). Author-labeled by the
+   *  annotation_ui owner; an agent note never reads as index fact (D-6). */
+  annotationSection: string
   stale: boolean
   freshnessStatus: "fresh" | "stale" | "missing"
   filePath: string
@@ -209,9 +232,13 @@ export function findSymbolAtPosition(
 
 /** Count usages of a symbol from brain_relationship (direct count). */
 export function countUsages(raw: CoreDatabase, symbolId: string): number {
+  // M29.R3 scale fix: the OR form defeats both single-column indexes and
+  // scanned brain_relationship at giant scale (hover p95 902ms on a 59k-file
+  // corpus vs the 50ms budget). The UNION form is two indexed probes with
+  // row-identity dedupe — the exact result multiset of the OR, index-served.
   const row = raw
     .prepare(
-      "SELECT COUNT(*) AS c FROM brain_relationship WHERE target_symbol_id = ? OR source_symbol_id = ?",
+      "SELECT COUNT(*) AS c FROM (SELECT id FROM brain_relationship WHERE target_symbol_id = ? UNION SELECT id FROM brain_relationship WHERE source_symbol_id = ?)",
     )
     .get(symbolId, symbolId) as { c: number }
   return row.c
@@ -219,13 +246,26 @@ export function countUsages(raw: CoreDatabase, symbolId: string): number {
 
 /** Collect evidence tiers across the symbol's relationships. */
 export function evidenceTiersFor(raw: CoreDatabase, symbolId: string): EvidenceTier[] {
+  // M29.R3 scale fix: UNION rewrite (see countUsages) — same tier set, two
+  // indexed probes instead of one full scan.
   const rows = raw
     .prepare(
-      "SELECT relationship_type, confidence FROM brain_relationship WHERE target_symbol_id = ? OR source_symbol_id = ?",
+      "SELECT relationship_type, confidence, metadata FROM brain_relationship WHERE target_symbol_id = ? UNION SELECT relationship_type, confidence, metadata FROM brain_relationship WHERE source_symbol_id = ?",
     )
-    .all(symbolId, symbolId) as Array<{ relationship_type: string; confidence: number | null }>
+    .all(symbolId, symbolId) as Array<{ relationship_type: string; confidence: number | null; metadata: string | null }>
   const tiers = new Set<EvidenceTier>()
-  for (const r of rows) tiers.add(tierForRelationship(r.relationship_type, r.confidence))
+  for (const r of rows) {
+    let evidenceClass: string | null = null
+    if (r.metadata) {
+      try {
+        const cls = (JSON.parse(r.metadata) as { evidenceClass?: unknown }).evidenceClass
+        if (typeof cls === "string") evidenceClass = cls
+      } catch {
+        // unreadable metadata is not evidence — fall through to derivation
+      }
+    }
+    tiers.add(tierForRelationship(r.relationship_type, r.confidence, evidenceClass))
+  }
   return [...tiers].sort()
 }
 
@@ -238,6 +278,18 @@ export function formatHoverMarkdown(data: SymbolHoverData): string {
     lines.push(`evidence: ${data.evidenceTiers.join(", ")}`)
   } else {
     lines.push("evidence: none (no indexed relationships)")
+  }
+  // M26.W3: cross-language facts ONLY from stored rows (is_cross_language = 1).
+  // An empty section renders nothing — a pair with no stored rows states
+  // nothing cross-language in the UI; absence is declared in docs, not faked
+  // (issue #511; mutation-gated: a fabricated fact fails the W3 suite).
+  if (data.crossLanguageSection && data.crossLanguageSection.length > 0) {
+    lines.push(data.crossLanguageSection)
+  }
+  // M28.A2: agent/human annotations, author-labeled. Empty section renders
+  // nothing — declared absence, never a placeholder (same law as W3 above).
+  if (data.annotationSection && data.annotationSection.length > 0) {
+    lines.push(data.annotationSection)
   }
   if (data.stale) {
     lines.push(`⚠️ **stale** — file changed since indexing (${data.freshnessStatus})`)
@@ -307,6 +359,12 @@ export function hover(
 
   const usageCount = countUsages(raw, symbol.id)
   const tiers = evidenceTiersFor(raw, symbol.id)
+  // M26.W3: per-pair cross-language facts from stored rows only.
+  const crossSection = crossLanguageSection(factsFromRows(storedCrossLanguageRows(raw, symbol.id), file.language))
+  // M28.A2: annotation rows for this symbol, rendered by the single owner.
+  // Project scoped via the symbol's file row (hover has no projectId param).
+  const annotationRows = raw.prepare("SELECT symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated FROM brain_annotation WHERE project_id = (SELECT project_id FROM brain_file WHERE id = ?) AND symbol_name = ? ORDER BY time_updated DESC").all(file.id, symbol.name) as AnnotationRow[]
+  const annotationSection = annotationHoverSection(annotationRows)
 
   const data: SymbolHoverData = {
     name: symbol.name,
@@ -315,6 +373,8 @@ export function hover(
     signature: buildSignature(symbol),
     usageCount,
     evidenceTiers: tiers,
+    crossLanguageSection: crossSection,
+    annotationSection,
     stale,
     freshnessStatus,
     filePath: file.path,
