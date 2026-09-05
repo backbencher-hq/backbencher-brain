@@ -5,8 +5,7 @@
 //   bb mcp [--dir DIR]
 //   bb version
 import { Command } from "commander"
-import { createHash } from "crypto"
-import { existsSync, mkdirSync, realpathSync, renameSync, statSync } from "fs"
+import { existsSync, statSync } from "fs"
 import path from "path"
 import { BrainDatabase } from "../brain/database"
 import { indexProjectParallel } from "../ast/parallel-indexer"
@@ -18,26 +17,8 @@ import { LogLevel, setLogLevel } from "../util/log"
 import { computeCheckoutFingerprint, readStoredFingerprint } from "../ast/fingerprint"
 import { FRESHNESS_REMEDIATION } from "../brain/freshness"
 
-export function getProjectId(projectPath: string): string {
-  const resolved = path.resolve(projectPath)
-  let canonical = resolved
-  try {
-    canonical = realpathSync.native(resolved)
-  } catch {
-    // Nonexistent paths retain deterministic lexical identity for validation.
-  }
-  const canonicalId = createHash("sha1").update(canonical).digest("hex").substring(0, 40)
-  if (canonical !== resolved) {
-    const legacyId = createHash("sha1").update(resolved).digest("hex").substring(0, 40)
-    const legacyDir = path.join(bbProjectsDir(), legacyId)
-    const canonicalDir = path.join(bbProjectsDir(), canonicalId)
-    if (existsSync(legacyDir) && !existsSync(canonicalDir)) {
-      mkdirSync(bbProjectsDir(), { recursive: true })
-      try { renameSync(legacyDir, canonicalDir) } catch {}
-    }
-  }
-  return canonicalId
-}
+import { getProjectId } from "../util/project-id"
+export { getProjectId }
 
 function requireDir(p: string): string {
   const abs = path.resolve(p)

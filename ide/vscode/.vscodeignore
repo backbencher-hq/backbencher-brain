@@ -4,6 +4,7 @@
 .vscode/**
 src/**
 esbuild-extension.mjs
+collect-server-deps.mjs
 tsconfig.json
 node_modules/**
 **/*.map
@@ -12,3 +13,6 @@ node_modules/**
 verification-*.png
 
 # server binary must remain: dist/server/lsp/server.js (audit rule AB3)
+# AND its runtime deps: dist/server/node_modules/** (better-sqlite3 native
+# build + drizzle-orm) — without them the bundled server dies with
+# ERR_MODULE_NOT_FOUND before initialize (owner spot-check defect, 2026-09-05).
