@@ -144,7 +144,7 @@ try {
     const missed = budgetViolations([{ op: "hover", p95WarmMs: 10 }])
     check("G3 [negative]: a missing op is a violation", missed.some((v) => v.endsWith(":missing")), missed.join(";"))
     negativeCases++
-    const over = budgetViolations([{ op: "hover", p95WarmMs: 50 }, { op: "definition", p95WarmMs: 10 }, { op: "references", p95WarmMs: 10 }, { op: "documentSymbol", p95WarmMs: 10 }, { op: "workspaceSymbol", p95WarmMs: 100 }, { op: "prepareCallHierarchy", p95WarmMs: 90 }, { op: "callHierarchyExpand", p95WarmMs: 90 }])
+    const over = budgetViolations([{ op: "hover", p95WarmMs: 50 }, { op: "definition", p95WarmMs: 10 }, { op: "references", p95WarmMs: 10 }, { op: "documentSymbol", p95WarmMs: 10 }, { op: "workspaceSymbol", p95WarmMs: 100 }, { op: "prepareCallHierarchy", p95WarmMs: 90 }, { op: "callHierarchyExpand", p95WarmMs: 90 }, { op: "documentHighlight", p95WarmMs: 10 }])
     check("G3 [negative]: a budget-bound hit is a violation (>= budget)", over.some((v) => v.startsWith("hover:")), over.join(";"))
   }
 
@@ -215,6 +215,7 @@ try {
           { op: "workspaceSymbol", p95WarmMs: 100 },
           { op: "prepareCallHierarchy", p95WarmMs: 90 },
           { op: "callHierarchyExpand", p95WarmMs: 90 },
+          { op: "documentHighlight", p95WarmMs: 10 },
         ]
         return mod.budgetViolations(full).length === 0
       }`,
