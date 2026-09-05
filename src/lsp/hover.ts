@@ -40,6 +40,7 @@ import {
 } from "./positions"
 import { storedCrossLanguageRows, factsFromRows, crossLanguageSection } from "./cross_language_hover"
 import { annotationHoverSection, type AnnotationRow } from "./annotation_ui"
+import { parseForSafety } from "../ast/safety-primitives"
 import { actionsSection, connectedGroups, connectedSummarySection, definitionLink, richSitesForSymbol, usagesSection } from "./rich_hover"
 
 /** The launch set, its membership test, and the path→language map live in
@@ -209,6 +210,10 @@ export function buildSignature(row: {
  * find the symbol whose indexed range contains it. Returns null when the
  * position is outside every indexed symbol (honest absence).
  */
+const SYMBOL_ROW_SELECT = `s.id, s.name, s.qualified_name, s.symbol_type, s.line_start, s.line_end,
+            s.byte_start, s.byte_end, s.return_type, s.parameters, s.visibility, s.file_id,
+            f.id AS f_id, f.path, f.language`
+
 export function findSymbolAtPosition(
   raw: CoreDatabase,
   filePath: string,
@@ -218,9 +223,7 @@ export function findSymbolAtPosition(
   // the requested line. Position conversion happens ONLY via P1.
   const rows = raw
     .prepare(
-      `SELECT s.id, s.name, s.qualified_name, s.symbol_type, s.line_start, s.line_end,
-              s.byte_start, s.byte_end, s.return_type, s.parameters, s.visibility, s.file_id,
-              f.id AS f_id, f.path, f.language
+      `SELECT ${SYMBOL_ROW_SELECT}
        FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id
        WHERE f.path = ? AND s.line_start IS NOT NULL AND s.line_end IS NOT NULL
          AND s.line_start <= ? AND s.line_end >= ?`,
@@ -243,6 +246,65 @@ export function findSymbolAtPosition(
     }
   }
   return best
+}
+
+/** Occurrence-first resolution (owner test, 2026-09-05): when the cursor sits
+ *  ON an identifier (a call site `g.greet()`, a member read `this.items`, a
+ *  cross-file reference), resolve that identifier to ITS declaration — the
+ *  enclosing-symbol fallback alone made hovering a call inside a function
+ *  body show the FUNCTION (main) instead of the callee. Resolution order
+ *  mirrors document highlight's proven rule: unique same-file declaration,
+ *  else unique workspace declaration, else null (declared ambiguity — the
+ *  caller then falls back to the enclosing symbol). Parses only the file at
+ *  the cursor via the shared safety machinery; comments/strings excluded. */
+export async function resolveOccurrenceSymbol(
+  raw: CoreDatabase,
+  filePath: string,
+  position: LspPosition,
+): Promise<{ symbol: SymbolRow; file: FileRow; occurrence: { startLine: number; startColumn: number; endColumn: number } } | null> {
+  let content: string
+  try {
+    content = readFileSync(filePath, "utf8")
+  } catch {
+    return null
+  }
+  const mapper = createPositionMapper(content)
+  let indexPos
+  try {
+    indexPos = mapper.lspToIndex({ line: position.line, character: position.character })
+  } catch (e) {
+    if (e instanceof PositionError) return null
+    throw e
+  }
+  let safety: Awaited<ReturnType<typeof parseForSafety>>
+  try {
+    safety = await parseForSafety(filePath, content)
+  } catch {
+    // Unparseable/unsupported file: honest degradation to the enclosing-
+    // symbol model — hover must never reject over a parse failure.
+    return null
+  }
+  const cursorOcc = safety.occurrences.find(
+    (o) => o.startLine === indexPos.line && o.startColumn <= indexPos.column && indexPos.column < o.endColumn,
+  )
+  if (!cursorOcc) return null
+  const sameFile = raw
+    .prepare(`SELECT ${SYMBOL_ROW_SELECT} FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id WHERE f.path = ? AND s.name = ?`)
+    .all(filePath, cursorOcc.text) as Array<SymbolRow & { f_id: string; path: string; language: string | null }>
+  let rows = sameFile
+  if (sameFile.length === 0) {
+    const workspace = raw
+      .prepare(`SELECT ${SYMBOL_ROW_SELECT} FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id WHERE s.name = ?`)
+      .all(cursorOcc.text) as Array<SymbolRow & { f_id: string; path: string; language: string | null }>
+    rows = workspace
+  }
+  if (rows.length !== 1) return null // declared ambiguity or unknown name → enclosing fallback
+  const row = rows[0]!
+  return {
+    symbol: row,
+    file: { id: row.f_id, path: row.path, language: row.language },
+    occurrence: { startLine: cursorOcc.startLine, startColumn: cursorOcc.startColumn, endColumn: cursorOcc.endColumn },
+  }
 }
 
 /** Count usages of a symbol from brain_relationship (direct count). */
@@ -343,11 +405,11 @@ export interface HoverDeps {
  * carries the honesty block. Never fabricates: no symbol at the position →
  * contents null with provenance explaining why.
  */
-export function hover(
+export async function hover(
   raw: CoreDatabase,
   request: HoverRequest,
   deps: HoverDeps = {},
-): HoverResult {
+): Promise<HoverResult> {
   const startedAt = (deps.now ?? Date.now)()
   const language = languageForPath(request.filePath)
 
@@ -371,7 +433,12 @@ export function hover(
     }
   }
 
-  const found = findSymbolAtPosition(raw, request.filePath, request.position)
+  // Occurrence-first (call sites / member reads resolve to the referenced
+  // declaration); the containing-symbol model stays as the fallback for
+  // positions that are not on a resolvable identifier.
+  const occurrence = await resolveOccurrenceSymbol(raw, request.filePath, request.position)
+  const containing = findSymbolAtPosition(raw, request.filePath, request.position)
+  const found = occurrence ?? containing
   if (!found) {
     return {
       contents: null,
@@ -432,6 +499,33 @@ export function hover(
     }
   }
 
+  // Response range: when the cursor sat on an identifier that resolved to a
+  // declaration OUTSIDE the containing range (a call site or member read),
+  // highlight the identifier AT THE CURSOR — not the remote declaration.
+  // Falls back to null (no decoration) on any impossible coordinate; the
+  // decl range stays the definition/actions anchor below.
+  // "Jumped" = resolved through an occurrence to a declaration that does NOT
+  // contain the cursor (call site / member read / cross-file reference).
+  const jumped = occurrence !== null && (containing === null || containing.symbol.id !== symbol.id)
+  let responseRange = range
+  if (jumped) {
+    try {
+      const sourceText = readFileSync(request.filePath, "utf8")
+      const startCol = resolveRowByteColumns(sourceText, occurrence.occurrence.startLine, occurrence.occurrence.startColumn)
+      const endCol = resolveRowByteColumns(sourceText, occurrence.occurrence.startLine, occurrence.occurrence.endColumn)
+      if (startCol !== null && endCol !== null) {
+        const cursorMapper = createPositionMapper(sourceText)
+        responseRange = cursorMapper.indexRangeToLsp({
+          start: { line: startCol.line, column: startCol.column } satisfies IndexPosition,
+          end: { line: endCol.line, column: endCol.column } satisfies IndexPosition,
+        })
+      }
+    } catch (error) {
+      if (!(error instanceof PositionError)) throw error
+      responseRange = null
+    }
+  }
+
   const data: SymbolHoverData = {
     name: symbol.name,
     qualifiedName: symbol.qualified_name,
@@ -463,7 +557,7 @@ export function hover(
 
   return {
     contents: { value: formatHoverMarkdown(data), kind: "markdown" },
-    range,
+    range: responseRange,
     data,
     provenance: {
       source: "bb_index",

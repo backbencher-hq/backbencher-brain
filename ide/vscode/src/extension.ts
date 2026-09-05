@@ -17,7 +17,7 @@
 // returns; progress UX is E2 scope. All work here is non-blocking and the
 // client start is awaited within the measured window.
 
-import { workspace, window, commands, ExtensionContext, StatusBarAlignment, StatusBarItem, ProgressLocation } from "vscode"
+import { workspace, window, commands, ExtensionContext, StatusBarAlignment, StatusBarItem, ProgressLocation, MarkdownString } from "vscode"
 import {
   LanguageClient,
   LanguageClientOptions,
@@ -132,6 +132,25 @@ async function startClient(context: ExtensionContext, report: ActivationReport):
       { scheme: "file", language: "python" },
     ],
     initializationOptions: {},
+    // Hover links must fire (owner test, 2026-09-05): VS Code only executes
+    // command: URIs in Markdown that is marked TRUSTED. The rich hover body
+    // (bb.openUsage / bb.openDefinition / bb.openGraph / …) is composed by
+    // OUR OWN server — self-produced content with our own bb.* commands — so
+    // trusting it is safe and is what makes the actions clickable. Middleware
+    // stamps every MarkdownString the client hands to the hover UI.
+    middleware: {
+      provideHover: (document, position, token, next) => {
+        const result = next(document, position, token)
+        if (result === null || result === undefined) return result
+        return Promise.resolve(result).then((hover) => {
+          const parts = Array.isArray(hover?.contents) ? hover!.contents : hover?.contents ? [hover!.contents] : []
+          for (const part of parts) {
+            if (part instanceof MarkdownString) part.isTrusted = true
+          }
+          return hover
+        })
+      },
+    },
     // Crash evidence, never silence: record WHY the connection closed before
     // delegating to the default handler's semantics. E5's editor leg showed
     // the client stopping mid-session with zero diagnostics — the default

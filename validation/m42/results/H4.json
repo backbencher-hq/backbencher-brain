@@ -1,0 +1,27 @@
+{
+  "issue": "652",
+  "code": "H4",
+  "milestone": "M42",
+  "status": "verified",
+  "checks": 31,
+  "passed": 31,
+  "failed": 0,
+  "failures": [],
+  "verdict": {
+    "realComponentFailures": 0,
+    "mutantsCaught": 5,
+    "mutantsTotal": 5
+  },
+  "negatives": 5,
+  "fixture": "script/m42/h2-fixture.ts (real indexer + real dist server)",
+  "budgets": {
+    "impactWarmP95Ms": 300
+  },
+  "currentCommit": "534de8a38175796e3adb5232b58d29d5ea48c074",
+  "verifierCommand": "npx tsx script/m42/verify-hover-actions.ts",
+  "evidenceFile": "H4.json",
+  "generatedAt": "2026-09-05T21:48:22.423Z",
+  "limitations": [
+    "editor leg (link clicks, panel surfaces) is proven in E5 over the shared core; this gate proves the server-side contract + renderer laws headless"
+  ]
+}
