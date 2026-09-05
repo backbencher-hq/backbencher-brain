@@ -325,7 +325,8 @@ async function main() {
     console.log("baseline written:", BASELINE)
   }
 
-  if (process.env.BB_M40_EVIDENCE === "1") {
+  // X1 lesson: closure's read-only probes must never overwrite real evidence.
+  if (process.env.BB_M40_EVIDENCE === "1" && process.env.BB_M40_READ_ONLY !== "1") {
     const { mkdirSync: mkd, writeFileSync: wfs } = await import("node:fs")
     mkd(path.join(ROOT, "validation/m40/results"), { recursive: true })
     wfs(path.join(ROOT, "validation/m40/results/A4.json"), JSON.stringify({

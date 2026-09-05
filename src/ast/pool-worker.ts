@@ -638,10 +638,13 @@ process.on("message", async (msg: any) => {
       engineModule = await import("./engine")
     } catch {}
     // M21.W1 debug hook: BB_WORKER_DELAY_READY_MS delays the `ready` signal so
-    // the parent's startup watchdog can be exercised deterministically. Zero by
-    // default — no production effect.
-    const delayReady = Number(process.env.BB_WORKER_DELAY_READY_MS || 0)
-    if (delayReady > 0) await new Promise((r) => setTimeout(r, delayReady))
+    // the parent's startup watchdog can be exercised deterministically.
+    // M40.A8: quarantined behind BB_TEST_HOOKS=1 — a stray env var can no
+    // longer stall a production index's worker startup.
+    if (process.env.BB_TEST_HOOKS === "1") {
+      const delayReady = Number(process.env.BB_WORKER_DELAY_READY_MS || 0)
+      if (delayReady > 0) await new Promise((r) => setTimeout(r, delayReady))
+    }
     process.send?.({ type: "ready", workerId: msg.workerId })
   } else if (msg.type === "parse_batch") {
     const { batchId, files, projectPath } = msg
@@ -649,18 +652,23 @@ process.on("message", async (msg: any) => {
     // deterministic crash/timeout fixtures die fast (M21.W1).
     const FILE_TIMEOUT_MS = Number(process.env.BB_FILE_TIMEOUT_MS || 45000)
 
-    // M21.W1 debug hooks (env-gated, zero default effect):
+    // M21.W1 debug hooks (fixture-only, zero default effect):
     //  - BB_WORKER_CRASH_ON_BATCH=1: exit immediately on parse_batch, before
     //    reporting file_start — deterministic poison-pill fixture (worker dies
     //    mid-batch with no in-flight file).
     //  - BB_WORKER_DELAY_PARSE_MS: sleep after file_start so the parent's
     //    per-file timeout fires deterministically (currentFile is already set,
     //    exercising the timeout→kill→retry path, not the poison path).
-    if (process.env.BB_WORKER_CRASH_ON_BATCH === "1") {
-      process.stderr.write(`[BB-WORKER-FIXTURE] crashing on parse_batch (batch ${batchId})\n`)
-      process.exit(1)
+    // M40.A8: quarantined behind BB_TEST_HOOKS=1 — without the explicit
+    // opt-in they are no-ops in every process, production included.
+    let delayParse = 0
+    if (process.env.BB_TEST_HOOKS === "1") {
+      if (process.env.BB_WORKER_CRASH_ON_BATCH === "1") {
+        process.stderr.write(`[BB-WORKER-FIXTURE] crashing on parse_batch (batch ${batchId})\n`)
+        process.exit(1)
+      }
+      delayParse = Number(process.env.BB_WORKER_DELAY_PARSE_MS || 0)
     }
-    const delayParse = Number(process.env.BB_WORKER_DELAY_PARSE_MS || 0)
 
     for (const filePath of files) {
       try {

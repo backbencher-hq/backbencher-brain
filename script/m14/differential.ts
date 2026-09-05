@@ -67,7 +67,7 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   groovy: { wasm: "tree-sitter-groovy.wasm", analyzerFile: "real-groovy-analyzer", className: "RealGroovyAnalyzer", ext: "groovy" },
   vue: { wasm: "tree-sitter-vue.wasm", analyzerFile: "real-vue-analyzer", className: "RealVueAnalyzer", ext: "vue" },
   svelte: { wasm: "tree-sitter-svelte.wasm", analyzerFile: "real-svelte-analyzer", className: "RealSvelteAnalyzer", ext: "svelte" },
-  cpp: { wasm: "tree-sitter-cpp.wasm", analyzerFile: "real-cpp-analyzer", className: "RealCppAnalyzer", ext: "cc" },
+  cpp: { wasm: "tree-sitter-cpp.wasm", analyzerFile: "real-cpp-analyzer", className: "RealCppAnalyzer", ext: "cc,h" },
   c: { wasm: "tree-sitter-c.wasm", analyzerFile: "real-c-analyzer", className: "RealCAnalyzer", ext: "c" },
   rust: { wasm: "tree-sitter-rust.wasm", analyzerFile: "real-rust-analyzer", className: "RealRustAnalyzer", ext: "rs" },
   go: { wasm: "tree-sitter-go.wasm", analyzerFile: "real-go-analyzer", className: "RealGoAnalyzer", ext: "go" },
@@ -194,14 +194,515 @@ async function deriveEmbeddedScriptTrees(root: any, content: string, lang: strin
 
 // C call-truth: a call_expression with an IDENTIFIER callee is an
 // independently derivable call edge (function pointers excluded - opaque).
-function deriveCCalls(root: any): { label: string; from: string; target: string }[] {
+// M37.9 cpp oracle: independently re-derive the analyzer's CALLS and member-
+// read USES truth so the fmt differential actually audits the surface the
+// analyzer emits (11.8k calls on .cc alone were previously never compared —
+// cpp sat outside the calls/uses compared-label sets). Contracts mirror
+// RealCppAnalyzer exactly:
+//   calls:     EVERY call_expression's callable leaf, except operator
+//              targets (the analyzer drops operator-starting callees; infix/
+//              explicit operator calls are additionally pinned-grammar
+//              ERROR-recovered, ruled in the cpp spec). field_expression ->
+//              field leaf; qualified_identifier -> last segment; identifier /
+//              template_function -> base leaf. No resolvability gate (the
+//              analyzer emits external/std leaves unconditionally, like C).
+//   uses:      field_expression member READS (obj.field, obj->field) that are
+//              not the callee of a call — assignment-LHS fields are writes
+//              (no edge; mirrors the analyzer's call_expression callee guard
+//              + SCD1-family write gate).
+// Both sides walk the SAME pinned parse, so leaf-attribution disagreements
+// surface as MISSING/UNEXPLAINED pairs for manual ruling.
+export function deriveCppEdges(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
+  const lastNamed = (n: any): any => n.namedChild(n.namedChildCount - 1)
+  // CPPD2 (probe): field LHS of an assignment is a write designator.
+  const isAssignLhsField = (n: any): boolean => {
+    const p = n.parent
+    if (!p) return false
+    const isWriteParent =
+      p.type === "assignment_expression" || p.type === "compound_assignment_expression"
+    if (!isWriteParent) return false
+    const lhs = p.namedChild(0)
+    return !!lhs && lhs.startIndex === n.startIndex && lhs.endIndex === n.endIndex
+  }
   const stack: any[] = [root]
   while (stack.length > 0) {
     const n = stack.pop()!
     if (n.type === "call_expression") {
-      // identifier callee OR member/pointer callee -> its callable LEAF
+      const fn = n.childForFieldName?.("function") ?? n.namedChild(0)
+      let target = ""
+      if (fn) {
+        if (fn.type === "field_expression") {
+          const f = fn.childForFieldName?.("field") ?? lastNamed(fn)
+          target = f?.text ?? ""
+        } else if (fn.type === "qualified_identifier") {
+          const leaf = lastNamed(fn)
+          target = leaf?.text ?? ""
+        } else if (fn.type === "template_function") {
+          const base = fn.namedChild(0)
+          target = base?.text ?? ""
+        } else if (fn.type === "identifier" || fn.type === "field_identifier" || fn.type === "operator_name" || fn.type === "destructor_name") {
+          target = fn.text
+        } else {
+          target = fn.text
+        }
+      }
+      if (target && !target.startsWith("operator")) {
+        const k = "calls|" + target
+        if (!seen.has(k)) { seen.add(k); edges.push({ label: "calls", from: "(expr)", target }) }
+      }
+    } else if (n.type === "field_expression") {
+      // member READ unless this field_expression is a call callee or a write
+      // LHS (analyzer: uses on obj.field only when not the call function).
+      const p = n.parent
+      const isCallee = !!p && p.type === "call_expression"
+      const f = n.childForFieldName?.("field") ?? lastNamed(n)
+      if (f && !isCallee && !isAssignLhsField(n)) {
+        const k = "uses|" + f.text
+        if (!seen.has(k)) { seen.add(k); edges.push({ label: "uses", from: "(expr)", target: f.text }) }
+      }
+    }
+    for (let i = n.namedChildCount - 1; i >= 0; i--) {
+      const c = n.namedChild(i)
+      if (c) stack.push(c)
+    }
+  }
+  return edges
+}
+
+export function deriveCCalls(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  // CGD1 mirror (M37 #601): compound/plain assignment LHS is a WRITE — the
+  // analyzer gates it, so the oracle must too or every write surfaces as
+  // "missing" (the SCD1 swift/ruby oracle-staleness lesson). Span-match the
+  // first named child; web-tree-sitter gives FRESH objects per child(), so
+  // reference identity never matches.
+  const isAssignLhs = (n: any): boolean => {
+    const p = n.parent
+    if (!p || p.type !== "assignment_expression") return false
+    const lhs = p.namedChild(0)
+    return !!lhs && lhs.startIndex === n.startIndex && lhs.endIndex >= n.endIndex
+  }
+  // CGD28 (M37 #601, measured fossildelta.c): a cast to a typedef alias —
+  // `(i64)x` parses as cast_expression > parenthesized_expression >
+  // identifier — is a TYPE REFERENCE position, but ONLY for the cast's TYPE
+  // operand: `(sqlite3_syscall_ptr)ts_open` — the function-name VALUE after
+  // the type — stays a `uses` read (test_syscall.c syscall tables). The
+  // value operand is the LAST named child of the cast; the type operand
+  // starts before it. Mirrors the analyzer's isTypePositionIdentifier.
+  const isCastTypePosition = (n: any): boolean => {
+    let cur: any = n.parent
+    while (cur) {
+      const t: string = cur.type
+      if (t === "sizeof_expression") return true
+      if (t === "cast_expression") {
+        const kids: any[] = []
+        for (let i = 0; i < cur.namedChildCount; i++) kids.push(cur.namedChild(i))
+        if (kids.length >= 2) {
+          const value = kids[kids.length - 1]
+          return n.startIndex < value.startIndex
+        }
+        return false
+      }
+      if (/statement|declaration|declarator|specifier|enumerator|compound|argument_list|init/.test(t)) return false
+      cur = cur.parent
+    }
+    return false
+  }
+  // CGD-IDENT truth scope: names DECLARED in this file. CGD9 fix: the
+  // declaring identifier is the identifier whose PARENT is a declaration
+  // node (mirrors the analyzer's isDeclarationLikeIdentifier) — the old
+  // isDeclarationPosition walked ANCESTORS and included
+  // function_definition, so EVERY identifier inside ANY function body was
+  // misclassified as a "declaration" and never emitted truth (reproduced:
+  // probe c-oracle-min — aSyscall read, callback value, sizeof(RenameToken)
+  // all silent). Type truth uses the analyzer's declaredTypes pre-pass
+  // contract exactly: struct/union/enum WITH a body, typedef aliases.
+  // Macros: preproc_def/preproc_function_def name.
+  const DECL_PARENT_TYPES = new Set([
+    "declaration", "parameter_declaration", "field_declaration", "init_declarator",
+    "function_declarator", "pointer_declarator", "array_declarator", "type_definition",
+    "enumerator", "preproc_def", "preproc_function_def",
+  ])
+  const isDeclaringIdentifier = (n: any): boolean => {
+    const p = n.parent
+    if (!p || !DECL_PARENT_TYPES.has(p.type)) return false
+    // CGD26 (M37 #601, measured jimsh0.c): the TYPE of a field/declaration is
+    // a USE, not a declaration — `Jim_FreeInternalRepProc *freeIntRepProc;`
+    // parses as field_declaration > [type_identifier, pointer_declarator];
+    // the any-position rule made the type_identifier count as a declaring
+    // occurrence, suppressing its own references-truth (analyzer correctly
+    // emits `references`).
+    if (n.type === "type_identifier") return false
+    // CGD12: for declarator-chain parents, only the LEFTMOST identifier
+    // declares — `int aLock[SQLITE_SHM_NLOCK]` parses as array_declarator
+    // with BOTH aLock and the size expression as identifier children; the
+    // any-child rule turned every array-size constant into a "declared
+    // name" (os_unix.c: false truth from `aMutex[SQLITE_SHM_NLOCK]`).
+    if (/declarator$/.test(p.type)) {
+      let cur: any = p
+      while (cur) {
+        if (cur.type === "identifier" || cur.type === "field_identifier") {
+          return cur.startIndex === n.startIndex
+        }
+        let next: any = null
+        for (let k = 0; k < cur.namedChildCount; k++) {
+          const c = cur.namedChild(k)
+          if (c && (c.type.endsWith("declarator") || c.type === "identifier" || c.type === "field_identifier")) {
+            next = c
+            break
+          }
+        }
+        cur = next
+      }
+      return false
+    }
+    return true
+  }
+  // Truth scope refinement: function-LOCAL declarations are execution
+  // artifacts (the analyzer's extractDeclaration only emits file/global
+  // symbols), so a local's name must NOT qualify as a resolvable use target
+  // — otherwise every read of a shadowed/unrelated name counted as truth and
+  // the analyzer's correct silence surfaced as MISSING (first sqlite run:
+  // 64.6% coverage / 2037 missing, all from locals). CGD8 refinement: the
+  // exclusion must be the function BODY and PARAMETER LIST, not the whole
+  // function_definition subtree — a function's own NAME is a file-scope
+  // declaration (callback references like `Tcl_CreateObjCommand(interp,
+  // "vfslog", test_vfslog, 0, 0)` are genuine reads of it; the old check
+  // silenced them, leaving 800+ callback uses with no truth). Struct
+  // fields, enum members, macros, typedefs, globals, and function names
+  // all remain truth.
+  // typedef alias name: the declarator chain's leftmost identifier
+  // (`typedef struct VfslogFile VfslogFile` — both occurrences declare).
+  // CGD18 (M37 #601): the descent must SKIP type nodes, never terminate on
+  // them — `off_t offset` has namedChild(0)=type_identifier(off_t), and the
+  // old terminal check stopped there and returned "off_t" as the bound
+  // name, so `offset` never entered fnLocals and 32 param reads of the
+  // struct field `offset` surfaced as bogus truth (os_unix.c MISSING
+  // poison). Two passes: declarator-typed children first, then plain
+  // identifier/field_identifier (type_identifier EXCLUDED — it names a
+  // TYPE, not the declared entity). Reaching a level with neither ends the
+  // walk (unnamed, e.g. abstract declarators).
+  const leftmostDeclaratorIdentifier = (n: any): string | undefined => {
+    if (!n) return undefined
+    let cur = n
+    while (cur && cur.type !== "identifier" && cur.type !== "field_identifier") {
+      let next: any = null
+      for (let k = 0; k < cur.namedChildCount; k++) {
+        const c = cur.namedChild(k)
+        if (c && c.type.endsWith("declarator")) {
+          next = c
+          break
+        }
+      }
+      if (!next) {
+        for (let k = 0; k < cur.namedChildCount; k++) {
+          const c = cur.namedChild(k)
+          if (c && (c.type === "identifier" || c.type === "field_identifier")) {
+            next = c
+            break
+          }
+        }
+      }
+      cur = next
+    }
+    return cur?.text
+  }
+  const isFunctionLocal = (n: any): boolean => {
+    let cur: any = n
+    while (cur) {
+      if (cur.type === "compound_statement" || cur.type === "parameter_list") return true
+      cur = cur.parent
+    }
+    return false
+  }
+  // CGD25 (M37 #601, measured os_win.c/jimsh0.c): a BARE function_declarator
+  // glued as a direct ERROR child (tokenize.c sqlite3RunParser, os_win.c
+  // winRead/winWrite headers) has no declaration wrapper — its name node's
+  // parent IS the fd. Test: walk from the name to the ERROR; a `declaration`
+  // wrapper on the path means an ordinary prototype (NOT glue).
+  const isBareFdGlueName = (n: any): boolean => {
+    const p = n.parent
+    if (!p || p.type !== "function_declarator") return false
+    const gp = p.parent
+    if (!gp || gp.type !== "ERROR") return false
+    // POSITION comparison (KAD2/TSD2 class, hygiene F7): web-tree-sitter
+    // hands out FRESH node wrappers per property access, so `mid === gp`
+    // never holds — this gate was dead code and the oracle admitted glue-fd
+    // names the analyzer structurally cannot resolve (no symbol: the
+    // declaration's declarator was swallowed by the ERROR, s3jni_config_log
+    // in sqlite3-jni.c). Reach the ERROR span by comparing spans.
+    const errStart = gp.startIndex
+    const errEnd = gp.endIndex
+    let mid: any = n
+    while (mid) {
+      if (mid.startIndex === errStart && mid.endIndex === errEnd) return true
+      if (mid.type === "declaration") return false
+      mid = mid.parent
+    }
+    return false
+  }
+  // Truth scope refinement 2 (CGD-PREPROC): identifiers inside PREPROCESSOR
+  // CONDITION TEXT are not code — `#if SQLITE_MAX_MMAP_SIZE>0` conditions,
+  // `defined(X)` tests, `#ifndef X` guards, `#define IOMETHODS(...CLOSE,
+  // LOCK...)` parameter lists, and macro-replacement bodies. The C
+  // preprocessor is textual (C-D2 ruling). BUT the exclusion must not eat
+  // CONDITIONAL CODE: test files are often one giant `#ifdef SQLITE_TEST`
+  // block, and every declaration/statement inside is real (the analyzer
+  // walks them). The precise rule: an identifier is directive text iff the
+  // path from it to the first preproc_* ancestor passes through NO code
+  // container (any statement/declaration/declarator/specifier/enumerator
+  // node). `#if (SQLITE_MAX_MMAP_SIZE>0)` → expression chain only → text;
+  // `int eAccess = F_OK;` inside #ifndef → init_declarator on path → code.
+  const isDirectiveConditionText = (n: any): boolean => {
+    // CGD13: the NAME identifier of a macro definition IS a declaration
+    // (`#define FUNC_PERFECT_MATCH 6` — the analyzer's extractMacro emits a
+    // Constant symbol, so uses of the name resolve). Everything else inside
+    // preproc_* (preproc_arg bodies, preproc_params parameter names, #if
+    // conditions) stays text.
+    const p0 = n.parent
+    if (p0 && (p0.type === "preproc_def" || p0.type === "preproc_function_def")) return false
+    let cur: any = n.parent
+    while (cur) {
+      const t: string = cur.type
+      if (/statement|declaration|definition|declarator|specifier|enumerator|compound/.test(t)) return false
+      if (t.startsWith("preproc_")) return true
+      cur = cur.parent
+    }
+    return false
+  }
+  // Type truth (CGD10): the analyzer's declaredTypes pre-pass — struct/
+  // union/enum names WITH a body (forward declarations resolve to nothing,
+  // no dangling edges) plus typedef aliases.
+  const declaredTypes = new Set<string>()
+  // File-scope declared value names (globals, functions, macros, enum
+  // members). Local declarations inside compound statements are execution
+  // artifacts and excluded.
+  const declaredNames = new Set<string>()
+  // CGD14 (REVISED, measured): blanket ERROR-ancestor exclusion is WRONG —
+  // os_win.c parses as ONE giant ERROR span (L1–L5345, #if-chain recovery)
+  // containing wholly real declarations the analyzer correctly extracts;
+  // status.c's SQLITE_WSD recovery region holds 13 real symbols. The honest
+  // discriminator mirrors the analyzer's CGD19 EXACTLY (one contract): an
+  // occurrence inside an ERROR span is an artifact iff it sits AFTER the
+  // FIRST glued function header in that span — glue = function_definition
+  // or a BARE function_declarator (direct ERROR child, tokenize.c
+  // sqlite3RunParser shape); ordinary prototypes (os_win.c winMemMalloc,
+  // a valid `declaration` with a function_declarator) are NOT glue.
+  // Memoized per ERROR span by startIndex.
+  const errHeaderIdx = new Map<number, number>()
+  const isSuppressedErrorDecl = (n: any): boolean => {
+    let cur: any = n
+    let innermost: any = null
+    while (cur) {
+      if (cur.type === "ERROR") innermost = cur
+      cur = cur.parent
+    }
+    if (!innermost) return false
+    const key = innermost.startIndex as number
+    let headerIdx = errHeaderIdx.get(key)
+    if (headerIdx === undefined) {
+      headerIdx = -1
+      const st: any[] = [innermost]
+      while (st.length > 0) {
+        const m = st.pop()!
+        if (m !== innermost) {
+          // Glue = function_definition OR a BARE function_declarator (no
+          // declaration/function_definition wrapper between fd and the ERROR
+          // — tokenize.c direct child; jimsh0.c nested in preproc_ifdef <
+          // ERROR). An fd inside a declaration wrapper is an ordinary
+          // prototype (os_win.c winMemMalloc) — NOT glue.
+          if (m.type === "function_definition") {
+            if ((headerIdx as number) < 0 || m.startIndex < (headerIdx as number)) headerIdx = m.startIndex
+          } else if (m.type === "function_declarator") {
+            // POSITION comparison (web-tree-sitter object identity never
+            // holds — the same trap that hit the analyzer side).
+            let w: any = m
+            let bare = true
+            while (w) {
+              if (w.startIndex === innermost.startIndex && w.endIndex === innermost.endIndex) break
+              if (w.type === "declaration" || w.type === "function_definition") {
+                bare = false
+                break
+              }
+              w = w.parent
+            }
+            if (bare && w) {
+              if ((headerIdx as number) < 0 || m.startIndex < (headerIdx as number)) headerIdx = m.startIndex
+            }
+          }
+        }
+        for (let k = 0; k < m.namedChildCount; k++) {
+          const c = m.namedChild(k)
+          if (c) st.push(c)
+        }
+      }
+      errHeaderIdx.set(key, headerIdx as number)
+    }
+    return (headerIdx as number) >= 0 && n.startIndex > (headerIdx as number)
+  }
+  {
+    const pre: any[] = [root]
+    while (pre.length > 0) {
+      const n = pre.pop()!
+      if (n.text) {
+        if (n.type === "struct_specifier" || n.type === "union_specifier") {
+          // CGD14b: type declarations mirror the ANALYZER — extractStruct has
+          // no ERROR gate (only extractDeclaration does). os_win.c's structs
+          // sit in one giant ERROR span and are real.
+          if (n.childForFieldName("body")) {
+            // CGD20-mirror: function-local type declarations are execution
+            // artifacts (C-D1) — no declaredTypes admission (measured:
+            // test_backup.c BackupSubCommandEnum, test_malloc.c MB_enum).
+            const inFunction = (() => { let c: any = n; while (c) { if (c.type === "function_definition") return true; c = c.parent } return false })()
+            if (!inFunction) {
+              const nm = n.childForFieldName("name")
+              if (nm && nm.text.trim()) declaredTypes.add(nm.text)
+            }
+          }
+        } else if (n.type === "enum_specifier") {
+          const nm = n.childForFieldName("name")
+          // CGD20-mirror (see struct branch): skip function-local enums.
+          const inFunction = (() => { let c: any = n; while (c) { if (c.type === "function_definition") return true; c = c.parent } return false })()
+          if (nm && nm.text.trim() && !inFunction) declaredTypes.add(nm.text)
+        } else if (n.type === "type_definition") {
+          // typedef name. TWO shapes (measured, probe c-oswin):
+          //  (a) `typedef struct Jim_Obj Jim_Obj;` / `typedef long i64;` —
+          //      the DECLARATOR FIELD ITSELF is a leaf type_identifier
+          //      (tree-sitter-c names the new type the "declarator" even
+          //      though its node type says identifier-ish TYPE). The
+          //      leftmost walk never terminates on type_identifier (CGD18:
+          //      it must SKIP type nodes inside chains) so these aliases
+          //      were silently dropped from declaredTypes — every later
+          //      `references i64` truth vanished (fossildelta.c/showwal.c
+          //      unexplained mass).
+          //  (b) `typedef void (*Fn)(int);` — a real declarator chain.
+          // CGD20-mirror: skip function-local typedefs.
+          const declField = n.childForFieldName("declarator")
+          const inFunction = (() => { let c: any = n; while (c) { if (c.type === "function_definition") return true; c = c.parent } return false })()
+          let ident: string | undefined
+          if (declField && /^(identifier|field_identifier|type_identifier)$/.test(declField.type)) {
+            ident = declField.text
+          } else if (declField) {
+            ident = leftmostDeclaratorIdentifier(declField)
+            // CGD30 (M37 #601, measured libcmpp.c/jimsh0.c): fn-ptr/fn-type
+            // typedef chains TERMINATE on a type_identifier leaf — tree-sitter-c
+            // names the new type of `typedef int (*cmpp_input_f)(...)` and
+            // `typedef void (Jim_FreeInternalRepProc)(...)` with a
+            // type_identifier node. The leftmost walk excludes type_identifier
+            // mid-chain (CGD18) and returns undefined here; the declared name
+            // is the first identifier-ish leaf OUTSIDE the parameter_list
+            // (~200 references-truth edges in libcmpp/jimsh0 were unexplained).
+            if (!ident) {
+              const findLeaf = (m: any): string | undefined => {
+                if (m.type === "parameter_list") return undefined
+                if (/^(identifier|field_identifier|type_identifier)$/.test(m.type)) return m.text
+                for (let k = 0; k < m.namedChildCount; k++) {
+                  const c = m.namedChild(k)
+                  if (c) {
+                    const r = findLeaf(c)
+                    if (r) return r
+                  }
+                }
+                return undefined
+              }
+              ident = findLeaf(declField)
+            }
+          }
+          if (ident && !inFunction) declaredTypes.add(ident)
+        } else if (n.type === "identifier" || n.type === "field_identifier") {
+          // CGD23/CGD24 (M37 #601): macro definition names are TEXTUALLY
+          // file-scoped (the C preprocessor has no lexical scope — a #define
+          // inside a function body or inside an error-recovered region is
+          // effective to end-of-file; C-D2). They bypass BOTH the
+          // function-local exclusion (prepare.c's `#ifndef
+          // SQLITE_MAX_PREPARE_RETRY` inside sqlite3Prepare's compound — the
+          // L883 use is a genuine macro use) AND the ERROR-ancestor
+          // exclusion (status.c's `# define wsdStat x[0]` sits inside the
+          // SQLITE_WSD recovery region but is a real directive the analyzer
+          // extracts). Directives are line-anchored text, not recoverable
+          // grammar — the CGD14 artifact ruling does not apply to their
+          // NAME nodes.
+          const isMacroName = !!(n.parent && (n.parent.type === "preproc_def" || n.parent.type === "preproc_function_def"))
+          // CGD25: glue fd NAMES never declare (analyzer suppresses the
+          // symbol). CGD19-mirror: VARIABLE declarations after the first
+          // glue in an ERROR span are body locals (analyzer extractDeclaration
+          // gate). Function names (extractFunction path) still declare —
+          // os_win.c's 54 real fnDefs inside the giant span are truth.
+          const fnNameDecl = (() => {
+            if (n.parent && n.parent.type === "function_declarator") {
+              let mid: any = n.parent
+              while (mid) {
+                if (mid.type === "function_definition") return true
+                if (mid.type === "declaration") return false
+                mid = mid.parent
+              }
+            }
+            return false
+          })()
+          const varDeclSuppressed = !fnNameDecl && isSuppressedErrorDecl(n)
+          if (isDeclaringIdentifier(n) && !isDirectiveConditionText(n) && !isBareFdGlueName(n) && (isMacroName || (!isFunctionLocal(n) && !varDeclSuppressed))) {
+            declaredNames.add(n.text)
+          }
+        }
+      }
+      for (let k = 0; k < n.namedChildCount; k++) pre.push(n.namedChild(k))
+    }
+  }
+  // CGD15: per-function locals mirror (params + locally-bound names) —
+  // the analyzer suppresses a use when the CURRENT function binds the name
+  // locally (functionLocals), so `offset` as a PARAMETER of the reading
+  // function must not surface as truth merely because some struct elsewhere
+  // has a field named offset. Keyed by function startIndex; the emission
+  // branch resolves the ENCLOSING function.
+  const fnLocals = new Map<number, Set<string>>()
+  {
+    const pre: any[] = [root]
+    while (pre.length > 0) {
+      const n = pre.pop()!
+      if (n.type === "function_definition") {
+        const locals = new Set<string>()
+        const declarator = n.childForFieldName("declarator")
+        const collectParam = (node: any): void => {
+          if (!node) return
+          if (node.type === "parameter_declaration") {
+            const id = leftmostDeclaratorIdentifier(node)
+            if (id) locals.add(id)
+            return
+          }
+          for (let k = 0; k < node.namedChildCount; k++) collectParam(node.namedChild(k))
+        }
+        if (declarator) collectParam(declarator)
+        const body = n.childForFieldName("body")
+        const collectLocalDecl = (node: any): void => {
+          if (!node) return
+          if (node.type === "declaration") {
+            for (let k = 0; k < node.namedChildCount; k++) {
+              const c = node.namedChild(k)
+              if (c && (c.type.endsWith("declarator") || c.type === "identifier")) {
+                const id = leftmostDeclaratorIdentifier(c)
+                if (id) locals.add(id)
+              }
+            }
+          }
+          for (let k = 0; k < node.namedChildCount; k++) collectLocalDecl(node.namedChild(k))
+        }
+        if (body) collectLocalDecl(body)
+        fnLocals.set(n.startIndex as number, locals)
+      }
+      for (let k = 0; k < n.namedChildCount; k++) pre.push(n.namedChild(k))
+    }
+  }
+  const stack: any[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()!
+    if (n.type === "call_expression") {
+      // identifier callee OR member/pointer callee -> its callable LEAF.
+      // CGD3 mirror: a parenthesized callee is a vendor-macro cast or a
+      // computed deref — no resolvable NAME, dropped on both sides. Calls
+      // INSIDE the call (cast arguments) still walk below and emit.
       const fn = n.namedChildren.find((c: any) => c.type === "identifier" || c.type === "field_expression")
       let name: string | undefined
       if (fn?.type === "field_expression") {
@@ -211,6 +712,77 @@ function deriveCCalls(root: any): { label: string; from: string; target: string 
       if (name && !seen.has(name)) {
         seen.add(name)
         edges.push({ label: "calls", from: "(expr)", target: name })
+      }
+    } else if (n.type === "field_expression") {
+      // CGD-FIELD mirror: member reads are `uses` on the field leaf; an
+      // assignment-LHS field is a WRITE (analyzer SCD1 gate).
+      const parent = n.parent
+      const isCallee = !!parent && parent.type === "call_expression"
+      if (!isCallee && !isAssignLhs(n)) {
+        const leaf = n.namedChildren.find((c: any) => c.type === "field_identifier")
+        if (leaf && !seen.has("use:" + leaf.text)) {
+          seen.add("use:" + leaf.text)
+          edges.push({ label: "uses", from: "(expr)", target: leaf.text })
+        }
+      }
+    } else if (n.type === "type_identifier") {
+      // CGD10: a type-name READ (`sizeof(struct RenameToken)`, `sizeof(X)`
+      // via type_identifier inside type_descriptor) is a REFERENCES edge to
+      // a type DECLARED in this file — the analyzer's type_reference
+      // contract. The declaring occurrence itself is skipped via
+      // isDeclaringIdentifier (struct_specifier name is captured as the
+      // child, so check parent type_identifier positions only).
+      if (!isDeclaringIdentifier(n) && !isDirectiveConditionText(n)) {
+        const name = n.text
+        if (name && declaredTypes.has(name) && !seen.has("ref:" + name)) {
+          seen.add("ref:" + name)
+          edges.push({ label: "references", from: "(expr)", target: name })
+        }
+      }
+    } else if (n.type === "preproc_include") {
+      // CGD16: include truth mirrors the analyzer's include_dependency
+      // references — target is the RAW path text (quotes/brackets
+      // stripped), measured from the analyzer (`references sqliteInt.h`).
+      const pathNode = n.namedChildren.find((c: any) => c.type === "string_literal" || c.type === "system_lib_string")
+      if (pathNode) {
+        const raw = pathNode.text.replace(/^["<]/, "").replace(/[">]$/, "")
+        if (raw && !seen.has("ref:" + raw)) {
+          seen.add("ref:" + raw)
+          edges.push({ label: "references", from: "(expr)", target: raw })
+        }
+      }
+    } else if (n.type === "identifier" && !isAssignLhs(n)) {
+      // CGD-IDENT mirror: a bare identifier READ of a file-scope variable,
+      // enum member, or macro constant. Truth requires the name to be
+      // DECLARED somewhere in this file (mirrors isResolvableUseTarget:
+      // no fabricated edges to undeclared names). Call-target identifiers
+      // are covered by the calls branch above.
+      const p = n.parent
+      // CGD-PREPROC: condition-text mentions emit no truth even when the
+      // name is declared elsewhere (a `#if SQLITE_WASI` reference to an
+      // external flag is not a code-level use).
+      if (p && p.type !== "call_expression" && !isDeclaringIdentifier(n) && !isDirectiveConditionText(n)) {
+        const name = n.text
+        // CGD15: a function-local BINDING of the name (param or local
+        // declaration in the enclosing function) shadows the file-scope
+        // name — the analyzer's functionLocals.has gate suppresses those
+        // reads, so truth must too.
+        let enc: any = n.parent
+        while (enc && enc.type !== "function_definition") enc = enc.parent
+        const locs = enc ? fnLocals.get(enc.startIndex) : undefined
+        // CGD28: cast-to-typedef positions are type references, not value
+        // uses — the analyzer re-routes them to `references` via
+        // isTypePositionIdentifier(cast_expression); skip as use-truth when
+        // the alias is a declared TYPE (declaredTypes), else no truth.
+        if (isCastTypePosition(n)) {
+          if (name && declaredTypes.has(name) && !seen.has("ref:" + name)) {
+            seen.add("ref:" + name)
+            edges.push({ label: "references", from: "(expr)", target: name })
+          }
+        } else if (name && declaredNames.has(name) && !(locs && locs.has(name)) && !seen.has("use:" + name)) {
+          seen.add("use:" + name)
+          edges.push({ label: "uses", from: "(expr)", target: name })
+        }
       }
     }
     for (let k = 0; k < n.namedChildCount; k++) stack.push(n.namedChild(k))
@@ -2943,6 +3515,15 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
   walk(root)
   // dedupe identical edges (oracle double-push guard)
   // overrides truth: same-name methods across in-file inheritance chains.
+  // CPPD-R1 (M37.9): cpp overrides are NOT independently derivable — same-
+  // name across a base chain conflates C++ NAME-HIDING with virtual override
+  // (chrono.h: null_chrono_spec_handler.on_24_hour(numeric_system) vs
+  // chrono_format_checker.on_24_hour(numeric_system, pad_type) — different
+  // arity hides, it does not override; the analyzer's type-only signature
+  // check is correct). Signature-aware override truth would just mirror the
+  // analyzer's own virtual-registry contract (shared blind spot), so cpp
+  // overrides are excluded here and stay pinned by the analyzer fixtures
+  // (cpp/override-signature-aware, cpp/virtual-override-resolution).
   // Only declarations related by extends/implements within THIS file count -
   // cross-file override resolution is the analyzer's job, not the oracle's.
   const decls: Record<string, { parents: string[]; methods: Set<string> }> = {}
@@ -2951,7 +3532,17 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
     const t2 = n.type
     if (/^(class|interface|record|trait|object)_declaration$|^class_definition$|^trait_definition$|^object_definition$|^(class|struct|union)_specifier$/.test(t2)) {
       const nameNode = n.childForFieldName?.("name") ?? n.namedChildren.find((c: any) => c.type === "identifier" || c.type === "type_identifier")
-      const nm = nameNode?.text
+      // M37.9 cpp: class names are CLEANED like the analyzer's — template
+      // class declarations/partial specs carry their args in the name node
+      // text (`IteratorImpl<IndexSequence<I...>>`); the class is
+      // IteratorImpl. Without the strip, truth emitted override pairs the
+      // analyzer (leaf-named) could never match.
+      let nm = nameNode?.text
+      if (nm) {
+        const lt = nm.indexOf("<")
+        if (lt !== -1) nm = nm.slice(0, lt).trim()
+        nm = lastSegment(nm)
+      }
       if (nm && !decls[nm]) {
         decls[nm] = { parents: [], methods: new Set() }
         // cpp classes use field_declaration_list (no 'body' substring)
@@ -3012,12 +3603,31 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
     }
   }
   for (const rel of declParents) {
+    if (lang === "cpp") break // CPPD-R1: no cpp overrides truth (see above)
     const childDecl = decls[rel.child]
-    const parentDecl = decls[rel.parent]
-    if (!childDecl || !parentDecl) continue
+    if (!childDecl) continue
+    // M37.9 cpp: overrides resolve TRANSITIVELY (A->B->C: a method defined
+    // only in A and C still overrides through B) with a depth cap — mirrors
+    // the analyzer's classBases BFS. The old code checked DIRECT parents
+    // only, so every transitive override the analyzer emitted surfaced as
+    // unexplained fabrication.
     for (const m of childDecl.methods) {
-      if (parentDecl.methods.has(m)) {
-        edges.push({ label: "overrides", from: `${rel.child}.${m}`, target: `${rel.parent}.${m}` })
+      const seenBase = new Set<string>()
+      const queue = [rel.child]
+      let depth = 0
+      while (queue.length && depth < 10) {
+        depth++
+        const cls = queue.shift()!
+        if (seenBase.has(cls)) continue
+        seenBase.add(cls)
+        for (const b of declParents.filter((r2) => r2.child === cls)) {
+          if (b.parent === rel.child) continue // self-collision guard
+          const parentDecl = decls[b.parent]
+          if (parentDecl?.methods.has(m) && !seenBase.has(b.parent)) {
+            edges.push({ label: "overrides", from: `${rel.child}.${m}`, target: `${b.parent}.${m}` })
+          }
+          if (decls[b.parent]) queue.push(b.parent)
+        }
       }
     }
   }
@@ -3128,7 +3738,7 @@ async function main() {
       for (const e of entries) {
         const p = path.join(d, e.name)
         if (e.isDirectory()) { if (!/^(\.|node_modules|build|target)/.test(e.name)) scan(p) }
-        else if (e.name.endsWith("." + cfg.ext)) files.push(p)
+        else if (cfg.ext.split(",").some((x: string) => e.name.endsWith("." + x))) files.push(p)
       }
     }
     scan(repoDir)
@@ -3282,6 +3892,14 @@ async function main() {
           ;(truth as any[]).push(e)
         }
       }
+      if (lang === "cpp") {
+        // M37.9: dedicated cpp oracle — calls + member-read uses truth so the
+        // fmt differential audits the analyzer's real surface (previously
+        // neither label was compared for cpp).
+        for (const e of deriveCppEdges(root)) {
+          ;(truth as any[]).push(e)
+        }
+      }
       if (lang === "rust") {
         for (const e of deriveRustEdges(root)) {
           ;(truth as any[]).push(e)
@@ -3369,8 +3987,9 @@ async function main() {
       // c, rust and go compare CALL edges too (their independently derivable
       // truth); zig derives calls AND uses; other languages do not derive
       // call truth, so including calls there would flag every real call edge
-      // as unexplained.
-      })).filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" ? ["overrides"] : []), ...(lang === "c" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" ? ["calls"] : []), ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" ? ["calls", "uses"] : []), ...(lang === "dart" || lang === "ruby" ? ["uses"] : []), ...(lang === "csharp" ? ["calls"] : []), ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" ? ["references"] : [])].includes(r.label))
+      // as unexplained. CGD (M37 #601): c's oracle now derives member/bare
+      // USES truth as well (write-gated), so c joins the uses-audited set.
+      })).filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" ? ["overrides"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" ? ["calls"] : []), ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" ? ["calls", "uses"] : []), ...(lang === "c" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" ? ["uses"] : []), ...(lang === "csharp" ? ["calls"] : []), ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" ? ["references"] : [])].includes(r.label))
         // The tree-truth oracles already emit UNIQUE (label,target) edges per
         // file (each oracle keeps a `seen` set keyed by label+target). The
         // analyzer, by contrast, emits one edge per source SEARCH HIT, so a

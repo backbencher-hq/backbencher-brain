@@ -36,10 +36,9 @@ const DANGEROUS_FUNCTIONS = ["system", "popen", "execve", "execvp", "execl", "ex
 const SIGNAL_FUNCTIONS = ["signal", "sigaction", "sigprocmask", "sigemptyset", "sigfillset", "sigaddset", "sigdelset", "sigwait", "sigpending", "sigsuspend"]
 const ASM_KEYWORDS = ["__asm__", "__asm", "asm", "__volatile__"]
 const COMPLEXITY_NODES = ["if_statement", "for_statement", "while_statement", "do_statement", "case_statement", "conditional_expression"]
-const DECLARATION_NODES = ["declaration", "parameter_declaration", "field_declaration", "init_declarator", "function_declarator", "pointer_declarator", "array_declarator", "type_definition", "enumerator", "preproc_def", "preproc_function_def"]
-const STRUCT_TYPE_NODES = ["primitive_type", "type_identifier", "sized_type_specifier", "struct_specifier", "enum_specifier", "union_specifier"]
-const DECLARATOR_NODES = ["init_declarator", "identifier", "pointer_declarator", "array_declarator", "function_declarator"]
-const TYPE_NODES = ["struct_specifier", "union_specifier", "enum_specifier"]
+// CGD9 (M37 #601 dead-code sweep): DECLARATION_NODES, STRUCT_TYPE_NODES,
+// DECLARATOR_NODES, TYPE_NODES were declared and never referenced anywhere —
+// disconnected constants that suggested coverage that did not exist. Removed.
 
 enum ScopeKind {
   Global = "global",
@@ -55,11 +54,37 @@ interface ScopeEntry {
   node: Node
 }
 
+// CGD22 (M37 #601): a C keyword can NEVER be a declared name. ERROR recovery
+// glues `else if(...)` fragments into pseudo function_definition shapes whose
+// "declarator" is the keyword itself (resolve.c: three `function "if"`
+// symbols fabricated from #ifdef-glued else-if chains, each seeding a bogus
+// `uses` edge). Names are filtered at the extraction dispatch.
+const C_KEYWORDS = new Set([
+  "if", "else", "for", "while", "do", "switch", "case", "default", "break",
+  "continue", "return", "goto", "sizeof", "typedef", "struct", "union",
+  "enum", "static", "extern", "inline", "register", "volatile", "const",
+  "auto", "signed", "unsigned", "void", "char", "short", "int", "long",
+  "float", "double", "_Bool", "_Complex", "_Imaginary", "restrict",
+  "_Alignas", "_Alignof", "_Atomic", "_Generic", "_Noreturn",
+  "_Static_assert", "_Thread_local",
+])
+
 class CScopeManager {
   private stack: ScopeEntry[] = []
 
   constructor() {
     this.pushScope(ScopeKind.Global, "global", null as any)
+  }
+
+  // CGD20 (M37 #601): does the current scope chain sit inside a FUNCTION
+  // body? Function locals (block vars, local struct/union/enum/typedef
+  // definitions) are execution artifacts (C-D1) — only file-scope
+  // declarations become symbols.
+  isInsideFunction(): boolean {
+    for (let i = this.stack.length - 1; i >= 0; i--) {
+      if (this.stack[i].kind === ScopeKind.Function) return true
+    }
+    return false
   }
 
   pushScope(kind: ScopeKind, name: string, node: Node): void {
@@ -127,9 +152,19 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     // (`struct ForwardOnly;`) emits no dangling use edge.
     const declaredTypes = new Set<string>()
     {
-      const preStack: Node[] = [rootNode]
+      // CGD20-mirror (PERF, measured): function-local type declarations are
+      // execution artifacts (C-D1) — they must not enter declaredTypes, else
+      // a `references` edge fires for a type whose SYMBOL was correctly
+      // suppressed (measured: test_backup.c backupTestCmd ->
+      // BackupSubCommandEnum dangled after the CGD20 symbol fix). The
+      // in-function state is carried IN THE STACK (per-node parent walks
+      // crossed the WASM boundary millions of times: vdbe.c 3.6s/file →
+      // differential timeout).
+      const preStack: { n: Node; inFn: boolean }[] = [{ n: rootNode, inFn: false }]
       while (preStack.length > 0) {
-        const n = preStack.pop()!
+        const { n, inFn } = preStack.pop()!
+        const nextInFn = inFn || n.type === "function_definition"
+        if (!inFn) {
         if (n.type === "struct_specifier" || n.type === "union_specifier") {
           if (n.childForFieldName("body")) {
             const nm = n.childForFieldName("name")
@@ -142,9 +177,95 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           const identNode = this.getIdentifierFromDeclarator(n.childForFieldName("declarator"))
           if (identNode && identNode.text.trim()) declaredTypes.add(identNode.text)
         }
+        }
         for (let i = n.namedChildCount - 1; i >= 0; i--) {
           const c = n.namedChild(i)
-          if (c) preStack.push(c)
+          if (c) preStack.push({ n: c, inFn: nextInFn })
+        }
+      }
+    }
+
+    // CGD26 (M37 #601): file-scope DECLARED-NAME pre-pass — order
+    // independence for file-scope value names (globals, functions,
+    // prototypes, enum members, macros). Mirrors the oracle's declaredNames:
+    // a static initializer table (`{ DupStringInternalRep, ... }`, jimsh0.c)
+    // or a callback reference walks BEFORE the later function/typedef symbol
+    // exists, so symbol-based resolution silently dropped the edge. Uses of
+    // names in this set resolve order-independently; the symbol walk still
+    // provides scoped/shadowed resolution and kind/visibility payloads.
+    const declaredNames = new Set<string>()
+    {
+      const preStack: { n: Node; inFn: boolean }[] = [{ n: rootNode, inFn: false }]
+      while (preStack.length > 0) {
+        const { n, inFn } = preStack.pop()!
+        const nextInFn = inFn || n.type === "function_definition"
+        if (n.type === "identifier" || n.type === "field_identifier") {
+          const p = n.parent
+          // CGD36 (M37 #601, measured vdbeaux.c/expr.c/loadext.c): a
+          // function DEFINITION name is a file-scope declaration even though
+          // the pre-pass carries inFn=true into the function_definition
+          // subtree — so a VALUE read of a function BEFORE its definition
+          // (`p->xDel==sqlite3VdbeFrameMemDel` at vdbeaux L2220 reads the fn
+          // defined at L2258; `sqlite3ExprListDeleteGeneric` passed as a
+          // callback; function-pointer tables) resolved only through the
+          // ORDER-DEPENDENT Function symbol and silently dropped. The oracle
+          // admits fn names (its isFunctionLocal excludes only compound/
+          // parameter ancestry), so the analyzer must too. Distinguish from
+          // LOCAL fn-pointer declarations: walk up from the name's
+          // function_declarator — hitting compound_statement/parameter_list
+          // first means a body-local declaration (excluded, C-D1); hitting
+          // function_definition first means the defining name.
+          const isFnDefName = (() => {
+            if (!p || p.type !== "function_declarator") return false
+            let mid: Node | null = p
+            while (mid) {
+              if (mid.type === "compound_statement" || mid.type === "parameter_list") return false
+              if (mid.type === "function_definition") return true
+              mid = mid.parent
+            }
+            return false
+          })()
+          if (p && (!inFn || isFnDefName) && this.isDeclarationLikeIdentifier(n) && !this.isDirectiveConditionText(n)) {
+            // Prototype names declare even inside ERROR-glued spans
+            // (CGD19 scope refinement); the glue-name test below handles
+            // bare-fd artifacts.
+            const isProto = (() => {
+              if (p.type !== "function_declarator") return false
+              let mid: Node | null = p
+              while (mid) {
+                if (mid.type === "function_definition") return true
+                if (mid.type === "declaration") return false
+                mid = mid.parent
+              }
+              return false
+            })()
+            const isGlueFdName = (() => {
+              if (p.type !== "function_declarator") return false
+              const gp = p.parent
+              if (!gp || gp.type !== "ERROR") return false
+              // POSITION comparison (KAD2/TSD2 class, hygiene F7):
+              // web-tree-sitter returns FRESH node objects per property
+              // access, so `m !== gp` could never terminate — this gate was
+              // dead code. Reach the ERROR span by comparing spans.
+              const errStart = gp.startIndex
+              const errEnd = gp.endIndex
+              let m: Node | null = n
+              while (m) {
+                if (m.startIndex === errStart && m.endIndex === errEnd) return true
+                if (m.type === "declaration") return false
+                m = m.parent
+              }
+              return false
+            })()
+            const isMacroName = !!(p.type === "preproc_def" || p.type === "preproc_function_def")
+            if (isProto || isMacroName || !(isGlueFdName || this.isCgd19SuppressedVarDecl(n))) {
+              declaredNames.add(n.text)
+            }
+          }
+        }
+        for (let i = n.namedChildCount - 1; i >= 0; i--) {
+          const c = n.namedChild(i)
+          if (c) preStack.push({ n: c, inFn: nextInFn })
         }
       }
     }
@@ -199,8 +320,31 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
       // --- Scope Management (Enter) ---
       switch (node.type) {
         case "function_definition": {
-          const nameNode = this.getIdentifierFromDeclarator(node.childForFieldName("declarator"))
-          if (nameNode && nameNode.text.trim()) {
+          // CGD38 (M37 #601, measured mem3.c/malloc.c/loadext.c): a
+          // macro-qualified struct definition — `static SQLITE_WSD struct
+          // Mem3Global {` (SQLITE_WSD is an unknown identifier) — recovers
+          // as a function_definition whose DECLARATOR FIELD is a BARE
+          // identifier (the struct TAG). Real function_definition
+          // declarators are always function_declarator (possibly wrapped in
+          // pointer_declarator/array_declarator). Treating the bare-identifier
+          // shape as a function fabricated phantom Function symbols
+          // (`Mem3Global`, `sqlite3AutoExtList`) whose "body" is the struct.
+          // Only a declarator chain that CONTAINS a function_declarator is
+          // a real callable.
+          const rawDecl = node.childForFieldName("declarator")
+          const declIsCallable = (() => {
+            if (!rawDecl) return false
+            if (rawDecl.type === "function_declarator") return true
+            // pointer_declarator / array_declarator / parenthesized wrappers:
+            // descend the declarator chain for a function_declarator.
+            let d: Node | null = rawDecl
+            while (d && d.type !== "function_declarator") d = d.childForFieldName("declarator")
+            return !!d
+          })()
+          const nameNode = declIsCallable ? this.getIdentifierFromDeclarator(rawDecl) : null
+          // CGD22: ERROR-glued pseudo definitions can carry a KEYWORD as the
+          // "function name" — no scope, no symbol, no locals for it.
+          if (nameNode && nameNode.text.trim() && !C_KEYWORDS.has(nameNode.text)) {
             scopeManager.pushScope(ScopeKind.Function, nameNode.text, node)
             willPushScope = true
             activeFunctionSymbol = this.extractFunction(
@@ -221,18 +365,28 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
           break
         }
-        case "compound_statement":
+        case "compound_statement": {
           // KAD2 sweep: comparing a STORED wrapper (scope entry) to a fresh
           // `node.parent` never matched — the guard was dead and nested
           // blocks always pushed a new scope. Span comparison restores the
           // merge behavior for consecutive same-scope compounds.
-          if (scopeManager.currentScope().node.startIndex !== node.parent?.startIndex ||
-              scopeManager.currentScope().node.endIndex !== node.parent?.endIndex) {
+          // CGD21 (M37 #601): the GLOBAL scope carries node=null —
+          // dereferencing its .node crashed 7/125 sqlite files on VALID C
+          // (a top-level or ERROR-glued compound reached while global is
+          // current). A null-node scope never merges.
+          const cur = scopeManager.currentScope()
+          if (!cur.node ||
+              cur.node.startIndex !== node.parent?.startIndex ||
+              cur.node.endIndex !== node.parent?.endIndex) {
             scopeManager.pushScope(ScopeKind.Block, `block_${node.startIndex}`, node)
             willPushScope = true
           }
           break
+        }
         case "struct_specifier": {
+          // CGD20: function-local struct definitions are execution artifacts
+          // (C-D1) — no scope, no symbol, no field registration.
+          if (scopeManager.isInsideFunction()) break
           const nameNode = node.childForFieldName("name")
     let structName = "anonymous_struct"
     if (nameNode && nameNode.text.trim()) {
@@ -261,6 +415,8 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
         }
         case "union_specifier": {
+          // CGD20: function-local unions are execution artifacts (C-D1).
+          if (scopeManager.isInsideFunction()) break
           const nameNode = node.childForFieldName("name")
     let unionName = "anonymous_union"
     if (nameNode && nameNode.text.trim()) {
@@ -277,6 +433,10 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
         }
         case "enum_specifier":
+          // CGD20: function-local enums are execution artifacts (C-D1) —
+          // their members must not leak as file-scope EnumMember symbols
+          // (measured: BackupSubCommandEnum/MB_enum members in sqlite).
+          if (scopeManager.isInsideFunction()) break
           this.extractEnum(node, symbols, enums, scopeManager.getScopeName(), isConditional)
           break
         case "declaration":
@@ -284,9 +444,17 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
             const currentFunction = scopeManager.getCurrentFunctionName()
             if (currentFunction) {
               const locals = functionLocals.get(currentFunction) || new Set<string>()
-              const declared = this.collectDeclaredIdentifiers(node)
-              for (let i = 0; i < declared.length; i++) {
-                locals.add(declared[i])
+              // CGD7 (M37 #601): only names actually BOUND by this declaration
+              // enter locals — the old collectDeclaredIdentifiers walked the
+              // ENTIRE declaration subtree, so `int y = g;` collected `g` (the
+              // RHS initializer identifier) as a "local", and every later
+              // genuine read of `g` in the same function was silently dropped
+              // (probe c-emit2 B1: `return g + 1` emitted nothing). A local
+              // variable shadowing a global is legitimately filtered; a
+              // READ of the global is not.
+              const bound = this.collectBoundLocals(node)
+              for (let i = 0; i < bound.length; i++) {
+                locals.add(bound[i])
               }
               functionLocals.set(currentFunction, locals)
             }
@@ -301,14 +469,26 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           )
           break
         case "type_definition":
+          // CGD20: function-local typedefs are execution artifacts (C-D1).
+          if (scopeManager.isInsideFunction()) break
           this.extractTypedef(node, symbols, structs, scopeManager.getScopeName(), isConditional)
           break
         case "preproc_def":
         case "preproc_function_def":
           patterns["Preprocessor Macros"] = true
           this.extractMacro(node, symbols, isConditional)
+          // CGD5 (M37 #601): preproc_arg is an OPAQUE token blob in the
+          // pinned grammar (probe c-emit2 B8 — zero named children; the C
+          // preprocessor is textual, and expansion is C-D2's recorded
+          // non-goal). Walking its text would fabricate identifiers out of
+          // macro bodies; treating it as AST would miss that every macro
+          // reference in real code IS parsed (as ordinary identifiers at
+          // use sites, post-expansion by the compiler). The honest ruling:
+          // the blob is neither walked nor re-parsed; macro USE sites resolve
+          // through the ordinary identifier path when the macro name is a
+          // declared Constant/Macro symbol (extractMacro above).
           break
-        case "preproc_include":
+        case "preproc_include": {
           this.extractInclude(node, imports, (path) => {
             if (stringIncludes(path, "windows.h")) {
               isLLP64 = true
@@ -320,17 +500,25 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
             }
           })
           // depends: #include creates a compile-time dependency on the header
+          // CGD4: isSystem must come from the RAW path text ("<stdio.h>"),
+          // never the stripped path — the stripped text never starts with
+          // '<', so every include edge carried isSystem=false.
           const includePath = this.getIncludePath(node)
           if (includePath) {
+            const rawPathNode =
+              node.childForFieldName("path") ||
+              this.findChild(node, (c) => c?.type === "string_literal" || c?.type === "system_lib_string")
+            const isSystemInclude = rawPathNode ? rawPathNode.text.trimStart().startsWith("<") : false
             relationships.push({
               source: scopeManager.getRelationshipSource(),
               target: includePath,
               type: ASTEngine.RelationshipType.References,
               confidence: 1.0,
-              metadata: { relationshipType: "include_dependency", isSystem: includePath.startsWith("<"), isImport: true },
+              metadata: { relationshipType: "include_dependency", isSystem: isSystemInclude, isImport: true },
             })
           }
           break
+        }
       }
 
       stack.push({ node, isConditional, isExit: true, pushedScope: willPushScope })
@@ -371,6 +559,16 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (op && (op.text === "&&" || op.text === "||")) cyclomaticComplexity++
       } else if (node.type === "call_expression") {
         const fnNode = node.childForFieldName("function")
+        // CGD3: a parenthesized callee is NEVER a resolvable call by name —
+        // it is either a vendor-macro cast `(Unit)(x)` (typedef from an
+        // untracked header; census: ~100% of paren callees in sqlite/jq are
+        // header typedefs like u8/Unit/sqlite3_int64) or a computed
+        // function-pointer deref `(*fp)(x)`. Both are dropped as call edges
+        // (oracle deriveCCalls already dropped them). CGD2: the old cast
+        // branch `continue`d the WALK, which skipped the entire call
+        // subtree — calls INSIDE cast arguments vanished. The walk now
+        // always recurses; only the calls edge is suppressed.
+        let suppressCall = false
         if (fnNode) {
           let target = fnNode.text
           let isFuncPtr = false
@@ -384,27 +582,33 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
             // NAME exists (family contract with cpp: computed/dynamic
             // calls are filtered rather than emitting bracket-text noise).
             target = ""
+          } else if (fnNode.type === "call_expression") {
+            // CGD32 (M37 #601, measured libcmpp.c ×90): a NESTED call as the
+            // callee — `CMPP__EXPORT(bool, cmpp_isspace)(...)` — is a
+            // macro-wrapped declaration whose inner call_expression text
+            // (`CMPP__EXPORT(bool, cmpp_isspace)`) leaked as a composite
+            // bogus call target (parens/commas; nothing can resolve it). The
+            // inner call still walks and emits its own `calls CMPP__EXPORT`
+            // edge — suppress only the composite outer target, mirroring the
+            // parenthesized-callee ruling (CGD3): a callee that is itself a
+            // call has no static NAME.
+            suppressCall = true
           } else if (fnNode.type === "parenthesized_expression") {
-            // CAST vs FUNCTION POINTER: `(Type)expr` through vendor macros
-            // parses as a call with a parenthesized callee whose child is a
-            // type - that is a CAST, not a callable. Genuine function-pointer
-            // calls dereference ((*fp)(x)) or hold a variable.
-            const inner = fnNode.namedChild(0)
-            // A parenthesized BARE identifier followed by arguments is the
-            // classic vendor-macro CAST shape `(Unit)(x)` (typedef from an
-            // untracked header). Genuine function-pointer invocations
-            // dereference ((*fp)(x)) or wrap member expressions.
-            if (
-              inner &&
-              (inner.type === "type_identifier" ||
-                inner.type === "sized_type_specifier" || inner.type === "identifier")
-            ) {
-              continue
-            }
-            isFuncPtr = true // simplified, we just assume paren is func ptr
+            // CAST vs FUNCTION POINTER (CGD3): `(Type)expr` through vendor
+            // macros parses as a call with a parenthesized callee whose child
+            // is a type — a CAST, not a callable (census: ~100% of paren
+            // callees in sqlite/jq are header typedefs: u8, Unit,
+            // sqlite3_int64). Deref calls ((*fp)(x)) hold a pointer
+            // expression. Neither shape has a resolvable call NAME, so the
+            // EDGE is suppressed; unlike the old `continue`, the WALK still
+            // descends — a call inside a cast argument, `(Unit)(make())`,
+            // still emits its own `calls make` (probe c-emit3 C1: previously
+            // the entire subtree was skipped).
+            suppressCall = true
           }
 
           if (
+            !suppressCall &&
             target && target.trim() !== "" &&
             // Malformed recovery guard: include-adjacent macros produced
             // targets containing quotes/newlines (never real callees).
@@ -491,9 +695,16 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
         const parent = node.parent
         const lhs = parent ? parent.namedChild(0) : null
         const isWrite = parent && parent.type === "assignment_expression" && lhs && lhs.startIndex === node.startIndex && lhs.endIndex >= node.endIndex
+        // CGD17 (M37 #601): a field_expression in the CALLEE position is a
+        // CALL, not a read — `p->xClose(p)` emitted BOTH `calls xClose`
+        // (from the call_expression branch) and `uses xClose [field_access]`
+        // here, doubling every member-function invocation (family contract:
+        // one edge per pair). Span-match the call's `function` field.
+        const isCallee = parent?.type === "call_expression" &&
+          parent.childForFieldName("function")?.startIndex === node.startIndex
         const field = node.childForFieldName("field")
         const obj = node.childForFieldName("argument") || node.namedChild(0)
-        if (field && field.text.trim() && !isWrite) {
+        if (field && field.text.trim() && !isWrite && !isCallee) {
           const sourceScope = scopeManager.getRelationshipSource()
           const relKey = `${sourceScope}::uses::${field.text}`
           if (!emittedUseRelationships.has(relKey)) {
@@ -508,21 +719,19 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
         }
       } else if (node.type === "init_declarator") {
-        // Variable init from function return: Type *p = create_thing()
-        const declName = this.getIdentifierFromDeclarator(node)
-        const value = node.childForFieldName("value")
-        if (declName && value && value.type === "call_expression") {
-          const fnNode = value.childForFieldName("function")
-          if (fnNode && fnNode.text.trim()) {
-            relationships.push({
-              source: declName.text,
-              target: fnNode.text,
-              type: ASTEngine.RelationshipType.Uses,
-              confidence: 0.85,
-              metadata: { relationshipType: "init_from_call", callTarget: fnNode.text },
-            })
-          }
-        }
+        // CGD8 (M37 #601): the old init_from_call edge — `p -uses->
+        // make_thing` for `Type *p = make_thing();` — is REMOVED. Measured
+        // on sqlite @60: 945 distinct dangling edges, every one duplicating
+        // the same-site `f -calls-> make_thing` (the enclosing function's
+        // call edge already carries the semantic). The dataflow claim
+        // ("p receives make_thing's return value") is real but needs
+        // cross-file signature resolution to name the return TYPE — a
+        // recorded non-goal (C-D2: no macro expansion, no cross-TU
+        // resolution). Worse, the source is the LOCAL variable `p`, which
+        // never becomes a symbol (extractDeclaration: execution artifact),
+        // so the edge could never resolve in the graph. If dataflow edges
+        // are wanted later, they must source the enclosing FUNCTION and be
+        // gated by resolvable return types.
       } else if (
         inArray(
           [
@@ -544,6 +753,14 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
         const sourceScope = scopeManager.getRelationshipSource()
         const currentFunction = scopeManager.getCurrentFunctionName()
         const locals = currentFunction ? functionLocals.get(currentFunction) : undefined
+        // CGD12 re-route (M37 #601): a plain identifier in a TYPE position
+        // (sizeof(X) argument, `(i64)x` cast) that resolves as a TYPE
+        // (declaredTypes) emits a REFERENCES edge — one contract for type
+        // usage regardless of grammar accident (type_identifier vs
+        // identifier-in-type-position). Value resolution is untouched.
+        const resolvesAsType =
+          this.isTypePositionIdentifier(node) &&
+          this.isResolvableUseTarget(text, "type_identifier", symbols, globalVars, structs, unions, enums, declaredTypes, declaredNames)
 
         if (
           text &&
@@ -551,19 +768,114 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           sourceScope !== "" &&
           !this.isDeclarationLikeIdentifier(node) &&
           !(locals && locals.has(text)) &&
+          // CGD27 (M37 #601): a designated-initializer field designator —
+          // `.nKeySize = KVRECORD_KEY_SZ` parses as field_designator >
+          // field_identifier — NAMES the field being initialized (a write
+          // target), it does not read it. The old code emitted `uses
+          // nKeySize [field_identifier]` for every designated initializer
+          // (os_kv.c's entire method table). The VALUE side of the
+          // initializer still walks and emits its own edges.
+          node.parent?.type !== "field_designator" &&
+          // CGD12 (M37 #601): a plain-identifier TYPE position —
+          // `sizeof(VfslogFile)` parses the argument as identifier inside
+          // parenthesized_expression inside sizeof_expression (probe
+          // c-ref-src) — is a TYPE REFERENCE, not a value read. RE-ROUTED
+          // (not dropped): resolvesAsType forces the references emission
+          // below; a value-only name keeps its normal path.
+          // CGD11 (M37 #601): an identifier inside PREPROCESSOR CONDITION
+          // TEXT (`#if SQLITE_ENABLE_LOCKING_STYLE>0`, `#ifdef X`,
+          // `defined(A) && defined(B)`) is not a code-level read — the
+          // preprocessor is textual (C-D2) and the condition vanishes or
+          // selects code; it never executes. Gate mirrors the oracle's
+          // isDirectiveConditionText: path to the first preproc_* ancestor
+          // through NO code container (statement/declaration/declarator/
+          // specifier/enumerator). Conditional CODE inside `#ifdef` blocks
+          // still walks and emits — test files are one giant #ifdef block.
+          !(this.isDirectiveConditionText(node)) &&
           // A call-target identifier already emits a `calls` edge from the
           // call_expression branch — skipping it here avoids the redundant
           // `uses` pair (family contract: one edge per pair).
           node.parent?.type !== "call_expression" &&
-          this.isResolvableUseTarget(text, node.type, symbols, globalVars, structs, unions, enums, declaredTypes)
+          // CGD34 (M37 #601, measured mem3.c/malloc.c/loadext.c): a bare
+          // identifier DIRECTLY under function_definition is the NAME of a
+          // phantom function recovered from a macro-mangled declaration —
+          // `static SQLITE_WSD struct Mem3Global {` parses as a
+          // function_definition whose direct children are
+          // [storage_class, type_identifier(SQLITE_WSD), ERROR, identifier
+          // (Mem3Global = the recovered "name"), compound_statement]. In
+          // well-formed C a function name is always wrapped in a
+          // function_declarator (suppressed via isDeclarationLikeIdentifier);
+          // only error recovery produces the bare child, and reading it as a
+          // value use fabricated `uses Mem3Global` sourced at the phantom
+          // function itself.
+          node.parent?.type !== "function_definition" &&
+          // CGD31 (M37 #601, measured os_kv.c): a `field_identifier` LEAF
+          // under a callee-position field_expression
+          // (`sqlite3KvvfsMethods.xRcrdRead(...)`) fired a redundant `uses`
+          // here — the call_expression branch already emits `calls
+          // xRcrdRead` (isFuncPtr), and CGD17 gated only the field_expression
+          // NODE, never its leaf (whose parent is field_expression, so the
+          // rule above cannot see the call). Span-match the call's `function`
+          // field exactly, as CGD17 does.
+          !(node.parent?.type === "field_expression" &&
+            node.parent.parent?.type === "call_expression" &&
+            node.parent.parent.childForFieldName("function")?.startIndex === node.parent.startIndex &&
+            // Only the FIELD leaf is a callee — the OBJECT leaf
+            // (`sqlite3KvvfsMethods.xRcrdRead(...)` → sqlite3KvvfsMethods) is
+            // a genuine value read of the table variable and must keep its
+            // `uses` edge (CGD31 over-suppressed it on first draft,
+            // measured missing `uses sqlite3KvvfsMethods` in os_kv.c).
+            node.parent.childForFieldName("field")?.startIndex === node.startIndex
+          ) &&
+          // CGD37 (M37 #601, measured os_kv.c L363): when a designated
+          // initializer's VALUE is itself an identifier, tree-sitter-c
+          // parses `.xRcrdRead = kvrecordRead` as field_expression under
+          // assignment_expression (not field_designator) — the designator
+          // NAMES the field being initialized (a WRITE), so the leaf must
+          // stay silent while the value side (`kvrecordRead`) still walks.
+          // Mirrors CGD1's LHS-span test one level up (field_expression is
+          // the assignment LHS here).
+          !(node.parent?.type === "field_expression" &&
+            node.parent.parent?.type === "assignment_expression" &&
+            node.parent.parent.namedChild(0)?.startIndex === node.parent.startIndex &&
+            (node.parent.parent.namedChild(0)?.endIndex ?? 0) >= node.parent.endIndex &&
+            node.parent.childForFieldName("field")?.startIndex === node.startIndex
+          ) &&
+          // CGD1 (M37 #601): an assignment LHS is a WRITE, never a read —
+          // plain and compound assignments both parse as
+          // assignment_expression with the LHS as its first named child
+          // (probe c-shapes1 P5). `g_counter += 1` / `g_counter = 5` leaked a
+          // bogus `uses g_counter` (SCD1 class; C was the last unprobed
+          // systems language for that sweep). Span-match the LHS exactly —
+          // web-tree-sitter returns FRESH node objects per child() call, so
+          // reference identity never matches (the DAD3 oracle lesson).
+          !(node.parent?.type === "assignment_expression" &&
+            node.parent.namedChild(0)?.startIndex === node.startIndex &&
+            (node.parent.namedChild(0)?.endIndex ?? 0) >= node.endIndex) &&
+          (this.isResolvableUseTarget(text, node.type, symbols, globalVars, structs, unions, enums, declaredTypes, declaredNames) || resolvesAsType) &&
+          // CGD33 (M37 #601, measured jimsh0.c ×101 / libcmpp.c ×86): a
+          // plain `identifier` that resolves ONLY as a TYPE declaration
+          // (struct/union/enum tag or typedef alias — type maps, declaredTypes,
+          // Type/Enum symbols) with NO value declaration cannot be a
+          // legitimate value read in well-formed C (C has no first-class
+          // type values; sizeof/cast/_Alignof positions are detected type
+          // positions and re-routed to REFERENCES by CGD12/CGD28). Every
+          // `uses <typeName>` emission is a parse artifact of macro-mangled
+          // regions (jimsh0: 37/37 plain `Jim_Obj` identifiers sit inside
+          // ERROR spans while the 1105 real uses parse as type_identifier).
+          // Suppression mirrors the oracle's declaredNames-gated uses truth
+          // and keeps the one-edge-per-semantic contract.
+          !(node.type === "identifier" && !resolvesAsType && this.isTypeOnlyName(text, symbols, globalVars, structs, unions, enums, declaredTypes, declaredNames))
         ) {
           // Family contract (matches Java M12.01): a type identifier is a
           // REFERENCES edge (type usage); a value identifier (global var, enum
           // member) is a USES edge — never both for the same pair.
-          const isTypeNode = inArray(
-            ["type_identifier", "struct_specifier", "union_specifier", "enum_specifier"],
-            node.type,
-          )
+          const isTypeNode =
+            resolvesAsType ||
+            inArray(
+              ["type_identifier", "struct_specifier", "union_specifier", "enum_specifier"],
+              node.type,
+            )
           const relKey = `${sourceScope}::${isTypeNode ? "ref" : "use"}::${text}`
           if (!emittedUseRelationships.has(relKey)) {
             emittedUseRelationships.add(relKey)
@@ -1192,6 +1504,26 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     // declarations become symbols.
     if (!isGlobal) return
 
+    // CGD19 (M37 #601): an ERROR ancestor that glues a FUNCTION HEADER to a
+    // body makes the following top-level declarations mis-scope as
+    // file-scope when they are really function locals (measured:
+    // tokenize.c — `int sqlite3RunParser(Parse*, const char*){ int nErr =
+    // 0; ...` recovers with the header inside the ERROR span, so `nErr`,
+    // `pEngine`, `db`, `lastTokenParsed`, ... leaked as Variable symbols
+    // even though they are locals of sqlite3RunParser). Discriminator: the
+    // innermost ERROR that contains this declaration must itself contain a
+    // function_definition or a declaration whose declarator is a
+    // function_declarator — i.e. the recovery swallowed a function HEADER.
+    // Real declarations inside a big ERROR-swallowed REGION (status.c: the
+    // SQLITE_WSD static struct recovery spans L31-L446 but contains no
+    // glued function header before its declarations) stay extracted —
+    // blanket ERROR exclusion would drop 13 real symbols there.
+    // PERF (measured regression): walking the ERROR subtree per declaration
+    // crossed the WASM boundary millions of times on big files (vdbe.c
+    // 3.6s/file, differential timeout) — the verdict is memoized PER ERROR
+    // span (keyed by startIndex) and answered per declaration by position.
+    if (this.isCgd19SuppressedVarDecl(node)) return
+
     for (let i = 0; i < node.namedChildCount; i++) {
       const child = node.namedChild(i)
       if (
@@ -1419,53 +1751,289 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     return current
   }
 
-  private collectDeclaredIdentifiers(node: Node): string[] {
-    const namesObj: Record<string, boolean> = {}
-    const stack: Node[] = [node]
-    while (stack.length > 0) {
-      const curr = stack.pop()
-      if (!curr) continue
-
+  /**
+   * CGD7 (M37 #601): names actually BOUND by a local declaration — the
+   * declarator identifiers of its init_declarator children, plus bare
+   * declarator identifiers. NOT the RHS initializer identifiers: `int y = g;`
+   * must bind only `y`. Binding `g` (the old collectDeclaredIdentifiers
+   * behavior) suppressed every later genuine read of `g` in the function.
+   */
+  private collectBoundLocals(node: Node): string[] {
+    const names: string[] = []
+    const seen: Record<string, boolean> = {}
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const child = node.namedChild(i)
+      if (!child) continue
       if (
         inArray(
           ["init_declarator", "identifier", "pointer_declarator", "array_declarator", "function_declarator"],
-          curr.type,
+          child.type,
         )
       ) {
-        const decl = this.getIdentifierFromDeclarator(curr)
-        if (decl && decl.text.trim()) namesObj[decl.text] = true
-      }
-
-      for (let i = curr.namedChildCount - 1; i >= 0; i--) {
-        const child = curr.namedChild(i)
-        if (child) stack.push(child)
+        // For init_declarator the declarator (first named child chain) is the
+        // bound name; the `value` field is the initializer and is excluded.
+        const decl =
+          child.type === "init_declarator"
+            ? this.getIdentifierFromDeclarator(child.childForFieldName("declarator"))
+            : this.getIdentifierFromDeclarator(child)
+        if (decl && decl.text.trim() && !seen[decl.text]) {
+          seen[decl.text] = true
+          names.push(decl.text)
+        }
       }
     }
-
-    const names: string[] = []
-    for (const k in namesObj) names.push(k)
     return names
+  }
+
+  // CGD19 PERF memo: per-ERROR-span verdict (last glued function-header
+  // position, or -1 when the span holds no glued header). Keyed by the
+  // span's startIndex; lives for the lifetime of one analyze() call.
+  private cgd19HeaderIdx = new Map<number, number>()
+
+  // CGD19 (M37 #601): positional ERROR-span discriminator for VARIABLE
+  // declarations. The innermost ERROR ancestor containing `node` is scanned
+  // ONCE (memoized per span by startIndex): glue = the FIRST
+  // function_definition OR bare function_declarator (direct ERROR child).
+  // Everything declared AFTER that glue is body text of the glued function
+  // (tokenize.c sqlite3RunParser locals) and must not surface as file-scope
+  // symbols. Prototypes (function_declarator inside a declaration wrapper)
+  // are NOT glue — os_win.c's winMemMalloc/... are real file-scope names —
+  // and function NAMES declare regardless (extractFunction path). status.c
+  // (big recovery region, no glue) keeps all 13 real symbols.
+  private isCgd19SuppressedVarDecl(node: Node): boolean {
+    let cur: Node | null = node
+    let innermostError: Node | null = null
+    while (cur) {
+      if (cur.type === "ERROR") innermostError = cur
+      cur = cur.parent
+    }
+    if (!innermostError) return false
+    const key = innermostError.startIndex
+    let headerIdx = this.cgd19HeaderIdx.get(key)
+    if (headerIdx === undefined) {
+      headerIdx = -1
+      const st: Node[] = [innermostError]
+      const errStart0 = innermostError.startIndex
+      const errEnd0 = innermostError.endIndex
+      while (st.length > 0) {
+        const m = st.pop()!
+        // POSITION comparison (KAD2/TSD2 class, hygiene F7): web-tree-sitter
+        // hands out fresh wrappers per access, so object identity only ever
+        // holds for the very root object we pushed — compare spans to skip it.
+        const isSpanRoot = m.startIndex === errStart0 && m.endIndex === errEnd0
+        if (!isSpanRoot) {
+          if (m.type === "function_definition") {
+            if ((headerIdx as number) < 0 || m.startIndex < (headerIdx as number)) headerIdx = m.startIndex
+          } else if (m.type === "function_declarator") {
+            // BARE fd = no declaration/function_definition wrapper between
+            // the fd and the ERROR span (tokenize.c: direct child; jimsh0.c:
+            // nested inside preproc_ifdef < ERROR — the direct-child test
+            // missed it and 80+ post-glue locals leaked as globals). An fd
+            // inside a declaration wrapper is an ordinary prototype
+            // (os_win.c L331 winMemMalloc) — NOT glue. POSITION comparison
+            // throughout: web-tree-sitter recreates node objects per access
+            // and object identity NEVER holds (the same trap that broke the
+            // direct-child test).
+            let w: Node | null = m
+            let bare = true
+            const errStart = innermostError.startIndex
+            const errEnd = innermostError.endIndex
+            while (w) {
+              if (w.startIndex === errStart && w.endIndex === errEnd) break
+              if (w.type === "declaration" || w.type === "function_definition") {
+                bare = false
+                break
+              }
+              w = w.parent
+            }
+            if (bare && w) {
+              if ((headerIdx as number) < 0 || m.startIndex < (headerIdx as number)) headerIdx = m.startIndex
+            }
+          }
+        }
+        for (let k = 0; k < m.namedChildCount; k++) {
+          const c = m.namedChild(k)
+          if (c) st.push(c)
+        }
+      }
+      this.cgd19HeaderIdx.set(key, headerIdx as number)
+    }
+    return (headerIdx as number) >= 0 && node.startIndex > (headerIdx as number)
+  }
+
+  // CGD11: preprocessor CONDITION text vs conditional CODE. An identifier
+  // is directive text iff the path from it to the first preproc_* ancestor
+  // passes through no code container node. `#if (X>0)` → expression chain
+  // only → text; `int y = F_OK;` inside #ifndef → init_declarator on path
+  // → code. Mirrors the differential oracle exactly (one contract).
+  private isDirectiveConditionText(node: Node): boolean {
+    let cur: Node | null = node.parent
+    while (cur) {
+      const t: string = cur.type
+      if (/statement|declaration|definition|declarator|specifier|enumerator|compound/.test(t)) return false
+      if (t.startsWith("preproc_")) return true
+      cur = cur.parent
+    }
+    return false
+  }
+
+  // CGD12: is this plain `identifier` really a TYPE position? The pinned
+  // grammar parses `sizeof(VfslogFile)` and C++-style template args as a
+  // bare identifier chain; the honest classification is the first
+  // code-container ancestor. If we reach a sizeof_expression (or the type
+  // slot of a cast/type_descriptor) before any statement/declaration
+  // container, the identifier names a type.
+  private isTypePositionIdentifier(node: Node): boolean {
+    let cur: Node | null = node.parent
+    while (cur) {
+      const t: string = cur.type
+      if (t === "sizeof_expression") return true
+      if (t === "cast_expression") {
+        // CGD28 (M37 #601): only the cast's TYPE OPERAND is a type position
+        // — `(i64)x` → i64 yes, x no. The VALUE operand is the LAST named
+        // child of the cast_expression; anything starting before it sits in
+        // the type operand. (Measured hole: `(sqlite3_syscall_ptr)ts_open`
+        // — the function-name VALUE must stay a `uses` read, test_syscall.c
+        // syscall tables.)
+        const kids: (Node | null)[] = []
+        for (let i = 0; i < cur.namedChildCount; i++) kids.push(cur.namedChild(i))
+        const valid = kids.filter((k): k is Node => !!k)
+        if (valid.length >= 2) {
+          const value = valid[valid.length - 1]
+          return node.startIndex < value.startIndex
+        }
+        return false
+      }
+      if (/statement|declaration|declarator|specifier|enumerator|compound|argument_list|init/.test(t)) return false
+      cur = cur.parent
+    }
+    return false
+  }
+
+  // CGD12-mirror (M37 #601): within a declarator-chain parent, only the
+  // LEFTMOST identifier declares. `int x = F_OK;` parses as declaration >
+  // init_declarator with children [declarator(x), value(F_OK)] — the old
+  // any-child rule treated the initializer VALUE as declaring too, so the
+  // read was suppressed and the edge never emitted (measured: F_OK in
+  // test_demovfs, pTestCollateInterp in test1.c, and the
+  // `*(*const autolockIoFinder)(...) = autolockIoFinderImpl` value in
+  // os_unix.c were all silent while the oracle derived truth → MISSING).
+  // Same chain walk as the oracle's isDeclaringIdentifier (one contract).
+  private isDeclaringChainLeftmost(node: Node): boolean {
+    const p = node.parent
+    if (!p || !/declarator$/.test(p.type)) return false
+    let cur: Node | null = p
+    while (cur) {
+      if (cur.type === "identifier" || cur.type === "field_identifier") {
+        return cur.startIndex === node.startIndex
+      }
+      let next: Node | null = null
+      for (let k = 0; k < cur.namedChildCount; k++) {
+        const c = cur.namedChild(k)
+        if (c && (c.type.endsWith("declarator") || c.type === "identifier" || c.type === "field_identifier")) {
+          next = c
+          break
+        }
+      }
+      cur = next
+    }
+    return false
   }
 
   private isDeclarationLikeIdentifier(node: Node): boolean {
     const p = node.parent
     if (!p) return false
-    return inArray(
-      [
-        "declaration",
-        "parameter_declaration",
-        "field_declaration",
-        "init_declarator",
-        "function_declarator",
-        "pointer_declarator",
-        "array_declarator",
-        "type_definition",
-        "enumerator",
-        "preproc_def",
-        "preproc_function_def",
-      ],
-      p.type,
-    )
+    // CGD35 (M37 #601, measured showwal.c/fossildelta.c/showdb.c ×15): a
+    // TYPE_identifier inside a declaration/parameter is a USE of the type,
+    // never the declaring occurrence — the NAME of a typedef alias or struct
+    // tag parses as type_identifier (the grammar tracks in-file typedefs),
+    // and only the alias/TAG declaration itself (declaredTypes pre-pass) is
+    // the declaration. The old any-parent rule classified `i64 x` / the
+    // return type of `static i64 f(...)` as "declaring", suppressing the
+    // references-truth the oracle derives (`typedef long long int i64;` in
+    // showwal.c → every real `i64` read vanished → references i64 missing).
+    // Mirrors the oracle's isDeclaringIdentifier exclusion exactly
+    // (`if (n.type === "type_identifier") return false`).
+    if (node.type === "type_identifier") return false
+    const declParents = [
+      "declaration",
+      "parameter_declaration",
+      "field_declaration",
+      "init_declarator",
+      "function_declarator",
+      "pointer_declarator",
+      "array_declarator",
+      "type_definition",
+      "enumerator",
+      "preproc_def",
+      "preproc_function_def",
+    ]
+    if (!inArray(declParents, p.type)) return false
+    // CGD12-mirror: within a declarator-chain parent only the leftmost
+    // identifier declares — an initializer value is a READ (see
+    // isDeclaringChainLeftmost for the measured defects).
+    if (/declarator$/.test(p.type) || p.type === "init_declarator") {
+      return this.isDeclaringChainLeftmost(node)
+    }
+    return true
+  }
+
+  // CGD33: does `name` resolve ONLY as a type declaration (no value
+  // declaration anywhere)? Value evidence = a global variable, a declared
+  // value name (globals/functions/prototypes/enum members/macros — the
+  // CGD26 pre-pass), or a VALUE symbol. VALUE kinds are the ones that name
+  // run-time entities a C expression can read: Variable/Constant/Macro
+  // (globals + preprocessor constants), Function (callbacks read as
+  // values), EnumMember. Everything else is a TYPE-ish kind — Type, Enum,
+  // Struct, Union, Class, Trait, Interface, Property (struct FIELDS are
+  // member declarations, never bare-value names in well-formed C) — and
+  // NEVER counts as value evidence, even when the symbol's scope is
+  // "global" (a top-level tagged `struct Mem3Global {...}` carries scope
+  // global and kind Struct — the exact class that leaked `uses
+  // Mem3Global`). Type evidence = the structs/unions/enums type maps, a
+  // declaredTypes entry, or a type-ish symbol. See the emission-gate
+  // comment for the measured defect.
+  private isTypeOnlyName(
+    name: string,
+    symbols: ASTEngine.UniversalSymbol[],
+    globalVars: Record<string, boolean>,
+    structs: Record<string, any[]>,
+    unions: Record<string, any[]>,
+    enums: Record<string, boolean>,
+    declaredTypes: Set<string>,
+    declaredNames?: Set<string>,
+  ): boolean {
+    if (globalVars[name] || declaredNames?.has(name)) return false
+    const VALUE_KINDS = new Set([
+      ASTEngine.SymbolKind.Variable,
+      ASTEngine.SymbolKind.Constant,
+      ASTEngine.SymbolKind.Macro,
+      ASTEngine.SymbolKind.Function,
+      ASTEngine.SymbolKind.EnumMember,
+    ])
+    const TYPE_KINDS = new Set([
+      ASTEngine.SymbolKind.Type,
+      ASTEngine.SymbolKind.Enum,
+      ASTEngine.SymbolKind.Struct,
+      ASTEngine.SymbolKind.Union,
+      ASTEngine.SymbolKind.Class,
+      ASTEngine.SymbolKind.Trait,
+      ASTEngine.SymbolKind.Interface,
+      ASTEngine.SymbolKind.Property,
+    ])
+    let hasValueSymbol = false
+    let hasTypeSymbol = false
+    for (let i = 0; i < symbols.length; i++) {
+      const s = symbols[i]
+      if (!s || s.name !== name) continue
+      if (TYPE_KINDS.has(s.kind)) hasTypeSymbol = true
+      if (VALUE_KINDS.has(s.kind)) {
+        hasValueSymbol = true
+        break
+      }
+    }
+    if (hasValueSymbol) return false
+    return !!structs[name] || !!unions[name] || !!enums[name] || hasTypeSymbol || declaredTypes.has(name)
   }
 
   private isResolvableUseTarget(
@@ -1477,6 +2045,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     unions: Record<string, any[]>,
     enums: Record<string, boolean>,
     declaredTypes: Set<string>,
+    declaredNames?: Set<string>,
   ): boolean {
     if (!name || !name.trim()) return false
     if (inArray(["NULL", "true", "false", "..."], name)) return false
@@ -1488,6 +2057,9 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (inArray(["type_identifier", "struct_specifier", "union_specifier", "enum_specifier"], nodeType))
       return declaredTypes.has(name)
     if (globalVars[name] || structs[name] || unions[name] || enums[name]) return true
+    // CGD26: order-independent file-scope name resolution (static
+    // initializer tables reference later symbols; see the pre-pass).
+    if (declaredNames?.has(name)) return true
 
     for (let i = 0; i < symbols.length; i++) {
       const s = symbols[i]

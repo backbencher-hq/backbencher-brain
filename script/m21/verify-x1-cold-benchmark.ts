@@ -141,7 +141,7 @@ try {
     cwd: ROOT,
     encoding: "utf8",
     timeout: 120_000,
-    env: { ...process.env, BB_FILE_TIMEOUT_MS: "150" },
+    env: { ...process.env, BB_FILE_TIMEOUT_MS: "150", BB_TEST_HOOKS: "1" },
   })
   const bigLine = (bigRes.stdout || "").split("\n").find((l) => l.startsWith("X1_BIG_RESULT "))
   const bigErr = (bigRes.stdout || "").split("\n").find((l) => l.startsWith("X1_BIG_ERROR "))

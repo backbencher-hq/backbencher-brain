@@ -3,10 +3,10 @@
 // compatibility), NVIDIA NIM (api.nvidia.com/v1), OpenAI, and self-hosted
 // vLLM/llama.cpp servers. No provider SDK required.
 //
-// Config (highest priority first):
-//   env  BB_EMBEDDING_BASE_URL, BB_EMBEDDING_API_KEY, BB_EMBEDDING_MODEL
-//   file ~/.bb/config.json  { "embedding_base_url", "embedding_api_key", "embedding_model" }
-import { Config } from "../../config/config"
+// M40.A8: precedence (env BB_EMBEDDING_* > config file > built-in default) is
+// defined ONCE in src/config/config.ts resolveEmbeddingConfig(). This module
+// consumes it — it must not re-implement or re-document a different order.
+import { Config, resolveEmbeddingConfig } from "../../config/config"
 
 export interface EmbeddingConfig {
   baseURL: string
@@ -16,25 +16,18 @@ export interface EmbeddingConfig {
 }
 
 export function isEmbeddingConfigured(config: Record<string, unknown>): boolean {
-  return Boolean(
-    (config.embedding_base_url || process.env.BB_EMBEDDING_BASE_URL) &&
-      (config.embedding_model || process.env.BB_EMBEDDING_MODEL),
-  )
+  // M40.A8: single source of truth — no local env-probing.
+  return resolveEmbeddingConfig(config).configured
 }
 
 export async function getEmbeddingConfig(): Promise<EmbeddingConfig | null> {
   const config = await Config.get()
-  // Explicit BB_* values are runtime overrides and must win over repository
-  // config. This is required for MCP hosts, local test endpoints, and workers
-  // that intentionally point at a different OpenAI-compatible service.
-  const baseURL = process.env.BB_EMBEDDING_BASE_URL || (config.embedding_base_url as string)
-  const apiKey = process.env.BB_EMBEDDING_API_KEY || (config.embedding_api_key as string)
-  const model = process.env.BB_EMBEDDING_MODEL || (config.embedding_model as string)
-  if (!baseURL || !model) return null
+  const eff = resolveEmbeddingConfig(config)
+  if (!eff.configured) return null
   return {
-    baseURL: baseURL.replace(/\/+$/, ""),
-    apiKey: apiKey ?? "",
-    model,
+    baseURL: eff.baseURL,
+    apiKey: eff.apiKey,
+    model: eff.model,
     dimension: typeof config.embedding_dimension === "number" ? config.embedding_dimension : undefined,
   }
 }
