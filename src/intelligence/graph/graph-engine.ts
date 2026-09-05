@@ -4,6 +4,8 @@ import type { ProjectID } from "../../project/schema"
 import type { GraphEdge, GraphNode, GraphTraversalOptions, GraphTraversalResult } from "../contracts"
 import { makeProvenance } from "../evidence"
 
+type EdgeMetadata = NonNullable<GraphEdge["metadata"]>
+
 const DEFAULT_REL_TYPES = ["calls", "instantiates", "extends", "implements"]
 const DEFAULT_MAX_DEPTH = 5
 const DEFAULT_BUDGET = 50
@@ -49,12 +51,25 @@ function cascadeBounds(symbolId: string): { prefix: string; upper: string } {
 /** Parse the stored metadata JSON into the declared pass-through shape.
  *  Malformed or foreign metadata degrades to undefined — never throws, never
  *  invents fields (a row with unreadable metadata still renders, tierless). */
-function edgeMetadata(meta: string | null): { evidenceClass?: string } | undefined {
+function edgeMetadata(meta: string | null): EdgeMetadata | undefined {
   if (!meta) return undefined
   try {
     const parsed = JSON.parse(meta) as Record<string, unknown>
-    const out: { evidenceClass?: string } = {}
+    const out: EdgeMetadata = {}
     if (typeof parsed["evidenceClass"] === "string") out.evidenceClass = parsed["evidenceClass"]
+    // M42.H3: pass through the index-computed enrichment fields (the
+    // enrichment pass writes them into metadata; the LSP surface only reads
+    // what the index stored — no inference here, §12.3). Presence is gated on
+    // the `inferredAt` marker the pass always writes.
+    if (typeof parsed["inferredAt"] === "number") {
+      out.enrichment = { inferredAt: parsed["inferredAt"] as number }
+      for (const key of ["role", "pattern", "layerFlow", "criticality", "frequency"] as const) {
+        if (typeof parsed[key] === "string") (out.enrichment as Record<string, unknown>)[key] = parsed[key]
+      }
+      for (const key of ["isTestCode", "isGeneratedCode", "isFrameworkContract", "isDependencyInjection"] as const) {
+        if (typeof parsed[key] === "boolean") (out.enrichment as Record<string, unknown>)[key] = parsed[key]
+      }
+    }
     return Object.keys(out).length > 0 ? out : undefined
   } catch {
     return undefined

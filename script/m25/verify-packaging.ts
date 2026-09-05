@@ -69,7 +69,7 @@ function auditPackagingList(listing: string): string[] {
     if (/^src\//.test(line)) violations.push(`dev source leaked: ${line}`)
     if (/^tsconfig\.json$/.test(line)) violations.push(`dev config leaked: ${line}`)
     if (/^esbuild-extension\.mjs$/.test(line)) violations.push(`build script leaked: ${line}`)
-    if (/\.map$/.test(line)) violations.push(`sourcemap leaked: ${line}`)
+    if (/\.map$/.test(line) && !line.includes("node_modules")) violations.push(`sourcemap leaked: ${line}`)
     if (/\.ts$/.test(line) && !line.includes("node_modules")) violations.push(`ts source leaked: ${line}`)
   }
   const has = (p: string) => lines.some((l) => l === p)
@@ -116,9 +116,20 @@ try {
 
   rmSync(path.join(EXT_ROOT, "dist"), { recursive: true, force: true }) // clean state
   execFileSync("node", ["esbuild-extension.mjs"], { cwd: EXT_ROOT, encoding: "utf8", timeout: 180_000, stdio: ["ignore", "pipe", "inherit"] })
+  execFileSync("node", ["collect-server-deps.mjs"], { cwd: EXT_ROOT, encoding: "utf8", timeout: 180_000, stdio: ["ignore", "pipe", "inherit"] })
   const stagedServer = path.join(EXT_ROOT, "dist/server/lsp/server.js")
   check("G1: clean rebuild produced the extension entry", existsSync(path.join(EXT_ROOT, "dist/extension.js")))
   check("G1: clean rebuild staged the bundled server", existsSync(stagedServer))
+  // G1b: the bundled server's RUNTIME deps must ship (owner spot-check
+  // defect, 2026-09-05): the server graph needs better-sqlite3 (native) and
+  // drizzle-orm at runtime; with --no-dependencies nothing else ships them.
+  // build script runs collect-server-deps.mjs to stage them.
+  const stagedNodeModules = path.join(EXT_ROOT, "dist/server/node_modules")
+  for (const dep of ["better-sqlite3", "drizzle-orm", "bindings", "file-uri-to-path", "node-gyp-build"]) {
+    check(`G1b: staged server dep present: ${dep}`, existsSync(path.join(stagedNodeModules, dep)), "missing — the packaged server would die with ERR_MODULE_NOT_FOUND")
+  }
+  const buildScript = (JSON.parse(readFileSync(path.join(EXT_ROOT, "package.json"), "utf8")) as { scripts?: Record<string, string> }).scripts?.build ?? ""
+  check("G1b: extension build script runs collect-server-deps.mjs", buildScript.includes("collect-server-deps.mjs"), "dep staging is a manual step — will rot")
   const repoBytes = statSync(serverDist).size
   const stagedBytes = statSync(stagedServer).size
   check("G1: staged server is byte-identical to the compiled server", repoBytes === stagedBytes && repoBytes > 0, `${stagedBytes} vs ${repoBytes}`)
