@@ -679,14 +679,14 @@
       "status": "pass"
     },
     {
-      "description": "cpp: 3 ruled, 0 pending owner",
+      "description": "cpp: 4 ruled, 5 pending owner",
       "id": "design-decisions-tracked",
       "language": "cpp",
       "status": "pass"
     },
     {
       "description": "every named node type classified (cpp)",
-      "detail": "256 types, 42 handled, 144 silent, 0 gaps, 3 decisions",
+      "detail": "256 types, 42 handled, 144 silent, 0 gaps, 9 decisions",
       "id": "section-a-structural",
       "language": "cpp",
       "status": "pass"
@@ -721,7 +721,7 @@
     },
     {
       "description": "cpp avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "fmt:cpp 35.2 ms/file",
+      "detail": "fmt:cpp 64.6 ms/file",
       "id": "section-f-perf-budget",
       "language": "cpp",
       "status": "pass"
@@ -1461,7 +1461,7 @@
     },
     {
       "description": "python avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "cython:python 21.8 ms/file",
+      "detail": "cython:python 40.7 ms/file",
       "id": "section-f-perf-budget",
       "language": "python",
       "status": "pass"
@@ -1556,8 +1556,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "59cff6aa6d704b3487110d33c97ab6739874bed4",
-  "committedAt": "2026-09-05T19:21:10+02:00",
+  "commit": "95728c38dcb4fedb01e922ff68afcf6ea1a14d21",
+  "committedAt": "2026-09-05T19:27:41+02:00",
   "data": {
     "languages": {
       "c": {
@@ -1608,15 +1608,22 @@
       "cpp": {
         "gaps": [],
         "nodeTypeCount": 256,
-        "pendingDecisions": [],
+        "pendingDecisions": [
+          "CPP-D4",
+          "CPP-D5",
+          "CPP-D6",
+          "CPP-D7",
+          "CPP-D8"
+        ],
         "ruledDecisions": [
           "CPP-D1",
           "CPP-D2",
-          "CPP-D3"
+          "CPP-D3",
+          "CPP-D9"
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "256 types, 42 handled, 144 silent, 0 gaps, 3 decisions",
+            "detail": "256 types, 42 handled, 144 silent, 0 gaps, 9 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -1636,7 +1643,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "fmt:cpp 35.2 ms/file",
+            "detail": "fmt:cpp 64.6 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -2193,7 +2200,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "cython:python 21.8 ms/file",
+            "detail": "cython:python 40.7 ms/file",
             "status": "pass"
           },
           "section-g-docs": {

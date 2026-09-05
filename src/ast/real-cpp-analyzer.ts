@@ -270,7 +270,29 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
           continue
         }
-        const name = this.childText(node, "type_identifier") || "anonymous"
+        // CPPD1 (M37.9 probe, fmt corpus): partial/explicit class template
+        // SPECIALIZATION (`template <typename T> class Box<T*>`, `template <>
+        // class Box<int>`) carries its name in a template_type child
+        // (`Box<T*>`), not a bare type_identifier — so every specialization
+        // fabricated a bogus `anonymous` class symbol (255 across fmt). The
+        // base name of the template_type IS the class (a specialization is
+        // the same class Box, not a new anonymous type).
+        const name =
+          this.childText(node, "type_identifier") ||
+          (() => {
+            const tt = this.findChild(node, "template_type")
+            if (tt) {
+              const tn =
+                tt.childForFieldName?.("name") ||
+                this.findChild(tt, "type_identifier") ||
+                this.findChild(tt, "qualified_identifier")
+              if (tn?.text) return tn.text
+              const lt = tt.text.indexOf("<")
+              return lt > 0 ? tt.text.slice(0, lt).trim() : null
+            }
+            return null
+          })() ||
+          "anonymous"
         const kind = ASTEngine.SymbolKind.Class
         const defaultVis = type === "class_specifier" ? "private" : "public"
 
@@ -294,7 +316,22 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
               this.findChild(bc, "qualified_identifier") ||
               this.findChild(bc, "template_type") ||
               bc
-            const rawText = stripAccessSpecifier(typeNode.text)
+            // CPPD4 (M37.9 fmt probe, base.h is_std_string_like): the extends
+            // EDGE target must be the BASE CLASS NAME — leaf segment, template
+            // ARGUMENTS stripped. Simple bases already parse to a bare
+            // type_identifier (native_formatter), but a QUALIFIED templated
+            // base (`detail::is_convertible<decltype(...)>`) fell through to
+            // the whole template_type text, fabricating extends edges whose
+            // target is the full argument list. Template args are ARGUMENTS,
+            // never the inherited base (family contract, mirror of the
+            // JS/TS/Dart heritage rule). The cleanBases registry below already
+            // applies exactly this clean (split '<' then ::-segments) — the
+            // edge now uses the same leaf.
+            let rawText = stripAccessSpecifier(typeNode.text)
+            const ltRaw = rawText.indexOf("<")
+            if (ltRaw !== -1) rawText = rawText.slice(0, ltRaw).trim()
+            const rawSegs = rawText.split(/::|\s+/).filter(Boolean)
+            if (rawSegs.length > 1) rawText = rawSegs[rawSegs.length - 1]
             if (rawText) {
               baseClasses.push(rawText)
               relationships.push({
@@ -457,14 +494,27 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
             parentContext?.kind === ASTEngine.SymbolKind.Class &&
             funcName !== parentContext.name
           ) {
-            // Signature-aware registry: name -> normalized parameter text.
+            // Signature-aware registry: name -> normalized TYPE-ONLY
+            // parameter signature. CPPD5 (M37.9 fmt probe, gtest.h
+            // EmptyTestEventListener): parameter NAMES are not part of a C++
+            // signature, and the gtest idiom of commenting an unused name out
+            // (`const TestInfo& /*test_info*/`) made the old full-text
+            // comparison diverge from the base declaration — every such
+            // override was silently dropped (11 of Empty's 15 overrides).
+            // Comment-stripping is insufficient: the base has the name, the
+            // child has none. Compare only each parameter's TYPE (the text
+            // before its declarator), so names, comments, and whitespace
+            // never affect virtual-dispatch matching — while DIFFERENT
+            // parameter TYPES still correctly hide (the override-signature-
+            // aware fixture contract).
             const decl2 = this.findChild(node, "function_declarator")
-            const rawParams = decl2?.childForFieldName("parameters")?.text ?? ""
+            const paramsNode = decl2?.childForFieldName("parameters") ?? null
+            const normParams = this.buildParamSig(paramsNode)
             const sigs = classVirtuals.get(parentContext.name) ?? new Map()
-            sigs.set(funcName, rawParams.replace(/\s+/g, ""))
+            sigs.set(funcName, normParams)
             classVirtuals.set(parentContext.name, sigs)
             if ((classBases.get(parentContext.name)?.length ?? 0) > 0) {
-              pendingOverrides.push({ cls: parentContext.name, method: funcName, params: rawParams.replace(/\s+/g, "") })
+              pendingOverrides.push({ cls: parentContext.name, method: funcName, params: normParams })
             }
           }
 
@@ -564,12 +614,25 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         // here avoids the redundant `uses` pair (one edge per pair).
         const field = node.childForFieldName("field")
         const obj = node.childForFieldName("argument") || node.namedChild(0)
-        if (
-          field &&
-          field.text.trim() &&
-          !(obj && obj.type === "call_expression") &&
-          node.parent?.type !== "call_expression"
-        ) {
+        // CPPD3 (M37.9 fmt probe, base-test.cc): a member read on a CALL
+        // TEMPORARY (`parse_arg_id("42:").res`) was dropped by the old
+        // `!(obj.type === call_expression)` guard — that guard was meant to
+        // skip method-call shapes, but `x().field` (read on a temporary) is a
+        // genuine member READ. The correct callee discriminator is the PARENT
+        // check (field_expression as the function of a call), which remains
+        // below. The obj being a call says nothing about whether `.field` is
+        // read or invoked.
+        // CPPD2 (M37.9 fmt probe, xchar/chrono-test.cc): assignment-LHS
+        // member WRITES (`tm.tm_year = 116`) emitted `uses` — only call-
+        // callee positions were gated, not write designators. The family
+        // contract (C CGD27, SCD1, OO member-read sweep) gates member writes:
+        // the LHS of an assignment is a write, never a read-use.
+        const pType = node.parent?.type
+        const lhsAssign =
+          (pType === "assignment_expression" || pType === "compound_assignment_expression") &&
+          node.parent?.namedChild(0) &&
+          node.parent!.namedChild(0)!.startIndex === node.startIndex
+        if (field && field.text.trim() && pType !== "call_expression" && !lhsAssign) {
           const source = parentContext?.name || "global"
           const relKey = `${source}::uses::${field.text}`
           if (!usesSeen.has(relKey)) {
@@ -635,23 +698,47 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         const typeNode = node.namedChild(0)
         if (typeNode) {
           let typeName = typeNode.text
-          if (typeNode.type === "qualified_identifier") {
-            const nameNode = typeNode.namedChild(typeNode.namedChildCount - 1)
-            if (nameNode) typeName = nameNode.text
+          // CPPD8 (M37.9 fmt probe, gtest Message ctor): a leading global-scope
+          // `::` adds a NESTED qualified_identifier level, so `new
+          // ::std::stringstream` parses as qualified_identifier >
+          // qualified_identifier("std::stringstream") > type_identifier. One
+          // unwrap left "std::stringstream" — still qualified — and the clean
+          // leaf regex below dropped the whole edge, while `new ::Foo` (single
+          // unwrap reaches the leaf) worked. Descend to the innermost name
+          // (the pinned grammar nests every namespace chain — `::` prefix or
+          // Foo::Bar::Baz — as qualified_identifier levels; probed 2026-09-05:
+          // no cpp shape emits scoped_type_identifier, so only
+          // qualified_identifier is unwrapped here).
+          let cur: any = typeNode
+          while (cur && cur.type === "qualified_identifier" && cur.namedChildCount >= 1) {
+            const inner = cur.namedChild(cur.namedChildCount - 1)
+            if (!inner) break
+            cur = inner
           }
+          if (cur && cur !== typeNode) typeName = cur.text
           // Template arguments are not part of the constructed type name
           // (`new std::vector<int>` instantiates vector, not 'vector<int>').
           const lt3 = typeName.indexOf("<")
           if (lt3 !== -1) typeName = typeName.slice(0, lt3)
-          const source = parentContext?.name || "global"
-          relationships.push({
-            source,
-            target: typeName,
-            fromSymbol: source,
-            toSymbol: typeNode.text,
-            type: ASTEngine.RelationshipType.Instantiates,
-            metadata: { line: node.startPosition.row, isNew: true },
-          })
+          // CPPD6 (M37.9 fmt probe, gtest.h/gmock.h): macro-mangled
+          // new_expression recovery fabricates garbage constructed-type
+          // targets (`(static_cast`, `typename Derived::template
+          // gmock_Impl`, `(&locale_)`) from ERROR-region node soup. A real
+          // constructed type is a clean identifier (optionally namespace-
+          // qualified before template stripping) — anything else is a
+          // recovery artifact and emits no edge (the C-wave CGD19 class).
+          if (/^[A-Za-z_]\w*$/.test(typeName)) {
+            const source = parentContext?.name || "global"
+            relationships.push({
+              source,
+              target: typeName,
+              fromSymbol: source,
+              toSymbol: typeNode.text,
+              type: ASTEngine.RelationshipType.Instantiates,
+              confidence: typeNode.hasError ? 0.6 : 1.0,
+              metadata: { line: node.startPosition.row, isNew: true },
+            })
+          }
         }
       }
 
@@ -774,6 +861,42 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         memorySafetyScore,
       },
     }
+  }
+
+  private buildParamSig(parametersNode: Node | null): string {
+    // CPPD5 (M37.9 fmt probe, gtest.h): parameter TYPE-ONLY signature. Each
+    // parameter_declaration's name lives in its trailing `declarator` field;
+    // the TYPE is the parameter text minus that declarator. Names, comments
+    // (`/*test_info*/`), and whitespace never enter the signature — matching
+    // real C++ overload semantics where only the types discriminate.
+    if (!parametersNode) return ""
+    const parts: string[] = []
+    for (let i = 0; i < parametersNode.namedChildCount; i++) {
+      const pc = parametersNode.namedChild(i)
+      if (!pc) continue
+      if (pc.type === "comment") continue
+      if (pc.type === "optional_parameter_declaration") {
+        // `= default` / `= expr` after the type — the DEFAULT is not part of
+        // the signature either; the type text precedes the `=` assignment.
+        let t = pc.text
+        const eq = t.indexOf("=")
+        if (eq !== -1) t = t.slice(0, eq).trim()
+        const d2 = pc.childForFieldName?.("declarator")
+        if (d2) t = t.slice(0, t.length - d2.text.length).trim()
+        if (t) parts.push(t)
+        continue
+      }
+      if (pc.type !== "parameter_declaration") {
+        // variadic_parameter (`...`) or stray nodes: include raw text.
+        if (pc.text) parts.push(pc.text)
+        continue
+      }
+      let t = pc.text
+      const d = pc.childForFieldName?.("declarator")
+      if (d) t = t.slice(0, t.length - d.text.length).trim()
+      if (t) parts.push(t)
+    }
+    return parts.join(",")
   }
 
   private methodComplexityCpp(node: Node): number {
