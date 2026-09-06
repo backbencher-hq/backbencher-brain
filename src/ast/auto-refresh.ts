@@ -22,7 +22,7 @@
 //   BB_NO_AUTO_REFRESH=1          opt out entirely (also per-call opt-out)
 //   BB_AUTO_REFRESH_MAX_FILES=N   default 25 stale+missing files
 //   BB_AUTO_REFRESH_MAX_BYTES=N   default 2 MiB of modified-file bytes
-import { statSync } from "node:fs"
+import { statSync, readFileSync } from "node:fs"
 import type { CoreDatabase } from "../brain/database"
 import { reindexFilesParallel } from "./parallel-indexer"
 import { liveIndexLockHolder, IndexLockHeldError } from "./index-lock"
@@ -242,18 +242,10 @@ export function autoRefreshLine(decision: AutoRefreshDecision): string {
 }
 
 // ══ M44.W1.2 (#670): one machine-readable refresh/decline wire shape ════════
-// Every read tool's JSON carries the SAME structured block on non-clean
-// outcomes (`autoRefresh` keeps the human text; `refresh` is its structured
-// sibling) so an agent can machine-check action + reason + counters without
-// parsing prose. `reason` is exactly AutoRefreshDecision's decline vocabulary:
-// disabled | no-index | budget-files | budget-bytes | indexer-active | error.
-// ══ M44.W1.2 (#670): one machine-readable refresh/decline wire shape ════════
-// Every read tool carries the SAME structured block on non-clean outcomes so
-// an agent can machine-check WHY a read did or did not repair — no per-tool
-// drift, no free-text parsing. `autoRefresh` keeps its human text (M43.A1
-// string contract); `refresh` is the structured sibling. Counters
-// (files/deleted/errors/tookMs) are exposed here, refreshed or declined.
-// The reason vocabulary is exactly AutoRefreshDecision's decline reasons:
+// Every read tool carries the SAME structured block on non-clean outcomes
+// (`autoRefresh` keeps the human text; `refresh` is its structured sibling)
+// so an agent can machine-check action + reason + counters without parsing
+// prose. `reason` is exactly AutoRefreshDecision's decline vocabulary:
 // disabled | no-index | budget-files | budget-bytes | indexer-active | error.
 export interface RefreshReport {
   action: "refreshed" | "declined"
@@ -291,4 +283,133 @@ export function refreshReport(decision: AutoRefreshDecision): RefreshReport | nu
     tookMs: null,
     derivedPass: null,
   }
+}
+
+// ══ M44.W2.1 (#671): added-file probe (git worktree layer) ══════════════════
+// A read can only repair files that have index rows — a brand-new file has
+// none, so every row-based repair is blind to it and the read silently
+// answers from a world without the file (the worst agent hallucination
+// case). This probe closes it for git worktrees: `git ls-files --others
+// --exclude-standard` lists untracked-but-not-ignored files (respecting
+// .gitignore and the repo's ignore rules exactly), the brain_file diff drops
+// files already indexed (e.g. just-created + already indexed between probe
+// and read), and valid-extension + skip filters keep the candidate set to
+// files the indexer would actually accept. Non-git trees return [] (W2.2
+// adds the snapshot layer). Cost: one `git` call (bounded by changed files,
+// never the whole tree) + an O(candidates) DB diff.
+
+export interface AddedFileProbe {
+  /** true when the project is a git worktree and the probe ran. */
+  available: boolean
+  /** absolute paths of untracked, indexable, not-yet-indexed files. */
+  files: string[]
+  /** probe wall time in ms (0 when not a git worktree). */
+  tookMs: number
+  /** explicit reason when the probe is unavailable/failed. */
+  reason: "no-git" | "ok" | "error"
+}
+
+function isLikelyText(content: string): boolean {
+  // Reject NUL-heavy binary content without reading the whole buffer twice.
+  let nul = 0
+  const len = Math.min(content.length, 4096)
+  for (let i = 0; i < len; i++) if (content.charCodeAt(i) === 0) nul++
+  return nul === 0
+}
+
+/**
+ * Probe a git worktree for files that exist on disk but have no index row.
+ * Returns [] (available=false) when the project is not a git worktree so
+ * callers fall back to W2.2 semantics or honest silence.
+ */
+export async function probeAddedFiles(raw: CoreDatabase, projectId: string, projectPath: string): Promise<AddedFileProbe> {
+  const t0 = performance.now()
+  const { execFile } = await import("node:child_process")
+  const { statSync } = await import("node:fs")
+  const { hasValidExtension, shouldSkipCli } = await import("./parallel-indexer")
+  try {
+    const root = await new Promise<string>((resolve) => {
+      execFile("git", ["-C", projectPath, "rev-parse", "--show-toplevel"], { timeout: 4000 }, (err, stdout) => {
+        resolve(err ? "" : stdout.toString().trim())
+      })
+    })
+    if (!root) return { available: false, files: [], tookMs: Math.round(performance.now() - t0), reason: "no-git" }
+    const listed = await new Promise<string>((resolve) => {
+      execFile("git", ["-C", root, "ls-files", "--others", "--exclude-standard", "-z"], { timeout: 10000, maxBuffer: 64 * 1024 * 1024 }, (err, stdout) => {
+        resolve(err ? "" : stdout.toString())
+      })
+    })
+    if (!listed) return { available: true, files: [], tookMs: Math.round(performance.now() - t0), reason: "ok" }
+    // Only files under the INDEXED root are candidates (a nested git repo or
+    // sibling checkout must never leak in). Relative to the indexed root.
+    const relRoot = root.replace(/[\/\\]+$/, "")
+    const candidates: string[] = []
+    for (const rel of listed.split("\0")) {
+      if (!rel) continue
+      const abs = relRoot + "/" + rel
+      // Mirror the indexer's own filters: indexable extension and not on the
+      // CLI skip list (node_modules/dist/build/.git/…). Never claim a file
+      // the indexer itself would skip.
+      if (!hasValidExtension(abs) || shouldSkipCli(abs)) continue
+      try {
+        if (!statSync(abs).isFile()) continue
+      } catch { continue }
+      candidates.push(abs)
+    }
+    if (candidates.length === 0) return { available: true, files: [], tookMs: Math.round(performance.now() - t0), reason: "ok" }
+    // Drop files already indexed (created between the probe and this diff, or
+    // previously indexed under another probe layer). One chunked query.
+    const indexed = new Set<string>()
+    const rels = candidates.map((c) => c.slice(relRoot.length + 1))
+    for (let i = 0; i < rels.length; i += 500) {
+      const slice = rels.slice(i, i + 500)
+      const idSlice = slice.map((r) => `${projectId}:${r}`)
+      for (const r of raw
+        .prepare(`SELECT id FROM brain_file WHERE project_id = ? AND id IN (${slice.map(() => "?").join(",")})`)
+        .all(projectId, ...idSlice) as Array<{ id: string }>) {
+        indexed.add(r.id)
+      }
+    }
+    const out = candidates.filter((c) => !indexed.has(`${projectId}:${c.slice(relRoot.length + 1)}`))
+    return { available: true, files: out, tookMs: Math.round(performance.now() - t0), reason: "ok" }
+  } catch {
+    return { available: false, files: [], tookMs: Math.round(performance.now() - t0), reason: "error" }
+  }
+}
+
+/**
+ * Cheap, honest relevance gate for query-driven reads: does any NEW file
+ * plausibly bear on the question? Token overlap between the query and the
+ * file's identifier-like content (first 32 KiB). Reading N new files is
+ * bounded by the probe's own candidate list; a mismatch costs one small read
+ * per new file. Only text-ish content is matched (binary is never claimed).
+ */
+export function addedFilesRelevantToQuery(files: string[], query: string): string[] {
+  if (files.length === 0 || !query.trim()) return []
+  const tokens = new Set<string>()
+  for (const raw of query.toLowerCase().split(/[^a-z0-9_]+/)) {
+    const t = raw.trim()
+    // Skip stop-word-ish single chars and the most generic glue words — they
+    // would match every file and make the gate useless.
+    if (t.length >= 3 && !["the", "and", "how", "what", "does", "this", "that", "with", "from", "file", "code"].includes(t)) tokens.add(t)
+  }
+  if (tokens.size === 0) return []
+  const hits: string[] = []
+  for (const f of files) {
+    try {
+      const content = readFileSync(f, "utf8").slice(0, 32 * 1024).toLowerCase()
+      if (!isLikelyText(content)) continue
+      for (const t of tokens) {
+        // Token as an identifier-ish boundary match: the query term appears as
+        // a real code identifier, not inside an unrelated longer word.
+        if (new RegExp(`(^|[^a-z0-9_])${t}([^a-z0-9_]|$)`, "i").test(content)) {
+          hits.push(f)
+          break
+        }
+      }
+    } catch {
+      // Read race (file deleted mid-probe) — the file is not claimed.
+    }
+  }
+  return hits
 }

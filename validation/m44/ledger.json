@@ -17,11 +17,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "17306f6fbd634ab7a88cb789533ce735b4a87e09",
+      "currentCommit": "9dbf19103aa7a01c2bd36ccdf6cb05946c406b78",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m44/verify-governance.ts",
       "evidenceFile": "G1.json",
-      "generatedAt": "2026-09-06T01:52:22.013Z",
+      "generatedAt": "2026-09-06T02:02:27.102Z",
       "passed": 21,
       "failed": 0,
       "negativeCases": 5
@@ -88,7 +88,7 @@
     "code": "W2.1",
     "githubIssue": 671,
     "tool": "new-file probe (git)",
-    "status": "planned",
+    "status": "verified",
     "scope": "Added-file probe (git status --porcelain): files present with no brain_file row join the repair set; decline names them otherwise",
     "acceptanceCriteria": [
       "New file externally in a git worktree -> bb_ask includes it (auto-refreshed) or explicitly names it as unindexed",
@@ -101,7 +101,18 @@
     ],
     "closureRequirements": [
       "Evidence file + ledger sync + evidence comment on close"
-    ]
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "0cf2b36f73b3acc1f4dbaefa4dcee5e3457f420a",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m44/verify-w21-git-probe.ts",
+      "evidenceFile": "W21.json",
+      "generatedAt": "2026-09-06T02:14:17.933Z",
+      "passed": 12,
+      "failed": 0,
+      "negativeCases": 3
+    }
   },
   {
     "code": "W2.2",
