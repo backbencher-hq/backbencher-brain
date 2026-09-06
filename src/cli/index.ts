@@ -524,6 +524,89 @@ async function cmdStatus(dir: string | undefined) {
   console.log(`  db: ${BrainDatabase.getDbPath(pid)}`)
 }
 
+async function cmdWatch(dir: string | undefined, opts: { stop?: boolean; status?: boolean }) {
+  // M44.W3.2 (#674): CLI surface for the shared resident watcher. All three
+  // forms are safe to run from any shell (state is the durable intent file
+  // next to the index, plus the in-process registry for live state).
+  const abs = dir ? requireDir(dir) : process.cwd()
+  const pid = getProjectId(abs)
+  const { bbDataDir } = await import("../util/bb-data-dir")
+  const { readWatchState, readWatchIntent, recordWatchIntent, clearWatchIntent, watchStatePath } = await import("../ast/watch-state")
+  const { startProjectWatcher, watcherFor, stopProjectWatcher } = await import("../ast/file-watcher")
+  const dbPath = BrainDatabase.getDbPath(pid)
+
+  if (opts.stop) {
+    // Clean lifecycle: clear the durable intent (so MCP/resident sessions do
+    // not auto-watch later) and stop a watcher living in THIS process. A
+    // watcher in another process belongs to that shell — Ctrl+C stops it;
+    // clearing the intent is the cross-process signal (documented).
+    const had = readWatchIntent(pid)
+    clearWatchIntent(pid)
+    const local = watcherFor(pid)
+    if (local) await stopProjectWatcher(pid)
+    console.log(had
+      ? `watch stopped for ${abs}${local ? " (watcher stopped)" : " (no watcher in this process — intent cleared)"}`
+      : `no watch intent for ${abs}`)
+    return
+  }
+
+  if (opts.status) {
+    const live = watcherFor(pid)?.status()
+    const { intent, runtime } = readWatchState(pid)
+    if (!intent && !live) {
+      console.log(`no watch intent for ${abs}`)
+      console.log(`  watch keeps an existing index fresh in real time; intent is recorded by bb index and bb watch. Run: bb index "${abs}"`)
+      return
+    }
+    console.log(`project: ${abs}`)
+    console.log(`  intent: ${intent?.desired ? "watching (desired)" : "inactive"}${intent ? ` — recorded ${new Date(intent.recordedAt).toISOString()}` : ""}`)
+    if (live) {
+      console.log(`  state: ${live.running ? "running in this process" : "registered (not running)"}`)
+      if (live.watchingSince) console.log(`  watching since: ${new Date(live.watchingSince).toISOString()}`)
+      console.log(`  startup scan: ${live.startupScan} | pending: ${live.pending} | in-flight: ${live.inFlight} | declined: ${live.declined}`)
+      if (live.lastReindexAt) console.log(`  last reindex: ${new Date(live.lastReindexAt).toISOString()}`)
+      if (live.lastError) console.log(`  last error: ${live.lastError}`)
+    } else if (runtime?.running) {
+      console.log(`  state: running in another process (last seen ${new Date(runtime.updatedAt).toISOString()})${runtime.watchingSince ? ` since ${new Date(runtime.watchingSince).toISOString()}` : ""}`)
+      if (runtime.lastError) console.log(`  last error: ${runtime.lastError}`)
+    } else {
+      console.log(`  state: stopped${runtime?.lastReindexAt ? ` — last reindex ${new Date(runtime.lastReindexAt).toISOString()}` : ""}`)
+    }
+    console.log(`  db: ${dbPath}`)
+    console.log(`  watch-state: ${watchStatePath(pid)}`)
+    return
+  }
+
+  // `bb watch [dir]` — foreground resident. Refuses an unindexed project
+  // (watch keeps an index fresh; it never silently starts from zero).
+  if (!existsSync(dbPath)) {
+    console.error(`✗ no index for ${abs}. Run: bb index "${abs}" first (watch keeps an existing index fresh in real time).`)
+    process.exit(1)
+  }
+  recordWatchIntent(pid, abs)
+  startProjectWatcher(pid, abs, {
+    force: true,
+    log: (msg: string, meta?: Record<string, unknown>) => console.error(`[bb-watch] ${msg}`, meta ?? ""),
+  })
+  console.log(`watching ${abs} — edits reindex in ~${300}ms + reindex bound`)
+  console.log(`  data dir: ${bbDataDir()}`)
+  console.log(`  stop: Ctrl+C here, or from another shell: bb watch --stop "${abs}" (clears the intent)`)
+  console.log(`  status: bb watch --status "${abs}"`)
+  let stopped = false
+  const shutdown = async (signal: string) => {
+    if (stopped) return
+    stopped = true
+    console.log(`watch stopped (${signal})`)
+    await stopProjectWatcher(pid).catch(() => {})
+    process.exit(0)
+  }
+  process.on("SIGINT", () => { void shutdown("SIGINT") })
+  process.on("SIGTERM", () => { void shutdown("SIGTERM") })
+  // Resident: never resolve — the watcher keeps the index fresh until the
+  // user stops it (the process is the lifecycle boundary; no detached daemon).
+  await new Promise<void>(() => {})
+}
+
 async function cmdHealth(dir: string | undefined, opts: { refresh?: boolean; force?: boolean; wait?: boolean; complete?: boolean; integrity?: boolean; sampleSize?: number; verboseConfig?: boolean }) {
   const abs = dir ? requireDir(dir) : process.cwd()
   const pid = getProjectId(abs)
@@ -744,6 +827,20 @@ Examples:
     .action(async (opts: any) => {
       const { startMcpServer } = await import("../mcp/server")
       await startMcpServer(opts.dir ? requireDir(opts.dir) : process.cwd())
+    })
+
+  // M44.W3.2 (#674): `bb watch` — first-class resident watching for CLI-only
+  // users (the MCP server auto-starts the same shared watcher from the
+  // index-time intent; this command IS that intent, foreground + stoppable).
+  program
+    .command("watch")
+    .description("keep an indexed project fresh in real time (resident watcher); run bb watch --help")
+    .argument("[dir]", "project directory (default: current directory)")
+    .option("--status", "show watch intent + live watcher state (no resident process needed)")
+    .option("--stop", "clear the watch intent so future resident sessions do not auto-watch")
+    .addHelpText("after", `\nExamples:\n  $ bb watch                 # watch the current directory (foreground; Ctrl+C stops)\n  $ bb watch ../my-project   # watch another indexed project\n  $ bb watch --status        # is the project watched? since when? last reindex?\n  $ bb watch --stop          # clear the intent (Ctrl+C in the watcher shell also stops)\n`)
+    .action(async (dir: string | undefined, opts: any) => {
+      await cmdWatch(dir, { stop: opts.stop === true, status: opts.status === true })
     })
 
   // M33.S1: `bb version` subcommand — the documented form (see header comment)
