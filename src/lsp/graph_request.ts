@@ -31,9 +31,14 @@
 
 import { graphTraversal } from "../intelligence/graph/graph-engine"
 import type { GraphTraversalResult } from "../intelligence/contracts"
+import { buildGroupedUsages, classifyFileLevel, type GroupedUsages } from "./graph_usages"
 
 export const GRAPH_REQUEST_METHOD = "bb/graph"
-export const GRAPH_SCHEMA_VERSION = 1
+// M44.U1 (issue #688): the usages-mode RESPONSE became grouped per symbol
+// (docs/m44/…). A v1 client would silently mis-render that payload, so the
+// wire schema is bumped and old clients get the loud mismatch error — never
+// a silent break. graph mode's payload is unchanged but shares the constant.
+export const GRAPH_SCHEMA_VERSION = 2
 // M42.H5 (issue #653): the hub's declared query profile. `mode: "usages"`
 // pins the hub's bounds server-side — direction both, depth capped at the
 // W5 impact cap — so every fork asks for the same declared profile and the
@@ -91,7 +96,7 @@ export async function handleGraphRequest(
   projectId: string,
   params: GraphRequestParams | null | undefined,
   deps: GraphRequestDeps = { traverse: graphTraversal },
-): Promise<GraphTraversalResult> {
+): Promise<GraphTraversalResult | GroupedUsages> {
   if (params === null || typeof params !== "object" || Array.isArray(params)) {
     throw new GraphRequestError("bb/graph: params must be an object carrying schemaVersion and symbol")
   }
@@ -157,6 +162,24 @@ export async function handleGraphRequest(
     ;(result as { annotations?: typeof annRows }).annotations = annRows
   } catch {
     ;(result as { annotations?: never[] }).annotations = []
+  }
+
+  // M44.U1 (issue #688): usages mode serves the GROUPED shape. File-level
+  // imports/exports rows (NULL source symbol, targeting the root) are read
+  // directly and land in the declared file-level sections — the traversal's
+  // symbol JOIN cannot carry them (no symbol endpoint), and dropping them
+  // would hide how the module reaches the codebase (§13.5).
+  if (params.mode === GRAPH_MODE_USAGES) {
+    const rootNode = (result as GraphTraversalResult).root
+    const fileLevelRaw = db
+      .prepare(
+        "SELECT id AS rowId, relationship_type AS relationshipType, target_external AS moduleSpecifier, confidence " +
+          "FROM brain_relationship WHERE project_id = ? AND source_symbol_id IS NULL AND target_symbol_id = ? " +
+          "AND relationship_type IN ('imports', 'exports')",
+      )
+      .all(projectId, rootNode.id) as Array<{ rowId: string; relationshipType: string; moduleSpecifier: string | null; confidence: number }>
+    const fileLevel = classifyFileLevel(fileLevelRaw)
+    return buildGroupedUsages(result as GraphTraversalResult, fileLevel)
   }
   return result
 }

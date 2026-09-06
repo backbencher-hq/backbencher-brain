@@ -25,28 +25,36 @@ Unified, validated source mutation. Discriminated by mode: write, update, insert
         "insert",
         "delete",
         "refactor"
-      ]
+      ],
+      "description": "Edit kind: write (create or overwrite a file), update (replace a symbol body), insert (add code relative to a symbol), delete (remove a symbol), or refactor (identifier-aware rename)"
     },
     "dryRun": {
-      "type": "boolean"
+      "type": "boolean",
+      "description": "Preview the planned changes without writing any file (default false)"
     },
     "filePath": {
-      "type": "string"
+      "type": "string",
+      "description": "write: project-relative target file to create or overwrite. Other modes: disambiguates symbolName when it appears in multiple files"
     },
     "symbolName": {
-      "type": "string"
+      "type": "string",
+      "description": "Name of the symbol to update, delete, or refactor (named-symbol edits require a fresh index)"
     },
     "lineStart": {
-      "type": "number"
+      "type": "number",
+      "description": "Declaration line of the target symbol, used with symbolName/filePath to disambiguate repeated names"
     },
     "content": {
-      "type": "string"
+      "type": "string",
+      "description": "Full file content for write mode; also accepted in place of newContent for update and insert"
     },
     "newContent": {
-      "type": "string"
+      "type": "string",
+      "description": "Replacement source: update swaps the symbol body for this text; insert adds this text relative to targetSymbolName"
     },
     "targetSymbolName": {
-      "type": "string"
+      "type": "string",
+      "description": "insert: symbol whose body or boundary receives the new code (required for insert)"
     },
     "position": {
       "type": "string",
@@ -55,16 +63,20 @@ Unified, validated source mutation. Discriminated by mode: write, update, insert
         "after",
         "inside-top",
         "inside-bottom"
-      ]
+      ],
+      "description": "insert anchor relative to targetSymbolName (default after)"
     },
     "newName": {
-      "type": "string"
+      "type": "string",
+      "description": "refactor: the valid identifier the symbol is renamed to"
     },
     "force": {
-      "type": "boolean"
+      "type": "boolean",
+      "description": "delete: allow removal when indexed callers or live references survive; leftovers are reported as warnings (default false)"
     },
     "format": {
-      "type": "boolean"
+      "type": "boolean",
+      "description": "Run the project formatter on written files after the edit (default true)"
     }
   },
   "required": [
