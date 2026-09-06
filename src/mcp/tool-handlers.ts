@@ -11,7 +11,7 @@ import { DependencyGraphVisualizer } from "../ast/dependency-graph-visualizer"
 import { CrossLanguageIntelligence } from "../ast/cross-language-intelligence"
 import { CrossLanguageMigrationAssistant } from "../ast/cross-language-migration-assistant"
 import { indexProjectParallel, reindexFilesParallel, wipeProjectData } from "../ast/parallel-indexer"
-import { collectStaleFiles, maybeAutoRefresh, autoRefreshLine, refreshReport, repairRead } from "../ast/auto-refresh"
+import { collectStaleFiles, maybeAutoRefresh, autoRefreshLine, refreshReport, repairRead, probeAddedFiles, addedFilesRelevantToQuery } from "../ast/auto-refresh"
 import { TOOL_DESCRIPTORS } from "./tool-registry"
 import { testQuality } from "../intelligence/testing/quality"
 import { executeEdit, type EditRequest } from "../intelligence/edit/edit-engine"
@@ -303,18 +303,25 @@ const handlers: Record<string, ToolHandler> = {
     // sources resolve stale/missing within budget, we repair inline and answer
     // from the SECOND pass so the answer reflects the repair, with the decision
     // declared. No staleness => one pass, byte-identical with pre-W1.1 output.
+    // M44.W2.1 (#671): a brand-new file has no index row, so every row-based
+    // repair is blind to it. On git worktrees the added-file probe finds
+    // untracked files that could bear on the query (token relevance) and they
+    // join the repair set — reindexed within the same budget, then re-asked.
+    // Out of budget / probe unavailable => the unindexed files are named on
+    // the answer, never silently absent.
     const raw = await BrainDatabase.getRawInstance(projectId as any)
     const limit = Number(args.limit ?? 5)
+    const query = String(args.query)
     const render = (result: Awaited<ReturnType<typeof quickAnswer>>): string => {
       const lines = result.sources
         .slice(0, limit)
         .map((source, index) => `${index + 1}. ${source.file}:${source.line}\n   ${source.context ?? ""}`)
       const head = result.answer ? `answer: ${result.answer}\n\n` : ""
       const prov = `[provenance: ${result.provenance.evidenceClass} via ${result.provenance.engine}${result.provenance.unknowns.length ? `; unknowns: ${result.provenance.unknowns.join("; ")}` : ""}]`
-      return head + (lines.length ? lines.join("\n") : `no semantic matches for "${String(args.query)}"`) + `\n${prov}`
+      return head + (lines.length ? lines.join("\n") : `no semantic matches for "${query}"`) + `\n${prov}`
     }
     const runPass = async () => {
-      const result = await quickAnswer(projectId, String(args.query))
+      const result = await quickAnswer(projectId, query)
       // Sources carry fileId (W1.1) — resolve their files' freshness through
       // the shared F1 resolver; rows without fileId contribute nothing.
       const rows = result.sources.map((s) => ({ fileId: s.fileId ?? null }))
@@ -323,15 +330,26 @@ const handlers: Record<string, ToolHandler> = {
     }
     const pass1 = await runPass()
     const staleFiles = collectStaleFiles(raw, pass1.rows, pass1.statuses)
-    if (staleFiles.length > 0) {
-      const decision = await maybeAutoRefresh(projectId, projectPath, staleFiles, { perCallOptOut: args.refresh === false })
+    // W2.1: merge query-relevant NEW files into the repair set. Reindexing a
+    // new file makes its symbols retrievable on the SECOND pass (lexical
+    // path) — the honest guarantee. Embedding coverage is enqueued by the
+    // derived pass or declared partial, never silently claimed.
+    const probe = await probeAddedFiles(raw, projectId as any, projectPath)
+    const relevantNew = addedFilesRelevantToQuery(probe.files, query)
+    const repairFiles = [...staleFiles, ...relevantNew.map((p) => ({ absolutePath: p, type: "modified" as const }))]
+    if (repairFiles.length > 0) {
+      const decision = await maybeAutoRefresh(projectId, projectPath, repairFiles, { perCallOptOut: args.refresh === false })
       if (decision.action === "refreshed") {
         const pass2 = await runPass()
         return textResult(`${render(pass2.result)}\n${autoRefreshLine(decision)}`)
       }
       if (decision.action === "declined") {
         // Honest decline: answer from existing data with the reason declared.
-        return textResult(`${render(pass1.result)}\n${autoRefreshLine(decision)}`)
+        const newNames = relevantNew.map((p) => p.startsWith(projectPath) ? p.slice(projectPath.length + 1) : p)
+        const unindexedNote = newNames.length > 0
+          ? `\nunindexed new file${newNames.length === 1 ? "" : "s"} matching the query (not in the index): ${newNames.join(", ")} — run bb index --changed (or bb_index) to include ${newNames.length === 1 ? "it" : "them"}`
+          : ""
+        return textResult(`${render(pass1.result)}\n${autoRefreshLine(decision)}${unindexedNote}`)
       }
     }
     return textResult(render(pass1.result))

@@ -1,6 +1,6 @@
 # `bb_ask`
 
-Answer a question about the codebase using semantic search over the index. Returns matched symbols with similarity scores. When the answer's source files are stale/missing within budget, those files are auto-refreshed exactly before the answer is re-built, declared (auto-refresh: ... with the machine-readable refresh block naming the reason); refresh=false opts out and answers from existing data with stale sources flagged.
+Answer a question about the codebase using semantic search over the index. Returns matched symbols with similarity scores. When the answer's source files are stale/missing within budget, those files are auto-refreshed exactly before the answer is re-built, declared (auto-refresh: ... with the machine-readable refresh block naming the reason). In a git worktree, brand-new untracked files whose content matches the query are also repaired and included (or named explicitly as unindexed when out of budget / refresh=false); refresh=false opts out and answers from existing data with stale sources flagged.
 
 ## Contract
 
