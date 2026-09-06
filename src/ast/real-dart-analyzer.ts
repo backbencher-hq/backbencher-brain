@@ -322,6 +322,13 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
           // in `declaration` are handled by that case — skip them here to
           // avoid double-processing.
           if (node.parent?.type === "declaration") break
+          // Local functions (local_function_declaration > lambda_expression >
+          // function_signature[name]) are NOT symbols — family contract: no
+          // locals (csharp/python/go never emit them; DARTD8). Without this
+          // guard their signature hit this case and leaked as top-level
+          // Function symbols with an empty scope (counted as duplicate
+          // functions across a corpus census).
+          if (t === "function_signature" && node.parent?.type === "lambda_expression") break
           const owner = scopeOwnerName(scopeStack)
           // Factories surface as `method_signature > factory_constructor_signature`
           // — dispatch constructors to processConstructor.
@@ -330,8 +337,12 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
             this.processConstructor(node, inner, owner, symbols, relationships, patterns)
           } else if (owner || t === "function_declaration") {
             this.processFunctionOrMethod(node, node, symbols, scopeStack, patterns, seenMembers)
-          } else if (t === "function_signature") {
-            // top-level function — signature with sibling function_body
+          } else if (t === "function_signature" || t === "getter_signature" || t === "setter_signature") {
+            // top-level function/getter/setter — signature with sibling
+            // function_body. Top-level accessors were silently dropped before
+            // (no dispatch branch), leaving their calls attributed to a
+            // non-declared source (DARTD10 — corpus: translate.dart's
+            // `List<String> get _deepLKeys`).
             this.processTopLevelFunction(node, symbols, scopeStack, patterns)
           }
           break
@@ -388,6 +399,24 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.addContainmentRelationships(symbols, relationships)
     this.extractOverrideRelationships(symbols, relationships, context?.overrideCompanion)
     this.extractCallRelationships(rootNode, relationships, moduleName)
+    // Deduplicate identical rows: calls/instantiates emit ONE row PER CALL
+    // SITE, so N sites of the same callee in one function push N identical
+    // (type,source,target,confidence) rows — 192,761 redundant rows across
+    // the proxicall corpus (35% of all relationships; icon files carried
+    // 1,511 identical `instantiates` rows from 1,512 const fields). The
+    // oracle/fixtures are presence-based, so multiplicity is pure payload
+    // pollution. Keep the first row per key (first metadata wins) — DARTD7.
+    {
+      const seenRel = new Set<string>()
+      const uniq: ASTEngine.UniversalRelationship[] = []
+      for (const r of relationships) {
+        const key = `${r.type}|${r.source}|${r.target}|${r.confidence}`
+        if (seenRel.has(key)) continue
+        seenRel.add(key)
+        uniq.push(r)
+      }
+      relationships.splice(0, relationships.length, ...uniq)
+    }
     this.classifyEvidenceTier(relationships)
 
     // --- Metadata ------------------------------------------------------------
@@ -567,9 +596,10 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (isAsync || (returnType && returnType.startsWith("Future"))) patterns["Async Programming"] = true
     const comments = this.collectComments(node)
 
+    const isAccessor = node.type === "getter_signature" || node.type === "setter_signature"
     symbols.push({
       name,
-      kind: ASTEngine.SymbolKind.Function,
+      kind: isAccessor ? ASTEngine.SymbolKind.Property : ASTEngine.SymbolKind.Function,
       range: this.rangeIncludingBody(node, node),
       scope: scopeString(scopeStack),
       visibility: name.startsWith("_") ? "private" : "public",
@@ -578,7 +608,13 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       comments,
       isAsync,
       complexity: this.methodComplexity(node),
-      metadata: { isAsync, isTopLevelFunction: true },
+      metadata: {
+        isAsync,
+        isGetter: node.type === "getter_signature",
+        isSetter: node.type === "setter_signature",
+        isTopLevelFunction: !isAccessor,
+        isTopLevelAccessor: isAccessor,
+      },
     })
     scopeStack.push({ name, kind: DartScopeKind.Function })
   }
@@ -790,14 +826,14 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
   ): void {
     // Current call source = enclosing function/method/constructor leaf name.
     const resolveCurrent = (n: Node, current: string | null): string | null => {
-      // Local functions: `local_function_declaration` wraps a lambda_expression
-      // whose function_signature carries the name. Top-level functions are
-      // bare function_signature + sibling function_body (handled below).
-      if (n.type === "local_function_declaration") {
-        const inner = this.findChildByType(n, "function_signature") || this.findChildByType(n, "lambda_expression")
-        const sig = inner ? this.findChildByType(inner, "function_signature") ?? inner : n
-        const nm = sig.childForFieldName("name")?.text
-        if (nm) return nm
+      // Local functions are NOT call contexts (family contract: locals fold
+      // into the enclosing function's call set — csharp/python/go parity,
+      // DARTD8). tree-sitter-dart: local_function_declaration >
+      // lambda_expression > function_signature[name] — the signature's only
+      // lambda parent is that wrapper, so returning `current` keeps the
+      // enclosing function as source for calls inside the local body.
+      if (n.type === "function_signature" && n.parent?.type === "lambda_expression") {
+        return current
       }
       // Only signature-bearing nodes change the call context. `declaration`
       // nodes matter only when they DIRECTLY wrap a signature (class members);
@@ -823,10 +859,36 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       return current
     }
 
-    const processNode = (n: Node, current: string | null): void => {
+    // Enclosing CLASS/MIXIN/ENUM/EXTENSION for non-function contexts: field
+    // initializers and annotation arguments carry no function context, but
+    // their constructions belong to the owning type, NOT the module/file name
+    // (csharp parity: parentContext?.rawName || "global" — DARTD9). Without
+    // this, every const field initializer of a big icon class attributed its
+    // instantiates to the file basename.
+    const resolveOwner = (n: Node, owner: string | null): string | null => {
+      const t = n.type
+      if (t === "class_definition" || t === "enum_declaration") {
+        const nm = n.childForFieldName?.("name")?.text
+        return nm || owner
+      }
+      if (t === "extension_declaration") {
+        const nm = n.childForFieldName?.("name")?.text || this.extensionTargetType(n)
+        return nm || owner
+      }
+      if (t === "mixin_declaration") {
+        // mixin name is a direct identifier child (no name field)
+        const id = this.findChildByType(n, "identifier")
+        return id ? id.text : owner
+      }
+      return owner
+    }
+
+    const processNode = (n: Node, current: string | null, owner: string | null): void => {
       const prev = current
+      const prevOwner = owner
       const t = n.type
       current = resolveCurrent(n, current)
+      owner = resolveOwner(n, owner)
       // Dart grammar: a function_body/function_expression_body is a named
       // child of the CONTAINER (class_body, extension_body, program) that
       // FOLLOWS the signature node it belongs to — the previous named sibling
@@ -841,7 +903,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (sigSource !== current) current = sigSource
         }
       }
-      const callSource = current || moduleName
+      const callSource = current || owner || moduleName
 
       // Constructor invocation: `List<int>.filled(3, 0)` → instantiates List.
       // `new Foo()` parses as new_expression and `const Foo()` as
@@ -910,13 +972,14 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       for (let i = 0; i < n.namedChildCount; i++) {
         const child = n.namedChild(i)
-        if (child) processNode(child, current)
+        if (child) processNode(child, current, owner)
       }
 
       current = prev
+      owner = prevOwner
     }
 
-    processNode(node, null)
+    processNode(node, null, null)
   }
 
   // ============================================================================
@@ -1276,6 +1339,15 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private extractFieldType(node: Node, declList: Node): string | undefined {
+    // Field/variable type: a type-ish DIRECT child of the declaration or its
+    // decl list. Dart puts the explicit type in front of the list
+    // (`declaration > [const_builtin, type_identifier, <list>]` — probed
+    // dart-typedecl-shapes.ts). Inferred fields (`static const x = Ctor(...)`)
+    // carry NO type node at all → undefined is correct. NEVER scan ancestors:
+    // the old parent fallback iterated every class_body member per field —
+    // O(class)², 13.6 s on phosphor_icons_regular.dart (1,512 fields × 3k-
+    // member scan per field). Same trap hasModifier documents and avoids;
+    // a bound is not needed since direct-child scans are O(1) per field.
     const candidates: Node[] = [node, declList]
     for (const cand of candidates) {
       for (let i = 0; i < cand.namedChildCount; i++) {
@@ -1284,13 +1356,6 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (c.type === "type_identifier" || c.type === "void_type") {
           return c.text
         }
-      }
-    }
-    if (node.parent) {
-      for (let i = 0; i < node.parent.namedChildCount; i++) {
-        const c = node.parent.namedChild(i)
-        if (!c) continue
-        if (c.type === "type_identifier" || c.type === "void_type") return c.text
       }
     }
     return undefined
