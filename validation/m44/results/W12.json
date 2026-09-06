@@ -1,10 +1,10 @@
 {
   "status": "verified",
-  "currentCommit": "96cac92792ceee263d194328d9b34fc2df1bc99f",
+  "currentCommit": "481d54dd15bbb2a4a6be8568e81382918b5f1330",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "bun run script/m44/verify-w12-decline-honesty.ts",
   "evidenceFile": "W12.json",
-  "generatedAt": "2026-09-06T03:19:34.863Z",
+  "generatedAt": "2026-09-06T03:28:56.178Z",
   "passed": 35,
   "failed": 0,
   "negativeCases": 11
