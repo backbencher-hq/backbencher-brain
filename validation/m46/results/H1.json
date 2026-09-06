@@ -1,15 +1,15 @@
 {
   "status": "verified",
-  "currentCommit": "2da3cf4e8ea4c80f1dbb441eea84a6fdfac1026c",
+  "currentCommit": "1bc0f7572afe9aa170bd7c4e3cd7894cef2320e1",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "bun run script/m46/verify-h1-syntax-truth.ts",
   "evidenceFile": "H1.json",
-  "generatedAt": "2026-09-06T17:37:26.088Z",
+  "generatedAt": "2026-09-06T17:53:55.184Z",
   "passed": 34,
   "failed": 0,
   "negativeCases": 4,
   "checks": 34,
-  "elapsedMs": 3205,
+  "elapsedMs": 12597,
   "observed": {
     "mode": "worker-pool",
     "gapFiles": [
