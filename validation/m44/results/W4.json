@@ -1,0 +1,78 @@
+{
+  "status": "verified",
+  "currentCommit": "f10bad6707479fa1d0764db167c4bbd57e6928a6",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m44/verify-w4-corpus.ts",
+  "evidenceFile": "W4.json",
+  "generatedAt": "2026-09-06T03:40:31.097Z",
+  "passed": 36,
+  "failed": 0,
+  "negativeCases": 4,
+  "measurements": [
+    {
+      "name": "rake.full-index",
+      "ms": 1914,
+      "files": 95,
+      "note": "errors=0 symbols=786"
+    },
+    {
+      "name": "rake.s1-newfile-ask",
+      "ms": 1488,
+      "files": 1,
+      "note": ""
+    },
+    {
+      "name": "rake.s2-edit-ask",
+      "ms": 859,
+      "files": 1,
+      "note": ""
+    },
+    {
+      "name": "rake.probe",
+      "ms": 8,
+      "files": 0,
+      "note": "git=true new=0"
+    },
+    {
+      "name": "rake.walk",
+      "ms": 859,
+      "files": 95,
+      "note": ""
+    },
+    {
+      "name": "ripgrep.full-index",
+      "ms": 7243,
+      "files": 111,
+      "note": "errors=0 symbols=7357"
+    },
+    {
+      "name": "ripgrep.s1-newfile-ask",
+      "ms": 1182,
+      "files": 1,
+      "note": ""
+    },
+    {
+      "name": "ripgrep.s2-edit-ask",
+      "ms": 1173,
+      "files": 1,
+      "note": ""
+    },
+    {
+      "name": "ripgrep.probe",
+      "ms": 2,
+      "files": 0,
+      "note": "git=false new=0"
+    },
+    {
+      "name": "ripgrep.walk",
+      "ms": 1173,
+      "files": 111,
+      "note": ""
+    }
+  ],
+  "caps": {
+    "repairMs": 30000,
+    "probeMs": 5000,
+    "singleReindexMs": 40000
+  }
+}
