@@ -22,7 +22,9 @@ Contract: [IDE-HONESTY-CONTRACT.md](./IDE-HONESTY-CONTRACT.md)
 | v2 | M26 | The Graph | **CLOSED** (11/11 verified) | I3 (graph panel live in VS Code, in-editor verified); cross-language per-pair with declared absence; 36 mutants caught across 8 suites | [m26 ledger](../validation/m26/results/manifest.json) |
 | v3 | M27 | Everywhere (JetBrains/Zed/Neovim/Helix) | **CLOSED** (7/7 verified) | N1 I3 (Neovim headless, machine-driven); J1/Z1/H1 I2 (config + wire capabilities, blocked legs recorded); 17 mutants caught across 5 suites | [m27 ledger](../validation/m27/results/manifest.json), [matrix](./m27/FORK-CAPABILITY-MATRIX.md) |
 | v4 | M28 | The Union (MCP + agent) | **CLOSED** (7/7 verified) | U1 I3-equivalent (MCP answers machine-proven identical to IDE answers on the shared fixture); annotations schema-enforced provenance + real headless-editor leg; 17 mutants caught across 5 suites | [m28 ledger](../validation/m28/results/manifest.json), [surface](./m28/MCP-SURFACE.md) |
-| v5 | M29 | Precision Waves | not started | — | — |
+| v5 | M29 | Precision Waves | **CLOSED** (9/9 verified) | wave-1 languages owner-approved (java/python/ts/js/kotlin/scala) verified through real editors; giant-repo budgets within contract §3 | [m29 ledger](../validation/m29/results/manifest.json) |
+| v6 | M42 | The Interactive Hover | **CLOSED** (8/8 verified) | rich hover + actions live in-editor (E5 70/70, E6 cursor/antigravity); click-throughs and panels verified in real VS Code | [m42 ledger](../validation/m42/results/manifest.json) |
+| v7 | M44 | The Understandable Hub | planning — filed #687–#694 | — | [m44/M44-MASTER-PLAN.md](./m44/M44-MASTER-PLAN.md) |
 
 Nothing on this page is a fork- or editor-verified claim until a milestone's
 ledger pins a version, a run, and a machine per claim (I3/I4 definitions,
