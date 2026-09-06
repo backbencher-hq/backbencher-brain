@@ -248,6 +248,13 @@
         "status": "RULED",
         "question": "Is where_clause a real, fixture-coverable shape in the pinned grammar?",
         "resolution": "No. Probe-verified 2026-09-02: generic `where T: Equatable` clauses parse as type_constraints (with where_keyword + type_constraint children); no Swift source produces a where_clause node. The grammar declares it but it is unreachable. Reclassified from handled_verified per the F6 fixture-coverage gate (M14.0.F6)."
+      },
+      {
+        "id": "M3710-COMPANION",
+        "node_type": "function_declaration with override modifier (override resolution)",
+        "status": "RULED",
+        "question": "The Pass-3 first-parent fallback emitted its GUESS at confidence 1.0 with evidenceClass 'structural' — indistinguishable from a verified override in thresholded analysis. What is the correct tier contract?",
+        "resolution": "M37.10 ruling (family-wide): verified overrides (in-file Pass-1) stay @1.0/structural; the Pass-3 first-parent guess is @0.5 with reasonCode 'first-parent-guess' and tier 'inferred' (classifyEvidenceTier <0.9 branch) — matching java/groovy's documented Pass-3 contract and staying below the patterns.ts 0.7 threshold. The guess may target a parent that never declares the method; claiming structural hid the evidence gap. Gated by F9-PROBE-M3710-SWIFT, the swift/external-override fixture + confidence pins, and 6 family regression mutants."
       }
     ]
   }
