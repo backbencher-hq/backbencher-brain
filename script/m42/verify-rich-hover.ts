@@ -147,6 +147,11 @@ function commandLinks(markdown: string): Array<{ command: string; args: { file: 
   return out
 }
 
+/** Wire helper: an LSP file:// uri -> the stored absolute path. */
+function filePathOf(uri: string): string {
+  return uri.startsWith("file://") ? uri.slice("file://".length) : uri
+}
+
 const sourceLines = readFileSync(H2_FILE_APP, "utf8").split("\n")
 const renderPos = {
   line: H2_EXPECT.render.declLine,
@@ -197,11 +202,11 @@ try {
     position: renderPos,
     context: { includeDeclaration: false },
   })
-  // The server answers with the navigation component's own shape:
-  // { locations: NavigationLocation[] } — NavigationLocation carries path /
-  // line / character directly (no range wrapper).
-  const refList: Array<{ path: string; line: number; character: number }> = Array.isArray(refs?.locations) ? refs.locations : []
-  const refLocs = new Set(refList.map((l) => `${l.path}:${l.line}:${l.character}`))
+  // The server answers the PROTOCOL shape now (wire law): Location[] — each
+  // { uri, range: { start: { line, character }, … } }. The navigation
+  // component's path/line/character ride inside it.
+  const refList: Array<{ uri: string; range: { start: { line: number; character: number } } }> = Array.isArray(refs) ? refs : []
+  const refLocs = new Set(refList.map((l) => `${filePathOf(l.uri)}:${l.range.start.line}:${l.range.start.character}`))
   check("H2/R4: references surface returns the fixture's sites", refLocs.size >= 3, `got ${refLocs.size}`)
   const usageLinks = commandLinks(md).filter((l) => l.command === "bb.openUsage")
   const targetInRefs = (t: { file: string; line: number; character: number }) => refLocs.has(`${t.file}:${t.line}:${t.character}`)
@@ -217,8 +222,10 @@ try {
     defLinks[0]!.args.line === H2_EXPECT.renderDefLine
   check("H2/R4: definition link equals the stored declaration location", defOk, JSON.stringify(defLinks[0]?.args ?? null))
   const defRef = await lsp.request("textDocument/definition", { textDocument: { uri: appUri }, position: renderPos })
-  // Definition answers with the component shape { found, location, symbol }.
-  const defTarget = defRef?.found ? (defRef.location as { path: string; line: number; character: number } | undefined) : undefined
+  // Definition answers the protocol shape (Location object or null).
+  const defArr = Array.isArray(defRef) ? defRef : defRef ? [defRef] : []
+  const defFirst = defArr[0] as { uri: string; range: { start: { line: number; character: number } } } | undefined
+  const defTarget = defFirst ? { path: filePathOf(defFirst.uri), line: defFirst.range.start.line, character: defFirst.range.start.character } : undefined
   const defMatch =
     defLinks.length === 1 &&
     Boolean(defTarget) &&
@@ -277,8 +284,8 @@ console.log("\nM: mutants")
   try {
     await p.request("initialize", { processId: null, rootUri: `file://${H2_ROOT}`, capabilities: {} })
     const r = await p.request("textDocument/references", { textDocument: { uri: appUri }, position: renderPos, context: { includeDeclaration: false } })
-    const list: Array<{ path: string; line: number; character: number }> = Array.isArray(r?.locations) ? r.locations : []
-    const locs = new Set(list.map((l) => `${l.path}:${l.line}:${l.character}`))
+    const list: Array<{ uri: string; range: { start: { line: number; character: number } } }> = Array.isArray(r) ? r : []
+    const locs = new Set(list.map((l) => `${filePathOf(l.uri)}:${l.range.start.line}:${l.range.start.character}`))
     const fabricated = { file: H2_FILE_APP, line: renderPos.line + 1, character: 4 }
     fabricatedIsRealRef = locs.has(`${fabricated.file}:${fabricated.line}:${fabricated.character}`)
   } finally {
