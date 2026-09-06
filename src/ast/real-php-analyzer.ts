@@ -745,7 +745,8 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (s.kind !== ASTEngine.SymbolKind.Method || !s.ownerName) continue
       const base = baseByClass.get(s.ownerName)
       if (!base) continue
-      const baseMethods = methodsByOwner.get(base) ?? context?.overrideCompanion?.get(base)
+      const inFileMethods = methodsByOwner.get(base)
+      const baseMethods = inFileMethods ?? context?.overrideCompanion?.get(base)
       if (baseMethods?.has(s.name)) {
         relationships.push({
           source: `${s.ownerName}.${s.name}`,
@@ -753,6 +754,23 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
           type: ASTEngine.RelationshipType.Overrides,
           confidence: 0.95,
           metadata: { phpSpecific: true, isOverride: true },
+        })
+      } else if (!inFileMethods && !context?.overrideCompanion?.get(base)) {
+        // Pass 3 (family parity with java/groovy resolveOverrides): the base
+        // is not declared in this file and the companion index gave no
+        // opinion (it is never populated in production — see M37.10), so
+        // declaring-parent verification is impossible. Emit the deterministic
+        // first-parent guess BELOW the patterns.ts threshold (0.7): visible
+        // in raw output, never contaminating thresholded analysis, and
+        // counted as heuristic (honest suspicion) by the differential. The
+        // pre-M37.10 behavior dropped the edge entirely when the base was
+        // external — silently losing every cross-file override.
+        relationships.push({
+          source: `${s.ownerName}.${s.name}`,
+          target: `${base}.${s.name}`,
+          type: ASTEngine.RelationshipType.Overrides,
+          confidence: 0.5,
+          metadata: { phpSpecific: true, isOverride: true, reasonCode: "first-parent-guess" },
         })
       }
     }
@@ -1018,7 +1036,13 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         md.evidenceClass = (r.confidence ?? 0) >= 0.9 ? "structural" : "inferred"
         continue
       }
-      if (type === "overrides") { md.evidenceClass = "structural"; continue }
+      if (type === "overrides") {
+        // M37.10 family contract: verified overrides are structural; a
+        // Pass-3 first-parent guess is only "inferred" (the external base
+        // may not even declare the method).
+        md.evidenceClass = (r.confidence ?? 0) >= 0.9 ? "structural" : "inferred"
+        continue
+      }
       md.evidenceClass = "usage_contextual"
     }
   }

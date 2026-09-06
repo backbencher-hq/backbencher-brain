@@ -286,6 +286,60 @@ class Host
     ["calls:this", "uses:arr"],
     [])
 
+  // ── M37.10: overrideCompanion dead-machinery sweep ────────────────────
+  // Production callers never populate the companion (grep across src/,
+  // ide/, script/ — only m12/verify-analyzer builds one for its own
+  // tests), so analyzers that gated ALL override emission on it silently
+  // lost every cross-file override. Family contract asserted here:
+  //   - in-file base declares the method -> overrides @0.95 (verified)
+  //   - external base, no companion -> overrides @0.5 with reasonCode
+  //     "first-parent-guess" and tier "inferred" (Pass-3 parity with
+  //     java/groovy; below the 0.7 patterns threshold; heuristic in F5)
+  //   - swift: the Pass-3 guess must NOT claim 1.0/structural (silent
+  //     overclaim fixed in M37.10); java pins its existing Pass-3
+  const m3710Cfgs: Record<string, { wasm: string; analyzerFile: string; className: string; ext: string }> = {
+    php: { wasm: "tree-sitter-php.wasm", analyzerFile: "real-php-analyzer", className: "RealPhpAnalyzer", ext: ".php" },
+    ruby: { wasm: "tree-sitter-ruby.wasm", analyzerFile: "real-ruby-analyzer", className: "RealRubyAnalyzer", ext: ".rb" },
+    python: { wasm: "tree-sitter-python.wasm", analyzerFile: "real-python-analyzer", className: "RealPythonAnalyzer", ext: ".py" },
+    javascript: { wasm: "tree-sitter-javascript.wasm", analyzerFile: "real-javascript-analyzer", className: "RealJavaScriptAnalyzer", ext: ".js" },
+    perl: { wasm: "tree-sitter-perl.wasm", analyzerFile: "real-perl-analyzer", className: "RealPerlAnalyzer", ext: ".pl" },
+    swift: { wasm: "tree-sitter-swift.wasm", analyzerFile: "real-swift-analyzer", className: "RealSwiftAnalyzer", ext: ".swift" },
+    java: { wasm: "tree-sitter-java.wasm", analyzerFile: "real-java-analyzer", className: "RealJavaAnalyzer", ext: ".java" },
+  }
+  const m3710Cases: Record<string, string> = {
+    php: `<?php\nclass Base { public function handle(): void {} }\nclass InService extends Base { public function handle(): void {} }\nclass AuditService extends ExternalBase { public function handle(): void {} }\n`,
+    ruby: `class Base\n  def handle; end\nend\nclass InService < Base\n  def handle; end\nend\nclass AuditService < ExternalBase\n  def handle; end\nend\n`,
+    python: `class Base:\n    def handle(self):\n        pass\n\nclass InService(Base):\n    def handle(self):\n        pass\n\nclass AuditService(ExternalBase):\n    def handle(self):\n        pass\n`,
+    javascript: `class Base { handle() {} }\nclass InService extends Base { handle() {} }\nclass AuditService extends ExternalBase { handle() {} }\n`,
+    perl: `package Base; sub handle { 1 }\npackage InService; use parent -norequire, 'Base'; sub handle { 2 }\npackage AuditService; use parent -norequire, 'ExternalBase'; sub handle { 3 }\n1;\n`,
+    swift: `class Base { func handle() {} }\nclass InService: Base { override func handle() {} }\nclass AuditService: ExternalBase { override func handle() {} }\n`,
+    java: `class Base { void handle() {} }\nclass InService extends Base { @Override void handle() {} }\nclass AuditService extends ExternalBase { @Override void handle() {} }\n`,
+  }
+  for (const lang of Object.keys(m3710Cases)) {
+    const src = m3710Cases[lang]
+    const probeId = "F9-PROBE-M3710-" + lang.toUpperCase()
+    try {
+      const res = await analyzeWith(lang, m3710Cfgs[lang], src)
+      const rels = (res.relationships ?? []).filter((r: any) => r.type === "overrides")
+      const inSvc = rels.find((r: any) => r.source === "InService.handle" && r.target === "Base.handle")
+      const audit = rels.find((r: any) => r.source === "AuditService.handle" && r.target === "ExternalBase.handle")
+      const problems: string[] = []
+      if (!inSvc) problems.push("in-file overrides edge missing")
+      else if ((inSvc.confidence ?? 0) < 0.9) problems.push(`in-file confidence ${inSvc.confidence} < 0.9 (verified tier must hold; 0.95 php/ruby/python/js/perl family, 1.0 java/swift Pass-1)`)
+      if (!audit) problems.push("external-base guess edge missing")
+      else {
+        if (Math.abs((audit.confidence ?? 0) - 0.5) > 1e-9) problems.push(`external confidence ${audit.confidence} != 0.5`)
+        if ((audit.metadata?.reasonCode ?? "") !== "first-parent-guess") problems.push(`reasonCode ${audit.metadata?.reasonCode} != first-parent-guess`)
+        if (audit.metadata?.evidenceClass && audit.metadata.evidenceClass !== "inferred") problems.push(`tier ${audit.metadata.evidenceClass} != inferred`)
+      }
+      const label = lang === "java" ? " (Pass-3 already in place; guards regressions)" : " (M37.10 fix)"
+      record(probeId, lang, "external-base override emits Pass-3 guess @0.5/inferred; in-file verified @0.95" + label,
+        problems.length === 0, problems.join("; ") || "ok")
+    } catch (e: any) {
+      record(probeId, lang, "external-base override Pass-3 contract", false, e.message)
+    }
+  }
+
   // ── F7 detector self-test: regexes regress like any code ────────────────
   {
     const hyg = await import("./verify-analyzer-hygiene")
