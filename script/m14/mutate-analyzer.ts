@@ -1793,6 +1793,60 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((x: any) => !(x.name === "activeKeys" && x.metadata?.isTopLevelAccessor)) }),
   },
   {
+    id: "dart/accessor-pair-collapsed",
+    language: "dart",
+    defectClass: "symbol-loss",
+    description: "reverts DARTD12: getter/setter pairs dedup to one symbol (owner:name key without kind) — expectSymbolCount value/property/Counter equals:2 fails",
+    transform: r => {
+      let dropped = false
+      const symbols = (r.symbols ?? []).filter((x: any) => {
+        if (!dropped && x.name === "value" && x.ownerName === "Counter" && x.metadata?.isSetter) { dropped = true; return false }
+        return true
+      })
+      return { ...r, symbols }
+    },
+  },
+  {
+    id: "dart/param-types-degraded",
+    language: "dart",
+    defectClass: "payload-corruption",
+    description: "reverts DARTD13: every parameter type degrades to dynamic (the old childForFieldName('type') miss) — expectParameters pins total:double, nv:int, sides:int fail",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({
+      ...s,
+      parameters: (s.parameters ?? []).map((p: any) => ({ ...p, type: "dynamic" })),
+    })) }),
+  },
+  {
+    id: "dart/mixin-on-heritage-dropped",
+    language: "dart",
+    defectClass: "relationship-loss",
+    description: "reverts DARTD14: mixin on-clause base never emits extends — expectRelationships extends Flow->Base meta.isMixinOn:true fails",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "extends" && x.source === "Flow" && x.metadata?.isMixinOn)) }),
+  },
+  {
+    id: "dart/enum-heritage-dropped",
+    language: "dart",
+    defectClass: "relationship-loss",
+    description: "reverts DARTD15: enhanced enum implements edges never emit — expectRelationships implements Poly->Shape fails",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "implements" && x.source === "Poly" && x.target === "Shape")) }),
+  },
+  {
+    id: "dart/external-override-dropped",
+    language: "dart",
+    defectClass: "relationship-loss",
+    description: "reverts DARTD16: cross-file @override methods emit no overrides edge (the 34k-class corpus loss) — expectRelationships overrides Banner.toString->StatelessWidget.toString fails",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "overrides" || !String(x.source).startsWith("Banner")) }),
+  },
+  {
+    id: "dart/field-override-fabricated",
+    language: "dart",
+    defectClass: "relationship-fabrication",
+    description: "re-introduces the DARTD16 un-gated fallback: fields fake external overrides (Poly.sides->Shape.sides) — fixture forbids that exact row",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).concat([
+      { source: "Poly.sides", target: "Shape.sides", type: "overrides", confidence: 0.8, metadata: { isOverride: true, isExternalBase: true } },
+    ]) }),
+  },
+  {
     id: "swift/drop-implements-edge",
     language: "swift",
     defectClass: "relationship-loss",
