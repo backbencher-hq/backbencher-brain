@@ -226,11 +226,69 @@ export async function repairRead(
   return { decision, staleFiles }
 }
 
-/** Render the decision for an answer envelope / text footer. */
+/**
+ * Render the decision for an answer envelope / text footer.
+ * M44.W1.2 (#670): every rendered line ends with the SAME machine-readable
+ * reason code ([refresh:refreshed] | [refresh:declined:<reason>]) so a CLI
+ * or text consumer can machine-check why a read did or did not repair — no
+ * free-text parsing, identical vocabulary on every read tool.
+ */
 export function autoRefreshLine(decision: AutoRefreshDecision): string {
   if (decision.action === "refreshed") {
-    return `auto-refreshed ${decision.files} file${decision.files === 1 ? "" : "s"}${decision.deleted ? `, removed ${decision.deleted} deleted` : ""} in ${decision.tookMs}ms${decision.derivedPass ? ` (derived pass: ${decision.derivedPass})` : ""}`
+    return `auto-refreshed ${decision.files} file${decision.files === 1 ? "" : "s"}${decision.deleted ? `, removed ${decision.deleted} deleted` : ""} in ${decision.tookMs}ms${decision.derivedPass ? ` (derived pass: ${decision.derivedPass})` : ""} [refresh:refreshed]`
   }
-  if (decision.action === "declined") return decision.detail
+  if (decision.action === "declined") return `${decision.detail} [refresh:declined:${decision.reason}]`
   return ""
+}
+
+// ══ M44.W1.2 (#670): one machine-readable refresh/decline wire shape ════════
+// Every read tool's JSON carries the SAME structured block on non-clean
+// outcomes (`autoRefresh` keeps the human text; `refresh` is its structured
+// sibling) so an agent can machine-check action + reason + counters without
+// parsing prose. `reason` is exactly AutoRefreshDecision's decline vocabulary:
+// disabled | no-index | budget-files | budget-bytes | indexer-active | error.
+// ══ M44.W1.2 (#670): one machine-readable refresh/decline wire shape ════════
+// Every read tool carries the SAME structured block on non-clean outcomes so
+// an agent can machine-check WHY a read did or did not repair — no per-tool
+// drift, no free-text parsing. `autoRefresh` keeps its human text (M43.A1
+// string contract); `refresh` is the structured sibling. Counters
+// (files/deleted/errors/tookMs) are exposed here, refreshed or declined.
+// The reason vocabulary is exactly AutoRefreshDecision's decline reasons:
+// disabled | no-index | budget-files | budget-bytes | indexer-active | error.
+export interface RefreshReport {
+  action: "refreshed" | "declined"
+  reason: string | null
+  detail: string
+  files: number | null
+  deleted: number | null
+  errors: number | null
+  tookMs: number | null
+  derivedPass: string | null
+}
+
+/** Build the shared machine-readable block from a decision (non-clean only). */
+export function refreshReport(decision: AutoRefreshDecision): RefreshReport | null {
+  if (decision.action === "clean") return null
+  if (decision.action === "refreshed") {
+    return {
+      action: "refreshed",
+      reason: null,
+      detail: autoRefreshLine(decision),
+      files: decision.files,
+      deleted: decision.deleted,
+      errors: decision.errors,
+      tookMs: decision.tookMs,
+      derivedPass: decision.derivedPass ?? null,
+    }
+  }
+  return {
+    action: "declined",
+    reason: decision.reason,
+    detail: decision.detail,
+    files: null,
+    deleted: null,
+    errors: null,
+    tookMs: null,
+    derivedPass: null,
+  }
 }

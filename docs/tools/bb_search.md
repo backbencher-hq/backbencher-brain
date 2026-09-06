@@ -1,6 +1,6 @@
 # `bb_search`
 
-Unified indexed retrieval for symbol lists, content, exact symbol source, or files. This is retrieval, not natural-language explanation or code analysis. Symbol/content/file modes carry a freshness block ({ fresh, stale, missing, staleRatio, mode, remediation }) stating whether results reflect the current files; rows may carry stale=true. Remediation names the exact reindex command. When a read finds stale/missing files within budget, those files are auto-refreshed exactly (reindexFilesParallel) before the answer is built, declared in an autoRefresh field; refresh=false opts out and answers from existing data with the staleness block.
+Unified indexed retrieval for symbol lists, content, exact symbol source, or files. This is retrieval, not natural-language explanation or code analysis. Symbol/content/file modes carry a freshness block ({ fresh, stale, missing, staleRatio, mode, remediation }) stating whether results reflect the current files; rows may carry stale=true. Remediation names the exact reindex command. When a read finds stale/missing files within budget, those files are auto-refreshed exactly (reindexFilesParallel) before the answer is built, declared in an autoRefresh field with a machine-readable refresh block ({ action, reason, detail, files, deleted, errors, tookMs }) naming why a repair did or did not run; refresh=false opts out and answers from existing data with the staleness block.
 
 ## Contract
 

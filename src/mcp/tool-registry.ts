@@ -48,7 +48,7 @@ export interface ToolDescriptor {
 const descriptors = [
   {
     name: "bb_search",
-    description: "Unified indexed retrieval for symbol lists, content, exact symbol source, or files. This is retrieval, not natural-language explanation or code analysis. Symbol/content/file modes carry a freshness block ({ fresh, stale, missing, staleRatio, mode, remediation }) stating whether results reflect the current files; rows may carry stale=true. Remediation names the exact reindex command. When a read finds stale/missing files within budget, those files are auto-refreshed exactly (reindexFilesParallel) before the answer is built, declared in an autoRefresh field; refresh=false opts out and answers from existing data with the staleness block.",
+    description: "Unified indexed retrieval for symbol lists, content, exact symbol source, or files. This is retrieval, not natural-language explanation or code analysis. Symbol/content/file modes carry a freshness block ({ fresh, stale, missing, staleRatio, mode, remediation }) stating whether results reflect the current files; rows may carry stale=true. Remediation names the exact reindex command. When a read finds stale/missing files within budget, those files are auto-refreshed exactly (reindexFilesParallel) before the answer is built, declared in an autoRefresh field with a machine-readable refresh block ({ action, reason, detail, files, deleted, errors, tookMs }) naming why a repair did or did not run; refresh=false opts out and answers from existing data with the staleness block.",
     inputSchema: {
       type: "object",
       properties: {
@@ -78,7 +78,7 @@ const descriptors = [
   },
   {
     name: "bb_ask",
-    description: "Answer a question about the codebase using semantic search over the index. Returns matched symbols with similarity scores. When the answer's source files are stale/missing within budget, those files are auto-refreshed exactly before the answer is re-built, declared (auto-refresh: ...); refresh=false opts out and answers from existing data with stale sources flagged.",
+    description: "Answer a question about the codebase using semantic search over the index. Returns matched symbols with similarity scores. When the answer's source files are stale/missing within budget, those files are auto-refreshed exactly before the answer is re-built, declared (auto-refresh: ... with the machine-readable refresh block naming the reason); refresh=false opts out and answers from existing data with stale sources flagged.",
     inputSchema: { type: "object", properties: { query: { type: "string", description: "natural-language question" }, limit: { type: "number", description: "max results (default 5)" }, refresh: { type: "boolean", description: "false opts out of the inline auto-refresh of stale files (default: auto-refresh within budget before answering)" } }, required: ["query"] },
     mutability: "read",
     requiresIndex: true,
@@ -101,7 +101,7 @@ const descriptors = [
   },
   {
     name: "bb_patterns",
-    description: "Detect orphaned code, framework patterns, and anti-patterns, with staleness markers when a finding's file changed after indexing. Use scope=orphaned for dead code; scope=all (default) for the full pattern scan with the optional pattern/confidence filters. Architecture and code-quality analysis are planned, not yet executable. When the scan's finding files are stale/missing within budget, the scan auto-refreshes exactly those files and re-runs so the output reflects current code (declared on the output); refresh=false opts out.",
+    description: "Detect orphaned code, framework patterns, and anti-patterns, with staleness markers when a finding's file changed after indexing. Use scope=orphaned for dead code; scope=all (default) for the full pattern scan with the optional pattern/confidence filters. Architecture and code-quality analysis are planned, not yet executable. When the scan's finding files are stale/missing within budget, the scan auto-refreshes exactly those files and re-runs so the output reflects current code (declared with the machine-readable refresh block naming the reason); refresh=false opts out.",
     inputSchema: { type: "object", properties: { scope: { type: "string", enum: ["orphaned", "all"], description: "orphaned only, or all pattern classes (default all)" }, limit: { type: "number", description: "max results (default 20)" }, includeOrphaned: { type: "boolean", description: "include orphaned-code patterns in an all scan (default true)" }, includeFramework: { type: "boolean", description: "include framework patterns (default true)" }, includeAntiPatterns: { type: "boolean", description: "include anti-patterns (default true)" }, confidenceThreshold: { type: "number", description: "minimum confidence 0..1 (default 0.6)" }, history: { type: "boolean", description: "return persisted pattern history" }, recordRun: { type: "boolean", description: "persist this scan as an analysis run" }, refresh: { type: "boolean", description: "false opts out of the inline auto-refresh of stale files (default: auto-refresh within budget before answering)" } } },
     mutability: "read",
     requiresIndex: true,
@@ -113,7 +113,7 @@ const descriptors = [
   },
   {
     name: "bb_security",
-    description: "Cross-language security scan: SQL injection, XSS, command injection, hardcoded secrets, weak crypto. Findings whose underlying file changed after indexing carry a staleness marker. When a finding's file is stale/missing within budget, the scan auto-refreshes exactly those files and re-runs so findings reflect current code (declared on the output); refresh=false opts out.",
+    description: "Cross-language security scan: SQL injection, XSS, command injection, hardcoded secrets, weak crypto. Findings whose underlying file changed after indexing carry a staleness marker. When a finding's file is stale/missing within budget, the scan auto-refreshes exactly those files and re-runs so findings reflect current code (declared with the machine-readable refresh block naming the reason); refresh=false opts out.",
     inputSchema: { type: "object", properties: { history: { type: "boolean", description: "return persisted security history" }, recordRun: { type: "boolean", description: "persist this scan as an analysis run" }, limit: { type: "number", description: "history run limit (default 20)" }, refresh: { type: "boolean", description: "false opts out of the inline auto-refresh of stale files (default: auto-refresh within budget before answering)" } } },
     mutability: "read",
     requiresIndex: true,
@@ -125,7 +125,7 @@ const descriptors = [
   },
   {
     name: "bb_visualize",
-    description: "Scoped dependency and architecture visualization over the canonical graph engine, with explicit filters, provenance, truncation, machine-readable JSON, and self-contained HTML. Every node and link carries a stale flag (file changed since index); links inherit worst-of-endpoints; a freshness envelope rides the JSON output. When the graph's files are stale/missing within budget, the graph auto-refreshes exactly those files and re-renders (declared on the output); refresh=false opts out.",
+    description: "Scoped dependency and architecture visualization over the canonical graph engine, with explicit filters, provenance, truncation, machine-readable JSON, and self-contained HTML. Every node and link carries a stale flag (file changed since index); links inherit worst-of-endpoints; a freshness envelope rides the JSON output. When the graph's files are stale/missing within budget, the graph auto-refreshes exactly those files and re-renders (declared with the machine-readable refresh block naming the reason); refresh=false opts out.",
     inputSchema: { type: "object", properties: { scope: { type: "string", enum: ["project", "file", "module", "symbol", "feature"], description: "graph scope (default project)" }, target: { type: "string", description: "file, module, symbol, or feature target" }, maxNodes: { type: "number", description: "max nodes (default 200)" }, maxLinks: { type: "number", description: "max links (default 5000)" }, relationshipTypes: { type: "array", items: { type: "string" }, description: "relationship type filter" }, languages: { type: "array", items: { type: "string" }, description: "language filter" }, format: { type: "string", enum: ["text", "json", "html"], description: "output format (default text)" }, refresh: { type: "boolean", description: "false opts out of the inline auto-refresh of stale files (default: auto-refresh within budget before answering)" } } },
     mutability: "read",
     requiresIndex: true,
@@ -136,7 +136,7 @@ const descriptors = [
   },
   {
     name: "bb_migrate",
-    description: "Read-only single or batch migration planning with dependency order, explicit effort methodology, library mappings, risks, truncation, and unsupported cases. Plans whose source file changed since the last index are flagged stale up front — a plan is a claim about current code; JSON output carries the freshness block. When plan source files are stale/missing within budget, planning auto-refreshes exactly those files and re-plans (declared on the output); refresh=false opts out.",
+    description: "Read-only single or batch migration planning with dependency order, explicit effort methodology, library mappings, risks, truncation, and unsupported cases. Plans whose source file changed since the last index are flagged stale up front — a plan is a claim about current code; JSON output carries the freshness block. When plan source files are stale/missing within budget, planning auto-refreshes exactly those files and re-plans (declared with the machine-readable refresh block naming the reason); refresh=false opts out.",
     inputSchema: { type: "object", properties: { symbolName: { type: "string", description: "legacy single symbol alias" }, symbolNames: { type: "array", items: { type: "string" }, description: "one or more symbols to migrate" }, targetLanguage: { type: "string", description: "e.g. rust, go, python" }, format: { type: "string", enum: ["text", "json"], description: "output format (default text)" }, refresh: { type: "boolean", description: "false opts out of the inline auto-refresh of stale files (default: auto-refresh within budget before answering)" } }, required: ["targetLanguage"] },
     mutability: "read",
     requiresIndex: true,
@@ -148,7 +148,7 @@ const descriptors = [
   },
   {
     name: "bb_analyze",
-    description: "Unified evidence-backed analysis over graph relationships, dependencies, statistics, complexity, impact, and test intelligence. Select exactly one mode. Every read mode carries a freshness block (fresh/stale/missing counts + remediation) resolved against the live working tree; graph nodes and report rows carry a stale flag when their file changed after indexing. When a mode's resolved files are stale/missing within budget, the mode auto-refreshes exactly those files and re-runs so the output reflects current code (declared in an autoRefresh field); refresh=false opts out.",
+    description: "Unified evidence-backed analysis over graph relationships, dependencies, statistics, complexity, impact, and test intelligence. Select exactly one mode. Every read mode carries a freshness block (fresh/stale/missing counts + remediation) resolved against the live working tree; graph nodes and report rows carry a stale flag when their file changed after indexing. When a mode's resolved files are stale/missing within budget, the mode auto-refreshes exactly those files and re-runs so the output reflects current code (declared in an autoRefresh field with a machine-readable refresh block naming the reason); refresh=false opts out.",
     inputSchema: { type: "object", properties: { mode: { type: "string", enum: ["callers", "callees", "trace", "dependencies", "stats", "complexity", "impact", "test_mapping", "test_gaps", "test_impact", "test_quality"], description: "analysis mode" }, target: { type: "string", description: "symbol or analysis target" }, filePath: { type: "string", description: "file scope for file-based analysis" }, limit: { type: "number", description: "result limit" }, refresh: { type: "boolean", description: "false opts out of the inline auto-refresh of stale files (default: auto-refresh within budget before answering)" } }, required: ["mode"] },
     mutability: "read",
     requiresIndex: true,
@@ -162,7 +162,7 @@ const descriptors = [
   },
   {
     name: "bb_doc",
-    description: "Generate read-only, evidence-backed documentation with resolvable citations and a freshness block over the cited files. Supports symbol, file, module, feature, API, project, and documentation-coverage modes in Markdown or JSON. When cited files are stale/missing within budget, the doc auto-refreshes exactly those files and regenerates (declared on the output); refresh=false opts out.",
+    description: "Generate read-only, evidence-backed documentation with resolvable citations and a freshness block over the cited files. Supports symbol, file, module, feature, API, project, and documentation-coverage modes in Markdown or JSON. When cited files are stale/missing within budget, the doc auto-refreshes exactly those files and regenerates (declared with the machine-readable refresh block naming the reason); refresh=false opts out.",
     inputSchema: { type: "object", properties: { mode: { type: "string", enum: ["symbol", "file", "module", "feature", "api", "project", "coverage"], description: "documentation mode" }, target: { type: "string", description: "symbol, file, module, feature, or API target; optional for project and coverage" }, format: { type: "string", enum: ["markdown", "json"], description: "output format (default markdown)" }, audience: { type: "string", enum: ["developer", "maintainer", "user", "website"], description: "documentation audience" }, detail: { type: "string", enum: ["brief", "standard", "deep"], description: "detail level" }, includeExamples: { type: "boolean", description: "include only source-backed examples" }, includeDiagrams: { type: "boolean", description: "include cited diagrams when available" }, includeTests: { type: "boolean", description: "include indexed test evidence" }, limit: { type: "number", description: "maximum evidence items" }, maxTokens: { type: "number", description: "output token budget" }, refresh: { type: "boolean", description: "false opts out of the inline auto-refresh of stale files (default: auto-refresh within budget before answering)" } }, required: ["mode"] },
     mutability: "read",
     requiresIndex: true,
@@ -202,7 +202,7 @@ const descriptors = [
     // handler reuses the same graph engine the LSP bb/graph handler uses —
     // one truth, two doors (M28 decision D-1/D-2).
     name: "bb_graph",
-    description: "Per-symbol dependency graph over the canonical graph engine: callers, callees, per-edge evidence tier (structural/import_based/usage_contextual/reference_qualified/inferred), confidence, and cross-language edge count. Same engine and tier rules the editor graph panel uses; truncated traversals are declared with a reason, never silent. When the traversed nodes' files are stale/missing within budget, the graph auto-refreshes exactly those files and re-traverses (declared in an autoRefresh field); refresh=false opts out.",
+    description: "Per-symbol dependency graph over the canonical graph engine: callers, callees, per-edge evidence tier (structural/import_based/usage_contextual/reference_qualified/inferred), confidence, and cross-language edge count. Same engine and tier rules the editor graph panel uses; truncated traversals are declared with a reason, never silent. When the traversed nodes' files are stale/missing within budget, the graph auto-refreshes exactly those files and re-traverses (declared in an autoRefresh field with a machine-readable refresh block naming the reason); refresh=false opts out.",
     inputSchema: {
       type: "object",
       properties: {
