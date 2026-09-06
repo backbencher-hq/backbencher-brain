@@ -1,6 +1,6 @@
 # `bb_analyze`
 
-Unified evidence-backed analysis over graph relationships, dependencies, statistics, complexity, impact, and test intelligence. Select exactly one mode. Every read mode carries a freshness block (fresh/stale/missing counts + remediation) resolved against the live working tree; graph nodes and report rows carry a stale flag when their file changed after indexing. When a mode's resolved files are stale/missing within budget, the mode auto-refreshes exactly those files and re-runs so the output reflects current code (declared in an autoRefresh field); refresh=false opts out.
+Unified evidence-backed analysis over graph relationships, dependencies, statistics, complexity, impact, and test intelligence. Select exactly one mode. Every read mode carries a freshness block (fresh/stale/missing counts + remediation) resolved against the live working tree; graph nodes and report rows carry a stale flag when their file changed after indexing. When a mode's resolved files are stale/missing within budget, the mode auto-refreshes exactly those files and re-runs so the output reflects current code (declared in an autoRefresh field with a machine-readable refresh block naming the reason); refresh=false opts out.
 
 ## Contract
 

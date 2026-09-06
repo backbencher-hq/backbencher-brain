@@ -11,7 +11,7 @@ import { DependencyGraphVisualizer } from "../ast/dependency-graph-visualizer"
 import { CrossLanguageIntelligence } from "../ast/cross-language-intelligence"
 import { CrossLanguageMigrationAssistant } from "../ast/cross-language-migration-assistant"
 import { indexProjectParallel, reindexFilesParallel, wipeProjectData } from "../ast/parallel-indexer"
-import { collectStaleFiles, maybeAutoRefresh, autoRefreshLine, repairRead } from "../ast/auto-refresh"
+import { collectStaleFiles, maybeAutoRefresh, autoRefreshLine, refreshReport, repairRead } from "../ast/auto-refresh"
 import { TOOL_DESCRIPTORS } from "./tool-registry"
 import { testQuality } from "../intelligence/testing/quality"
 import { executeEdit, type EditRequest } from "../intelligence/edit/edit-engine"
@@ -200,12 +200,12 @@ const handlers: Record<string, ToolHandler> = {
         const decision = await maybeAutoRefresh(projectId, projectPath, staleFiles, { perCallOptOut: args.refresh === false })
         if (decision.action === "refreshed") {
           const pass2 = await runPass()
-          return textResult(JSON.stringify({ ...pass2.answer, autoRefresh: autoRefreshLine(decision) }, null, 2))
+          return textResult(JSON.stringify({ ...pass2.answer, autoRefresh: autoRefreshLine(decision), refresh: refreshReport(decision) }, null, 2))
         }
         if (decision.action === "declined") {
           // Honest decline: answer from existing data with the envelope, and
           // declare why the automatic repair did not run.
-          return textResult(JSON.stringify({ ...pass1.answer, autoRefresh: autoRefreshLine(decision) }, null, 2))
+          return textResult(JSON.stringify({ ...pass1.answer, autoRefresh: autoRefreshLine(decision), refresh: refreshReport(decision) }, null, 2))
         }
       }
       return textResult(JSON.stringify(pass1.answer, null, 2))
@@ -234,10 +234,10 @@ const handlers: Record<string, ToolHandler> = {
         const decision = await maybeAutoRefresh(projectId, projectPath, staleFiles, { perCallOptOut: args.refresh === false })
         if (decision.action === "refreshed") {
           const pass2 = await runPass()
-          return textResult(JSON.stringify({ ...pass2.answer, autoRefresh: autoRefreshLine(decision) }, null, 2))
+          return textResult(JSON.stringify({ ...pass2.answer, autoRefresh: autoRefreshLine(decision), refresh: refreshReport(decision) }, null, 2))
         }
         if (decision.action === "declined") {
-          return textResult(JSON.stringify({ ...pass1.answer, autoRefresh: autoRefreshLine(decision) }, null, 2))
+          return textResult(JSON.stringify({ ...pass1.answer, autoRefresh: autoRefreshLine(decision), refresh: refreshReport(decision) }, null, 2))
         }
       }
       return textResult(JSON.stringify(pass1.answer, null, 2))
@@ -410,11 +410,11 @@ const handlers: Record<string, ToolHandler> = {
         if (decision.action === "refreshed") {
           // Answer from a SECOND pass so the JSON reflects the repair.
           const r2 = await resolve(await run())
-          return textResult(JSON.stringify({ ...r2.data, freshness: buildStalenessEnvelope(r2.detail.summary, r2.scope), autoRefresh: autoRefreshLine(decision) }, null, 2))
+          return textResult(JSON.stringify({ ...r2.data, freshness: buildStalenessEnvelope(r2.detail.summary, r2.scope), autoRefresh: autoRefreshLine(decision), refresh: refreshReport(decision) }, null, 2))
         }
         if (decision.action === "declined") {
           // Honest decline: answer from existing data with the reason declared.
-          return textResult(JSON.stringify({ ...r1.data, freshness: buildStalenessEnvelope(r1.detail.summary, r1.scope), autoRefresh: autoRefreshLine(decision) }, null, 2))
+          return textResult(JSON.stringify({ ...r1.data, freshness: buildStalenessEnvelope(r1.detail.summary, r1.scope), autoRefresh: autoRefreshLine(decision), refresh: refreshReport(decision) }, null, 2))
         }
       }
       return textResult(JSON.stringify({ ...r1.data, freshness: buildStalenessEnvelope(r1.detail.summary, r1.scope) }, null, 2))
@@ -770,7 +770,7 @@ const handlers: Record<string, ToolHandler> = {
       if (request.format === "json") {
         const parsed = JSON.parse(formatVisualization(p.result))
         parsed.freshness = buildStalenessEnvelope(vizEnvelopeSource, { kind: "dir" })
-        if (decl && decl.action !== "clean") parsed.autoRefresh = autoRefreshLine(decl)
+        if (decl && decl.action !== "clean") { parsed.autoRefresh = autoRefreshLine(decl); parsed.refresh = refreshReport(decl) }
         return textResult(JSON.stringify(parsed, null, 2))
       }
       const vizOut = formatVisualization(p.result)
@@ -838,7 +838,7 @@ const handlers: Record<string, ToolHandler> = {
       if (args.format === "json") {
         const parsed = JSON.parse(formatMigrationPlans(p.result, "json"))
         parsed.freshness = buildStalenessEnvelope(migEnvelopeSource, { kind: "dir" })
-        if (decl && decl.action !== "clean") parsed.autoRefresh = autoRefreshLine(decl)
+        if (decl && decl.action !== "clean") { parsed.autoRefresh = autoRefreshLine(decl); parsed.refresh = refreshReport(decl) }
         return textResult(JSON.stringify(parsed, null, 2))
       }
       const migOut = formatMigrationPlans(p.result, "text")
@@ -881,7 +881,7 @@ const handlers: Record<string, ToolHandler> = {
       if (request.format === "json") {
         const parsed = JSON.parse(formatDocumentation(p.result, "json"))
         parsed.freshness = buildStalenessEnvelope(p.derived.summary, { kind: "dir" })
-        if (decl && decl.action !== "clean") parsed.autoRefresh = autoRefreshLine(decl)
+        if (decl && decl.action !== "clean") { parsed.autoRefresh = autoRefreshLine(decl); parsed.refresh = refreshReport(decl) }
         return textResult(JSON.stringify(parsed, null, 2))
       }
       const base = formatDocumentation(p.result, request.format)
@@ -1023,7 +1023,7 @@ const handlers: Record<string, ToolHandler> = {
         },
         provenance: result.provenance ?? null,
       }
-      if (decl && decl.action !== "clean") json.autoRefresh = autoRefreshLine(decl)
+      if (decl && decl.action !== "clean") { json.autoRefresh = autoRefreshLine(decl); json.refresh = refreshReport(decl) }
       return textResult(JSON.stringify(json, null, 2))
     }
     const pass1 = await runPass()

@@ -1,6 +1,6 @@
 # `bb_doc`
 
-Generate read-only, evidence-backed documentation with resolvable citations and a freshness block over the cited files. Supports symbol, file, module, feature, API, project, and documentation-coverage modes in Markdown or JSON. When cited files are stale/missing within budget, the doc auto-refreshes exactly those files and regenerates (declared on the output); refresh=false opts out.
+Generate read-only, evidence-backed documentation with resolvable citations and a freshness block over the cited files. Supports symbol, file, module, feature, API, project, and documentation-coverage modes in Markdown or JSON. When cited files are stale/missing within budget, the doc auto-refreshes exactly those files and regenerates (declared with the machine-readable refresh block naming the reason); refresh=false opts out.
 
 ## Contract
 
