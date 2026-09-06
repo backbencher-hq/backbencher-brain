@@ -473,186 +473,283 @@ export function renderImpact(result: ImpactResultLike, dom: GraphDom): { nodesRe
   return { nodesRendered: result.impact.length, marker }
 }
 
-// --- M42.H5 (issue #653): the hub — usages as list/tree --------------------
-// The hub renders the SAME usages-mode traversal result three ways (list by
-// file, list by caller, call tree) through this ONE import-pure core. The
-// panel pre-renders all three from a single query and a tiny local script
-// toggles between them (docs/m42/HUB.md — the authored contract). Laws:
-// deterministic (no Math.random/Date.now), every row model-traceable via
-// data-row-id, every row badged with the SAME tier resolution as edges, no
-// fabricated rows, truncation + empty honesty declared.
+// --- M42.H5 (issue #653) / M44.U1 (issue #688): the hub — grouped usages ---
+// The hub renders the usages-mode result three ways (list by file, list by
+// caller, call tree) through this ONE import-pure core. M44.U1 made the
+// SERVER group usages per symbol (src/lsp/graph_usages.ts) — the renderers
+// below consume that grouped shape: ONE visual row per caller/callee symbol
+// with declared relationship-type counts (§13.1/§13.2), file-level and
+// external rows in labeled sections (§13.5), and header counts that equal
+// the rendered group count (§13.4). The panel pre-renders all three from a
+// single query and a tiny local script toggles between them. Laws:
+// deterministic (no Math.random/Date.now); every group row is
+// model-traceable via data-symbol-id + data-row-ids (its full stored-row
+// inventory — nothing dropped); every relationship type renders a chip whose
+// tier is the SAME tier resolution as edges (uniform, else declared
+// "mixed"); no fabricated rows; truncation + empty honesty declared.
+//
+// The grouped types below are a STRUCTURAL mirror of src/lsp/graph_usages.ts
+// (GroupedUsages & friends): this core keeps its zero-import law (W1), and
+// hub-panel passes the server-typed value through — tsc checks the shapes
+// agree at that call site (a compile-time drift gate).
 
-export interface HubUsageRow {
-  dir: "caller" | "callee"
-  /** endpoint name: the caller (dir=caller) or callee (dir=callee) */
+export interface GroupedHubRow {
+  rowId: string
+  relationshipType: string
+  callSite?: { file: string; line: number }
+  depth: number
+  confidence: number
+  isCrossLanguage: boolean
+  bridgeMechanism?: string
+  evidenceClass?: string
+  enrichment?: {
+    inferredAt?: number
+    role?: string
+    pattern?: string
+    layerFlow?: string
+    criticality?: string
+    frequency?: string
+  }
+}
+
+export interface GroupedHubEntry {
+  symbolId: string
   name: string
   file: string
+  language: string
+  symbolType: string
   line: number
-  depth: number
-  edge: GraphEdgeLike
-  /** The usage's OTHER END symbol id (index-resolved click identity — the
-   *  M42.H6 bridge sends it as navigate.target.symbolId, never a guess). */
-  endpointId?: string
+  isExternal: boolean
+  relationshipTypes: Array<{ type: string; occurrences: number }>
+  occurrences: number
+  rows: GroupedHubRow[]
 }
 
-/** The deterministic usage row set: callers (as traversed) then callees.
- *  An edge whose endpoint node is missing (external/unindexed) still yields
- *  a row with the declared (external) marker — a drop would lie. */
-export function hubUsages(result: GraphResultLike): HubUsageRow[] {
-  const rows: HubUsageRow[] = []
-  for (const edge of result.callers) {
-    const node = result.nodes[edge.from]
-    rows.push({
-      dir: "caller",
-      name: node?.name ?? "(external)",
-      file: node?.file ?? "",
-      line: node?.line ?? 0,
-      depth: edge.depth,
-      edge,
-      endpointId: node?.id,
-    })
+export interface GroupedHubFileLevelRow {
+  rowId: string
+  relationshipType: string
+  moduleSpecifier: string
+  confidence: number
+}
+
+export interface GroupedHub {
+  root: { symbolId: string; name: string; file: string; language: string; line: number }
+  callers: GroupedHubEntry[]
+  callees: GroupedHubEntry[]
+  fileLevel: { imports: GroupedHubFileLevelRow[]; exports: GroupedHubFileLevelRow[] }
+  counts: {
+    callerGroups: number
+    calleeGroups: number
+    callerRows: number
+    calleeRows: number
+    fileLevelRows: number
   }
-  for (const edge of result.callees) {
-    const node = result.nodes[edge.to]
-    rows.push({
-      dir: "callee",
-      name: node?.name ?? "(external)",
-      file: node?.file ?? "",
-      line: node?.line ?? 0,
-      depth: edge.depth,
-      edge,
-      endpointId: node?.id,
-    })
+  summary: { truncated: boolean; truncationReason?: string; crossLanguageGroups: number }
+  annotations?: Array<{ author_class: string; tool_identity: string; body: string; time_updated: number }>
+}
+
+/** Tier for a relationship TYPE inside a group: uniform when every stored
+ *  row of that type resolves to one tier, else "mixed" — declared, never a
+ *  fabricated single answer (a mixed type is mixed, honestly). */
+export function tierForTypeRows(rows: GroupedHubRow[]): EdgeTier | "mixed" {
+  const tiers = new Set(
+    rows.map((r) =>
+      tierForEdge({
+        relationshipType: r.relationshipType,
+        confidence: r.confidence,
+        metadata: { evidenceClass: r.evidenceClass },
+      } as GraphEdgeLike),
+    ),
+  )
+  return tiers.size === 1 ? [...tiers][0]! : "mixed"
+}
+
+function relChips(entry: GroupedHubEntry, parent: GraphDomElement, dom: GraphDom): void {
+  const wrap = dom.create("span")
+  wrap.addClass("bb-hub-relchips")
+  for (const rt of entry.relationshipTypes) {
+    const typeRows = entry.rows.filter((r) => r.relationshipType === rt.type)
+    const tier = tierForTypeRows(typeRows)
+    const chip = dom.create("span")
+    chip.addClass("bb-hub-relchip")
+    chip.addClass(tier === "mixed" ? "bb-badge-mixed" : `bb-badge-${tier}`)
+    chip.setAttribute("data-rel-type", rt.type)
+    chip.setAttribute("data-occurrences", String(rt.occurrences))
+    chip.setAttribute("data-tier", tier)
+    chip.textContent = `${rt.type} ×${rt.occurrences}`
+    wrap.appendChild(chip)
   }
-  return rows
+  parent.appendChild(wrap)
 }
 
-export interface HubGroup {
-  key: string
-  rows: HubUsageRow[]
+/** Enrichment is stored per ROW; a group is enriched when any member row is.
+ *  The labeled chip lists the DISTINCT roles present (never an invented
+ *  single answer); data-enriched is presence-gated. */
+function groupEnrichment(entry: GroupedHubEntry, parent: GraphDomElement, dom: GraphDom): void {
+  const enriched = entry.rows.filter((r) => r.enrichment?.inferredAt !== undefined)
+  if (enriched.length === 0) return
+  parent.addClass("bb-hub-enriched")
+  parent.setAttribute("data-enriched", "1")
+  const roles = [...new Set(enriched.map((r) => r.enrichment?.role).filter((x): x is string => !!x))].sort()
+  if (roles.length > 0) parent.setAttribute("data-enrich-roles", roles.join(","))
+  const chip = dom.create("span")
+  chip.addClass("bb-hub-enrichment")
+  chip.textContent = roles.length > 0 ? `⌾ enriched (${roles.join(", ")})` : "⌾ enriched"
+  parent.appendChild(chip)
 }
 
-/** Group rows by first-appearance order of the key (deterministic). */
-function groupRows(rows: HubUsageRow[], keyOf: (r: HubUsageRow) => string): HubGroup[] {
-  const order: string[] = []
-  const map = new Map<string, HubUsageRow[]>()
-  for (const row of rows) {
-    const key = keyOf(row)
-    if (!map.has(key)) {
-      map.set(key, [])
-      order.push(key)
-    }
-    map.get(key)!.push(row)
-  }
-  return order.map((key) => ({ key, rows: map.get(key)! }))
-}
-
-export const groupUsagesByFile = (rows: HubUsageRow[]): HubGroup[] => groupRows(rows, (r) => (r.file.length > 0 ? r.file : "(external)"))
-
-export const groupUsagesByCaller = (rows: HubUsageRow[]): HubGroup[] => groupRows(rows, (r) => (r.name.length > 0 ? r.name : "(external)"))
-
-/** Row element shared by list and tree layouts. */
-function hubRowElement(row: HubUsageRow, dom: GraphDom): GraphDomElement {
+function groupRow(entry: GroupedHubEntry, dir: "caller" | "callee", dom: GraphDom): GraphDomElement {
   const el = dom.create("div")
   el.addClass("bb-hub-row")
-  el.setAttribute("data-dir", row.dir)
-  el.setAttribute("data-depth", String(row.depth))
-  if (row.edge.rowId) el.setAttribute("data-row-id", row.edge.rowId)
-  // M42.H6 machine click targets: index-resolved file/line/symbol of the
-  // usage's other end — the bridge navigates from these attrs, never from
-  // the display text (no client-side position guessing, issue #654).
-  if (row.file.length > 0) el.setAttribute("data-file", row.file)
-  el.setAttribute("data-line", String(row.line))
-  if (row.endpointId) el.setAttribute("data-symbol-id", row.endpointId)
+  el.addClass("bb-hub-symrow")
+  el.setAttribute("data-dir", dir)
+  el.setAttribute("data-symbol-id", entry.symbolId)
+  el.setAttribute("data-row-ids", entry.rows.map((r) => r.rowId).join(" "))
+  el.setAttribute("data-occurrences", String(entry.occurrences))
+  if (entry.rows.length > 0) el.setAttribute("data-depth", String(Math.min(...entry.rows.map((r) => r.depth))))
+  // H6 machine click targets: index-resolved file/line/symbol — the bridge
+  // navigates from these attrs, never from the display text (issue #654).
+  if (entry.file.length > 0) el.setAttribute("data-file", entry.file)
+  el.setAttribute("data-line", String(entry.line))
+  el.setAttribute("data-symbol", entry.name)
+  if (entry.isExternal) el.addClass("bb-hub-row-external")
   const name = dom.create("span")
   name.addClass("bb-hub-row-name")
-  name.textContent = row.name
+  name.textContent = entry.name
   const meta = dom.create("span")
   meta.addClass("bb-hub-row-meta")
-  meta.textContent = row.file.length > 0 ? `${row.file}:${row.line}` : "(external)"
+  meta.textContent = entry.file.length > 0 ? `${entry.file}:${entry.line}` : "(external)"
   el.appendChild(name)
   el.appendChild(meta)
-  const tier = tierForEdge(row.edge)
-  el.setAttribute("data-tier", tier)
-  el.setAttribute("data-confidence", String(row.edge.confidence))
-  appendEvidenceBadge(el, row.edge, tier, "bb-hub-badge", dom)
-  appendEnrichmentChip(el, row.edge, dom, "bb-hub-enriched", "bb-hub-enrichment")
+  relChips(entry, el, dom)
+  groupEnrichment(entry, el, dom)
   return el
 }
 
-/** Summary line + declared truncation; shared by every hub section. */
-function hubSummary(result: GraphResultLike, layer: GraphDomElement, dom: GraphDom): void {
+/** Summary line + declared truncation; shared by every hub section. Counts
+ *  are GROUP counts (what the eye can verify against the rendered rows,
+ *  §13.4); row counts ride as declared multiplicity. */
+function hubSummary(grouped: GroupedHub, layer: GraphDomElement, dom: GraphDom): void {
   const summary = dom.create("div")
   summary.addClass("bb-hub-summary")
-  summary.setAttribute("data-callers", String(result.callers.length))
-  summary.setAttribute("data-callees", String(result.callees.length))
-  summary.textContent = `${result.callers.length} caller${result.callers.length === 1 ? "" : "s"} · ${result.callees.length} callee${result.callees.length === 1 ? "" : "s"}`
+  summary.setAttribute("data-callers", String(grouped.counts.callerGroups))
+  summary.setAttribute("data-callees", String(grouped.counts.calleeGroups))
+  summary.setAttribute("data-caller-rows", String(grouped.counts.callerRows))
+  summary.setAttribute("data-callee-rows", String(grouped.counts.calleeRows))
+  summary.setAttribute("data-file-level-rows", String(grouped.counts.fileLevelRows))
+  summary.textContent = `${grouped.counts.callerGroups} caller${grouped.counts.callerGroups === 1 ? "" : "s"} · ${grouped.counts.calleeGroups} callee${grouped.counts.calleeGroups === 1 ? "" : "s"}`
   layer.appendChild(summary)
-  if (result.summary?.truncated) {
-    const shown = result.callers.length + result.callees.length
-    const total = (result.summary.totalCallers ?? 0) + (result.summary.totalCallees ?? 0)
+  if (grouped.summary.truncated) {
+    const shown = grouped.counts.callerGroups + grouped.counts.calleeGroups
     const marker = dom.create("div")
     marker.addClass("bb-truncation-marker")
     marker.setAttribute("data-truncated", "hub")
     marker.setAttribute("data-shown", String(shown))
-    marker.setAttribute("data-total-if-known", String(total))
-    marker.textContent = `Showing ${shown} of ${total} usages (render budget exhausted — not all data is displayed)`
+    marker.setAttribute("data-total-if-known", "unknown")
+    marker.textContent = `Showing ${shown} usage groups (traversal truncated${grouped.summary.truncationReason ? `: ${grouped.summary.truncationReason}` : ""} — more usages exist but the total is not computed)`
     layer.appendChild(marker)
   }
 }
 
-/** The hub section root with its shared header. Renders INTO dom.root() —
- *  the same convention as renderGraph (an orphaned section would make the
- *  hub render empty markup; M26.V1 P5 catches exactly that). */
-function hubSection(result: GraphResultLike, dom: GraphDom, sectionClass: string): GraphDomElement {
+/** File-level sections: declared, labeled, never merged into symbol rows
+ *  (§13.5). Rendered only when such rows exist — presence-gated absence. */
+function fileLevelSections(grouped: GroupedHub, layer: GraphDomElement, dom: GraphDom): void {
+  const all = [...grouped.fileLevel.imports, ...grouped.fileLevel.exports]
+  if (all.length === 0) return
+  const box = dom.create("div")
+  box.addClass("bb-hub-filelevel")
+  box.setAttribute("data-file-level-rows", String(all.length))
+  const title = dom.create("span")
+  title.addClass("bb-hub-filelevel-title")
+  title.textContent = `file-level ${grouped.fileLevel.imports.length > 0 ? "imports" : ""}${grouped.fileLevel.imports.length > 0 && grouped.fileLevel.exports.length > 0 ? " / " : ""}${grouped.fileLevel.exports.length > 0 ? "exports" : ""} (module specifiers — no symbol endpoint in the index)`
+  box.appendChild(title)
+  for (const row of [...grouped.fileLevel.imports, ...grouped.fileLevel.exports]) {
+    const el = dom.create("div")
+    el.addClass("bb-hub-flrow")
+    el.setAttribute("data-row-id", row.rowId)
+    el.setAttribute("data-fl-type", row.relationshipType)
+    el.setAttribute("data-module", row.moduleSpecifier)
+    el.textContent = `${row.relationshipType} ${row.moduleSpecifier || "(module not recorded)"}`
+    box.appendChild(el)
+  }
+  layer.appendChild(box)
+}
+
+function hubSection(grouped: GroupedHub, dom: GraphDom, sectionClass: string): GraphDomElement {
   const section = dom.root()
   section.addClass("bb-hub")
   section.addClass(sectionClass)
-  section.setAttribute("data-symbol", result.root?.name ?? "")
-  hubSummary(result, section, dom)
+  section.setAttribute("data-symbol", grouped.root.name)
+  hubSummary(grouped, section, dom)
+  fileLevelSections(grouped, section, dom)
   return section
 }
 
-/** List view: usage rows grouped by file or by caller. Empty set renders the
- *  declared empty state (never fabricated rows). */
-export function renderHubList(result: GraphResultLike, dom: GraphDom, group: "file" | "caller"): RenderStats {
-  const section = hubSection(result, dom, "bb-hub-list")
-  section.setAttribute("data-group", group)
-  const rows = hubUsages(result)
-  if (rows.length === 0) {
-    const empty = dom.create("div")
-    empty.addClass("bb-hub-empty")
-    empty.textContent = "no indexed usages for this symbol"
-    section.appendChild(empty)
-    return { nodesRendered: 0, nodesTotal: 0, edgesRendered: 0, edgesTotal: 0, nodesTruncated: false, edgesTruncated: false }
-  }
-  const groups = group === "file" ? groupUsagesByFile(rows) : groupUsagesByCaller(rows)
-  for (const group of groups) {
-    const g = dom.create("div")
-    g.addClass("bb-hub-group")
-    g.setAttribute("data-group-name", group.key)
-    const label = dom.create("span")
-    label.addClass("bb-hub-group-label")
-    label.textContent = group.key
-    g.appendChild(label)
-    for (const row of group.rows) g.appendChild(hubRowElement(row, dom))
-    section.appendChild(g)
-  }
-  return { nodesRendered: rows.length, nodesTotal: rows.length, edgesRendered: rows.length, edgesTotal: rows.length, nodesTruncated: false, edgesTruncated: false }
+function hubEmpty(section: GraphDomElement, dom: GraphDom): void {
+  const empty = dom.create("div")
+  empty.addClass("bb-hub-empty")
+  empty.textContent = "no indexed usages for this symbol"
+  section.appendChild(empty)
 }
 
-/** Tree view: rows laid out by traversal depth (callers first — who calls
- *  the symbol, recursively — then callees), indented by data-depth. */
-export function renderHubTree(result: GraphResultLike, dom: GraphDom): RenderStats {
-  const section = hubSection(result, dom, "bb-hub-tree")
-  const rows = hubUsages(result)
-  if (rows.length === 0) {
-    const empty = dom.create("div")
-    empty.addClass("bb-hub-empty")
-    empty.textContent = "no indexed usages for this symbol"
-    section.appendChild(empty)
+function allEntries(grouped: GroupedHub): Array<{ entry: GroupedHubEntry; dir: "caller" | "callee" }> {
+  return [
+    ...grouped.callers.map((entry) => ({ entry, dir: "caller" as const })),
+    ...grouped.callees.map((entry) => ({ entry, dir: "callee" as const })),
+  ]
+}
+
+/** List view: one row per symbol group, sectioned by file (group="file") or
+ *  by caller name (group="caller"). Empty set renders the declared empty
+ *  state (never fabricated rows). */
+export function renderHubList(grouped: GroupedHub, dom: GraphDom, group: "file" | "caller"): RenderStats {
+  const section = hubSection(grouped, dom, "bb-hub-list")
+  section.setAttribute("data-group", group)
+  const all = allEntries(grouped)
+  if (all.length === 0) {
+    hubEmpty(section, dom)
     return { nodesRendered: 0, nodesTotal: 0, edgesRendered: 0, edgesTotal: 0, nodesTruncated: false, edgesTruncated: false }
   }
-  for (const row of rows) section.appendChild(hubRowElement(row, dom))
-  return { nodesRendered: rows.length, nodesTotal: rows.length, edgesRendered: rows.length, edgesTotal: rows.length, nodesTruncated: false, edgesTruncated: false }
+  const byKey = new Map<string, Array<{ entry: GroupedHubEntry; dir: "caller" | "callee" }>>()
+  for (const item of all) {
+    const key = group === "file" ? (item.entry.file.length > 0 ? item.entry.file : "(external)") : (item.entry.name.length > 0 ? item.entry.name : "(external)")
+    if (!byKey.has(key)) byKey.set(key, [])
+    byKey.get(key)!.push(item)
+  }
+  const keys = [...byKey.keys()].sort()
+  for (const key of keys) {
+    const g = dom.create("div")
+    g.addClass("bb-hub-group")
+    g.setAttribute("data-group-name", key)
+    const label = dom.create("span")
+    label.addClass("bb-hub-group-label")
+    label.textContent = key
+    g.appendChild(label)
+    const items = byKey.get(key)!
+    items.sort((a, b) => a.entry.file.localeCompare(b.entry.file) || a.entry.name.localeCompare(b.entry.name) || a.entry.symbolId.localeCompare(b.entry.symbolId))
+    for (const item of items) g.appendChild(groupRow(item.entry, item.dir, dom))
+    section.appendChild(g)
+  }
+  return { nodesRendered: all.length, nodesTotal: all.length, edgesRendered: 0, edgesTotal: 0, nodesTruncated: false, edgesTruncated: false }
+}
+
+/** Tree view (U3 reworks presentation): one row per symbol group, ordered
+ *  callers then callees by their nearest traversal depth — the grouped shape
+ *  is depth-preserving (each stored row keeps its edge depth). */
+export function renderHubTree(grouped: GroupedHub, dom: GraphDom): RenderStats {
+  const section = hubSection(grouped, dom, "bb-hub-tree")
+  const all = allEntries(grouped)
+  if (all.length === 0) {
+    hubEmpty(section, dom)
+    return { nodesRendered: 0, nodesTotal: 0, edgesRendered: 0, edgesTotal: 0, nodesTruncated: false, edgesTruncated: false }
+  }
+  const depthOf = (item: { entry: GroupedHubEntry }): number => (item.entry.rows.length > 0 ? Math.min(...item.entry.rows.map((r) => r.depth)) : 0)
+  all.sort((a, b) => {
+    if (a.dir !== b.dir) return a.dir === "caller" ? -1 : 1
+    const d = depthOf(a) - depthOf(b)
+    if (d !== 0) return d
+    return a.entry.file.localeCompare(b.entry.file) || a.entry.name.localeCompare(b.entry.name)
+  })
+  for (const item of all) section.appendChild(groupRow(item.entry, item.dir, dom))
+  return { nodesRendered: all.length, nodesTotal: all.length, edgesRendered: 0, edgesTotal: 0, nodesTruncated: false, edgesTruncated: false }
 }

@@ -109,7 +109,7 @@ record("A2: unannotated symbol renders NO annotation section (declared absence)"
 local graph = request("workspace/executeCommand", { command = "__unused__" })
 results.raw.graph_error_probe = graph ~= nil or false -- executeCommand may not exist; bb/graph goes via custom request
 local ok_graph, graph_res = pcall(function()
-  return client:request_sync("bb/graph", { schemaVersion = 1, symbol = "Greeter" }, 20000, bufnr)
+  return client:request_sync("bb/graph", { schemaVersion = 2, symbol = "Greeter" }, 20000, bufnr)
 end)
 local graph_result = nil
 if ok_graph and graph_res and not graph_res.err then graph_result = graph_res.result end

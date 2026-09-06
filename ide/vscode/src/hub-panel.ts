@@ -1,9 +1,12 @@
-// ide/vscode/src/hub-panel.ts — M42.H5 (issue #653): the hub webview panel —
-// the surface behind the hover's "Open in graph" action (H4).
+// ide/vscode/src/hub-panel.ts — M42.H5 (issue #653) / M44.U1 (issue #688):
+// the hub webview panel — the surface behind the hover's "Open in graph"
+// action (H4).
 //
 // THIN CLIENT, same law as graph-panel / impact-panel:
-//   1. ONE bb/graph request in the declared usages mode (schemaVersion 1,
-//      mode "usages" — the hub profile, docs/m42/HUB.md),
+//   1. ONE bb/graph request in the declared usages mode (schemaVersion 2,
+//      mode "usages" — the hub profile, docs/m42/HUB.md; M44.U1 serves the
+//      GROUPED shape: one entry per caller/callee symbol with declared
+//      multiplicity),
 //   2. THREE pre-rendered sections from that single result through the ONE
 //      renderer core (graph-core renderHubList/renderHubTree): list by file,
 //      list by caller, call tree,
@@ -56,7 +59,7 @@ export async function renderHubForPanel(
   let raw: unknown
   try {
     raw = await deps.client.sendRequest(GRAPH_METHOD, {
-      schemaVersion: 1,
+      schemaVersion: 2,
       symbol: params.symbol,
       mode: "usages",
     })
@@ -67,8 +70,11 @@ export async function renderHubForPanel(
   if (raw === null || typeof raw !== "object") {
     return { ok: false, error: "bb/graph returned a malformed result (not an object)" }
   }
-  const result = raw as Parameters<typeof renderHubList>[0]
-  const rootName = (result.root as { name?: string } | undefined)?.name ?? params.symbol
+  // Compile-time drift gate (U1): the renderer's structural GroupedHub is
+  // checked against this server-typed value right here — a shape mismatch
+  // between graph_usages.ts and graph-core.ts fails the build.
+  const result = raw as unknown as import("../../../src/lsp/graph_usages").GroupedUsages
+  const rootName = result.root?.name ?? params.symbol
 
   // Whole-panel staleness (§12.2): ask the server for the root symbol's file
   // marker. Any failure degrades to a declared unknown — never a fresh lie.
@@ -114,9 +120,11 @@ export async function renderHubForPanel(
   if ("error" in tree) return { ok: false, error: tree.error }
 
   const markup = `${byFile.markup}${byCaller.markup}${tree.markup}`
+  // §13.4: header counts equal the GROUP counts the rows render (the raw
+  // multiplicity rides alongside as callerRows/calleeRows).
   const counts = {
-    callers: Number(((result.callers as unknown[]) ?? []).length),
-    callees: Number(((result.callees as unknown[]) ?? []).length),
+    callers: result.counts?.callerGroups ?? 0,
+    callees: result.counts?.calleeGroups ?? 0,
   }
   const staleMarkup = stale
     ? `<div class="bb-stale-marker" data-stale="true" data-status="${serializeAttr(staleStatus)}">⚠️ stale — file changed since indexing (${serializeAttr(staleStatus)})</div>`
