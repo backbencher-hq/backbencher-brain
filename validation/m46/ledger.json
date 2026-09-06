@@ -3,7 +3,7 @@
     "code": "G1",
     "githubIssue": 683,
     "tool": "governance",
-    "status": "planned",
+    "status": "verified",
     "scope": "Ledger (validation/m46), gates-registry.json, verify-governance.ts, sync-ledger.ts, PLAN.md invariant",
     "acceptanceCriteria": [
       "Ledger: all 4 codes, unique populated issue numbers, legal statuses, criteria present, no fabricated evidence",
@@ -13,13 +13,24 @@
     ],
     "closureRequirements": [
       "Evidence file + ledger sync + evidence comment on close"
-    ]
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "1bc0f7572afe9aa170bd7c4e3cd7894cef2320e1",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m46/verify-governance.ts",
+      "evidenceFile": "G1.json",
+      "generatedAt": "2026-09-06T17:53:55.555Z",
+      "passed": 18,
+      "failed": 0,
+      "negativeCases": 5
+    }
   },
   {
     "code": "H1",
     "githubIssue": 684,
     "tool": "syntax-truth fixture gate",
-    "status": "planned",
+    "status": "verified",
     "scope": "Fixture gate (worker-pool) over the four grammar-gap construct minimals + genuine breakage: gap files not flagged, broken file flagged, symbols intact, independent probe proves non-vacuousness (regression armature for 2da3cf4e)",
     "acceptanceCriteria": [
       "Fresh pool index of 4 gap minimals + broken.ts + 12 fillers: worker-pool mode asserted, zero index errors",
@@ -31,13 +42,24 @@
     ],
     "closureRequirements": [
       "Evidence file + ledger sync + evidence comment on close"
-    ]
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "1bc0f7572afe9aa170bd7c4e3cd7894cef2320e1",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m46/verify-h1-syntax-truth.ts",
+      "evidenceFile": "H1.json",
+      "generatedAt": "2026-09-06T17:53:55.184Z",
+      "passed": 34,
+      "failed": 0,
+      "negativeCases": 4
+    }
   },
   {
     "code": "H2",
     "githubIssue": 685,
     "tool": "real-repo syntax-truth corpus",
-    "status": "planned",
+    "status": "verified",
     "scope": "Full default-pipeline indexes (isolated temp data dir) of this repo + rake/lodash/graphql-js copies; every flagged real-code file independently probe re-parsed: grammar-gap or lint leaks FAIL, genuine breakage recorded, validation/ poison fixtures exempt by design",
     "acceptanceCriteria": [
       "Each repo full-indexes with zero errors under the per-repo cap",
@@ -49,7 +71,18 @@
     ],
     "closureRequirements": [
       "Evidence file + ledger sync + evidence comment on close"
-    ]
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "1bc0f7572afe9aa170bd7c4e3cd7894cef2320e1",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m46/verify-h2-real-repo-syntax.ts",
+      "evidenceFile": "H2.json",
+      "generatedAt": "2026-09-06T18:02:24.906Z",
+      "passed": 16,
+      "failed": 0,
+      "negativeCases": 3
+    }
   },
   {
     "code": "X1",
