@@ -7,11 +7,11 @@
   "passed": 26,
   "failed": 0,
   "negativeCases": 9,
-  "currentCommit": "27d2daf9218cb77ee614f55d1fb42352e21cfacf",
+  "currentCommit": "eae2b654a2058dfd086b2ac3827b2275e8e1ed43",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m44/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-06T22:38:00.190Z",
+  "generatedAt": "2026-09-06T22:40:59.245Z",
   "ledger": "validation/m44/results/manifest.json",
   "m42Bar": {
     "gateExit": 0
