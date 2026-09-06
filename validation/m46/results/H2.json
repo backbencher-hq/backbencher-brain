@@ -1,0 +1,78 @@
+{
+  "status": "verified",
+  "currentCommit": "2da3cf4e8ea4c80f1dbb441eea84a6fdfac1026c",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m46/verify-h2-real-repo-syntax.ts",
+  "evidenceFile": "H2.json",
+  "generatedAt": "2026-09-06T17:50:46.398Z",
+  "passed": 16,
+  "failed": 0,
+  "negativeCases": 3,
+  "checks": 16,
+  "elapsedMs": 449663,
+  "observed": {
+    "dataDir": "/tmp/m46-h2-data-JT3EcV",
+    "repos": [
+      {
+        "name": "backbencher-brain (self)",
+        "ms": 403242,
+        "newlyParsed": 2760,
+        "flaggedTotal": 22,
+        "exemptedCount": 22,
+        "exempted": [
+          "docs/analyzers/real-kotlin-analyzer.md (non-code (documented grammar-gap class: md/sh/sql/json/yml/css/html — exempt from FAIL, recorded))",
+          "docs/analyzers/real-c-analyzer.md (non-code (documented grammar-gap class: md/sh/sql/json/yml/css/html — exempt from FAIL, recorded))",
+          "script/m22/create-issues.sh (non-code (documented grammar-gap class: md/sh/sql/json/yml/css/html — exempt from FAIL, recorded))",
+          "validation/m12/framework-fixtures/data/dbt_model.sql",
+          "validation/m12/fixtures/objective-c/user_config.h",
+          "validation/m12/fixtures/xml/Negative.xml",
+          "validation/m12/fixtures/make/Negative.mk",
+          "validation/m12/fixtures/powershell/Negative.ps1",
+          "validation/m12/fixtures/graphql/Negative.graphql",
+          "validation/m12/fixtures/bash/Negative.sh",
+          "validation/m12/fixtures/yaml/Negative.yaml",
+          "validation/m12/fixtures/hcl/Negative.tf"
+        ],
+        "genuineCount": 0,
+        "genuine": [],
+        "leaks": []
+      },
+      {
+        "name": "rake",
+        "ms": 6807,
+        "newlyParsed": 57,
+        "flaggedTotal": 0,
+        "exemptedCount": 0,
+        "exempted": [],
+        "genuineCount": 0,
+        "genuine": [],
+        "leaks": []
+      },
+      {
+        "name": "lodash",
+        "ms": 15344,
+        "newlyParsed": 36,
+        "flaggedTotal": 0,
+        "exemptedCount": 0,
+        "exempted": [],
+        "genuineCount": 0,
+        "genuine": [],
+        "leaks": []
+      },
+      {
+        "name": "graphql-js",
+        "ms": 23372,
+        "newlyParsed": 182,
+        "flaggedTotal": 2,
+        "exemptedCount": 2,
+        "exempted": [
+          "benchmark/kitchen-sink.graphql (non-code (documented grammar-gap class: md/sh/sql/json/yml/css/html — exempt from FAIL, recorded))",
+          "website/css/globals.css (non-code (documented grammar-gap class: md/sh/sql/json/yml/css/html — exempt from FAIL, recorded))"
+        ],
+        "genuineCount": 0,
+        "genuine": [],
+        "leaks": []
+      }
+    ]
+  }
+}

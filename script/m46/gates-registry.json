@@ -1,0 +1,9 @@
+{
+  "comment": "M46 gates registry — every on-disk script/m46 verifier must appear here (governance check 2) AND in the npm run verify chain as it lands (governance check 3). Infra gates (governance/sync/closure) are exempt from mutation requirements but listed.",
+  "gates": [
+    { "code": "G1", "script": "verify-governance.ts", "infra": true },
+    { "code": "H1", "script": "verify-h1-syntax-truth.ts", "infra": false },
+    { "code": "H2", "script": "verify-h2-real-repo-syntax.ts", "infra": false },
+    { "code": "X1", "script": "verify-closure.ts", "infra": true }
+  ]
+}
