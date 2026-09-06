@@ -393,8 +393,14 @@ import { fileURLToPath } from "node:url"
 import { BrainDatabase } from "../brain/database"
 import { hover } from "./hover"
 import { resolveDefinition, resolveReferences } from "./navigation"
-import { documentSymbols, workspaceSymbols } from "./symbols"
-import { prepareCallHierarchy, expandCalls } from "./call_hierarchy"
+import { documentSymbols, workspaceSymbols, type DocumentSymbolEntry } from "./symbols"
+import {
+  prepareCallHierarchy,
+  expandCalls,
+  symbolKindFor,
+  type CallHierarchyIncomingCall,
+  type CallHierarchyOutgoingCall,
+} from "./call_hierarchy"
 
 /** Convert a `file://` LSP URI to a filesystem path (or passthrough). */
 export function uriToPath(uri: string): string {
@@ -512,13 +518,26 @@ export function wireFeatures(server: BbLspServer): void {
     })
   })
 
+  // Wire law (LSP 3.18) — same rule as documentHighlight below. The standard
+  // read methods answer PROTOCOL shapes (Location[], DocumentSymbol[], …),
+  // never the component envelopes (a typed editor client would crash or
+  // drop them — found live: VS Code's documentSymbol/call-hierarchy adapters
+  // iterate the result as an array and died reading `.name` of undefined,
+  // owner test 2026-09-06). Honesty metadata the protocol cannot carry
+  // (evidence tier, truncation, provenance) is declared and verified at the
+  // component layer; where the spec HAS a data slot (DocumentSymbol.data,
+  // CallHierarchyItem.data) the tier rides there.
   server.register("textDocument/definition", async (params: any) => {
     const raw = await BrainDatabase.getRawInstance(projectId)
-    return resolveDefinition(raw, {
+    const r = await resolveDefinition(raw, {
       filePath: uriToPath(params?.textDocument?.uri ?? ""),
       line: params?.position?.line ?? 0,
       character: params?.position?.character ?? 0,
     })
+    // Wire: Location | Location[] | null. Absence is `null`, never an
+    // envelope that would read as a fabricated definition.
+    if (!r.found || r.location === null) return null
+    return navLocationToWire(r.location)
   })
 
   server.register("textDocument/documentHighlight", async (params: any) => {
@@ -543,51 +562,108 @@ export function wireFeatures(server: BbLspServer): void {
 
   server.register("textDocument/references", async (params: any) => {
     const raw = await BrainDatabase.getRawInstance(projectId)
-    return resolveReferences(raw, {
+    const r = await resolveReferences(raw, {
       filePath: uriToPath(params?.textDocument?.uri ?? ""),
       line: params?.position?.line ?? 0,
       character: params?.position?.character ?? 0,
       includeDeclaration: params?.context?.includeDeclaration ?? false,
     })
+    // Wire: Location[]. Honesty (truncated/totalCount/evidenceTier) stays at
+    // the component layer — the references UI renders what the index stores.
+    return r.locations.map(navLocationToWire)
   })
 
   server.register("textDocument/documentSymbol", async (params: any) => {
     const raw = await BrainDatabase.getRawInstance(projectId)
-    return documentSymbols(raw, uriToPath(params?.textDocument?.uri ?? ""))
+    const r = documentSymbols(raw, uriToPath(params?.textDocument?.uri ?? ""))
+    // Wire: DocumentSymbol[] (3.17+ — each item MAY carry `data`; the tier
+    // rides there for clients that read it, the tree renders regardless).
+    const tier = r.evidenceTier
+    const notIndexed = r.notIndexed
+    const toWire = (e: DocumentSymbolEntry): unknown => ({
+      name: e.name,
+      detail: e.qualifiedName ?? undefined,
+      kind: symbolKindFor(e.symbolType),
+      range: symbolRangeToWire(e.range),
+      selectionRange: symbolRangeToWire(e.selectionRange),
+      children: e.children?.map(toWire),
+      data: { id: e.id, evidenceTier: tier, notIndexed },
+    })
+    return r.symbols.map(toWire)
   })
 
   server.register("workspace/symbol", async (params: any) => {
     const raw = await BrainDatabase.getRawInstance(projectId)
-    return workspaceSymbols(raw, {
+    const r = workspaceSymbols(raw, {
       query: params?.query ?? "",
       limit: params?.limit,
     })
+    // Wire: SymbolInformation[] (flat). Each carries the index-resolved line
+    // (zero-width range); absence is an empty array, never a fabricated hit.
+    return r.symbols.map((s) => ({
+      name: s.name,
+      kind: symbolKindFor(s.symbolType),
+      containerName: s.qualifiedName ?? undefined,
+      location: {
+        uri: `file://${s.path}`,
+        range: {
+          start: { line: s.line, character: 0 },
+          end: { line: s.line, character: 0 },
+        },
+      },
+    }))
   })
 
   server.register("textDocument/prepareCallHierarchy", async (params: any) => {
     const raw = await BrainDatabase.getRawInstance(projectId)
-    return prepareCallHierarchy(raw, {
+    const r = await prepareCallHierarchy(raw, {
       filePath: uriToPath(params?.textDocument?.uri ?? ""),
       line: params?.position?.line ?? 0,
       character: params?.position?.character ?? 0,
     })
+    // Wire: CallHierarchyItem[] | null. The item's `data` (symbolId) is what
+    // expand requests echo back — the client converter preserves it.
+    return r.item === null ? null : [r.item]
   })
 
   server.register("callHierarchy/incomingCalls", async (params: any) => {
     const raw = await BrainDatabase.getRawInstance(projectId)
-    return expandCalls(raw, projectId, {
+    const r = await expandCalls(raw, projectId, {
       item: params?.item,
       direction: "incoming",
     })
+    // Wire: CallHierarchyIncomingCall[] (plain array; the envelope's
+    // truncation metadata stays at the component layer).
+    return r.calls as CallHierarchyIncomingCall[]
   })
 
   server.register("callHierarchy/outgoingCalls", async (params: any) => {
     const raw = await BrainDatabase.getRawInstance(projectId)
-    return expandCalls(raw, projectId, {
+    const r = await expandCalls(raw, projectId, {
       item: params?.item,
       direction: "outgoing",
     })
+    return r.calls as CallHierarchyOutgoingCall[]
   })
+}
+
+/** Wire helper: a NavigationLocation (component) -> LSP Location. */
+function navLocationToWire(loc: { path: string; line: number; character: number; endLine: number; endCharacter: number }): unknown {
+  return {
+    uri: `file://${loc.path}`,
+    range: {
+      start: { line: loc.line, character: loc.character },
+      end: { line: loc.endLine, character: loc.endCharacter },
+    },
+  }
+}
+
+/** Wire helper: a component SymbolRange -> LSP Range. */
+function symbolRangeToWire(r: { line: number; character: number; endLine: number; endCharacter: number }): unknown {
+  return {
+    start: { line: r.line, character: r.character },
+    end: { line: r.endLine, character: r.endCharacter },
+  }
 }
 
 // Self-execution: node dist/lsp/server.js --dir <ws> (also bun src/lsp/server.ts).

@@ -287,7 +287,11 @@ export async function activate(context: ExtensionContext): Promise<unknown> {
   // the clickable targets of the rich hover body. The webview actions get the
   // REAL client so panels resolve symbols server-side (never client-guessed).
   const { registerHoverCommands } = await import("./hover-commands")
-  registerHoverCommands(context, { client, cspSource: "" })
+  // Live getter, NOT a value: this runs before startClient() assigns the
+  // module-level client, so capturing `client` here would freeze the hover
+  // actions at null and every bb.openGraph / bb.openImpact panel would
+  // render "bb_lsp is not running" forever (owner test, 2026-09-06).
+  registerHoverCommands(context, { getClient: () => client, cspSource: "" })
   // Staleness follows the active editor; status renders after every change.
   context.subscriptions.push(
     window.onDidChangeActiveTextEditor(() => {

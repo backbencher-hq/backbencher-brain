@@ -138,12 +138,16 @@ function serializeAttr(v: string): string {
   return v.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
 }
 
-/** Open (or reuse) the hub panel for a symbol. */
+/** Open (or reuse) the hub panel for a symbol. Returns the panel AND the
+ *  render outcome it shows — the caller (bb.openGraph) surfaces whether the
+ *  panel rendered DATA or a declared failure (owner test, 2026-09-06: a
+ *  click whose panel only ever renders the stale-null not-running banner is
+ *  a wiring failure, not a success). */
 export async function showHubPanel(
   params: { symbol: string; file?: string },
   deps: HubPanelDeps,
   context: ExtensionContext,
-): Promise<WebviewPanel> {
+): Promise<{ panel: WebviewPanel; outcome: HubRenderOutcome }> {
   const panel = window.createWebviewPanel("bbHub", `Backbencher Hub — ${params.symbol}`, ViewColumn.Beside, {
     // The toggle needs a script; the W6 shell ships nonce-bound and CSP-locked
     // (default-src 'none'): enableScripts only makes the nonce-bound local
@@ -162,7 +166,7 @@ export async function showHubPanel(
   context.subscriptions.push(wireWebviewMessages(panel.webview, vscodeDeps(), refresh))
   const outcome = await renderHubForPanel(params, deps)
   panel.webview.html = buildHubHtml(outcome, deps.cspSource)
-  return panel
+  return { panel, outcome }
 }
 
 /** Toggle script (local only): switches the active hub section. Nonce-bound
