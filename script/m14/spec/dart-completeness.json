@@ -244,7 +244,7 @@
         "node_type": "local_function_declaration,lambda_expression,function_expression",
         "status": "RULED",
         "question": "Local functions, lambdas, and function expressions are not module-level symbols.",
-        "resolution": "NO locals/lambdas as symbols (M12.11 family contract). A local_function_declaration still becomes the call-source context for calls inside it; lambda_expression and function_expression are silent internals."
+        "resolution": "NO locals/lambdas as symbols (M12.11 family contract). A local_function_declaration still becomes the call-source context for calls inside it; lambda_expression and function_expression are silent internals. SUPERSEDED (2026-09, DARTD8): a local_function_declaration is now a silent fold — calls inside it attribute to the enclosing real function (csharp/python/go parity), and it never becomes a call-source context either."
       },
       {
         "id": "DARTD3",
@@ -268,7 +268,42 @@
         "resolution": "All type positions resolve via type_identifier/void_type; generic arguments live in type_arguments and are preserved in the type string."
       },
       {
-        "id": "DARTD2",
+        "id": "DARTD6",
+        "node_type": "field/variable declarations (declaration > <list>)",
+        "status": "FIXED",
+        "question": "Where is a field's declared type in the parse tree, and how is it extracted without an O(class)^2 ancestor scan?",
+        "resolution": "The explicit type is always a DIRECT child of the declaration container in front of the list (probed dart-typedecl-shapes.ts: instance/static/final/multi-name/top-level all place type_identifier on declaration; inferred `static const x = Ctor(...)` carries none). extractFieldType scans node + declList direct children only. The old parent fallback iterated every class_body member per field — 13.6 s on phosphor_icons_regular.dart (1,512 fields x 3k-member scan); fixed to 252 ms (50x). Same trap hasModifier documents; a bound is not needed since direct-child scans are O(1)."
+      },
+      {
+        "id": "DARTD7",
+        "node_type": "relationship multiplicity",
+        "status": "FIXED",
+        "question": "Calls/instantiates emit ONE row per call site — N sites of the same callee push N identical (type,source,target,confidence) rows. Is multiplicity payload or noise?",
+        "resolution": "Noise: 192,761 redundant rows across proxicall (35% of 545,208); oracle/fixtures are presence-based so multiplicity was invisible to every gate. Dedup exact rows at emission (first metadata wins): total corpus relationships 545,208 -> 351,722, dup rows 0. Unique-set semantics mirror the rust #383/go GOD9 qualified_calls lesson."
+      },
+      {
+        "id": "DARTD8",
+        "node_type": "local_function_declaration (lambda_expression > function_signature)",
+        "status": "FIXED",
+        "question": "Local functions leaked as top-level Function symbols with empty scope, and became their own call-source context (contradicting DARTD2's no-locals rule).",
+        "resolution": "Local-function signatures are not symbols AND not call contexts: the guard skips function_signature under lambda_expression in the symbol pass, and resolveCurrent returns the enclosing function for calls inside a local body (fold). Corpus: the countingFetch/start 'duplicate function' census rows disappear; calls attribute to the real enclosing function (csharp/python/go parity)."
+      },
+      {
+        "id": "DARTD9",
+        "node_type": "class-member field initializers (no enclosing function)",
+        "status": "FIXED",
+        "question": "Instantiates/calls with no function context fell back to the MODULE (file basename) as source — every const field of an icon class attributed to the file, a name that is not a symbol.",
+        "resolution": "extractCallRelationships tracks the enclosing class/mixin/enum/extension and uses it before the module fallback: field initializers attribute to the owning class (IconSet -> IconData); the module remains only for true top-level initializers. Csharp parity: parentContext?.rawName || 'global'."
+      },
+      {
+        "id": "DARTD10",
+        "node_type": "top-level getter_signature / setter_signature",
+        "status": "FIXED",
+        "question": "Top-level getters/setters fell through every dispatch branch (owner undefined, t not function_signature) — silently dropped as symbols while their bodies' calls attributed to a non-declared source.",
+        "resolution": "Bare top-level getter/setter signatures route to processTopLevelFunction as Property symbols with meta.isTopLevelAccessor/isGetter/isSetter (corpus: translate.dart's `List<String> get _deepLKeys` now declared; non-declared call-source tail 0)."
+      },
+      {
+        "id": "DARTD11",
         "node_type": "constructor_invocation, qualified, scoped_identifier, typed_identifier",
         "status": "RULED",
         "question": "Are these four grammar rules realizable as parse-tree nodes by any Dart source in the pinned tree-sitter-dart grammar?",
