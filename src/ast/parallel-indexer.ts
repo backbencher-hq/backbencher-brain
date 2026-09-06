@@ -1257,7 +1257,13 @@ export async function processWithWorkerPool(
             const fileResult = { filePath: msg.filePath, ...msg.result }
             // DEBUG
             if (!msg.result || !msg.result.symbols) process.stderr.write(`[BB-NO-RESULT] ${msg.filePath}: result=${!!msg.result} symCount=${msg.symCount}\n`)
-            results.push({ filePath: msg.filePath, success: true, timeout: false, error: undefined })
+            // M44-post-close: keep the FULL result (symbols included) in the
+            // outcomes array, mirroring the in-process path. Previously only
+            // filePath/success were pushed, so r.symbols was always undefined
+            // for pool runs and symbolLoss == newlyParsed unconditionally —
+            // genuine ENGINE_EMPTY zero-symbol files were invisible in the
+            // breakdown line (silent-loss class V5 exists to surface).
+            results.push(fileResult)
             pendingDbBatch.push(fileResult)
 
             if (pendingDbBatch.length >= 20) { // Flush smaller batches to avoid blocking event loop
