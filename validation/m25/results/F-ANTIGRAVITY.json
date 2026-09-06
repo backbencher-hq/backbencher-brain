@@ -17,8 +17,8 @@
     "node": "v20.19.5",
     "runtime": "fork-run"
   },
-  "currentCommit": "7b3cb7043700461ce259fe38c7be98a35dd63836",
-  "commit": "7b3cb7043700461ce259fe38c7be98a35dd63836",
+  "currentCommit": "27d2daf9218cb77ee614f55d1fb42352e21cfacf",
+  "commit": "27d2daf9218cb77ee614f55d1fb42352e21cfacf",
   "failed": 0,
   "checks": [
     {
@@ -32,12 +32,12 @@
     {
       "name": "E5: server launched and version ok",
       "ok": true,
-      "detail": "{\"activationMs\":37,\"declaredBudgetMs\":150,\"withinBudget\":true,\"launch\":{\"kind\":\"dist-bundled\",\"entryPath\":\"$HOME/backbencher-brain/ide/vscode/dist/server/lsp/server.js\",\"runtime\":\"node\",\"run"
+      "detail": "{\"activationMs\":30,\"declaredBudgetMs\":150,\"withinBudget\":true,\"launch\":{\"kind\":\"dist-bundled\",\"entryPath\":\"$HOME/backbencher-brain/ide/vscode/dist/server/lsp/server.js\",\"runtime\":\"node\",\"run"
     },
     {
       "name": "E5: activation within declared budget",
       "ok": true,
-      "detail": "{\"activationMs\":37,\"regime\":\"cold-first-launch\",\"ceiling\":1500,\"declaredBudgetMs\":150}"
+      "detail": "{\"activationMs\":30,\"regime\":\"cold-first-launch\",\"ceiling\":1500,\"declaredBudgetMs\":150}"
     },
     {
       "name": "E5: extension exposes its LanguageClient transport",
@@ -46,12 +46,12 @@
     {
       "name": "L2: hover renders markdown",
       "ok": true,
-      "detail": "{\"contents\":{\"value\":\"```\\nmethod greet(…)\\n```\\n\\n**greet** — method, 1 usage\\n\\nevidence: structural\\n\\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-MPvwIl%2Fmain.ts%22%2C%22line%22%3A6%2C%22character%22%3A9%7D%5D) · _role consumer · layer core→core · 1"
+      "detail": "{\"contents\":{\"value\":\"```\\nmethod greet(…)\\n```\\n\\n**greet** — method, 1 usage\\n\\nevidence: structural\\n\\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-wQ32ML%2Fmain.ts%22%2C%22line%22%3A6%2C%22character%22%3A9%7D%5D) · _role consumer · layer core→core · 1"
     },
     {
       "name": "L2: hover names greet",
       "ok": true,
-      "detail": "{\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\",\"symbolType\":\"method\",\"signature\":\"method greet(…)\",\"usageCount\":1,\"evidenceTiers\":[\"structural\"],\"connectedSection\":\"**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-MPvwIl%2Fmain.ts%22%2C%22line%22%3A6%2C%22character%22%3A9%7D%5D) · _role consumer · layer core→core · 1 referring row · low criticality (enriched by index)_\",\"usagesSection\":\"**usages**\\n1. [main — main.ts:7](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-MPvwIl%2Fmain.ts%22%2C%22line%22%3A6%2C%22character%22%3A9%7D%5D)\",\"definition\":{\"line\":1,\"character\":2},\"actionsSection\":\"**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Ftmp%2Fv1-ws-MPvwIl%2Fmain.ts%22%2C%22line%22%3A1%2C%22character%22%3A2%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Ftmp%2Fv1-ws-MPvwIl%2Fmain.ts%22%2C%22line%22%3A1%2C%22character%22%3A2%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Ftmp%2Fv1-ws-MPvwIl%2Fmain.ts%22%2C%22line%22%3A1%2C%22character%22%3A2%7D%5D)\",\"crossLanguageSection\":\"\",\"annotationSection\":\"\",\"stale\":false,\"freshnessStatus\":\"fresh\",\"filePath\":\"/tmp/v1-ws-MPvwIl/main.ts\",\"lineStart\":2,\"lineEnd\":2}"
+      "detail": "{\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\",\"symbolType\":\"method\",\"signature\":\"method greet(…)\",\"usageCount\":1,\"evidenceTiers\":[\"structural\"],\"connectedSection\":\"**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-wQ32ML%2Fmain.ts%22%2C%22line%22%3A6%2C%22character%22%3A9%7D%5D) · _role consumer · layer core→core · 1 referring row · low criticality (enriched by index)_\",\"usagesSection\":\"**usages**\\n1. [main — main.ts:7](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-wQ32ML%2Fmain.ts%22%2C%22line%22%3A6%2C%22character%22%3A9%7D%5D)\",\"definition\":{\"line\":1,\"character\":2},\"actionsSection\":\"**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Ftmp%2Fv1-ws-wQ32ML%2Fmain.ts%22%2C%22line%22%3A1%2C%22character%22%3A2%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Ftmp%2Fv1-ws-wQ32ML%2Fmain.ts%22%2C%22line%22%3A1%2C%22character%22%3A2%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Ftmp%2Fv1-ws-wQ32ML%2Fmain.ts%22%2C%22line%22%3A1%2C%22character%22%3A2%7D%5D)\",\"crossLanguageSection\":\"\",\"annotationSection\":\"\",\"stale\":false,\"freshnessStatus\":\"fresh\",\"filePath\":\"/tmp/v1-ws-wQ32ML/main.ts\",\"lineStart\":2,\"lineEnd\":2}"
     },
     {
       "name": "L2: hover usage count matches fixture relationship",
@@ -69,17 +69,17 @@
     {
       "name": "H2: rich hover renders the connected summary (called by main)",
       "ok": true,
-      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-MPvwIl%2Fmain.ts%22%2C%22line%22%3A6%2C%22character%22"
+      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-wQ32ML%2Fmain.ts%22%2C%22line%22%3A6%2C%22character%22"
     },
     {
       "name": "H2: usage link is clickable with an index-backed file:line target",
       "ok": true,
-      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-MPvwIl%2Fmain.ts%22%2C%22line%22%3A6%2C%22character%22%3A9%7D%5D) · _role consumer · layer core→core · 1 referring row · low criticali"
+      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-wQ32ML%2Fmain.ts%22%2C%22line%22%3A6%2C%22character%22%3A9%7D%5D) · _role consumer · layer core→core · 1 referring row · low criticali"
     },
     {
       "name": "H2: definition footnote is a link (bb.openDefinition)",
       "ok": true,
-      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-MPvwIl%2Fmain.ts%22%2C%22line%22%3"
+      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-wQ32ML%2Fmain.ts%22%2C%22line%22%3"
     },
     {
       "name": "H2: no show-all-usages link for a single-usage symbol",
@@ -89,12 +89,12 @@
     {
       "name": "H3: stored enrichment surfaces on hover (role/layer/frequency)",
       "ok": true,
-      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-MPvwIl%2Fmain.ts%22%2C%22line%22%3A6%2C%22character%22%3A9%7D%5D) · _role consumer · layer core→core · 1 referring row · low criticality (enriched by index)_\n\n**usages**\n1. [main — main.ts:7](command:bb.openUsage?%5B%7B%22file%22%3A%2"
+      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-wQ32ML%2Fmain.ts%22%2C%22line%22%3A6%2C%22character%22%3A9%7D%5D) · _role consumer · layer core→core · 1 referring row · low criticality (enriched by index)_\n\n**usages**\n1. [main — main.ts:7](command:bb.openUsage?%5B%7B%22file%22%3A%2"
     },
     {
       "name": "H3: enrichment is labeled index-inferred, never parser-fact tier",
       "ok": true,
-      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-MPvwIl%2Fmain.ts%22%2C%22line%22%3A6%2C%22character%22%3A9%7D%5D) · _role consumer · layer core→core · 1 referring row · low criticality (enriched by index)_\n\n**usages**\n1. [main — main.ts:7](command:bb.openUsage?%5B%7B%22file%22%3A%2"
+      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-wQ32ML%2Fmain.ts%22%2C%22line%22%3A6%2C%22character%22%3A9%7D%5D) · _role consumer · layer core→core · 1 referring row · low criticality (enriched by index)_\n\n**usages**\n1. [main — main.ts:7](command:bb.openUsage?%5B%7B%22file%22%3A%2"
     },
     {
       "name": "H3: enrichment annotation never upgrades the evidence tier",
@@ -104,7 +104,7 @@
     {
       "name": "H4: hover embeds the actions row",
       "ok": true,
-      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-MPvwIl%2Fmain.ts%22%2C%22line%22%3A6%2C%22character%22%3A9%7D%5D) · _role consumer · layer core→core · 1 referring row · low criticality (enriched by index)_\n\n**usages**\n1. [main — main.ts:7](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-MPvwIl%2Fmain.ts%22%2C%22line%22%3A6%2C%22character%22%3A9%7D%5D)\n\n**actions**: [Ope"
+      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-wQ32ML%2Fmain.ts%22%2C%22line%22%3A6%2C%22character%22%3A9%7D%5D) · _role consumer · layer core→core · 1 referring row · low criticality (enriched by index)_\n\n**usages**\n1. [main — main.ts:7](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-wQ32ML%2Fmain.ts%22%2C%22line%22%3A6%2C%22character%22%3A9%7D%5D)\n\n**actions**: [Ope"
     },
     {
       "name": "H4: exactly the three action commands embed parseable args",
@@ -114,7 +114,7 @@
     {
       "name": "H4: action args are the server-resolved symbol identity (greet)",
       "ok": true,
-      "detail": "{\"symbol\":\"greet\",\"file\":\"/tmp/v1-ws-MPvwIl/main.ts\",\"line\":1,\"character\":2}"
+      "detail": "{\"symbol\":\"greet\",\"file\":\"/tmp/v1-ws-wQ32ML/main.ts\",\"line\":1,\"character\":2}"
     },
     {
       "name": "L2: hover outside index is declared absent",
@@ -124,17 +124,17 @@
     {
       "name": "L3: definition resolves greet",
       "ok": true,
-      "detail": "{\"uri\":\"file:///tmp/v1-ws-MPvwIl/main.ts\",\"range\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\"line\":1,\"character\":7}}}"
+      "detail": "{\"uri\":\"file:///tmp/v1-ws-wQ32ML/main.ts\",\"range\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\"line\":1,\"character\":7}}}"
     },
     {
       "name": "L3: definition location is 0-based line 1",
       "ok": true,
-      "detail": "{\"uri\":\"file:///tmp/v1-ws-MPvwIl/main.ts\",\"range\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\"line\":1,\"character\":7}}}"
+      "detail": "{\"uri\":\"file:///tmp/v1-ws-wQ32ML/main.ts\",\"range\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\"line\":1,\"character\":7}}}"
     },
     {
       "name": "L3: references returns locations",
       "ok": true,
-      "detail": "[{\"uri\":\"file:///tmp/v1-ws-MPvwIl/main.ts\",\"range\":{\"start\":{\"line\":6,\"character\":9},\"end\":{\"line\":9,\"character\":1}}},{\"uri\":\"file:///tmp/v1-ws-MPvwIl/main.ts\",\"range\":{\"start\":{\"line\":1,\"character\":2"
+      "detail": "[{\"uri\":\"file:///tmp/v1-ws-wQ32ML/main.ts\",\"range\":{\"start\":{\"line\":6,\"character\":9},\"end\":{\"line\":9,\"character\":1}}},{\"uri\":\"file:///tmp/v1-ws-wQ32ML/main.ts\",\"range\":{\"start\":{\"line\":1,\"character\":2"
     },
     {
       "name": "L3: definition outside index is honest empty",
@@ -153,17 +153,17 @@
     {
       "name": "L4: workspace/symbol finds greet",
       "ok": true,
-      "detail": "[{\"name\":\"greet\",\"kind\":6,\"containerName\":\"Greeter.greet\",\"location\":{\"uri\":\"file:///tmp/v1-ws-MPvwIl/main.ts\",\"range\":{\"start\":{\"line\":1,\"character\":0},\"end\":{\"line\":1,\"character\":0}}}}]"
+      "detail": "[{\"name\":\"greet\",\"kind\":6,\"containerName\":\"Greeter.greet\",\"location\":{\"uri\":\"file:///tmp/v1-ws-wQ32ML/main.ts\",\"range\":{\"start\":{\"line\":1,\"character\":0},\"end\":{\"line\":1,\"character\":0}}}}]"
     },
     {
       "name": "L5: prepareCallHierarchy returns item",
       "ok": true,
-      "detail": "[{\"name\":\"greet\",\"kind\":6,\"uri\":\"file:///tmp/v1-ws-MPvwIl/main.ts\",\"range\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\"line\":1,\"character\":7}},\"selectionRange\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\""
+      "detail": "[{\"name\":\"greet\",\"kind\":6,\"uri\":\"file:///tmp/v1-ws-wQ32ML/main.ts\",\"range\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\"line\":1,\"character\":7}},\"selectionRange\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\""
     },
     {
       "name": "L5: incomingCalls returns callers",
       "ok": true,
-      "detail": "[{\"from\":{\"name\":\"main\",\"kind\":12,\"uri\":\"file:///tmp/v1-ws-MPvwIl/main.ts\",\"range\":{\"start\":{\"line\":6,\"character\":0},\"end\":{\"line\":9,\"character\":0}},\""
+      "detail": "[{\"from\":{\"name\":\"main\",\"kind\":12,\"uri\":\"file:///tmp/v1-ws-wQ32ML/main.ts\",\"range\":{\"start\":{\"line\":6,\"character\":0},\"end\":{\"line\":9,\"character\":0}},\""
     },
     {
       "name": "L5: outgoingCalls returns callees",
@@ -198,13 +198,23 @@
     {
       "name": "E5-H2: hover embeds a bb.openUsage link",
       "ok": true,
-      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-MPvwIl%2Fmain.ts%22%2C%22line%22%3A6%2C%22character%22%3A9%7D%5D) · _role consumer · layer core→core · 1 referring row · low criticali"
+      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-wQ32ML%2Fmain.ts%22%2C%22line%22%3A6%2C%22character%22%3A9%7D%5D) · _role consumer · layer core→core · 1 referring row · low criticali"
+    },
+    {
+      "name": "E5-H2: clicking bb.openUsage reveals the index-stored target",
+      "ok": true,
+      "detail": "{\"before\":-1,\"args\":{\"file\":\"/tmp/v1-ws-wQ32ML/main.ts\",\"line\":6,\"character\":9},\"line\":6}"
+    },
+    {
+      "name": "E5-H2: hover embeds a bb.openDefinition link",
+      "ok": true,
+      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-wQ32ML%2Fmain.ts%22%2C%22line%22%3"
     }
   ],
-  "checksPassed": 37,
-  "checksTotal": 37,
+  "checksPassed": 39,
+  "checksTotal": 39,
   "activation": {
-    "activationMs": 37,
+    "activationMs": 30,
     "declaredBudgetMs": 150,
     "withinBudget": true,
     "launch": {
@@ -216,11 +226,11 @@
     },
     "serverVersion": "0.3.0",
     "versionOk": true,
-    "handshakeMs": 342
+    "handshakeMs": 303
   },
-  "elapsedMs": 24028,
+  "elapsedMs": 24022,
   "verifierCommand": "npx tsx script/m25/run-fork-e2e.mts",
   "evidenceFile": "F-ANTIGRAVITY.json",
-  "generatedAt": "2026-09-06T17:41:37.964Z",
+  "generatedAt": "2026-09-06T19:19:03.473Z",
   "limitations": []
 }
