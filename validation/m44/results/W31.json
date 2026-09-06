@@ -1,0 +1,11 @@
+{
+  "status": "verified",
+  "currentCommit": "96cac92792ceee263d194328d9b34fc2df1bc99f",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m44/verify-w31-watcher.ts",
+  "evidenceFile": "W31.json",
+  "generatedAt": "2026-09-06T03:19:53.026Z",
+  "passed": 18,
+  "failed": 0,
+  "negativeCases": 1
+}
