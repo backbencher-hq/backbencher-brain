@@ -114,7 +114,9 @@ async function main(): Promise<void> {
   try {
     check("P1: missing version rejected loudly", await expectGraphError(handleGraphRequest(fx.db, fx.projectId, { symbol: "main" }), "schema version mismatch"))
     check("P1: wrong version rejected loudly", await expectGraphError(handleGraphRequest(fx.db, fx.projectId, { schemaVersion: 1, symbol: "main" }), "schema version mismatch"))
-    check("P1: version pinned at 1", GRAPH_SCHEMA_VERSION === 1 && GRAPH_REQUEST_METHOD === "bb/graph")
+    // M44.U1: the usages-mode response is grouped per symbol (issue #688) —
+    // the wire schema moved to 2 and the version is pinned here, machine-wide.
+    check("P1: version pinned at 2 (M44.U1 grouped usages)", GRAPH_SCHEMA_VERSION === 2 && GRAPH_REQUEST_METHOD === "bb/graph")
     // Happy path with correct version.
     const ok = await handleGraphRequest(fx.db, fx.projectId, { schemaVersion: GRAPH_SCHEMA_VERSION, symbol: "main" })
     check("P1: correct version serves the graph", ok.summary.totalCallers >= 1, `callers=${ok.summary.totalCallers}`)
@@ -192,7 +194,7 @@ async function main(): Promise<void> {
   // --- P6: doc drift gate ----------------------------------------------------
   const doc = existsSync(DOC) ? readFileSync(DOC, "utf8") : ""
   check("P6: doc names the method", doc.includes("`bb/graph`"))
-  check("P6: doc names the schema version", doc.includes("schema version 1") || doc.includes("Schema version 1") || doc.includes("Schema Version 1".toLowerCase()))
+  check("P6: doc names the schema version", doc.includes("schema version 2") || doc.includes("Schema version 2"))
   check("P6: doc declares the error prefix contract", doc.includes("bb/graph:"))
   check("P6: doc declares the indexed-workspace rule", doc.toLowerCase().includes("not indexed") && doc.includes("`bb index`"))
   check("P6: doc declares the traceability rule", doc.toLowerCase().includes("rowid") && doc.toLowerCase().includes("trace"))
@@ -201,7 +203,7 @@ async function main(): Promise<void> {
   const r1 = await realServerLeg()
   check("R1: real server — happy path with row-id trace over the wire", r1.happy, r1.detail)
   check("R1: real server — legacy caller (no version) gets the loud declared error", r1.legacy, r1.detail2)
-  check("R1: real server — capabilities advertise graphProvider.schemaVersion=1", r1.caps, r1.detail3)
+  check("R1: real server — capabilities advertise graphProvider.schemaVersion (matches the module)", r1.caps, r1.detail3)
 
   // --- Mutants ----------------------------------------------------------------
   const mutants: Array<{ name: string; from: string; to: string }> = [
@@ -375,6 +377,10 @@ async function main(): Promise<void> {
 // --- Real-server leg -----------------------------------------------------------
 async function realServerLeg(): Promise<{ happy: boolean; legacy: boolean; caps: boolean; detail: string; detail2: string; detail3: string }> {
   const out = { happy: false, legacy: false, caps: false, detail: "", detail2: "", detail3: "" }
+  // The leg runs outside main() — read the version from the module under test
+  // itself (never a hardcoded literal): a version bump with a stale leg fails.
+  const wireMod = (await import(COMPONENT)) as GraphRequestModule
+  const WIRE_VERSION = wireMod.GRAPH_SCHEMA_VERSION
   const ws = mkdtempSync(join(tmpdir(), "w2-r-ws-"))
   const dataDir = mkdtempSync(join(tmpdir(), "w2-r-data-"))
   let child: ReturnType<typeof spawn> | null = null
@@ -448,11 +454,11 @@ async function realServerLeg(): Promise<{ happy: boolean; legacy: boolean; caps:
       })
 
     const init = await request("initialize", { capabilities: {}, rootUri: `file://${ws}` })
-    out.caps = (init?.result?.capabilities?.graphProvider as any)?.schemaVersion === GRAPH_SCHEMA_VERSION
+    out.caps = (init?.result?.capabilities?.graphProvider as any)?.schemaVersion === WIRE_VERSION
     out.detail3 = `graphProvider=${JSON.stringify(init?.result?.capabilities?.graphProvider)}`
     send({ jsonrpc: "2.0", method: "initialized", params: {} })
 
-    const res = await request("bb/graph", { schemaVersion: GRAPH_SCHEMA_VERSION, symbol: "main" })
+    const res = await request("bb/graph", { schemaVersion: WIRE_VERSION, symbol: "main" })
     const edges = [...((res?.result?.callers as any[]) ?? []), ...((res?.result?.callees as any[]) ?? [])]
     out.happy = res?.result !== undefined && edges.length >= 1 && edges.every((e) => typeof e.rowId === "string" && e.rowId.startsWith("rel-wire-"))
     out.detail = `edges=${JSON.stringify(edges.map((e) => ({ rowId: e.rowId, from: e.from, to: e.to })))} stderr=${stderrTail.slice(-200)}`

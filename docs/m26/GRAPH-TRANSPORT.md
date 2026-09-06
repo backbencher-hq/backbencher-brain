@@ -13,16 +13,21 @@ code).
 capabilities as:
 
 ```json
-"graphProvider": { "schemaVersion": 1 }
+"graphProvider": { "schemaVersion": 2 }
 ```
 
-## Schema version 1
+## Schema version 2 (M44.U1: grouped usages)
+
+Schema version 2 changes ONLY the `mode: "usages"` RESPONSE: it is grouped
+per symbol (below). The `graph` mode response is unchanged from version 1.
+A version-1 client is rejected loudly (`schema version mismatch`), never
+served a v2 payload it would mis-render.
 
 Request params (all keys except `schemaVersion` and `symbol` optional):
 
 | param | type | constraint |
 |---|---|---|
-| `schemaVersion` | integer | must be exactly `1` |
+| `schemaVersion` | integer | must be exactly `2` |
 | `symbol` | string | non-empty; symbol name to root the graph at |
 | `direction` | string | `"callers"` \| `"callees"` \| `"both"` |
 | `maxDepth` | integer | 1–10 (server clamps traversal to 10 regardless) |
@@ -30,7 +35,9 @@ Request params (all keys except `schemaVersion` and `symbol` optional):
 | `relationshipTypes` | string[] | non-empty strings; defaults to the engine set |
 | `includeCrossLanguage` | boolean | |
 
-Response: the `GraphTraversalResult` model (src/intelligence/contracts.ts) —
+### `mode: "graph"` response
+
+The `GraphTraversalResult` model (src/intelligence/contracts.ts) —
 `root`, `callers`, `callees`, `nodes`, `provenance`, `summary`. Every edge in
 `callers`/`callees` carries:
 
@@ -39,6 +46,27 @@ Response: the `GraphTraversalResult` model (src/intelligence/contracts.ts) —
   boundary and an edge without a row id fails the request rather than ship.
 - `metadata.evidenceClass` — the stored evidence tier when the indexer wrote
   one; the webview renders tiers from this field (W4), never from guesswork.
+
+### `mode: "usages"` response (v2: grouped, M44.U1)
+
+The hub must understand WHO uses a symbol — and a caller legitimately owns
+several stored rows (calls + instantiates + references), so a raw edge list
+repeats the same symbol. The v2 usages response groups per symbol
+(Understanding Rules §13.1/§13.2/§13.4/§13.5, owner: `src/lsp/graph_usages.ts`):
+
+- `callers` / `callees` — arrays of **groups**, one per SYMBOL (identity =
+  symbol id, never name): `{ symbolId, name, file, line, symbolType,
+  isExternal, relationshipTypes: [{type, occurrences}], occurrences, rows }`.
+- `rows[]` — every stored row behind the group, declared and traceable
+  (`rowId`, `relationshipType`, `callSite`, `confidence`, `depth`, …).
+  Nothing is dropped: the served row-id set equals the stored set.
+- `fileLevel` — `{ imports, exports }`: file-level rows (NULL source symbol,
+  module-specifier identity) in DECLARED, labeled sections — never merged
+  into symbol rows, never dropped (§13.5).
+- `counts` — header counts count **groups** (`callerGroups`, `calleeGroups`)
+  plus row totals — the renderer's header can never disagree with the list.
+- `summary` — truncation is declared (never silent); `crossLanguageGroups`
+  counts groups carrying a cross-language row.
 
 ## Declared errors (loud, machine-parseable)
 
@@ -49,7 +77,7 @@ distinguish declared errors from bugs.
 | condition | message shape |
 |---|---|
 | params not an object | `bb/graph: params must be an object carrying schemaVersion and symbol` |
-| missing/mismatched version | `bb/graph: schema version mismatch — request carries …, server implements 1 …` |
+| missing/mismatched version | `bb/graph: schema version mismatch — request carries …, server implements 2 …` |
 | missing/empty symbol | `bb/graph: params.symbol (non-empty string) is required` |
 | bad direction/maxDepth/… | `bb/graph: params.<field> must be …` |
 | **unindexed workspace** | `bb/graph: workspace is not indexed — run `bb index` first …` |
