@@ -8,10 +8,10 @@
   "failed": 0,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "aed0cd3a98484150686a211d301e8ff8b5130595",
+  "currentCommit": "9df90a5458c7c990596a693bee0a5a6e6d080775",
   "verifierCommand": "npx tsx script/m42/verify-hub.ts",
   "evidenceFile": "H5.json",
-  "generatedAt": "2026-09-05T23:50:09.810Z",
+  "generatedAt": "2026-09-06T17:32:27.278Z",
   "fixture": {
     "root": "$HOME/backbencher-brain/.tools/m42-h2-fixture",
     "files": [
