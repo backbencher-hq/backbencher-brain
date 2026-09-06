@@ -1089,6 +1089,38 @@ export namespace ASTEngine {
     return { parser, tree, transientLuaGrammar }
   }
 
+  // M45.H1 grammar-gap machinery (see parseFile). The probe copy is used ONLY
+  // to decide whether parse errors are grammar gaps on valid code — its tree
+  // is never used for symbols/ranges, so replacement length is irrelevant.
+  const TS_FAMILY = new Set(["typescript", "tsx", "javascript"])
+  const SYNTAX_WARNING_RE = /syntax|unexpected node|missing node|bypass|broken node|parse error/i
+
+  function neutralizeTsGrammarGaps(content: string, language: string): string {
+    let c = content
+    // 1. `import("mod")` / `import("mod").Member` — legal in BOTH value
+    //    position (dynamic import) and type position (import type); the
+    //    grammar chokes on the import type. Neutralize to `object`, which is a
+    //    valid type and a valid expression.
+    c = c.replace(/import\((["'])([^"'\n]*?)\1\)(?:\.[A-Za-z_$][\w$]*)*/g, "object")
+    if (language === "tsx") {
+      // 4. TSX attribute values are JS strings: a bare `&` (Tailwind
+      //    `[&_code]:…`) is legal, but the tsx grammar demands entity form
+      //    inside quoted attribute values. Only quoted attribute strings are
+      //    touched — expression containers `{...}` are never matched. (`<!--`
+      //    is skipped here because in TSX it is a real JSX HTML comment.)
+      c = c.replace(/(=\s*)(["'])([\s\S]*?)\2/g, (m, pre, q, inner: string) => `${pre}${q}${inner.replace(/&(?!amp;)/g, "&amp;")}${q}`)
+    } else {
+      // 2. `unique` is a legal value identifier; the grammar reserves it for
+      //    the `unique symbol` type. Never touch the type itself.
+      c = c.replace(/\bunique\b(?!\s*symbol)/g, "uniqxx")
+      // 3. An HTML-comment opener inside a regex literal (e.g. /<!-- -->/) is
+      //    legal JS but desyncs the .ts/.js lexer. In .tsx `<!--` is a real
+      //    JSX HTML comment, so it is left alone there.
+      c = c.replace(/<!--/g, "<!__")
+    }
+    return c
+  }
+
   // Wrap parseRaw with a timeout so a stuck grammar cannot hang the process.
   async function parseWithTimeout(
     filePath: string,
@@ -1178,6 +1210,34 @@ export namespace ASTEngine {
           },
           severity: `warning`,
         })
+      }
+    }
+
+    // M45.H1: grammar-gap discriminator. The bundled tree-sitter-typescript
+    // grammar (0.23.2 — latest) cannot parse several LEGAL TS/TSX constructs:
+    //   `unique` used as a value identifier (reserved for `unique symbol`),
+    //   `import("m").T` type annotations,
+    //   `<!--` inside regex literals (lexer desync),
+    //   a bare `&` inside double-quoted TSX attribute strings (Tailwind
+    //   arbitrary variants like `[&_code]:` require entity form per grammar).
+    // Each produces ERROR nodes that used to mark healthy, tsc-valid files
+    // has_syntax_errors = 1 (health 92% on this repo, tools refusing to
+    // operate on real source). When the ORIGINAL parse has errors we re-parse
+    // a copy with those constructs neutralized: if that probe is CLEAN the
+    // errors are grammar gaps on valid code and are NOT reported as syntax
+    // errors. Genuinely broken files (poison/negative fixtures) still error on
+    // the probe and stay flagged. Symbols/ranges always come from the ORIGINAL
+    // parse — the probe only decides the error report.
+    let grammarGapOnly = false
+    if (treeErrors.length > 0 && TS_FAMILY.has(language)) {
+      const probe = neutralizeTsGrammarGaps(content, language)
+      if (probe !== content) {
+        const { tree: probeTree } = await parseWithTimeout(filePath, probe, language)
+        try {
+          grammarGapOnly = !probeTree.rootNode.hasError
+        } finally {
+          if (probeTree && typeof probeTree.delete === "function") probeTree.delete()
+        }
       }
     }
 
@@ -1397,13 +1457,20 @@ export namespace ASTEngine {
 
       // STEP 4: Return complete intelligent analysis
 
+      // M45.H1: when the probe proved the file valid, drop parse-family
+      // entries (engine walk + analyzer walk both report the same ERROR nodes)
+      // so the file is not flagged; non-parse warnings (e.g. lint) survive but
+      // the store predicate already refuses to treat them as syntax errors.
+      let mergedErrors = [...(result.errors || []), ...treeErrors]
+      if (grammarGapOnly) mergedErrors = mergedErrors.filter((e: any) => !SYNTAX_WARNING_RE.test(String(e?.message ?? "")))
+
       return {
         language,
         symbols: result.symbols || [],
         relationships: result.relationships || [],
         imports: result.imports || [],
         exports: result.exports || [],
-        errors: [...(result.errors || []), ...treeErrors],
+        errors: mergedErrors,
         rawContent: result.rawContent,
         metadata: {
           complexity: meta.complexity || 0,

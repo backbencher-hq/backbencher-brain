@@ -23,6 +23,10 @@ import { acquireIndexLock, type IndexLockHandle } from "./index-lock"
 
 const log = Log.create({ service: "parallel-indexer" })
 
+// M45.H1: syntax-warning matcher shared with the store predicate below —
+// matches genuine parse-family messages only (see the predicate comment).
+const SYNTAX_WARNING_RE = /syntax|unexpected node|missing node|bypass|broken node|parse error/i
+
 // ============================================================================
 // PILLAR 3: LAYER-AWARE PAGERANK
 // ============================================================================
@@ -1869,7 +1873,15 @@ export async function storeResults(
           if (hasReact) fileLayer = "ui"
         }
 
-        const hasSyntaxErrors = result.errors && result.errors.some((e: any) => e.severity === "warning")
+        // M45.H1: only genuine parse/syntax warnings set has_syntax_errors.
+        // Lint-style analyzer warnings (e.g. React hook anti-patterns, which
+        // share severity "warning") are not syntax errors and must never mark
+        // a file as having syntax errors. Engine parse errors always carry
+        // /Syntax/i or /missing|unexpected node/ phrasing; analyzer parse
+        // errors carry /Syntax … detected|bypassed|broken node/ phrasing.
+        const hasSyntaxErrors = result.errors && result.errors.some(
+          (e: any) => e.severity === "warning" && SYNTAX_WARNING_RE.test(String(e?.message ?? "")),
+        )
         const errorReport = hasSyntaxErrors ? JSON.stringify(result.errors) : null
 
         const isTestFile = 
