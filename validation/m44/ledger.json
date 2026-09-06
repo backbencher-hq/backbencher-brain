@@ -17,11 +17,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "f10bad6707479fa1d0764db167c4bbd57e6928a6",
+      "currentCommit": "88da2fa771da5f8428141d28774c57941534577f",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m44/verify-governance.ts",
       "evidenceFile": "G1.json",
-      "generatedAt": "2026-09-06T03:40:31.214Z",
+      "generatedAt": "2026-09-06T03:42:26.369Z",
       "passed": 21,
       "failed": 0,
       "negativeCases": 5
@@ -47,11 +47,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "f10bad6707479fa1d0764db167c4bbd57e6928a6",
+      "currentCommit": "88da2fa771da5f8428141d28774c57941534577f",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m44/verify-w11-universal-repair.ts",
       "evidenceFile": "W11.json",
-      "generatedAt": "2026-09-06T03:39:45.198Z",
+      "generatedAt": "2026-09-06T03:41:41.418Z",
       "passed": 32,
       "failed": 0,
       "negativeCases": 13
@@ -74,11 +74,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "f10bad6707479fa1d0764db167c4bbd57e6928a6",
+      "currentCommit": "88da2fa771da5f8428141d28774c57941534577f",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m44/verify-w12-decline-honesty.ts",
       "evidenceFile": "W12.json",
-      "generatedAt": "2026-09-06T03:39:47.397Z",
+      "generatedAt": "2026-09-06T03:41:43.507Z",
       "passed": 35,
       "failed": 0,
       "negativeCases": 11
@@ -104,11 +104,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "f10bad6707479fa1d0764db167c4bbd57e6928a6",
+      "currentCommit": "88da2fa771da5f8428141d28774c57941534577f",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m44/verify-w21-git-probe.ts",
       "evidenceFile": "W21.json",
-      "generatedAt": "2026-09-06T03:39:51.644Z",
+      "generatedAt": "2026-09-06T03:41:47.650Z",
       "passed": 13,
       "failed": 0,
       "negativeCases": 2
@@ -131,11 +131,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "f10bad6707479fa1d0764db167c4bbd57e6928a6",
+      "currentCommit": "88da2fa771da5f8428141d28774c57941534577f",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m44/verify-w22-snapshot-probe.ts",
       "evidenceFile": "W22.json",
-      "generatedAt": "2026-09-06T03:39:57.046Z",
+      "generatedAt": "2026-09-06T03:41:52.475Z",
       "passed": 27,
       "failed": 0,
       "negativeCases": 4
@@ -161,11 +161,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "f10bad6707479fa1d0764db167c4bbd57e6928a6",
+      "currentCommit": "88da2fa771da5f8428141d28774c57941534577f",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m44/verify-w31-watcher.ts",
       "evidenceFile": "W31.json",
-      "generatedAt": "2026-09-06T03:40:04.265Z",
+      "generatedAt": "2026-09-06T03:41:59.916Z",
       "passed": 18,
       "failed": 0,
       "negativeCases": 1
@@ -189,11 +189,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "f10bad6707479fa1d0764db167c4bbd57e6928a6",
+      "currentCommit": "88da2fa771da5f8428141d28774c57941534577f",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m44/verify-w32-bb-watch.ts",
       "evidenceFile": "W32.json",
-      "generatedAt": "2026-09-06T03:40:06.252Z",
+      "generatedAt": "2026-09-06T03:42:02.100Z",
       "passed": 14,
       "failed": 0,
       "negativeCases": 1
@@ -220,11 +220,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "f10bad6707479fa1d0764db167c4bbd57e6928a6",
+      "currentCommit": "88da2fa771da5f8428141d28774c57941534577f",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m44/verify-w4-corpus.ts",
       "evidenceFile": "W4.json",
-      "generatedAt": "2026-09-06T03:40:31.097Z",
+      "generatedAt": "2026-09-06T03:42:26.282Z",
       "passed": 36,
       "failed": 0,
       "negativeCases": 4

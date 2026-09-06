@@ -1,0 +1,13 @@
+{
+  "status": "blocked",
+  "currentCommit": "88da2fa771da5f8428141d28774c57941534577f",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m44/verify-closure.ts",
+  "generatedAt": "2026-09-06T03:43:18.077Z",
+  "passed": 72,
+  "failed": 1,
+  "negativeCases": 3,
+  "failures": [
+    "residue: no uncommitted changes on governed M44 surfaces —  M validation/m44/ledger.json"
+  ]
+}
