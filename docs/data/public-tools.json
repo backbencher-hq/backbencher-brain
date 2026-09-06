@@ -8,7 +8,7 @@
   "tools": [
     {
       "name": "bb_search",
-      "description": "Unified indexed retrieval for symbol lists, content, exact symbol source, or files. This is retrieval, not natural-language explanation or code analysis. Symbol/content/file modes carry a freshness block ({ fresh, stale, missing, staleRatio, mode, remediation }) stating whether results reflect the current files; rows may carry stale=true. Remediation names the exact reindex command. When a read finds stale/missing files within budget, the handler auto-refreshes exactly those files (reindexFilesParallel) before answering and declares it in an autoRefresh field; refresh=false opts out and answers from existing data with the staleness block.",
+      "description": "Unified indexed retrieval for symbol lists, content, exact symbol source, or files. This is retrieval, not natural-language explanation or code analysis. Symbol/content/file modes carry a freshness block ({ fresh, stale, missing, staleRatio, mode, remediation }) stating whether results reflect the current files; rows may carry stale=true. Remediation names the exact reindex command. When a read finds stale/missing files within budget, those files are auto-refreshed exactly (reindexFilesParallel) before the answer is built, declared in an autoRefresh field; refresh=false opts out and answers from existing data with the staleness block.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -137,7 +137,7 @@
     },
     {
       "name": "bb_ask",
-      "description": "Answer a question about the codebase using semantic search over the index. Returns matched symbols with similarity scores.",
+      "description": "Answer a question about the codebase using semantic search over the index. Returns matched symbols with similarity scores. When the answer's source files are stale/missing within budget, those files are auto-refreshed exactly before the answer is re-built, declared (auto-refresh: ...); refresh=false opts out and answers from existing data with stale sources flagged.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -148,6 +148,10 @@
           "limit": {
             "type": "number",
             "description": "max results (default 5)"
+          },
+          "refresh": {
+            "type": "boolean",
+            "description": "false opts out of the inline auto-refresh of stale files (default: auto-refresh within budget before answering)"
           }
         },
         "required": [
@@ -314,7 +318,7 @@
     },
     {
       "name": "bb_patterns",
-      "description": "Detect orphaned code, framework patterns, and anti-patterns, with staleness markers when a finding's file changed after indexing. Use scope=orphaned for dead code; scope=all (default) for the full pattern scan with the optional pattern/confidence filters. Architecture and code-quality analysis are planned, not yet executable.",
+      "description": "Detect orphaned code, framework patterns, and anti-patterns, with staleness markers when a finding's file changed after indexing. Use scope=orphaned for dead code; scope=all (default) for the full pattern scan with the optional pattern/confidence filters. Architecture and code-quality analysis are planned, not yet executable. When the scan's finding files are stale/missing within budget, the scan auto-refreshes exactly those files and re-runs so the output reflects current code (declared on the output); refresh=false opts out.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -353,6 +357,10 @@
           "recordRun": {
             "type": "boolean",
             "description": "persist this scan as an analysis run"
+          },
+          "refresh": {
+            "type": "boolean",
+            "description": "false opts out of the inline auto-refresh of stale files (default: auto-refresh within budget before answering)"
           }
         }
       },
@@ -412,7 +420,7 @@
     },
     {
       "name": "bb_security",
-      "description": "Cross-language security scan: SQL injection, XSS, command injection, hardcoded secrets, weak crypto. Findings whose underlying file changed after indexing carry a staleness marker.",
+      "description": "Cross-language security scan: SQL injection, XSS, command injection, hardcoded secrets, weak crypto. Findings whose underlying file changed after indexing carry a staleness marker. When a finding's file is stale/missing within budget, the scan auto-refreshes exactly those files and re-runs so findings reflect current code (declared on the output); refresh=false opts out.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -427,6 +435,10 @@
           "limit": {
             "type": "number",
             "description": "history run limit (default 20)"
+          },
+          "refresh": {
+            "type": "boolean",
+            "description": "false opts out of the inline auto-refresh of stale files (default: auto-refresh within budget before answering)"
           }
         }
       },
@@ -481,7 +493,7 @@
     },
     {
       "name": "bb_visualize",
-      "description": "Scoped dependency and architecture visualization over the canonical graph engine, with explicit filters, provenance, truncation, machine-readable JSON, and self-contained HTML. Every node and link carries a stale flag (file changed since index); links inherit worst-of-endpoints; a freshness envelope rides the JSON output.",
+      "description": "Scoped dependency and architecture visualization over the canonical graph engine, with explicit filters, provenance, truncation, machine-readable JSON, and self-contained HTML. Every node and link carries a stale flag (file changed since index); links inherit worst-of-endpoints; a freshness envelope rides the JSON output. When the graph's files are stale/missing within budget, the graph auto-refreshes exactly those files and re-renders (declared on the output); refresh=false opts out.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -530,6 +542,10 @@
               "html"
             ],
             "description": "output format (default text)"
+          },
+          "refresh": {
+            "type": "boolean",
+            "description": "false opts out of the inline auto-refresh of stale files (default: auto-refresh within budget before answering)"
           }
         }
       },
@@ -587,7 +603,7 @@
     },
     {
       "name": "bb_migrate",
-      "description": "Read-only single or batch migration planning with dependency order, explicit effort methodology, library mappings, risks, truncation, and unsupported cases. Plans whose source file changed since the last index are flagged stale up front — a plan is a claim about current code; JSON output carries the freshness block.",
+      "description": "Read-only single or batch migration planning with dependency order, explicit effort methodology, library mappings, risks, truncation, and unsupported cases. Plans whose source file changed since the last index are flagged stale up front — a plan is a claim about current code; JSON output carries the freshness block. When plan source files are stale/missing within budget, planning auto-refreshes exactly those files and re-plans (declared on the output); refresh=false opts out.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -613,6 +629,10 @@
               "json"
             ],
             "description": "output format (default text)"
+          },
+          "refresh": {
+            "type": "boolean",
+            "description": "false opts out of the inline auto-refresh of stale files (default: auto-refresh within budget before answering)"
           }
         },
         "required": [
@@ -672,7 +692,7 @@
     },
     {
       "name": "bb_analyze",
-      "description": "Unified evidence-backed analysis over graph relationships, dependencies, statistics, complexity, impact, and test intelligence. Select exactly one mode. Every read mode carries a freshness block (fresh/stale/missing counts + remediation) resolved against the live working tree; graph nodes and report rows carry a stale flag when their file changed after indexing.",
+      "description": "Unified evidence-backed analysis over graph relationships, dependencies, statistics, complexity, impact, and test intelligence. Select exactly one mode. Every read mode carries a freshness block (fresh/stale/missing counts + remediation) resolved against the live working tree; graph nodes and report rows carry a stale flag when their file changed after indexing. When a mode's resolved files are stale/missing within budget, the mode auto-refreshes exactly those files and re-runs so the output reflects current code (declared in an autoRefresh field); refresh=false opts out.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -704,6 +724,10 @@
           "limit": {
             "type": "number",
             "description": "result limit"
+          },
+          "refresh": {
+            "type": "boolean",
+            "description": "false opts out of the inline auto-refresh of stale files (default: auto-refresh within budget before answering)"
           }
         },
         "required": [
@@ -781,7 +805,7 @@
     },
     {
       "name": "bb_doc",
-      "description": "Generate read-only, evidence-backed documentation with resolvable citations and a freshness block over the cited files. Supports symbol, file, module, feature, API, project, and documentation-coverage modes in Markdown or JSON.",
+      "description": "Generate read-only, evidence-backed documentation with resolvable citations and a freshness block over the cited files. Supports symbol, file, module, feature, API, project, and documentation-coverage modes in Markdown or JSON. When cited files are stale/missing within budget, the doc auto-refreshes exactly those files and regenerates (declared on the output); refresh=false opts out.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -848,6 +872,10 @@
           "maxTokens": {
             "type": "number",
             "description": "output token budget"
+          },
+          "refresh": {
+            "type": "boolean",
+            "description": "false opts out of the inline auto-refresh of stale files (default: auto-refresh within budget before answering)"
           }
         },
         "required": [
@@ -1106,7 +1134,7 @@
     },
     {
       "name": "bb_graph",
-      "description": "Per-symbol dependency graph over the canonical graph engine: callers, callees, per-edge evidence tier (structural/import_based/usage_contextual/reference_qualified/inferred), confidence, and cross-language edge count. Same engine and tier rules the editor graph panel uses; truncated traversals are declared with a reason, never silent.",
+      "description": "Per-symbol dependency graph over the canonical graph engine: callers, callees, per-edge evidence tier (structural/import_based/usage_contextual/reference_qualified/inferred), confidence, and cross-language edge count. Same engine and tier rules the editor graph panel uses; truncated traversals are declared with a reason, never silent. When the traversed nodes' files are stale/missing within budget, the graph auto-refreshes exactly those files and re-traverses (declared in an autoRefresh field); refresh=false opts out.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1117,6 +1145,10 @@
           "maxDepth": {
             "type": "number",
             "description": "traversal depth bound (default 3)"
+          },
+          "refresh": {
+            "type": "boolean",
+            "description": "false opts out of the inline auto-refresh of stale files (default: auto-refresh within budget before answering)"
           }
         },
         "required": [

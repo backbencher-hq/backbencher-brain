@@ -1,6 +1,6 @@
 # `bb_visualize`
 
-Scoped dependency and architecture visualization over the canonical graph engine, with explicit filters, provenance, truncation, machine-readable JSON, and self-contained HTML. Every node and link carries a stale flag (file changed since index); links inherit worst-of-endpoints; a freshness envelope rides the JSON output.
+Scoped dependency and architecture visualization over the canonical graph engine, with explicit filters, provenance, truncation, machine-readable JSON, and self-contained HTML. Every node and link carries a stale flag (file changed since index); links inherit worst-of-endpoints; a freshness envelope rides the JSON output. When the graph's files are stale/missing within budget, the graph auto-refreshes exactly those files and re-renders (declared on the output); refresh=false opts out.
 
 ## Contract
 
@@ -62,6 +62,10 @@ Scoped dependency and architecture visualization over the canonical graph engine
         "html"
       ],
       "description": "output format (default text)"
+    },
+    "refresh": {
+      "type": "boolean",
+      "description": "false opts out of the inline auto-refresh of stale files (default: auto-refresh within budget before answering)"
     }
   }
 }

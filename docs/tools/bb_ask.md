@@ -1,6 +1,6 @@
 # `bb_ask`
 
-Answer a question about the codebase using semantic search over the index. Returns matched symbols with similarity scores.
+Answer a question about the codebase using semantic search over the index. Returns matched symbols with similarity scores. When the answer's source files are stale/missing within budget, those files are auto-refreshed exactly before the answer is re-built, declared (auto-refresh: ...); refresh=false opts out and answers from existing data with stale sources flagged.
 
 ## Contract
 
@@ -24,6 +24,10 @@ Answer a question about the codebase using semantic search over the index. Retur
     "limit": {
       "type": "number",
       "description": "max results (default 5)"
+    },
+    "refresh": {
+      "type": "boolean",
+      "description": "false opts out of the inline auto-refresh of stale files (default: auto-refresh within budget before answering)"
     }
   },
   "required": [

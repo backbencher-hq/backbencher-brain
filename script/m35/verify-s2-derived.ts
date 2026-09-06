@@ -19,7 +19,7 @@
 // FRESH — the [stale] markers vanish and the footer miscounts; the flag
 // checks must fail.
 
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs"
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
@@ -107,20 +107,23 @@ async function runSuite(): Promise<void> {
     const run = async (tool: string, args: any) => (await handlers[tool](args, ctx)).content[0].text as string
 
     // ── 1. bb_patterns (all): per-finding flags + footer counts ──
-    const patText = await run("bb_patterns", { scope: "all", limit: 50 })
+    // M44.W1.1: the M35 REPORTING contract (flags/footer) is asserted with
+    // refresh=false (auto-repair disabled); the default-call contract is now
+    // declared auto-refresh + fresh re-scan (asserted below the reporting run).
+    const patText = await run("bb_patterns", { scope: "all", limit: 50, refresh: false })
     check("patterns: edited-file findings flagged [stale]", /app\.ts:\d+.*\[stale\]/.test(patText), patText.slice(0, 400))
     check("patterns: footer counts the stale findings", /1 stale, 0 missing of \d+ findings' files/.test(patText), patText.slice(-200))
     check("patterns: footer names the registered remediation", patText.includes("bb index --changed") && patText.includes("bb_index"), "")
     negative("patterns: untouched-file finding NOT flagged", !/dao\.ts:\d+.*\[stale\]/.test(patText), "")
 
     // ── 2. bb_patterns (orphaned): same contract ──
-    const orphText = await run("bb_patterns", { scope: "orphaned", limit: 50 })
+    const orphText = await run("bb_patterns", { scope: "orphaned", limit: 50, refresh: false })
     check("orphaned phase 1: untouched-file finding NOT flagged (dao.ts fresh)", !/dao\.ts:\d+.*\[stale\]/.test(orphText), orphText.slice(0, 300))
     check("orphaned phase 1: footer silent when all fresh (registered silence contract)", !orphText.includes("findings' files"), orphText.slice(-160))
     negative("orphaned: untouched-file finding NOT flagged", !/dao\.ts:\d+.*\[stale\]/.test(orphText), "")
 
     // ── 3. bb_security: stale taint finding says so ──
-    const secText = await run("bb_security", {})
+    const secText = await run("bb_security", { refresh: false })
     const sqliStale = /@ src\/app\.ts:\d+.*\[stale\]/.test(secText) || /\[stale\]/.test(secText)
     check("security: findings rendered with staleness wiring live", typeof secText === "string" && secText.length > 0)
     if (findingsPresent(secText)) {
@@ -137,19 +140,21 @@ async function runSuite(): Promise<void> {
     }
 
     // ── 4. bb_doc: envelope on json, footer on markdown ──
-    const docJson = JSON.parse(await run("bb_doc", { mode: "file", target: "src/app.ts", format: "json" }))
+    // (refresh=false keeps the M35 reporting assertions; W1.1 default-call
+    // assertions for bb_doc run below in section 4b.)
+    const docJson = JSON.parse(await run("bb_doc", { mode: "file", target: "src/app.ts", format: "json", refresh: false }))
     const f = docJson.freshness
     check("doc: freshness block with exact registered keys", f && JSON.stringify(Object.keys(f).sort()) === JSON.stringify(["fresh", "missing", "mode", "remediation", "stale", "staleRatio"]), JSON.stringify(f))
     check("doc: edited cited file reported stale", f.stale >= 1, JSON.stringify(f))
     check("doc: staleRatio consistent", Math.abs(f.staleRatio - (f.stale + f.missing) / Math.max(1, f.fresh + f.stale + f.missing)) < 1e-9, String(f.staleRatio))
     negative("doc: remediation names the registered interface when stale", typeof f.remediation === "string" && f.remediation.includes("bb index --changed"), f.remediation)
 
-    const docMd = await run("bb_doc", { mode: "file", target: "src/app.ts", format: "markdown" })
+    const docMd = await run("bb_doc", { mode: "file", target: "src/app.ts", format: "markdown", refresh: false })
     check("doc markdown: footer present when citations stale", docMd.includes("bb index --changed"), docMd.slice(-200))
     check("doc markdown: per-citation (stale) rendered", /\(stale\)/.test(docMd), docMd.slice(-300))
 
     // Fresh doc: silence (no footer) when all citations fresh
-    const freshDoc = JSON.parse(await run("bb_doc", { mode: "file", target: "src/dao.ts", format: "json" }))
+    const freshDoc = JSON.parse(await run("bb_doc", { mode: "file", target: "src/dao.ts", format: "json", refresh: false }))
     // Post-edit truthfulness: the dao.ts doc's remediation must be non-empty
     // iff its citations include the edited file (caller citations are
     // resolution-dependent, so the assertion is relative to observed citations).
@@ -158,11 +163,31 @@ async function runSuite(): Promise<void> {
 
     // ── phase 2: edit dao.ts too — orphaned/pattern scope flagging turns on ──
     writeFileSync(path.join(fixture, "src", "dao.ts"), "export function getUser(id: number) { const q = 'SELECT * FROM users WHERE id=' + id; return q }\nexport function unusedHelper() { return 1 }\n// post-index edit: dao findings now stale\n")
-    const orphText2 = await run("bb_patterns", { scope: "orphaned", limit: 50 })
+    const orphText2 = await run("bb_patterns", { scope: "orphaned", limit: 50, refresh: false })
     check("orphaned phase 2: edited-file finding flagged [stale]", /dao\.ts:\d+.*\[stale\]/.test(orphText2), orphText2.slice(0, 300))
     check("orphaned phase 2: footer counts correct (1 stale)", /1 stale, 0 missing/.test(orphText2), orphText2.slice(-160))
-    const patText2 = await run("bb_patterns", { scope: "all", limit: 50 })
+    const patText2 = await run("bb_patterns", { scope: "all", limit: 50, refresh: false })
     check("patterns phase 2: footer counts both stale files", /2 stale, 0 missing of \d+ findings' files/.test(patText2), patText2.slice(-200))
+
+    // ── 4b. M44.W1.1 default calls: stale state is repaired within budget
+    // and the tool answers fresh — declared, never silent. Runs AFTER the
+    // reporting assertions so those keep their state. Each probe repairs the
+    // file its own read resolved; the next probe re-stales its own target so
+    // every repair decision is exercised deterministically.
+    const patAuto = await run("bb_patterns", { scope: "all", limit: 50 })
+    check("patterns W1.1: default call declares auto-refresh", /auto-refreshed 2 files/.test(patAuto), patAuto.slice(-200))
+    check("patterns W1.1: re-scanned answer has no stale flags", !/\[stale\]/.test(patAuto), patAuto.slice(0, 300))
+    // Re-stale dao.ts only: the orphaned scope resolves dao.ts, so the repair
+    // set is exactly that file.
+    writeFileSync(path.join(fixture, "src", "dao.ts"), readFileSync(path.join(fixture, "src", "dao.ts"), "utf8") + "\n// W1.1 probe: dao re-staled\n")
+    const orphAuto = await run("bb_patterns", { scope: "orphaned", limit: 50 })
+    check("orphaned W1.1: default call declares auto-refresh", /auto-refreshed 1 file/.test(orphAuto), orphAuto.slice(-200))
+    check("orphaned W1.1: re-scanned answer has no stale flags", !/\[stale\]/.test(orphAuto), orphAuto.slice(0, 300))
+    // Re-stale app.ts only: the doc over app.ts resolves app.ts, repairing it.
+    writeFileSync(path.join(fixture, "src", "app.ts"), readFileSync(path.join(fixture, "src", "app.ts"), "utf8") + "\n// W1.1 probe: app re-staled\n")
+    const docAuto = JSON.parse(await run("bb_doc", { mode: "file", target: "src/app.ts", format: "json" }))
+    check("doc W1.1: default call declares auto-refresh on json output", typeof docAuto.autoRefresh === "string" && /auto-refreshed/.test(docAuto.autoRefresh), JSON.stringify(docAuto.autoRefresh))
+    check("doc W1.1: regenerated envelope is clean", docAuto.freshness && docAuto.freshness.stale === 0 && docAuto.freshness.missing === 0, JSON.stringify(docAuto.freshness))
 
     // ── 5. history interplay: recorded state immutable ──
     await run("bb_patterns", { scope: "all", limit: 50, recordRun: true })

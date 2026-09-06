@@ -1,0 +1,12 @@
+{
+  "status": "verified",
+  "currentCommit": "17306f6fbd634ab7a88cb789533ce735b4a87e09",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m44/verify-w11-universal-repair.ts",
+  "evidenceFile": "W11.json",
+  "code": "W1.1",
+  "generatedAt": "2026-09-06T01:52:27.714Z",
+  "passed": 32,
+  "failed": 0,
+  "negativeCases": 13
+}

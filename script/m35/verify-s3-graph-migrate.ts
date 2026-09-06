@@ -82,12 +82,15 @@ async function runSuite(): Promise<void> {
     const run = async (tool: string, args: any) => (await handlers[tool](args, ctx)).content[0].text as string
 
     // ── 1. bb_visualize text: footer counts + remediation ──
-    const vizText = await run("bb_visualize", { scope: "project" })
+    // M44.W1.1: reporting assertions below run with refresh=false (auto-repair
+    // disabled) — the M35 flag/footer contract. W1.1 default-call assertions
+    // (declared auto-refresh + fresh answer) run in section 3 below.
+    const vizText = await run("bb_visualize", { scope: "project", refresh: false })
     check("viz: footer counts the stale graph files", /1 stale, 0 missing of 2 graph files/.test(vizText), vizText.slice(-200))
     check("viz: footer names the registered remediation", vizText.includes("bb index --changed") && vizText.includes("bb_index"), "")
 
     // ── 2. bb_visualize json: envelope + per-node flags + link inheritance ──
-    const vizJson = JSON.parse(await run("bb_visualize", { scope: "project", format: "json" }))
+    const vizJson = JSON.parse(await run("bb_visualize", { scope: "project", format: "json", refresh: false }))
     const f = vizJson.freshness
     check("viz: freshness block with exact registered keys", f && JSON.stringify(Object.keys(f).sort()) === JSON.stringify(["fresh", "missing", "mode", "remediation", "stale", "staleRatio"]), JSON.stringify(f))
     check("viz: staleRatio consistent", Math.abs(f.staleRatio - (f.stale + f.missing) / Math.max(1, f.fresh + f.stale + f.missing)) < 1e-9, String(f.staleRatio))
@@ -111,21 +114,21 @@ async function runSuite(): Promise<void> {
     if (freshLink) negative("viz: fresh-fresh link NOT flagged", freshLink.stale === false, `${nameOf(freshLink.source)}->${nameOf(freshLink.target)}=${freshLink.stale}`)
 
     // ── 3. truncation composes with staleness ──
-    const trunc = JSON.parse(await run("bb_visualize", { scope: "project", format: "json", maxNodes: 1 }))
+    const trunc = JSON.parse(await run("bb_visualize", { scope: "project", format: "json", maxNodes: 1, refresh: false }))
     check("viz: truncation reported honestly", trunc.truncation?.truncated === true, JSON.stringify(trunc.truncation))
     check("viz: truncated output still carries freshness envelope", trunc.freshness && typeof trunc.freshness.staleRatio === "number", JSON.stringify(trunc.freshness))
     check("viz: truncated nodes still carry stale flags", (trunc.nodes as any[]).length >= 1 && (trunc.nodes as any[]).every((n) => typeof n.stale === "boolean"), "")
 
     // ── 4. silence when fresh ──
-    const freshVizText = await run("bb_visualize", { scope: "file", target: "util.ts" })
+    const freshVizText = await run("bb_visualize", { scope: "file", target: "util.ts", refresh: false })
     negative("viz: no footer when all graph files fresh", !freshVizText.includes("graph files —"), freshVizText.slice(-160))
-    const freshVizJson = JSON.parse(await run("bb_visualize", { scope: "file", target: "util.ts", format: "json" }))
+    const freshVizJson = JSON.parse(await run("bb_visualize", { scope: "file", target: "util.ts", format: "json", refresh: false }))
     negative("viz: no remediation when fresh", freshVizJson.freshness.remediation === "", JSON.stringify(freshVizJson.freshness))
 
     // ── 5. bb_migrate: stale plan flagged UP FRONT + per-plan flags ──
-    const migText = await run("bb_migrate", { symbolNames: ["handler", "formatDate"], targetLanguage: "python" })
+    const migText = await run("bb_migrate", { symbolNames: ["handler", "formatDate"], targetLanguage: "python", refresh: false })
     check("migrate: stale-plan notice precedes the plan text", /⚠ 1 of 2 plans reference files changed/.test(migText) && migText.indexOf("⚠") < migText.indexOf("handler:"), migText.slice(0, 200))
-    const migJson = JSON.parse(await run("bb_migrate", { symbolNames: ["handler", "formatDate"], targetLanguage: "python", format: "json" }))
+    const migJson = JSON.parse(await run("bb_migrate", { symbolNames: ["handler", "formatDate"], targetLanguage: "python", format: "json", refresh: false }))
     const mf = migJson.freshness
     check("migrate: freshness block with exact registered keys", mf && JSON.stringify(Object.keys(mf).sort()) === JSON.stringify(["fresh", "missing", "mode", "remediation", "stale", "staleRatio"]), JSON.stringify(mf))
     const plans = migJson.plans as any[]
@@ -136,11 +139,25 @@ async function runSuite(): Promise<void> {
 
     // ── phase 2: edit util.ts too — the second plan flags on ──
     writeFileSync(path.join(fixture, "src", "util.ts"), UTIL_V2)
-    const migJson2 = JSON.parse(await run("bb_migrate", { symbolNames: ["handler", "formatDate"], targetLanguage: "python", format: "json" }))
+    const migJson2 = JSON.parse(await run("bb_migrate", { symbolNames: ["handler", "formatDate"], targetLanguage: "python", format: "json", refresh: false }))
     check("migrate phase 2: both plans flagged stale", (migJson2.plans as any[]).every((p) => p.stale === true), JSON.stringify((migJson2.plans as any[]).map((p) => `${p.componentName}=${p.stale}`)))
     check("migrate phase 2: envelope counts both", migJson2.freshness.stale === 2 && migJson2.freshness.staleRatio === 1, JSON.stringify(migJson2.freshness))
-    const migText2 = await run("bb_migrate", { symbolNames: ["handler", "formatDate"], targetLanguage: "python" })
+    const migText2 = await run("bb_migrate", { symbolNames: ["handler", "formatDate"], targetLanguage: "python", refresh: false })
     check("migrate phase 2: notice counts 2 of 2", /⚠ 2 of 2 plans reference files changed/.test(migText2), migText2.slice(0, 160))
+
+    // ── 6. M44.W1.1 default calls: stale graph/plan files are repaired within
+    // budget and the answer re-rendered fresh — declared, never silent. Both
+    // api.ts + util.ts are stale here. bb_visualize repairs the graph's files;
+    // bb_migrate then re-plans (re-staled util first so its repair fires).
+    const vizAuto = await run("bb_visualize", { scope: "project" })
+    check("viz W1.1: default call declares auto-refresh", /auto-refreshed 2 files/.test(vizAuto), vizAuto.slice(-200))
+    check("viz W1.1: re-rendered output has no stale footer", !vizAuto.includes("graph files —"), vizAuto.slice(-160))
+    const vizAutoJson = JSON.parse(await run("bb_visualize", { scope: "project", format: "json" }))
+    negative("viz W1.1: clean re-render carries no autoRefresh field", vizAutoJson.autoRefresh === undefined, JSON.stringify(vizAutoJson.autoRefresh))
+    writeFileSync(path.join(fixture, "src", "util.ts"), UTIL_V2 + "\n// W1.1 probe: util re-staled\n")
+    const migAuto = await run("bb_migrate", { symbolNames: ["handler", "formatDate"], targetLanguage: "python" })
+    check("migrate W1.1: default call declares auto-refresh", /auto-refreshed 1 file/.test(migAuto), migAuto.slice(-200))
+    check("migrate W1.1: no stale-plan notice on re-planned output", !migAuto.includes("plans reference files changed"), migAuto.slice(0, 160))
   } finally {
     rmSync(fixture, { recursive: true, force: true })
   }
