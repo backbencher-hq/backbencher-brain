@@ -382,6 +382,9 @@ export function ensureSchema(raw: any): void {
   migrateSchemaColumns(raw)
   // M28.A1: annotation store is additive + idempotent, every open.
   ensureAnnotationTable(raw)
+  // M44.W2.2 (#672): directory manifest is additive + idempotent, every open
+  // (pre-existing DBs get the table via the else-branch of ensureSchemaIfNew).
+  ensureDirManifestTable(raw)
   raw.exec(`
     CREATE TABLE IF NOT EXISTS brain_analysis_run (
       id TEXT PRIMARY KEY NOT NULL, project_id TEXT NOT NULL, kind TEXT NOT NULL,
@@ -412,5 +415,42 @@ export function ensureSchema(raw: any): void {
   try {
     raw.prepare(`INSERT OR IGNORE INTO brain_index_status (project_id, indexing_version, languages_detected, frameworks_detected, indexing_errors, performance_stats, time_created, time_updated)
       VALUES ('__schema__', 'v1.0.0', '[]', '[]', '[]', '{}', strftime('%s','now') * 1000, strftime('%s','now') * 1000)`).run()
+  } catch {}
+}
+
+/**
+ * M44.W2.2 (issue #672): per-directory index manifest.
+ *
+ * A row means: at the moment this directory was scanned (last full discovery
+ * walk, or a verified incremental repair), the directory's on-disk state was
+ * captured with mtime `dir_mtime`. Read-side probes (bb_ask auto-refresh on
+ * non-git trees) stat only the manifest's directories and RE-LIST exactly
+ * those whose mtime has moved past `dir_mtime` — a moved directory is the
+ * filesystem's own signal that an entry appeared since the scan. Because a
+ * new file moves only its OWN directory's mtime (never ancestors'), the
+ * manifest stores every scanned directory flat: no tree walk, no pruning, no
+ * propagation flaw. Cost per read is O(known dirs) stats + O(changed dirs ×
+ * entries) listings — never O(whole tree) and never file-content reads.
+ *
+ * The manifest is derived data, rebuilt wholesale on every full discovery
+ * (DELETE + INSERT of the walked dirs) and verified-incrementally on
+ * touched-dir repairs, so it can never drift from brain_file: a crash leaves
+ * rows from the last complete scan, which is exactly the correct baseline.
+ *
+ * Additive-only and idempotent — safe on every DB open.
+ */
+export const DIR_MANIFEST_DDL = `
+    CREATE TABLE IF NOT EXISTS brain_dir_manifest (
+      project_id TEXT NOT NULL,
+      dir_path TEXT NOT NULL,
+      dir_mtime INTEGER NOT NULL,
+      PRIMARY KEY (project_id, dir_path)
+    );
+  `
+
+/** Idempotent, additive-only directory-manifest migration. Safe to call repeatedly. */
+export function ensureDirManifestTable(raw: any): void {
+  try {
+    raw.exec(DIR_MANIFEST_DDL)
   } catch {}
 }

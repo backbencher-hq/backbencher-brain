@@ -542,13 +542,18 @@ async function discoverAndFilterFiles(
   stats: ParallelIndexingStats,
   filesOverride?: string[],
   excludePatterns?: string[],
-): Promise<string[]> {
+): Promise<{ files: string[]; dirs: WalkedDir[] }> {
   const files: string[] = []
   const startTime = Date.now()
   const { readFile, stat: statFile } = await import("fs/promises")
   const { createHash } = await import("crypto")
   const ignore = await import("ignore").then((m) => m.default)
-  const { existsSync } = await import("fs")
+  const { existsSync, statSync } = await import("fs")
+  // M44.W2.2 (#672): every directory this walk readdir'd, stamped with its
+  // mtime AT WALK TIME. Captured here (not at commit) so a file added AFTER
+  // the walk — mid-parse — still moves the dir mtime past its stamp and is
+  // picked up by read-side probes instead of being masked by the commit.
+  const walkedDirs: WalkedDir[] = []
 
   // =========================================================================
   // .bbignore SUPPORT — User-controlled indexing exclusions (like .gitignore)
@@ -651,6 +656,12 @@ async function discoverAndFilterFiles(
         if (dir !== projectPath && entries.some((e) => e.isDirectory() && e.name === ".git")) {
           return
         }
+        // M44.W2.2: record this directory as scanned. If the dir vanishes
+        // between readdir and stat, keep a 0 stamp (a missing dir yields no
+        // candidates; the row is harmless and replaced on the next full run).
+        let dirMtime = 0
+        try { dirMtime = Math.floor(statSync(dir).mtimeMs) } catch {}
+        walkedDirs.push({ abs: dir, mtime: dirMtime })
 
         // Parse local .gitignore if exists
         let localIg = ig
@@ -795,7 +806,7 @@ async function discoverAndFilterFiles(
     durationMs: Date.now() - startTime,
   })
 
-  return files
+  return { files, dirs: walkedDirs }
 }
 
 // ============================================================================
@@ -2827,6 +2838,171 @@ export async function resolveCrossSymbolTaints(projectId: ProjectID): Promise<nu
 // MAIN ENTRY POINT
 // ============================================================================
 
+// ═══════════════════════════════════════════════════════════════════════════
+// M44.W2.2 (#672): per-directory index manifest.
+//
+// WHY A MANIFEST: a read can only repair files that have index rows, and a
+// brand-new file has none — on non-git trees nothing can name it without
+// scanning. A filesystem directory's mtime moves exactly when an ENTRY is
+// added/removed in THAT directory (never in ancestors), so the manifest
+// stores every scanned directory flat with its mtime-at-scan. Read-side
+// probes stat the manifest's directories (O(known dirs), never O(tree)) and
+// re-list only the moved ones — no recursion, no ancestor-pruning flaw, no
+// file-content reads. The manifest is derived data rebuilt wholesale on each
+// full discovery walk and verified-incrementally on repairs, so it can never
+// drift from brain_file; a crash simply leaves the last complete scan as the
+// baseline, which is exactly correct.
+// ═══════════════════════════════════════════════════════════════════════════
+
+export interface WalkedDir {
+  /** absolute path of a directory the discovery walk readdir'd. */
+  abs: string
+  /** the directory's mtimeMs (floored) AT WALK TIME. */
+  mtime: number
+}
+
+const DIR_MANIFEST_TABLE = "brain_dir_manifest"
+
+/**
+ * Directories the indexer's discovery walk never scans (metadata caches,
+ * compiled output, benchmark trees — see the walk's skip list and the
+ * compiled-mode path filter). A rowless subdirectory matching this never
+ * holds indexable candidates, so manifest verification treats it as
+ * accounted and the read-side probe never descends into it.
+ */
+const INDEXER_SKIPPED_DIR = /(^|\/)(node_modules|dist|build|coverage|obj|bin|wwwroot|testData|testassets|perf|Microbenchmarks|benchmarkapps|\.git|\.svn|\.hg|\.cache|\.nyc_output|\.venv|\.next|\.nuxt|\.svelte-kit|\.turbo)(\/|$)/
+
+function manifestRelDir(absDir: string, projectPath: string): string {
+  const rel = path.relative(projectPath, absDir).replace(/\\/g, "/")
+  return rel === "." ? "" : rel
+}
+
+/**
+ * Full-scan commit: replace the project's manifest rows with the directories
+ * the discovery walk actually readdir'd. Walk-time stamps (never commit-time
+ * re-stats) keep the invariant "anything added after a dir was scanned moves
+ * its mtime past the stamp" — a file created mid-parse is picked up by the
+ * next probe instead of being silently masked by a fresh commit-time stamp.
+ */
+export async function commitDirManifest(projectId: ProjectID, projectPath: string, walkedDirs: WalkedDir[]): Promise<void> {
+  if (!walkedDirs || walkedDirs.length === 0) return
+  try {
+    const raw = await BrainDatabase.getRawInstance(projectId)
+    const seen = new Set<string>()
+    const rows: Array<[string, string, number]> = []
+    for (const w of walkedDirs) {
+      const rel = manifestRelDir(w.abs, projectPath)
+      if (seen.has(rel)) continue
+      seen.add(rel)
+      rows.push([String(projectId), rel, w.mtime])
+    }
+    const tx = raw.transaction(() => {
+      raw.prepare(`DELETE FROM ${DIR_MANIFEST_TABLE} WHERE project_id = ?`).run(String(projectId))
+      const ins = raw.prepare(`INSERT INTO ${DIR_MANIFEST_TABLE} (project_id, dir_path, dir_mtime) VALUES (?, ?, ?)`)
+      for (const r of rows) ins.run(...r)
+    })
+    tx()
+  } catch (e: any) {
+    log.warn("dir-manifest full commit failed", { error: e?.message })
+  }
+}
+
+/**
+ * Incremental repair commit: re-stamp the directories of the files a run
+ * just touched — and every new ancestor up to an unchanged, already-stamped
+ * directory — but ONLY after VERIFYING each directory against its current
+ * listing: every indexable, non-ignored file entry must already be in the
+ * index and every non-ignored subdirectory entry must already have a
+ * manifest row. The verification readdir is what makes each stamp safe:
+ * without it, stamping could mask a sibling file created alongside the
+ * repair that no run has indexed yet, or a brand-new directory whose whole
+ * subtree no scan ever saw. A directory that fails verification is left
+ * unstamped and the upward chain stops there — the probe will keep listing
+ * it (its mtime stays moved) and pick the new content up.
+ *
+ * Why the chain: a brand-new directory has no manifest row, so nothing ever
+ * stats it — its parent must be verified+stamped for the probe to reach it,
+ * then the parent's parent, and so on, until a directory whose own mtime
+ * still matches its stamp proves nothing new appeared at that level.
+ *
+ * Cost is bounded: the common case (all ancestors stamped and unchanged)
+ * stops at the FIRST stat with zero readdirs; readdirs happen only on moved
+ * or never-stamped levels, one level of direct entries each.
+ */
+export async function restampTouchedDirManifest(projectId: ProjectID, projectPath: string, touchedFiles: string[]): Promise<void> {
+  if (!touchedFiles || touchedFiles.length === 0) return
+  try {
+    const { readFileSync, readdirSync, statSync, existsSync } = await import("node:fs")
+    const ignore = await import("ignore").then((m) => m.default)
+    const raw = await BrainDatabase.getRawInstance(projectId)
+    const ig = ignore()
+    if (existsSync(path.join(projectPath, ".bbignore"))) {
+      try {
+        ig.add(readFileSync(path.join(projectPath, ".bbignore"), "utf8").split("\n").map((l) => l.trim()).filter((l) => l && !l.startsWith("#")))
+      } catch {}
+    }
+    const ignored = (rel: string) => ig.ignores(rel) || ig.ignores(rel + "/")
+    const hasRow = raw.prepare(`SELECT 1 FROM brain_dir_manifest WHERE project_id = ? AND dir_path = ?`)
+    const getStamp = raw.prepare(`SELECT dir_mtime FROM brain_dir_manifest WHERE project_id = ? AND dir_path = ?`)
+    const isIndexedFile = raw.prepare(`SELECT 1 FROM brain_file WHERE project_id = ? AND relative_path = ?`)
+    const upsert = raw.prepare(`INSERT INTO ${DIR_MANIFEST_TABLE} (project_id, dir_path, dir_mtime) VALUES (?, ?, ?)
+      ON CONFLICT(project_id, dir_path) DO UPDATE SET dir_mtime = excluded.dir_mtime`)
+    const ROOT = projectPath.replace(/[\/\\]+$/, "")
+
+    // Verify one directory's direct entries, then stamp it. Returns false when
+    // an unaccounted entry exists (file not indexed, or rowless subdirectory).
+    const verifyAndStamp = (absDir: string): boolean => {
+      const rel = manifestRelDir(absDir, projectPath)
+      if (rel !== "" && ignored(rel)) return true // indexer never scans it; not ours to stamp
+      let names: string[]
+      try { names = readdirSync(absDir) } catch { return true } // gone: nothing to account
+      for (const name of names) {
+        const abs = path.join(absDir, name)
+        const childRel = rel ? rel + "/" + name : name
+        let st
+        try { st = statSync(abs) } catch { continue }
+        if (st.isDirectory()) {
+          // Directories the indexer itself never walks (metadata + compiled
+          // dirs + .bbignore) are not candidates: a rowless one of THOSE is
+          // fine. Any other rowless subdirectory is stat'd by nobody — only a
+          // row makes the probe reach it, so it fails verification.
+          if (ignored(childRel)) continue
+          if (INDEXER_SKIPPED_DIR.test(childRel)) continue
+          if (!hasRow.get(String(projectId), childRel)) return false
+        } else if (st.isFile()) {
+          if (name.startsWith(".") && name !== ".bbignore") continue
+          if (!hasValidExtension(abs) || shouldSkipCli(abs)) continue
+          if (ignored(childRel)) continue
+          if (!isIndexedFile.get(String(projectId), childRel)) return false
+        }
+      }
+      let st2
+      try { st2 = statSync(absDir) } catch { return true }
+      upsert.run(String(projectId), rel, Math.floor(st2.mtimeMs))
+      return true
+    }
+
+    for (const f of touchedFiles) {
+      let dir = path.dirname(f)
+      while (dir.length >= ROOT.length) {
+        const rel = manifestRelDir(dir, projectPath)
+        const row = getStamp.get(String(projectId), rel) as { dir_mtime: number } | undefined
+        let st
+        try { st = statSync(dir) } catch { break }
+        // Unchanged since its last stamp: its direct entries are stable, so
+        // nothing rowless can hide below this level — stop ascending (the
+        // probe independently stats every stamped dir).
+        if (row && Number(row.dir_mtime) >= Math.floor(st.mtimeMs)) break
+        if (!verifyAndStamp(dir)) break // unaccounted content: leave unstamped
+        if (dir === ROOT) break
+        dir = path.dirname(dir)
+      }
+    }
+  } catch (e: any) {
+    log.warn("dir-manifest incremental restamp failed", { error: e?.message })
+  }
+}
+
 export async function indexProjectParallel(
   projectId: ProjectID,
   projectPath: string,
@@ -2899,11 +3075,21 @@ export async function indexProjectParallel(
     noop: false,
   }
 
+  // M44.W2.2 (#672): directories this run actually scanned. A full discovery
+  // walk replaces the whole manifest at the end of the run; a files-mode run
+  // (skipDiscovery) never scans dirs, so its touched dirs get verified
+  // re-stamps instead (see restampTouchedDirManifest).
+  const walkedDirs: WalkedDir[] = []
   try {
     const discoveryStart = Date.now()
-    const files = options.skipDiscovery && options.files
-      ? options.files.filter(f => !shouldSkipCli(f) && hasValidExtension(f))
-      : await discoverAndFilterFiles(projectId, projectPath, stats, options.files, options.excludePatterns)
+    let files: string[]
+    if (options.skipDiscovery && options.files) {
+      files = options.files.filter(f => !shouldSkipCli(f) && hasValidExtension(f))
+    } else {
+      const discovery = await discoverAndFilterFiles(projectId, projectPath, stats, options.files, options.excludePatterns)
+      files = discovery.files
+      walkedDirs.push(...discovery.dirs)
+    }
     phases.discoveryMs = Date.now() - discoveryStart
 
     // M40.A2: on incremental runs, capture cross-file edges INTO the files
@@ -3017,6 +3203,10 @@ export async function indexProjectParallel(
           skippedFiles: stats.skippedFiles,
         },
       })
+
+      // M44.W2.2: even a no-op full re-walk re-baselines the manifest — the
+      // dirs readdir'd this run are the fresh scan boundary for probes.
+      if (walkedDirs.length > 0) await commitDirManifest(projectId, projectPath, walkedDirs)
 
       return stats
     }
@@ -3498,6 +3688,18 @@ export async function indexProjectParallel(
       } catch {}
     }
 
+    // M44.W2.2 (#672): manifest commit at the end of EVERY completed run. A
+    // full discovery walk replaces the project's rows (the dirs scanned this
+    // run become the new baseline); a files-mode run — which never scanned
+    // dirs — verifiably re-stamps only its touched dirs. Cancelled runs are
+    // excluded: their file set is partial, so re-stamping could mask work the
+    // cancel interrupted (a resume re-walks and re-baselines instead).
+    if (walkedDirs.length > 0) {
+      await commitDirManifest(projectId, projectPath, walkedDirs)
+    } else if (files.length > 0 && !stats.cancelled) {
+      await restampTouchedDirManifest(projectId, projectPath, files)
+    }
+
     return stats
   } catch (error) {
     stats.endTime = Date.now()
@@ -3546,6 +3748,9 @@ export function wipeProjectData(rawDb: any): void {
     "brain_query_cache",
     "brain_project_health",
     "brain_index_status",
+    // M44.W2.2: derived per-directory scan state — wiped with the rest so a
+    // forced full re-index starts from a clean manifest (the run rewrites it).
+    "brain_dir_manifest",
     "brain_file",
   ]
   for (const t of tables) {

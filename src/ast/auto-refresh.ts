@@ -23,6 +23,7 @@
 //   BB_AUTO_REFRESH_MAX_FILES=N   default 25 stale+missing files
 //   BB_AUTO_REFRESH_MAX_BYTES=N   default 2 MiB of modified-file bytes
 import { statSync, readFileSync } from "node:fs"
+import path from "node:path"
 import type { CoreDatabase } from "../brain/database"
 import { reindexFilesParallel } from "./parallel-indexer"
 import { liveIndexLockHolder, IndexLockHeldError } from "./index-lock"
@@ -412,4 +413,151 @@ export function addedFilesRelevantToQuery(files: string[], query: string): strin
     }
   }
   return hits
+}
+
+// ══ M44.W2.2 (#672): added-file probe (non-git snapshot layer) ══════════════
+// Non-git trees have no status command, so the probe diffs against the
+// indexer's per-directory manifest (brain_dir_manifest): every directory the
+// last full discovery walk readdir'd, stamped with its mtime AT WALK TIME.
+// The probe stats the manifest's directories (O(known dirs), no recursion)
+// and re-LISTS exactly those whose on-disk mtime has moved past the stamp —
+// a moved directory is the filesystem's own signal that an entry appeared
+// since the scan. A new file moves only its OWN directory's mtime (never
+// ancestors'), so storing every scanned directory FLAT is what makes the
+// bound correct: no tree walk, no ancestor pruning, no silent miss. New
+// subdirectories are only reachable inside a moved directory's listing, so
+// they are listed fully (their whole subtree is new). Legacy DBs with no
+// manifest rows fall back to deriving directories from brain_file with a
+// zero baseline — everything lists once, and the next full index writes the
+// manifest (self-healing, honest, bounded-after).
+//
+// Skips mirror the indexer's own candidate rules: extension + CLI skip list
+// + root .bbignore. Never claims a file the indexer would not index.
+
+export interface SnapshotProbeResult {
+  available: boolean
+  files: string[]
+  tookMs: number
+  dirsStat: number
+  dirsListed: number
+  /** true when no manifest rows existed and a one-time full listing fallback ran. */
+  legacyFallback: boolean
+  reason: "ok" | "error"
+}
+
+async function listIgnoreRules(projectPath: string): Promise<string[]> {
+  const { existsSync: ex } = await import("node:fs")
+  if (!ex(path.join(projectPath, ".bbignore"))) return []
+  try {
+    const content = readFileSync(path.join(projectPath, ".bbignore"), "utf8")
+    return content.split("\n").map((l) => l.trim()).filter((l) => l && !l.startsWith("#"))
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Non-git added-file probe. `probeAddedFiles` falls back to this when the
+ * project is not a git worktree, so bb_ask's repair path treats git and
+ * non-git identically (one interface, W1.2 vocabulary).
+ */
+export async function probeAddedFilesSnapshot(raw: CoreDatabase, projectId: string, projectPath: string): Promise<SnapshotProbeResult> {
+  const t0 = performance.now()
+  const { hasValidExtension, shouldSkipCli } = await import("./parallel-indexer")
+  const { default: IgnoreFactory } = await import("ignore")
+  try {
+    const ignoreRules = await listIgnoreRules(projectPath)
+    const ig = IgnoreFactory ? (IgnoreFactory as any)() : null
+    if (ig && ignoreRules.length > 0) for (const r of ignoreRules) ig.add(r)
+    // Manifest directories + their scan-time stamps (the probe's only source
+    // of "what does the index know about this directory?").
+    // Directories the indexer never scans: never candidates, never descended.
+    const skippedDir = /(^|\/)(node_modules|dist|build|coverage|obj|bin|wwwroot|testData|testassets|perf|Microbenchmarks|benchmarkapps|\.git|\.svn|\.hg|\.cache|\.nyc_output|\.venv|\.next|\.nuxt|\.svelte-kit|\.turbo)(\/|$)/
+    const manifest = raw.prepare("SELECT dir_path, dir_mtime FROM brain_dir_manifest WHERE project_id = ?").all(projectId) as Array<{ dir_path: string; dir_mtime: number }>
+    // rel -> recorded scan-time mtime (the probe's only source of "what does
+    // the index know about this directory?").
+    const manifestRows = new Map<string, number>()
+    let dirs: Array<{ rel: string; recorded: number }> = []
+    let legacyFallback = false
+    if (manifest.length === 0) {
+      // Legacy DB (indexed before the manifest existed): derive directories
+      // from the indexed rows with a zero baseline — every derived directory
+      // is listed once (correct, just not bounded), and the next full index
+      // writes real manifest rows (self-healing).
+      legacyFallback = true
+      const fileRows = raw.prepare("SELECT relative_path FROM brain_file WHERE project_id = ?").all(projectId) as Array<{ relative_path: string }>
+      const seen = new Set<string>()
+      for (const r of fileRows) {
+        const slash = r.relative_path.lastIndexOf("/")
+        const rel = slash === -1 ? "" : r.relative_path.slice(0, slash)
+        if (!seen.has(rel)) { seen.add(rel); dirs.push({ rel, recorded: 0 }) }
+      }
+      dirs.push({ rel: "", recorded: 0 }) // root always listed in the fallback
+    } else {
+      for (const m of manifest) {
+        manifestRows.set(m.dir_path, Number(m.dir_mtime ?? 0))
+        dirs.push({ rel: m.dir_path, recorded: Number(m.dir_mtime ?? 0) })
+      }
+    }
+    // Indexed rows for the candidate diff (a file just indexed between the
+    // probe and this diff must not be claimed twice).
+    const indexedPaths = new Set(
+      (raw.prepare("SELECT relative_path FROM brain_file WHERE project_id = ?").all(projectId) as Array<{ relative_path: string }>).map((r) => r.relative_path),
+    )
+    const { readdirSync, statSync } = await import("node:fs")
+    const out: string[] = []
+    let dirsStat = 0
+    let dirsListed = 0
+    const ROOT = projectPath.replace(/[\/\\]+$/, "")
+    const listed = new Set<string>()
+    const ignoredRel = (rel: string) => !!ig && ignoreRules.length > 0 && (ig.ignores(rel) || ig.ignores(rel + "/"))
+    // List a directory that has moved (or a brand-new subtree nobody ever
+    // scanned). Subdirectories WITH a manifest row are NOT descended into
+    // here — each is stat'd by the main loop on its own (a moved one gets its
+    // own listing). Only rowless subdirectories — new since the last scan —
+    // are listed fully, recursively: their whole subtree is new. dirsListed
+    // counts every readdir this probe actually performed.
+    const listDir = (absDir: string, relDir: string) => {
+      let entries: string[] = []
+      try { entries = readdirSync(absDir) } catch { return }
+      for (const name of entries) {
+        if (name.startsWith(".") && name !== ".bbignore") continue
+        const abs = path.join(absDir, name)
+        const subRel = relDir ? relDir + "/" + name : name
+        let e
+        try { e = statSync(abs) } catch { continue }
+        if (e.isDirectory()) {
+          // Only brand-new (rowless) directories need the recursive descent;
+          // scanned directories are this probe's own responsibility below.
+          if (skippedDir.test(subRel)) continue
+          if (ignoredRel(subRel)) continue
+          if (manifestRows.has(subRel)) continue
+          if (!listed.has(subRel)) {
+            listed.add(subRel)
+            dirsListed++
+            listDir(abs, subRel)
+          }
+        } else if (e.isFile()) {
+          if (!hasValidExtension(abs) || shouldSkipCli(abs)) continue
+          if (ignoredRel(subRel)) continue
+          if (!indexedPaths.has(subRel)) out.push(abs)
+        }
+      }
+    }
+    for (const d of dirs) {
+      const absDir = d.rel ? path.join(ROOT, ...d.rel.split("/")) : ROOT
+      let st
+      try { st = statSync(absDir) } catch { continue } // dir gone since the index
+      dirsStat++
+      if (d.recorded >= Math.floor(st.mtimeMs)) continue // untouched since the scan
+      if (!listed.has(d.rel)) {
+        listed.add(d.rel)
+        dirsListed++
+        listDir(absDir, d.rel)
+      }
+    }
+    return { available: true, files: out, tookMs: Math.round(performance.now() - t0), dirsStat, dirsListed, legacyFallback, reason: "ok" }
+  } catch {
+    return { available: false, files: [], tookMs: Math.round(performance.now() - t0), dirsStat: 0, dirsListed: 0, legacyFallback: false, reason: "error" }
+  }
 }

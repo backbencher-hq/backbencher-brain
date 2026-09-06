@@ -10,8 +10,11 @@
 //   3. A stale unrelated modified file does NOT trigger a new-file repair.
 //   4. refresh=false on a query-relevant new file names the unindexed file
 //      explicitly (never silent).
-//   5. Non-git trees: the probe is unavailable and bb_ask stays silent-clean
-//      (no false repair claims on a plain directory).
+//   5. Non-git trees: the GIT probe is unavailable there (by design), but the
+//      W2.2 snapshot layer (verified separately) gives plain directories the
+//      same repair parity — this gate asserts the git probe itself declines
+//      cleanly on a plain dir while bb_ask still repairs via the snapshot
+//      fallback (declared, never silent).
 // Honesty rules: no auto-passes; every check exercises a real code path.
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync } from "node:fs"
 import { tmpdir } from "node:os"
@@ -110,7 +113,8 @@ export function freshHelper(): string { return "fresh" }
     check("bb_ask refresh=false: unindexed new file is named explicitly", /unindexed new file/.test(optOut) && optOut.includes("other.ts"), optOut.slice(-300))
     negative("bb_ask refresh=false: no auto-refresh claimed", !/auto-refreshed/.test(optOut), optOut.slice(-200))
 
-    // ── 5b. non-git directory: probe unavailable, read stays clean-silent ──
+    // ── 5b. non-git directory: the GIT probe is unavailable, but the W2.2
+    // snapshot layer repairs the new file through the same bb_ask path ──
     const plainDir = mkdtempSync(path.join(tmpdir(), "bb-m44-w21-plain-"))
     try {
       mkdirSync(path.join(plainDir, "src"), { recursive: true })
@@ -125,7 +129,8 @@ export function freshHelper(): string { return "fresh" }
 `)
       const h2 = createToolHandlers()
       const plainAsk = await h2.bb_ask({ query: "plainNew" }, { projectId: pid2, projectPath: plainDir })
-      negative("bb_ask non-git: no false repair claim on a plain directory", !/auto-refreshed/.test(plainAsk.content[0].text), plainAsk.content[0].text.slice(-200))
+      check("bb_ask non-git: new file auto-refreshed via the snapshot layer (declared)", /auto-refreshed 1 file/.test(plainAsk.content[0].text), plainAsk.content[0].text.slice(-250))
+      check("bb_ask non-git: the new symbol is in the answer", plainAsk.content[0].text.includes("plainNew") || plainAsk.content[0].text.includes("newplain.ts"), plainAsk.content[0].text.slice(0, 400))
     } finally {
       rmSync(plainDir, { recursive: true, force: true })
     }
