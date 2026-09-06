@@ -20,7 +20,7 @@
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m45/verify-governance.ts",
       "evidenceFile": "G1.json",
-      "generatedAt": "2026-09-06T05:12:41.835Z",
+      "generatedAt": "2026-09-06T05:13:17.424Z",
       "passed": 20,
       "failed": 0,
       "negativeCases": 5
@@ -138,7 +138,7 @@
     "code": "X1",
     "githubIssue": 682,
     "tool": "closure",
-    "status": "planned",
+    "status": "verified",
     "scope": "verify-closure.ts: refuses close unless all content gates have conformant single-commit evidence and pass live read-only at one stamp; residue-clean governed surfaces",
     "acceptanceCriteria": [
       "R1/R2/R3/A1 evidence conformant at one consensus commit (HEAD or ancestor); G1 at HEAD or ancestor",
@@ -147,6 +147,17 @@
     ],
     "closureRequirements": [
       "Evidence file + ledger sync + evidence comment on close"
-    ]
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "c5f2326abbb087ee16077b68c49e7569e605b7bd",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m45/verify-closure.ts",
+      "evidenceFile": "X1.json",
+      "generatedAt": "2026-09-06T05:14:14.943Z",
+      "passed": 46,
+      "failed": 0,
+      "negativeCases": 3
+    }
   }
 ]
