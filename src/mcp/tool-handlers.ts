@@ -11,7 +11,7 @@ import { DependencyGraphVisualizer } from "../ast/dependency-graph-visualizer"
 import { CrossLanguageIntelligence } from "../ast/cross-language-intelligence"
 import { CrossLanguageMigrationAssistant } from "../ast/cross-language-migration-assistant"
 import { indexProjectParallel, reindexFilesParallel, wipeProjectData } from "../ast/parallel-indexer"
-import { collectStaleFiles, maybeAutoRefresh, autoRefreshLine } from "../ast/auto-refresh"
+import { collectStaleFiles, maybeAutoRefresh, autoRefreshLine, repairRead } from "../ast/auto-refresh"
 import { TOOL_DESCRIPTORS } from "./tool-registry"
 import { testQuality } from "../intelligence/testing/quality"
 import { executeEdit, type EditRequest } from "../intelligence/edit/edit-engine"
@@ -37,7 +37,16 @@ import type { AnalysisFindingInput } from "../intelligence/contracts"
 // F1 batch resolver and render per-finding markers + a footer built from the
 // REGISTERED remediation constants — never ad-hoc text. Empty findings → no
 // footer (silence when fresh; the tools' existing zero-findings idiom stays).
-function derivedStaleness(raw: any, projectId: string, relPaths: Array<string | undefined | null>): { isStale: (rel: string | undefined | null) => boolean; footer: string; summary: FreshnessSummary } {
+type DerivedStaleness = {
+  isStale: (rel: string | undefined | null) => boolean
+  footer: string
+  summary: FreshnessSummary
+  // M44.W1.1: the resolved rows + statuses, so read tools can hand the SAME
+  // set to the shared repair helper (repair set = files the read touched).
+  rows: Array<{ fileId: string | null }>
+  statuses: Map<string, string>
+}
+function derivedStaleness(raw: any, projectId: string, relPaths: Array<string | undefined | null>): DerivedStaleness {
   const rels = [...new Set(relPaths.filter((p): p is string => !!p))]
   // brain_file.path is ABSOLUTE; findings carry relative_path. Resolve
   // rel -> id first (one IN query on relative_path) and resolve freshness by
@@ -60,6 +69,8 @@ function derivedStaleness(raw: any, projectId: string, relPaths: Array<string | 
     isStale: (rel) => rel != null && statuses.get(relToId.get(rel) ?? "") === "stale",
     footer: stale + missing > 0 ? `${stale} stale, ${missing} missing of ${rows.length} findings' files — ${FRESHNESS_REMEDIATION.dir}` : "",
     summary,
+    rows,
+    statuses,
   }
 }
 
@@ -286,19 +297,49 @@ const handlers: Record<string, ToolHandler> = {
     return textResult(pass1.text)
   },
 
-  bb_ask: async (args, { projectId }) => {
-    const result = await quickAnswer(projectId, String(args.query))
-    const lines = result.sources
-      .slice(0, Number(args.limit ?? 5))
-      .map((source, index) => `${index + 1}. ${source.file}:${source.line}\n   ${source.context ?? ""}`)
-    const head = result.answer ? `answer: ${result.answer}\n\n` : ""
-    const prov = `[provenance: ${result.provenance.evidenceClass} via ${result.provenance.engine}${result.provenance.unknowns.length ? `; unknowns: ${result.provenance.unknowns.join("; ")}` : ""}]`
-    return textResult(head + (lines.length ? lines.join("\n") : `no semantic matches for "${args.query}"`) + `\n${prov}`)
+  bb_ask: async (args, { projectId, projectPath }) => {
+    // M44.W1.1 (#669): rerunnable pass, the bb_search M43 shape. quickAnswer is
+    // a pure function of (projectId, query, DB) — so when the FIRST pass's
+    // sources resolve stale/missing within budget, we repair inline and answer
+    // from the SECOND pass so the answer reflects the repair, with the decision
+    // declared. No staleness => one pass, byte-identical with pre-W1.1 output.
+    const raw = await BrainDatabase.getRawInstance(projectId as any)
+    const limit = Number(args.limit ?? 5)
+    const render = (result: Awaited<ReturnType<typeof quickAnswer>>): string => {
+      const lines = result.sources
+        .slice(0, limit)
+        .map((source, index) => `${index + 1}. ${source.file}:${source.line}\n   ${source.context ?? ""}`)
+      const head = result.answer ? `answer: ${result.answer}\n\n` : ""
+      const prov = `[provenance: ${result.provenance.evidenceClass} via ${result.provenance.engine}${result.provenance.unknowns.length ? `; unknowns: ${result.provenance.unknowns.join("; ")}` : ""}]`
+      return head + (lines.length ? lines.join("\n") : `no semantic matches for "${String(args.query)}"`) + `\n${prov}`
+    }
+    const runPass = async () => {
+      const result = await quickAnswer(projectId, String(args.query))
+      // Sources carry fileId (W1.1) — resolve their files' freshness through
+      // the shared F1 resolver; rows without fileId contribute nothing.
+      const rows = result.sources.map((s) => ({ fileId: s.fileId ?? null }))
+      const detail = rows.length ? resolveRowsFreshnessDetailed(raw, projectId as any, rows) : null
+      return { result, rows, statuses: detail?.statuses ?? new Map<string, string>() }
+    }
+    const pass1 = await runPass()
+    const staleFiles = collectStaleFiles(raw, pass1.rows, pass1.statuses)
+    if (staleFiles.length > 0) {
+      const decision = await maybeAutoRefresh(projectId, projectPath, staleFiles, { perCallOptOut: args.refresh === false })
+      if (decision.action === "refreshed") {
+        const pass2 = await runPass()
+        return textResult(`${render(pass2.result)}\n${autoRefreshLine(decision)}`)
+      }
+      if (decision.action === "declined") {
+        // Honest decline: answer from existing data with the reason declared.
+        return textResult(`${render(pass1.result)}\n${autoRefreshLine(decision)}`)
+      }
+    }
+    return textResult(render(pass1.result))
   },
 
-  bb_analyze: async (args, { projectId }) => {
+  bb_analyze: async (args, { projectId, projectPath }) => {
     const mode = String(args.mode ?? "")
-    const allowed = new Set(["mode", "target", "filePath", "limit"])
+    const allowed = new Set(["mode", "target", "filePath", "limit", "refresh"])
     const unused = Object.keys(args).filter((key) => !allowed.has(key))
     if (unused.length) return textResult(`bb_analyze ${mode || "unknown"}: irrelevant options: ${unused.join(", ")}`, true)
     const target = args.target ? String(args.target) : ""
@@ -322,31 +363,61 @@ const handlers: Record<string, ToolHandler> = {
     // "complete". Sampling is honest: the envelope counts describe the sample
     // actually resolved, and the S1 gate recomputes the same sample
     // independently to prove the counts correct-for-sample.
+    //
+    // M44.W1.1 (#669): every mode is a rerunnable pass through ONE shared
+    // repair path (bb_search's M43 shape). The FIRST pass resolves the rows
+    // the read touched; when any are stale/missing within budget the shared
+    // helper (repairRead -> maybeAutoRefresh) reindexes exactly those files
+    // and the mode RUNS AGAIN so the JSON reflects the repair, declared in an
+    // autoRefresh field. Declines declare the reason; clean paths are
+    // byte-identical with the pre-W1.1 output. Sampling is applied to both
+    // passes with the same stride, so a rerun re-samples deterministically.
     const FRESHNESS_SAMPLE_CAP = 64
     const raw = await BrainDatabase.getRawInstance(projectId as any)
-    const withFreshness = async (
-      data: Record<string, unknown>,
-      rows: Array<{ fileId?: string | null; filePath?: string | null }>,
-      opts: { scope?: { kind: "file" | "dir"; path?: string }; onRows?: (statuses: Map<string, string>) => void; sample?: number } = {},
-    ) => {
+    type AnalyzePass = {
+      data: Record<string, unknown>
+      rows: Array<{ fileId?: string | null; filePath?: string | null }>
+      onRows?: (statuses: Map<string, string>) => void
+      scope?: { kind: "file" | "dir"; path?: string }
+    }
+    const renderPass = async (run: () => Promise<AnalyzePass>, sample?: number): Promise<ToolResult> => {
       // Measurement seam for the S1 latency-budget gate (BB_M35_SKIP_FRESHNESS=1
       // runs the handler WITHOUT freshness work). Not part of the public
       // contract; the gate measures with/without and asserts the delta < 5%.
       // M40.A9: quarantined behind BB_TEST_HOOKS=1 — like the worker fixtures,
       // a stray env var must not silently degrade a production read path.
-      if (process.env.BB_TEST_HOOKS === "1" && process.env.BB_M35_SKIP_FRESHNESS === "1") return textResult(JSON.stringify(data, null, 2))
-      let resolved = rows
-      let mode: "sampled" | "complete" = "complete"
-      const cap = opts.sample
-      if (cap && rows.length > cap) {
-        const step = Math.ceil(rows.length / cap)
-        resolved = rows.filter((_, i) => i % step === 0)
-        mode = "sampled"
+      const skipFreshness = process.env.BB_TEST_HOOKS === "1" && process.env.BB_M35_SKIP_FRESHNESS === "1"
+      const scope = (p: AnalyzePass) => p.scope ?? { kind: "dir" as const }
+      const resolve = async (p: AnalyzePass) => {
+        let resolved = p.rows
+        let fMode: "sampled" | "complete" = "complete"
+        const cap = sample
+        if (cap && p.rows.length > cap) {
+          const step = Math.ceil(p.rows.length / cap)
+          resolved = p.rows.filter((_, i) => i % step === 0)
+          fMode = "sampled"
+        }
+        const detail = resolveRowsFreshnessDetailed(raw, projectId as any, resolved, { freshnessMode: fMode })
+        p.onRows?.(detail.statuses)
+        return { data: p.data, scope: scope(p), detail, resolved, statuses: detail.statuses }
       }
-      const detail = resolveRowsFreshnessDetailed(raw, projectId as any, resolved, { freshnessMode: mode })
-      opts.onRows?.(detail.statuses)
-      const text = JSON.stringify({ ...data, freshness: buildStalenessEnvelope(detail.summary, opts.scope ?? { kind: "dir" }) }, null, 2)
-      return textResult(text)
+      const pass1 = await run()
+      if (skipFreshness) return textResult(JSON.stringify(pass1.data, null, 2))
+      const r1 = await resolve(pass1)
+      const staleFiles = collectStaleFiles(raw, r1.resolved, r1.statuses)
+      if (staleFiles.length > 0) {
+        const decision = await maybeAutoRefresh(projectId, projectPath, staleFiles, { perCallOptOut: args.refresh === false })
+        if (decision.action === "refreshed") {
+          // Answer from a SECOND pass so the JSON reflects the repair.
+          const r2 = await resolve(await run())
+          return textResult(JSON.stringify({ ...r2.data, freshness: buildStalenessEnvelope(r2.detail.summary, r2.scope), autoRefresh: autoRefreshLine(decision) }, null, 2))
+        }
+        if (decision.action === "declined") {
+          // Honest decline: answer from existing data with the reason declared.
+          return textResult(JSON.stringify({ ...r1.data, freshness: buildStalenessEnvelope(r1.detail.summary, r1.scope), autoRefresh: autoRefreshLine(decision) }, null, 2))
+        }
+      }
+      return textResult(JSON.stringify({ ...r1.data, freshness: buildStalenessEnvelope(r1.detail.summary, r1.scope) }, null, 2))
     }
     // relative_path -> file id map for report rows that carry relative paths
     // (test-intel entries, dependency entries). Built lazily — graph modes pay
@@ -380,27 +451,29 @@ const handlers: Record<string, ToolHandler> = {
     }
 
     if (mode === "callers" || mode === "callees" || mode === "trace") {
-      const result = await graphTraversal(projectId as any, target, { direction: mode === "trace" ? "both" : mode, maxDepth: 3 })
-      const nodes = Object.values((result as { nodes: Record<string, any> }).nodes ?? {})
-      return withFreshness(
-        result as unknown as Record<string, unknown>,
-        nodes.map((n) => (n.isExternal ? { filePath: null } : { filePath: n.filePath || n.file || null })),
-        { onRows: (statuses) => { for (const n of nodes) if (!n.isExternal) n.stale = statuses.get(n.filePath || n.file) !== "fresh" } },
-      )
+      return renderPass(async () => {
+        const result = await graphTraversal(projectId as any, target, { direction: mode === "trace" ? "both" : mode, maxDepth: 3 })
+        const nodes = Object.values((result as { nodes: Record<string, any> }).nodes ?? {})
+        return {
+          data: result as unknown as Record<string, unknown>,
+          rows: nodes.map((n) => (n.isExternal ? { filePath: null } : { filePath: n.filePath || n.file || null })),
+          onRows: (statuses) => { for (const n of nodes) if (!n.isExternal) n.stale = statuses.get(n.filePath || n.file) !== "fresh" },
+        }
+      })
     }
     if (mode === "dependencies") {
-      const deps = await getFileDependencies(projectId as any, { filePath: args.filePath ? String(args.filePath) : target || undefined, limit: Number(args.limit ?? 20) })
-      const rows = deps.flatMap((d) => [
-        { fileId: d.fileId },
-        ...d.dependencies.filter((x) => !x.external && x.fileId).map((x) => ({ fileId: x.fileId! })),
-        ...d.dependents.map((x) => ({ fileId: x.fileId })),
-      ])
-      const first = deps[0]
-      return withFreshness(
-        { dependencies: deps },
-        rows,
-        {
-          scope: first ? { kind: "file", path: first.file } : undefined,
+      return renderPass(async () => {
+        const deps = await getFileDependencies(projectId as any, { filePath: args.filePath ? String(args.filePath) : target || undefined, limit: Number(args.limit ?? 20) })
+        const rows = deps.flatMap((d) => [
+          { fileId: d.fileId },
+          ...d.dependencies.filter((x) => !x.external && x.fileId).map((x) => ({ fileId: x.fileId! })),
+          ...d.dependents.map((x) => ({ fileId: x.fileId })),
+        ])
+        const first = deps[0]
+        return {
+          data: { dependencies: deps } as unknown as Record<string, unknown>,
+          rows,
+          scope: first ? { kind: "file" as const, path: first.file } : undefined,
           onRows: (statuses) => {
             for (const d of deps as any[]) {
               d.stale = statuses.get(d.fileId) !== "fresh"
@@ -408,77 +481,92 @@ const handlers: Record<string, ToolHandler> = {
               for (const x of d.dependents) x.stale = statuses.get(x.fileId) !== "fresh"
             }
           },
-        },
-      )
+        }
+      })
     }
     if (mode === "stats") {
-      const stats = await getProjectStats(projectId as any)
-      const fileRows = raw.prepare("SELECT id FROM brain_file WHERE project_id = ? ORDER BY id").all(projectId) as Array<{ id: string }>
-      return withFreshness(stats as unknown as Record<string, unknown>, fileRows.map((f) => ({ fileId: f.id })), { sample: 64 })
+      return renderPass(async () => {
+        const stats = await getProjectStats(projectId as any)
+        const fileRows = raw.prepare("SELECT id FROM brain_file WHERE project_id = ? ORDER BY id").all(projectId) as Array<{ id: string }>
+        return {
+          data: stats as unknown as Record<string, unknown>,
+          rows: fileRows.map((f) => ({ fileId: f.id })),
+        }
+      }, 64)
     }
     if (mode === "complexity") {
-      const report = await analyzeComplexity(projectId as any, { scope: target ? "file" : "project", target: target || undefined })
-      // Rows = the files actually visible in the breakdown (<=20): freshness
-      // resolution bounded by output size, mode "complete" — no project-wide
-      // sampling needed to flag what the user sees. Latency-budget verified.
-      const relIds = relIdsFor((report.breakdown ?? []).map((b) => b.file))
-      return withFreshness(
-        report as unknown as Record<string, unknown>,
-        (report.breakdown ?? []).map((b) => ({ fileId: relIds.get(b.file) ?? null })),
-        { onRows: (statuses) => { for (const b of report.breakdown as any[]) b.stale = statuses.get(relIds.get(b.file) ?? "") !== "fresh" } },
-      )
+      return renderPass(async () => {
+        const report = await analyzeComplexity(projectId as any, { scope: target ? "file" : "project", target: target || undefined })
+        // Rows = the files actually visible in the breakdown (<=20): freshness
+        // resolution bounded by output size, mode "complete" — no project-wide
+        // sampling needed to flag what the user sees. Latency-budget verified.
+        const relIds = relIdsFor((report.breakdown ?? []).map((b) => b.file))
+        return {
+          data: report as unknown as Record<string, unknown>,
+          rows: (report.breakdown ?? []).map((b) => ({ fileId: relIds.get(b.file) ?? null })),
+          onRows: (statuses) => { for (const b of report.breakdown as any[]) b.stale = statuses.get(relIds.get(b.file) ?? "") !== "fresh" },
+        }
+      })
     }
     if (mode === "impact") {
-      const report = await analyzeImpact(projectId as any, target)
-      if (report.found) {
-        // Rows = the report's own affectedFiles (relative paths). Deliberately
-        // NOT a second graph traversal — the report already did that work.
-        return withFreshness(
-          report as unknown as Record<string, unknown>,
-          report.affectedFiles.map((a) => ({ fileId: relToFileId().get(a.file) ?? null })),
-          { onRows: (statuses) => { for (const a of report.affectedFiles as any[]) a.stale = statusFor(statuses, a.file) !== "fresh" } },
-        )
-      }
-      return textResult(JSON.stringify({ ...report, freshness: buildStalenessEnvelope({ fresh: 0, stale: 0, missing: 0, staleRatio: 0, freshnessMode: "complete" }, { kind: "dir" }) }, null, 2))
+      // Rows = the report's own affectedFiles (relative paths). Deliberately
+      // NOT a second graph traversal — the report already did that work.
+      return renderPass(async () => {
+        const rep = await analyzeImpact(projectId as any, target)
+        // Not-found reports carry an empty freshness block, as before — the
+        // shared envelope over zero rows IS that block, so no special case.
+        if (!rep.found) return { data: rep as unknown as Record<string, unknown>, rows: [] }
+        return {
+          data: rep as unknown as Record<string, unknown>,
+          rows: rep.affectedFiles.map((a) => ({ fileId: relToFileId().get(a.file) ?? null })),
+          onRows: (statuses) => { for (const a of rep.affectedFiles as any[]) a.stale = statusFor(statuses, a.file) !== "fresh" },
+        }
+      })
     }
     if (mode === "test_mapping") {
-      const report = await testMapping(projectId as any)
-      return withFreshness(
-        report as unknown as Record<string, unknown>,
-        report.entries.map((e) => ({ fileId: relToFileId().get(e.file) ?? null })),
-        { sample: 64, onRows: (statuses) => { for (const e of report.entries as any[]) e.stale = statusFor(statuses, e.file) === "stale" } },
-      )
+      return renderPass(async () => {
+        const report = await testMapping(projectId as any)
+        return {
+          data: report as unknown as Record<string, unknown>,
+          rows: report.entries.map((e) => ({ fileId: relToFileId().get(e.file) ?? null })),
+          onRows: (statuses) => { for (const e of report.entries as any[]) e.stale = statusFor(statuses, e.file) === "stale" },
+        }
+      }, 64)
     }
     if (mode === "test_gaps") {
-      const report = await testGaps(projectId as any)
-      return withFreshness(
-        report as unknown as Record<string, unknown>,
-        report.gaps.map((g) => ({ fileId: relToFileId().get(g.file) ?? null })),
-        { sample: 64, onRows: (statuses) => { for (const g of report.gaps as any[]) g.stale = statusFor(statuses, g.file) === "stale" } },
-      )
+      return renderPass(async () => {
+        const report = await testGaps(projectId as any)
+        return {
+          data: report as unknown as Record<string, unknown>,
+          rows: report.gaps.map((g) => ({ fileId: relToFileId().get(g.file) ?? null })),
+          onRows: (statuses) => { for (const g of report.gaps as any[]) g.stale = statusFor(statuses, g.file) === "stale" },
+        }
+      }, 64)
     }
     if (mode === "test_impact") {
-      const report = await testImpact(projectId as any, target)
-      if (report.found) {
-        const tests = [...report.directTests, ...report.indirectTests]
-        return withFreshness(
-          report as unknown as Record<string, unknown>,
-          tests.map((t) => ({ fileId: relToFileId().get(t.testFile) ?? null })),
-          { onRows: (statuses) => { for (const t of tests as any[]) t.stale = statusFor(statuses, t.testFile) !== "fresh" } },
-        )
-      }
-      return textResult(JSON.stringify({ ...report, freshness: buildStalenessEnvelope({ fresh: 0, stale: 0, missing: 0, staleRatio: 0, freshnessMode: "complete" }, { kind: "dir" }) }, null, 2))
+      return renderPass(async () => {
+        const rep = await testImpact(projectId as any, target)
+        if (!rep.found) return { data: rep as unknown as Record<string, unknown>, rows: [] }
+        const tests = [...rep.directTests, ...rep.indirectTests]
+        return {
+          data: rep as unknown as Record<string, unknown>,
+          rows: tests.map((t) => ({ fileId: relToFileId().get(t.testFile) ?? null })),
+          onRows: (statuses) => { for (const t of tests as any[]) t.stale = statusFor(statuses, t.testFile) !== "fresh" },
+        }
+      })
     }
     if (mode === "test_quality") {
-      const report = await testQuality(projectId as any, { maxFiles: Number(args.limit ?? 50) })
-      // Rows = the files in the report (<= maxFiles, default 50): complete
-      // over visible rows; the sample cap still guards pathological limits.
-      const relIds = relIdsFor(report.files.map((f) => f.relativePath))
-      return withFreshness(
-        report as unknown as Record<string, unknown>,
-        report.files.map((f) => ({ fileId: relIds.get(f.relativePath) ?? null })),
-        { sample: 64, onRows: (statuses) => { for (const f of report.files as any[]) f.stale = statuses.get(relIds.get(f.relativePath) ?? "") === "stale" } },
-      )
+      return renderPass(async () => {
+        const report = await testQuality(projectId as any, { maxFiles: Number(args.limit ?? 50) })
+        // Rows = the files in the report (<= maxFiles, default 50): complete
+        // over visible rows; the sample cap still guards pathological limits.
+        const relIds = relIdsFor(report.files.map((f) => f.relativePath))
+        return {
+          data: report as unknown as Record<string, unknown>,
+          rows: report.files.map((f) => ({ fileId: relIds.get(f.relativePath) ?? null })),
+          onRows: (statuses) => { for (const f of report.files as any[]) f.stale = statuses.get(relIds.get(f.relativePath) ?? "") === "stale" },
+        }
+      }, 64)
     }
     return textResult("bb_analyze requires mode: callers|callees|trace|dependencies|stats|complexity|impact|test_mapping|test_gaps|test_impact|test_quality", true)
   },
@@ -493,7 +581,7 @@ const handlers: Record<string, ToolHandler> = {
     return textResult(formatUnifiedHealth(report))
   },
 
-  bb_patterns: async (args, { projectId }) => {
+  bb_patterns: async (args, { projectId, projectPath }) => {
     if (args.history === true) {
       const history = await getAnalysisHistory(projectId, "patterns", Number(args.limit ?? 20))
       return textResult(JSON.stringify(history, null, 2))
@@ -503,191 +591,272 @@ const handlers: Record<string, ToolHandler> = {
     // M35.S2: live derived findings carry staleness truth — flagged per
     // finding, never silently presented as current. History (above) keeps its
     // recorded state; staleness applies to live reads only.
+    // M44.W1.1 (#669): rerunnable pass — when the findings' files are stale
+    // within budget, repair exactly those files and re-scan, declared on the
+    // output. Recording (recordRun) always persists the FINAL pass's set.
     const rawDb = await BrainDatabase.getRawInstance(projectId as any)
-    if (scope === "orphaned") {
-      const report = await detectOrphans(projectId, { minConfidence: Number(args.confidenceThreshold ?? 0.6), maxResults: Math.max(limit, 100) })
-      const items = report.findings.slice(0, limit)
-      const derived = derivedStaleness(rawDb, projectId as any, items.map((f) => f.location.file))
-      const lines = items.map((f) => `  ${f.rule} ${f.location.symbol || f.location.file} — ${f.location.file}:${f.location.line} (${Math.round(f.confidence * 100)}%)${derived.isStale(f.location.file) ? " [stale]" : ""}`)
-      const prov = `\n[provenance: ${report.provenance.evidenceClass} via ${report.provenance.engine}; ${report.findings.length} findings${report.provenance.truncated ? "; truncated" : ""}; limitations: ${report.provenance.limitations.length}]`
-      const footer = derived.footer ? `\n${derived.footer}` : ""
-      return textResult(`orphaned code (${report.summary?.total ?? items.length}):\n${lines.join("\n") || "  none"}${prov}${footer}`)
-    }
-    const result: any = await PatternBrainTools.detectPatterns(projectId, {
-      includeOrphaned: args.includeOrphaned !== false,
-      includeFramework: args.includeFramework !== false,
-      includeAntiPatterns: args.includeAntiPatterns !== false,
-      confidenceThreshold: Number(args.confidenceThreshold ?? 0.6),
-      maxResults: Math.max(limit, 100),
-    })
-    const allPatterns = result?.patterns ?? []
-    const items = allPatterns.slice(0, limit)
-    const derived = derivedStaleness(rawDb, projectId as any, items.map((item: any) => item.location?.file))
-    const lines = items.map((item: any) => `  [${item.severity}] ${item.type} @ ${item.location?.file}:${item.location?.line} (${Math.round(item.confidence * 100)}%)${derived.isStale(item.location?.file) ? " [stale]" : ""}`)
-    const stalenessFooter = derived.footer ? `\n${derived.footer}` : ""
-    if (args.recordRun === true) {
-      const recorded = await executeAnalysis({
-        projectId,
-        kind: "patterns",
-        input: { options: args },
-        // Persist the FULL analyzed set, never the display slice: recorded
-        // history must reflect the run, not the truncated preview. Otherwise
-        // findings past `limit` would be silently auto-resolved on the next
-        // run even though they still exist.
-        persist: () => allPatterns.map((item: any): AnalysisFindingInput => ({
-          fingerprint: item.fingerprint ?? `${item.type}:${item.location?.file ?? "?"}:${item.location?.line ?? "?"}`,
-          rule: item.type ?? "pattern",
-          title: item.description ?? item.type ?? "pattern finding",
-          severity: item.severity ?? "info",
-          confidence: item.confidence ?? null,
-          evidence: item.evidence ?? [],
-          location: item.location?.file ? `${item.location.file}:${item.location.line ?? "?"}` : null,
-        })),
+    const runPass = async () => {
+      if (scope === "orphaned") {
+        const report = await detectOrphans(projectId, { minConfidence: Number(args.confidenceThreshold ?? 0.6), maxResults: Math.max(limit, 100) })
+        const items = report.findings.slice(0, limit)
+        const derived = derivedStaleness(rawDb, projectId as any, items.map((f) => f.location.file))
+        return { kind: "orphaned" as const, report, allPatterns: null as any[] | null, items, derived }
+      }
+      const result: any = await PatternBrainTools.detectPatterns(projectId, {
+        includeOrphaned: args.includeOrphaned !== false,
+        includeFramework: args.includeFramework !== false,
+        includeAntiPatterns: args.includeAntiPatterns !== false,
+        confidenceThreshold: Number(args.confidenceThreshold ?? 0.6),
+        maxResults: Math.max(limit, 100),
       })
-      const found = result?.statistics?.totalFound ?? allPatterns.length
-      return textResult(`patterns (${found} found, ${recorded.report.run.findingCount} recorded) recorded run ${recorded.report.run.id}: new=${recorded.report.newFindings} repeated=${recorded.report.repeatedFindings} resolved=${recorded.report.resolvedFindings}\n${lines.join("\n") || "  none"}${stalenessFooter}`)
+      const allPatterns = result?.patterns ?? []
+      const items = allPatterns.slice(0, limit)
+      const derived = derivedStaleness(rawDb, projectId as any, items.map((item: any) => item.location?.file))
+      return { kind: "all" as const, result, allPatterns, items, derived }
     }
-    return textResult(`patterns (${result?.statistics?.totalFound ?? items.length}):\n${lines.join("\n") || "  none"}${stalenessFooter}`)
+    const render = async (p: Awaited<ReturnType<typeof runPass>>, decl: Awaited<ReturnType<typeof repairRead>>["decision"] | null) => {
+      const declSuffix = decl && decl.action !== "clean" ? `\n${autoRefreshLine(decl)}` : ""
+      if (p.kind === "orphaned") {
+        const lines = p.items.map((f) => `  ${f.rule} ${f.location.symbol || f.location.file} — ${f.location.file}:${f.location.line} (${Math.round(f.confidence * 100)}%)${p.derived.isStale(f.location.file) ? " [stale]" : ""}`)
+        const prov = `\n[provenance: ${p.report.provenance.evidenceClass} via ${p.report.provenance.engine}; ${p.report.findings.length} findings${p.report.provenance.truncated ? "; truncated" : ""}; limitations: ${p.report.provenance.limitations.length}]`
+        const footer = p.derived.footer ? `\n${p.derived.footer}` : ""
+        return textResult(`orphaned code (${p.report.summary?.total ?? p.items.length}):\n${lines.join("\n") || "  none"}${prov}${footer}${declSuffix}`)
+      }
+      const lines = p.items.map((item: any) => `  [${item.severity}] ${item.type} @ ${item.location?.file}:${item.location?.line} (${Math.round(item.confidence * 100)}%)${p.derived.isStale(item.location?.file) ? " [stale]" : ""}`)
+      const stalenessFooter = p.derived.footer ? `\n${p.derived.footer}` : ""
+      if (args.recordRun === true && p.allPatterns) {
+        const recorded = await executeAnalysis({
+          projectId,
+          kind: "patterns",
+          input: { options: args },
+          // Persist the FULL analyzed set, never the display slice: recorded
+          // history must reflect the run, not the truncated preview. Otherwise
+          // findings past `limit` would be silently auto-resolved on the next
+          // run even though they still exist.
+          persist: () => (p.allPatterns as any[]).map((item: any): AnalysisFindingInput => ({
+            fingerprint: item.fingerprint ?? `${item.type}:${item.location?.file ?? "?"}:${item.location?.line ?? "?"}`,
+            rule: item.type ?? "pattern",
+            title: item.description ?? item.type ?? "pattern finding",
+            severity: item.severity ?? "info",
+            confidence: item.confidence ?? null,
+            evidence: item.evidence ?? [],
+            location: item.location?.file ? `${item.location.file}:${item.location.line ?? "?"}` : null,
+          })),
+        })
+        const found = p.result?.statistics?.totalFound ?? p.allPatterns.length
+        return textResult(`patterns (${found} found, ${recorded.report.run.findingCount} recorded) recorded run ${recorded.report.run.id}: new=${recorded.report.newFindings} repeated=${recorded.report.repeatedFindings} resolved=${recorded.report.resolvedFindings}\n${lines.join("\n") || "  none"}${stalenessFooter}${declSuffix}`)
+      }
+      return textResult(`patterns (${p.result?.statistics?.totalFound ?? p.items.length}):\n${lines.join("\n") || "  none"}${stalenessFooter}${declSuffix}`)
+    }
+    const pass1 = await runPass()
+    if (pass1.derived.rows.length > 0) {
+      const staleFiles = collectStaleFiles(rawDb, pass1.derived.rows, pass1.derived.statuses)
+      if (staleFiles.length > 0) {
+        const decision = await repairRead(rawDb, projectId, projectPath, pass1.derived.rows, pass1.derived.statuses, { perCallOptOut: args.refresh === false })
+        if (decision.decision.action === "refreshed") return render(await runPass(), decision.decision)
+        if (decision.decision.action === "declined") return render(pass1, decision.decision)
+      }
+    }
+    return render(pass1, null)
   },
 
-  bb_security: async (args, { projectId }) => {
+  bb_security: async (args, { projectId, projectPath }) => {
     if (args.history === true) {
       const history = await getAnalysisHistory(projectId, "security", Number(args.limit ?? 20))
       return textResult(JSON.stringify(history, null, 2))
     }
-    const result: any = await CrossLanguageSecurityAnalysis.analyzeSecurityAcrossLanguages(projectId)
-    const findings = result?.findings ?? []
-    const suspicious = result?.suspiciousSources ?? []
-    const summary = result?.summary
     // M35.S2: a stale taint/flow finding says so — security honesty. History
     // paths (above) keep their recorded state; this is the live read.
+    // M44.W1.1 (#669): rerunnable pass — when the findings' files are stale
+    // within budget, repair exactly those files and re-scan, declared on the
+    // output. Recording (recordRun) always persists the FINAL pass's set.
     const rawDb = await BrainDatabase.getRawInstance(projectId as any)
-    const derived = derivedStaleness(rawDb, projectId as any, findings.map((f: any) => f.file))
-    const head = summary
-      ? `security: ${summary.critical} critical / ${summary.high} high / ${summary.medium} medium / ${summary.low} low (${summary.resolved} resolved flows, ${summary.unresolvedSources} unvalidated sources, ${summary.mitigated} mitigated)`
-      : `security findings (${findings.length})`
-    const lines = findings.slice(0, 20).map(
-      (finding: any) => `  [${finding.severity}] ${finding.label ?? finding.type}${finding.symbol ? ` (${finding.symbol})` : ""} @ ${finding.file}:${finding.line ?? "?"}${finding.sinkType ? ` -> ${finding.sinkType}` : ""}${finding.mitigated ? " [mitigated]" : ""}${derived.isStale(finding.file) ? " [stale]" : ""}`,
-    )
-    const sourceLines = suspicious.slice(0, 5).map(
-      (source: any) => `  [info] unvalidated input${source.symbol ? ` ${source.symbol}` : ""} @ ${source.file}:${source.line ?? "?"} (no sink reached)`,
-    )
-    if (args.recordRun === true) {
-      const findingCount = findings.length
-      const recorded = await executeAnalysis({
-        projectId,
-        kind: "security",
-        input: { options: args },
-        persist: () => findings.map((finding: any): AnalysisFindingInput => ({
-          fingerprint: finding.fingerprint ?? `${finding.file}:${finding.line ?? "?"}:${finding.label ?? finding.type}`,
-          rule: finding.label ?? finding.type ?? "security",
-          title: finding.label ?? finding.type ?? "security finding",
-          severity: finding.severity ?? "medium",
-          confidence: finding.confidence ?? null,
-          evidence: finding.evidence ?? [],
-          location: finding.file ? `${finding.file}:${finding.line ?? "?"}` : null,
-          state: finding.mitigated ? "mitigated" : undefined,
-        })),
-      })
-      return textResult(head + `\nrecorded run: ${recorded.report.run.id}\nnew=${recorded.report.newFindings} repeated=${recorded.report.repeatedFindings} resolved=${recorded.report.resolvedFindings}` + "\n" + `${findingCount} findings recorded` + (lines.length ? "\n" + lines.join("\n") : "") + (derived.footer ? `\n${derived.footer}` : ""))
+    const runPass = async () => {
+      const result: any = await CrossLanguageSecurityAnalysis.analyzeSecurityAcrossLanguages(projectId)
+      const findings = result?.findings ?? []
+      const suspicious = result?.suspiciousSources ?? []
+      const derived = derivedStaleness(rawDb, projectId as any, findings.map((f: any) => f.file))
+      return { result, findings, suspicious, derived }
     }
-    return textResult(head + "\n" + (lines.length ? lines.join("\n") : "  clean") + (sourceLines.length ? `\n\nunvalidated input sources:\n${sourceLines.join("\n")}` : "") + (derived.footer ? `\n\n${derived.footer}` : ""))
+    const render = async (p: Awaited<ReturnType<typeof runPass>>, decl: Awaited<ReturnType<typeof repairRead>>["decision"] | null) => {
+      const summary = p.result?.summary
+      const head = summary
+        ? `security: ${summary.critical} critical / ${summary.high} high / ${summary.medium} medium / ${summary.low} low (${summary.resolved} resolved flows, ${summary.unresolvedSources} unvalidated sources, ${summary.mitigated} mitigated)`
+        : `security findings (${p.findings.length})`
+      const lines = p.findings.slice(0, 20).map(
+        (finding: any) => `  [${finding.severity}] ${finding.label ?? finding.type}${finding.symbol ? ` (${finding.symbol})` : ""} @ ${finding.file}:${finding.line ?? "?"}${finding.sinkType ? ` -> ${finding.sinkType}` : ""}${finding.mitigated ? " [mitigated]" : ""}${p.derived.isStale(finding.file) ? " [stale]" : ""}`,
+      )
+      const sourceLines = p.suspicious.slice(0, 5).map(
+        (source: any) => `  [info] unvalidated input${source.symbol ? ` ${source.symbol}` : ""} @ ${source.file}:${source.line ?? "?"} (no sink reached)`,
+      )
+      const declSuffix = decl && decl.action !== "clean" ? `\n${autoRefreshLine(decl)}` : ""
+      if (args.recordRun === true) {
+        const findingCount = p.findings.length
+        const recorded = await executeAnalysis({
+          projectId,
+          kind: "security",
+          input: { options: args },
+          persist: () => p.findings.map((finding: any): AnalysisFindingInput => ({
+            fingerprint: finding.fingerprint ?? `${finding.file}:${finding.line ?? "?"}:${finding.label ?? finding.type}`,
+            rule: finding.label ?? finding.type ?? "security",
+            title: finding.label ?? finding.type ?? "security finding",
+            severity: finding.severity ?? "medium",
+            confidence: finding.confidence ?? null,
+            evidence: finding.evidence ?? [],
+            location: finding.file ? `${finding.file}:${finding.line ?? "?"}` : null,
+            state: finding.mitigated ? "mitigated" : undefined,
+          })),
+        })
+        return textResult(head + `\nrecorded run: ${recorded.report.run.id}\nnew=${recorded.report.newFindings} repeated=${recorded.report.repeatedFindings} resolved=${recorded.report.resolvedFindings}` + "\n" + `${findingCount} findings recorded` + (lines.length ? "\n" + lines.join("\n") : "") + (p.derived.footer ? `\n${p.derived.footer}` : "") + declSuffix)
+      }
+      return textResult(head + "\n" + (lines.length ? lines.join("\n") : "  clean") + (sourceLines.length ? `\n\nunvalidated input sources:\n${sourceLines.join("\n")}` : "") + (p.derived.footer ? `\n\n${p.derived.footer}` : "") + declSuffix)
+    }
+    const pass1 = await runPass()
+    if (pass1.derived.rows.length > 0) {
+      const staleFiles = collectStaleFiles(rawDb, pass1.derived.rows, pass1.derived.statuses)
+      if (staleFiles.length > 0) {
+        const decision = await repairRead(rawDb, projectId, projectPath, pass1.derived.rows, pass1.derived.statuses, { perCallOptOut: args.refresh === false })
+        if (decision.decision.action === "refreshed") return render(await runPass(), decision.decision)
+        if (decision.decision.action === "declined") return render(pass1, decision.decision)
+      }
+    }
+    return render(pass1, null)
   },
 
-  bb_visualize: async (args, { projectId }) => {
+  bb_visualize: async (args, { projectId, projectPath }) => {
     // M31.T1: no silent scope/target fallback. The validation layer rejects
     // scoped calls without a target; unknown scope strings here are a handler
     // bug and must fail loudly rather than masquerade as a project graph.
     const scope = String(args.scope ?? "project")
     if (!["project", "file", "module", "symbol", "feature"].includes(scope)) return textResult(`bb_visualize: unknown scope: ${scope}`, true)
     const request: VisualizationRequest = { scope: scope as VisualizationScope, target: args.target ? String(args.target) : undefined, format: ["text", "json", "html"].includes(String(args.format)) ? args.format : "text", maxNodes: args.maxNodes == null ? undefined : Number(args.maxNodes), maxLinks: args.maxLinks == null ? undefined : Number(args.maxLinks), relationshipTypes: Array.isArray(args.relationshipTypes) ? args.relationshipTypes.map(String) : undefined, languages: Array.isArray(args.languages) ? args.languages.map(String) : undefined }
-    const result = await visualizeProject(projectId, request)
     // M35.S3: per-node stale flags (node file changed since index); links
     // inherit worst-of-endpoints — a link is stale if EITHER endpoint's file
     // is stale (the edge crosses changed code on either side). Truncation
     // metadata is untouched so truncated AND stale are both visible.
+    // M44.W1.1 (#669): rerunnable pass — when the graph's own files are stale
+    // within budget, repair exactly those files and re-render, declared on the
+    // output. Clean path byte-identical.
     const vizRaw = await BrainDatabase.getRawInstance(projectId as any)
-    const vizFiles = [...new Set((result.nodes as any[]).map((n) => n.filePath).filter((p: unknown): p is string => typeof p === "string" && p.length > 0 && p !== "unknown"))]
-    const vizRelToId = new Map<string, string>()
-    if (vizFiles.length) {
-      for (const r of vizRaw.prepare(`SELECT id, relative_path FROM brain_file WHERE project_id = ? AND relative_path IN (${vizFiles.map(() => "?").join(",")})`).all(projectId, ...vizFiles) as Array<{ id: string; relative_path: string }>) {
-        vizRelToId.set(r.relative_path, r.id)
+    const runPass = async () => {
+      const result = await visualizeProject(projectId, request)
+      const vizFiles = [...new Set((result.nodes as any[]).map((n) => n.filePath).filter((p: unknown): p is string => typeof p === "string" && p.length > 0 && p !== "unknown"))]
+      const vizRelToId = new Map<string, string>()
+      if (vizFiles.length) {
+        for (const r of vizRaw.prepare(`SELECT id, relative_path FROM brain_file WHERE project_id = ? AND relative_path IN (${vizFiles.map(() => "?").join(",")})`).all(projectId, ...vizFiles) as Array<{ id: string; relative_path: string }>) {
+          vizRelToId.set(r.relative_path, r.id)
+        }
+      }
+      const vizRows = vizFiles.map((p) => ({ fileId: vizRelToId.get(p) ?? null }))
+      const vizDetail = vizRows.length ? resolveRowsFreshnessDetailed(vizRaw, projectId as any, vizRows) : null
+      const vizStatuses = vizDetail?.statuses ?? new Map<string, string>()
+      const vizStatus = (rel: string | undefined) => (rel ? vizStatuses.get(vizRelToId.get(rel) ?? "") ?? "missing" : "missing")
+      const vizSummary = {
+        fresh: vizRows.filter((r) => vizStatuses.get(r.fileId ?? "") === "fresh").length,
+        stale: vizRows.filter((r) => vizStatuses.get(r.fileId ?? "") === "stale").length,
+        missing: vizRows.filter((r) => vizStatuses.get(r.fileId ?? "") !== "fresh" && vizStatuses.get(r.fileId ?? "") !== "stale").length,
+      }
+      for (const n of result.nodes as any[]) n.stale = vizStatus(n.filePath) === "stale"
+      const nodeById = new Map((result.nodes as any[]).map((n) => [n.id, n]))
+      for (const l of result.links as any[]) {
+        const s = nodeById.get(l.source)
+        const t = nodeById.get(l.target)
+        l.stale = (!!s && vizStatus(s.filePath) === "stale") || (!!t && vizStatus(t.filePath) === "stale")
+      }
+      return { result, vizRows, vizStatuses, vizSummary }
+    }
+    const render = (p: Awaited<ReturnType<typeof runPass>>, decl: Awaited<ReturnType<typeof repairRead>>["decision"] | null) => {
+      const vizEnvelopeSource = { ...p.vizSummary, staleRatio: p.vizRows.length ? (p.vizSummary.stale + p.vizSummary.missing) / p.vizRows.length : 0, freshnessMode: "complete" as const }
+      if (request.format === "json") {
+        const parsed = JSON.parse(formatVisualization(p.result))
+        parsed.freshness = buildStalenessEnvelope(vizEnvelopeSource, { kind: "dir" })
+        if (decl && decl.action !== "clean") parsed.autoRefresh = autoRefreshLine(decl)
+        return textResult(JSON.stringify(parsed, null, 2))
+      }
+      const vizOut = formatVisualization(p.result)
+      const vizFooter = p.vizSummary.stale + p.vizSummary.missing > 0 ? `\n\n${p.vizSummary.stale} stale, ${p.vizSummary.missing} missing of ${p.vizRows.length} graph files — ${FRESHNESS_REMEDIATION.dir}` : ""
+      const vizOut2 = vizOut + vizFooter
+      return textResult(decl && decl.action !== "clean" ? `${vizOut2}\n${autoRefreshLine(decl)}` : vizOut2)
+    }
+    const pass1 = await runPass()
+    if (pass1.vizRows.length > 0) {
+      const staleFiles = collectStaleFiles(vizRaw, pass1.vizRows, pass1.vizStatuses)
+      if (staleFiles.length > 0) {
+        const decision = await repairRead(vizRaw, projectId, projectPath, pass1.vizRows, pass1.vizStatuses, { perCallOptOut: args.refresh === false })
+        if (decision.decision.action === "refreshed") return render(await runPass(), decision.decision)
+        if (decision.decision.action === "declined") return render(pass1, decision.decision)
       }
     }
-    const vizRows = vizFiles.map((p) => ({ fileId: vizRelToId.get(p) ?? null }))
-    const vizDetail = vizRows.length ? resolveRowsFreshnessDetailed(vizRaw, projectId as any, vizRows) : null
-    const vizStatuses = vizDetail?.statuses ?? new Map<string, string>()
-    const vizStatus = (rel: string | undefined) => (rel ? vizStatuses.get(vizRelToId.get(rel) ?? "") ?? "missing" : "missing")
-    const vizSummary = {
-      fresh: vizRows.filter((r) => vizStatuses.get(r.fileId ?? "") === "fresh").length,
-      stale: vizRows.filter((r) => vizStatuses.get(r.fileId ?? "") === "stale").length,
-      missing: vizRows.filter((r) => vizStatuses.get(r.fileId ?? "") !== "fresh" && vizStatuses.get(r.fileId ?? "") !== "stale").length,
-    }
-    for (const n of result.nodes as any[]) n.stale = vizStatus(n.filePath) === "stale"
-    const nodeById = new Map((result.nodes as any[]).map((n) => [n.id, n]))
-    for (const l of result.links as any[]) {
-      const s = nodeById.get(l.source)
-      const t = nodeById.get(l.target)
-      l.stale = (!!s && vizStatus(s.filePath) === "stale") || (!!t && vizStatus(t.filePath) === "stale")
-    }
-    const vizEnvelopeSource = { ...vizSummary, staleRatio: vizRows.length ? (vizSummary.stale + vizSummary.missing) / vizRows.length : 0, freshnessMode: "complete" as const }
-    if (request.format === "json") {
-      const parsed = JSON.parse(formatVisualization(result))
-      parsed.freshness = buildStalenessEnvelope(vizEnvelopeSource, { kind: "dir" })
-      return textResult(JSON.stringify(parsed, null, 2))
-    }
-    const vizOut = formatVisualization(result)
-    const vizFooter = vizSummary.stale + vizSummary.missing > 0 ? `\n\n${vizSummary.stale} stale, ${vizSummary.missing} missing of ${vizRows.length} graph files — ${FRESHNESS_REMEDIATION.dir}` : ""
-    return textResult(vizOut + vizFooter)
+    return render(pass1, null)
   },
 
-  bb_migrate: async (args, { projectId }) => {
+  bb_migrate: async (args, { projectId, projectPath }) => {
     const symbolNames = Array.isArray(args.symbolNames) ? args.symbolNames.map(String) : args.symbolName ? [String(args.symbolName)] : []
     if (!symbolNames.length || !args.targetLanguage) return textResult("bb_migrate requires symbolNames (or symbolName) and targetLanguage", true)
-    const result = await generateMigrationPlans(projectId, { symbolNames, targetLanguage: String(args.targetLanguage) })
     // M35.S3: a migration plan is a claim about CURRENT code. Resolve each
     // plan's source file and flag plans whose file changed since the index —
     // a stale plan says so up front instead of silently planning against
     // outdated symbols.
+    // M44.W1.1 (#669): rerunnable pass — when the plan source files are stale
+    // within budget, repair exactly those files and RE-PLAN so the output
+    // reflects the repair, declared on the output. Clean path byte-identical.
     const migRaw = await BrainDatabase.getRawInstance(projectId as any)
-    const planNames = (result.plans as any[]).map((p) => String(p.componentName ?? "").toLowerCase()).filter(Boolean)
-    const nameToRel = new Map<string, string>()
-    if (planNames.length) {
-      for (const r of migRaw.prepare(`SELECT lower(s.name) AS lname, f.relative_path AS rel FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id WHERE s.project_id = ? AND lower(s.name) IN (${planNames.map(() => "?").join(",")})`).all(projectId, ...planNames) as Array<{ lname: string; rel: string }>) {
-        if (!nameToRel.has(r.lname)) nameToRel.set(r.lname, r.rel)
+    const runPass = async () => {
+      const result = await generateMigrationPlans(projectId, { symbolNames, targetLanguage: String(args.targetLanguage) })
+      const planNames = (result.plans as any[]).map((p) => String(p.componentName ?? "").toLowerCase()).filter(Boolean)
+      const nameToRel = new Map<string, string>()
+      if (planNames.length) {
+        for (const r of migRaw.prepare(`SELECT lower(s.name) AS lname, f.relative_path AS rel FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id WHERE s.project_id = ? AND lower(s.name) IN (${planNames.map(() => "?").join(",")})`).all(projectId, ...planNames) as Array<{ lname: string; rel: string }>) {
+          if (!nameToRel.has(r.lname)) nameToRel.set(r.lname, r.rel)
+        }
+      }
+      const migFiles = [...new Set([...nameToRel.values()])]
+      const migRelToId = new Map<string, string>()
+      if (migFiles.length) {
+        for (const r of migRaw.prepare(`SELECT id, relative_path FROM brain_file WHERE project_id = ? AND relative_path IN (${migFiles.map(() => "?").join(",")})`).all(projectId, ...migFiles) as Array<{ id: string; relative_path: string }>) {
+          migRelToId.set(r.relative_path, r.id)
+        }
+      }
+      const migRows = migFiles.map((p) => ({ fileId: migRelToId.get(p) ?? null }))
+      const migDetail = migRows.length ? resolveRowsFreshnessDetailed(migRaw, projectId as any, migRows) : null
+      const migStatuses = migDetail?.statuses ?? new Map<string, string>()
+      const migStatus = (rel: string | undefined) => (rel ? migStatuses.get(migRelToId.get(rel) ?? "") ?? "missing" : "missing")
+      for (const p of result.plans as any[]) {
+        p.sourceFile = nameToRel.get(String(p.componentName ?? "").toLowerCase()) ?? null
+        p.stale = migStatus(p.sourceFile) === "stale"
+      }
+      const migSummary = {
+        fresh: migRows.filter((r) => migStatuses.get(r.fileId ?? "") === "fresh").length,
+        stale: migRows.filter((r) => migStatuses.get(r.fileId ?? "") === "stale").length,
+        missing: migRows.filter((r) => migStatuses.get(r.fileId ?? "") !== "fresh" && migStatuses.get(r.fileId ?? "") !== "stale").length,
+      }
+      return { result, migRows, migStatuses, migSummary }
+    }
+    const render = (p: Awaited<ReturnType<typeof runPass>>, decl: Awaited<ReturnType<typeof repairRead>>["decision"] | null) => {
+      const migEnvelopeSource = { ...p.migSummary, staleRatio: p.migRows.length ? (p.migSummary.stale + p.migSummary.missing) / p.migRows.length : 0, freshnessMode: "complete" as const }
+      const stalePlans = (p.result.plans as any[]).filter((pl) => pl.stale).length
+      if (args.format === "json") {
+        const parsed = JSON.parse(formatMigrationPlans(p.result, "json"))
+        parsed.freshness = buildStalenessEnvelope(migEnvelopeSource, { kind: "dir" })
+        if (decl && decl.action !== "clean") parsed.autoRefresh = autoRefreshLine(decl)
+        return textResult(JSON.stringify(parsed, null, 2))
+      }
+      const migOut = formatMigrationPlans(p.result, "text")
+      const migNotice = stalePlans > 0 ? `⚠ ${stalePlans} of ${p.result.plans.length} plans reference files changed since the last index — reindex before acting on these plans.\n\n` : ""
+      const migFooter = p.migSummary.stale + p.migSummary.missing > 0 ? `\n\n${p.migSummary.stale} stale, ${p.migSummary.missing} missing of ${p.migRows.length} plan files — ${FRESHNESS_REMEDIATION.dir}` : ""
+      const migOut2 = migNotice + migOut + migFooter
+      return textResult(decl && decl.action !== "clean" ? `${migOut2}\n${autoRefreshLine(decl)}` : migOut2)
+    }
+    const pass1 = await runPass()
+    if (pass1.migRows.length > 0) {
+      const staleFiles = collectStaleFiles(migRaw, pass1.migRows, pass1.migStatuses)
+      if (staleFiles.length > 0) {
+        const decision = await repairRead(migRaw, projectId, projectPath, pass1.migRows, pass1.migStatuses, { perCallOptOut: args.refresh === false })
+        if (decision.decision.action === "refreshed") return render(await runPass(), decision.decision)
+        if (decision.decision.action === "declined") return render(pass1, decision.decision)
       }
     }
-    const migFiles = [...new Set([...nameToRel.values()])]
-    const migRelToId = new Map<string, string>()
-    if (migFiles.length) {
-      for (const r of migRaw.prepare(`SELECT id, relative_path FROM brain_file WHERE project_id = ? AND relative_path IN (${migFiles.map(() => "?").join(",")})`).all(projectId, ...migFiles) as Array<{ id: string; relative_path: string }>) {
-        migRelToId.set(r.relative_path, r.id)
-      }
-    }
-    const migRows = migFiles.map((p) => ({ fileId: migRelToId.get(p) ?? null }))
-    const migDetail = migRows.length ? resolveRowsFreshnessDetailed(migRaw, projectId as any, migRows) : null
-    const migStatuses = migDetail?.statuses ?? new Map<string, string>()
-    const migStatus = (rel: string | undefined) => (rel ? migStatuses.get(migRelToId.get(rel) ?? "") ?? "missing" : "missing")
-    for (const p of result.plans as any[]) {
-      p.sourceFile = nameToRel.get(String(p.componentName ?? "").toLowerCase()) ?? null
-      p.stale = migStatus(p.sourceFile) === "stale"
-    }
-    const migSummary = {
-      fresh: migRows.filter((r) => migStatuses.get(r.fileId ?? "") === "fresh").length,
-      stale: migRows.filter((r) => migStatuses.get(r.fileId ?? "") === "stale").length,
-      missing: migRows.filter((r) => migStatuses.get(r.fileId ?? "") !== "fresh" && migStatuses.get(r.fileId ?? "") !== "stale").length,
-    }
-    const migEnvelopeSource = { ...migSummary, staleRatio: migRows.length ? (migSummary.stale + migSummary.missing) / migRows.length : 0, freshnessMode: "complete" as const }
-    const stalePlans = (result.plans as any[]).filter((p) => p.stale).length
-    if (args.format === "json") {
-      const parsed = JSON.parse(formatMigrationPlans(result, "json"))
-      parsed.freshness = buildStalenessEnvelope(migEnvelopeSource, { kind: "dir" })
-      return textResult(JSON.stringify(parsed, null, 2))
-    }
-    const migOut = formatMigrationPlans(result, "text")
-    const migNotice = stalePlans > 0 ? `⚠ ${stalePlans} of ${result.plans.length} plans reference files changed since the last index — reindex before acting on these plans.\n\n` : ""
-    const migFooter = migSummary.stale + migSummary.missing > 0 ? `\n\n${migSummary.stale} stale, ${migSummary.missing} missing of ${migRows.length} plan files — ${FRESHNESS_REMEDIATION.dir}` : ""
-    return textResult(migNotice + migOut + migFooter)
+    return render(pass1, null)
   },
 
   bb_doc: async (args, { projectId, projectPath }) => {
@@ -695,20 +864,40 @@ const handlers: Record<string, ToolHandler> = {
     if (!["symbol", "file", "module", "feature", "api", "project", "coverage"].includes(mode)) return textResult("bb_doc requires mode: symbol|file|module|feature|api|project|coverage", true)
     if (["symbol", "file", "module", "feature"].includes(mode) && !args.target) return textResult(`bb_doc ${mode} mode requires target`, true)
     const request: DocRequest = { mode, target: args.target ? String(args.target) : undefined, format: args.format === "json" ? "json" : "markdown", audience: args.audience, detail: args.detail, includeExamples: args.includeExamples === true, includeDiagrams: args.includeDiagrams === true, includeTests: args.includeTests === true, limit: args.limit == null ? undefined : Number(args.limit), maxTokens: args.maxTokens == null ? undefined : Number(args.maxTokens) }
-    const result = await generateDocumentation(projectId, projectPath, request)
     // M35.S2: the doc carries the registered freshness envelope over its cited
     // files; per-citation freshness is already resolved inside the engine and
     // rendered in Sources. JSON gets the exact registered block; text/markdown
     // get the footer built from the registered remediation constant.
+    // M44.W1.1 (#669): rerunnable pass — when the cited files are stale within
+    // budget, repair exactly those files and RE-GENERATE so the doc reflects
+    // the repair, declared on the output. Clean path byte-identical.
     const rawDb = await BrainDatabase.getRawInstance(projectId as any)
-    const derived = derivedStaleness(rawDb, projectId as any, (result.citations ?? []).map((c) => c.path ?? undefined))
-    if (request.format === "json") {
-      const parsed = JSON.parse(formatDocumentation(result, "json"))
-      parsed.freshness = buildStalenessEnvelope(derived.summary, { kind: "dir" })
-      return textResult(JSON.stringify(parsed, null, 2))
+    const runPass = async () => {
+      const result = await generateDocumentation(projectId, projectPath, request)
+      const derived = derivedStaleness(rawDb, projectId as any, (result.citations ?? []).map((c) => c.path ?? undefined))
+      return { result, derived }
     }
-    const base = formatDocumentation(result, request.format)
-    return textResult(derived.footer ? `${base}\n\n---\n${derived.footer}` : base)
+    const render = (p: Awaited<ReturnType<typeof runPass>>, decl: Awaited<ReturnType<typeof repairRead>>["decision"] | null) => {
+      if (request.format === "json") {
+        const parsed = JSON.parse(formatDocumentation(p.result, "json"))
+        parsed.freshness = buildStalenessEnvelope(p.derived.summary, { kind: "dir" })
+        if (decl && decl.action !== "clean") parsed.autoRefresh = autoRefreshLine(decl)
+        return textResult(JSON.stringify(parsed, null, 2))
+      }
+      const base = formatDocumentation(p.result, request.format)
+      const footer = p.derived.footer ? `${base}\n\n---\n${p.derived.footer}` : base
+      return textResult(decl && decl.action !== "clean" ? `${footer}\n${autoRefreshLine(decl)}` : footer)
+    }
+    const pass1 = await runPass()
+    if (pass1.derived.rows.length > 0) {
+      const staleFiles = collectStaleFiles(rawDb, pass1.derived.rows, pass1.derived.statuses)
+      if (staleFiles.length > 0) {
+        const decision = await repairRead(rawDb, projectId, projectPath, pass1.derived.rows, pass1.derived.statuses, { perCallOptOut: args.refresh === false })
+        if (decision.decision.action === "refreshed") return render(await runPass(), decision.decision)
+        if (decision.decision.action === "declined") return render(pass1, decision.decision)
+      }
+    }
+    return render(pass1, null)
   },
 
   bb_edit: async (args, { projectId, projectPath }) => {
@@ -769,18 +958,30 @@ const handlers: Record<string, ToolHandler> = {
   // Decision D-1: these handlers call the same functions the LSP handlers
   // call. The union differential gate (M28.U1) proves the two doors agree.
 
-  bb_graph: async (args, { projectId }) => {
+  bb_graph: async (args, { projectId, projectPath }) => {
     const symbol = String(args.symbol ?? "")
     if (!symbol) return textResult("bb_graph requires symbol", true)
     const maxDepth = Number(args.maxDepth ?? 3)
     if (!Number.isFinite(maxDepth) || maxDepth < 1 || maxDepth > 10) {
       return textResult("bb_graph maxDepth must be a number between 1 and 10", true)
     }
-    let result
-    try {
-      result = await graphTraversal(projectId as any, symbol, { maxDepth })
-    } catch (error) {
-      return textResult(`bb_graph: ${error instanceof Error ? error.message : String(error)}`, true)
+    // M44.W1.1 (#669): rerunnable pass — the graph is a claim about CURRENT
+    // callers/callees. When the traversed nodes' files are stale within
+    // budget, repair exactly those files and re-traverse, declared in an
+    // autoRefresh field (present only when a repair/decline happened; clean
+    // output is byte-identical with the pre-W1.1 shape).
+    const raw = await BrainDatabase.getRawInstance(projectId as any)
+    const runPass = async (): Promise<{ ok: true; result: any; rows: Array<{ filePath: string | null }>; statuses: Map<string, string> } | { ok: false; message: string }> => {
+      let result
+      try {
+        result = await graphTraversal(projectId as any, symbol, { maxDepth })
+      } catch (error) {
+        return { ok: false, message: error instanceof Error ? error.message : String(error) }
+      }
+      const nodes = Object.values((result as { nodes?: Record<string, any> }).nodes ?? {}) as Array<{ isExternal?: boolean; filePath?: string | null; file?: string }>
+      const rows = nodes.filter((n) => !(n.isExternal === true) && (n.filePath || n.file)).map((n) => ({ filePath: n.filePath || n.file || null }))
+      const detail = rows.length ? resolveRowsFreshnessDetailed(raw, projectId as any, rows) : null
+      return { ok: true, result, rows, statuses: detail?.statuses ?? new Map<string, string>() }
     }
     const tierFor = (e: { relationshipType: string; confidence: number; metadata?: { evidenceClass?: string } }): string => {
       // Identical tier derivation to the webview core (script/m26/graph-core.ts
@@ -806,21 +1007,38 @@ const handlers: Record<string, ToolHandler> = {
         depth: e.depth,
         callSite: e.callSite ?? null,
       }))
-    return textResult(JSON.stringify({
-      symbol,
-      root: { id: result.root?.id, name: result.root?.name, filePath: result.root?.filePath ?? null },
-      callers: edgesOf(result.callers as any[], "caller"),
-      callees: edgesOf(result.callees as any[], "callee"),
-      summary: {
-        totalCallers: result.summary?.totalCallers ?? result.callers.length,
-        totalCallees: result.summary?.totalCallees ?? result.callees.length,
-        maxDepthReached: result.summary?.maxDepthReached ?? maxDepth,
-        crossLanguageEdges: result.summary?.crossLanguageEdges ?? 0,
-        truncated: result.summary?.truncated === true,
-        truncationReason: result.summary?.truncationReason ?? null,
-      },
-      provenance: result.provenance ?? null,
-    }, null, 2))
+    const buildJson = (result: any, decl: Awaited<ReturnType<typeof repairRead>>["decision"] | null) => {
+      const json: Record<string, unknown> = {
+        symbol,
+        root: { id: result.root?.id, name: result.root?.name, filePath: result.root?.filePath ?? null },
+        callers: edgesOf(result.callers as any[], "caller"),
+        callees: edgesOf(result.callees as any[], "callee"),
+        summary: {
+          totalCallers: result.summary?.totalCallers ?? result.callers.length,
+          totalCallees: result.summary?.totalCallees ?? result.callees.length,
+          maxDepthReached: result.summary?.maxDepthReached ?? maxDepth,
+          crossLanguageEdges: result.summary?.crossLanguageEdges ?? 0,
+          truncated: result.summary?.truncated === true,
+          truncationReason: result.summary?.truncationReason ?? null,
+        },
+        provenance: result.provenance ?? null,
+      }
+      if (decl && decl.action !== "clean") json.autoRefresh = autoRefreshLine(decl)
+      return textResult(JSON.stringify(json, null, 2))
+    }
+    const pass1 = await runPass()
+    if (!pass1.ok) return textResult(`bb_graph: ${pass1.message}`, true)
+    const staleFiles = collectStaleFiles(raw, pass1.rows, pass1.statuses)
+    if (staleFiles.length > 0) {
+      const decision = await repairRead(raw, projectId, projectPath, pass1.rows, pass1.statuses, { perCallOptOut: args.refresh === false })
+      if (decision.decision.action === "refreshed") {
+        const pass2 = await runPass()
+        if (!pass2.ok) return textResult(`bb_graph: ${pass2.message}`, true)
+        return buildJson(pass2.result, decision.decision)
+      }
+      if (decision.decision.action === "declined") return buildJson(pass1.result, decision.decision)
+    }
+    return buildJson(pass1.result, null)
   },
 
   bb_impact: async (args, { projectId }) => {

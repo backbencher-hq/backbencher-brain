@@ -1,6 +1,6 @@
 # `bb_graph`
 
-Per-symbol dependency graph over the canonical graph engine: callers, callees, per-edge evidence tier (structural/import_based/usage_contextual/reference_qualified/inferred), confidence, and cross-language edge count. Same engine and tier rules the editor graph panel uses; truncated traversals are declared with a reason, never silent.
+Per-symbol dependency graph over the canonical graph engine: callers, callees, per-edge evidence tier (structural/import_based/usage_contextual/reference_qualified/inferred), confidence, and cross-language edge count. Same engine and tier rules the editor graph panel uses; truncated traversals are declared with a reason, never silent. When the traversed nodes' files are stale/missing within budget, the graph auto-refreshes exactly those files and re-traverses (declared in an autoRefresh field); refresh=false opts out.
 
 ## Contract
 
@@ -24,6 +24,10 @@ Per-symbol dependency graph over the canonical graph engine: callers, callees, p
     "maxDepth": {
       "type": "number",
       "description": "traversal depth bound (default 3)"
+    },
+    "refresh": {
+      "type": "boolean",
+      "description": "false opts out of the inline auto-refresh of stale files (default: auto-refresh within budget before answering)"
     }
   },
   "required": [

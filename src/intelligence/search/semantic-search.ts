@@ -180,6 +180,7 @@ async function resolveEntities(
       similarity: entry.similarity,
       language: symbol.language,
       stale: ["stale", "missing"].includes(freshness.get(symbol.fileId) ?? "") || undefined,
+      fileId: symbol.fileId,
     })
   }
   return results
@@ -207,6 +208,7 @@ async function keywordFallback(
     similarity: 0,
     language: row.language,
     stale: (row as any).stale === true || undefined,
+    fileId: row.fileId,
   }))
   return {
     results,

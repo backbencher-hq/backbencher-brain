@@ -196,6 +196,36 @@ export async function maybeAutoRefresh(
   }
 }
 
+export interface ReadRepairOutcome {
+  /** The decision: clean (nothing stale), refreshed (repaired), or declined (with reason). */
+  decision: AutoRefreshDecision
+  /** The files the read resolved as stale/missing (empty when clean). */
+  staleFiles: AutoRefreshFile[]
+}
+
+/**
+ * M44.W1.1 shared read-repair entry: every row-resolving read handler calls
+ * ONE helper — collect the stale files its resolved rows touched, then decide
+ * within budget (or decline honestly). The handler reruns its pass when
+ * `decision.action === "refreshed"` so the answer reflects the repair, and
+ * appends `autoRefreshLine(decision)` on any non-clean outcome. No per-tool
+ * forks: bb_search's M43 inline path and every tool wired under W1.1 share
+ * this exact code.
+ */
+export async function repairRead(
+  raw: CoreDatabase,
+  projectId: string,
+  projectPath: string,
+  rows: Array<{ fileId?: string | null; filePath?: string | null }>,
+  statuses: Map<string, string>,
+  opts: { perCallOptOut?: boolean } = {},
+): Promise<ReadRepairOutcome> {
+  const staleFiles = collectStaleFiles(raw, rows, statuses)
+  if (staleFiles.length === 0) return { decision: { action: "clean" }, staleFiles }
+  const decision = await maybeAutoRefresh(projectId, projectPath, staleFiles, opts)
+  return { decision, staleFiles }
+}
+
 /** Render the decision for an answer envelope / text footer. */
 export function autoRefreshLine(decision: AutoRefreshDecision): string {
   if (decision.action === "refreshed") {

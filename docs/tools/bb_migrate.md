@@ -1,6 +1,6 @@
 # `bb_migrate`
 
-Read-only single or batch migration planning with dependency order, explicit effort methodology, library mappings, risks, truncation, and unsupported cases. Plans whose source file changed since the last index are flagged stale up front — a plan is a claim about current code; JSON output carries the freshness block.
+Read-only single or batch migration planning with dependency order, explicit effort methodology, library mappings, risks, truncation, and unsupported cases. Plans whose source file changed since the last index are flagged stale up front — a plan is a claim about current code; JSON output carries the freshness block. When plan source files are stale/missing within budget, planning auto-refreshes exactly those files and re-plans (declared on the output); refresh=false opts out.
 
 ## Contract
 
@@ -39,6 +39,10 @@ Read-only single or batch migration planning with dependency order, explicit eff
         "json"
       ],
       "description": "output format (default text)"
+    },
+    "refresh": {
+      "type": "boolean",
+      "description": "false opts out of the inline auto-refresh of stale files (default: auto-refresh within budget before answering)"
     }
   },
   "required": [
