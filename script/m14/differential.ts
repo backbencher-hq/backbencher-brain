@@ -1355,8 +1355,16 @@ export function deriveDartEdges(root: any): { label: string; from: string; targe
     const n = stack.pop()!
     const t = n.type
     if (t === "class_definition" || t === "mixin_declaration") {
-      const nm = n.childForFieldName?.("name")?.text
+      const nm = n.childForFieldName?.("name")?.text ||
+        (t === "mixin_declaration" ? n.namedChildren.find((c: any) => c.type === "identifier")?.text : undefined)
       if (nm) {
+        // DARTD14 mirror: mixin on-base is a DIRECT type_identifier child
+        // (mixin_declaration > [mixin, identifier, type_identifier, ...]) —
+        // never a superclass child, so the branch below never sees it.
+        if (t === "mixin_declaration") {
+          const onBase = n.namedChildren.find((c: any) => c.type === "type_identifier")
+          if (onBase) push("extends", onBase.text)
+        }
         const sup = n.namedChildren.find((c: any) => c.type === "superclass")
         if (sup) {
           // DAD1 mirror: resolved base = first raw name NOT followed by `.`
@@ -1377,6 +1385,17 @@ export function deriveDartEdges(root: any): { label: string; from: string; targe
         // dropped, generic args excluded).
         const ifc = n.namedChildren.find((c: any) => c.type === "interfaces")
         if (ifc) for (const m of resolvedRawNames(ifc)) push("implements", m)
+      }
+    }
+    // DARTD15 mirror: enhanced enums carry implements/with heritage like
+    // classes (`enum Poly implements Shape`).
+    if (t === "enum_declaration") {
+      const nm = n.childForFieldName?.("name")?.text
+      if (nm) {
+        const ifc = n.namedChildren.find((c: any) => c.type === "interfaces")
+        if (ifc) for (const m of resolvedRawNames(ifc)) push("implements", m)
+        const mx = n.namedChildren.find((c: any) => c.type === "mixins")
+        if (mx) for (const m of typeLeaves(mx)) push("uses", m)
       }
     }
     if (t === "constructor_invocation" || t === "new_expression" || t === "const_object_expression") {
