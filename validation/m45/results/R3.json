@@ -1,10 +1,10 @@
 {
   "status": "verified",
-  "currentCommit": "9f26fd38d682ec2911082983a6ff0fcddba09391",
+  "currentCommit": "6716a8978489fe6aa6db38b9e47b34d421e044d7",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "bun run script/m45/verify-r3-real-repo-integrity.ts",
   "evidenceFile": "R3.json",
-  "generatedAt": "2026-09-06T05:11:44.379Z",
+  "generatedAt": "2026-09-06T05:13:11.416Z",
   "passed": 23,
   "failed": 0,
   "negativeCases": 3,
@@ -12,13 +12,13 @@
   "measurements": [
     {
       "name": "rake.full-index",
-      "ms": 3633,
+      "ms": 3909,
       "files": 95,
       "symbols": 786
     },
     {
       "name": "ripgrep.full-index",
-      "ms": 10949,
+      "ms": 14626,
       "files": 111,
       "symbols": 7357
     }

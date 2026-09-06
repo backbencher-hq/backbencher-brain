@@ -1,15 +1,15 @@
 {
   "status": "verified",
-  "currentCommit": "9f26fd38d682ec2911082983a6ff0fcddba09391",
+  "currentCommit": "6716a8978489fe6aa6db38b9e47b34d421e044d7",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "bun run script/m45/verify-r1-pool-symbol-loss.ts",
   "evidenceFile": "R1.json",
-  "generatedAt": "2026-09-06T05:09:50.070Z",
+  "generatedAt": "2026-09-06T05:12:44.935Z",
   "passed": 20,
   "failed": 0,
   "negativeCases": 3,
   "checks": 20,
-  "elapsedMs": 3213,
+  "elapsedMs": 3028,
   "observed": {
     "fresh": {
       "newlyParsed": 15,
