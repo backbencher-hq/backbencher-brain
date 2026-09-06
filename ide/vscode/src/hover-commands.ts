@@ -86,9 +86,15 @@ export function parseHoverActionArgs(raw: unknown): HoverActionArgs | null {
 }
 
 /** Deps for the webview-opening actions (thin client: the panels own the
- *  rendering; this module only hands them the real client). */
+ *  rendering; this module only hands them the real client).
+ *
+ *  getClient is a GETTER, never a captured value: activate() registers these
+ *  handlers before startClient() assigns the module-level client, so a
+ *  value capture freezes deps.client at null and every bb.openGraph /
+ *  bb.openImpact panel renders "bb_lsp is not running" forever (owner test,
+ *  2026-09-06). Each click resolves the client at click time. */
 export interface HoverActionDeps {
-  client: LanguageClient | null
+  getClient: () => LanguageClient | null
   cspSource: string
 }
 
@@ -156,8 +162,16 @@ function register(ctx: vscode.ExtensionContext, deps: HoverActionDeps): void {
       // staleness marker; the symbol name feeds the usages query.
       const { showHubPanel } = await import("./hub-panel")
       try {
-        await showHubPanel({ symbol: args.symbol, file: args.file }, { client: deps.client, cspSource: deps.cspSource }, ctx)
-        return { ok: true as const, surface: "graph", symbol: args.symbol }
+        // Live client at click time (HoverActionDeps.getClient) — a null
+        // client renders the panel's declared not-running error; a running
+        // client renders the hub data. `rendered` reports which one the
+        // panel actually shows (a click is not a success when its panel only
+        // ever renders the banner).
+        const opened = await showHubPanel({ symbol: args.symbol, file: args.file }, { client: deps.getClient(), cspSource: deps.cspSource }, ctx)
+        const outcome = opened.outcome
+        return outcome.ok
+          ? { ok: true as const, surface: "graph" as const, symbol: args.symbol, rendered: true as const }
+          : { ok: true as const, surface: "graph" as const, symbol: args.symbol, rendered: false as const, error: outcome.error }
       } catch (e) {
         const reason = e instanceof Error ? e.message : String(e)
         void vscode.window.showErrorMessage(`bb_lsp: bb.openGraph failed — ${reason}`)
@@ -174,8 +188,12 @@ function register(ctx: vscode.ExtensionContext, deps: HoverActionDeps): void {
       }
       const { showImpactPanel } = await import("./impact-panel")
       try {
-        await showImpactPanel(args.symbol, { client: deps.client, cspSource: deps.cspSource }, ctx)
-        return { ok: true as const, surface: "impact", symbol: args.symbol }
+        // Live client at click time (same rule as bb.openGraph above).
+        const opened = await showImpactPanel(args.symbol, { client: deps.getClient(), cspSource: deps.cspSource }, ctx)
+        const outcome = opened.outcome
+        return outcome.ok
+          ? { ok: true as const, surface: "impact" as const, symbol: args.symbol, rendered: true as const }
+          : { ok: true as const, surface: "impact" as const, symbol: args.symbol, rendered: false as const, error: outcome.error }
       } catch (e) {
         const reason = e instanceof Error ? e.message : String(e)
         void vscode.window.showErrorMessage(`bb_lsp: bb.openImpact failed — ${reason}`)

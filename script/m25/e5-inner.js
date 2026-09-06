@@ -148,15 +148,24 @@ async function run() {
       assert("E5-H4: hover embeds all three action links", h4links.length === 3 && new Set(h4links.map((l) => l.cmd)).size === 3, JSON.stringify(h4links.map((l) => l.cmd)))
       const h4cmds = await vscode.commands.getCommands(true)
       assert("E5-H4: all three hover-action commands are registered", ["bb.openGraph", "bb.openImpact", "bb.showCallHierarchy"].every((c) => h4cmds.includes(c)), JSON.stringify(h4cmds.filter((c) => c.startsWith("bb."))))
+      // Wiring regression (owner test, 2026-09-06): the hover-action
+      // commands once captured the LanguageClient at ACTIVATION time (null —
+      // registration runs before startClient), so every panel a click opened
+      // rendered "bb_lsp is not running" even with a healthy server, and the
+      // ok:true returns hid it from E5. The command now reports `rendered`:
+      // whether its panel actually showed DATA (bb/graph hub data / bb/impact
+      // impact set) rather than the stale-null banner.
       const g = h4links.find((l) => l.cmd === "bb.openGraph")
       if (g !== undefined) {
         const r = await vscode.commands.executeCommand("bb.openGraph", g.args)
         assert("E5-H4: clicking bb.openGraph opens the graph surface", r && r.ok === true && r.surface === "graph" && r.symbol === "greet", JSON.stringify(r).slice(0, 160))
+        assert("E5-H4: bb.openGraph's panel renders DATA (live client at click time, no stale-null banner)", r && r.rendered === true, JSON.stringify(r).slice(0, 220))
       }
       const im = h4links.find((l) => l.cmd === "bb.openImpact")
       if (im !== undefined) {
         const r = await vscode.commands.executeCommand("bb.openImpact", im.args)
         assert("E5-H4: clicking bb.openImpact opens the impact surface", r && r.ok === true && r.surface === "impact" && r.symbol === "greet", JSON.stringify(r).slice(0, 160))
+        assert("E5-H4: bb.openImpact's panel renders DATA (live client at click time, no stale-null banner)", r && r.rendered === true, JSON.stringify(r).slice(0, 220))
       }
       const ch = h4links.find((l) => l.cmd === "bb.showCallHierarchy")
       if (ch !== undefined) {

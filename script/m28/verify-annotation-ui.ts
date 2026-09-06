@@ -81,8 +81,11 @@ async function seedFixture(dataDir: string): Promise<string> {
   symStmt.run("sym-greeter", projectId, fileId, "Greeter", null, "class", 1, 3, 7, 2, null, 10)
   symStmt.run("sym-greet", projectId, fileId, "greet", "Greeter.greet", "method", 2, 2, 3, 8, "sym-greeter", 7)
   symStmt.run("sym-main", projectId, fileId, "main", null, "function", 7, 10, 10, 2, null, 5)
+  // relationship_type is "calls" (the REAL analyzer vocabulary — the graph
+  // engine's DEFAULT_REL_TYPES filter on it; singular "call" was invisible
+  // to engine traversals).
   raw.prepare(`INSERT INTO brain_relationship (id, project_id, source_symbol_id, target_symbol_id, relationship_type, confidence) VALUES (?,?,?,?,?,?)`).run(
-    "rel-1", projectId, "sym-main", "sym-greet", "call", 1.0,
+    "rel-1", projectId, "sym-main", "sym-greet", "calls", 1.0,
   )
   raw.prepare(`INSERT INTO brain_annotation (id, project_id, symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated) VALUES (?,?,?,?,?,?,?,?,?)`).run(
     "ann-1", projectId, "greet", "main.ts", "agent", ANNOTATION_TOOL, ANNOTATION_BODY, Date.now(), Date.now(),

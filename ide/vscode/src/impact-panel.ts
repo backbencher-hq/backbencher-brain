@@ -74,8 +74,16 @@ export async function renderImpactForPanel(
   return { ok: true, markup, stateJson }
 }
 
-/** Open (or reuse) the impact panel for a symbol. */
-export async function showImpactPanel(symbol: string, deps: ImpactPanelDeps, context: ExtensionContext): Promise<WebviewPanel> {
+/** Open (or reuse) the impact panel for a symbol. Returns the panel AND the
+ *  render outcome it shows — the caller (bb.openImpact) surfaces whether the
+ *  panel rendered DATA or a declared failure (owner test, 2026-09-06: a
+ *  click whose panel only ever renders the stale-null not-running banner is
+ *  a wiring failure, not a success). */
+export async function showImpactPanel(
+  symbol: string,
+  deps: ImpactPanelDeps,
+  context: ExtensionContext,
+): Promise<{ panel: WebviewPanel; outcome: { ok: true; markup: string; stateJson: string } | { ok: false; error: string } }> {
   const panel = window.createWebviewPanel("bbImpact", `Backbencher Impact — ${symbol}`, ViewColumn.Beside, {
     enableScripts: false,
     localResourceRoots: [],
@@ -83,7 +91,7 @@ export async function showImpactPanel(symbol: string, deps: ImpactPanelDeps, con
   context.subscriptions.push(panel)
   const outcome = await renderImpactForPanel({ symbol }, deps)
   panel.webview.html = buildHtml(outcome, deps.cspSource)
-  return panel
+  return { panel, outcome }
 }
 
 function buildHtml(outcome: Awaited<ReturnType<typeof renderImpactForPanel>>, cspSource: string): string {
