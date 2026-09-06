@@ -17,11 +17,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "9dbf19103aa7a01c2bd36ccdf6cb05946c406b78",
+      "currentCommit": "ed6062703396b7566a98dd7f0e969cdae5dfd4db",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m44/verify-governance.ts",
       "evidenceFile": "G1.json",
-      "generatedAt": "2026-09-06T02:02:27.102Z",
+      "generatedAt": "2026-09-06T03:08:27.654Z",
       "passed": 21,
       "failed": 0,
       "negativeCases": 5
@@ -47,11 +47,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "9dbf19103aa7a01c2bd36ccdf6cb05946c406b78",
+      "currentCommit": "ed6062703396b7566a98dd7f0e969cdae5dfd4db",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m44/verify-w11-universal-repair.ts",
       "evidenceFile": "W11.json",
-      "generatedAt": "2026-09-06T02:02:13.285Z",
+      "generatedAt": "2026-09-06T03:08:12.723Z",
       "passed": 32,
       "failed": 0,
       "negativeCases": 13
@@ -74,11 +74,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "9dbf19103aa7a01c2bd36ccdf6cb05946c406b78",
+      "currentCommit": "ed6062703396b7566a98dd7f0e969cdae5dfd4db",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m44/verify-w12-decline-honesty.ts",
       "evidenceFile": "W12.json",
-      "generatedAt": "2026-09-06T02:02:07.227Z",
+      "generatedAt": "2026-09-06T03:08:15.416Z",
       "passed": 35,
       "failed": 0,
       "negativeCases": 11
@@ -104,21 +104,21 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "0cf2b36f73b3acc1f4dbaefa4dcee5e3457f420a",
+      "currentCommit": "ed6062703396b7566a98dd7f0e969cdae5dfd4db",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m44/verify-w21-git-probe.ts",
       "evidenceFile": "W21.json",
-      "generatedAt": "2026-09-06T02:14:17.933Z",
-      "passed": 12,
+      "generatedAt": "2026-09-06T03:08:21.361Z",
+      "passed": 13,
       "failed": 0,
-      "negativeCases": 3
+      "negativeCases": 2
     }
   },
   {
     "code": "W2.2",
     "githubIssue": 672,
     "tool": "new-file probe (non-git)",
-    "status": "planned",
+    "status": "verified",
     "scope": "Bounded snapshot-walk probe for non-git trees; explicit unavailability otherwise",
     "acceptanceCriteria": [
       "Behavioral parity with W2.1 on a non-git fixture",
@@ -128,7 +128,18 @@
     ],
     "closureRequirements": [
       "Evidence file + ledger sync + evidence comment on close"
-    ]
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "ed6062703396b7566a98dd7f0e969cdae5dfd4db",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m44/verify-w22-snapshot-probe.ts",
+      "evidenceFile": "W22.json",
+      "generatedAt": "2026-09-06T03:08:27.549Z",
+      "passed": 27,
+      "failed": 0,
+      "negativeCases": 4
+    }
   },
   {
     "code": "W3.1",

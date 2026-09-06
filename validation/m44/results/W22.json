@@ -1,0 +1,11 @@
+{
+  "status": "verified",
+  "currentCommit": "ed6062703396b7566a98dd7f0e969cdae5dfd4db",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m44/verify-w22-snapshot-probe.ts",
+  "evidenceFile": "W22.json",
+  "generatedAt": "2026-09-06T03:08:27.549Z",
+  "passed": 27,
+  "failed": 0,
+  "negativeCases": 4
+}
