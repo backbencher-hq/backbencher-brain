@@ -18,7 +18,8 @@ Reindex a file or directory so the index reflects edits immediately (agent-fresh
   "type": "object",
   "properties": {
     "path": {
-      "type": "string"
+      "type": "string",
+      "description": "Project-relative file (reindex only that file) or directory (incremental index of changed files); for mode=post, the project whose derived phases should be re-run"
     },
     "mode": {
       "type": "string",
@@ -27,7 +28,8 @@ Reindex a file or directory so the index reflects edits immediately (agent-fresh
         "file",
         "dir",
         "post"
-      ]
+      ],
+      "description": "auto (default) infers file vs dir from path; file reindexes one file; dir runs an incremental directory index; post re-runs derived phases (relationships/taints/health) without re-parsing"
     }
   },
   "required": [

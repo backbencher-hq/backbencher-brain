@@ -148,7 +148,7 @@ export class BbLspServer {
     ) {
       caps.callHierarchyProvider = true
     }
-    if (this.handlers.has("bb/graph")) caps.graphProvider = { schemaVersion: 1 }
+    if (this.handlers.has("bb/graph")) caps.graphProvider = { schemaVersion: 2 }
     return caps
   }
 
