@@ -90,6 +90,11 @@ const LITERAL_ALLOWLIST: Record<string, Set<string>> = {
   ]),
   dart: new Set([
     "super", "this",
+    // `dynamic` compares the PARAMETER TYPE PAYLOAD, not a node type — the
+    // honest no-type value DARTD13 leaves for unresolvable params (see spec
+    // DARTD13). The coverage audit flags it because it is not a grammar
+    // type; it never claimed to be one.
+    "dynamic",
   ]),
   csharp: new Set([
     "base", "this",
