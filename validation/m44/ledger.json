@@ -17,11 +17,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "099b085aa6f0e8028df6a5776864b75d1a46cd42",
+      "currentCommit": "f10bad6707479fa1d0764db167c4bbd57e6928a6",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m44/verify-governance.ts",
       "evidenceFile": "G1.json",
-      "generatedAt": "2026-09-06T03:27:02.087Z",
+      "generatedAt": "2026-09-06T03:40:31.214Z",
       "passed": 21,
       "failed": 0,
       "negativeCases": 5
@@ -47,11 +47,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "481d54dd15bbb2a4a6be8568e81382918b5f1330",
+      "currentCommit": "f10bad6707479fa1d0764db167c4bbd57e6928a6",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m44/verify-w11-universal-repair.ts",
       "evidenceFile": "W11.json",
-      "generatedAt": "2026-09-06T03:28:52.957Z",
+      "generatedAt": "2026-09-06T03:39:45.198Z",
       "passed": 32,
       "failed": 0,
       "negativeCases": 13
@@ -74,11 +74,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "481d54dd15bbb2a4a6be8568e81382918b5f1330",
+      "currentCommit": "f10bad6707479fa1d0764db167c4bbd57e6928a6",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m44/verify-w12-decline-honesty.ts",
       "evidenceFile": "W12.json",
-      "generatedAt": "2026-09-06T03:28:56.178Z",
+      "generatedAt": "2026-09-06T03:39:47.397Z",
       "passed": 35,
       "failed": 0,
       "negativeCases": 11
@@ -104,11 +104,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "481d54dd15bbb2a4a6be8568e81382918b5f1330",
+      "currentCommit": "f10bad6707479fa1d0764db167c4bbd57e6928a6",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m44/verify-w21-git-probe.ts",
       "evidenceFile": "W21.json",
-      "generatedAt": "2026-09-06T03:29:02.521Z",
+      "generatedAt": "2026-09-06T03:39:51.644Z",
       "passed": 13,
       "failed": 0,
       "negativeCases": 2
@@ -131,11 +131,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "481d54dd15bbb2a4a6be8568e81382918b5f1330",
+      "currentCommit": "f10bad6707479fa1d0764db167c4bbd57e6928a6",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m44/verify-w22-snapshot-probe.ts",
       "evidenceFile": "W22.json",
-      "generatedAt": "2026-09-06T03:29:13.779Z",
+      "generatedAt": "2026-09-06T03:39:57.046Z",
       "passed": 27,
       "failed": 0,
       "negativeCases": 4
@@ -161,11 +161,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "481d54dd15bbb2a4a6be8568e81382918b5f1330",
+      "currentCommit": "f10bad6707479fa1d0764db167c4bbd57e6928a6",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m44/verify-w31-watcher.ts",
       "evidenceFile": "W31.json",
-      "generatedAt": "2026-09-06T03:29:24.304Z",
+      "generatedAt": "2026-09-06T03:40:04.265Z",
       "passed": 18,
       "failed": 0,
       "negativeCases": 1
@@ -189,11 +189,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "481d54dd15bbb2a4a6be8568e81382918b5f1330",
+      "currentCommit": "f10bad6707479fa1d0764db167c4bbd57e6928a6",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m44/verify-w32-bb-watch.ts",
       "evidenceFile": "W32.json",
-      "generatedAt": "2026-09-06T03:29:27.934Z",
+      "generatedAt": "2026-09-06T03:40:06.252Z",
       "passed": 14,
       "failed": 0,
       "negativeCases": 1
@@ -203,7 +203,7 @@
     "code": "W4",
     "githubIssue": 675,
     "tool": "changed-files corpus",
-    "status": "planned",
+    "status": "verified",
     "scope": "Corpus over fixtures real repos + larger checkout: new-file-ask, edit-analyze, bursts, bb_edit ref, watcher on/off, W2 parity, time bounds",
     "acceptanceCriteria": [
       "Every scenario declares repaired OR explicit staleness/new-file naming; never silent",
@@ -217,7 +217,18 @@
     ],
     "closureRequirements": [
       "Evidence file + ledger sync + evidence comment on close"
-    ]
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "f10bad6707479fa1d0764db167c4bbd57e6928a6",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m44/verify-w4-corpus.ts",
+      "evidenceFile": "W4.json",
+      "generatedAt": "2026-09-06T03:40:31.097Z",
+      "passed": 36,
+      "failed": 0,
+      "negativeCases": 4
+    }
   },
   {
     "code": "X1",
