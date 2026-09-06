@@ -1,0 +1,23 @@
+{
+  "status": "verified",
+  "currentCommit": "9f26fd38d682ec2911082983a6ff0fcddba09391",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m45/verify-r2-graph-integrity.ts",
+  "evidenceFile": "R2.json",
+  "generatedAt": "2026-09-06T05:10:01.579Z",
+  "passed": 22,
+  "failed": 0,
+  "negativeCases": 3,
+  "checks": 22,
+  "elapsedMs": 4695,
+  "observed": {
+    "orphanOwners": 0,
+    "dangling": 0,
+    "orphanTargets": 0,
+    "afterEdit": {
+      "orphanOwners2": 0,
+      "dangling2": 0
+    },
+    "m1OwnedByA": true
+  }
+}

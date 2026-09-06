@@ -1,0 +1,11 @@
+{
+  "comment": "M45 gates registry — every on-disk script/m45 verifier must appear here (governance check 2) AND in the npm run verify chain as it lands (governance check 3). Infra gates (governance/sync/closure) are exempt from mutation requirements but listed. A1 is a doc/handoff gate (infra=false but exercised like a content gate).",
+  "gates": [
+    { "code": "G1", "script": "verify-governance.ts", "infra": true },
+    { "code": "R1", "script": "verify-r1-pool-symbol-loss.ts", "infra": false },
+    { "code": "R2", "script": "verify-r2-graph-integrity.ts", "infra": false },
+    { "code": "R3", "script": "verify-r3-real-repo-integrity.ts", "infra": false },
+    { "code": "A1", "script": "verify-a1-handoff.ts", "infra": false },
+    { "code": "X1", "script": "verify-closure.ts", "infra": true }
+  ]
+}

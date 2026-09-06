@@ -1,0 +1,97 @@
+[
+  {
+    "code": "G1",
+    "githubIssue": 677,
+    "tool": "governance",
+    "status": "planned",
+    "scope": "Ledger (validation/m45), gates-registry.json, verify-governance.ts, sync-ledger.ts, PLAN.md invariant",
+    "acceptanceCriteria": [
+      "Ledger: all 6 codes, unique populated issue numbers, legal statuses, criteria present, no fabricated evidence",
+      "Every on-disk script/m45 verifier is registered in gates-registry.json; content gates join npm run verify in the same change that lands them",
+      "Auto-pass audit clean across all M45 verifiers; in-memory negatives prove the predicates can refuse",
+      "PLAN.md exists and carries the milestone invariant sentence"
+    ],
+    "closureRequirements": [
+      "Evidence file + ledger sync + evidence comment on close"
+    ]
+  },
+  {
+    "code": "R1",
+    "githubIssue": 678,
+    "tool": "worker-pool symbol-loss honesty",
+    "status": "planned",
+    "scope": "Force the worker-pool path on fixtures and assert the symbol-loss bucket counts only real zero-symbol parses — closing the m22 V5 blind spot (in-process fixtures)",
+    "acceptanceCriteria": [
+      "Fresh pool index of N symbol files + 1 comment-only file: symbolLoss == 1, symbolLoss < newlyParsed, errors == 0",
+      "No-change re-run: newlyParsed 0 / unchanged N+1 / loss 0; one-file symbol edit: parsed 1 / loss 0",
+      "Loss fixture good.ts + empty.css: loss >= 1, good.ts never counted, errors 0",
+      "Gate refuses in-process-only runs (cannot vouch) and fabricated summaries",
+      "Evidence + ledger sync + evidence comment"
+    ],
+    "closureRequirements": [
+      "Evidence file + ledger sync + evidence comment on close"
+    ]
+  },
+  {
+    "code": "R2",
+    "githubIssue": 679,
+    "tool": "graph-integrity gate",
+    "status": "planned",
+    "scope": "Fixture with class containment (A.m1, A.C.nested), top-level decls, JSON/YAML config virtuals, incremental re-index; SQL-audit + runIndexHealthCheck",
+    "acceptanceCriteria": [
+      "After full index: orphan owners == 0, dead (non-empty) source edges == 0, orphan targets == 0, config-virtual orphans == 0",
+      "Containment preserved: m1 -> A, C -> A, nested -> C, universal contains edge A->m1 present",
+      "File-scope top-level decls ownerless (never orphan); health checks report 0",
+      "Edit + re-index keeps all invariants (incl. m1 -> A)",
+      "Negatives refuse nonzero corruption; Evidence + ledger sync + comment"
+    ],
+    "closureRequirements": [
+      "Evidence file + ledger sync + evidence comment on close"
+    ]
+  },
+  {
+    "code": "R3",
+    "githubIssue": 680,
+    "tool": "real-repo integrity corpus",
+    "status": "planned",
+    "scope": "Full index of fixtures/repositories copies (rake w/ .git, ripgrep w/o), default pipeline incl. derived passes; SQL-audit + health + measured wall times",
+    "acceptanceCriteria": [
+      "Per repo: orphan owners == 0, dead edges == 0, orphan targets == 0, config-virtual orphans == 0",
+      "Health checks ok; symbols stored > 0; full-index wall time recorded under cap (10 min)",
+      "Negatives refuse nonzero corruption / over-cap; Evidence + ledger sync + comment"
+    ],
+    "closureRequirements": [
+      "Evidence file + ledger sync + evidence comment on close"
+    ]
+  },
+  {
+    "code": "A1",
+    "githubIssue": 681,
+    "tool": "analyzer-lane handoff",
+    "status": "planned",
+    "scope": "docs/m45/analyzer-handoff.md covering the four analyzer-side root causes with evidence tokens; filed so M14/M37 analyzer owners can fix at source. Store defends meanwhile (R2/R3)",
+    "acceptanceCriteria": [
+      "Doc exists, 4 defect sections each with an Ask, evidence numbers embedded (126,894 / 3,786 / module_declaration / package.imports / Window / anonymous_struct / harness:0 / fix commits)",
+      "Gate refuses a doc missing root-cause tokens or an Ask-less section",
+      "Evidence + ledger sync + comment (no M45 gate depends on analyzer fixes landing)"
+    ],
+    "closureRequirements": [
+      "Evidence file + ledger sync + evidence comment on close"
+    ]
+  },
+  {
+    "code": "X1",
+    "githubIssue": 682,
+    "tool": "closure",
+    "status": "planned",
+    "scope": "verify-closure.ts: refuses close unless all content gates have conformant single-commit evidence and pass live read-only at one stamp; residue-clean governed surfaces",
+    "acceptanceCriteria": [
+      "R1/R2/R3/A1 evidence conformant at one consensus commit (HEAD or ancestor); G1 at HEAD or ancestor",
+      "Live read-only re-run of all four content gates passes; residue check over script/m45, ledger, package.json, docs/m45",
+      "Negative controls; evidence + ledger sync + milestone close with summary"
+    ],
+    "closureRequirements": [
+      "Evidence file + ledger sync + evidence comment on close"
+    ]
+  }
+]

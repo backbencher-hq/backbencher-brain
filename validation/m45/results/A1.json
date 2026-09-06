@@ -1,0 +1,13 @@
+{
+  "status": "verified",
+  "currentCommit": "9f26fd38d682ec2911082983a6ff0fcddba09391",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m45/verify-a1-handoff.ts",
+  "evidenceFile": "A1.json",
+  "generatedAt": "2026-09-06T05:11:23.929Z",
+  "passed": 20,
+  "failed": 0,
+  "negativeCases": 2,
+  "checks": 20,
+  "handoff": "docs/m45/analyzer-handoff.md"
+}
