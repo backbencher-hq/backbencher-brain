@@ -1,0 +1,71 @@
+[
+  {
+    "code": "G1",
+    "githubIssue": 683,
+    "tool": "governance",
+    "status": "planned",
+    "scope": "Ledger (validation/m46), gates-registry.json, verify-governance.ts, sync-ledger.ts, PLAN.md invariant",
+    "acceptanceCriteria": [
+      "Ledger: all 4 codes, unique populated issue numbers, legal statuses, criteria present, no fabricated evidence",
+      "Every on-disk script/m46 verifier is registered in gates-registry.json; content gates join npm run verify in the same change that lands them",
+      "Auto-pass audit clean across all M46 verifiers; in-memory negatives prove the predicates can refuse",
+      "PLAN.md exists and carries the milestone invariant sentence"
+    ],
+    "closureRequirements": [
+      "Evidence file + ledger sync + evidence comment on close"
+    ]
+  },
+  {
+    "code": "H1",
+    "githubIssue": 684,
+    "tool": "syntax-truth fixture gate",
+    "status": "planned",
+    "scope": "Fixture gate (worker-pool) over the four grammar-gap construct minimals + genuine breakage: gap files not flagged, broken file flagged, symbols intact, independent probe proves non-vacuousness (regression armature for 2da3cf4e)",
+    "acceptanceCriteria": [
+      "Fresh pool index of 4 gap minimals + broken.ts + 12 fillers: worker-pool mode asserted, zero index errors",
+      "DB: gap files has_syntax_errors == 0; broken.ts == 1; every gap file still stores >= 1 symbol",
+      "Independent probe (gate-owned neutralizer + real parser): each gap minimal has pre-neutralization parse errors AND parses clean after neutralization; broken.ts still errors after neutralization",
+      "Structural: engine.ts carries neutralizer/TS-family probe gating; store gates has_syntax_errors on SYNTAX_WARNING_RE",
+      "Negatives refuse fabricated flagged-gap rows and missing machinery tokens",
+      "Evidence + ledger sync + evidence comment"
+    ],
+    "closureRequirements": [
+      "Evidence file + ledger sync + evidence comment on close"
+    ]
+  },
+  {
+    "code": "H2",
+    "githubIssue": 685,
+    "tool": "real-repo syntax-truth corpus",
+    "status": "planned",
+    "scope": "Full default-pipeline indexes (isolated temp data dir) of this repo + rake/lodash/graphql-js copies; every flagged real-code file independently probe re-parsed: grammar-gap or lint leaks FAIL, genuine breakage recorded, validation/ poison fixtures exempt by design",
+    "acceptanceCriteria": [
+      "Each repo full-indexes with zero errors under the per-repo cap",
+      "Zero grammar-gap/lint false positives on real code (probe re-parse verdict)",
+      "Genuinely broken files stay flagged and are recorded; non-code documented-gap files exempt and recorded",
+      "Real values recorded: per-repo flagged sets with classification, wall times",
+      "Negatives refuse fabricated leak classifications and a vacuous corpus",
+      "Evidence + ledger sync + evidence comment"
+    ],
+    "closureRequirements": [
+      "Evidence file + ledger sync + evidence comment on close"
+    ]
+  },
+  {
+    "code": "X1",
+    "githubIssue": 686,
+    "tool": "closure gate",
+    "status": "planned",
+    "scope": "Refuses milestone close unless H1/H2 evidence is conformant at a single consensus commit and both gates re-pass live read-only on a residue-clean governed surface",
+    "acceptanceCriteria": [
+      "Ledger + evidence conformance for H1 and H2; single-commit stamp consensus (HEAD or ancestor)",
+      "H1 + H2 re-run live read-only (children stamp nothing)",
+      "G1 infra evidence stamped at HEAD or ancestor",
+      "Negative controls: failed>0 / zero-negatives evidence refused; divergent stamps refused; missing evidence refused",
+      "Evidence + ledger sync + evidence comment on close"
+    ],
+    "closureRequirements": [
+      "Evidence file + ledger sync + evidence comment on close"
+    ]
+  }
+]
