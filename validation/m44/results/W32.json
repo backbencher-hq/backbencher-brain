@@ -1,0 +1,11 @@
+{
+  "status": "verified",
+  "currentCommit": "481d54dd15bbb2a4a6be8568e81382918b5f1330",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m44/verify-w32-bb-watch.ts",
+  "evidenceFile": "W32.json",
+  "generatedAt": "2026-09-06T03:29:27.934Z",
+  "passed": 14,
+  "failed": 0,
+  "negativeCases": 1
+}
