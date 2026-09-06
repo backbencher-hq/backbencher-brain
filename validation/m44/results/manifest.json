@@ -12,7 +12,7 @@
       "code": "G1",
       "githubIssue": 687,
       "tool": "m44-governance",
-      "status": "planned",
+      "status": "verified",
       "scope": "M44 ledger; closure gate re-auditing the M29+M42 bars; §13 Understanding Rules in the contract doc, machine-gated",
       "acceptanceCriteria": [
         "gate exits 0 at a HEAD where M24→M42 governance all exit 0; exits non-zero when any ledger item lacks evidence or a bar fails (proven by mutant ledger entries)",
@@ -23,7 +23,17 @@
         "G1 evidence (verified, current HEAD)",
         "M42 bar gate exit 0 recorded (M29 transitively re-audited)",
         "verify-chain + CI wiring present (verify:fast and verify)"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see G1.json",
+        "verifierCommand": "npx tsx script/m44/verify-governance.ts",
+        "evidenceFile": "G1.json",
+        "passed": 26,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 9
+      }
     },
     {
       "code": "U1",
