@@ -52,6 +52,7 @@ function matchConstraints(actual: Entry, want: Entry): boolean {
   for (const [k, v] of Object.entries(want)) {
     // Documentation fields on expectation entries are NOT match constraints.
     if (k === "comment") continue
+    if (k === "note") continue
     if (k === "confidenceMin") {
       if (!(typeof actual.confidence === "number" && actual.confidence >= v)) return false
     } else if (k === "confidenceMax") {
@@ -236,9 +237,12 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
     for (const want of exp.expectParameters ?? []) {
       // ownerName-aware lookup (mirrors expectSymbols): overloaded names like
       // dart's multiple `constructor` symbols need the owning class to disambiguate.
+      // Optional metadataKind narrows accessor pairs (value getter has no params;
+      // the setter carries them — pick the setter explicitly).
       const sym = symbols.find((s: any) =>
         s.name === want.symbol &&
-        (want.ownerName === undefined || s.ownerName === want.ownerName))
+        (want.ownerName === undefined || s.ownerName === want.ownerName) &&
+        (want.metadataKind === undefined || (s.metadata ?? {})[want.metadataKind]))
       if (!sym) { problems.push(`expectParameters: symbol ${want.symbol}${want.ownerName ? " in " + want.ownerName : ""} not found`); continue }
       const actual: Entry[] = sym?.parameters ?? []
       for (const wp of want.parameters ?? []) {
@@ -388,9 +392,14 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
     for (const want of exp.expectSymbolCount ?? []) {
       // { name, equals } — pins DEDUPE: overload groups must yield exactly
       // one symbol per name (duplicate constructor symbols violated this).
-      const n = symbols.filter((s: any) => s.name === want.name).length
+      // Optional ownerName/kind narrow the bucket (accessor pairs: Counter
+      // keeps its getter+setter pair, IconSet's same-name getter excluded).
+      const n = symbols.filter((s: any) =>
+        s.name === want.name &&
+        (want.ownerName === undefined || s.ownerName === want.ownerName) &&
+        (want.kind === undefined || s.kind === want.kind)).length
       if (n !== want.equals) {
-        problems.push(`expected ${want.equals} symbol(s) named "${want.name}"; got ${n}`)
+        problems.push(`expected ${want.equals} symbol(s) named "${want.name}"${want.ownerName ? ` in ${want.ownerName}` : ""}${want.kind ? ` kind=${want.kind}` : ""}; got ${n}`)
       }
     }
     for (const want of exp.expectRelationshipCount ?? []) {

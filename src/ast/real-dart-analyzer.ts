@@ -130,7 +130,11 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     const stack: Frame[] = [{ node: rootNode, scopes, functionDepth: 0 }]
     let cyclomaticComplexity = 1
-    const seenMembers = new Set<string>() // owner:name — overload dedup
+    // DARTD12: getter/setter pairs share owner:name — dedup by
+    // owner:name:kind so a class with `get value` AND `set value` keeps both
+    // symbols (setters carry the value param; the pair collapsed to one
+    // Property symbol before).
+    const seenMembers = new Set<string>() // owner:name:kind — accessor-pair dedup
 
     while (stack.length > 0) {
       const { node, scopes: frameScopes, functionDepth } = stack.pop()!
@@ -210,6 +214,12 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
               metadata: { isMixin: true },
             })
             scopeStack.push({ name, kind: DartScopeKind.Class })
+            // DARTD14: `mixin M on Base implements I` — the on-base is a
+            // direct type_identifier child of the mixin_declaration (NOT the
+            // name: probed dart-mixin-shape.ts); implements/with reuse the
+            // class heritage extractor. Corpus had mixin on-clauses emitting
+            // zero heritage edges.
+            this.extractClassHeritage(node, name, relationships, patterns)
           }
           break
         }
@@ -271,6 +281,9 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
                 }
               }
             }
+            // DARTD15: enhanced enums carry implements/with heritage like
+            // classes (`enum Poly implements Shape`) — same extractor.
+            this.extractClassHeritage(node, name, relationships, patterns)
             scopeStack.push({ name, kind: DartScopeKind.Class })
           }
           break
@@ -420,6 +433,31 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.classifyEvidenceTier(relationships)
 
     // --- Metadata ------------------------------------------------------------
+    // DARTD13 (part 2): `P(this.name)` — the constructor_param node carries
+    // ONLY the name; its type is the type of the field it initializes. Bind
+    // post-pass (O(symbols), no parent scans — DARTD6 lesson): every
+    // constructor param still typed `dynamic` resolves against a field of the
+    // same name in the owning class. `super.key` and unresolvable names stay
+    // `dynamic` (honest no-type).
+    {
+      const fieldTypeByClass = new Map<string, string>()
+      for (const s of symbols) {
+        if ((s.metadata ?? {}).isField && s.ownerName) {
+          const dt = (s.metadata as any).dataType
+          if (dt) fieldTypeByClass.set(`${s.ownerName}.${s.name}`, dt)
+        }
+      }
+      for (const s of symbols) {
+        if (s.kind === ASTEngine.SymbolKind.Constructor && s.ownerName) {
+          for (const p of s.parameters ?? []) {
+            if (p.type === "dynamic") {
+              const ft = fieldTypeByClass.get(`${s.ownerName}.${p.name}`)
+              if (ft) p.type = ft
+            }
+          }
+        }
+      }
+    }
     const architecturalScore = Math.min(100, Math.max(0, 100 - errors.length * 5))
     const detectedPatterns = Object.keys(patterns)
     const detectedFrameworks = Object.keys(frameworks)
@@ -533,12 +571,14 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     const name = this.signatureName(inner)
     if (!name) return
     const owner = scopeOwnerName(scopeStack)
-    const dedupKey = `${owner ?? "module"}:${name}`
+    const isGetter0 = inner.type === "getter_signature"
+    const isSetter0 = inner.type === "setter_signature"
+    const dedupKey = `${owner ?? "module"}:${name}:${isGetter0 ? "get" : isSetter0 ? "set" : "fn"}`
     if (seenMembers.has(dedupKey)) return
     seenMembers.add(dedupKey)
 
-    const isGetter = inner.type === "getter_signature"
-    const isSetter = inner.type === "setter_signature"
+    const isGetter = isGetter0
+    const isSetter = isSetter0
     if (isGetter || isSetter) patterns["Getters and Setters"] = true
 
     const params = this.extractParameters(inner)
@@ -785,38 +825,117 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     relationships: ASTEngine.UniversalRelationship[],
     overrideCompanion?: Map<string, Set<string>>,
   ): void {
+    // DARTD16: the old engine only checked the DIRECT extends base — so a
+    // chain (`A extends B extends C`, hello declared on C) emitted nothing,
+    // interface implementations (`class X implements Shape { area() }`) —
+    // which ARE overrides in Dart — emitted nothing, and cross-file bases
+    // (Flutter's `build`, `createState`, `==` — 99.8% of the corpus's 34,306
+    // @override sites) emitted nothing because production never passes an
+    // overrideCompanion (parseFile callers pass no context). Three passes
+    // mirroring the csharp family contract (real-csharp-analyzer.ts
+    // resolveOverrides): in-file BFS over ALL heritage (extends + implements
+    // + with), cross-file companion when provided, then a deterministic
+    // first-heritage-parent fallback for cross-file framework bases.
     const byName = new Map<string, ASTEngine.UniversalSymbol[]>()
     for (const s of symbols) {
       const list = byName.get(s.name) ?? []
       list.push(s)
       byName.set(s.name, list)
     }
-    const baseByClass = new Map<string, string>()
+    // Heritage graph from extends/implements/uses edges (in-file knowledge).
+    const heritageByClass = new Map<string, string[]>()
+    const firstHeritage = new Map<string, string>()
     for (const r of relationships) {
-      if (r.type === ASTEngine.RelationshipType.Extends && r.source && r.target) {
-        baseByClass.set(r.source, r.target)
+      if (!r.source || !r.target) continue
+      const type = r.type ?? r.relationshipType ?? ""
+      if (type === "extends" || type === "implements" || type === "uses") {
+        const list = heritageByClass.get(r.source) ?? []
+        if (!list.includes(r.target)) list.push(r.target)
+        heritageByClass.set(r.source, list)
+        if (!firstHeritage.has(r.source)) firstHeritage.set(r.source, r.target)
       }
     }
-    const baseDeclares = (base: string, method: string): boolean => {
+    // Base declares the member? In-file by owner, else companion.
+    const declares = (base: string, method: string): boolean => {
       const inFile = byName.get(method)?.some((bm) => bm.ownerName === base) ?? false
       if (inFile) return true
       const companion = overrideCompanion?.get(base)
       return !!companion && companion.has(method)
     }
+    const seenOverride = new Set<string>()
     for (const s of symbols) {
       if ((s.kind === ASTEngine.SymbolKind.Method || s.kind === ASTEngine.SymbolKind.Property) && s.ownerName) {
-        const base = baseByClass.get(s.ownerName)
-        if (!base) continue
-        if (!baseDeclares(base, s.name)) continue
+        const heritage = heritageByClass.get(s.ownerName)
+        if (!heritage || heritage.length === 0) continue
+        // Pass 1: BFS over the full heritage graph (extends/implements/with,
+        // transitively) for a base that declares this member IN-FILE.
+        let target: string | null = null
+        const seenCls = new Set<string>()
+        const queue = [...heritage]
+        while (queue.length > 0 && !target) {
+          const base = queue.shift()!
+          if (seenCls.has(base)) continue
+          seenCls.add(base)
+          if (declares(base, s.name)) {
+            target = base
+            break
+          }
+          for (const h of heritageByClass.get(base) ?? []) queue.push(h)
+        }
+        let confidence = 0.95
+        let metadata: Record<string, unknown> = { isOverride: true, relationshipType: "method_override" }
+        if (target) {
+          // exact in-file resolution
+        } else if (overrideCompanion && heritage.length > 0) {
+          // Pass 2: cross-file companion declaring-parent resolution.
+          const seen2 = new Set<string>()
+          const q2 = [...heritage]
+          while (q2.length > 0 && !target) {
+            const base = q2.shift()!
+            if (seen2.has(base)) continue
+            seen2.add(base)
+            if (this.companionHas(overrideCompanion, base, s.name)) {
+              target = base
+              break
+            }
+            for (const h of heritageByClass.get(base) ?? []) q2.push(h)
+          }
+        }
+        if (!target) {
+          // Pass 3: deterministic cross-file fallback — the first heritage
+          // parent (csharp parity). Flutter methods override StatelessWidget
+          // etc.; the base class is real even when declared elsewhere.
+          // GATED on the @override annotation: fields (kind Property too)
+          // can never override in Dart and carry no annotation — without
+          // this gate every field of a subclass faked an external override
+          // (`Poly.sides -> Shape.sides`).
+          const hasOverrideAnn = (s.decorators ?? []).some((d) => d.includes("@override"))
+          if (hasOverrideAnn) {
+            target = firstHeritage.get(s.ownerName) ?? null
+            confidence = 0.8
+            metadata = { isOverride: true, relationshipType: "method_override", isExternalBase: true }
+          }
+        }
+        if (!target) continue
+        const key = `${s.ownerName}.${s.name}->${target}.${s.name}`
+        if (seenOverride.has(key)) continue
+        seenOverride.add(key)
         relationships.push({
           source: `${s.ownerName}.${s.name}`,
-          target: `${base}.${s.name}`,
+          target: `${target}.${s.name}`,
           type: ASTEngine.RelationshipType.Overrides,
-          confidence: 0.95,
-          metadata: { isOverride: true, relationshipType: "method_override" },
+          confidence,
+          metadata,
         })
       }
     }
+  }
+
+  /** Companion lookup with leaf-name fallback (bases may arrive qualified). */
+  private companionHas(companion: Map<string, Set<string>>, base: string, method: string): boolean {
+    if (companion.get(base)?.has(method)) return true
+    const leaf = base.includes(".") ? base.split(".").pop()! : base
+    return leaf !== base && !!companion.get(leaf)?.has(method)
   }
 
   private extractCallRelationships(
@@ -952,12 +1071,30 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
 
-      // cascade calls: `list.add(1)..remove(2)` → calls remove/clear
+      // cascade calls: `list.add(1)..remove(2)` → calls remove/clear.
+      // DARTD17: `b..a.b.c(1)` — the cascade_selector names only the FIRST
+      // segment (`a`); the deeper chain lives in nested
+      // unconditional_assignable_selector children (probed cascade-shape.ts).
+      // The true leaf is the LAST identifier in the section that has args.
       if (t === "cascade_section") {
         const sel = this.findChildByType(n, "cascade_selector")
         const hasArgs = this.findChildByType(n, "argument_part")
         if (sel && hasArgs) {
-          const mname = this.findChildByType(sel, "identifier")?.text
+          // Callee chain = identifiers in selector children ONLY — skipping
+          // argument_part keeps call arguments (`b..foo(a.bar)`) out.
+          let mname: string | null = null
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (!c || c.type === "cascade_selector" || c.type === "argument_part") {
+              if (c && c.type === "cascade_selector") {
+                const id = this.lastIdentifier(c)
+                if (id) mname = id
+              }
+              continue
+            }
+            const id = this.lastIdentifier(c)
+            if (id) mname = id
+          }
           if (mname && !this.isDartGlobalBuiltin(mname)) {
             relationships.push({
               source: callSource,
@@ -1021,6 +1158,26 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
               metadata: { isMixin: true },
             })
           }
+        }
+      }
+    }
+
+    // DARTD14: mixin `on`-base — `mixin M on Base implements I` parses the
+    // on-base as a DIRECT type_identifier child of mixin_declaration (probed
+    // dart-mixin-shape.ts: [mixin, identifier, type_identifier, interfaces]).
+    // The superclass/interfaces branches below never see it.
+    if (node.type === "mixin_declaration") {
+      for (let i = 0; i < node.namedChildCount; i++) {
+        const c = node.namedChild(i)
+        if (c && c.type === "type_identifier") {
+          relationships.push({
+            source: className,
+            target: c.text,
+            type: ASTEngine.RelationshipType.Extends,
+            confidence: 1.0,
+            metadata: { isMixinOn: true },
+          })
+          break
         }
       }
     }
@@ -1291,8 +1448,37 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       ) {
         const nameNode = n.childForFieldName("name") || this.findChildByType(n, "identifier")
         if (nameNode && nameNode.text !== "this" && nameNode.text !== "super") {
-          const typeNode = n.childForFieldName("type") ||
-            (n.type === "typed_identifier" ? this.firstTypeIdentifier(n, false) : undefined)
+          // DARTD13: tree-sitter-dart has NO `type` field on formal_parameter
+          // (probed dart-param-children.ts) — the old childForFieldName("type")
+          // never matched, so EVERY typed param degraded to `dynamic` (8,094
+          // in the corpus census). The type is a leading child BEFORE the name:
+          // type_identifier (`int x`), function_type (`void Function() cb`),
+          // or nullable_type suffix (`int? x` → type_identifier + nullable_type).
+          // The name identifier is always LAST; type children precede it.
+          let typeText: string | undefined
+          if (n.type === "typed_identifier") {
+            typeText = this.firstTypeIdentifier(n, false)?.text
+          } else {
+            const kids: Node[] = []
+            for (let i = 0; i < n.namedChildCount; i++) {
+              const c = n.namedChild(i)
+              if (c) kids.push(c)
+            }
+            const nameIdx = kids.findIndex((c) =>
+              // web-tree-sitter creates a NEW wrapper object per access, so
+              // reference equality always fails (same trap extractReturnType's
+              // KAD2 sweep fixed) — compare byte spans.
+              nameNode && c.startIndex === nameNode.startIndex && c.endIndex === nameNode.endIndex,
+            )
+            for (let i = 0; i < nameIdx; i++) {
+              const c = kids[i]
+              if (c.type === "type_identifier" || c.type === "function_type" ||
+                  c.type === "nullable_type" || c.type === "void_type") {
+                typeText = c.text
+                break
+              }
+            }
+          }
           // Named vs positional-optional: the grammar wraps BOTH `{...}` and
           // `[...]` parameter groups in optional_formal_parameters — the
           // distinction is the container's opening bracket (`{` = named,
@@ -1307,7 +1493,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
           const isOptional = group !== undefined
           const hasDefault = n.text.includes("=")
           const already = out.some((p) => p.name === nameNode.text)
-          if (!already) out.push({ name: nameNode.text, type: typeNode?.text ?? "dynamic", isOptional, isNamed })
+          if (!already) out.push({ name: nameNode.text, type: typeText ?? "dynamic", isOptional, isNamed })
         }
       }
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
