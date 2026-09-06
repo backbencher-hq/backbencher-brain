@@ -1,10 +1,10 @@
 {
   "status": "verified",
-  "currentCommit": "9dbf19103aa7a01c2bd36ccdf6cb05946c406b78",
+  "currentCommit": "0cf2b36f73b3acc1f4dbaefa4dcee5e3457f420a",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "bun run script/m44/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-06T02:02:27.102Z",
+  "generatedAt": "2026-09-06T02:14:34.719Z",
   "passed": 21,
   "failed": 0,
   "negativeCases": 5,

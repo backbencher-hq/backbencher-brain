@@ -1,10 +1,10 @@
 {
   "status": "verified",
-  "currentCommit": "9dbf19103aa7a01c2bd36ccdf6cb05946c406b78",
+  "currentCommit": "0cf2b36f73b3acc1f4dbaefa4dcee5e3457f420a",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "bun run script/m31/wave2/verify-g2-doc-surface.ts",
   "evidenceFile": "G2.json",
-  "generatedAt": "2026-09-06T02:01:13.468Z",
+  "generatedAt": "2026-09-06T02:15:05.440Z",
   "passed": 130,
   "failed": 0,
   "negativeCases": 3,

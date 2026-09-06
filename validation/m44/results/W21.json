@@ -1,0 +1,11 @@
+{
+  "status": "verified",
+  "currentCommit": "0cf2b36f73b3acc1f4dbaefa4dcee5e3457f420a",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m44/verify-w21-git-probe.ts",
+  "evidenceFile": "W21.json",
+  "generatedAt": "2026-09-06T02:14:17.933Z",
+  "passed": 12,
+  "failed": 0,
+  "negativeCases": 3
+}

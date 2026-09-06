@@ -14,8 +14,8 @@ const RESULTS_DIR = path.join(ROOT, "validation/m44/results")
 
 // code -> evidence file name (a verifier may write a more descriptive file)
 const EVIDENCE_FILE: Record<string, string> = {
-  G1: "G1.json", "W1.1": "W11.json", "W1.2": "W12.json", "W2.1": "W2.1.json", "W2.2": "W2.2.json",
-  "W3.1": "W3.1.json", "W3.2": "W3.2.json", W4: "W4.json", X1: "X1.json",
+  G1: "G1.json", "W1.1": "W11.json", "W1.2": "W12.json", "W2.1": "W21.json", "W2.2": "W22.json",
+  "W3.1": "W31.json", "W3.2": "W32.json", W4: "W4.json", X1: "X1.json",
 }
 
 type LedgerIssue = {
