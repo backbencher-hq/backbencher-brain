@@ -102,7 +102,7 @@ function main() {
   const planPath = path.join(ROOT, "docs/m46/PLAN.md")
   check("PLAN.md exists", existsSync(planPath))
   if (existsSync(planPath)) {
-    const plan = readFileSync(planPath, "utf8").replace(/\s+/g, " ")
+    const plan = readFileSync(planPath, "utf8").replace(/^\s*>\s?/gm, "").replace(/\s+/g, " ")
     check("PLAN.md states the milestone invariant (head + tail tokens)",
       plan.includes("A file must carry `has_syntax_errors = 1` if and only if it is genuinely unparseable")
       && plan.includes("genuinely broken files must always stay flagged"), "invariant sentence missing")
