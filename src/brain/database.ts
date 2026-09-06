@@ -7,7 +7,7 @@ import type { CoreDatabase } from "#db"
 import path from "path"
 import { mkdirSync, existsSync } from "fs"
 import * as BrainSchema from "./brain.sql"
-import { ensureSchema, migrateSchemaColumns, ensureAnnotationTable } from "./schema-ddl"
+import { ensureSchema, migrateSchemaColumns, ensureAnnotationTable, ensureDirManifestTable } from "./schema-ddl"
 import { bbProjectsDir } from "../util/bb-data-dir"
 
 export type { CoreDatabase, CoreStatement } from "#db"
@@ -74,6 +74,9 @@ async function buildDrizzle(raw: CoreDatabase): Promise<any> {
       // M28.A1: the annotation store must exist on pre-existing DBs too
       // (additive, idempotent) — bb_annotate writes where every editor reads.
       ensureAnnotationTable(raw)
+      // M44.W2.2 (#672): the dir manifest must exist on pre-existing DBs too
+      // (additive, idempotent) — bb_ask's non-git probe reads it on every ask.
+      ensureDirManifestTable(raw)
     }
   }
 
