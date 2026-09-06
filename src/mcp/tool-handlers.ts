@@ -11,7 +11,7 @@ import { DependencyGraphVisualizer } from "../ast/dependency-graph-visualizer"
 import { CrossLanguageIntelligence } from "../ast/cross-language-intelligence"
 import { CrossLanguageMigrationAssistant } from "../ast/cross-language-migration-assistant"
 import { indexProjectParallel, reindexFilesParallel, wipeProjectData } from "../ast/parallel-indexer"
-import { collectStaleFiles, maybeAutoRefresh, autoRefreshLine, refreshReport, repairRead, probeAddedFiles, addedFilesRelevantToQuery } from "../ast/auto-refresh"
+import { collectStaleFiles, maybeAutoRefresh, autoRefreshLine, refreshReport, repairRead, probeAddedFiles, probeAddedFilesSnapshot, addedFilesRelevantToQuery } from "../ast/auto-refresh"
 import { TOOL_DESCRIPTORS } from "./tool-registry"
 import { testQuality } from "../intelligence/testing/quality"
 import { executeEdit, type EditRequest } from "../intelligence/edit/edit-engine"
@@ -330,12 +330,17 @@ const handlers: Record<string, ToolHandler> = {
     }
     const pass1 = await runPass()
     const staleFiles = collectStaleFiles(raw, pass1.rows, pass1.statuses)
-    // W2.1: merge query-relevant NEW files into the repair set. Reindexing a
-    // new file makes its symbols retrievable on the SECOND pass (lexical
-    // path) — the honest guarantee. Embedding coverage is enqueued by the
-    // derived pass or declared partial, never silently claimed.
-    const probe = await probeAddedFiles(raw, projectId as any, projectPath)
-    const relevantNew = addedFilesRelevantToQuery(probe.files, query)
+    // W2.1/W2.2: merge query-relevant NEW files into the repair set.
+    // Reindexing a new file makes its symbols retrievable on the SECOND pass
+    // (lexical path) — the honest guarantee. Embedding coverage is enqueued
+    // by the derived pass or declared partial, never silently claimed.
+    // Probe layering (one interface): git worktree → git ls-files; non-git →
+    // the dir-manifest snapshot probe (M44.W2.2: stats the indexer's recorded
+    // directories, re-lists only the moved ones — bounded, never O(tree)).
+    const gitProbe = await probeAddedFiles(raw, projectId as any, projectPath)
+    const snapshotProbe = gitProbe.available ? null : await probeAddedFilesSnapshot(raw, projectId as any, projectPath)
+    const newFiles = gitProbe.available ? gitProbe.files : (snapshotProbe?.files ?? [])
+    const relevantNew = addedFilesRelevantToQuery(newFiles, query)
     const repairFiles = [...staleFiles, ...relevantNew.map((p) => ({ absolutePath: p, type: "modified" as const }))]
     if (repairFiles.length > 0) {
       const decision = await maybeAutoRefresh(projectId, projectPath, repairFiles, { perCallOptOut: args.refresh === false })
