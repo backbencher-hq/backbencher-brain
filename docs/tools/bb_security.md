@@ -1,6 +1,6 @@
 # `bb_security`
 
-Cross-language security scan: SQL injection, XSS, command injection, hardcoded secrets, weak crypto. Findings whose underlying file changed after indexing carry a staleness marker.
+Cross-language security scan: SQL injection, XSS, command injection, hardcoded secrets, weak crypto. Findings whose underlying file changed after indexing carry a staleness marker. When a finding's file is stale/missing within budget, the scan auto-refreshes exactly those files and re-runs so findings reflect current code (declared on the output); refresh=false opts out.
 
 ## Contract
 
@@ -28,6 +28,10 @@ Cross-language security scan: SQL injection, XSS, command injection, hardcoded s
     "limit": {
       "type": "number",
       "description": "history run limit (default 20)"
+    },
+    "refresh": {
+      "type": "boolean",
+      "description": "false opts out of the inline auto-refresh of stale files (default: auto-refresh within budget before answering)"
     }
   }
 }

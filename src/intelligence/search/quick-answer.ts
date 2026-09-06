@@ -7,7 +7,13 @@ import { makeProvenance, type EvidenceProvenance } from "../evidence"
 export interface QuickAnswerResult {
   answer: string
   confidence: number
-  sources: Array<{ file: string; line: number; context: string }>
+  sources: Array<{
+    file: string
+    line: number
+    context: string
+    /** M44.W1.1: brain_file id when the source maps to an indexed file (read-repair). */
+    fileId?: string
+  }>
   suggestions?: string[]
   provenance: EvidenceProvenance
 }
@@ -191,14 +197,14 @@ export async function quickAnswer(projectId: ProjectID, query: string): Promise<
       "confidently answer this from embeddings.\n\n"
     let combinedAnswer = `Closest matches from the AST index for your query (search results, not a verified answer):\n\n`
     if (isFallback) combinedAnswer = fallbackNote + combinedAnswer
-    const sources: Array<{ file: string; line: number; context: string }> = []
+    const sources: Array<{ file: string; line: number; context: string; fileId?: string }> = []
     for (const res of semantic.results.slice(0, 5)) {
       const staleMark = res.stale ? " [STALE — file changed since index]" : ""
       combinedAnswer += `--- File: ${res.file} (Line ${res.line})${staleMark} ---\n`
       combinedAnswer += `[${res.symbolType}] ${res.symbolName} — similarity ${res.similarity.toFixed(3)}\n`
       const truncated = (res.snippet || "").split("\n").slice(0, 30).join("\n")
       if (truncated) combinedAnswer += `\`\`\`\n${truncated}\n\`\`\`\n\n`
-      sources.push({ file: res.file, line: res.line, context: res.symbolName + (res.stale ? " (STALE)" : "") })
+      sources.push({ file: res.file, line: res.line, context: res.symbolName + (res.stale ? " (STALE)" : ""), fileId: res.fileId })
     }
     combinedAnswer += `\n— Use bb_search for precise symbol lookup: "bb_search(query='${query}')".\n`
     combinedAnswer += `— Use bb_search with mode="file" to read any indexed file.`
@@ -232,7 +238,7 @@ export async function quickAnswer(projectId: ProjectID, query: string): Promise<
       return {
         answer: fallbackAnswer,
         confidence: Math.round(Math.max(0.2, Math.min(0.8, quality)) * 100) / 100,
-        sources: symbolResults.map((r) => ({ file: r.file, line: r.line, context: r.symbolName || r.context })),
+        sources: symbolResults.map((r) => ({ file: r.file, line: r.line, context: r.symbolName || r.context, fileId: (r as { fileId?: string }).fileId })),
         provenance: fallbackProvenance(projectId, "semantic search returned no results; symbol-name match used as fallback"),
       }
     }

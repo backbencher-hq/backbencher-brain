@@ -3,7 +3,7 @@
     "code": "G1",
     "githubIssue": 668,
     "tool": "governance",
-    "status": "planned",
+    "status": "verified",
     "scope": "Ledger, gates registry, governance gate, mutation seams, sync-ledger",
     "acceptanceCriteria": [
       "Governance gate green on the scaffolded world (all codes planned, zero fabricated evidence)",
@@ -14,13 +14,24 @@
     ],
     "closureRequirements": [
       "Evidence file + ledger sync + evidence comment on close"
-    ]
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "17306f6fbd634ab7a88cb789533ce735b4a87e09",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m44/verify-governance.ts",
+      "evidenceFile": "G1.json",
+      "generatedAt": "2026-09-06T01:52:22.013Z",
+      "passed": 21,
+      "failed": 0,
+      "negativeCases": 5
+    }
   },
   {
     "code": "W1.1",
     "githubIssue": 669,
     "tool": "read-path repair",
-    "status": "planned",
+    "status": "verified",
     "scope": "Universal lazy repair: extend the M43 maybeAutoRefresh path to every row-resolving read tool via ONE shared helper",
     "acceptanceCriteria": [
       "Per-tool behavioral test: external edit -> tool call -> declares auto-refreshed N files OR explicit decline with reason; never silent stale",
@@ -33,7 +44,18 @@
     ],
     "closureRequirements": [
       "Evidence file + ledger sync + evidence comment on close"
-    ]
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "17306f6fbd634ab7a88cb789533ce735b4a87e09",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m44/verify-w11-universal-repair.ts",
+      "evidenceFile": "W11.json",
+      "generatedAt": "2026-09-06T01:52:27.714Z",
+      "passed": 32,
+      "failed": 0,
+      "negativeCases": 13
+    }
   },
   {
     "code": "W1.2",

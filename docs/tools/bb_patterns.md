@@ -1,6 +1,6 @@
 # `bb_patterns`
 
-Detect orphaned code, framework patterns, and anti-patterns, with staleness markers when a finding's file changed after indexing. Use scope=orphaned for dead code; scope=all (default) for the full pattern scan with the optional pattern/confidence filters. Architecture and code-quality analysis are planned, not yet executable.
+Detect orphaned code, framework patterns, and anti-patterns, with staleness markers when a finding's file changed after indexing. Use scope=orphaned for dead code; scope=all (default) for the full pattern scan with the optional pattern/confidence filters. Architecture and code-quality analysis are planned, not yet executable. When the scan's finding files are stale/missing within budget, the scan auto-refreshes exactly those files and re-runs so the output reflects current code (declared on the output); refresh=false opts out.
 
 ## Contract
 
@@ -52,6 +52,10 @@ Detect orphaned code, framework patterns, and anti-patterns, with staleness mark
     "recordRun": {
       "type": "boolean",
       "description": "persist this scan as an analysis run"
+    },
+    "refresh": {
+      "type": "boolean",
+      "description": "false opts out of the inline auto-refresh of stale files (default: auto-refresh within budget before answering)"
     }
   }
 }
