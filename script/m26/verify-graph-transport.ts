@@ -113,10 +113,10 @@ async function main(): Promise<void> {
   const fx = await makeFixture()
   try {
     check("P1: missing version rejected loudly", await expectGraphError(handleGraphRequest(fx.db, fx.projectId, { symbol: "main" }), "schema version mismatch"))
-    check("P1: wrong version rejected loudly", await expectGraphError(handleGraphRequest(fx.db, fx.projectId, { schemaVersion: 2, symbol: "main" }), "schema version mismatch"))
+    check("P1: wrong version rejected loudly", await expectGraphError(handleGraphRequest(fx.db, fx.projectId, { schemaVersion: 1, symbol: "main" }), "schema version mismatch"))
     check("P1: version pinned at 1", GRAPH_SCHEMA_VERSION === 1 && GRAPH_REQUEST_METHOD === "bb/graph")
     // Happy path with correct version.
-    const ok = await handleGraphRequest(fx.db, fx.projectId, { schemaVersion: 1, symbol: "main" })
+    const ok = await handleGraphRequest(fx.db, fx.projectId, { schemaVersion: GRAPH_SCHEMA_VERSION, symbol: "main" })
     check("P1: correct version serves the graph", ok.summary.totalCallers >= 1, `callers=${ok.summary.totalCallers}`)
   } finally {
     fx.cleanup()
@@ -124,13 +124,13 @@ async function main(): Promise<void> {
 
   // --- P2: param validation -------------------------------------------------
   check("P2: non-object params rejected", await expectGraphError(handleGraphRequest({} as any, "p", null as never), "params must be an object"))
-  check("P2: empty symbol rejected", await expectGraphError(handleGraphRequest({} as any, "p", { schemaVersion: 1, symbol: "" }), "params.symbol"))
-  check("P2: bad direction rejected", await expectGraphError(handleGraphRequest({} as any, "p", { schemaVersion: 1, symbol: "x", direction: "up" }), "params.direction"))
-  check("P2: bad maxDepth rejected", await expectGraphError(handleGraphRequest({} as any, "p", { schemaVersion: 1, symbol: "x", maxDepth: 99 }), "params.maxDepth"))
+  check("P2: empty symbol rejected", await expectGraphError(handleGraphRequest({} as any, "p", { schemaVersion: GRAPH_SCHEMA_VERSION, symbol: "" }), "params.symbol"))
+  check("P2: bad direction rejected", await expectGraphError(handleGraphRequest({} as any, "p", { schemaVersion: GRAPH_SCHEMA_VERSION, symbol: "x", direction: "up" }), "params.direction"))
+  check("P2: bad maxDepth rejected", await expectGraphError(handleGraphRequest({} as any, "p", { schemaVersion: GRAPH_SCHEMA_VERSION, symbol: "x", maxDepth: 99 }), "params.maxDepth"))
   // M42.H5: the usages-mode profile is pinned and validated.
-  check("P2: bad mode rejected", await expectGraphError(handleGraphRequest({} as any, "p", { schemaVersion: 1, symbol: "x", mode: "sideways" }), "params.mode"))
+  check("P2: bad mode rejected", await expectGraphError(handleGraphRequest({} as any, "p", { schemaVersion: GRAPH_SCHEMA_VERSION, symbol: "x", mode: "sideways" }), "params.mode"))
   check("P2: usages-mode depth cap is the W5 cap (5)", HUB_USAGES_MAX_DEPTH === 5 && GRAPH_MODE_USAGES === "usages")
-  check("P2: bad relationshipTypes rejected", await expectGraphError(handleGraphRequest({} as any, "p", { schemaVersion: 1, symbol: "x", relationshipTypes: [42] }), "params.relationshipTypes"))
+  check("P2: bad relationshipTypes rejected", await expectGraphError(handleGraphRequest({} as any, "p", { schemaVersion: GRAPH_SCHEMA_VERSION, symbol: "x", relationshipTypes: [42] }), "params.relationshipTypes"))
 
   // --- P3: unindexed workspace ---------------------------------------------
   const unindexed = await makeFixture()
@@ -146,7 +146,7 @@ async function main(): Promise<void> {
     try {
       const { BrainDatabase } = await import(join(ROOT, "src", "brain", "database.ts"))
       const db = await BrainDatabase.getRawInstance(unindexed.projectId)
-      await handleGraphRequest(db, unindexed.projectId, { schemaVersion: 1, symbol: "main" })
+      await handleGraphRequest(db, unindexed.projectId, { schemaVersion: GRAPH_SCHEMA_VERSION, symbol: "main" })
       return false
     } catch (error: any) {
       return String(error?.message ?? error).startsWith("bb/graph:") && String(error?.message).includes("not indexed")
@@ -156,12 +156,12 @@ async function main(): Promise<void> {
   // --- P4: traceability (boundary gate + engine truth) ----------------------
   const fx4 = await makeFixture()
   try {
-    const result = await handleGraphRequest(fx4.db, fx4.projectId, { schemaVersion: 1, symbol: "main" })
+    const result = await handleGraphRequest(fx4.db, fx4.projectId, { schemaVersion: GRAPH_SCHEMA_VERSION, symbol: "main" })
     const allEdges = [...result.callers, ...result.callees]
     check("P4: every edge carries its seeded row id", allEdges.length >= 2 && allEdges.every((e: any) => typeof e.rowId === "string" && e.rowId.startsWith("rel-fixture-")))
     check("P4: stored evidenceClass passes through", allEdges.some((e: any) => e.metadata?.evidenceClass === "structural") && allEdges.some((e: any) => e.metadata === undefined))
     // Boundary gate: an untraceable edge must fail the request (stubbed engine).
-    const tampered = await handleGraphRequest(fx4.db, fx4.projectId, { schemaVersion: 1, symbol: "main" }, {
+    const tampered = await handleGraphRequest(fx4.db, fx4.projectId, { schemaVersion: GRAPH_SCHEMA_VERSION, symbol: "main" }, {
       traverse: async () => ({
         root: {} as never,
         callers: [{ from: "a", to: "b", relationshipType: "calls", confidence: 1, isCrossLanguage: false, callSite: { file: "f", line: 1 }, depth: 0 }] as never,
@@ -227,8 +227,8 @@ async function main(): Promise<void> {
     },
     {
       name: "M5 advertisement gone",
-      from: "if (this.handlers.has(\"bb/graph\")) caps.graphProvider = { schemaVersion: 1 }",
-      to: "if (false) caps.graphProvider = { schemaVersion: 1 }",
+      from: "if (this.handlers.has(\"bb/graph\")) caps.graphProvider = { schemaVersion: 2 }",
+      to: "if (false) caps.graphProvider = { schemaVersion: 2 }",
     },
   ]
 
@@ -286,7 +286,7 @@ async function main(): Promise<void> {
         return r !== undefined && r !== null
       }
       if (name.startsWith("M2")) {
-        const r = await m.handleGraphRequest(fxm.db, fxm.projectId, { schemaVersion: 1, symbol: "main" }, {
+        const r = await m.handleGraphRequest(fxm.db, fxm.projectId, { schemaVersion: GRAPH_SCHEMA_VERSION, symbol: "main" }, {
           traverse: async () => ({
             root: {},
             callers: [{ from: "a", to: "b", relationshipType: "calls", confidence: 1, isCrossLanguage: false, callSite: { file: "f", line: 1 }, depth: 0 }],
@@ -306,7 +306,7 @@ async function main(): Promise<void> {
           const { BrainDatabase } = await import(join(ROOT, "src", "brain", "database.ts"))
           process.env.BB_DATA_DIR = "/tmp/w2-nonexistent-data-dir"
           const db = await BrainDatabase.getRawInstance(fxm.projectId)
-          await m.handleGraphRequest(db, fxm.projectId, { schemaVersion: 1, symbol: "main" })
+          await m.handleGraphRequest(db, fxm.projectId, { schemaVersion: GRAPH_SCHEMA_VERSION, symbol: "main" })
           return false // served something: declared error gone
         } catch (error: any) {
           return !String(error?.message ?? "").includes("not indexed")
@@ -314,7 +314,7 @@ async function main(): Promise<void> {
       }
       if (name.startsWith("M4")) {
         try {
-          await m.handleGraphRequest(fxm.db, fxm.projectId, { schemaVersion: 1, symbol: "" })
+          await m.handleGraphRequest(fxm.db, fxm.projectId, { schemaVersion: GRAPH_SCHEMA_VERSION, symbol: "" })
           return true // empty symbol accepted => validation gone
         } catch {
           return false
@@ -448,11 +448,11 @@ async function realServerLeg(): Promise<{ happy: boolean; legacy: boolean; caps:
       })
 
     const init = await request("initialize", { capabilities: {}, rootUri: `file://${ws}` })
-    out.caps = (init?.result?.capabilities?.graphProvider as any)?.schemaVersion === 1
+    out.caps = (init?.result?.capabilities?.graphProvider as any)?.schemaVersion === GRAPH_SCHEMA_VERSION
     out.detail3 = `graphProvider=${JSON.stringify(init?.result?.capabilities?.graphProvider)}`
     send({ jsonrpc: "2.0", method: "initialized", params: {} })
 
-    const res = await request("bb/graph", { schemaVersion: 1, symbol: "main" })
+    const res = await request("bb/graph", { schemaVersion: GRAPH_SCHEMA_VERSION, symbol: "main" })
     const edges = [...((res?.result?.callers as any[]) ?? []), ...((res?.result?.callees as any[]) ?? [])]
     out.happy = res?.result !== undefined && edges.length >= 1 && edges.every((e) => typeof e.rowId === "string" && e.rowId.startsWith("rel-wire-"))
     out.detail = `edges=${JSON.stringify(edges.map((e) => ({ rowId: e.rowId, from: e.from, to: e.to })))} stderr=${stderrTail.slice(-200)}`
