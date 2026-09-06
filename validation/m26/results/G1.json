@@ -2,20 +2,20 @@
   "issue": "M26.G1",
   "code": "G1",
   "milestone": "M26",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 70,
-  "passed": 68,
-  "failed": 2,
+  "passed": 70,
+  "failed": 0,
   "negativeCases": 10,
-  "currentCommit": "9df90a5458c7c990596a693bee0a5a6e6d080775",
+  "currentCommit": "90553ce10abf0b25909a64075b8f9689cd60f70a",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m26/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-06T17:26:35.767Z",
+  "generatedAt": "2026-09-06T17:47:06.441Z",
   "ledger": "validation/m26/results/manifest.json",
   "m25Bar": {
     "ledgerStatus": "closed",
-    "m25GateExit": 1
+    "m25GateExit": 0
   },
   "limitations": [
     "This gate validates governance metadata, mutation response, and the M25 bar; it does not verify graph features.",
