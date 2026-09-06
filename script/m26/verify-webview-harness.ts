@@ -324,30 +324,26 @@ async function main(): Promise<void> {
   // over the same model class. Positive: real renderHubList/renderHubTree
   // satisfy AH1–AH5. Negative: hand-built lying hub documents (fabricated
   // row, dropped row, wrong grouping, unbadged edge, hidden truncation,
-  // phantom rows on an empty model) each FAIL their assertion.
-  console.log("  P5: hub laws (M42.H5)")
+  // phantom rows on an empty model) each FAIL their assertion.  console.log("  P5: hub laws (M42.H5 / M44.U1 grouped)")
   {
+    // Grouped fixture: caller1 (one enriched row), caller2, callee x.
     const hubModel = {
-      root: { id: "sym:root", name: "root", symbolType: "function", file: "root.ts", line: 1, lineEnd: 2, language: "typescript", isExternal: false },
+      root: { symbolId: "sym:root", name: "root", file: "root.ts", language: "typescript", line: 1 },
       callers: [
-        { from: "sym:c1", to: "sym:root", relationshipType: "calls", confidence: 0.4, isCrossLanguage: false, callSite: { file: "caller1.ts", line: 1 }, depth: 0, rowId: "rel-0", metadata: { enrichment: { inferredAt: 1, role: "consumer" } } },
-        { from: "sym:c2", to: "sym:root", relationshipType: "calls", confidence: 0.9, isCrossLanguage: false, callSite: { file: "caller2.ts", line: 1 }, depth: 0, rowId: "rel-1" },
+        { symbolId: "sym:c1", name: "caller1", file: "caller1.ts", language: "typescript", symbolType: "function", line: 1, isExternal: false, relationshipTypes: [{ type: "calls", occurrences: 1 }], occurrences: 1, rows: [{ rowId: "rel-0", relationshipType: "calls", depth: 0, confidence: 0.4, enrichment: { role: "consumer", inferredAt: 1 } }] },
+        { symbolId: "sym:c2", name: "caller2", file: "caller2.ts", language: "typescript", symbolType: "function", line: 1, isExternal: false, relationshipTypes: [{ type: "calls", occurrences: 1 }], occurrences: 1, rows: [{ rowId: "rel-1", relationshipType: "calls", depth: 0, confidence: 0.9 }] },
       ],
-      callees: [{ from: "sym:root", to: "sym:x", relationshipType: "calls", confidence: 0.8, isCrossLanguage: false, callSite: { file: "root.ts", line: 1 }, depth: 0, rowId: "rel-2" }],
-      nodes: {
-        "sym:root": { id: "sym:root", name: "root", symbolType: "function", file: "root.ts", line: 1, lineEnd: 2, language: "typescript", isExternal: false },
-        "sym:c1": { id: "sym:c1", name: "caller1", symbolType: "function", file: "caller1.ts", line: 1, lineEnd: 2, language: "typescript", isExternal: false },
-        "sym:c2": { id: "sym:c2", name: "caller2", symbolType: "function", file: "caller2.ts", line: 1, lineEnd: 2, language: "typescript", isExternal: false },
-        "sym:x": { id: "sym:x", name: "x", symbolType: "function", file: "x.ts", line: 1, lineEnd: 2, language: "typescript", isExternal: false },
-      },
-      summary: { totalCallers: 2, totalCallees: 1, truncated: false, crossLanguageEdges: 0 },
+      callees: [{ symbolId: "sym:x", name: "x", file: "x.ts", language: "typescript", symbolType: "function", line: 1, isExternal: false, relationshipTypes: [{ type: "calls", occurrences: 1 }], occurrences: 1, rows: [{ rowId: "rel-2", relationshipType: "calls", depth: 0, confidence: 0.8 }] }],
+      fileLevel: { imports: [], exports: [] },
+      counts: { callerGroups: 2, calleeGroups: 1, callerRows: 2, calleeRows: 1, fileLevelRows: 0 },
+      summary: { truncated: false, crossLanguageGroups: 0 },
     }
     const HUB_ROWS: H.HubHarnessRow[] = [
-      { rowId: "rel-0", dir: "caller", name: "caller1", file: "caller1.ts", line: 1, depth: 0, expectedTier: "inferred", enriched: true },
-      { rowId: "rel-1", dir: "caller", name: "caller2", file: "caller2.ts", line: 1, depth: 0, expectedTier: "structural", enriched: false },
-      { rowId: "rel-2", dir: "callee", name: "x", file: "x.ts", line: 1, depth: 0, expectedTier: "structural", enriched: false },
+      { symbolId: "sym:c1", dir: "caller", name: "caller1", file: "caller1.ts", line: 1, rowIds: ["rel-0"], types: [{ type: "calls", occurrences: 1, tier: "inferred" }], enriched: true },
+      { symbolId: "sym:c2", dir: "caller", name: "caller2", file: "caller2.ts", line: 1, rowIds: ["rel-1"], types: [{ type: "calls", occurrences: 1, tier: "structural" }], enriched: false },
+      { symbolId: "sym:x", dir: "callee", name: "x", file: "x.ts", line: 1, rowIds: ["rel-2"], types: [{ type: "calls", occurrences: 1, tier: "structural" }], enriched: false },
     ]
-    const hubHarnessModel: H.HubHarnessModel = { rows: HUB_ROWS, truncated: false, totalIfKnown: 3 }
+    const hubHarnessModel: H.HubHarnessModel = { rows: HUB_ROWS, truncated: false, totalIfKnown: null }
 
     const renderHubOnce = (fn: (r: any, d: any, group?: any) => any, group?: any): H.HarnessNode => {
       const r = new El("div")
@@ -357,30 +353,40 @@ async function main(): Promise<void> {
     }
     const listFile = renderHubOnce(core.renderHubList, "file")
     const findingsListFile = H.runHubHarness(hubHarnessModel, listFile, { sectionClass: "bb-hub-list", group: "file", assertGrouping: true })
-    check("P5: real core list-by-file passes AH1–AH5 clean", findingsListFile.every((f) => f.ok), findingsListFile.filter((f) => !f.ok).map((f) => `${f.assertion}: ${f.detail}`).join("; "))
+    check("P5: real core list-by-file passes AH1–AH5 clean (grouped)", findingsListFile.every((f) => f.ok), findingsListFile.filter((f) => !f.ok).map((f) => `${f.assertion}: ${f.detail}`).join("; "))
     const listCaller = renderHubOnce(core.renderHubList, "caller")
     const findingsListCaller = H.runHubHarness(hubHarnessModel, listCaller, { sectionClass: "bb-hub-list", group: "caller", assertGrouping: true })
-    check("P5: real core list-by-caller passes AH1–AH5 clean", findingsListCaller.every((f) => f.ok), findingsListCaller.filter((f) => !f.ok).map((f) => `${f.assertion}: ${f.detail}`).join("; "))
+    check("P5: real core list-by-caller passes AH1–AH5 clean (grouped)", findingsListCaller.every((f) => f.ok), findingsListCaller.filter((f) => !f.ok).map((f) => `${f.assertion}: ${f.detail}`).join("; "))
     const tree = renderHubOnce(core.renderHubTree)
     const findingsTree = H.runHubHarness(hubHarnessModel, tree, { sectionClass: "bb-hub-tree" })
-    check("P5: real core call tree passes AH1–AH5 clean", findingsTree.every((f) => f.ok), findingsTree.filter((f) => !f.ok).map((f) => `${f.assertion}: ${f.detail}`).join("; "))
+    check("P5: real core call tree passes AH1–AH5 clean (grouped)", findingsTree.every((f) => f.ok), findingsTree.filter((f) => !f.ok).map((f) => `${f.assertion}: ${f.detail}`).join("; "))
     check("P5: hub renders are deterministic (tree twice byte-identical)", H.serializeHarnessNode(renderHubOnce(core.renderHubTree)) === H.serializeHarnessNode(renderHubOnce(core.renderHubTree)))
 
     // --- Liars: hand-built hub documents that MUST fail the harness --------
-    const mkRow = (rowId: string, dir: string, name: string, file: string, line: number, tier: string, enriched = false): El => {
+    const mkRow = (symbolId: string, dir: string, name: string, file: string, line: number, rowIds: string[], types: Array<{ type: string; occurrences: number; tier: string }>, enriched = false): El => {
       const el = new El("div")
       el.addClass("bb-hub-row")
-      el.setAttribute("data-row-id", rowId)
+      el.addClass("bb-hub-symrow")
+      el.setAttribute("data-symbol-id", symbolId)
       el.setAttribute("data-dir", dir)
       el.setAttribute("data-depth", "0")
-      el.setAttribute("data-tier", tier)
-      el.setAttribute("data-confidence", "0.9")
+      el.setAttribute("data-file", file)
+      el.setAttribute("data-line", String(line))
+      el.setAttribute("data-symbol", name)
+      el.setAttribute("data-row-ids", rowIds.join(" "))
+      el.setAttribute("data-occurrences", String(rowIds.length))
       const n = new El("span"); n.addClass("bb-hub-row-name"); n.textContent = name
       const m = new El("span"); m.addClass("bb-hub-row-meta"); m.textContent = `${file}:${line}`
       el.appendChild(n); el.appendChild(m)
-      const b = new El("span"); b.addClass("bb-hub-badge"); b.addClass(`bb-badge-${tier}`); b.setAttribute("data-badge-tier", tier); b.setAttribute("data-badge-confidence", "0.9"); b.textContent = `${tier} · 0.9`
-      el.appendChild(b)
-      if (enriched) { el.setAttribute("data-enriched", "1"); const c = new El("span"); c.addClass("bb-hub-enrichment"); c.textContent = "⌾ role consumer"; el.appendChild(c) }
+      const chips = new El("span"); chips.addClass("bb-hub-relchips")
+      for (const t of types) {
+        const c = new El("span"); c.addClass("bb-hub-relchip"); c.addClass(`bb-badge-${t.tier}`)
+        c.setAttribute("data-rel-type", t.type); c.setAttribute("data-occurrences", String(t.occurrences)); c.setAttribute("data-tier", t.tier)
+        c.textContent = `${t.type} ×${t.occurrences}`
+        chips.appendChild(c)
+      }
+      el.appendChild(chips)
+      if (enriched) { el.addClass("bb-hub-enriched"); el.setAttribute("data-enriched", "1"); const c = new El("span"); c.addClass("bb-hub-enrichment"); c.textContent = "⌾ enriched (consumer)"; el.appendChild(c) }
       return el
     }
     const mkSection = (): El => {
@@ -396,43 +402,44 @@ async function main(): Promise<void> {
       }
       return s
     }
-    // liar 1: fabricated row
+    const rowC1 = () => mkRow("sym:c1", "caller", "caller1", "caller1.ts", 1, ["rel-0"], [{ type: "calls", occurrences: 1, tier: "inferred" }], true)
+    const rowC2 = () => mkRow("sym:c2", "caller", "caller2", "caller2.ts", 1, ["rel-1"], [{ type: "calls", occurrences: 1, tier: "structural" }])
+    const rowX = () => mkRow("sym:x", "callee", "x", "x.ts", 1, ["rel-2"], [{ type: "calls", occurrences: 1, tier: "structural" }])
+    // liar 1: fabricated symbol row
     {
       const s = mkSection()
-      const doc = withGroups(s, [["caller1.ts", [mkRow("rel-0", "caller", "caller1", "caller1.ts", 1, "inferred", true)]], ["x.ts", [mkRow("rel-2", "callee", "x", "x.ts", 1, "structural")]], ["FABRICATED.ts", [mkRow("rel-fab", "caller", "ghost", "FABRICATED.ts", 1, "structural")]]])
+      const doc = withGroups(s, [["caller1.ts", [rowC1()]], ["x.ts", [rowX()]], ["FABRICATED.ts", [mkRow("sym:fab", "caller", "ghost", "FABRICATED.ts", 1, ["rel-fab"], [{ type: "calls", occurrences: 1, tier: "structural" }])]]])
       const findings = H.runHubHarness(hubHarnessModel, toHarness(doc), { sectionClass: "bb-hub-list", group: "file", assertGrouping: true })
-      check("P5 liar: fabricated row caught (AH1)", findings.some((f) => !f.ok && f.assertion.startsWith("AH1")), findings.map((f) => `${f.assertion}:${f.ok}`).join("; "))
+      check("P5 liar: fabricated symbol row caught (AH1)", findings.some((f) => !f.ok && f.assertion.startsWith("AH1")), findings.map((f) => `${f.assertion}:${f.ok}`).join("; "))
     }
-    // liar 2: dropped row (and a dropped row's group is also missing)
+    // liar 2: dropped row id from a group's inventory (rel-1's row gone)
     {
       const s = mkSection()
-      const doc = withGroups(s, [["caller1.ts", [mkRow("rel-0", "caller", "caller1", "caller1.ts", 1, "inferred", true)]], ["caller2.ts", [mkRow("rel-1", "caller", "caller2", "caller2.ts", 1, "structural")]]])
+      const dropped = mkRow("sym:c2", "caller", "caller2", "caller2.ts", 1, ["rel-9"], [{ type: "calls", occurrences: 1, tier: "structural" }]) // wrong inventory id
+      const doc = withGroups(s, [["caller1.ts", [rowC1()]], ["caller2.ts", [dropped]], ["x.ts", [rowX()]]])
       const findings = H.runHubHarness(hubHarnessModel, toHarness(doc), { sectionClass: "bb-hub-list", group: "file" })
-      check("P5 liar: dropped row caught (AH1)", findings.some((f) => !f.ok && f.assertion.startsWith("AH1")), findings.map((f) => `${f.assertion}:${f.ok}`).join("; "))
+      check("P5 liar: dropped row id caught (AH1 inventory)", findings.some((f) => !f.ok && f.assertion.startsWith("AH1")), findings.map((f) => `${f.assertion}:${f.ok}`).join("; "))
     }
-    // liar 3: wrong grouping — rel-1 rendered under caller1.ts
+    // liar 3: wrong grouping — rel-1 symbol rendered under caller1.ts
     {
       const s = mkSection()
-      const doc = withGroups(s, [["caller1.ts", [mkRow("rel-0", "caller", "caller1", "caller1.ts", 1, "inferred", true), mkRow("rel-1", "caller", "caller2", "caller2.ts", 1, "structural")]], ["x.ts", [mkRow("rel-2", "callee", "x", "x.ts", 1, "structural")]]])
+      const doc = withGroups(s, [["caller1.ts", [rowC1(), rowC2()]], ["x.ts", [rowX()]]])
       const findings = H.runHubHarness(hubHarnessModel, toHarness(doc), { sectionClass: "bb-hub-list", group: "file", assertGrouping: true })
       check("P5 liar: wrong grouping caught (AH2)", findings.some((f) => !f.ok && f.assertion.startsWith("AH2")), findings.map((f) => `${f.assertion}:${f.ok}`).join("; "))
     }
-    // liar 4: unbadged edge — row without its W4 badge
+    // liar 4: missing type chip — row without its relchip (W4 tier law, grouped)
     {
       const s = mkSection()
-      const g = new El("div"); g.addClass("bb-hub-group"); g.setAttribute("data-group-name", "caller1.ts")
-      const row = mkRow("rel-0", "caller", "caller1", "caller1.ts", 1, "inferred", true)
-      const noTier = new El("div"); noTier.addClass("bb-hub-row"); noTier.setAttribute("data-row-id", "rel-1"); noTier.setAttribute("data-dir", "caller")
-      g.appendChild(row); g.appendChild(noTier); s.appendChild(g)
-      const findings = H.runHubHarness(hubHarnessModel, toHarness(s), { sectionClass: "bb-hub-list", group: "file" })
-      check("P5 liar: unbadged edge caught (AH3)", findings.some((f) => !f.ok && f.assertion.startsWith("AH3")), findings.map((f) => `${f.assertion}:${f.ok}`).join("; "))
+      const noChip = mkRow("sym:c1", "caller", "caller1", "caller1.ts", 1, ["rel-0"], [], true) // types: [] -> no chips
+      const doc = withGroups(s, [["caller1.ts", [noChip]], ["caller2.ts", [rowC2()]], ["x.ts", [rowX()]]])
+      const findings = H.runHubHarness(hubHarnessModel, toHarness(doc), { sectionClass: "bb-hub-list", group: "file" })
+      check("P5 liar: missing type chip caught (AH3)", findings.some((f) => !f.ok && f.assertion.startsWith("AH3")), findings.map((f) => `${f.assertion}:${f.ok}`).join("; "))
     }
     // liar 5: hidden truncation — truncated model rendered without a marker
     {
-      const truncRows = HUB_ROWS.slice(0, 2)
-      const truncModel: H.HubHarnessModel = { rows: truncRows, truncated: true, shownCount: 2, totalIfKnown: 3 }
+      const truncModel: H.HubHarnessModel = { rows: HUB_ROWS.slice(0, 2), truncated: true, shownCount: 2, totalIfKnown: null }
       const s = mkSection()
-      const doc = withGroups(s, [["caller1.ts", [mkRow("rel-0", "caller", "caller1", "caller1.ts", 1, "inferred", true)]], ["caller2.ts", [mkRow("rel-1", "caller", "caller2", "caller2.ts", 1, "structural")]]])
+      const doc = withGroups(s, [["caller1.ts", [rowC1()]], ["caller2.ts", [rowC2()]]])
       const findings = H.runHubHarness(truncModel, toHarness(doc), { sectionClass: "bb-hub-list", group: "file" })
       check("P5 liar: hidden truncation caught (AH5)", findings.some((f) => !f.ok && f.assertion.startsWith("AH5")), findings.map((f) => `${f.assertion}:${f.ok}`).join("; "))
     }
@@ -440,7 +447,7 @@ async function main(): Promise<void> {
     {
       const emptyModel: H.HubHarnessModel = { rows: [], truncated: false, totalIfKnown: 0 }
       const s = mkSection()
-      const doc = withGroups(s, [["caller1.ts", [mkRow("rel-0", "caller", "caller1", "caller1.ts", 1, "inferred", true)]]])
+      const doc = withGroups(s, [["caller1.ts", [rowC1()]]])
       const findings = H.runHubHarness(emptyModel, toHarness(doc), { sectionClass: "bb-hub-list", group: "file" })
       check("P5 liar: phantom rows on an empty model caught (AH5)", findings.some((f) => !f.ok), findings.map((f) => `${f.assertion}:${f.ok}`).join("; "))
     }
