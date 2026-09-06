@@ -225,6 +225,13 @@
     "status": "RULED",
     "question": "Interface inheritance (`interface A extends B, C`) uses the same base_clause node as class extends \u2014 how are they distinguished?",
     "resolution": "By container node type: inside interface_declaration, base_clause children are ALL extends targets (interfaces inherit multiple parents); inside class_declaration, base_clause has exactly ONE child = the superclass (extends), and class_interface_clause children are implements. The dead literal 'interface_base_clause' (older grammar) was removed \u2014 probe-verified against the pinned wasm 2026-08-30."
+   },
+   {
+    "id": "M3710-COMPANION",
+    "node_type": "method_signature / method_declaration / function_definition / def / sub (override resolution)",
+    "status": "RULED",
+    "question": "AnalyzeContext.overrideCompanion is never populated by production callers \u2014 what must analyzers that gate ALL override emission on it do for externally-declared bases?",
+    "resolution": "M37.10 ruling (family-wide): the companion is optional enrichment, never a hard gate. Contract: in-file base declaring the method -> verified override (0.95 php/ruby/python/js/perl, 1.0 java/swift Pass-1); companion present -> companion-index resolution (0.85-0.9); otherwise deterministic Pass-3 first-parent guess at 0.5 with reasonCode 'first-parent-guess' and evidence tier 'inferred' \u2014 below the patterns.ts 0.7 threshold, counted as heuristic (honest suspicion) by the F5 differential. Gating on the companion alone silently dropped every cross-file override (php, ruby, python, javascript, perl); the inverse overclaim (swift guess at 1.0/structural) is equally a defect. Gated by F9-PROBE-M3710-* probes, per-language external-override fixtures + confidence pins, and 6 regression mutants."
    }
   ]
  }

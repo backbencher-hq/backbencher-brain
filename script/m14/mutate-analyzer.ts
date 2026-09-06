@@ -1926,6 +1926,53 @@ const MUTANTS: Mutant[] = [
       ),
     }),
   },
+  // ── M37.10: overrideCompanion dead-machinery sweep ────────────────────
+  // The pre-fix analyzers dropped every override whose base was declared in
+  // another file (companion never populated in production). Each mutant
+  // re-introduces the silent drop or breaks the guess-tier contract; the
+  // external-override fixture pins must kill all of them.
+  {
+    id: "php/drop-external-override-guess",
+    language: "php",
+    defectClass: "relationship-loss",
+    description: "M37.10 regression: re-drops external-base overrides (AuditService.handle->ExternalBase.handle) — php external-override pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "overrides" && x.source === "AuditService.handle" && x.target === "ExternalBase.handle")) }),
+  },
+  {
+    id: "ruby/drop-external-override-guess",
+    language: "ruby",
+    defectClass: "relationship-loss",
+    description: "M37.10 regression: re-drops external-base overrides (AuditService.handle->ExternalBase.handle) — ruby external-override pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "overrides" && x.source === "AuditService.handle" && x.target === "ExternalBase.handle")) }),
+  },
+  {
+    id: "python/drop-external-override-guess",
+    language: "python",
+    defectClass: "relationship-loss",
+    description: "M37.10 regression: re-drops external-base overrides (AuditService.handle->ExternalBase.handle) — python external-override pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "overrides" && x.source === "AuditService.handle" && x.target === "ExternalBase.handle")) }),
+  },
+  {
+    id: "javascript/drop-external-override-guess",
+    language: "javascript",
+    defectClass: "relationship-loss",
+    description: "M37.10 regression: re-drops external-base overrides (AuditService.handle->ExternalBase.handle) — js external-override pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "overrides" && x.source === "AuditService.handle" && x.target === "ExternalBase.handle")) }),
+  },
+  {
+    id: "swift/guess-at-verified-confidence",
+    language: "swift",
+    defectClass: "confidence-corruption",
+    description: "M37.10 regression: re-claims the Pass-3 guess as verified (confidence 1.0) — swift external-override confidenceMax:0.5 pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => (x.type === "overrides" && x.source === "AuditService.handle" && x.target === "ExternalBase.handle" ? { ...x, confidence: 1, metadata: { ...(x.metadata ?? {}), reasonCode: undefined, evidenceClass: "structural" } } : x)) }),
+  },
+  {
+    id: "swift/drop-external-override-guess",
+    language: "swift",
+    defectClass: "relationship-loss",
+    description: "M37.10 regression: drops the external-base guess entirely — swift external-override pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "overrides" && x.source === "AuditService.handle" && x.target === "ExternalBase.handle")) }),
+  },
   {
     id: "objc/drop-implements-edge",
     language: "objc",

@@ -231,6 +231,13 @@
         "status": "RULED",
         "question": "class static blocks: the block is recursed (calls found) but attribution lands on the module — J5 covers the attribution fix; the block structure itself is handled.",
         "resolution": "RULED — HANDLED (2026-08-27): class_static_block structure is recursed; the attribution fix is J5 (calls now land on the enclosing class)."
+      },
+      {
+        "id": "M3710-COMPANION",
+        "node_type": "class_declaration / method_definition (override resolution)",
+        "status": "RULED",
+        "question": "AnalyzeContext.overrideCompanion is never populated by production callers — what must the analyzer do for externally-declared bases?",
+        "resolution": "M37.10 ruling (family-wide): the companion is optional enrichment, never a hard gate. In-file base declaring the method -> verified override @0.95; companion present -> companion-index resolution; otherwise deterministic Pass-3 first-parent guess @0.5 with reasonCode 'first-parent-guess' and tier 'inferred' — below the patterns.ts 0.7 threshold, counted as heuristic by the F5 differential. Gating on the companion alone silently dropped every cross-file override. Gated by F9-PROBE-M3710-JAVASCRIPT, the javascript/external-override fixture + confidence pins, and 6 family regression mutants."
       }
     ]
   }
