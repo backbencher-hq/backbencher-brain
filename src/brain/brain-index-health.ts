@@ -202,9 +202,16 @@ async function checkOrphanTargets(rawDb: any, projectId: ProjectID): Promise<Hea
 }
 
 async function checkDanglingSources(rawDb: any, projectId: ProjectID): Promise<HealthCheck> {
+  // Only rows with a NON-EMPTY source id count as corruption. Rows whose
+  // source is NULL/'' with source_external set are the designed module-level
+  // edge shape (schema: source_external = "unresolved / external sources
+  // when source is a string but symbol not declared") — those are not dead
+  // call-graph edges and were being miscounted as dangling on every index.
   const row = rawDb.prepare(`
     SELECT COUNT(*) as count FROM brain_relationship r
     WHERE r.project_id = ?
+      AND r.source_symbol_id IS NOT NULL
+      AND r.source_symbol_id != ''
       AND NOT EXISTS (SELECT 1 FROM brain_symbol s WHERE s.id = r.source_symbol_id AND s.project_id = r.project_id)
   `).get(projectId) as any
 
