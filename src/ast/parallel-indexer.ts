@@ -1803,6 +1803,7 @@ export async function storeResults(
     let batchSymbols = 0, batchRelationships = 0, batchImports = 0
 
     const tx = rawDb.transaction((batch: any) => {
+      const batchFileIds: string[] = []
       for (const result of batch) {
         if (!result.success) continue
 
@@ -2472,7 +2473,39 @@ export async function storeResults(
               process.stderr.write(`[REL-LOSS] ${relativePath}: engine=${result.relationships.length} rels, stored=0\n`)
             }
         }
+
+        batchFileIds.push(fileId)
       }
+      // Post-close deep-review (health 75% on full indexes): null
+      // owner_symbol_id values that reference rows that do not exist —
+      // analyzer file/module-scope owners at ":0" and dotted JSON/YAML
+      // parents never emitted as symbol rows. Runs inside the same
+      // transaction, so a batch can never leave dangling owner references.
+      if (batchFileIds.length > 0) {
+        const phs = batchFileIds.map(() => "?").join(",")
+        rawDb.prepare(
+          `UPDATE brain_symbol SET owner_symbol_id = NULL
+           WHERE project_id = ? AND file_id IN (${phs})
+             AND owner_symbol_id IS NOT NULL AND owner_symbol_id != ''
+             AND NOT EXISTS (SELECT 1 FROM brain_symbol p
+               WHERE p.id = brain_symbol.owner_symbol_id
+                 AND p.project_id = brain_symbol.project_id)`,
+        ).run(projectId, ...batchFileIds)
+      }
+      // Same defect class on the relationship side: analyzer emits contains/
+      // calls edges from a symbol the store then skips (denylisted/artifact
+      // names like module_declaration, anonymous_struct, Window) — those
+      // edges reference a row that will never exist. Remove them in the same
+      // transaction so no dead source edges survive a batch. Cross-file edges
+      // are created later by the resolution pass, so nothing in-flight is hit.
+      rawDb.prepare(
+        `DELETE FROM brain_relationship
+         WHERE project_id = ?
+           AND source_symbol_id IS NOT NULL AND source_symbol_id != ''
+           AND NOT EXISTS (SELECT 1 FROM brain_symbol p
+             WHERE p.id = brain_relationship.source_symbol_id
+               AND p.project_id = brain_relationship.project_id)`,
+      ).run(projectId)
     })
     try {
       tx(batch)
