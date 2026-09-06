@@ -3,7 +3,7 @@
 //
 // THIN CLIENT (the one-library rule): no per-IDE renderer fork. This panel
 //   1. sends the versioned bb/graph request over the extension's REAL
-//      LanguageClient (declared schemaVersion, per docs/m26/GRAPH-TRANSPORT.md),
+//      LanguageClient (declared schemaVersion 2, per docs/m26/GRAPH-TRANSPORT.md),
 //   2. renders the result through the ONE renderer core (script/m26/graph-core.ts)
 //      via an escaping DOM port in the extension host,
 //   3. emits the canonical W6 shell (buildWebviewHtml) with the pre-rendered
@@ -77,7 +77,7 @@ export async function renderGraphForPanel(
   let raw: unknown
   try {
     raw = await deps.client.sendRequest(GRAPH_METHOD, {
-      schemaVersion: 1,
+      schemaVersion: 2,
       symbol: params.symbol,
       direction: "both",
       maxDepth: 3,
@@ -103,7 +103,7 @@ export async function renderGraphForPanel(
   const markup = serialize(root)
   const stateJson = JSON.stringify({
     renderedBy: "bb_lsp graph core (one-library rule)",
-    schemaVersion: 1,
+    schemaVersion: 2,
     symbol: params.symbol,
     nodesRendered: stats.nodesRendered,
     nodesTotal: stats.nodesTotal,

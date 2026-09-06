@@ -180,7 +180,7 @@ try {
 
   // --- R5: graph edges carry enrichment -----------------------------------------------
   console.log("\nR5: bb/graph edges carry enrichment over the wire")
-  const g = await lsp.request("bb/graph", { symbol: "Greeter", direction: "both", schemaVersion: 1 })
+  const g = await lsp.request("bb/graph", { symbol: "Greeter", direction: "both", schemaVersion: 2 })
   const edges = Array.isArray(g?.edges) ? g.edges : Array.isArray(g?.callers) || Array.isArray(g?.callees) ? [...(g.callers ?? []), ...(g.callees ?? [])] : []
   check("H3/R5: graph returns edges", edges.length > 0, `got ${edges.length}`)
   const enrichedEdges = edges.filter((e: any) => e?.metadata?.enrichment?.inferredAt !== undefined)
