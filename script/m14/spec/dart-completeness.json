@@ -308,7 +308,50 @@
         "status": "RULED",
         "question": "Are these four grammar rules realizable as parse-tree nodes by any Dart source in the pinned tree-sitter-dart grammar?",
         "resolution": "No. Probe-verified 2026-09-02 across 25+ syntax shapes (prefixed calls/types, scoped library imports, constructor initializers super.named()/this(), typed literals, is/as casts, enum constant constructor args, super formal parameters): none produce these nodes. They are grammar-internal supertypes whose productions are folded into concrete siblings (type_identifier, identifier, selector, object_creation forms). The analyzer's branches on constructor_invocation/new_expression/const_object_expression and typed_identifier formal parameters are retained as defensive coverage and all resolve through the same concrete-node paths. Reclassified from handled_verified per the F6 fixture-coverage gate (M14.0.F6)."
+      },
+      {
+        "id": "DARTD12",
+        "node_type": "getter/setter pairs (method_signature > getter_signature + setter_signature, same name)",
+        "status": "FIXED",
+        "question": "M37 master-review 2 (2026-09-06): seenMembers dedup keyed owner:name without kind — every accessor pair collapsed to one Property symbol (setters carry the value param)",
+        "answer": "owner:name:kind key; fixture expectSymbolCount value/property/Counter equals:2; mutant dart/accessor-pair-collapsed"
+      },
+      {
+        "id": "DARTD13",
+        "node_type": "formal_parameter type extraction (tree-sitter-dart has NO type field)",
+        "status": "FIXED",
+        "question": "M37 master-review 2: childForFieldName('type') never matched (probed dart-param-children.ts) — 8,094 corpus params degraded to dynamic; this-params carry type on the sibling field",
+        "answer": "span-matched leading type child (type_identifier/function_type/nullable_type/void_type) + post-pass this-param->field-type binding (O(symbols), no parent scans); expectParameters pins total:double nv:int sides:int; mutant dart/param-types-degraded"
+      },
+      {
+        "id": "DARTD14",
+        "node_type": "mixin_declaration on-clause heritage (mixin M on Base implements I)",
+        "status": "FIXED",
+        "question": "M37 master-review 2: on-base is a DIRECT type_identifier child (probed dart-mixin-shape.ts) — heritage extractor only looked for superclass children, so mixin on-bases emitted zero edges",
+        "answer": "extractClassHeritage handles mixin_declaration direct type_identifier as extends + interfaces/mixins via existing branches; oracle derives the same truth; mutants dart/mixin-on-heritage-dropped"
+      },
+      {
+        "id": "DARTD15",
+        "node_type": "enhanced enum heritage (enum Poly implements Shape / with M)",
+        "status": "FIXED",
+        "question": "M37 master-review 2: enum_declaration case never called extractClassHeritage — enhanced-enum implements/with edges vanished; in-file interface methods also produced no overrides",
+        "answer": "enum_declaration calls extractClassHeritage; overrides pass covers implements; oracle enum_declaration branch mirrors; mutant dart/enum-heritage-dropped"
+      },
+      {
+        "id": "DARTD16",
+        "node_type": "cross-file overrides (@override methods whose bases are declared outside the file)",
+        "status": "FIXED",
+        "question": "M37 master-review 2: 34,306 corpus @override sites produced 32 edges — production never passes overrideCompanion (parseFile callers pass no context) and the pass only checked the direct extends base. Fields also faked overrides via un-gated external fallback",
+        "answer": "3-pass resolution (in-file BFS over extends+implements+with -> companion -> annotation-gated external first-parent at conf 0.8); fields can never override; oracle n/a (overrides not compared for dart); mutants dart/external-override-dropped + dart/field-override-fabricated"
+      },
+      {
+        "id": "DARTD17",
+        "node_type": "cascade_section chained selectors (b..a.b.c(1))",
+        "status": "FIXED",
+        "question": "M37 master-review 2: cascade calls resolved to the cascade_selector's first identifier (a) — the leaf method (c) lives in nested unconditional_assignable_selector children",
+        "answer": "callee chain = last identifier across selector children excluding argument_part (args excluded so b..foo(a.bar) stays foo); covered by existing cascade pins"
       }
-    ]
+    ],
+    "lastUpdated": "2026-09-06 (M37 master-review 2: DARTD12-DARTD17)"
   }
 }
