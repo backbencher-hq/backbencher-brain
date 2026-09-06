@@ -262,3 +262,40 @@ can lie, so these rules are contract, gated from M42.G1 onward. Scope:
    server responds with declared-absent semantics (no capabilities for that
    language), and the absence is verifiable by a negative test. Silent
    empty results that look like "no references found" are a violation.
+
+## 13. Understanding Rules (M44 amendment, ratified 2026-09-06)
+
+M44 makes the surfaces the hover opens *understandable* (IDE v7). A
+developer landing on a usages/hub/graph/impact surface must understand in
+one second what it shows, why rows differ, what is clickable, and what each
+badge means. These rules are contract, gated from M44.G1 onward. Scope:
+`src/lsp/`, `script/m26/graph-core.ts`, `ide/vscode/src/` (hub/impact/graph
+panels), `script/m44/`, `validation/m44/`, and every surface rendering
+usages, hub, graph, or impact.
+
+1. **One row per symbol.** Caller/callee relationship rows are grouped per
+   symbol before rendering. A symbol that appears multiple times only
+   because it owns several stored relationship rows is a rendering defect,
+   not data richness.
+2. **Multiplicity is declared.** When a symbol relates through several
+   relationship types or occurrences, the group states the count and names
+   the types. Nothing is merged into silence, and no stored row is dropped
+   from the index or from differential counts.
+3. **Interactive is visibly interactive.** Every clickable element renders
+   a click affordance (hover state, link underline, chevron, focus
+   outline). Text that looks clickable but is not, and a link that does
+   nothing, are both defects (M42 rule 1 unchanged).
+4. **Counts equal what is rendered.** Header totals ("9 callers") count the
+   groups the surface actually renders. A number the eye cannot verify
+   against the list is a violation.
+5. **Noise is labeled, not hidden.** File-level (`imports`/`exports`) and
+   external rows live in declared, labeled sections — never dropped, never
+   rendered as ordinary symbol rows.
+6. **Dead ends are defects.** A surface that names a symbol, file, or usage
+   without a working navigation to it is a defect. "Show all usages" never
+   ends in a message-only fallback when the editor's native references
+   surface is unavailable.
+7. **ONE renderer core for the new surfaces.** All M44 list, tree, and
+   badge rendering extends `script/m26/graph-core.ts` (the M26 W1 rule);
+   per-IDE forks stay structurally impossible, and the W6 shell's CSP is
+   unchanged.

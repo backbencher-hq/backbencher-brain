@@ -66,7 +66,7 @@ co-agent lanes); the website lane (M41) is untouched.
 - **In:** bb/graph usages-mode grouping shape and its verifiers (U1); graph-core
   list/tree/badge rendering and the webview harness (U2/U3/U4); impact root resolution
   (U5); hover-command references fallback (U6); governance + closure (G1/X1).
-- **Out:** pixel-perfect theming; new editor transports (M27 convention applies to the
+- **Out:** pixel-exact theming; new editor transports (M27 convention applies to the
   same extension surfaces); completion/diagnostics/rename (contract §7.1 unchanged);
   the analyzer relationship vocabulary itself (that is M14/M37's stored truth — M44 only
   *presents* it understandably and never drops rows from the index).
