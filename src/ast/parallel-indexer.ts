@@ -3208,6 +3208,11 @@ export async function indexProjectParallel(
       // dirs readdir'd this run are the fresh scan boundary for probes.
       if (walkedDirs.length > 0) await commitDirManifest(projectId, projectPath, walkedDirs)
 
+      // M44.W3.1 (#673): every completed index run records the durable
+      // watch-intent so the next resident session (MCP) auto-starts the
+      // watcher without the user asking again.
+      try { (await import("./watch-state")).recordWatchIntent(projectId, projectPath) } catch {}
+
       return stats
     }
 
@@ -3699,6 +3704,10 @@ export async function indexProjectParallel(
     } else if (files.length > 0 && !stats.cancelled) {
       await restampTouchedDirManifest(projectId, projectPath, files)
     }
+
+    // M44.W3.1 (#673): record durable watch-intent at index time (any path
+    // that indexes this project — CLI bb index, bb_index, edits, resume).
+    try { (await import("./watch-state")).recordWatchIntent(projectId, projectPath) } catch {}
 
     return stats
   } catch (error) {

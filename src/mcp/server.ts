@@ -28,6 +28,23 @@ async function ensureIndexed(context: ToolContext): Promise<string | null> {
 
 export async function startMcpServer(projectPath: string): Promise<void> {
   const context: ToolContext = { projectPath, projectId: getProjectId(projectPath) }
+
+  // M44.W3.1 (#673): a resident session honors the watch-intent recorded at
+  // index time — the user never re-activates watching per session. stdio-safe:
+  // every watcher log goes to stderr (never the JSON-RPC stream).
+  try {
+    const { readWatchIntent } = await import("../ast/watch-state")
+    const { startProjectWatcher } = await import("../ast/file-watcher")
+    const intent = readWatchIntent(context.projectId)
+    if (intent?.desired) {
+      startProjectWatcher(context.projectId, context.projectPath, {
+        log: (msg: string, meta?: Record<string, unknown>) => console.error(`[bb-mcp-watch] ${msg}`, meta ?? ""),
+      })
+    }
+  } catch {
+    // Watch auto-start is additive: a failure must never block the server.
+  }
+
   const server = new Server(
     { name: "backbencher-brain", version: BACKBENCHER_BRAIN_VERSION },
     { capabilities: { tools: {} } },
