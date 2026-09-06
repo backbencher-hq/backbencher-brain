@@ -3,7 +3,7 @@
     "code": "G1",
     "githubIssue": 677,
     "tool": "governance",
-    "status": "planned",
+    "status": "verified",
     "scope": "Ledger (validation/m45), gates-registry.json, verify-governance.ts, sync-ledger.ts, PLAN.md invariant",
     "acceptanceCriteria": [
       "Ledger: all 6 codes, unique populated issue numbers, legal statuses, criteria present, no fabricated evidence",
@@ -13,13 +13,24 @@
     ],
     "closureRequirements": [
       "Evidence file + ledger sync + evidence comment on close"
-    ]
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "6716a8978489fe6aa6db38b9e47b34d421e044d7",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m45/verify-governance.ts",
+      "evidenceFile": "G1.json",
+      "generatedAt": "2026-09-06T05:12:41.835Z",
+      "passed": 20,
+      "failed": 0,
+      "negativeCases": 5
+    }
   },
   {
     "code": "R1",
     "githubIssue": 678,
     "tool": "worker-pool symbol-loss honesty",
-    "status": "planned",
+    "status": "verified",
     "scope": "Force the worker-pool path on fixtures and assert the symbol-loss bucket counts only real zero-symbol parses — closing the m22 V5 blind spot (in-process fixtures)",
     "acceptanceCriteria": [
       "Fresh pool index of N symbol files + 1 comment-only file: symbolLoss == 1, symbolLoss < newlyParsed, errors == 0",
@@ -30,13 +41,24 @@
     ],
     "closureRequirements": [
       "Evidence file + ledger sync + evidence comment on close"
-    ]
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "6716a8978489fe6aa6db38b9e47b34d421e044d7",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m45/verify-r1-pool-symbol-loss.ts",
+      "evidenceFile": "R1.json",
+      "generatedAt": "2026-09-06T05:12:44.935Z",
+      "passed": 20,
+      "failed": 0,
+      "negativeCases": 3
+    }
   },
   {
     "code": "R2",
     "githubIssue": 679,
     "tool": "graph-integrity gate",
-    "status": "planned",
+    "status": "verified",
     "scope": "Fixture with class containment (A.m1, A.C.nested), top-level decls, JSON/YAML config virtuals, incremental re-index; SQL-audit + runIndexHealthCheck",
     "acceptanceCriteria": [
       "After full index: orphan owners == 0, dead (non-empty) source edges == 0, orphan targets == 0, config-virtual orphans == 0",
@@ -47,13 +69,24 @@
     ],
     "closureRequirements": [
       "Evidence file + ledger sync + evidence comment on close"
-    ]
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "6716a8978489fe6aa6db38b9e47b34d421e044d7",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m45/verify-r2-graph-integrity.ts",
+      "evidenceFile": "R2.json",
+      "generatedAt": "2026-09-06T05:12:48.603Z",
+      "passed": 22,
+      "failed": 0,
+      "negativeCases": 3
+    }
   },
   {
     "code": "R3",
     "githubIssue": 680,
     "tool": "real-repo integrity corpus",
-    "status": "planned",
+    "status": "verified",
     "scope": "Full index of fixtures/repositories copies (rake w/ .git, ripgrep w/o), default pipeline incl. derived passes; SQL-audit + health + measured wall times",
     "acceptanceCriteria": [
       "Per repo: orphan owners == 0, dead edges == 0, orphan targets == 0, config-virtual orphans == 0",
@@ -62,13 +95,24 @@
     ],
     "closureRequirements": [
       "Evidence file + ledger sync + evidence comment on close"
-    ]
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "6716a8978489fe6aa6db38b9e47b34d421e044d7",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m45/verify-r3-real-repo-integrity.ts",
+      "evidenceFile": "R3.json",
+      "generatedAt": "2026-09-06T05:13:11.416Z",
+      "passed": 23,
+      "failed": 0,
+      "negativeCases": 3
+    }
   },
   {
     "code": "A1",
     "githubIssue": 681,
     "tool": "analyzer-lane handoff",
-    "status": "planned",
+    "status": "verified",
     "scope": "docs/m45/analyzer-handoff.md covering the four analyzer-side root causes with evidence tokens; filed so M14/M37 analyzer owners can fix at source. Store defends meanwhile (R2/R3)",
     "acceptanceCriteria": [
       "Doc exists, 4 defect sections each with an Ask, evidence numbers embedded (126,894 / 3,786 / module_declaration / package.imports / Window / anonymous_struct / harness:0 / fix commits)",
@@ -77,7 +121,18 @@
     ],
     "closureRequirements": [
       "Evidence file + ledger sync + evidence comment on close"
-    ]
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "6716a8978489fe6aa6db38b9e47b34d421e044d7",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m45/verify-a1-handoff.ts",
+      "evidenceFile": "A1.json",
+      "generatedAt": "2026-09-06T05:12:48.703Z",
+      "passed": 20,
+      "failed": 0,
+      "negativeCases": 2
+    }
   },
   {
     "code": "X1",
