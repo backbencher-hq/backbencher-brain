@@ -111,7 +111,10 @@ async function seedFixtureIndex(wsDir: string, dataDir: string): Promise<{ files
   raw.prepare(
     `INSERT INTO brain_relationship (id, project_id, source_symbol_id, target_symbol_id, relationship_type, confidence)
      VALUES (?,?,?,?,?,?)`,
-  ).run("rel-1", projectId, "sym-main", "sym-greet", "call", 1.0)
+  // relationship_type is "calls" — the REAL analyzer vocabulary (plural). The
+  // graph engine's DEFAULT_REL_TYPES filter on it; the M24-era singular
+  // "call" was invisible to the engine's call-hierarchy/impact traversals.
+  ).run("rel-1", projectId, "sym-main", "sym-greet", "calls", 1.0)
 
   return { files: 1, symbols: 3, relationships: 1 }
 }
@@ -312,19 +315,25 @@ async function driveFeatureSuite(
   check(ctx, "L2: hover outside index is declared absent", hoverMiss?.result?.contents === null && hoverMiss?.result?.data === null)
 
   // --- Definition + references (L3) ---
+  // Wire law: the server answers PROTOCOL shapes (Location / Location[] /
+  // DocumentSymbol[] / CallHierarchyItem[]), not component envelopes — a
+  // typed editor client iterates these results as arrays (VS Code's
+  // documentSymbol and call-hierarchy adapters crashed on the old envelope,
+  // reading `.name` of undefined; owner test 2026-09-06).
   const def = await client.request("textDocument/definition", {
     textDocument: { uri: mainUri },
     position: hoverPos,
   })
-  check(ctx, "L3: definition resolves greet", def?.result?.found === true && def?.result?.symbol?.name === "greet")
-  check(ctx, "L3: definition location is 0-based line 1", def?.result?.location?.line === 1, JSON.stringify(def?.result?.location))
+  const defLoc = Array.isArray(def?.result) ? def?.result?.[0] : def?.result
+  check(ctx, "L3: definition resolves to an LSP Location", defLoc?.uri?.startsWith("file://") && defLoc?.range?.start?.line !== undefined, JSON.stringify(def?.result).slice(0, 250))
+  check(ctx, "L3: definition location is 0-based line 1", defLoc?.range?.start?.line === 1, JSON.stringify(defLoc))
 
   const refs = await client.request("textDocument/references", {
     textDocument: { uri: mainUri },
     position: hoverPos,
     context: { includeDeclaration: true },
   })
-  check(ctx, "L3: references returns locations", Array.isArray(refs?.result?.locations) && refs?.result?.locations.length > 0, JSON.stringify(refs).slice(0, 250))
+  check(ctx, "L3: references returns LSP Location[]", Array.isArray(refs?.result) && refs.result.length > 0 && (refs.result[0]?.uri ?? "").startsWith("file://"), JSON.stringify(refs).slice(0, 250))
 
   // Unresolved position: honest empty. Line 10 (0-based) is the trailing
   // empty line — in range but carries no symbol.
@@ -332,37 +341,40 @@ async function driveFeatureSuite(
     textDocument: { uri: mainUri },
     position: { line: 10, character: 0 },
   })
-  check(ctx, "L3: definition outside index is honest empty", defMiss?.result?.found === false, JSON.stringify(defMiss).slice(0, 250))
+  check(ctx, "L3: definition outside index is honest empty", defMiss?.result === null || (Array.isArray(defMiss?.result) && defMiss.result.length === 0), JSON.stringify(defMiss).slice(0, 250))
 
   // --- Symbols (L4) ---
   const docSym = await client.request("textDocument/documentSymbol", {
     textDocument: { uri: mainUri },
   })
-  check(ctx, "L4: documentSymbol returns Greeter root", docSym?.result?.symbols?.[0]?.name === "Greeter", (JSON.stringify(docSym?.result) ?? "").slice(0, 300))
-  check(ctx, "L4: documentSymbol hierarchy has greet child", (docSym?.result?.symbols?.[0]?.children ?? []).some((c: any) => c.name === "greet"), (JSON.stringify(docSym?.result?.symbols?.[0]?.children) ?? "").slice(0, 250))
+  const symList: any[] = Array.isArray(docSym?.result) ? docSym.result : []
+  check(ctx, "L4: documentSymbol returns Greeter root (DocumentSymbol[])", symList[0]?.name === "Greeter" && symList[0]?.kind !== undefined, (JSON.stringify(docSym?.result) ?? "").slice(0, 300))
+  check(ctx, "L4: documentSymbol hierarchy has greet child", (symList[0]?.children ?? []).some((c: any) => c.name === "greet"), (JSON.stringify(symList[0]?.children) ?? "").slice(0, 250))
   check(ctx, "L4: documentSymbol range contains symbol text", (() => {
-    const root = docSym?.result?.symbols?.[0]
+    const root = symList[0]
     if (!root) return false
     const lines = FIXTURE_MAIN.split("\n")
-    const firstLine = lines[root.selectionRange.line] ?? ""
+    const firstLine = lines[root.range?.start?.line] ?? ""
     return firstLine.includes("Greeter")
   })())
 
   const wsSym = await client.request("workspace/symbol", { query: "greet" })
-  check(ctx, "L4: workspace/symbol finds greet", wsSym?.result?.symbols?.some((s: any) => s.name === "greet"))
+  const wsList: any[] = Array.isArray(wsSym?.result) ? wsSym.result : []
+  check(ctx, "L4: workspace/symbol finds greet (SymbolInformation[])", wsList.some((s: any) => s.name === "greet" && (s.location?.uri ?? "").startsWith("file://")))
 
   // --- Call hierarchy (L5) ---
   const prep = await client.request("textDocument/prepareCallHierarchy", {
     textDocument: { uri: mainUri },
     position: hoverPos,
   })
-  check(ctx, "L5: prepareCallHierarchy returns item", prep?.result?.item?.name === "greet")
+  const prepItems: any[] = Array.isArray(prep?.result) ? prep.result : []
+  check(ctx, "L5: prepareCallHierarchy returns CallHierarchyItem[]", prepItems[0]?.name === "greet" && prepItems[0]?.data?.symbolId !== undefined, (JSON.stringify(prep?.result) ?? "").slice(0, 250))
 
-  const item = prep?.result?.item
+  const item = prepItems[0]
   const incoming = item ? await client.request("callHierarchy/incomingCalls", { item }) : null
-  check(ctx, "L5: incomingCalls returns callers", Array.isArray(incoming?.result?.calls) && incoming?.result?.calls.length >= 0)
+  check(ctx, "L5: incomingCalls returns CallHierarchyIncomingCall[]", Array.isArray(incoming?.result) && incoming.result.length >= 0)
   const outgoing = item ? await client.request("callHierarchy/outgoingCalls", { item }) : null
-  check(ctx, "L5: outgoingCalls returns callees", Array.isArray(outgoing?.result?.calls))
+  check(ctx, "L5: outgoingCalls returns CallHierarchyOutgoingCall[]", Array.isArray(outgoing?.result))
 
   // --- Latency (budget gate, contract §3) ---
   await measure(ctx, "hover", () => client.request("textDocument/hover", { textDocument: { uri: mainUri }, position: hoverPos }))
