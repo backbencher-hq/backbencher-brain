@@ -125,6 +125,10 @@ Read-only. It never refreshes implicitly, writes source, or invokes bb_edit.
 
 Claims are classified as extracted, inferred, generated, or unknown and carry resolvable citations where applicable.
 
+## Relationship to other tools
+
+For raw symbol metadata use `bb_search` mode `symbol`; this tool composes documented, cited explanations.
+
 ## Staleness
 
 Freshness applies to the tool's read output (no registered per-mode split). Staleness surfaces as: `freshness` envelope (`{ fresh, stale, missing, staleRatio, mode, remediation }`) on JSON + footer naming the remediation; per-citation `(stale)` in Sources; silent when all fresh. When something is stale/missing, the remediation names the registered reindex interfaces: project scope → `reads auto-refresh stale files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)`; file scope → `reads auto-refresh this file within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index "<file>" (or the bb_index tool with that file path)`. Nothing is stale → silence (no remediation text). Detection uses a mtime+size fast path with a content-hash fallback: an edit that leaves both size and mtime unchanged is reported fresh without hashing (same trade-off as git's index stat-cache; accepted, documented in `src/brain/freshness.ts`).

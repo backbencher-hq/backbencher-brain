@@ -1,10 +1,10 @@
 # `bb_annotate`
 
-Attach an agent-authored annotation to a symbol in the shared index. Provenance is enforced: the row records author class 'agent' (never spoofable), the calling tool identity, and timestamps. Re-annotating the same symbol+path updates the note in place — one note per author per location. Annotations are opinions layered on evidence, never index facts, and surface in the editor where the human reads (hover + graph).
+Attach an agent-authored annotation to a symbol in the shared index. Provenance is enforced: the row records author class 'agent' (never spoofable), the calling tool identity, and timestamps. Re-annotating the same symbol+path updates the note in place — one note per author per location. Annotations are opinions layered on evidence, never index facts, and surface in the editor where the human reads (hover + graph). To change source code use bb_edit; to read notes back use bb_annotations.
 
 ## Contract
 
-- Category: `graph`
+- Category: `annotations`
 - Mutability: `write`
 - Requires index: `false`
 - Modes: `annotate`
@@ -73,8 +73,12 @@ Write-capable against the annotation store only. It never modifies source files.
 
 Annotations carry provenance (toolIdentity, time) and are stored in brain_annotation.
 
+## Relationship to other tools
+
+To change source code use `bb_edit`; this tool stores provenance-enforced notes on symbols.
+
 ## Staleness
 
-This tool does not report index staleness. Output reflects the index as of the last bb index run; run bb index --changed to refresh changed files before acting on results.
+This tool does not report per-file index staleness and does not auto-refresh. Output reflects the index as of the last index run; when files changed after indexing, refresh first (project scope: `reads auto-refresh stale files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)`).
 
 This page is generated from the executable registry and curated documentation. Run `npm run docs:generate` to update it.
