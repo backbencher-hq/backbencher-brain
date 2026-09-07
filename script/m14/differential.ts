@@ -49,7 +49,7 @@ const LANG_REPOS: Record<string, string> = {
   csharp: "powershell",
   dart: "proxicall",
   swift: "swift-nio",
-  objc: "Clyde",
+  objc: "sdwebimage",
   php: "phpunit",
   ruby: "rake",
   python: "cython",
@@ -1463,6 +1463,18 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
     "print", "debugPrint", "assert", "precondition", "fatalError",
     "String", "Int", "Double", "Float", "Bool", "Array", "Dictionary",
     "Set", "Optional", "Any", "Void", "Character", "Data", "Date", "defer",
+    // SWIFTD16 mirror: fixed-width stdlib numerics filtered like Int/Double.
+    "UInt", "UInt8", "UInt16", "UInt32", "UInt64",
+    "Int8", "Int16", "Int32", "Int64",
+  ])
+  // SWIFTD15 mirror: stdlib raw-value types of a raw-representable enum.
+  // The oracle must skip the SAME first base the analyzer records as
+  // meta.rawType (String/Int/...) — everything else is a conformance.
+  const SWIFT_ENUM_RAW = new Set([
+    "String", "Character",
+    "Int", "Int8", "Int16", "Int32", "Int64",
+    "UInt", "UInt8", "UInt16", "UInt32", "UInt64",
+    "Float", "Float32", "Float64", "Double",
   ])
   const isCapitalized = (t: string): boolean => t.length > 1 && t.charCodeAt(0) >= 65 && t.charCodeAt(0) <= 90
   const key = (label: string, target: string) => label + ":" + target
@@ -1514,18 +1526,35 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
   }
 
   // Base names from the inheritance_specifier (mirrors extractBaseName).
+  // SWIFTD19 mirror: the LEAF of a dotted user_type is the LAST sibling
+  // type_identifier (Outer.Inner -> Inner, Foundation.URLSession ->
+  // URLSession) — the pre-fix FIRST-segment read fabricated edges to the
+  // module/container name.
   const baseName = (spec: any): string | null => {
     for (let i = 0; i < spec.namedChildCount; i++) {
       const c = spec.namedChild(i)
       if (!c) continue
       if (c.type === "type_identifier") return c.text
       if (c.type === "user_type") {
-        const leaf = c.namedChildren.find((x: any) => x.type === "type_identifier")
+        let leaf: any = null
+        for (let j = 0; j < c.namedChildCount; j++) {
+          const x = c.namedChild(j)
+          if (x && x.type === "type_identifier") leaf = x
+        }
         if (leaf) return leaf.text
       }
     }
     const txt = spec.text.trim()
     return txt && !txt.includes(" ") ? txt : null
+  }
+
+  // SWIFTD17 mirror helper: is this call_expression a SUBSCRIPT access
+  // (call_suffix with a `[` value_arguments) rather than a method call?
+  const isSubscript = (n: any): boolean => {
+    const suffix = n.namedChildren.find((c: any) => c.type === "call_suffix")
+    if (!suffix) return false
+    const va = suffix.namedChildren.find((c: any) => c.type === "value_arguments" && c.text.startsWith("["))
+    return !!va
   }
 
   const stack: any[] = [{ n: root, parentType: "" }]
@@ -1534,11 +1563,10 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
     const t = n.type
     if (t === "class_declaration") {
       // Actor/struct/enum/extension are all class_declaration in the pinned
-      // grammar, decided by the anonymous keyword token. Only class/struct/
-      // actor carry extends/implements (enum/extension excluded — the
-      // analyzer's handleDeclaration guard). Swift semantics: ONLY a class
-      // can have a superclass (first base extends); struct/actor bases are
-      // all protocol adoptions (implements) — mirrors the analyzer fix.
+      // grammar, decided by the anonymous keyword token. Swift semantics:
+      // ONLY a class can have a superclass (first base extends); struct/actor
+      // bases are all protocol adoptions (implements); enum/extension bases
+      // are conformances (SWIFTD14/15, below) — mirrors the analyzer.
       let isEnum = false
       let isExtension = false
       let isClass = false
@@ -1550,15 +1578,21 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
           if (c.type === "class") isClass = true
         }
       }
-      if (!isEnum && !isExtension) {
-        const bases: string[] = []
-        for (let i = 0; i < n.namedChildCount; i++) {
-          const c = n.namedChild(i)
-          if (c && c.type === "inheritance_specifier") {
-            const nm = baseName(c)
-            if (nm) bases.push(nm)
-          }
+      const bases: string[] = []
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c && c.type === "inheritance_specifier") {
+          const nm = baseName(c)
+          if (nm) bases.push(nm)
         }
+      }
+      if (isEnum || isExtension) {
+        // SWIFTD14/15 oracle mirror: extension bases are ALL conformances
+        // (no superclass possible); enum bases are conformances except a
+        // stdlib raw-value first base (analyzer records it as meta.rawType).
+        const skipFirst = isEnum && bases.length > 0 && SWIFT_ENUM_RAW.has(bases[0])
+        for (let i = skipFirst ? 1 : 0; i < bases.length; i++) push("implements", bases[i])
+      } else {
         // Mirror the analyzer: a class's first base is extends only when it
         // is NOT a known corpus protocol; a known protocol first-base (or any
         // struct/actor base) is implements.
@@ -1571,13 +1605,23 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
         }
       }
     }
+    if (t === "protocol_declaration") {
+      // SWIFTD13 oracle mirror: protocol inheritance -> extends per parent;
+      // AnyObject/Any class-constraint markers are NOT protocol parents.
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c && c.type === "inheritance_specifier") {
+          const nm = baseName(c)
+          if (nm && nm !== "AnyObject" && nm !== "Any") push("extends", nm)
+        }
+      }
+    }
     if (t === "call_expression") {
       // Subscript READ (`entries[key]`) parses as call_expression with a
       // `[key]` call_suffix — a property access, NOT a call (mirrors the
       // analyzer's isSubscriptRead gate).
-      const suffix = n.namedChildren.find((c: any) => c.type === "call_suffix")
-      const isSubscript = !!suffix && !!suffix.namedChildren.find((c: any) => c.type === "value_arguments" && c.text.startsWith("["))
-      if (isSubscript) { for (let i = n.namedChildCount - 1; i >= 0; i--) { const c = n.namedChild(i); if (c) stack.push({ n: c, parentType: t }) }; continue }
+      const isSubscriptCall = isSubscript(n)
+      if (isSubscriptCall) { for (let i = n.namedChildCount - 1; i >= 0; i--) { const c = n.namedChild(i); if (c) stack.push({ n: c, parentType: t }) }; continue }
       // callee: simple_identifier / identifier / navigation_expression
       const callee = n.namedChildren.find((c: any) => c.type === "simple_identifier" || c.type === "identifier" || c.type === "navigation_expression")
       if (callee && callee.type === "navigation_expression") {
@@ -1585,7 +1629,9 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
         if (leaf && leaf !== "$0" && !SWIFT_BUILTINS.has(leaf)) push("calls", leaf)
       } else if (callee) {
         const target = callee.text
-        if (target && !SWIFT_BUILTINS.has(target)) {
+        // SWIFTD16 mirror: XCTest assertion functions (capitalized free
+        // functions, never types) must not fabricate instantiates edges.
+        if (target && !SWIFT_BUILTINS.has(target) && !target.startsWith("XCT")) {
           if (isCapitalized(target)) push("instantiates", target)
           else push("calls", target)
         }
@@ -1609,7 +1655,13 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
         }
       }
       const hasSelf = hasSelfReceiver(n)
-      if (hasSelf && parentType !== "call_expression") {
+      // SWIFTD17 mirror: the funcNode of a METHOD call is not a member read
+      // (analyzer RULED), but the base navigation of a SUBSCRIPT access is a
+      // genuine container read — php/objc emit uses there too. The analyzer
+      // inspects node.parent; the oracle receives the parent type via the
+      // walk, so re-derive subscript-ness from this node's parent node.
+      const parCallSubscript = n.parent && n.parent.type === "call_expression" && isSubscript(n.parent)
+      if (hasSelf && (parentType !== "call_expression" || parCallSubscript)) {
         const leaf = navLeaf(n)
         if (leaf) push("uses", leaf)
       }
@@ -1967,13 +2019,17 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
         }
       }
     }
-    if (t === "member_access_expression" && inBody) {
+    if ((t === "member_access_expression" || t === "nullsafe_member_access_expression") && inBody) {
       // Member READS only: assignment/augmented-assignment LHS is a write;
       // member_call receiver is a call target (mirrors the analyzer's
       // read/write + call-receiver gate — M37.13 added
       // augmented_assignment_expression to this oracle gate after the
       // analyzer's SCD1 fix showed the oracle fabricating phantom uses for
       // `$this->count += $step` when the member is never read elsewhere).
+      // PHPD11 mirror (M37 #606 master-review wave-2): PHP 8 nullsafe reads
+      // `$this->svc?->name` parse as nullsafe_member_access_expression with
+      // the SAME "name" field (probe-verified 2026-09-07); both sides were
+      // dropping the trailing member read the non-null form emits.
       const lhs = parent ? parent.namedChild(0) : null
       const isWrite = parent && (parent.type === "assignment_expression" || parent.type === "augmented_assignment_expression") && lhs && lhs.startIndex === n.startIndex && lhs.endIndex === n.endIndex
       const isCallReceiver = parent && (parent.type === "member_call_expression" || parent.type === "nullsafe_member_call_expression")
