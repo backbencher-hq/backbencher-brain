@@ -2,7 +2,7 @@
   "milestone": "M29.R4",
   "issue": 539,
   "generatedBy": "npx tsx script/m29/generate-precision-ledger.ts --write",
-  "inputsHash": "7936bf88f5fc9d1f35312ad998f95726cb9fc886",
+  "inputsHash": "d65f060517ba661244d2d70faaf91aa447ee7af2",
   "inputs": [
     "validation/m29/results/wave-java.json",
     "validation/m29/results/wave-python.json",
