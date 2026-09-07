@@ -23,6 +23,7 @@
 
 import { readFileSync, existsSync, statSync } from "node:fs"
 import { writeFileSync } from "node:fs"
+import { execFileSync } from "node:child_process"
 import path from "node:path"
 
 const ROOT = process.cwd()
@@ -137,6 +138,7 @@ const evidence = {
   gate: "T1",
   issue: 711,
   verifierCommand: "npx tsx script/m45/verify-site-embed.ts",
+  currentCommit: (() => { try { return execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim() } catch { return "unknown" } })(),
   passed,
   failed,
   negativeCases: mutantsCaught,
