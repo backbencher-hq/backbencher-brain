@@ -1926,6 +1926,53 @@ const MUTANTS: Mutant[] = [
       ),
     }),
   },
+  // ── M37.10: overrideCompanion dead-machinery sweep ────────────────────
+  // The pre-fix analyzers dropped every override whose base was declared in
+  // another file (companion never populated in production). Each mutant
+  // re-introduces the silent drop or breaks the guess-tier contract; the
+  // external-override fixture pins must kill all of them.
+  {
+    id: "php/drop-external-override-guess",
+    language: "php",
+    defectClass: "relationship-loss",
+    description: "M37.10 regression: re-drops external-base overrides (AuditService.handle->ExternalBase.handle) — php external-override pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "overrides" && x.source === "AuditService.handle" && x.target === "ExternalBase.handle")) }),
+  },
+  {
+    id: "ruby/drop-external-override-guess",
+    language: "ruby",
+    defectClass: "relationship-loss",
+    description: "M37.10 regression: re-drops external-base overrides (AuditService.handle->ExternalBase.handle) — ruby external-override pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "overrides" && x.source === "AuditService.handle" && x.target === "ExternalBase.handle")) }),
+  },
+  {
+    id: "python/drop-external-override-guess",
+    language: "python",
+    defectClass: "relationship-loss",
+    description: "M37.10 regression: re-drops external-base overrides (AuditService.handle->ExternalBase.handle) — python external-override pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "overrides" && x.source === "AuditService.handle" && x.target === "ExternalBase.handle")) }),
+  },
+  {
+    id: "javascript/drop-external-override-guess",
+    language: "javascript",
+    defectClass: "relationship-loss",
+    description: "M37.10 regression: re-drops external-base overrides (AuditService.handle->ExternalBase.handle) — js external-override pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "overrides" && x.source === "AuditService.handle" && x.target === "ExternalBase.handle")) }),
+  },
+  {
+    id: "swift/guess-at-verified-confidence",
+    language: "swift",
+    defectClass: "confidence-corruption",
+    description: "M37.10 regression: re-claims the Pass-3 guess as verified (confidence 1.0) — swift external-override confidenceMax:0.5 pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => (x.type === "overrides" && x.source === "AuditService.handle" && x.target === "ExternalBase.handle" ? { ...x, confidence: 1, metadata: { ...(x.metadata ?? {}), reasonCode: undefined, evidenceClass: "structural" } } : x)) }),
+  },
+  {
+    id: "swift/drop-external-override-guess",
+    language: "swift",
+    defectClass: "relationship-loss",
+    description: "M37.10 regression: drops the external-base guess entirely — swift external-override pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "overrides" && x.source === "AuditService.handle" && x.target === "ExternalBase.handle")) }),
+  },
   {
     id: "objc/drop-implements-edge",
     language: "objc",
@@ -2097,6 +2144,48 @@ const MUTANTS: Mutant[] = [
     defectClass: "relationship-loss",
     description: "drops php override edges (PaymentService.__construct -> BaseService.__construct) — php overrides pin",
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "overrides") }),
+  },
+  {
+    id: "php/drop-top-level-procedural",
+    language: "php",
+    defectClass: "relationship-loss",
+    description: "M37.13 regression: restores the pre-fix extractive-walk drop — no generic fallback, so top-level/script statements ($app->boot(), new Application(), register_shutdown_function at program scope) emit nothing (global-sourced edges vanish) — procedural-enum instantiates/calls equals pins catch it",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.source !== "global" || !(x.type === "calls" || x.type === "instantiates")) }),
+  },
+  {
+    id: "php/drop-enum-implements",
+    language: "php",
+    defectClass: "relationship-loss",
+    description: "M37.13 regression: restores the pre-fix enum_declaration branch that never read class_interface_clause — enum implements edges (Status->Labeled/Tagged) vanish — procedural-enum implements pins catch it",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "implements" && (x.metadata ?? {}).isEnumImplements)) }),
+  },
+  {
+    id: "php/emit-wp-hook-calls",
+    language: "php",
+    defectClass: "relationship-fabrication",
+    description: "M37.13 regression: removes the add_action/add_filter early return so WP hook registrations re-emit calls edges (pre-fix oracle fabricated calls:add_action/add_filter truth; analyzer never did) — procedural-enum forbid pins catch it",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "calls", source: "global", target: "add_action", isExternal: true, weight: 1, confidence: 0.9 }, { type: "calls", source: "global", target: "add_filter", isExternal: true, weight: 1, confidence: 0.9 }] }),
+  },
+  {
+    id: "php/symbolize-anon-class-methods",
+    language: "php",
+    defectClass: "symbol-fabrication",
+    description: "M37.13 regression: restores the pre-fix ownerless method symbol for anonymous-class methods (top-level `new class { public function handle(){} }` fabricated a method symbol with no owner) — procedural-enum forbidSymbols handle catches it",
+    transform: r => ({ ...r, symbols: [...(r.symbols ?? []), { name: "handle", kind: "method", ownerName: undefined }] }),
+  },
+  {
+    id: "php/self-extends-reintroduced",
+    language: "php",
+    defectClass: "relationship-fabrication",
+    description: "PHPD10 regression: restores the pre-fix leaf-collapse — extends FeaturesForm->FeaturesForm (same-leaf qualified base collapsed onto the subclass) fabricated self-inheritance — same-leaf-inheritance extends forbid + equals:1 pins catch it",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []).filter((x: any) => !(x.type === "extends" && x.source === x.target)), { type: "extends", source: "FeaturesForm", target: "FeaturesForm", isExternal: true, weight: 1, confidence: 1.0, metadata: { phpSpecific: true } }, { type: "extends", source: "InvalidArgumentException", target: "InvalidArgumentException", isExternal: true, weight: 1, confidence: 1.0, metadata: { phpSpecific: true } }] }),
+  },
+  {
+    id: "php/self-override-verified-reintroduced",
+    language: "php",
+    defectClass: "relationship-fabrication",
+    description: "PHPD10 regression: restores the pre-fix verified self-override — a same-leaf external base resolved to the class's OWN methods at 0.95/structural (FeaturesForm.getForms->FeaturesForm.getForms) — same-leaf-inheritance overrides forbid + reasonCode pin catch it",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []).filter((x: any) => !(x.type === "overrides" && x.source === x.target)), { type: "overrides", source: "FeaturesForm.getForms", target: "FeaturesForm.getForms", isExternal: true, weight: 1, confidence: 0.95, metadata: { phpSpecific: true, isOverride: true } }] }),
   },
   {
     id: "ruby/drop-implements-edge",

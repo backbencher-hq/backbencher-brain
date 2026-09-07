@@ -212,18 +212,25 @@
         "decided_by": "owner-delegated (M14 ruby re-review)"
       },
       {
-        "id": "RUBD2",
+        "id": "RUBD8",
         "node_type": "line, file, encoding",
         "status": "RULED",
         "question": "Do the __LINE__/__FILE__/__encoding__ keyword tokens produce distinct parse-tree nodes in the pinned grammar?",
         "resolution": "No. Probe-verified 2026-09-02: all three keyword tokens parse as plain `identifier` nodes in every context (assignment, call args, bare expression). The grammar declares the rules but the parser folds them into identifier. Analyzer needs no distinct handling; values remain available via text. Reclassified from handled_verified per the F6 fixture-coverage gate (M14.0.F6)."
       },
       {
-        "id": "RUBD3",
+        "id": "RUBD9",
         "node_type": "test_pattern",
         "status": "RULED",
         "question": "Is test_pattern a realizable parse-tree node for valid Ruby pattern-matching source in the pinned grammar?",
         "resolution": "No. Probe-verified 2026-09-02 across 20+ case/in shapes (call patterns, bare literals, ranges, one-line `then` forms, parenthesized alts): the only source that produced test_pattern was `def m(v) = case v in 1 then 2 end`, which is an ERROR parse \u2014 the one-line case/in form is not supported by this grammar version. Every clean parse realizes other pattern nodes (as_pattern, alternative_pattern, parenthesized_pattern, find_pattern). Reclassified from handled_verified per the F6 fixture-coverage gate (M14.0.F6)."
+      },
+      {
+        "id": "M3710-COMPANION",
+        "node_type": "method_signature (override resolution)",
+        "status": "RULED",
+        "question": "AnalyzeContext.overrideCompanion is never populated by production callers \u2014 what must the analyzer do for externally-declared bases?",
+        "resolution": "M37.10 ruling (family-wide): the companion is optional enrichment, never a hard gate. In-file base declaring the method -> verified override @0.95; companion present -> companion-index resolution; otherwise deterministic Pass-3 first-parent guess @0.5 with reasonCode 'first-parent-guess' and tier 'inferred' \u2014 below the patterns.ts 0.7 threshold, counted as heuristic by the F5 differential. Gating on the companion alone silently dropped every cross-file override. Gated by F9-PROBE-M3710-RUBY, the ruby/external-override fixture + confidence pins, and 6 family regression mutants."
       }
     ]
   }
