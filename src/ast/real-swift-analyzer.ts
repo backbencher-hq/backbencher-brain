@@ -779,7 +779,13 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (target.startsWith("XCT")) return
 
     const firstChar = target.charCodeAt(0)
-    const isCapitalized = firstChar >= 65 && firstChar <= 90 && target.length > 1
+    // SWIFTD17 (OO family closure #613 family sweep): the `length > 1` carve
+    // out (inherited from M12.21 without rationale) mislabeled single-letter
+    // constructions (`struct E: Error` / `E()`, 15 sites in the swift-nio
+    // corpus tests) as `calls` instead of `instantiates` — capitalized is a
+    // type-name signal regardless of length, and Swift's naming rules reserve
+    // single capital letters for types (never free functions).
+    const isCapitalized = firstChar >= 65 && firstChar <= 90
 
     if (isCapitalized) {
       // Bare capitalized call = construction syntax -> instantiates ONLY

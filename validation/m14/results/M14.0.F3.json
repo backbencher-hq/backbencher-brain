@@ -98,7 +98,7 @@
     },
     {
       "description": "swift adversarial fixtures",
-      "detail": "6/6 fixtures pass",
+      "detail": "7/7 fixtures pass",
       "id": "fixtures-swift",
       "status": "pass"
     },
@@ -128,8 +128,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "93fcf0b153acdbdd456ff6f6fe803463553dd4de",
-  "committedAt": "2026-09-07T19:46:49+02:00",
+  "commit": "7653741c3591d0420183e617e0a98b60023296b4",
+  "committedAt": "2026-09-07T21:03:02+02:00",
   "data": {
     "details": [
       {
@@ -1643,6 +1643,11 @@
         "problems": []
       },
       {
+        "fixture": "swift/single-letter-construction",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "swift/write-gate",
         "ok": true,
         "problems": []
@@ -1789,7 +1794,7 @@
       },
       "swift": {
         "fail": 0,
-        "pass": 6
+        "pass": 7
       },
       "typescript": {
         "fail": 0,
