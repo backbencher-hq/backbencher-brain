@@ -299,6 +299,14 @@ usages, hub, graph, or impact.
    badge rendering extends `script/m26/graph-core.ts` (the M26 W1 rule);
    per-IDE forks stay structurally impossible, and the W6 shell's CSP is
    unchanged.
+8. **Trees nest honestly, once per symbol.** A call tree places each symbol
+   group under the parent its own stored rows declare (the shallowest row's
+   parent; a fold to the root level only when the engine's cascade made the
+   parent root-equivalent — declared, never guessed), and renders the symbol
+   exactly once per side — a second render would double-count usages
+   (rule 2). Deeper levels start collapsed behind a declared expander, and
+   expansion is a client toggle, never a re-render. A fabricated nesting
+   level, a duplicated symbol, or an undeclared control is a defect.
 
 ## 14. Demo-Media Rules (M45 amendment, ratified 2026-09-07)
 

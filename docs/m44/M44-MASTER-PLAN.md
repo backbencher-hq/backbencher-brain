@@ -58,6 +58,21 @@ the hover a portal; M44 makes what the portal opens *understandable*.
 | U6 | [#693](https://github.com/backbencher-hq/backbencher-brain/issues/693) References fallback surface | when the editor's native references surface is unavailable, `show all usages` opens our own usages list instead of a message-only dead end (rule 6) |
 | X1 | [#694](https://github.com/backbencher-hq/backbencher-brain/issues/694) Gate + launch bar | M44 closure gate (full-ladder audit at HEAD); in-editor visual leg through E5/E6; every known gap fixed or owner-waived |
 
+### U3 decision (2026-09-07, owner-approved "true nested tree")
+
+The tree nests by the **placement parent** — the parent endpoint of the group's
+shallowest stored row (ties: root-first, then parentName, then rowId). Every
+symbol renders exactly once per side (a second render double-counts usages,
+§13.2); deeper rows whose parent endpoint is itself a rendered same-side group
+hang under it; a parent that is not a rendered group is a depth-0 cascade
+match (root's class/member — the engine treats `cascade(root)` as root), so
+that row folds to the root level with the true parent declared in
+data-parent-id/data-parent-name. Children beyond the first level start
+collapsed (`bb-hub-collapsed` + `data-expanded=0`) behind an expander control;
+expansion is a client toggle in the bridge script (never a postMessage, never
+a re-render). Gated by `script/m44/verify-hub-tree.ts` (U3) and harness laws
+AH7–AH9; the W2/transport note documents the parent-carrying row.
+
 Parallel tracks (not M44 issues, riding alongside): language waves continue in M37/M14 (the
 co-agent lanes); the website lane (M41) is untouched.
 

@@ -219,6 +219,15 @@ async function run() {
         assert("E5-H5: group headers carry their rendered count (§13.4)", m.includes("data-group-count"), m.slice(0, 200))
         assert("E5-H5: complete usage set renders no truncation marker", !m.includes("bb-truncation-marker"), "")
         assert("E5-H5: enriched rel-1 renders its labeled chip in the hub", m.includes("data-enriched=\"1\"") && m.includes("bb-hub-enrichment"), m.slice(0, 240))
+        // M44.U3: the call tree is a REAL nested tree in-editor — the tree
+        // view ships per-side subtrees whose rows carry the declared nesting
+        // attrs (data-parent-id, data-level, data-depth) and the H6 machine
+        // navigation channel. The seeded fixture is flat (1 caller, 0
+        // callees), so every tree row must ALSO stay expander-free — an
+        // expander on a childless row would be an undeclared control.
+        assert("E5-H5: tree view ships caller/callee subtrees with declared parent+level+depth attrs", m.includes("bb-hub-subtree") && m.includes("bb-hub-tree-node") && m.includes("data-parent-id") && m.includes("data-level") && m.includes("data-depth"), m.slice(0, 300))
+        assert("E5-H5: tree rows reuse the H6 navigation machine attrs", m.includes("data-clickable=\"1\"") && m.includes("data-symbol-id"), m.slice(0, 300))
+        assert("E5-H5: flat fixture tree rows render NO expander (declared absence)", !m.includes("data-action=\"bb-expand\""), "")
       } else {
         assert("E5-H5: hub failure is declared (bb/graph prefix or not-indexed)", hubResult && !hubResult.ok && typeof hubResult.error === "string" && (hubResult.error.includes("bb/graph") || hubResult.error.toLowerCase().includes("not indexed")), hubResult && hubResult.error)
       }

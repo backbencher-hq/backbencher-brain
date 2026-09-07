@@ -510,6 +510,13 @@ export interface GroupedHubRow {
     criticality?: string
     frequency?: string
   }
+  /** M44.U3: the tree parent symbol id this row's edge hangs under (the
+   *  endpoint one hop toward the root). Depth-0 rows parent to the root
+   *  symbol. Optional at the TYPE level so hand-built list fixtures stay
+   *  valid; renderHubTree requires it for depth ≥ 1 (a deeper row without a
+   *  parent cannot nest — declared error, never a fabricated position). */
+  parentSymbolId?: string
+  parentName?: string
 }
 
 export interface GroupedHubEntry {
@@ -758,9 +765,179 @@ export function renderHubList(grouped: GroupedHub, dom: GraphDom, group: "file" 
   return { nodesRendered: all.length, nodesTotal: all.length, edgesRendered: 0, edgesTotal: 0, nodesTruncated: false, edgesTruncated: false }
 }
 
-/** Tree view (U3 reworks presentation): one row per symbol group, ordered
- *  callers then callees by their nearest traversal depth — the grouped shape
- *  is depth-preserving (each stored row keeps its edge depth). */
+/** The tree's nesting law (U3): every symbol group renders EXACTLY ONCE per
+ *  side (a second render would double-count usages, §13.2), hung under the
+ *  group's placement parent. The placement parent is the parent of the
+ *  group's shallowest row — tie-break prefers root, then the lexicographic
+ *  (parentName, rowId) — and is always honest: caller-side rows can target
+ *  root's class/members via the engine cascade (depth-0, unrendered: fold
+ *  to the root level, the engine treats cascade(root) as root) while every
+ *  depth-≥1 traced symbol is itself a rendered group (the walk only recurses
+ *  into sources of pushed edges). A renderer that nests under a symbol that
+ *  is not the row's declared parent fabricates a level (AH7-negative). */
+interface TreeSide {
+  dir: "caller" | "callee"
+  groups: GroupedHubEntry[]
+  byId: Map<string, GroupedHubEntry>
+}
+
+function sideGroups(grouped: GroupedHub, dir: "caller" | "callee"): TreeSide {
+  const groups = dir === "caller" ? grouped.callers : grouped.callees
+  const byId = new Map<string, GroupedHubEntry>()
+  for (const g of groups) byId.set(g.symbolId, g)
+  return { dir, groups, byId }
+}
+
+/** Placement parent of a group: the parent id of the shallowest row
+ *  (preferring a root-id row among equals), else declared lexicographic
+ *  (parentName, rowId) — the SAME selection every run must make. */
+function placementOf(entry: GroupedHubEntry, rootId: string): GroupedHubRow {
+  if (entry.rows.length === 0) throw new Error("bb/graph: tree placement on an empty group — a group without rows cannot nest")
+  let best = entry.rows[0]!
+  for (const r of entry.rows) {
+    const rank = (x: GroupedHubRow): [number, number, string, string] => [
+      x.depth,
+      x.parentSymbolId === rootId ? 0 : 1,
+      x.parentName,
+      x.rowId,
+    ]
+    const a = rank(r)
+    const b = rank(best)
+    if (a[0] !== b[0]) best = a[0] < b[0] ? r : best
+    else if (a[1] !== b[1]) best = a[1] < b[1] ? r : best
+    else if (a[2] !== b[2]) best = a[2] < b[2] ? r : best
+    else if (a[3] !== b[3]) best = a[3] < b[3] ? r : best
+  }
+  return best
+}
+
+/** Emit one nested tree branch (callers or callees). Root symbol id anchors
+ *  the top level; children of a group are the groups whose placement parent
+ *  is that group's symbol. Children beyond the first level start collapsed
+ *  (declared data-expanded=0 + bb-hub-collapsed) and every parent carries an
+ *  expander control — expansion is the client's toggle, never a re-render. */
+function treeSideInto(
+  side: TreeSide,
+  rootId: string,
+  host: GraphDomElement,
+  dom: GraphDom,
+  anchorKids: Map<string, GroupedHubEntry[]>,
+  rowsRendered: { count: number },
+): void {
+  const header = dom.create("div")
+  header.addClass("bb-hub-subtree")
+  header.setAttribute("data-dir", side.dir)
+  header.setAttribute("data-group-count", String(side.groups.length))
+  const label = dom.create("span")
+  label.addClass("bb-hub-subtree-label")
+  label.textContent = `${side.dir === "caller" ? "callers" : "callees"} (${side.groups.length})`
+  header.appendChild(label)
+  host.appendChild(header)
+
+  const emit = (entry: GroupedHubEntry, level: number, parentEl: GraphDomElement): void => {
+    rowsRendered.count += 1
+    const p = placementOf(entry, rootId)
+    const folded = p.parentSymbolId !== rootId && !side.byId.has(p.parentSymbolId)
+    const row = treeRow(entry, side.dir, level, p.parentSymbolId, p.parentName, folded, dom)
+    parentEl.appendChild(row)
+    const kids = anchorKids.get(entry.symbolId)
+    if (kids && kids.length > 0) {
+      row.setAttribute("data-has-children", "1")
+      row.setAttribute("data-expanded", "0")
+      const expander = dom.create("span")
+      expander.addClass("bb-hub-expander")
+      expander.setAttribute("data-action", "bb-expand")
+      expander.setAttribute("role", "button")
+      expander.setAttribute("aria-expanded", "false")
+      expander.setAttribute("tabindex", "0")
+      expander.textContent = "▸"
+      row.appendChild(expander)
+      const wrap = dom.create("div")
+      wrap.addClass("bb-hub-children")
+      // Collapsed-by-default beyond the first level (acceptance: declared
+      // expansion, never hidden data).
+      if (level >= 1) wrap.addClass("bb-hub-collapsed")
+      row.appendChild(wrap)
+      const ordered = [...kids].sort((a, b) => a.file.localeCompare(b.file) || a.name.localeCompare(b.name) || a.symbolId.localeCompare(b.symbolId))
+      for (const kid of ordered) emit(kid, level + 1, wrap)
+    }
+  }
+
+  // Top level: every group whose placement parent is root (or an unrendered
+  // depth-0 cascade target — folded to root, declared) emits here. Deeper
+  // groups emit through their parent's recursion, so every group renders
+  // exactly once per side.
+  for (const g of side.groups) {
+    const p = placementOf(g, rootId)
+    if (p.parentSymbolId === rootId || !side.byId.has(p.parentSymbolId)) emit(g, 0, header)
+  }
+}
+
+/** Tree row anatomy: name-first like the list row (U2), plus the declared
+ *  tree attrs — data-parent-id/data-parent-name (the true edge endpoint),
+ *  data-depth (min stored row depth) and data-level (visual nesting depth,
+ *  root children = 0). Clicking navigates via the same H6 machine attrs as
+ *  the list; the expander is a separate control (never a navigation target). */
+function treeRow(
+  entry: GroupedHubEntry,
+  dir: "caller" | "callee",
+  level: number,
+  parentId: string,
+  parentName: string,
+  folded: boolean,
+  dom: GraphDom,
+): GraphDomElement {
+  const el = dom.create("div")
+  el.addClass("bb-hub-row")
+  el.addClass("bb-hub-symrow")
+  el.addClass("bb-hub-tree-node")
+  el.setAttribute("data-dir", dir)
+  el.setAttribute("data-level", String(level))
+  el.setAttribute("data-symbol-id", entry.symbolId)
+  el.setAttribute("data-row-ids", entry.rows.map((r) => r.rowId).join(" "))
+  el.setAttribute("data-occurrences", String(entry.occurrences))
+  // The true tree edge: this node hangs under its placement parent (a
+  // rendered same-side node, or the root). A cascade fold declares the
+  // unrendered parent id/name — the fold is root-level because the engine
+  // treats cascade(root) as root, and the attrs never lie about the stored
+  // edge endpoint.
+  el.setAttribute("data-parent-id", parentId)
+  el.setAttribute("data-parent-name", parentName)
+  if (folded) el.setAttribute("data-fold", "cascade")
+  const minDepth = entry.rows.length > 0 ? Math.min(...entry.rows.map((r) => r.depth)) : 0
+  el.setAttribute("data-depth", String(minDepth))
+  const navigable = entry.file.length > 0
+  if (navigable) el.setAttribute("data-file", entry.file)
+  el.setAttribute("data-line", String(entry.line))
+  el.setAttribute("data-symbol", entry.name)
+  el.setAttribute("data-clickable", navigable ? "1" : "0")
+  if (navigable) el.setAttribute("tabindex", "0")
+  else el.addClass("bb-hub-row-unclickable")
+  if (entry.isExternal) el.addClass("bb-hub-row-external")
+  const main = dom.create("span")
+  main.addClass("bb-hub-row-main")
+  const name = dom.create("span")
+  name.addClass("bb-hub-row-name")
+  name.textContent = entry.name
+  const meta = dom.create("span")
+  meta.addClass("bb-hub-row-meta")
+  meta.textContent = entry.file.length > 0 ? `${entry.file}:${entry.line}` : "(external)"
+  main.appendChild(name)
+  main.appendChild(meta)
+  el.appendChild(main)
+  relChips(entry, el, dom)
+  groupEnrichment(entry, el, dom)
+  const chevron = dom.create("span")
+  chevron.addClass("bb-hub-chevron")
+  chevron.setAttribute("aria-hidden", "true")
+  chevron.textContent = navigable ? "›" : "·"
+  el.appendChild(chevron)
+  return el
+}
+
+/** Tree view (U3): a real expandable tree. Each side is its own branch under
+ *  the root symbol; nesting follows the placement law above; every row
+ *  renders exactly once inside its symbol's node. */
 export function renderHubTree(grouped: GroupedHub, dom: GraphDom): RenderStats {
   const section = hubSection(grouped, dom, "bb-hub-tree")
   const all = allEntries(grouped)
@@ -768,13 +945,30 @@ export function renderHubTree(grouped: GroupedHub, dom: GraphDom): RenderStats {
     hubEmpty(section, dom)
     return { nodesRendered: 0, nodesTotal: 0, edgesRendered: 0, edgesTotal: 0, nodesTruncated: false, edgesTruncated: false }
   }
-  const depthOf = (item: { entry: GroupedHubEntry }): number => (item.entry.rows.length > 0 ? Math.min(...item.entry.rows.map((r) => r.depth)) : 0)
-  all.sort((a, b) => {
-    if (a.dir !== b.dir) return a.dir === "caller" ? -1 : 1
-    const d = depthOf(a) - depthOf(b)
-    if (d !== 0) return d
-    return a.entry.file.localeCompare(b.entry.file) || a.entry.name.localeCompare(b.entry.name)
-  })
-  for (const item of all) section.appendChild(groupRow(item.entry, item.dir, dom))
-  return { nodesRendered: all.length, nodesTotal: all.length, edgesRendered: 0, edgesTotal: 0, nodesTruncated: false, edgesTruncated: false }
+  section.setAttribute("data-root-symbol", grouped.root.symbolId)
+  const callers = sideGroups(grouped, "caller")
+  const callees = sideGroups(grouped, "callee")
+  // Anchor map per side: group G (side S) hangs under its placement parent
+  // when that parent is a rendered group on the SAME side; otherwise G is a
+  // top-level child of the root (its parent is root or an unrendered depth-0
+  // cascade target — fold declared, never fabricated). One group has exactly
+  // one placement parent, so the child relation is a function — a strict
+  // tree, never a DAG (a second render would double-count usages, §13.2).
+  const callerKids = new Map<string, GroupedHubEntry[]>()
+  const calleeKids = new Map<string, GroupedHubEntry[]>()
+  for (const side of [callers, callees]) {
+    const map = side.dir === "caller" ? callerKids : calleeKids
+    for (const g of side.groups) {
+      const p = placementOf(g, grouped.root.symbolId)
+      if (p.parentSymbolId !== grouped.root.symbolId && side.byId.has(p.parentSymbolId)) {
+        if (!map.has(p.parentSymbolId)) map.set(p.parentSymbolId, [])
+        map.get(p.parentSymbolId)!.push(g)
+      }
+    }
+  }
+  const rowsRendered = { count: 0 }
+  treeSideInto(callers, grouped.root.symbolId, section, dom, callerKids, rowsRendered)
+  treeSideInto(callees, grouped.root.symbolId, section, dom, calleeKids, rowsRendered)
+  const total = grouped.counts.callerGroups + grouped.counts.calleeGroups
+  return { nodesRendered: rowsRendered.count, nodesTotal: total, edgesRendered: 0, edgesTotal: 0, nodesTruncated: grouped.summary.truncated, edgesTruncated: grouped.summary.truncated }
 }

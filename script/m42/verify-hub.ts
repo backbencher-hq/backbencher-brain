@@ -455,9 +455,9 @@ console.log("\nM: hub renderer mutants (source-copy, M26.W1 pattern)")
       label: "AH5 truncation",
     },
     {
-      name: "M3: callees dropped (allEntries ignores the callee list)",
-      from: "    ...grouped.callees.map((entry) => ({ entry, dir: \"callee\" as const })),",
-      to: "    // callees dropped",
+      name: "M3: callees dropped (treeSideInto never emits the callee side)",
+      from: "  treeSideInto(callees, grouped.root.symbolId, section, dom, calleeKids, rowsRendered)",
+      to: "  // callee side dropped",
       probe: (m) => {
         const { html } = renderInto(m.renderHubTree, detGrouped)
         return !html.includes("data-symbol-id=\"sym:cal\"")

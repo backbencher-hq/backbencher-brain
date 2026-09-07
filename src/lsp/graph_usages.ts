@@ -47,6 +47,18 @@ export interface GroupedRow {
   bridgeMechanism?: string
   evidenceClass?: string
   enrichment?: NonNullable<GraphEdge["metadata"]>["enrichment"]
+  /** M44.U3 (issue #690): the tree parent of this row's group — the symbol
+   *  the edge connects toward the root (callers: edge.to; callees:
+   *  edge.from), or the root symbol id itself for a depth-0 row. Every
+   *  expanded node is itself a caller/callee group, so this id always
+   *  resolves to a rendered tree position — a renderer that nests a row
+   *  under a parent that does not own it fabricates a level (harness
+   *  AH7-negative). Kept per ROW because one symbol group can legitimately
+   *  own rows toward several parents (a diamond); the tree then shows the
+   *  symbol once per parent position with each position's own rows. */
+  parentSymbolId: string
+  /** Display name of the parent symbol (index-stored, never parsed). */
+  parentName: string
 }
 
 /** A per-symbol usage group: the caller/callee symbol ONCE, with the full
@@ -145,7 +157,7 @@ function sortedGroups(groups: UsageGroup[]): UsageGroup[] {
   )
 }
 
-function groupSide(edges: GraphEdge[], nodes: Record<string, GraphNode>, pick: (e: GraphEdge) => string): Map<string, UsageGroup> {
+function groupSide(edges: GraphEdge[], nodes: Record<string, GraphNode>, pick: (e: GraphEdge) => string, parentOf: (e: GraphEdge) => string): Map<string, UsageGroup> {
   const byNode = new Map<string, UsageGroup>()
   for (const edge of edges) {
     const nodeId = pick(edge)
@@ -154,6 +166,14 @@ function groupSide(edges: GraphEdge[], nodes: Record<string, GraphNode>, pick: (
       // Traceability law (M26.W2): an edge whose endpoint is not in the node
       // registry can never render. Fail loud — never silently drop.
       throw new Error(`bb/graph: usages grouping consistency failure — edge ${edge.from} -> ${edge.to} has no registered node ${nodeId}`)
+    }
+    // Tree parent must resolve too — a row whose parent endpoint is missing
+    // from the registry would let a renderer nest it under a fabricated
+    // parent (U3 AH7-negative). The parent is ALWAYS root or an expanded
+    // caller/callee, both registered, so a miss is an engine contract break.
+    const parentId = parentOf(edge)
+    if (nodes[parentId] === undefined) {
+      throw new Error(`bb/graph: usages grouping consistency failure — edge ${edge.from} -> ${edge.to} has no registered parent node ${parentId}`)
     }
     let group = byNode.get(nodeId)
     if (group === undefined) {
@@ -171,7 +191,7 @@ function groupSide(edges: GraphEdge[], nodes: Record<string, GraphNode>, pick: (
       }
       byNode.set(nodeId, group)
     }
-    group.rows.push({
+      group.rows.push({
       rowId: edge.rowId,
       relationshipType: edge.relationshipType,
       callSite: edge.callSite,
@@ -181,6 +201,8 @@ function groupSide(edges: GraphEdge[], nodes: Record<string, GraphNode>, pick: (
       bridgeMechanism: edge.bridgeMechanism,
       evidenceClass: edge.metadata?.evidenceClass,
       enrichment: edge.metadata?.enrichment,
+      parentSymbolId: parentId,
+      parentName: nodes[parentId]!.name,
     })
   }
   return byNode
@@ -200,8 +222,13 @@ function finalize(byNode: Map<string, UsageGroup>): UsageGroup[] {
  *  whole of the grouping decision — a renderer that repeats a symbol row,
  *  drops a row, or miscounts a group has broken a law this module enforces. */
 export function groupUsagesEdges(result: GraphTraversalResult): { callers: UsageGroup[]; callees: UsageGroup[] } {
-  const callerMap = groupSide(result.callers ?? [], result.nodes ?? {}, (e) => e.from)
-  const calleeMap = groupSide(result.callees ?? [], result.nodes ?? {}, (e) => e.to)
+  // Tree parent semantics (U3): an edge's group keys on one endpoint and its
+  // TREE position hangs under the OTHER endpoint — the symbol one hop closer
+  // to the root. Caller edge Y→X: group Y (the caller), parent X (Y calls X,
+  // X calls root). Callee edge X→Y: group Y (the callee), parent X (X calls
+  // Y, root calls X). Depth-0 rows therefore parent to the root symbol id.
+  const callerMap = groupSide(result.callers ?? [], result.nodes ?? {}, (e) => e.from, (e) => e.to)
+  const calleeMap = groupSide(result.callees ?? [], result.nodes ?? {}, (e) => e.to, (e) => e.from)
   return { callers: finalize(callerMap), callees: finalize(calleeMap) }
 }
 

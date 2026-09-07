@@ -330,10 +330,10 @@ async function main(): Promise<void> {
     const hubModel = {
       root: { symbolId: "sym:root", name: "root", file: "root.ts", language: "typescript", line: 1 },
       callers: [
-        { symbolId: "sym:c1", name: "caller1", file: "caller1.ts", language: "typescript", symbolType: "function", line: 1, isExternal: false, relationshipTypes: [{ type: "calls", occurrences: 1 }], occurrences: 1, rows: [{ rowId: "rel-0", relationshipType: "calls", depth: 0, confidence: 0.4, enrichment: { role: "consumer", inferredAt: 1 } }] },
-        { symbolId: "sym:c2", name: "caller2", file: "caller2.ts", language: "typescript", symbolType: "function", line: 1, isExternal: false, relationshipTypes: [{ type: "calls", occurrences: 1 }], occurrences: 1, rows: [{ rowId: "rel-1", relationshipType: "calls", depth: 0, confidence: 0.9 }] },
+        { symbolId: "sym:c1", name: "caller1", file: "caller1.ts", language: "typescript", symbolType: "function", line: 1, isExternal: false, relationshipTypes: [{ type: "calls", occurrences: 1 }], occurrences: 1, rows: [{ rowId: "rel-0", relationshipType: "calls", depth: 0, confidence: 0.4, parentSymbolId: "sym:root", parentName: "root", enrichment: { role: "consumer", inferredAt: 1 } }] },
+        { symbolId: "sym:c2", name: "caller2", file: "caller2.ts", language: "typescript", symbolType: "function", line: 1, isExternal: false, relationshipTypes: [{ type: "calls", occurrences: 1 }], occurrences: 1, rows: [{ rowId: "rel-1", relationshipType: "calls", depth: 0, confidence: 0.9, parentSymbolId: "sym:root", parentName: "root" }] },
       ],
-      callees: [{ symbolId: "sym:x", name: "x", file: "x.ts", language: "typescript", symbolType: "function", line: 1, isExternal: false, relationshipTypes: [{ type: "calls", occurrences: 1 }], occurrences: 1, rows: [{ rowId: "rel-2", relationshipType: "calls", depth: 0, confidence: 0.8 }] }],
+      callees: [{ symbolId: "sym:x", name: "x", file: "x.ts", language: "typescript", symbolType: "function", line: 1, isExternal: false, relationshipTypes: [{ type: "calls", occurrences: 1 }], occurrences: 1, rows: [{ rowId: "rel-2", relationshipType: "calls", depth: 0, confidence: 0.8, parentSymbolId: "sym:root", parentName: "root" }] }],
       fileLevel: { imports: [], exports: [] },
       counts: { callerGroups: 2, calleeGroups: 1, callerRows: 2, calleeRows: 1, fileLevelRows: 0 },
       summary: { truncated: false, crossLanguageGroups: 0 },
@@ -353,13 +353,13 @@ async function main(): Promise<void> {
     }
     const listFile = renderHubOnce(core.renderHubList, "file")
     const findingsListFile = H.runHubHarness(hubHarnessModel, listFile, { sectionClass: "bb-hub-list", group: "file", assertGrouping: true })
-    check("P5: real core list-by-file passes AH1–AH5 clean (grouped)", findingsListFile.every((f) => f.ok), findingsListFile.filter((f) => !f.ok).map((f) => `${f.assertion}: ${f.detail}`).join("; "))
+    check("P5: real core list-by-file passes AH1–AH9 clean (grouped)", findingsListFile.every((f) => f.ok), findingsListFile.filter((f) => !f.ok).map((f) => `${f.assertion}: ${f.detail}`).join("; "))
     const listCaller = renderHubOnce(core.renderHubList, "caller")
     const findingsListCaller = H.runHubHarness(hubHarnessModel, listCaller, { sectionClass: "bb-hub-list", group: "caller", assertGrouping: true })
-    check("P5: real core list-by-caller passes AH1–AH5 clean (grouped)", findingsListCaller.every((f) => f.ok), findingsListCaller.filter((f) => !f.ok).map((f) => `${f.assertion}: ${f.detail}`).join("; "))
+    check("P5: real core list-by-caller passes AH1–AH9 clean (grouped)", findingsListCaller.every((f) => f.ok), findingsListCaller.filter((f) => !f.ok).map((f) => `${f.assertion}: ${f.detail}`).join("; "))
     const tree = renderHubOnce(core.renderHubTree)
     const findingsTree = H.runHubHarness(hubHarnessModel, tree, { sectionClass: "bb-hub-tree" })
-    check("P5: real core call tree passes AH1–AH5 clean (grouped)", findingsTree.every((f) => f.ok), findingsTree.filter((f) => !f.ok).map((f) => `${f.assertion}: ${f.detail}`).join("; "))
+    check("P5: real core call tree passes AH1–AH9 clean (grouped)", findingsTree.every((f) => f.ok), findingsTree.filter((f) => !f.ok).map((f) => `${f.assertion}: ${f.detail}`).join("; "))
     check("P5: hub renders are deterministic (tree twice byte-identical)", H.serializeHarnessNode(renderHubOnce(core.renderHubTree)) === H.serializeHarnessNode(renderHubOnce(core.renderHubTree)))
 
     // --- Liars: hand-built hub documents that MUST fail the harness --------
@@ -479,6 +479,119 @@ async function main(): Promise<void> {
       const doc = withGroups(s, [["caller1.ts", [rowC1()]], ["caller2.ts", [rowC2()]], ["x.ts", [rowX()]]], [5, 1, 1])
       const findings = H.runHubHarness(hubHarnessModel, toHarness(doc), { sectionClass: "bb-hub-list", group: "file" })
       check("P5 liar: group header miscount caught (AH6)", findings.some((f) => !f.ok && f.assertion.startsWith("AH6")), findings.map((f) => `${f.assertion}:${f.ok}`).join("; "))
+    }
+
+    // --- U3 (M44.U3): the call tree nests honestly — AH7–AH9 -------------
+    // Positive: the real core nests a deeper caller under its placement
+    // parent (never flat, never duplicated) with declared expansion state.
+    const nestedHub = {
+      root: { symbolId: "sym:root", name: "root", file: "root.ts", language: "typescript", line: 1 },
+      callers: [
+        { symbolId: "sym:mid", name: "mid", file: "mid.ts", language: "typescript", symbolType: "function", line: 2, isExternal: false, relationshipTypes: [{ type: "calls", occurrences: 1 }], occurrences: 1, rows: [{ rowId: "rel-m", relationshipType: "calls", depth: 0, confidence: 0.9, parentSymbolId: "sym:root", parentName: "root" }] },
+        { symbolId: "sym:leaf", name: "leaf", file: "leaf.ts", language: "typescript", symbolType: "function", line: 3, isExternal: false, relationshipTypes: [{ type: "calls", occurrences: 1 }], occurrences: 1, rows: [{ rowId: "rel-l", relationshipType: "calls", depth: 1, confidence: 0.9, parentSymbolId: "sym:mid", parentName: "mid" }] },
+      ],
+      callees: [],
+      fileLevel: { imports: [], exports: [] },
+      counts: { callerGroups: 2, calleeGroups: 0, callerRows: 2, calleeRows: 0, fileLevelRows: 0 },
+      summary: { truncated: false, crossLanguageGroups: 0 },
+    }
+    const nestedHarnessModel: H.HubHarnessModel = {
+      rows: [
+        { symbolId: "sym:mid", dir: "caller", name: "mid", file: "mid.ts", line: 2, rowIds: ["rel-m"], types: [{ type: "calls", occurrences: 1, tier: "structural" }], enriched: false, depth: 0, treeParent: "" },
+        { symbolId: "sym:leaf", dir: "caller", name: "leaf", file: "leaf.ts", line: 3, rowIds: ["rel-l"], types: [{ type: "calls", occurrences: 1, tier: "structural" }], enriched: false, depth: 1, treeParent: "sym:mid" },
+      ],
+      truncated: false,
+      totalIfKnown: null,
+    }
+    const nestedTree = (() => {
+      const r = new El("div")
+      const d = { create: (t: string) => new El(t), root: () => r }
+      core.renderHubTree(nestedHub as never, d as never)
+      return toHarness(r)
+    })()
+    const nestedFindings = H.runHubHarness(nestedHarnessModel, nestedTree, { sectionClass: "bb-hub-tree" })
+    check("P5: real core nests a deeper caller under its parent (AH7) with declared expansion (AH8) and honest depth/level (AH9)", nestedFindings.every((f) => f.ok), nestedFindings.filter((f) => !f.ok).map((f) => `${f.assertion}: ${f.detail}`).join("; "))
+    // One symbol per placement, exactly once per side: the deeper row's count
+    // never double-counts the parent (AH1 dupes guard, exercised positively).
+    const treeText = H.serializeHarnessNode(nestedTree)
+    check("P5: nested tree renders each symbol exactly once (no DAG duplication)", (treeText.match(/data-symbol-id=\"sym:leaf\"/g) ?? []).length === 1 && (treeText.match(/data-symbol-id=\"sym:mid\"/g) ?? []).length === 1)
+
+    // Tree DOM builders for the U3 liars: a bb-hub-tree section whose rows
+    // can nest under parent rows via children wrappers.
+    const treeRowEl = (symbolId: string, dir: string, name: string, file: string, line: number, rowIds: string[], parentId: string, parentName: string, level: number, depth: number): any => {
+      const row = mkRow(symbolId, dir, name, file, line, rowIds, [{ type: "calls", occurrences: rowIds.length, tier: "structural" }])
+      row.addClass("bb-hub-tree-node")
+      row.setAttribute("data-level", String(level))
+      row.setAttribute("data-depth", String(depth))
+      row.setAttribute("data-parent-id", parentId)
+      row.setAttribute("data-parent-name", parentName)
+      return row
+    }
+    const treeSection = (): El => {
+      const s = new El("div"); s.addClass("bb-hub"); s.addClass("bb-hub-tree")
+      const sum = new El("div"); sum.addClass("bb-hub-summary"); sum.textContent = "1 caller · 0 callees"; s.appendChild(sum)
+      return s
+    }
+    const withCallerSubtree = (s: El, top: any, kid: any): El => {
+      const sub = new El("div"); sub.addClass("bb-hub-subtree"); sub.setAttribute("data-dir", "caller")
+      sub.appendChild(top)
+      const wrap = new El("div"); wrap.addClass("bb-hub-children"); wrap.addClass("bb-hub-collapsed")
+      top.appendChild(wrap)
+      wrap.appendChild(kid)
+      s.appendChild(sub)
+      return s
+    }
+    const rowMid = () => treeRowEl("sym:mid", "caller", "mid", "mid.ts", 2, ["rel-m"], "sym:root", "root", 0, 0)
+    const rowLeaf = () => treeRowEl("sym:leaf", "caller", "leaf", "leaf.ts", 3, ["rel-l"], "sym:mid", "mid", 1, 1)
+    // liar 9 (U3 AH7): a deeper row FLATTENED to the top level — the model
+    // says it nests under sym:mid; the liar renders it as a top-level row.
+    {
+      const s = treeSection()
+      const sub = new El("div"); sub.addClass("bb-hub-subtree"); sub.setAttribute("data-dir", "caller")
+      sub.appendChild(rowMid())
+      sub.appendChild(rowLeaf()) // flattened sibling — fabricates a level
+      s.appendChild(sub)
+      const findings = H.runHubHarness(nestedHarnessModel, toHarness(s), { sectionClass: "bb-hub-tree" })
+      check("P5 liar: deeper row flattened to top level caught (AH7)", findings.some((f) => !f.ok && f.assertion.startsWith("AH7-9")), findings.map((f) => `${f.assertion}:${f.ok}`).join("; "))
+    }
+    // liar 10 (U3 AH7): nested under the WRONG parent (data-parent-id says
+    // sym:mid but the DOM nests it under a fabricated sym:other node).
+    {
+      const s = treeSection()
+      const other = treeRowEl("sym:other", "caller", "other", "other.ts", 9, ["rel-o"], "sym:root", "root", 0, 0)
+      const sub = new El("div"); sub.addClass("bb-hub-subtree"); sub.setAttribute("data-dir", "caller")
+      const wrap = new El("div"); wrap.addClass("bb-hub-children")
+      other.appendChild(wrap)
+      wrap.appendChild(rowLeaf()) // leaf's true parent is mid, not other
+      sub.appendChild(rowMid())
+      sub.appendChild(other)
+      s.appendChild(sub)
+      const findings = H.runHubHarness(nestedHarnessModel, toHarness(s), { sectionClass: "bb-hub-tree" })
+      check("P5 liar: deeper row nested under a non-parent caught (AH7)", findings.some((f) => !f.ok && f.assertion.startsWith("AH7-9")), findings.map((f) => `${f.assertion}:${f.ok}`).join("; "))
+    }
+    // liar 11 (U3 AH8): a parent with model children renders NO expander —
+    // the subtree exists but the user is never told it can open.
+    {
+      const noExp = treeRowEl("sym:mid", "caller", "mid", "mid.ts", 2, ["rel-m"], "sym:root", "root", 0, 0)
+      const s = withCallerSubtree(treeSection(), noExp, rowLeaf())
+      const findings = H.runHubHarness(nestedHarnessModel, toHarness(s), { sectionClass: "bb-hub-tree" })
+      check("P5 liar: parent without a declared expander caught (AH8)", findings.some((f) => !f.ok && f.assertion.startsWith("AH7-9")), findings.map((f) => `${f.assertion}:${f.ok}`).join("; "))
+    }
+    // liar 12 (U3 AH1): the same symbol rendered TWICE in the tree (DAG-style
+    // duplication would double-count usages, §13.2).
+    {
+      const s = treeSection()
+      const sub = new El("div"); sub.addClass("bb-hub-subtree"); sub.setAttribute("data-dir", "caller")
+      const midRow = rowMid()
+      const dupLeaf = rowLeaf()
+      const wrap = new El("div"); wrap.addClass("bb-hub-children")
+      midRow.appendChild(wrap)
+      wrap.appendChild(dupLeaf) // leaf nested under mid (its true parent)
+      sub.appendChild(midRow)
+      sub.appendChild(dupLeaf) // ...and rendered AGAIN at the top level
+      s.appendChild(sub)
+      const findings = H.runHubHarness(nestedHarnessModel, toHarness(s), { sectionClass: "bb-hub-tree" })
+      check("P5 liar: duplicated tree symbol caught (AH1 dupes)", findings.some((f) => !f.ok && f.assertion.startsWith("AH1")), findings.map((f) => `${f.assertion}:${f.ok}`).join("; "))
     }
   }
 

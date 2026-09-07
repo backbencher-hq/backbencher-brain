@@ -60,6 +60,11 @@ repeats the same symbol. The v2 usages response groups per symbol
 - `rows[]` — every stored row behind the group, declared and traceable
   (`rowId`, `relationshipType`, `callSite`, `confidence`, `depth`, …).
   Nothing is dropped: the served row-id set equals the stored set.
+- M44.U3 added the tree-parent fields to every group row: `parentSymbolId`
+  + `parentName` — the true edge endpoint one hop toward the root (callers:
+  the row's `to`; callees: the row's `from`; depth-0 rows parent to the root
+  symbol). The hub tree nests from these and never invents a level.
+
 - `fileLevel` — `{ imports, exports }`: file-level rows (NULL source symbol,
   module-specifier identity) in DECLARED, labeled sections — never merged
   into symbol rows, never dropped (§13.5).

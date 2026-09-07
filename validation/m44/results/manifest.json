@@ -93,7 +93,7 @@
       "code": "U3",
       "githubIssue": 690,
       "tool": "hub-tree",
-      "status": "planned",
+      "status": "verified",
       "scope": "renderHubTree rework in the ONE renderer core: expandable tree with per-node occurrence counts, declared expansion, clickable leaves (H6 reveal), truncation declared in-tree",
       "acceptanceCriteria": [
         "DOM harness positive/negative on the fixture tree (nesting depth, counts, clickable leaves, truncation marker)",
@@ -104,7 +104,17 @@
         "U3 evidence (verified, current HEAD)",
         "tree harness positive/negative records",
         "in-editor navigation leg evidence"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see U3.json",
+        "verifierCommand": "npx tsx script/m44/verify-hub-tree.ts",
+        "evidenceFile": "U3.json",
+        "passed": 25,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 5
+      }
     },
     {
       "code": "U4",
