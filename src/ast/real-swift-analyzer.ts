@@ -501,15 +501,30 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     // Name: the type identifier. For extensions it is the EXTENDED type
     // (inside a user_type), and the extension has NO owner (never self-owner).
+    // SWIFTD19: a dotted extension target (`extension Outer.Inner`) names the
+    // LEAF type (Inner) — the user_type holds sibling type_identifiers in
+    // source order, so the leaf is the LAST one. The pre-fix code took the
+    // FIRST (Outer), minting an extension symbol that collided with the
+    // container type's symbol id and mis-attributing every member.
     let nameNode: Node | null = null
     if (kind === ASTEngine.SymbolKind.Extension) {
-      nameNode = this.findDescendantTypeIdentifier(node)
+      const ut = this.findChildByType(node, "user_type")
+      if (ut) {
+        nameNode = this.lastTypeIdentifier(ut)
+      } else {
+        nameNode = this.findDescendantTypeIdentifier(node)
+      }
     } else {
       nameNode = this.findChildByType(node, "type_identifier") || this.findChildByType(node, "user_type") || this.firstNamedChild(node)
     }
     if (!nameNode) return parent
 
     let rawName = nameNode.type === "user_type" && nameNode.namedChildCount > 0 ? nameNode.namedChild(0)!.text : nameNode.text
+    // Dotted name fallback: leaf of the user_type (last type_identifier).
+    if (kind === ASTEngine.SymbolKind.Extension && nameNode.type === "user_type") {
+      const leaf = this.lastTypeIdentifier(nameNode)
+      if (leaf) rawName = leaf.text
+    }
 
     const meta: Record<string, any> = {
       hasGenerics: this.hasChildType(node, "type_parameters"),
@@ -701,13 +716,23 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     const kind = parent ? ASTEngine.SymbolKind.Property : ASTEngine.SymbolKind.Variable
 
-    // Name from the binding pattern: `var x: Int` / `let x = ...` — the
-    // pattern's simple_identifier (first identifier child).
-    const patternNode = this.findChildByType(node, "pattern")
-    if (patternNode) {
-      const idNode = this.findChildByType(patternNode, "simple_identifier") || this.findChildByType(patternNode, "identifier") || this.firstNamedChild(patternNode)
-      if (idNode) {
-        this.createSymbol(idNode.text, kind, idNode, parent, symbols, meta, vis)
+    // SWIFTD18: multi-binding declarations (`var a = 1, b = 2`, `let x = 1,
+    // y = 2`) carry one sibling `pattern` child PER binding in the pinned
+    // grammar (probe-verified 2026-09). The pre-fix code symbolized only the
+    // FIRST pattern, silently dropping every additional property/variable.
+    // (Locals remain non-symbols by contract — this handler returns early for
+    // non-type parents before reaching here.)
+    const patternNodes: Node[] = []
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (c && c.type === "pattern") patternNodes.push(c)
+    }
+    if (patternNodes.length > 0) {
+      for (const pn of patternNodes) {
+        const idNode = this.findChildByType(pn, "simple_identifier") || this.findChildByType(pn, "identifier") || this.firstNamedChild(pn)
+        if (idNode) {
+          this.createSymbol(idNode.text, kind, idNode, parent, symbols, meta, vis)
+        }
       }
     } else {
       const idNode = this.findChildByType(node, "simple_identifier") || this.findChildByType(node, "identifier")
@@ -831,7 +856,15 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     // `self.helper()` is a METHOD CALL — the callee of a call_expression
     // emits `calls` via handleCall, never also `uses` (member reads only,
     // the M12.21 contract). Rust M12.18 uses the same parent-type gate.
-    if (node.parent && node.parent.type === "call_expression") return
+    // SWIFTD17 exception: a SUBSCRIPT call (`self.items[key]`) is a property
+    // ACCESS, not a method invocation — the base navigation IS a genuine
+    // container read and must emit uses. Family precedent (probe-verified
+    // 2026-09): php and objc both emit container-read uses for subscript
+    // reads AND writes (`$this->items[$i]`, `self.items[i] = v`). The
+    // pre-fix gate suppressed the base because it is the funcNode of a
+    // call_expression — subscript and method calls were not distinguished.
+    const par = node.parent
+    if (par && par.type === "call_expression" && !this.isSubscriptRead(par)) return
 
     const leaf = this.navigationLeaf(node)
     if (!leaf) return
@@ -1252,17 +1285,51 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     return bases
   }
 
+  /**
+   * Leaf of a (possibly dotted) user_type: the LAST sibling type_identifier
+   * (`Outer.Inner` -> Inner, `Foundation.URLSession` -> URLSession). The
+   * user_type node holds its dotted segments as sibling type_identifier
+   * children in source order (probe-verified 2026-09), so the leaf is simply
+   * the last one. SWIFTD19: the pre-fix code returned the FIRST segment,
+   * fabricating extends/implements edges to the wrong (module/container)
+   * name — e.g. `class Sub2: Foundation.URLSession` became extends Sub2 ->
+   * Foundation, and `extension Foo: SomeMod.Proto` became implements Foo ->
+   * SomeMod.
+   */
+  private lastTypeIdentifier(ut: Node): Node | null {
+    let last: Node | null = null
+    for (let i = 0; i < ut.namedChildCount; i++) {
+      const c = ut.namedChild(i)
+      if (c && c.type === "type_identifier") last = c
+    }
+    if (last) return last
+    // Fallback for non-flat user_types (nested user_type in user_type).
+    const stack: Node[] = [ut]
+    let best: Node | null = null
+    while (stack.length > 0) {
+      const c = stack.pop()!
+      if (c.type === "type_identifier") {
+        if (!best || c.startIndex >= best.startIndex) best = c
+      }
+      for (let i = c.namedChildCount - 1; i >= 0; i--) {
+        const child = c.namedChild(i)
+        if (child) stack.push(child)
+      }
+    }
+    return best
+  }
+
   private extractBaseName(spec: Node): string | null {
-    // `user_type > type_identifier` — take the leaf type identifier.
+    // `user_type > type_identifier` — take the LEAF type identifier
+    // (SWIFTD19: last segment of dotted names, family leaf convention).
     for (let i = 0; i < spec.namedChildCount; i++) {
       const c = spec.namedChild(i)
       if (!c) continue
       if (c.type === "type_identifier") return c.text
       if (c.type === "user_type") {
-        const leaf = this.findChildByType(c, "type_identifier")
+        const leaf = this.lastTypeIdentifier(c)
         if (leaf) return leaf.text
       }
-      if (c.type === "type_identifier" && c.text) return c.text
     }
     const txt = spec.text.trim()
     return txt && !txt.includes(" ") ? txt : null
