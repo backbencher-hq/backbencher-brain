@@ -29,8 +29,15 @@ import { findDeclaringParent, type OverrideCompanion } from "./override-context"
 //   Relationships
 //     - contains: REAL ownership only (type -> member). Locals carry no
 //       owner, so they emit nothing.
-//     - extends:  first inheritance base of class/struct/actor (superclass)
-//     - implements: remaining bases (adopted protocols)
+//     - extends:  class/struct/actor superclass (first base when the kind
+//       resolves to a class) AND protocol -> inherited protocol parents
+//       (AnyObject/Any class-constraint markers excluded — family contract:
+//       csharp interface IX : IA / java interface extends / objc protocol <A>)
+//     - implements: adopted protocols — remaining class bases, EVERY
+//       extension base (Swift forbids redundant conformances, so extension
+//       adoptions are always additional), and every enum base except a
+//       stdlib raw-value type in first slot (String/Int/...)
+//       (`enum E: String, Codable` -> implements E -> Codable)
 //     - calls:    member calls resolve to the LEAF target (`users.first` ->
 //       `first`, `[1,2].map` -> `map`); source = enclosing method. Bare
 //       builtins (print/String/Int/...) are filtered (C# BuiltinsAreFiltered
@@ -44,6 +51,18 @@ import { findDeclaringParent, type OverrideCompanion } from "./override-context"
 //       semantics)
 //     - references: file-scope imports -> `root -> module` (ObjC M12.19)
 // ============================================================================
+
+// Stdlib raw-value types of a raw-representable enum (`enum E: String, Codable`).
+// Only a stdlib-named FIRST base is the raw value; every other base (and a
+// non-stdlib first base like `enum E: Error`) is a protocol conformance.
+// (Swift also allows custom RawRepresentable raw types — unresolvable
+// statically; the stdlib gate is the deterministic rule, documented SWIFTD15.)
+const ENUM_RAW_VALUE_TYPES = new Set([
+  "String", "Character",
+  "Int", "Int8", "Int16", "Int32", "Int64",
+  "UInt", "UInt8", "UInt16", "UInt32", "UInt64",
+  "Float", "Float32", "Float64", "Double",
+])
 
 const MEMBER_OWNER_KINDS = new Set([
   ASTEngine.SymbolKind.Class,
@@ -61,6 +80,12 @@ const BUILTIN_BARE_CALLS = new Set([
   "print", "debugPrint", "assert", "precondition", "fatalError",
   "String", "Int", "Double", "Float", "Bool", "Array", "Dictionary",
   "Set", "Optional", "Any", "Void", "Character", "Data", "Date",
+  // Fixed-width stdlib numerics (SWIFTD16): trivial value construction, same
+  // class as Int/Double — filtered for consistency (Int8-64/UInt8-64 were
+  // previously missed while Int was filtered; corpus: UInt8 244 / Int64 72 /
+  // UInt16 47 bare constructions per swift-nio 200-file census).
+  "UInt", "UInt8", "UInt16", "UInt32", "UInt64",
+  "Int8", "Int16", "Int32", "Int64",
   // `defer { }` parses as call_expression(simple_identifier "defer", lambda_literal)
   // in the pinned grammar — it is a control keyword, never a real function call.
   "defer",
@@ -426,8 +451,29 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     const vis = this.getVisibility(node)
     const symbol = this.createSymbol(nameNode.text, ASTEngine.SymbolKind.Interface, nameNode, parent, symbols, meta, vis)
 
-    // Protocol inheritance is NOT materialized as extends/implements (ObjC
-    // M12.19 precedent: `@protocol A <NSObject>` emits no edge).
+    // Protocol inheritance IS materialized as extends edges (family
+    // contract, probe-verified 2026-09: csharp `interface IX : IA` ->
+    // extends, java `interface IX extends IA` -> extends, objc
+    // `@protocol B <A>` -> extends). The AnyObject / Any markers in the
+    // inheritance list are CLASS-CONSTRAINT annotations, not protocol
+    // parents — excluded (probe-verified: `protocol P: AnyObject, B` in
+    // swift-nio parses AnyObject as an inheritance_specifier).
+    const bases = this.extractBases(node)
+    const parents: string[] = []
+    for (const base of bases) {
+      if (base === "AnyObject" || base === "Any") continue
+      parents.push(base)
+      relationships.push({
+        type: ASTEngine.RelationshipType.Extends,
+        source: symbol.name,
+        target: base,
+        isExternal: true,
+        weight: 1,
+        confidence: 1.0,
+        metadata: { isImplements: false },
+      })
+    }
+    if (parents.length > 0) classHierarchy.set(symbol.name, parents)
     return symbol
   }
 
@@ -474,18 +520,20 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     const vis = this.getVisibility(node)
 
-    // Enum raw type (`enum Status: String`) -> metadata ONLY, no edge.
+    // Enum raw value (`enum Status: String`) -> metadata ONLY when the
+    // first base names a stdlib raw-value type. A protocol in first slot
+    // (`enum E: Error`, 46 corpus sites) is a CONFORMANCE, never a raw type
+    // — the pre-SWIFTD15 code minted bogus rawType=Error payload there.
     if (kind === ASTEngine.SymbolKind.Enum) {
       const rawType = this.findEnumRawType(node)
-      if (rawType) meta.rawType = rawType
+      if (rawType && ENUM_RAW_VALUE_TYPES.has(rawType)) meta.rawType = rawType
     }
 
     const symbol = this.createSymbol(rawName, kind, nameNode, parent, symbols, meta, vis)
 
-    // extends / implements for class/struct/actor only.
-    if (kind !== ASTEngine.SymbolKind.Enum && kind !== ASTEngine.SymbolKind.Extension) {
-      const bases = this.extractBases(node)
-      const parents: string[] = []
+    const bases = this.extractBases(node)
+    const parents: string[] = []
+    if (kind === ASTEngine.SymbolKind.Class || kind === ASTEngine.SymbolKind.Struct || kind === ASTEngine.SymbolKind.Actor) {
       // Swift semantics (probe-verified fixture #266): ONLY a class can have
       // a superclass. A class's FIRST base is extends ONLY IF it is actually
       // a class — a first-base protocol is still an adoption (implements).
@@ -512,6 +560,43 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
         })
       }
       if (parents.length > 0) classHierarchy.set(symbol.name, parents)
+    } else if (kind === ASTEngine.SymbolKind.Extension) {
+      // SWIFTD14: Swift extensions CANNOT add a superclass, and the compiler
+      // forbids redundant conformances — every extension base is an ADDITIONAL
+      // protocol adoption (implements). Corpus: 380 sites in swift-nio that
+      // previously emitted nothing (csharp partial-class conformance is the
+      // managed-OO analog and IS materialized).
+      for (const base of bases) {
+        parents.push(base)
+        relationships.push({
+          type: ASTEngine.RelationshipType.Implements,
+          source: symbol.name,
+          target: base,
+          isExternal: true,
+          weight: 0.9,
+          confidence: 1.0,
+          metadata: { isImplements: true },
+        })
+      }
+    } else if (kind === ASTEngine.SymbolKind.Enum) {
+      // SWIFTD15: enum conformances. The raw value (first base, stdlib-named
+      // only) is metadata, NOT an edge; every remaining base is an adopted
+      // protocol. Corpus: 181 enums carry bases; ~93% first-slot are
+      // protocols (Sendable 76 / Error 46 / Hashable 22 / Equatable 17).
+      // Mirrors dart DARTD15 (enhanced-enum conformances -> implements).
+      const skipFirst = bases.length > 0 && ENUM_RAW_VALUE_TYPES.has(bases[0])
+      for (let i = skipFirst ? 1 : 0; i < bases.length; i++) {
+        const base = bases[i]
+        relationships.push({
+          type: ASTEngine.RelationshipType.Implements,
+          source: symbol.name,
+          target: base,
+          isExternal: true,
+          weight: 0.9,
+          confidence: 1.0,
+          metadata: { isImplements: true },
+        })
+      }
     }
 
     return symbol
@@ -661,6 +746,12 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Bare identifier call.
     const target = funcNode.text
     if (!target || BUILTIN_BARE_CALLS.has(target)) return
+    // SWIFTD16: XCTest assertion FUNCTIONS (XCTAssertEqual/XCTFail/XCTSkip/...)
+    // are the one capitalized free-function family in Swift — the capitalized-
+    // call construction rule would fabricate `instantiates -> XCTAssertEqual`
+    // (8,226 occurrences, 59% of all capitalized bare calls, per the swift-nio
+    // census). They are not types; filtered like builtins (no edge).
+    if (target.startsWith("XCT")) return
 
     const firstChar = target.charCodeAt(0)
     const isCapitalized = firstChar >= 65 && firstChar <= 90 && target.length > 1
