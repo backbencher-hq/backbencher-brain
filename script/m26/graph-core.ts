@@ -609,20 +609,41 @@ function groupRow(entry: GroupedHubEntry, dir: "caller" | "callee", dom: GraphDo
   if (entry.rows.length > 0) el.setAttribute("data-depth", String(Math.min(...entry.rows.map((r) => r.depth))))
   // H6 machine click targets: index-resolved file/line/symbol — the bridge
   // navigates from these attrs, never from the display text (issue #654).
-  if (entry.file.length > 0) el.setAttribute("data-file", entry.file)
+  const navigable = entry.file.length > 0
+  if (navigable) el.setAttribute("data-file", entry.file)
   el.setAttribute("data-line", String(entry.line))
   el.setAttribute("data-symbol", entry.name)
+  // U2 §13.3: the click affordance is DECLARED — data-clickable=1 iff the
+  // bridge can actually navigate this row (file + line resolved). A clickable
+  // target rendered without the affordance, or an affordance on a row the
+  // bridge cannot navigate, is a lying renderer (harness AH1-negative).
+  el.setAttribute("data-clickable", navigable ? "1" : "0")
+  // U2 keyboard parity: a navigable row is focusable and Enter/Space posts
+  // the same navigate message as a click (bridge-generated from the same
+  // module). A non-navigable row stays out of the tab order.
+  if (navigable) el.setAttribute("tabindex", "0")
+  else el.addClass("bb-hub-row-unclickable")
   if (entry.isExternal) el.addClass("bb-hub-row-external")
+  // Name-first anatomy (U2): name → meta → chips, chevron last. The whole
+  // row is the click target (the bridge walks up from ev.target to the row).
+  const main = dom.create("span")
+  main.addClass("bb-hub-row-main")
   const name = dom.create("span")
   name.addClass("bb-hub-row-name")
   name.textContent = entry.name
   const meta = dom.create("span")
   meta.addClass("bb-hub-row-meta")
   meta.textContent = entry.file.length > 0 ? `${entry.file}:${entry.line}` : "(external)"
-  el.appendChild(name)
-  el.appendChild(meta)
+  main.appendChild(name)
+  main.appendChild(meta)
+  el.appendChild(main)
   relChips(entry, el, dom)
   groupEnrichment(entry, el, dom)
+  const chevron = dom.create("span")
+  chevron.addClass("bb-hub-chevron")
+  chevron.setAttribute("aria-hidden", "true")
+  chevron.textContent = navigable ? "›" : "·"
+  el.appendChild(chevron)
   return el
 }
 
@@ -700,8 +721,9 @@ function allEntries(grouped: GroupedHub): Array<{ entry: GroupedHubEntry; dir: "
 }
 
 /** List view: one row per symbol group, sectioned by file (group="file") or
- *  by caller name (group="caller"). Empty set renders the declared empty
- *  state (never fabricated rows). */
+ *  by caller name (group="caller"). Group headers carry per-group row counts
+ *  (U2: counts that match what is rendered, §13.4). Empty set renders the
+ *  declared empty state (never fabricated rows). */
 export function renderHubList(grouped: GroupedHub, dom: GraphDom, group: "file" | "caller"): RenderStats {
   const section = hubSection(grouped, dom, "bb-hub-list")
   section.setAttribute("data-group", group)
@@ -721,12 +743,15 @@ export function renderHubList(grouped: GroupedHub, dom: GraphDom, group: "file" 
     const g = dom.create("div")
     g.addClass("bb-hub-group")
     g.setAttribute("data-group-name", key)
-    const label = dom.create("span")
-    label.addClass("bb-hub-group-label")
-    label.textContent = key
-    g.appendChild(label)
     const items = byKey.get(key)!
     items.sort((a, b) => a.entry.file.localeCompare(b.entry.file) || a.entry.name.localeCompare(b.entry.name) || a.entry.symbolId.localeCompare(b.entry.symbolId))
+    // U2 §13.4: the header count is what the eye can verify — the number of
+    // rows the group actually renders below it.
+    const label = dom.create("span")
+    label.addClass("bb-hub-group-label")
+    label.setAttribute("data-group-count", String(items.length))
+    label.textContent = `${key} · ${items.length}`
+    g.appendChild(label)
     for (const item of items) g.appendChild(groupRow(item.entry, item.dir, dom))
     section.appendChild(g)
   }

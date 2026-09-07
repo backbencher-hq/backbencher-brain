@@ -413,6 +413,43 @@ export function assertHubTruncationEmpty(doc: HarnessNode, model: HubHarnessMode
   return { assertion: `AH5 complete renders no marker (${sectionClass})`, ok, detail: ok ? "clean" : "phantom marker or empty on a complete set" }
 }
 
+/** AH6 (M44.U2 §13.3): the click affordance is DECLARED and HONEST —
+ *  a row the bridge can navigate (file + line resolved) carries
+ *  data-clickable="1" + tabindex="0" (keyboard parity) + a chevron; a row
+ *  the bridge CANNOT navigate renders data-clickable="0" and no tabindex
+ *  (a clickable-looking dead row is a lie). The group header count equals
+ *  the rows actually rendered under it (§13.4). */
+export function assertHubAffordances(doc: HarnessNode, model: HubHarnessModel, sectionClass: string, group?: string): Finding {
+  const { byKey } = modelInventory(model)
+  const { section, rows } = collectHub(doc, sectionClass, group)
+  if (section === null) return { assertion: `AH6 affordances (${sectionClass})`, ok: false, detail: "section missing" }
+  const problems: string[] = []
+  for (const r of rows) {
+    const expect = byKey.get(r.key)
+    if (expect === undefined) continue
+    const navigable = (expect.file ?? "").length > 0
+    const clickable = r.node.attrs["data-clickable"]
+    if (navigable && clickable !== "1") problems.push(`symbol ${expect.symbolId}: navigable in model but rendered data-clickable=${clickable}`)
+    if (!navigable && clickable !== "0") problems.push(`symbol ${expect.symbolId}: not navigable (external) but rendered data-clickable=${clickable}`)
+    if (navigable) {
+      if (r.node.attrs["tabindex"] !== "0") problems.push(`symbol ${expect.symbolId}: navigable but not keyboard-focusable (no tabindex="0")`)
+      if (find(r.node, "bb-hub-chevron") === null) problems.push(`symbol ${expect.symbolId}: navigable but no chevron affordance`)
+    } else if (find(r.node, "bb-hub-chevron") !== null && r.node.attrs["data-clickable"] === "1") {
+      problems.push(`symbol ${expect.symbolId}: un-navigable row renders a navigate chevron`)
+    }
+  }
+  // Group header counts (§13.4): header data-group-count == rows under it.
+  for (const g of findAll(section, "bb-hub-group")) {
+    const label = g.children.find((c) => c.className.split(" ").includes("bb-hub-group-label"))
+    const declared = label?.attrs["data-group-count"]
+    const actual = findAll(g, "bb-hub-row").length
+    if (declared !== undefined && Number(declared) !== actual) {
+      problems.push(`group "${g.attrs["data-group-name"]}" header count=${declared} but renders ${actual} rows`)
+    }
+  }
+  return { assertion: `AH6 affordances declared + header counts (${sectionClass})`, ok: problems.length === 0, detail: problems.join("; ") }
+}
+
 /** Run the full hub assertion set over one section. */
 export function runHubHarness(
   model: HubHarnessModel,
@@ -424,6 +461,7 @@ export function runHubHarness(
   findings.push(assertHubBadges(doc, model, opts.sectionClass, opts.group))
   findings.push(assertHubEnrichment(doc, model, opts.sectionClass, opts.group))
   findings.push(assertHubTruncationEmpty(doc, model, opts.sectionClass, opts.group))
+  findings.push(assertHubAffordances(doc, model, opts.sectionClass, opts.group))
   if (opts.assertGrouping && opts.group !== undefined) {
     findings.push(assertHubGrouping(doc, model, opts.group))
   }
