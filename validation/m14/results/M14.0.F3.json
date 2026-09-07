@@ -104,7 +104,7 @@
     },
     {
       "description": "objc adversarial fixtures",
-      "detail": "3/3 fixtures pass",
+      "detail": "4/4 fixtures pass",
       "id": "fixtures-objc",
       "status": "pass"
     },
@@ -128,8 +128,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "7ad5b09e86159de5d038765e729b6a6c3c35db5d",
-  "committedAt": "2026-09-07T15:51:12+02:00",
+  "commit": "ed54c097f9659852c9dcdfe1720f7302b5a1fd20",
+  "committedAt": "2026-09-07T16:31:01+02:00",
   "data": {
     "details": [
       {
@@ -1643,6 +1643,11 @@
         "problems": []
       },
       {
+        "fixture": "objc/selector-identity",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "php/external-override",
         "ok": true,
         "problems": []
@@ -1726,7 +1731,7 @@
       },
       "objc": {
         "fail": 0,
-        "pass": 3
+        "pass": 4
       },
       "php": {
         "fail": 0,

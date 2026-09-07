@@ -459,6 +459,11 @@ function loadSpec(cfg: LangConfig) {
   }
   const decisionTypes = new Set<string>()
   for (const d of spec.design_decision.decisions) {
+    // Defect-style records (SWIFTD17-19, OBJCD5-8: status FIXED + `issue` field)
+    // document a resolved defect, not a grammar node-type ruling — they carry
+    // no node_type and must not classify anything. Only RULED-style records
+    // with node_type join the classified set.
+    if (!d.node_type) continue
     for (const t of d.node_type.split(",")) decisionTypes.add(t.trim())
   }
   return { spec, handled, silent, gapTypes, decisionTypes }
