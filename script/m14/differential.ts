@@ -1526,18 +1526,35 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
   }
 
   // Base names from the inheritance_specifier (mirrors extractBaseName).
+  // SWIFTD19 mirror: the LEAF of a dotted user_type is the LAST sibling
+  // type_identifier (Outer.Inner -> Inner, Foundation.URLSession ->
+  // URLSession) — the pre-fix FIRST-segment read fabricated edges to the
+  // module/container name.
   const baseName = (spec: any): string | null => {
     for (let i = 0; i < spec.namedChildCount; i++) {
       const c = spec.namedChild(i)
       if (!c) continue
       if (c.type === "type_identifier") return c.text
       if (c.type === "user_type") {
-        const leaf = c.namedChildren.find((x: any) => x.type === "type_identifier")
+        let leaf: any = null
+        for (let j = 0; j < c.namedChildCount; j++) {
+          const x = c.namedChild(j)
+          if (x && x.type === "type_identifier") leaf = x
+        }
         if (leaf) return leaf.text
       }
     }
     const txt = spec.text.trim()
     return txt && !txt.includes(" ") ? txt : null
+  }
+
+  // SWIFTD17 mirror helper: is this call_expression a SUBSCRIPT access
+  // (call_suffix with a `[` value_arguments) rather than a method call?
+  const isSubscript = (n: any): boolean => {
+    const suffix = n.namedChildren.find((c: any) => c.type === "call_suffix")
+    if (!suffix) return false
+    const va = suffix.namedChildren.find((c: any) => c.type === "value_arguments" && c.text.startsWith("["))
+    return !!va
   }
 
   const stack: any[] = [{ n: root, parentType: "" }]
@@ -1603,9 +1620,8 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
       // Subscript READ (`entries[key]`) parses as call_expression with a
       // `[key]` call_suffix — a property access, NOT a call (mirrors the
       // analyzer's isSubscriptRead gate).
-      const suffix = n.namedChildren.find((c: any) => c.type === "call_suffix")
-      const isSubscript = !!suffix && !!suffix.namedChildren.find((c: any) => c.type === "value_arguments" && c.text.startsWith("["))
-      if (isSubscript) { for (let i = n.namedChildCount - 1; i >= 0; i--) { const c = n.namedChild(i); if (c) stack.push({ n: c, parentType: t }) }; continue }
+      const isSubscriptCall = isSubscript(n)
+      if (isSubscriptCall) { for (let i = n.namedChildCount - 1; i >= 0; i--) { const c = n.namedChild(i); if (c) stack.push({ n: c, parentType: t }) }; continue }
       // callee: simple_identifier / identifier / navigation_expression
       const callee = n.namedChildren.find((c: any) => c.type === "simple_identifier" || c.type === "identifier" || c.type === "navigation_expression")
       if (callee && callee.type === "navigation_expression") {
@@ -1639,7 +1655,13 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
         }
       }
       const hasSelf = hasSelfReceiver(n)
-      if (hasSelf && parentType !== "call_expression") {
+      // SWIFTD17 mirror: the funcNode of a METHOD call is not a member read
+      // (analyzer RULED), but the base navigation of a SUBSCRIPT access is a
+      // genuine container read — php/objc emit uses there too. The analyzer
+      // inspects node.parent; the oracle receives the parent type via the
+      // walk, so re-derive subscript-ness from this node's parent node.
+      const parCallSubscript = n.parent && n.parent.type === "call_expression" && isSubscript(n.parent)
+      if (hasSelf && (parentType !== "call_expression" || parCallSubscript)) {
         const leaf = navLeaf(n)
         if (leaf) push("uses", leaf)
       }
