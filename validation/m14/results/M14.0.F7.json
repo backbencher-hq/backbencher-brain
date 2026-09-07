@@ -128,8 +128,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "93fcf0b153acdbdd456ff6f6fe803463553dd4de",
-  "committedAt": "2026-09-07T19:46:49+02:00",
+  "commit": "7653741c3591d0420183e617e0a98b60023296b4",
+  "committedAt": "2026-09-07T21:03:02+02:00",
   "governance": "docs/M14-HONESTY-CONTRACT.md",
   "issueId": "M14.0.F7",
   "layers": [
