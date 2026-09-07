@@ -304,6 +304,13 @@
         "question": "Dotted qualified type names were resolved to the FIRST segment everywhere. `extension Outer2.Inner2` minted an extension symbol named Outer2 \u2014 colliding with the container struct's symbol id and mis-attributing every extension member to the container (97 dotted extension targets in the 200-file swift-nio census, mostly nested-type extensions like WebSocketFrame._Storage / NIOBSDSocket.AddressFamily). Dotted inheritance bases fabricated edges to the module/container name: `class Sub2: Foundation.URLSession` emitted extends Sub2->Foundation, `struct M2: SharedMod.Proto` emitted implements M2->SharedMod (6 dotted bases in the census).",
         "resolution": "A user_type holds its dotted segments as sibling type_identifier children in source order (probe-verified), so the leaf is the LAST type_identifier \u2014 consistent with the family's leaf-target convention everywhere else. Extension targets now name the leaf (Inner2); extractBaseName now returns the leaf (URLSession/Proto). Oracle baseName mirrored. Gated by fixture swift/master-review-w2-regressions (expects extends NetSession->URLSession, implements M2->Proto, extension symbol Inner2; forbids contains Outer2->operator ==, extends NetSession->Foundation, implements M2->SharedMod) + mutants swift/first-segment-dotted-base + swift/first-segment-extension-name.",
         "issue": "M37.14-w2 swift master review (#607)"
+      },
+      {
+        "id": "SWIFTD20",
+        "node_type": "call_expression (single-letter bare capitalized callee)",
+        "status": "FIXED",
+        "question": "OO family closure #613 family sweep (shared-blind-spot): bare capitalized calls emit instantiates \u2014 but the M12.21 `target.length > 1` carve-out mislabels single-letter constructions. Is length meaningful for the construction rule?",
+        "resolution": "No \u2014 Swift naming reserves single capital letters for types (never free functions), so `E()` where `struct E: Error` is construction (instantiates ONLY). The carve-out had no rationale and was shared by analyzer + oracle (F5-blind): 15 sites in swift-nio corpus tests all degraded to calls. Guard removed on both sides; single-letter-construction fixture + swift/single-letter-as-calls mutant pin it."
       }
     ]
   }

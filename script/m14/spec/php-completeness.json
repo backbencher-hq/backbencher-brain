@@ -282,6 +282,13 @@
     "question": "M37.13 follow-up wave-2 (#606 master-review): PHP 8 nullsafe member READS `$this->svc?->name` parse as nullsafe_member_access_expression with the SAME \"name\" field as member_access_expression (`$this->svc->name`), but the walkBody member-read branch only matched member_access_expression, so every nullsafe read silently dropped the trailing member uses edge. 20 occurrences across phpunit+phpmyadmin+slim (4,231 files). Differential-invisible: the oracle's derivePhpEdges member branch shared the same shallow type gate, so F5 parity held at 0 missing / 0 unexplained while both sides dropped the read.",
     "resolution": "Fix (wave-2 probe-verified 2026-09-07): walkBody member-read branch now matches member_access_expression OR nullsafe_member_access_expression; the read/write + call-receiver byte-range gate is unchanged, so nullsafe WRITES (`$this->feature?->name = $v`) and RMW (`$this->feature?->name .= '!'`) stay gated exactly like the plain form (LHS name never a read). The receiver member (`$this->svc` / `$this->feature`) emits its own uses in both forms (csharp/java/ruby family precedent: the container is fetched to dereference). Oracle mirror identical. Parity probe: read/chain/plain emit [name, svc]/[deep, inner, svc]; write/augwrite emit only [svc]. Pinned by fixtures/php/nullsafe-member-reads (expect describe->name / describe->nested / describe->feature uses; forbid rewrite->name / bump->name) + mutants php/drop-nullsafe-member-read-uses and php/emit-nullsafe-write-as-uses both CAUGHT (299/299)."
    }
-  ]
+  ,
+   {
+    "id": "PHPD19",
+    "node_type": "instanceof_expression (runtime type check)",
+    "status": "RULED",
+    "question": "OO family closure #613 family sweep: php `$x instanceof Foo` emits NO edge on either side while java (instanceof_expression) and python (isinstance/issubclass) emit references:instanceof_check from their declared-type reference graphs. Corpus: ~950 instanceof sites in the two php corpora (phpunit 799, phpmyadmin 153) are silent. Is php dropping a relationship the family convention requires?",
+    "resolution": "RULED consistent-as-designed: php has no declared-type reference graph \u2014 its references channel is include-only (PHPD3); type hints (named_type in parameter/return positions) are SYMBOL payload, never edges \u2014 matching csharp (is/as silent), swift (as?/is silent) and objc (isKindOfClass: silent). python/java materialize those edges because their analyzers carry a declared-type reference extraction pass php does not have. Adding instanceof references to php alone would create a family asymmetry in the other direction and require re-pinning both php F5 lanes. Recorded as a measured scope decision, not a hidden skip (both sides silent = differential-consistent 100/0/0)."
+   }]
  }
 }

@@ -1502,7 +1502,10 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
     "UInt", "UInt8", "UInt16", "UInt32", "UInt64",
     "Float", "Float32", "Float64", "Double",
   ])
-  const isCapitalized = (t: string): boolean => t.length > 1 && t.charCodeAt(0) >= 65 && t.charCodeAt(0) <= 90
+  // SWIFTD17 mirror (OO family closure family sweep): capitalized = type-name
+  // signal regardless of length — the old `length > 1` carve-out mislabeled
+  // single-letter constructions (`E()`) as calls on BOTH sides (F5-blind).
+  const isCapitalized = (t: string): boolean => t.length > 0 && t.charCodeAt(0) >= 65 && t.charCodeAt(0) <= 90
   const key = (label: string, target: string) => label + ":" + target
   const push = (label: string, target: string) => {
     const k = key(label, target)
