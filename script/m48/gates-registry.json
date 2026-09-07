@@ -1,0 +1,17 @@
+{
+  "comment": "M48 gates registry. Every verifier must appear here AND in the npm run verify chain as it lands. Infra gates (governance/gate-selftest/closure/sync) are exempt from mutation requirements but listed for completeness. Verifier scripts land with their owning issue; the registry is the single wiring authority (G1 governs).",
+  "gates": [
+    { "code": "G1", "script": "verify-governance.ts", "infra": true, "issue": 695 },
+    { "code": "P1", "script": "verify-p1-impact-unity.ts", "infra": false, "issue": 696 },
+    { "code": "P2", "script": "verify-p2-honesty-fields.ts", "infra": false, "issue": 697 },
+    { "code": "P3", "script": "verify-p3-agreement.ts", "infra": false, "issue": 698 },
+    { "code": "C1", "script": "verify-c1-corpus.ts", "infra": false, "issue": 699 },
+    { "code": "C2", "script": "verify-c2-edge-mutations.ts", "infra": false, "issue": 700 },
+    { "code": "D1", "script": "verify-d1-doc-truth.ts", "infra": false, "issue": 701 },
+    { "code": "W1", "script": "verify-w1-website-tools.ts", "infra": false, "issue": 702 },
+    { "code": "H1", "script": "verify-h1-ghosts.ts", "infra": false, "issue": 703 },
+    { "code": "L1", "script": "verify-l1-hub-guard.ts", "infra": false, "issue": 704 },
+    { "code": "P4", "script": "verify-p4-param-matrix.ts", "infra": true, "issue": 706 },
+    { "code": "X1", "script": "verify-closure.ts", "infra": true, "issue": 705 }
+  ]
+}

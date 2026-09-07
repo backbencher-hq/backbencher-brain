@@ -23,13 +23,15 @@ import { generateMigrationPlans, formatMigrationPlans } from "../intelligence/mi
 import { graphTraversal } from "../intelligence/graph/graph-engine"
 // M28.T1 (issue #624): the agent door reuses the EXACT components the IDE
 // door uses — one truth, two doors (M28 decision D-1). No reimplementation.
-import { computeImpact } from "../lsp/impact"
+// M48.P1 (#696): bb_analyze impact aggregates the SAME canonical calculator
+// (computeImpact + its declared budget) so the two doors cannot disagree.
+import { computeImpact, IMPACT_BUDGET } from "../lsp/impact"
 import { tierForCrossLanguageEdge, factsFromRows, storedCrossLanguageRows } from "../lsp/cross_language_hover"
 import { getProjectStats } from "../intelligence/analysis/project-stats"
 import { getFileDependencies } from "../intelligence/analysis/dependencies"
 import { analyzeComplexity } from "../intelligence/analysis/complexity"
-import { analyzeImpact } from "../intelligence/analysis/impact"
 import { testMapping, testGaps, testImpact } from "../intelligence/testing/test-intel"
+import { makeProvenance } from "../intelligence/evidence"
 import type { AnalysisFindingInput } from "../intelligence/contracts"
 
 // M35.S2: staleness for TEXT-mode derived-analysis read paths (bb_patterns,
@@ -113,6 +115,130 @@ function resolveSafeReadPath(projectPath: string, requested: string): { absolute
   const absolute = realpathSync(candidate)
   ensureWithinProject(root, absolute)
   return { absolute, relative: path.relative(root, absolute).split(path.sep).join("/") }
+}
+
+// M48.P1 (#696): canonical impact report for bb_analyze mode=impact.
+// Numbers (symbol set, truncation, declared total, budget/depth) come from
+// computeImpact — the SAME component bb_impact and the editor use. The
+// aggregation adds only what the report semantics genuinely need: file-level
+// rollup, risk level, cross-language and unresolved-edge counts. All are
+// derived from the SAME single traversal (injected via deps.traverse) — no
+// second walk, no second math, no drift. Depth cap + depth reached are
+// declared fields; truncated is real (can be true when the node budget or
+// traversal budget is exhausted).
+async function canonicalImpactReport(
+  raw: any,
+  projectId: string,
+  target: string,
+): Promise<Record<string, unknown> & { found: boolean }> {
+  const notFound = (): Record<string, unknown> & { found: boolean } => ({
+    target,
+    found: false,
+    scope: "transitive",
+    directSymbols: 0,
+    affectedFiles: [],
+    transitiveFiles: 0,
+    crossLanguageFiles: 0,
+    unresolvedEdges: 0,
+    riskLevel: "low",
+    truncated: false,
+    provenance: makeProvenance({
+      evidenceClass: "unknown",
+      engine: "impact@lsp-canonical",
+      engineVersion: "m48.01",
+      projectId,
+      source: "computeImpact-not-found",
+      limitations: ["Target not found in the indexed graph — no impact set exists (declared, never an invented empty set)."],
+      unknowns: ["target-not-found"],
+    }),
+  })
+  let capturedEdges: Array<any> = []
+  let capturedNodes: Record<string, any> = {}
+  let result
+  try {
+    result = await computeImpact(raw, projectId, target, {
+      traverse: (async (pid: string, symbol: string, opts: any) => {
+        const r = await graphTraversal(pid, symbol, opts)
+        capturedEdges = r.callers ?? []
+        capturedNodes = r.nodes ?? {}
+        return r
+      }) as any,
+    })
+  } catch {
+    return notFound()
+  }
+
+  const internal = new Map<string, { name: string; file: string; depth: number }>()
+  let unresolvedEdges = 0
+  let depthReached = 0
+  for (const entry of result.impact as Array<{ id: string; name: string; file: string; depth: number }>) {
+    if (entry.depth > depthReached) depthReached = entry.depth
+    const node = capturedNodes[entry.id]
+    if (node?.isExternal === true || !entry.file) { unresolvedEdges++; continue }
+    const existing = internal.get(entry.id)
+    if (!existing || entry.depth < existing.depth) internal.set(entry.id, { name: entry.name, file: entry.file, depth: entry.depth })
+  }
+  for (const edge of capturedEdges) {
+    const node = capturedNodes[edge.from]
+    if (node?.isExternal === true) unresolvedEdges++
+  }
+
+  // File-level rollup (one row per file, min depth, first symbol as via).
+  const crossLangFiles = new Set<string>()
+  for (const edge of capturedEdges) {
+    const node = capturedNodes[edge.from]
+    if (!node || node.isExternal === true) continue
+    if (edge.isCrossLanguage === true && node.file) crossLangFiles.add(node.file)
+  }
+  const byFile = new Map<string, { via: string; depth: number; crossLanguage: boolean }>()
+  for (const entry of internal.values()) {
+    const cur = byFile.get(entry.file)
+    if (!cur || entry.depth < cur.depth) {
+      byFile.set(entry.file, { via: entry.name, depth: entry.depth, crossLanguage: crossLangFiles.has(entry.file) })
+    }
+  }
+  const affectedFiles = Array.from(byFile.entries())
+    .map(([file, v]) => ({ file, via: v.via, depth: v.depth, crossLanguage: v.crossLanguage }))
+    .sort((a, b) => a.depth - b.depth || a.file.localeCompare(b.file))
+  const directSymbols = Array.from(internal.values()).filter((e) => e.depth === 0).length
+  const transitiveFiles = affectedFiles.filter((f) => f.depth > 0).length
+  const crossLanguageFiles = new Set(affectedFiles.filter((f) => f.crossLanguage).map((f) => f.file)).size
+  const total = affectedFiles.length
+  const riskLevel = total >= 20 || crossLanguageFiles > 0 ? "critical" : total >= 8 ? "high" : total >= 3 ? "medium" : "low"
+  return {
+    target,
+    found: true,
+    scope: "transitive",
+    directSymbols,
+    affectedFiles,
+    transitiveFiles,
+    crossLanguageFiles,
+    unresolvedEdges,
+    riskLevel,
+    truncated: result.truncated,
+    truncationReason: result.truncationReason,
+    // Declared limits (M48.P1): the cap and the depth actually reached are
+    // always stated — a reader never has to guess whether more exists.
+    depthCap: IMPACT_BUDGET.maxDepth,
+    nodeBudget: IMPACT_BUDGET.maxNodes,
+    depthReached,
+    // The exact bb_impact count (same result object) — gate-asserted equal.
+    totalSymbols: result.shownCount,
+    source: "impact@lsp-canonical (computeImpact, M48.P1)",
+    provenance: makeProvenance({
+      evidenceClass: "inferred",
+      engine: "impact@lsp-canonical",
+      engineVersion: "m48.01",
+      projectId,
+      source: "brain_relationship+brain_symbol+brain_file via computeImpact",
+      limitations: [
+        "Impact set, truncation, and totals come from the editor-canonical calculator (src/lsp/impact.ts).",
+        `Depth cap ${IMPACT_BUDGET.maxDepth} and node budget ${IMPACT_BUDGET.maxNodes} are declared; depthReached states how far the walk actually went.`,
+        "Static impact cannot establish runtime behavior; unresolved external edges are counted but not followed.",
+      ],
+      truncated: result.truncated,
+    }),
+  }
 }
 
 const handlers: Record<string, ToolHandler> = {
@@ -429,17 +555,25 @@ const handlers: Record<string, ToolHandler> = {
       )
     }
     if (mode === "impact") {
-      const report = await analyzeImpact(projectId as any, target)
-      if (report.found) {
-        // Rows = the report's own affectedFiles (relative paths). Deliberately
-        // NOT a second graph traversal — the report already did that work.
-        return withFreshness(
-          report as unknown as Record<string, unknown>,
-          report.affectedFiles.map((a) => ({ fileId: relToFileId().get(a.file) ?? null })),
-          { onRows: (statuses) => { for (const a of report.affectedFiles as any[]) a.stale = statusFor(statuses, a.file) !== "fresh" } },
-        )
-      }
-      return textResult(JSON.stringify({ ...report, freshness: buildStalenessEnvelope({ fresh: 0, stale: 0, missing: 0, staleRatio: 0, freshnessMode: "complete" }, { kind: "dir" }) }, null, 2))
+      // M48.P1 (#696): ONE impact calculator. The report aggregates the SAME
+      // canonical walk bb_impact and the editor use (computeImpact: callers
+      // direction, declared budget 200 nodes / depth 5, truncation + declared
+      // total) — the file-level risk aggregation is layered on top, never a
+      // second math. The depth cap and depth actually reached are DECLARED
+      // fields, so the old silent depth-3 undercount (5 files while claiming
+      // truncated:false, dropping real dependents) is impossible.
+      return renderPass(async () => {
+        const rep = await canonicalImpactReport(raw, projectId as any, target)
+        // Not-found reports carry an empty freshness block, as before — the
+        // shared envelope over zero rows IS that block, so no special case.
+        if (!rep.found) return { data: rep as unknown as Record<string, unknown>, rows: [] }
+        const affected = (rep as any).affectedFiles as Array<{ file: string }>
+        return {
+          data: rep as unknown as Record<string, unknown>,
+          rows: affected.map((a) => ({ fileId: relToFileId().get(a.file) ?? null })),
+          onRows: (statuses) => { for (const a of affected as any[]) a.stale = statusFor(statuses, a.file) !== "fresh" },
+        }
+      })
     }
     if (mode === "test_mapping") {
       const report = await testMapping(projectId as any)
