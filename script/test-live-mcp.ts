@@ -41,11 +41,14 @@ console.log("\n--- bb_search 'indexProjectParallel' ---\n" + r.text)
 r = await call("bb_search", { query: "startMcpServer", limit: 3 })
 console.log("\n--- bb_search 'startMcpServer' ---\n" + r.text)
 
-r = await call("bb_select", { symbolName: "startMcpServer" })
-console.log("\n--- bb_select 'startMcpServer' ---\n" + r.text.slice(0, 600))
+// M48.H1 (#703): the pre-0.3.0 aliases (bb_select/bb_relationships) were
+// removed at 0.3.0 — this live probe now exercises the real surface
+// (bb_search mode=symbol, bb_analyze mode=callers).
+r = await call("bb_search", { mode: "symbol", symbolName: "startMcpServer" })
+console.log("\n--- bb_search symbol 'startMcpServer' ---\n" + r.text.slice(0, 600))
 
-r = await call("bb_relationships", { target: "startMcpServer", direction: "callers" })
-console.log("\n--- bb_relationships callers of startMcpServer ---\n" + r.text)
+r = await call("bb_analyze", { mode: "callers", target: "startMcpServer" })
+console.log("\n--- bb_analyze callers of startMcpServer ---\n" + r.text)
 
 r = await call("bb_ask", { query: "how does the mcp server start", limit: 3 })
 console.log("\n--- bb_ask ---\n" + r.text.slice(0, 600))
