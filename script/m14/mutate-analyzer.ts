@@ -2188,6 +2188,20 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: [...(r.relationships ?? []).filter((x: any) => !(x.type === "overrides" && x.source === x.target)), { type: "overrides", source: "FeaturesForm.getForms", target: "FeaturesForm.getForms", isExternal: true, weight: 1, confidence: 0.95, metadata: { phpSpecific: true, isOverride: true } }] }),
   },
   {
+    id: "php/drop-nullsafe-member-read-uses",
+    language: "php",
+    defectClass: "relationship-loss",
+    description: "PHPD11 regression: reverts the walkBody member-read branch to match only member_access_expression — PHP 8 nullsafe reads `$this->svc?->name` (nullsafe_member_access_expression, same \"name\" field) silently drop the trailing member uses edge — nullsafe-member-reads expect pins (describe->name / describe->nested uses) catch it",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "uses" && x.metadata?.isMemberRead && x.source === "describe" && (x.target === "name" || x.target === "nested"))) }),
+  },
+  {
+    id: "php/emit-nullsafe-write-as-uses",
+    language: "php",
+    defectClass: "relationship-fabrication",
+    description: "PHPD11 regression: re-opens the nullsafe write gate so `$this->feature?->name = $v` / `$this->feature?->name .= '!'` re-emit uses for the LHS name (byte-range first-child gate bypassed for the nullsafe node type) — nullsafe-member-reads forbid pins catch it",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "rewrite", target: "name", isExternal: true, weight: 1, confidence: 0.9, metadata: { isMemberRead: true } }, { type: "uses", source: "bump", target: "name", isExternal: true, weight: 1, confidence: 0.9, metadata: { isMemberRead: true } }] }),
+  },
+  {
     id: "ruby/drop-implements-edge",
     language: "ruby",
     defectClass: "relationship-loss",

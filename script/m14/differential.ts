@@ -1967,13 +1967,17 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
         }
       }
     }
-    if (t === "member_access_expression" && inBody) {
+    if ((t === "member_access_expression" || t === "nullsafe_member_access_expression") && inBody) {
       // Member READS only: assignment/augmented-assignment LHS is a write;
       // member_call receiver is a call target (mirrors the analyzer's
       // read/write + call-receiver gate — M37.13 added
       // augmented_assignment_expression to this oracle gate after the
       // analyzer's SCD1 fix showed the oracle fabricating phantom uses for
       // `$this->count += $step` when the member is never read elsewhere).
+      // PHPD11 mirror (M37 #606 master-review wave-2): PHP 8 nullsafe reads
+      // `$this->svc?->name` parse as nullsafe_member_access_expression with
+      // the SAME "name" field (probe-verified 2026-09-07); both sides were
+      // dropping the trailing member read the non-null form emits.
       const lhs = parent ? parent.namedChild(0) : null
       const isWrite = parent && (parent.type === "assignment_expression" || parent.type === "augmented_assignment_expression") && lhs && lhs.startIndex === n.startIndex && lhs.endIndex === n.endIndex
       const isCallReceiver = parent && (parent.type === "member_call_expression" || parent.type === "nullsafe_member_call_expression")
