@@ -12,7 +12,7 @@
 // Evidence: validation/m45/results/C1.json (machine-emitted)
 
 import { execFileSync } from "node:child_process"
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs"
 import { createRequire } from "node:module"
 import { tmpdir } from "node:os"
 import path from "node:path"
@@ -25,6 +25,7 @@ import {
   MANIFEST_REQUIRED_KEYS,
   MANIFEST_SCHEMA_VERSION,
   M45_CORPUS_REL,
+  M45_EDITOR,
   sha256File,
   gitHead,
   toolVersions,
@@ -144,6 +145,121 @@ check("C1: manifest bbVersion is non-empty and sane", typeof manifest.bbVersion 
 check("C1: manifest vsixSha256 is a sha256 hex", typeof manifest.vsixSha256 === "string" && /^[0-9a-f]{64}$/.test(manifest.vsixSha256))
 check("C1: manifest tools object records ffmpeg", (manifest.tools as Record<string, string>).ffmpeg !== undefined)
 check("C1: manifest tools object records Xvfb", (manifest.tools as Record<string, string>).Xvfb !== undefined)
+
+// --- Committed pixel evidence integrity (the editor leg) -------------------------------------
+// The capture driver (real VS Code under Xvfb) emits frames + manifest +
+// editor-leg JSON into validation/m45/results/demo-capture/. This block
+// machine-checks that committed evidence WITHOUT re-running Xvfb: the
+// manifest must pass the G1 schema, its indexHash must equal a fresh index
+// of the committed corpus (determinism = reproducibility), the frames must
+// exist as real PNGs above a floor size, and the editor-leg JSON must record
+// a successful hover proof referencing exactly those frames.
+console.log("\nC1: committed pixel evidence integrity (editor leg)")
+const DEMO_DIR = path.join(EVIDENCE_DIR, "demo-capture")
+const LEG_JSON = path.join(DEMO_DIR, "C1-editor-leg.json")
+const MANIFEST_JSON = path.join(DEMO_DIR, "capture-manifest.json")
+const FRAME_FLOOR = 10_000
+
+function validateCommittedEvidence(dir: string): { ok: boolean; problems: string[] } {
+  const problems: string[] = []
+  const legPath = path.join(dir, "C1-editor-leg.json")
+  const manPath = path.join(dir, "capture-manifest.json")
+  if (!existsSync(legPath)) problems.push("C1-editor-leg.json missing")
+  if (!existsSync(manPath)) problems.push("capture-manifest.json missing")
+  if (problems.length > 0) return { ok: false, problems }
+
+  const leg = JSON.parse(readFileSync(legPath, "utf8")) as Record<string, unknown>
+  if (leg.issue !== "M45.C1" || leg.code !== "C1") problems.push("editor-leg JSON wrong issue/code")
+  if (leg.status !== "verified") problems.push(`editor-leg status=${String(leg.status)}`)
+  const hover = leg.hoverProof as { ok?: boolean; summary?: string } | undefined
+  if (!hover || hover.ok !== true) problems.push("hoverProof not ok")
+
+  const man = JSON.parse(readFileSync(manPath, "utf8")) as Record<string, unknown>
+  for (const key of MANIFEST_REQUIRED_KEYS) {
+    if (!(key in man) || man[key] === undefined || man[key] === "") problems.push(`manifest missing "${key}"`)
+  }
+  if (man.schemaVersion !== MANIFEST_SCHEMA_VERSION) problems.push(`manifest schemaVersion=${String(man.schemaVersion)}`)
+  const manHash = man.indexHash
+  const frames = Array.isArray(leg.frames) ? (leg.frames as string[]) : []
+  if (frames.length === 0) problems.push("editor-leg frames list empty")
+  for (const f of frames) {
+    const p = path.join(dir, "frames", f)
+    if (!existsSync(p)) { problems.push(`frame missing: ${f}`); continue }
+    const size = statSync(p).size
+    if (size < FRAME_FLOOR) problems.push(`frame too small (${size}b): ${f}`)
+    const head = readFileSync(p).subarray(0, 8)
+    if (head.toString("hex").slice(0, 8) !== "89504e47") problems.push(`frame not a PNG: ${f}`)
+  }
+  return { ok: problems.length === 0, problems }
+}
+
+const committed = validateCommittedEvidence(DEMO_DIR)
+check("C1: committed pixel evidence directory exists with valid manifest + frames + hover proof", committed.ok, committed.problems.join("; "))
+if (existsSync(MANIFEST_JSON)) {
+  const committedManifest = JSON.parse(readFileSync(MANIFEST_JSON, "utf8")) as Record<string, unknown>
+  check("C1: committed manifest indexHash equals a FRESH index of the committed corpus (reproducible)", committedManifest.indexHash === a.idx.indexHash, `committed=${String(committedManifest.indexHash).slice(0, 16)} fresh=${a.idx.indexHash.slice(0, 16)}`)
+  check("C1: committed manifest corpusPath matches the corpus", committedManifest.corpusPath === M45_CORPUS_REL)
+  check("C1: committed manifest editor is vscode", committedManifest.editor === M45_EDITOR)
+  const commitField = String(committedManifest.corpusCommit)
+  let commitExists = false
+  try {
+    execFileSync("git", ["cat-file", "-e", `${commitField}^{commit}`], { cwd: ROOT, stdio: ["ignore", "ignore", "ignore"] })
+    commitExists = true
+  } catch { /* not a real commit */ }
+  commitExists = commitExists && /^[0-9a-f]{40}$/.test(commitField)
+  check("C1: committed manifest corpusCommit is a real repo commit", commitExists, `commit=${commitField.slice(0, 12)}`)
+  const leg = existsSync(LEG_JSON) ? (JSON.parse(readFileSync(LEG_JSON, "utf8")) as Record<string, unknown>) : null
+  if (leg) {
+    check("C1: editor-leg JSON currentCommit matches the corpus commit (captured at that commit)", leg.currentCommit === committedManifest.corpusCommit, `leg=${String(leg.currentCommit).slice(0, 12)} manifest=${String(committedManifest.corpusCommit).slice(0, 12)}`)
+    check("C1: editor-leg frames all present on disk", (leg.frames as string[]).every((f) => existsSync(path.join(DEMO_DIR, "frames", f))))
+  }
+
+  // Negative probes on TEMP copies — the evidence validator CAN fail.
+  const negDir = path.join(tmpdir(), `m45-c1-evidence-neg-${Date.now()}`)
+  mkdirSync(path.join(negDir, "frames"), { recursive: true })
+  const copy = (n: string) => { writeFileSync(path.join(negDir, n), readFileSync(path.join(DEMO_DIR, n))) }
+  if (existsSync(MANIFEST_JSON)) copy("capture-manifest.json")
+  if (existsSync(LEG_JSON)) copy("C1-editor-leg.json")
+  for (const f of existsSync(LEG_JSON) ? ((JSON.parse(readFileSync(LEG_JSON, "utf8")) as { frames: string[] }).frames ?? []) : []) {
+    const src = path.join(DEMO_DIR, "frames", f)
+    if (existsSync(src)) writeFileSync(path.join(negDir, "frames", f), readFileSync(src))
+  }
+  // Neg 1: drop a required manifest key -> validator must flag it.
+  {
+    const p = path.join(negDir, "capture-manifest.json")
+    const m = JSON.parse(readFileSync(p, "utf8")) as Record<string, unknown>
+    delete m.indexHash
+    writeFileSync(p, JSON.stringify(m))
+    const r = validateCommittedEvidence(negDir)
+    negative("C1: evidence validator flags a manifest missing indexHash", r.problems.some((x) => x.includes("indexHash")))
+  }
+  // Neg 2: delete a frame -> validator must flag it.
+  {
+    const p = path.join(negDir, "C1-editor-leg.json")
+    const l = JSON.parse(readFileSync(p, "utf8")) as { frames: string[] }
+    l.frames = ["01-editor.png", "02-hover.png", "03-editor-again.png", "ghost.png"]
+    writeFileSync(p, JSON.stringify(l))
+    const r = validateCommittedEvidence(negDir)
+    negative("C1: evidence validator flags a referenced-but-missing frame", r.problems.some((x) => x.includes("ghost.png")))
+  }
+  // Neg 3: hover proof flipped to false -> validator must flag it.
+  {
+    const p = path.join(negDir, "C1-editor-leg.json")
+    const l = JSON.parse(readFileSync(p, "utf8")) as { hoverProof: { ok: boolean } }
+    l.hoverProof.ok = false
+    writeFileSync(p, JSON.stringify(l))
+    const r = validateCommittedEvidence(negDir)
+    negative("C1: evidence validator flags a hover proof that is not ok", r.problems.some((x) => x.includes("hoverProof")))
+  }
+  // Neg 4: blank frame (zero bytes) -> validator must flag it.
+  {
+    const p = path.join(negDir, "frames", "01-editor.png")
+    writeFileSync(p, Buffer.alloc(0))
+    const r = validateCommittedEvidence(negDir)
+    negative("C1: evidence validator flags an empty frame", r.problems.some((x) => x.includes("too small") || x.includes("not a PNG")))
+  }
+  rmSync(negDir, { recursive: true, force: true })
+}
 
 // --- Mutation proofs — the gate CAN fail ---------------------------------------------------
 console.log("\nC1: mutation proofs — the gate CAN fail")
