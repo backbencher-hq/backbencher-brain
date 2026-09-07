@@ -283,6 +283,55 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     //   overrides   real methods with 'override' modifier → declaring parent
     //   references  imports → root
     // ─────────────────────────────────────────────────────────────────────
+    // ScalaD-A/B (two-corpus gate wave 2026-09): the old keyworded path
+    // emitted a first-supertype GUESS (0.5) whenever the companion index was
+    // absent — even when the REAL declaring ancestor was in this file
+    // (ConcurrentImpl.get -> CommonImpl.get @0.5, while CommonImpl never
+    // declares get; AtomicCell does). And keywordless implementations of
+    // ABSTRACT members (no `override` needed in Scala) emitted nothing at
+    // all. Both now resolve the verified in-file declaring ancestor first:
+    // same NAME + parameter-type signature anywhere up the in-file supertype
+    // chain -> exact-in-file override @1.0. Only keyworded methods without an
+    // exact in-file match keep the companion/first-supertype tiers.
+    const sigText = (m: ASTEngine.UniversalSymbol): string =>
+      "(" + (m.parameters ?? []).map((p) => (p.type || "unknown").replace(/\s+/g, "")).join(",") + ")"
+    const methodSigsByOwner = new Map<string, Map<string, Set<string>>>()
+    for (const s of symbols) {
+      if (s.kind !== ASTEngine.SymbolKind.Method || !s.ownerName || s.metadata?.isPhantom) continue
+      let byName = methodSigsByOwner.get(s.ownerName)
+      if (!byName) { byName = new Map(); methodSigsByOwner.set(s.ownerName, byName) }
+      let sigs = byName.get(s.name)
+      if (!sigs) { sigs = new Set(); byName.set(s.name, sigs) }
+      sigs.add(sigText(s))
+    }
+    // BFS over the in-file supertype chain for a non-private ancestor method
+    // with the same name and signature (the declaring parent of `s`).
+    const findDeclaringAncestor = (s: ASTEngine.UniversalSymbol): string | null => {
+      const ownerSym = typeIndex.get(s.ownerName ?? "")
+      if (!ownerSym) return null
+      const sig = sigText(s)
+      const seen = new Set<string>()
+      const queue: string[] = [...(ownerSym.metadata?.superTypes ?? [])]
+      while (queue.length > 0) {
+        const parent = queue.shift()!
+        if (seen.has(parent)) continue
+        seen.add(parent)
+        const parentMethods = methodSigsByOwner.get(parent)
+        if (parentMethods?.get(s.name)?.has(sig)) {
+          // Private members are not inherited (JLS/Scala): a private-only
+          // exact-signature match is an independent member — keep searching.
+          const nonPrivate = symbols.some((bm) =>
+            bm.kind === ASTEngine.SymbolKind.Method && bm.ownerName === parent &&
+            bm.name === s.name && sigText(bm) === sig && bm.visibility !== "private")
+          if (nonPrivate) return parent
+        }
+        const pSym = typeIndex.get(parent)
+        if (pSym?.metadata?.superTypes) {
+          for (const p of pSym.metadata.superTypes) queue.push(p)
+        }
+      }
+      return null
+    }
     for (const s of symbols) {
       const _owner = s.ownerName
       if (_owner) {
@@ -300,6 +349,20 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         !s.metadata?.isPhantom &&
         s.metadata?.isOverride
       ) {
+        // ScalaD-B: keyworded methods first try the verified in-file declaring
+        // ancestor (exact signature); only if none exists do the companion /
+        // first-supertype guess tiers run.
+        const declaringInFile = findDeclaringAncestor(s)
+        if (declaringInFile) {
+          relationships.push({
+            source: `${s.ownerName}.${s.name}`,
+            target: `${declaringInFile}.${s.name}`,
+            type: ASTEngine.RelationshipType.Overrides,
+            confidence: 1.0,
+            metadata: { isOverride: true, overrideParent: declaringInFile, reasonCode: "exact-in-file" },
+          })
+          continue
+        }
         const ownerSym = typeIndex.get(s.ownerName)
         const parents: string[] = ownerSym?.metadata?.superTypes ?? []
         let overrideParent = parents.length > 0 ? parents[0] : ""
@@ -331,6 +394,28 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
             metadata: { isOverride: true, overrideParent, reasonCode },
           })
         }
+      }
+    }
+
+    // ScalaD-A: KEYWORDLESS implementations. Implementing an ABSTRACT member
+    // needs no `override` in Scala (required only for CONCRETE base members),
+    // so these are genuine, common overrides (cats-effect trait impls). A
+    // keywordless exact-signature match is verified when the in-file ancestor
+    // member exists and is non-private; keywordless + concrete ancestor of the
+    // same signature cannot compile, so the match implies abstraction. No
+    // guessing tier for implicit pairs — overloads must never pair.
+    for (const s of symbols) {
+      if (s.kind !== ASTEngine.SymbolKind.Method || !s.ownerName) continue
+      if (s.metadata?.isPhantom || s.metadata?.isOverride || s.visibility === "private") continue
+      const declaringInFile = findDeclaringAncestor(s)
+      if (declaringInFile) {
+        relationships.push({
+          source: `${s.ownerName}.${s.name}`,
+          target: `${declaringInFile}.${s.name}`,
+          type: ASTEngine.RelationshipType.Overrides,
+          confidence: 1.0,
+          metadata: { isOverride: true, implicitOverride: true, overrideParent: declaringInFile, reasonCode: "exact-in-file" },
+        })
       }
     }
     for (const imp of imports) {
@@ -518,6 +603,13 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       for (let i = 0; i < modifiersNode.childCount; i++) {
         const mod = modifiersNode.child(i)
         if (mod && mod.type === "access_modifier") {
+          // `private[effect]` / `protected[pkg]` SCOPE qualifiers are NOT a
+          // hard private: a qualified private is visible (and overridable)
+          // within its scope — ScalaD-C (two-corpus wave 2026-09): IO.tag is
+          // `private[effect]` and its 26 inner IO subclasses implement it
+          // keywordless. Modeled as package-scoped so it is never exported
+          // but still inheritable. Bare private stays private.
+          if (mod.text.includes("[")) return "package"
           const inner = mod.child(0)
           if (inner && (inner.type === "private" || inner.type === "protected")) return inner.type
         }

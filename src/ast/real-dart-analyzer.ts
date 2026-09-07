@@ -1075,34 +1075,40 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       // DARTD17: `b..a.b.c(1)` — the cascade_selector names only the FIRST
       // segment (`a`); the deeper chain lives in nested
       // unconditional_assignable_selector children (probed cascade-shape.ts).
-      // The true leaf is the LAST identifier in the section that has args.
+      // DARTD18 (OO family closure): a cascade_section may carry SEVERAL
+      // invocations (`..transform(x)..listen(y)` = one section holding two
+      // selector+argument_part pairs). One call is emitted per selector that
+      // is IMMEDIATELY followed by its own argument_part sibling — so
+      // `..headers.addAll(x)` calls addAll (headers is a bare getter, no
+      // args), and multi-invocation sections call every method, not just the
+      // last (dart-http corpus: echo_server's `..transform(..)..listen(..)`
+      // previously dropped the transform call).
       if (t === "cascade_section") {
-        const sel = this.findChildByType(n, "cascade_selector")
-        const hasArgs = this.findChildByType(n, "argument_part")
-        if (sel && hasArgs) {
-          // Callee chain = identifiers in selector children ONLY — skipping
-          // argument_part keeps call arguments (`b..foo(a.bar)`) out.
-          let mname: string | null = null
+        const hasArgs = (() => {
           for (let i = 0; i < n.namedChildCount; i++) {
             const c = n.namedChild(i)
-            if (!c || c.type === "cascade_selector" || c.type === "argument_part") {
-              if (c && c.type === "cascade_selector") {
-                const id = this.lastIdentifier(c)
-                if (id) mname = id
-              }
-              continue
-            }
-            const id = this.lastIdentifier(c)
-            if (id) mname = id
+            if (c && c.type === "argument_part") return true
           }
-          if (mname && !this.isDartGlobalBuiltin(mname)) {
-            relationships.push({
-              source: callSource,
-              target: mname,
-              type: ASTEngine.RelationshipType.Calls,
-              confidence: 0.9,
-              metadata: { isCascade: true },
-            })
+          return false
+        })()
+        if (hasArgs) {
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (!c) continue
+            if (c.type !== "cascade_selector" && c.type !== "unconditional_assignable_selector" &&
+                c.type !== "conditional_assignable_selector" && c.type !== "selector") continue
+            const next = n.namedChild(i + 1)
+            if (!next || next.type !== "argument_part") continue
+            const id = this.lastIdentifier(c)
+            if (id && !this.isDartGlobalBuiltin(id)) {
+              relationships.push({
+                source: callSource,
+                target: id,
+                type: ASTEngine.RelationshipType.Calls,
+                confidence: 0.9,
+                metadata: { isCascade: true },
+              })
+            }
           }
         }
       }
