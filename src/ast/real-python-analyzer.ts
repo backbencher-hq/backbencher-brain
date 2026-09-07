@@ -928,8 +928,20 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (s.kind === ASTEngine.SymbolKind.Method && s.ownerName) {
         const base = baseByClass.get(s.ownerName)
         if (!base) continue
-        if (!baseDeclares(base, s.name)) continue
-        this.pushRel(ctx, `${s.ownerName}.${s.name}`, `${base}.${s.name}`, ASTEngine.RelationshipType.Overrides, 0.95, {})
+        const inFileDeclares = byName.get(s.name)?.some((bm) => bm.ownerName === base) ?? false
+        if (inFileDeclares || overrideCompanion?.get(base)?.has(s.name)) {
+          this.pushRel(ctx, `${s.ownerName}.${s.name}`, `${base}.${s.name}`, ASTEngine.RelationshipType.Overrides, 0.95, {})
+        } else if (!overrideCompanion?.has(base)) {
+          // Pass 3 (family parity with java/groovy resolveOverrides): the
+          // base is not declared in this file and the companion index gave
+          // no opinion (it is never populated in production — see M37.10).
+          // Emit the deterministic first-parent guess BELOW the patterns.ts
+          // threshold (0.7): visible in raw output, counted as heuristic
+          // (honest suspicion) by the differential, never contaminating
+          // thresholded analysis. Pre-M37.10 this edge was silently dropped
+          // for every externally-declared base.
+          this.pushRel(ctx, `${s.ownerName}.${s.name}`, `${base}.${s.name}`, ASTEngine.RelationshipType.Overrides, 0.5, { reasonCode: "first-parent-guess" })
+        }
       }
     }
   }
@@ -1180,7 +1192,14 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       const md = r.metadata ?? (r.metadata = {})
       if (md.evidenceClass) continue
       const t = String(r.type ?? r.relationshipType ?? "")
-      if (t === "contains" || t === "exports" || t === "extends" || t === "overrides") {
+      if (t === "overrides") {
+        // M37.10 family contract: verified overrides are structural; a
+        // Pass-3 first-parent guess is only "inferred" (the external base
+        // may not even declare the method).
+        md.evidenceClass = (r.confidence ?? 0) >= 0.9 ? "structural" : "inferred"
+        continue
+      }
+      if (t === "contains" || t === "exports" || t === "extends") {
         md.evidenceClass = "structural"
         continue
       }
