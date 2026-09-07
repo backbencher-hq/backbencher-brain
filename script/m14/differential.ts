@@ -1679,8 +1679,8 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
   return edges
 }
 
-// Objective-C tree-truth oracle (objective-c managed-OO wave #267). Mirrors
-// RealObjectiveCAnalyzer's emission contract exactly:
+// Objective-C tree-truth oracle (objective-c managed-OO wave #267, selector
+// identity wave #2). Mirrors RealObjectiveCAnalyzer's emission contract:
 //   - extends: superclass (the first identifier/type_identifier AFTER the
 //     class name, past the `:` in class_interface/class_implementation),
 //     from non-category declarations only
@@ -1688,9 +1688,14 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
 //     identifier / type_name children)
 //   - instantiates: message_expression whose selector is alloc/new — the
 //     receiver leaf is the instantiated class (nested [[Foo alloc] ...] too)
-//   - calls: message_expression selectors (non alloc/new) AND C call_expression
-//     identifiers, ONLY inside method/function bodies (the analyzer guards
-//     `activeScope !== "global"`)
+//   - calls: message_expression FULL SELECTORS (OBJCD7: the keyword segments
+//     are identifiers whose next child is an anonymous ':' — leaf naming
+//     merged distinct overloads; zero-arg selectors are the last identifier)
+//     AND C call_expression identifiers, ONLY inside method/function bodies
+//   - overrides (verified in-file only, OBJCD8): a class whose superclass is
+//     declared in-file and declares the same full selector emits overrides
+//     target `Base.method` (the analyzer's verified 0.95 edges; external-base
+//     first-parent guesses at 0.5 are heuristic, no oracle counterpart)
 //   - references: preproc_include -> root -> module name (system_lib_string
 //     stripped of <>, or string_literal content)
 // The oracle emits UNIQUE (label,target) edges (seen-set per label+target),
@@ -1702,6 +1707,115 @@ export function deriveObjcEdges(root: any): { label: string; from: string; targe
   const push = (label: string, target: string) => {
     const k = key(label, target)
     if (!seen.has(k)) { seen.add(k); edges.push({ label, from: "(expr)", target }) }
+  }
+  const isRootBase = (name: string) => name === "NSObject" || name === "NSProxy"
+  // OBJCD8 oracle mirror: collect in-file class superclass clauses + full
+  // selectors per class (interface/implementation both contribute; a Set
+  // dedups the same selector declared in @interface and defined in
+  // @implementation, mirroring the analyzer's symbol dedup).
+  const classBase = new Map<string, string>()
+  const classMethods = new Map<string, Set<string>>()
+  const fullMethodSelector = (mnode: any): string => {
+    let sel = ""
+    for (let i = 0; i < mnode.namedChildCount; i++) {
+      const c = mnode.namedChild(i)
+      if (!c) continue
+      if (c.type === "identifier") {
+        sel += c.text
+        const next = i + 1 < mnode.namedChildCount ? mnode.namedChild(i + 1) : null
+        if (next && next.type === "method_parameter") sel += ":"
+      }
+    }
+    return sel
+  }
+  const fullMessageSelector = (mnode: any): string => {
+    let sel = ""
+    let lastId: string | null = null
+    for (let i = 0; i < mnode.childCount; i++) {
+      const c = mnode.child(i)
+      if (!c) continue
+      if (c.isNamed && c.type === "identifier") {
+        const nxt = i + 1 < mnode.childCount ? mnode.child(i + 1) : null
+        if (nxt && !nxt.isNamed && nxt.type === ":") {
+          sel += c.text + ":"
+        } else {
+          lastId = c.text
+        }
+      }
+    }
+    if (sel) return sel
+    return lastId ?? ""
+  }
+  const collectCls = (cnode: any) => {
+    let hasParen = false
+    for (let i = 0; i < cnode.childCount; i++) {
+      const c = cnode.child(i)
+      if (c && !c.isNamed && c.type === "(") { hasParen = true; break }
+    }
+    if (hasParen) return
+    // class_interface: identifier(class), identifier(superclass),
+    // parameterized_arguments(protocols), then method_declaration nodes
+    // DIRECTLY. class_implementation: identifier(class), then methods nest
+    // under implementation_definition wrappers. Collect superclass from the
+    // top-level identifiers (probe-verified 2026-09) and methods via a
+    // subtree scan that stops at nested class/protocol boundaries.
+    let foundName = false
+    let superName: string | null = null
+    let className: string | null = null
+    const methods = new Set<string>()
+    for (let i = 0; i < cnode.namedChildCount; i++) {
+      const c = cnode.namedChild(i)
+      if (!c) continue
+      if ((c.type === "identifier" || c.type === "type_identifier") && !foundName && !className) {
+        className = c.text
+        foundName = true
+        continue
+      }
+      if (c.type === "identifier" && className && !superName && !c.text.startsWith("@")) superName = c.text
+    }
+    const mstack: any[] = [{ n: cnode, top: true }]
+    while (mstack.length > 0) {
+      const { n } = mstack.pop()!
+      const tt = n.type
+      if (!n || n === cnode) { /* root of scan */ }
+      if (n !== cnode && (tt === "class_interface" || tt === "class_implementation" || tt === "protocol_declaration")) continue
+      if (tt === "method_declaration" || tt === "method_definition") {
+        const sel = fullMethodSelector(n)
+        if (sel) methods.add(sel)
+        continue
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const cc = n.namedChild(i)
+        if (cc) mstack.push({ n: cc })
+      }
+    }
+    if (className) {
+      if (superName && !isRootBase(superName)) classBase.set(className, superName)
+      let set = classMethods.get(className)
+      if (!set) { set = new Set<string>(); classMethods.set(className, set) }
+      for (const m of methods) set.add(m)
+    }
+  }
+  // In-file verified overrides (OBJCD8): for each class with a KNOWN in-file
+  // base that declares the same selector. NSObject/NSProxy bases never appear
+  // (excluded above); external bases emit no oracle edge (the analyzer's 0.5
+  // guess is heuristic by design).
+  const scanStack: any[] = [root]
+  while (scanStack.length > 0) {
+    const nn = scanStack.pop()!
+    if (nn.type === "class_interface" || nn.type === "class_implementation") collectCls(nn)
+    for (let i = nn.namedChildCount - 1; i >= 0; i--) {
+      const cc = nn.namedChild(i)
+      if (cc) scanStack.push(cc)
+    }
+  }
+  for (const [cls, base] of classBase) {
+    const baseSet = classMethods.get(base)
+    const clsSet = classMethods.get(cls)
+    if (!baseSet || !clsSet) continue
+    for (const m of clsSet) {
+      if (baseSet.has(m)) push("overrides", `${base}.${m}`)
+    }
   }
 
   // Walk with an inBody flag: calls/instantiates only inside method/function
@@ -1776,23 +1890,23 @@ export function deriveObjcEdges(root: any): { label: string; from: string; targe
       }
     }
     if (t === "message_expression" && inBody) {
-      // Selector = first identifier AFTER the receiver (mirrors the analyzer:
-      // never the receiver itself). alloc/new -> instantiates the receiver
-      // leaf; nested [[Foo alloc] ...] resolves through the inner message.
-      let selectorNode: any = null
-      for (let i = 1; i < n.namedChildCount; i++) {
-        const c = n.namedChild(i)
-        if (c && c.type === "identifier") { selectorNode = c; break }
-      }
-      if (selectorNode) {
-        if (selectorNode.text === "alloc" || selectorNode.text === "new") {
+      // OBJCD7: full selector (mirrors the analyzer) — a keyword is an
+      // identifier whose next child is an anonymous ':'; zero-arg messages
+      // fall back to the last identifier. alloc/new -> instantiates the
+      // receiver leaf (first keyword check); nested [[Foo alloc] ...]
+      // resolves through the inner message.
+      const msgSel = fullMessageSelector(n)
+      if (msgSel) {
+        const firstKw = msgSel.split(":")[0]
+        if (firstKw === "alloc" || firstKw === "new") {
           let receiverLeaf: string | null = null
           const receiver = n.namedChild(0)
           if (receiver) {
             if (receiver.type === "identifier" || receiver.type === "type_identifier") receiverLeaf = receiver.text
             else if (receiver.type === "message_expression") {
-              const innerSel = receiver.namedChildren.find((c: any) => c.type === "identifier")
-              if (innerSel && (innerSel.text === "alloc" || innerSel.text === "new")) {
+              const innerSel = fullMessageSelector(receiver)
+              const innerKw = innerSel.split(":")[0]
+              if (innerKw === "alloc" || innerKw === "new") {
                 const innerRecv = receiver.namedChild(0)
                 if (innerRecv && (innerRecv.type === "identifier" || innerRecv.type === "type_identifier")) receiverLeaf = innerRecv.text
               }
@@ -1800,7 +1914,7 @@ export function deriveObjcEdges(root: any): { label: string; from: string; targe
           }
           if (receiverLeaf) push("instantiates", receiverLeaf)
         } else {
-          push("calls", selectorNode.text)
+          push("calls", msgSel)
         }
       }
     }
