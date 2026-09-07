@@ -2154,6 +2154,20 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "calls", source: "Widget", target: "LOCK_DECLARE", isExternal: true, weight: 1, confidence: 0.95, metadata: { isCFunctionCall: true } }] }),
   },
   {
+    id: "objc/collapse-selector-leaf-naming",
+    language: "objc",
+    defectClass: "symbol-identity-loss",
+    description: "OBJCD7 regression: reverts method identity to first-keyword leaf naming, collapsing distinct selectors (initWithNamespace: vs initWithNamespace:diskCacheDirectory: merge; message targets become leaves) — objc selector-identity expectSymbolCount/forbidSymbols/calls-target pins die",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.kind === "method" && s.name.includes(":") ? { ...s, name: s.name.split(":")[0] } : s)), relationships: (r.relationships ?? []).map((x: any) => (x.type === "calls" && x.meta?.isMessageExpression ? { ...x, target: x.target.split(":")[0] } : x)) }),
+  },
+  {
+    id: "objc/drop-override-machinery",
+    language: "objc",
+    defectClass: "relationship-loss",
+    description: "OBJCD8 regression: removes the override post-pass (no overrides emitted at all) — objc selector-identity overrides pins + expectRelationshipCount die",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "overrides") }),
+  },
+  {
     id: "php/drop-implements-edge",
     language: "php",
     defectClass: "relationship-loss",
