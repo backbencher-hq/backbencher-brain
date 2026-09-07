@@ -247,8 +247,12 @@ const handlers: Record<string, ToolHandler> = {
     // M40.A7 negative-case fix: invalid input must return an MCP error
     // envelope, not throw out of the handler — a thrown error crashes the
     // whole tool call on hosts that do not wrap handlers in try/catch.
-    if (args.mode !== undefined && !"content symbol file".split(" ").includes(String(args.mode))) {
-      return textResult(`bb_search: unknown mode "${args.mode}" (known: content, symbol, file; omit mode for the symbols listing)`, true)
+    // M48.C1 (#699) corpus catch: the registry advertises mode enum
+    // [symbols, content, symbol, file] (and the docs example calls
+    // mode:"symbols"), the validation layer accepts it — but this guard
+    // rejected it. Surface truth: the advertised enum value must work.
+    if (args.mode !== undefined && !"symbols content symbol file".split(" ").includes(String(args.mode))) {
+      return textResult(`bb_search: unknown mode "${args.mode}" (known: symbols, content, symbol, file)`, true)
     }
     if (mode === "file") {
       let target: { absolute: string; relative: string }

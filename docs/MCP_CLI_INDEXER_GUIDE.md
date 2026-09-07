@@ -152,7 +152,7 @@ separation is corrected.
 |---|---|
 | `bb index <dir>` | Full/incremental project indexing |
 | `bb index <dir> --force` | In-place wipe and full rebuild |
-| `bb search <query>` | Symbol retrieval (default listing; omit `--mode` — explicit `--mode symbols` is rejected), language and limit filters; auto-refreshes stale files within budget before answering and declares it |
+| `bb search <query>` | Symbol retrieval (default listing; `--mode symbols` equals the default), language and limit filters; auto-refreshes stale files within budget before answering and declares it |
 | `bb search --no-auto-refresh <q>` | Answer from the existing index with the staleness footer instead of auto-refreshing (same decision as MCP `refresh=false`) |
 | `bb search --mode content <q>` | Content/snippet retrieval (same handler as MCP `bb_search` mode=content) |
 | `bb search --mode symbol <name>` | Exact-symbol source lookup (MCP mode=symbol parity) |
