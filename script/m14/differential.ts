@@ -17,7 +17,7 @@ import * as fs from "fs"
 import * as path from "path"
 import { execSync } from "child_process"
 import { PHP_BUILTINS } from "../../src/ast/real-php-analyzer"
-import { RUBY_BUILTINS, RAILS_MACRO_METHODS } from "../../src/ast/real-ruby-analyzer"
+import { RUBY_BUILTINS, RAILS_MACRO_METHODS, isRubyStaticSuperclassName } from "../../src/ast/real-ruby-analyzer"
 import { PYTHON_BUILTINS } from "../../src/ast/real-python-analyzer"
 
 function loadAvg1(): number {
@@ -2386,8 +2386,41 @@ export function deriveRubyEdges(root: any): { label: string; from: string; targe
     const t = n.type
     if (t === "class") {
       // superclass field text is "< Name" — strip the marker, keep the leaf.
+      // Static-superclass gate mirrors the analyzer's isStaticSuperclassName
+      // (RUBD13 master-review): `class X < Struct.new(:a)` has an ANONYMOUS
+      // base (RB-C: no extends). The old rule leaf-split the raw expression
+      // text into a DIFFERENT junk target than the analyzer's, a latent
+      // missing+unexplained pair whenever the shape was sampled.
       const sup = n.childForFieldName?.("superclass")
-      if (sup) push("extends", leafName(sup.text.replace(/^<\s*/, "")))
+      if (sup) {
+        const cleaned = sup.text.replace(/^<\s*/, "").trim()
+        // Shared single-source-of-truth gate with the analyzer
+        // (isRubyStaticSuperclassName) — a duplicated inline regex previously
+        // produced a DIFFERENT junk target than the analyzer (master-review
+        // 2026-09), a latent missing+unexplained pair on real corpora.
+        if (isRubyStaticSuperclassName(cleaned)) {
+          push("extends", leafName(cleaned))
+        }
+      }
+    }
+    // Keyword `alias new_name old_name` (class/module/top-level): the
+    // analyzer treats it as the RB-E alias_method contract (calls:<newname>,
+    // aliasedTo metadata). Mirror so the edge is covered, not unexplained
+    // (master-review 2026-09). Method-body aliases emit nothing on either
+    // side (the identifier skip suppresses both names).
+    if (t === "alias" && !inBody) {
+      // Keyword alias is a declaration-time construct (class/module/top
+      // level). The analyzer's walkBody consumes method bodies and its
+      // `alias` skip-parent suppresses method-body aliases (runtime
+      // redefinition) — gate on !inBody to stay in exact parity.
+      const names: string[] = []
+      for (let i = 0; i < n.namedChildCount && names.length < 2; i++) {
+        const c = n.namedChild(i)
+        if (!c) continue
+        if (c.type === "identifier") names.push(c.text)
+        else if (c.type === "simple_symbol") names.push(c.text.replace(/^:/, ""))
+      }
+      if (names.length === 2) push("calls", names[0])
     }
     // Mixins: the analyzer emits include/extend/prepend wherever they appear
     // (class level AND inside method bodies — `base.extend(ClassMethods)`,
@@ -2499,10 +2532,17 @@ export function deriveRubyEdges(root: any): { label: string; from: string; targe
       // (mirrors walkBody): an identifier assigned in test_invoke but used in
       // test_investigation_output is a CALL in Ruby, not a local.
       const localsHere = methodId ? methodLocals.get(methodId) : undefined
+      // `pair` is deliberately ABSENT (RUBD12, master-review 2026-09): a
+      // hash/argument pair's VALUE is a real expression (`{ x: helper }`,
+      // `foo(k: helper)`) and colon-form KEYS are hash_key_symbol nodes, so
+      // the old `pair` skip only ever suppressed genuine value-position
+      // calls — on BOTH sides, a shared blind spot F5 cannot see.
+      // `alias` is present: `alias a b` identifiers are method-name
+      // declarations, never expression calls (analyzer + oracle parity).
       const skip = pt === "method" || pt === "singleton_method" || pt === "setter" ||
         pt === "method_parameters" || pt === "parameters" ||
         pt === "block_parameters" || pt === "lambda_parameters" ||
-        pt === "pair" || pt === "class" || pt === "module" ||
+        pt === "alias" || pt === "class" || pt === "module" ||
         pt === "singleton_class" || pt === "call" || pt === "command" || pt === "command_call"
       if (!skip && !(localsHere?.has(n.text) ?? false) && !isRubyBuiltin(n.text) && !isVisibilityDirective(n.text)) {
         // A bare identifier naming a method defined in this file resolves to
