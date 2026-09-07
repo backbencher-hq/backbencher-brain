@@ -185,7 +185,9 @@ export function validateHubMessage(raw: unknown): { ok: true; message: HubMessag
  *  code. Row clicks read the row's MACHINE attrs (data-file/data-line/data-
  *  symbol-id — index-resolved, set by the ONE renderer core) and post a
  *  versioned navigate message; a refresh control posts requestRefresh.
- *  Strict: unknown click targets are ignored (never guessed). */
+ *  Keyboard parity (M44.U2 §13.3): Enter/Space on a focused row navigates
+ *  exactly like a click — same target attrs, same message, same staleness
+ *  labeling. Strict: unknown click targets are ignored (never guessed). */
 export function buildBridgeScript(): string {
   return `
 (function () {
@@ -194,12 +196,7 @@ export function buildBridgeScript(): string {
   try { api = acquireVsCodeApi() } catch (e) { /* headless render: no host */ }
   function post(msg) { if (api !== null) { try { api.postMessage(msg) } catch (e) {} } }
   function parseLine(v) { var n = parseInt(v, 10); return Number.isNaN(n) || n < 0 ? null : n }
-  document.addEventListener("click", function (ev) {
-    var row = null
-    for (var el = ev.target; el !== null && el !== document; el = el.parentElement) {
-      if (el.classList && el.classList.contains("bb-hub-row")) { row = el; break }
-    }
-    if (row === null) return
+  function navigateFrom(row) {
     var file = row.getAttribute("data-file")
     var lineRaw = row.getAttribute("data-line")
     var symbolId = row.getAttribute("data-symbol-id") || undefined
@@ -222,6 +219,28 @@ export function buildBridgeScript(): string {
     var msg = { schemaVersion: VERSION, type: "navigate", target: { file: file, line: line, symbolId: symbolId } }
     if (stale) msg.staleness = { stale: true, status: staleStatus }
     post(msg)
+  }
+  document.addEventListener("click", function (ev) {
+    var row = null
+    for (var el = ev.target; el !== null && el !== document; el = el.parentElement) {
+      if (el.classList && el.classList.contains("bb-hub-row")) { row = el; break }
+    }
+    if (row === null) return
+    navigateFrom(row)
+  })
+  // Keyboard parity (M44.U2 §13.3): the hub CSS makes rows focusable
+  // (tabindex="0" on data-clickable rows); Enter/Space navigate exactly like
+  // a click — same target attrs, same message, same staleness labeling.
+  document.addEventListener("keydown", function (ev) {
+    if (ev.key !== "Enter" && ev.key !== " " && ev.key !== "Spacebar") return
+    var row = null
+    for (var el = ev.target; el !== null && el !== document; el = el.parentElement) {
+      if (el.classList && el.classList.contains("bb-hub-row")) { row = el; break }
+    }
+    if (row === null) return
+    if (row.getAttribute("data-clickable") !== "1") return
+    ev.preventDefault()
+    navigateFrom(row)
   })
   var refreshers = Array.prototype.slice.call(document.querySelectorAll("[data-hub-refresh]"))
   refreshers.forEach(function (b) {

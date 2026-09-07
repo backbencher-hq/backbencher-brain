@@ -22,6 +22,7 @@
 //                  are each caught by the verifier
 
 import { randomBytes } from "node:crypto"
+import { HUB_CSS } from "./hub-css"
 
 /** Strict CSP for the webview. nonce goes into script-src/style-src; the
  *  editor's own cspSource covers local resources (icons). No remote origin
@@ -100,8 +101,14 @@ export const ADVERSARIAL_FIXTURES: Array<{ name: string; payload: string; mustCo
 /** The canonical webview HTML document. `state` is embedded as escaped JSON
  *  in a nonce-bound script tag; repo-controlled strings inside state are
  *  escaped by the consumer through escapeHtml() before embedding (defence in
- *  depth: the shell escapes the JSON delimiters too). */
-export function buildWebviewHtml(options: { nonce?: string; cspSource: string; stateJson: string; bodyMarkup?: string }): { html: string; nonce: string; csp: string } {
+ *  depth: the shell escapes the JSON delimiters too).
+ *
+ *  M44.U2 (issue #689): the shell injects the hub stylesheet (a static,
+ *  repo-controlled string from script/m26/hub-css.ts — the ONE style owner)
+ *  as a nonce-bound <style> block. `styles: false` opts out for providers
+ *  that bring their own sheet; the default styles every consumer so the hub
+ *  can never again render as unstyled text. */
+export function buildWebviewHtml(options: { nonce?: string; cspSource: string; stateJson: string; bodyMarkup?: string; styles?: boolean }): { html: string; nonce: string; csp: string } {
   const nonce = options.nonce ?? randomBytes(16).toString("hex")
   const csp = cspFor(nonce, options.cspSource)
   // The state payload is double-defence: escapeHtml over the JSON string.
@@ -111,6 +118,7 @@ export function buildWebviewHtml(options: { nonce?: string; cspSource: string; s
   // accepts it verbatim because the producer already escaped every
   // repo-controlled string (W6 law; the verifier gates the producer).
   const body = options.bodyMarkup ? `<div id="bb-graph-root">${options.bodyMarkup}</div>` : `<div id="bb-graph-root"></div>`
+  const styleBlock = options.styles === false ? "" : `<style nonce="${nonce}">${HUB_CSS}</style>`
   const html = [
     "<!DOCTYPE html>",
     '<html lang="en">',
@@ -118,12 +126,13 @@ export function buildWebviewHtml(options: { nonce?: string; cspSource: string; s
     '<meta charset="UTF-8">',
     `<meta http-equiv="Content-Security-Policy" content="${escapeHtml(csp)}">`,
     `<title>Backbencher Graph</title>`,
+    styleBlock,
     "</head>",
     "<body>",
     body,
     `<script nonce="${nonce}" type="application/json" id="bb-state">${safeState}</script>`,
     "</body>",
     "</html>",
-  ].join("\n")
+  ].filter((s) => s.length > 0).join("\n")
   return { html, nonce, csp }
 }

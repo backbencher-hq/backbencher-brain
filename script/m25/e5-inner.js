@@ -211,6 +211,12 @@ async function run() {
         // chips instead of the old edge-level bb-hub-badge.
         assert("E5-H5: hub lists the seeded caller row (main) with traceable row ids", m.includes("main") && m.includes("bb-hub-symrow") && m.includes("data-row-ids"), m.slice(0, 200))
         assert("E5-H5: hub counts match the seeded graph (1 caller, 0 callees)", hubResult.counts && hubResult.counts.callers === 1 && hubResult.counts.callees === 0, JSON.stringify(hubResult.counts))
+        // M44.U2: the affordance contract — a navigable row DECLARSES it
+        // (data-clickable=1 + tabindex for keyboard parity + chevron), the
+        // sheet ships (no unstyled hub), and group headers carry counts.
+        assert("E5-H5: navigable rows declare the click affordance (data-clickable + tabindex + chevron)", m.includes('data-clickable="1"') && m.includes('tabindex="0"') && m.includes("bb-hub-chevron"), m.slice(0, 240))
+        assert("E5-H5: the hub markup renders through the panel path (sheet injection verified at W6)", typeof hubResult.markup === "string" && hubResult.markup.length > 0, `markup=${typeof hubResult.markup}`)
+        assert("E5-H5: group headers carry their rendered count (§13.4)", m.includes("data-group-count"), m.slice(0, 200))
         assert("E5-H5: complete usage set renders no truncation marker", !m.includes("bb-truncation-marker"), "")
         assert("E5-H5: enriched rel-1 renders its labeled chip in the hub", m.includes("data-enriched=\"1\"") && m.includes("bb-hub-enrichment"), m.slice(0, 240))
       } else {
