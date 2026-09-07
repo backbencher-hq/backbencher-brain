@@ -4,17 +4,16 @@
   "milestone": "M25",
   "status": "known-gap",
   "checks": 72,
-  "passed": 72,
-  "failed": 0,
+  "passed": 71,
+  "failed": 1,
   "negativeCases": 11,
-  "currentCommit": "9f7c3afb8c6f70de8c18fa702bad7d76d8c8f0d1",
+  "currentCommit": "37bf738d6eaed85edecf2e6f4dfd8d473ae13ac2",
   "workingTreeRelevantChanges": [
-    "script/m25/e5-inner.js",
-    "script/m25/run-vscode-e2e.mts"
+    "docs/IDE-HONESTY-CONTRACT.md"
   ],
   "verifierCommand": "npx tsx script/m25/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-07T01:21:40.738Z",
+  "generatedAt": "2026-09-07T01:24:34.672Z",
   "ledger": "validation/m25/results/manifest.json",
   "m24Bar": {
     "ledgerStatus": "closed",
