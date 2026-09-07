@@ -58,6 +58,25 @@ the hover a portal; M44 makes what the portal opens *understandable*.
 | U6 | [#693](https://github.com/backbencher-hq/backbencher-brain/issues/693) References fallback surface | when the editor's native references surface is unavailable, `show all usages` opens our own usages list instead of a message-only dead end (rule 6) |
 | X1 | [#694](https://github.com/backbencher-hq/backbencher-brain/issues/694) Gate + launch bar | M44 closure gate (full-ladder audit at HEAD); in-editor visual leg through E5/E6; every known gap fixed or owner-waived |
 
+### U4 decision (2026-09-07): header counts + the ONE legend
+
+Two laws, gated by `script/m44/verify-legend.ts` (fixture with a duplicated
+relationship + real server + 4 mutants) and harness laws AH10/AH11:
+
+- **Header counts are derived from the RENDERED groups** (`hubSummary`),
+  never trusted from the server's counts block; the server's group/row
+  counts ride as declared `data-server-*` attributes. A fixture where one
+  caller holds two stored rows must render "2 callers", never "3"
+  (the pre-U1 raw-row bug — now a permanent mutant).
+- **ONE legend** (`renderLegend` — graph, hub list, tree, impact: 4 call
+  sites in the core) carries the five evidence tiers, the enrichment row,
+  and the staleness section (fresh/stale/missing/unknown — cross-checked
+  against `src/lsp/freshness.ts`'s marker union). Legend styles ship in the
+  ONE hub stylesheet (`script/m26/hub-css.ts`, nonce-bound, W6 unchanged).
+  `docs/m44/LEGEND.md` is GENERATED from the live core; the drift gate is
+  byte-identical regeneration. The whole-panel stale marker stays a
+  hub-panel contract: pinned at source level in U4, asserted live by E5.
+
 ### U3 decision (2026-09-07, owner-approved "true nested tree")
 
 The tree nests by the **placement parent** — the parent endpoint of the group's

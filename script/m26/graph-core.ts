@@ -284,6 +284,35 @@ export function renderLegend(dom: GraphDom): GraphDomElement {
   enrMeaning.textContent = "⌾ role/pattern/layer/criticality — inferred by the index enrichment pass (M40); an annotation, never an evidence tier."
   enrItem.appendChild(enrMeaning)
   legend.appendChild(enrItem)
+  // M44.U4: the staleness legend — the marker semantics shared by the hub
+  // panel, graph, and impact surfaces. Statuses mirror the server's
+  // StaleMarker (src/lsp/freshness.ts): fresh | stale | missing | unknown.
+  // The legend never claims freshness — it explains what each marker means.
+  const staleTitle = dom.create("span")
+  staleTitle.addClass("bb-legend-title")
+  staleTitle.textContent = "Staleness:"
+  legend.appendChild(staleTitle)
+  const staleMeanings: Array<[string, string]> = [
+    ["fresh", "fresh — indexed data matches the files on disk; no marker is shown"],
+    ["stale", "⚠️ stale — the file changed since indexing (or a reindex is pending); the data may be outdated — refresh before trusting it"],
+    ["missing", "missing — an indexed file is no longer on disk; the data refers to a file that moved or was deleted"],
+    ["unknown", "unknown — freshness cannot be claimed for this file; declared unknown, never silently fresh"],
+  ]
+  for (const [status, meaning] of staleMeanings) {
+    const item = dom.create("div")
+    item.addClass("bb-legend-item")
+    item.addClass(`bb-legend-stale-${status}`)
+    item.setAttribute("data-legend-status", status)
+    const swatch = dom.create("span")
+    swatch.addClass("bb-legend-swatch")
+    swatch.addClass(`bb-stale-swatch-${status}`)
+    const meaningEl = dom.create("span")
+    meaningEl.addClass("bb-legend-meaning")
+    meaningEl.textContent = meaning
+    item.appendChild(swatch)
+    item.appendChild(meaningEl)
+    legend.appendChild(item)
+  }
   return legend
 }
 
@@ -457,6 +486,8 @@ export function renderImpact(result: ImpactResultLike, dom: GraphDom): { nodesRe
     el.textContent = `${dep.name} (${dep.file || "external"})`
     layer.appendChild(el)
   }
+  // U4: the ONE badge legend ships with the impact surface too (§13.9).
+  layer.appendChild(renderLegend(dom))
   let marker: GraphDomElement | null = null
   if (result.truncated) {
     marker = dom.create("div")
@@ -654,18 +685,29 @@ function groupRow(entry: GroupedHubEntry, dir: "caller" | "callee", dom: GraphDo
   return el
 }
 
-/** Summary line + declared truncation; shared by every hub section. Counts
- *  are GROUP counts (what the eye can verify against the rendered rows,
- *  §13.4); row counts ride as declared multiplicity. */
+/** Summary line + declared truncation; shared by every hub section. Header
+ *  counts are DERIVED FROM THE RENDERED GROUPS (U4, §13.4) — the number the
+ *  eye can verify against the rows below — never trusted from the server
+ *  counts block; the server's own group/row counts ride as declared
+ *  data-server-* attributes so any drift between the two is visible, not
+ *  hidden. Row counts are derived from the rendered rows' declared
+ *  multiplicity. */
 function hubSummary(grouped: GroupedHub, layer: GraphDomElement, dom: GraphDom): void {
+  const callerGroups = grouped.callers.length
+  const calleeGroups = grouped.callees.length
+  const callerRows = grouped.callers.reduce((n, g) => n + g.rows.length, 0)
+  const calleeRows = grouped.callees.reduce((n, g) => n + g.rows.length, 0)
+  const fileLevelRows = grouped.fileLevel.imports.length + grouped.fileLevel.exports.length
   const summary = dom.create("div")
   summary.addClass("bb-hub-summary")
-  summary.setAttribute("data-callers", String(grouped.counts.callerGroups))
-  summary.setAttribute("data-callees", String(grouped.counts.calleeGroups))
-  summary.setAttribute("data-caller-rows", String(grouped.counts.callerRows))
-  summary.setAttribute("data-callee-rows", String(grouped.counts.calleeRows))
-  summary.setAttribute("data-file-level-rows", String(grouped.counts.fileLevelRows))
-  summary.textContent = `${grouped.counts.callerGroups} caller${grouped.counts.callerGroups === 1 ? "" : "s"} · ${grouped.counts.calleeGroups} callee${grouped.counts.calleeGroups === 1 ? "" : "s"}`
+  summary.setAttribute("data-callers", String(callerGroups))
+  summary.setAttribute("data-callees", String(calleeGroups))
+  summary.setAttribute("data-caller-rows", String(callerRows))
+  summary.setAttribute("data-callee-rows", String(calleeRows))
+  summary.setAttribute("data-file-level-rows", String(fileLevelRows))
+  summary.setAttribute("data-server-callers", String(grouped.counts.callerGroups))
+  summary.setAttribute("data-server-callees", String(grouped.counts.calleeGroups))
+  summary.textContent = `${callerGroups} caller${callerGroups === 1 ? "" : "s"} · ${calleeGroups} callee${calleeGroups === 1 ? "" : "s"}`
   layer.appendChild(summary)
   if (grouped.summary.truncated) {
     const shown = grouped.counts.callerGroups + grouped.counts.calleeGroups
@@ -762,6 +804,8 @@ export function renderHubList(grouped: GroupedHub, dom: GraphDom, group: "file" 
     for (const item of items) g.appendChild(groupRow(item.entry, item.dir, dom))
     section.appendChild(g)
   }
+  // U4: the ONE badge legend ships with the hub list too (§13.9).
+  section.appendChild(renderLegend(dom))
   return { nodesRendered: all.length, nodesTotal: all.length, edgesRendered: 0, edgesTotal: 0, nodesTruncated: false, edgesTruncated: false }
 }
 
@@ -969,6 +1013,9 @@ export function renderHubTree(grouped: GroupedHub, dom: GraphDom): RenderStats {
   const rowsRendered = { count: 0 }
   treeSideInto(callers, grouped.root.symbolId, section, dom, callerKids, rowsRendered)
   treeSideInto(callees, grouped.root.symbolId, section, dom, calleeKids, rowsRendered)
+  // U4: the ONE badge legend ships with the tree too — same core function as
+  // graphs, hub list, and impact (single legend law, §13.9).
+  section.appendChild(renderLegend(dom))
   const total = grouped.counts.callerGroups + grouped.counts.calleeGroups
   return { nodesRendered: rowsRendered.count, nodesTotal: total, edgesRendered: 0, edgesTotal: 0, nodesTruncated: grouped.summary.truncated, edgesTruncated: grouped.summary.truncated }
 }

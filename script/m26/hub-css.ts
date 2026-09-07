@@ -51,6 +51,18 @@ export const HUB_CSS = `
 .bb-hub-empty { color: var(--vscode-descriptionForeground, #888); font-style: italic; padding: 8px 0; }
 .bb-truncation-marker { color: var(--vscode-editorWarning-foreground, #e5c07b); font-size: 12px; margin: 6px 0; }
 .bb-stale-marker { color: var(--vscode-editorWarning-foreground, #e5c07b); font-size: 12px; margin: 0 0 8px 0; }
+.bb-legend { margin: 14px 0 4px 0; padding: 8px 10px; border: 1px solid var(--vscode-panel-border, #333); border-radius: 3px; display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; }
+.bb-legend-title { display: block; width: 100%; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--vscode-descriptionForeground, #888); }
+.bb-legend-item { display: inline-flex; align-items: baseline; gap: 5px; font-size: 11.5px; color: var(--vscode-descriptionForeground, #aaa); }
+.bb-legend-swatch { display: inline-block; width: 9px; height: 9px; border-radius: 2px; border: 1px solid var(--vscode-panel-border, #555); }
+.bb-legend-swatch.bb-badge-structural { background: rgba(97,175,239,0.25); }
+.bb-legend-swatch.bb-badge-import_based { background: rgba(229,192,123,0.25); }
+.bb-legend-swatch.bb-badge-usage_contextual, .bb-legend-swatch.bb-badge-reference_qualified { background: rgba(152,195,121,0.25); }
+.bb-legend-swatch.bb-badge-inferred { background: rgba(156,220,254,0.18); }
+.bb-stale-swatch-fresh { background: rgba(152,195,121,0.35); }
+.bb-stale-swatch-stale { background: var(--vscode-editorWarning-foreground, #e5c07b); border-color: var(--vscode-editorWarning-foreground, #e5c07b); }
+.bb-stale-swatch-missing { background: var(--vscode-errorForeground, #f44747); border-color: var(--vscode-errorForeground, #f44747); }
+.bb-stale-swatch-unknown { background: transparent; border-style: dashed; }
 .bb-hub-view { margin: 0 0 18px 0; }
 /* U3: the call tree nests — children indent under their parent row, and a
    collapsed wrapper hides (the renderer declares it; the bridge toggles it). */
