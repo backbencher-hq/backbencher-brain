@@ -1214,9 +1214,9 @@
     "sdwebimage:objc": {
       "missing": 0,
       "unexplained": 0,
-      "heuristic": 0,
+      "heuristic": 163,
       "perf": {
-        "avgMsPerFile": 12.7
+        "avgMsPerFile": 9.8
       }
     }
   }

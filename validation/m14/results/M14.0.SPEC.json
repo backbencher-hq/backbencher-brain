@@ -1123,14 +1123,14 @@
       "status": "pass"
     },
     {
-      "description": "swift: 7 ruled, 0 pending owner",
+      "description": "swift: 7 ruled, 7 pending owner",
       "id": "design-decisions-tracked",
       "language": "swift",
       "status": "pass"
     },
     {
       "description": "every named node type classified (swift)",
-      "detail": "185 types, 58 handled, 118 silent, 3 gaps, 7 decisions",
+      "detail": "185 types, 58 handled, 118 silent, 3 gaps, 14 decisions",
       "id": "section-a-structural",
       "language": "swift",
       "status": "pass"
@@ -1197,21 +1197,21 @@
       "status": "pass"
     },
     {
-      "description": "objc: 4 ruled, 0 pending owner",
+      "description": "objc: 4 ruled, 4 pending owner",
       "id": "design-decisions-tracked",
       "language": "objc",
       "status": "pass"
     },
     {
       "description": "every named node type classified (objc)",
-      "detail": "214 types, 35 handled, 146 silent, 3 gaps, 4 decisions",
+      "detail": "214 types, 35 handled, 146 silent, 3 gaps, 8 decisions",
       "id": "section-a-structural",
       "language": "objc",
       "status": "pass"
     },
     {
       "description": "7 relationship kinds pinned by objc fixtures",
-      "detail": "pinned: calls, contains, extends, implements, instantiates, references, uses",
+      "detail": "pinned: calls, contains, extends, implements, instantiates, overrides, references, uses",
       "id": "section-b-relationship-kinds",
       "language": "objc",
       "status": "pass"
@@ -1225,21 +1225,21 @@
     },
     {
       "description": ">=2 distinct evidenceClass values pinned by fixtures",
-      "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
+      "detail": "4 tier(s) pinned: import_based, inferred, structural, usage_contextual",
       "id": "section-d-evidence-tiers",
       "language": "objc",
       "status": "pass"
     },
     {
-      "description": "Clyde:objc at corpus floor (missing 0, unexplained 0)",
-      "detail": "floor Clyde:objc: missing=0, unexplained=0 (differential-baseline.json)",
+      "description": "sdwebimage:objc at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor sdwebimage:objc: missing=0, unexplained=0 (differential-baseline.json)",
       "id": "section-e-differential",
       "language": "objc",
       "status": "pass"
     },
     {
       "description": "objc avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "Clyde:objc 5.5 ms/file",
+      "detail": "sdwebimage:objc 9.8 ms/file",
       "id": "section-f-perf-budget",
       "language": "objc",
       "status": "pass"
@@ -1271,14 +1271,14 @@
       "status": "pass"
     },
     {
-      "description": "php: 5 ruled, 0 pending owner",
+      "description": "php: 7 ruled, 5 pending owner",
       "id": "design-decisions-tracked",
       "language": "php",
       "status": "pass"
     },
     {
       "description": "every named node type classified (php)",
-      "detail": "177 types, 59 handled, 98 silent, 2 gaps, 5 decisions",
+      "detail": "177 types, 59 handled, 98 silent, 2 gaps, 12 decisions",
       "id": "section-a-structural",
       "language": "php",
       "status": "pass"
@@ -1556,8 +1556,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "61e185ef496d589f169dc4f56295cd93d814d55d",
-  "committedAt": "2026-09-06T21:13:43+02:00",
+  "commit": "ed54c097f9659852c9dcdfe1720f7302b5a1fd20",
+  "committedAt": "2026-09-07T16:31:01+02:00",
   "data": {
     "languages": {
       "c": {
@@ -2102,7 +2102,12 @@
           "undefined: obsolete/dead grammar-era names (pre-pinned-wasm aliases) — the pinned wasm has no such nodes; the analyzer never emits them. Documented to prevent future dead-literal regressions"
         ],
         "nodeTypeCount": 214,
-        "pendingDecisions": [],
+        "pendingDecisions": [
+          "OBJCD5",
+          "OBJCD6",
+          "OBJCD7",
+          "OBJCD8"
+        ],
         "ruledDecisions": [
           "OBJCD1",
           "OBJCD2",
@@ -2111,11 +2116,11 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "214 types, 35 handled, 146 silent, 3 gaps, 4 decisions",
+            "detail": "214 types, 35 handled, 146 silent, 3 gaps, 8 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
-            "detail": "pinned: calls, contains, extends, implements, instantiates, references, uses",
+            "detail": "pinned: calls, contains, extends, implements, instantiates, overrides, references, uses",
             "status": "pass"
           },
           "section-c-payload-matrix": {
@@ -2123,15 +2128,15 @@
             "status": "pass"
           },
           "section-d-evidence-tiers": {
-            "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
+            "detail": "4 tier(s) pinned: import_based, inferred, structural, usage_contextual",
             "status": "pass"
           },
           "section-e-differential": {
-            "detail": "floor Clyde:objc: missing=0, unexplained=0 (differential-baseline.json)",
+            "detail": "floor sdwebimage:objc: missing=0, unexplained=0 (differential-baseline.json)",
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "Clyde:objc 5.5 ms/file",
+            "detail": "sdwebimage:objc 9.8 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -2150,17 +2155,25 @@
           "undefined: ini directives and shell hash-bang lines are not parsed as symbols or decision points"
         ],
         "nodeTypeCount": 177,
-        "pendingDecisions": [],
+        "pendingDecisions": [
+          "PHPD5",
+          "PHPD6",
+          "PHPD8",
+          "PHPD10",
+          "PHPD11"
+        ],
         "ruledDecisions": [
           "PHPD1",
           "PHPD2",
           "PHPD3",
           "PHPD4",
-          "M3710-COMPANION"
+          "M3710-COMPANION",
+          "PHPD7",
+          "PHPD9"
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "177 types, 59 handled, 98 silent, 2 gaps, 5 decisions",
+            "detail": "177 types, 59 handled, 98 silent, 2 gaps, 12 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -2461,7 +2474,15 @@
           "undefined: key-path/selector/constructor/metatype/opaque/existential expressions as distinct symbols"
         ],
         "nodeTypeCount": 185,
-        "pendingDecisions": [],
+        "pendingDecisions": [
+          "SWIFTD13",
+          "SWIFTD14",
+          "SWIFTD15",
+          "SWIFTD16",
+          "SWIFTD17",
+          "SWIFTD18",
+          "SWIFTD19"
+        ],
         "ruledDecisions": [
           "SWIFTD1",
           "SWIFTD2",
@@ -2473,7 +2494,7 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "185 types, 58 handled, 118 silent, 3 gaps, 7 decisions",
+            "detail": "185 types, 58 handled, 118 silent, 3 gaps, 14 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
