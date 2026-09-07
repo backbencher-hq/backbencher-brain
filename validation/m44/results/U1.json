@@ -10,10 +10,10 @@
   "negativeCases": 6,
   "mutantsCaught": 6,
   "mutantsTotal": 6,
-  "currentCommit": "4fae1ab6bdc90fdbc5f0568c0a32091c2ffd8685",
+  "currentCommit": "a5704c44dd4b8a7cacdc046928d7599611136238",
   "verifierCommand": "npx tsx script/m44/verify-usages-groups.ts",
   "evidenceFile": "U1.json",
-  "generatedAt": "2026-09-07T17:12:16.001Z",
+  "generatedAt": "2026-09-07T17:23:56.339Z",
   "schemaVersion": 2,
   "laws": [
     "L1 one-group-per-symbol",
