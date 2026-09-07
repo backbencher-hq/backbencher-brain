@@ -211,22 +211,22 @@
         "id": "SWIFTD1",
         "node_type": "class_declaration",
         "status": "RULED",
-        "question": "The pinned grammar (alex-pinkus style) has ONE class_declaration node for class/struct/actor/enum/extension — the kind is decided by the anonymous keyword token.",
-        "resolution": "The analyzer reads the anonymous keyword token (class/struct/enum/extension/actor) to pick the kind — never source-text scanning. Only CLASS can have a superclass: its FIRST base is extends ONLY when that base is a class. A first-base protocol is still an adoption (implements). Kind resolution: an in-file pre-pass records declared protocol/class names, and the cross-file companion (context.typeKinds, corpus protocol set) covers other files; unknown externals follow the deterministic Swift rule (first base = superclass extends). Structs and actors have NO superclass — every base is implements."
+        "question": "The pinned grammar (alex-pinkus style) has ONE class_declaration node for class/struct/actor/enum/extension \u2014 the kind is decided by the anonymous keyword token.",
+        "resolution": "The analyzer reads the anonymous keyword token (class/struct/enum/extension/actor) to pick the kind \u2014 never source-text scanning. Only CLASS can have a superclass: its FIRST base is extends ONLY when that base is a class. A first-base protocol is still an adoption (implements). Kind resolution: an in-file pre-pass records declared protocol/class names, and the cross-file companion (context.typeKinds, corpus protocol set) covers other files; unknown externals follow the deterministic Swift rule (first base = superclass extends). Structs and actors have NO superclass \u2014 every base is implements."
       },
       {
         "id": "SWIFTD2",
         "node_type": "function_declaration, operator",
         "status": "RULED",
-        "question": "Operator overloads (`static func + (l:r:)`) have no simple_identifier name — the name is the anonymous operator token after `func`.",
+        "question": "Operator overloads (`static func + (l:r:)`) have no simple_identifier name \u2014 the name is the anonymous operator token after `func`.",
         "resolution": "Emitted as method symbols named `operator +` / `operator ==` / `operator []` (the dart #265 operator-signature convention); their bodies' calls/instantiates attach to the operator method."
       },
       {
         "id": "SWIFTD3",
         "node_type": "call_expression, call_suffix, value_arguments",
         "status": "RULED",
-        "question": "Subscript READS (`entries[key]`) parse as call_expression with a `[key]` call_suffix — indistinguishable from a function call by node type alone.",
-        "resolution": "A call_suffix whose value_arguments open with `[` is a property read — NO calls edge (family property-read precedent). `defer { }` also parses as a call_expression; it is filtered as a keyword construct, never a calls edge."
+        "question": "Subscript READS (`entries[key]`) parse as call_expression with a `[key]` call_suffix \u2014 indistinguishable from a function call by node type alone.",
+        "resolution": "A call_suffix whose value_arguments open with `[` is a property read \u2014 NO calls edge (family property-read precedent). `defer { }` also parses as a call_expression; it is filtered as a keyword construct, never a calls edge."
       },
       {
         "id": "SWIFTD4",
@@ -253,36 +253,57 @@
         "id": "M3710-COMPANION",
         "node_type": "function_declaration with override modifier (override resolution)",
         "status": "RULED",
-        "question": "The Pass-3 first-parent fallback emitted its GUESS at confidence 1.0 with evidenceClass 'structural' — indistinguishable from a verified override in thresholded analysis. What is the correct tier contract?",
-        "resolution": "M37.10 ruling (family-wide): verified overrides (in-file Pass-1) stay @1.0/structural; the Pass-3 first-parent guess is @0.5 with reasonCode 'first-parent-guess' and tier 'inferred' (classifyEvidenceTier <0.9 branch) — matching java/groovy's documented Pass-3 contract and staying below the patterns.ts 0.7 threshold. The guess may target a parent that never declares the method; claiming structural hid the evidence gap. Gated by F9-PROBE-M3710-SWIFT, the swift/external-override fixture + confidence pins, and 6 family regression mutants."
+        "question": "The Pass-3 first-parent fallback emitted its GUESS at confidence 1.0 with evidenceClass 'structural' \u2014 indistinguishable from a verified override in thresholded analysis. What is the correct tier contract?",
+        "resolution": "M37.10 ruling (family-wide): verified overrides (in-file Pass-1) stay @1.0/structural; the Pass-3 first-parent guess is @0.5 with reasonCode 'first-parent-guess' and tier 'inferred' (classifyEvidenceTier <0.9 branch) \u2014 matching java/groovy's documented Pass-3 contract and staying below the patterns.ts 0.7 threshold. The guess may target a parent that never declares the method; claiming structural hid the evidence gap. Gated by F9-PROBE-M3710-SWIFT, the swift/external-override fixture + confidence pins, and 6 family regression mutants."
       },
       {
         "id": "SWIFTD13",
         "node_type": "protocol_declaration, inheritance_specifier",
         "status": "FIXED",
-        "question": "Protocol inheritance (`protocol A: B, C`) emitted NO edge — a comment claimed ObjC `@protocol A <NSObject>` precedent, but the managed-OO family materializes interface extends (csharp `interface IX : IA` -> extends, java `interface IX extends IA` -> extends, objc `@protocol B <A>` -> extends). Probe-verified 2026-09 on swift-nio: 46 protocol-inheritance sites, both sides silent.",
-        "resolution": "protocol inheritance now emits extends per parent (weight 1). AnyObject/Any inheritance_specifiers are CLASS-CONSTRAINT markers, not protocol parents — probe-verified (`protocol P: AnyObject, B` in swift-nio parses AnyObject as an inheritance_specifier) — excluded from the extends set."
+        "question": "Protocol inheritance (`protocol A: B, C`) emitted NO edge \u2014 a comment claimed ObjC `@protocol A <NSObject>` precedent, but the managed-OO family materializes interface extends (csharp `interface IX : IA` -> extends, java `interface IX extends IA` -> extends, objc `@protocol B <A>` -> extends). Probe-verified 2026-09 on swift-nio: 46 protocol-inheritance sites, both sides silent.",
+        "resolution": "protocol inheritance now emits extends per parent (weight 1). AnyObject/Any inheritance_specifiers are CLASS-CONSTRAINT markers, not protocol parents \u2014 probe-verified (`protocol P: AnyObject, B` in swift-nio parses AnyObject as an inheritance_specifier) \u2014 excluded from the extends set."
       },
       {
         "id": "SWIFTD14",
         "node_type": "class_declaration (extension), inheritance_specifier",
         "status": "FIXED",
-        "question": "Extension conformances (`extension Circle: Equatable`) emitted NOTHING — base extraction was skipped for the Extension kind. Swift forbids redundant conformances, so every extension base is an ADDITIONAL adoption. Corpus: 380 sites in swift-nio (554 files). csharp partial-class conformance is the managed-OO analog and IS materialized.",
+        "question": "Extension conformances (`extension Circle: Equatable`) emitted NOTHING \u2014 base extraction was skipped for the Extension kind. Swift forbids redundant conformances, so every extension base is an ADDITIONAL adoption. Corpus: 380 sites in swift-nio (554 files). csharp partial-class conformance is the managed-OO analog and IS materialized.",
         "resolution": "extension bases now emit implements (weight 0.9) sourced from the extension symbol (named after the extended type). Extensions cannot add a superclass, so no extends is ever possible."
       },
       {
         "id": "SWIFTD15",
         "node_type": "class_declaration (enum), inheritance_specifier",
         "status": "FIXED",
-        "question": "Enum bases were skipped entirely AND the first base was always recorded as rawType metadata — so `enum Result: Error` minted bogus rawType=Error payload (Error is a conformance) and no conformance edges ever emitted. Corpus: 181 enums carry bases; ~93% first-slot are protocols (Sendable 76 / Error 46 / Hashable 22 / Equatable 17 / String 7 / Int 5 / UInt8 1).",
+        "question": "Enum bases were skipped entirely AND the first base was always recorded as rawType metadata \u2014 so `enum Result: Error` minted bogus rawType=Error payload (Error is a conformance) and no conformance edges ever emitted. Corpus: 181 enums carry bases; ~93% first-slot are protocols (Sendable 76 / Error 46 / Hashable 22 / Equatable 17 / String 7 / Int 5 / UInt8 1).",
         "resolution": "only a stdlib-named first base (String/Character/Int8-64/UInt8-64/Float/Double/CGFloat) is the raw value (meta.rawType, no edge); every other base is a protocol conformance -> implements (weight 0.9). Mirrors dart DARTD15 (enhanced-enum conformances). Custom RawRepresentable raw types in first slot are unresolvable statically; the stdlib gate is the deterministic rule (accepted boundary)."
       },
       {
         "id": "SWIFTD16",
         "node_type": "call_expression (bare capitalized callee)",
         "status": "FIXED",
-        "question": "Bare capitalized calls emit instantiates (Swift construction syntax), but two non-type families fabricate edges: XCTest assertion FUNCTIONS (XCTAssertEqual/XCTFail/... — the one capitalized free-function family in Swift; 8,226 of 13,966 capitalized bare calls = 59% in the swift-nio census) and stdlib fixed-width numerics (UInt64/Int64/UInt8 — 1,105 stdlib constructions — while Int/Double/String were already in BUILTIN_BARE_CALLS, an inconsistency). Both sides colluded (F5-blind).",
-        "resolution": "XCT-prefixed bare callees are filtered (no edge — they are not types, matching BuiltinsAreFiltered); fixed-width stdlib numerics (UInt/UInt8-64/Int8-64) joined BUILTIN_BARE_CALLS. Genuine external type construction (DispatchQueue etc, undeclared in corpus) still emits instantiates. Oracle mirrored exactly."
+        "question": "Bare capitalized calls emit instantiates (Swift construction syntax), but two non-type families fabricate edges: XCTest assertion FUNCTIONS (XCTAssertEqual/XCTFail/... \u2014 the one capitalized free-function family in Swift; 8,226 of 13,966 capitalized bare calls = 59% in the swift-nio census) and stdlib fixed-width numerics (UInt64/Int64/UInt8 \u2014 1,105 stdlib constructions \u2014 while Int/Double/String were already in BUILTIN_BARE_CALLS, an inconsistency). Both sides colluded (F5-blind).",
+        "resolution": "XCT-prefixed bare callees are filtered (no edge \u2014 they are not types, matching BuiltinsAreFiltered); fixed-width stdlib numerics (UInt/UInt8-64/Int8-64) joined BUILTIN_BARE_CALLS. Genuine external type construction (DispatchQueue etc, undeclared in corpus) still emits instantiates. Oracle mirrored exactly."
+      },
+      {
+        "id": "SWIFTD17",
+        "status": "FIXED",
+        "question": "Subscript access of a SELF container (`self.storage[k]`, `self.storage[k] = v`) emitted NO uses \u2014 the write/call gates treated the subscript base as an assignment LHS / method-call callee. But a subscript access is a property READ of the container, not a write to it and not a method invocation. Family precedent probe-verified 2026-09 on the same shapes: php emits `uses read->items` AND `uses write->items`, objc emits both too. 62 subscript self-container accesses in the 200-file swift-nio census (49 reads, 13 writes) \u2014 all silently dropped, both sides (differential-invisible).",
+        "resolution": "Subscript base navigations with a self receiver now emit uses (container read); the method-call callee suppression is scoped to NON-subscript call_expression parents only. A pure field write (`self.count = 0`) stays gated by the SCD1 write gate (probe-verified: it never reaches this gate \u2014 its parent is the assignment LHS wrapper). Subscript-write bases are container reads, matching php/objc. Mirror in deriveSwiftEdges. Gated by fixture swift/master-review-w2-regressions (expectUses Cache->storage/key, forbid uses Cache->count) + mutant swift/drop-container-subscript-uses + swift/re-add-field-write-uses.",
+        "issue": "M37.14-w2 swift master review (#607)"
+      },
+      {
+        "id": "SWIFTD18",
+        "status": "FIXED",
+        "question": "Multi-binding declarations (`var a = 1, b = 2`, top-level `let g1 = 1, g2 = 2`) symbolized only the FIRST binding \u2014 the declaration carries one sibling `pattern` child PER binding in the pinned grammar (probe-verified 2026-09), and handleVariable read only findChildByType(pattern). 0 corpus sites in the 200-file swift-nio census but a real completeness hole: every additional property/variable was silently dropped.",
+        "resolution": "handleVariable now iterates ALL sibling pattern children and creates one symbol per binding (kind property/variable by scope). Locals remain non-symbols by contract (the handler early-returns for non-type parents). Gated by fixture swift/master-review-w2-regressions (expectSymbols second/gTop2) + mutant swift/drop-second-binding-symbol.",
+        "issue": "M37.14-w2 swift master review (#607)"
+      },
+      {
+        "id": "SWIFTD19",
+        "status": "FIXED",
+        "question": "Dotted qualified type names were resolved to the FIRST segment everywhere. `extension Outer2.Inner2` minted an extension symbol named Outer2 \u2014 colliding with the container struct's symbol id and mis-attributing every extension member to the container (97 dotted extension targets in the 200-file swift-nio census, mostly nested-type extensions like WebSocketFrame._Storage / NIOBSDSocket.AddressFamily). Dotted inheritance bases fabricated edges to the module/container name: `class Sub2: Foundation.URLSession` emitted extends Sub2->Foundation, `struct M2: SharedMod.Proto` emitted implements M2->SharedMod (6 dotted bases in the census).",
+        "resolution": "A user_type holds its dotted segments as sibling type_identifier children in source order (probe-verified), so the leaf is the LAST type_identifier \u2014 consistent with the family's leaf-target convention everywhere else. Extension targets now name the leaf (Inner2); extractBaseName now returns the leaf (URLSession/Proto). Oracle baseName mirrored. Gated by fixture swift/master-review-w2-regressions (expects extends NetSession->URLSession, implements M2->Proto, extension symbol Inner2; forbids contains Outer2->operator ==, extends NetSession->Foundation, implements M2->SharedMod) + mutants swift/first-segment-dotted-base + swift/first-segment-extension-name.",
+        "issue": "M37.14-w2 swift master review (#607)"
       }
     ]
   }
