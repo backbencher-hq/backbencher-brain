@@ -10,8 +10,13 @@
 // Code, the VSIX, the LSP server, or the hover do not materialize, the run
 // fails loudly and no manifest is written (rule: a video is a claim).
 //
-// Run: npx tsx script/m45/capture-driver.ts [--out /abs/dir]
+// Run: npx tsx script/m45/capture-driver.ts [--out /abs/dir] [--film]
 // Evidence: <out>/frames/ (png), <out>/capture-manifest.json, <out>/C1-editor-leg.json
+//
+// `--film` shoots at film grade for D1 (storyboard beats need push-in headroom):
+//   2× device scale (retina-class 2560×1600 grab), clean editor (sidebar/minimap/
+//   status bar off), larger editor font, longer hover dwell. Default mode is
+//   unchanged so the committed C1 evidence stays byte-stable.
 
 import { execFileSync, spawn } from "node:child_process"
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
@@ -32,8 +37,26 @@ const VSIX_PATH = path.join(ROOT, "ide/vscode/bb-lsp-vscode-0.1.0.vsix")
 const CORPUS_ABS = path.join(ROOT, M45_CORPUS_REL)
 
 const outArg = process.argv.indexOf("--out")
-const OUT_DIR = outArg >= 0 && process.argv[outArg + 1] ? path.resolve(process.argv[outArg + 1]!) : path.join(ROOT, "validation/m45/results/demo-capture")
+const FILM = process.argv.includes("--film")
+const OUT_DIR = outArg >= 0 && process.argv[outArg + 1]
+  ? path.resolve(process.argv[outArg + 1]!)
+  : path.join(ROOT, FILM ? "validation/m45/results/demo-capture-film" : "validation/m45/results/demo-capture")
 const FRAMES = path.join(OUT_DIR, "frames")
+
+// Film-grade profile: pixels the director's layer can push into without blur.
+// 2× device scale on a 2560×1600 grab = a 1280×800 logical IDE (comfortable)
+// rendered at retina-class density; zoom to 2× in post still has 1:1 pixels.
+const FILM_PROFILE = {
+  screen: "2560x1600",
+  scaleFactor: "2",
+  editorFontSize: 20,
+  editorLineHeight: 30,
+  hoverDwellMs: 3000,
+  frameW: 2560,
+  frameH: 1600,
+} as const
+const GRAB_W = FILM ? FILM_PROFILE.frameW : 1600
+const GRAB_H = FILM ? FILM_PROFILE.frameH : 1000
 
 function sh(cmd: string, opts: { cwd?: string; env?: NodeJS.ProcessEnv; timeoutMs?: number } = {}): string {
   return execFileSync("bash", ["-c", cmd], { cwd: opts.cwd ?? ROOT, env: opts.env ?? process.env, encoding: "utf8", timeout: opts.timeoutMs ?? 60_000, stdio: ["ignore", "pipe", "pipe"] })
@@ -67,7 +90,7 @@ async function main(): Promise<void> {
   const display = `:${displayNum}`
   sh(`pkill -f "[X]vfb ${display}" 2>/dev/null; true`)
   await sleep(500)
-  sh(`setsid nohup Xvfb ${display} -screen 0 1600x1000x24 >/tmp/m45-xvfb.log 2>&1 </dev/null &`)
+  sh(`setsid nohup Xvfb ${display} -screen 0 ${FILM ? FILM_PROFILE.screen : "1600x1000"}x24 >/tmp/m45-xvfb.log 2>&1 </dev/null &`)
   await sleep(2500)
   const alive = sh(`ls /tmp/.X11-unix/ 2>/dev/null | grep -c X${displayNum} || true`).trim()
   if (alive !== "1") throw new Error(`Xvfb ${display} did not start`)
@@ -84,17 +107,31 @@ async function main(): Promise<void> {
   const userDir = path.join(tmpdir(), "m45-vscode-user")
   rmSync(userDir, { recursive: true, force: true })
   mkdirSync(userDir, { recursive: true })
-  const codeLog = "/tmp/m45-code.log"
-  rmSync(codeLog, { force: true })
+  if (FILM) {
+    // Clean film layout: sidebar/minimap/status-bar noise off, readable font.
+    const settingsDir = path.join(userDir, "Data", "User")
+    mkdirSync(settingsDir, { recursive: true })
+    writeFileSync(path.join(settingsDir, "settings.json"), JSON.stringify({
+      "editor.minimap.enabled": false,
+      "editor.fontSize": FILM_PROFILE.editorFontSize,
+      "editor.lineHeight": FILM_PROFILE.editorLineHeight,
+      "editor.cursorBlinking": "solid",
+      "workbench.statusBar.visible": false,
+      "workbench.colorTheme": "Default Dark Modern",
+      "explorer.openEditors.visible": 0,
+      "window.commandCenter": false,
+    }, null, 2) + "\n")
+  }
   const env = { ...process.env, DISPLAY: display, BB_DATA_DIR: dataDir }
-  const code = spawn(
-    "/usr/bin/code",
-    ["--user-data-dir", userDir, "--no-sandbox", "--disable-workspace-trust", "--skip-welcome", "--skip-release-notes",
-      "--enable-unsafe-swiftshader", "--use-gl=angle", "--use-angle=swiftshader", "--extensions-dir", extDir, CORPUS_ABS],
-    { env, stdio: ["ignore", "ignore", "ignore"], detached: true },
-  )
+  const codeArgs = [
+    "--user-data-dir", userDir, "--no-sandbox", "--disable-workspace-trust", "--skip-welcome", "--skip-release-notes",
+    "--enable-unsafe-swiftshader", "--use-gl=angle", "--use-angle=swiftshader", "--extensions-dir", extDir,
+    ...(FILM ? ["--force-device-scale-factor", FILM_PROFILE.scaleFactor, "--window-size", "2560,1600"] : []),
+    CORPUS_ABS,
+  ]
+  const code = spawn("/usr/bin/code", codeArgs, { env, stdio: ["ignore", "ignore", "ignore"], detached: true })
   code.unref()
-  console.log("  VS Code launched on corpus workspace")
+  console.log(`  VS Code launched on corpus workspace${FILM ? ` (film grade: ${FILM_PROFILE.scaleFactor}× scale, clean layout)` : ""}`)
 
   // 6. Wait for window + bb_lsp serving the corpus.
   let windowId = ""
@@ -108,6 +145,11 @@ async function main(): Promise<void> {
   }
   if (!windowId) throw new Error("VS Code window never appeared")
   console.log(`  window up: ${windowId}`)
+  if (FILM) {
+    // Pin the window to the full X11 screen (physical px) — deterministic frame.
+    sh(`DISPLAY=${display} xdotool windowmove ${windowId} 0 0 windowsize ${windowId} ${GRAB_W} ${GRAB_H} 2>/dev/null; true`)
+    await sleep(1200)
+  }
   const lspServing = sh(`ps aux | grep "[l]sp/server.js" 2>/dev/null | grep -c "m45-demo" || true`).trim()
   console.log(`  bb_lsp serving corpus: ${lspServing !== "0" ? "yes" : "checking…"}`)
 
@@ -121,18 +163,24 @@ async function main(): Promise<void> {
   // cursor to line 5, Home, then hover command
   sh(`DISPLAY=${display} xdotool key --window ${windowId} ctrl+g; sleep 1; DISPLAY=${display} xdotool type --window ${windowId} --delay 40 "5"; sleep 1; DISPLAY=${display} xdotool key --window ${windowId} Return; sleep 1; DISPLAY=${display} xdotool key --window ${windowId} Home; sleep 1`)
 
+  // Film grade: drop the explorer sidebar for a clean editor surface.
+  if (FILM) {
+    sh(`DISPLAY=${display} xdotool key --window ${windowId} ctrl+b; sleep 1; DISPLAY=${display} xdotool key --window ${windowId} ctrl+j; true`)
+    await sleep(1000)
+  }
+
   // 8. Frame A: editor, no hover yet.
   mkdirSync(FRAMES, { recursive: true })
-  sh(`DISPLAY=${display} ffmpeg -y -f x11grab -video_size 1600x1000 -i ${display} -frames:v 1 ${FRAMES}/01-editor.png >/dev/null 2>&1`)
+  sh(`DISPLAY=${display} ffmpeg -y -f x11grab -video_size ${GRAB_W}x${GRAB_H} -i ${display} -frames:v 1 ${FRAMES}/01-editor.png >/dev/null 2>&1`)
   await sleep(500)
   // Frame B: rich hover.
   sh(`DISPLAY=${display} xdotool key --window ${windowId} ctrl+k ctrl+i; sleep 1`)
-  await sleep(2500)
-  sh(`DISPLAY=${display} ffmpeg -y -f x11grab -video_size 1600x1000 -i ${display} -frames:v 1 ${FRAMES}/02-hover.png >/dev/null 2>&1`)
+  await sleep(FILM ? FILM_PROFILE.hoverDwellMs : 2500)
+  sh(`DISPLAY=${display} ffmpeg -y -f x11grab -video_size ${GRAB_W}x${GRAB_H} -i ${display} -frames:v 1 ${FRAMES}/02-hover.png >/dev/null 2>&1`)
   await sleep(500)
   sh(`DISPLAY=${display} xdotool key --window ${windowId} Escape; true`)
   await sleep(800)
-  sh(`DISPLAY=${display} ffmpeg -y -f x11grab -video_size 1600x1000 -i ${display} -frames:v 1 ${FRAMES}/03-editor-again.png >/dev/null 2>&1`)
+  sh(`DISPLAY=${display} ffmpeg -y -f x11grab -video_size ${GRAB_W}x${GRAB_H} -i ${display} -frames:v 1 ${FRAMES}/03-editor-again.png >/dev/null 2>&1`)
 
   for (const f of ["01-editor.png", "02-hover.png", "03-editor-again.png"]) {
     const p = path.join(FRAMES, f)
@@ -169,6 +217,7 @@ async function main(): Promise<void> {
     frames: ["01-editor.png", "02-hover.png", "03-editor-again.png"],
     manifest: "capture-manifest.json",
     hoverProof,
+    ...(FILM ? { filmProfile: { scale: FILM_PROFILE.scaleFactor, grab: `${GRAB_W}x${GRAB_H}`, editorFontSize: FILM_PROFILE.editorFontSize, layout: "sidebar/minimap/status-bar off" } } : {}),
     generatedAt: new Date().toISOString(),
   }
   writeFileSync(path.join(OUT_DIR, "C1-editor-leg.json"), JSON.stringify(evidence, null, 2) + "\n")
