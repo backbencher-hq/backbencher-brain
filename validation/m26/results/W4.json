@@ -8,10 +8,10 @@
   "failed": 0,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "a5704c44dd4b8a7cacdc046928d7599611136238",
+  "currentCommit": "489cb8e12bf6631619108a4c1b46998cf5b520f5",
   "verifierCommand": "npx tsx script/m26/verify-evidence-badges.ts",
   "evidenceFile": "W4.json",
-  "generatedAt": "2026-09-07T17:30:13.054Z",
+  "generatedAt": "2026-09-07T18:00:55.108Z",
   "limitations": [
     "Badge styling (colors/shape) is per-editor CSS; the verified honesty surface is the class + data-attribute contract.",
     "Legend meanings are English UI terms; localization is not declared."
