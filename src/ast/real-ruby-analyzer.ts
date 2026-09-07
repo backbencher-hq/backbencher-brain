@@ -214,6 +214,23 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
           for (let i = bodyFrames.length - 1; i >= 0; i--) stack.push(bodyFrames[i])
         }
+        // The superclass expression may itself CONSTRUCT the base class
+        // (`class Body < Struct.new(:root, :path, :files)`) — visit the nested
+        // call under the declaration's own (outer) scope so `Struct.new`
+        // surfaces as an instantiation. Parity with the oracle truth, which
+        // walks the superclass subtree (RB-C, rack wave).
+        const superNode = this.findChild(node, "superclass")
+        if (superNode) {
+          for (let i = 0; i < superNode.namedChildCount; i++) {
+            const sc = superNode.namedChild(i)
+            // The pinned grammar folds every paren-less/paren'd call into
+            // `call`, so only that type is matched here (command types are
+            // never produced — F6 dead-literal guard).
+            if (sc && sc.type === "call") {
+              stack.push({ node: sc, owner, ownerKind, visibility, isSingleton: false })
+            }
+          }
+        }
         continue
       }
 
@@ -289,6 +306,13 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
             owner, ownerKind, enclosingMethod, visibilityOverrides,
             new Set((params ?? []).map((p) => p.name)))
         }
+        // Default-argument VALUE expressions run in this method's scope at
+        // call time (`mutex = Mutex.new`, `params = Rack::Utils.…`) — surface
+        // their calls/reads too (RB-B, rack wave; the oracle truth walks
+        // parameter values).
+        this.walkParamDefaults(node, symbols, relationships, imports, metadata,
+          owner, ownerKind, enclosingMethod, visibilityOverrides,
+          new Set((params ?? []).map((p) => p.name)))
 
         continue
       }
@@ -350,6 +374,10 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
             owner, ownerKind, name, visibilityOverrides,
             new Set((params ?? []).map((p) => p.name)))
         }
+        // RB-B default-argument values (see walkParamDefaults above).
+        this.walkParamDefaults(node, symbols, relationships, imports, metadata,
+          owner, ownerKind, name, visibilityOverrides,
+          new Set((params ?? []).map((p) => p.name)))
 
         continue
       }
@@ -414,6 +442,28 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (child) stack.push({ node: child, owner, ownerKind, visibility, isSingleton: false })
         }
         continue
+      }
+
+      // --- Instance-variable reads outside method bodies (RB-D) ---
+      // walkBody emits member-read `uses` inside defs. Spec/DSL code (`it`,
+      // `before` blocks, bare class-level reads) has no enclosing method, yet
+      // the oracle truth counts every instance_variable READ — attribute them
+      // to the file-level owner (owner || Global), the same fallback calls
+      // use, so analyzer and truth stay in parity on spec/DSL-heavy corpora
+      // (rack wave: @content_type/@app reads in minitest specs).
+      if (type === "instance_variable") {
+        const parentType = node.parent?.type
+        const isLhsOfAssign = (parentType === "assignment" || parentType === "operator_assignment") &&
+          node.parent?.childForFieldName("left")?.id === node.id
+        if (!isLhsOfAssign) {
+          relationships.push({
+            source: owner || "Global",
+            target: node.text,
+            type: ASTEngine.RelationshipType.Uses,
+            confidence: 0.9,
+            metadata: { memberRead: true },
+          })
+        }
       }
 
       // --- Fallback: recurse into any other top-level/module/class body
@@ -753,6 +803,46 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
+  /**
+   * Walk the default-argument VALUE expressions of a method's parameters
+   * (`optional_parameter` `x = v`, `keyword_parameter` `k: v`) in the method's
+   * own scope. Ruby evaluates these at call time, so their calls, member
+   * reads and instantiations belong to the method — only the body was walked
+   * before, silently dropping `def f(app, lock = Lock.new)`-style call sites
+   * (RB-B, rack wave: mutex = Mutex.new, params = Rack::Utils.default_query_parser,
+   * app = @app). Mirrors the oracle truth, which walks parameter values.
+   */
+  private walkParamDefaults(
+    node: Node,
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    imports: ASTEngine.ImportInfo[],
+    metadata: Partial<ASTEngine.FileMetadata>,
+    owner: string | undefined,
+    ownerKind: string | undefined,
+    enclosingMethod: string | undefined,
+    visibilityOverrides: Map<string, string>,
+    locals: Set<string>,
+  ): void {
+    const paramsNode = this.findChild(node, "method_parameters") ||
+                       this.findChild(node, "parameters")
+    if (!paramsNode) return
+    for (let i = 0; i < paramsNode.namedChildCount; i++) {
+      const pc = paramsNode.namedChild(i)
+      if (!pc) continue
+      if (pc.type === "optional_parameter" || pc.type === "keyword_parameter") {
+        // Children are [name, value]; the value is the last named child.
+        if (pc.namedChildCount >= 2) {
+          const value = pc.namedChild(pc.namedChildCount - 1)
+          if (value) {
+            this.walkBody(value, symbols, relationships, imports, metadata,
+              owner, ownerKind, enclosingMethod, visibilityOverrides, locals)
+          }
+        }
+      }
+    }
+  }
+
   // ========================================================================
   // CALL PROCESSOR — resolves a single `call` node
   // ========================================================================
@@ -774,12 +864,19 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     // --- Extract receiver (identifier before the method name) ---
     let receiver: string | undefined
     let receiverLeaf: string | undefined
+    // A receiver that is itself a call/block expression (`Class.new { }.new`)
+    // is an ANONYMOUS target — RB-A uses this to suppress `.new` on it instead
+    // of leaking a junk `calls:new` (rack spec_lock.rb wave).
+    let hasExpressionReceiver = false
     for (let i = 0; i < node.namedChildCount; i++) {
       const child = node.namedChild(i)
       if (child && child.id === methodNode.id) break
-      if (child && (child.type === "identifier" || child.type === "constant" || child.type === "scope_resolution")) {
+      if (!child) continue
+      if (child.type === "identifier" || child.type === "constant" || child.type === "scope_resolution") {
         receiver = child.text
         receiverLeaf = this.leafName(child.text)
+      } else {
+        hasExpressionReceiver = true
       }
     }
 
@@ -1016,6 +1113,15 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         })
         return
       }
+      // RB-A (rack wave): not a constant instantiation. Two shapes must NOT
+      // fall through to a generic `calls:new`:
+      //  1. expression receivers (`Class.new { ... }.new`) instantiate an
+      //     anonymous class — no nameable target exists;
+      //  2. a receiverless `new` at top level has no owning class either.
+      // Lowercase receivers (`task_class.new`) still fall through — that is a
+      // genuine member call (truth parity: deriveRubyEdges pushes calls:new).
+      if (hasExpressionReceiver) return
+      if (!receiver && !owner) return
     }
 
     // --- Regular call relationship ---
