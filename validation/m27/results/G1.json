@@ -2,22 +2,20 @@
   "issue": "M27.G1",
   "code": "G1",
   "milestone": "M27",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 70,
-  "passed": 69,
-  "failed": 1,
+  "passed": 70,
+  "failed": 0,
   "negativeCases": 10,
-  "currentCommit": "37bf738d6eaed85edecf2e6f4dfd8d473ae13ac2",
-  "workingTreeRelevantChanges": [
-    "docs/IDE-HONESTY-CONTRACT.md"
-  ],
+  "currentCommit": "ecdb6fcb07b892c77dbe5b835d67ef243d12dc13",
+  "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m27/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-07T01:24:34.970Z",
+  "generatedAt": "2026-09-07T15:13:47.466Z",
   "ledger": "validation/m27/results/manifest.json",
   "m26Bar": {
     "ledgerStatus": "closed",
-    "m26GateExit": 1
+    "m26GateExit": 0
   },
   "limitations": [
     "This gate validates governance metadata, mutation response, and the M26 bar; it does not verify editor adapters.",
