@@ -230,6 +230,13 @@ export interface HubHarnessRow {
   /** Presence-gated: any stored row enriched => the row renders the
    *  annotation; none enriched => none renders. */
   enriched: boolean
+  /** U3 tree laws (AH7–AH9): the group's minimum stored row depth (the
+   *  row's declared data-depth) and the placement parent it must nest
+   *  under — the symbolId of the same-side group whose node is its DOM
+   *  ancestor, or "" for a top-level child of the root. Optional: list
+   *  renders ignore them, tree renders assert them. */
+  depth?: number
+  treeParent?: string
 }
 
 export interface HubHarnessModel {
@@ -450,6 +457,77 @@ export function assertHubAffordances(doc: HarnessNode, model: HubHarnessModel, s
   return { assertion: `AH6 affordances declared + header counts (${sectionClass})`, ok: problems.length === 0, detail: problems.join("; ") }
 }
 
+function treeRowsContaining(doc: HarnessNode, row: HarnessNode): HarnessNode[] {
+  // The section (or any node) containing `row`: all tree-node rows whose
+  // descendant set includes `row`, excluding `row` itself.
+  const out: HarnessNode[] = []
+  const contains = (n: HarnessNode, target: HarnessNode): boolean => n === target || n.children.some((c) => contains(c, target))
+  walk(doc, (n) => {
+    if (n === row) return
+    if (n.className.split(" ").includes("bb-hub-tree-node") && contains(n, row)) out.push(n)
+  })
+  return out
+}
+
+/** U3 tree laws over the nested call tree (sectionClass "bb-hub-tree"):
+ *  AH7 nesting truth — every row's DOM position agrees with the model's
+ *  placement (its nearest tree-node ancestor is the model row whose symbolId
+ *  equals treeParent; a top-level row has NO tree-node ancestor). AH8
+ *  expansion declared — a model parent renders data-has-children=1,
+ *  data-expanded=0, an expander control (data-action="bb-expand",
+ *  aria-expanded="false") and a bb-hub-children wrapper that carries
+ *  bb-hub-collapsed beyond the first level; a childless row renders NO
+ *  expander (declared absence). AH9 depth/level honest — data-depth matches
+ *  the model's min stored depth and data-level is the parent's level + 1
+ *  (top-level rows are level 0). */
+export function assertHubTree(doc: HarnessNode, model: HubHarnessModel, sectionClass: string): Finding {
+  if (sectionClass !== "bb-hub-tree") return { assertion: "AH7-9 tree laws", ok: true, detail: "not a tree section" }
+  const { section, rows } = collectHub(doc, sectionClass)
+  if (section === null) return { assertion: `AH7-9 tree laws (${sectionClass})`, ok: false, detail: "section missing" }
+  const byKey = modelInventory(model).byKey
+  const problems: string[] = []
+  for (const r of rows) {
+    const expect = byKey.get(r.key)
+    if (expect === undefined) continue // fabricated rows are AH1's finding
+    const ancestors = treeRowsContaining(section, r.node)
+    const domParent = ancestors[ancestors.length - 1] ?? null
+    const expectParent = expect.treeParent ?? ""
+    if (expectParent === "") {
+      // Top-level: must NOT be nested under any tree node row.
+      if (domParent !== null) problems.push(`symbol ${expect.symbolId}: expected a top-level row but nests under ${domParent.attrs["data-symbol-id"]}`)
+    } else {
+      if (domParent === null) problems.push(`symbol ${expect.symbolId}: expected nesting under ${expectParent} but renders at top level`)
+      else if (domParent.attrs["data-symbol-id"] !== expectParent) problems.push(`symbol ${expect.symbolId}: nests under ${domParent.attrs["data-symbol-id"]}, expected ${expectParent}`)
+    }
+    // AH9: depth + level.
+    const declaredDepth = r.node.attrs["data-depth"]
+    if (expect.depth !== undefined && declaredDepth !== String(expect.depth)) problems.push(`symbol ${expect.symbolId}: data-depth=${declaredDepth} expected=${expect.depth}`)
+    const level = Number(r.node.attrs["data-level"] ?? -1)
+    const expectLevel = domParent === null ? 0 : Number(domParent.attrs["data-level"] ?? -1) + 1
+    if (level !== expectLevel) problems.push(`symbol ${expect.symbolId}: data-level=${level} expected=${expectLevel}`)
+    // The true placement parent is declared on the row (never a guess).
+    const parentId = r.node.attrs["data-parent-id"]
+    if (parentId === undefined || parentId === "" || parentId === "undefined") problems.push(`symbol ${expect.symbolId}: no declared data-parent-id`)
+    // AH8: expansion state per model parenthood.
+    const modelKids = model.rows.filter((m) => (m.treeParent ?? "") === expect.symbolId && m.dir === expect.dir)
+    const hasKids = r.node.attrs["data-has-children"] === "1"
+    if (modelKids.length > 0) {
+      if (!hasKids) problems.push(`symbol ${expect.symbolId}: model parent but rendered without data-has-children=1`)
+      if (r.node.attrs["data-expanded"] !== "0") problems.push(`symbol ${expect.symbolId}: parent without declared initial collapsed state`)
+      const expander = find(r.node, "bb-hub-expander")
+      if (expander === null || expander.attrs["data-action"] !== "bb-expand" || expander.attrs["aria-expanded"] !== "false") problems.push(`symbol ${expect.symbolId}: missing/undeclared expander control`)
+      const wrap = r.node.children.find((c) => c.className.split(" ").includes("bb-hub-children"))
+      const levelOf = Number(r.node.attrs["data-level"] ?? 0)
+      if (wrap === null) problems.push(`symbol ${expect.symbolId}: no children wrapper`)
+      else if (levelOf >= 1 && !wrap.className.split(" ").includes("bb-hub-collapsed")) problems.push(`symbol ${expect.symbolId}: children beyond the first level not collapsed by default`)
+    } else {
+      if (hasKids) problems.push(`symbol ${expect.symbolId}: childless in model but rendered data-has-children=1`)
+      if (find(r.node, "bb-hub-expander") !== null) problems.push(`symbol ${expect.symbolId}: childless row renders an expander (undeclared control)`)
+    }
+  }
+  return { assertion: `AH7-9 tree laws (${sectionClass})`, ok: problems.length === 0, detail: problems.slice(0, 6).join("; ") }
+}
+
 /** Run the full hub assertion set over one section. */
 export function runHubHarness(
   model: HubHarnessModel,
@@ -462,6 +540,7 @@ export function runHubHarness(
   findings.push(assertHubEnrichment(doc, model, opts.sectionClass, opts.group))
   findings.push(assertHubTruncationEmpty(doc, model, opts.sectionClass, opts.group))
   findings.push(assertHubAffordances(doc, model, opts.sectionClass, opts.group))
+  findings.push(assertHubTree(doc, model, opts.sectionClass))
   if (opts.assertGrouping && opts.group !== undefined) {
     findings.push(assertHubGrouping(doc, model, opts.group))
   }
