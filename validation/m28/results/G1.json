@@ -4,20 +4,20 @@
   "milestone": "M28",
   "status": "known-gap",
   "checks": 70,
-  "passed": 70,
-  "failed": 0,
+  "passed": 68,
+  "failed": 2,
   "negativeCases": 10,
-  "currentCommit": "9f7c3afb8c6f70de8c18fa702bad7d76d8c8f0d1",
+  "currentCommit": "37bf738d6eaed85edecf2e6f4dfd8d473ae13ac2",
   "workingTreeRelevantChanges": [
-    "script/m28/verify-annotation-ui.ts"
+    "docs/IDE-HONESTY-CONTRACT.md"
   ],
   "verifierCommand": "npx tsx script/m28/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-07T01:21:40.868Z",
+  "generatedAt": "2026-09-07T01:24:35.098Z",
   "ledger": "validation/m28/results/manifest.json",
   "m27Bar": {
     "ledgerStatus": "closed",
-    "m27GateExit": 0
+    "m27GateExit": 1
   },
   "limitations": [
     "This gate validates governance metadata, mutation response, and the M26 bar; it does not verify MCP tools or annotations.",

@@ -299,3 +299,38 @@ usages, hub, graph, or impact.
    badge rendering extends `script/m26/graph-core.ts` (the M26 W1 rule);
    per-IDE forks stay structurally impossible, and the W6 shell's CSP is
    unchanged.
+
+## 14. Demo-Media Rules (M45 amendment, ratified 2026-09-07)
+
+M45 publishes product demo films on the website. A video is a claim, and
+claims this program makes are machine-checked — pixels are no exception.
+These rules are contract, gated from M45.G1 onward. Scope: `docs/m45/`,
+`script/m45/`, `validation/m45/`, `website/public/demos/`, the website
+hero embed and `/demos` route, and every frame that ships as product media.
+
+1. **A video is a claim.** Every committed clip carries a sidecar manifest:
+   bb version, editor name + exact version, extension VSIX hash, demo-corpus
+   commit, index hash, capture date, capture-tool versions. No clip ships
+   without its manifest; a manifest pointing at artifacts the capture cannot
+   reproduce is a violation.
+2. **Every frame is real.** No AI-generated footage, no composited or
+   doctored product pixels, no mock UI. The capture must be reproducible by
+   script from the pinned artifacts; a frame a fresh run cannot reproduce is
+   a defect.
+3. **Version honesty.** What a video shows is the version in its manifest —
+   never a newer or aspirational surface. A film of a UI still changing in
+   an open milestone is captured only after that milestone closes; a
+   pre-change UI is never substituted for the closed one.
+4. **Verifier-first.** A frame-truth verifier re-runs the capture at the
+   pinned commit, frame-diffs sampled frames, and carries planted mutations
+   that must fail (wrong version burned into a caption, an edited frame,
+   wrong corpus, missing manifest).
+5. **Website integration is truth-invariant.** The hero embed and `/demos`
+   page may not change any M41 claim; the M41 truth/SEO verifiers re-run
+   unchanged after a media change.
+6. **Reduced-motion and accessibility are not optional.** Autoplay is muted
+   with a poster frame; `prefers-reduced-motion` receives the poster; clips
+   carry captions or transcript summaries for the core beats.
+7. **The director's layer never touches product pixels.** Camera moves,
+   cuts, captions, and grade act over real captures only — a zoom into real
+   pixels is honest, a generated UI is not (rule 2).

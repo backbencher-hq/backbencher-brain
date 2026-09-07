@@ -111,7 +111,7 @@ check("T2: docs honesty note about upgrade channel present", docsPage.includes("
 
 // --- 3b. T3 pages: install, faq, troubleshooting, contact ------------------------
 
-const EXPECTED_ROUTES = ["index", "docs", "tools", "install", "faq", "troubleshooting", "contact"]
+const EXPECTED_ROUTES = ["index", "docs", "tools", "languages", "install", "faq", "troubleshooting", "contact"]
 for (const route of EXPECTED_ROUTES) {
   check(`T3: route rendered (${route}.html exists in build output)`, buildOk && read(`website/.next/server/app/${route}.html`).length > 0)
 }
@@ -143,7 +143,7 @@ check("T3: no phantom command renders on any T3 page", PHANTOMS.every((p) => ![i
 
 // --- 4. language display coverage (source-level) --------------------------------
 
-const showcaseSrc = read("website/src/components/LanguageShowcase.tsx")
+const showcaseSrc = read("website/src/data/brain-languages.ts")
 const idRefs = [...showcaseSrc.matchAll(/ids: \[([^\]]*)\]/g)].flatMap((m) => (m[1]!.match(/'([^']+)'/g) ?? []).map((s) => s.slice(1, -1)))
 const registryNames = truthNames("names")
 const idSet = [...new Set(idRefs)].sort()
