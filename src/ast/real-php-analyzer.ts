@@ -624,14 +624,18 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       } else if (type === "require_once_expression" || type === "include_once_expression" ||
                  type === "require_expression" || type === "include_expression") {
         this.emitInclude(n, imports, relationships, ns)
-      } else if (type === "member_access_expression") {
+      } else if (type === "member_access_expression" || type === "nullsafe_member_access_expression") {
         // Member READS (managed-OO family contract — dart/swift/objc emit
         // uses for property reads). `$this->balance`, `$obj->name`,
         // `$this->svc->inner` parse as member_access_expression with a
-        // "name" field (probe-verified 2026-08-30). Emit uses -> the field
-        // name for READS only: a member_access that is the FIRST child of
-        // an assignment_expression is a WRITE (never a read); a
-        // member_call_expression receiver is a call target, not a read.
+        // "name" field (probe-verified 2026-08-30); PHP 8 nullsafe reads
+        // `$this->svc?->name` parse as nullsafe_member_access_expression
+        // with the SAME "name" field (master-review wave-2 probe
+        // 2026-09-07) — both emit uses -> the field name. Emit uses for
+        // READS only: a member_access that is the FIRST child of an
+        // assignment_expression is a WRITE (never a read); a
+        // member_call_expression / nullsafe_member_call_expression
+        // receiver is a call target, not a read.
         // SCD1 family parity (M37 #599 pre-wave follow-up): the pinned
         // grammar parses compound-assign as a DIFFERENT node —
         // augmented_assignment_expression ($this->count += $step) — so the
