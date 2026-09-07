@@ -10,7 +10,7 @@ suite if this file stops matching a fresh generation.
 The webview renders the `bb/graph` result through ONE renderer
 (`script/m26/graph-core.ts`): nodes, edges with per-edge evidence
 badges, the tier legend, and truncation markers. The transport is the
-versioned custom LSP request `bb/graph` (schema v1, declared in
+versioned custom LSP request `bb/graph` (schema v2, declared in
 `docs/m26/GRAPH-TRANSPORT.md`).
 
 ## Edge evidence tiers (generated from TIER_MEANINGS — the W4 UI law)

@@ -132,9 +132,9 @@ const projectId = await seedFixture(process.env.BB_DATA_DIR!)
 // --- R3: the REAL graph request carries annotations -----------------------------
 {
   const { BrainDatabase } = await import(path.join(ROOT, "src", "brain", "database.ts"))
-  const { handleGraphRequest } = await import(path.join(ROOT, "src", "lsp", "graph_request.ts"))
+  const { handleGraphRequest, GRAPH_SCHEMA_VERSION } = await import(path.join(ROOT, "src", "lsp", "graph_request.ts"))
   const raw = await BrainDatabase.getRawInstance(projectId)
-  const result = await handleGraphRequest(raw as any, projectId, { schemaVersion: 1, symbol: "Greeter" })
+  const result = await handleGraphRequest(raw as any, projectId, { schemaVersion: GRAPH_SCHEMA_VERSION, symbol: "Greeter" })
   const anns = (result as any).annotations ?? []
   check("A2: bb/graph root annotations present", anns.length >= 1, JSON.stringify(anns).slice(0, 200))
   check("A2: bb/graph annotations author-labeled with tool identity", anns.some((a: any) => a.author_class === "agent" && a.tool_identity === ANNOTATION_TOOL), JSON.stringify(anns).slice(0, 200))

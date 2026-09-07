@@ -206,7 +206,10 @@ async function run() {
       if (hubResult && hubResult.ok) {
         const m = hubResult.markup
         assert("E5-H5: hub renders all three views (list-by-file, list-by-caller, tree)", m.includes("bb-hub-view") && m.includes("bb-hub-list") && m.includes("bb-hub-tree"), m.slice(0, 140))
-        assert("E5-H5: hub lists the seeded caller row (main) with a W4 badge", m.includes("main") && m.includes("bb-hub-badge") && m.includes("data-row-id"), m.slice(0, 200))
+        // M44.U1: the hub now groups per symbol (one symrow per caller) with
+        // data-row-ids (plural, traceable stored rows) and bb-hub-enrichment
+        // chips instead of the old edge-level bb-hub-badge.
+        assert("E5-H5: hub lists the seeded caller row (main) with traceable row ids", m.includes("main") && m.includes("bb-hub-symrow") && m.includes("data-row-ids"), m.slice(0, 200))
         assert("E5-H5: hub counts match the seeded graph (1 caller, 0 callees)", hubResult.counts && hubResult.counts.callers === 1 && hubResult.counts.callees === 0, JSON.stringify(hubResult.counts))
         assert("E5-H5: complete usage set renders no truncation marker", !m.includes("bb-truncation-marker"), "")
         assert("E5-H5: enriched rel-1 renders its labeled chip in the hub", m.includes("data-enriched=\"1\"") && m.includes("bb-hub-enrichment"), m.slice(0, 240))

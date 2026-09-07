@@ -2,16 +2,18 @@
   "issue": "M29.G1",
   "code": "G1",
   "milestone": "M29",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 70,
   "passed": 70,
   "failed": 0,
   "negativeCases": 10,
-  "currentCommit": "4093cbcd60d16a92f3f13d8e57ffc41a6e7a2017",
-  "workingTreeRelevantChanges": [],
+  "currentCommit": "9f7c3afb8c6f70de8c18fa702bad7d76d8c8f0d1",
+  "workingTreeRelevantChanges": [
+    "docs/m29/PRECISION-LEDGER.md"
+  ],
   "verifierCommand": "npx tsx script/m29/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-06T22:42:44.630Z",
+  "generatedAt": "2026-09-07T01:21:40.920Z",
   "ledger": "validation/m29/results/manifest.json",
   "m28Bar": {
     "ledgerStatus": "closed",
