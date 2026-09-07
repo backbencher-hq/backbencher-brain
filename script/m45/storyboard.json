@@ -1,0 +1,151 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M45",
+  "issue": "D1 (#710)",
+  "corpus": {
+    "path": "test/fixtures/m45-demo",
+    "commit": "efc24ed2",
+    "workspace": "greeter.ts, main.ts, report.ts",
+    "heroSymbol": "Greeter",
+    "relationshipTruth": "Greeter is instantiated by buildGreeter (main.ts) and referenced by describeGreeter (report.ts); 10 symbols / 31 relationships in the pinned index"
+  },
+  "styleContract": {
+    "palette": "warm near-black editor (site-continuity)",
+    "titleFont": "Fraunces",
+    "labelFont": "JetBrains Mono",
+    "accent": "ember, used only where it means something",
+    "callouts": "hairline",
+    "audio": "none — silent with on-screen captions"
+  },
+  "cameraGrammar": {
+    "easings": ["easeInOutCubic", "easeOutQuart"],
+    "zoom": "scale + focus point over real captured pixels; never alters product pixels",
+    "loopSeam": "hero cut ends on the same wide frame it starts on"
+  },
+  "cuts": {
+    "hero": {
+      "targetDurationMs": 13500,
+      "allowedRangeMs": [12000, 20000],
+      "beats": [
+        {
+          "id": "H1",
+          "job": "establish — wide editor, greeter.ts open",
+          "captureScene": "editor-wide",
+          "durationMs": 2500,
+          "camera": { "scale": 1.0, "easing": "none" },
+          "caption": null
+        },
+        {
+          "id": "H2",
+          "job": "cursor travels to the Greeter symbol",
+          "captureScene": "editor-wide",
+          "durationMs": 1200,
+          "camera": { "scale": 1.0, "easing": "easeInOutCubic" },
+          "caption": null
+        },
+        {
+          "id": "H3",
+          "job": "hover reveal — the rich portal appears over Greeter",
+          "captureScene": "hover-portal",
+          "durationMs": 1800,
+          "camera": { "scale": 1.0, "easing": "easeOutQuart" },
+          "caption": "Hover any symbol"
+        },
+        {
+          "id": "H4",
+          "job": "hold on the payoff — portal headline readable",
+          "captureScene": "hover-portal",
+          "durationMs": 2500,
+          "camera": { "scale": 1.35, "focus": "portal-headline", "easing": "easeInOutCubic" },
+          "caption": "class · 13 usages · evidence tiers"
+        },
+        {
+          "id": "H5",
+          "job": "push into the connected section — cross-file truth",
+          "captureScene": "hover-portal",
+          "durationMs": 2500,
+          "camera": { "scale": 1.8, "focus": "portal-connected", "easing": "easeInOutCubic" },
+          "caption": "Who builds it, who calls it — across files"
+        },
+        {
+          "id": "H6",
+          "job": "pull back to the wide editor",
+          "captureScene": "editor-wide",
+          "durationMs": 1500,
+          "camera": { "scale": 1.0, "easing": "easeInOutCubic" },
+          "caption": null
+        },
+        {
+          "id": "H7",
+          "job": "settle on the opening frame — loop seam",
+          "captureScene": "editor-wide",
+          "durationMs": 1500,
+          "camera": { "scale": 1.0, "easing": "none" },
+          "caption": null
+        }
+      ]
+    },
+    "full": {
+      "targetDurationMs": 45000,
+      "allowedRangeMs": [40000, 60000],
+      "beats": [
+        { "$ref": "hero H1..H7 (identical opening)" },
+        {
+          "id": "F1",
+          "job": "go to definition — jump from Greeter to its declaration",
+          "captureScene": "definition-jump",
+          "durationMs": 4000,
+          "camera": { "scale": 1.15, "easing": "easeInOutCubic" },
+          "caption": "Go to definition"
+        },
+        {
+          "id": "F2",
+          "job": "references — every usage of Greeter listed",
+          "captureScene": "references-list",
+          "durationMs": 5000,
+          "camera": { "scale": 1.2, "focus": "references-panel", "easing": "easeInOutCubic" },
+          "caption": "Every usage, with evidence"
+        },
+        {
+          "id": "F3",
+          "job": "call hierarchy — follow main → describeGreeter",
+          "captureScene": "call-hierarchy",
+          "durationMs": 5000,
+          "camera": { "scale": 1.2, "focus": "hierarchy-tree", "easing": "easeInOutCubic" },
+          "caption": "Call hierarchy, from the real index"
+        },
+        {
+          "id": "F4",
+          "job": "GATED on M44 close — Open in hub: graph view of Greeter's neighborhood",
+          "captureScene": "hub-graph",
+          "gatedOn": "M44",
+          "durationMs": 6000,
+          "camera": { "scale": 1.0, "easing": "easeInOutCubic" },
+          "caption": "Open in hub — the graph behind the code"
+        },
+        {
+          "id": "F5",
+          "job": "pull back to file, close on the editor",
+          "captureScene": "editor-wide",
+          "durationMs": 3000,
+          "camera": { "scale": 1.0, "easing": "easeInOutCubic" },
+          "caption": null
+        }
+      ]
+    }
+  },
+  "captureScenesRequired": [
+    { "scene": "editor-wide", "status": "captured (C1 frame 01/03)" },
+    { "scene": "hover-portal", "status": "captured (C1 frame 02)" },
+    { "scene": "definition-jump", "status": "to shoot" },
+    { "scene": "references-list", "status": "to shoot" },
+    { "scene": "call-hierarchy", "status": "to shoot" },
+    { "scene": "hub-graph", "status": "GATED — shoot only after M44 closes (rule 3)" }
+  ],
+  "honestyNotes": [
+    "Every beat's pixels come from a captureScene the C1 driver actually produced; the storyboard never invents UI.",
+    "Captions state only what the pinned manifest supports; the version shown in any burn-in comes from the sidecar manifest, never hand-typed.",
+    "The zoom/push-in is a camera move over real pixels (Layer 2); product pixels are never redrawn (two-layer rule).",
+    "Hub beat F4 stays out of every render until M44 closes; the hero cut contains no hub content at all."
+  ]
+}
