@@ -14,19 +14,26 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
     // walk below — no source-text scanning. Framework detection is a pure
     // String.includes check on the module name.
 
-    // Law 3 & 4: Explicit Iterative Stack (O(N) single-pass) and ZERO mutable class props
-    const walkStack: Array<{ node: Node; isExit: boolean; activeScope: string; parentType: string }> = [
-      { node: rootNode, isExit: false, activeScope: "global", parentType: "" }
+    // Law 3 & 4: Explicit Iterative Stack (O(N) single-pass) and ZERO mutable class props.
+    // isInBody distinguishes a real EXECUTION context (method/function/block
+    // body) from a declaration context that merely has a class name on the
+    // scope stack — `@implementation Foo { SD_LOCK_DECLARE(_lock); }` parses
+    // the ivar-area macro as a call_expression, and the pre-fix code emitted
+    // a fabricated `calls` edge for it because activeScope (the class name)
+    // was non-global there (OBJCD6).
+    const walkStack: Array<{ node: Node; isExit: boolean; activeScope: string; parentType: string; isInBody: boolean }> = [
+      { node: rootNode, isExit: false, activeScope: "global", parentType: "", isInBody: false }
     ]
 
     while (walkStack.length > 0) {
       const state = walkStack.pop()!
       if (!state) continue
       
-      const { node, isExit, activeScope, parentType } = state
+      const { node, isExit, activeScope, parentType, isInBody } = state
       if (isExit || !node || node.isMissing) continue
 
       let nextActiveScope = activeScope
+      let nextIsInBody = isInBody
 
       // Law 1: Flawless Database Extraction (cover all major Obj-C constructs)
 
@@ -193,11 +200,21 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
           })
         }
       } 
-      // 5. Standard C Functions
+      // 5. Standard C Functions. OBJCD5: pointer/object-return helpers parse
+      // the defining declarator NESTED — `static NSArray * fn(...)` is
+      // function_definition > pointer_declarator > function_declarator, and
+      // `static NSDictionary<...> * fn(...)` adds a generic_specifier sibling.
+      // The pre-fix code looked for a DIRECT function_declarator/identifier
+      // child, so every pointer-return C helper was silently dropped — and
+      // because the function was never symbolized, activeScope stayed
+      // "global" and its ENTIRE body (calls, uses, instantiates) was
+      // suppressed. Corpus (afnetworking+sdwebimage, 153 files): 46 of 110
+      // C helper functions affected. Resolution: the FIRST function_declarator
+      // in document order that is NOT inside the compound_statement is the
+      // definition's head (parameters nest function-pointer declarators
+      // strictly AFTER the head in the tree).
       else if (node.type === "function_definition") {
-        const declarator = this.findChild(node, (n) => n.type === "function_declarator" || n.type === "identifier")
-        const nameNode = declarator ? (declarator.type === "function_declarator" ? this.findChild(declarator, (n) => n.type === "identifier") : declarator) : null
-        
+        const nameNode = this.findFunctionName(node)
         if (nameNode) {
           nextActiveScope = nameNode.text
           symbols.push({
@@ -265,7 +282,7 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
            const cn = node.namedChild(ci)
            if (cn && cn.type === "identifier") { selectorNode = cn; break }
          }
-         if (selectorNode && activeScope !== "global") {
+         if (selectorNode && activeScope !== "global" && isInBody) {
             // [[Foo alloc] init] / [Foo new] → Instantiates Foo. The receiver
             // of an alloc/new message is the class identifier.
             if (selectorNode.text === "alloc" || selectorNode.text === "new") {
@@ -303,7 +320,7 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       else if (node.type === "call_expression") {
         const funcNode = this.findChild(node, (n) => n.type === "identifier")
-        if (funcNode && activeScope !== "global") {
+        if (funcNode && activeScope !== "global" && isInBody) {
             relationships.push({
               source: activeScope,
               target: funcNode.text,
@@ -319,7 +336,7 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
       // field_identifier (probe-verified 2026-08-30). Emit uses -> the
       // field name, from the enclosing method scope. Writes (LHS of
       // assignment_expression) are NOT reads — only reads become uses.
-      else if (node.type === "field_expression" && activeScope !== "global") {
+      else if (node.type === "field_expression" && activeScope !== "global" && isInBody) {
         const field = node.childForFieldName("field") ?? this.findChild(node, (n) => n.type === "field_identifier")
         if (field && field.text.trim()) {
           // Skip the LHS of an assignment (a write, not a read): the
@@ -337,11 +354,16 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
 
       // Law 2: Absolute Zero array bridge. Bounds checked loops only.
+      // A method/function/block node starts a real body: its children (and
+      // their descendants) are execution context. Everything else (class
+      // ivar braces, @interface declarations, file-scope) is not — message
+      // sends and calls there are macro/declaration artifacts, never edges.
       const childCount = node.namedChildCount
+      nextIsInBody = nextIsInBody || node.type === "method_definition" || node.type === "method_declaration" || node.type === "function_definition" || node.type === "block_literal"
       for (let i = childCount - 1; i >= 0; i--) {
         const child = node.namedChild(i)
         if (child) {
-           walkStack.push({ node: child, isExit: false, activeScope: nextActiveScope, parentType: node.type })
+           walkStack.push({ node: child, isExit: false, activeScope: nextActiveScope, parentType: node.type, isInBody: nextIsInBody })
         }
       }
     }
@@ -489,6 +511,32 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
     return idNode.text
+  }
+
+  /**
+   * OBJCD5: the defining name of a function_definition — the first
+   * function_declarator in document order that is NOT inside the body
+   * (compound_statement), then its first identifier child. Handles the
+   * pointer_declarator > function_declarator nesting of pointer-return C
+   * helpers. The head always precedes any parameter-nested function-pointer
+   * declarator in the tree, so pre-order first-hit is exact (probe-verified
+   * against the pinned tree-sitter-objc, 2026-09).
+   */
+  private findFunctionName(node: Node): Node | null {
+    const stack: Node[] = [node]
+    while (stack.length > 0) {
+      const c = stack.pop()!
+      if (c.type === "compound_statement") continue
+      if (c.type === "function_declarator") {
+        const id = this.findChild(c, (n) => n.type === "identifier")
+        return id || c
+      }
+      for (let i = c.namedChildCount - 1; i >= 0; i--) {
+        const child = c.namedChild(i)
+        if (child) stack.push(child)
+      }
+    }
+    return null
   }
 
   // The `+`/`-` sign is an anonymous token child of a method node
