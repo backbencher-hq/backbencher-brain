@@ -1813,6 +1813,27 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
     const parts = t.split(/\\|\./).filter(Boolean)
     return parts[parts.length - 1] ?? t
   }
+  // PHPD10 mirror (M37.13): a qualified base/interface whose leaf equals the
+  // declaring class's own name must keep its qualification (leading \\
+  // stripped) — leaf-collapse would fabricate self extends/implements truth
+  // for same-leaf cross-namespace inheritance (Setup\\FeaturesForm extends
+  // User\\FeaturesForm). Bare names and non-colliding leaves are unchanged.
+  const heritageTarget = (raw: string, ownName: string): string => {
+    const leaf = leafName(raw)
+    if (raw.includes("\\") && leaf === ownName) {
+      return raw.replace(/^\\+/, "")
+    }
+    return leaf
+  }
+  // PHPD10 mirror: returns undefined when qualification cannot disambiguate
+  // a same-leaf base/interface (global single-segment: `class Foo extends
+  // \\Foo`) — the analyzer emits NO edge there (self-loop would be
+  // fabrication); the oracle must not fabricate truth for it either.
+  const heritageOrSkip = (raw: string, ownName: string): string | undefined => {
+    const t = heritageTarget(raw, ownName)
+    if (t === ownName && raw !== t) return undefined
+    return t
+  }
   // Mirror RealPhpAnalyzer.extractIncludePath (probe-verified shapes).
   const cleanString = (t: string): string => {
     const m = t.match(/^['"](.*)['"]$/s)
@@ -1842,27 +1863,52 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
       if (baseClause) {
         const first = baseClause.namedChild(0)
         if (first) {
-          declaredBase = leafName(first.text)
-          push("extends", declaredBase)
+          declaredBase = heritageOrSkip(first.text, className)
+          if (declaredBase) push("extends", declaredBase)
         }
       }
       const ifaceClause = n.namedChildren.find((c: any) => c.type === "class_interface_clause")
       if (ifaceClause) {
         for (let i = 0; i < ifaceClause.namedChildCount; i++) {
           const c = ifaceClause.namedChild(i)
-          if (c) push("implements", leafName(c.text))
+          if (c) {
+            const ifaceT = heritageOrSkip(c.text, className)
+            if (ifaceT) push("implements", ifaceT)
+          }
         }
       }
       // Hoisted for the walk-tail (nextCls/nextBase) via the stack object:
       ;(stack as any)._curCls = className
       ;(stack as any)._curBase = declaredBase
     }
+    if (t === "enum_declaration") {
+      // M37.13 mirror: PHP 8.1 enums implement interfaces via the SAME
+      // class_interface_clause shape as classes (analyzer emits the edges).
+      const nameNode = n.namedChildren.find((c: any) => c.type === "name")
+      const enumCls = nameNode?.text ?? "?"
+      if (nameNode) (stack as any)._curCls = enumCls
+      const ifaceClause = n.namedChildren.find((c: any) => c.type === "class_interface_clause")
+      if (ifaceClause) {
+        for (let i = 0; i < ifaceClause.namedChildCount; i++) {
+          const c = ifaceClause.namedChild(i)
+          if (c) {
+            const ifaceT = heritageOrSkip(c.text, enumCls)
+            if (ifaceT) push("implements", ifaceT)
+          }
+        }
+      }
+    }
     if (t === "interface_declaration") {
+      const nameNode = n.namedChildren.find((c: any) => c.type === "name")
+      const ifaceName = nameNode?.text ?? "?"
       const baseClause = n.namedChildren.find((c: any) => c.type === "base_clause")
       if (baseClause) {
         for (let i = 0; i < baseClause.namedChildCount; i++) {
           const c = baseClause.namedChild(i)
-          if (c) push("extends", leafName(c.text))
+          if (c) {
+            const extT = heritageOrSkip(c.text, ifaceName)
+            if (extT) push("extends", extT)
+          }
         }
       }
     }
@@ -1884,7 +1930,12 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
       const fn = n.childForFieldName?.("function") ?? n.namedChildren.find((c: any) => c.type === "name" || c.type === "qualified_name")
       if (fn) {
         const target = leafName(fn.text)
-        if (!PHP_BUILTINS.has(target)) push("calls", target)
+        // M37.13 mirror: the analyzer's processFunctionCall returns EARLY for
+        // the WordPress hook registrars (framework detection only, no calls
+        // edge). Without this mirror the oracle fabricated calls:add_action/
+        // add_filter truth on every procedural WP-style file.
+        const isWpHook = target === "add_action" || target === "add_filter"
+        if (!isWpHook && !PHP_BUILTINS.has(target)) push("calls", target)
       }
     }
     if (t === "member_call_expression" || t === "nullsafe_member_call_expression") {
@@ -1917,10 +1968,14 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
       }
     }
     if (t === "member_access_expression" && inBody) {
-      // Member READS only: assignment-LHS is a write; member_call receiver is
-      // a call target (mirrors the analyzer's read/write + call-receiver gate).
+      // Member READS only: assignment/augmented-assignment LHS is a write;
+      // member_call receiver is a call target (mirrors the analyzer's
+      // read/write + call-receiver gate — M37.13 added
+      // augmented_assignment_expression to this oracle gate after the
+      // analyzer's SCD1 fix showed the oracle fabricating phantom uses for
+      // `$this->count += $step` when the member is never read elsewhere).
       const lhs = parent ? parent.namedChild(0) : null
-      const isWrite = parent && parent.type === "assignment_expression" && lhs && lhs.startIndex === n.startIndex && lhs.endIndex === n.endIndex
+      const isWrite = parent && (parent.type === "assignment_expression" || parent.type === "augmented_assignment_expression") && lhs && lhs.startIndex === n.startIndex && lhs.endIndex === n.endIndex
       const isCallReceiver = parent && (parent.type === "member_call_expression" || parent.type === "nullsafe_member_call_expression")
       if (!isWrite && !isCallReceiver) {
         const nameNode = n.childForFieldName?.("name")
