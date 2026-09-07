@@ -8,6 +8,6 @@ inheritance (contract §1/§2).
 | --- | --- | --- | --- | --- | --- |
 | cursor | 3.19.13 | linux | I4 (verified in this fork) | [F-CURSOR.json](../../validation/m25/results/F-CURSOR.json) | verified (31/31) |
 | windsurf | — | — | unset (blocked) | [F-WINDSURF.json](../../validation/m25/results/F-WINDSURF.json) | blocked: windsurf CLI not found on PATH — install or record the waiver (E6 honest blocked |
-| antigravity | 1.107.0 | linux | I4 (verified in this fork) | [F-ANTIGRAVITY.json](../../validation/m25/results/F-ANTIGRAVITY.json) | verified (47/47) |
+| antigravity | 1.107.0 | linux | I4 (verified in this fork) | [F-ANTIGRAVITY.json](../../validation/m25/results/F-ANTIGRAVITY.json) | verified (37/37) |
 
 Owner spot-check: pending (scheduled per issue #504 closure requirements).
