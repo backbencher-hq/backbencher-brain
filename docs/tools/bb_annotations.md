@@ -1,10 +1,10 @@
 # `bb_annotations`
 
-Read annotations for a symbol (or all annotations up to the declared limit) with full provenance on every row: author class, tool identity, and timestamps. No annotations is a declared absence, never an error.
+Read annotations for a symbol (or all annotations up to the declared limit) with full provenance on every row: author class, tool identity, and timestamps. No annotations is a declared absence, never an error. To write a note use bb_annotate.
 
 ## Contract
 
-- Category: `graph`
+- Category: `annotations`
 - Mutability: `read`
 - Requires index: `false`
 - Modes: `annotate`
@@ -62,8 +62,12 @@ Read-only. It does not modify source files, index data, or annotations.
 
 Rows come from brain_annotation with provenance fields preserved.
 
+## Relationship to other tools
+
+To write a note use `bb_annotate`; this tool reads stored annotations and declares absence.
+
 ## Staleness
 
-This tool does not report index staleness. Output reflects the index as of the last bb index run; run bb index --changed to refresh changed files before acting on results.
+This tool does not report per-file index staleness and does not auto-refresh. Output reflects the index as of the last index run; when files changed after indexing, refresh first (project scope: `reads auto-refresh stale files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)`).
 
 This page is generated from the executable registry and curated documentation. Run `npm run docs:generate` to update it.

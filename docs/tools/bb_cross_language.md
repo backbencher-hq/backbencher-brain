@@ -59,8 +59,12 @@ Read-only. It does not modify source files or index data.
 
 Only brain_relationship rows with is_cross_language=1; identical semantics to the editor cross-language hover section.
 
+## Relationship to other tools
+
+For same-language callers/callees use `bb_graph`; this tool reports cross-language pairs and bridges (declared absent when none).
+
 ## Staleness
 
-This tool does not report index staleness. Output reflects the index as of the last bb index run; run bb index --changed to refresh changed files before acting on results.
+This tool does not report per-file index staleness and does not auto-refresh. Output reflects the index as of the last index run; when files changed after indexing, refresh first (project scope: `reads auto-refresh stale files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)`).
 
 This page is generated from the executable registry and curated documentation. Run `npm run docs:generate` to update it.
