@@ -25,32 +25,71 @@ import { gitHead } from "./capture-harness.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
 const SESSION_DIR = path.join(ROOT, "validation/m45/results/demo-session")
-const TAKE = path.join(SESSION_DIR, "raw-take.mp4")
-const OUT = path.join(SESSION_DIR, "hero-cut.mp4")
 const WORK = path.join(tmpdir(), "m45-post")
 const FONTS = path.join(ROOT, "script/m45/film/fonts")
 const FRAUNCES = path.join(FONTS, existsSync(path.join(FONTS, "Fraunces-600Italic.ttf")) ? "Fraunces-600Italic.ttf" : "Fraunces-Italic.ttf")
 const MONO = path.join(FONTS, "JetBrainsMono-Regular.ttf")
 const W = 2560, H = 1600, FPS = 30
 
-// Segments cut from the raw take (seconds). In/out points follow the
-// observed timeline in D1-session-raw.json; ~29s hero total.
-const SEGMENTS = [
-  { name: "A-establish", in: 3.5, out: 9.5, zoom: null },
-  { name: "B-portal-place", in: 9.5, out: 14.2, zoom: { midT: 12.0, preT: 9.6 } },
-  { name: "C-goto-def", in: 15.0, out: 20.0, zoom: null },
-  { name: "D-portal-cancel", in: 20.5, out: 29.0, zoom: { midT: 25.0, preT: 21.0 } },
-  { name: "E-references", in: 31.0, out: 35.7, zoom: null },
-] as const
+interface PostSegment { name: string; in: number; out: number; zoom: { midT: number; preT: number } | null }
+interface PostCaption { seg: string; ta: number; tb: number; text: string; kicker?: string }
+interface PostScenario {
+  id: string
+  take: string
+  out: string
+  evidenceFile: string
+  segments: readonly PostSegment[]
+  captions: readonly PostCaption[]
+}
 
-// Captions in OUTPUT-global time (segment offsets accumulated below).
-const CAPTIONS = [
-  { seg: "A-establish", ta: 0.6, tb: 5.6, text: "Your codebase, already understood.", kicker: "backbencher · local code intelligence" },
-  { seg: "B-portal-place", ta: 7.0, tb: 10.4, text: "Hover any symbol — its full story, in place." },
-  { seg: "C-goto-def", ta: 11.5, tb: 15.4, text: "Jump to the definition without breaking flow." },
-  { seg: "D-portal-cancel", ta: 17.8, tb: 23.8, text: "Who builds it, who calls it — across every file." },
-  { seg: "E-references", ta: 25.0, tb: 28.5, text: "Every usage, one keystroke away.", kicker: "bb · code intelligence that stays local" },
-]
+const HERO: PostScenario = {
+  id: "hero",
+  take: "raw-take.mp4",
+  out: "hero-cut.mp4",
+  evidenceFile: "D1-post.json",
+  // In/out points follow the observed timeline in D1-session-raw.json; ~29s total.
+  segments: [
+    { name: "A-establish", in: 3.5, out: 9.5, zoom: null },
+    { name: "B-portal-place", in: 9.5, out: 14.2, zoom: { midT: 12.0, preT: 9.6 } },
+    { name: "C-goto-def", in: 15.0, out: 20.0, zoom: null },
+    { name: "D-portal-cancel", in: 20.5, out: 29.0, zoom: { midT: 25.0, preT: 21.0 } },
+    { name: "E-references", in: 31.0, out: 35.7, zoom: null },
+  ],
+  // Captions in OUTPUT-global time (segment offsets accumulated).
+  captions: [
+    { seg: "A-establish", ta: 0.6, tb: 5.6, text: "Your codebase, already understood.", kicker: "backbencher · local code intelligence" },
+    { seg: "B-portal-place", ta: 7.0, tb: 10.4, text: "Hover any symbol — its full story, in place." },
+    { seg: "C-goto-def", ta: 11.5, tb: 15.4, text: "Jump to the definition without breaking flow." },
+    { seg: "D-portal-cancel", ta: 17.8, tb: 23.8, text: "Who builds it, who calls it — across every file." },
+    { seg: "E-references", ta: 25.0, tb: 28.5, text: "Every usage, one keystroke away.", kicker: "bb · code intelligence that stays local" },
+  ],
+}
+
+const MONEY: PostScenario = {
+  id: "money",
+  take: "raw-take-money.mp4",
+  out: "hero-cut-money.mp4",
+  evidenceFile: "D1-post-money.json",
+  // Observed timeline (1s frame-diff scan): the portal opens between t=5-6
+  // (102,944 px transition) and holds to ~14.4; references peek 15.5-20.5;
+  // browse ~20.5-21.5; settle 22+. The choreography clock ran ~3s ahead of
+  // the recording clock — segments follow the SCAN, not the nominal table.
+  segments: [
+    { name: "A-establish", in: 1.0, out: 5.4, zoom: null },
+    { name: "B-portal-money", in: 5.4, out: 14.6, zoom: { midT: 12.0, preT: 5.0 } },
+    { name: "C-references", in: 14.6, out: 21.9, zoom: { midT: 18.0, preT: 14.5 } },
+    { name: "D-settle", in: 21.9, out: 27.5, zoom: null },
+  ],
+  captions: [
+    { seg: "A-establish", ta: 0.5, tb: 4.2, text: "One type. Every place it is used.", kicker: "backbencher · local code intelligence" },
+    { seg: "B-portal-money", ta: 6.0, tb: 13.0, text: "Money — 41 usages, every file, one hover." },
+    { seg: "C-references", ta: 14.8, tb: 20.6, text: "Six files, one list — nothing hidden." },
+    { seg: "D-settle", ta: 21.8, tb: 25.8, text: "Every usage, one keystroke away.", kicker: "bb · code intelligence that stays local" },
+  ],
+}
+
+const scenarioFlag = process.argv.includes("--scenario") ? process.argv[process.argv.indexOf("--scenario") + 1] : undefined
+const SCENARIO = scenarioFlag === "money" ? MONEY : HERO
 
 function sh(cmd: string): string {
   return execFileSync("bash", ["-c", cmd], { cwd: ROOT, encoding: "utf8", timeout: 120_000, stdio: ["ignore", "pipe", "pipe"] })
@@ -113,7 +152,7 @@ function plainFilter(): string {
   return "eq=contrast=1.05:brightness=0.012:saturation=1.04,fps=30"
 }
 
-function drawtextCaption(c: (typeof CAPTIONS)[number], ta: number, tb: number): string {
+function drawtextCaption(c: PostCaption, ta: number, tb: number): string {
   const A = ta.toFixed(2), B = tb.toFixed(2)
   const alpha = `if(lt(t\\,${A})\\,0\\,if(lt(t\\,${A}+0.5)\\,(t-${A})/0.5\\,if(lt(t\\,${B}-0.5)\\,1\\,if(lt(t\\,${B})\\,(${B}-t)/0.5\\,0))))`
   const parts = [
@@ -127,6 +166,10 @@ function drawtextCaption(c: (typeof CAPTIONS)[number], ta: number, tb: number): 
 
 async function main(): Promise<void> {
   const commit = gitHead(ROOT)
+  const TAKE = path.join(SESSION_DIR, SCENARIO.take)
+  const OUT = path.join(SESSION_DIR, SCENARIO.out)
+  const SEGMENTS = SCENARIO.segments
+  const CAPTIONS = SCENARIO.captions
   if (!existsSync(TAKE)) throw new Error(`raw take missing: ${TAKE}`)
   rmSync(WORK, { recursive: true, force: true })
   execFileSync("mkdir", ["-p", WORK])
@@ -177,7 +220,7 @@ async function main(): Promise<void> {
     ...captionChain,
   ].join(",")
   run("ffmpeg", ["-y", "-v", "error", "-i", nocap, "-vf", vfOut, "-an", "-c:v", "libx264", "-crf", "18", "-preset", "medium", "-pix_fmt", "yuv420p", OUT])
-  console.log(`  hero cut rendered: ${total.toFixed(1)}s -> ${path.relative(ROOT, OUT)}`)
+  console.log(`  hero cut rendered (${SCENARIO.id}): ${total.toFixed(1)}s -> ${path.relative(ROOT, OUT)}`)
 
   // 5. Self-verification — the post pass proves itself or fails loudly.
   const duration = parseFloat(sh(`ffprobe -v error -show_entries format=duration -of csv=p=0 "${OUT}"`).trim())
@@ -204,8 +247,9 @@ async function main(): Promise<void> {
   // only shows at text edges (calibrated: ~21k px when zooming, ~0 when
   // the zoom silently failed in the first run).
   {
-    const b = SEGMENTS[1]
-    const bOffset = SEGMENTS.slice(0, 1).reduce((s, x) => s + (x.out - x.in), 0)
+    const b = SEGMENTS.find((s) => s.zoom)!
+    const bIdx = SEGMENTS.indexOf(b)
+    const bOffset = SEGMENTS.slice(0, bIdx).reduce((s, x) => s + (x.out - x.in), 0)
     const a = grayFrame(OUT, bOffset + 0.4)
     const z = grayFrame(OUT, bOffset + (b.out - b.in) - 0.3)
     let strong = 0
@@ -223,10 +267,11 @@ async function main(): Promise<void> {
   const evidence = {
     issue: "M45.D1", code: "D1", milestone: "M45",
     status: ok ? "verified" : "known-gap", currentCommit: commit,
-    verifierCommand: "npx tsx script/m45/post-production.ts",
-    evidenceFile: "D1-post.json",
-    input: { take: "raw-take.mp4", sha256: sha256(TAKE) },
-    output: { file: "hero-cut.mp4", sha256: sha256(OUT), seconds: duration, resolution: `${W}x${H}`, fps: 30 },
+    verifierCommand: `npx tsx script/m45/post-production.ts${SCENARIO.id === "hero" ? "" : " --scenario " + SCENARIO.id}`,
+    evidenceFile: SCENARIO.evidenceFile,
+    input: { take: SCENARIO.take, sha256: sha256(TAKE) },
+    output: { file: SCENARIO.out, sha256: sha256(OUT), seconds: duration, resolution: `${W}x${H}`, fps: 30 },
+    scenario: SCENARIO.id,
     segments: SEGMENTS.map((s) => ({ name: s.name, in: s.in, out: s.out, zoom: Boolean(s.zoom) })),
     anchors: anchorNotes,
     captions: CAPTIONS,
@@ -235,7 +280,7 @@ async function main(): Promise<void> {
     checks,
     generatedAt: new Date().toISOString(),
   }
-  writeFileSync(path.join(SESSION_DIR, "D1-post.json"), JSON.stringify(evidence, null, 2) + "\n")
+  writeFileSync(path.join(SESSION_DIR, SCENARIO.evidenceFile), JSON.stringify(evidence, null, 2) + "\n")
 
   for (const c of checks) console.log(`  ${c.pass ? "PASS" : "FAIL"}: ${c.name} (${c.detail})`)
   if (!ok) {
