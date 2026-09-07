@@ -1,0 +1,13 @@
+{
+  "status": "verified",
+  "currentCommit": "6c898e05e39a2b1784a386b238471e2e2e4ae776",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m48/verify-p1-impact-unity.ts",
+  "evidenceFile": "P1.json",
+  "generatedAt": "2026-09-07T01:04:21.147Z",
+  "passed": 28,
+  "failed": 0,
+  "negativeCases": 3,
+  "failures": [],
+  "fixtureNote": "chain leaf<-b1/b2<-c1<-d1<-e1<-f1 + Service.run + 250 direct callers of leafB (budget truncation)"
+}
