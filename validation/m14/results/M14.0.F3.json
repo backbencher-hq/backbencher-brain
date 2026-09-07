@@ -86,13 +86,13 @@
     },
     {
       "description": "csharp adversarial fixtures",
-      "detail": "1/1 fixtures pass",
+      "detail": "2/2 fixtures pass",
       "id": "fixtures-csharp",
       "status": "pass"
     },
     {
       "description": "dart adversarial fixtures",
-      "detail": "3/3 fixtures pass",
+      "detail": "4/4 fixtures pass",
       "id": "fixtures-dart",
       "status": "pass"
     },
@@ -128,8 +128,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "d13ae57ce9b63177c0ca6cb199a6a4f1d41ae0a0",
-  "committedAt": "2026-09-07T18:58:23+02:00",
+  "commit": "93fcf0b153acdbdd456ff6f6fe803463553dd4de",
+  "committedAt": "2026-09-07T19:46:49+02:00",
   "data": {
     "details": [
       {
@@ -1588,12 +1588,22 @@
         "problems": []
       },
       {
+        "fixture": "csharp/csd14-array-member-news",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "csharp/payload-and-complexity",
         "ok": true,
         "problems": []
       },
       {
         "fixture": "dart/dedup-and-attribution",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "dart/family-closure-cascades",
         "ok": true,
         "problems": []
       },
@@ -1719,11 +1729,11 @@
       },
       "csharp": {
         "fail": 0,
-        "pass": 1
+        "pass": 2
       },
       "dart": {
         "fail": 0,
-        "pass": 3
+        "pass": 4
       },
       "go": {
         "fail": 0,

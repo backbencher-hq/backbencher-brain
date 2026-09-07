@@ -1756,6 +1756,13 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => x.type === "implements" && x.target === "IDisposable" ? { ...x, type: "extends", metadata: { ...x.metadata, isImplements: false } } : x) }),
   },
   {
+    id: "csharp/array-member-new-selfmap",
+    language: "csharp",
+    defectClass: "fabrication",
+    description: "injects the CSD14 regression class: array/collection-typed member target-typed new() self-maps to the member NAME again (Prebuilt/Selected/Grid->themselves) — csd14 fixture pins element-type targets and forbids self targets",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => (x.type === "instantiates" && (x.source === "Prebuilt" || x.source === "Selected" || x.source === "Grid" || x.source === "Fallback")) ? { ...x, target: x.source } : x) }),
+  },
+  {
     id: "dart/drop-implements-edge",
     language: "dart",
     defectClass: "relationship-loss",
@@ -1881,6 +1888,20 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).concat([
       { source: "Poly.sides", target: "Shape.sides", type: "overrides", confidence: 0.8, metadata: { isOverride: true, isExternalBase: true } },
     ]) }),
+  },
+  {
+    id: "dart/cascade-multi-invocation-dropped",
+    language: "dart",
+    defectClass: "relationship-loss",
+    description: "reverts DARTD18: multi-invocation cascade sections keep only the LAST selector call (`..transform(t)..listen((){})` loses transform) — family-closure fixture expects calls make->transform AND make->listen",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).isCascade && x.type === "calls" && x.source === "make" && x.target === "transform")) }),
+  },
+  {
+    id: "dart/factory-redirect-instantiates-dropped",
+    language: "dart",
+    defectClass: "relationship-loss",
+    description: "reverts DARTD19: redirecting factory emits no instantiates to the implementation class (`factory Reporter() = _Reporter` loses Reporter->_Reporter) — family-closure fixture instantiates pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "instantiates" && x.source === "Reporter" && x.target === "_Reporter")) }),
   },
   {
     id: "swift/drop-implements-edge",
