@@ -350,6 +350,20 @@
         "status": "FIXED",
         "question": "M37 master-review 2: cascade calls resolved to the cascade_selector's first identifier (a) — the leaf method (c) lives in nested unconditional_assignable_selector children",
         "answer": "callee chain = last identifier across selector children excluding argument_part (args excluded so b..foo(a.bar) stays foo); covered by existing cascade pins"
+      },
+      {
+        "id": "DARTD18",
+        "node_type": "cascade_section (multi-invocation)",
+        "status": "FIXED",
+        "question": "OO family closure #613 (dart-http corpus): a cascade section may hold several invocations (..a(x)..b(y)); which selectors are calls?",
+        "answer": "Each selector IMMEDIATELY followed by its own argument_part sibling is an invocation — ..headers.addAll(x) calls addAll (headers is a bare getter), and ..transform(x)..listen(y) calls BOTH (the earlier keep-last-only logic dropped transform). Same per-invocation model mirrored in deriveDartEdges (it previously emitted only the cascade_selector first identifier = getter junk). pinned: family-closure-cascades fixture + dart/cascade-multi-invocation-dropped mutant."
+      },
+      {
+        "id": "DARTD19",
+        "node_type": "redirecting_factory_constructor_signature (factory X() = _Y;)",
+        "status": "FIXED",
+        "question": "OO family closure #613 (dart-http generated jni_bindings.dart): does a redirecting factory attribute construction to the implementation class?",
+        "answer": "Yes — factory X() = _Y; emits instantiates X -> _Y (the analyzer already did; the deriveDartEdges oracle lacked the mirror, making those the only unexplained instantiates in dart-http at 200-file depth). Oracle now pushes the redirect target (private _-prefixed names allowed, so no capitalization filter). pinned: family-closure-cascades fixture + dart/factory-redirect-instantiates-dropped mutant."
       }
     ],
     "lastUpdated": "2026-09-06 (M37 master-review 2: DARTD12-DARTD17)"

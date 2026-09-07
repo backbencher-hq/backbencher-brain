@@ -19,6 +19,7 @@ import { execSync } from "child_process"
 import { PHP_BUILTINS } from "../../src/ast/real-php-analyzer"
 import { RUBY_BUILTINS, RAILS_MACRO_METHODS, isRubyStaticSuperclassName } from "../../src/ast/real-ruby-analyzer"
 import { PYTHON_BUILTINS } from "../../src/ast/real-python-analyzer"
+import { csharpMemberDeclaredTypeText, csharpResolveTargetTypedNew } from "../../src/ast/real-csharp-analyzer"
 
 function loadAvg1(): number {
   try { return parseFloat(fs.readFileSync("/proc/loadavg", "utf8").split(" ")[0] ?? "0") } catch { return 0 }
@@ -1063,51 +1064,14 @@ function csharpCleanTypeName(text: string): string {
   return (q > 0 ? base.slice(0, q) : base).trim()
 }
 
-// Mirror of RealCSharpAnalyzer.resolveImplicitNewType: a target-typed `new()`
-// carries no syntactic type, so the type comes from the enclosing
-// variable_declarator (or property_declaration) declaration. Walks `.parent`
-// exactly like the analyzer so both sides resolve the SAME target.
+// CSD14 (OO family closure 2026-09): single shared source of truth with the
+// analyzer — csharpResolveTargetTypedNew handles direct assignments (declared
+// type), collection/array element positions (element type) and assignment-form
+// member resolution through the memberTypes prepass. The old local DFS over the
+// property subtree picked argument/initializer identifiers (Description, UNSET)
+// as targets — the exact fabrication class this shared helper eliminates.
 function csharpImplicitNewType(node: any, memberTypes?: Map<string, string>): string | null {
-  let cur: any = node.parent
-  while (cur) {
-    if (cur.type === "variable_declarator") {
-      const parentDecl = cur.parent
-      if (parentDecl && parentDecl.type === "variable_declaration") {
-        for (let k = 0; k < parentDecl.namedChildCount; k++) {
-          const c = parentDecl.namedChild(k)
-          if (c && /^(generic_name|identifier|qualified_name|predefined_type|nullable_type|array_type)$/.test(c.type)) return csharpCleanTypeName(c.text)
-        }
-      }
-      return null
-    }
-    if (cur.type === "field_declaration") return null
-    if (cur.type === "property_declaration") {
-      const stack: any[] = [cur]
-      while (stack.length) {
-        const t = stack.pop()!
-        if (t && /^(generic_name|identifier|qualified_name|predefined_type|nullable_type)$/.test(t.type) && t.type !== "variable_declarator") return csharpCleanTypeName(t.text)
-        for (let k = 0; k < t.namedChildCount; k++) stack.push(t.namedChild(k))
-      }
-      return null
-    }
-    cur = cur.parent
-  }
-  // CSD11 mirror: assignment-form `_items = new();` — resolve through the
-  // member-type prepass map keyed by the assignment LHS (fields/properties).
-  let walk: any = node.parent
-  while (walk) {
-    if (walk.type === "assignment_expression") {
-      const lhs = walk.childForFieldName?.("left")
-      if (lhs && memberTypes) {
-        const name = lhs.type === "identifier" ? lhs.text : (lhs.childForFieldName?.("name")?.text ?? "")
-        const declared = name ? memberTypes.get(name) : undefined
-        if (declared) return declared
-      }
-      return null
-    }
-    walk = walk.parent
-  }
-  return null
+  return csharpResolveTargetTypedNew(node, memberTypes)
 }
 
 export function deriveCSharpEdges(root: any, corpusInterfaces?: Set<string>): { label: string; from: string; target: string }[] {
@@ -1154,22 +1118,24 @@ export function deriveCSharpEdges(root: any, corpusInterfaces?: Set<string>): { 
       }
       if (t.type === "field_declaration" || t.type === "property_declaration") {
         const isField = t.type === "field_declaration"
-        const typeContainer = isField ? t.namedChildren.find((c: any) => c.type === "variable_declaration") : t
-        const typeNode = typeContainer
-          ? typeContainer.namedChildren.find((c: any) =>
-              /^(generic_name|identifier|qualified_name|predefined_type|nullable_type)$/.test(c.type),
-            )
-          : undefined
-        const declaredType = typeNode ? csharpCleanTypeName(typeNode.text) : undefined
+        // CSD14 mirror (OO family closure 2026-09): shared
+        // csharpMemberDeclaredTypeText unwraps array/pointer/nullable
+        // containers so array-typed members no longer self-map (the old
+        // direct-child scan fell through to the member NAME). RAW type text is
+        // stored; base/element resolution happens at use time.
+        const declaredType = csharpMemberDeclaredTypeText(t) ?? undefined
         const names: string[] = []
-        if (isField && typeContainer) {
-          for (const d of typeContainer.namedChildren) {
-            if (d.type === "variable_declarator") {
-              const id = d.namedChildren.find((c: any) => c.type === "identifier")
-              if (id) names.push(id.text)
+        if (isField) {
+          const typeContainer = t.namedChildren.find((c: any) => c.type === "variable_declaration")
+          if (typeContainer) {
+            for (const d of typeContainer.namedChildren) {
+              if (d.type === "variable_declarator") {
+                const id = d.namedChildren.find((c: any) => c.type === "identifier")
+                if (id) names.push(id.text)
+              }
             }
           }
-        } else if (!isField) {
+        } else {
           const nm = t.childForFieldName?.("name")?.text
           if (nm) names.push(nm)
         }
@@ -1433,6 +1399,16 @@ export function deriveDartEdges(root: any): { label: string; from: string; targe
       const tn = n.namedChildren.find((c: any) => c.type === "type_identifier")
       if (tn && isCapitalized(tn.text)) push("instantiates", tn.text)
     }
+    // DARTD19 mirror (OO family closure): redirecting factories
+    // (`factory $X() = _$Y;`) construct the implementation class _$Y — the
+    // analyzer emits instantiates for the redirect target (probed on the
+    // generated jni_bindings.dart where these are the only unexplained
+    // instantiates; the redirect target may be private `_`-prefixed so no
+    // capitalization filter applies).
+    if (t === "redirecting_factory_constructor_signature") {
+      const rt = n.namedChildren.find((c: any) => c.type === "type_identifier")
+      if (rt) push("instantiates", rt.text)
+    }
     if (t === "selector") {
       const hasArgs = n.namedChildren.some((c: any) => c.type === "argument_part")
       if (hasArgs) {
@@ -1459,11 +1435,30 @@ export function deriveDartEdges(root: any): { label: string; from: string; targe
       }
     }
     if (t === "cascade_section") {
-      const sel = n.namedChildren.find((c: any) => c.type === "cascade_selector")
-      const hasArgs = n.namedChildren.some((c: any) => c.type === "argument_part")
-      if (sel && hasArgs) {
-        const id = sel.namedChildren.find((c: any) => c.type === "identifier")
-        if (id && !DART_BUILTINS.has(id.text) && /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(id.text)) push("calls", id.text)
+      // DARTD18 mirror (OO family closure): one call per selector immediately
+      // followed by its own argument_part sibling — `..headers.addAll(x)`
+      // calls addAll (headers is a bare getter), and `..a(x)..b(y)` calls
+      // BOTH a and b (previously only the FIRST cascade_selector identifier
+      // was emitted, fabricating getter junk and missing later calls).
+      const idText = (sel: any): string | null => {
+        const stk: any[] = [sel]
+        let last: string | null = null
+        while (stk.length) {
+          const x = stk.pop()!
+          if (x.type === "identifier" || x.type === "type_identifier") last = x.text
+          for (let k = 0; k < x.namedChildCount; k++) { const c = x.namedChild(k); if (c) stk.push(c) }
+        }
+        return last
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (!c) continue
+        if (c.type !== "cascade_selector" && c.type !== "unconditional_assignable_selector" &&
+            c.type !== "conditional_assignable_selector" && c.type !== "selector") continue
+        const next = n.namedChild(i + 1)
+        if (!next || next.type !== "argument_part") continue
+        const id = idText(c)
+        if (id && !DART_BUILTINS.has(id) && /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(id)) push("calls", id)
       }
     }
     for (let k = 0; k < n.namedChildCount; k++) { const c = n.namedChild(k); if (c) stack.push(c) }
@@ -2912,7 +2907,7 @@ export function derivePythonEdges(root: any): { label: string; from: string; tar
         while (stackT.length > 0) {
           const tn = stackT.pop()!
           if (tn.type === "identifier") {
-            if (!["str", "int", "float", "complex", "bool", "bytes", "object", "None", "Any"].includes(tn.text)) push("references", tn.text)
+            if (!["str", "int", "float", "complex", "bool", "bytes", "object", "None", "Any", "self", "cls"].includes(tn.text)) push("references", tn.text)
           } else if (tn.type !== "string" && tn.type !== "concatenated_string" && tn.type !== "none") {
             for (let i = 0; i < tn.namedChildCount; i++) stackT.push(tn.namedChild(i))
           }
@@ -2928,7 +2923,7 @@ export function derivePythonEdges(root: any): { label: string; from: string; tar
         while (stackT.length > 0) {
           const tn = stackT.pop()!
           if (tn.type === "identifier") {
-            if (!["str", "int", "float", "complex", "bool", "bytes", "object", "None", "Any"].includes(tn.text)) push("references", tn.text)
+            if (!["str", "int", "float", "complex", "bool", "bytes", "object", "None", "Any", "self", "cls"].includes(tn.text)) push("references", tn.text)
           } else if (tn.type !== "string" && tn.type !== "concatenated_string" && tn.type !== "none") {
             for (let i = 0; i < tn.namedChildCount; i++) stackT.push(tn.namedChild(i))
           }
@@ -3058,11 +3053,15 @@ export function derivePythonEdges(root: any): { label: string; from: string; tar
         const args = n.namedChildren.find((c: any) => c.type === "argument_list")
         const last = args && args.namedChildCount >= 2 ? args.namedChild(args.namedChildCount - 1) : undefined
         if (last) {
+          // Same primitive exclusion as the analyzer's PRIMITIVES — self/cls
+          // are conventional method/classmethod receivers (and here `cls` is
+          // a local bound class), never type-name references (PYD cython
+          // corpus: Pipeline.py `isinstance(t, cls)` was oracle-only noise).
           const stackT: any[] = [last]
           while (stackT.length > 0) {
             const tn = stackT.pop()!
             if (tn.type === "identifier") {
-              if (!["str", "int", "float", "complex", "bool", "bytes", "object", "None", "Any"].includes(tn.text)) push("references", tn.text)
+              if (!["str", "int", "float", "complex", "bool", "bytes", "object", "None", "Any", "self", "cls"].includes(tn.text)) push("references", tn.text)
             } else for (let i = 0; i < tn.namedChildCount; i++) stackT.push(tn.namedChild(i))
           }
         }
