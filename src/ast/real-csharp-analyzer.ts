@@ -21,6 +21,159 @@
 
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
+
+// ============================================================================
+// SHARED TARGET-TYPED `new()` RESOLUTION (CSD14, OO family closure 2026-09)
+// ============================================================================
+// The 200-file deep fsharp:csharp lane exposed a defect class SHARED by the
+// analyzer AND the oracle (invisible at 60-file depth): member-type prepasses
+// and resolvers only accepted identifier/generic/qualified/predefined/nullable
+// DIRECT children, so array/collection-wrapped members (`EnumSettingEntry[]
+// ExtensionChoice { get; } = [ new(...), ... ]`) fell through to the member
+// NAME as the declared type — fabricating self-targets (`ExtensionChoice ->
+// ExtensionChoice`) on the analyzer side and property/argument names on the
+// oracle side. These helpers are the single source of truth for both sides:
+//
+//  - csharpMemberDeclaredTypeText: the RAW declared-type text of a field /
+//    property / indexer / local declarator, unwrapping array_type / pointer_type
+//    / nullable_type / ref_type containers to their inner token.
+//  - csharpResolveTargetTypedNew: resolve an implicit_object_creation_expression
+//    to its construction target — the declared type BASE for direct
+//    assignments, or the ELEMENT type when the new() sits inside a collection /
+//    array initializer (`T[] x = [new()]` -> T; `List<T> x = [new()]` -> T).
+
+export function csharpCleanTypeLeaf(text: string): string {
+  // Strip generic arguments, nullable and array suffixes, keep qualified paths
+  // verbatim (legacy cleanTypeName contract — no last-segment collapse).
+  const lt = text.indexOf("<")
+  const base = lt > 0 ? text.slice(0, lt) : text
+  const q = base.indexOf("?")
+  const noQ = q > 0 ? base.slice(0, q) : base
+  const br = noQ.indexOf("[")
+  return (br > 0 ? noQ.slice(0, br) : noQ).trim()
+}
+
+export function csharpMemberDeclaredTypeText(memberLike: any): string | null {
+  // A member-LIKE node is any declaration that carries (or wraps) a declared
+  // type: field_declaration > variable_declaration, property/indexer, or a
+  // variable_declarator whose type lives on the enclosing variable_declaration.
+  const TYPES = new Set([
+    "identifier", "generic_name", "qualified_name", "predefined_type",
+    "array_type", "pointer_type", "nullable_type", "ref_type", "tuple_type",
+  ])
+
+  const resolveHolder = (holder: any, nameFieldChild: any): string | null => {
+    // Preferred: the explicit `type` FIELD (never the declarator name).
+    const tf = holder?.childForFieldName?.("type")
+    if (tf) return String(tf.text ?? "").trim()
+    // Fallback: first direct type-ish child that is NOT the node's name field
+    // (a variable_declarator's identifier name must never read as a type — the
+    // CSD14 self-target fabrication: `Widget Fallback = new()` resolved to
+    // Fallback because the name identifier matched the type-ish scan).
+    for (const c of holder?.namedChildren ?? []) {
+      if (!c || !TYPES.has(c.type)) continue
+      if (nameFieldChild && c.startIndex === nameFieldChild.startIndex && c.endIndex === nameFieldChild.endIndex) continue
+      return String(c.text ?? "").trim()
+    }
+    return null
+  }
+
+  if (memberLike.type === "field_declaration") {
+    const vd = memberLike.namedChildren?.find((c: any) => c.type === "variable_declaration")
+    if (vd) {
+      const t = resolveHolder(vd, null)
+      if (t) return t
+    }
+  }
+  if (memberLike.type === "variable_declarator") {
+    // The declarator's own type field is empty for fields/locals — climb to
+    // the enclosing variable_declaration which holds the type.
+    const parentDecl = memberLike.parent
+    if (parentDecl && parentDecl.type === "variable_declaration") {
+      const t = resolveHolder(parentDecl, null)
+      if (t) return t
+    }
+  }
+  const nameFieldChild = memberLike.childForFieldName?.("name") ?? null
+  const holder = memberLike.type === "field_declaration"
+    ? memberLike.namedChildren?.find((c: any) => c.type === "variable_declaration")
+    : memberLike
+  return resolveHolder(holder, nameFieldChild)
+}
+
+export function csharpResolveTargetTypedNew(nodeLike: any, memberTypes?: Map<string, string>): string | null {
+  // Walk UP from the implicit new: collect whether we crossed an element
+  // position (collection_expression / collection_element / initializer of an
+  // array creation) and bail when we cross an enclosing object_creation
+  // (object-initializer member values need the OTHER type's member table).
+  let isElement = false
+  let cur: any = nodeLike.parent
+  while (cur) {
+    if (cur.type === "collection_expression" || cur.type === "collection_element" ||
+        cur.type === "expression_element" || cur.type === "initializer_expression" ||
+        cur.type === "array_creation_expression") {
+      // array_creation_expression > initializer_expression holds ELEMENTS.
+      isElement = isElement || cur.type === "collection_element" ||
+        cur.type === "expression_element" || cur.type === "collection_expression" ||
+        cur.type === "initializer_expression" || cur.type === "array_creation_expression"
+    }
+    if (cur.type === "object_creation_expression" || cur.type === "implicit_object_creation_expression" ||
+        cur.type === "anonymous_object_creation_expression") {
+      // Nested inside another construction (object initializer member value) —
+      // the target is a member of the OUTER type, not resolvable per-file.
+      return null
+    }
+    if (cur.type === "invocation_expression" || cur.type === "argument_list" ||
+        /^(binary|conditional|prefix_unary|postfix_unary|cast|as_|await|coalesce|conditional_access|element_access|member_access)_expression$/.test(cur.type)) {
+      // The new() sits INSIDE a larger expression (a call argument such as
+      // `Foo(new())`, `x ? new() : y`): its target is the parameter/operand
+      // type, not the enclosing declaration's type — an honest no-edge.
+      return null
+    }
+    if (cur.type === "variable_declarator" || cur.type === "property_declaration" ||
+        cur.type === "indexer_declaration" || cur.type === "field_declaration") {
+      const declared = csharpMemberDeclaredTypeText(cur)
+      if (!declared) return null
+      if (declared === "var") return null
+      return csharpTargetFromDeclaredType(declared, isElement)
+    }
+    if (cur.type === "assignment_expression") {
+      const lhs = cur.childForFieldName?.("left")
+      if (lhs && memberTypes) {
+        const name = lhs.type === "identifier" ? lhs.text : (lhs.childForFieldName?.("name")?.text ?? "")
+        const declared = name ? memberTypes.get(name) : undefined
+        if (declared) return csharpTargetFromDeclaredType(declared, isElement)
+      }
+      return null
+    }
+    cur = cur.parent
+  }
+  return null
+}
+
+export function csharpTargetFromDeclaredType(typeText: string, isElement: boolean): string {
+  let t = typeText.trim()
+  if (t === "var") return ""
+  // Outer nullable marker (`List<int>?`, `T?`) is not part of the construction
+  // target.
+  if (t.endsWith("?")) t = t.slice(0, -1).trim()
+  if (isElement) {
+    // Element of an array-typed member: content before the first `[`.
+    const br = t.indexOf("[")
+    if (br > 0) return csharpCleanTypeLeaf(t.slice(0, br))
+    // Element of a generic collection member: the FIRST type argument
+    // (`List<EnumSettingEntry>` -> EnumSettingEntry).
+    const lt = t.indexOf("<")
+    if (lt > 0 && t.endsWith(">")) {
+      const inner = t.slice(lt + 1, -1)
+      const first = inner.split(",")[0].trim()
+      return csharpCleanTypeLeaf(first)
+    }
+    return csharpCleanTypeLeaf(t)
+  }
+  // Direct assignment: the declared type itself (generic base for `List<int>`).
+  return csharpCleanTypeLeaf(t)
+}
 import { findDeclaringParent } from "./override-context"
 
 interface Scope {
@@ -994,16 +1147,14 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       const t = n.type
       if (t === "field_declaration" || t === "property_declaration") {
         const isField = t === "field_declaration"
-        // The type node is a direct child of variable_declaration for fields
-        // (`field_declaration > variable_declaration > generic_name`) and a
-        // direct child of the property node itself for properties.
-        const typeContainer = isField ? this.findChild(n, "variable_declaration") : n
-        const typeNode = typeContainer
-          ? this.findChild(typeContainer, (c) =>
-              c.type === "generic_name" || c.type === "identifier" || c.type === "qualified_name" || c.type === "predefined_type" || c.type === "nullable_type",
-            )
-          : null
-        const declaredType = typeNode ? this.cleanTypeName(typeNode.text) : undefined
+        // CSD14 (OO family closure 2026-09): the type token is extracted via
+        // the shared csharpMemberDeclaredTypeText, which unwraps array_type /
+        // pointer_type / nullable_type containers and never confuses the
+        // member NAME with the type (the old direct-child scan fell through to
+        // the name for array-typed members, self-mapping EnumSettingEntry[]
+        // ExtensionChoice => ExtensionChoice). RAW text is stored — element /
+        // base resolution happens at use time (csharpResolveTargetTypedNew).
+        const declaredType = csharpMemberDeclaredTypeText(n) ?? undefined
         const names: string[] = []
         if (isField) {
           const varDecl = this.findChild(n, "variable_declaration")
@@ -1257,53 +1408,13 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private resolveImplicitNewType(node: Node, memberTypes: Map<string, string>): string | null {
-    // `= new()` inside a variable_declarator: type from the declaration.
-    let cur: Node | null = node.parent
-    while (cur) {
-      if (cur.type === "variable_declarator") {
-        const parentDecl = cur.parent
-        if (parentDecl && parentDecl.type === "variable_declaration") {
-          const typeNode = this.findChild(parentDecl, (n) =>
-            n.type === "generic_name" || n.type === "identifier" || n.type === "qualified_name" || n.type === "predefined_type" || n.type === "nullable_type" || n.type === "array_type",
-          )
-          if (typeNode) return this.cleanTypeName(typeNode.text)
-        }
-        return null
-      }
-      // NOTE: no `field_declaration` early return — for the standard field
-      // initializer shape the walk hits `variable_declarator` first (its
-      // branch returns), so a field branch here was unreachable dead code
-      // (CSD11 re-review 2026-09-04).
-      if (cur.type === "property_declaration") {
-        const typeNode = this.findChild(cur, (n) =>
-          n.type === "generic_name" || n.type === "identifier" || n.type === "qualified_name" || n.type === "predefined_type" || n.type === "nullable_type",
-        )
-        if (typeNode) return this.cleanTypeName(typeNode.text)
-        return null
-      }
-      cur = cur.parent
-    }
-    // CSD11 (re-review 2026-09-04): assignment-form `_items = new();` has NO
-    // declarator — the declared type lives on the field/property symbol keyed
-    // by the assignment LHS. Resolve through the member-type map (6 per 400
-    // powershell files; explicit `new List<int>()` in the same position already
-    // emitted, so this was a pure target-typed asymmetry). Locals declared
-    // without an initializer stay an honest no-edge — their type is not in
-    // any AST map to resolve from.
-    let walk: Node | null = node.parent
-    while (walk) {
-      if (walk.type === "assignment_expression") {
-        const lhs = walk.childForFieldName("left")
-        if (lhs) {
-          const name = lhs.type === "identifier" ? lhs.text : (lhs.childForFieldName?.("name")?.text ?? "")
-          const declared = name ? memberTypes.get(name) : undefined
-          if (declared) return declared
-        }
-        return null
-      }
-      walk = walk.parent
-    }
-    return null
+    // CSD14 (OO family closure 2026-09): single shared source of truth with
+    // the differential oracle (csharpResolveTargetTypedNew) — element-type
+    // resolution through array/generic collection members plus guarded bail
+    // on nested expression contexts. Both sides previously carried their own
+    // divergent copies (the oracle's DFS even picked argument identifiers as
+    // targets).
+    return csharpResolveTargetTypedNew(node, memberTypes)
   }
 
   private isCSharpBuiltin(call: string): boolean {
