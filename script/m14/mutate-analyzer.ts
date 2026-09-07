@@ -2105,6 +2105,13 @@ const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "swift/single-letter-as-calls",
+    language: "swift",
+    defectClass: "relationship-loss",
+    description: "SWIFTD17 regression: restores the length>1 carve-out so single-letter constructions (`E()` with `struct E: Error`) degrade to calls again — single-letter-construction fixture instantiates pins (run->E, go->E) die and the calls forbids fire",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => (x.type === "instantiates" && x.source === "run" && x.target === "E") || (x.type === "instantiates" && x.source === "go" && x.target === "E") ? { ...x, type: "calls", metadata: { ...x.metadata, isInstantiation: false } } : x) }),
+  },
+  {
     id: "objc/drop-implements-edge",
     language: "objc",
     defectClass: "relationship-loss",
