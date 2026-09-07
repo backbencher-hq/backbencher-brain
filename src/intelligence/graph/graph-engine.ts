@@ -283,15 +283,27 @@ export async function traverseGraph(
 // Resolve a symbol name to its highest-gravity match (exact, then fuzzy).
 export async function resolveGraphRoot(projectId: ProjectID, name: string): Promise<SymbolRow | null> {
   const raw = await BrainDatabase.getRawInstance(projectId)
-  const cols =
+  const STRUCTURAL = "('function','method','class','interface','trait','struct','enum','macro')"
+  const base =
     "SELECT s.id, s.name, s.symbol_type AS symbolType, COALESCE(s.line_start,0) AS line, " +
     "COALESCE(s.line_end,0) AS lineEnd, f.relative_path AS relativePath, f.path AS filePath, " +
     "COALESCE(f.language,'unknown') AS language, COALESCE(s.complexity,0) AS complexity " +
     "FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id AND f.project_id = s.project_id " +
-    "WHERE s.project_id = ? AND s.symbol_type IN ('function','method','class','interface','trait','struct','enum','macro') "
-  let rows = raw.prepare(cols + "AND s.name = ? ORDER BY s.gravity_score DESC LIMIT 1").all(projectId, name) as SymbolRow[]
+    "WHERE s.project_id = ? "
+  // 1) exact name among the structural kinds the graph can traverse
+  let rows = raw.prepare(base + `AND s.symbol_type IN ${STRUCTURAL} AND s.name = ? ORDER BY s.gravity_score DESC LIMIT 1`).all(projectId, name) as SymbolRow[]
   if (rows.length === 0) {
-    rows = raw.prepare(cols + "AND s.name LIKE ? ORDER BY s.gravity_score DESC LIMIT 1").all(projectId, `%${name}%`) as SymbolRow[]
+    // M48.C1 (#699) corpus catch: previously the fallback went STRAIGHT to a
+    // fuzzy substring match, so a real exact-name symbol of a non-structural
+    // kind (e.g. #define LANGUAGE_NAME in C) lost to an unrelated symbol
+    // merely CONTAINING the string (a Makefile target lib$(LANGUAGE_NAME).a) —
+    // bb_graph and bb_analyze then answered the same query with different
+    // roots. Exact-name of ANY kind must win over fuzzy containment.
+    rows = raw.prepare(base + "AND s.name = ? ORDER BY s.gravity_score DESC LIMIT 1").all(projectId, name) as SymbolRow[]
+  }
+  if (rows.length === 0) {
+    // 3) documented near-miss fallback: fuzzy containment among structural kinds
+    rows = raw.prepare(base + `AND s.symbol_type IN ${STRUCTURAL} AND s.name LIKE ? ORDER BY s.gravity_score DESC LIMIT 1`).all(projectId, `%${name}%`) as SymbolRow[]
   }
   return rows[0] ?? null
 }

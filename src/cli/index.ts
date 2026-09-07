@@ -336,12 +336,16 @@ async function cmdSearch(query: string, opts: { dir?: string; limit?: number; la
   // M40.A7: --mode routes through the REAL bb_search MCP handler (same code
   // path, same freshness envelope) — CLI/MCP parity by construction. Default
   // mode keeps the original symbols text rendering.
-  // M40.A9/A7 negative-case fix: an UNKNOWN --mode value must be rejected
-  // (the MCP schema rejects it too) — silently falling back to the default
-  // listing hid the user's intent and broke CLI/MCP surface parity.
-  const KNOWN_MODES = new Set(["content", "symbol", "file"])
+  // M40.A9/A7 negative-case fix: an UNKNOWN --mode value must be rejected —
+  // silently falling back to the default listing hid the user's intent and
+  // broke CLI/MCP surface parity.
+  // M48.C1 (#699) surface-truth fix: `symbols` was rejected here while the
+  // CLI's own --help and the MCP registry/docs advertise it as a mode (the
+  // registry example literally calls mode:"symbols"). The advertised enum
+  // value must work on BOTH doors: --mode symbols == the default listing.
+  const KNOWN_MODES = new Set(["symbols", "content", "symbol", "file"])
   if (opts.mode !== undefined && !KNOWN_MODES.has(opts.mode)) {
-    console.error(`✗ unknown search mode "${opts.mode}" (known: content, symbol, file; omit --mode for the symbols listing)`)
+    console.error(`✗ unknown search mode "${opts.mode}" (known: symbols, content, symbol, file)`)
     process.exit(1)
   }
   const mode = opts.mode ?? "symbols"
