@@ -49,7 +49,7 @@ const LANG_REPOS: Record<string, string> = {
   csharp: "powershell",
   dart: "proxicall",
   swift: "swift-nio",
-  objc: "Clyde",
+  objc: "sdwebimage",
   php: "phpunit",
   ruby: "rake",
   python: "cython",
