@@ -10,7 +10,22 @@ import { ASTEngine } from "./engine"
 const BARE_CALL_SKIP_PARENTS = new Set([
   "call", "command", "command_call",
   "method", "singleton_method",
-  "pair",
+  // `def size=(v)` parses the NAME as a `setter` node wrapping the plain
+  // identifier — without this the nested `size` leaked as a bare call
+  // (master-review 2026-09; oracle already carried `setter`).
+  "setter",
+  // Keyword `alias new_name old_name` (any scope): its identifiers are
+  // method-name DECLARATIONS, never expression calls. Class-level alias
+  // gets the RB-E alias_method contract in the main loop; alias inside a
+  // method body is a runtime-definition (SyntaxError in practice) and must
+  // emit nothing, not two junk calls (master-review 2026-09).
+  "alias",
+  // NOT present: `pair` — a hash/argument pair's VALUE is a real expression
+  // (`{ x: helper }`, `foo(k: helper)`); only colon-form KEYS are
+  // non-expression, and those are hash_key_symbol/simple_symbol nodes, never
+  // identifiers. Rocket-form keys (`key => v`) also evaluate. pair was
+  // suppressing genuine value-position method calls on both sides — a
+  // shared blind spot F5 cannot see (master-review 2026-09, RUBD12).
   "method_parameters", "parameters", "block_parameters", "lambda_parameters", "block_parameters",
   "class", "module", "singleton_class",
 ])
@@ -64,6 +79,51 @@ export const RUBY_BUILTINS = new Set([
 ])
 
 // Rails-specific call targets (emit as property/use edges, not call edges)
+/**
+ * True when a superclass expression is a statically nameable constant /
+ * scope path (`Foo`, `::Foo`, `A::B::C`, `A :: B`). Anything else — a call
+ * (`Struct.new(...)`, `Class.new(Base)`), an operator expression, a
+ * lowercase identifier — is a DYNAMIC superclass whose concrete base is
+ * unknowable statically; emitting its raw text as an extends target
+ * fabricated junk on both the analyzer and the oracle truth (RB-C ruling;
+ * master-review 2026-09). Pure character scan (no regex) so the analyzer
+ * and the differential oracle share ONE source of truth — a duplicated
+ * regex literal previously drifted into junk targets on the oracle side.
+ */
+export function isRubyStaticSuperclassName(text: string): boolean {
+  if (!text) return false
+  const t = text.trim()
+  const isConstChar = (c: string): boolean => {
+    const code = c.charCodeAt(0)
+    return code >= 65 && code <= 90
+  }
+  const isNameChar = (c: string): boolean => {
+    const code = c.charCodeAt(0)
+    return (code >= 65 && code <= 90) || (code >= 97 && code <= 122) ||
+      (code >= 48 && code <= 57) || c === "_"
+  }
+  let i = 0
+  const readConst = (): boolean => {
+    // Consume one CONSTANT segment; true if one was read.
+    if (i >= t.length || !isConstChar(t[i])) return false
+    i++
+    while (i < t.length && isNameChar(t[i])) i++
+    return true
+  }
+  if (t.startsWith("::")) i = 2
+  if (!readConst()) return false
+  while (i < t.length) {
+    while (i < t.length && (t[i] === " " || t[i] === "\t")) i++
+    if (i >= t.length) break
+    if (t[i] !== ":") return false
+    if (t[i + 1] !== ":") return false
+    i += 2
+    while (i < t.length && (t[i] === " " || t[i] === "\t")) i++
+    if (!readConst()) return false
+  }
+  return true
+}
+
 export const RAILS_MACRO_METHODS = new Set([
   "has_many", "belongs_to", "has_one", "has_and_belongs_to_many",
   "scope", "default_scope",
@@ -162,7 +222,19 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (type === "class") {
         const nameNode = node.childForFieldName("name")
         if (!nameNode) continue
-        const name = nameNode.text
+        // Namespaced reopen (`class Rake::NameSpace`) declares the same class
+        // as the nested form `module Rake; class NameSpace` — the graph must
+        // give them ONE identity: name = leaf, owner = the module scope path.
+        // Before this the reopen carried the FULL path as a bare name with no
+        // owner, so the two spellings never unified across files (rake's own
+        // lib uses both styles; master-review 2026-09, RUBD13). The module
+        // scope is kept verbatim (`A::B`) — identical reopen spellings merge,
+        // matching how nested owners are compared by string elsewhere.
+        const rawName = nameNode.text
+        const sepIdx = rawName.indexOf("::")
+        const name = sepIdx >= 0 ? rawName.substring(sepIdx + 2) : rawName
+        const scopeOwner = sepIdx >= 0 ? rawName.substring(0, sepIdx) : undefined
+        const effOwner = scopeOwner ?? owner
 
         const superClass = this.extractSuperclass(node)
         const isRailsModel = this.isRailsModelName(superClass)
@@ -176,12 +248,24 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
           name,
           kind: ASTEngine.SymbolKind.Class,
           range: this.nodeToRange(node),
-          ownerName: owner,
-          metadata: { superClass, isRailsModel, isRailsController },
+          ownerName: effOwner,
+          metadata: {
+            superClass,
+            isRailsModel,
+            isRailsController,
+            // Full declaration path for reopen spellings (`Rake::NameSpace`)
+            // so consumers that want the lexical path can recover it even
+            // though the identity is leaf+owner (php-family precedent).
+            ...(sepIdx >= 0 ? { fqn: rawName } : {}),
+          },
         }
         symbols.push(sym)
-        // extends relationship
-        if (superClass) {
+        // extends relationship — ONLY when the superclass is a statically
+        // nameable constant/scope path. `class X < Struct.new(:a)` has an
+        // ANONYMOUS base (RB-C ruling: no extends); emitting the raw
+        // expression text fabricated `extends X -> "Struct.new(:a, :b)"`
+        // (master-review 2026-09: extractSuperclass never filtered calls).
+        if (superClass && this.isStaticSuperclassName(superClass)) {
           const leaf = this.leafName(superClass)
           relationships.push({
             source: name,
@@ -238,14 +322,20 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (type === "module") {
         const nameNode = node.childForFieldName("name")
         if (!nameNode) continue
-        const name = nameNode.text
+        // Same reopen normalization as class (`module A::B` ≡ nested
+        // `module A; module B`) — RUBD13, master-review 2026-09.
+        const rawName = nameNode.text
+        const sepIdx = rawName.indexOf("::")
+        const name = sepIdx >= 0 ? rawName.substring(sepIdx + 2) : rawName
+        const scopeOwner = sepIdx >= 0 ? rawName.substring(0, sepIdx) : undefined
+        const effOwner = scopeOwner ?? owner
 
         const sym: ASTEngine.UniversalSymbol = {
           name,
           kind: ASTEngine.SymbolKind.Module,
           range: this.nodeToRange(node),
-          ownerName: owner,
-          metadata: {},
+          ownerName: effOwner,
+          metadata: { ...(sepIdx >= 0 ? { fqn: rawName } : {}) },
         }
         symbols.push(sym)
         const body = this.findChild(node, "body_statement")
@@ -382,6 +472,33 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         continue
       }
 
+      // --- Keyword alias (class/module/top-level scope) ---
+      // `alias new_name old_name` is the keyword twin of alias_method and
+      // makes `new_name` a callable member of the class — same RB-E
+      // contract: calls:<alias> with aliasedTo metadata (master-review
+      // 2026-09; before this the alias was invisible at declaration scope
+      // while method-body aliases leaked two junk bare calls, now suppressed
+      // by the `alias` entry in BARE_CALL_SKIP_PARENTS).
+      if (type === "alias") {
+        const names: string[] = []
+        for (let i = 0; i < node.namedChildCount && names.length < 2; i++) {
+          const c = node.namedChild(i)
+          if (!c) continue
+          if (c.type === "identifier") names.push(c.text)
+          else if (c.type === "simple_symbol") names.push(this.stripSymbolColon(c.text))
+        }
+        if (names.length === 2) {
+          relationships.push({
+            source: owner || "unknown",
+            target: names[0],
+            type: ASTEngine.RelationshipType.Calls,
+            confidence: 0.9,
+            metadata: { aliasedTo: names[1], keywordAlias: true },
+          })
+        }
+        continue
+      }
+
       // --- Visibility markers (private, protected, public) ---
       // Ruby's grammar represents these bare keywords as named identifiers.
       if (type === "identifier") {
@@ -513,7 +630,14 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (s.kind !== ASTEngine.SymbolKind.Method || !s.ownerName) continue
       const base = baseByClass.get(s.ownerName)
       if (!base) continue
-      const inFileMethods = methodsByOwner.get(base)
+      // Self-collision guard (master-review 2026-09, RUBD14): a namespaced
+      // reopen like `class Rake::TestCase < Test::Unit::TestCase` leaf-
+      // collapses its superclass to `TestCase` — the class's OWN leaf after
+      // the RUBD13 reopen normalization. A class can never extend itself, so
+      // this is a resolution artifact, not a declared in-file base: route it
+      // to the honest external first-parent guess instead of fabricating
+      // VERIFIED self-overrides (rake helper.rb: 9 phantom 0.95 edges).
+      const inFileMethods = base === s.ownerName ? undefined : methodsByOwner.get(base)
       const baseMethods = inFileMethods ?? context?.overrideCompanion?.get(base)
       if (baseMethods?.has(s.name)) {
         relationships.push({
@@ -1335,6 +1459,10 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
   private leafName(name: string): string {
     const idx = name.lastIndexOf("::")
     return idx >= 0 ? name.substring(idx + 2) : name
+  }
+
+  private isStaticSuperclassName(text: string): boolean {
+    return isRubyStaticSuperclassName(text)
   }
 
   private isRailsModelName(superClass: string | undefined): boolean {
