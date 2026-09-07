@@ -370,14 +370,18 @@ async function main(): Promise<void> {
       el.setAttribute("data-symbol-id", symbolId)
       el.setAttribute("data-dir", dir)
       el.setAttribute("data-depth", "0")
-      el.setAttribute("data-file", file)
+      const navigable = file.length > 0
+      if (navigable) el.setAttribute("data-file", file)
+      el.setAttribute("data-clickable", navigable ? "1" : "0")
+      if (navigable) el.setAttribute("tabindex", "0")
       el.setAttribute("data-line", String(line))
       el.setAttribute("data-symbol", name)
       el.setAttribute("data-row-ids", rowIds.join(" "))
       el.setAttribute("data-occurrences", String(rowIds.length))
+      const main = new El("span"); main.addClass("bb-hub-row-main")
       const n = new El("span"); n.addClass("bb-hub-row-name"); n.textContent = name
-      const m = new El("span"); m.addClass("bb-hub-row-meta"); m.textContent = `${file}:${line}`
-      el.appendChild(n); el.appendChild(m)
+      const m = new El("span"); m.addClass("bb-hub-row-meta"); m.textContent = navigable ? `${file}:${line}` : "(external)"
+      main.appendChild(n); main.appendChild(m); el.appendChild(main)
       const chips = new El("span"); chips.addClass("bb-hub-relchips")
       for (const t of types) {
         const c = new El("span"); c.addClass("bb-hub-relchip"); c.addClass(`bb-badge-${t.tier}`)
@@ -387,6 +391,7 @@ async function main(): Promise<void> {
       }
       el.appendChild(chips)
       if (enriched) { el.addClass("bb-hub-enriched"); el.setAttribute("data-enriched", "1"); const c = new El("span"); c.addClass("bb-hub-enrichment"); c.textContent = "⌾ enriched (consumer)"; el.appendChild(c) }
+      const chev = new El("span"); chev.addClass("bb-hub-chevron"); chev.textContent = navigable ? "›" : "·"; el.appendChild(chev)
       return el
     }
     const mkSection = (): El => {
@@ -394,11 +399,13 @@ async function main(): Promise<void> {
       const sum = new El("div"); sum.addClass("bb-hub-summary"); sum.textContent = "2 callers · 1 callee"; s.appendChild(sum)
       return s
     }
-    const withGroups = (s: El, groups: Array<[string, El[]]>) => {
+    const withGroups = (s: El, groups: Array<[string, El[]]>, counts?: number[]) => {
+      let i = 0
       for (const [name, rows] of groups) {
         const g = new El("div"); g.addClass("bb-hub-group"); g.setAttribute("data-group-name", name)
-        const l = new El("span"); l.addClass("bb-hub-group-label"); l.textContent = name; g.appendChild(l)
+        const l = new El("span"); l.addClass("bb-hub-group-label"); l.setAttribute("data-group-count", String(counts ? counts[i] : rows.length)); l.textContent = name; g.appendChild(l)
         rows.forEach((r) => g.appendChild(r)); s.appendChild(g)
+        i++
       }
       return s
     }
@@ -450,6 +457,28 @@ async function main(): Promise<void> {
       const doc = withGroups(s, [["caller1.ts", [rowC1()]]])
       const findings = H.runHubHarness(emptyModel, toHarness(doc), { sectionClass: "bb-hub-list", group: "file" })
       check("P5 liar: phantom rows on an empty model caught (AH5)", findings.some((f) => !f.ok), findings.map((f) => `${f.assertion}:${f.ok}`).join("; "))
+    }
+    // liar 7 (M44.U2 §13.3): a CLICKABLE row rendered WITHOUT the affordance —
+    // data-clickable removed, no tabindex, no chevron. The row claims to be
+    // navigable (data-file set, bridge would navigate it) but the user is
+    // never told — the exact "cannot tell what is clickable" defect.
+    {
+      const dead = mkRow("sym:c2", "caller", "caller2", "caller2.ts", 1, ["rel-1"], [{ type: "calls", occurrences: 1, tier: "structural" }])
+      dead.attrs["data-clickable"] = "0"
+      delete dead.attrs["tabindex"]
+      dead.children = dead.children.filter((c) => !c.className.split(" ").includes("bb-hub-chevron"))
+      const s = mkSection()
+      const doc = withGroups(s, [["caller1.ts", [rowC1()]], ["caller2.ts", [dead]], ["x.ts", [rowX()]]])
+      const findings = H.runHubHarness(hubHarnessModel, toHarness(doc), { sectionClass: "bb-hub-list", group: "file" })
+      check("P5 liar: navigable row without a click affordance caught (AH6)", findings.some((f) => !f.ok && f.assertion.startsWith("AH6")), findings.map((f) => `${f.assertion}:${f.ok}`).join("; "))
+    }
+    // liar 8 (M44.U2 §13.4): a group header that LIES about its count —
+    // header claims 5, renders 1.
+    {
+      const s = mkSection()
+      const doc = withGroups(s, [["caller1.ts", [rowC1()]], ["caller2.ts", [rowC2()]], ["x.ts", [rowX()]]], [5, 1, 1])
+      const findings = H.runHubHarness(hubHarnessModel, toHarness(doc), { sectionClass: "bb-hub-list", group: "file" })
+      check("P5 liar: group header miscount caught (AH6)", findings.some((f) => !f.ok && f.assertion.startsWith("AH6")), findings.map((f) => `${f.assertion}:${f.ok}`).join("; "))
     }
   }
 

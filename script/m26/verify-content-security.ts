@@ -56,6 +56,16 @@ async function main(): Promise<void> {
   check("G1: script-src and style-src nonce-bound", csp.includes("script-src") && csp.includes("'nonce-testnonce01'") && csp.includes("style-src") && csp.match(/'nonce-testnonce01'/g)!.length >= 2)
   check("G1: connect/form/frame/base locked", csp.includes("connect-src 'none'") && csp.includes("form-action 'none'") && csp.includes("base-uri 'none'"))
 
+  // M44.U2 (issue #689): the shell injects the hub stylesheet as a
+  // nonce-bound <style> block. The CSS is a STATIC repo-controlled string —
+  // no interpolation, no user data — so it cannot introduce an injection
+  // surface; the nonce keeps it the only permitted sheet.
+  const styled = buildWebviewHtml({ cspSource: "vscode-webview://test", stateJson: "{}" })
+  const unstyled = buildWebviewHtml({ cspSource: "vscode-webview://test", stateJson: "{}", styles: false })
+  check("G1: style block present by default, nonce-bound", styled.html.includes(`<style nonce="${styled.nonce}">`), "")
+  check("G1: styles:false opts out (provider-owned sheet path)", !unstyled.html.includes("<style") && unstyled.html.includes(`script-src`), "")
+  check("G1: the injected sheet is static (no interpolation seams)", !/\$\{|undefined|\[object/.test(styled.html.match(/<style[^>]*>([\s\S]*?)<\/style>/)?.[1] ?? "X"), "")
+
   // --- G2: escaping law ---------------------------------------------------------
   check("G2: escapeHtml escapes the full breakout set", escapeHtml(`<a href="x">'&`) === "&lt;a href=&quot;x&quot;&gt;&#39;&amp;")
   check("G2: escapeHtml is idempotent over double-escape attempts", escapeHtml(escapeHtml("<b>")) === escapeHtml("&lt;b&gt;"))
