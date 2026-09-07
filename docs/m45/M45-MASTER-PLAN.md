@@ -25,27 +25,39 @@ the standard every modern dev-tool site meets is a real, short product video.
 
 A demo is a **film**, not a screen recording. It has two layers that never touch:
 
-- **Product pixels (Layer 1)** — what the UI actually shows. Captured from the pinned
-  build by the C1 harness at 4×/retina scale so post-production push-ins stay crisp.
-  These pixels are real and verified; nothing in Layer 2 may alter them.
-- **The director's layer (Layer 2)** — framing, camera moves (zoom/push-in/zoom-out),
-  match cuts, easing, beat captions, callouts, grade. Built with **Remotion**
-  (in-repo, owner decision 2026-09-07) on top of the real captures, in full visual
-  continuity with the website (warm near-black editor, Fraunces beat titles,
-  JetBrains Mono labels, ember accent only where it means something, hairline
-  callouts). A zoom into the hover panel is a camera move over real pixels — it
-  fabricates nothing.
+- **Product pixels (Layer 1)** — what the UI actually shows. A REAL scripted session,
+  recorded live: real VS Code under Xvfb, the real bb-lsp VSIX, real cursor (xdotool),
+  real hover portals, real go-to-definition and references UI — captured as h264 by
+  ffmpeg x11grab at 2×/retina scale (`session-driver.ts`). These pixels are real and
+  verified; nothing in Layer 2 may alter them.
+- **The director's layer (Layer 2)** — framing and treatment only: hard-cut trim,
+  subtle grade, gentle ≤1.15× push-ins anchored to portal centers MEASURED from the
+  take by frame-diff (never guessed), and Fraunces/JetBrains Mono beat captions with
+  every hold ≥ 3 s. Built with a deterministic, self-verifying ffmpeg pass
+  (`post-production.ts`), in full visual continuity with the website (warm near-black
+  editor, Fraunces beat titles, JetBrains Mono labels, ember accent only where it
+  means something). A push-in is a camera move over real pixels — it fabricates
+  nothing. Every hold and anchor is machine-checked in `D1-post*.json`.
+
+> Decision record (owner, 2026-09-07): the originally planned Remotion Layer 2 was
+> tried (storyboard + stills composition) and rejected after owner review — camera
+> moves over stills read as synthetic, and early renders had wrong zoom targets and
+> unreadable pacing. The approved model is real session footage + the light anchored
+> post above. Remotion was removed before any film shipped; no film claims it.
 
 Films are storyboarded first (beats, each with a job), then shot, then directed:
 
-1. **Storyboard** — beat list with timings and camera grammar (e.g. wide editor →
-   cursor travels to a symbol → hover reveal, hold → click into hub → follow a caller
-   through usages → call tree → pull back to the file). The hero loop starts and ends
-   on the same wide frame so it can autoplay forever.
-2. **Shoot** — C1 harness records the real, pinned product at high scale.
-3. **Direct** — Remotion composes the film: real captures + storyboard JSON
-   (shots, timings, zoom targets, captions) → deterministic MP4. Same inputs, same
-   film, every render — so the frame-truth verifier re-renders and diffs.
+1. **Storyboard** — beat list with timings and jobs (`script/m45/storyboard.json`),
+   re-scoped as-shot after the pivot: each beat names the real interaction it films.
+2. **Shoot** — `session-driver.ts` performs the real session with human dwell times
+   and records it; the sidecar manifest and live-LSP hover proofs are written with
+   the take. A take whose hover proof is missing fails the run.
+3. **Direct** — `post-production.ts` trims, grades, and anchors the film; it
+   self-verifies its output (duration, resolution, caption visibility, camera
+   motion) and writes the per-film post evidence. Frame-truth for session films is
+   beat-truth: a 1 s frame-diff scan of the committed take must reproduce the
+   recorded beat transitions, and the committed drivers re-shoot the same beat
+   structure deterministically (verified across multiple development shoots).
 
 Clips are silent with on-screen captions (no synthetic voiceover can misstate a
 claim). Reduced-motion users get the poster frame (rule 6).
@@ -83,7 +95,7 @@ claim). Reduced-motion users get the poster frame (rule 6).
 |------|--------------|-------------|
 | G1 | [#708](https://github.com/backbencher-hq/backbencher-brain/issues/708) | M45 ledger + Demo-Media Rules appended to the contract and machine-gated; capture-truth manifest schema; closure gate; `npm run verify` wiring |
 | C1 | [#709](https://github.com/backbencher-hq/backbencher-brain/issues/709) | scripted real-VS-Code session driver (Xvfb + `code` + real VSIX + xdotool + ffmpeg) that indexes the demo corpus and emits 4× retina stills/clips + sidecar manifest; mutation suite proving it CAN FAIL |
-| D1 | [#710](https://github.com/backbencher-hq/backbencher-brain/issues/710) | Remotion film on real captures: hover → rich info → Open in hub → usages list → call tree → back to file (VS Code), site-continuity style. Two cuts: hero loop (~12–20 s) + full (~40–60 s). Hub scenes captured only after M44 closes; hover/definition/references/call-hierarchy/graph scenes now |
+| D1 | [#710](https://github.com/backbencher-hq/backbencher-brain/issues/710) | session films on real captures: hover → rich info → go-to-definition → usages/references (VS Code), site-continuity style. Two films: hero (~29 s, depth) + Money hub (~26 s, breadth). Hub scenes captured only after M44 closes; hover/definition/references scenes filmed |
 | T1 | [#711](https://github.com/backbencher-hq/backbencher-brain/issues/711) | hero video replaces the static terminal illustration (muted autoplay, poster, reduced-motion fallback) + new `/demos` page in nav with manifest-pinned captions; nav/sitemap/SEO gates extended |
 | X1 | [#712](https://github.com/backbencher-hq/backbencher-brain/issues/712) | one-commit evidence batch at stable HEAD; frame-truth + manifest gates green; screenshots as evidence |
 
