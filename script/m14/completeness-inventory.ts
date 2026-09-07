@@ -268,7 +268,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     fixturesDir: "validation/m14/fixtures/objc",
     docs: ["docs/analyzers/real-objective-c-analyzer.md"],
     differentialCheck: "differential-objc",
-    perfKey: "Clyde:objc",
+    perfKey: "sdwebimage:objc",
     requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "objc/payload-and-complexity" },
