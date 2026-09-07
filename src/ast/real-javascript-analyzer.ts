@@ -816,14 +816,31 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
       if ((s.kind === ASTEngine.SymbolKind.Method || s.kind === ASTEngine.SymbolKind.Constructor) && s.ownerName) {
         const base = baseByClass.get(s.ownerName)
         if (!base) continue
-        if (!baseDeclares(base, s.name)) continue
-        relationships.push({
-          source: `${s.ownerName}.${s.name}`,
-          target: `${base}.${s.name}`,
-          type: ASTEngine.RelationshipType.Overrides,
-          confidence: 0.95,
-          metadata: {},
-        })
+        const inFileDeclares = byName.get(s.name)?.some((bm) => bm.ownerName === base) ?? false
+        if (inFileDeclares || overrideCompanion?.get(base)?.has(s.name)) {
+          relationships.push({
+            source: `${s.ownerName}.${s.name}`,
+            target: `${base}.${s.name}`,
+            type: ASTEngine.RelationshipType.Overrides,
+            confidence: 0.95,
+            metadata: {},
+          })
+        } else if (!overrideCompanion?.has(base)) {
+          // Pass 3 (family parity with java/groovy resolveOverrides): the
+          // base is not declared in this file and the companion index gave
+          // no opinion (it is never populated in production — see M37.10).
+          // Emit the deterministic first-parent guess BELOW the patterns.ts
+          // threshold (0.7): visible in raw output, counted as heuristic
+          // (honest suspicion) by the differential. Pre-M37.10 this edge was
+          // silently dropped for every externally-declared base.
+          relationships.push({
+            source: `${s.ownerName}.${s.name}`,
+            target: `${base}.${s.name}`,
+            type: ASTEngine.RelationshipType.Overrides,
+            confidence: 0.5,
+            metadata: { reasonCode: "first-parent-guess" },
+          })
+        }
       }
     }
   }

@@ -151,18 +151,27 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         const nameNode = this.findChildByType(node, "name")
         const className = nameNode ? nameNode.text : `anonymous_class_${node.startIndex}`
         const baseClause = this.findChildByType(node, "base_clause")
-        const baseName = baseClause ? this.leafName(baseClause.namedChild(0)?.text ?? "") : undefined
+        // PHPD10: heritage target resolution — never fabricate a self-edge
+        // when a qualified base/interface shares the class's leaf name.
+        // heritageTarget returns the OWN name when qualification cannot
+        // disambiguate (global single-segment base like \\RuntimeException):
+        // emit NO extends for that unresolvable base.
+        const rawBase = baseClause?.namedChild(0)?.text
+        const baseName = baseClause ? this.heritageTarget(rawBase ?? "", className) : undefined
+        const baseUnresolvable =
+          !!rawBase && rawBase !== baseName && baseName === className
         const interfaces: string[] = []
         const ifaceClause = this.findChildByType(node, "class_interface_clause")
         if (ifaceClause) {
           for (let i = 0; i < ifaceClause.namedChildCount; i++) {
             const iface = ifaceClause.namedChild(i)
             if (!iface) continue
-            const ifaceName = iface.text
-            interfaces.push(this.leafName(ifaceName))
+            const ifaceName = this.heritageTarget(iface.text, className)
+            if (ifaceName === className && iface.text !== ifaceName) continue // unresolvable same-name interface
+            interfaces.push(ifaceName)
             relationships.push({
               source: className,
-              target: this.leafName(ifaceName),
+              target: ifaceName,
               type: ASTEngine.RelationshipType.Implements,
               confidence: 1.0,
               metadata: { phpSpecific: true },
@@ -182,14 +191,14 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
             phpSpecific: true,
             fqn: ns ? `${ns}\\${className}` : className,
             namespace: ns,
-            baseClass: baseName,
+            baseClass: baseUnresolvable ? undefined : baseName,
             interfaces,
             isFinal: modifiers.includes("final"),
             isAnonymous: false,
           },
         })
 
-        if (baseName) {
+        if (baseName && !baseUnresolvable) {
           relationships.push({
             source: className,
             target: baseName,
@@ -227,7 +236,14 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
           for (let i = 0; i < baseClause.namedChildCount; i++) {
             const parent = baseClause.namedChild(i)
             if (!parent) continue
-            const parentName = this.leafName(parent.text)
+            // PHPD10: same-leaf qualified parents (`interface Exception
+            // extends \PHPUnit\Exception`) must keep qualification — the leaf
+            // would fabricate a self-extends. A qualified parent whose name
+            // still equals the interface after disambiguation (global
+            // single-segment, e.g. `interface Foo extends \Foo`) is
+            // unresolvable in the leaf graph: skip it (no self-loop).
+            const parentName = this.heritageTarget(parent.text, ifaceName)
+            if (parentName === ifaceName && parent.text !== parentName) continue
             extended.push(parentName)
             relationships.push({
               source: ifaceName,
@@ -270,12 +286,30 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         const nameNode = this.findChildByType(node, "name")
         if (!nameNode) continue
         const enumName = nameNode.text
+        // M37.13: PHP 8.1 enums implement interfaces via the SAME
+        // class_interface_clause shape classes use (`enum Status implements
+        // Labeled`). Probe-verified: enum_declaration carries the clause; the
+        // pre-M37.13 code never read it, silently dropping enum implements.
+        const ifaceClause = this.findChildByType(node, "class_interface_clause")
+        if (ifaceClause) {
+          for (let i = 0; i < ifaceClause.namedChildCount; i++) {
+            const iface = ifaceClause.namedChild(i)
+            if (!iface) continue
+            relationships.push({
+              source: enumName,
+              target: this.heritageTarget(iface.text, enumName),
+              type: ASTEngine.RelationshipType.Implements,
+              confidence: 1.0,
+              metadata: { phpSpecific: true, isEnumImplements: true },
+            })
+          }
+        }
         symbols.push({
           name: enumName,
           kind: ASTEngine.SymbolKind.Enum,
           range: this.nodeToRange(node),
           visibility: "public",
-          metadata: { phpSpecific: true, fqn: ns ? `${ns}\\${enumName}` : enumName, namespace: ns },
+          metadata: { phpSpecific: true, fqn: ns ? `${ns}\\${enumName}` : enumName, namespace: ns, implementedInterfaces: ifaceClause ? Array.from({ length: ifaceClause.namedChildCount }, (_, i) => this.heritageTarget(ifaceClause.namedChild(i)?.text ?? "", enumName)).filter(Boolean) : [] },
         })
         const list = this.findChildByType(node, "enum_declaration_list")
         if (list) {
@@ -329,6 +363,17 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         const nameNode = node.childForFieldName("name")
         if (!nameNode) continue
         const methodName = nameNode.text
+        // M37.13 (dual-lens php): anonymous-class methods are reached only
+        // through `new class { ... }` (owner undefined — a class body member
+        // always carries its owner via pushMembers). The class has no nameable
+        // symbol, so no method symbol / promoted-property is fabricated; the
+        // body is still walked so calls/creations are not lost (mirrors
+        // walkBody's treatment of anon classes nested inside named methods).
+        if (!owner) {
+          const body = node.childForFieldName("body")
+          if (body) this.walkBody(body, symbols, relationships, imports, owner, ns, undefined, detectedFrameworks, patterns)
+          continue
+        }
         const modifiers = this.extractModifiers(node)
         let visibility = "public"
         if (modifiers.includes("private")) visibility = "private"
@@ -470,6 +515,30 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         continue
       }
 
+      // --- Top-level call/creation dispatch (M37.13 procedural gap) ---
+      // The call/creation processors used to live ONLY inside walkBody
+      // (method/function bodies). Statements at program/namespace scope
+      // (`$x = new App(); $app->run(); run_it(); echo fn();` — PHP scripts,
+      // config/bootstrap files, WP/plugin hook files) were silently dropped
+      // by the extractive walk, so procedural files emitted ZERO relationship
+      // edges while the differential oracle (a generic walk) derived them
+      // all. These dispatchers fire wherever a call/creation is reached
+      // OUTSIDE a body; the generic fallback below descends every unmatched
+      // statement/expression wrapper until it finds them (nested args,
+      // chained member calls, assignments, closures). Member READS are
+      // deliberately not dispatched here — the oracle derives uses for
+      // member_access only inside method/function bodies (inBody), which the
+      // extractive walk never reaches (walkBody owns bodies).
+      if (type === "function_call_expression") {
+        this.processFunctionCall(node, relationships, owner, ns, inFunction, detectedFrameworks, patterns)
+      } else if (type === "member_call_expression" || type === "nullsafe_member_call_expression") {
+        this.processMethodCall(node, relationships, inFunction)
+      } else if (type === "scoped_call_expression") {
+        this.processScopedCall(node, relationships, inFunction)
+      } else if (type === "object_creation_expression") {
+        this.processObjectCreation(node, relationships, owner, inFunction)
+      }
+
       // --- Top-level statement wrapper (e.g. `require_once ...;` is wrapped in
       // an expression_statement at the program level).
       if (type === "expression_statement") {
@@ -487,6 +556,18 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (child) stack.push({ node: child, owner, ownerKind, ns, inFunction })
         }
         continue
+      }
+
+      // --- Generic fallback: descend every unmatched node ---
+      // The extractive walk previously DROPPED any node type it did not
+      // match (no default recursion), which is precisely how procedural
+      // statements, anonymous-class bodies, and deep expression trees fell
+      // into the void. Symbol-bearing branches above all `continue`, so this
+      // only re-descends statement/expression wrappers — mirroring the
+      // oracle's generic walk.
+      for (let i = node.namedChildCount - 1; i >= 0; i--) {
+        const child = node.namedChild(i)
+        if (child) stack.push({ node: child, owner, ownerKind, ns, inFunction })
       }
     }
 
@@ -728,7 +809,12 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     const baseByClass = new Map<string, string>()
     for (const s of symbols) {
       if (s.kind === ASTEngine.SymbolKind.Class && s.metadata?.baseClass) {
-        baseByClass.set(s.name, this.leafName(String(s.metadata.baseClass)))
+        // PHPD10: metadata.baseClass already holds the heritage-resolved
+        // target (qualified form kept when a same-leaf collision would
+        // fabricate a self-edge). Re-leafing here would collapse the
+        // qualified external base back onto the subclass name and re-create
+        // the self-override — use it verbatim.
+        baseByClass.set(s.name, String(s.metadata.baseClass))
       }
     }
     const methodsByOwner = new Map<string, Set<string>>()
@@ -745,7 +831,8 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (s.kind !== ASTEngine.SymbolKind.Method || !s.ownerName) continue
       const base = baseByClass.get(s.ownerName)
       if (!base) continue
-      const baseMethods = methodsByOwner.get(base) ?? context?.overrideCompanion?.get(base)
+      const inFileMethods = methodsByOwner.get(base)
+      const baseMethods = inFileMethods ?? context?.overrideCompanion?.get(base)
       if (baseMethods?.has(s.name)) {
         relationships.push({
           source: `${s.ownerName}.${s.name}`,
@@ -753,6 +840,23 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
           type: ASTEngine.RelationshipType.Overrides,
           confidence: 0.95,
           metadata: { phpSpecific: true, isOverride: true },
+        })
+      } else if (!inFileMethods && !context?.overrideCompanion?.get(base)) {
+        // Pass 3 (family parity with java/groovy resolveOverrides): the base
+        // is not declared in this file and the companion index gave no
+        // opinion (it is never populated in production — see M37.10), so
+        // declaring-parent verification is impossible. Emit the deterministic
+        // first-parent guess BELOW the patterns.ts threshold (0.7): visible
+        // in raw output, never contaminating thresholded analysis, and
+        // counted as heuristic (honest suspicion) by the differential. The
+        // pre-M37.10 behavior dropped the edge entirely when the base was
+        // external — silently losing every cross-file override.
+        relationships.push({
+          source: `${s.ownerName}.${s.name}`,
+          target: `${base}.${s.name}`,
+          type: ASTEngine.RelationshipType.Overrides,
+          confidence: 0.5,
+          metadata: { phpSpecific: true, isOverride: true, reasonCode: "first-parent-guess" },
         })
       }
     }
@@ -917,6 +1021,37 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     return idx >= 0 ? name.substring(idx + 1) : name
   }
 
+  /**
+   * PHPD10 (M37.13): namespaced heritage target resolution.
+   * A class may inherit from a DIFFERENT class that shares its leaf name in
+   * another namespace (`class Setup\\FeaturesForm extends
+   * \\PhpMyAdmin\\Config\\Forms\\User\\FeaturesForm` — phpmyadmin's Setup form
+   * family). Leaf-collapsing the fully-qualified base fabricates SELF edges
+   * (extends FeaturesForm->FeaturesForm, verified self-overrides at 0.95,
+   * `new parent()` -> self): the leaf equals the subclass's own name, so
+   * every in-file/companion check matches the class's OWN methods. When the
+   * declared base/interface text is namespace-qualified AND its leaf equals
+   * the declaring class's name, keep the qualification (leading \\ stripped)
+   * so the external entity stays distinct from the in-file class. Bare
+   * unqualified names and non-colliding qualified names keep the leaf
+   * (unchanged behavior).
+   *
+   * A qualified name whose qualification does NOT disambiguate it
+   * (single-segment global: `class InvalidArgumentException extends
+   * \\InvalidArgumentException` — the SPL builtin, phpunit's exception
+   * classes) returns the OWN name unchanged; callers treat that as
+   * UNRESOLVABLE and emit NO edge (a self-loop is always fabrication, and a
+   * wrong edge is worse than no edge — family precedent: `new parent()`
+   * with an unresolvable base).
+   */
+  private heritageTarget(raw: string, ownName: string): string {
+    const leaf = this.leafName(raw)
+    if (raw.includes("\\") && leaf === ownName) {
+      return raw.replace(/^\\+/, "")
+    }
+    return leaf
+  }
+
   /** Strip surrounding single/double quotes — pure char scan. */
   private cleanString(text: string): string {
     if (text.length >= 2) {
@@ -1018,7 +1153,13 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         md.evidenceClass = (r.confidence ?? 0) >= 0.9 ? "structural" : "inferred"
         continue
       }
-      if (type === "overrides") { md.evidenceClass = "structural"; continue }
+      if (type === "overrides") {
+        // M37.10 family contract: verified overrides are structural; a
+        // Pass-3 first-parent guess is only "inferred" (the external base
+        // may not even declare the method).
+        md.evidenceClass = (r.confidence ?? 0) >= 0.9 ? "structural" : "inferred"
+        continue
+      }
       md.evidenceClass = "usage_contextual"
     }
   }

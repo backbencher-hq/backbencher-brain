@@ -1142,9 +1142,9 @@
     "phpunit:php": {
       "missing": 0,
       "unexplained": 0,
-      "heuristic": 0,
+      "heuristic": 94,
       "perf": {
-        "avgMsPerFile": 0.9
+        "avgMsPerFile": 2.5
       }
     },
     "rake:c": {
@@ -1158,9 +1158,9 @@
     "rake:ruby": {
       "missing": 0,
       "unexplained": 0,
-      "heuristic": 0,
+      "heuristic": 382,
       "perf": {
-        "avgMsPerFile": 2.4
+        "avgMsPerFile": 5
       }
     },
     "cython:javascript": {
@@ -1182,9 +1182,9 @@
     "cython:python": {
       "missing": 0,
       "unexplained": 0,
-      "heuristic": 0,
+      "heuristic": 433,
       "perf": {
-        "avgMsPerFile": 40.7
+        "avgMsPerFile": 35.2
       }
     },
     "cabal:haskell": {

@@ -389,7 +389,15 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
         md.evidenceClass = (r.confidence ?? 0) >= 0.9 ? "structural" : "inferred"
         continue
       }
-      if (type === "overrides") { md.evidenceClass = "structural"; continue }
+      if (type === "overrides") {
+        // Family contract (dart DARTD16 / csharp Pass-3 parity): a verified
+        // override (in-file or companion evidence) is structural; a Pass-3
+        // first-parent guess is only "inferred" — the parent may not even
+        // declare the method, and guessing structural would hide the
+        // evidence gap from the #419-D tier audit.
+        md.evidenceClass = (r.confidence ?? 0) >= 0.9 ? "structural" : "inferred"
+        continue
+      }
       md.evidenceClass = "usage_contextual"
     }
   }
@@ -766,6 +774,9 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (const task of tasks) {
       let targetFqn: string | null = null
 
+      let confidence = 1.0
+      let reasonCode: string | undefined
+
       // Pass 1: BFS over the in-file hierarchy, exact name match.
       const queue: string[] = []
       const ownerH = classHierarchy.get(task.ownerFqn)
@@ -793,12 +804,32 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       // Pass 2: cross-file declaring-parent resolution via the companion.
       if (!targetFqn && companion && ownerH && ownerH.length > 0) {
         const declaring = findDeclaringParent(task.methodName, ownerH, companion, (t) => classHierarchy.get(t) ?? [])
-        if (declaring) targetFqn = `${declaring}.${task.methodName}`
+        if (declaring) {
+          targetFqn = `${declaring}.${task.methodName}`
+          // Companion-verified declaring parent — high confidence, below
+          // the exact-in-file 1.0 (matches kotlin/scala's 0.9 tier).
+          confidence = 0.9
+          reasonCode = "companion-index"
+        }
       }
 
       // Pass 3: deterministic per-file fallback — first hierarchy parent.
+      // Confidence 0.5 (family parity with java/groovy resolveOverrides):
+      // the parent may not even declare the method, and a guess emitted at
+      // 1.0 was indistinguishable from a companion-verified override in
+      // thresholded analysis — the exact anti-pattern java's Pass-3 comment
+      // documents as fixed. classifyEvidenceTier then labels these
+      // "inferred" instead of "structural" (confidence < 0.9 branch).
       if (!targetFqn && ownerH && ownerH.length > 0) {
         targetFqn = `${ownerH[0]}.${task.methodName}`
+        // Confidence 0.5 (family parity with java/groovy resolveOverrides):
+        // the parent may not even declare the method, and a guess emitted
+        // at 1.0 was indistinguishable from a companion-verified override
+        // in thresholded analysis — the exact anti-pattern java's Pass-3
+        // comment documents as fixed. classifyEvidenceTier then labels
+        // these "inferred" instead of "structural" (<0.9 branch).
+        confidence = 0.5
+        reasonCode = "first-parent-guess"
       }
 
       if (targetFqn) {
@@ -808,8 +839,8 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: targetFqn,
           isExternal: true,
           weight: 0.8,
-          confidence: 1.0,
-          metadata: { relationshipType: "method_override", isSwiftOverride: true, evidenceClass: "structural" },
+          confidence,
+          metadata: { relationshipType: "method_override", isSwiftOverride: true, ...(reasonCode ? { reasonCode } : {}) },
         })
       }
     }
