@@ -228,6 +228,26 @@ async function run() {
         assert("E5-H5: tree view ships caller/callee subtrees with declared parent+level+depth attrs", m.includes("bb-hub-subtree") && m.includes("bb-hub-tree-node") && m.includes("data-parent-id") && m.includes("data-level") && m.includes("data-depth"), m.slice(0, 300))
         assert("E5-H5: tree rows reuse the H6 navigation machine attrs", m.includes("data-clickable=\"1\"") && m.includes("data-symbol-id"), m.slice(0, 300))
         assert("E5-H5: flat fixture tree rows render NO expander (declared absence)", !m.includes("data-action=\"bb-expand\""), "")
+        // M44.U4: header counts are the RENDERED truth and the ONE legend
+        // ships with every hub view — in the real editor, over the real
+        // index, rendered through the bundled core.
+        {
+          // Scope to the FIRST hub view (list-by-file): the panel renders three
+          // views, and tree subtree headers also carry data-dir.
+          const first = m.indexOf("bb-hub-view")
+          const second = m.indexOf("bb-hub-view", first + 1)
+          const view = second === -1 ? m.slice(first) : m.slice(first, second)
+          const sum = /class="bb-hub-summary"([^>]*)>([^<]*)</.exec(view)
+          const attrs = sum ? sum[1] : ""
+          const callers = /data-callers="(\d+)"/.exec(attrs)
+          const serverCallers = /data-server-callers="(\d+)"/.exec(attrs)
+          assert("E5-U4: hub header declares data-callers AND the server drift attr", callers !== null && serverCallers !== null, attrs.slice(0, 160))
+          const renderedCallerRows = (view.match(/data-dir="caller"/g) ?? []).length
+          assert("E5-U4: header data-callers equals the rendered caller rows in-editor", callers !== null && Number(callers[1]) === renderedCallerRows, `header=${callers?.[1]} rendered=${renderedCallerRows}`)
+          assert("E5-U4: header text states the rendered group count (never raw rows)", sum !== null && sum[2].includes(`${renderedCallerRows} caller`), sum ? sum[2].slice(0, 120) : "no summary")
+        }
+        assert("E5-U4: the ONE legend renders in the hub panel (5 tiers + enrichment + staleness)", m.includes("bb-legend") && (m.match(/data-legend-tier=/g) ?? []).length >= 5 && m.includes("data-legend-enrichment") && ["fresh", "stale", "missing", "unknown"].every((s) => m.includes(`data-legend-status="${s}"`)), `tiers=${(m.match(/data-legend-tier=/g) ?? []).length}`)
+        assert("E5-U4: a fresh fixture renders NO stale marker in the hub", !m.includes("bb-stale-marker"), "")
       } else {
         assert("E5-H5: hub failure is declared (bb/graph prefix or not-indexed)", hubResult && !hubResult.ok && typeof hubResult.error === "string" && (hubResult.error.includes("bb/graph") || hubResult.error.toLowerCase().includes("not indexed")), hubResult && hubResult.error)
       }
