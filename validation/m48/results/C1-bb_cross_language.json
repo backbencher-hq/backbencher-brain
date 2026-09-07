@@ -1,10 +1,10 @@
 {
   "status": "verified",
-  "currentCommit": "b6bf72092e2387c85785e7d8a858fdf4f3927104",
+  "currentCommit": "fdc3d1833e6445b7171eae46552e12920920b9b6",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "bun run script/m48/verify-c1-corpus.ts",
   "evidenceFile": "C1-bb_cross_language.json",
-  "generatedAt": "2026-09-07T22:45:21.795Z",
+  "generatedAt": "2026-09-07T23:01:08.754Z",
   "tools": [
     "bb_cross_language"
   ],
@@ -21,7 +21,7 @@
       "repo": "ripgrep",
       "ok": true,
       "declaredAbsent": true,
-      "ms": 2,
+      "ms": 0,
       "args": "{\"symbol\":\"unwrap\"}",
       "outHead": "{\"symbol\":\"unwrap\",\"language\":\"rust\",\"facts\":[],\"pairCount\":0,\"declaredAbsent\":true,\"absenceNote\":\"no stored cross-language rows for this symbol — absence decla"
     },
@@ -45,7 +45,7 @@
       "repo": "lodash",
       "ok": true,
       "declaredAbsent": true,
-      "ms": 1,
+      "ms": 0,
       "args": "{\"symbol\":\"getIteratee\"}",
       "outHead": "{\"symbol\":\"getIteratee\",\"language\":\"javascript\",\"facts\":[],\"pairCount\":0,\"declaredAbsent\":true,\"absenceNote\":\"no stored cross-language rows for this symbol — ab"
     }
