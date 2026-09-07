@@ -4051,6 +4051,57 @@ export async function runBoundedPostProcessing(
   return { phases, totalMs: Date.now() - start, repairedInEdges, purgedDeletedFiles, touchedSymbols: touchedSymbols.length }
 }
 
+// M48.C2 (#700): dir-mode change detection scoped to a subdirectory, computed
+// against the PROJECT ROOT so file keys never move. The old dir path indexed
+// with the subdir itself as projectPath, re-keying every row ("mod.ts" instead
+// of "src/mod.ts") — duplicate rows, lost symbols, and reads that resolved
+// against a corrupted index. Comparison matches the discovery fast path
+// exactly: Math.floor(mtimeMs) + size_bytes; files discovery would skip
+// (>5MB) are skipped here too, and the same heavyweight directories
+// discovery never indexes are excluded, so there is no correctness gap
+// against a full `bb index`.
+const DIR_WALK_SKIP_DIRS = new Set([".git", "node_modules", "dist", "build", "out", "coverage", ".next", "target", "vendor", "__pycache__", ".venv", "venv"])
+const DIR_WALK_SIZE_LIMIT = 5 * 1024 * 1024
+
+export async function collectDirChanges(
+  projectId: ProjectID,
+  root: string,
+  dir: string,
+): Promise<FileChange[]> {
+  const rawDb = await BrainDatabase.getRawInstance(projectId)
+  const rows = rawDb
+    .prepare(`SELECT path, last_modified, size_bytes FROM brain_file WHERE project_id = ?`)
+    .all(projectId) as { path: string; last_modified: number; size_bytes: number }[]
+  const stored = new Map(rows.map((r) => [r.path, r]))
+  const changes: FileChange[] = []
+  const seen = new Set<string>()
+  const walk = async (d: string): Promise<void> => {
+    let entries
+    try { entries = await readdir(d, { withFileTypes: true }) } catch { return }
+    for (const e of entries) {
+      if (e.isDirectory()) {
+        if (DIR_WALK_SKIP_DIRS.has(e.name)) continue
+        await walk(path.join(d, e.name))
+        continue
+      }
+      if (!e.isFile()) continue
+      const p = path.join(d, e.name)
+      let st
+      try { st = await stat(p) } catch { continue }
+      if (st.size > DIR_WALK_SIZE_LIMIT) continue
+      seen.add(p)
+      const row = stored.get(p)
+      if (!row) changes.push({ path: p, type: "added" })
+      else if (Math.floor(row.last_modified) !== Math.floor(st.mtimeMs) || row.size_bytes !== st.size) changes.push({ path: p, type: "modified" })
+    }
+  }
+  const base = path.resolve(dir)
+  await walk(base)
+  const basePrefix = base.endsWith(path.sep) ? base : base + path.sep
+  for (const p of stored.keys()) if (p.startsWith(basePrefix) && !seen.has(p)) changes.push({ path: p, type: "deleted" })
+  return changes
+}
+
 export async function reindexFilesParallel(
   projectId: ProjectID,
   projectPath: string,

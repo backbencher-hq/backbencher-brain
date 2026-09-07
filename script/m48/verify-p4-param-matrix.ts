@@ -73,6 +73,18 @@ function cliSurface(): MatrixRow[] {
 
 async function main() {
   const { tools, rows } = registrySurface()
+  // M48.C2 binding: C2's expect:"error" rows are real rejection proofs on a
+  // live indexed fixture. Each becomes a matrix rejection row verified by the
+  // C2 evidence file — a rejection that stops being proven fails the matrix.
+  const c2Path = path.join(RESULTS_DIR, "C2.json")
+  if (existsSync(c2Path)) {
+    try {
+      const c2 = JSON.parse(readFileSync(c2Path, "utf8"))
+      for (const rj of Array.isArray(c2.rejections) ? c2.rejections : []) {
+        rows.push({ tool: String(rj.tool), kind: "rejection", name: String(rj.label), verifiedBy: "C2.json" })
+      }
+    } catch { /* unreadable C2 evidence simply contributes no rows */ }
+  }
   const cliRows = cliSurface()
   check("registry surface yields exactly 16 tools", tools.length === 16, `${tools.length}`)
   check("registry matrix rows non-empty", rows.length > 0, `${rows.length}`)

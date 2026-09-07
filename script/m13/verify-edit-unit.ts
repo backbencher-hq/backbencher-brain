@@ -104,14 +104,19 @@ function teardown(f: Fixture): void {
     const res = await executeEdit(f.root, f.projectId, { mode: "update", symbolName: "target", filePath: "src/mod.ts", newContent: "return 42", format: false })
     harness.check("update: rewrites the symbol body", readFileSync(path.join(f.srcDir, "mod.ts"), "utf8").includes("return 42"))
     harness.check("update: reports a single change", res.changes.length === 1)
-    // Stale bounds: shrink the file so the indexed symbol is no longer resolvable,
-    // then update. The operation must abort loudly (no silent wrong write).
+    // Stale bounds: change the file on disk so the indexed bounds no longer
+    // match, then update. The operation must abort loudly (no silent wrong
+    // write). M48.C2 note: this assertion previously matched "not found" —
+    // which only fired because the OLD destructive update removed the symbol
+    // from the DB. With fragment-safe updates the symbol survives, so the
+    // correct loud failure is the stale-bounds refusal.
     writeFileSync(path.join(f.srcDir, "mod.ts"), `export function target(): number { return 99 }\n`)
     await harness.rejectsAsync(
       "update: stale index aborts (no silent wrong write)",
       () => executeEdit(f.root, f.projectId, { mode: "update", symbolName: "target", filePath: "src/mod.ts", newContent: "return 1", format: false }),
-      "not found",
+      "stale index bounds",
     )
+    harness.check("update: stale abort leaves the file untouched", readFileSync(path.join(f.srcDir, "mod.ts"), "utf8").includes("return 99"))
   } finally {
     teardown(f)
   }
