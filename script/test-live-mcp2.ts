@@ -35,9 +35,11 @@ const check = (label: string, cond: boolean) => {
 await client.connect(transport)
 const tools = await client.listTools()
 const names = tools.tools.map((t: any) => t.name)
-check("15 tools", names.length === 15)
+// M48.H1 (#703): the public surface is 16 tools since the M28/M29 graph
+// doors; the old assertion (15) and the bb_relationships probe predate it.
+check("16 tools", names.length === 16)
 check("bb_search has new params", JSON.stringify(tools.tools.find((t: any) => t.name === "bb_search")?.inputSchema ?? {}).includes("symbolKind") && JSON.stringify(tools.tools.find((t: any) => t.name === "bb_search")?.inputSchema ?? {}).includes("regex"))
-check("bb_relationships has includeIndirect", JSON.stringify(tools.tools.find((t: any) => t.name === "bb_relationships")?.inputSchema ?? {}).includes("includeIndirect"))
+check("bb_graph has maxDepth", JSON.stringify(tools.tools.find((t: any) => t.name === "bb_graph")?.inputSchema ?? {}).includes("maxDepth"))
 check("bb_patterns has confidenceThreshold", JSON.stringify(tools.tools.find((t: any) => t.name === "bb_patterns")?.inputSchema ?? {}).includes("confidenceThreshold"))
 check("bb_visualize has format", JSON.stringify(tools.tools.find((t: any) => t.name === "bb_visualize")?.inputSchema ?? {}).includes("format"))
 check("bb_health has verbose", JSON.stringify(tools.tools.find((t: any) => t.name === "bb_health")?.inputSchema ?? {}).includes("verbose"))
@@ -48,8 +50,8 @@ check("search symbolKind+includeContent", r.text.includes("indexProjectParallel"
 r = await call("bb_search", { query: "startMcpServer", regex: true, exact: true, limit: 2 })
 check("search regex+exact", r.text.includes("startMcpServer"))
 
-r = await call("bb_relationships", { target: "startMcpServer", direction: "callees", includeIndirect: true, maxDepth: 2, limit: 5 })
-check("relationships indirect", r.text.includes("callees of startMcpServer"))
+r = await call("bb_graph", { symbol: "startMcpServer", maxDepth: 2 })
+check("graph traversal at depth 2", r.text.includes("startMcpServer"))
 
 r = await call("bb_health", { verbose: true })
 check("health verbose (languages)", r.text.includes("languages:"))
