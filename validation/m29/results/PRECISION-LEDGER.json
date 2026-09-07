@@ -2,7 +2,7 @@
   "milestone": "M29.R4",
   "issue": 539,
   "generatedBy": "npx tsx script/m29/generate-precision-ledger.ts --write",
-  "inputsHash": "10bfa6d4a5d3486e3581c7e994dc23c494088fb0",
+  "inputsHash": "b9c69549a3abd91f4a2ffd7c412d7cfa37beb185",
   "inputs": [
     "validation/m29/results/wave-java.json",
     "validation/m29/results/wave-python.json",
@@ -70,7 +70,7 @@
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-java.json",
-          "commit": "f619e01549afc115e431c2ce575af7da8fb2c46f",
+          "commit": "e535d780ba84b1d6eff16257f412d23d3a32a587",
           "status": "verified"
         }
       },
@@ -123,7 +123,7 @@
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-python.json",
-          "commit": "f619e01549afc115e431c2ce575af7da8fb2c46f",
+          "commit": "e535d780ba84b1d6eff16257f412d23d3a32a587",
           "status": "verified"
         }
       },
@@ -176,7 +176,7 @@
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-typescript.json",
-          "commit": "f619e01549afc115e431c2ce575af7da8fb2c46f",
+          "commit": "e535d780ba84b1d6eff16257f412d23d3a32a587",
           "status": "verified"
         }
       },
@@ -229,7 +229,7 @@
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-javascript.json",
-          "commit": "f619e01549afc115e431c2ce575af7da8fb2c46f",
+          "commit": "e535d780ba84b1d6eff16257f412d23d3a32a587",
           "status": "verified"
         }
       },
@@ -282,7 +282,7 @@
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-kotlin.json",
-          "commit": "f619e01549afc115e431c2ce575af7da8fb2c46f",
+          "commit": "e535d780ba84b1d6eff16257f412d23d3a32a587",
           "status": "verified"
         }
       },
@@ -335,7 +335,7 @@
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-scala.json",
-          "commit": "f619e01549afc115e431c2ce575af7da8fb2c46f",
+          "commit": "e535d780ba84b1d6eff16257f412d23d3a32a587",
           "status": "verified"
         }
       },
@@ -349,9 +349,9 @@
       "revision": "f7572f6229314400",
       "files": 59000
     },
-    "hoverP95Ms": 22.51,
-    "inEditorHoverP95Ms": 5.99,
-    "coldMedianMs": 319,
+    "hoverP95Ms": 21.55,
+    "inEditorHoverP95Ms": 9.09,
+    "coldMedianMs": 576,
     "tierRatio": {
       "totalRelationships": 777954,
       "inferredRatioBeforePct": 42.5,

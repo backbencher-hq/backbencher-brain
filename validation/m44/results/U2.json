@@ -10,7 +10,7 @@
   "negativeCases": 7,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "489cb8e1",
+  "currentCommit": "7aaf202647665e68d6d2a25206e78cee146a93e9",
   "verifierCommand": "npx tsx script/m26/verify-webview-harness.ts",
   "evidenceFile": "U2.json",
   "generatedAt": "2026-09-07T15:20:00.000Z",

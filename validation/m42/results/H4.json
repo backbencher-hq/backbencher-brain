@@ -17,10 +17,10 @@
   "budgets": {
     "impactWarmP95Ms": 300
   },
-  "currentCommit": "489cb8e12bf6631619108a4c1b46998cf5b520f5",
+  "currentCommit": "e535d780ba84b1d6eff16257f412d23d3a32a587",
   "verifierCommand": "npx tsx script/m42/verify-hover-actions.ts",
   "evidenceFile": "H4.json",
-  "generatedAt": "2026-09-07T18:51:48.205Z",
+  "generatedAt": "2026-09-07T23:16:26.109Z",
   "limitations": [
     "editor leg (link clicks, panel surfaces) is proven in E5 over the shared core; this gate proves the server-side contract + renderer laws headless"
   ]
