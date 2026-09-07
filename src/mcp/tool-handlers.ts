@@ -566,18 +566,15 @@ const handlers: Record<string, ToolHandler> = {
       // second math. The depth cap and depth actually reached are DECLARED
       // fields, so the old silent depth-3 undercount (5 files while claiming
       // truncated:false, dropping real dependents) is impossible.
-      return renderPass(async () => {
-        const rep = await canonicalImpactReport(raw, projectId as any, target)
-        // Not-found reports carry an empty freshness block, as before — the
-        // shared envelope over zero rows IS that block, so no special case.
-        if (!rep.found) return { data: rep as unknown as Record<string, unknown>, rows: [] }
-        const affected = (rep as any).affectedFiles as Array<{ file: string }>
-        return {
-          data: rep as unknown as Record<string, unknown>,
-          rows: affected.map((a) => ({ fileId: relToFileId().get(a.file) ?? null })),
-          onRows: (statuses) => { for (const a of affected as any[]) a.stale = statusFor(statuses, a.file) !== "fresh" },
-        }
-      })
+      const rep = await canonicalImpactReport(raw, projectId as any, target)
+      // Not-found reports carry an empty freshness block, as before — the
+      // shared envelope over zero rows IS that block, so no special case.
+      const affected = rep.found ? ((rep as any).affectedFiles as Array<{ file: string }>) : []
+      return withFreshness(
+        rep as unknown as Record<string, unknown>,
+        affected.map((a) => ({ fileId: relToFileId().get(a.file) ?? null })),
+        { onRows: (statuses) => { for (const a of affected as any[]) a.stale = statusFor(statuses, a.file) !== "fresh" } },
+      )
     }
     if (mode === "test_mapping") {
       const report = await testMapping(projectId as any)
@@ -636,7 +633,12 @@ const handlers: Record<string, ToolHandler> = {
       const history = await getAnalysisHistory(projectId, "patterns", Number(args.limit ?? 20))
       return textResult(JSON.stringify(history, null, 2))
     }
-    const scope = args.scope === "orphaned" ? "orphaned" : "all"
+    // M48.C2 (#700): unknown scope strings are refused, never silently
+    // re-interpreted as "all" — a typo'd scope must not masquerade as a
+    // different (much larger) scan.
+    const scopeArg = String(args.scope ?? "all")
+    if (!["all", "orphaned"].includes(scopeArg)) return textResult(`bb_patterns: unknown scope: ${scopeArg} (expected all|orphaned)`, true)
+    const scope = scopeArg as "all" | "orphaned"
     const limit = Number(args.limit ?? 20)
     // M35.S2: live derived findings carry staleness truth — flagged per
     // finding, never silently presented as current. History (above) keeps its
@@ -738,6 +740,9 @@ const handlers: Record<string, ToolHandler> = {
     // bug and must fail loudly rather than masquerade as a project graph.
     const scope = String(args.scope ?? "project")
     if (!["project", "file", "module", "symbol", "feature"].includes(scope)) return textResult(`bb_visualize: unknown scope: ${scope}`, true)
+    // M48.C2 (#700): every non-project scope needs a target — without one the
+    // old path silently rendered a project-wide graph for a scoped request.
+    if (scope !== "project" && !args.target) return textResult(`bb_visualize scope=${scope} requires a target`, true)
     const request: VisualizationRequest = { scope: scope as VisualizationScope, target: args.target ? String(args.target) : undefined, format: ["text", "json", "html"].includes(String(args.format)) ? args.format : "text", maxNodes: args.maxNodes == null ? undefined : Number(args.maxNodes), maxLinks: args.maxLinks == null ? undefined : Number(args.maxLinks), relationshipTypes: Array.isArray(args.relationshipTypes) ? args.relationshipTypes.map(String) : undefined, languages: Array.isArray(args.languages) ? args.languages.map(String) : undefined }
     const result = await visualizeProject(projectId, request)
     // M35.S3: per-node stale flags (node file changed since index); links
@@ -852,8 +857,15 @@ const handlers: Record<string, ToolHandler> = {
   bb_edit: async (args, { projectId, projectPath }) => {
     const request = args as EditRequest
     if (!(["write", "update", "insert", "delete", "refactor"] as const).includes(request.mode as any)) return textResult("bb_edit requires mode: write|update|insert|delete|refactor", true)
-    const result = await executeEdit(projectPath, projectId, request)
-    return textResult(JSON.stringify(result, null, 2))
+    try {
+      const result = await executeEdit(projectPath, projectId, request)
+      return textResult(JSON.stringify(result, null, 2))
+    } catch (e: any) {
+      // M48.C2 (#700): a refused edit returns a rollback envelope instead of
+      // throwing — the engine restores the pre-edit bytes before raising, and
+      // a throw out of the handler crashes hosts that do not wrap errors.
+      return textResult(JSON.stringify({ ok: false, mode: request.mode, error: e?.message ?? String(e), rolledBack: true }, null, 2), true)
+    }
   },
 
   // M22.E1: agent-fresh. A file reindexes only itself; a dir runs an
@@ -863,6 +875,10 @@ const handlers: Record<string, ToolHandler> = {
     const raw = String(args.path ?? "")
     if (!raw) return textResult("bb_index requires path", true)
     const mode = String(args.mode ?? "auto")
+    // M48.C2 (#700): unknown modes are refused, never silently treated as
+    // another mode — the old fall-through executed a full dir index for ANY
+    // unrecognized mode string.
+    if (!["auto", "file", "dir", "post"].includes(mode)) return textResult(`bb_index: unknown mode: ${mode} (expected auto|file|dir|post)`, true)
     // M40.A1: mode=post — re-run the heavy derived-data phases (relationships,
     // enrichment, gravity, taints, health) WITHOUT re-parsing. The remediation
     // for stale derived data after agent edits or incremental indexing.
@@ -894,10 +910,17 @@ const handlers: Record<string, ToolHandler> = {
         return textResult(`bb_index mode=file refused: ${e?.message}`, true)
       }
     }
-    // dir: incremental — parses only changed files, defers heavy post-processing
+    // M48.C2 (#700): dir-mode detects changes under the requested directory
+    // but reindexes from the PROJECT ROOT — file keys are root-relative and
+    // never move, so a subdir index can no longer corrupt the index.
     try {
-      const s = await indexProjectParallel(projectId as any, abs, { isIncremental: true, skipPostProcessing: true })
-      return textResult(JSON.stringify({ mode: "dir", path: abs, candidates: s.totalFiles, processed: s.processedFiles, errors: s.errorFiles }, null, 2))
+      const { collectDirChanges } = await import("../ast/parallel-indexer")
+      const changes = await collectDirChanges(projectId as any, projectPath, abs)
+      if (changes.length === 0) {
+        return textResult(JSON.stringify({ mode: "dir", path: abs, candidates: 0, processed: 0, deleted: 0, errors: 0, unchanged: true }, null, 2))
+      }
+      const r = await reindexFilesParallel(projectId as any, projectPath, changes)
+      return textResult(JSON.stringify({ mode: "dir", path: abs, candidates: changes.length, processed: r.indexed, deleted: r.deleted, errors: r.errors }, null, 2))
     } catch (e: any) {
       return textResult(`bb_index mode=dir refused: ${e?.message}`, true)
     }
