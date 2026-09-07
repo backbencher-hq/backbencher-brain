@@ -99,8 +99,11 @@ const OO_EQUIVALENTS: Record<string, { wasm: string; analyzerFile: string; class
   },
   objc: {
     wasm: "tree-sitter-objc.wasm", analyzerFile: "real-objective-c-analyzer", className: "RealObjectiveCAnalyzer", ext: "m",
+    // OBJCD7: ObjC method identity is the FULL selector — this single-argument
+    // method's symbol name is `render:` (the trailing colon is part of the
+    // selector, matching runtime/clangd/Xcode identity).
     source: `@interface Widget : NSObject\n@property (nonatomic, strong) NSString *label;\n- (NSString *)render:(NSString *)input;\n@end\n@implementation Widget\n- (NSString *)render:(NSString *)input {\n    return self.label;\n}\n@end\n`,
-    methodName: "render", classNameLiteral: "Widget",
+    methodName: "render:", classNameLiteral: "Widget",
   },
   php: {
     wasm: "tree-sitter-php.wasm", analyzerFile: "real-php-analyzer", className: "RealPhpAnalyzer", ext: "php",
