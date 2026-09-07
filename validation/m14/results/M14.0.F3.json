@@ -98,7 +98,7 @@
     },
     {
       "description": "swift adversarial fixtures",
-      "detail": "4/4 fixtures pass",
+      "detail": "5/5 fixtures pass",
       "id": "fixtures-swift",
       "status": "pass"
     },
@@ -128,8 +128,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "61e185ef496d589f169dc4f56295cd93d814d55d",
-  "committedAt": "2026-09-07T02:13:01+02:00",
+  "commit": "b7d9ae840856a5a65222e60dd50652f28b98b2e7",
+  "committedAt": "2026-09-07T04:38:25+02:00",
   "data": {
     "details": [
       {
@@ -1608,6 +1608,11 @@
         "problems": []
       },
       {
+        "fixture": "swift/inheritance-conformance-fixes",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "swift/payload-and-complexity",
         "ok": true,
         "problems": []
@@ -1739,7 +1744,7 @@
       },
       "swift": {
         "fail": 0,
-        "pass": 4
+        "pass": 5
       },
       "typescript": {
         "fail": 0,
