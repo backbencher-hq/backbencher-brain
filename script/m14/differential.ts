@@ -1463,6 +1463,18 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
     "print", "debugPrint", "assert", "precondition", "fatalError",
     "String", "Int", "Double", "Float", "Bool", "Array", "Dictionary",
     "Set", "Optional", "Any", "Void", "Character", "Data", "Date", "defer",
+    // SWIFTD16 mirror: fixed-width stdlib numerics filtered like Int/Double.
+    "UInt", "UInt8", "UInt16", "UInt32", "UInt64",
+    "Int8", "Int16", "Int32", "Int64",
+  ])
+  // SWIFTD15 mirror: stdlib raw-value types of a raw-representable enum.
+  // The oracle must skip the SAME first base the analyzer records as
+  // meta.rawType (String/Int/...) — everything else is a conformance.
+  const SWIFT_ENUM_RAW = new Set([
+    "String", "Character",
+    "Int", "Int8", "Int16", "Int32", "Int64",
+    "UInt", "UInt8", "UInt16", "UInt32", "UInt64",
+    "Float", "Float32", "Float64", "Double",
   ])
   const isCapitalized = (t: string): boolean => t.length > 1 && t.charCodeAt(0) >= 65 && t.charCodeAt(0) <= 90
   const key = (label: string, target: string) => label + ":" + target
@@ -1534,11 +1546,10 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
     const t = n.type
     if (t === "class_declaration") {
       // Actor/struct/enum/extension are all class_declaration in the pinned
-      // grammar, decided by the anonymous keyword token. Only class/struct/
-      // actor carry extends/implements (enum/extension excluded — the
-      // analyzer's handleDeclaration guard). Swift semantics: ONLY a class
-      // can have a superclass (first base extends); struct/actor bases are
-      // all protocol adoptions (implements) — mirrors the analyzer fix.
+      // grammar, decided by the anonymous keyword token. Swift semantics:
+      // ONLY a class can have a superclass (first base extends); struct/actor
+      // bases are all protocol adoptions (implements); enum/extension bases
+      // are conformances (SWIFTD14/15, below) — mirrors the analyzer.
       let isEnum = false
       let isExtension = false
       let isClass = false
@@ -1550,15 +1561,21 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
           if (c.type === "class") isClass = true
         }
       }
-      if (!isEnum && !isExtension) {
-        const bases: string[] = []
-        for (let i = 0; i < n.namedChildCount; i++) {
-          const c = n.namedChild(i)
-          if (c && c.type === "inheritance_specifier") {
-            const nm = baseName(c)
-            if (nm) bases.push(nm)
-          }
+      const bases: string[] = []
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c && c.type === "inheritance_specifier") {
+          const nm = baseName(c)
+          if (nm) bases.push(nm)
         }
+      }
+      if (isEnum || isExtension) {
+        // SWIFTD14/15 oracle mirror: extension bases are ALL conformances
+        // (no superclass possible); enum bases are conformances except a
+        // stdlib raw-value first base (analyzer records it as meta.rawType).
+        const skipFirst = isEnum && bases.length > 0 && SWIFT_ENUM_RAW.has(bases[0])
+        for (let i = skipFirst ? 1 : 0; i < bases.length; i++) push("implements", bases[i])
+      } else {
         // Mirror the analyzer: a class's first base is extends only when it
         // is NOT a known corpus protocol; a known protocol first-base (or any
         // struct/actor base) is implements.
@@ -1568,6 +1585,17 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
         for (let i = 0; i < bases.length; i++) {
           const isExtends = firstIsSuperclass && i === 0
           push(isExtends ? "extends" : "implements", bases[i])
+        }
+      }
+    }
+    if (t === "protocol_declaration") {
+      // SWIFTD13 oracle mirror: protocol inheritance -> extends per parent;
+      // AnyObject/Any class-constraint markers are NOT protocol parents.
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c && c.type === "inheritance_specifier") {
+          const nm = baseName(c)
+          if (nm && nm !== "AnyObject" && nm !== "Any") push("extends", nm)
         }
       }
     }
@@ -1585,7 +1613,9 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
         if (leaf && leaf !== "$0" && !SWIFT_BUILTINS.has(leaf)) push("calls", leaf)
       } else if (callee) {
         const target = callee.text
-        if (target && !SWIFT_BUILTINS.has(target)) {
+        // SWIFTD16 mirror: XCTest assertion functions (capitalized free
+        // functions, never types) must not fabricate instantiates edges.
+        if (target && !SWIFT_BUILTINS.has(target) && !target.startsWith("XCT")) {
           if (isCapitalized(target)) push("instantiates", target)
           else push("calls", target)
         }
