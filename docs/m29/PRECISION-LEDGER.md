@@ -1,6 +1,6 @@
 # Precision ledger — bb_lsp per-language, per-feature truth (M29.R4)
 
-Inputs hash `db4bab026ef895a9fccf44ce9ba1dd61cd7c4877` (deterministic: byte-identical regeneration is the drift gate; run record with commit + timestamp lives in validation/m29/results/R4.json).
+Inputs hash `0d4f86d309e7519ef75537ed29b4cea6d11920fd` (deterministic: byte-identical regeneration is the drift gate; run record with commit + timestamp lives in validation/m29/results/R4.json).
 
 > This document is **generated** from evidence files. A hand edit breaks the drift gate (`script/m29/verify-precision-ledger.ts`). Claim levels are computed by the R1 binding from recorded evidence — they cannot be edited up. Staleness policy: any input-evidence change makes this stale until regenerated.
 
@@ -13,7 +13,7 @@ Inputs hash `db4bab026ef895a9fccf44ce9ba1dd61cd7c4877` (deterministic: byte-iden
 | kotlin | I3 | pass | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 0/0 | 39.3 | 3 |
 | scala | I3 | pass | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 0/0 | 12.8 | 3 |
 
-**Giant scale (R3):** hover p95 8.83ms over 59000 files (revision f7572f6229314400); in-editor 8.07ms; cold median 370ms; evidence-tier inferred ratio 42.5% -> 0% (R5 fix, mutant-gated). Evidence: validation/m29/results/R3.json.
+**Giant scale (R3):** hover p95 6.99ms over 59000 files (revision f7572f6229314400); in-editor 8.79ms; cold median 400ms; evidence-tier inferred ratio 42.5% -> 0% (R5 fix, mutant-gated). Evidence: validation/m29/results/R3.json.
 
 ## Limitations (declared)
 

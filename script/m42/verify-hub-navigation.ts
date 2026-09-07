@@ -197,7 +197,12 @@ console.log("\nR4: real hub rows carry index-resolved click attrs")
   // The ONE core renders usage rows from a traversal-shaped model; the rows
   // must carry machine attrs the bridge navigates from (data-file/data-line/
   // data-symbol-id) — never display text.
-  const model = {
+  // M44.U1 (issue #688): the renderer consumes the GROUPED usages shape (one
+  // row per symbol with declared multiplicity) — the manual model below is
+  // that shape, built through the REAL grouping core so the model can never
+  // drift from what the server serves.
+  const { buildGroupedUsages } = await import(path.join(ROOT, "src/lsp/graph_usages.ts"))
+  const rawModel = {
     root: { id: "sym:render", name: "render", symbolType: "method", file: "/ws/App.java", line: 7, language: "java", isExternal: false },
     callers: [
       { from: "sym:mainA", to: "sym:render", relationshipType: "calls", confidence: 0.9, isCrossLanguage: false, callSite: { file: "/ws/App.java", line: 13 }, depth: 0, rowId: "r1" },
@@ -211,6 +216,7 @@ console.log("\nR4: real hub rows carry index-resolved click attrs")
     },
     summary: { totalCallers: 2, totalCallees: 0, truncated: false, crossLanguageEdges: 0 },
   }
+  const model = buildGroupedUsages(rawModel as never, { imports: [], exports: [] })
   const graphCore = await import(path.join(ROOT, "script/m26/graph-core.ts"))
   class El {
     tagName: string

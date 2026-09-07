@@ -198,7 +198,9 @@ function main(): void {
   const self = readFileSync(fileURLToPath(import.meta.url), "utf8")
   check("G1: impact budget imported from the real module", self.includes(`nodeRequire(join(ROOT, "src/lsp/impact.ts"))`) && facts.impactBudget.maxNodes === 200 && facts.impactBudget.maxDepth === 5)
   check("G1: render budget imported from the real core", self.includes(`nodeRequire(join(ROOT, "script/m26/graph-core.ts"))`) && facts.renderBudget.maxNodes === 500 && facts.renderBudget.maxEdges === 2000)
-  check("G1: schema version imported from the real transport", self.includes(`nodeRequire(join(ROOT, "src/lsp/graph_request.ts"))`) && facts.schemaVersion === 1)
+  // M44.U1 (issue #688): the usages-mode response is grouped per symbol, so
+  // the wire schema moved to 2 — pinned here against the live transport.
+  check("G1: schema version imported from the real transport", self.includes(`nodeRequire(join(ROOT, "src/lsp/graph_request.ts"))`) && facts.schemaVersion === 2)
   check("G1: tier meanings imported from the real core map", facts.edgeTiers.length === 5 && typeof facts.tierMeanings[facts.edgeTiers[0]] === "string" && facts.tierMeanings[facts.edgeTiers[0]].length > 10)
 
   // --- Generate + write ------------------------------------------------------
