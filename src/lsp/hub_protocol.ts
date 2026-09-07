@@ -187,7 +187,10 @@ export function validateHubMessage(raw: unknown): { ok: true; message: HubMessag
  *  versioned navigate message; a refresh control posts requestRefresh.
  *  Keyboard parity (M44.U2 §13.3): Enter/Space on a focused row navigates
  *  exactly like a click — same target attrs, same message, same staleness
- *  labeling. Strict: unknown click targets are ignored (never guessed). */
+ *  labeling. The U3 expander (data-action="bb-expand") is a LOCAL toggle
+ *  (expand/collapse never leaves the client): clicking or Enter/Space on it
+ *  flips the declared collapsed class + attrs and never navigates. Strict:
+ *  unknown click targets are ignored (never guessed). */
 export function buildBridgeScript(): string {
   return `
 (function () {
@@ -220,7 +223,36 @@ export function buildBridgeScript(): string {
     if (stale) msg.staleness = { stale: true, status: staleStatus }
     post(msg)
   }
+  // U3 expand/collapse: the expander is a LOCAL DOM toggle (no postMessage —
+  // expansion is client state, never a server round trip). The toggle flips
+  // the declared classes/attrs the renderer emitted: the row's children
+  // wrapper (bb-hub-children) loses/gains bb-hub-collapsed, the row's
+  // data-expanded and the control's aria-expanded flip, and the glyph turns.
+  function expanderFrom(el) {
+    for (var n = el; n !== null && n !== document; n = n.parentElement) {
+      if (n.getAttribute && n.getAttribute("data-action") === "bb-expand") return n
+    }
+    return null
+  }
+  function toggleExpand(expander) {
+    var row = expander.parentElement
+    if (row === null) return
+    var wrap = null
+    for (var i = 0; i < row.children.length; i++) {
+      if (row.children[i].classList && row.children[i].classList.contains("bb-hub-children")) { wrap = row.children[i]; break }
+    }
+    if (wrap === null) return
+    var collapsed = wrap.classList.contains("bb-hub-collapsed")
+    if (collapsed) wrap.classList.remove("bb-hub-collapsed")
+    else wrap.classList.add("bb-hub-collapsed")
+    row.setAttribute("data-expanded", collapsed ? "1" : "0")
+    expander.setAttribute("aria-expanded", collapsed ? "true" : "false")
+    expander.textContent = collapsed ? "▾" : "▸"
+  }
   document.addEventListener("click", function (ev) {
+    // An expander click toggles the subtree — never navigates.
+    var expander = expanderFrom(ev.target)
+    if (expander !== null) { toggleExpand(expander); return }
     var row = null
     for (var el = ev.target; el !== null && el !== document; el = el.parentElement) {
       if (el.classList && el.classList.contains("bb-hub-row")) { row = el; break }
@@ -228,11 +260,17 @@ export function buildBridgeScript(): string {
     if (row === null) return
     navigateFrom(row)
   })
-  // Keyboard parity (M44.U2 §13.3): the hub CSS makes rows focusable
-  // (tabindex="0" on data-clickable rows); Enter/Space navigate exactly like
-  // a click — same target attrs, same message, same staleness labeling.
+  // Keyboard parity (M44.U2 §13.3 + M44.U3): Enter/Space on a focused
+  // expander toggles it; on a focused data-clickable row it navigates
+  // exactly like a click — same target attrs, same message, same staleness.
   document.addEventListener("keydown", function (ev) {
     if (ev.key !== "Enter" && ev.key !== " " && ev.key !== "Spacebar") return
+    var target = ev.target
+    if (target && target.getAttribute && target.getAttribute("data-action") === "bb-expand") {
+      ev.preventDefault()
+      toggleExpand(target)
+      return
+    }
     var row = null
     for (var el = ev.target; el !== null && el !== document; el = el.parentElement) {
       if (el.classList && el.classList.contains("bb-hub-row")) { row = el; break }

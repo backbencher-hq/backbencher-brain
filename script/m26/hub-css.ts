@@ -52,5 +52,12 @@ export const HUB_CSS = `
 .bb-truncation-marker { color: var(--vscode-editorWarning-foreground, #e5c07b); font-size: 12px; margin: 6px 0; }
 .bb-stale-marker { color: var(--vscode-editorWarning-foreground, #e5c07b); font-size: 12px; margin: 0 0 8px 0; }
 .bb-hub-view { margin: 0 0 18px 0; }
-.bb-hub-tree .bb-hub-row { margin-left: calc(var(--bb-depth, 0) * 14px); }
+/* U3: the call tree nests — children indent under their parent row, and a
+   collapsed wrapper hides (the renderer declares it; the bridge toggles it). */
+.bb-hub-subtree { margin: 0 0 10px 0; }
+.bb-hub-subtree-label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--vscode-descriptionForeground, #888); margin: 0 0 3px 0; }
+.bb-hub-children { margin-left: 16px; padding-left: 4px; border-left: 1px solid var(--vscode-panel-border, #333); }
+.bb-hub-children.bb-hub-collapsed { display: none; }
+.bb-hub-expander { order: -1; flex: 0 0 auto; width: 15px; text-align: center; cursor: pointer; user-select: none; color: var(--vscode-descriptionForeground, #999); border-radius: 3px; font-size: 11px; }
+.bb-hub-expander:hover, .bb-hub-expander:focus-visible { color: var(--vscode-focusBorder, #4fc1ff); background: var(--vscode-list-hoverBackground, rgba(255,255,255,0.06)); outline: 1px solid var(--vscode-focusBorder, #4fc1ff); outline-offset: -1px; }
 `
