@@ -6,6 +6,14 @@ import { makeProvenance } from "../evidence"
 const ENGINE = "impact@intelligence"
 const ENGINE_VERSION = "m10.04"
 
+// M48.P1/P2 (#696/#697): DEPRECATED as a tool-surface calculator. bb_analyze
+// mode=impact aggregates the canonical computeImpact walk (src/lsp/impact.ts)
+// since M48.P1; this function is no longer reachable from any public tool and
+// its depth-capped "transitive" scope could report truncated:false while real
+// dependents exist beyond the cap. Retained only as an exported unit for the
+// M15 legacy gate (which asserts reachability, never truncation). Do not wire
+// it into a tool handler; the M48.P2 gate fails if a handler imports it.
+
 // Change impact: who is affected when the target changes. Built over the shared
 // graph engine (callers direction). Distinguishes direct (depth 0), transitive
 // (depth > 0), and global (full traversal). Reports cross-language and
