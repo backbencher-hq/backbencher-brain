@@ -38,8 +38,8 @@
       "qualified_name",
       "explicit_interface_specifier",
       "constructor_initializer",
-    "using_directive",
-    "attribute",
+      "using_directive",
+      "attribute",
       "attribute_list",
       "modifier",
       "block",
@@ -236,6 +236,13 @@
         "status": "RULED",
         "question": "C# base lists have no keyword distinction (unlike Java's extends/implements); the first entry may be a base class OR an interface.",
         "resolution": "Kind resolved via the optional type-kind companion (typeKinds) built from the cross-file symbol space; unknown external types use the deterministic rule: first base = extends, remaining = implements."
+      },
+      {
+        "id": "CSD14",
+        "node_type": "implicit_object_creation_expression (target-typed new in collection/array initializers)",
+        "status": "FIXED",
+        "question": "OO family closure #613 (fsharp corpus): how do target-typed new() sites inside collection/array member initializers resolve?",
+        "answer": "Through the member ELEMENT type (EnumSettingEntry[] x = [new()] -> EnumSettingEntry); direct field/property initializers use the declared type base; a new() nested in a call argument resolves to nothing. One shared resolver (csharpResolveTargetTypedNew + csharpMemberDeclaredTypeText) now serves the analyzer AND the differential oracle — the old divergent copies shared the self-map blind spot (member NAME read as the type) that F5 could not see. pinned: csd14-array-member-news fixture + csharp/array-member-new-selfmap mutant."
       }
     ]
   }

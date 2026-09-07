@@ -108,7 +108,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // O(1) Quick Lookups
     const symbolMap = new Map<string, ASTEngine.UniversalSymbol>()
     const classHierarchy = new Map<string, string[]>()
-    const overrideTasks: { fqn: string; methodName: string; signature: string; ownerFqn: string }[] = []
+    const overrideTasks: { fqn: string; methodName: string; signature: string; ownerFqn: string; explicit?: boolean }[] = []
 
     interface Scope {
       node: Node
@@ -541,12 +541,34 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           // interface body, JLS 9.4.1.3, stays private).
           const effectiveVisibility = visibility ?? (parentContext?.isInterface ? "public" : undefined)
 
-          if (annotations.indexOf("@Override") !== -1 && parentContext) {
+          const isAnnotatedOverride = annotations.indexOf("@Override") !== -1
+          // JLS 8.4.8: @Override is a compile-time CHECK, not a requirement —
+          // an un-annotated instance method whose signature matches an
+          // accessible ancestor method still overrides it. Annotation-heavy
+          // corpora (grails) never exposed this; clojure/ASF java code omits
+          // @Override on most overrides (two-corpus gate finding 2026-09:
+          // SubVector.iterator() vs APersistentVector.iterator()). Implicit
+          // tasks are resolved by resolveOverrides but emitted ONLY on a
+          // verified exact-signature in-file match (pass 1) — the explicit
+          // @Override tasks keep the pass-2 companion / pass-3 first-parent
+          // guess tiers, so overloads like `nth(int)` against a base
+          // `nth(int, Object)` never fabricate an override edge.
+          if (isAnnotatedOverride && parentContext) {
              overrideTasks.push({
                fqn,
                methodName: name,
                signature,
-               ownerFqn: parentContext.fqn
+               ownerFqn: parentContext.fqn,
+               explicit: true,
+             })
+          } else if (parentContext && !isConstructor &&
+                     modifiers.indexOf("static") === -1 && visibility !== "private") {
+             overrideTasks.push({
+               fqn,
+               methodName: name,
+               signature,
+               ownerFqn: parentContext.fqn,
+               explicit: false,
              })
           }
 
@@ -1158,7 +1180,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
 
   private resolveOverrides(
-    tasks: { fqn: string; methodName: string; signature: string; ownerFqn: string }[],
+    tasks: { fqn: string; methodName: string; signature: string; ownerFqn: string; explicit?: boolean }[],
     classHierarchy: Map<string, string[]>,
     symbolMap: Map<string, ASTEngine.UniversalSymbol>,
     relationships: ASTEngine.UniversalRelationship[],
@@ -1190,9 +1212,15 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
         seen.add(parent)
 
         const potentialTargetFqn = `${parent}.${task.methodName}${task.signature}`
-        if (symbolMap.has(potentialTargetFqn)) {
-           targetFqn = potentialTargetFqn
-           break
+        const baseSym = symbolMap.get(potentialTargetFqn)
+        if (baseSym) {
+          // JLS 8.4.8.1: a PRIVATE ancestor method is never overridden — a
+          // same-signature subclass method is independent. Keep walking up
+          // the hierarchy for a real (accessible) declaring ancestor.
+          if (baseSym.visibility !== "private") {
+            targetFqn = potentialTargetFqn
+            break
+          }
         }
         
         const pH = classHierarchy.get(parent)
@@ -1223,7 +1251,12 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
       // Pass 3: deterministic per-file fallback — first hierarchy parent. Only
       // reached when no context was provided or no ancestor declares the
       // method (the true declaring parent is unknowable from this file alone).
-      if (!targetFqn && ownerH && ownerH.length > 0) {
+      // IMPLICIT (un-annotated) tasks never reach it: guessing an override
+      // for `nth(int)` against a base that only has `nth(int, Object)` would
+      // fabricate an override that is really an overload (two-corpus finding
+      // 2026-09). The explicit @Override annotation asserts intent, so its
+      // tasks keep the guess tier.
+      if (!targetFqn && task.explicit && ownerH && ownerH.length > 0) {
         targetFqn = `${ownerH[0]}.${task.methodName}${task.signature}`
         // Below the patterns.ts default confidenceThreshold (0.7): visible in
         // raw output, but never contaminating thresholded analysis.

@@ -907,6 +907,42 @@ const MUTANTS: Mutant[] = [
     },
   },
   {
+    id: "java/drop-unannotated-overrides",
+    language: "java",
+    defectClass: "relationship-loss",
+    description: "JAO1 regression: re-gates overrides behind the @Override annotation (un-annotated DerivedThing.total silently loses its override edge) — implicit-overrides fixture pins DerivedThing.total -> BaseThing.total",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) =>
+      !(x.type === "overrides" && x.target === "BaseThing.total")) }),
+  },
+  {
+    id: "java/overload-paired-as-override",
+    language: "java",
+    defectClass: "fabrication",
+    description: "JAO2 regression: injects the name-only truth bug class — DerivedThing.find(int, String) pairs against BaseThing.find(int) as an override — implicit-overrides forbid pin",
+    transform: r => ({ ...r, relationships: [
+      ...(r.relationships ?? []),
+      { type: "overrides", source: "DerivedThing.find", target: "BaseThing.find", fromSymbol: "DerivedThing.find", toSymbol: "BaseThing.find", confidence: 1.0, metadata: { relationshipType: "method_override", isJavaOverride: true, reasonCode: "exact-in-file", evidenceClass: "structural" } },
+    ] }),
+  },
+  {
+    id: "scala/drop-keywordless-abstract-impl",
+    language: "scala",
+    defectClass: "relationship-loss",
+    description: "ScalaD-A regression: re-gates overrides behind the `override` keyword (keywordless ImplA.value/ImplB.value implementations of abstract BaseTrait.value lose their edges) — implicit-overrides fixture pins",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) =>
+      !((x.type === "overrides" && (x.source === "ImplA.value" || x.source === "ImplB.value") && x.target === "BaseTrait.value"))) }),
+  },
+  {
+    id: "scala/first-supertype-guess-override",
+    language: "scala",
+    defectClass: "fabrication",
+    description: "ScalaD-B regression: injects the old first-supertype GUESS (keyworded ImplB.doubled -> Mid.doubled @0.5 even though Mid never declares doubled) — implicit-overrides forbid pin",
+    transform: r => ({ ...r, relationships: [
+      ...(r.relationships ?? []),
+      { type: "overrides", source: "ImplB.doubled", target: "Mid.doubled", fromSymbol: "ImplB.doubled", toSymbol: "Mid.doubled", confidence: 0.5, metadata: { isOverride: true, overrideParent: "Mid", reasonCode: "first-supertype-guess", evidenceClass: "inferred" } },
+    ] }),
+  },
+  {
     id: "groovy/groovydoc-leak",
     language: "groovy",
     defectClass: "docstring-misattribution",
@@ -1720,6 +1756,13 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => x.type === "implements" && x.target === "IDisposable" ? { ...x, type: "extends", metadata: { ...x.metadata, isImplements: false } } : x) }),
   },
   {
+    id: "csharp/array-member-new-selfmap",
+    language: "csharp",
+    defectClass: "fabrication",
+    description: "injects the CSD14 regression class: array/collection-typed member target-typed new() self-maps to the member NAME again (Prebuilt/Selected/Grid->themselves) — csd14 fixture pins element-type targets and forbids self targets",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => (x.type === "instantiates" && (x.source === "Prebuilt" || x.source === "Selected" || x.source === "Grid" || x.source === "Fallback")) ? { ...x, target: x.source } : x) }),
+  },
+  {
     id: "dart/drop-implements-edge",
     language: "dart",
     defectClass: "relationship-loss",
@@ -1845,6 +1888,20 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).concat([
       { source: "Poly.sides", target: "Shape.sides", type: "overrides", confidence: 0.8, metadata: { isOverride: true, isExternalBase: true } },
     ]) }),
+  },
+  {
+    id: "dart/cascade-multi-invocation-dropped",
+    language: "dart",
+    defectClass: "relationship-loss",
+    description: "reverts DARTD18: multi-invocation cascade sections keep only the LAST selector call (`..transform(t)..listen((){})` loses transform) — family-closure fixture expects calls make->transform AND make->listen",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).isCascade && x.type === "calls" && x.source === "make" && x.target === "transform")) }),
+  },
+  {
+    id: "dart/factory-redirect-instantiates-dropped",
+    language: "dart",
+    defectClass: "relationship-loss",
+    description: "reverts DARTD19: redirecting factory emits no instantiates to the implementation class (`factory Reporter() = _Reporter` loses Reporter->_Reporter) — family-closure fixture instantiates pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "instantiates" && x.source === "Reporter" && x.target === "_Reporter")) }),
   },
   {
     id: "swift/drop-implements-edge",
@@ -2375,6 +2432,80 @@ const MUTANTS: Mutant[] = [
       { type: "calls", source: "amount_of", target: "code", fromSymbol: "amount_of", toSymbol: "code", confidence: 0.9, metadata: { bareCall: true } },
       { type: "calls", source: "amount_of", target: "msg", fromSymbol: "amount_of", toSymbol: "msg", confidence: 0.9, metadata: { bareCall: true } },
     ] }),
+  },
+  {
+    id: "ruby/readd-anonymous-new-junk",
+    language: "ruby",
+    defectClass: "fabrication",
+    description: "RB-A regression: re-adds the junk `calls:<owner> -> new` edge for anonymous expression receivers (`Class.new { ... }.new`) — rack-wave-regressions forbid pin `calls target new`",
+    transform: r => ({ ...r, relationships: [
+      ...(r.relationships ?? []),
+      { type: "calls", source: "Global", target: "new", fromSymbol: "Global", toSymbol: "new", confidence: 0.9, metadata: { bareCall: true } },
+      { type: "calls", source: "UploadedLike", target: "new", fromSymbol: "UploadedLike", toSymbol: "new", confidence: 0.9, metadata: { bareCall: true } },
+    ] }),
+  },
+  {
+    id: "ruby/drop-default-arg-edges",
+    language: "ruby",
+    defectClass: "relationship-loss",
+    description: "RB-B regression: re-skips default-argument VALUE expressions (`mutex = Mutex.new`, `app = @app`) — rack-wave-regressions instantiates:initialize->Mutex and uses:context->@app pins",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) =>
+      !(x.type === "instantiates" && x.source === "initialize" && x.target === "Mutex") &&
+      !(x.type === "uses" && x.source === "context" && x.target === "@app")),
+    }),
+  },
+  {
+    id: "ruby/drop-superclass-construct-instantiation",
+    language: "ruby",
+    defectClass: "relationship-loss",
+    description: "RB-C regression: re-skips call expressions in the superclass field (`class BodyLike < Struct.new(...)` drops instantiates:Struct) — rack-wave-regressions instantiates Global->Struct pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) =>
+      !(x.type === "instantiates" && x.source === "Global" && x.target === "Struct")),
+    }),
+  },
+  {
+    id: "ruby/drop-def-less-member-read-uses",
+    language: "ruby",
+    defectClass: "relationship-loss",
+    description: "RB-D regression: re-gates instance_variable reads behind method bodies only (spec/DSL reads @content_type/@empty_hash lose their Global-sourced uses) — rack-wave-regressions memberRead pins",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) =>
+      !(x.type === "uses" && x.source === "Global" && (x.metadata ?? {}).memberRead)),
+    }),
+  },
+  {
+    id: "ruby/drop-alias-method-edge",
+    language: "ruby",
+    defectClass: "relationship-loss",
+    description: "RB-E regression: re-skips the alias_method emission (`alias_method :local_path, :original_filename` drops calls:local_path) — rack-wave-regressions aliasedTo pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.metadata ?? {}).aliasedTo) }),
+  },
+  {
+    id: "ruby/drop-keyword-alias-edge",
+    language: "ruby",
+    defectClass: "relationship-loss",
+    description: "master-review RUBD15 regression: re-skips the KEYWORD alias node (`alias copy original` emits nothing — reverts the main-loop alias branch) — master-review-wave calls:Api->copy aliasedTo pin dies",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.metadata ?? {}).keywordAlias) }),
+  },
+  {
+    id: "ruby/readd-pair-value-suppression",
+    language: "ruby",
+    defectClass: "relationship-loss",
+    description: "master-review RUBD12 regression: re-adds `pair` to the bare-call skip-parents, silencing hash/argument VALUE-position method calls (`{ key: fetch_key }`, `{ pair => fetch_val }`, `store.write(cache: build_entry)`) — master-review-wave value-call pins die",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "calls" && (x.metadata ?? {}).bareCall && ["fetch_key", "fetch_val", "build_entry"].includes(x.target))) }),
+  },
+  {
+    id: "ruby/readd-dynamic-superclass-extends",
+    language: "ruby",
+    defectClass: "fabrication",
+    description: "master-review regression: superclass call expressions emit extends again (`class Tuple < Struct.new(:a,:b)` -> extends Tuple->Struct.new(:a, :b)) — master-review-wave forbid dies",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "extends", source: "Tuple", target: "Struct.new(:a, :b)", fromSymbol: "Tuple", toSymbol: "Struct.new(:a, :b)", confidence: 1.0, metadata: {} }] }),
+  },
+  {
+    id: "ruby/self-verify-overrides-guard",
+    language: "ruby",
+    defectClass: "fabrication",
+    description: "master-review RUBD14 regression: removes the self-collision guard — `class Parser::Tok < Tok` (external base leaf == class leaf) emits VERIFIED self-overrides at 0.95 — master-review-wave forbid overrides@0.95 dies",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "overrides", source: "Tok.read", target: "Tok.read", fromSymbol: "Tok.read", toSymbol: "Tok.read", confidence: 0.95, metadata: { isOverride: true } }] }),
   },
   {
     id: "python/drop-instance-attribute-properties",

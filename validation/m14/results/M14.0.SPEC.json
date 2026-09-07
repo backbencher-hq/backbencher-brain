@@ -13,14 +13,14 @@
       "status": "pass"
     },
     {
-      "description": "java: 3 ruled, 0 pending owner",
+      "description": "java: 5 ruled, 0 pending owner",
       "id": "design-decisions-tracked",
       "language": "java",
       "status": "pass"
     },
     {
       "description": "every named node type classified (java)",
-      "detail": "143 types, 70 handled, 60 silent, 4 gaps, 3 decisions",
+      "detail": "143 types, 70 handled, 60 silent, 4 gaps, 5 decisions",
       "id": "section-a-structural",
       "language": "java",
       "status": "pass"
@@ -235,14 +235,14 @@
       "status": "pass"
     },
     {
-      "description": "scala: 7 ruled, 0 pending owner",
+      "description": "scala: 10 ruled, 0 pending owner",
       "id": "design-decisions-tracked",
       "language": "scala",
       "status": "pass"
     },
     {
       "description": "every named node type classified (scala)",
-      "detail": "189 types, 134 handled, 8 silent, 9 gaps, 7 decisions",
+      "detail": "189 types, 134 handled, 8 silent, 9 gaps, 10 decisions",
       "id": "section-a-structural",
       "language": "scala",
       "status": "pass"
@@ -975,14 +975,14 @@
       "status": "pass"
     },
     {
-      "description": "csharp: 1 ruled, 0 pending owner",
+      "description": "csharp: 1 ruled, 1 pending owner",
       "id": "design-decisions-tracked",
       "language": "csharp",
       "status": "pass"
     },
     {
       "description": "every named node type classified (csharp)",
-      "detail": "239 types, 51 handled, 164 silent, 0 gaps, 1 decisions",
+      "detail": "239 types, 51 handled, 164 silent, 0 gaps, 2 decisions",
       "id": "section-a-structural",
       "language": "csharp",
       "status": "pass"
@@ -1049,14 +1049,14 @@
       "status": "pass"
     },
     {
-      "description": "dart: 6 ruled, 11 pending owner",
+      "description": "dart: 6 ruled, 13 pending owner",
       "id": "design-decisions-tracked",
       "language": "dart",
       "status": "pass"
     },
     {
       "description": "every named node type classified (dart)",
-      "detail": "222 types, 86 handled, 105 silent, 5 gaps, 17 decisions",
+      "detail": "222 types, 86 handled, 105 silent, 5 gaps, 19 decisions",
       "id": "section-a-structural",
       "language": "dart",
       "status": "pass"
@@ -1345,14 +1345,14 @@
       "status": "pass"
     },
     {
-      "description": "ruby: 10 ruled, 0 pending owner",
+      "description": "ruby: 19 ruled, 0 pending owner",
       "id": "design-decisions-tracked",
       "language": "ruby",
       "status": "pass"
     },
     {
       "description": "every named node type classified (ruby)",
-      "detail": "158 types, 120 handled, 10 silent, 0 gaps, 10 decisions",
+      "detail": "158 types, 120 handled, 10 silent, 0 gaps, 19 decisions",
       "id": "section-a-structural",
       "language": "ruby",
       "status": "pass"
@@ -1419,14 +1419,14 @@
       "status": "pass"
     },
     {
-      "description": "python: 6 ruled, 0 pending owner",
+      "description": "python: 6 ruled, 1 pending owner",
       "id": "design-decisions-tracked",
       "language": "python",
       "status": "pass"
     },
     {
       "description": "every named node type classified (python)",
-      "detail": "128 types, 60 handled, 63 silent, 0 gaps, 6 decisions",
+      "detail": "128 types, 60 handled, 63 silent, 0 gaps, 7 decisions",
       "id": "section-a-structural",
       "language": "python",
       "status": "pass"
@@ -1556,8 +1556,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "ed54c097f9659852c9dcdfe1720f7302b5a1fd20",
-  "committedAt": "2026-09-07T16:31:01+02:00",
+  "commit": "93fcf0b153acdbdd456ff6f6fe803463553dd4de",
+  "committedAt": "2026-09-07T19:46:49+02:00",
   "data": {
     "languages": {
       "c": {
@@ -1664,13 +1664,15 @@
       "csharp": {
         "gaps": [],
         "nodeTypeCount": 239,
-        "pendingDecisions": [],
+        "pendingDecisions": [
+          "CSD14"
+        ],
         "ruledDecisions": [
           "CSD1"
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "239 types, 51 handled, 164 silent, 0 gaps, 1 decisions",
+            "detail": "239 types, 51 handled, 164 silent, 0 gaps, 2 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -1723,7 +1725,9 @@
           "DARTD14",
           "DARTD15",
           "DARTD16",
-          "DARTD17"
+          "DARTD17",
+          "DARTD18",
+          "DARTD19"
         ],
         "ruledDecisions": [
           "DARTD1",
@@ -1735,7 +1739,7 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "222 types, 86 handled, 105 silent, 5 gaps, 17 decisions",
+            "detail": "222 types, 86 handled, 105 silent, 5 gaps, 19 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -1946,11 +1950,13 @@
         "ruledDecisions": [
           "G5",
           "G6",
-          "S1"
+          "S1",
+          "JAO1",
+          "JAO2"
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "143 types, 70 handled, 60 silent, 4 gaps, 3 decisions",
+            "detail": "143 types, 70 handled, 60 silent, 4 gaps, 5 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -2209,7 +2215,9 @@
       "python": {
         "gaps": [],
         "nodeTypeCount": 128,
-        "pendingDecisions": [],
+        "pendingDecisions": [
+          "PYD17"
+        ],
         "ruledDecisions": [
           "PY-D1",
           "PY-D2",
@@ -2220,7 +2228,7 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "128 types, 60 handled, 63 silent, 0 gaps, 6 decisions",
+            "detail": "128 types, 60 handled, 63 silent, 0 gaps, 7 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -2267,11 +2275,20 @@
           "RUBD7",
           "RUBD8",
           "RUBD9",
-          "M3710-COMPANION"
+          "M3710-COMPANION",
+          "RB-A",
+          "RB-B",
+          "RB-C",
+          "RB-D",
+          "RB-E",
+          "RUBD12",
+          "RUBD13",
+          "RUBD14",
+          "RUBD15"
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "158 types, 120 handled, 10 silent, 0 gaps, 10 decisions",
+            "detail": "158 types, 120 handled, 10 silent, 0 gaps, 19 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -2378,11 +2395,14 @@
           "D4",
           "D5",
           "D6",
-          "F6.GI.SCALA"
+          "F6.GI.SCALA",
+          "ScalaD-A",
+          "ScalaD-B",
+          "ScalaD-C"
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "189 types, 134 handled, 8 silent, 9 gaps, 7 decisions",
+            "detail": "189 types, 134 handled, 8 silent, 9 gaps, 10 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
