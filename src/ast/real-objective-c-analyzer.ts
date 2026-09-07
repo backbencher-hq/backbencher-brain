@@ -181,22 +181,29 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
         }
       }
-      // 4. Methods (@method)
+      // 4. Methods (@method) — OBJCD7: an ObjC method's identity is the FULL
+      // selector ("storeImage:forName:", "getPathForName:bundle:preferredScale:"),
+      // not its first keyword. The grammar nests keyword identifiers at the
+      // top level alternating with method_parameter nodes (parameter locals
+      // live INSIDE method_parameter, probe-verified 2026-09). Leaf naming
+      // merged distinct selectors sharing a first keyword (SDImageCache:
+      // initWithNamespace / initWithNamespace:diskCacheDirectory: /
+      // initWithNamespace:diskCacheDirectory:config: -> one symbol, 14 of 59
+      // methods silently lost) and made message-send targets unresolvable.
       else if (node.type === "method_declaration" || node.type === "method_definition") {
-        // Obj-C method selectors can be disjointed, but we grab the first logical identifier or selector 
-        const nameNode = this.findChild(node, (n) => n.type === "identifier")
-        if (nameNode) {
-          nextActiveScope = nameNode.text
+        const sel = this.fullMethodSelector(node)
+        if (sel) {
+          nextActiveScope = sel
           // The `+`/`-` sign is an anonymous token child of the method node
           // (`method_declaration [-:"-"] [;:";"]`) — pure AST, no text scan.
           const isClassMethod = this.isClassMethodToken(node)
           symbols.push({
-            name: nameNode.text,
+            name: sel,
             kind: ASTEngine.SymbolKind.Method,
             range: this.getRange(node),
             ownerName: activeScope !== "global" ? activeScope : undefined,
             complexity: this.calculateCyclomaticComplexity(node),
-            metadata: { objcSpecific: true, isClassMethod, isInstanceMethod: !isClassMethod },
+            metadata: { objcSpecific: true, isClassMethod, isInstanceMethod: !isClassMethod, selector: sel },
           })
         }
       } 
@@ -271,21 +278,22 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
          }
       }
       // 8. Relationships (Obj-C Message Expressions `[receiver selector]` & C-Function Calls)
-      // Structure: `[receiver selector:arg...]`. namedChild(0) is the receiver
-      // (identifier, field_expression, or nested message_expression); the
-      // selector is the FIRST identifier AFTER the receiver — never the
-      // receiver itself (`[NSString stringWithFormat:]` → stringWithFormat,
-      // not NSString; `[super init]` → init, not super).
+      // OBJCD7: the callable identity of a message send is the FULL selector
+      // (storeImage:forName:, initWithBlock:), not its first keyword — a
+      // leaf-named edge could not resolve to the exact overload. The grammar
+      // flattens keywords and arguments as siblings; a keyword is an
+      // identifier whose NEXT child is an anonymous ':' token (colons are
+      // direct anonymous children of message_expression, probe-verified
+      // 2026-09). Zero-argument messages have no ':' — the selector is the
+      // LAST identifier child (receiver identifiers live in nested nodes;
+      // `[foo bar]` -> bar, `[[Foo alloc] init]` -> init).
       else if (node.type === "message_expression") {
-         let selectorNode: Node | null = null
-         for (let ci = 1; ci < node.namedChildCount; ci++) {
-           const cn = node.namedChild(ci)
-           if (cn && cn.type === "identifier") { selectorNode = cn; break }
-         }
-         if (selectorNode && activeScope !== "global" && isInBody) {
-            // [[Foo alloc] init] / [Foo new] → Instantiates Foo. The receiver
-            // of an alloc/new message is the class identifier.
-            if (selectorNode.text === "alloc" || selectorNode.text === "new") {
+         const msgSel = this.fullMessageSelector(node)
+         if (msgSel && activeScope !== "global" && isInBody) {
+            // alloc/new detection uses the FIRST keyword (these are zero-arg
+            // selectors, so the leaf equals the full selector).
+            const firstKw = msgSel.split(":")[0]
+            if (firstKw === "alloc" || firstKw === "new") {
               let receiverLeaf: string | null = null
               const receiver = node.namedChild(0)
               if (receiver) {
@@ -310,7 +318,7 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
             } else {
               relationships.push({
                 source: activeScope,
-                target: selectorNode.text,
+                target: msgSel,
                 type: ASTEngine.RelationshipType.Calls,
                 confidence: 0.95,
                 metadata: { isMessageExpression: true }
@@ -410,6 +418,81 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
     }
+    // --- Override relationships (OBJCD8, M37.10 family implicit-override
+    // model — ruby/php/python precedent). ObjC dispatch is by selector: a
+    // method a subclass declares with the same FULL SELECTOR as a superclass
+    // method overrides it. ObjC was the only inheritance-based family member
+    // with zero override machinery — the classifyEvidenceTier branch was dead
+    // code and every cross-class redeclaration was silent. Selector identity
+    // (OBJCD7) makes the same-name test exact. In-file base declaring the
+    // method -> verified override at 0.95; base is a known external super
+    // (extends target not declared in-file) -> deterministic Pass-3
+    // first-parent guess at 0.5 with reasonCode 'first-parent-guess', below
+    // the patterns.ts 0.7 threshold (honest suspicion, counted as heuristic
+    // by the differential). NSObject/NSProxy are the universal root — like
+    // ruby's implicit Object / java's implicit superclass, no override is
+    // ever declared against them in-file, so they are excluded from baseByClass
+    // (a guess toward the root for every method would be systematic noise;
+    // verified overrides of the root are impossible in a translation unit).
+    const classNameSet = new Set<string>()
+    for (const s of uniqueSymbols) {
+      if (s.kind === ASTEngine.SymbolKind.Class) classNameSet.add(s.name)
+    }
+    // baseByClass: source of a Class extends edge -> its superclass. Only
+    // non-category class inheritance (metadata.isProtocolInheritance edges
+    // are protocol extends and carry no superclass meaning).
+    const baseByClass = new Map<string, string>()
+    for (const r of uniqueRelationships) {
+      if (r.type === ASTEngine.RelationshipType.Extends && classNameSet.has(String(r.source)) && !r.metadata?.isProtocolInheritance) {
+        const t = String(r.target)
+        if (t && t !== "NSObject" && t !== "NSProxy") baseByClass.set(String(r.source), t)
+      }
+    }
+    const methodsByOwner = new Map<string, Set<string>>()
+    for (const s of uniqueSymbols) {
+      if (s.kind === ASTEngine.SymbolKind.Method && s.ownerName) {
+        let names = methodsByOwner.get(s.ownerName)
+        if (!names) { names = new Set<string>(); methodsByOwner.set(s.ownerName, names) }
+        names.add(s.name)
+      }
+    }
+    for (const s of uniqueSymbols) {
+      if (s.kind !== ASTEngine.SymbolKind.Method || !s.ownerName) continue
+      const base = baseByClass.get(s.ownerName)
+      if (!base) continue
+      const inFileBaseMethods = classNameSet.has(base) ? methodsByOwner.get(base) : undefined
+      if (inFileBaseMethods?.has(s.name)) {
+        // Verified: the superclass is declared in this file and declares the
+        // same full selector.
+        const key = `${ASTEngine.RelationshipType.Overrides}|${s.ownerName}.${s.name}->${base}.${s.name}`
+        if (!relKeySet.has(key)) {
+          relKeySet.add(key)
+          uniqueRelationships.push({
+            source: `${s.ownerName}.${s.name}`,
+            target: `${base}.${s.name}`,
+            type: ASTEngine.RelationshipType.Overrides,
+            confidence: 0.95,
+            metadata: { isOverride: true },
+          })
+        }
+      } else if (!classNameSet.has(base)) {
+        // Pass 3 (family parity): the base is NOT declared in this file —
+        // declaring-parent verification is impossible in this translation
+        // unit (the @interface naming the superclass lives in a header or
+        // another file). Deterministic first-parent guess below threshold.
+        const key = `${ASTEngine.RelationshipType.Overrides}|${s.ownerName}.${s.name}->${base}.${s.name}`
+        if (!relKeySet.has(key)) {
+          relKeySet.add(key)
+          uniqueRelationships.push({
+            source: `${s.ownerName}.${s.name}`,
+            target: `${base}.${s.name}`,
+            type: ASTEngine.RelationshipType.Overrides,
+            confidence: 0.5,
+            metadata: { isOverride: true, reasonCode: "first-parent-guess" },
+          })
+        }
+      }
+    }
     // Evidence-tier classification (managed-OO family contract — swift/dart/
     // csharp #264–#266 precedent; M14 section D requires >=2 distinct
     // evidenceClass values). structural (grammar clauses, conf 1.0) |
@@ -446,7 +529,13 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
         md.evidenceClass = (r.confidence ?? 0) >= 0.9 ? "structural" : "inferred"
         continue
       }
-      if (type === "overrides") { md.evidenceClass = "structural"; continue }
+      if (type === "overrides") {
+        // OBJCD8 M37.10 family contract: verified overrides are structural; a
+        // Pass-3 first-parent guess is only "inferred" (the external base may
+        // not even declare the method).
+        md.evidenceClass = (r.confidence ?? 0) >= 0.9 ? "structural" : "inferred"
+        continue
+      }
       md.evidenceClass = "usage_contextual"
     }
   }
@@ -549,6 +638,60 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (c && !c.isNamed && c.type === "+") return true
     }
     return false
+  }
+
+  /**
+   * OBJCD7: full ObjC selector of a method_declaration/method_definition.
+   * The pinned grammar nests keyword identifiers at the TOP level of the
+   * method node (parameter locals live INSIDE the method_parameter nodes,
+   * probe-verified 2026-09): `- (void)storeImage:(UIImage*)image
+   * forName:(NSString*)name` -> top-level children are identifier
+   * "storeImage", method_parameter, identifier "forName", method_parameter.
+   * A keyword gets ':' when the NEXT named sibling is a method_parameter.
+   */
+  private fullMethodSelector(node: Node): string {
+    let sel = ""
+    const count = node.namedChildCount
+    for (let i = 0; i < count; i++) {
+      const c = node.namedChild(i)
+      if (!c) continue
+      if (c.type === "identifier") {
+        sel += c.text
+        const next = i + 1 < count ? node.namedChild(i + 1) : null
+        if (next && next.type === "method_parameter") sel += ":"
+      }
+    }
+    return sel
+  }
+
+  /**
+   * OBJCD7: full selector of a message_expression. The grammar flattens
+   * keywords and arguments as SIBLINGS; a keyword is an identifier whose
+   * NEXT child is an anonymous ':' token (the colons are direct anonymous
+   * children of message_expression, probe-verified 2026-09). Zero-argument
+   * messages have no ':' — the selector is then the LAST identifier child
+   * (receiver identifiers live inside nested nodes for complex receivers;
+   * `[foo bar]` -> bar, `[self.imageTable removeAllObjects]` ->
+   * removeAllObjects, `[[Foo alloc] init]` -> init).
+   */
+  private fullMessageSelector(node: Node): string {
+    let sel = ""
+    let lastId: string | null = null
+    const count = node.childCount
+    for (let i = 0; i < count; i++) {
+      const c = node.child(i)
+      if (!c) continue
+      if (c.isNamed && c.type === "identifier") {
+        const nxt = i + 1 < count ? node.child(i + 1) : null
+        if (nxt && !nxt.isNamed && nxt.type === ":") {
+          sel += c.text + ":"
+        } else {
+          lastId = c.text
+        }
+      }
+    }
+    if (sel) return sel
+    return lastId ?? ""
   }
 
   // Pure cursor helper protecting V8 from GC Thrashing
