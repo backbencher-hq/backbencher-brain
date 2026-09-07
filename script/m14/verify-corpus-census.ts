@@ -52,7 +52,7 @@ const GATED: Record<string, { wasm: string; ext: string[]; repo: string }> = {
   csharp: { wasm: "tree-sitter-c_sharp.wasm", ext: [".cs"], repo: "powershell" },
   dart: { wasm: "tree-sitter-dart.wasm", ext: [".dart"], repo: "proxicall" },
   swift: { wasm: "tree-sitter-swift.wasm", ext: [".swift"], repo: "swift-nio" },
-  objc: { wasm: "tree-sitter-objc.wasm", ext: [".m", ".h"], repo: "Clyde" },
+  objc: { wasm: "tree-sitter-objc.wasm", ext: [".m", ".h"], repo: "sdwebimage" },
   php: { wasm: "tree-sitter-php.wasm", ext: [".php"], repo: "phpunit" },
   ruby: { wasm: "tree-sitter-ruby.wasm", ext: [".rb"], repo: "rake" },
   python: { wasm: "tree-sitter-python.wasm", ext: [".py"], repo: "cython" },

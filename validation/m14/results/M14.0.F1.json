@@ -13,14 +13,14 @@
       "status": "pass"
     },
     {
-      "description": "regression gate vs grammar-audit-baseline.json (34/41 languages pass)",
+      "description": "regression gate vs grammar-audit-baseline.json (33/41 languages pass)",
       "id": "baseline-gate",
       "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "b30328c8438394c1c38cc0eaf0e7839b9114c0f0",
-  "committedAt": "2026-09-06T21:13:43+02:00",
+  "commit": "7ad5b09e86159de5d038765e729b6a6c3c35db5d",
+  "committedAt": "2026-09-07T15:51:12+02:00",
   "data": {
     "languages": {
       "bash": {
@@ -549,7 +549,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 535,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 30,
+        "referencedTypeLiterals": 31,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -828,10 +828,91 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 526,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 66,
-        "status": "pass",
+        "referencedTypeLiterals": 82,
+        "status": "fail",
         "unknownFields": [],
-        "unknownNodeTypes": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-swift-analyzer.ts:const:ENUM_RAW_VALUE_TYPES",
+            "line": 60,
+            "literal": "String"
+          },
+          {
+            "context": "real-swift-analyzer.ts:const:ENUM_RAW_VALUE_TYPES",
+            "line": 60,
+            "literal": "Character"
+          },
+          {
+            "context": "real-swift-analyzer.ts:const:ENUM_RAW_VALUE_TYPES",
+            "line": 60,
+            "literal": "Int"
+          },
+          {
+            "context": "real-swift-analyzer.ts:const:ENUM_RAW_VALUE_TYPES",
+            "line": 60,
+            "literal": "Int8"
+          },
+          {
+            "context": "real-swift-analyzer.ts:const:ENUM_RAW_VALUE_TYPES",
+            "line": 60,
+            "literal": "Int16"
+          },
+          {
+            "context": "real-swift-analyzer.ts:const:ENUM_RAW_VALUE_TYPES",
+            "line": 60,
+            "literal": "Int32"
+          },
+          {
+            "context": "real-swift-analyzer.ts:const:ENUM_RAW_VALUE_TYPES",
+            "line": 60,
+            "literal": "Int64"
+          },
+          {
+            "context": "real-swift-analyzer.ts:const:ENUM_RAW_VALUE_TYPES",
+            "line": 60,
+            "literal": "UInt"
+          },
+          {
+            "context": "real-swift-analyzer.ts:const:ENUM_RAW_VALUE_TYPES",
+            "line": 60,
+            "literal": "UInt8"
+          },
+          {
+            "context": "real-swift-analyzer.ts:const:ENUM_RAW_VALUE_TYPES",
+            "line": 60,
+            "literal": "UInt16"
+          },
+          {
+            "context": "real-swift-analyzer.ts:const:ENUM_RAW_VALUE_TYPES",
+            "line": 60,
+            "literal": "UInt32"
+          },
+          {
+            "context": "real-swift-analyzer.ts:const:ENUM_RAW_VALUE_TYPES",
+            "line": 60,
+            "literal": "UInt64"
+          },
+          {
+            "context": "real-swift-analyzer.ts:const:ENUM_RAW_VALUE_TYPES",
+            "line": 60,
+            "literal": "Float"
+          },
+          {
+            "context": "real-swift-analyzer.ts:const:ENUM_RAW_VALUE_TYPES",
+            "line": 60,
+            "literal": "Float32"
+          },
+          {
+            "context": "real-swift-analyzer.ts:const:ENUM_RAW_VALUE_TYPES",
+            "line": 60,
+            "literal": "Float64"
+          },
+          {
+            "context": "real-swift-analyzer.ts:const:ENUM_RAW_VALUE_TYPES",
+            "line": 60,
+            "literal": "Double"
+          }
+        ],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-swift.wasm"
@@ -945,10 +1026,10 @@
       }
     },
     "summary": {
-      "fail": 7,
+      "fail": 8,
       "languagesAudited": 41,
-      "pass": 34,
-      "totalUnknownReferences": 24
+      "pass": 33,
+      "totalUnknownReferences": 40
     }
   },
   "governance": "docs/M14-HONESTY-CONTRACT.md",

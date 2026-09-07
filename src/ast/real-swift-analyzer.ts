@@ -29,8 +29,15 @@ import { findDeclaringParent, type OverrideCompanion } from "./override-context"
 //   Relationships
 //     - contains: REAL ownership only (type -> member). Locals carry no
 //       owner, so they emit nothing.
-//     - extends:  first inheritance base of class/struct/actor (superclass)
-//     - implements: remaining bases (adopted protocols)
+//     - extends:  class/struct/actor superclass (first base when the kind
+//       resolves to a class) AND protocol -> inherited protocol parents
+//       (AnyObject/Any class-constraint markers excluded — family contract:
+//       csharp interface IX : IA / java interface extends / objc protocol <A>)
+//     - implements: adopted protocols — remaining class bases, EVERY
+//       extension base (Swift forbids redundant conformances, so extension
+//       adoptions are always additional), and every enum base except a
+//       stdlib raw-value type in first slot (String/Int/...)
+//       (`enum E: String, Codable` -> implements E -> Codable)
 //     - calls:    member calls resolve to the LEAF target (`users.first` ->
 //       `first`, `[1,2].map` -> `map`); source = enclosing method. Bare
 //       builtins (print/String/Int/...) are filtered (C# BuiltinsAreFiltered
@@ -44,6 +51,18 @@ import { findDeclaringParent, type OverrideCompanion } from "./override-context"
 //       semantics)
 //     - references: file-scope imports -> `root -> module` (ObjC M12.19)
 // ============================================================================
+
+// Stdlib raw-value types of a raw-representable enum (`enum E: String, Codable`).
+// Only a stdlib-named FIRST base is the raw value; every other base (and a
+// non-stdlib first base like `enum E: Error`) is a protocol conformance.
+// (Swift also allows custom RawRepresentable raw types — unresolvable
+// statically; the stdlib gate is the deterministic rule, documented SWIFTD15.)
+const ENUM_RAW_VALUE_TYPES = new Set([
+  "String", "Character",
+  "Int", "Int8", "Int16", "Int32", "Int64",
+  "UInt", "UInt8", "UInt16", "UInt32", "UInt64",
+  "Float", "Float32", "Float64", "Double",
+])
 
 const MEMBER_OWNER_KINDS = new Set([
   ASTEngine.SymbolKind.Class,
@@ -61,6 +80,12 @@ const BUILTIN_BARE_CALLS = new Set([
   "print", "debugPrint", "assert", "precondition", "fatalError",
   "String", "Int", "Double", "Float", "Bool", "Array", "Dictionary",
   "Set", "Optional", "Any", "Void", "Character", "Data", "Date",
+  // Fixed-width stdlib numerics (SWIFTD16): trivial value construction, same
+  // class as Int/Double — filtered for consistency (Int8-64/UInt8-64 were
+  // previously missed while Int was filtered; corpus: UInt8 244 / Int64 72 /
+  // UInt16 47 bare constructions per swift-nio 200-file census).
+  "UInt", "UInt8", "UInt16", "UInt32", "UInt64",
+  "Int8", "Int16", "Int32", "Int64",
   // `defer { }` parses as call_expression(simple_identifier "defer", lambda_literal)
   // in the pinned grammar — it is a control keyword, never a real function call.
   "defer",
@@ -426,8 +451,29 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     const vis = this.getVisibility(node)
     const symbol = this.createSymbol(nameNode.text, ASTEngine.SymbolKind.Interface, nameNode, parent, symbols, meta, vis)
 
-    // Protocol inheritance is NOT materialized as extends/implements (ObjC
-    // M12.19 precedent: `@protocol A <NSObject>` emits no edge).
+    // Protocol inheritance IS materialized as extends edges (family
+    // contract, probe-verified 2026-09: csharp `interface IX : IA` ->
+    // extends, java `interface IX extends IA` -> extends, objc
+    // `@protocol B <A>` -> extends). The AnyObject / Any markers in the
+    // inheritance list are CLASS-CONSTRAINT annotations, not protocol
+    // parents — excluded (probe-verified: `protocol P: AnyObject, B` in
+    // swift-nio parses AnyObject as an inheritance_specifier).
+    const bases = this.extractBases(node)
+    const parents: string[] = []
+    for (const base of bases) {
+      if (base === "AnyObject" || base === "Any") continue
+      parents.push(base)
+      relationships.push({
+        type: ASTEngine.RelationshipType.Extends,
+        source: symbol.name,
+        target: base,
+        isExternal: true,
+        weight: 1,
+        confidence: 1.0,
+        metadata: { isImplements: false },
+      })
+    }
+    if (parents.length > 0) classHierarchy.set(symbol.name, parents)
     return symbol
   }
 
@@ -455,15 +501,30 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     // Name: the type identifier. For extensions it is the EXTENDED type
     // (inside a user_type), and the extension has NO owner (never self-owner).
+    // SWIFTD19: a dotted extension target (`extension Outer.Inner`) names the
+    // LEAF type (Inner) — the user_type holds sibling type_identifiers in
+    // source order, so the leaf is the LAST one. The pre-fix code took the
+    // FIRST (Outer), minting an extension symbol that collided with the
+    // container type's symbol id and mis-attributing every member.
     let nameNode: Node | null = null
     if (kind === ASTEngine.SymbolKind.Extension) {
-      nameNode = this.findDescendantTypeIdentifier(node)
+      const ut = this.findChildByType(node, "user_type")
+      if (ut) {
+        nameNode = this.lastTypeIdentifier(ut)
+      } else {
+        nameNode = this.findDescendantTypeIdentifier(node)
+      }
     } else {
       nameNode = this.findChildByType(node, "type_identifier") || this.findChildByType(node, "user_type") || this.firstNamedChild(node)
     }
     if (!nameNode) return parent
 
     let rawName = nameNode.type === "user_type" && nameNode.namedChildCount > 0 ? nameNode.namedChild(0)!.text : nameNode.text
+    // Dotted name fallback: leaf of the user_type (last type_identifier).
+    if (kind === ASTEngine.SymbolKind.Extension && nameNode.type === "user_type") {
+      const leaf = this.lastTypeIdentifier(nameNode)
+      if (leaf) rawName = leaf.text
+    }
 
     const meta: Record<string, any> = {
       hasGenerics: this.hasChildType(node, "type_parameters"),
@@ -474,18 +535,20 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     const vis = this.getVisibility(node)
 
-    // Enum raw type (`enum Status: String`) -> metadata ONLY, no edge.
+    // Enum raw value (`enum Status: String`) -> metadata ONLY when the
+    // first base names a stdlib raw-value type. A protocol in first slot
+    // (`enum E: Error`, 46 corpus sites) is a CONFORMANCE, never a raw type
+    // — the pre-SWIFTD15 code minted bogus rawType=Error payload there.
     if (kind === ASTEngine.SymbolKind.Enum) {
       const rawType = this.findEnumRawType(node)
-      if (rawType) meta.rawType = rawType
+      if (rawType && ENUM_RAW_VALUE_TYPES.has(rawType)) meta.rawType = rawType
     }
 
     const symbol = this.createSymbol(rawName, kind, nameNode, parent, symbols, meta, vis)
 
-    // extends / implements for class/struct/actor only.
-    if (kind !== ASTEngine.SymbolKind.Enum && kind !== ASTEngine.SymbolKind.Extension) {
-      const bases = this.extractBases(node)
-      const parents: string[] = []
+    const bases = this.extractBases(node)
+    const parents: string[] = []
+    if (kind === ASTEngine.SymbolKind.Class || kind === ASTEngine.SymbolKind.Struct || kind === ASTEngine.SymbolKind.Actor) {
       // Swift semantics (probe-verified fixture #266): ONLY a class can have
       // a superclass. A class's FIRST base is extends ONLY IF it is actually
       // a class — a first-base protocol is still an adoption (implements).
@@ -512,6 +575,43 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
         })
       }
       if (parents.length > 0) classHierarchy.set(symbol.name, parents)
+    } else if (kind === ASTEngine.SymbolKind.Extension) {
+      // SWIFTD14: Swift extensions CANNOT add a superclass, and the compiler
+      // forbids redundant conformances — every extension base is an ADDITIONAL
+      // protocol adoption (implements). Corpus: 380 sites in swift-nio that
+      // previously emitted nothing (csharp partial-class conformance is the
+      // managed-OO analog and IS materialized).
+      for (const base of bases) {
+        parents.push(base)
+        relationships.push({
+          type: ASTEngine.RelationshipType.Implements,
+          source: symbol.name,
+          target: base,
+          isExternal: true,
+          weight: 0.9,
+          confidence: 1.0,
+          metadata: { isImplements: true },
+        })
+      }
+    } else if (kind === ASTEngine.SymbolKind.Enum) {
+      // SWIFTD15: enum conformances. The raw value (first base, stdlib-named
+      // only) is metadata, NOT an edge; every remaining base is an adopted
+      // protocol. Corpus: 181 enums carry bases; ~93% first-slot are
+      // protocols (Sendable 76 / Error 46 / Hashable 22 / Equatable 17).
+      // Mirrors dart DARTD15 (enhanced-enum conformances -> implements).
+      const skipFirst = bases.length > 0 && ENUM_RAW_VALUE_TYPES.has(bases[0])
+      for (let i = skipFirst ? 1 : 0; i < bases.length; i++) {
+        const base = bases[i]
+        relationships.push({
+          type: ASTEngine.RelationshipType.Implements,
+          source: symbol.name,
+          target: base,
+          isExternal: true,
+          weight: 0.9,
+          confidence: 1.0,
+          metadata: { isImplements: true },
+        })
+      }
     }
 
     return symbol
@@ -616,13 +716,23 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     const kind = parent ? ASTEngine.SymbolKind.Property : ASTEngine.SymbolKind.Variable
 
-    // Name from the binding pattern: `var x: Int` / `let x = ...` — the
-    // pattern's simple_identifier (first identifier child).
-    const patternNode = this.findChildByType(node, "pattern")
-    if (patternNode) {
-      const idNode = this.findChildByType(patternNode, "simple_identifier") || this.findChildByType(patternNode, "identifier") || this.firstNamedChild(patternNode)
-      if (idNode) {
-        this.createSymbol(idNode.text, kind, idNode, parent, symbols, meta, vis)
+    // SWIFTD18: multi-binding declarations (`var a = 1, b = 2`, `let x = 1,
+    // y = 2`) carry one sibling `pattern` child PER binding in the pinned
+    // grammar (probe-verified 2026-09). The pre-fix code symbolized only the
+    // FIRST pattern, silently dropping every additional property/variable.
+    // (Locals remain non-symbols by contract — this handler returns early for
+    // non-type parents before reaching here.)
+    const patternNodes: Node[] = []
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (c && c.type === "pattern") patternNodes.push(c)
+    }
+    if (patternNodes.length > 0) {
+      for (const pn of patternNodes) {
+        const idNode = this.findChildByType(pn, "simple_identifier") || this.findChildByType(pn, "identifier") || this.firstNamedChild(pn)
+        if (idNode) {
+          this.createSymbol(idNode.text, kind, idNode, parent, symbols, meta, vis)
+        }
       }
     } else {
       const idNode = this.findChildByType(node, "simple_identifier") || this.findChildByType(node, "identifier")
@@ -661,6 +771,12 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Bare identifier call.
     const target = funcNode.text
     if (!target || BUILTIN_BARE_CALLS.has(target)) return
+    // SWIFTD16: XCTest assertion FUNCTIONS (XCTAssertEqual/XCTFail/XCTSkip/...)
+    // are the one capitalized free-function family in Swift — the capitalized-
+    // call construction rule would fabricate `instantiates -> XCTAssertEqual`
+    // (8,226 occurrences, 59% of all capitalized bare calls, per the swift-nio
+    // census). They are not types; filtered like builtins (no edge).
+    if (target.startsWith("XCT")) return
 
     const firstChar = target.charCodeAt(0)
     const isCapitalized = firstChar >= 65 && firstChar <= 90 && target.length > 1
@@ -740,7 +856,15 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     // `self.helper()` is a METHOD CALL — the callee of a call_expression
     // emits `calls` via handleCall, never also `uses` (member reads only,
     // the M12.21 contract). Rust M12.18 uses the same parent-type gate.
-    if (node.parent && node.parent.type === "call_expression") return
+    // SWIFTD17 exception: a SUBSCRIPT call (`self.items[key]`) is a property
+    // ACCESS, not a method invocation — the base navigation IS a genuine
+    // container read and must emit uses. Family precedent (probe-verified
+    // 2026-09): php and objc both emit container-read uses for subscript
+    // reads AND writes (`$this->items[$i]`, `self.items[i] = v`). The
+    // pre-fix gate suppressed the base because it is the funcNode of a
+    // call_expression — subscript and method calls were not distinguished.
+    const par = node.parent
+    if (par && par.type === "call_expression" && !this.isSubscriptRead(par)) return
 
     const leaf = this.navigationLeaf(node)
     if (!leaf) return
@@ -1161,17 +1285,51 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     return bases
   }
 
+  /**
+   * Leaf of a (possibly dotted) user_type: the LAST sibling type_identifier
+   * (`Outer.Inner` -> Inner, `Foundation.URLSession` -> URLSession). The
+   * user_type node holds its dotted segments as sibling type_identifier
+   * children in source order (probe-verified 2026-09), so the leaf is simply
+   * the last one. SWIFTD19: the pre-fix code returned the FIRST segment,
+   * fabricating extends/implements edges to the wrong (module/container)
+   * name — e.g. `class Sub2: Foundation.URLSession` became extends Sub2 ->
+   * Foundation, and `extension Foo: SomeMod.Proto` became implements Foo ->
+   * SomeMod.
+   */
+  private lastTypeIdentifier(ut: Node): Node | null {
+    let last: Node | null = null
+    for (let i = 0; i < ut.namedChildCount; i++) {
+      const c = ut.namedChild(i)
+      if (c && c.type === "type_identifier") last = c
+    }
+    if (last) return last
+    // Fallback for non-flat user_types (nested user_type in user_type).
+    const stack: Node[] = [ut]
+    let best: Node | null = null
+    while (stack.length > 0) {
+      const c = stack.pop()!
+      if (c.type === "type_identifier") {
+        if (!best || c.startIndex >= best.startIndex) best = c
+      }
+      for (let i = c.namedChildCount - 1; i >= 0; i--) {
+        const child = c.namedChild(i)
+        if (child) stack.push(child)
+      }
+    }
+    return best
+  }
+
   private extractBaseName(spec: Node): string | null {
-    // `user_type > type_identifier` — take the leaf type identifier.
+    // `user_type > type_identifier` — take the LEAF type identifier
+    // (SWIFTD19: last segment of dotted names, family leaf convention).
     for (let i = 0; i < spec.namedChildCount; i++) {
       const c = spec.namedChild(i)
       if (!c) continue
       if (c.type === "type_identifier") return c.text
       if (c.type === "user_type") {
-        const leaf = this.findChildByType(c, "type_identifier")
+        const leaf = this.lastTypeIdentifier(c)
         if (leaf) return leaf.text
       }
-      if (c.type === "type_identifier" && c.text) return c.text
     }
     const txt = spec.text.trim()
     return txt && !txt.includes(" ") ? txt : null
