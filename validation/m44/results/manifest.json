@@ -120,7 +120,7 @@
       "code": "U4",
       "githubIssue": 691,
       "tool": "hub-counts-legend",
-      "status": "planned",
+      "status": "verified",
       "scope": "header counts derived from the rendered groups; one badge legend (evidence tiers + enrichment + staleness) shared by hub/graph/impact; stale markers visually consistent with the hover legend",
       "acceptanceCriteria": [
         "DOM harness: header count equals the rendered group count for a duplicated-relationship fixture; stale fixture renders the marker",
@@ -131,7 +131,18 @@
         "U4 evidence (verified, current HEAD)",
         "counts/legend harness records",
         "generated legend doc committed byte-identical"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "24f9524dd7064fb726003b48f828ee970ba0dc5b",
+        "verifierCommand": "npx tsx script/m44/verify-legend.ts",
+        "evidenceFile": "U4.json",
+        "passed": 25,
+        "failed": 0,
+        "mutantsCaught": 4,
+        "mutantsTotal": 4,
+        "inEditor": "E5 81/81 (5 new U4 checks); W4 19/19 (extended legend assertions); V1 41/41 (AH10/AH11 + 3 liars)"
+      }
     },
     {
       "code": "U5",

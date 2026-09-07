@@ -307,6 +307,17 @@ usages, hub, graph, or impact.
    (rule 2). Deeper levels start collapsed behind a declared expander, and
    expansion is a client toggle, never a re-render. A fabricated nesting
    level, a duplicated symbol, or an undeclared control is a defect.
+9. **Header counts are the rendered truth; one legend explains every badge.
+   ** Surface headers count what the eye can verify — the groups/rows
+   actually rendered (§ rule 4) — never a server-side counter: any server
+   count rides as a declared attribute so drift is visible, not hidden
+   (M44.U4). Every hub list, tree, graph, and impact render ships the SAME
+   legend — evidence tiers, enrichment annotations, and staleness statuses
+   (fresh/stale/missing/unknown, mirroring the server's marker union) —
+   through the ONE core function; the legend doc is GENERATED from that
+   core and drift-gated byte-identical. A legend missing a section, a
+   header disagreeing with the rendered rows, or a stale render without
+   its marker (or a fresh one with a phantom marker) is a defect.
 
 ## 14. Demo-Media Rules (M45 amendment, ratified 2026-09-07)
 
