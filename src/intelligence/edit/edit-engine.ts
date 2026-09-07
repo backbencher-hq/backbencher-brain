@@ -336,7 +336,32 @@ async function planEdit(projectPath: string, projectId: string, request: EditReq
   resolveSafeEditPath(projectPath, match.fileId)
   const original = readFileSync(match.fileId, "utf8")
 
-  if (request.mode === "update") return { changes: [{ path: match.fileId, before: original, after: replaceRange(original, match.byteStart, match.byteEnd, String(request.newContent ?? request.content ?? "")) }], warnings }
+  if (request.mode === "update") {
+    const newContent = String(request.newContent ?? request.content ?? "")
+    // M48.C2 (#700): fragment-safe update. The documented contract (registry
+    // example) is full-declaration replacement, but a BODY FRAGMENT
+    // ("return 42") used to replace the ENTIRE declaration span — silently
+    // destroying the function while reporting validated:true. If newContent
+    // does not declare the symbol itself, it is treated as the new body:
+    // the declaration and signature are kept, only the body block changes.
+    const escaped = symbolName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+    const declaresSelf = new RegExp(`(?:function|class|interface|type|enum|struct|impl|def|fn|func|method|const|let|var|val)\\s+${escaped}\\b`).test(newContent)
+    if (declaresSelf) return { changes: [{ path: match.fileId, before: original, after: replaceRange(original, match.byteStart, match.byteEnd, newContent) }], warnings }
+    const parsed = await parseForSafety(match.fileId, original)
+    const body = findSymbolBody(parsed, match.byteStart, match.byteEnd)
+    if (body && original[body.startIndex] === "{") {
+      const open = body.startIndex
+      const close = body.endIndex - 1
+      const inner = original.slice(open + 1, close)
+      const innerIndent = inner.includes("\n") ? computeInnerIndent(original, body) : lineLeadingWhitespace(original, open) + indentUnit(original)
+      const after = replaceRange(original, open + 1, close, "\n" + indentLines(newContent, innerIndent, true) + "\n" + lineLeadingWhitespace(original, open))
+      return { changes: [{ path: match.fileId, before: original, after }], warnings }
+    }
+    // No recognizable brace body (expression-bodied / one-line decls in
+    // languages without braces): refuse rather than guess — a caller wanting
+    // a structural change passes the full declaration.
+    throw new Error(`update ${symbolName}: newContent does not declare the symbol and no replaceable body block was found; pass the full declaration to replace it`)
+  }
   if (request.mode === "insert") {
     const position = request.position ?? "after"
     const content = String(request.newContent ?? request.content ?? "")
