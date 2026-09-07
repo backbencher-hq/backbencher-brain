@@ -1,10 +1,10 @@
 {
   "status": "verified",
-  "currentCommit": "8a9bb1a5c61bf36e9ac517f50eb987fcf38f6562",
+  "currentCommit": "b6bf72092e2387c85785e7d8a858fdf4f3927104",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "bun run script/m48/verify-c1-corpus.ts",
   "evidenceFile": "C1-bb_cross_language.json",
-  "generatedAt": "2026-09-07T22:04:46.869Z",
+  "generatedAt": "2026-09-07T22:45:21.795Z",
   "tools": [
     "bb_cross_language"
   ],
@@ -21,7 +21,7 @@
       "repo": "ripgrep",
       "ok": true,
       "declaredAbsent": true,
-      "ms": 1,
+      "ms": 2,
       "args": "{\"symbol\":\"unwrap\"}",
       "outHead": "{\"symbol\":\"unwrap\",\"language\":\"rust\",\"facts\":[],\"pairCount\":0,\"declaredAbsent\":true,\"absenceNote\":\"no stored cross-language rows for this symbol — absence decla"
     },
@@ -29,7 +29,7 @@
       "repo": "graphql-js",
       "ok": true,
       "declaredAbsent": false,
-      "ms": 5,
+      "ms": 1,
       "args": "{\"symbol\":\"Node\"}",
       "outHead": "{\"symbol\":\"Node\",\"language\":\"graphql\",\"facts\":[{\"pair\":\"graphql → yaml\",\"direction\":\"callee\",\"bridge\":\"name-resolution\",\"tier\":\"inferred\",\"confidence\":1,\"relati"
     },
@@ -37,7 +37,7 @@
       "repo": "tree-sitter-clean",
       "ok": true,
       "declaredAbsent": true,
-      "ms": 2,
+      "ms": 1,
       "args": "{\"symbol\":\"Scanner\"}",
       "outHead": "{\"symbol\":\"Scanner\",\"language\":\"c\",\"facts\":[],\"pairCount\":0,\"declaredAbsent\":true,\"absenceNote\":\"no stored cross-language rows for this symbol — absence declare"
     },
@@ -45,7 +45,7 @@
       "repo": "lodash",
       "ok": true,
       "declaredAbsent": true,
-      "ms": 2,
+      "ms": 1,
       "args": "{\"symbol\":\"getIteratee\"}",
       "outHead": "{\"symbol\":\"getIteratee\",\"language\":\"javascript\",\"facts\":[],\"pairCount\":0,\"declaredAbsent\":true,\"absenceNote\":\"no stored cross-language rows for this symbol — ab"
     }
