@@ -907,6 +907,42 @@ const MUTANTS: Mutant[] = [
     },
   },
   {
+    id: "java/drop-unannotated-overrides",
+    language: "java",
+    defectClass: "relationship-loss",
+    description: "JAO1 regression: re-gates overrides behind the @Override annotation (un-annotated DerivedThing.total silently loses its override edge) — implicit-overrides fixture pins DerivedThing.total -> BaseThing.total",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) =>
+      !(x.type === "overrides" && x.target === "BaseThing.total")) }),
+  },
+  {
+    id: "java/overload-paired-as-override",
+    language: "java",
+    defectClass: "fabrication",
+    description: "JAO2 regression: injects the name-only truth bug class — DerivedThing.find(int, String) pairs against BaseThing.find(int) as an override — implicit-overrides forbid pin",
+    transform: r => ({ ...r, relationships: [
+      ...(r.relationships ?? []),
+      { type: "overrides", source: "DerivedThing.find", target: "BaseThing.find", fromSymbol: "DerivedThing.find", toSymbol: "BaseThing.find", confidence: 1.0, metadata: { relationshipType: "method_override", isJavaOverride: true, reasonCode: "exact-in-file", evidenceClass: "structural" } },
+    ] }),
+  },
+  {
+    id: "scala/drop-keywordless-abstract-impl",
+    language: "scala",
+    defectClass: "relationship-loss",
+    description: "ScalaD-A regression: re-gates overrides behind the `override` keyword (keywordless ImplA.value/ImplB.value implementations of abstract BaseTrait.value lose their edges) — implicit-overrides fixture pins",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) =>
+      !((x.type === "overrides" && (x.source === "ImplA.value" || x.source === "ImplB.value") && x.target === "BaseTrait.value"))) }),
+  },
+  {
+    id: "scala/first-supertype-guess-override",
+    language: "scala",
+    defectClass: "fabrication",
+    description: "ScalaD-B regression: injects the old first-supertype GUESS (keyworded ImplB.doubled -> Mid.doubled @0.5 even though Mid never declares doubled) — implicit-overrides forbid pin",
+    transform: r => ({ ...r, relationships: [
+      ...(r.relationships ?? []),
+      { type: "overrides", source: "ImplB.doubled", target: "Mid.doubled", fromSymbol: "ImplB.doubled", toSymbol: "Mid.doubled", confidence: 0.5, metadata: { isOverride: true, overrideParent: "Mid", reasonCode: "first-supertype-guess", evidenceClass: "inferred" } },
+    ] }),
+  },
+  {
     id: "groovy/groovydoc-leak",
     language: "groovy",
     defectClass: "docstring-misattribution",
@@ -2375,6 +2411,52 @@ const MUTANTS: Mutant[] = [
       { type: "calls", source: "amount_of", target: "code", fromSymbol: "amount_of", toSymbol: "code", confidence: 0.9, metadata: { bareCall: true } },
       { type: "calls", source: "amount_of", target: "msg", fromSymbol: "amount_of", toSymbol: "msg", confidence: 0.9, metadata: { bareCall: true } },
     ] }),
+  },
+  {
+    id: "ruby/readd-anonymous-new-junk",
+    language: "ruby",
+    defectClass: "fabrication",
+    description: "RB-A regression: re-adds the junk `calls:<owner> -> new` edge for anonymous expression receivers (`Class.new { ... }.new`) — rack-wave-regressions forbid pin `calls target new`",
+    transform: r => ({ ...r, relationships: [
+      ...(r.relationships ?? []),
+      { type: "calls", source: "Global", target: "new", fromSymbol: "Global", toSymbol: "new", confidence: 0.9, metadata: { bareCall: true } },
+      { type: "calls", source: "UploadedLike", target: "new", fromSymbol: "UploadedLike", toSymbol: "new", confidence: 0.9, metadata: { bareCall: true } },
+    ] }),
+  },
+  {
+    id: "ruby/drop-default-arg-edges",
+    language: "ruby",
+    defectClass: "relationship-loss",
+    description: "RB-B regression: re-skips default-argument VALUE expressions (`mutex = Mutex.new`, `app = @app`) — rack-wave-regressions instantiates:initialize->Mutex and uses:context->@app pins",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) =>
+      !(x.type === "instantiates" && x.source === "initialize" && x.target === "Mutex") &&
+      !(x.type === "uses" && x.source === "context" && x.target === "@app")),
+    }),
+  },
+  {
+    id: "ruby/drop-superclass-construct-instantiation",
+    language: "ruby",
+    defectClass: "relationship-loss",
+    description: "RB-C regression: re-skips call expressions in the superclass field (`class BodyLike < Struct.new(...)` drops instantiates:Struct) — rack-wave-regressions instantiates Global->Struct pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) =>
+      !(x.type === "instantiates" && x.source === "Global" && x.target === "Struct")),
+    }),
+  },
+  {
+    id: "ruby/drop-def-less-member-read-uses",
+    language: "ruby",
+    defectClass: "relationship-loss",
+    description: "RB-D regression: re-gates instance_variable reads behind method bodies only (spec/DSL reads @content_type/@empty_hash lose their Global-sourced uses) — rack-wave-regressions memberRead pins",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) =>
+      !(x.type === "uses" && x.source === "Global" && (x.metadata ?? {}).memberRead)),
+    }),
+  },
+  {
+    id: "ruby/drop-alias-method-edge",
+    language: "ruby",
+    defectClass: "relationship-loss",
+    description: "RB-E regression: re-skips the alias_method emission (`alias_method :local_path, :original_filename` drops calls:local_path) — rack-wave-regressions aliasedTo pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.metadata ?? {}).aliasedTo) }),
   },
   {
     id: "python/drop-instance-attribute-properties",

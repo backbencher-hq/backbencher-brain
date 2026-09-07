@@ -55,6 +55,37 @@ const LANG_REPOS: Record<string, string> = {
   python: "cython",
   haskell: "cabal",
 }
+// M37.16 two-corpus gate (second-opinion hardening): every gated language runs
+// the SAME analyzer-vs-oracle differential on a SECOND, independent real corpus
+// in the default sweep, so a defect with zero occurrences in the primary repo
+// (SWIFTD18 class — multi-binding in swift-nio had 0 sites) is exercised by a
+// different codebase's dialect. Rows are keyed repo:lang in the baseline/current
+// maps exactly like the primary rows, so regressions on EITHER corpus block
+// release. Each repo is an independent git checkout under CORPUS_ROOT whose
+// pin is recorded in corpusPins.
+const SECOND_CORPUS: Record<string, string> = {
+  java: "clojure",
+  groovy: "geb",
+  kotlin: "kotlinx-coroutines",
+  scala: "cats-effect",
+  typescript: "element-plus",
+  javascript: "lodash",
+  vue: "vue-element-admin",
+  svelte: "shadcn-svelte",
+  c: "jq",
+  cpp: "nlohmann-json",
+  rust: "cargo",
+  go: "terraform",
+  zig: "zls",
+  csharp: "fsharp",
+  dart: "dart-http",
+  swift: "alamofire",
+  objc: "afnetworking",
+  php: "phpmyadmin",
+  ruby: "rack",
+  python: "requests",
+  haskell: "hledger",
+}
 const REPO = process.argv.includes("--repo") ? process.argv[process.argv.indexOf("--repo") + 1] : undefined
 const SAMPLE_PER_LANG = process.argv.includes("--sample") ? parseInt(process.argv[process.argv.indexOf("--sample") + 1]) : 60
 
@@ -2276,15 +2307,23 @@ export function deriveRubyEdges(root: any): { label: string; from: string; targe
       // into the whole subtree so the bound name inside every form is added.
       if (n.type === "method_parameters" || n.type === "block_parameters" ||
           n.type === "lambda_parameters" || n.type === "parameters") {
-        const collectIdent = (qn: any) => {
+        // Only the BOUND NAMES are locals. optional_parameter / keyword_parameter
+        // also carry a default VALUE expression whose identifiers are NOT
+        // locals — `def f(x = challenge)` must leave `challenge` a method call
+        // (RB-B parity fix, rack wave: handler.rb). Block/lambda containers
+        // hold names only, so the plain recursion stays correct for them.
+        const collectParamName = (qn: any) => {
           for (let i = 0; i < qn.namedChildCount; i++) {
             const c = qn.namedChild(i)
             if (!c) continue
             if (c.type === "identifier") into.add(c.text)
-            else collectIdent(c)
+            else if (c.type === "optional_parameter" || c.type === "keyword_parameter") {
+              const nm = c.childForFieldName?.("name") ?? c.namedChild(0)
+              if (nm?.type === "identifier") into.add(nm.text)
+            } else collectParamName(c)
           }
         }
-        collectIdent(n)
+        collectParamName(n)
       }
       // `rescue Exception => ex` binds `ex` as a local (mirrors the analyzer's
       // exception_variable rule — probe-verified 2026-08-31).
@@ -2376,6 +2415,21 @@ export function deriveRubyEdges(root: any): { label: string; from: string; targe
             }
           }
         }
+      } else if (methodName === "alias_method") {
+        // `alias_method :local_path, :path` makes the alias name a callable
+        // member of the class — the analyzer emits calls:local_path with
+        // aliasedTo metadata (long-standing contract); mirror it so the edge
+        // is covered rather than flagged unexplained (RB-E, rack wave:
+        // uploaded_file.rb). Only simple_symbol args, like the analyzer.
+        const args = n.namedChildren.find((c: any) => c.type === "argument_list")
+        if (args) {
+          const names: string[] = []
+          for (let i = 0; i < args.namedChildCount && names.length < 2; i++) {
+            const arg = args.namedChild(i)
+            if (arg && arg.type === "simple_symbol") names.push(arg.text.replace(/^:/, ""))
+          }
+          if (names.length === 2) push("calls", names[0])
+        }
       }
     }
     if (t === "call" || t === "command" || t === "command_call") {
@@ -2397,6 +2451,13 @@ export function deriveRubyEdges(root: any): { label: string; from: string; targe
           // fell through to enclosingClass and fabricated instantiates
           // (verified: rake task_manager.rb `task_class.new(task_name, self)`
           // -> bogus instantiates:TaskManager).
+          // RB-A note (rack wave): the receiver scan below intentionally skips
+          // expression receivers (`Class.new { ... }.new`, `self.class.new`) —
+          // they read as receiverless, so `self.new` / `self.class.new` inside
+          // a class resolve to the ENCLOSING class (instantiates, mirroring the
+          // analyzer's owner fallback) and a complex receiver at TOP level has
+          // no enclosing class and correctly emits nothing. The analyzer's
+          // own rb-A gate suppresses its junk `calls:new` for the same shapes.
           let receiver: string | undefined
           let receiverIsConst = false
           for (let i = 0; i < n.namedChildCount; i++) {
@@ -3544,9 +3605,16 @@ function deriveRustEdges(root: any): { label: string; from: string; target: stri
       }
     } else if (n.type === "struct_expression") {
       const typeNode = n.childForFieldName?.("name") ?? n.namedChild(0)
-      if (typeNode && /^[A-Z]/.test(typeNode.text)) {
-        const t2 = lastSegment(typeNode.text)
-        if (!seenCalls.has("struct:" + t2)) {
+      // CARGO-D1 (two-corpus gate, cargo tree.rs:242): a QUALIFIED struct
+      // literal `cargo_tree::TreeOptions { .. }` carries a scoped_type_
+      // identifier whose text starts LOWERCASE (the crate/module path), so a
+      // whole-text /^[A-Z]/ test silently dropped the construction while the
+      // analyzer (leaf contract) emitted instantiates TreeOptions. Casing is
+      // judged on the LEAF segment (the type), matching the analyzer.
+      if (typeNode) {
+        const rawLeaf = lastSegment(typeNode.text)
+        const t2 = rawLeaf.split("<")[0].trim()
+        if (/^[A-Z]/.test(t2) && !seenCalls.has("struct:" + t2)) {
           seenCalls.add("struct:" + t2)
           edges.push({ label: "instantiates", from: "(expr)", target: t2 })
         }
@@ -3880,8 +3948,34 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
   // (cpp/override-signature-aware, cpp/virtual-override-resolution).
   // Only declarations related by extends/implements within THIS file count -
   // cross-file override resolution is the analyzer's job, not the oracle's.
-  const decls: Record<string, { parents: string[]; methods: Set<string> }> = {}
+  const decls: Record<string, { parents: string[]; methods: Set<string>; sigs: Map<string, Set<string>> }> = {}
   const declParents: { child: string; parent: string }[] = []
+  // Best-effort parameter TYPE signature for a method node (java/kotlin/scala/
+  // groovy/csharp/dart style typed params). Empty/unknown -> the language keeps
+  // the legacy name-only pairing (never a false negative from a missing sig).
+  const extractSig = (m: any): string | undefined => {
+    const container = m.namedChildren.find((c: any) =>
+      /^(formal_parameters|parameters|parameter_list|parameter_clause|method_parameters)$/.test(c?.type ?? ""))
+    if (!container) return undefined
+    const types: string[] = []
+    for (let i = 0; i < container.namedChildCount; i++) {
+      const p = container.namedChild(i)
+      if (!p) continue
+      const pt = p.childForFieldName?.("type")
+      if (pt?.text) types.push(pt.text.replace(/\s+/g, ""))
+      else return undefined // untyped parameter form — fall back to name-only
+    }
+    return types.length > 0 || container.namedChildCount === 0 ? "(" + types.join(",") + ")" : undefined
+  }
+  const sigCompatible = (child: any, parent: any, m: string): boolean => {
+    const cs = child.sigs?.get(m)
+    const ps = parent.sigs?.get(m)
+    if (cs && ps && cs.size > 0 && ps.size > 0) {
+      for (const s of cs) if (ps.has(s)) return true
+      return false // same name, different signature = OVERLOAD, not an override
+    }
+    return true // signature unavailable on a side -> legacy name-only pairing
+  }
   const collectDecl = (n: any) => {
     const t2 = n.type
     if (/^(class|interface|record|trait|object)_declaration$|^class_definition$|^trait_definition$|^object_definition$|^(class|struct|union)_specifier$/.test(t2)) {
@@ -3898,18 +3992,28 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
         nm = lastSegment(nm)
       }
       if (nm && !decls[nm]) {
-        decls[nm] = { parents: [], methods: new Set() }
+        decls[nm] = { parents: [], methods: new Set(), sigs: new Map() }
         // cpp classes use field_declaration_list (no 'body' substring)
         const body = n.namedChildren.find((c: any) => /body|field_declaration_list/.test(c.type))
         if (body) {
           for (let i = 0; i < body.namedChildCount; i++) {
             const m = body.namedChild(i)
-            if (/function_definition|function_declaration|method_declaration|method_definition|method_signature|field_declaration|declaration/.test(m?.type ?? "")) {
+            // Method/function nodes only. The old trailing `|declaration`
+            // catch-all ALSO admitted NESTED class/interface/enum_declaration
+            // nodes, counting the nested type's name as a method of the
+            // enclosing class (two-corpus wave 2026-09: SubVector "overrides"
+            // its own nested Iterator/Spliterator/Object).
+            if (/function_definition|function_declaration|method_declaration|method_definition|method_signature|field_declaration/.test(m?.type ?? "")) {
               // cpp class members are field_declaration > function_declarator;
               // other families keep the name as a direct identifier child.
               const fd = m.namedChildren.find((c: any) => c.type === "function_declarator")
               let mn: any = null
-              if (!fd && /field_declaration|declaration/.test(m.type)) continue // member VARIABLE, not a method
+              // Member VARIABLES, not methods. Must be field_declaration ONLY:
+              // java/kotlin/dart methods are method_declaration/function_declaration
+              // and were wrongly skipped by the old /declaration/ regex, silently
+              // disabling override truth for those languages (two-corpus wave
+              // 2026-09: clojure:java SubVector.spliterator -> APersistentVector).
+              if (!fd && m.type === "field_declaration") continue
               if (fd) {
                 // cpp nests the name: function_declarator has a `declarator`
                 // FIELD holding the method name (field_identifier, possibly
@@ -3933,13 +4037,35 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
                   for (let k = 0; k < x.namedChildCount; k++) st2.push(x.namedChild(k))
                 }
               } else {
-                mn = m.namedChildren.find((c: any) => /identifier/.test(c.type))
+                // The METHOD NAME, never the return type. The old
+                // /identifier/ test matched `type_identifier` FIRST, so any
+                // method with a class/interface return type (`public Iterator
+                // iterator()`) was registered under its RETURN TYPE
+                // (`Iterator`) — fabricating override pairs (two-corpus wave
+                // 2026-09: clojure SubVector.Iterator "overrides"
+                // APersistentVector.Iterator). Prefer the grammar `name`
+                // field, then a plain (non-type) identifier child.
+                mn = m.childForFieldName?.("name") ??
+                  m.namedChildren.find((c: any) => c.type === "identifier") ?? null
               }
               // constructors are NOT virtually dispatched - no family
               // analyzer emits ctor-overrides, so truth must not either.
               // (cpp ctor name == class name; also skip same-name-as-class
               // members to avoid self/hierarchy name collisions)
-              if (mn && mn.text !== "constructor" && mn.text !== nm) decls[nm].methods.add(mn.text)
+              if (mn && mn.text !== "constructor" && mn.text !== nm) {
+                decls[nm].methods.add(mn.text)
+                // Record the parameter-type signature (when extractable) so
+                // overloads (same name, different signature) never pair as
+                // overrides — java/kotlin-style overloading is common
+                // (two-corpus gate 2026-09: SubVector.nth(int) is NOT an
+                // override of APersistentVector.nth(int, Object)).
+                const sig = extractSig(m)
+                if (sig) {
+                  let ss = decls[nm].sigs.get(mn.text)
+                  if (!ss) { ss = new Set(); decls[nm].sigs.set(mn.text, ss) }
+                  ss.add(sig)
+                }
+              }
             }
           }
         }
@@ -3949,8 +4075,20 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
   }
   collectDecl(root)
   // hierarchy from already-derived extends edges (head-segment normalized)
+  // SCALA-D1 (two-corpus gate finding, cats-effect Queue.scala): a QUALIFIED
+  // heritage target (`with unsafe.BoundedQueue[F, A]`) must never seed an
+  // override chain. unsafe.BoundedQueue is an EXTERNAL trait (different
+  // package/file); lastSegment() collapsed it onto the unrelated IN-FILE
+  // sync class `BoundedQueue extends AbstractQueue`, fabricating
+  // `BoundedAsyncQueue.offer -> AbstractQueue.offer` through a chain the
+  // analyzer (correctly descending BaseBoundedAsyncQueue -> Queue) never
+  // emits. Override truth is in-file verification: a dotted target cannot
+  // resolve to a declaration in THIS file, so qualified names are excluded
+  // from declParents on every language (external inheritance is the
+  // analyzer's cross-file job, not the oracle's).
   for (const e of edges) {
     if (e.label !== "extends" && e.label !== "implements") continue
+    if (e.target.includes(".")) continue // qualified = external, not in-file
     const parent = lastSegment(e.target)
     if (decls[e.from] && decls[parent] && e.from !== parent) {
       declParents.push({ child: e.from, parent })
@@ -3977,7 +4115,8 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
         for (const b of declParents.filter((r2) => r2.child === cls)) {
           if (b.parent === rel.child) continue // self-collision guard
           const parentDecl = decls[b.parent]
-          if (parentDecl?.methods.has(m) && !seenBase.has(b.parent)) {
+          if (parentDecl?.methods.has(m) && !seenBase.has(b.parent) &&
+              sigCompatible(childDecl, parentDecl, m)) {
             edges.push({ label: "overrides", from: `${rel.child}.${m}`, target: `${b.parent}.${m}` })
           }
           if (decls[b.parent]) queue.push(b.parent)
@@ -4039,21 +4178,35 @@ export function evaluateDifferential(
       }
     }
   }
-  const failed = new Set([
-    ...regressions.map(key => key.split(":").pop() ?? key),
-    // perf keys are `repo:lang: avg Xms -> Yms` — the LANGUAGE part must mark
-    // the differential-<lang> check failed. The old `split(":")[0]` marked the
-    // REPO failed instead, so perf regressions never failed any check.
-    ...perfRegressions.map(x => x.split(":")[1] ?? x.split(":")[0] ?? x),
-  ])
-  const checks = Object.entries(report).map(([lang, r]: any) => ({
-    id: `differential-${lang}`,
-    description: `${repoOf(lang)}: tree-truth vs analyzer diff`,
-    status: comparable && !failed.has(lang) ? "pass" as const : "fail" as const,
-    detail: comparable
-      ? `${r.filesSampled} files, coverage ${r.coveragePct}%, unexplained ${r.fabricationPct}%${failed.has(lang) ? "; regression detected" : ""}`
-      : `${r.filesSampled} files; NOT COMPARABLE: baseline sampled ${baselineSample ?? "unknown"}/lang, run ${samplePerLang}/lang`,
-  }))
+  // Lane-aware failed set: report rows (and current/baseline rows) are keyed
+  // `repo:lang` under the two-corpus gate, so regressions carry the FULL lane
+  // key and mark that lane's check failed. The function also still accepts the
+  // legacy bare-`lang` report shape (unit tests / single-corpus probe callers):
+  // a regression key `repo:lang` then marks the bare-lang check by matching on
+  // the language part (also added to the set below).
+  const failed = new Set([...regressions])
+  for (const key of regressions) {
+    const parts = key.split(":")
+    if (parts.length >= 2) failed.add(parts[parts.length - 1])
+  }
+  // Perf messages are `repo:lang: avg Xms -> Yms` — derive the full lane key
+  // (`repo:lang`) plus the bare lang so both shapes of report keys match.
+  for (const x of perfRegressions) {
+    const parts = x.split(":")
+    if (parts.length >= 3) failed.add(`${parts[0]}:${parts[1]}`)
+    if (parts.length >= 2) failed.add(parts[1])
+  }
+  const checks = Object.entries(report).map(([lang, r]: any) => {
+    const laneFailed = failed.has(lang)
+    return {
+      id: `differential-${lang}`,
+      description: `${repoOf(lang)}: tree-truth vs analyzer diff`,
+      status: comparable && !laneFailed ? "pass" as const : "fail" as const,
+      detail: comparable
+        ? `${r.filesSampled} files, coverage ${r.coveragePct}%, unexplained ${r.fabricationPct}%${laneFailed ? "; regression detected" : ""}`
+        : `${r.filesSampled} files; NOT COMPARABLE: baseline sampled ${baselineSample ?? "unknown"}/lang, run ${samplePerLang}/lang`,
+    }
+  })
   return { comparable, regressions, perfRegressions, checks }
 }
 
@@ -4063,7 +4216,8 @@ async function main() {
   const Language = wts.Language ?? wts.default?.Language
   await ParserClass.init({ locateFile: () => path.join(ROOT, "node_modules", "web-tree-sitter", "tree-sitter.wasm") })
 
-  const activeRepos = REPO ? [REPO] : [...new Set(Object.values(LANG_REPOS))]
+  // Two-corpus gate: active repos = primary set ∪ second-corpus set.
+  const activeRepos = REPO ? [REPO] : [...new Set([...Object.values(LANG_REPOS), ...Object.values(SECOND_CORPUS)])]
   for (const rp of activeRepos) {
     const rd = path.join(CORPUS_ROOT, rp)
     if (!fs.existsSync(rd)) throw new Error(`corpus repo missing: ${rd}`)
@@ -4080,8 +4234,22 @@ async function main() {
   }
 
   const report: Record<string, any> = {}
-  for (const [lang, cfg] of Object.entries(LANGS)) {
-    const langRepo = repoFor(lang)
+  const reportSecond: Record<string, any> = {}
+  // Lane sweep: primary + second corpus per gated language (two-corpus gate).
+  // Lanes are (lang, repo) pairs; rows keyed `repo:lang` in the baseline map so
+  // regressions on EITHER corpus fail the language's check.
+  const lanes: { lang: string; repo: string; isSecond: boolean }[] = []
+  for (const lang of Object.keys(LANGS)) {
+    lanes.push({ lang, repo: repoFor(lang), isSecond: false })
+    // Probe mode (--repo X): single corpus only — the second lane would point
+    // at an unrelated repo and defeat the probe's intent.
+    if (REPO) continue
+    const second = SECOND_CORPUS[lang]
+    if (second && second !== repoFor(lang)) lanes.push({ lang, repo: second, isSecond: true })
+  }
+  for (const lane of lanes) {
+    const { lang, repo: langRepo } = lane
+    const cfg = LANGS[lang]
     const repoDir = path.join(CORPUS_ROOT, langRepo)
     const repoPin = repoPins[langRepo]
     const files: string[] = []
@@ -4382,7 +4550,7 @@ async function main() {
       }
     }
 
-    report[lang] = {
+    const row = {
       filesSampled: sample.length,
       treeTruthEdges: treeEdgesTotal,
       coveredByAnalyzer,
@@ -4410,10 +4578,14 @@ async function main() {
       // Vacuous-pass guard: a repo with zero files of this language produces a
       // 0/0 row that "passes" without verifying anything. That dishonesty
       // shipped before (php/ruby on grails-core logged files=0 as pass). The
-      // language must be re-routed to a repo that contains it.
-      throw new Error(`differential: corpus repo ${langRepo} contains no ${lang} files — fix LANG_REPOS routing for ${lang}`)
+      // language must be re-routed to a repo that contains it. Applies to BOTH
+      // primary and second lanes (a second corpus with no files is a routing
+      // error, never a silent skip).
+      throw new Error(`differential: corpus repo ${langRepo} contains no ${lang} files — fix LANG_REPOS/SECOND_CORPUS routing for ${lang}`)
     }
-    console.log(`[${langRepo}] ${lang}: files=${sample.length} tree-truth=${treeEdgesTotal} covered=${coveredByAnalyzer} (${report[lang].coveragePct}%) MISSING=${missingInAnalyzer} | analyzer-edges=${analyzerEdgesTotal} unexplained=${unexplainedInAnalyzer} (${report[lang].fabricationPct}%)`)
+    if (lane.isSecond) reportSecond[`${langRepo}:${lang}`] = row
+    else report[lang] = row
+    console.log(`[${langRepo}] ${lang}: files=${sample.length} tree-truth=${treeEdgesTotal} covered=${coveredByAnalyzer} (${row.coveragePct}%) MISSING=${missingInAnalyzer} | analyzer-edges=${analyzerEdgesTotal} unexplained=${unexplainedInAnalyzer} (${row.fabricationPct}%)`)
   }
 
   // Evaluate against the pinned baseline BEFORE emitting F5 evidence. The
@@ -4422,24 +4594,45 @@ async function main() {
   const BASELINE = path.join(ROOT, "validation", "m14", "differential-baseline.json")
   const parsedBaseline = fs.existsSync(BASELINE) ? JSON.parse(fs.readFileSync(BASELINE, "utf8")) : {}
   const baselineCounts = parsedBaseline.counts ?? parsedBaseline
+  // Two-corpus gate: the current map carries the PRIMARY lane (repo:lang key,
+  // derived from the lang-keyed report) AND every SECOND lane (repo:lang keys
+  // from reportSecond). Baseline rows are repo:lang-keyed, so regressions on
+  // either corpus compare 1:1 against their pinned row. The F5 evidence
+  // keeps the per-language checks (differential-<lang>, consumed by the
+  // completeness inventory) PLUS a per-language second-corpus check.
   const current: Record<string, any> = {}
   for (const [lang, r] of Object.entries<any>(report)) current[`${repoFor(lang)}:${lang}`] = {
     missing: r.missingInAnalyzer, unexplained: r.unexplainedInAnalyzer,
     heuristic: r.heuristicUnexplained,
     perf: { avgMsPerFile: r.perf.avgMsPerFile },
   }
+  const currentSecond: Record<string, any> = {}
+  for (const [key, r] of Object.entries<any>(reportSecond)) currentSecond[key] = {
+    missing: r.missingInAnalyzer, unexplained: r.unexplainedInAnalyzer,
+    heuristic: r.heuristicUnexplained,
+    perf: { avgMsPerFile: r.perf.avgMsPerFile },
+  }
   const evaluation = evaluateDifferential(report, current, baselineCounts, parsedBaseline.samplePerLang, SAMPLE_PER_LANG, (lang: string) => repoFor(lang))
+  // Second-corpus evaluation: same baseline file (repo:lang rows), report keyed
+  // repo:lang, so evaluateDifferential's failed-set must match full lane keys.
+  const evaluationSecond = evaluateDifferential(reportSecond, currentSecond, baselineCounts, parsedBaseline.samplePerLang, SAMPLE_PER_LANG, (key: string) => key.split(":")[0])
 
   const { emitEvidence } = await import("./evidence-harness")
   emitEvidence({
     issueId: "M14.0.F5",
-    title: "Differential corpus harness",
+    title: "Differential corpus harness (two-corpus gate)",
     claimLevel: "L1",
     layers: ["differential"],
-    checks: evaluation.checks.map(check => {
-      const lang = check.id.replace("differential-", "")
-      return { ...check, description: `${check.description} @${repoPins[repoFor(lang)]?.slice(0, 10) ?? "?"}` }
-    }),
+    checks: [
+      ...evaluation.checks.map(check => {
+        const lang = check.id.replace("differential-", "")
+        return { ...check, description: `${check.description} @${repoPins[repoFor(lang)]?.slice(0, 10) ?? "?"}` }
+      }),
+      ...evaluationSecond.checks.map(check => {
+        const repo = (check.id.replace("differential-", "")).split(":")[0]
+        return { ...check, description: `${check.description} (second corpus) @${repoPins[repo]?.slice(0, 10) ?? "?"}` }
+      }),
+    ],
     limitations: [
       { description: "second opinion is a clause-structure re-derivation from the same wasm grammars; a grammar bug shared by both paths would be invisible to this harness" },
       { description: "seeded sample of files per language, deterministic; not exhaustive over the corpus" },
@@ -4447,8 +4640,9 @@ async function main() {
     ],
     data: {
       corpusPins: repoPins,
-      samplingRule: `seeded ${SAMPLE_PER_LANG} files/language`,
+      samplingRule: `seeded ${SAMPLE_PER_LANG} files/language (primary + second corpus lanes)`,
       report,
+      secondCorpus: { mapping: SECOND_CORPUS, report: reportSecond },
     },
   })
   console.log("evidence written: validation/m14/results/M14.0.F5.json")
@@ -4458,19 +4652,24 @@ async function main() {
   const updateBaseline = process.argv.includes("--update-baseline")
   if (updateBaseline) {
     const previous = fs.existsSync(BASELINE) ? JSON.parse(fs.readFileSync(BASELINE, "utf8")) : {}
+    // Merge BOTH lanes (primary + second) into the repo:lang baseline file.
+    const clean: Record<string, any> = {}
+    for (const [k, v] of Object.entries<any>({ ...current, ...currentSecond })) {
+      clean[k] = { missing: v.missing, unexplained: v.unexplained, heuristic: v.heuristic, perf: v.perf }
+    }
     const merged = {
       samplePerLang: SAMPLE_PER_LANG,
-      counts: { ...(previous.counts ?? previous), ...current },
+      counts: { ...(previous.counts ?? previous), ...clean },
     }
     fs.writeFileSync(BASELINE, JSON.stringify(merged, null, 2) + "\n")
-    console.log("differential baseline updated:", current)
+    console.log("differential baseline updated (primary + second lanes):", clean)
   } else if (!evaluation.comparable) {
     console.log(`differential baseline gate: SKIPPED (baseline sampled ${parsedBaseline.samplePerLang ?? "unknown"}/lang, this run ${SAMPLE_PER_LANG}/lang — probe mode, not comparable)`)
   } else {
-    for (const r of evaluation.regressions) console.error(`DIFFERENTIAL REGRESSION ${r}: ${JSON.stringify(baselineCounts[r])} -> ${JSON.stringify(current[r])}`)
-    for (const r of evaluation.perfRegressions) console.error(`PERF BUDGET EXCEEDED ${r}`)
-    if (evaluation.regressions.length || evaluation.perfRegressions.length) process.exit(5)
-    console.log("differential baseline gate: no regressions; perf budgets respected")
+    for (const r of [...evaluation.regressions, ...evaluationSecond.regressions]) console.error(`DIFFERENTIAL REGRESSION ${r}: ${JSON.stringify(baselineCounts[r])} -> ${JSON.stringify(current[r] ?? currentSecond[r])}`)
+    for (const r of [...evaluation.perfRegressions, ...evaluationSecond.perfRegressions]) console.error(`PERF BUDGET EXCEEDED ${r}`)
+    if (evaluation.regressions.length || evaluation.perfRegressions.length || evaluationSecond.regressions.length || evaluationSecond.perfRegressions.length) process.exit(5)
+    console.log("differential baseline gate: no regressions (primary + second corpus); perf budgets respected")
   }
 }
 
