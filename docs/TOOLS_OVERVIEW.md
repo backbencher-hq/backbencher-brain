@@ -103,11 +103,11 @@ Cross-language facts for one symbol from stored `brain_relationship` rows only (
 
 ### bb_annotate
 
-Write a typed, provenance-carrying agent annotation onto a symbol (body limit 2000 chars; empty body is a declared refusal, not a silent no-op). Non-mutating over source files: annotations live in the typed annotation store, never in index truth. **Category:** graph. **Mutability:** write. **Requires index:** no. **Modes:** `annotate`. The annotation store is owned by the M28 workstream; what is stable today is the MCP write path with declared refusals.
+Write a typed, provenance-carrying agent annotation onto a symbol (body limit 2000 chars; empty body is a declared refusal, not a silent no-op). Non-mutating over source files: annotations live in the typed annotation store, never in index truth. **Category:** annotations. **Mutability:** write. **Requires index:** no. **Modes:** `annotate`. The annotation store is owned by the M28 workstream; what is stable today is the MCP write path with declared refusals.
 
 ### bb_annotations
 
-Read back typed agent annotations for a symbol from the annotation store, with provenance (tool identity, time). **Category:** graph. **Mutability:** read. **Requires index:** no. **Modes:** `annotate`. Read-only over the annotation store; absent annotations are declared absent. The store itself is owned by the M28 workstream.
+Read back typed agent annotations for a symbol from the annotation store, with provenance (tool identity, time). **Category:** annotations. **Mutability:** read. **Requires index:** no. **Modes:** `annotate`. Read-only over the annotation store; absent annotations are declared absent. The store itself is owned by the M28 workstream.
 
 ## How the tools relate
 

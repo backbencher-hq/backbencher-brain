@@ -14,7 +14,7 @@ export interface ToolInputSchema {
 }
 
 export interface ToolDocumentation {
-  category: "search" | "analysis" | "operations" | "lifecycle" | "graph"
+  category: "search" | "analysis" | "operations" | "lifecycle" | "graph" | "annotations"
   summary: string
   defaults: Readonly<Record<string, string | number | boolean>>
   examples: readonly Readonly<Record<string, unknown>>[]
@@ -261,7 +261,7 @@ const descriptors = [
     // (project, symbol, path, author) so re-annotation updates instead of
     // flooding; body length is bounded by a declared limit.
     name: "bb_annotate",
-    description: "Attach an agent-authored annotation to a symbol in the shared index. Provenance is enforced: the row records author class 'agent' (never spoofable), the calling tool identity, and timestamps. Re-annotating the same symbol+path updates the note in place — one note per author per location. Annotations are opinions layered on evidence, never index facts, and surface in the editor where the human reads (hover + graph).",
+    description: "Attach an agent-authored annotation to a symbol in the shared index. Provenance is enforced: the row records author class 'agent' (never spoofable), the calling tool identity, and timestamps. Re-annotating the same symbol+path updates the note in place — one note per author per location. Annotations are opinions layered on evidence, never index facts, and surface in the editor where the human reads (hover + graph). To change source code use bb_edit; to read notes back use bb_annotations.",
     inputSchema: {
       type: "object",
       properties: {
@@ -277,14 +277,14 @@ const descriptors = [
     modes: ["annotate"],
     aliases: [],
     deprecated: false,
-    documentation: { category: "graph", summary: "Agent note with enforced provenance, stored where the human reads.", defaults: {}, examples: [{ symbol: "handleRequest", body: "Legacy auth path — scheduled for removal in Q3." }] },
+    documentation: { category: "annotations", summary: "Agent note with enforced provenance, stored where the human reads.", defaults: {}, examples: [{ symbol: "handleRequest", body: "Legacy auth path — scheduled for removal in Q3." }] },
   },
   {
     // M28.A1 (issue #626, decision D-3): the read door. Provenance fields are
     // always returned — a reader can always tell an agent note from a human
     // note. Declared absence when there are none; bounded by a declared limit.
     name: "bb_annotations",
-    description: "Read annotations for a symbol (or all annotations up to the declared limit) with full provenance on every row: author class, tool identity, and timestamps. No annotations is a declared absence, never an error.",
+    description: "Read annotations for a symbol (or all annotations up to the declared limit) with full provenance on every row: author class, tool identity, and timestamps. No annotations is a declared absence, never an error. To write a note use bb_annotate.",
     inputSchema: {
       type: "object",
       properties: {
@@ -298,7 +298,7 @@ const descriptors = [
     modes: ["annotate"],
     aliases: [],
     deprecated: false,
-    documentation: { category: "graph", summary: "Annotations with full provenance; absence declared.", defaults: { limit: 50 }, examples: [{ symbol: "handleRequest" }, { limit: 100 }] },
+    documentation: { category: "annotations", summary: "Annotations with full provenance; absence declared.", defaults: { limit: 50 }, examples: [{ symbol: "handleRequest" }, { limit: 100 }] },
   },
 ] as const satisfies readonly ToolDescriptor[]
 

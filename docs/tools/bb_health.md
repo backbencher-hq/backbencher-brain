@@ -108,8 +108,12 @@ Status is read-only. refresh=true explicitly mutates only index data; force=true
 
 Counts and versions come from the brain database; freshness compares indexed metadata with the filesystem.
 
+## Relationship to other tools
+
+For index size/counts use `bb index status` (CLI) or the stats surface; this tool reports index health and integrity.
+
 ## Staleness
 
-This tool does not report index staleness. Output reflects the index as of the last bb index run; run bb index --changed to refresh changed files before acting on results.
+This tool does not report per-file index staleness and does not auto-refresh. Output reflects the index as of the last index run; when files changed after indexing, refresh first (project scope: `reads auto-refresh stale files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)`).
 
 This page is generated from the executable registry and curated documentation. Run `npm run docs:generate` to update it.
