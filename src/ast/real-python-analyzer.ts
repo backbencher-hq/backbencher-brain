@@ -322,6 +322,14 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       for (let i = 0; i < argsNode.namedChildCount; i++) {
         const arg = argsNode.namedChild(i)
         if (!arg) continue
+        // PYD6 (two-corpus gate finding, requests/_types.py:157): TypedDict
+        // declarations carry KEYWORD arguments in the base list —
+        // `class X(TypedDict, total=False)` parses the kwarg as a
+        // keyword_argument child (`total` name + `False` value), and the
+        // blanket descent named `total` as a fabricated base class
+        // (extends X -> total). Keywords are NOT base classes; skip them
+        // (also skips splat/unpacking forms, which are never class bases).
+        if (arg.type === "keyword_argument") continue
         // Base class leaf: `Generic[T]` → `Generic`, dotted `a.b` → `b`.
         const baseLeaf = this.baseClassLeaf(arg)
         if (!baseLeaf) continue
