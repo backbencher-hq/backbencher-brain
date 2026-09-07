@@ -2140,6 +2140,20 @@ const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "objc/drop-pointer-return-function-bodies",
+    language: "objc",
+    defectClass: "relationship-loss",
+    description: "OBJCD5 regression: reverts to the direct-child declarator lookup, dropping pointer-return C helpers (HelperObjects/MakeImage symbols + their body calls) — objc pointer-return-helpers expectSymbols/expectRelationships pins die",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => s.name !== "HelperObjects" && s.name !== "MakeImage"), relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "calls" && (x.source === "HelperObjects" || x.source === "MakeImage"))) }),
+  },
+  {
+    id: "objc/emit-ivar-block-macro-calls",
+    language: "objc",
+    defectClass: "relationship-fabrication",
+    description: "OBJCD6 regression: reverts to the scope-only gate, re-emitting the fabricated class-scope macro call (calls Widget->LOCK_DECLARE) — objc pointer-return-helpers forbid pin dies",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "calls", source: "Widget", target: "LOCK_DECLARE", isExternal: true, weight: 1, confidence: 0.95, metadata: { isCFunctionCall: true } }] }),
+  },
+  {
     id: "php/drop-implements-edge",
     language: "php",
     defectClass: "relationship-loss",
