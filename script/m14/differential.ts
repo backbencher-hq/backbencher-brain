@@ -27,6 +27,10 @@ function loadAvg1(): number {
 
 const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 const CORPUS_ROOT = "$HOME/fixtures/repositories"
+// Crash-resume journal for full sweeps: each completed lane is persisted
+// immediately (see the per-lane write in the sweep loop). Cleared after a
+// successful final evidence emit.
+const LANE_JOURNAL = "/tmp/m14-f5-lane-journal.json"
 // Per-language corpus routing: each language runs against a repo that
 // ACTUALLY CONTAINS it. The previous single-repo default (grails-core) gave
 // vacuous 0-file "pass" rows for php/ruby/etc (nothing to verify — logged as
@@ -4723,6 +4727,12 @@ async function main() {
 
   const report: Record<string, any> = {}
   const reportSecond: Record<string, any> = {}
+  // Crash-resume: seed from the per-lane journal (written after every lane).
+  // Only for canonical full sweeps — probe runs (--repo/--sample) always
+  // recompute and never read the journal.
+  const resume = !REPO && !process.argv.includes("--sample")
+  let resumedLanes = 0
+  const laneJournal: Record<string, any> = resume && fs.existsSync(LANE_JOURNAL) ? JSON.parse(fs.readFileSync(LANE_JOURNAL, "utf8")) : {}
   // Lane sweep: primary + second corpus per gated language (two-corpus gate).
   // Lanes are (lang, repo) pairs; rows keyed `repo:lang` in the baseline map so
   // regressions on EITHER corpus fail the language's check.
@@ -4737,6 +4747,16 @@ async function main() {
   }
   for (const lane of lanes) {
     const { lang, repo: langRepo } = lane
+    // Crash-resume: a lane already in the journal is trusted verbatim.
+    const jKey = lane.isSecond ? `${langRepo}:${lang}` : lang
+    if (resume && laneJournal[jKey]) {
+      const jRow = laneJournal[jKey].row
+      if (lane.isSecond) reportSecond[jKey] = jRow
+      else report[lang] = jRow
+      resumedLanes++
+      console.log(`[${langRepo}] ${lang}: RESUMED from journal (files=${jRow.filesSampled} cov=${jRow.coveragePct}% missing=${jRow.missingInAnalyzer} unexp=${jRow.unexplainedInAnalyzer})`)
+      continue
+    }
     const cfg = LANGS[lang]
     const repoDir = path.join(CORPUS_ROOT, langRepo)
     const repoPin = repoPins[langRepo]
@@ -5099,6 +5119,15 @@ async function main() {
     if (lane.isSecond) reportSecond[`${langRepo}:${lang}`] = row
     else report[lang] = row
     console.log(`[${langRepo}] ${lang}: files=${sample.length} tree-truth=${treeEdgesTotal} covered=${coveredByAnalyzer} (${row.coveragePct}%) MISSING=${missingInAnalyzer} | analyzer-edges=${analyzerEdgesTotal} unexplained=${unexplainedInAnalyzer} (${row.fabricationPct}%)`)
+    // M37.21 #610 operational lesson (web-tree-sitter WASM heap aborts kill
+    // the sweep mid-run — twice during the JVM wave): persist each completed
+    // lane immediately so a crash never loses finished lanes again. The
+    // final emitEvidence still writes the complete artifact; this is a
+    // crash-resume journal keyed by lane, re-read on startup.
+    fs.mkdirSync(path.dirname(LANE_JOURNAL), { recursive: true })
+    const journal = fs.existsSync(LANE_JOURNAL) ? JSON.parse(fs.readFileSync(LANE_JOURNAL, "utf8")) : {}
+    journal[lane.isSecond ? `${langRepo}:${lang}` : lang] = { row, repo: langRepo, isSecond: !!lane.isSecond }
+    fs.writeFileSync(LANE_JOURNAL, JSON.stringify(journal, null, 2))
   }
 
   // Evaluate against the pinned baseline BEFORE emitting F5 evidence. The
@@ -5158,7 +5187,9 @@ async function main() {
       secondCorpus: { mapping: SECOND_CORPUS, report: reportSecond },
     },
   })
-  console.log("evidence written: validation/m14/results/M14.0.F5.json")
+  console.log(`evidence written: validation/m14/results/M14.0.F5.json (resumed ${resumedLanes} lane(s) from journal)`)
+  // Full sweep completed: the crash-resume journal served its purpose.
+  try { fs.rmSync(LANE_JOURNAL, { force: true }) } catch { /* already gone */ }
 
   // Improvement-forcing gate: missing/unexplained counts may never grow.
   // Baseline updates are explicit and are not silently treated as validation.
