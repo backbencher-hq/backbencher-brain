@@ -7,7 +7,7 @@
   "passed": 12,
   "failed": 0,
   "negativeCases": 1,
-  "currentCommit": "14407e4496b4eaffc126cf2751822605d1f37973",
+  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
   "sourceFingerprint": "6d38c8eedca197d908e530dd6761326797e56149b1cb3c4bf43da19ba2c8582a",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "bun run script/m20/verify-real-repo-ledger.ts",
