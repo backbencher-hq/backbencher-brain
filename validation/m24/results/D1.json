@@ -2,7 +2,7 @@
   "issue": "496",
   "code": "D1",
   "status": "verified",
-  "currentCommit": "3fa837266d11fa231b21e1d835a165cf283c58aa",
+  "currentCommit": "14407e4496b4eaffc126cf2751822605d1f37973",
   "sourceFingerprint": "4f06b8c03e5fa873d341d48fd2e01da6195390f0b94203fb4cf274c70d3d34cd",
   "verifierCommand": "npx tsx script/m24/verify-docs.ts",
   "evidenceFile": "D1.json",
@@ -17,7 +17,7 @@
     "note": "doc fingerprint is the committed TOOL-DOC.md; regeneration byte-identity is the drift gate."
   },
   "limitations": [
-    "claim levels capped at I1 (protocol-passed) by design — I3/I4/I5 are M25 scope and declared absent",
+    "claim levels capped at I1 (protocol-passed) by design \u2014 I3/I4/I5 are M25 scope and declared absent",
     "per-language fixture evidence is M25 scope; the claim table states the language-agnostic protocol claim",
     "vocabulary lint covers docs/m24/ artifacts (tool doc + master plan); the contract and decision records are canonical and outside the lint surface"
   ]

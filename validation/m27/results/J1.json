@@ -26,11 +26,11 @@
       "caught": true
     }
   ],
-  "currentCommit": "3fa837266d11fa231b21e1d835a165cf283c58aa",
+  "currentCommit": "14407e4496b4eaffc126cf2751822605d1f37973",
   "verifierCommand": "npx tsx script/m27/verify-lsp4ij.ts",
   "evidenceFile": "J1.json",
   "generatedAt": "2026-09-07T22:50:34.902Z",
-  "claimLevel": "I2 — template verified against the real server's wire capabilities; runIde leg blocked-with-reason (D-7)",
+  "claimLevel": "I2 \u2014 template verified against the real server's wire capabilities; runIde leg blocked-with-reason (D-7)",
   "blockedLegs": [
     {
       "leg": "runIde editor session",
