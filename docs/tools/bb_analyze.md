@@ -1,6 +1,6 @@
 # `bb_analyze`
 
-Unified evidence-backed analysis over graph relationships, dependencies, statistics, complexity, impact, and test intelligence. Select exactly one mode. Every read mode carries a freshness block (fresh/stale/missing counts + remediation) resolved against the live working tree; graph nodes and report rows carry a stale flag when their file changed after indexing.
+Unified evidence-backed analysis over graph relationships, dependencies, statistics, complexity, impact, and test intelligence. Select exactly one mode. Every read mode carries a freshness block (fresh/stale/missing counts + remediation) resolved against the live working tree; graph nodes and report rows carry a stale flag when their file changed after indexing. Callers/callees/trace/impact modes share the graph engine's owner-cascade semantics: a relationship stored against a class member is attributed to the owner class.
 
 ## Contract
 
@@ -77,6 +77,7 @@ Unified evidence-backed analysis over graph relationships, dependencies, statist
 
 - Static relationships cannot establish runtime behavior
 - Test results describe indexed static evidence, not executed coverage
+- Callers/callees/trace/impact modes share the graph engine's owner-cascade semantics: a relationship stored against a class member is attributed to the owner class
 
 ## Performance
 
