@@ -23,6 +23,8 @@
 
 import * as vscode from "vscode"
 import type { LanguageClient } from "vscode-languageclient/node"
+// M44.U6 (issue #693): the ONE fallback decision core (vscode-free, pure).
+import { parseUsageFallbackArgs, resolveUsageFallback, type NativeHandoffResult, type UsageFallbackArgs } from "./usage-fallback"
 
 export const OPEN_USAGE = "bb.openUsage"
 export const OPEN_DEFINITION = "bb.openDefinition"
@@ -129,22 +131,69 @@ function register(ctx: vscode.ExtensionContext, deps: HoverActionDeps): void {
       return { ok: true as const, surface: "reveal", line: args.line }
     }),
     vscode.commands.registerCommand(SHOW_ALL_USAGES, async (raw: unknown) => {
-      const args = parseHoverLinkArgs(raw)
+      // M44.U6 (issue #693): the message-only dead end is a contract defect
+      // (Understanding Rule 6). The decision comes from the ONE pure core:
+      //   1. strict parse — the upgraded server link now carries the
+      //      SERVER-RESOLVED identity {file, line, character, symbol};
+      //   2. reveal first (always works), so even the degrade floor lands
+      //      the cursor on the symbol;
+      //   3. native references handoff is PRIMARY where it works — the
+      //      three-way executor distinguishes missing/false (unavailable)
+      //      from a thrown failure;
+      //   4. on any native failure the hub usages surface opens for the
+      //      SAME symbol (renderHubForPanel over the live client) — data,
+      //      never a message.
+      const args: UsageFallbackArgs | null = parseUsageFallbackArgs(raw)
       if (args === null) {
-        void vscode.window.showErrorMessage("bb_lsp: malformed bb.showAllUsages link (no navigation).")
-        return { ok: false as const, reason: "malformed args" }
+        // Legacy bare-location args (pre-U6 links) still parse through the
+        // strict core only when a symbol is present. A malformed payload is
+        // a loud declared error, never a silent no-op.
+        const legacy = parseHoverLinkArgs(raw)
+        if (legacy === null) {
+          void vscode.window.showErrorMessage("bb_lsp: malformed bb.showAllUsages link (no navigation).")
+          return { ok: false as const, reason: "malformed args" }
+        }
+        // No symbol in the args: reveal floor, declared (never message-only).
+        await revealLocation(legacy)
+        return { ok: true as const, surface: "reveal" as const, line: legacy.line }
       }
-      // Reveal first (always works), then hand off to the native references
-      // surface — the editor's own door to the same L3 location set the
-      // hover's "N more" counts. Best-effort: a fork without the command
-      // still lands the cursor on the symbol (never silent about it).
       await revealLocation(args)
+      // Three-way native handoff (primary): the editor's own references view
+      // takes the click where it works.
+      let handoff: NativeHandoffResult = "ok"
       try {
-        await vscode.commands.executeCommand("editor.action.referencesTrigger")
+        const taken = await vscode.commands.executeCommand("editor.action.referencesTrigger")
+        if (taken === false) handoff = "unavailable"
       } catch {
-        void vscode.window.showInformationMessage("bb_lsp: this editor has no native references view; cursor placed on the symbol.")
+        handoff = "threw"
       }
-      return { ok: true as const, surface: "references", line: args.line }
+      const resolved = resolveUsageFallback(args, handoff)
+      if (resolved.surface === "native-references") {
+        return { ok: true as const, surface: "references" as const, line: args.line }
+      }
+      if (resolved.surface === "fallback-hub") {
+        // THE FALLBACK: our usages list for the same symbol (the hub's
+        // grouped usages surface). The native door stays primary; this door
+        // means the user still lands on DATA, never on a bare message.
+        try {
+          const { renderHubForPanel } = await import("./hub-panel")
+          const result = await renderHubForPanel({ symbol: resolved.symbol, file: args.file }, { client: deps.getClient(), cspSource: deps.cspSource })
+          if (result.ok) {
+            await vscode.window.showInformationMessage(`bb_lsp: native references view unavailable — showing the Backbencher usages list for ${resolved.symbol}.`)
+            return { ok: true as const, surface: "usages-fallback" as const, symbol: resolved.symbol, rendered: true as const }
+          }
+          // The hub itself failed (declared reason) — surface it loudly.
+          void vscode.window.showErrorMessage(`bb_lsp: usages fallback failed — ${result.error}`)
+          return { ok: true as const, surface: "usages-fallback" as const, symbol: resolved.symbol, rendered: false as const, error: result.error }
+        } catch (e) {
+          const reason = e instanceof Error ? e.message : String(e)
+          void vscode.window.showErrorMessage(`bb_lsp: usages fallback failed — ${reason}`)
+          return { ok: true as const, surface: "usages-fallback" as const, symbol: resolved.symbol, rendered: false as const, error: reason }
+        }
+      }
+      // resolved.surface === "error" (unreachable after the args check;
+      // kept total for the type).
+      return { ok: false as const, reason: resolved.reason }
     }),
     // --- M42.H4: the hover actions -------------------------------------------
     // bb.openGraph: open the graph webview for the hovered symbol. The panel

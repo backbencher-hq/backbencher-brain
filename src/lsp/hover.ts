@@ -535,7 +535,7 @@ export async function hover(
     evidenceTiers: tiers,
     // M42.H2: rich sections composed from stored relationship rows.
     connectedSection: connectedSummarySection(connectedGroups(sites)),
-    usagesSection: usagesSection(sites, sites.length, file.path, request.position.line, request.position.character),
+    usagesSection: usagesSection(sites, sites.length, symbol.name, file.path, request.position.line, request.position.character),
     // LSP definition location (range.start) when resolvable; null otherwise
     // (the footnote then renders the plain location — still honest).
     definition: range === null ? null : { line: range.start.line, character: range.start.character },
