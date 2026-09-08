@@ -218,7 +218,7 @@
     "node_type": "string_interpolation,template_expression,string_fragment,multiline_string_fragment",
     "status": "RULED",
     "question": "Should interpolated identifiers in GStrings (\"hi ${name}\") emit a Uses edge on the referenced variable/property? The gstring-interpolation fixture pins no-garbage-symbols only. Recommend: emit Uses (semantically a property read, matching field_access behavior).",
-    "resolution": "DECLARED LIMITATION: tree-sitter-groovy produces NO string_interpolation/template nodes (probed 2026-08-27: \"hi ${name}\", triple-quoted and slashy forms all parse as opaque string literals). Interpolated identifiers cannot emit Uses without string parsing \u2014 out of scope; gstring-interpolation fixture pins no-garbage-symbols."
+    "resolution": "DECLARED LIMITATION: tree-sitter-groovy produces NO string_interpolation/template nodes (probed 2026-08-27: \"hi ${name}\", triple-quoted and slashy forms all parse as opaque string literals). Interpolated identifiers cannot emit Uses without string parsing — out of scope; gstring-interpolation fixture pins no-garbage-symbols."
    },
    {
     "id": "S2",
@@ -231,7 +231,7 @@
     "id": "S3",
     "node_type": "",
     "status": "RULED",
-    "question": "exports relationship kind: NOT EMITTED for groovy \u2014 no annotation-to-endpoint path exists (probe: Grails @Resource(uri=...) produces no exports edge or apiContractPath). Recommend: declared limitation.",
+    "question": "exports relationship kind: NOT EMITTED for groovy — no annotation-to-endpoint path exists (probe: Grails @Resource(uri=...) produces no exports edge or apiContractPath). Recommend: declared limitation.",
     "resolution": "DECLARED LIMITATION: exports relationship kind NOT EMITTED for groovy (no annotation-to-endpoint path; Grails @Resource(uri=...) probe emits no exports edge). Section B requiredKinds excludes it."
    },
    {
@@ -247,6 +247,13 @@
     "status": "RULED",
     "question": "parameters payload pin: groovy has no expectParameters fixture (Matrix 1b cell PENDING -> #383). Section C reports it; the wave adds the fixture + mutant.",
     "resolution": "FIXED + GATED: groovy/parameters-payload fixture (incl. varargs String... parts -> String[] + name fix), mutants groovy/drop-parameters + groovy/drop-varargs-type CAUGHT. Matrix 1b cell GATED."
+   },
+   {
+    "id": "GD19",
+    "node_type": "multi-hop nested-class override resolution (BlackVal extends Black extends Node)",
+    "status": "FIXED",
+    "question": "M37.21 #610 JD19 family lesson (java finding, groovy shares the copied resolveOverrides): overrides through a NON-declaring ancestor were lost at hop-2 (bare name vs FQN-keyed classHierarchy) AND fell through to the pass-3 first-parent guess, fabricating BlackVal.val -> Black.val at 0.5 — a wrong edge, worse than no edge.",
+    "resolution": "Suffix-resolve every bare parent to its FQN candidate(s) during the BFS; match on the declaring-owner bare name against symbolMap's Owner.method(sig) raw key. Probe-verified: BlackVal.val -> Node.val at conf 1.0; both groovy lanes 100%/0/0 at 200 files; fixture groovy/multihop-override-resolution pins the true target and forbids the fabricated one; mutant groovy/override-multihop-fallthrough."
    }
   ]
  }

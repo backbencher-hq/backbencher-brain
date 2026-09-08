@@ -925,6 +925,44 @@ const MUTANTS: Mutant[] = [
     ] }),
   },
   {
+    id: "scala/anonymous-body-scope-leak",
+    language: "scala",
+    defectClass: "payload-corruption",
+    description: "ScalaD-D regression: reverts the anonymous-class-body parent push — run re-attributes to the enclosing class (contains Service->run) and the anonymous_Runnable symbol vanishes — anonymous-body-scope pins catch both",
+    transform: r => ({ ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => !String(s.name).startsWith("anonymous_")),
+      relationships: (r.relationships ?? []).map((x: any) =>
+        (x.type === "contains" && x.target === "run") ? { ...x, source: "Service" } : x),
+    }),
+  },
+  {
+    id: "kotlin/enum-supertype-drop",
+    language: "kotlin",
+    defectClass: "relationship-loss",
+    description: "KD19 regression: reverts extractEnumClass superTypes extraction — enum class Direction(...) : Mode silently drops its implements edge (and enum class Counted : Numbered(1) its extends) — enum-supertype-heritage pins catch both",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) =>
+      !((x.type === "implements" || x.type === "extends") && (x.source === "Direction" || x.source === "Counted"))) }),
+  },
+  {
+    id: "java/anonymous-body-scope-leak",
+    language: "java",
+    defectClass: "payload-corruption",
+    description: "JD18 regression: reverts the anonymous-class-body scope push — compare/run re-attribute to the enclosing class (contains Service->compare) and the anonymous_Comparator symbol vanishes — anonymous-and-multihop-overrides pins catch both",
+    transform: r => ({ ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => !String(s.name).startsWith("anonymous_")),
+      relationships: (r.relationships ?? []).map((x: any) =>
+        (x.type === "contains" && (x.target === "compare" || x.target === "run")) ? { ...x, source: "Service" } : x),
+    }),
+  },
+  {
+    id: "java/override-multihop-bare-name",
+    language: "java",
+    defectClass: "relationship-loss",
+    description: "JD19 regression: reverts the suffix-resolved hierarchy walk — overrides through a non-declaring ancestor (BlackVal.val -> Node.val, BlackBranch.left -> Node.left) drop because hop-2 looks up classHierarchy with the bare name — anonymous-and-multihop-overrides pins catch them",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) =>
+      !(x.type === "overrides" && ((x.source === "BlackVal.val" && x.target === "Node.val") || (x.source === "BlackBranch.left" && x.target === "Node.left") || (x.source === "BlackBranchVal.val" && x.target === "Node.val")))) }),
+  },
+  {
     id: "scala/drop-keywordless-abstract-impl",
     language: "scala",
     defectClass: "relationship-loss",
@@ -1115,6 +1153,13 @@ const MUTANTS: Mutant[] = [
     defectClass: "payload-loss",
     description: "drops the parameters payload from method symbols — #383 Matrix 1b parameters pin",
     transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, parameters: undefined })) }),
+  },
+  {
+    id: "scala/revert-generic-substitution-fallback",
+    language: "scala",
+    defectClass: "relationship-loss",
+    description: "ScalaD-H regression: reverts the analyzer's generic-substitution override fallback — trait methods declared under type variables (def to(t: T)) no longer pair with substituted implementations (def to(t: AABB)); generic-substitution-overrides expects 4 Codec override pins",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(x.type === "overrides" && (x.source.includes("Codec") || x.source.includes("StringCodec")))) }),
   },
   {
     id: "typescript/drop-declared-types",
@@ -1662,6 +1707,26 @@ const MUTANTS: Mutant[] = [
     defectClass: "relationship-loss",
     description: "drops contains edges for type/member/field containment — #419 groovy section B contains pin",
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => x.type !== "contains") }),
+  },
+  {
+    id: "groovy/anonymous-body-scope-leak",
+    language: "groovy",
+    defectClass: "payload-corruption",
+    description: "GD18 regression: reverts the anonymous-inner-class scope push — run re-attributes to the enclosing class (contains Tree->run) and the anonymous_Runnable symbol vanishes — multihop-override-resolution pins catch both",
+    transform: r => ({ ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => !String(s.name).startsWith("anonymous_")),
+      relationships: (r.relationships ?? []).map((x: any) =>
+        (x.type === "contains" && x.target === "run") ? { ...x, source: "Tree" } : x),
+    }),
+  },
+  {
+    id: "groovy/override-multihop-fallthrough",
+    language: "groovy",
+    defectClass: "fabrication",
+    description: "GD19 regression: reverts the suffix-resolved hierarchy walk — the pre-fix BFS missed through non-declaring ancestors and fell through to the pass-3 first-parent guess, fabricating BlackVal.val -> Black.val at 0.5 (wrong edge, Black declares no val) — multihop-override-resolution forbid pin catches it",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) =>
+      (x.type === "overrides" && x.source === "BlackVal.val") ? { ...x, target: "Black.val", confidence: 0.5 } : x),
+    }),
   },
   {
     id: "csharp/drop-field-access-uses",

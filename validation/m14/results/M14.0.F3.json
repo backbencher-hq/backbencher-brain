@@ -26,25 +26,25 @@
     },
     {
       "description": "java adversarial fixtures",
-      "detail": "32/32 fixtures pass",
+      "detail": "33/33 fixtures pass",
       "id": "fixtures-java",
       "status": "pass"
     },
     {
       "description": "groovy adversarial fixtures",
-      "detail": "36/36 fixtures pass",
+      "detail": "37/37 fixtures pass",
       "id": "fixtures-groovy",
       "status": "pass"
     },
     {
       "description": "kotlin adversarial fixtures",
-      "detail": "36/36 fixtures pass",
+      "detail": "37/37 fixtures pass",
       "id": "fixtures-kotlin",
       "status": "pass"
     },
     {
       "description": "scala adversarial fixtures",
-      "detail": "43/43 fixtures pass",
+      "detail": "45/45 fixtures pass",
       "id": "fixtures-scala",
       "status": "pass"
     },
@@ -128,8 +128,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "f2c5538edec1eb64142d5ae2bc2045173248f0cb",
-  "committedAt": "2026-09-07T21:25:43+02:00",
+  "commit": "043508817d8576e23aaea4119c8973017f37e1f2",
+  "committedAt": "2026-09-08T04:10:52+02:00",
   "data": {
     "details": [
       {
@@ -708,6 +708,11 @@
         "problems": []
       },
       {
+        "fixture": "java/anonymous-and-multihop-overrides",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "java/array-access-uses",
         "ok": true,
         "problems": []
@@ -988,6 +993,11 @@
         "problems": []
       },
       {
+        "fixture": "groovy/multihop-override-resolution",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "groovy/override-fallback-confidence",
         "ok": true,
         "problems": []
@@ -1109,6 +1119,11 @@
       },
       {
         "fixture": "kotlin/enum-and-sealed",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/enum-supertype-heritage",
         "ok": true,
         "problems": []
       },
@@ -1238,6 +1253,11 @@
         "problems": []
       },
       {
+        "fixture": "scala/anonymous-body-scope",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "scala/case-class-fields",
         "ok": true,
         "problems": []
@@ -1299,6 +1319,11 @@
       },
       {
         "fixture": "scala/generic-parameters-payload",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/generic-substitution-overrides",
         "ok": true,
         "problems": []
       },
@@ -1746,7 +1771,7 @@
       },
       "groovy": {
         "fail": 0,
-        "pass": 36
+        "pass": 37
       },
       "haskell": {
         "fail": 0,
@@ -1754,7 +1779,7 @@
       },
       "java": {
         "fail": 0,
-        "pass": 32
+        "pass": 33
       },
       "javascript": {
         "fail": 0,
@@ -1762,7 +1787,7 @@
       },
       "kotlin": {
         "fail": 0,
-        "pass": 36
+        "pass": 37
       },
       "objc": {
         "fail": 0,
@@ -1786,7 +1811,7 @@
       },
       "scala": {
         "fail": 0,
-        "pass": 43
+        "pass": 45
       },
       "svelte": {
         "fail": 0,

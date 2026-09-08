@@ -308,6 +308,53 @@
         "status": "RULED",
         "question": "`private[effect] def tag` parsed as plain `private` \u2014 hiding it from exports AND making the analyzer treat the member as non-overridable (26 keywordless IO subclasses implement IO.tag). Correct handling?",
         "resolution": "Scope-qualified private/protected (private[pkg], protected[pkg]) is visible and overridable within its scope \u2014 modeled as package-scoped visibility (never exported, still inheritable). Bare private stays private. Two-corpus gate wave 2026-09 (cats-effect IO.scala: 26 tag implementations)."
+      },
+      {
+        "id": "ScalaD-D",
+        "node_type": "anonymous class body (new Runnable { ... } \u2014 instance_expression + template_body)",
+        "status": "FIXED",
+        "question": "M37.21 #610 JD18 family lesson (java finding, scala shares the gap): methods inside anonymous bodies attributed to the enclosing class (run -> Service) with no anonymous symbol \u2014 the contains graph leaked the body's members into the enclosing type.",
+        "resolution": "Mirror the kotlin/java family convention: anonymous_<SuperName> Class symbol (generic supertypes collapse to the head name, bracketed args stripped; noise name, never leaks into the index) owned by the enclosing type, pushed as the walk parent so body members attribute to the anonymous type (contains anonymous_Runnable -> run). Oracle mirror: deriveTreeEdges registers the synthetic anonymous declaration (methods + supertype parent) so scala overrides truth covers anonymous-body members (cats-effect 91 -> 8 unexplained; the remaining 8 are the documented ~>/compound-instantiates shapes). Fixture pins in java/anonymous-and-multihop-overrides; scala fixture pending in the scala wave."
+      },
+      {
+        "id": "ScalaD-E",
+        "node_type": "override pairing where a signature carries a GENERIC TYPE VARIABLE (trait def to(t: T) vs impl def to(t: AABB))",
+        "status": "FIXED",
+        "question": "M37.21 #610 scala3 byname-implicits-13: textual sig equality rejected genuine generic-substitution overrides (oracle side, sigCompatible)",
+        "resolution": "sigCompatible falls back to name-only pairing when either sig contains a type-variable token (hasTypeVar: single-capital identifier, possibly compound H :: T). Concrete-vs-concrete mismatches keep the strict overload guard.",
+        "evidence": "scala3 lane 19 unexplained -> 0; probe scala-eq-probe9"
+      },
+      {
+        "id": "ScalaD-F",
+        "node_type": "companion object + class sharing a NAME (object SetNode + sealed abstract class SetNode)",
+        "status": "FIXED",
+        "question": "M37.21 #610 scala3 HashSet.scala: oracle collectDecl first-wins guard dropped the class's 19 abstract methods (companion registered first) \u2014 every BitmapIndexedSetNode override surfaced as unexplained",
+        "resolution": "collectDecl always ensures the decl entry exists and MERGES members across every same-named declaration (companion union semantics, mirroring the analyzer's methodSigsByOwner).",
+        "evidence": "HashSet.scala oracle overrides 0 -> 35; scala3 lane 18 unexplained -> 0"
+      },
+      {
+        "id": "ScalaD-G",
+        "node_type": "override owner lookup when a companion MODULE shadows the CLASS in typeIndex (object Setup + class Setup)",
+        "status": "FIXED",
+        "question": "M37.21 #610 scala3 Setup.scala: typeIndex first-wins let the module shadow the class; ownerSym.metadata.superTypes undefined; BFS died at hop 0; Setup.isPreCC -> SetupAPI.isPreCC never emitted (analyzer side)",
+        "resolution": "ownerKind stamped on every symbol at walk time (createSymbol); typeIndexByKind indexes first-seen per KIND; resolveOwner() resolves exact-kind first with legacy first-wins fallback. Both lookup sites (findDeclaringAncestor, keyworded tier) route through resolveOwner.",
+        "evidence": "scala3 lane 10 missing -> 2; Setup.isPreCC/setupUnit/postCheck emit at conf 1.0"
+      },
+      {
+        "id": "ScalaD-H",
+        "node_type": "analyzer-side generic-substitution override pairing (mirror of ScalaD-E)",
+        "status": "FIXED",
+        "question": "M37.21 #610 byname-implicits-13 (Generic.to) + spec-example1 (@specialized C.m): analyzer findDeclaringAncestor exact-sig check rejected substituted implementations \u2014 MISSING overrides",
+        "resolution": "hasTypeVar fallback in findDeclaringAncestor: parent declares member under a type-variable sig (or child is substituted) -> name-only pairing, non-private guard preserved. Private-only members still never pair.",
+        "evidence": "scala3 lane missing 2 -> 0 (100%/0/0); fixture scala/generic-substitution-overrides pins 4 Codec overrides + forbids Overloads.f self-pair"
+      },
+      {
+        "id": "ScalaD-I",
+        "node_type": "oracle instantiates normalization for instance_expression targets with bracketed type args + `with` compound shapes",
+        "status": "FIXED",
+        "question": "M37.21 #610 cats-effect SecureRandomCompanionPlatform: oracle pushed raw text ScalaRandom[F](...) with SecureRandom[F] while the analyzer strips brackets iteratively \u2014 pairs never matched (10 MISSING)",
+        "resolution": "deriveTreeEdges instance_expression push applies the analyzer's iterative bracket-strip (square + angle) to the target.",
+        "evidence": "cats-effect lane 10 missing -> 0 (100%/0/0)"
       }
     ]
   }
