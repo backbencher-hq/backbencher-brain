@@ -234,6 +234,12 @@ try {
     defTarget.character === defLinks[0]!.args.character
   check("H2/R4: definition link equals the L3 definition response", Boolean(defMatch), JSON.stringify(defTarget ?? defRef ?? null).slice(0, 200))
 
+  // --- M44.U6: the show-all-usages link carries the server-resolved identity.
+  // This fixture renders exactly MAX_USAGE_LINKS sites so the escape hatch
+  // never appears here; the REAL wire link (hover markdown → bb.showAllUsages
+  // args with symbol) is fixture-verified by script/m44/verify-usages-fallback.ts
+  // on its own >MAX-sites fixture (issue #693).
+
   // --- R5: budget ---------------------------------------------------------------
   console.log("\nR5: budget")
   check("H2/R5: cold call completes under 2s (one-time WASM init excluded)", coldMs < 2000, `cold ${coldMs.toFixed(1)}ms`)
@@ -270,9 +276,9 @@ check("H2/R6: contains rows never render as connection facts", connectedSummaryS
 const callSite: RichSite = { ...containsOnly, relationshipType: "calls", reversed: true, name: "main", line: 9, character: 4, endLine: 9, endCharacter: 4 }
 const oneLink = connectedSummarySection(connectedGroups([callSite]))
 check("H2/R6: called-by renders one link for one call row", oneLink.startsWith("**connected**: called by [main](command:bb.openUsage?"), oneLink)
-check("H2/R6: usagesSection with >3 sites renders the +N more escape hatch", usagesSection([callSite, callSite, callSite, callSite], 4, "/w/App.java", 6, 4).includes("+1 more — [show all usages]"), "")
+check("H2/R6: usagesSection with >3 sites renders the +N more escape hatch", usagesSection([callSite, callSite, callSite, callSite], 4, "render", "/w/App.java", 6, 4).includes("+1 more — [show all usages]"), "")
 check("H2/R6: site label is file:line (1-based human line)", siteLabel(callSite) === "main — App.java:10", siteLabel(callSite))
-check("H2/R6: usagesSection([]) is empty (declared absence)", usagesSection([], 0, "/w/App.java", 0, 0) === "")
+check("H2/R6: usagesSection([]) is empty (declared absence)", usagesSection([], 0, "render", "/w/App.java", 0, 0) === "")
 
 // --- Mutants: the suite CAN fail ---------------------------------------------------------
 console.log("\nM: mutants")
@@ -296,10 +302,10 @@ console.log("\nM: mutants")
 // M2: leaking a contains row into the connected summary fails R6.
 mutant("M2: contains rows leaked into the connected summary fail R6", connectedSummarySection(connectedGroups([containsOnly])) === "")
 // M3: fabricating a section from empty rows fails R6.
-mutant("M3: fabricating a connected section from empty rows fails R6", connectedSummarySection([]) === "" && usagesSection([], 0, "/w/x.java", 0, 0) === "")
+mutant("M3: fabricating a connected section from empty rows fails R6", connectedSummarySection([]) === "" && usagesSection([], 0, "render", "/w/x.java", 0, 0) === "")
 // M4: dropping the usages section when sites exist fails R3 (renderer must
 // produce content for a non-empty site list).
-mutant("M4: dropping the usages section when rows exist fails R3", usagesSection([callSite, callSite, callSite], 3, "/w/App.java", 6, 4).length > 0)
+mutant("M4: dropping the usages section when rows exist fails R3", usagesSection([callSite, callSite, callSite], 3, "render", "/w/App.java", 6, 4).length > 0)
 // M5: dropping the definition link fails R4 (nothing unclickable §12.1) —
 // a plain-text footnote yields no bb.openDefinition link in the real hover.
 mutant("M5: definition link present in the real hover (nothing unclickable)", md.includes("bb.openDefinition?"), "definition footnote must be a link")
