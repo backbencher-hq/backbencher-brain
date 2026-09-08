@@ -371,6 +371,13 @@
     "status": "FIXED",
     "question": "Hygiene: finalFrameworks[0] depended on import order — same file could report spring_mvc or spring depending on which import came first",
     "decision": "Deterministic pickJavaFramework: fixed priority list (spring_data > spring_mvc > spring_core > spring > jpa > hibernate > ...), alphabetical tiebreak. No fixture pinned framework (verified), lanes unaffected"
+   },
+   {
+    "id": "JD39",
+    "node_type": "method_invocation calls-edge payload (overload disambiguation)",
+    "status": "FIXED",
+    "question": "M49 R3 claim 1: overloads collapse to the same bare leaf target (process(String) vs process(int) both -> process) and even metadata carried no discriminator",
+    "decision": "Bare-leaf target STAYS the matching contract (JD20; oracle mirrors it) but every calls edge now carries metadata.argumentCount (named children of argument_list) — additive payload; downstream consumers can disambiguate by arity without a resolution engine. Probe: process sites carry argumentCount=1, other.a.b carries 3. Fixture overload-arity-varargs-multicatch pins; mutants java/drop-arity-payload + java/varargs-sig-not-normalized (348/348). Claims 2+3 verified-working and pinned: JLS 8.4.1 int.../int[] equivalence resolves both cross combinations exact-in-file (was true by construction, unproven until this probe); multi-catch unions emit declared_type for EVERY member"
    }
   ]
  }
