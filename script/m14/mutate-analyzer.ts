@@ -1356,6 +1356,34 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "instantiates", source: "make", target: "ns.Thing", confidence: 1, metadata: {} }] }),
   },
   {
+    id: "typescript/reintroduce-subscript-call-targets",
+    language: "typescript",
+    defectClass: "relationship-garbage",
+    description: "reverts W2: computed member calls (handlers[mode]()) emit the raw subscript text as call target again (nodeTransforms[i]-class fabrications no symbol index can join; JS family contract skips them)",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "calls", source: "run", target: "handlers[mode]", confidence: 0.9, metadata: {} }] }),
+  },
+  {
+    id: "typescript/reintroduce-module-leaf-attr",
+    language: "typescript",
+    defectClass: "relationship-loss",
+    description: "reverts W1: object-literal member calls fall back to the module leaf again (run->helper becomes <module>->helper; the object member scope is the JD18-class contract)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => (x.type === "calls" && x.source === "run" && x.target === "helper") ? { ...x, source: "object-literal-members" } : x) }),
+  },
+  {
+    id: "typescript/reintroduce-nested-misattribution",
+    language: "typescript",
+    defectClass: "relationship-loss",
+    description: "reverts the W1 resolver fix: nested object methods (const local = { deep() {...} } inside a method body) misattribute their calls to the enclosing class method again (deep->inside becomes run->inside — the JD18-class misattribution)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => (x.type === "calls" && x.source === "deep" && x.target === "inside") ? { ...x, source: "run" } : x) }),
+  },
+  {
+    id: "typescript/reintroduce-module-leaf-statics",
+    language: "typescript",
+    defectClass: "relationship-loss",
+    description: "reverts W3 (J5): static block and property-initializer calls attribute to the module leaf again instead of the class (Service->warm becomes <module>->warm)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => (x.type === "calls" && x.source === "Service" && (x.target === "warm" || x.target === "init")) ? { ...x, source: "object-literal-members" } : x) }),
+  },
+  {
     id: "javascript/reclassify-import-tier",
     language: "javascript",
     defectClass: "evidence-mislabel",
@@ -1616,6 +1644,31 @@ const MUTANTS: Mutant[] = [
         ...(r.symbols ?? []).filter((s: any) => (s.metadata ?? {}).isReactiveDeclaration).map((s: any) => ({ ...s })),
       ],
     }),
+  },
+  {
+    id: "svelte/drop-on-handler-calls",
+    language: "svelte",
+    defectClass: "relationship-loss",
+    description: "M37.21 #611 regression: reverts the template pass on: directive branch — on:click={inc} / on:submit={() => save()} / on:click={box.open} emit no call edges (template-calls pins inc/save/open)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).context ?? "").startsWith("Svelte event directive")) }),
+  },
+  {
+    id: "svelte/drop-render-tag-calls",
+    language: "svelte",
+    defectClass: "relationship-loss",
+    description: "M37.21 #611 regression: reverts the render_tag branch — {@render row(it)} / {@render children?.()} emit no call edges (template-calls pins row)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).context ?? "").startsWith("Svelte {@render}")) }),
+  },
+  {
+    id: "vue/reemit-filtered-kebab-tags",
+    language: "vue",
+    defectClass: "relationship-fabrication",
+    description: "M37.21 #611 regression: re-emits modern-HTML/SVG builtin tags as component instantiates — <search> (2023 HTML element) and the camelCase SVG tags (linearGradient, clipPath, mask, pattern, marker, symbol) are filtered by the analyzer's builtin set; re-adding them is the ORACLE_HTML_TAGS drift class that faked a MISSING in vue-element-admin",
+    transform: r => {
+      const rels = r.relationships ?? []
+      const source = (rels.find((x: any) => x.type === "instantiates" || x.type === "uses")?.source) || "vue-component-usage"
+      return { ...r, relationships: [...rels, { source, target: "search", type: "instantiates", confidence: 0.95, metadata: { isComponentUsage: true } }] }
+    },
   },
   {
     id: "groovy/drop-class-symbols",

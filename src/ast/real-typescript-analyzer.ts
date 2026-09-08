@@ -1796,10 +1796,27 @@ class TypeScriptAnalysisRunner {
           // C#-family contract: variables declared inside a function body are
           // locals — not symbols. Only module/namespace/class-level declarations
           // become symbols (and do not descend into them at function depth).
+          // W1 exception (JD18-class, JS parity): a function-body declarator
+          // whose value is an OBJECT LITERAL still descends — the object's
+          // shorthand methods are their own scopes (probed: class-body-local
+          // `const local = { deep() {...} }` -> method:deep + deep -> inside
+          // on the JS side; TS must match or the nested calls misattribute to
+          // the enclosing method). The declarator symbol is still suppressed
+          // (locals stay locals) — only the descent differs.
           if (this.insideFunctionDepth === 0) {
             skipChildren = this.extractVariables(node, symbols, stack)
           } else {
-            skipChildren = true
+            const w1Descend = (node: Node): boolean => {
+              for (let i = 0; i < node.namedChildCount; i++) {
+                const d = node.namedChild(i)
+                if (!d) continue
+                if (d.type !== "variable_declarator") continue
+                const v = d.childForFieldName("value")
+                if (v && v.type === "object") return true
+              }
+              return false
+            }
+            skipChildren = !w1Descend(node)
           }
           break
 
@@ -1820,8 +1837,16 @@ class TypeScriptAnalysisRunner {
           break
 
         case "method_definition":
-          // Shorthand methods on object literals pollute the symbol table with
-          // unscoped duplicate names; class methods are extracted via extractClass.
+          // W1 (JD18-class, web-family parity with JS): shorthand methods on
+          // object literals ARE members. JS emits them at ANY depth (probed:
+          // class-body-local `const local = { deep() {...} }` -> method:deep
+          // + deep -> inside — the nested object's method is its own scope,
+          // never misattributed to the enclosing method). Owner resolution:
+          // walk up to the enclosing variable_declarator name; at module
+          // level that's the object's binding (util/routes), inside a body
+          // it's the local binding. Calls inside the method then attribute
+          // to the method symbol itself via the rel-walk resolver.
+          skipChildren = this.extractObjectLiteralMethod(node, symbols, stack)
           break
 
         case "arrow_function":
@@ -2413,6 +2438,14 @@ class TypeScriptAnalysisRunner {
           stack.push({ node: body })
         }
       }
+
+      // W1 (JD18-class): object-literal VALUES carry members. Returning
+      // false lets the walk descend naturally into the declarator's object
+      // value, where the method_definition case extracts each member at ANY
+      // depth (JS parity — nested object methods are their own scope).
+      if (valueNode?.type === "object") {
+        return false
+      }
     }
     return true
   }
@@ -2969,6 +3002,58 @@ class TypeScriptAnalysisRunner {
     symbols.push(symbol)
   }
 
+  // W1 (JD18-class): object-literal shorthand methods are members of the
+  // object's owning variable. Owner resolution: walk up from the
+  // method_definition to the enclosing variable_declarator (const util = {
+  // run() {...} } -> owner util). Nested objects inherit the same owner
+  // (the outermost binding names the value). The resolver's method_definition
+  // branch then attributes calls to the method symbol itself (matching the
+  // JS contract: run -> helper, never util -> helper).
+  private extractObjectLiteralMethod(node: Node, symbols: ASTEngine.UniversalSymbol[], stack: StackEntry[]): boolean {
+    const nameNode = node.childForFieldName("name")
+    if (!nameNode) return false
+    const name = nameNode.text
+    let ownerName: string | undefined
+    let cur: Node | null = node.parent
+    while (cur) {
+      if (cur.type === "variable_declarator") {
+        ownerName = cur.childForFieldName("name")?.text
+        break
+      }
+      if (cur.type === "pair") {
+        cur = cur.parent
+        continue
+      }
+      if (cur.type === "object") {
+        cur = cur.parent
+        continue
+      }
+      break
+    }
+    const ownerInfo = ownerName
+      ? { ownerName, ownerKind: ASTEngine.SymbolKind.Constant as unknown as ASTEngine.SymbolKind }
+      : this.scopeManager.getOwnerInfo()
+    // Reuse extractMethod for full parity (params, complexity, qualified_calls,
+    // taint payloads) with the owner info swapped in afterwards.
+    const before = symbols.length
+    const ok = this.extractMethod(node, symbols, stack)
+    if (ok) {
+      for (let i = before; i < symbols.length; i++) {
+        const s = symbols[i]
+        if (ownerInfo) {
+          s.ownerName = ownerInfo.ownerName
+          s.ownerKind = ownerInfo.ownerKind
+          s.scope = ownerInfo.ownerName
+        }
+      }
+      // extractMethod pushed a Method scope named after the METHOD — for
+      // object-literal members the body must descend with the method scope
+      // (same as class methods), which extractMethod already arranged via
+      // its own pushScope. Nothing further here.
+    }
+    return ok
+  }
+
   private extractStaticBlock(node: Node, symbols: ASTEngine.UniversalSymbol[], stack: StackEntry[]): boolean {
     const ownerInfo = this.scopeManager.getOwnerInfo()
 
@@ -3364,6 +3449,14 @@ class TypeScriptAnalysisRunner {
               if (property) {
                 targetName = property.text
               }
+            } else if (callee.type === "subscript_expression") {
+              // W2 (web-family contract, JS J-subscript precedent): computed
+              // member calls — `nodeTransforms[i](node)`, `el[assignKey](...)`
+              // — have no clean call target. The pre-fix branch let the RAW
+              // subscript text through ("nodeTransforms[i]" targets no symbol
+              // index can join — 2 fabrications in vue-core transform.ts
+              // alone). JS skips these; TS must too (probed 2026-09-08).
+              return
             }
 
             // Skip targets that are clearly not valid function names:
@@ -3958,11 +4051,61 @@ class TypeScriptAnalysisRunner {
       )
     }
 
+    if (node.type === "class_declaration" || node.type === "abstract_class_declaration") {
+      // W3 (web-family contract, JS J5 precedent): static blocks and
+      // property initializers have no enclosing function — their calls
+      // belong to the CLASS. Pre-fix they fell through to the module leaf
+      // ("si -> init" instead of "Service -> init" on the probed shape).
+      // Instance method bodies resolve to the method first (this node is
+      // only reached when no closer function exists), so this never
+      // misattributes method calls (same reasoning as the JS analyzer).
+      const nm = node.childForFieldName("name")?.text
+      if (nm) {
+        const ownerSym = findItem(symbols, (s) => s.name === nm && s.kind === ASTEngine.SymbolKind.Class)
+        if (ownerSym) return ownerSym
+      }
+      return current
+    }
+
     if (node.type === "method_definition") {
       const raw = node.childForFieldName("name")?.text
       if (!raw) return current
       const name = stripPrivatePrefix(raw)
-      const owner = this.findEnclosingClassName(node)
+      // W1 (JD18-class): the enclosing-class walk must stop at the nearest
+      // FUNCTION/CLASS boundary, not skip through it. An object-literal
+      // method nested in a method body (`const local = { deep() {...} }`
+      // inside Outer.run) walked all the way out to Outer — owner=Outer vs
+      // the symbol's real owner=local never matched, so every call inside
+      // the nested object misattributed to the enclosing method (deep ->
+      // inside emitted as run -> inside). If a method_definition or a
+      // function-like node sits between, the object member belongs to the
+      // nearest declarator instead.
+      let owner = this.findEnclosingClassName(node)
+      if (owner) {
+        let anc: Node | null = node.parent
+        while (anc) {
+          if (
+            anc.type === "method_definition" ||
+            anc.type === "function_declaration" ||
+            anc.type === "function_expression" ||
+            anc.type === "arrow_function"
+          ) {
+            // Reached a function boundary before any class: the object
+            // member's owner is the enclosing variable, not the class.
+            let v: Node | null = node.parent
+            while (v && v.type !== "variable_declarator") v = v.parent
+            owner = v?.childForFieldName("name")?.text
+            break
+          }
+          if (anc.type === "class_declaration" || anc.type === "abstract_class_declaration") break
+          anc = anc.parent
+        }
+      } else {
+        // No enclosing class at all: object member -> nearest declarator.
+        let v: Node | null = node.parent
+        while (v && v.type !== "variable_declarator") v = v.parent
+        owner = v?.childForFieldName("name")?.text
+      }
       return (
         byPos(name, ASTEngine.SymbolKind.Method, node.startPosition.row, node.startPosition.column, owner) ||
         findItem(
