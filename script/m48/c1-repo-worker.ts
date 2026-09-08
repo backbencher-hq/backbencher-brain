@@ -60,6 +60,7 @@ async function main() {
 
   const raw = await BrainDatabase.getRawInstance(pid)
   const fileCount = (raw.prepare("SELECT COUNT(*) AS c FROM brain_file WHERE project_id = ?").get(pid) as any)?.c ?? -1
+  const symCount = (raw.prepare("SELECT COUNT(*) AS c FROM brain_symbol WHERE project_id = ?").get(pid) as any)?.c ?? -1
 
   // Roots: unique by name project-wide AND restricted to the structural kinds
   // the graph/impact/analyze-callers tools resolve — the cross-check then asks
@@ -111,17 +112,45 @@ async function main() {
     const m = txt.match(/files=(\d+)/)
     addCC("bb_health", repo, { label: `health.files == SQL count (${fileCount})`, pass: !r.isError && m !== null && Number(m[1]) === fileCount, detail: `${r.text.slice(0, 120)}` })
   }
-  await runTool("bb_ask", { query: `what does ${sym.name} do?` })
-  await runTool("bb_patterns", { scope: "orphaned" })
-  await runTool("bb_security", {})
+  // ── bb_ask: substantive answer on an indexed symbol (declared-absent would be honest only if unindexed) ──
+  {
+    const r = await runTool("bb_ask", { query: `what does ${sym.name} do?` })
+    const txt = typeof r.parsed === "string" ? r.parsed : JSON.stringify(r.parsed ?? "")
+    addCC("bb_ask", repo, { label: "ask returns a substantive answer for an indexed symbol", pass: !r.isError && txt.length > 40, detail: r.text.slice(0, 100) })
+  }
+  // ── bb_patterns: orphaned scope yields parseable findings or a declared zero-state ──
+  {
+    const r = await runTool("bb_patterns", { scope: "orphaned" })
+    const shape = typeof r.parsed === "object" && r.parsed !== null ? Object.keys(r.parsed).length : String(r.parsed ?? "").length
+    addCC("bb_patterns", repo, { label: "patterns orphaned scope returns structured output", pass: !r.isError && shape > 0, detail: r.text.slice(0, 100) })
+  }
+  // ── bb_security: scan yields structured output ──
+  {
+    const r = await runTool("bb_security", {})
+    const shape = typeof r.parsed === "object" && r.parsed !== null ? Object.keys(r.parsed).length : String(r.parsed ?? "").length
+    addCC("bb_security", repo, { label: "security scan returns structured output", pass: !r.isError && shape > 0, detail: r.text.slice(0, 100) })
+  }
   {
     const r = await runTool("bb_visualize", { scope: "symbol", target: sym.name, format: "json" })
     const v = r.parsed as any
     addCC("bb_visualize", repo, { label: "visualize resolves root symbol", pass: !r.isError && (v?.root?.name === sym.name || v?.nodes?.root?.name === sym.name || JSON.stringify(v ?? "").includes(sym.name)), detail: r.text.slice(0, 120) })
   }
-  await runTool("bb_migrate", { symbolName: sym.name, targetLanguage: "go", format: "json" })
-  await runTool("bb_analyze", { mode: "callers", target: sym.name })
-  await runTool("bb_analyze", { mode: "stats" })
+  // ── bb_migrate: response names the migrated symbol or is declared-absent ──
+  {
+    const r = await runTool("bb_migrate", { symbolName: sym.name, targetLanguage: "go", format: "json" })
+    addCC("bb_migrate", repo, { label: "migrate references the requested symbol or declares absence", pass: !r.isError && (JSON.stringify(r.parsed ?? "").includes(sym.name) || (r.parsed as any)?.declaredAbsent === true), detail: r.text.slice(0, 100) })
+  }
+  // ── bb_analyze: callers names the target; stats counts == independent SQL counts ──
+  {
+    const r = await runTool("bb_analyze", { mode: "callers", target: sym.name })
+    addCC("bb_analyze", repo, { label: "analyze callers references the target symbol", pass: !r.isError && JSON.stringify(r.parsed ?? "").includes(sym.name), detail: r.text.slice(0, 100) })
+  }
+  {
+    const r = await runTool("bb_analyze", { mode: "stats" })
+    const p = r.parsed as any
+    addCC("bb_analyze", repo, { label: `analyze stats.files == SQL count (${fileCount})`, pass: !r.isError && Number(p?.files ?? -1) === fileCount, detail: `out files=${p?.files} sql=${fileCount}` })
+    addCC("bb_analyze", repo, { label: `analyze stats.symbols == SQL count (${symCount})`, pass: !r.isError && Number(p?.symbols ?? -1) === symCount, detail: `out symbols=${p?.symbols} sql=${symCount}` })
+  }
   {
     const r = await runTool("bb_doc", { mode: "symbol", target: sym.name, format: "markdown", maxTokens: 1200 })
     addCC("bb_doc", repo, { label: "doc returns markdown content", pass: !r.isError && typeof r.parsed === "string" && r.parsed.length > 20, detail: r.text.slice(0, 100) })
@@ -150,7 +179,16 @@ async function main() {
     const im = r.parsed as any
     addCC("bb_impact", repo, { label: `impact root == ${sym.name}`, pass: !r.isError && (im?.root?.name === sym.name || (im && typeof im === "object")), detail: r.text.slice(0, 120) })
   }
-  await runTool("bb_cross_language", { symbol: sym.name })
+  // ── bb_cross_language: declared response naming the symbol or declared absence ──
+  {
+    const r = await runTool("bb_cross_language", { symbol: sym.name })
+    addCC("bb_cross_language", repo, { label: "cross_language names the symbol or declares absence", pass: !r.isError && (JSON.stringify(r.parsed ?? "").includes(sym.name) || (r.parsed as any)?.declaredAbsent === true), detail: r.text.slice(0, 100) })
+  }
+  // ── bb_annotate: write on the corpus symbol itself must be declared success ──
+  {
+    const w = await runTool("bb_annotate", { symbol: sym.name, body: `m48 c1 corpus note on ${sym.name} (${repo})` })
+    addCC("bb_annotate", repo, { label: "annotate write is declared success", pass: !w.isError, detail: w.text.slice(0, 100) })
+  }
   // ── bb_annotate / bb_annotations: write/read round-trip ──
   {
     const w = await runTool("bb_annotate", { symbol: sym2.name, body: `m48 c1 corpus note (${repo})` })
