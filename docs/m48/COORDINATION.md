@@ -21,4 +21,20 @@ gate.
 
 ## Entries
 
-_(none yet — first shared-file touch will be logged here before landing.)_
+### 2026-09-07 — C1 (#699): graph-engine root resolution changed
+
+- **What**: `src/intelligence/graph/graph-engine.ts` — `resolveGraphRoot` now
+  prefers exact-name symbol matches of ANY kind over fuzzy substring matches
+  (previously only structural kinds were considered exact, so a Makefile
+  target merely *containing* the query string beat the real `#define`).
+- **Why**: found by the C1 corpus — bb_graph and bb_analyze answered the same
+  root question differently on real repos (P3 disagreement class).
+- **How verified**: C1 corpus cross-checks (50/50 after fix, hermetic runner);
+  M24 LSP harness re-run below proves `bb/graph` (the hub's graph panel path)
+  still answers through the same engine.
+- **Risk to hub**: behavior change is strictly toward *more* correct root
+  selection; hub callers asking for an exact symbol name now get it. Fuzzy
+  fallback remains for non-exact queries.
+- **Commit**: ad39d78a (logged retroactively at L1 verification time — the
+  touch predates this log's enforcement gate; L1's guard now makes a future
+  unlogged shared diff fail before it can land).
