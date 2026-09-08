@@ -13,14 +13,14 @@
       "status": "pass"
     },
     {
-      "description": "java: 6 ruled, 5 pending owner",
+      "description": "java: 6 ruled, 17 pending owner",
       "id": "design-decisions-tracked",
       "language": "java",
       "status": "pass"
     },
     {
       "description": "every named node type classified (java)",
-      "detail": "143 types, 70 handled, 60 silent, 4 gaps, 11 decisions",
+      "detail": "143 types, 70 handled, 60 silent, 4 gaps, 23 decisions",
       "id": "section-a-structural",
       "language": "java",
       "status": "pass"
@@ -69,7 +69,7 @@
     },
     {
       "description": "cross-language consistency checks all pass",
-      "detail": "9 checks pass",
+      "detail": "12 checks pass",
       "id": "section-h-cross-language",
       "language": "java",
       "status": "pass"
@@ -143,7 +143,7 @@
     },
     {
       "description": "cross-language consistency checks all pass",
-      "detail": "9 checks pass",
+      "detail": "12 checks pass",
       "id": "section-h-cross-language",
       "language": "groovy",
       "status": "pass"
@@ -217,7 +217,7 @@
     },
     {
       "description": "cross-language consistency checks all pass",
-      "detail": "9 checks pass",
+      "detail": "12 checks pass",
       "id": "section-h-cross-language",
       "language": "kotlin",
       "status": "pass"
@@ -291,7 +291,7 @@
     },
     {
       "description": "cross-language consistency checks all pass",
-      "detail": "9 checks pass",
+      "detail": "12 checks pass",
       "id": "section-h-cross-language",
       "language": "scala",
       "status": "pass"
@@ -365,7 +365,7 @@
     },
     {
       "description": "cross-language consistency checks all pass",
-      "detail": "9 checks pass",
+      "detail": "12 checks pass",
       "id": "section-h-cross-language",
       "language": "typescript",
       "status": "pass"
@@ -439,7 +439,7 @@
     },
     {
       "description": "cross-language consistency checks all pass",
-      "detail": "9 checks pass",
+      "detail": "12 checks pass",
       "id": "section-h-cross-language",
       "language": "javascript",
       "status": "pass"
@@ -513,7 +513,7 @@
     },
     {
       "description": "cross-language consistency checks all pass",
-      "detail": "9 checks pass",
+      "detail": "12 checks pass",
       "id": "section-h-cross-language",
       "language": "vue",
       "status": "pass"
@@ -587,7 +587,7 @@
     },
     {
       "description": "cross-language consistency checks all pass",
-      "detail": "9 checks pass",
+      "detail": "12 checks pass",
       "id": "section-h-cross-language",
       "language": "svelte",
       "status": "pass"
@@ -661,7 +661,7 @@
     },
     {
       "description": "cross-language consistency checks all pass",
-      "detail": "9 checks pass",
+      "detail": "12 checks pass",
       "id": "section-h-cross-language",
       "language": "c",
       "status": "pass"
@@ -735,7 +735,7 @@
     },
     {
       "description": "cross-language consistency checks all pass",
-      "detail": "9 checks pass",
+      "detail": "12 checks pass",
       "id": "section-h-cross-language",
       "language": "cpp",
       "status": "pass"
@@ -809,7 +809,7 @@
     },
     {
       "description": "cross-language consistency checks all pass",
-      "detail": "9 checks pass",
+      "detail": "12 checks pass",
       "id": "section-h-cross-language",
       "language": "rust",
       "status": "pass"
@@ -883,7 +883,7 @@
     },
     {
       "description": "cross-language consistency checks all pass",
-      "detail": "9 checks pass",
+      "detail": "12 checks pass",
       "id": "section-h-cross-language",
       "language": "go",
       "status": "pass"
@@ -957,7 +957,7 @@
     },
     {
       "description": "cross-language consistency checks all pass",
-      "detail": "9 checks pass",
+      "detail": "12 checks pass",
       "id": "section-h-cross-language",
       "language": "zig",
       "status": "pass"
@@ -1031,7 +1031,7 @@
     },
     {
       "description": "cross-language consistency checks all pass",
-      "detail": "9 checks pass",
+      "detail": "12 checks pass",
       "id": "section-h-cross-language",
       "language": "csharp",
       "status": "pass"
@@ -1105,7 +1105,7 @@
     },
     {
       "description": "cross-language consistency checks all pass",
-      "detail": "9 checks pass",
+      "detail": "12 checks pass",
       "id": "section-h-cross-language",
       "language": "dart",
       "status": "pass"
@@ -1179,7 +1179,7 @@
     },
     {
       "description": "cross-language consistency checks all pass",
-      "detail": "9 checks pass",
+      "detail": "12 checks pass",
       "id": "section-h-cross-language",
       "language": "swift",
       "status": "pass"
@@ -1253,7 +1253,7 @@
     },
     {
       "description": "cross-language consistency checks all pass",
-      "detail": "9 checks pass",
+      "detail": "12 checks pass",
       "id": "section-h-cross-language",
       "language": "objc",
       "status": "pass"
@@ -1327,7 +1327,7 @@
     },
     {
       "description": "cross-language consistency checks all pass",
-      "detail": "9 checks pass",
+      "detail": "12 checks pass",
       "id": "section-h-cross-language",
       "language": "php",
       "status": "pass"
@@ -1401,7 +1401,7 @@
     },
     {
       "description": "cross-language consistency checks all pass",
-      "detail": "9 checks pass",
+      "detail": "12 checks pass",
       "id": "section-h-cross-language",
       "language": "ruby",
       "status": "pass"
@@ -1475,7 +1475,7 @@
     },
     {
       "description": "cross-language consistency checks all pass",
-      "detail": "9 checks pass",
+      "detail": "12 checks pass",
       "id": "section-h-cross-language",
       "language": "python",
       "status": "pass"
@@ -1549,15 +1549,15 @@
     },
     {
       "description": "cross-language consistency checks all pass",
-      "detail": "9 checks pass",
+      "detail": "12 checks pass",
       "id": "section-h-cross-language",
       "language": "haskell",
       "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "95feccaad8cf5c02e329e903ff3b716675cbca93",
-  "committedAt": "2026-09-08T15:58:58+02:00",
+  "commit": "e5fbe1dd89e14732ab289d72f8178641c250baa1",
+  "committedAt": "2026-09-08T20:04:19+02:00",
   "data": {
     "languages": {
       "c": {
@@ -1600,7 +1600,7 @@
             "status": "pass"
           },
           "section-h-cross-language": {
-            "detail": "9 checks pass",
+            "detail": "12 checks pass",
             "status": "pass"
           }
         }
@@ -1656,7 +1656,7 @@
             "status": "pass"
           },
           "section-h-cross-language": {
-            "detail": "9 checks pass",
+            "detail": "12 checks pass",
             "status": "pass"
           }
         }
@@ -1700,7 +1700,7 @@
             "status": "pass"
           },
           "section-h-cross-language": {
-            "detail": "9 checks pass",
+            "detail": "12 checks pass",
             "status": "pass"
           }
         }
@@ -1767,7 +1767,7 @@
             "status": "pass"
           },
           "section-h-cross-language": {
-            "detail": "9 checks pass",
+            "detail": "12 checks pass",
             "status": "pass"
           }
         }
@@ -1818,7 +1818,7 @@
             "status": "pass"
           },
           "section-h-cross-language": {
-            "detail": "9 checks pass",
+            "detail": "12 checks pass",
             "status": "pass"
           }
         }
@@ -1875,7 +1875,7 @@
             "status": "pass"
           },
           "section-h-cross-language": {
-            "detail": "9 checks pass",
+            "detail": "12 checks pass",
             "status": "pass"
           }
         }
@@ -1935,7 +1935,7 @@
             "status": "pass"
           },
           "section-h-cross-language": {
-            "detail": "9 checks pass",
+            "detail": "12 checks pass",
             "status": "pass"
           }
         }
@@ -1953,7 +1953,19 @@
           "JD19",
           "JD21",
           "JD22",
-          "JD23"
+          "JD23",
+          "JD24",
+          "JD25",
+          "JD26",
+          "JD27",
+          "JD28",
+          "JD29",
+          "JD30",
+          "JD31",
+          "JD32",
+          "JD33",
+          "JD34",
+          "JD35"
         ],
         "ruledDecisions": [
           "G5",
@@ -1965,7 +1977,7 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "143 types, 70 handled, 60 silent, 4 gaps, 11 decisions",
+            "detail": "143 types, 70 handled, 60 silent, 4 gaps, 23 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -1993,7 +2005,7 @@
             "status": "pass"
           },
           "section-h-cross-language": {
-            "detail": "9 checks pass",
+            "detail": "12 checks pass",
             "status": "pass"
           }
         }
@@ -2051,7 +2063,7 @@
             "status": "pass"
           },
           "section-h-cross-language": {
-            "detail": "9 checks pass",
+            "detail": "12 checks pass",
             "status": "pass"
           }
         }
@@ -2110,7 +2122,7 @@
             "status": "pass"
           },
           "section-h-cross-language": {
-            "detail": "9 checks pass",
+            "detail": "12 checks pass",
             "status": "pass"
           }
         }
@@ -2164,7 +2176,7 @@
             "status": "pass"
           },
           "section-h-cross-language": {
-            "detail": "9 checks pass",
+            "detail": "12 checks pass",
             "status": "pass"
           }
         }
@@ -2222,7 +2234,7 @@
             "status": "pass"
           },
           "section-h-cross-language": {
-            "detail": "9 checks pass",
+            "detail": "12 checks pass",
             "status": "pass"
           }
         }
@@ -2271,7 +2283,7 @@
             "status": "pass"
           },
           "section-h-cross-language": {
-            "detail": "9 checks pass",
+            "detail": "12 checks pass",
             "status": "pass"
           }
         }
@@ -2331,7 +2343,7 @@
             "status": "pass"
           },
           "section-h-cross-language": {
-            "detail": "9 checks pass",
+            "detail": "12 checks pass",
             "status": "pass"
           }
         }
@@ -2384,7 +2396,7 @@
             "status": "pass"
           },
           "section-h-cross-language": {
-            "detail": "9 checks pass",
+            "detail": "12 checks pass",
             "status": "pass"
           }
         }
@@ -2452,7 +2464,7 @@
             "status": "pass"
           },
           "section-h-cross-language": {
-            "detail": "9 checks pass",
+            "detail": "12 checks pass",
             "status": "pass"
           }
         }
@@ -2508,7 +2520,7 @@
             "status": "pass"
           },
           "section-h-cross-language": {
-            "detail": "9 checks pass",
+            "detail": "12 checks pass",
             "status": "pass"
           }
         }
@@ -2569,7 +2581,7 @@
             "status": "pass"
           },
           "section-h-cross-language": {
-            "detail": "9 checks pass",
+            "detail": "12 checks pass",
             "status": "pass"
           }
         }
@@ -2626,7 +2638,7 @@
             "status": "pass"
           },
           "section-h-cross-language": {
-            "detail": "9 checks pass",
+            "detail": "12 checks pass",
             "status": "pass"
           }
         }
@@ -2679,7 +2691,7 @@
             "status": "pass"
           },
           "section-h-cross-language": {
-            "detail": "9 checks pass",
+            "detail": "12 checks pass",
             "status": "pass"
           }
         }
@@ -2729,7 +2741,7 @@
             "status": "pass"
           },
           "section-h-cross-language": {
-            "detail": "9 checks pass",
+            "detail": "12 checks pass",
             "status": "pass"
           }
         }

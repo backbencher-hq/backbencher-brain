@@ -744,3 +744,36 @@ Line-by-line read of the typescript/vue/svelte analyzers + the four-lane differe
 - **Svelte template truth**: on:-directive handlers + {@render} snippet calls are template-pass emissions the embedded-JS oracle cannot see — 7 unexplained in the svelte repo lane before the mirror (set/onClick/f/outerCall/changeStores/children). Oracle now derives identical template truth from the template tree.
 - **Builtin-set drift (vue + svelte, the D9 lesson)**: analyzer HTML_BUILTIN_TAGS = 134 tags (incl. 2023 `<search>` and camelCase SVG) vs oracle ORACLE_HTML_TAGS = 126 — faked a MISSING instantiates->search in vue-element-admin Navbar.vue. Oracle extended to the identical list; **CC1 now carries a web family block** (ts/js structural parity + a permanent builtin-set parity check that fails the gate on ANY future drift between the three parallel lists).
 - **Evidence**: all 8 web lanes (ts vue-core+element-plus, js grails-core+lodash, vue element-plus+vue-element-admin, svelte svelte+shadcn-svelte) **100%/0/0** — svelte at 200-file depth on both corpora; **344/344 mutants caught** (+7); svelte 19/19 + vue 15/15 fixtures (new: svelte/template-calls, vue/modern-html-svg-builtin-tags); spec SVELTE-D7–D9, VUE-D10, JSD-calls-oracle recorded; F1–F4/F6–F9 + CC1 + honesty green; canonical 47-lane F5 no regressions (crash-resume journal carried 20 lanes across OOM restarts).
+
+## M37.21 — Java reviewer-issue wave (2026-09-08, HEAD e5fbe1dd+)
+
+External code review reported 32 claims against real-java-analyzer; all 32 verified
+against the code AND live parses before any fix (2 false, 5 niche/partial, 25 true).
+12 fixes landed this wave (C3-C12, C17, C20-C21, C23, C25, C30 partial earlier, plus
+C17/C23/C25 medium set):
+
+- **JD24-JD35** recorded in script/m14/spec/java-completeness.json (23 decisions total).
+- Structural: ctor symbols carry class names (C3), return types emit declared_type
+  references (C9), var filtered at all declared-type positions (C4), root-segment-only
+  builtin exclusion + oracle lockstep mirror (C5, fixture root-segment-builtin-filter),
+  Spring route fidelity (C6/C7/C8/C23: no fabricated '/', method= honored, array join,
+  constant-fold of + chains and text blocks via multiline_string_fragment — probed:
+  this grammar has NO text_block node), complexity parity incl. switch_rule (C10),
+  exact-name Lombok/Spring-Data triggers (C20/C21), resolveOverrides build-once
+  suffixIndex (C11), @interface member-read owner (C17), frameworkPatterns payload for
+  spring_mvc/spring_data/jpa/hibernate (C25).
+- C30 (anon class bodies): classHierarchy registration lets in-file-supertype anon
+  bodies resolve @Override exact-in-file (grails-core JpaQueryBuilder: 13 anon bodies,
+  0 unexplained @200); external-supertype bodies stay override-free (in-file truth).
+  Oracle anon mirror added to deriveTreeEdges (scala pattern).
+- C2 ruled family contract: overrides render last-two-segment (oracle matches
+  exactly); overload contains mirrors 2-for-2. C13/C14/C16 were reviewer errors
+  (probe-refuted); C16 remains ledgered as the known field-chain rewrite open item.
+- Gates: 34/34 java fixtures (329 total, 21 languages), 346/346 mutants (2 new java),
+  canonical F5 21 langs 100%/0/0 (c at CGD31-38 floor), F1 java grammar-clean, honesty
+  + consistency (incl. web builtin-set parity) + pipeline e2e green.
+
+**Process lesson recorded**: a fix claimed "landed" without a green re-run is NOT
+landed (C5 verified missing a day later). Every fix must end with its probe re-run +
+fixture pin in the same session; the reviewer's 32-claim list is the seed of the
+framework/payload fidelity lens that F5 previously could not see (vacuous-pass class).

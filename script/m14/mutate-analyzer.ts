@@ -963,6 +963,34 @@ const MUTANTS: Mutant[] = [
       !(x.type === "overrides" && ((x.source === "BlackVal.val" && x.target === "Node.val") || (x.source === "BlackBranch.left" && x.target === "Node.left") || (x.source === "BlackBranchVal.val" && x.target === "Node.val")))) }),
   },
   {
+    id: "java/return-type-refs-drop",
+    language: "java",
+    defectClass: "relationship-loss",
+    description: "C9 regression: drops declared_type references emitted from return positions (declaredOn=return_type) — the pre-fix gap where List<User> getUsers() produced zero edges to List/User — type-usage-graph's R pin catches it",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) =>
+      !(String(x.type) === "references" && x.metadata?.declaredOn === "return_type")) }),
+  },
+  {
+    id: "java/per-segment-builtin-filter",
+    language: "java",
+    defectClass: "relationship-loss",
+    description: "C5 regression: re-applies the pre-fix PER-SEGMENT stdlib check over emitted calls (metadata.callExpression segments vs the root list — mirrors the old isJavaBuiltin) so mid-chain collisions (A.Logger.bar on segment Logger) drop as stdlib — root-segment-builtin-filter pins catch it",
+    transform: r => {
+      // Representative JAVA_STDLIB_ROOTS subset (differential.ts JAVA_STDLIB_ROOTS mirror):
+      const roots = new Set(["Logger", "com", "org", "System", "Math", "java", "javax"])
+      return { ...r, relationships: (r.relationships ?? []).filter((x: any) => {
+        if (String(x.type) !== "calls") return true
+        const ce = x.metadata?.javaCallExpression ?? x.metadata?.callExpression
+        if (!ce) return true
+        const ceText = String(ce)
+        const paren = ceText.indexOf("(")
+        const head = paren !== -1 ? ceText.slice(0, paren) : ceText
+        for (const seg of head.split(".")) if (roots.has(seg)) return false
+        return true
+      }) }
+    },
+  },
+  {
     id: "scala/drop-keywordless-abstract-impl",
     language: "scala",
     defectClass: "relationship-loss",

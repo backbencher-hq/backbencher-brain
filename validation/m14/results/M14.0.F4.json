@@ -703,6 +703,18 @@
       "status": "pass"
     },
     {
+      "description": "C9 regression: drops declared_type references emitted from return positions (declaredOn=return_type) — the pre-fix gap where List<User> getUsers() produced zero edges to List/User — type-usage-graph's R pin catches it",
+      "detail": "0 -> 1",
+      "id": "mutation-java-return-type-refs-drop",
+      "status": "pass"
+    },
+    {
+      "description": "C5 regression: re-applies the pre-fix PER-SEGMENT stdlib check over emitted calls (metadata.callExpression segments vs the root list — mirrors the old isJavaBuiltin) so mid-chain collisions (A.Logger.bar on segment Logger) drop as stdlib — root-segment-builtin-filter pins catch it",
+      "detail": "0 -> 1",
+      "id": "mutation-java-per-segment-builtin-filter",
+      "status": "pass"
+    },
+    {
       "description": "ScalaD-A regression: re-gates overrides behind the `override` keyword (keywordless ImplA.value/ImplB.value implementations of abstract BaseTrait.value lose their edges) — implicit-overrides fixture pins",
       "detail": "0 -> 1",
       "id": "mutation-scala-drop-keywordless-abstract-impl",
@@ -2066,12 +2078,12 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "95feccaad8cf5c02e329e903ff3b716675cbca93",
-  "committedAt": "2026-09-08T15:58:58+02:00",
+  "commit": "e5fbe1dd89e14732ab289d72f8178641c250baa1",
+  "committedAt": "2026-09-08T20:04:19+02:00",
   "data": {
     "summary": {
-      "caught": 344,
-      "mutantsRun": 344,
+      "caught": 346,
+      "mutantsRun": 346,
       "survived": 0
     }
   },
@@ -2093,2065 +2105,2077 @@
     {
       "caughtBy": "c/cgd31-37-regressions",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:58.254Z",
+      "injectedAt": "2026-09-08T19:37:20.838Z",
       "mutant": "c/drop-field-access-uses"
     },
     {
       "caughtBy": "c/c-completeness",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:58.288Z",
+      "injectedAt": "2026-09-08T19:37:20.887Z",
       "mutant": "c/drop-include-references"
     },
     {
       "caughtBy": "c/c-completeness, c/complexity-and-payloads",
       "detail": "payload-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:39:58.355Z",
+      "injectedAt": "2026-09-08T19:37:20.954Z",
       "mutant": "c/drop-complexity"
     },
     {
       "caughtBy": "c/c-completeness",
       "detail": "relationship-fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:58.384Z",
+      "injectedAt": "2026-09-08T19:37:20.987Z",
       "mutant": "c/emit-write-as-read"
     },
     {
       "caughtBy": "c/cgd31-37-regressions",
       "detail": "relationship-duplication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:58.414Z",
+      "injectedAt": "2026-09-08T19:37:21.016Z",
       "mutant": "c/cgd31-callee-field-leaf-uses"
     },
     {
       "caughtBy": "c/cgd31-37-regressions",
       "detail": "relationship-fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:58.446Z",
+      "injectedAt": "2026-09-08T19:37:21.040Z",
       "mutant": "c/cgd33-type-only-uses"
     },
     {
       "caughtBy": "c/cgd31-37-regressions",
       "detail": "relationship-fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:58.475Z",
+      "injectedAt": "2026-09-08T19:37:21.060Z",
       "mutant": "c/cgd37-designator-name-uses"
     },
     {
       "caughtBy": "c/cgd31-37-regressions",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:58.499Z",
+      "injectedAt": "2026-09-08T19:37:21.091Z",
       "mutant": "c/cgd35-drop-typedef-references"
     },
     {
       "caughtBy": "c/cgd31-37-regressions",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:58.525Z",
+      "injectedAt": "2026-09-08T19:37:21.113Z",
       "mutant": "c/cgd36-drop-fn-value-before-def"
     },
     {
       "caughtBy": "c/cgd31-37-regressions",
       "detail": "symbol-fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:58.550Z",
+      "injectedAt": "2026-09-08T19:37:21.154Z",
       "mutant": "c/cgd38-phantom-function-symbol"
     },
     {
       "caughtBy": "cpp/ctor-and-overload-regressions, cpp/virtual-override-resolution",
       "detail": "relationship-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:39:58.687Z",
+      "injectedAt": "2026-09-08T19:37:21.258Z",
       "mutant": "cpp/drop-virtual-overrides"
     },
     {
       "caughtBy": "cpp/ctor-and-overload-regressions, cpp/override-signature-aware, cpp/virtual-override-resolution",
       "detail": "relationship-loss: 0 -> 3 fixture failures",
-      "injectedAt": "2026-09-08T17:39:58.707Z",
+      "injectedAt": "2026-09-08T19:37:21.278Z",
       "mutant": "cpp/drop-extends-edges"
     },
     {
       "caughtBy": "cpp/ctor-and-overload-regressions, cpp/payload-and-complexity",
       "detail": "payload-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:39:58.721Z",
+      "injectedAt": "2026-09-08T19:37:21.296Z",
       "mutant": "cpp/drop-qualified-calls"
     },
     {
       "caughtBy": "cpp/system-completeness",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:58.733Z",
+      "injectedAt": "2026-09-08T19:37:21.320Z",
       "mutant": "cpp/drop-global-scope-new"
     },
     {
       "caughtBy": "cpp/ctor-and-overload-regressions",
       "detail": "payload-corruption: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:58.742Z",
+      "injectedAt": "2026-09-08T19:37:21.345Z",
       "mutant": "cpp/ctor-calls-to-class-name"
     },
     {
       "caughtBy": "cpp/ctor-and-overload-regressions",
       "detail": "payload-corruption: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:58.753Z",
+      "injectedAt": "2026-09-08T19:37:21.368Z",
       "mutant": "cpp/qc-cross-class-pollution"
     },
     {
       "caughtBy": "cpp/ctor-and-overload-regressions",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:58.767Z",
+      "injectedAt": "2026-09-08T19:37:21.395Z",
       "mutant": "cpp/last-sig-wins-overrides"
     },
     {
       "caughtBy": "cpp/system-completeness",
       "detail": "payload-corruption: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:58.782Z",
+      "injectedAt": "2026-09-08T19:37:21.420Z",
       "mutant": "cpp/legacy-using-import-shape"
     },
     {
       "caughtBy": "cpp/ctor-and-overload-regressions",
       "detail": "payload-corruption: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:58.796Z",
+      "injectedAt": "2026-09-08T19:37:21.445Z",
       "mutant": "cpp/template-arg-call-targets"
     },
     {
       "caughtBy": "rust/scoped-and-turbofish",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:58.864Z",
+      "injectedAt": "2026-09-08T19:37:21.628Z",
       "mutant": "rust/drop-scoped-struct-literal-leaf"
     },
     {
       "caughtBy": "rust/scoped-and-turbofish",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:58.889Z",
+      "injectedAt": "2026-09-08T19:37:21.678Z",
       "mutant": "rust/turbofish-whole-text-target"
     },
     {
       "caughtBy": "rust/scoped-and-turbofish",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:58.917Z",
+      "injectedAt": "2026-09-08T19:37:21.723Z",
       "mutant": "rust/parenthesized-closure-callee"
     },
     {
       "caughtBy": "rust/union-and-associated-type",
       "detail": "symbol-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:58.940Z",
+      "injectedAt": "2026-09-08T19:37:21.746Z",
       "mutant": "rust/drop-union-symbols"
     },
     {
       "caughtBy": "rust/union-and-associated-type",
       "detail": "symbol-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:58.961Z",
+      "injectedAt": "2026-09-08T19:37:21.773Z",
       "mutant": "rust/drop-trait-associated-types"
     },
     {
       "caughtBy": "rust/await-single-edge",
       "detail": "relationship-duplication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:58.987Z",
+      "injectedAt": "2026-09-08T19:37:21.799Z",
       "mutant": "rust/duplicate-awaited-call-edge"
     },
     {
       "caughtBy": "rust/use-list-imports",
       "detail": "import-contract: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:59.000Z",
+      "injectedAt": "2026-09-08T19:37:21.823Z",
       "mutant": "rust/raw-use-list-import"
     },
     {
       "caughtBy": "rust/qualified-calls-ownership",
       "detail": "payload-pollution: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:59.018Z",
+      "injectedAt": "2026-09-08T19:37:21.843Z",
       "mutant": "rust/merge-qc-by-bare-name"
     },
     {
       "caughtBy": "rust/error-file-payload",
       "detail": "payload-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:59.034Z",
+      "injectedAt": "2026-09-08T19:37:21.864Z",
       "mutant": "rust/wipe-qc-on-error-files"
     },
     {
       "caughtBy": "rust/qualified-calls-ownership",
       "detail": "symbol-identity: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:59.050Z",
+      "injectedAt": "2026-09-08T19:37:21.887Z",
       "mutant": "rust/duplicate-impl-ids"
     },
     {
       "caughtBy": "rust/qualified-calls-ownership",
       "detail": "payload-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:59.067Z",
+      "injectedAt": "2026-09-08T19:37:21.908Z",
       "mutant": "rust/drop-macro-payload"
     },
     {
       "caughtBy": "rust/qualified-calls-ownership",
       "detail": "relationship-noise: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:59.082Z",
+      "injectedAt": "2026-09-08T19:37:21.926Z",
       "mutant": "rust/reemit-write-field-uses"
     },
     {
       "caughtBy": "rust/use-list-imports",
       "detail": "import-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:59.098Z",
+      "injectedAt": "2026-09-08T19:37:21.945Z",
       "mutant": "rust/drop-nested-group-import-items"
     },
     {
       "caughtBy": "rust/use-list-imports",
       "detail": "import-contract: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:59.113Z",
+      "injectedAt": "2026-09-08T19:37:21.960Z",
       "mutant": "rust/join-top-group-imports"
     },
     {
       "caughtBy": "rust/relationship-kinds",
       "detail": "framework-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:59.131Z",
+      "injectedAt": "2026-09-08T19:37:21.973Z",
       "mutant": "rust/drop-attr-framework-detection"
     },
     {
       "caughtBy": "go/relationship-and-payloads",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:59.220Z",
+      "injectedAt": "2026-09-08T19:37:22.062Z",
       "mutant": "go/whole-text-stdlib-callee"
     },
     {
       "caughtBy": "go/relationship-and-payloads",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:59.250Z",
+      "injectedAt": "2026-09-08T19:37:22.090Z",
       "mutant": "go/drop-package-scope-call"
     },
     {
       "caughtBy": "go/relationship-and-payloads",
       "detail": "relationship-fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:59.275Z",
+      "injectedAt": "2026-09-08T19:37:22.112Z",
       "mutant": "go/closure-var-goroutine-defer"
     },
     {
       "caughtBy": "go/relationship-and-payloads",
       "detail": "relationship-fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:59.303Z",
+      "injectedAt": "2026-09-08T19:37:22.141Z",
       "mutant": "go/type-conversion-as-call"
     },
     {
       "caughtBy": "go/implements-params, go/relationship-and-payloads",
       "detail": "relationship-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:39:59.337Z",
+      "injectedAt": "2026-09-08T19:37:22.171Z",
       "mutant": "go/drop-implements-edge"
     },
     {
       "caughtBy": "go/type-usage-graph",
       "detail": "payload-corruption: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:59.372Z",
+      "injectedAt": "2026-09-08T19:37:22.196Z",
       "mutant": "go/double-count-switch-arms"
     },
     {
       "caughtBy": "go/relationship-and-payloads",
       "detail": "relationship-noise: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:59.416Z",
+      "injectedAt": "2026-09-08T19:37:22.218Z",
       "mutant": "go/reemit-write-selector-uses"
     },
     {
       "caughtBy": "go/implements-params",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:59.457Z",
+      "injectedAt": "2026-09-08T19:37:22.241Z",
       "mutant": "go/drop-interface-embedding-extends"
     },
     {
       "caughtBy": "go/framework-detection, go/relationship-and-payloads",
       "detail": "relationship-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:39:59.499Z",
+      "injectedAt": "2026-09-08T19:37:22.267Z",
       "mutant": "go/drop-composite-literal-construction"
     },
     {
       "caughtBy": "go/implements-params",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:59.540Z",
+      "injectedAt": "2026-09-08T19:37:22.293Z",
       "mutant": "go/func-type-implementors-dropped"
     },
     {
       "caughtBy": "go/implements-params",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:59.592Z",
+      "injectedAt": "2026-09-08T19:37:22.318Z",
       "mutant": "go/named-result-signature-mismatch"
     },
     {
       "caughtBy": "go/implements-params",
       "detail": "relationship-fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:59.628Z",
+      "injectedAt": "2026-09-08T19:37:22.340Z",
       "mutant": "go/generic-implements-fabricated"
     },
     {
       "caughtBy": "go/implements-params",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:59.658Z",
+      "injectedAt": "2026-09-08T19:37:22.362Z",
       "mutant": "go/drop-promoted-struct-implements"
     },
     {
       "caughtBy": "go/implements-params",
       "detail": "relationship-fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:59.692Z",
+      "injectedAt": "2026-09-08T19:37:22.389Z",
       "mutant": "go/false-implements-embedded-only"
     },
     {
       "caughtBy": "go/relationship-and-payloads, go/type-usage-graph",
       "detail": "payload-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:39:59.727Z",
+      "injectedAt": "2026-09-08T19:37:22.418Z",
       "mutant": "go/drop-symbol-complexity"
     },
     {
       "caughtBy": "go/framework-detection",
       "detail": "payload-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:59.760Z",
+      "injectedAt": "2026-09-08T19:37:22.441Z",
       "mutant": "go/drop-framework-detection"
     },
     {
       "caughtBy": "go/relationship-and-payloads",
       "detail": "payload-corruption: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:59.797Z",
+      "injectedAt": "2026-09-08T19:37:22.474Z",
       "mutant": "go/duplicate-qualified-calls"
     },
     {
       "caughtBy": "go/type-usage-graph",
       "detail": "relationship-noise: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:59.824Z",
+      "injectedAt": "2026-09-08T19:37:22.503Z",
       "mutant": "go/reemit-dotted-channel-uses"
     },
     {
       "caughtBy": "zig/calls-uses-complexity",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:59.863Z",
+      "injectedAt": "2026-09-08T19:37:22.540Z",
       "mutant": "zig/drop-calls"
     },
     {
       "caughtBy": "zig/calls-uses-complexity",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:59.868Z",
+      "injectedAt": "2026-09-08T19:37:22.547Z",
       "mutant": "zig/drop-uses"
     },
     {
       "caughtBy": "zig/calls-uses-complexity",
       "detail": "relationship-fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:59.873Z",
+      "injectedAt": "2026-09-08T19:37:22.553Z",
       "mutant": "zig/emit-write-as-read"
     },
     {
       "caughtBy": "zig/calls-uses-complexity",
       "detail": "symbol-fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:59.882Z",
+      "injectedAt": "2026-09-08T19:37:22.560Z",
       "mutant": "zig/leak-test-locals"
     },
     {
       "caughtBy": "zig/calls-uses-complexity",
       "detail": "relationship-fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:59.890Z",
+      "injectedAt": "2026-09-08T19:37:22.570Z",
       "mutant": "zig/fabricate-usingnamespace-call"
     },
     {
       "caughtBy": "zig/calls-uses-complexity",
       "detail": "relationship-fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:59.899Z",
+      "injectedAt": "2026-09-08T19:37:22.577Z",
       "mutant": "zig/emit-type-position-uses"
     },
     {
       "caughtBy": "zig/calls-uses-complexity",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:59.906Z",
+      "injectedAt": "2026-09-08T19:37:22.587Z",
       "mutant": "zig/drop-import-reference"
     },
     {
       "caughtBy": "zig/calls-uses-complexity",
       "detail": "payload-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:39:59.914Z",
+      "injectedAt": "2026-09-08T19:37:22.594Z",
       "mutant": "zig/drop-symbol-complexity"
     },
     {
       "caughtBy": "java/class-extends-implements, java/fqn-extends, java/implicit-overrides, java/multi-interface-extends, java/sealed-varargs",
       "detail": "relationship-mislabel: 0 -> 5 fixture failures",
-      "injectedAt": "2026-09-08T17:40:00.058Z",
+      "injectedAt": "2026-09-08T19:37:22.738Z",
       "mutant": "java/mislabel-inheritance"
     },
     {
       "caughtBy": "java/array-access-uses, java/chained-field-access, java/class-extends-implements, java/complexity-parity, java/fq-api-endpoint, java/fqn-instantiation, java/generic-parameters-payload, java/generic-visibility-payload, java/generics-bounds, java/implicit-overrides, java/import-edges, java/initializer-calls, java/inner-class-instantiation, java/javadoc-payload, java/method-complexity-payload, java/nested-types, java/parameters-payload, java/pure-field-chain, java/qualified-call-path, java/sealed-varargs",
       "detail": "symbol-loss: 0 -> 20 fixture failures",
-      "injectedAt": "2026-09-08T17:40:00.117Z",
+      "injectedAt": "2026-09-08T19:37:22.788Z",
       "mutant": "java/drop-method-symbols"
     },
     {
       "caughtBy": "java/anonymous-and-multihop-overrides, java/ctor-value-injection, java/fqn-extends, java/fqn-instantiation, java/implicit-overrides, java/import-edges, java/inner-class-instantiation, java/overrides, java/type-usage-graph",
       "detail": "edge-drop: 0 -> 9 fixture failures",
-      "injectedAt": "2026-09-08T17:40:00.176Z",
+      "injectedAt": "2026-09-08T19:37:22.828Z",
       "mutant": "java/fqn-edge-drop"
     },
     {
       "caughtBy": "groovy/chained-field-access, groovy/override-fallback-confidence, groovy/safe-nav-chain",
       "detail": "confidence-dishonesty: 0 -> 3 fixture failures",
-      "injectedAt": "2026-09-08T17:40:00.303Z",
+      "injectedAt": "2026-09-08T19:37:22.929Z",
       "mutant": "groovy/confidence-tamper"
     },
     {
       "caughtBy": "groovy/annotation-type, groovy/array-access-uses, groovy/attribution-visibility, groovy/cast-types, groovy/chained-field-access, groovy/class-decorators, groovy/closure-and-typedef, groovy/complexity-parity, groovy/contains-edges, groovy/ctor-delegation, groovy/field-decorators, groovy/fq-annotations, groovy/fqn-extends, groovy/fqn-implements, groovy/fqn-instantiation, groovy/framework-annotations-only, groovy/framework-imports, groovy/generic-visibility-payload, groovy/groovydoc-payload, groovy/gstring-interpolation, groovy/import-edges, groovy/indexing-write-gate, groovy/method-refs, groovy/multihop-override-resolution, groovy/override-fallback-confidence, groovy/overrides, groovy/parameters-payload, groovy/pattern-refs, groovy/pure-field-chain, groovy/qualified-calls-payload, groovy/record-symbol, groovy/safe-nav-chain, groovy/script-methods, groovy/trait-implements, groovy/type-usage-graph",
       "detail": "relationship-garbage: 0 -> 35 fixture failures",
-      "injectedAt": "2026-09-08T17:40:00.369Z",
+      "injectedAt": "2026-09-08T19:37:22.967Z",
       "mutant": "groovy/segment-garbage"
     },
     {
       "caughtBy": "javascript/callee-uses, javascript/optional-chaining",
       "detail": "relationship-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:00.522Z",
+      "injectedAt": "2026-09-08T19:37:23.065Z",
       "mutant": "javascript/drop-field-access"
     },
     {
       "caughtBy": "javascript/payload-docs",
       "detail": "docstring-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:00.575Z",
+      "injectedAt": "2026-09-08T19:37:23.103Z",
       "mutant": "javascript/hide-jsdoc"
     },
     {
       "caughtBy": "scala/field-uses",
       "detail": "relationship-noise: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:00.890Z",
+      "injectedAt": "2026-09-08T19:37:23.323Z",
       "mutant": "scala/write-as-read-leak"
     },
     {
       "caughtBy": "scala/throw-targets",
       "detail": "relationship-noise: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:01.004Z",
+      "injectedAt": "2026-09-08T19:37:23.378Z",
       "mutant": "scala/throw-target-garbage"
     },
     {
       "caughtBy": "scala/abstract-members",
       "detail": "symbol-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:01.089Z",
+      "injectedAt": "2026-09-08T19:37:23.435Z",
       "mutant": "scala/abstract-members-loss"
     },
     {
       "caughtBy": "scala/enum-params",
       "detail": "symbol-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:01.174Z",
+      "injectedAt": "2026-09-08T19:37:23.494Z",
       "mutant": "scala/enum-params-loss"
     },
     {
       "caughtBy": "scala/enum-params",
       "detail": "relationship-noise: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:01.263Z",
+      "injectedAt": "2026-09-08T19:37:23.559Z",
       "mutant": "scala/enum-param-type-root-attribution"
     },
     {
       "caughtBy": "scala/given-refs",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:01.344Z",
+      "injectedAt": "2026-09-08T19:37:23.641Z",
       "mutant": "scala/drop-given-refs"
     },
     {
       "caughtBy": "scala/annotation-flags",
       "detail": "metadata-fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:01.424Z",
+      "injectedAt": "2026-09-08T19:37:23.711Z",
       "mutant": "scala/text-substring-pattern-fabrication"
     },
     {
       "caughtBy": "scala/complexity-parity, scala/f6-coverage-wave",
       "detail": "metric-drift: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:01.523Z",
+      "injectedAt": "2026-09-08T19:37:23.772Z",
       "mutant": "scala/complexity-arm-double-count"
     },
     {
       "caughtBy": "scala/qualified-call-path",
       "detail": "payload-noise: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:01.643Z",
+      "injectedAt": "2026-09-08T19:37:23.837Z",
       "mutant": "scala/curried-qualified-calls-dup"
     },
     {
       "caughtBy": "scala/generic-parameters-payload",
       "detail": "symbol-payload-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:01.749Z",
+      "injectedAt": "2026-09-08T19:37:23.911Z",
       "mutant": "scala/drop-typeParameters"
     },
     {
       "caughtBy": "scala/method-value-refs",
       "detail": "relationship-noise: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:01.863Z",
+      "injectedAt": "2026-09-08T19:37:23.981Z",
       "mutant": "scala/callee-method-value-leak"
     },
     {
       "caughtBy": "scala/decorators",
       "detail": "annotation-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:01.980Z",
+      "injectedAt": "2026-09-08T19:37:24.047Z",
       "mutant": "scala/drop-decorators"
     },
     {
       "caughtBy": "scala/scaladoc-payload",
       "detail": "docstring-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:02.076Z",
+      "injectedAt": "2026-09-08T19:37:24.104Z",
       "mutant": "scala/drop-docstrings"
     },
     {
       "caughtBy": "java/type-usage-graph",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:02.135Z",
+      "injectedAt": "2026-09-08T19:37:24.140Z",
       "mutant": "java/drop-declared-types"
     },
     {
       "caughtBy": "java/initializer-calls",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:02.201Z",
+      "injectedAt": "2026-09-08T19:37:24.179Z",
       "mutant": "java/drop-initializer-calls"
     },
     {
       "caughtBy": "java/array-access-uses",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:02.237Z",
+      "injectedAt": "2026-09-08T19:37:24.217Z",
       "mutant": "java/drop-array-access"
     },
     {
       "caughtBy": "java/ctor-delegation",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:02.285Z",
+      "injectedAt": "2026-09-08T19:37:24.256Z",
       "mutant": "java/drop-ctor-delegation"
     },
     {
       "caughtBy": "java/record-pattern-refs",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:02.330Z",
+      "injectedAt": "2026-09-08T19:37:24.311Z",
       "mutant": "java/drop-record-patterns"
     },
     {
       "caughtBy": "java/array-access-uses",
       "detail": "fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:02.391Z",
+      "injectedAt": "2026-09-08T19:37:24.363Z",
       "mutant": "java/emit-write-as-read"
     },
     {
       "caughtBy": "java/array-access-uses",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:02.454Z",
+      "injectedAt": "2026-09-08T19:37:24.417Z",
       "mutant": "java/type-sourced-member-reads"
     },
     {
       "caughtBy": "java/multi-interface-extends",
       "detail": "symbol-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:02.514Z",
+      "injectedAt": "2026-09-08T19:37:24.466Z",
       "mutant": "java/interface-methods-unexported"
     },
     {
       "caughtBy": "java/import-edges",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:02.572Z",
+      "injectedAt": "2026-09-08T19:37:24.546Z",
       "mutant": "java/drop-import-edges"
     },
     {
       "caughtBy": "java/parameters-payload",
       "detail": "payload-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:02.626Z",
+      "injectedAt": "2026-09-08T19:37:24.612Z",
       "mutant": "java/drop-parameters"
     },
     {
       "caughtBy": "java/import-edges",
       "detail": "evidence-mislabel: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:02.691Z",
+      "injectedAt": "2026-09-08T19:37:24.690Z",
       "mutant": "java/reclassify-import-tier"
     },
     {
       "caughtBy": "kotlin/type-usage-graph",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:03.213Z",
+      "injectedAt": "2026-09-08T19:37:25.030Z",
       "mutant": "kotlin/drop-declared-types"
     },
     {
       "caughtBy": "kotlin/indexing-uses, kotlin/template-uses",
       "detail": "relationship-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:03.308Z",
+      "injectedAt": "2026-09-08T19:37:25.101Z",
       "mutant": "kotlin/drop-expression-uses"
     },
     {
       "caughtBy": "kotlin/ctor-delegation",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:03.381Z",
+      "injectedAt": "2026-09-08T19:37:25.144Z",
       "mutant": "kotlin/drop-ctor-delegation"
     },
     {
       "caughtBy": "kotlin/callable-refs",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:03.457Z",
+      "injectedAt": "2026-09-08T19:37:25.192Z",
       "mutant": "kotlin/drop-callable-refs"
     },
     {
       "caughtBy": "kotlin/type-alias",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:03.524Z",
+      "injectedAt": "2026-09-08T19:37:25.241Z",
       "mutant": "kotlin/drop-type-alias-refs"
     },
     {
       "caughtBy": "kotlin/type-alias",
       "detail": "symbol-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:03.595Z",
+      "injectedAt": "2026-09-08T19:37:25.300Z",
       "mutant": "kotlin/drop-type-alias-symbols"
     },
     {
       "caughtBy": "kotlin/object-literal",
       "detail": "symbol-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:03.666Z",
+      "injectedAt": "2026-09-08T19:37:25.392Z",
       "mutant": "kotlin/drop-anonymous-objects"
     },
     {
       "caughtBy": "kotlin/object-literal",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:03.735Z",
+      "injectedAt": "2026-09-08T19:37:25.462Z",
       "mutant": "kotlin/drop-object-literal-refs"
     },
     {
       "caughtBy": "kotlin/init-attribution",
       "detail": "relationship-mislabel: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:03.829Z",
+      "injectedAt": "2026-09-08T19:37:25.542Z",
       "mutant": "kotlin/global-attribution"
     },
     {
       "caughtBy": "kotlin/import-edges",
       "detail": "evidence-mislabel: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:03.904Z",
+      "injectedAt": "2026-09-08T19:37:25.619Z",
       "mutant": "kotlin/reclassify-import-tier"
     },
     {
       "caughtBy": "kotlin/init-attribution, kotlin/instantiates-edges",
       "detail": "relationship-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:04.002Z",
+      "injectedAt": "2026-09-08T19:37:25.701Z",
       "mutant": "kotlin/drop-instantiates"
     },
     {
       "caughtBy": "kotlin/parameters-payload",
       "detail": "symbol-payload-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:04.105Z",
+      "injectedAt": "2026-09-08T19:37:25.769Z",
       "mutant": "kotlin/strip-parameters"
     },
     {
       "caughtBy": "kotlin/visibility-payload",
       "detail": "symbol-payload-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:04.181Z",
+      "injectedAt": "2026-09-08T19:37:25.835Z",
       "mutant": "kotlin/strip-visibility"
     },
     {
       "caughtBy": "kotlin/kdoc-extraction",
       "detail": "docstring-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:04.263Z",
+      "injectedAt": "2026-09-08T19:37:25.903Z",
       "mutant": "kotlin/clear-comments"
     },
     {
       "caughtBy": "kotlin/indexing-uses",
       "detail": "relationship-noise: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:04.336Z",
+      "injectedAt": "2026-09-08T19:37:25.972Z",
       "mutant": "kotlin/write-as-read-uses"
     },
     {
       "caughtBy": "kotlin/kdoc-extraction",
       "detail": "docstring-misattribution: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:04.396Z",
+      "injectedAt": "2026-09-08T19:37:26.055Z",
       "mutant": "kotlin/kdoc-contamination"
     },
     {
       "caughtBy": "kotlin/property-accessors",
       "detail": "payload-fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:04.458Z",
+      "injectedAt": "2026-09-08T19:37:26.127Z",
       "mutant": "kotlin/accessor-text-fallback"
     },
     {
       "caughtBy": "kotlin/type-usage-graph",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:04.509Z",
+      "injectedAt": "2026-09-08T19:37:26.201Z",
       "mutant": "kotlin/receiver-ref-loss"
     },
     {
       "caughtBy": "kotlin/type-usage-graph",
       "detail": "relationship-mislabel: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:04.566Z",
+      "injectedAt": "2026-09-08T19:37:26.291Z",
       "mutant": "kotlin/return-type-global"
     },
     {
       "caughtBy": "java/javadoc-payload",
       "detail": "docstring-misattribution: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:04.599Z",
+      "injectedAt": "2026-09-08T19:37:26.349Z",
       "mutant": "java/javadoc-leak"
     },
     {
       "caughtBy": "java/implicit-overrides",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:04.627Z",
+      "injectedAt": "2026-09-08T19:37:26.647Z",
       "mutant": "java/drop-unannotated-overrides"
     },
     {
       "caughtBy": "java/implicit-overrides",
       "detail": "fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:04.661Z",
+      "injectedAt": "2026-09-08T19:37:26.688Z",
       "mutant": "java/overload-paired-as-override"
     },
     {
       "caughtBy": "scala/anonymous-body-scope",
       "detail": "payload-corruption: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:04.761Z",
+      "injectedAt": "2026-09-08T19:37:26.767Z",
       "mutant": "scala/anonymous-body-scope-leak"
     },
     {
       "caughtBy": "kotlin/enum-supertype-heritage",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:04.859Z",
+      "injectedAt": "2026-09-08T19:37:26.822Z",
       "mutant": "kotlin/enum-supertype-drop"
     },
     {
       "caughtBy": "java/anonymous-and-multihop-overrides",
       "detail": "payload-corruption: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:04.916Z",
+      "injectedAt": "2026-09-08T19:37:26.862Z",
       "mutant": "java/anonymous-body-scope-leak"
     },
     {
       "caughtBy": "java/anonymous-and-multihop-overrides",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:04.958Z",
+      "injectedAt": "2026-09-08T19:37:26.897Z",
       "mutant": "java/override-multihop-bare-name"
+    },
+    {
+      "caughtBy": "java/type-usage-graph",
+      "detail": "relationship-loss: 0 -> 1 fixture failures",
+      "injectedAt": "2026-09-08T19:37:26.934Z",
+      "mutant": "java/return-type-refs-drop"
+    },
+    {
+      "caughtBy": "java/root-segment-builtin-filter",
+      "detail": "relationship-loss: 0 -> 1 fixture failures",
+      "injectedAt": "2026-09-08T19:37:26.962Z",
+      "mutant": "java/per-segment-builtin-filter"
     },
     {
       "caughtBy": "scala/implicit-overrides",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:05.065Z",
+      "injectedAt": "2026-09-08T19:37:27.019Z",
       "mutant": "scala/drop-keywordless-abstract-impl"
     },
     {
       "caughtBy": "scala/implicit-overrides",
       "detail": "fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:05.175Z",
+      "injectedAt": "2026-09-08T19:37:27.094Z",
       "mutant": "scala/first-supertype-guess-override"
     },
     {
       "caughtBy": "groovy/groovydoc-payload",
       "detail": "docstring-misattribution: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:05.242Z",
+      "injectedAt": "2026-09-08T19:37:27.133Z",
       "mutant": "groovy/groovydoc-leak"
     },
     {
       "caughtBy": "scala/scaladoc-payload",
       "detail": "docstring-misattribution: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:05.339Z",
+      "injectedAt": "2026-09-08T19:37:27.188Z",
       "mutant": "scala/scaladoc-leak"
     },
     {
       "caughtBy": "groovy/attribution-visibility",
       "detail": "attribution-corruption: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:05.494Z",
+      "injectedAt": "2026-09-08T19:37:27.224Z",
       "mutant": "groovy/read-attribution-to-receiver"
     },
     {
       "caughtBy": "groovy/script-methods",
       "detail": "attribution-corruption: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:05.568Z",
+      "injectedAt": "2026-09-08T19:37:27.258Z",
       "mutant": "groovy/script-sentinel-split"
     },
     {
       "caughtBy": "groovy/attribution-visibility",
       "detail": "payload-corruption: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:05.626Z",
+      "injectedAt": "2026-09-08T19:37:27.296Z",
       "mutant": "groovy/text-visibility-fabrication"
     },
     {
       "caughtBy": "groovy/attribution-visibility",
       "detail": "payload-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:05.667Z",
+      "injectedAt": "2026-09-08T19:37:27.338Z",
       "mutant": "groovy/keyword-modifiers-blind"
     },
     {
       "caughtBy": "groovy/attribution-visibility",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:05.715Z",
+      "injectedAt": "2026-09-08T19:37:27.386Z",
       "mutant": "groovy/modifier-return-type-loss"
     },
     {
       "caughtBy": "groovy/indexing-write-gate",
       "detail": "relationship-noise: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:05.753Z",
+      "injectedAt": "2026-09-08T19:37:27.427Z",
       "mutant": "groovy/array-write-uses"
     },
     {
       "caughtBy": "groovy/attribution-visibility, groovy/type-usage-graph",
       "detail": "relationship-mislabel: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:05.802Z",
+      "injectedAt": "2026-09-08T19:37:27.476Z",
       "mutant": "groovy/return-type-mislabel"
     },
     {
       "caughtBy": "groovy/attribution-visibility, groovy/pattern-refs, groovy/type-usage-graph",
       "detail": "relationship-loss: 0 -> 3 fixture failures",
-      "injectedAt": "2026-09-08T17:40:05.843Z",
+      "injectedAt": "2026-09-08T19:37:27.521Z",
       "mutant": "groovy/drop-declared-types"
     },
     {
       "caughtBy": "scala/abstract-members, scala/enum-params, scala/f6-coverage-wave, scala/tuple-refs, scala/type-usage-graph",
       "detail": "relationship-loss: 0 -> 5 fixture failures",
-      "injectedAt": "2026-09-08T17:40:05.922Z",
+      "injectedAt": "2026-09-08T19:37:27.594Z",
       "mutant": "scala/drop-declared-types"
     },
     {
       "caughtBy": "scala/import-edges",
       "detail": "tier-misclassification: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:06.003Z",
+      "injectedAt": "2026-09-08T19:37:27.666Z",
       "mutant": "scala/reclassify-import-tier"
     },
     {
       "caughtBy": "scala/f6-coverage-wave, scala/import-edges",
       "detail": "relationship-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:06.071Z",
+      "injectedAt": "2026-09-08T19:37:27.735Z",
       "mutant": "scala/drop-import-source-rewrite"
     },
     {
       "caughtBy": "scala/pattern-refs",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:06.142Z",
+      "injectedAt": "2026-09-08T19:37:27.803Z",
       "mutant": "scala/drop-pattern-refs"
     },
     {
       "caughtBy": "scala/method-value-refs",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:06.219Z",
+      "injectedAt": "2026-09-08T19:37:27.871Z",
       "mutant": "scala/drop-method-value-refs"
     },
     {
       "caughtBy": "scala/extension-method-flag, scala/f6-coverage-wave, scala/field-uses, scala/interp-uses",
       "detail": "relationship-loss: 0 -> 4 fixture failures",
-      "injectedAt": "2026-09-08T17:40:06.280Z",
+      "injectedAt": "2026-09-08T19:37:27.938Z",
       "mutant": "scala/drop-expression-uses"
     },
     {
       "caughtBy": "scala/tuple-refs",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:06.357Z",
+      "injectedAt": "2026-09-08T19:37:28.001Z",
       "mutant": "scala/drop-tuple-refs"
     },
     {
       "caughtBy": "scala/derives-refs",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:06.429Z",
+      "injectedAt": "2026-09-08T19:37:28.056Z",
       "mutant": "scala/drop-derives-refs"
     },
     {
       "caughtBy": "scala/f6-coverage-wave, scala/type-alias-refs",
       "detail": "relationship-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:06.524Z",
+      "injectedAt": "2026-09-08T19:37:28.121Z",
       "mutant": "scala/drop-type-alias-refs"
     },
     {
       "caughtBy": "scala/self-type-ref",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:06.623Z",
+      "injectedAt": "2026-09-08T19:37:28.186Z",
       "mutant": "scala/drop-self-type-ref"
     },
     {
       "caughtBy": "scala/parameters-payload",
       "detail": "payload-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:06.733Z",
+      "injectedAt": "2026-09-08T19:37:28.252Z",
       "mutant": "scala/drop-parameters"
     },
     {
       "caughtBy": "scala/generic-substitution-overrides",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:06.835Z",
+      "injectedAt": "2026-09-08T19:37:28.317Z",
       "mutant": "scala/revert-generic-substitution-fallback"
     },
     {
       "caughtBy": "typescript/type-assertion, typescript/type-usage-graph",
       "detail": "relationship-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:07.950Z",
+      "injectedAt": "2026-09-08T19:37:28.971Z",
       "mutant": "typescript/drop-declared-types"
     },
     {
       "caughtBy": "javascript/instanceof-source, javascript/type-usage-graph",
       "detail": "relationship-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:07.994Z",
+      "injectedAt": "2026-09-08T19:37:29.008Z",
       "mutant": "javascript/drop-instanceof-refs"
     },
     {
       "caughtBy": "javascript/callee-uses",
       "detail": "relationship-garbage: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:08.035Z",
+      "injectedAt": "2026-09-08T19:37:29.043Z",
       "mutant": "javascript/reintroduce-receiver-source"
     },
     {
       "caughtBy": "javascript/deep-cjs-exports",
       "detail": "relationship-garbage: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:08.071Z",
+      "injectedAt": "2026-09-08T19:37:29.079Z",
       "mutant": "javascript/reintroduce-module-write-uses"
     },
     {
       "caughtBy": "python/payload-and-complexity, python/type-usage-graph",
       "detail": "relationship-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:08.222Z",
+      "injectedAt": "2026-09-08T19:37:29.326Z",
       "mutant": "python/drop-declared-types"
     },
     {
       "caughtBy": "go/relationship-and-payloads, go/type-usage-graph",
       "detail": "relationship-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:08.256Z",
+      "injectedAt": "2026-09-08T19:37:29.352Z",
       "mutant": "go/drop-declared-types"
     },
     {
       "caughtBy": "typescript/type-usage-graph",
       "detail": "relationship-fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:08.433Z",
+      "injectedAt": "2026-09-08T19:37:29.520Z",
       "mutant": "typescript/double-emit-type-args"
     },
     {
       "caughtBy": "typescript/payload-pins, typescript/qualified-call-path",
       "detail": "symbol-payload-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:08.565Z",
+      "injectedAt": "2026-09-08T19:37:29.666Z",
       "mutant": "typescript/drop-qualified-calls"
     },
     {
       "caughtBy": "typescript/comment-boundary, typescript/payload-pins",
       "detail": "docstring-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:08.700Z",
+      "injectedAt": "2026-09-08T19:37:29.845Z",
       "mutant": "typescript/hide-jsdoc"
     },
     {
       "caughtBy": "typescript/abstract-class, typescript/consistency-tiers, typescript/contains-overrides, typescript/generic-heritage, typescript/interface-extends",
       "detail": "relationship-mislabel: 0 -> 5 fixture failures",
-      "injectedAt": "2026-09-08T17:40:08.847Z",
+      "injectedAt": "2026-09-08T19:37:30.023Z",
       "mutant": "typescript/swap-heritage-labels"
     },
     {
       "caughtBy": "typescript/dynamic-import, typescript/import-edges",
       "detail": "evidence-mislabel: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:09.028Z",
+      "injectedAt": "2026-09-08T19:37:30.184Z",
       "mutant": "typescript/reclassify-import-tier"
     },
     {
       "caughtBy": "typescript/dynamic-import, typescript/import-edges",
       "detail": "relationship-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:09.190Z",
+      "injectedAt": "2026-09-08T19:37:30.292Z",
       "mutant": "typescript/drop-import-edges"
     },
     {
       "caughtBy": "typescript/type-alias-refs",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:09.367Z",
+      "injectedAt": "2026-09-08T19:37:30.391Z",
       "mutant": "typescript/drop-type-alias-refs"
     },
     {
       "caughtBy": "typescript/field-uses, typescript/interp-uses",
       "detail": "relationship-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:09.539Z",
+      "injectedAt": "2026-09-08T19:37:30.513Z",
       "mutant": "typescript/drop-expression-uses"
     },
     {
       "caughtBy": "typescript/satisfies-ref",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:09.707Z",
+      "injectedAt": "2026-09-08T19:37:30.629Z",
       "mutant": "typescript/drop-satisfies-refs"
     },
     {
       "caughtBy": "typescript/destructure-scope",
       "detail": "relationship-garbage: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:09.904Z",
+      "injectedAt": "2026-09-08T19:37:30.735Z",
       "mutant": "typescript/reintroduce-shadowed-false-refs"
     },
     {
       "caughtBy": "typescript/type-assertion, typescript/type-usage-graph",
       "detail": "relationship-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:10.102Z",
+      "injectedAt": "2026-09-08T19:37:30.844Z",
       "mutant": "typescript/drop-cast-assertion-refs"
     },
     {
       "caughtBy": "typescript/instantiation-refs",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:10.277Z",
+      "injectedAt": "2026-09-08T19:37:30.939Z",
       "mutant": "typescript/drop-type-argument-refs"
     },
     {
       "caughtBy": "typescript/contains-overrides",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:10.437Z",
+      "injectedAt": "2026-09-08T19:37:31.025Z",
       "mutant": "typescript/drop-override-edges"
     },
     {
       "caughtBy": "typescript/exports-edges",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:10.604Z",
+      "injectedAt": "2026-09-08T19:37:31.110Z",
       "mutant": "typescript/drop-exports-edges"
     },
     {
       "caughtBy": "typescript/visibility-payload",
       "detail": "payload-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:10.767Z",
+      "injectedAt": "2026-09-08T19:37:31.207Z",
       "mutant": "typescript/drop-visibility"
     },
     {
       "caughtBy": "typescript/parameters-payload",
       "detail": "payload-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:10.930Z",
+      "injectedAt": "2026-09-08T19:37:31.348Z",
       "mutant": "typescript/drop-parameters"
     },
     {
       "caughtBy": "typescript/generic-constraints",
       "detail": "payload-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:11.056Z",
+      "injectedAt": "2026-09-08T19:37:31.691Z",
       "mutant": "typescript/drop-type-parameters"
     },
     {
       "caughtBy": "typescript/field-uses",
       "detail": "relationship-garbage: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:11.182Z",
+      "injectedAt": "2026-09-08T19:37:31.795Z",
       "mutant": "typescript/reintroduce-write-as-read"
     },
     {
       "caughtBy": "typescript/instantiation-refs",
       "detail": "relationship-garbage: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:11.300Z",
+      "injectedAt": "2026-09-08T19:37:31.903Z",
       "mutant": "typescript/reintroduce-script-placeholder"
     },
     {
       "caughtBy": "typescript/instantiation-refs",
       "detail": "relationship-garbage: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:12.118Z",
+      "injectedAt": "2026-09-08T19:37:31.989Z",
       "mutant": "typescript/reintroduce-qualified-new"
     },
     {
       "caughtBy": "typescript/object-literal-members",
       "detail": "relationship-garbage: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:12.252Z",
+      "injectedAt": "2026-09-08T19:37:32.089Z",
       "mutant": "typescript/reintroduce-subscript-call-targets"
     },
     {
       "caughtBy": "typescript/object-literal-members",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:12.388Z",
+      "injectedAt": "2026-09-08T19:37:32.186Z",
       "mutant": "typescript/reintroduce-module-leaf-attr"
     },
     {
       "caughtBy": "typescript/object-literal-members",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:12.514Z",
+      "injectedAt": "2026-09-08T19:37:32.296Z",
       "mutant": "typescript/reintroduce-nested-misattribution"
     },
     {
       "caughtBy": "typescript/object-literal-members",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:12.639Z",
+      "injectedAt": "2026-09-08T19:37:32.404Z",
       "mutant": "typescript/reintroduce-module-leaf-statics"
     },
     {
       "caughtBy": "javascript/dynamic-import, javascript/import-edges",
       "detail": "evidence-mislabel: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:12.681Z",
+      "injectedAt": "2026-09-08T19:37:32.442Z",
       "mutant": "javascript/reclassify-import-tier"
     },
     {
       "caughtBy": "javascript/dynamic-import, javascript/import-edges",
       "detail": "relationship-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:12.715Z",
+      "injectedAt": "2026-09-08T19:37:32.480Z",
       "mutant": "javascript/drop-import-edges"
     },
     {
       "caughtBy": "javascript/interp-uses",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:12.756Z",
+      "injectedAt": "2026-09-08T19:37:32.535Z",
       "mutant": "javascript/drop-template-uses"
     },
     {
       "caughtBy": "javascript/callee-uses",
       "detail": "relationship-garbage: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:12.801Z",
+      "injectedAt": "2026-09-08T19:37:32.588Z",
       "mutant": "javascript/reintroduce-callee-uses"
     },
     {
       "caughtBy": "javascript/static-block",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:12.843Z",
+      "injectedAt": "2026-09-08T19:37:32.631Z",
       "mutant": "javascript/drop-static-calls"
     },
     {
       "caughtBy": "javascript/instanceof-source",
       "detail": "relationship-mislabel: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:12.888Z",
+      "injectedAt": "2026-09-08T19:37:32.668Z",
       "mutant": "javascript/global-instanceof-source"
     },
     {
       "caughtBy": "javascript/destructure-symbols",
       "detail": "symbol-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:12.922Z",
+      "injectedAt": "2026-09-08T19:37:32.700Z",
       "mutant": "javascript/drop-destructure-symbols"
     },
     {
       "caughtBy": "javascript/jsx-usage",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:12.951Z",
+      "injectedAt": "2026-09-08T19:37:32.731Z",
       "mutant": "javascript/drop-jsx-uses"
     },
     {
       "caughtBy": "javascript/contains-overrides, javascript/external-override",
       "detail": "relationship-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:12.982Z",
+      "injectedAt": "2026-09-08T19:37:32.757Z",
       "mutant": "javascript/drop-override-edges"
     },
     {
       "caughtBy": "javascript/instantiations",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:13.030Z",
+      "injectedAt": "2026-09-08T19:37:32.787Z",
       "mutant": "javascript/drop-instantiates-edges"
     },
     {
       "caughtBy": "javascript/private-methods, javascript/visibility-payload",
       "detail": "payload-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:13.071Z",
+      "injectedAt": "2026-09-08T19:37:32.819Z",
       "mutant": "javascript/drop-visibility"
     },
     {
       "caughtBy": "javascript/parameters-payload",
       "detail": "payload-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:13.112Z",
+      "injectedAt": "2026-09-08T19:37:32.864Z",
       "mutant": "javascript/drop-parameters"
     },
     {
       "caughtBy": "vue/generic-props-emits, vue/generic-union-emits, vue/script-setup-props-emits",
       "detail": "symbol-loss: 0 -> 3 fixture failures",
-      "injectedAt": "2026-09-08T17:40:14.035Z",
+      "injectedAt": "2026-09-08T19:37:34.890Z",
       "mutant": "vue/drop-generic-macro-symbols"
     },
     {
       "caughtBy": "vue/template-member-uses, vue/template-scope-shadow",
       "detail": "relationship-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:14.114Z",
+      "injectedAt": "2026-09-08T19:37:34.959Z",
       "mutant": "vue/drop-template-member-uses"
     },
     {
       "caughtBy": "vue/script-relations",
       "detail": "relationship-duplication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:14.195Z",
+      "injectedAt": "2026-09-08T19:37:35.035Z",
       "mutant": "vue/reduplicate-contains"
     },
     {
       "caughtBy": "vue/generic-props-emits, vue/generic-union-emits, vue/script-relations",
       "detail": "relationship-loss: 0 -> 3 fixture failures",
-      "injectedAt": "2026-09-08T17:40:14.265Z",
+      "injectedAt": "2026-09-08T19:37:35.099Z",
       "mutant": "vue/drop-contains-edges"
     },
     {
       "caughtBy": "vue/script-relations",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:14.345Z",
+      "injectedAt": "2026-09-08T19:37:35.168Z",
       "mutant": "vue/drop-import-edges"
     },
     {
       "caughtBy": "vue/payload-pins",
       "detail": "payload-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:14.426Z",
+      "injectedAt": "2026-09-08T19:37:35.232Z",
       "mutant": "vue/drop-complexity"
     },
     {
       "caughtBy": "vue/payload-pins",
       "detail": "payload-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:14.496Z",
+      "injectedAt": "2026-09-08T19:37:35.306Z",
       "mutant": "vue/drop-visibility"
     },
     {
       "caughtBy": "vue/payload-pins",
       "detail": "payload-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:14.566Z",
+      "injectedAt": "2026-09-08T19:37:35.368Z",
       "mutant": "vue/drop-parameters"
     },
     {
       "caughtBy": "vue/template-scope-shadow",
       "detail": "scope-blindness: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:14.645Z",
+      "injectedAt": "2026-09-08T19:37:35.435Z",
       "mutant": "vue/reemit-shadowed-uses"
     },
     {
       "caughtBy": "vue/generic-props-emits, vue/generic-union-emits, vue/script-setup-props-emits",
       "detail": "symbol-loss: 0 -> 3 fixture failures",
-      "injectedAt": "2026-09-08T17:40:14.728Z",
+      "injectedAt": "2026-09-08T19:37:35.513Z",
       "mutant": "vue/drop-union-emit-names"
     },
     {
       "caughtBy": "svelte/each-shadow-collision, svelte/relationship-kinds, svelte/template-member-uses",
       "detail": "relationship-loss: 0 -> 3 fixture failures",
-      "injectedAt": "2026-09-08T17:40:17.262Z",
+      "injectedAt": "2026-09-08T19:37:35.951Z",
       "mutant": "svelte/drop-template-member-uses"
     },
     {
       "caughtBy": "svelte/each-shadow-collision, svelte/template-member-uses",
       "detail": "scope-blindness: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:17.358Z",
+      "injectedAt": "2026-09-08T19:37:36.100Z",
       "mutant": "svelte/reemit-shadowed-uses"
     },
     {
       "caughtBy": "svelte/evidence-tiers-and-columns, svelte/module-block-exports, svelte/reactive-dedupe, svelte/relationship-kinds, svelte/rune-props-dedupe, svelte/template-member-uses, svelte/ts-script-interface",
       "detail": "symbol-duplication: 0 -> 7 fixture failures",
-      "injectedAt": "2026-09-08T17:40:17.456Z",
+      "injectedAt": "2026-09-08T19:37:36.240Z",
       "mutant": "svelte/reduplicate-rune-props"
     },
     {
       "caughtBy": "svelte/relationship-kinds",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:17.605Z",
+      "injectedAt": "2026-09-08T19:37:36.390Z",
       "mutant": "svelte/drop-overrides-edges"
     },
     {
       "caughtBy": "svelte/relationship-kinds",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:17.763Z",
+      "injectedAt": "2026-09-08T19:37:36.547Z",
       "mutant": "svelte/drop-references-edges"
     },
     {
       "caughtBy": "svelte/each-shadow-collision, svelte/relationship-kinds, svelte/template-member-uses",
       "detail": "relationship-loss: 0 -> 3 fixture failures",
-      "injectedAt": "2026-09-08T17:40:17.910Z",
+      "injectedAt": "2026-09-08T19:37:36.680Z",
       "mutant": "svelte/drop-uses-edges"
     },
     {
       "caughtBy": "svelte/relationship-kinds",
       "detail": "payload-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:18.023Z",
+      "injectedAt": "2026-09-08T19:37:36.771Z",
       "mutant": "svelte/drop-parameters"
     },
     {
       "caughtBy": "svelte/relationship-kinds",
       "detail": "payload-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:18.127Z",
+      "injectedAt": "2026-09-08T19:37:36.857Z",
       "mutant": "svelte/drop-visibility"
     },
     {
       "caughtBy": "svelte/each-shadow-collision, svelte/template-member-uses",
       "detail": "scope-blindness: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:18.239Z",
+      "injectedAt": "2026-09-08T19:37:36.947Z",
       "mutant": "svelte/reemit-shadowed-member-uses"
     },
     {
       "caughtBy": "svelte/reactive-dedupe",
       "detail": "symbol-duplication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:18.349Z",
+      "injectedAt": "2026-09-08T19:37:37.044Z",
       "mutant": "svelte/reduplicate-reactive-targets"
     },
     {
       "caughtBy": "svelte/evidence-tiers-and-columns, svelte/relationship-kind-catalog, svelte/template-calls, svelte/template-member-uses",
       "detail": "relationship-loss: 0 -> 4 fixture failures",
-      "injectedAt": "2026-09-08T17:40:18.443Z",
+      "injectedAt": "2026-09-08T19:37:37.153Z",
       "mutant": "svelte/drop-on-handler-calls"
     },
     {
       "caughtBy": "svelte/snippet-definitions, svelte/template-calls",
       "detail": "relationship-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:18.566Z",
+      "injectedAt": "2026-09-08T19:37:37.258Z",
       "mutant": "svelte/drop-render-tag-calls"
     },
     {
       "caughtBy": "vue/modern-html-svg-builtin-tags",
       "detail": "relationship-fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:18.643Z",
+      "injectedAt": "2026-09-08T19:37:37.334Z",
       "mutant": "vue/reemit-filtered-kebab-tags"
     },
     {
       "caughtBy": "groovy/annotation-type, groovy/array-access-uses, groovy/attribution-visibility, groovy/cast-types, groovy/chained-field-access, groovy/class-decorators, groovy/closure-and-typedef, groovy/contains-edges, groovy/ctor-delegation, groovy/field-decorators, groovy/fq-annotations, groovy/fqn-extends, groovy/fqn-implements, groovy/fqn-instantiation, groovy/framework-annotations-only, groovy/framework-imports, groovy/generic-visibility-payload, groovy/groovydoc-payload, groovy/gstring-interpolation, groovy/import-edges, groovy/indexing-write-gate, groovy/method-refs, groovy/multihop-override-resolution, groovy/override-fallback-confidence, groovy/overrides, groovy/parameters-payload, groovy/pattern-refs, groovy/pure-field-chain, groovy/qualified-calls-payload, groovy/record-symbol, groovy/safe-nav-chain, groovy/trait-implements",
       "detail": "symbol-loss: 0 -> 32 fixture failures",
-      "injectedAt": "2026-09-08T17:40:18.713Z",
+      "injectedAt": "2026-09-08T19:37:37.375Z",
       "mutant": "groovy/drop-class-symbols"
     },
     {
       "caughtBy": "groovy/array-access-uses, groovy/indexing-write-gate",
       "detail": "relationship-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:18.782Z",
+      "injectedAt": "2026-09-08T19:37:37.424Z",
       "mutant": "groovy/drop-array-access"
     },
     {
       "caughtBy": "groovy/ctor-delegation",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:18.853Z",
+      "injectedAt": "2026-09-08T19:37:37.469Z",
       "mutant": "groovy/drop-ctor-delegation"
     },
     {
       "caughtBy": "groovy/pattern-refs, groovy/type-usage-graph",
       "detail": "relationship-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:18.913Z",
+      "injectedAt": "2026-09-08T19:37:37.526Z",
       "mutant": "groovy/drop-pattern-refs"
     },
     {
       "caughtBy": "groovy/method-refs",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:18.972Z",
+      "injectedAt": "2026-09-08T19:37:37.580Z",
       "mutant": "groovy/drop-method-refs"
     },
     {
       "caughtBy": "groovy/cast-types",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:19.034Z",
+      "injectedAt": "2026-09-08T19:37:37.637Z",
       "mutant": "groovy/drop-cast-types"
     },
     {
       "caughtBy": "groovy/record-symbol",
       "detail": "symbol-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:19.081Z",
+      "injectedAt": "2026-09-08T19:37:37.672Z",
       "mutant": "groovy/drop-record-symbols"
     },
     {
       "caughtBy": "groovy/annotation-type",
       "detail": "symbol-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:19.122Z",
+      "injectedAt": "2026-09-08T19:37:37.710Z",
       "mutant": "groovy/drop-annotation-types"
     },
     {
       "caughtBy": "groovy/import-edges, groovy/script-methods",
       "detail": "relationship-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:19.167Z",
+      "injectedAt": "2026-09-08T19:37:37.746Z",
       "mutant": "groovy/drop-import-edges"
     },
     {
       "caughtBy": "groovy/import-edges",
       "detail": "metadata-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:19.202Z",
+      "injectedAt": "2026-09-08T19:37:37.795Z",
       "mutant": "groovy/drop-wildcard-flag"
     },
     {
       "caughtBy": "groovy/parameters-payload",
       "detail": "payload-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:19.257Z",
+      "injectedAt": "2026-09-08T19:37:37.853Z",
       "mutant": "groovy/drop-parameters"
     },
     {
       "caughtBy": "groovy/parameters-payload",
       "detail": "payload-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:19.313Z",
+      "injectedAt": "2026-09-08T19:37:37.905Z",
       "mutant": "groovy/drop-varargs-type"
     },
     {
       "caughtBy": "groovy/array-access-uses, groovy/contains-edges, groovy/multihop-override-resolution, groovy/record-symbol",
       "detail": "relationship-loss: 0 -> 4 fixture failures",
-      "injectedAt": "2026-09-08T17:40:19.369Z",
+      "injectedAt": "2026-09-08T19:37:37.939Z",
       "mutant": "groovy/drop-contains-edges"
     },
     {
       "caughtBy": "groovy/multihop-override-resolution",
       "detail": "payload-corruption: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:19.435Z",
+      "injectedAt": "2026-09-08T19:37:37.984Z",
       "mutant": "groovy/anonymous-body-scope-leak"
     },
     {
       "caughtBy": "groovy/multihop-override-resolution",
       "detail": "fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:19.508Z",
+      "injectedAt": "2026-09-08T19:37:38.018Z",
       "mutant": "groovy/override-multihop-fallthrough"
     },
     {
       "caughtBy": "csharp/payload-and-complexity",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:20.147Z",
+      "injectedAt": "2026-09-08T19:37:39.537Z",
       "mutant": "csharp/drop-field-access-uses"
     },
     {
       "caughtBy": "csharp/payload-and-complexity",
       "detail": "relationship-fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:20.215Z",
+      "injectedAt": "2026-09-08T19:37:39.585Z",
       "mutant": "csharp/emit-write-as-read"
     },
     {
       "caughtBy": "csharp/payload-and-complexity",
       "detail": "payload-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:20.274Z",
+      "injectedAt": "2026-09-08T19:37:39.638Z",
       "mutant": "csharp/drop-symbol-complexity"
     },
     {
       "caughtBy": "csharp/payload-and-complexity",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:20.370Z",
+      "injectedAt": "2026-09-08T19:37:39.703Z",
       "mutant": "csharp/drop-implements-edge"
     },
     {
       "caughtBy": "csharp/payload-and-complexity",
       "detail": "relationship-noise: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:20.482Z",
+      "injectedAt": "2026-09-08T19:37:39.761Z",
       "mutant": "csharp/callee-field-access-leak"
     },
     {
       "caughtBy": "csharp/payload-and-complexity",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:20.545Z",
+      "injectedAt": "2026-09-08T19:37:39.820Z",
       "mutant": "csharp/ctor-initializer-loss"
     },
     {
       "caughtBy": "csharp/payload-and-complexity",
       "detail": "payload-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:20.610Z",
+      "injectedAt": "2026-09-08T19:37:39.875Z",
       "mutant": "csharp/operator-name-collapse"
     },
     {
       "caughtBy": "csharp/payload-and-complexity",
       "detail": "symbol-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:20.666Z",
+      "injectedAt": "2026-09-08T19:37:39.933Z",
       "mutant": "csharp/drop-accessor-events"
     },
     {
       "caughtBy": "csharp/payload-and-complexity",
       "detail": "payload-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:20.705Z",
+      "injectedAt": "2026-09-08T19:37:39.982Z",
       "mutant": "csharp/switch-arm-complexity-loss"
     },
     {
       "caughtBy": "csharp/payload-and-complexity",
       "detail": "fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:20.739Z",
+      "injectedAt": "2026-09-08T19:37:40.027Z",
       "mutant": "csharp/filescoped-fqn-loss"
     },
     {
       "caughtBy": "csharp/payload-and-complexity",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:20.771Z",
+      "injectedAt": "2026-09-08T19:37:40.070Z",
       "mutant": "csharp/implicit-new-assignment-loss"
     },
     {
       "caughtBy": "csharp/payload-and-complexity",
       "detail": "fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:20.814Z",
+      "injectedAt": "2026-09-08T19:37:40.112Z",
       "mutant": "csharp/iface-base-extends-fabrication"
     },
     {
       "caughtBy": "csharp/csd14-array-member-news",
       "detail": "fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:20.867Z",
+      "injectedAt": "2026-09-08T19:37:40.155Z",
       "mutant": "csharp/array-member-new-selfmap"
     },
     {
       "caughtBy": "dart/dedup-and-attribution, dart/family-closure-cascades, dart/payload-and-complexity",
       "detail": "relationship-loss: 0 -> 3 fixture failures",
-      "injectedAt": "2026-09-08T17:40:21.298Z",
+      "injectedAt": "2026-09-08T19:37:40.277Z",
       "mutant": "dart/drop-implements-edge"
     },
     {
       "caughtBy": "dart/payload-and-complexity",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:21.442Z",
+      "injectedAt": "2026-09-08T19:37:40.316Z",
       "mutant": "dart/drop-mixin-uses-edge"
     },
     {
       "caughtBy": "dart/dedup-and-attribution, dart/family-closure-cascades, dart/payload-and-complexity",
       "detail": "relationship-loss: 0 -> 3 fixture failures",
-      "injectedAt": "2026-09-08T17:40:21.535Z",
+      "injectedAt": "2026-09-08T19:37:40.354Z",
       "mutant": "dart/drop-constructor-instantiates"
     },
     {
       "caughtBy": "dart/payload-and-complexity",
       "detail": "misattribution: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:21.586Z",
+      "injectedAt": "2026-09-08T19:37:40.390Z",
       "mutant": "dart/heritage-alias-not-resolved"
     },
     {
       "caughtBy": "dart/payload-and-complexity",
       "detail": "fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:21.625Z",
+      "injectedAt": "2026-09-08T19:37:40.424Z",
       "mutant": "dart/implements-alias-leak"
     },
     {
       "caughtBy": "dart/dedup-and-attribution",
       "detail": "payload-noise: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:21.662Z",
+      "injectedAt": "2026-09-08T19:37:40.459Z",
       "mutant": "dart/dup-rows-reintroduced"
     },
     {
       "caughtBy": "dart/dedup-and-attribution",
       "detail": "misattribution: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:21.703Z",
+      "injectedAt": "2026-09-08T19:37:40.496Z",
       "mutant": "dart/field-init-module-source"
     },
     {
       "caughtBy": "dart/dedup-and-attribution",
       "detail": "symbol-pollution: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:21.734Z",
+      "injectedAt": "2026-09-08T19:37:40.534Z",
       "mutant": "dart/local-fn-symbols-reintroduced"
     },
     {
       "caughtBy": "dart/dedup-and-attribution",
       "detail": "misattribution: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:21.771Z",
+      "injectedAt": "2026-09-08T19:37:40.571Z",
       "mutant": "dart/local-fn-call-context-reintroduced"
     },
     {
       "caughtBy": "dart/dedup-and-attribution",
       "detail": "symbol-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:21.800Z",
+      "injectedAt": "2026-09-08T19:37:40.610Z",
       "mutant": "dart/top-level-accessors-dropped"
     },
     {
       "caughtBy": "dart/dedup-and-attribution",
       "detail": "symbol-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:21.825Z",
+      "injectedAt": "2026-09-08T19:37:40.656Z",
       "mutant": "dart/accessor-pair-collapsed"
     },
     {
       "caughtBy": "dart/dedup-and-attribution, dart/payload-and-complexity",
       "detail": "payload-corruption: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:21.854Z",
+      "injectedAt": "2026-09-08T19:37:40.701Z",
       "mutant": "dart/param-types-degraded"
     },
     {
       "caughtBy": "dart/dedup-and-attribution",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:21.887Z",
+      "injectedAt": "2026-09-08T19:37:40.749Z",
       "mutant": "dart/mixin-on-heritage-dropped"
     },
     {
       "caughtBy": "dart/dedup-and-attribution",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:21.925Z",
+      "injectedAt": "2026-09-08T19:37:40.787Z",
       "mutant": "dart/enum-heritage-dropped"
     },
     {
       "caughtBy": "dart/dedup-and-attribution",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:21.964Z",
+      "injectedAt": "2026-09-08T19:37:40.829Z",
       "mutant": "dart/external-override-dropped"
     },
     {
       "caughtBy": "dart/dedup-and-attribution",
       "detail": "relationship-fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:22.002Z",
+      "injectedAt": "2026-09-08T19:37:40.873Z",
       "mutant": "dart/field-override-fabricated"
     },
     {
       "caughtBy": "dart/family-closure-cascades",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:22.033Z",
+      "injectedAt": "2026-09-08T19:37:40.914Z",
       "mutant": "dart/cascade-multi-invocation-dropped"
     },
     {
       "caughtBy": "dart/family-closure-cascades",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:22.061Z",
+      "injectedAt": "2026-09-08T19:37:40.953Z",
       "mutant": "dart/factory-redirect-instantiates-dropped"
     },
     {
       "caughtBy": "swift/edges-and-patterns, swift/inheritance-conformance-fixes, swift/master-review-w2-regressions, swift/payload-and-complexity, swift/single-letter-construction",
       "detail": "relationship-loss: 0 -> 5 fixture failures",
-      "injectedAt": "2026-09-08T17:40:22.747Z",
+      "injectedAt": "2026-09-08T19:37:41.269Z",
       "mutant": "swift/drop-implements-edge"
     },
     {
       "caughtBy": "swift/edges-and-patterns, swift/master-review-w2-regressions, swift/payload-and-complexity, swift/write-gate",
       "detail": "relationship-loss: 0 -> 4 fixture failures",
-      "injectedAt": "2026-09-08T17:40:22.849Z",
+      "injectedAt": "2026-09-08T19:37:41.360Z",
       "mutant": "swift/drop-self-uses-edge"
     },
     {
       "caughtBy": "swift/write-gate",
       "detail": "relationship-fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:22.949Z",
+      "injectedAt": "2026-09-08T19:37:41.437Z",
       "mutant": "swift/emit-write-as-read"
     },
     {
       "caughtBy": "swift/write-gate",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:23.037Z",
+      "injectedAt": "2026-09-08T19:37:41.510Z",
       "mutant": "swift/drop-glued-receiver-reads"
     },
     {
       "caughtBy": "swift/edges-and-patterns, swift/master-review-w2-regressions",
       "detail": "symbol-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:23.106Z",
+      "injectedAt": "2026-09-08T19:37:41.583Z",
       "mutant": "swift/drop-operator-symbol"
     },
     {
       "caughtBy": "swift/edges-and-patterns, swift/payload-and-complexity",
       "detail": "payload-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:23.171Z",
+      "injectedAt": "2026-09-08T19:37:41.659Z",
       "mutant": "swift/drop-symbol-complexity"
     },
     {
       "caughtBy": "swift/edges-and-patterns",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:23.225Z",
+      "injectedAt": "2026-09-08T19:37:41.733Z",
       "mutant": "swift/emit-subscript-call"
     },
     {
       "caughtBy": "swift/edges-and-patterns, swift/payload-and-complexity",
       "detail": "relationship-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:23.278Z",
+      "injectedAt": "2026-09-08T19:37:41.804Z",
       "mutant": "swift/emit-defer-call"
     },
     {
       "caughtBy": "swift/edges-and-patterns, swift/inheritance-conformance-fixes",
       "detail": "relationship-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:23.339Z",
+      "injectedAt": "2026-09-08T19:37:41.883Z",
       "mutant": "swift/class-protocol-first-as-extends"
     },
     {
       "caughtBy": "php/external-override",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:24.220Z",
+      "injectedAt": "2026-09-08T19:37:42.442Z",
       "mutant": "php/drop-external-override-guess"
     },
     {
       "caughtBy": "ruby/external-override",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:25.039Z",
+      "injectedAt": "2026-09-08T19:37:43.180Z",
       "mutant": "ruby/drop-external-override-guess"
     },
     {
       "caughtBy": "python/external-override",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:25.073Z",
+      "injectedAt": "2026-09-08T19:37:43.215Z",
       "mutant": "python/drop-external-override-guess"
     },
     {
       "caughtBy": "javascript/external-override",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:25.133Z",
+      "injectedAt": "2026-09-08T19:37:43.277Z",
       "mutant": "javascript/drop-external-override-guess"
     },
     {
       "caughtBy": "swift/external-override",
       "detail": "confidence-corruption: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:25.210Z",
+      "injectedAt": "2026-09-08T19:37:43.360Z",
       "mutant": "swift/guess-at-verified-confidence"
     },
     {
       "caughtBy": "swift/external-override",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:25.293Z",
+      "injectedAt": "2026-09-08T19:37:43.463Z",
       "mutant": "swift/drop-external-override-guess"
     },
     {
       "caughtBy": "swift/inheritance-conformance-fixes",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:25.371Z",
+      "injectedAt": "2026-09-08T19:37:43.584Z",
       "mutant": "swift/drop-protocol-inheritance"
     },
     {
       "caughtBy": "swift/inheritance-conformance-fixes",
       "detail": "relationship-fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:25.459Z",
+      "injectedAt": "2026-09-08T19:37:43.689Z",
       "mutant": "swift/protocol-anyobject-as-extends"
     },
     {
       "caughtBy": "swift/inheritance-conformance-fixes",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:25.533Z",
+      "injectedAt": "2026-09-08T19:37:43.767Z",
       "mutant": "swift/drop-extension-conformances"
     },
     {
       "caughtBy": "swift/inheritance-conformance-fixes",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:25.614Z",
+      "injectedAt": "2026-09-08T19:37:43.831Z",
       "mutant": "swift/drop-enum-conformances"
     },
     {
       "caughtBy": "swift/inheritance-conformance-fixes",
       "detail": "relationship-fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:25.683Z",
+      "injectedAt": "2026-09-08T19:37:43.891Z",
       "mutant": "swift/emit-xctest-instantiates"
     },
     {
       "caughtBy": "swift/master-review-w2-regressions",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:25.748Z",
+      "injectedAt": "2026-09-08T19:37:43.941Z",
       "mutant": "swift/drop-container-subscript-uses"
     },
     {
       "caughtBy": "swift/master-review-w2-regressions",
       "detail": "relationship-fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:25.817Z",
+      "injectedAt": "2026-09-08T19:37:43.992Z",
       "mutant": "swift/re-add-field-write-uses"
     },
     {
       "caughtBy": "swift/master-review-w2-regressions",
       "detail": "symbol-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:25.886Z",
+      "injectedAt": "2026-09-08T19:37:44.044Z",
       "mutant": "swift/drop-second-binding-symbol"
     },
     {
       "caughtBy": "swift/master-review-w2-regressions",
       "detail": "relationship-fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:25.960Z",
+      "injectedAt": "2026-09-08T19:37:44.095Z",
       "mutant": "swift/first-segment-dotted-base"
     },
     {
       "caughtBy": "swift/master-review-w2-regressions",
       "detail": "symbol-corruption: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:26.032Z",
+      "injectedAt": "2026-09-08T19:37:44.143Z",
       "mutant": "swift/first-segment-extension-name"
     },
     {
       "caughtBy": "swift/single-letter-construction",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:26.103Z",
+      "injectedAt": "2026-09-08T19:37:44.202Z",
       "mutant": "swift/single-letter-as-calls"
     },
     {
       "caughtBy": "objc/edges-and-patterns, objc/payload-and-complexity",
       "detail": "relationship-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:26.869Z",
+      "injectedAt": "2026-09-08T19:37:44.660Z",
       "mutant": "objc/drop-implements-edge"
     },
     {
       "caughtBy": "objc/edges-and-patterns, objc/payload-and-complexity, objc/selector-identity",
       "detail": "relationship-loss: 0 -> 3 fixture failures",
-      "injectedAt": "2026-09-08T17:40:26.914Z",
+      "injectedAt": "2026-09-08T19:37:44.695Z",
       "mutant": "objc/drop-extends-edge"
     },
     {
       "caughtBy": "objc/edges-and-patterns, objc/payload-and-complexity, objc/selector-identity",
       "detail": "relationship-loss: 0 -> 3 fixture failures",
-      "injectedAt": "2026-09-08T17:40:26.965Z",
+      "injectedAt": "2026-09-08T19:37:44.726Z",
       "mutant": "objc/drop-instantiates-edge"
     },
     {
       "caughtBy": "objc/edges-and-patterns, objc/payload-and-complexity",
       "detail": "symbol-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:27.017Z",
+      "injectedAt": "2026-09-08T19:37:44.758Z",
       "mutant": "objc/drop-category-extension"
     },
     {
       "caughtBy": "objc/edges-and-patterns, objc/payload-and-complexity",
       "detail": "payload-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:27.070Z",
+      "injectedAt": "2026-09-08T19:37:44.790Z",
       "mutant": "objc/drop-symbol-complexity"
     },
     {
       "caughtBy": "objc/payload-and-complexity",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:27.127Z",
+      "injectedAt": "2026-09-08T19:37:44.817Z",
       "mutant": "objc/emit-receiver-call"
     },
     {
       "caughtBy": "objc/payload-and-complexity, objc/selector-identity",
       "detail": "symbol-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:27.182Z",
+      "injectedAt": "2026-09-08T19:37:44.842Z",
       "mutant": "objc/duplicate-interface-impl"
     },
     {
       "caughtBy": "objc/edges-and-patterns, objc/pointer-return-helpers",
       "detail": "relationship-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:27.237Z",
+      "injectedAt": "2026-09-08T19:37:44.869Z",
       "mutant": "objc/drop-member-read-uses"
     },
     {
       "caughtBy": "objc/edges-and-patterns",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:27.290Z",
+      "injectedAt": "2026-09-08T19:37:44.892Z",
       "mutant": "objc/drop-protocol-inheritance"
     },
     {
       "caughtBy": "objc/edges-and-patterns",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:27.346Z",
+      "injectedAt": "2026-09-08T19:37:44.924Z",
       "mutant": "objc/drop-category-protocol"
     },
     {
       "caughtBy": "objc/edges-and-patterns",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:27.408Z",
+      "injectedAt": "2026-09-08T19:37:44.950Z",
       "mutant": "objc/emit-write-as-uses"
     },
     {
       "caughtBy": "objc/pointer-return-helpers",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:27.448Z",
+      "injectedAt": "2026-09-08T19:37:44.972Z",
       "mutant": "objc/drop-pointer-return-function-bodies"
     },
     {
       "caughtBy": "objc/pointer-return-helpers",
       "detail": "relationship-fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:27.479Z",
+      "injectedAt": "2026-09-08T19:37:44.994Z",
       "mutant": "objc/emit-ivar-block-macro-calls"
     },
     {
       "caughtBy": "objc/edges-and-patterns, objc/payload-and-complexity, objc/selector-identity",
       "detail": "symbol-identity-loss: 0 -> 3 fixture failures",
-      "injectedAt": "2026-09-08T17:40:27.499Z",
+      "injectedAt": "2026-09-08T19:37:45.017Z",
       "mutant": "objc/collapse-selector-leaf-naming"
     },
     {
       "caughtBy": "objc/payload-and-complexity, objc/selector-identity",
       "detail": "relationship-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:27.513Z",
+      "injectedAt": "2026-09-08T19:37:45.041Z",
       "mutant": "objc/drop-override-machinery"
     },
     {
       "caughtBy": "php/payload-and-complexity, php/procedural-enum",
       "detail": "relationship-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:27.539Z",
+      "injectedAt": "2026-09-08T19:37:45.073Z",
       "mutant": "php/drop-implements-edge"
     },
     {
       "caughtBy": "php/external-override, php/payload-and-complexity, php/same-leaf-inheritance",
       "detail": "relationship-loss: 0 -> 3 fixture failures",
-      "injectedAt": "2026-09-08T17:40:27.562Z",
+      "injectedAt": "2026-09-08T19:37:45.102Z",
       "mutant": "php/drop-extends-edge"
     },
     {
       "caughtBy": "php/payload-and-complexity, php/procedural-enum, php/same-leaf-inheritance",
       "detail": "relationship-loss: 0 -> 3 fixture failures",
-      "injectedAt": "2026-09-08T17:40:27.586Z",
+      "injectedAt": "2026-09-08T19:37:45.126Z",
       "mutant": "php/drop-instantiates-edge"
     },
     {
       "caughtBy": "php/payload-and-complexity",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:27.604Z",
+      "injectedAt": "2026-09-08T19:37:45.156Z",
       "mutant": "php/drop-trait-use"
     },
     {
       "caughtBy": "php/nullsafe-member-reads, php/payload-and-complexity",
       "detail": "relationship-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:27.625Z",
+      "injectedAt": "2026-09-08T19:37:45.178Z",
       "mutant": "php/drop-member-read-uses"
     },
     {
       "caughtBy": "php/payload-and-complexity",
       "detail": "relationship-fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:27.645Z",
+      "injectedAt": "2026-09-08T19:37:45.201Z",
       "mutant": "php/emit-rmw-write-as-uses"
     },
     {
       "caughtBy": "php/payload-and-complexity",
       "detail": "payload-corruption: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:27.663Z",
+      "injectedAt": "2026-09-08T19:37:45.226Z",
       "mutant": "php/wrapper-complexity-count"
     },
     {
       "caughtBy": "php/payload-and-complexity",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:27.676Z",
+      "injectedAt": "2026-09-08T19:37:45.257Z",
       "mutant": "php/emit-write-as-uses"
     },
     {
       "caughtBy": "php/payload-and-complexity",
       "detail": "payload-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:27.689Z",
+      "injectedAt": "2026-09-08T19:37:45.287Z",
       "mutant": "php/drop-symbol-complexity"
     },
     {
       "caughtBy": "php/external-override, php/payload-and-complexity, php/same-leaf-inheritance",
       "detail": "relationship-loss: 0 -> 3 fixture failures",
-      "injectedAt": "2026-09-08T17:40:27.701Z",
+      "injectedAt": "2026-09-08T19:37:45.321Z",
       "mutant": "php/drop-override-edge"
     },
     {
       "caughtBy": "php/procedural-enum",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:27.720Z",
+      "injectedAt": "2026-09-08T19:37:45.350Z",
       "mutant": "php/drop-top-level-procedural"
     },
     {
       "caughtBy": "php/procedural-enum",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:27.736Z",
+      "injectedAt": "2026-09-08T19:37:45.374Z",
       "mutant": "php/drop-enum-implements"
     },
     {
       "caughtBy": "php/procedural-enum",
       "detail": "relationship-fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:27.754Z",
+      "injectedAt": "2026-09-08T19:37:45.398Z",
       "mutant": "php/emit-wp-hook-calls"
     },
     {
       "caughtBy": "php/procedural-enum",
       "detail": "symbol-fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:27.774Z",
+      "injectedAt": "2026-09-08T19:37:45.424Z",
       "mutant": "php/symbolize-anon-class-methods"
     },
     {
       "caughtBy": "php/same-leaf-inheritance",
       "detail": "relationship-fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:27.792Z",
+      "injectedAt": "2026-09-08T19:37:45.447Z",
       "mutant": "php/self-extends-reintroduced"
     },
     {
       "caughtBy": "php/same-leaf-inheritance",
       "detail": "relationship-fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:27.809Z",
+      "injectedAt": "2026-09-08T19:37:45.475Z",
       "mutant": "php/self-override-verified-reintroduced"
     },
     {
       "caughtBy": "php/nullsafe-member-reads",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:27.825Z",
+      "injectedAt": "2026-09-08T19:37:45.502Z",
       "mutant": "php/drop-nullsafe-member-read-uses"
     },
     {
       "caughtBy": "php/nullsafe-member-reads",
       "detail": "relationship-fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:27.841Z",
+      "injectedAt": "2026-09-08T19:37:45.523Z",
       "mutant": "php/emit-nullsafe-write-as-uses"
     },
     {
       "caughtBy": "ruby/payload-and-complexity",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:27.879Z",
+      "injectedAt": "2026-09-08T19:37:45.561Z",
       "mutant": "ruby/drop-implements-edge"
     },
     {
       "caughtBy": "ruby/payload-and-complexity, ruby/rack-wave-regressions",
       "detail": "relationship-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:27.909Z",
+      "injectedAt": "2026-09-08T19:37:45.602Z",
       "mutant": "ruby/drop-member-read-uses"
     },
     {
       "caughtBy": "ruby/payload-and-complexity",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:27.946Z",
+      "injectedAt": "2026-09-08T19:37:45.639Z",
       "mutant": "ruby/emit-write-as-uses"
     },
     {
       "caughtBy": "ruby/payload-and-complexity",
       "detail": "payload-corruption: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:27.979Z",
+      "injectedAt": "2026-09-08T19:37:45.679Z",
       "mutant": "ruby/split-script-sentinel"
     },
     {
       "caughtBy": "ruby/payload-and-complexity",
       "detail": "relationship-fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:28.012Z",
+      "injectedAt": "2026-09-08T19:37:45.720Z",
       "mutant": "ruby/emit-rmw-write-as-uses"
     },
     {
       "caughtBy": "ruby/master-review-wave, ruby/payload-and-complexity, ruby/rack-wave-regressions",
       "detail": "relationship-loss: 0 -> 3 fixture failures",
-      "injectedAt": "2026-09-08T17:40:28.047Z",
+      "injectedAt": "2026-09-08T19:37:45.759Z",
       "mutant": "ruby/drop-instantiates-edge"
     },
     {
       "caughtBy": "ruby/payload-and-complexity, ruby/rack-wave-regressions",
       "detail": "payload-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:28.074Z",
+      "injectedAt": "2026-09-08T19:37:45.794Z",
       "mutant": "ruby/drop-symbol-complexity"
     },
     {
       "caughtBy": "ruby/payload-and-complexity",
       "detail": "fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:28.097Z",
+      "injectedAt": "2026-09-08T19:37:45.834Z",
       "mutant": "ruby/pattern-bindings-leak-as-calls"
     },
     {
       "caughtBy": "ruby/rack-wave-regressions",
       "detail": "fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:28.120Z",
+      "injectedAt": "2026-09-08T19:37:45.863Z",
       "mutant": "ruby/readd-anonymous-new-junk"
     },
     {
       "caughtBy": "ruby/rack-wave-regressions",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:28.148Z",
+      "injectedAt": "2026-09-08T19:37:45.894Z",
       "mutant": "ruby/drop-default-arg-edges"
     },
     {
       "caughtBy": "ruby/master-review-wave, ruby/rack-wave-regressions",
       "detail": "relationship-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:28.181Z",
+      "injectedAt": "2026-09-08T19:37:45.935Z",
       "mutant": "ruby/drop-superclass-construct-instantiation"
     },
     {
       "caughtBy": "ruby/rack-wave-regressions",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:28.221Z",
+      "injectedAt": "2026-09-08T19:37:45.967Z",
       "mutant": "ruby/drop-def-less-member-read-uses"
     },
     {
       "caughtBy": "ruby/master-review-wave, ruby/rack-wave-regressions",
       "detail": "relationship-loss: 0 -> 2 fixture failures",
-      "injectedAt": "2026-09-08T17:40:28.253Z",
+      "injectedAt": "2026-09-08T19:37:45.999Z",
       "mutant": "ruby/drop-alias-method-edge"
     },
     {
       "caughtBy": "ruby/master-review-wave",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:28.276Z",
+      "injectedAt": "2026-09-08T19:37:46.031Z",
       "mutant": "ruby/drop-keyword-alias-edge"
     },
     {
       "caughtBy": "ruby/master-review-wave",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:28.298Z",
+      "injectedAt": "2026-09-08T19:37:46.056Z",
       "mutant": "ruby/readd-pair-value-suppression"
     },
     {
       "caughtBy": "ruby/master-review-wave",
       "detail": "fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:28.317Z",
+      "injectedAt": "2026-09-08T19:37:46.083Z",
       "mutant": "ruby/readd-dynamic-superclass-extends"
     },
     {
       "caughtBy": "ruby/master-review-wave",
       "detail": "fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:28.340Z",
+      "injectedAt": "2026-09-08T19:37:46.109Z",
       "mutant": "ruby/self-verify-overrides-guard"
     },
     {
       "caughtBy": "python/payload-and-complexity",
       "detail": "symbol-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:28.362Z",
+      "injectedAt": "2026-09-08T19:37:46.132Z",
       "mutant": "python/drop-instance-attribute-properties"
     },
     {
       "caughtBy": "python/payload-and-complexity",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:28.379Z",
+      "injectedAt": "2026-09-08T19:37:46.153Z",
       "mutant": "python/drop-member-read-uses"
     },
     {
       "caughtBy": "python/payload-and-complexity",
       "detail": "fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:28.395Z",
+      "injectedAt": "2026-09-08T19:37:46.174Z",
       "mutant": "python/emit-self-shadow-extends"
     },
     {
       "caughtBy": "python/payload-and-complexity",
       "detail": "payload-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:28.412Z",
+      "injectedAt": "2026-09-08T19:37:46.197Z",
       "mutant": "python/drop-symbol-complexity"
     },
     {
       "caughtBy": "python/payload-and-complexity",
       "detail": "payload-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:28.436Z",
+      "injectedAt": "2026-09-08T19:37:46.225Z",
       "mutant": "python/class-var-public-visibility"
     },
     {
       "caughtBy": "python/payload-and-complexity",
       "detail": "symbol-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:28.456Z",
+      "injectedAt": "2026-09-08T19:37:46.249Z",
       "mutant": "python/drop-enum-auto-members"
     },
     {
       "caughtBy": "python/payload-and-complexity",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:28.479Z",
+      "injectedAt": "2026-09-08T19:37:46.268Z",
       "mutant": "python/nested-def-reowner"
     },
     {
       "caughtBy": "haskell/payload-and-complexity",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:29.181Z",
+      "injectedAt": "2026-09-08T19:37:46.440Z",
       "mutant": "haskell/drop-derived-implements"
     },
     {
       "caughtBy": "haskell/payload-and-complexity",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:29.197Z",
+      "injectedAt": "2026-09-08T19:37:46.461Z",
       "mutant": "haskell/drop-qualified-calls"
     },
     {
       "caughtBy": "haskell/payload-and-complexity",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:29.214Z",
+      "injectedAt": "2026-09-08T19:37:46.480Z",
       "mutant": "haskell/drop-record-construction"
     },
     {
       "caughtBy": "haskell/payload-and-complexity",
       "detail": "payload-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:29.230Z",
+      "injectedAt": "2026-09-08T19:37:46.499Z",
       "mutant": "haskell/drop-symbol-complexity"
     },
     {
       "caughtBy": "haskell/payload-and-complexity",
       "detail": "fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:29.246Z",
+      "injectedAt": "2026-09-08T19:37:46.521Z",
       "mutant": "haskell/pattern-bindings-leak-as-calls"
     },
     {
       "caughtBy": "haskell/payload-and-complexity",
       "detail": "relationship-loss: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:29.263Z",
+      "injectedAt": "2026-09-08T19:37:46.538Z",
       "mutant": "haskell/drop-standalone-deriving"
     },
     {
       "caughtBy": "haskell/payload-and-complexity",
       "detail": "fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:29.274Z",
+      "injectedAt": "2026-09-08T19:37:46.552Z",
       "mutant": "haskell/qualified-ctor-as-calls"
     },
     {
       "caughtBy": "haskell/payload-and-complexity",
       "detail": "fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:29.286Z",
+      "injectedAt": "2026-09-08T19:37:46.569Z",
       "mutant": "haskell/pattern-position-instantiates"
     },
     {
       "caughtBy": "haskell/payload-and-complexity",
       "detail": "fabrication: 0 -> 1 fixture failures",
-      "injectedAt": "2026-09-08T17:40:29.297Z",
+      "injectedAt": "2026-09-08T19:37:46.582Z",
       "mutant": "haskell/head-self-call"
     }
   ],
