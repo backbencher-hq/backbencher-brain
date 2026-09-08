@@ -240,6 +240,77 @@ async function main() {
     ooSummary[lang] = { classKind: cls?.kind, methodKind: method?.kind, complexity: method?.complexity, classStartColumn: cls?.range?.startColumn }
   }
 
+  // ── Web family (typescript/javascript) — family closure 2026-09-08 ──
+  // vue/svelte stay out of the structural block (SFC pre-parse); their
+  // template contracts are pinned by fixtures + the F5 embedded-script
+  // oracles. ts/js get the standard class/method shape; BOTH get the
+  // builtin-set parity check born from the #611 drift finding.
+  const WEB_EQUIVALENTS: Record<string, { wasm: string; analyzerFile: string; className: string; ext: string; source: string }> = {
+    typescript: {
+      wasm: "tree-sitter-typescript.wasm", analyzerFile: "real-typescript-analyzer", className: "RealTypeScriptAnalyzer", ext: "ts",
+      source: `class Widget {\n    private label: string = ""\n    render(input: string): string {\n        return this.label + input\n    }\n}\n`,
+    },
+    javascript: {
+      wasm: "tree-sitter-javascript.wasm", analyzerFile: "real-javascript-analyzer", className: "RealJavaScriptAnalyzer", ext: "js",
+      source: `class Widget {\n    render(input) {\n        return input\n    }\n}\n`,
+    },
+  }
+  const webFailures: string[] = []
+  const webSummary: Record<string, any> = {}
+  for (const [lang, cfg] of Object.entries(WEB_EQUIVALENTS)) {
+    const grammar = await Language.load(fs.readFileSync(path.join(ROOT, "wasm", cfg.wasm)))
+    const parser = new ParserClass()
+    parser.setLanguage(grammar)
+    const mod: any = await import(`../../src/ast/${cfg.analyzerFile}`)
+    const analyzer = new mod[cfg.className]()
+    const r = await analyzer.analyze(parser.parse(cfg.source).rootNode, cfg.source, `Widget.${cfg.ext}`)
+    const symbols = r.symbols ?? []
+    const cls = symbols.find(s => s.name === "Widget" && /class/i.test(String(s.kind)))
+    const method = symbols.find(s => s.name === "render")
+    if (!cls) webFailures.push(`${lang}: class Widget not extracted as class-kind symbol`)
+    if (!method) webFailures.push(`${lang}: method render not extracted`)
+    for (const s of [...(cls ? [cls] : []), ...(method ? [method] : [])]) {
+      const rng = s.range ?? {}
+      if (!(rng.startColumn >= 1)) webFailures.push(`${lang}/${s.name}: startColumn=${rng.startColumn} is not 1-based`)
+      if (!(rng.endLine >= (rng.startLine ?? 1))) webFailures.push(`${lang}/${s.name}: endLine < startLine`)
+      if (rng.endLine === rng.startLine && !(rng.endColumn >= (rng.startColumn ?? 0))) webFailures.push(`${lang}/${s.name}: endColumn < startColumn on single line`)
+      if (!(rng.startLine >= 1)) webFailures.push(`${lang}/${s.name}: startLine not 1-based`)
+    }
+    if (cls && !/class/.test(String(cls.kind).toLowerCase())) webFailures.push(`${lang}: Widget kind ${cls.kind} is not class-like`)
+    if (method && !/method|function/.test(String(method.kind).toLowerCase())) webFailures.push(`${lang}: render kind ${method.kind} unexpected`)
+    webSummary[lang] = { classKind: cls?.kind, methodKind: method?.kind }
+  }
+
+  // Builtin-set parity (born 2026-09-08, #611 drift finding): the vue and
+  // svelte analyzers' HTML_BUILTIN_TAGS and the F5 oracle's ORACLE_HTML_TAGS
+  // must be the IDENTICAL set — the pre-fix oracle carried 126 tags vs the
+  // analyzers' 134 and faked a MISSING instantiates->search (2023 HTML
+  // element) in vue-element-admin. This check fails the gate on ANY future
+  // drift between the three parallel lists.
+  const vueSrc = fs.readFileSync(path.join(ROOT, "src/ast/real-vue-analyzer.ts"), "utf8")
+  const svelteSrc = fs.readFileSync(path.join(ROOT, "src/ast/real-svelte-analyzer.ts"), "utf8")
+  const diffSrc = fs.readFileSync(path.join(ROOT, "script/m14/differential.ts"), "utf8")
+  const extractSet = (src: string, name: string): Set<string> | null => {
+    const anchor = "const " + name + " = new Set(["
+    const start = src.indexOf(anchor)
+    if (start === -1) return null
+    const bodyStart = start + anchor.length
+    const end = src.indexOf("])", bodyStart)
+    if (end === -1) return null
+    return new Set([...src.slice(bodyStart, end).matchAll(/"([^"]+)"/g)].map(x => x[1]))
+  }
+  const vueTags = extractSet(vueSrc, "HTML_BUILTIN_TAGS")
+  const svelteTags = extractSet(svelteSrc, "HTML_BUILTIN_TAGS")
+  const oracleTags = extractSet(diffSrc, "ORACLE_HTML_TAGS")
+  if (!vueTags || !svelteTags || !oracleTags) {
+    webFailures.push("builtin-set parity: could not extract HTML_BUILTIN_TAGS/ORACLE_HTML_TAGS from source")
+  } else {
+    for (const t of vueTags) if (!oracleTags.has(t)) webFailures.push(`builtin-set parity: tag '${t}' in vue analyzer but missing from ORACLE_HTML_TAGS`)
+    for (const t of oracleTags) if (!vueTags.has(t)) webFailures.push(`builtin-set parity: tag '${t}' in ORACLE_HTML_TAGS but missing from vue analyzer`)
+    for (const t of svelteTags) if (!vueTags.has(t)) webFailures.push(`builtin-set parity: tag '${t}' in svelte analyzer but missing from vue analyzer`)
+    for (const t of vueTags) if (!svelteTags.has(t)) webFailures.push(`builtin-set parity: tag '${t}' in vue analyzer but missing from svelte analyzer`)
+  }
+
   const { emitEvidence } = await import("./evidence-harness")
   emitEvidence({
     issueId: "M14.CC1",
@@ -256,12 +327,15 @@ async function main() {
       { id: "oo-ranges-1based", description: "1-based ranges across csharp/dart/swift/objc/php/ruby", status: ooFailures.some(f => f.includes("startColumn") || f.includes("startLine")) ? "fail" : "pass" },
       { id: "oo-kind-consistency", description: "class/method kinds consistent across csharp/dart/swift/objc/php/ruby", status: ooFailures.some(f => f.includes("kind")) ? "fail" : "pass" },
       { id: "oo-complexity", description: "per-symbol complexity present in all six OO analyzers", status: ooFailures.some(f => f.includes("complexity")) ? "fail" : "pass" },
+      { id: "web-ranges-1based", description: "1-based ranges across typescript/javascript", status: webFailures.some(f => f.includes("startColumn") || f.includes("startLine")) ? "fail" : "pass" },
+      { id: "web-kind-consistency", description: "class/method kinds consistent across typescript/javascript", status: webFailures.some(f => f.includes("kind")) ? "fail" : "pass" },
+      { id: "web-builtin-set-parity", description: "HTML/SVG builtin tag sets identical across vue analyzer, svelte analyzer, and F5 oracle (the #611 search-drift class)", status: webFailures.some(f => f.includes("builtin-set parity")) ? "fail" : "pass" },
     ],
     limitations: [
-      { description: "covers JVM-family + systems-family + managed-OO equivalents; other clusters added with their waves (#384)" },
+      { description: "covers JVM-family + systems-family + managed-OO + web(ts/js structural, vue/svelte builtin-parity) equivalents" },
       { description: "scala qualified_calls absence declared pending under #383" },
     ],
-    data: { failures, summary, systemsFailures: sysFailures, systemsSummary: sysSummary, ooFailures, ooSummary },
+    data: { failures, summary, systemsFailures: sysFailures, systemsSummary: sysSummary, ooFailures, ooSummary, webFailures, webSummary },
   })
 
   if (sysFailures.length) {
@@ -276,12 +350,18 @@ async function main() {
     process.exit(9)
   }
 
+  if (webFailures.length) {
+    console.error("WEB CONSISTENCY FAILED:")
+    for (const f of webFailures) console.error("  -", f)
+    process.exit(9)
+  }
+
   if (failures.length) {
     console.error("CONSISTENCY FAILED:")
     for (const f of failures) console.error("  -", f)
     process.exit(9)
   }
-  console.log("cross-language consistency verified across " + Object.keys(EQUIVALENTS).length + " JVM + " + Object.keys(SYSTEMS_EQUIVALENTS).length + " systems + " + Object.keys(OO_EQUIVALENTS).length + " OO languages")
+  console.log("cross-language consistency verified across " + Object.keys(EQUIVALENTS).length + " JVM + " + Object.keys(SYSTEMS_EQUIVALENTS).length + " systems + " + Object.keys(OO_EQUIVALENTS).length + " OO + " + Object.keys(WEB_EQUIVALENTS).length + " web languages (+ vue/svelte builtin-set parity)")
 }
 
 main().catch(e => { console.error(e); process.exit(1) })

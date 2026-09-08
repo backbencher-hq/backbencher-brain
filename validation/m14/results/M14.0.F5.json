@@ -2,7 +2,7 @@
   "checks": [
     {
       "description": "grails-core: tree-truth vs analyzer diff @a83f87480e",
-      "detail": "52 files, coverage null%, unexplained null%",
+      "detail": "52 files, coverage 100%, unexplained 0%",
       "id": "differential-javascript",
       "status": "pass"
     },
@@ -182,7 +182,7 @@
     },
     {
       "description": "jq: tree-truth vs analyzer diff (second corpus) @41b8edfe54",
-      "detail": "45 files, coverage 99.9%, unexplained 0.9%",
+      "detail": "45 files, coverage null%, unexplained null%",
       "id": "differential-jq:c",
       "status": "pass"
     },
@@ -254,8 +254,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "0e2b5d7d6ef794963e8e7a21a92ff7949e492ffc",
-  "committedAt": "2026-09-08T05:35:43+02:00",
+  "commit": "95feccaad8cf5c02e329e903ff3b716675cbca93",
+  "committedAt": "2026-09-08T15:58:58+02:00",
   "data": {
     "corpusPins": {
       "Exposed": "1be664715fc581cda0ec6141b2914908dabe184e",
@@ -309,9 +309,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 9,
         "perf": {
-          "avgMsPerFile": 107.7,
-          "loadAvgRetried": false,
-          "maxMsPerFile": 2544.7,
+          "avgMsPerFile": 156.6,
+          "loadAvgRetried": true,
+          "maxMsPerFile": 5565,
           "samplesTimed": 60
         },
         "samples": [
@@ -1232,9 +1232,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 49.6,
-          "loadAvgRetried": false,
-          "maxMsPerFile": 477.9,
+          "avgMsPerFile": 36.3,
+          "loadAvgRetried": true,
+          "maxMsPerFile": 1144.6,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1251,9 +1251,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 18,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 230.5,
+          "avgMsPerFile": 25.9,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 222.7,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1270,9 +1270,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 27.9,
+          "avgMsPerFile": 48.3,
           "loadAvgRetried": false,
-          "maxMsPerFile": 895.7,
+          "maxMsPerFile": 1285.6,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1289,9 +1289,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 18.9,
+          "avgMsPerFile": 13,
           "loadAvgRetried": false,
-          "maxMsPerFile": 119.1,
+          "maxMsPerFile": 99.9,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1308,9 +1308,9 @@
         "heuristicUnexplained": 27,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 6.5,
+          "avgMsPerFile": 9.7,
           "loadAvgRetried": false,
-          "maxMsPerFile": 46.1,
+          "maxMsPerFile": 85.7,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1327,9 +1327,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 7.8,
+          "avgMsPerFile": 14,
           "loadAvgRetried": false,
-          "maxMsPerFile": 205.1,
+          "maxMsPerFile": 264.9,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1346,9 +1346,9 @@
         "heuristicUnexplained": 76,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 5.7,
+          "avgMsPerFile": 6.3,
           "loadAvgRetried": false,
-          "maxMsPerFile": 42.6,
+          "maxMsPerFile": 92.7,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1356,22 +1356,22 @@
         "unexplainedInAnalyzer": 0
       },
       "javascript": {
-        "analyzerEdges": 0,
-        "coveragePct": null,
-        "coveredByAnalyzer": 0,
-        "explainableByTree": 0,
-        "fabricationPct": null,
+        "analyzerEdges": 311,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 311,
+        "explainableByTree": 311,
+        "fabricationPct": 0,
         "filesSampled": 52,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 2.5,
-          "loadAvgRetried": false,
-          "maxMsPerFile": 25.5,
+          "avgMsPerFile": 2.3,
+          "loadAvgRetried": true,
+          "maxMsPerFile": 30.9,
           "samplesTimed": 52
         },
         "samples": [],
-        "treeTruthEdges": 0,
+        "treeTruthEdges": 311,
         "unexplainedInAnalyzer": 0
       },
       "kotlin": {
@@ -1384,9 +1384,9 @@
         "heuristicUnexplained": 57,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 30.3,
-          "loadAvgRetried": false,
-          "maxMsPerFile": 165.5,
+          "avgMsPerFile": 19.6,
+          "loadAvgRetried": true,
+          "maxMsPerFile": 98.9,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1403,9 +1403,9 @@
         "heuristicUnexplained": 163,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 8.8,
-          "loadAvgRetried": false,
-          "maxMsPerFile": 79.1,
+          "avgMsPerFile": 6,
+          "loadAvgRetried": true,
+          "maxMsPerFile": 48.6,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1422,9 +1422,9 @@
         "heuristicUnexplained": 94,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 2.6,
+          "avgMsPerFile": 2.8,
           "loadAvgRetried": false,
-          "maxMsPerFile": 67.8,
+          "maxMsPerFile": 51.3,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1441,9 +1441,9 @@
         "heuristicUnexplained": 433,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 23.5,
+          "avgMsPerFile": 32.8,
           "loadAvgRetried": false,
-          "maxMsPerFile": 513.8,
+          "maxMsPerFile": 800.7,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1460,9 +1460,9 @@
         "heuristicUnexplained": 382,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 4.6,
+          "avgMsPerFile": 5.8,
           "loadAvgRetried": false,
-          "maxMsPerFile": 36.7,
+          "maxMsPerFile": 53.8,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1479,9 +1479,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 13.6,
-          "loadAvgRetried": false,
-          "maxMsPerFile": 115.6,
+          "avgMsPerFile": 10.1,
+          "loadAvgRetried": true,
+          "maxMsPerFile": 195.8,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1498,9 +1498,9 @@
         "heuristicUnexplained": 55,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 8.2,
-          "loadAvgRetried": false,
-          "maxMsPerFile": 165.8,
+          "avgMsPerFile": 5.5,
+          "loadAvgRetried": true,
+          "maxMsPerFile": 195.8,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1508,22 +1508,22 @@
         "unexplainedInAnalyzer": 0
       },
       "svelte": {
-        "analyzerEdges": 8,
+        "analyzerEdges": 25,
         "coveragePct": 100,
-        "coveredByAnalyzer": 8,
-        "explainableByTree": 8,
+        "coveredByAnalyzer": 25,
+        "explainableByTree": 25,
         "fabricationPct": 0,
         "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 2.4,
-          "loadAvgRetried": false,
-          "maxMsPerFile": 6.9,
+          "avgMsPerFile": 1.9,
+          "loadAvgRetried": true,
+          "maxMsPerFile": 33.2,
           "samplesTimed": 60
         },
         "samples": [],
-        "treeTruthEdges": 8,
+        "treeTruthEdges": 25,
         "unexplainedInAnalyzer": 0
       },
       "swift": {
@@ -1536,9 +1536,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 42.6,
+          "avgMsPerFile": 80.5,
           "loadAvgRetried": false,
-          "maxMsPerFile": 362.7,
+          "maxMsPerFile": 860.8,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1546,41 +1546,41 @@
         "unexplainedInAnalyzer": 0
       },
       "typescript": {
-        "analyzerEdges": 25,
+        "analyzerEdges": 1068,
         "coveragePct": 100,
-        "coveredByAnalyzer": 25,
-        "explainableByTree": 25,
+        "coveredByAnalyzer": 1080,
+        "explainableByTree": 1068,
         "fabricationPct": 0,
         "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 39.3,
-          "loadAvgRetried": false,
-          "maxMsPerFile": 320.5,
+          "avgMsPerFile": 31,
+          "loadAvgRetried": true,
+          "maxMsPerFile": 297.3,
           "samplesTimed": 60
         },
         "samples": [],
-        "treeTruthEdges": 25,
+        "treeTruthEdges": 1080,
         "unexplainedInAnalyzer": 0
       },
       "vue": {
-        "analyzerEdges": 156,
+        "analyzerEdges": 418,
         "coveragePct": 100,
-        "coveredByAnalyzer": 156,
-        "explainableByTree": 156,
+        "coveredByAnalyzer": 418,
+        "explainableByTree": 418,
         "fabricationPct": 0,
         "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 8.9,
+          "avgMsPerFile": 13.5,
           "loadAvgRetried": false,
-          "maxMsPerFile": 117.2,
+          "maxMsPerFile": 232.8,
           "samplesTimed": 60
         },
         "samples": [],
-        "treeTruthEdges": 156,
+        "treeTruthEdges": 418,
         "unexplainedInAnalyzer": 0
       },
       "zig": {
@@ -1593,9 +1593,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 17.1,
+          "avgMsPerFile": 16.5,
           "loadAvgRetried": true,
-          "maxMsPerFile": 357.1,
+          "maxMsPerFile": 252.7,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1639,9 +1639,9 @@
           "heuristicUnexplained": 315,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 7.1,
+            "avgMsPerFile": 9.2,
             "loadAvgRetried": false,
-            "maxMsPerFile": 36.4,
+            "maxMsPerFile": 50.2,
             "samplesTimed": 49
           },
           "samples": [],
@@ -1658,9 +1658,9 @@
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 55.4,
-            "loadAvgRetried": false,
-            "maxMsPerFile": 507.6,
+            "avgMsPerFile": 41.1,
+            "loadAvgRetried": true,
+            "maxMsPerFile": 859.2,
             "samplesTimed": 60
           },
           "samples": [],
@@ -1677,9 +1677,9 @@
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 8.5,
+            "avgMsPerFile": 9.1,
             "loadAvgRetried": false,
-            "maxMsPerFile": 89,
+            "maxMsPerFile": 134.7,
             "samplesTimed": 60
           },
           "samples": [],
@@ -1696,9 +1696,9 @@
           "heuristicUnexplained": 84,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 18.2,
+            "avgMsPerFile": 22.2,
             "loadAvgRetried": false,
-            "maxMsPerFile": 309.7,
+            "maxMsPerFile": 316.3,
             "samplesTimed": 60
           },
           "samples": [],
@@ -1715,9 +1715,9 @@
           "heuristicUnexplained": 58,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 14.3,
+            "avgMsPerFile": 9.4,
             "loadAvgRetried": false,
-            "maxMsPerFile": 98.3,
+            "maxMsPerFile": 56.8,
             "samplesTimed": 60
           },
           "samples": [],
@@ -1734,9 +1734,9 @@
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 5.7,
+            "avgMsPerFile": 7.9,
             "loadAvgRetried": false,
-            "maxMsPerFile": 48.6,
+            "maxMsPerFile": 46.1,
             "samplesTimed": 60
           },
           "samples": [],
@@ -1744,22 +1744,22 @@
           "unexplainedInAnalyzer": 0
         },
         "element-plus:typescript": {
-          "analyzerEdges": 4,
+          "analyzerEdges": 419,
           "coveragePct": 100,
-          "coveredByAnalyzer": 4,
-          "explainableByTree": 4,
+          "coveredByAnalyzer": 420,
+          "explainableByTree": 419,
           "fabricationPct": 0,
           "filesSampled": 60,
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 11,
-            "loadAvgRetried": false,
-            "maxMsPerFile": 129.2,
+            "avgMsPerFile": 7,
+            "loadAvgRetried": true,
+            "maxMsPerFile": 121.7,
             "samplesTimed": 60
           },
           "samples": [],
-          "treeTruthEdges": 4,
+          "treeTruthEdges": 420,
           "unexplainedInAnalyzer": 0
         },
         "fsharp:csharp": {
@@ -1772,9 +1772,9 @@
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 7.7,
-            "loadAvgRetried": true,
-            "maxMsPerFile": 130.6,
+            "avgMsPerFile": 23,
+            "loadAvgRetried": false,
+            "maxMsPerFile": 188.4,
             "samplesTimed": 60
           },
           "samples": [],
@@ -1791,9 +1791,9 @@
           "heuristicUnexplained": 30,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 4.9,
+            "avgMsPerFile": 5.5,
             "loadAvgRetried": false,
-            "maxMsPerFile": 97.5,
+            "maxMsPerFile": 47,
             "samplesTimed": 60
           },
           "samples": [],
@@ -1810,9 +1810,9 @@
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 18.1,
+            "avgMsPerFile": 28,
             "loadAvgRetried": false,
-            "maxMsPerFile": 115.3,
+            "maxMsPerFile": 150.5,
             "samplesTimed": 60
           },
           "samples": [],
@@ -1820,276 +1820,23 @@
           "unexplainedInAnalyzer": 0
         },
         "jq:c": {
-          "analyzerEdges": 2967,
-          "coveragePct": 99.9,
-          "coveredByAnalyzer": 2934,
-          "explainableByTree": 2939,
-          "fabricationPct": 0.9,
+          "analyzerEdges": 0,
+          "coveragePct": null,
+          "coveredByAnalyzer": 0,
+          "explainableByTree": 0,
+          "fabricationPct": null,
           "filesSampled": 45,
           "heuristicUnexplained": 0,
-          "missingInAnalyzer": 4,
+          "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 61.7,
+            "avgMsPerFile": null,
             "loadAvgRetried": true,
-            "maxMsPerFile": 1156,
-            "samplesTimed": 45
+            "maxMsPerFile": null,
+            "samplesTimed": 0
           },
-          "samples": [
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/jv.c",
-              "label": "uses",
-              "line": 0,
-              "target": "ITER_FINISHED"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "vendor/decNumber/decNumber.c",
-              "label": "uses",
-              "line": 0,
-              "target": "lhs"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "vendor/decNumber/decNumber.c",
-              "label": "uses",
-              "line": 0,
-              "target": "rhs"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/builtin.c",
-              "label": "uses",
-              "line": 0,
-              "target": "last_var"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/builtin.c",
-              "label": "uses",
-              "line": 0,
-              "target": "is_empty_var"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/builtin.c",
-              "label": "uses",
-              "line": 0,
-              "target": "call_arg"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/builtin.c",
-              "label": "uses",
-              "line": 0,
-              "target": "if_empty"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/builtin.c",
-              "label": "uses",
-              "line": 0,
-              "target": "builtin_defs"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/builtin.c",
-              "label": "uses",
-              "line": 0,
-              "target": "builtin_def_1arg"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/builtin.c",
-              "label": "uses",
-              "line": 0,
-              "target": "rangestart"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/builtin.c",
-              "label": "uses",
-              "line": 0,
-              "target": "rangevar"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/builtin.c",
-              "label": "uses",
-              "line": 0,
-              "target": "range"
-            },
-            {
-              "dir": "MISSING",
-              "file": "src/jv_dtoa.c",
-              "from": "(expr)",
-              "label": "uses",
-              "target": "ROUND_BIASED"
-            },
-            {
-              "dir": "MISSING",
-              "file": "src/jv_dtoa.c",
-              "from": "(expr)",
-              "label": "uses",
-              "target": "Sudden_Underflow"
-            },
-            {
-              "dir": "MISSING",
-              "file": "src/jv_dtoa.c",
-              "from": "(expr)",
-              "label": "uses",
-              "target": "NO_HEX_FP"
-            },
-            {
-              "dir": "MISSING",
-              "file": "src/jv_dtoa.c",
-              "from": "(expr)",
-              "label": "uses",
-              "target": "Avoid_Underflow"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/jv_dtoa.c",
-              "label": "uses",
-              "line": 0,
-              "target": "Round_up"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/jv_dtoa.c",
-              "label": "uses",
-              "line": 0,
-              "target": "Round_down"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/jv_dtoa.c",
-              "label": "uses",
-              "line": 0,
-              "target": "Round_near"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/jv_dtoa.c",
-              "label": "uses",
-              "line": 0,
-              "target": "Round_zero"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/lexer.c",
-              "label": "uses",
-              "line": 0,
-              "target": "yyscanner"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/lexer.c",
-              "label": "uses",
-              "line": 0,
-              "target": "yylval_param"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/lexer.c",
-              "label": "uses",
-              "line": 0,
-              "target": "yylloc_param"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/lexer.c",
-              "label": "uses",
-              "line": 0,
-              "target": "yyg"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/lexer.c",
-              "label": "uses",
-              "line": 0,
-              "target": "yy_cp"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/lexer.c",
-              "label": "uses",
-              "line": 0,
-              "target": "yy_current_state"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/lexer.c",
-              "label": "uses",
-              "line": 0,
-              "target": "yy_act"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/lexer.c",
-              "label": "uses",
-              "line": 0,
-              "target": "escapes"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/lexer.c",
-              "label": "uses",
-              "line": 0,
-              "target": "yy_amount_of_matched_text"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/lexer.c",
-              "label": "uses",
-              "line": 0,
-              "target": "yy_next_state"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/lexer.c",
-              "label": "uses",
-              "line": 0,
-              "target": "offset"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/parser.c",
-              "label": "uses",
-              "line": 0,
-              "target": "YY_INITIAL_VALUE"
-            }
-          ],
-          "treeTruthEdges": 2938,
-          "unexplainedInAnalyzer": 28
+          "samples": [],
+          "treeTruthEdges": 0,
+          "unexplainedInAnalyzer": 0
         },
         "kotlinx-coroutines:kotlin": {
           "analyzerEdges": 979,
@@ -2101,9 +1848,9 @@
           "heuristicUnexplained": 84,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 11.8,
-            "loadAvgRetried": false,
-            "maxMsPerFile": 56.6,
+            "avgMsPerFile": 5.1,
+            "loadAvgRetried": true,
+            "maxMsPerFile": 48.3,
             "samplesTimed": 60
           },
           "samples": [],
@@ -2111,22 +1858,22 @@
           "unexplainedInAnalyzer": 0
         },
         "lodash:javascript": {
-          "analyzerEdges": 162,
+          "analyzerEdges": 4296,
           "coveragePct": 100,
-          "coveredByAnalyzer": 162,
-          "explainableByTree": 162,
+          "coveredByAnalyzer": 4296,
+          "explainableByTree": 4296,
           "fabricationPct": 0,
           "filesSampled": 55,
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 106,
+            "avgMsPerFile": 161.6,
             "loadAvgRetried": false,
-            "maxMsPerFile": 1528.5,
+            "maxMsPerFile": 3188.4,
             "samplesTimed": 55
           },
           "samples": [],
-          "treeTruthEdges": 162,
+          "treeTruthEdges": 4296,
           "unexplainedInAnalyzer": 0
         },
         "nlohmann-json:cpp": {
@@ -2139,9 +1886,9 @@
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 13.8,
+            "avgMsPerFile": 24.9,
             "loadAvgRetried": true,
-            "maxMsPerFile": 635.7,
+            "maxMsPerFile": 951.3,
             "samplesTimed": 17
           },
           "samples": [],
@@ -2158,9 +1905,9 @@
           "heuristicUnexplained": 162,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 3.8,
+            "avgMsPerFile": 4.4,
             "loadAvgRetried": false,
-            "maxMsPerFile": 23.5,
+            "maxMsPerFile": 35.3,
             "samplesTimed": 60
           },
           "samples": [],
@@ -2177,9 +1924,9 @@
           "heuristicUnexplained": 58,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 8,
+            "avgMsPerFile": 7.9,
             "loadAvgRetried": false,
-            "maxMsPerFile": 64.5,
+            "maxMsPerFile": 65.7,
             "samplesTimed": 60
           },
           "samples": [],
@@ -2196,9 +1943,9 @@
           "heuristicUnexplained": 118,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 22.6,
-            "loadAvgRetried": false,
-            "maxMsPerFile": 312.2,
+            "avgMsPerFile": 13.7,
+            "loadAvgRetried": true,
+            "maxMsPerFile": 277.1,
             "samplesTimed": 37
           },
           "samples": [],
@@ -2206,22 +1953,22 @@
           "unexplainedInAnalyzer": 0
         },
         "shadcn-svelte:svelte": {
-          "analyzerEdges": 470,
+          "analyzerEdges": 505,
           "coveragePct": 100,
-          "coveredByAnalyzer": 470,
-          "explainableByTree": 470,
+          "coveredByAnalyzer": 509,
+          "explainableByTree": 505,
           "fabricationPct": 0,
           "filesSampled": 60,
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 5.8,
-            "loadAvgRetried": false,
-            "maxMsPerFile": 26.6,
+            "avgMsPerFile": 5.4,
+            "loadAvgRetried": true,
+            "maxMsPerFile": 34.2,
             "samplesTimed": 60
           },
           "samples": [],
-          "treeTruthEdges": 470,
+          "treeTruthEdges": 509,
           "unexplainedInAnalyzer": 0
         },
         "terraform:go": {
@@ -2234,9 +1981,9 @@
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 41.4,
+            "avgMsPerFile": 40.9,
             "loadAvgRetried": false,
-            "maxMsPerFile": 651.6,
+            "maxMsPerFile": 844.4,
             "samplesTimed": 60
           },
           "samples": [],
@@ -2244,22 +1991,22 @@
           "unexplainedInAnalyzer": 0
         },
         "vue-element-admin:vue": {
-          "analyzerEdges": 139,
+          "analyzerEdges": 404,
           "coveragePct": 100,
-          "coveredByAnalyzer": 139,
-          "explainableByTree": 139,
+          "coveredByAnalyzer": 407,
+          "explainableByTree": 404,
           "fabricationPct": 0,
           "filesSampled": 60,
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 6.3,
+            "avgMsPerFile": 9.5,
             "loadAvgRetried": false,
-            "maxMsPerFile": 48.3,
+            "maxMsPerFile": 85.1,
             "samplesTimed": 60
           },
           "samples": [],
-          "treeTruthEdges": 139,
+          "treeTruthEdges": 407,
           "unexplainedInAnalyzer": 0
         },
         "zls:zig": {
@@ -2272,9 +2019,9 @@
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 28.5,
-            "loadAvgRetried": true,
-            "maxMsPerFile": 428.4,
+            "avgMsPerFile": 35.9,
+            "loadAvgRetried": false,
+            "maxMsPerFile": 360.1,
             "samplesTimed": 60
           },
           "samples": [],
