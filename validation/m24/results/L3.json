@@ -2,7 +2,7 @@
   "issue": "492",
   "code": "L3",
   "status": "verified",
-  "currentCommit": "14407e4496b4eaffc126cf2751822605d1f37973",
+  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
   "sourceFingerprint": "84607ba16b28d88e424e8f434b5cbb7f7baa18055ad8de84847d790b66c93e8b",
   "verifierCommand": "npx tsx script/m24/verify-navigation.ts",
   "evidenceFile": "L3.json",

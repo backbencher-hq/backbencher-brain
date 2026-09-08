@@ -49,7 +49,7 @@
       "detail": "caught: lineCount 3 (phantom) (got 2, want 3)"
     }
   ],
-  "currentCommit": "14407e4496b4eaffc126cf2751822605d1f37973",
+  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
   "sourceFingerprint": "a46a5661517d88abc200a4fcd45e2de5eeb9f438054a01ada2f800a2d555e26a",
   "verifierCommand": "npx tsx script/m24/verify-positions.ts",
   "evidenceFile": "P1.json",
