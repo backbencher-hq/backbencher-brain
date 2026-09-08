@@ -836,12 +836,27 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (parentContext && parentContext.kind === ASTEngine.SymbolKind.Method && parentContext.symbolRef) {
               if (!parentContext.symbolRef.qualified_calls) parentContext.symbolRef.qualified_calls = []
               parentContext.symbolRef.qualified_calls.push(callExpression)
+              // M49 R3 (overload disambiguation payload, review claim 1):
+              // the bare-name target stays the matching contract (JD20 —
+              // oracle mirrors it), but the ARGUMENT COUNT is carried so a
+              // downstream consumer can tell process(String) from process(int)
+              // without a resolution engine. Leaf target + argumentCount is
+              // additive; the differential's label+target matching is unaffected.
+              let argumentCount: number | undefined
+              const argsNode = node.childForFieldName("arguments")
+              if (argsNode) {
+                argumentCount = 0
+                for (let ai = 0; ai < argsNode.namedChildCount; ai++) {
+                  const ac = argsNode.namedChild(ai)
+                  if (ac && ac.type !== "comment") argumentCount!++
+                }
+              }
               relationships.push({
                 source: parentContext.name || parentContext.symbolRef.name,
                 target: callExpression.split(".").pop() || callExpression,
                 type: ASTEngine.RelationshipType.Calls,
                 confidence: 0.7,
-                metadata: { javaCallExpression: callExpression },
+                metadata: { javaCallExpression: callExpression, ...(argumentCount !== undefined ? { argumentCount } : {}) },
               })
             } else {
               // M14 #419 G4: calls outside method bodies (static/instance

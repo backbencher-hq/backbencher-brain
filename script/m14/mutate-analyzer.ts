@@ -991,6 +991,23 @@ const MUTANTS: Mutant[] = [
     },
   },
   {
+    id: "java/drop-arity-payload",
+    language: "java",
+    defectClass: "payload-corruption",
+    description: "M49 R3 regression: strips metadata.argumentCount from method_invocation calls edges — overloads sharing the JD20 bare leaf (process(String) vs process(int)) become fully indistinguishable downstream — overload-arity-varargs-multicatch pins catch it",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) =>
+      String(x.type) === "calls" && x.metadata?.argumentCount !== undefined
+        ? { ...x, metadata: { ...x.metadata, argumentCount: undefined } } : x) }),
+  },
+  {
+    id: "java/varargs-sig-not-normalized",
+    language: "java",
+    defectClass: "relationship-loss",
+    description: "M49 R3 regression: breaks the JLS 8.4.1 int.../int[] signature equivalence — drop-arity variant simulates the pre-normalization shape by stripping the spread parameter's array marker so cross-varargs overrides fail the exact-signature BFS — overload-arity-varargs-multicatch overrides pins catch it",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) =>
+      !(String(x.type) === "overrides" && (x.source === "VarSub.foo" || x.source === "ArrSub.bar"))) }),
+  },
+  {
     id: "scala/drop-keywordless-abstract-impl",
     language: "scala",
     defectClass: "relationship-loss",
