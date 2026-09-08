@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M49",
+  "title": "Review-Intake & Gate-Hardening",
+  "purpose": "External reviews keep finding real defects in analyzers declared done. M49 is the standing intake layer: every review claim is verified against code + live parse, fixed with oracle mirror, gated with fixture+mutant+spec in the same session, and the discovered lens is extended family-wide so m37/m14 inherit hardened gates. Cascade: m49 -> m37 -> m14.",
+  "issues": [
+    {
+      "id": "G1",
+      "title": "Governance: ledger, coverage, registry wiring, chain wiring, auto-pass audit",
+      "status": "verified",
+      "evidenceFile": "validation/m49/results/G1.json",
+      "verifiedAtCommit": "bb2c631e",
+      "notes": "Codes G1/R1/R2/X1; board tracks every review folder; verifiers registered; package.json verify runs m49 gates; no auto-pass literals."
+    },
+    {
+      "id": "R1",
+      "title": "Review-intake protocol gate (reviews/<lang> -> protocol -> board)",
+      "status": "verified",
+      "evidenceFile": "validation/m49/results/R1.json",
+      "verifiedAtCommit": "bb2c631e",
+      "notes": "Every review folder tracked on the board; method+verdict tally required; resolutions must cite commits; negatives prove prose-only resolutions fail."
+    },
+    {
+      "id": "R2",
+      "title": "Regex census truth gate (freshness + debt register + shrink-only)",
+      "status": "verified",
+      "evidenceFile": "validation/m49/results/R2.json",
+      "verifiedAtCommit": "bb2c631e",
+      "notes": "User suspicion confirmed: census claimed 0 while analyzers carried 55 (scala 13, csharp 8, vue 6...). Baseline 22 review-class regexes registered; total may only shrink."
+    },
+    {
+      "id": "X1",
+      "title": "Closure: live re-run of R1+R2, no unresolved review claims older than their gate run",
+      "status": "pending",
+      "notes": "Closes only when kotlin+scala waves are processed and the register shrinks or every entry carries a justified ruling."
+    }
+  ]
+}
