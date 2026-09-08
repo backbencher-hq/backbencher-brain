@@ -1,0 +1,10 @@
+{
+ "schemaVersion": 1,
+ "milestone": "M49",
+ "issueId": "G1",
+ "runCommand": "bun run script/m49/verify-governance.ts",
+ "verifiedAtCommit": "bb2c631e",
+ "status": "pass",
+ "verdictLine": "see rawOutput tail below",
+ "rawOutput": "G1: 33 passed, 0 failed, 4 negative(s) exercised"
+}
