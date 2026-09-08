@@ -24,6 +24,7 @@
 import { mkdtempSync, writeFileSync, readFileSync, existsSync, readdirSync, mkdirSync, statSync } from "node:fs"
 import { createHash } from "node:crypto"
 import { tmpdir } from "node:os"
+import { execFileSync } from "node:child_process" // M48 post-closure: proper ESM import — the require() form fails under tsx ESM and stamped evidence commit as "unknown"
 import path from "node:path"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
@@ -41,7 +42,7 @@ function negative(label: string, ok: boolean, detail = "") {
   if (!ok) { failed++; failures.push(`[negative] ${label}${detail ? ` — ${detail}` : ""}`) }
 }
 
-const gitHead = (() => { try { const { execFileSync } = require("node:child_process") as typeof import("node:child_process"); return execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim() } catch { return "unknown" } })()
+const gitHead = (() => { try { return execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim() } catch { return "unknown" } })()
 
 async function main() {
   const fixture = mkdtempSync(path.join(tmpdir(), "m48-c2-fixture-"))
