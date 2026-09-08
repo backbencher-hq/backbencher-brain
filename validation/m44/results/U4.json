@@ -8,10 +8,10 @@
   "failed": 0,
   "mutantsCaught": 4,
   "mutantsTotal": 4,
-  "currentCommit": "3fa837266d11fa231b21e1d835a165cf283c58aa",
+  "currentCommit": "99170ce01521d8cff385c717215787b766336eb3",
   "verifierCommand": "npx tsx script/m44/verify-legend.ts",
   "evidenceFile": "U4.json",
-  "generatedAt": "2026-09-07T22:39:51.072Z",
+  "generatedAt": "2026-09-08T04:55:19.552Z",
   "fixture": {
     "root": "Widget (file-1:Widget)",
     "duplicated": "make -> Widget carries calls + instantiates (3 caller rows, 2 caller groups)"
