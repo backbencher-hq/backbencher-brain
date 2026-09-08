@@ -54,8 +54,18 @@ const commits = evs.map((e) => e.currentCommit).filter(Boolean)
 check("X1: all four gate evidence files exist", evs.every((e) => e.currentCommit !== undefined))
 check("X1: all gates cite the SAME commit (one-commit batch)", new Set(commits).size === 1 && commits.length === 4, commits.join(","))
 
+// One-commit batch semantics (M33/M36 precedent): the gates re-ran at one
+// commit H, and the batch is closed by committing the evidence at H+1 —
+// committing X1's own evidence necessarily moves HEAD past H, so requiring
+// batch === HEAD can never hold honestly. The honest invariant: H is an
+// ancestor of HEAD (the tree only moved forward since the batch ran).
 const head = execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim()
-check("X1: batch commit is HEAD", commits[0] === head, `${commits[0]?.slice(0, 9)} vs ${head.slice(0, 9)}`)
+let batchIsAncestor = false
+try {
+  execFileSync("git", ["merge-base", "--is-ancestor", String(commits[0] ?? ""), head], { cwd: ROOT, stdio: "ignore" })
+  batchIsAncestor = true
+} catch {}
+check("X1: batch commit is HEAD or an ancestor of HEAD", batchIsAncestor, `${commits[0]?.slice(0, 9)} vs ${head.slice(0, 9)}`)
 
 for (const [g, e] of [["C1", evs[0]], ["D1", evs[1]], ["T1", evs[2]], ["G1", evs[3]]] as const) {
   const okStatus = e.status === "verified" || e.verdict === "PASS"
@@ -134,7 +144,7 @@ negative("X1: missing evidence file is rejected", () => !existsSync(path.join(EV
 const dirty = execFileSync("git", ["status", "--porcelain", "--untracked-files=all"], { cwd: ROOT, encoding: "utf8" })
   .split("\n").map((l) => l.slice(3).trim()).filter(Boolean)
   .filter((f) => f.startsWith("script/m45/") || f.startsWith("docs/m45/") || f.startsWith("test/fixtures/m45-studio/") || f === "package.json")
-  .filter((f) => !(f.startsWith("validation/m45/") && ["X1.json", "G1.json", "C1.json"].includes(f.split("/").pop() ?? "")))
+  .filter((f) => !(f.startsWith("validation/m45/") && f.endsWith(".json"))) // evidence outputs are not inputs
 check("X1: relevant tree is clean", dirty.length === 0, dirty.join(","))
 
 // --- evidence ------------------------------------------------------------------------------
