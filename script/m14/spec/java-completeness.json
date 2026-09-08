@@ -350,6 +350,27 @@
     "status": "FIXED",
     "question": "C25: only bare 'spring' surfaced patterns; spring_mvc/spring_data/jpa/hibernate flags produced zero pattern payload",
     "decision": "Spring MVC -> mvc_pattern+api_endpoints; Spring Data -> repository_pattern+orm_mapping; JPA/Hibernate -> orm_mapping (first match). Vocabulary matches the spring block"
+   },
+   {
+    "id": "JD36",
+    "node_type": "syntax-error reporting (ERROR/MISSING vs hasError on typed nodes)",
+    "status": "RULED",
+    "question": "Hygiene: only ERROR/MISSING nodes push errors; hasError on a WELL-TYPED node (a method containing one bad child) is silent",
+    "decision": "Ruled intentional: a typed node with an embedded error still ANALYZES correctly (tree-sitter recovery keeps the valid subtree); pushing a file-level error per bad child would flood output on generated/amalgamated files. The C-wave guarantee (error-containing files still emit recoverable content) is the standing probe. receiver_parameter (skip-listed) joins the documented skip set — receiver params (void m(Outer this)) are receiver binders, not user parameters"
+   },
+   {
+    "id": "JD37",
+    "node_type": "bare-name symbolMap alias",
+    "status": "FIXED",
+    "question": "Hygiene: symbolMap.set(name, sym) bare overwrite lets nested same-name classes (Outer.Inner vs Other.Inner) repoint the alias",
+    "decision": "Set-if-absent (first-wins). Verified: the only symbolMap.get is FQN-keyed (override BFS), so bare keys are informational and can never misresolve — the fix removes the silent-repoint hazard"
+   },
+   {
+    "id": "JD38",
+    "node_type": "metadata.framework single pick",
+    "status": "FIXED",
+    "question": "Hygiene: finalFrameworks[0] depended on import order — same file could report spring_mvc or spring depending on which import came first",
+    "decision": "Deterministic pickJavaFramework: fixed priority list (spring_data > spring_mvc > spring_core > spring > jpa > hibernate > ...), alphabetical tiebreak. No fixture pinned framework (verified), lanes unaffected"
    }
   ]
  }
