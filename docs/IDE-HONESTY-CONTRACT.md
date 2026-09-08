@@ -318,6 +318,16 @@ usages, hub, graph, or impact.
    core and drift-gated byte-identical. A legend missing a section, a
    header disagreeing with the rendered rows, or a stale render without
    its marker (or a fresh one with a phantom marker) is a defect.
+10. **Impact resolves through the owning declaration.** A member-name
+   target the engine's traversable-type whitelist excludes (a constructor,
+   a plain member) roots its impact through the OWNING declaration when
+   the member is indexed — the surface states the resolution
+   (`resolvedThrough: "owning-declaration"`, member and owner named) and
+   never silently relabels the root. Genuinely absent symbols keep the
+   declared not-indexed error; an empty set is never invented (M44.U5).
+   On every read surface an out-of-range editor position is declared
+   absence — a wire error where the contract requires honest emptiness is
+   a defect (the PositionError guard in the navigation owner).
 
 ## 14. Demo-Media Rules (M45 amendment, ratified 2026-09-07)
 

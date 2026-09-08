@@ -23,7 +23,7 @@
 
 import { readFileSync } from "node:fs";
 import type { CoreDatabase } from "../brain/database";
-import { createPositionMapper, resolveRowByteColumns } from "./positions";
+import { createPositionMapper, resolveRowByteColumns, PositionError } from "./positions";
 import { languageForPath } from "./hover";
 
 /** Hard cap on locations per response (contract §3 bounded result sets). */
@@ -134,7 +134,19 @@ export function findIndexedSymbol(
     return null;
   }
   const mapper = createPositionMapper(sourceText);
-  const indexPos = mapper.lspToIndex({ line: line, character: character });
+  // M44.U5: an out-of-range editor position (past EOF, e.g. the derived
+  // miss probes the honesty suite uses) is DECLARED ABSENCE — no indexed
+  // symbol at that position — not a wire error. Before this guard the
+  // PositionError propagated as -32603 on definition/references/call-hierarchy
+  // while hover returned honest null at the identical position: the
+  // declared-absence rule (contract §1) must hold on every surface.
+  let indexPos;
+  try {
+    indexPos = mapper.lspToIndex({ line: line, character: character });
+  } catch (err) {
+    if (err instanceof PositionError) return null;
+    throw err;
+  }
   const rows = raw
     .prepare(
       `SELECT s.id, s.name, s.qualified_name, s.symbol_type, s.file_id,

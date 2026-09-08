@@ -2,16 +2,21 @@
   "issue": "M44.G1",
   "code": "G1",
   "milestone": "M44",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 26,
   "passed": 26,
   "failed": 0,
   "negativeCases": 9,
-  "currentCommit": "24060f1916d28ee120e69c51fc2a2d510ae25d0e",
-  "workingTreeRelevantChanges": [],
+  "currentCommit": "99170ce01521d8cff385c717215787b766336eb3",
+  "workingTreeRelevantChanges": [
+    "docs/IDE-HONESTY-CONTRACT.md",
+    "docs/m44/M44-MASTER-PLAN.md",
+    "script/m44/u5-fixture.ts",
+    "script/m44/verify-impact-resolution.ts"
+  ],
   "verifierCommand": "npx tsx script/m44/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-07T23:28:05.209Z",
+  "generatedAt": "2026-09-08T19:50:30.266Z",
   "ledger": "validation/m44/results/manifest.json",
   "m42Bar": {
     "gateExit": 0

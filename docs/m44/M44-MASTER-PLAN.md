@@ -77,6 +77,23 @@ relationship + real server + 4 mutants) and harness laws AH10/AH11:
   byte-identical regeneration. The whole-panel stale marker stays a
   hub-panel contract: pinned at source level in U4, asserted live by E5.
 
+### U5 decision (2026-09-08): impact resolves through the owning declaration
+
+The impact door (`src/lsp/impact.ts` — the single owner) resolves a member-name
+target the engine's traversable-type whitelist excludes through its OWNING
+declaration, exact-name and project-scoped, only when the member has no stored
+reverse edges of its own; the result carries a first-class `resolution`
+field (`through: "owning-declaration"`, member and owner named) that
+`renderImpact` renders as a declared note (`data-resolution-through` + visible
+`bb-impact-resolution-note`) — never a silent relabel. Genuinely absent symbols
+keep the declared not-indexed error. The same work fixed a REAL pre-existing
+defect the derived probes exposed: an out-of-range editor position threw
+`PositionError` (wire -32603) on definition/references/call-hierarchy where
+hover returned honest null — the navigation owner now converts out-of-range
+to declared absence (contract §13.10), with a permanent L3 mutant.
+Gated by `script/m44/verify-impact-resolution.ts` (fixture-first, real seeded
+index + real server, 4 mutants) and the E5 constructor-impact assertions.
+
 ### U3 decision (2026-09-07, owner-approved "true nested tree")
 
 The tree nests by the **placement parent** — the parent endpoint of the group's
