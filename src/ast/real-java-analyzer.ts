@@ -74,6 +74,21 @@ function stripJavaAnnotations(text: string): string {
   return out
 }
 
+/** Deterministic framework pick for metadata.framework: fixed priority
+ *  (most-specific first), then alphabetical tiebreak. Import-order must
+ *  never change the reported value. */
+const JAVA_FRAMEWORK_PRIORITY = [
+  "spring_data", "spring_mvc", "spring_core", "spring", "jpa", "hibernate",
+  "mybatis", "quarkus", "micronaut", "jackson", "slf4j",
+]
+function pickJavaFramework(frameworks: string[]): string | undefined {
+  for (let i = 0; i < JAVA_FRAMEWORK_PRIORITY.length; i++) {
+    if (inArray(frameworks, JAVA_FRAMEWORK_PRIORITY[i])) return JAVA_FRAMEWORK_PRIORITY[i]
+  }
+  const sorted = [...frameworks].sort()
+  return sorted[0]
+}
+
 function inArray(arr: any[], val: any): boolean {
   for (let i = 0; i < arr.length; i++) {
     if (arr[i] === val) return true
@@ -405,7 +420,11 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
           symbols.push(sym)
           symbolMap.set(fqn, sym)
-          symbolMap.set(name, sym)
+          // Bare-name alias: convenience key. Set-if-absent (first-wins) — a
+          // bare overwrite would let nested same-name classes (Outer.Inner vs
+          // Other.Inner) silently repoint the alias. The only symbolMap getter
+          // is FQN-keyed (override BFS), so bare keys are informational.
+          if (!symbolMap.has(name)) symbolMap.set(name, sym)
 
           newContext = {
             node,
@@ -1245,7 +1264,10 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
         complexity: cyclomaticComplexity + 1,
         linesOfCode: content.split("\n").length,
         cyclomaticComplexity: cyclomaticComplexity + 1,
-        framework: finalFrameworks[0],
+        // Deterministic single-framework pick (hygiene 2026-09-08): the old
+        // finalFrameworks[0] depended on import ORDER. Fixed priority list,
+        // alphabetical tiebreak — same file always reports the same value.
+        framework: pickJavaFramework(finalFrameworks),
         patterns: finalPatterns,
         currentPackage,
         detectedFrameworks: finalFrameworks,
