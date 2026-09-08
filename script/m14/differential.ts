@@ -299,8 +299,9 @@ async function deriveEmbeddedScriptTrees(root: any, content: string, lang: strin
 // deriveJavaEdges audits it: every method_invocation, explicit constructor
 // delegation (super/this/Foo.super), and method reference (T::m) derives an
 // independent calls truth edge. The builtin/stdlib exclusion mirrors
-// RealJavaAnalyzer.isJavaBuiltin EXACTLY (exact-match list + per-segment
-// STDLIB_ROOTS) — that policy is a documented design decision (JLS-based,
+// RealJavaAnalyzer.isJavaBuiltin EXACTLY (exact-match list + ROOT-segment
+// STDLIB_ROOTS — M37.21 C5: root prefix only, never mid-chain segments) —
+// that policy is a documented design decision (JLS-based,
 // measured 4.2% fabrication without it); the oracle audits target FINDING,
 // not the exclusion policy. Both sides walk the same pinned parse.
 const JAVA_EXACT_BUILTINS = new Set([
@@ -351,8 +352,9 @@ const JAVA_STDLIB_ROOTS = new Set([
 ])
 function isJavaBuiltinCall(call: string): boolean {
   if (JAVA_EXACT_BUILTINS.has(call)) return true
+  // M37.21 C5 mirror: ROOT segment only (see RealJavaAnalyzer.isJavaBuiltin).
   const segments = call.split(".")
-  for (const seg of segments) if (JAVA_STDLIB_ROOTS.has(seg)) return true
+  if (segments.length > 0 && JAVA_STDLIB_ROOTS.has(segments[0])) return true
   if (JAVA_STDLIB_ROOTS.has(call)) return true
   return false
 }
@@ -4796,6 +4798,49 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
   while (anonStack.length) {
     const x = anonStack.pop()!
     anonScalaDecl(x)
+    // M37.21 C30 mirror (java twin of the scala block): `new QueryHandler()
+    // { public int handle(...) {...} }` — the analyzer now declares
+    // anonymous_${Super} class symbols, attributes the body's methods to
+    // the anonymous type, and registers the supertype in classHierarchy so
+    // @Override methods resolve (exact-in-file). The oracle must register
+    // the same synthetic declaration or every verified
+    // anonymous_X.m -> Super.m edge surfaces as unexplained fabrication
+    // (grails-core JpaQueryBuilder: 13 anon bodies, 1 unexplained @200).
+    // Scoped supertypes collapse to the base segment; generic args stripped
+    // — mirrors extractJavaTypeBaseName.
+    if (x.type === "object_creation_expression") {
+      const jbody = x.namedChildren.find((c: any) => c.type === "class_body")
+      const jtn = x.namedChildren.find((c: any) => /type_identifier|scoped_type_identifier|generic_type$/.test(c.type))
+      if (jbody && jtn) {
+        let jSuper = jtn.text
+        if (jtn.type === "generic_type" && jtn.namedChildCount > 0) jSuper = jtn.namedChild(0).text
+        jSuper = jSuper.replace(/<[^<>]*>/g, "").trim()
+        const jDot = jSuper.lastIndexOf(".")
+        if (jDot !== -1) jSuper = jSuper.slice(jDot + 1)
+        if (jSuper) {
+          const jAnon = `anonymous_${jSuper}`
+          if (!decls[jAnon]) {
+            decls[jAnon] = { parents: [], methods: new Set(), sigs: new Map() }
+            for (let i = 0; i < jbody.namedChildCount; i++) {
+              const m = jbody.namedChild(i)
+              if (m?.type !== "method_declaration") continue
+              const mn = m.childForFieldName?.("name")
+              if (mn) {
+                decls[jAnon].methods.add(mn.text)
+                const sig = extractSig(m)
+                if (sig) {
+                  let ss = decls[jAnon].sigs.get(mn.text)
+                  if (!ss) { ss = new Set(); decls[jAnon].sigs.set(mn.text, ss) }
+                  ss.add(sig)
+                }
+              }
+            }
+          }
+          if (!decls[jSuper]) decls[jSuper] = { parents: [], methods: new Set(), sigs: new Map() }
+          declParents.push({ child: jAnon, parent: jSuper })
+        }
+      }
+    }
     for (let i = 0; i < x.namedChildCount; i++) { const c = x.namedChild(i); if (c) anonStack.push(c) }
   }
   // hierarchy from already-derived extends edges (head-segment normalized)

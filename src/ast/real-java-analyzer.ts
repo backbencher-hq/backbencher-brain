@@ -45,17 +45,18 @@ function stripJavaAnnotations(text: string): string {
   while (i < text.length) {
     const ch = text[i]
     if (ch === "@") {
-      // Skip the annotation name (word chars and dots), then any whitespace.
+      // Skip the annotation name (word chars incl $, and dots), then any
+      // whitespace.
       i++
       while (i < text.length) {
         const c = text[i]
-        const isWord = (c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || (c >= "0" && c <= "9") || c === "_" || c === "."
+        const isWord = (c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || (c >= "0" && c <= "9") || c === "_" || c === "." || c === "$"
         if (!isWord) break
         i++
       }
       // Also consume a balanced (...) argument list — @NotNull(message = "x")
       // must not leave its arguments behind as phantom type text.
-      while (i < text.length && text[i] === " ") i++
+      while (i < text.length && (text[i] === " " || text[i] === "\t" || text[i] === "\n" || text[i] === "\r")) i++
       if (text[i] === "(") {
         let depth = 0
         while (i < text.length) {
@@ -64,7 +65,7 @@ function stripJavaAnnotations(text: string): string {
           i++
         }
       }
-      while (i < text.length && (text[i] === " " || text[i] === "\t")) i++
+      while (i < text.length && (text[i] === " " || text[i] === "\t" || text[i] === "\n" || text[i] === "\r")) i++
       continue
     }
     out += ch
@@ -171,6 +172,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
         type === "do_statement" ||
         type === "catch_clause" ||
         type === "switch_block_statement_group" ||
+        type === "switch_rule" ||
         type === "ternary_expression"
       ) {
         cyclomaticComplexity++
@@ -450,6 +452,29 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           const fqn = parentContext ? `${parentContext.fqn}.${name}${signature}` : `${name}${signature}`
           const localOwnerPrefix = parentContext ? `${parentContext.name}.${name}${signature}` : `${name}${signature}`
           const returnType = isConstructor ? undefined : this.extractJavaReturnType(node)
+
+          // Declared-type references for RETURN types — the declared-type graph
+          // covered fields, params, locals, catch, throws, and casts, but the
+          // method's return type emitted nothing (probe: `List<User> getUsers()`
+          // produced zero edges to List/User, 2026-09-08). Same contract as the
+          // field branch: every named type in the type clause becomes a
+          // References edge from the owning class; primitives/void contribute
+          // nothing (collectJavaTypeNames only visits name-bearing nodes).
+          if (!isConstructor && parentContext) {
+            const retTypeNode = node.childForFieldName("type")
+            if (retTypeNode) {
+              for (const t of this.collectJavaTypeNames(retTypeNode)) {
+                if (t === "var") continue
+                relationships.push({
+                  source: parentContext.name,
+                  target: t,
+                  type: ASTEngine.RelationshipType.References,
+                  confidence: 0.95,
+                  metadata: { relationshipType: "declared_type", declaredOn: "return_type" },
+                })
+              }
+            }
+          }
           
           let isApiEndpoint = false
           let fullRoute = ""
@@ -471,8 +496,35 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
             else if (mappingAnnotation === "PutMapping") httpMethod = "PUT"
             else if (mappingAnnotation === "DeleteMapping") httpMethod = "DELETE"
             else if (mappingAnnotation === "PatchMapping") httpMethod = "PATCH"
-            else if (mappingAnnotation === "RequestMapping" || mappingAnnotation === "Path") httpMethod = "ANY"
+            else if (mappingAnnotation === "Path") httpMethod = "ANY"
+            else if (mappingAnnotation === "RequestMapping") {
+              // JLS/Spring semantics: @RequestMapping(method = GET) declares the
+              // HTTP verb — the pre-fix code defaulted to ANY without reading the
+              // key (probe-verified 2026-09-08). The value is an identifier
+              // (GET) or an array_initializer ({GET, POST}); the first element
+              // names the primary verb, absent key means ANY (Spring default).
+              const m = this.getAnnotationValue(node, "RequestMapping", "method")
+              if (m) {
+                // Char walk, not regex (M12 no-regex census): keep letters only.
+                let verb = ""
+                for (let ci = 0; ci < m.length; ci++) {
+                  const c = m[ci]
+                  if ((c >= "A" && c <= "Z") || (c >= "a" && c <= "z")) verb += c
+                }
+                verb = verb.toUpperCase()
+                if (verb === "GET" || verb === "POST" || verb === "PUT" || verb === "DELETE" || verb === "PATCH" || verb === "HEAD" || verb === "OPTIONS") httpMethod = verb
+                else httpMethod = "ANY"
+              } else httpMethod = "ANY"
+            }
 
+            // Route composition. Array-valued routes (@RequestMapping({"/a","/b"}))
+            // previously leaked the RAW initializer text (probe: route
+            // `/{"/a","/b"}`) — getAnnotationValue now returns the FIRST
+            // string element for array initializers, matching the single-route
+            // model. A mapping with NO route component at all (bare
+            // @GetMapping on a class with no @RequestMapping base) previously
+            // fabricated a root endpoint ("/") for every arg-less mapping —
+            // the honest output is NO endpoint edge when no route exists.
             const methodRoute = this.getAnnotationValue(node, mappingAnnotation, "value") || this.getAnnotationValue(node, mappingAnnotation, "path") || ""
 
             let basePath = ""
@@ -489,25 +541,33 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
                 basePath = this.getAnnotationValue(parentContext.node, classMapping, "value") || this.getAnnotationValue(parentContext.node, classMapping, "path") || ""
               }
             }
-            // Collapse repeated slashes in the composed route (pure string normalization).
-            // Assigns to the method-scoped fullRoute declared above — redeclaring
-            // here shadowed it and left apiContractPath permanently "".
-            fullRoute = ""
-            for (let i = 0; i < basePath.length + methodRoute.length; i++) {
-              const ch = i < basePath.length ? basePath[i] : methodRoute[i - basePath.length]
-              if (ch === "/" && fullRoute.length > 0 && fullRoute[fullRoute.length - 1] === "/") continue
-              fullRoute += ch
-            }
-            if (!fullRoute.startsWith("/")) fullRoute = "/" + fullRoute
 
-            relationships.push({
-              source: localOwnerPrefix,
-              target: fullRoute,
-              type: ASTEngine.RelationshipType.Exports,
-              confidence: 1.0,
-              metadata: { isApiEndpoint: true, httpMethod, route: fullRoute },
-            })
-            frameworks["spring_mvc"] = true
+            if (basePath || methodRoute) {
+              // Collapse repeated slashes in the composed route (pure string normalization).
+              // Assigns to the method-scoped fullRoute declared above — redeclaring
+              // here shadowed it and left apiContractPath permanently "".
+              fullRoute = ""
+              for (let i = 0; i < basePath.length + methodRoute.length; i++) {
+                const ch = i < basePath.length ? basePath[i] : methodRoute[i - basePath.length]
+                if (ch === "/" && fullRoute.length > 0 && fullRoute[fullRoute.length - 1] === "/") continue
+                fullRoute += ch
+              }
+              if (!fullRoute.startsWith("/")) fullRoute = "/" + fullRoute
+
+              relationships.push({
+                source: localOwnerPrefix,
+                target: fullRoute,
+                type: ASTEngine.RelationshipType.Exports,
+                confidence: 1.0,
+                metadata: { isApiEndpoint: true, httpMethod, route: fullRoute },
+              })
+            } else {
+              // Mapping annotation present, no route component: the method IS
+              // an endpoint but its path is undeclared at parse level — record
+              // the fact without fabricating a route value.
+              isApiEndpoint = false
+            }
+            if (isApiEndpoint) frameworks["spring_mvc"] = true
           }
 
           let dbMapping = ""
@@ -573,8 +633,13 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
 
           const methodDoc = this.extractJavadocComment(node)
+          // Ctor identity: the symbol KEEPS ITS DECLARED NAME (the class name),
+          // matching the csharp family convention. The pre-fix "constructor"
+          // literal collided across classes (contains:A->constructor and
+          // contains:B->constructor are indistinguishable; every ctor overload
+          // collapsed). The kind field still says Constructor.
           const sym: ASTEngine.UniversalSymbol = {
-            name: isConstructor ? "constructor" : name,
+            name,
             kind: isConstructor ? ASTEngine.SymbolKind.Constructor : ASTEngine.SymbolKind.Method,
             range: this.nodeToRange(node),
             comments: methodDoc ? [methodDoc] : [],
@@ -850,6 +915,12 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
             }
             symbols.push(anonSym)
             symbolMap.set(anonFqn, anonSym)
+            // Claim 30: the anonymous type never registered its hierarchy, so
+            // an @Override method inside the anon body had NO ancestor to BFS
+            // — the override task fell out with no edge at all. Registering
+            // the supertype gives the existing resolveOverrides machinery the
+            // same in-file reach it has for named classes.
+            classHierarchy.set(anonFqn, typeName ? [typeName] : [])
             newContext = {
               node: classBody,
               name: anonName,
@@ -870,18 +941,11 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
 
-      else if (
-        type === "cast_expression" ||
-        type === "instanceof_expression" ||
-        type === "class_literal"
-      ) {
+      else      if (type === "cast_expression" || type === "instanceof_expression" || type === "class_literal") {
         // JLS 15.16 / 15.20.2 / 15.8.2: casts, instanceof checks, and class
-        // literals all reference a type by name. Without these handlers the
-        // type usage was silently dropped (measured: zero edges for
-        // `(String) s`, `o instanceof String`, `T.class` in the M14 gap
-        // probe). Grammar field access ("type"/"right") is preferred over
-        // child search so identifiers inside the operand expression are not
-        // mistaken for the referenced type.
+        // literals all reference a type by name. Grammar field access
+        // ("type"/"right") is preferred over child search so identifiers
+        // inside the operand expression are not mistaken for the type.
         const typeNode =
           node.childForFieldName("type") ||
           node.childForFieldName("right") ||
@@ -893,7 +957,11 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (typeName && typeName !== "var") {
             relationships.push({
               source: parentContext?.name || parentContext?.symbolRef?.name || "global",
-              target: typeName,
+              // Cast arrays: `(String[]) o` — the EDGE TARGET is the element
+              // type (String), not the JVM-erasure text with brackets
+              // (probe 2026-09-08: `String[]` target joined nothing). The
+              // declaredOn shape stays visible in metadata below.
+              target: typeName.endsWith("[]") ? typeName.slice(0, typeName.length - 2) : typeName,
               type: ASTEngine.RelationshipType.References,
               confidence: 0.95,
               metadata: {
@@ -964,7 +1032,13 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (kids.length > 0) {
           const recv = kids[0]
           const recvName = recv.type === "type_identifier" || recv.type === "identifier" ? recv.text : this.extractJavaTypeBaseName(recv)
-          if (recvName) {
+          // this::m / super::m are instance-receiver method refs — the receiver
+          // is the enclosing instance, not a named type; int[]::new is a
+          // primitive-array constructor ref. Neither references a TYPE symbol
+          // (probe 2026-09-08: m->this and m->int[] were noise edges).
+          const isKeywordReceiver = recvName === "this" || recvName === "super"
+          const isArrayTypeRef = recv.text.endsWith("[]") || recv.type === "array_type"
+          if (recvName && !isKeywordReceiver && !isArrayTypeRef) {
             relationships.push({
               source: refSource,
               target: recvName,
@@ -1026,6 +1100,12 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
         const typeNode = node.childForFieldName("type") || this.findChildByType(node, "catch_type") || this.findChildByType(node, "type_identifier")
         if (typeNode) {
           for (const t of this.collectJavaTypeNames(typeNode)) {
+            // JLS 14.4: `var` is NOT a type — it is reserved type inference
+            // with the inferred type unknown at parse level. The cast and
+            // record_pattern paths already filtered it; the declared-variable
+            // path did not, emitting a bogus `References ->var` edge for every
+            // `var x = ...` (probe-verified 2026-09-08).
+            if (t === "var") continue
             relationships.push({
               source: parentContext?.name || parentContext?.symbolRef?.name || "global",
               target: t,
@@ -1055,9 +1135,19 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
 
       if (type === "identifier") {
-         if (node.text === "Singleton" || node.text.endsWith("Factory") || node.text.endsWith("Builder")) {
-            const pat = node.text.endsWith("Factory") ? "factory" : node.text === "Singleton" ? "singleton" : "builder"
-            patterns[pat] = true
+         // Pattern-shape detection is a TYPE-DECLARATION signal: Singleton /
+         // *Factory / *Builder name a design pattern when they name a TYPE.
+         // Pre-fix every identifier node fed this check, so a local variable
+         // `myFactory` or a method `buildFactory()` set the file's factory
+         // pattern (probe-verified 2026-09-08). The name child of a type
+         // declaration is a direct identifier whose parent is the declaration.
+         const pt = node.parent?.type
+         if (
+           pt === "class_declaration" || pt === "interface_declaration" ||
+           pt === "enum_declaration" || pt === "record_declaration"
+         ) {
+            const pat = node.text.endsWith("Factory") ? "factory" : node.text === "Singleton" ? "singleton" : node.text.endsWith("Builder") ? "builder" : null
+            if (pat) patterns[pat] = true
          }
       }
 
@@ -1137,7 +1227,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
       // must count as exported exactly like Class. The pre-fix filter
       // exported only Class-owned methods, silently excluding the most
       // intentional API surface in Java.
-      if (!s.metadata?.isPhantom && s.visibility === "public" && (!s.ownerName || s.ownerKind === ASTEngine.SymbolKind.Class || s.ownerKind === ASTEngine.SymbolKind.Interface)) {
+      if (!s.metadata?.isPhantom && s.visibility === "public" && (!s.ownerName || s.ownerKind === ASTEngine.SymbolKind.Class || s.ownerKind === ASTEngine.SymbolKind.Interface || s.ownerKind === ASTEngine.SymbolKind.Enum)) {
         exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility })
       }
     }
@@ -1217,6 +1307,10 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
     relationships: ASTEngine.UniversalRelationship[],
     companion?: Map<string, Set<string>>
   ) {
+    // PERF (review 2026-09-08, claim 11): the suffix index is built ONCE per
+    // file (O(C)) instead of per task (was O(T·C)); the BFS below uses an
+    // index cursor instead of queue.shift() (O(1) vs O(N) per dequeue).
+    let suffixIndex: Map<string, string[]> | null = null
     for (let taskIdx = 0; taskIdx < tasks.length; taskIdx++) { const task = tasks[taskIdx]
       let targetFqn: string | null = null
       // Confidence reflects EVIDENCE TIER, and it is consumed downstream
@@ -1242,12 +1336,15 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
       // matching method symbol). JLS 8.4.8.1 semantics unchanged: BFS walks
       // the chain level-by-level, breaking at the first accessible (non-
       // private) declaring ancestor.
-      const suffixIndex = new Map<string, string[]>()
-      for (const fqn of classHierarchy.keys()) {
-        const bare = fqn.slice(fqn.lastIndexOf(".") + 1)
-        const arr = suffixIndex.get(bare)
-        if (arr) arr.push(fqn)
-        else suffixIndex.set(bare, [fqn])
+      // PERF (review 2026-09-08): suffixIndex is hoisted above the task loop.
+      if (!suffixIndex) {
+        suffixIndex = new Map<string, string[]>()
+        for (const fqn of classHierarchy.keys()) {
+          const bare = fqn.slice(fqn.lastIndexOf(".") + 1)
+          const arr = suffixIndex.get(bare)
+          if (arr) arr.push(fqn)
+          else suffixIndex.set(bare, [fqn])
+        }
       }
       const queue: string[] = []
       const ownerH = classHierarchy.get(task.ownerFqn)
@@ -1255,9 +1352,10 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
          for (let i = 0; i < ownerH.length; i++) queue.push(ownerH[i])
       }
       const seen: Set<string> = new Set()
+      let head = 0
 
-      while (queue.length > 0 && !targetFqn) {
-        const parent = queue.shift()!
+      while (head < queue.length && !targetFqn) {
+        const parent = queue[head++]
         if (seen.has(parent)) continue
         seen.add(parent)
 
@@ -1361,7 +1459,11 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
             ownerKind: ASTEngine.SymbolKind.Interface,
             modifiers: ["phantom", "framework_generated", "spring-data"],
             range: scope.node ? this.nodeToRange(scope.node) : { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 },
-            parameters: [],
+            // Payload consistency (claim 21): the symbolMap key carries the
+            // REAL signature (findById(Object), save(Object)) while the symbol
+            // payload said parameters:[] — resolution and display disagreed.
+            // A phantom method with an arity-carrying key has arity.
+            parameters: method === "findById" || method === "deleteById" || method === "save" || method === "delete" ? [{ name: "entity", type: "Object", isOptional: false }] : [],
             returnType: "Object",
             metadata: { isPhantom: true },
           }
@@ -1380,8 +1482,17 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
       let isDataOrSetter = false
       for (let i = 0; i < scope.annotations.length; i++) {
          const d = scope.annotations[i]
-         if (d.indexOf("Data") !== -1 || d.indexOf("Getter") !== -1) isDataOrGetter = true
-         if (d.indexOf("Data") !== -1 || d.indexOf("Setter") !== -1) isDataOrSetter = true
+         // Exact short-name match: the pre-fix substring test (indexOf("Data"))
+         // fired on @Metadata / @Database and indexOf("Getter") on any
+         // annotation ending in Getter — fabricating Lombok accessors for
+         // non-Lombok classes (probe 2026-09-08).
+         let shortName = d.startsWith("@") ? d.slice(1) : d
+         const paren = shortName.indexOf("(")
+         if (paren !== -1) shortName = shortName.slice(0, paren)
+         const lastDot = shortName.lastIndexOf(".")
+         if (lastDot !== -1) shortName = shortName.slice(lastDot + 1)
+         if (shortName === "Data" || shortName === "Getter") isDataOrGetter = true
+         if (shortName === "Data" || shortName === "Setter") isDataOrSetter = true
       }
 
       if (isDataOrGetter || isDataOrSetter) {
@@ -1613,7 +1724,11 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
         node.type === "class_declaration" ||
         node.type === "interface_declaration" ||
         node.type === "enum_declaration" ||
-        node.type === "record_declaration"
+        node.type === "record_declaration" ||
+        // M37.21 C17: member reads INSIDE an @interface body previously kept
+        // the outer owner — @interface is a type declaration like the others,
+        // so its member declarations must rebind the read owner.
+        node.type === "annotation_type_declaration"
       ) {
         const nameNode = this.findChildByType(node, "identifier")
         const nextOwner = nameNode ? nameNode.text : owner
@@ -1746,13 +1861,17 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private getJavaAnnotations(node: Node): string[] {
     const annotations: string[] = []
+    // Unification (claim 22): getJavaAnnotations and getJavaAnnotationNames
+    // used different node sources — the former read ONLY modifiers children,
+    // the latter fell back to the node itself. Annotations live in the
+    // modifiers node in this grammar, but a grammar revision moving them
+    // would silently split the two readers. Both now share the same lookup.
     const modifiersNode = this.findChildByType(node, "modifiers")
-    if (modifiersNode) {
-      for (let i = 0; i < modifiersNode.namedChildCount; i++) {
-        const child = modifiersNode.namedChild(i)
-        if (child && (child.type === "annotation" || child.type === "marker_annotation")) {
-          annotations.push(child.text)
-        }
+    const target = modifiersNode || node
+    for (let i = 0; i < target.namedChildCount; i++) {
+      const child = target.namedChild(i)
+      if (child && (child.type === "annotation" || child.type === "marker_annotation")) {
+        annotations.push(child.text)
       }
     }
     return annotations
@@ -1767,7 +1886,10 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
    * pass through unchanged.
    */
   private getJavaAnnotationShortName(ann: Node): string | null {
-    const nameNode = this.findChildByType(ann, "identifier") || this.findChildByType(ann, "scoped_identifier")
+    // _reserved_identifier (var, record, sealed, yield are contextual
+    // keywords the grammar wraps) is a legal annotation NAME shape — the
+    // claimed triple-choice in the doc comment below was missing it.
+    const nameNode = this.findChildByType(ann, "identifier") || this.findChildByType(ann, "scoped_identifier") || this.findChildByType(ann, "_reserved_identifier")
     if (!nameNode) return null
     const text = nameNode.text
     const lastDot = text.lastIndexOf(".")
@@ -1799,15 +1921,56 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
    */
   private extractStringValue(node: Node | null | undefined): string | undefined {
     if (!node) return undefined
+    // M37.21 C23: text blocks ("""…""") concatenate their string_fragment
+    // children like ordinary literals; a constant-foldable `+` chain
+    // ("/a" + "/b") resolves to the JOINED literal instead of leaking raw
+    // source text. Non-literal operands (variables, method calls) return
+    // undefined — statically unresolvable, never folded from names.
     if (node.type === "string_literal") {
       let fragmentText = ""
       for (let i = 0; i < node.namedChildCount; i++) {
         const c = node.namedChild(i)
-        if (c && c.type === "string_fragment") fragmentText += c.text
+        // Probed grammar: plain literals carry string_fragment; text blocks
+        // (\"\""…\"\"\") parse as string_literal TOO — with a
+        // multiline_string_fragment child — so one reader covers both.
+        if (c && (c.type === "string_fragment" || c.type === "multiline_string_fragment")) fragmentText += c.text
       }
       if (fragmentText) return fragmentText
     }
+    if (node.type === "binary_expression") {
+      return this.extractJavaConstantString(node)
+    }
     return node.text
+  }
+
+  /** Strict constant-string folder: literals/text blocks/parens/+ chains
+   *  only. Any non-literal operand makes the whole expression unresolved. */
+  private extractJavaConstantString(node: Node): string | undefined {
+    if (node.type === "parenthesized_expression") {
+      const inner = node.namedChild(0)
+      return inner ? this.extractJavaConstantString(inner) : undefined
+    }
+    if (node.type === "string_literal") {
+      let fragmentText = ""
+      for (let i = 0; i < node.namedChildCount; i++) {
+        const c = node.namedChild(i)
+        if (c && (c.type === "string_fragment" || c.type === "multiline_string_fragment")) fragmentText += c.text
+      }
+      return fragmentText || undefined
+    }
+    if (node.type === "binary_expression") {
+      const op = node.childForFieldName("operator")?.text
+      if (op !== "+") return undefined
+      const l = node.namedChild(0)
+      const r = node.namedChild(1)
+      if (!l || !r) return undefined
+      const lt = this.extractJavaConstantString(l)
+      const rt = this.extractJavaConstantString(r)
+      if (lt === undefined || rt === undefined) return undefined
+      const joined = lt + rt
+      return joined || undefined
+    }
+    return undefined
   }
 
   private getJavaVisibility(modifiers: string[]): "public" | "private" | "protected" | undefined {
@@ -1985,7 +2148,10 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (typeNode) return typeNode.text
     for (let i = 0; i < paramNode.namedChildCount; i++) {
       const child = paramNode.namedChild(i)
-      if (child && child.type !== "identifier" && child.type !== "modifiers") return child.text
+      // Annotation nodes are NOT types (claim 27): the spread path skipped
+      // them, this fallback did not — a modifier-only parameter degraded to
+      // its annotation text as the type.
+      if (child && child.type !== "identifier" && child.type !== "modifiers" && !stringIncludes(child.type, "annotation")) return child.text
     }
     return undefined
   }
@@ -2009,7 +2175,15 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
   private buildJavaCallExpression(invocationNode: Node): string {
     const objectNode = invocationNode.childForFieldName("object")
     const nameNode = invocationNode.childForFieldName("name")
-    if (!nameNode) return invocationNode.text
+    if (!nameNode) {
+      // Defensive fallback (claim 26): the no-name path returned the RAW text
+      // (`foo(a,b)`), whose split(".").pop() kept the argument list in the
+      // call target. Strip at the first '(' so a degraded shape never leaks
+      // args into the graph.
+      const text = invocationNode.text
+      const paren = text.indexOf("(")
+      return paren === -1 ? text : text.slice(0, paren)
+    }
     if (objectNode) {
       const objectText = objectNode.type === "method_invocation" ? this.buildJavaCallExpression(objectNode) : objectNode.text
       return `${objectText}.${nameNode.text}`
@@ -2081,12 +2255,14 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
       // org.slf4j / logging
       "slf4j", "log4j", "logback",
     ])
-    // Split dotted call and check every segment prefix
+    // M37.21 C5: check the ROOT segment ONLY. The previous per-segment walk
+    // dropped user calls like com.mycompany.Service.doWork (segment "com")
+    // and foo.Logger.bar (segment "Logger") as stdlib — root-prefix is the
+    // JLS-meaningful resolution key for a qualified name. Under-filtering of
+    // static-imported bare names (assertEquals, println) is a known, accepted
+    // behavior (emitting them as user calls is conservative and honest).
     const segments = call.split(".")
-    for (const seg of segments) {
-      if (STDLIB_ROOTS.has(seg)) return true
-    }
-    // If the entire call itself (no dots) matches a stdlib root
+    if (segments.length > 0 && STDLIB_ROOTS.has(segments[0])) return true
     if (STDLIB_ROOTS.has(call)) return true
     return false
   }
@@ -2128,6 +2304,14 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
                 const valNode = arg.namedChild(arg.namedChildCount - 1)
                 return this.extractStringValue(valNode)
              }
+          } else if (key === "value" && arg.type === "element_value_array_initializer") {
+            // Array-valued routes: @RequestMapping({"/a","/b"}) — the FIRST
+            // element is the primary route under the single-route model; the
+            // pre-fix path fell to extractStringValue(arg) and leaked the RAW
+            // initializer text (probe: route `{"/a","/b"}`, 2026-09-08).
+            const first = arg.namedChild(0)
+            if (first) return this.extractStringValue(first)
+            return undefined
           } else if (key === "value" && arg.type !== "element_value_pair") {
              return this.extractStringValue(arg)
           }
@@ -2144,7 +2328,12 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (let i = 0; i < typeParamsNode.namedChildCount; i++) {
       const child = typeParamsNode.namedChild(i);
       if (child && child.type === "type_parameter") {
-        params.push(child.text);
+        // The payload is the VARIABLE name, not the declaration text —
+        // `<T extends Foo>` pushes T (probe 2026-09-08 pushed "T extends Foo",
+        // mixing bounds into the name). Bounds remain visible in source; the
+        // grammar gives the variable as a type_identifier child (no name field).
+        const nameChild = child.childForFieldName("name") || this.findChildByType(child, "type_identifier")
+        params.push(nameChild ? nameChild.text : child.text);
       }
     }
     return params.length > 0 ? params : undefined;
@@ -2184,6 +2373,21 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
          if (hasRepo) springPatterns.push("repository_pattern")
          if (hasController) { springPatterns.push("mvc_pattern"); springPatterns.push("api_endpoints"); }
          if (springPatterns.length > 0) patterns.push({ framework: "Spring Framework", patterns: springPatterns })
+     }
+     // M37.21 C25: the other DETECTED frameworks never surfaced —
+     // getJavaFrameworkPatterns only read the bare `spring` key, so
+     // spring_mvc/spring_data/jpa/hibernate imports produced framework flags
+     // with zero pattern payload. Vocabulary matches the spring block
+     // (mvc_pattern/api_endpoints) plus orm_mapping for persistence layers.
+     if (inArray(frameworks, "spring_mvc")) {
+       patterns.push({ framework: "Spring MVC", patterns: ["mvc_pattern", "api_endpoints"] })
+     }
+     if (inArray(frameworks, "spring_data")) {
+       patterns.push({ framework: "Spring Data", patterns: ["repository_pattern", "orm_mapping"] })
+     } else if (inArray(frameworks, "jpa")) {
+       patterns.push({ framework: "JPA", patterns: ["orm_mapping"] })
+     } else if (inArray(frameworks, "hibernate")) {
+       patterns.push({ framework: "Hibernate", patterns: ["orm_mapping"] })
      }
      return patterns
   }
