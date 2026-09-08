@@ -2,7 +2,7 @@
   "issue": "495",
   "code": "V1",
   "status": "verified",
-  "currentCommit": "3fa837266d11fa231b21e1d835a165cf283c58aa",
+  "currentCommit": "14407e4496b4eaffc126cf2751822605d1f37973",
   "sourceFingerprint": "bf484166fefc94ef0cdad664ccd6d0a546fbb53f2bdfcd44ac60e5d0d69ea992",
   "verifierCommand": "npx tsx script/m24/verify-harness.ts",
   "evidenceFile": "V1.json",
@@ -169,9 +169,9 @@
     "callHierarchyExpand": 100
   },
   "limitations": [
-    "bun-source leg is blocked in this environment (bun not installed); the harness attempts it every run and records the reason — never a silent skip",
+    "bun-source leg is blocked in this environment (bun not installed); the harness attempts it every run and records the reason \u2014 never a silent skip",
     "latency measured on this machine only (kernel/CPU/RAM recorded per run); cross-platform budgets are M25 scope",
     "fixture workspace is a single TypeScript file; per-language fixtures follow in M25",
-    "cold-start latency not measured in this issue (warm regime only, per contract §3 definition)"
+    "cold-start latency not measured in this issue (warm regime only, per contract \u00a73 definition)"
   ]
 }

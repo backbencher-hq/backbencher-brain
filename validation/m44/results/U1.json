@@ -10,7 +10,7 @@
   "negativeCases": 6,
   "mutantsCaught": 6,
   "mutantsTotal": 6,
-  "currentCommit": "99170ce01521d8cff385c717215787b766336eb3",
+  "currentCommit": "14407e4496b4eaffc126cf2751822605d1f37973",
   "verifierCommand": "npx tsx script/m44/verify-usages-groups.ts",
   "evidenceFile": "U1.json",
   "generatedAt": "2026-09-08T04:55:21.176Z",
@@ -41,7 +41,7 @@
       "imports ./widget:Widget",
       "exports ./widget:Widget"
     ],
-    "noise": "draw→util (sibling callee, must never leak into Widget's usage set)"
+    "noise": "draw\u2192util (sibling callee, must never leak into Widget's usage set)"
   },
   "limitations": [
     "Fixture rows are seeded with the analyzer storage vocabulary; the real indexer's full row production is exercised by the standing H5/wave fixtures.",
