@@ -13,14 +13,14 @@
       "status": "pass"
     },
     {
-      "description": "java: 6 ruled, 17 pending owner",
+      "description": "java: 7 ruled, 19 pending owner",
       "id": "design-decisions-tracked",
       "language": "java",
       "status": "pass"
     },
     {
       "description": "every named node type classified (java)",
-      "detail": "143 types, 70 handled, 60 silent, 4 gaps, 23 decisions",
+      "detail": "143 types, 70 handled, 60 silent, 4 gaps, 26 decisions",
       "id": "section-a-structural",
       "language": "java",
       "status": "pass"
@@ -1556,8 +1556,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "e5fbe1dd89e14732ab289d72f8178641c250baa1",
-  "committedAt": "2026-09-08T20:04:19+02:00",
+  "commit": "f4d3aeb024caf257ea1ea71380e73730730d6199",
+  "committedAt": "2026-09-08T22:09:19+02:00",
   "data": {
     "languages": {
       "c": {
@@ -1965,7 +1965,9 @@
           "JD32",
           "JD33",
           "JD34",
-          "JD35"
+          "JD35",
+          "JD37",
+          "JD38"
         ],
         "ruledDecisions": [
           "G5",
@@ -1973,11 +1975,12 @@
           "S1",
           "JAO1",
           "JAO2",
-          "JD20"
+          "JD20",
+          "JD36"
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "143 types, 70 handled, 60 silent, 4 gaps, 23 decisions",
+            "detail": "143 types, 70 handled, 60 silent, 4 gaps, 26 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
