@@ -94,6 +94,25 @@ to declared absence (contract §13.10), with a permanent L3 mutant.
 Gated by `script/m44/verify-impact-resolution.ts` (fixture-first, real seeded
 index + real server, 4 mutants) and the E5 constructor-impact assertions.
 
+### U6 decision (2026-09-08): show all usages never dead-ends
+
+The `bb.showAllUsages` command is native-first with a declared fallback: the
+handoff to the editor's references view stays PRIMARY where it works (a
+three-way executor distinguishes ok / unavailable / threw); on any native
+failure the command opens OUR hub usages surface for the same symbol
+(`renderHubForPanel` over the live client) — data, never a message. The
+decision lives in ONE vscode-free pure core (`ide/vscode/src/usage-fallback.ts`):
+strict parse (symbol REQUIRED — the hover link was upgraded server-side to
+carry the SERVER-RESOLVED identity {file, line, character, symbol}, extending
+issue #652's no-client-guessing rule to the fallback), native primary, hub
+fallback, and a declared reveal floor for legacy location-only clients (a
+defined outcome, not a dead end). The old message-only path is a contract
+defect (§13.6) and its string is gone. Gated by
+`script/m44/verify-usages-fallback.ts` (u6 fixture: five call sites so the
++2-more escape hatch renders; real index + real server for the wire link;
+4 mutants incl. the acceptance criterion's message-only regression) and the
+E5 in-editor click leg.
+
 ### U3 decision (2026-09-07, owner-approved "true nested tree")
 
 The tree nests by the **placement parent** — the parent endpoint of the group's

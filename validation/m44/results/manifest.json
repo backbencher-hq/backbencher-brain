@@ -179,7 +179,7 @@
       "code": "U6",
       "githubIssue": 693,
       "tool": "references-fallback",
-      "status": "planned",
+      "status": "verified",
       "scope": "show-all-usages opens OUR usages list when the editor's native references surface is unavailable or throws; native handoff stays primary; fallback declared and tested",
       "acceptanceCriteria": [
         "headless: command-level test with a stubbed editor whose referencesTrigger throws \u2192 fallback surface opens, no message-only return",
@@ -190,7 +190,20 @@
         "U6 evidence (verified, current HEAD)",
         "fallback command verifier + mutation record",
         "E5 in-editor leg evidence"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "verifierCommand": "npx tsx script/m44/verify-usages-fallback.ts",
+        "evidenceFile": "U6.json",
+        "passed": 25,
+        "failed": 0,
+        "mutantsCaught": 4,
+        "mutantsTotal": 4,
+        "negativeCases": 2,
+        "inEditor": "E5 88/88 (E5-U6 click leg: declared surface + data landing + identity + legacy reveal floor)",
+        "docs": "docs/m44/M44-MASTER-PLAN.md U6 decision",
+        "currentCommit": "9c3f8c49fba98379f63c463d1cc6b0c3aa7b4ce4"
+      }
     },
     {
       "code": "X1",

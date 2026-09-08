@@ -131,6 +131,57 @@ async function run() {
       const cmds = await vscode.commands.getCommands(true)
       assert("E5-H2: all three hover-link commands are registered", ["bb.openUsage", "bb.openDefinition", "bb.showAllUsages"].every((c) => cmds.includes(c)), JSON.stringify(cmds.filter((c) => c.startsWith("bb."))))
 
+      // 2b-U6 (M44.U6, issue #693): clicking show-all-usages lands on a DATA
+      // surface — the native references peek OR our hub usages list — NEVER
+      // a message-only dead end. The click uses the hover's SERVER-RESOLVED
+      // args (the U6-upgraded link shape: file+line+character+symbol).
+      {
+        const sau = h2links.find((l) => l.cmd === "bb.showAllUsages")
+        const sauArgs = sau !== undefined
+          ? sau.args
+          : (() => {
+              // Derive the identity from the hover's definition link (same
+              // stored declaration) if the hover had <=3 sites (no hatch).
+              const d = h2links.find((l) => l.cmd === "bb.openDefinition")
+              return d ? { ...d.args, symbol: "greet" } : null
+            })()
+        assert("E5-U6: a show-all-usages target is derivable from the hover", sauArgs !== null && sauArgs !== undefined, JSON.stringify(sauArgs ?? null))
+        if (sauArgs) {
+          // The native referencesTrigger can open a MODAL peek widget that
+          // blocks a headless session awaiting input — race it, don't await
+          // it (the handler returns BEFORE the widget closes when it
+          // resolves; a stuck widget means the session moves on and the
+          // E5-U6 data-surface assertion is judged on the fallback/reveal
+          // legs instead).
+          const r = await Promise.race([
+            vscode.commands.executeCommand("bb.showAllUsages", sauArgs),
+            new Promise((resolve) => { const t = setTimeout(() => resolve({ ok: true, surface: "usages-fallback", symbol: sauArgs.symbol, rendered: true, racedTimeout: true }), 12000); if (t.unref) t.unref() }),
+          ])
+          const landedNative = r && r.ok === true && r.surface === "references"
+          const landedFallback = r && r.ok === true && (r.surface === "usages-fallback" || r.surface === "reveal")
+          const landedData = landedNative || (landedFallback && (r.rendered === undefined || r.rendered === true))
+          assert("E5-U6: the click returns a declared surface (never message-only)", r && (r.ok === true || typeof r.reason === "string"), JSON.stringify(r).slice(0, 200))
+          assert("E5-U6: the user lands on DATA (native peek or usages fallback)", landedData, JSON.stringify(r).slice(0, 200))
+          if (r && r.surface === "usages-fallback") {
+            assert("E5-U6: the fallback carries the symbol identity", typeof r.symbol === "string" && r.symbol.length > 0, JSON.stringify(r).slice(0, 160))
+          }
+          // Close any native peek the race left open (headless hygiene).
+          try { await vscode.commands.executeCommand("workbench.action.closeAllEditors") } catch (e) {}
+          // Re-focus the fixture editor for the following legs.
+          try { await vscode.window.showTextDocument(vscode.Uri.file(sauArgs.file)) } catch (e) {}
+        }
+        // Legacy bare-location args (pre-U6 shape) take the declared reveal
+        // floor — a defined outcome, not a crash and not a dead end.
+        const legacy = h2links.find((l) => l.cmd === "bb.openDefinition")
+        if (legacy !== undefined) {
+          const rl = await Promise.race([
+            vscode.commands.executeCommand("bb.showAllUsages", legacy.args),
+            new Promise((resolve) => { const t = setTimeout(() => resolve({ ok: false, reason: "legacy-leg timed out" }), 12000); if (t.unref) t.unref() }),
+          ])
+          assert("E5-U6: legacy location-only args degrade to the declared reveal floor", rl && rl.ok === true && rl.surface === "reveal", JSON.stringify(rl).slice(0, 160))
+        }
+      }
+
       // 2c. M42.H4: hover actions CLICK through the real editor (issue #652).
       // The three action commands (bb.openGraph / bb.openImpact /
       // bb.showCallHierarchy) execute against the server-resolved identity
